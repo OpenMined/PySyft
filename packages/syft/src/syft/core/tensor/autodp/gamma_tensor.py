@@ -33,8 +33,6 @@ from ....lib.numpy.array import capnp_serialize
 from ....lib.python.util import upcast
 from ....util import inherit_tags
 from ...adp.data_subject_ledger import DataSubjectLedger
-from ...adp.data_subject_list import DataSubject
-from ...adp.data_subject_list import DataSubjectArray
 from ...adp.data_subject_list import DataSubjectList
 from ...adp.data_subject_list import dslarraytonumpyutf8
 from ...adp.data_subject_list import numpyutf8todslarray
@@ -1089,7 +1087,7 @@ def create_new_lookup_tables(
     return index2key, key2index, index2values, index2size
 
 
-def no_op(x: Dict[str, GammaTensor]) -> Dict[str, GammaTensor]:
+def no_op(x: GammaTensor) -> GammaTensor:
     """A Private input will be initialized with this function.
     Whenever you manipulate a private input (i.e. add it to another private tensor),
     the result will have a different function. Thus we can check to see if the f
@@ -1121,11 +1119,9 @@ class GammaTensor:
     PointerClassOverride = TensorWrappedGammaTensorPointer
 
     child: jnp.array
-    data_subjects: Union[
-        np.ndarray, List[DataSubjectArray], DataSubjectList, List[DataSubject]
-    ]
-    min_vals: lazyrepeatarray = flax.struct.field(pytree_node=False)
-    max_vals: lazyrepeatarray = flax.struct.field(pytree_node=False)
+    data_subjects: np.ndarray
+    min_vals: Union[lazyrepeatarray, np.ndarray] = flax.struct.field(pytree_node=False)
+    max_vals: Union[lazyrepeatarray, np.ndarray] = flax.struct.field(pytree_node=False)
     is_linear: bool = True
     func: Callable = flax.struct.field(pytree_node=False, default_factory=lambda: no_op)
     id: str = flax.struct.field(
@@ -1784,7 +1780,7 @@ class GammaTensor:
                 maxv.data = maxv.data.max()
 
         elif isinstance(self.min_vals, (int, float)):
-            minv = self.min_vals
+            minv = self.min_vals  # type: ignore
             maxv = self.max_vals
         else:
             minv = self.min_vals
@@ -1804,7 +1800,7 @@ class GammaTensor:
         output_state = dict()
         output_state[self.id] = self
 
-        def _mean(state, axis=axis) -> jax.numpy.DeviceArray:
+        def _mean(state: dict, axis: int = axis) -> jax.numpy.DeviceArray:
             return jnp.mean(self.run(state), axis)
 
         result = self.child.mean(axis, **kwargs)
@@ -1827,13 +1823,14 @@ class GammaTensor:
             func=_mean,
         )
 
-    def expand_dims(self, axis: Optional[int]) -> GammaTensor:
+    def expand_dims(self, axis: Optional[int] = None) -> GammaTensor:
         # print("CAN YOU HEAR ME")
         result = np.expand_dims(self.child, axis)
         # print("reshaping to:", result.shape)
         # print("og shape", self.data_subjects.shape)
         target_shape_dsl = list(self.data_subjects.shape)
-        target_shape_dsl.insert(axis + 1, 1)
+        if axis:
+            target_shape_dsl.insert(axis + 1, 1)
         # print("target shape", target_shape_dsl)
 
         return GammaTensor(
@@ -1843,11 +1840,11 @@ class GammaTensor:
             max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
         )
 
-    def std(self, axis, **kwargs) -> GammaTensor:
+    def std(self, axis: int, **kwargs: Dict[Any, Any]) -> GammaTensor:
         output_state = dict()
         output_state[self.id] = self
 
-        def _std(state, axis=axis) -> jax.numpy.DeviceArray:
+        def _std(state: dict, axis: int = axis) -> jax.numpy.DeviceArray:
             return jnp.std(self.run(state), axis)
 
         result = self.child.std(axis, **kwargs)
@@ -2041,61 +2038,7 @@ class GammaTensor:
         )
 
     @staticmethod
-    def combine(gt_list: List[GammaTensor], target_shape: Tuple) -> GammaTensor:
-        data = np.zeros(np.prod(target_shape))
-        last_index = 0
-        min_val = 1e20
-        max_val = -1e20
-
-        data_subs = DataSubjectList(
-            one_hot_lookup=np.empty(0), data_subjects_indexed=np.empty(0)
-        )
-
-        for gamma_tensor in gt_list:
-            # Add data points
-            input_size = int(np.prod(gamma_tensor.shape))
-            data[
-                last_index : last_index + input_size  # noqa: E203
-            ] = gamma_tensor.child.flatten()
-            last_index += input_size
-
-            # Add min/max values
-            if isinstance(gamma_tensor.min_vals, lazyrepeatarray):
-                local_min = gamma_tensor.min_vals.data.min()
-                if local_min < min_val:
-                    min_val = local_min
-
-                local_max = gamma_tensor.max_vals.data.max()
-                if local_max < max_val:
-                    max_val = local_max
-
-            elif isinstance(gamma_tensor.min_vals, (int, float)):
-                if gamma_tensor.min_vals < min_val:
-                    min_val = gamma_tensor.min_vals
-
-                if gamma_tensor.max_vals < max_val:
-                    max_val = local_max
-            else:
-                raise NotImplementedError(
-                    f"Undefined behaviour for type: {type(gamma_tensor.min_vals)}"
-                )
-
-            # Add data subjects
-            data_subs = DataSubjectList.absorb(data_subs, gamma_tensor.data_subjects)
-
-        data_subs.data_subjects_indexed = data_subs.data_subjects_indexed.reshape(
-            target_shape
-        )
-
-        return GammaTensor(
-            child=data.reshape(target_shape),
-            data_subjects=data_subs,
-            min_vals=min_val,
-            max_vals=max_val,
-        )
-
-    @staticmethod
-    def convert_dsl(state: dict, new_state: Optional[dict] = None):
+    def convert_dsl(state: dict, new_state: Optional[dict] = None) -> Dict:
         if new_state is None:
             new_state = dict()
         if state:
@@ -2119,7 +2062,7 @@ class GammaTensor:
                 new_state[new_tensor.id] = new_tensor
             return new_state
         else:
-            return None
+            return {}
 
     def publish(
         self,
@@ -2127,7 +2070,7 @@ class GammaTensor:
         deduct_epsilon_for_user: Callable,
         ledger: DataSubjectLedger,
         sigma: Optional[float] = None,
-        dsl_hack=False,
+        dsl_hack: bool = False,
     ) -> jax.numpy.DeviceArray:
         print("min_vals", self.min_vals.shape)
         print("max_vals", self.max_vals.shape)
@@ -2209,9 +2152,7 @@ class GammaTensor:
     def __len__(self) -> int:
         return len(self.child)
 
-    def __getitem__(
-        self, item: Union[str, int, slice, PassthroughTensor]
-    ) -> GammaTensor:
+    def __getitem__(self, item: Union[int, slice, PassthroughTensor]) -> GammaTensor:
         # TODO: Technically we could reduce ds.one_hot_lookup to remove any DS that won't be there
         # There technically isn't any penalty for keeping it as is, but maybe there's a sidechannel attack
         # where you index into one value in a GammaTensor and get all the data subjects of that Tensor?
@@ -2220,7 +2161,7 @@ class GammaTensor:
             minv = self.min_vals
             maxv = self.max_vals
         elif isinstance(self.min_vals, lazyrepeatarray):
-            minv = self.min_vals[item]
+            minv = self.min_vals[item]  # type: ignore
             maxv = self.max_vals[item]
         else:
             raise NotImplementedError

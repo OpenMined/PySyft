@@ -1,6 +1,4 @@
 # stdlib
-from typing import Any
-from typing import List
 from typing import Tuple
 
 # third party

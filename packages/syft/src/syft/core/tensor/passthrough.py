@@ -389,7 +389,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return self.__class__(self.child.transpose(*args, **kwargs))
 
     def __getitem__(
-        self, key: Union[int, bool, np.array, PassthroughTensor, slice, ellipsis]
+        self, key: Union[int, bool, np.array, PassthroughTensor, slice]
     ) -> Union[PassthroughTensor, AcceptableSimpleType]:
         if isinstance(key, PassthroughTensor):
             return self.__class__(self.child.__getitem__(key.child))

@@ -1204,7 +1204,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         )
 
     def __setitem__(
-        self, key, value: Union[PhiTensor, np.ndarray]
+        self, key: Union[int, slice], value: Union[PhiTensor, GammaTensor, np.ndarray]
     ) -> Union[PhiTensor, GammaTensor]:
         if isinstance(value, PhiTensor):
             self.child[key] = value.child
@@ -1310,7 +1310,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=output_max_val,
         )
 
-    def ravel(self):
+    def ravel(self) -> PhiTensor:
         data = self.child
         output_data = data.ravel()
 
@@ -1386,7 +1386,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         return np.unravel_index(arg_result, shape)
 
     def mean(
-        self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs
+        self,
+        axis: Optional[Union[int, Tuple[int, ...]]] = None,
+        **kwargs: Dict[Any, Any],
     ) -> PhiTensor:
         result = self.child.mean(axis, **kwargs)
         # print(f"PT mean gives shape of {result.shape}")
@@ -1398,7 +1400,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         )
 
     def std(
-        self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs
+        self,
+        axis: Optional[Union[int, Tuple[int, ...]]] = None,
+        **kwargs: Dict[Any, Any],
     ) -> PhiTensor:
         result = self.child.std(axis, **kwargs)
         return PhiTensor(
@@ -1452,7 +1456,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         return gamma_tensor
 
-    def view(self, *args) -> PhiTensor:
+    def view(self, *args: List[Any]) -> PhiTensor:
         # TODO: Figure out how to fix lazyrepeatarray reshape
 
         data = self.child.reshape(*args)
@@ -1797,7 +1801,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     data_subjects=output_ds,
                 )
 
-    def clip(self, a_min: float, a_max: float):
+    def clip(self, a_min: float, a_max: float) -> PhiTensor:
         output_data = np.clip(self.child, a_min, a_max)
 
         min_v = np.clip(self.min_vals.data, a_min, a_max)
@@ -1815,7 +1819,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def transpose(self, *args: Any, **kwargs: Any) -> PhiTensor:
         """Transposes self.child, min_vals, and max_vals if these can be transposed, otherwise doesn't change them."""
-        data: Sequence
+        data: np.ndarray
         if (
             isinstance(self.child, int)
             or isinstance(self.child, float)
@@ -2054,7 +2058,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             raise NotImplementedError
 
     def sum(
-        self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs
+        self,
+        axis: Optional[Union[int, Tuple[int, ...]]] = None,
+        **kwargs: Dict[Any, Any],
     ) -> Union[PhiTensor, GammaTensor]:
         return self.gamma.sum(axis, **kwargs)
         # # TODO: Add support for axes arguments later

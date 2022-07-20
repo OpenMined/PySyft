@@ -72,7 +72,7 @@ class Convolution(Layer):
         self.init = XavierInitialization()
         self.activation = activations.get(activation)
 
-    def connect_to(self, prev_layer: Optional[Type[Layer]] = None) ->  None:
+    def connect_to(self, prev_layer: Optional[Type[Layer]] = None) -> None:
         if prev_layer is None:
             if self.input_shape is None:
                 raise ValueError(
@@ -210,7 +210,9 @@ class Convolution(Layer):
     ) -> None:
 
         if len(new_params) == 2:
-            raise ValueError(f"Expected two values. Update params has length{len(new_params)}")
+            raise ValueError(
+                f"Expected two values. Update params has length{len(new_params)}"
+            )
         self.W, self.b = new_params
 
     @property
