@@ -1663,7 +1663,7 @@ class GammaTensor:
         return self.transpose()
 
     def sum(
-        self, axis: Optional[Union[int, Tuple[int]]] = None, **kwargs: Any
+        self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs: Any
     ) -> GammaTensor:
         def _sum(state: dict) -> jax.numpy.DeviceArray:
             return jnp.sum(self.run(state))

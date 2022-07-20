@@ -2054,7 +2054,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             raise NotImplementedError
 
     def sum(
-        self, axis: Optional[Union[int, Tuple]] = None, **kwargs
+        self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs
     ) -> Union[PhiTensor, GammaTensor]:
         return self.gamma.sum(axis, **kwargs)
         # # TODO: Add support for axes arguments later

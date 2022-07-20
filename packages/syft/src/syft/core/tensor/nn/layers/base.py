@@ -34,7 +34,7 @@ class Layer:
         raise NotImplementedError
 
     @property
-    def params(self) -> List:
+    def params(self) -> Tuple:
         """Layer parameters.
 
         Returns a list of numpy.array variables or expressions that
@@ -47,12 +47,12 @@ class Layer:
         -----
         For layers without any parameters, this will return an empty list.
         """
-        return []
+        return ()
 
     @property
-    def grads(self) -> List:
+    def grads(self) -> Tuple:
         """Get layer parameter gradients as calculated from backward()."""
-        return []
+        return ()
 
     @property
     def param_grads(self) -> List:

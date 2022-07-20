@@ -67,7 +67,6 @@ class Convolution(Layer):
         self.out_shape: Optional[Tuple[int, ...]] = None
         self.last_output: Optional[Union[PhiTensor, GammaTensor]] = None
         self.last_input: Optional[Union[PhiTensor, GammaTensor]] = None
-        self.X_col: Optional[Union[PhiTensor, GammaTensor]] = None
 
         self.init = XavierInitialization()
         self.activation = activations.get(activation)
@@ -79,7 +78,10 @@ class Convolution(Layer):
         else:
             input_shape = prev_layer.out_shape  # type: ignore
 
-        assert len(input_shape) == 4
+        if len(input_shape) != 4:
+            raise ValueError(
+                "Input shape to the layer should be of the format: (N, C, H, W)."
+            )
 
         nb_batch, pre_nb_filter, pre_height, pre_width = input_shape
         if isinstance(self.filter_size, tuple):
@@ -88,7 +90,7 @@ class Convolution(Layer):
             filter_height = filter_width = self.filter_size
         else:
             raise TypeError(
-                "Argument `filter_size` should either to be Tuple or an integer."
+                "Argument `filter_size` should either to be Tuple[int, int] or an integer."
             )
 
         height = (pre_height - filter_height + 2 * self.padding) // self.stride + 1
@@ -103,10 +105,16 @@ class Convolution(Layer):
 
     def forward(
         self, input: Union[PhiTensor, GammaTensor], *args: Tuple, **kwargs: Dict
-    ):
+    ) -> Union[PhiTensor, GammaTensor]:
         # print("Input into Conv forward:", input.shape, input.data_subjects.shape)
         self.last_input = input
         self.input_shape = input.shape
+
+        if self.W is None or self.b is None:
+            raise ValueError(
+                """Weight or bias for the layer cannot be None.
+                Please initialize the weight (self.W) and bias (self.b) for the layer."""
+            )
 
         n_filters, d_filter, h_filter, w_filter = self.W.shape
 
@@ -117,11 +125,9 @@ class Convolution(Layer):
 
         _, _, h_out, w_out = self.out_shape
 
-        self.X_col = im2col_indices(
+        self.X_col: Union[GammaTensor, PhiTensor] = im2col_indices(
             input, h_filter, w_filter, padding=self.padding, stride=self.stride
         )
-
-        assert self.W is not None, "self.W cannot be None."
 
         W_col = self.W.reshape((n_filters, -1))
         out = (
@@ -139,7 +145,15 @@ class Convolution(Layer):
     def backward(
         self, pre_grad: Union[PhiTensor, GammaTensor], *args: Tuple, **kwargs: Dict
     ):
-        n_filter, d_filter, h_filter, w_filter = self.W.shape
+
+        if self.W is None or self.b is None:
+            raise ValueError(
+                """Weight or bias for the layer cannot be None.
+                Please initialize the weight (self.W) and bias (self.b) for the layer."""
+            )
+
+        # N, C, H, W
+        n_filter, _, h_filter, w_filter = self.W.shape
 
         pre_grads = (
             self.activation.derivative(pre_grad)
@@ -161,6 +175,12 @@ class Convolution(Layer):
 
         W_reshape = self.W.reshape((n_filter, -1))
         dX_col = pre_grads_reshaped.T @ W_reshape
+
+        if self.input_shape is None:
+            raise ValueError(
+                "Input shape to the layer cannot be None. \
+                Please check if the input shape has been initialized ."
+            )
         dX = col2im_indices(
             dX_col,
             self.input_shape,
@@ -172,16 +192,18 @@ class Convolution(Layer):
         return dX
 
     @property
-    def params(self) -> Tuple[PhiTensor, GammaTensor]:
+    def params(self) -> Tuple[Union[PhiTensor, GammaTensor, np.ndarray, None], ...]:
         return self.W, self.b
 
     @params.setter
-    def params(self, new_params: Tuple[PhiTensor, GammaTensor]):
+    def params(
+        self, new_params: Tuple[Union[PhiTensor, GammaTensor, np.ndarray, None], ...]
+    ):
         assert (
             len(new_params) == 2
         ), f"Expected Two values Update Params has length{len(new_params)}"
         self.W, self.b = new_params
 
     @property
-    def grads(self) -> Tuple[GammaTensor, PhiTensor]:
+    def grads(self) -> Tuple[Union[PhiTensor, GammaTensor, np.ndarray, None], ...]:
         return self.dW, self.db

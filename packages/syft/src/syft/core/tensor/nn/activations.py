@@ -98,7 +98,7 @@ class leaky_ReLU(Activation):
             )
 
 
-def get(activation_name: Optional[str]) -> Optional[Type[Activation]]:
+def get(activation_name: Optional[str]) -> Optional[Activation]:
 
     activation_name_map: Dict[str, Type[Activation]] = {
         "leaky_relu": leaky_ReLU,
@@ -112,7 +112,8 @@ def get(activation_name: Optional[str]) -> Optional[Type[Activation]]:
                 f"Activation {activation_name} is not current supported in PySyft."
             )
         else:
-            return activation_name_map.get(activation_name)
+            activation_func = activation_name_map[activation_name]
+            return activation_func()
     else:
         raise TypeError(
             f"Could not interpret activation function identifier: {activation_name}"
