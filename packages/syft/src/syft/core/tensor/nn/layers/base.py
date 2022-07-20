@@ -1,5 +1,4 @@
 # stdlib
-from typing import Any
 from typing import Dict
 from typing import List
 from typing import Tuple
@@ -23,12 +22,12 @@ class Layer:
 
     def forward(
         self, input: Union[PhiTensor, GammaTensor], *args: Tuple, **kwargs: Dict
-    ) -> Any:
+    ) -> Union[PhiTensor, GammaTensor]:
         raise NotImplementedError
 
     def backward(
         self, pre_grad: Union[PhiTensor, GammaTensor], *args: Tuple, **kwargs: Dict
-    ) -> Any:
+    ) -> Optional[Union[PhiTensor, GammaTensor]]:
         raise NotImplementedError
 
     def connect_to(self, prev_layer: "Layer") -> None:

@@ -17,8 +17,8 @@ class Activation(object):
 
     __attr_allowlist__: Tuple[str, ...] = ("last_forward",)
 
-    def __init__(self):
-        self.last_forward = None
+    def __init__(self) -> None:
+        self.last_forward: Optional[Union[PhiTensor, GammaTensor]] = None
 
     def forward(
         self, input: Union[PhiTensor, GammaTensor]
@@ -56,7 +56,7 @@ class leaky_ReLU(Activation):
         "last_forward",
     )
 
-    def __init__(self, slope: float = 0.01):
+    def __init__(self, slope: float = 0.01) -> None:
         super(leaky_ReLU, self).__init__()
         self.slope = slope
 
@@ -73,9 +73,13 @@ class leaky_ReLU(Activation):
     def derivative(
         self, input_array: Optional[Union[PhiTensor, GammaTensor]] = None
     ) -> Union[PhiTensor, GammaTensor]:
-        last_forward: Union[GammaTensor, PhiTensor] = (
-            input_array if input_array else self.last_forward
-        )
+        last_forward = input_array if input_array else self.last_forward
+
+        if last_forward is None:
+            raise ValueError(
+                "last forward layer is None. Please provide an input to the derivative method."
+            )
+
         res = (last_forward > 0).child * 1 + (last_forward <= 0).child * self.slope
 
         if isinstance(input_array, PhiTensor):
