@@ -131,7 +131,6 @@ services:
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
     depends_on:
       - db
-      - seaweedfs
     env_file:
       - .env
     environment:
@@ -161,7 +160,6 @@ services:
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
     depends_on:
       - db
-      - seaweedfs
       - backend
     env_file:
       - .env
@@ -194,7 +192,6 @@ services:
     depends_on:
       - db
       - queue
-      - seaweedfs
     env_file:
       - .env
     environment:
