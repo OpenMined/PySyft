@@ -1,5 +1,5 @@
 # stdlib
-from typing import Dict
+from typing import Any
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -22,12 +22,18 @@ class Layer:
     first_layer: bool = False
 
     def forward(
-        self, input: Union[PhiTensor, GammaTensor], *args: Tuple, **kwargs: Dict
+        self,
+        input: Union[PhiTensor, GammaTensor],
+        *args: Optional[Any],
+        **kwargs: Optional[Any]
     ) -> Union[PhiTensor, GammaTensor]:
         raise NotImplementedError
 
     def backward(
-        self, pre_grad: Union[PhiTensor, GammaTensor], *args: Tuple, **kwargs: Dict
+        self,
+        pre_grad: Union[PhiTensor, GammaTensor],
+        *args: Optional[Any],
+        **kwargs: Optional[Any]
     ) -> Optional[Union[PhiTensor, GammaTensor]]:
         raise NotImplementedError
 

@@ -1,5 +1,5 @@
 # stdlib
-from typing import Dict
+from typing import Any
 from typing import Optional
 from typing import Tuple
 from typing import Union
@@ -54,7 +54,8 @@ class Linear(Layer):
         else:
             if len(prev_layer.out_shape) != 2:  # type: ignore
                 raise ValueError(
-                    f"The out_shape should be of length 2. Current shape is : {len(prev_layer.out_shape)}"  # type: ignore
+                    f"The out_shape should be of length 2. \
+                    Current shape is : {len(prev_layer.out_shape)}"  # type: ignore
                 )
 
             n_in = int(prev_layer.out_shape[-1])  # type: ignore
@@ -65,17 +66,25 @@ class Linear(Layer):
         self.out_shape = (self.n_out,)
 
     def forward(
-        self, input: Union[PhiTensor, GammaTensor], *args: Tuple, **kwargs: Dict
+        self,
+        input: Union[PhiTensor, GammaTensor],
+        *args: Optional[Any],
+        **kwargs: Optional[Any],
     ) -> Union[PhiTensor, GammaTensor]:
         self.last_input = input
 
         if self.W is None:
-            raise ValueError("`self.W` is None. Please check if self.W is correctly initialized.")
+            raise ValueError(
+                "`self.W` is None. Please check if self.W is correctly initialized."
+            )
 
         return input.dot(self.W) + self.b
 
     def backward(
-        self, pre_grad: Union[PhiTensor, GammaTensor], *args: Tuple, **kwargs: Dict
+        self,
+        pre_grad: Union[PhiTensor, GammaTensor],
+        *args: Optional[Any],
+        **kwargs: Optional[Any],
     ) -> Optional[Union[PhiTensor, GammaTensor]]:
 
         if self.last_input is None:

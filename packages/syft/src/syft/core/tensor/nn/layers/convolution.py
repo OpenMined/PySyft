@@ -1,8 +1,7 @@
 # stdlib
-from typing import Dict
+from typing import Any
 from typing import Optional
 from typing import Tuple
-from typing import Type
 from typing import Union
 
 # third party
@@ -72,7 +71,7 @@ class Convolution(Layer):
         self.init = XavierInitialization()
         self.activation = activations.get(activation)
 
-    def connect_to(self, prev_layer: Optional[Type[Layer]] = None) -> None:
+    def connect_to(self, prev_layer: Optional[Layer] = None) -> None:
         if prev_layer is None:
             if self.input_shape is None:
                 raise ValueError(
@@ -109,7 +108,10 @@ class Convolution(Layer):
         self.b = np.zeros((self.nb_filter,))
 
     def forward(
-        self, input: Union[PhiTensor, GammaTensor], *args: Tuple, **kwargs: Dict
+        self,
+        input: Union[PhiTensor, GammaTensor],
+        *args: Optional[Any],
+        **kwargs: Optional[Any],
     ) -> Union[PhiTensor, GammaTensor]:
 
         self.last_input = input
@@ -152,7 +154,10 @@ class Convolution(Layer):
         return out
 
     def backward(
-        self, pre_grad: Union[PhiTensor, GammaTensor], *args: Tuple, **kwargs: Dict
+        self,
+        pre_grad: Union[PhiTensor, GammaTensor],
+        *args: Optional[Any],
+        **kwargs: Optional[Any],
     ) -> Union[PhiTensor, GammaTensor]:
 
         if self.W is None or self.b is None:
@@ -206,7 +211,7 @@ class Convolution(Layer):
 
     @params.setter
     def params(
-        self, new_params: Tuple[Union[PhiTensor, GammaTensor, NDArray, None], ...]
+        self, new_params: Tuple[Union[PhiTensor, GammaTensor, NDArray], ...]
     ) -> None:
 
         if len(new_params) == 2:

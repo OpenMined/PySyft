@@ -1,11 +1,12 @@
 # stdlib
-from typing import Dict
+from typing import Any
 from typing import Optional
 from typing import Tuple
 from typing import Union
 
 # third party
 import numpy as np
+from numpy.typing import NDArray
 
 # relative
 from .. import activations
@@ -43,21 +44,26 @@ class BatchNorm(Layer):
         self.axis = axis
         self.activation = activations.get(activation)
 
-        self.beta, self.dbeta = None, None
-        self.gamma, self.dgamma = None, None
-        self.cache = None
-        self.input_shape = None
-        self.out_shape = None
+        self.beta: Optional[Union[NDArray, PhiTensor, GammaTensor]] = None
+        self.dbeta: Optional[Union[NDArray, PhiTensor, GammaTensor]] = None
+        self.gamma: Optional[Union[NDArray, PhiTensor, GammaTensor]] = None
+        self.dgamma: Optional[Union[NDArray, PhiTensor, GammaTensor]] = None
+        self.cache: Tuple = tuple()
+        self.input_shape: Optional[Tuple[int, ...]] = None
+        self.out_shape: Optional[Tuple[int, ...]] = None
 
-    def connect_to(self, prev_layer):
+    def connect_to(self, prev_layer: Layer) -> None:
 
-        N, C, H, W = prev_layer.out_shape
+        # N, C, H, W -> out_shape
+        _, C, _, _ = prev_layer.out_shape  # type: ignore
         self.beta = np.zeros((1, C, 1, 1))
         self.gamma = np.zeros((1, C, 1, 1))
-        self.input_shape = prev_layer.out_shape
-        self.out_shape = prev_layer.out_shape
+        self.input_shape = prev_layer.out_shape  # type: ignore
+        self.out_shape = prev_layer.out_shape  # type: ignore
 
-    def forward(self, input: Union[PhiTensor, GammaTensor], *args, **kwargs):
+    def forward(
+        self, input: Union[PhiTensor, GammaTensor], *args: Any, **kwargs: Any
+    ) -> Union[PhiTensor, GammaTensor]:
         # N, D = x.shape
 
         # step1: calculate the mean
@@ -93,8 +99,11 @@ class BatchNorm(Layer):
         return out
 
     def backward(
-        self, pre_grad: Union[PhiTensor, GammaTensor], *args: Tuple, **kwargs: Dict
-    ):
+        self,
+        pre_grad: Union[PhiTensor, GammaTensor],
+        *args: Optional[Any],
+        **kwargs: Optional[Any],
+    ) -> Union[PhiTensor, GammaTensor]:
         """
         If you get stuck, here's a resource:
         https://kratzert.github.io/2016/02/12/understanding-the-
@@ -113,7 +122,9 @@ class BatchNorm(Layer):
 
         xhat, xmu, ivar, sqrtvar, var = self.cache
 
-        N, D, x, y = pre_grad.shape
+        # pre_grad.shape -> N, C, H, W
+        N, _, _, _ = pre_grad.shape
+
         pre_grad = (
             self.activation.derivative(pre_grad)
             if self.activation is not None
@@ -157,7 +168,7 @@ class BatchNorm(Layer):
         return dx
 
     @property
-    def params(self):
+    def params(self) -> Tuple[Union[PhiTensor, GammaTensor, NDArray, None], ...]:
         return self.beta, self.gamma
 
     @params.setter
@@ -169,5 +180,5 @@ class BatchNorm(Layer):
         self.beta, self.gamma = new_params
 
     @property
-    def grads(self):
+    def grads(self) -> Tuple[Union[PhiTensor, GammaTensor, NDArray, None], ...]:
         return self.dbeta, self.dgamma

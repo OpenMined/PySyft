@@ -1836,11 +1836,13 @@ class GammaTensor:
     def _argmax(self, axis: Optional[int]) -> np.ndarray:
         return self.child.argmax(axis)
 
-    def mean(self, axis: int, **kwargs: Dict[Any, Any]) -> GammaTensor:
+    def mean(self, axis: Union[int, Tuple[int, ...]], **kwargs: Any) -> GammaTensor:
         output_state = dict()
         output_state[self.id] = self
 
-        def _mean(state: dict, axis: int = axis) -> jax.numpy.DeviceArray:
+        def _mean(
+            state: dict, axis: Union[int, Tuple[int, ...]] = axis
+        ) -> jax.numpy.DeviceArray:
             return jnp.mean(self.run(state), axis)
 
         result = self.child.mean(axis, **kwargs)
@@ -1880,11 +1882,13 @@ class GammaTensor:
             max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
         )
 
-    def std(self, axis: int, **kwargs: Dict[Any, Any]) -> GammaTensor:
+    def std(self, axis: Union[int, Tuple[int, ...]], **kwargs: Any) -> GammaTensor:
         output_state = dict()
         output_state[self.id] = self
 
-        def _std(state: dict, axis: int = axis) -> jax.numpy.DeviceArray:
+        def _std(
+            state: dict, axis: Union[int, Tuple[int, ...]] = axis
+        ) -> jax.numpy.DeviceArray:
             return jnp.std(self.run(state), axis)
 
         result = self.child.std(axis, **kwargs)
