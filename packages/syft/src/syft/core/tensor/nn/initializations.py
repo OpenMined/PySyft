@@ -42,7 +42,7 @@ class Uniform(Initializer):
     def __init__(self, scale: float = 0.05):
         self.scale = scale
 
-    def call(self, size: float) -> NDArray:
+    def call(self, size: Tuple[int, ...]) -> NDArray:
         return np.array(np.random.uniform(-self.scale, self.scale, size=size))
 
 

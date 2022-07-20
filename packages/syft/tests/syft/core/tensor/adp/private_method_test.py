@@ -30,9 +30,7 @@ def test_list_of_strings_data_subject() -> None:
     x = sy.Tensor(np.array([1, 2, 3, 4], dtype=DEFAULT_INT_NUMPY_TYPE))
     bob = DataSubjectArray(["bob"])
     alice = DataSubjectArray(["alice"])
-    data_subjects = np.array([alice,alice,alice,bob])
+    data_subjects = np.array([alice, alice, alice, bob])
     out = x.private(min_val=0, max_val=5, data_subjects=data_subjects)
     assert bob in out.child.data_subjects
     assert alice in out.child.data_subjects
-
-

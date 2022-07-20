@@ -1204,7 +1204,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         )
 
     def __setitem__(
-        self, key: Union[int, slice], value: Union[PhiTensor, GammaTensor, np.ndarray]
+        self,
+        key: Union[int, slice, NDArray],
+        value: Union[PhiTensor, GammaTensor, np.ndarray],
     ) -> Union[PhiTensor, GammaTensor]:
         if isinstance(value, PhiTensor):
             self.child[key] = value.child

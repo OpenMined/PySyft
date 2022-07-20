@@ -19,6 +19,7 @@ import jax
 from jax import numpy as jnp
 import numpy as np
 from numpy.random import randint
+from numpy.typing import NDArray
 from scipy.optimize import shgo
 
 # relative
@@ -2242,7 +2243,7 @@ class GammaTensor:
             )
 
     def __setitem__(
-        self, key: Union[int, slice], value: Union[GammaTensor, np.ndarray]
+        self, key: Union[int, slice, NDArray], value: Union[GammaTensor, np.ndarray]
     ) -> None:
         # relative
         from .phi_tensor import PhiTensor
