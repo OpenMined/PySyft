@@ -162,9 +162,10 @@ class BatchNorm(Layer):
 
     @params.setter
     def params(self, new_params):
-        assert (
-            len(new_params) == 2
-        ), f"Expected Two values Update Params has length{len(new_params)}"
+        if len(new_params) != 2:
+            raise ValueError(
+                f"Expected Two values Update Params has length{len(new_params)}"
+            )
         self.beta, self.gamma = new_params
 
     @property

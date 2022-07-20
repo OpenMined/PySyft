@@ -20,7 +20,10 @@ class Flatten(Layer):
         self.out_shape = None
 
     def connect_to(self, prev_layer):
-        assert len(prev_layer.out_shape) > 2
+        if len(prev_layer.out_shape) < 2:
+            raise ValueError(
+                f"Input layer shape should have more than two dimensions:{prev_layer.out_shape}"
+            )
 
         to_flatten = np.prod(prev_layer.out_shape[self.outdim - 1 :])  # noqa: E203
         flattened_shape = prev_layer.out_shape[: self.outdim - 1] + (int(to_flatten),)

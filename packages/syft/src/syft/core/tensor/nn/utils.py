@@ -219,8 +219,16 @@ def get_im2col_indices(
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     # First figure out what the size of the output should be
     N, C, H, W = x_shape
-    assert (H + 2 * padding - field_height) % stride == 0
-    assert (W + 2 * padding - field_height) % stride == 0
+    if (H + 2 * padding - field_height) % stride != 0:
+        raise ValueError(
+            f"(H + 2 * padding - field_height) H:{H} , padding:{padding} , field_height:{field_height} \
+        should be a multiple of stride:{stride}"
+        )
+    if (W + 2 * padding - field_height) % stride != 0:
+        raise ValueError(
+            f"(W + 2 * padding - field_height) W:{W} , padding:{padding} , field_height:{field_height} \
+        should be a multiple of stride:{stride}"
+        )
     out_height = int((H + 2 * padding - field_height) / stride + 1)
     out_width = int((W + 2 * padding - field_width) / stride + 1)
 

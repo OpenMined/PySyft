@@ -49,7 +49,11 @@ class AvgPool(Layer):
         self.last_input = None
 
     def connect_to(self, prev_layer):
-        assert 5 > len(prev_layer.out_shape) >= 3
+
+        if not (5 > len(prev_layer.out_shape) >= 3):
+            raise ValueError(
+                f"Input layer shape:{prev_layer.out_shape} dimension should be between [3,5)"
+            )
 
         old_h, old_w = prev_layer.out_shape[-2:]
         pool_h, pool_w = self.pool_size
@@ -145,7 +149,10 @@ class MaxPool(Layer):
 
     def connect_to(self, prev_layer):
         # prev_layer.out_shape: (nb_batch, ..., height, width)
-        assert len(prev_layer.out_shape) >= 3
+        if len(prev_layer.out_shape) < 3:
+            raise ValueError(
+                f"Input layer shape should have atleast  three dimensions:{prev_layer.out_shape} for MaxPool"
+            )
 
         old_h, old_w = prev_layer.out_shape[-2:]
         pool_h, pool_w = self.pool_size
