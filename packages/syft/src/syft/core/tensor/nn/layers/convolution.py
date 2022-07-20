@@ -7,6 +7,7 @@ from typing import Union
 
 # third party
 import numpy as np
+from numpy.typing import NDArray
 
 # relative
 from .. import activations
@@ -60,9 +61,9 @@ class Convolution(Layer):
         self.padding = padding
         self.name = "Conv"
 
-        self.W: Optional[Union[np.ndarray, PhiTensor, GammaTensor]] = None
+        self.W: Optional[Union[NDArray, PhiTensor, GammaTensor]] = None
         self.dW: Optional[Union[PhiTensor, GammaTensor]] = None
-        self.b: Optional[Union[np.ndarray, PhiTensor, GammaTensor]] = None
+        self.b: Optional[Union[NDArray, PhiTensor, GammaTensor]] = None
         self.db: Optional[Union[PhiTensor, GammaTensor]] = None
         self.out_shape: Optional[Tuple[int, ...]] = None
         self.last_output: Optional[Union[PhiTensor, GammaTensor]] = None
@@ -71,9 +72,13 @@ class Convolution(Layer):
         self.init = XavierInitialization()
         self.activation = activations.get(activation)
 
-    def connect_to(self, prev_layer: Optional[Type[Layer]] = None):
+    def connect_to(self, prev_layer: Optional[Type[Layer]] = None) ->  None:
         if prev_layer is None:
-            assert self.input_shape is not None
+            if self.input_shape is None:
+                raise ValueError(
+                    "`input_shape` cannot be None. \
+                    Please specify the input shape, since this is the first layer."
+                )
             input_shape = self.input_shape
         else:
             input_shape = prev_layer.out_shape  # type: ignore
@@ -106,7 +111,7 @@ class Convolution(Layer):
     def forward(
         self, input: Union[PhiTensor, GammaTensor], *args: Tuple, **kwargs: Dict
     ) -> Union[PhiTensor, GammaTensor]:
-        # print("Input into Conv forward:", input.shape, input.data_subjects.shape)
+
         self.last_input = input
         self.input_shape = input.shape
 
@@ -116,12 +121,16 @@ class Convolution(Layer):
                 Please initialize the weight (self.W) and bias (self.b) for the layer."""
             )
 
-        n_filters, d_filter, h_filter, w_filter = self.W.shape
+        # N, C, H, W
+        n_filters, _, h_filter, w_filter = self.W.shape
 
         # Input Shape -> N, C, H, W
         n_x, _, _, _ = input.shape
 
-        assert self.out_shape is not None
+        if self.out_shape is None:
+            raise ValueError(
+                "`self.out_shape` cannot be None. Please check if the output_shape to the layer is correctly defined."
+            )
 
         _, _, h_out, w_out = self.out_shape
 
@@ -144,7 +153,7 @@ class Convolution(Layer):
 
     def backward(
         self, pre_grad: Union[PhiTensor, GammaTensor], *args: Tuple, **kwargs: Dict
-    ):
+    ) -> Union[PhiTensor, GammaTensor]:
 
         if self.W is None or self.b is None:
             raise ValueError(
@@ -192,18 +201,18 @@ class Convolution(Layer):
         return dX
 
     @property
-    def params(self) -> Tuple[Union[PhiTensor, GammaTensor, np.ndarray, None], ...]:
+    def params(self) -> Tuple[Union[PhiTensor, GammaTensor, NDArray, None], ...]:
         return self.W, self.b
 
     @params.setter
     def params(
-        self, new_params: Tuple[Union[PhiTensor, GammaTensor, np.ndarray, None], ...]
-    ):
-        assert (
-            len(new_params) == 2
-        ), f"Expected Two values Update Params has length{len(new_params)}"
+        self, new_params: Tuple[Union[PhiTensor, GammaTensor, NDArray, None], ...]
+    ) -> None:
+
+        if len(new_params) == 2:
+            raise ValueError(f"Expected two values. Update params has length{len(new_params)}")
         self.W, self.b = new_params
 
     @property
-    def grads(self) -> Tuple[Union[PhiTensor, GammaTensor, np.ndarray, None], ...]:
+    def grads(self) -> Tuple[Union[PhiTensor, GammaTensor, NDArray, None], ...]:
         return self.dW, self.db
