@@ -1388,7 +1388,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def mean(
         self,
         axis: Optional[Union[int, Tuple[int, ...]]] = None,
-        **kwargs: Dict[Any, Any],
+        **kwargs: Any,
     ) -> PhiTensor:
         result = self.child.mean(axis, **kwargs)
         # print(f"PT mean gives shape of {result.shape}")
@@ -1402,7 +1402,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def std(
         self,
         axis: Optional[Union[int, Tuple[int, ...]]] = None,
-        **kwargs: Dict[Any, Any],
+        **kwargs: Any,
     ) -> PhiTensor:
         result = self.child.std(axis, **kwargs)
         return PhiTensor(
@@ -2060,7 +2060,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def sum(
         self,
         axis: Optional[Union[int, Tuple[int, ...]]] = None,
-        **kwargs: Dict[Any, Any],
+        **kwargs: Any,
     ) -> Union[PhiTensor, GammaTensor]:
         return self.gamma.sum(axis, **kwargs)
         # # TODO: Add support for axes arguments later
