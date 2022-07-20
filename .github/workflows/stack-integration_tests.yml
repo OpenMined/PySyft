@@ -71,7 +71,9 @@ jobs:
           pip install tox --upgrade
 
       - name: Check python version
-        if: steps.changes.outputs.stack == 'true' || if matrix.os == 'windows'
+         if: |
+          steps.changes.outputs.stack == 'true' || 
+          matrix.os == 'windows'
         run: |
           python -VV
         shell: cmd
@@ -95,7 +97,9 @@ jobs:
           args: install cmake.portable --installargs 'ADD_CMAKE_TO_PATH=System' -y
 
       - name: Check cmake version
-        if: steps.changes.outputs.stack == 'true' || if matrix.os == 'windows'
+        if: |
+          steps.changes.outputs.stack == 'true' || 
+          matrix.os == 'windows'
         run: |
           cmake --version
         shell: cmd
