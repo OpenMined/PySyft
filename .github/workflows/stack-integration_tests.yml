@@ -84,7 +84,7 @@ jobs:
           args: list --localonly
 
       - name: Install git
-        if: ${{matrix.os}} == 'windows'
+        if: matrix.os == 'windows'
         uses: crazy-max/ghaction-chocolatey@v1
         with:
           args: install git.install --params "/GitAndUnixToolsOnPath /WindowsTerminal /NoAutoCrlf" -y
@@ -102,7 +102,7 @@ jobs:
         shell: cmd
 
       - name: Install visualcpp-build-tools
-        if: ${{matrix.os}} == 'windows'
+        if: matrix.os == 'windows'
         uses: crazy-max/ghaction-chocolatey@v1
         with:
           args: install visualstudio2019-workload-vctools -y
