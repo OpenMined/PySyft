@@ -1714,7 +1714,7 @@ class GammaTensor:
 
         return GammaTensor(
             child=child,
-            data_subjects=self.data_subjects.sum(axis=axis, **kwargs),
+            data_subjects=np.array(self.data_subjects.sum(axis=axis, **kwargs)),
             min_vals=lazyrepeatarray(data=min_v, shape=child.shape),
             max_vals=lazyrepeatarray(data=max_v, shape=child.shape),
             func=_sum,

@@ -8,6 +8,7 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.core.adp.data_subject_ledger import DataSubjectLedger
+from syft.core.adp.data_subject_list import DataSubjectArray
 from syft.core.adp.ledger_store import DictLedgerStore
 from syft.core.tensor.autodp.gamma_tensor import GammaTensor
 from syft.core.tensor.autodp.phi_tensor import PhiTensor as PT
@@ -64,13 +65,16 @@ def test_gamma_serde(
     lower_bound: np.ndarray,
 ) -> None:
     """Test basic serde for GammaTensor"""
+    data_subjects = np.broadcast_to(
+        np.array(DataSubjectArray(["eagle"])), reference_data.shape
+    )
     tensor1 = PT(
         child=reference_data,
-        data_subjects=np.random.choice(["0", "1"], reference_data.shape),
+        data_subjects=data_subjects,
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    assert tensor1.data_subjects.data_subjects_indexed.shape == tensor1.child.shape
+    assert tensor1.data_subjects.shape == tensor1.child.shape
     gamma_tensor1 = tensor1.sum()
 
     print("gamma tensor", gamma_tensor1)
@@ -82,7 +86,7 @@ def test_gamma_serde(
     de = sy.deserialize(ser, from_bytes=True)
 
     assert de.child == gamma_tensor1.child
-    assert de.data_subjects == gamma_tensor1.data_subjects
+    assert (de.data_subjects == gamma_tensor1.data_subjects).all()
     assert de.min_vals == gamma_tensor1.min_vals
     assert de.max_vals == gamma_tensor1.max_vals
     assert de.is_linear == gamma_tensor1.is_linear
@@ -97,13 +101,16 @@ def test_gamma_publish(
     lower_bound: np.ndarray,
 ) -> None:
     """Test basic serde for GammaTensor"""
+    data_subjects = np.broadcast_to(
+        np.array(DataSubjectArray(["eagle"])), reference_data.shape
+    )
     tensor1 = PT(
         child=reference_data,
-        data_subjects=np.random.choice([0, 1], reference_data.shape),
+        data_subjects=data_subjects,
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    assert tensor1.data_subjects.data_subjects_indexed.shape == tensor1.child.shape
+    assert tensor1.data_subjects.shape == tensor1.child.shape
     gamma_tensor1 = tensor1.sum()
     assert isinstance(gamma_tensor1, GammaTensor)
     # Gamma Tensor Does not have FPT Values

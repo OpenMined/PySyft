@@ -64,7 +64,7 @@ class lazyrepeatarray:
         if isinstance(shape, Iterable):
             for val in shape:
                 if val < 0:
-                    print("Invalid Shape", shape)
+                    raise ValueError(f"Invalid shape: {shape}")
 
     def __getitem__(self, item: Union[str, int, slice]) -> lazyrepeatarray:
         if self.data.shape == self.shape:
