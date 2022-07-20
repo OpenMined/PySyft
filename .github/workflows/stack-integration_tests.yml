@@ -77,19 +77,19 @@ jobs:
         shell: cmd
 
       - name: Show choco installed packages
-        if: matrix.os == 'windows'
+        if: ${{matrix.os}} == 'windows'
         uses: crazy-max/ghaction-chocolatey@v1
         with:
           args: list --localonly
 
       - name: Install git
-        if: matrix.os == 'windows'
+        if: ${{matrix.os}} == 'windows'
         uses: crazy-max/ghaction-chocolatey@v1
         with:
           args: install git.install --params "/GitAndUnixToolsOnPath /WindowsTerminal /NoAutoCrlf" -y
 
       - name: Install cmake
-        if: matrix.os == 'windows'
+        if: ${{matrix.os}} == 'windows'
         uses: crazy-max/ghaction-chocolatey@v1
         with:
           args: install cmake.portable --installargs 'ADD_CMAKE_TO_PATH=System' -y
@@ -101,7 +101,7 @@ jobs:
         shell: cmd
 
       - name: Install visualcpp-build-tools
-        if: matrix.os == 'windows'
+        if: ${{matrix.os}} == 'windows'
         uses: crazy-max/ghaction-chocolatey@v1
         with:
           args: install visualstudio2019-workload-vctools -y
