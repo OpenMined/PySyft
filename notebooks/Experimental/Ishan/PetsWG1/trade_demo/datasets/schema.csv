@@ -1,0 +1,23 @@
+﻿Column,Description
+Classification,Commodity Classification (HS= Harmonized System)
+Year,4-digit year
+Period,yyyymm
+Period Desc.,Description
+Aggregate level,"Level of reporting (6,4,2,0, where 0=total level)"
+Is Leaf code,Basic/Aggregated (0=basic level)
+Trade Flow Code,"Imports, Re-imports, Exports, Re-exports"
+Trade Flow  ,Description
+Reporter Code ,UN Country Code
+Reporter  ,Description
+Reporter ISO,ISO Country Code
+Partner Code,UN Country Code
+Partner  ,Description
+Partner ISO,ISO Country Code
+Commodity Code,HS Commodity Code
+Commodity  ,Description
+Quantity Unit Code,UN Quantity Code
+Quantity Unit  ,Description
+Quantity,in units of the Quantity Unit
+Net Weight,in Kilograms
+Trade Value,in US dollars
+Flag,Estimation indicator (0=reported)
