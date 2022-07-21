@@ -1449,6 +1449,14 @@ class GammaTensor:
             state=output_state,
         )
 
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, GammaTensor):
+            return (self.child == other.child).all() and (
+                self.data_subjects == other.data_subjects
+            ).all()
+
+        return False
+
     def __lt__(self, other: Any) -> GammaTensor:
         # relative
         from .phi_tensor import PhiTensor

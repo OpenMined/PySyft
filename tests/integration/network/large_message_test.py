@@ -9,7 +9,7 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.adp.data_subject_list import DataSubjectList
+from syft.core.adp.data_subject_list import DataSubjectArray
 from syft.core.store.proxy_dataset import ProxyDataset
 from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
 from syft.util import size_mb
@@ -62,10 +62,12 @@ def test_large_blob_upload() -> None:
         )
 
         data_subject_name = "ϕhishan"
-        entities = DataSubjectList.from_objs([data_subject_name] * (multiplier * ndim))
+        data_subjects = np.broadcast_to(
+            np.array(DataSubjectArray([data_subject_name])), reference_data.shape
+        )
 
         tweets_data = sy.Tensor(reference_data).private(
-            min_val=0, max_val=30, data_subjects=entities
+            min_val=0, max_val=30, data_subjects=data_subjects
         )
 
         report[size_name]["tensor_type"] = type(tweets_data.child).__name__
@@ -102,7 +104,7 @@ def test_large_blob_upload() -> None:
         # create new tensor from remote Tensor constructor
         new_tensor_ptr = domain_client.syft.core.tensor.tensor.Tensor(child=asset_ptr)
         new_tensor_ptr.block_with_timeout(
-            10 * multiplier
+            30 * multiplier
         )  # wait for obj upload and proxy obj creation
 
         # make sure new object is also in blob storage
@@ -112,7 +114,7 @@ def test_large_blob_upload() -> None:
         # pointer addition
         add_res_prt = asset_ptr + asset_ptr
         add_res_prt.block_with_timeout(
-            10 * multiplier
+            30 * multiplier
         )  # wait for obj upload and proxy obj creation
 
         # make sure new object is also in blob storage
@@ -122,7 +124,8 @@ def test_large_blob_upload() -> None:
         # compare result to locally generated result
         add_result = add_res_prt.get(delete_obj=False)
         org_result = tweets_data + tweets_data
-        assert org_result == add_result
+
+        assert org_result.child == add_result.child
 
         # get the proxy object
         result_proxy = asset_ptr.get(delete_obj=False, proxy_only=True)

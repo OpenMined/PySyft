@@ -273,7 +273,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             Tuple[MPCTensor,Union[MPCTensor,int,float,np.ndarray]] : Result of the operation
         """
         if isinstance(other, TensorWrappedPhiTensorPointer):
-            if self.data_subjects != other.data_subjects:
+            if (self.data_subjects != other.data_subjects).all():  # type: ignore
                 return getattr(self.gamma, op_str)(other.gamma)
         elif isinstance(other, TensorWrappedGammaTensorPointer):
             return getattr(self.gamma, op_str)(other)
