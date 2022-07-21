@@ -283,7 +283,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
 
     def _increase_max_cache(self, new_size: int, cache_constant2epsilon:np.ndarray) -> None:
         new_entries = []
-        print("CACHE CONSTANTS: ",  len(cache_constant2epsilon))
+        #print("CACHE CONSTANTS: ",  len(cache_constant2epsilon))
         current_size = len(cache_constant2epsilon)
         new_alphas = []
         for i in range(new_size - current_size):
@@ -353,10 +353,10 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         constant = compute_rdp_constant(rdp_params, private)
         if self._rdp_constants.size == 0:
             self._rdp_constants = np.zeros_like(np.asarray(constant, constant.dtype))
-        print("constant: ", constant)
-        print("_rdp_constants: ", self._rdp_constants)
-        print("entity ids query", entity_ids_query)
-        print(jnp.max(entity_ids_query))
+        # print("constant: ", constant)
+        # print("_rdp_constants: ", self._rdp_constants)
+        # print("entity ids query", entity_ids_query)
+        # print(jnp.max(entity_ids_query))
         self._rdp_constants = first_try_branch(
             constant,
             self._rdp_constants,
@@ -431,14 +431,14 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         highest_possible_spend = float(highest_possible_spend)
         user_budget = float(user_budget)
         print("Epsilon spend ", epsilon_spend)
-        print("Highest possible spend ", highest_possible_spend)
+        #print("Highest possible spend ", highest_possible_spend)
         if highest_possible_spend > 0:
             # go spend it in the db
             attempts = 0
             while attempts < 5:
-                print(
-                    f"Attemping to spend epsilon: {highest_possible_spend}. Try: {attempts}"
-                )
+                # print(
+                #     f"Attemping to spend epsilon: {highest_possible_spend}. Try: {attempts}"
+                # )
                 attempts += 1
                 try:
                     user_budget = self.spend_epsilon(
@@ -473,7 +473,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         old_user_budget: float,
     ) -> float:
         # get the budget
-        print("got user budget", old_user_budget, "epsilon_spent", epsilon_spend)
+        print("\n Got user budget", old_user_budget, "epsilon_spent", epsilon_spend)
         deduct_epsilon_for_user(
             verify_key=self.user_key,
             old_budget=old_user_budget,

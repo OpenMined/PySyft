@@ -30,37 +30,6 @@ if TYPE_CHECKING:
     # relative
     from ..tensor.autodp.gamma_tensor import GammaTensor
 
-# def calculate_bounds_for_mechanism(
-#     value_array: np.ndarray, min_val_array: np.ndarray, max_val_array: np.ndarray
-# ) -> Tuple[np.ndarray, np.ndarray]:
-#     """Calculates the squared L2 norm values needed to create a Mechanism, and calculate
-#     privacy budget + spend. If you calculate the privacy budget spend with the worst
-#     case bound, you can show this number to the DS. If you calculate it with the
-#     regular value (the value computed below when public_only = False, you cannot show
-#     the privacy budget to the DS because this violates privacy."""
-
-#     # TODO: Double check whether the iDPGaussianMechanism class squares its
-#     # squared_l2_norm values!!
-
-#     # min_val_array = min_val_array.astype(np.int64)
-#     # max_val_array = max_val_array.astype(np.int64)
-
-#     # using np.ones_like dtype=value_array.dtype because without it the output was
-#     # of type "O" python object causing issues when doing operations against JAX
-#     worst_case_l2_norm = np.sqrt(
-#         np.sum(np.square(max_val_array - min_val_array))
-#     ) * np.ones_like(
-#         value_array
-#     )  # dtype=value_array.dtype)
-
-#     l2_norm = np.sqrt(np.sum(np.square(value_array))) * np.ones_like(value_array)
-#     # dtype=value_array.dtype
-#     #
-#     # print(l2_norm.shape, worst_case_l2_norm.shape)
-#     # print(l2_norm.shape)
-#     return l2_norm, worst_case_l2_norm
-
-
 @jax.jit
 def calculate_bounds_for_mechanism(
     value_array: jnp.ndarray,
@@ -104,6 +73,8 @@ def calibrate_sigma(
         max_val_array=max_vals,
         sigma=sigma,
     )
+    print("Query Limit: ",query_limit )
+    print("Sigma before Calibration:\n ", sigma)
 
     if is_linear:
         lipschitz_bounds = coeffs.copy()
@@ -135,9 +106,12 @@ def calibrate_sigma(
 
     else:
         print("****** Budget spent BELOW limit set by data owner")
-        calibrated_sigma = rdp_params.sigmas
+        calibrated_sigma = rdp_params.sigmas[0]
+
+    print("Sigma after Calibration: \n", calibrated_sigma)
 
     return calibrated_sigma
+
 
 def vectorized_publish(
         value: np.ndarray,
@@ -151,7 +125,7 @@ def vectorized_publish(
     sigma: float = 1.5,
     output_func: Callable = lambda x: x,
     fpt_encode_func: Optional[Callable] = None,
-    query_limit: int = 5
+    query_limit: int = 999999
 ) -> Union[np.ndarray, jax.numpy.DeviceArray]:
     # relative
     from ..tensor.autodp.gamma_tensor import GammaTensor
@@ -240,20 +214,20 @@ def vectorized_publish(
             print(traceback.format_exc())
             print(f"Failed to run vectorized_publish. {e}")
 
-    print("We have filtered all the input tensors. Now to compute the result:")
+    #print("We have filtered all the input tensors. Now to compute the result:")
 
     # noise = secrets.SystemRandom().gauss(0, sigma)
-    print("Filtered inputs ", filtered_inputs)
+    #print("Filtered inputs ", filtered_inputs)
     original_output = np.asarray(output_func(filtered_inputs))
-    print("original output (before noise:", original_output)
+    #print("original output (before noise:", original_output)
     noise = np.asarray(
         [secrets.SystemRandom().gauss(0, sigma) for _ in range(original_output.size)]
     )
     noise.resize(original_output.shape)
-    print("noise: ", noise)
+    #print("noise: ", noise)
     if fpt_encode_func is not None:
         noise = fpt_encode_func(noise)
-        print("Noise after FPT", noise)
+        #print("Noise after FPT", noise)
     output = np.asarray(output_func(filtered_inputs) + noise)
-    print("got output", type(output), output.dtype)
+    #print("got output", type(output), output.dtype)
     return output.squeeze()

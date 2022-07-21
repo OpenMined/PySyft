@@ -707,8 +707,8 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         ledger: DataSubjectLedger,
         sigma: float,
     ) -> AcceptableSimpleType:
-        print("PUBLISHING TO GAMMA:")
-        print(self.child)
+        #print("PUBLISHING TO GAMMA:")
+        # print(self.child)
 
         gamma = self.gamma
         # gamma.func = lambda x: x
@@ -732,7 +732,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         else:
             fpt_values.child = res
 
-        print("Final FPT Values", fpt_values)
+        #print("Final FPT Values", fpt_values)
 
         return fpt_values
 
