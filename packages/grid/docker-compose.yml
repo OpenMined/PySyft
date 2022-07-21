@@ -62,7 +62,7 @@ services:
     #   - "41641/udp"
     #   - "4000"
     depends_on:
-      - "proxy"
+      - proxy
     network_mode: service:proxy
 
   frontend:
@@ -70,6 +70,8 @@ services:
     image: "${DOCKER_IMAGE_FRONTEND?Variable not set}:${VERSION-latest}"
     profiles:
       - frontend
+    depends_on:
+      - proxy
     environment:
       - SERVICE_NAME=frontend
       - RELEASE=${RELEASE:-production}
@@ -130,6 +132,7 @@ services:
     restart: always
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
     depends_on:
+      - proxy
       - db
     env_file:
       - .env
@@ -159,8 +162,8 @@ services:
     restart: always
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
     depends_on:
+      - proxy
       - db
-      - backend
     env_file:
       - .env
     environment:
@@ -190,6 +193,7 @@ services:
     restart: always
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
     depends_on:
+      - proxy
       - db
       - queue
     env_file:
@@ -215,6 +219,8 @@ services:
   headscale:
     profiles:
       - network
+    depends_on:
+      - proxy
     hostname: headscale
     image: "${DOCKER_IMAGE_HEADSCALE?Variable not set}:${VERSION-latest}"
     volumes:
@@ -235,6 +241,9 @@ services:
   seaweedfs:
     profiles:
       - blob-storage
+    depends_on:
+      - proxy
+      - redis
     image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}"
     environment:
       - S3_VOLUME_SIZE_MB=${S3_VOLUME_SIZE_MB:-1024}
@@ -244,8 +253,6 @@ services:
       - ./seaweedfs/s3config.json:/etc/s3config.json
       - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml
 
-    depends_on:
-      - redis
     labels:
       - "traefik.enable=true"
       - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
