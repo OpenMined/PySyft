@@ -103,29 +103,47 @@ class RDPParams:
         return res
 
 
-@partial(jax.jit, static_argnums=3, donate_argnums=(1, 2))
+def get_unique_data_subjects(data_subjects_query: np.ndarray) -> np.ndarray:
+    # This might look horribly wrong, but .sum() returns all the unique DS ~ Ishan
+    return data_subjects_query.sum()
+
+
+# @partial(jax.jit, static_argnums=3, donate_argnums=(1, 2))
 def first_try_branch(
     constant: jax.numpy.DeviceArray,
     rdp_constants: np.ndarray,
     entity_ids_query: np.ndarray,
-    max_entity: int,
 ) -> jax.numpy.DeviceArray:
-    summed_constant = constant.take(entity_ids_query) + rdp_constants.take(
-        entity_ids_query
-    )
+    unique_data_subjects = get_unique_data_subjects(entity_ids_query)
+    max_entity = len(unique_data_subjects)
+    
     if max_entity < len(rdp_constants):
-        return rdp_constants.at[entity_ids_query].set(summed_constant)
+        summed_constant = None
+
+        for data_subject in unique_data_subjects:
+            # Create a mask where the current data subject is present
+            ds_mask = np.isin(entity_ids_query, data_subject).flatten()
+
+            # Take only the constants values where current data subject is present
+            summed_constant = constant[ds_mask] + rdp_constants[ds_mask]
+
+            # Set rpd constants for given data subjects
+            rdp_constants[ds_mask] = summed_constant
     else:
-        # print(f"Constant: {type(constant)}, {constant.shape}")
-        # print(f"entity_ids_query: {type(entity_ids_query)}, {entity_ids_query.shape}")
-        # print(f"rdp_constants: {len(rdp_constants)}, {rdp_constants.shape}")
         pad_length = max_entity - len(rdp_constants) + 1
         rdp_constants = jnp.concatenate([rdp_constants, jnp.zeros(shape=pad_length)])
-        # print(constant.shape, rdp_constants.shape)
-        summed_constant = constant.take(entity_ids_query) + rdp_constants.take(
-            entity_ids_query
-        )
-        return rdp_constants.at[entity_ids_query].set(summed_constant)
+
+        for data_subject in entity_ids_query:
+            # Create a mask where the current data subject is present
+            ds_mask = np.isin(entity_ids_query, data_subject).flatten()
+
+            # Take only the constants values where current data subject is present
+            summed_constant = constant[ds_mask] + rdp_constants[ds_mask]
+
+            # Set rpd constants for given data subjects
+            rdp_constants[entity_ids_query] = summed_constant
+
+    return rdp_constants
 
 
 @partial(jax.jit, static_argnums=1)
@@ -227,7 +245,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         private: bool = True,
     ) -> np.ndarray:
         # coerce to np.int64
-        entity_ids_query: np.ndarray = unique_entity_ids_query.astype(np.int64)
+        entity_ids_query: np.ndarray = unique_entity_ids_query # = unique_entity_ids_query.astype(np.int64)
         # calculate constants
         rdp_constants = self._get_batch_rdp_constants(
             entity_ids_query=entity_ids_query, rdp_params=rdp_params, private=private
@@ -318,11 +336,12 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         # print("_rdp_constants: ", self._rdp_constants)
         # print("entity ids query", entity_ids_query)
         # print(jnp.max(entity_ids_query))
+
+        num_uniques = np.unique(entity_ids_query)
         self._rdp_constants = first_try_branch(
             constant,
             self._rdp_constants,
-            entity_ids_query,
-            int(jnp.max(entity_ids_query)),
+            entity_ids_query
         )
         return constant
 

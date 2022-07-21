@@ -143,7 +143,8 @@ def vectorized_publish(
             while isinstance(input_tensor, PassthroughTensor):
                 root_child = input_tensor.child
                 input_tensor = root_child
-            input_entities = np.zeros_like(root_child)
+            # input_entities = np.zeros_like(root_child)
+            input_entities = input_tensor.data_subjects
         elif isinstance(input_tensor.data_subjects, DataSubjectList):
             input_entities = input_tensor.data_subjects.data_subjects_indexed
         else:
@@ -221,4 +222,4 @@ def vectorized_publish(
     print("got output", output, type(output), output.dtype)
 
     # TODO: remove extra dimension output, to return output as it is
-    return output[0]
+    return output

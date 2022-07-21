@@ -440,6 +440,9 @@ class DataSubjectArray:
     def __len__(self) -> int:
         return len(self.data_subjects)
 
+    def unique(self):
+        return np.unique(self.data_subjects)
+
     def tostring(self) -> str:
         return f"{self.delimiter}".join(self.data_subjects)
 

@@ -8,7 +8,7 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.core.adp.data_subject_ledger import DataSubjectLedger
-from syft.core.adp.data_subject_list import DataSubjectArray
+from syft.core.adp.data_subject_list import DataSubjectArray, DataSubjectList
 from syft.core.adp.ledger_store import DictLedgerStore
 from syft.core.tensor.autodp.gamma_tensor import GammaTensor
 from syft.core.tensor.autodp.phi_tensor import PhiTensor as PT
@@ -102,9 +102,9 @@ def test_gamma_publish(
 ) -> None:
     """Test basic serde for GammaTensor"""
     data_subjects = np.broadcast_to(
-        np.array(DataSubjectArray(["eagle"])), reference_data.shape
+        np.array(DataSubjectArray(["eagle", "potato"])), reference_data.shape
     )
-    tensor1 = PT(
+    tensor1 = GammaTensor(
         child=reference_data,
         data_subjects=data_subjects,
         max_vals=upper_bound,
@@ -138,3 +138,5 @@ def test_gamma_publish(
     assert results < upper_bound.sum() + 10
     assert -10 + lower_bound.sum() < results
     print(ledger_store.kv_store)
+
+

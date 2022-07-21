@@ -1099,13 +1099,19 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         self.min_vals = min_vals
         self.max_vals = max_vals
 
-        if not isinstance(data_subjects, DataSubjectArray):
-            data_subjects = DataSubjectArray.from_objs(data_subjects)
-
-        if len(data_subjects.shape) != len(self.shape):
-            raise ValueError(
-                f"DataSubjects shape: {len(data_subjects.shape)} should match data shape: {len(self.shape)}"
-            )
+        # if not isinstance(data_subjects, DataSubjectArray):
+        #     data_subjects = DataSubjectArray.from_objs(data_subjects)
+        #
+        # if isinstance(data_subjects, DataSubjectList):
+        #     if len(data_subjects.data_subjects_indexed.shape) != len(self.shape):
+        #         raise ValueError(
+        #             f"DataSubjects shape: {len(data_subjects.shape)} should match data shape: {len(self.shape)}"
+        #         )
+        # else:
+        #     if len(data_subjects.data_subjects_indexed.shape) != len(self.shape):
+        #         raise ValueError(
+        #             f"DataSubjects shape: {len(data_subjects.shape)} should match data shape: {len(self.shape)}"
+        #         )
 
         self.data_subjects = data_subjects
 

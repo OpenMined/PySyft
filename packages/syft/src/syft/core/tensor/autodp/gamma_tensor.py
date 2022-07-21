@@ -1138,9 +1138,9 @@ class GammaTensor:
         if self.state and len(self.state) == 0 and self.func is not no_op:
             self.state[self.id] = self
 
-        if not isinstance(self.min_vals, lazyrepeatarray):
-            self.min_vals = lazyrepeatarray(data=self.min_vals, shape=self.shape)
-            self.max_vals = lazyrepeatarray(data=self.max_vals, shape=self.shape)
+        # if not isinstance(self.min_vals, lazyrepeatarray):
+        #     self.min_vals = lazyrepeatarray(data=self.min_vals, shape=self.shape)
+        #     self.max_vals = lazyrepeatarray(data=self.max_vals, shape=self.shape)
 
         if isinstance(self.min_vals, lazyrepeatarray):
             if self.min_vals.data.size != 1:
