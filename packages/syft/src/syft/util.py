@@ -488,7 +488,6 @@ def get_tracer(service_name: Optional[str] = None) -> Any:
         return _tracer  # type: ignore
 
     PROFILE_MODE = str_to_bool(os.environ.get("PROFILE", "False"))
-    PROFILE_MODE = False
     if not PROFILE_MODE:
 
         class NoopTracer:
