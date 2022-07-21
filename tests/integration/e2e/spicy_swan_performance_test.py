@@ -16,7 +16,7 @@ import pytest
 # syft absolute
 import syft as sy
 from syft import Domain
-from syft.core.adp.data_subject_list import DataSubjectList
+from syft.core.adp.data_subject_list import DataSubjectArray
 from syft.core.node.common.node_service.user_manager.user_messages import (
     UpdateUserMessage,
 )
@@ -58,7 +58,7 @@ def upload_subset(
 
     user_id = df["user_id"]
 
-    entities = DataSubjectList.from_series(user_id)
+    entities = DataSubjectArray.from_objs(user_id)
 
     tweets_data = sy.Tensor(impressions).private(
         min_val=0, max_val=30, data_subjects=entities

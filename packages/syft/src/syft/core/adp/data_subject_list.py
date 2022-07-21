@@ -588,7 +588,7 @@ class DataSubjectArray:
             input_subjects = np.array(input_subjects)
 
         data_map = (
-            lambda x: DataSubjectArray([x])
+            lambda x: DataSubjectArray([str(x)])
             if not isinstance(x, DataSubjectArray)
             else x
         )

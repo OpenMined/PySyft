@@ -12,7 +12,7 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.adp.data_subject import DataSubject
+from syft.core.adp.data_subject_list import DataSubjectArray
 from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
 
 sy.logger.remove()
@@ -51,16 +51,14 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     canada_trade = (
         (np.array(list(ca_data["Trade Value (US$)"])) / 100000)[0:10]
     ).astype(DEFAULT_INT_NUMPY_TYPE)
-    trade_partners = ((list(ca_data["Partner"])))[0:10]
-
-    entities = list()
-    for i in range(len(trade_partners)):
-        entities.append(DataSubject(name=trade_partners[i]))
+    data_subjects_canada = np.broadcast_to(
+        np.array(DataSubjectArray(["Other Asia, nes"])), canada_trade.shape
+    )
 
     sampled_canada_dataset = sy.Tensor(canada_trade)
     sampled_canada_dataset.public_shape = sampled_canada_dataset.shape
     sampled_canada_dataset = sampled_canada_dataset.private(
-        0, 3, data_subjects=[entities[0]] * canada_trade.shape[0]
+        0, 3, data_subjects=data_subjects_canada
     ).tag("trade_flow")
 
     # load dataset
@@ -86,17 +84,15 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     italy_trade = (
         (np.array(list(it_data["Trade Value (US$)"])) / 100000)[0:10]
     ).astype(DEFAULT_INT_NUMPY_TYPE)
-    trade_partners = ((list(it_data["Partner"])))[0:10]
-
-    entities = list()
-    for _ in range(len(trade_partners)):
-        entities.append(DataSubject(name="Other Asia, nes"))
 
     # Upload a private dataset to the Domain object, as the root owner
     sampled_italy_dataset = sy.Tensor(italy_trade)
     sampled_italy_dataset.public_shape = sampled_italy_dataset.shape
+    data_subjects_italy = np.broadcast_to(
+        np.array(DataSubjectArray(["Other Asia, nes"])), italy_trade.shape
+    )
     sampled_italy_dataset = sampled_italy_dataset.private(
-        0, 3, data_subjects=[entities[0]] * italy_trade.shape[0]
+        0, 3, data_subjects=data_subjects_italy
     ).tag("trade_flow")
 
     it_root.load_dataset(
