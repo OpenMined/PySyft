@@ -1051,6 +1051,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
                 data_subjects=self.data_subjects,
                 min_vals=self.min_vals,  # type: ignore
                 max_vals=self.max_vals,  # type: ignore
+                skip_check=True,
             ),
             public_shape=public_shape,
             public_dtype=public_dtype,
@@ -1085,6 +1086,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         ],
         min_vals: Union[np.ndarray, lazyrepeatarray],
         max_vals: Union[np.ndarray, lazyrepeatarray],
+        skip_check: bool = False,
     ) -> None:
 
         # child = the actual private data
@@ -1101,7 +1103,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         if not isinstance(data_subjects, DataSubjectArray):
             data_subjects = DataSubjectArray.from_objs(data_subjects)
 
-        if len(data_subjects.shape) != len(self.shape):
+        if not skip_check and len(data_subjects.shape) != len(self.shape):
             raise ValueError(
                 f"DataSubjects shape: {len(data_subjects.shape)} should match data shape: {len(self.shape)}"
             )
@@ -1509,7 +1511,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     @property
     def shape(self) -> Tuple[Any, ...]:
-        return self.child.shape
+        if self.child is None:
+            return ()
+        else:
+            return self.child.shape
 
     def __repr__(self) -> str:
         """Pretty print some information, optimized for Jupyter notebook viewing."""
