@@ -380,6 +380,9 @@ class Client(AbstractNodeClient):
         return hash(self.id)
 
 
+GET_OBJECT_TIMEOUT = 600  # seconds
+
+
 class StoreClient:
     def __init__(self, client: Client) -> None:
         self.client = client
@@ -510,7 +513,9 @@ class StoreClient:
                 address=self.client.address, reply_to=self.client.address, obj_id=key
             )
             results = getattr(
-                self.client.send_immediate_msg_with_reply(msg=msg, timeout=600),
+                self.client.send_immediate_msg_with_reply(
+                    msg=msg, timeout=GET_OBJECT_TIMEOUT
+                ),
                 "results",
                 None,
             )
