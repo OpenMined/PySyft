@@ -30,11 +30,11 @@ from ....abstract.node import AbstractNode
 
 @serializable(recursive_serde=True)
 class TFFMessageWithReply:
-    __attr_allowlist__ = ["id_dataset", "params", "model_bytes"]
+    __attr_allowlist__ = ["params", "model_bytes"]
 
-    def __init__(self, id_dataset: str, params: Dict, model_bytes: bytes) -> None:
+    def __init__(self, params: Dict, model_bytes: bytes) -> None:
         # self.stuff = stuff
-        self.id_dataset = id_dataset
+        # self.id_dataset = id_dataset
         self.params = params
         self.model_bytes = model_bytes
 
@@ -48,7 +48,7 @@ class TFFMessageWithReply:
 
     @property
     def pprint(self) -> str:
-        return f"TFFMessageWithReply({self.more_stuff})"
+        return f"TFFMessageWithReply({self.params})"
 
 
 @serializable()

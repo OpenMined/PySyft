@@ -80,10 +80,10 @@ COPY syft/src /app/syft/src
 RUN --mount=type=cache,target=/root/.cache \
   pip install --user -r requirements.txt
 
-# RUN echo "$TFF" && sleep 3
-RUN if [ "$TFF" = "True" ] ; then pip install --upgrade tensorflow-federated; fi
-
-
+RUN apt update
+RUN pip install --upgrade pip
+# RUN pip install tensorflow==2.9.1
+RUN if [ "$TFF" = "True" ] ; then pip install --upgrade tensorflow-federated==0.28.0; fi
 
 # install syft
 RUN --mount=type=cache,target=/root/.cache \
