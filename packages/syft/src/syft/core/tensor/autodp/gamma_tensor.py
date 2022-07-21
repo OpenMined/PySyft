@@ -92,6 +92,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
     __serde_overrides__ = {
         "client": [lambda x: x.address, lambda y: y],
         "public_shape": [lambda x: x, lambda y: upcast(y)],
+        "data_subjects": [dslarraytonumpyutf8, numpyutf8todslarray],
     }
     _exhausted = False
     is_enum = False
@@ -1093,6 +1094,7 @@ def no_op(x: GammaTensor) -> GammaTensor:
     Whenever you manipulate a private input (i.e. add it to another private tensor),
     the result will have a different function. Thus we can check to see if the f
     """
+    res = x
     if isinstance(x, GammaTensor) and isinstance(x.data_subjects, np.ndarray):
         res = GammaTensor(
             child=x.child,

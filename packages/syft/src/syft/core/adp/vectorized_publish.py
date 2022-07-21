@@ -139,7 +139,11 @@ def vectorized_publish(
         if isinstance(input_tensor.data_subjects, np.ndarray):
             # TODO: THIS IS A HACK FOR AA AND SHOULD __NOT__ BE MERGED INTO DEV
             # Need to convert newDSL to old DSL-> this works because for each step we only use 1 data subject at a time
-            input_entities = np.zeros_like(input_tensor)
+            root_child = None
+            while isinstance(input_tensor, PassthroughTensor):
+                root_child = input_tensor.child
+                input_tensor = root_child
+            input_entities = np.zeros_like(root_child)
         elif isinstance(input_tensor.data_subjects, DataSubjectList):
             input_entities = input_tensor.data_subjects.data_subjects_indexed
         else:
@@ -214,5 +218,7 @@ def vectorized_publish(
     print("noise: ", noise)
 
     output = np.asarray(output_func(filtered_inputs) + noise)
-    print("got output", type(output), output.dtype)
-    return output.squeeze(axis=0)
+    print("got output", output, type(output), output.dtype)
+
+    # TODO: remove extra dimension output, to return output as it is
+    return output[0]

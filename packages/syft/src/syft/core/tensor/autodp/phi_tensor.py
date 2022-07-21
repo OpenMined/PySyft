@@ -92,7 +92,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
     def __init__(
         self,
-        data_subjects: DataSubjectList,
+        data_subjects: np.ndarray,
         min_vals: np.typing.ArrayLike,
         max_vals: np.typing.ArrayLike,
         client: Any,
@@ -522,65 +522,66 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         Returns:
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.sum"
-        result: Union[TensorWrappedGammaTensorPointer, TensorWrappedPhiTensorPointer]
-        min_vals = self.min_vals.sum(*args, **kwargs)
-        max_vals = self.max_vals.sum(*args, **kwargs)
-        if len(self.data_subjects.one_hot_lookup) == 1:
-            result = TensorWrappedPhiTensorPointer(
-                data_subjects=self.data_subjects,
-                min_vals=min_vals,
-                max_vals=max_vals,
-                client=self.client,
-            )
-        else:
-            result = TensorWrappedGammaTensorPointer(
-                data_subjects=self.data_subjects,
-                min_vals=min_vals,
-                max_vals=max_vals,
-                client=self.client,
-            )
+        return self.gamma.sum(*args, **kwargs)
+        # attr_path_and_name = "syft.core.tensor.tensor.Tensor.sum"
+        # result: Union[TensorWrappedGammaTensorPointer, TensorWrappedPhiTensorPointer]
+        # min_vals = self.min_vals.sum(*args, **kwargs)
+        # max_vals = self.max_vals.sum(*args, **kwargs)
+        # if len(self.data_subjects.one_hot_lookup) == 1:
+        #     result = TensorWrappedPhiTensorPointer(
+        #         data_subjects=self.data_subjects,
+        #         min_vals=min_vals,
+        #         max_vals=max_vals,
+        #         client=self.client,
+        #     )
+        # else:
+        #     result = TensorWrappedGammaTensorPointer(
+        #         data_subjects=self.data_subjects,
+        #         min_vals=min_vals,
+        #         max_vals=max_vals,
+        #         client=self.client,
+        #     )
 
-        # QUESTION can the id_at_location be None?
-        result_id_at_location = getattr(result, "id_at_location", None)
+        # # QUESTION can the id_at_location be None?
+        # result_id_at_location = getattr(result, "id_at_location", None)
 
-        if result_id_at_location is not None:
-            # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+        # if result_id_at_location is not None:
+        #     # first downcast anything primitive which is not already PyPrimitive
+        #     (
+        #         downcast_args,
+        #         downcast_kwargs,
+        #     ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
 
-            # then we convert anything which isnt a pointer into a pointer
-            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args,
-                kwargs=downcast_kwargs,
-                client=self.client,
-                gc_enabled=False,
-            )
+        #     # then we convert anything which isnt a pointer into a pointer
+        #     pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+        #         args=downcast_args,
+        #         kwargs=downcast_kwargs,
+        #         client=self.client,
+        #         gc_enabled=False,
+        #     )
 
-            cmd = RunClassMethodAction(
-                path=attr_path_and_name,
-                _self=self,
-                args=pointer_args,
-                kwargs=pointer_kwargs,
-                id_at_location=result_id_at_location,
-                address=self.client.address,
-            )
-            self.client.send_immediate_msg_without_reply(msg=cmd)
+        #     cmd = RunClassMethodAction(
+        #         path=attr_path_and_name,
+        #         _self=self,
+        #         args=pointer_args,
+        #         kwargs=pointer_kwargs,
+        #         id_at_location=result_id_at_location,
+        #         address=self.client.address,
+        #     )
+        #     self.client.send_immediate_msg_without_reply(msg=cmd)
 
-        inherit_tags(
-            attr_path_and_name=attr_path_and_name,
-            result=result,
-            self_obj=self,
-            args=[],
-            kwargs={},
-        )
-        dummy_res = np.empty(self.public_shape).sum(*args, **kwargs)
-        result.public_shape = dummy_res.shape
-        result.public_dtype = self.public_dtype
+        # inherit_tags(
+        #     attr_path_and_name=attr_path_and_name,
+        #     result=result,
+        #     self_obj=self,
+        #     args=[],
+        #     kwargs={},
+        # )
+        # dummy_res = np.empty(self.public_shape).sum(*args, **kwargs)
+        # result.public_shape = dummy_res.shape
+        # result.public_dtype = self.public_dtype
 
-        return result
+        # return result
 
     def __getitem__(
         self, key: Union[int, bool, slice]
@@ -1047,11 +1048,10 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         public_dtype = getattr(self, "public_dtype", None)
         return Tensor(
             child=PhiTensor(
-                child=FixedPrecisionTensor(value=None),
+                child=FixedPrecisionTensor(value=np.empty(self.data_subjects.shape)),
                 data_subjects=self.data_subjects,
                 min_vals=self.min_vals,  # type: ignore
                 max_vals=self.max_vals,  # type: ignore
-                skip_check=True,
             ),
             public_shape=public_shape,
             public_dtype=public_dtype,
@@ -1086,7 +1086,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         ],
         min_vals: Union[np.ndarray, lazyrepeatarray],
         max_vals: Union[np.ndarray, lazyrepeatarray],
-        skip_check: bool = False,
     ) -> None:
 
         # child = the actual private data
@@ -1103,7 +1102,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         if not isinstance(data_subjects, DataSubjectArray):
             data_subjects = DataSubjectArray.from_objs(data_subjects)
 
-        if not skip_check and len(data_subjects.shape) != len(self.shape):
+        if len(data_subjects.shape) != len(self.shape):
             raise ValueError(
                 f"DataSubjects shape: {len(data_subjects.shape)} should match data shape: {len(self.shape)}"
             )
