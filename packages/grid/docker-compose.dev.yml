@@ -10,8 +10,8 @@ services:
     ports:
       - "8080"
     command:
-      - --api # admin panel
-      - --api.insecure=true # admin panel no password
+      - "--api" # admin panel
+      - "--api.insecure=true" # admin panel no password
 
   frontend:
     build:

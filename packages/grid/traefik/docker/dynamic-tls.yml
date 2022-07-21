@@ -26,24 +26,28 @@ http:
       entryPoints:
         - web
         - vpn
+        - websecure
       service: "frontend"
     backend:
       rule: "PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)"
       entryPoints:
         - web
         - vpn
+        - websecure
       service: "backend"
     backend-stream:
       rule: "PathPrefix(`/api`) && PathPrefix(`/api/v1/syft/stream`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)"
       entryPoints:
         - web
         - vpn
+        - websecure
       service: "backend-stream"
     blob-storage:
       rule: "PathPrefix(`/blob`)"
       entryPoints:
         - web
         - vpn
+        - websecure
       service: "seaweedfs"
       middlewares:
         - "blob-storage-url"
@@ -53,6 +57,7 @@ http:
       entryPoints:
         - web
         - vpn
+        - websecure
       service: "headscale"
       middlewares:
         - "vpn-url"
@@ -61,6 +66,7 @@ http:
       entryPoints:
         - web
         - vpn
+        - websecure
       service: "ping@internal"
 
   middlewares:
@@ -78,3 +84,13 @@ http:
       stripprefix:
         prefixes: /vpn
         forceslash: true
+
+tls:
+  certificates:
+    - certFile: /etc/traefik/certs/cert.pem
+      keyFile: /etc/traefik/certs/key.pem
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /etc/traefik/certs/cert.pem
+        keyFile: /etc/traefik/certs/key.pem

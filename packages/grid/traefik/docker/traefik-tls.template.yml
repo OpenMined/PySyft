@@ -10,6 +10,15 @@ entryPoints:
     address: :80
   web:
     address: :81
+    http:
+      redirections:
+        entrypoint:
+          to: "websecure"
+          scheme: "https"
+  websecure:
+    address: :$HTTPS_PORT
+    http:
+      tls: true
 
 ping:
   manualRouting: true

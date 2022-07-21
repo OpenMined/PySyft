@@ -15,7 +15,7 @@ services:
       - default
     volumes:
       - "./traefik/docker/traefik.yml:/etc/traefik/traefik.yml"
-      - "./traefik/docker/dynamic.yml:/etc/traefik/dynamic.yml"
+      - "./traefik/docker/dynamic.yml:/etc/traefik/conf/dynamic.yml"
     environment:
       - SERVICE_NAME=proxy
       - RELEASE=${RELEASE:-production}

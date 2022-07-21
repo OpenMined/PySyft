@@ -2,12 +2,12 @@ services:
   proxy:
     ports:
       - "8080"
+    volumes:
+      - ./tls/rootCA.pem:/usr/local/share/ca-certificates/rootCA.pem
 
   tailscale:
     profiles:
       - vpn
-    volumes:
-      - ./tls/rootCA.pem:/usr/local/share/ca-certificates/rootCA.pem
 
   db:
     ports:
