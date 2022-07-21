@@ -1082,7 +1082,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         self,
         child: Union[Sequence, NDArray],
         data_subjects: Union[
-            List[DataSubjectArray], List[DataSubject], DataSubjectList, NDArray
+            DataSubjectArray, List[DataSubject], DataSubjectList, NDArray
         ],
         min_vals: Union[np.ndarray, lazyrepeatarray],
         max_vals: Union[np.ndarray, lazyrepeatarray],

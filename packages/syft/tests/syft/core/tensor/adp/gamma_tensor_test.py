@@ -8,7 +8,7 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.core.adp.data_subject_ledger import DataSubjectLedger
-from syft.core.adp.data_subject_list import DataSubjectArray, DataSubjectList
+from syft.core.adp.data_subject_list import DataSubjectArray
 from syft.core.adp.ledger_store import DictLedgerStore
 from syft.core.tensor.autodp.gamma_tensor import GammaTensor
 from syft.core.tensor.autodp.phi_tensor import PhiTensor as PT
@@ -138,5 +138,3 @@ def test_gamma_publish(
     assert results < upper_bound.sum() + 10
     assert -10 + lower_bound.sum() < results
     print(ledger_store.kv_store)
-
-

@@ -16,38 +16,6 @@ from ..autodp.phi_tensor import PhiTensor
 from ..lazy_repeat_array import lazyrepeatarray
 
 
-def gamma_output(
-    x: Union[np.ndarray, PhiTensor, GammaTensor],
-    y: Union[np.ndarray, PhiTensor, GammaTensor],
-) -> bool:
-    """This function will tell you if the inputs to dp_maximum will be a GammaTensor.
-
-    This will be the case if:
-    - either x or y are gamma tensors
-    - x, y are both phi tensors AND have different data subjects.
-
-    TODO: This compares the full one_hot_lookup, not just the DS' who contributed the local maxima. Fix this?
-    """
-    inputs_are_gamma = any([isinstance(i, GammaTensor) for i in (x, y)])
-    inputs_are_phi = all([isinstance(i, PhiTensor) for i in (x, y)])
-
-    def phi_data_subjects_differ(
-        x: Union[PhiTensor, Any], y: Union[PhiTensor, Any]
-    ) -> bool:
-        if not isinstance(y, PhiTensor) or not isinstance(x, PhiTensor):
-            return False
-
-        if x.data_subjects.one_hot_lookup != y.data_subjects.one_hot_lookup:
-            return True
-        else:
-            return False
-
-    if inputs_are_gamma or (inputs_are_phi and phi_data_subjects_differ(x, y)):
-        return True
-    else:
-        return False
-
-
 def dp_maximum(
     x: Union[PhiTensor, GammaTensor], y: Union[np.ndarray, PhiTensor, GammaTensor]
 ) -> Union[PhiTensor, GammaTensor]:
@@ -56,16 +24,6 @@ def dp_maximum(
     y_data = y.child if hasattr(y, "child") else y
 
     output = np.maximum(x_data, y_data)
-
-    # if gamma_output(x, y):
-    #     array_with_max = np.argmax(np.dstack((x_data, y_data)), axis=-1)
-    #     x_max_ds = np.transpose(array_with_max.nonzero())
-    #     y_max_ds = np.transpose((array_with_max == 1).nonzero())
-
-    #     tensor_list = [x[tuple(i)] for i in x_max_ds]
-    #     if isinstance(y, (PhiTensor, GammaTensor)):
-    #         tensor_list += [y[tuple(i)] for i in y_max_ds]
-    #     return GammaTensor.combine(tensor_list, output.shape)
 
     min_v, max_v = output.min(), output.max()
     dsl = x.data_subjects  # TODO: fix later

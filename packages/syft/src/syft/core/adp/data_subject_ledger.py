@@ -116,7 +116,7 @@ def first_try_branch(
 ) -> jax.numpy.DeviceArray:
     unique_data_subjects = get_unique_data_subjects(entity_ids_query)
     max_entity = len(unique_data_subjects)
-    
+
     if max_entity < len(rdp_constants):
         summed_constant = None
 
@@ -245,7 +245,9 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         private: bool = True,
     ) -> np.ndarray:
         # coerce to np.int64
-        entity_ids_query: np.ndarray = unique_entity_ids_query # = unique_entity_ids_query.astype(np.int64)
+        entity_ids_query: np.ndarray = (
+            unique_entity_ids_query  # = unique_entity_ids_query.astype(np.int64)
+        )
         # calculate constants
         rdp_constants = self._get_batch_rdp_constants(
             entity_ids_query=entity_ids_query, rdp_params=rdp_params, private=private
@@ -337,11 +339,8 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         # print("entity ids query", entity_ids_query)
         # print(jnp.max(entity_ids_query))
 
-        num_uniques = np.unique(entity_ids_query)
         self._rdp_constants = first_try_branch(
-            constant,
-            self._rdp_constants,
-            entity_ids_query
+            constant, self._rdp_constants, entity_ids_query
         )
         return constant
 
