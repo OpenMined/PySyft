@@ -483,6 +483,9 @@ class DataSubjectArray:
         else:
             return DataSubjectArray(self.data_subjects)
 
+    def exp(self) -> DataSubjectArray:
+        return DataSubjectArray(self.data_subjects)
+
     def __lt__(self, other: Union[DataSubjectArray, Any]) -> DataSubjectArray:
         if isinstance(other, DataSubjectArray):
             return DataSubjectArray(self.data_subjects.union(other.data_subjects))
@@ -495,8 +498,17 @@ class DataSubjectArray:
         else:
             return DataSubjectArray(self.data_subjects)
 
+    def __rmatmul__(self, other: Union[DataSubjectArray, Any]) -> DataSubjectArray:
+        if isinstance(other, DataSubjectArray):
+            return DataSubjectArray(self.data_subjects.union(other.data_subjects))
+        else:
+            return DataSubjectArray(self.data_subjects)
+
     def __rtruediv__(self, other: Union[DataSubjectArray, Any]) -> DataSubjectArray:
-        return DataSubjectArray(self.data_subjects)
+        if isinstance(other, DataSubjectArray):
+            return DataSubjectArray(other.data_subjects.union(self.data_subjects))
+        else:
+            return DataSubjectArray(self.data_subjects)
 
     def __repr__(self) -> str:
         return "DataSubjectArray: " + str(self.data_subjects.__repr__())
@@ -557,6 +569,9 @@ class DataSubjectArray:
             return np.array(self) == other
         else:
             raise NotImplementedError
+
+    def log(self) -> DataSubjectArray:
+        return DataSubjectArray(self.data_subjects)
 
     def real(self) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)

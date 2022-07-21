@@ -1193,7 +1193,7 @@ class GammaTensor:
             child = self.child + other
             min_val = self.min_vals + other
             max_val = self.max_vals + other
-            output_ds = self.data_subjects
+            output_ds = self.data_subjects + other
         # print("the state we returned is: ", output_state)
         return GammaTensor(
             child=child,
@@ -1211,7 +1211,7 @@ class GammaTensor:
                 child=(1 / self.child) * other,
                 min_vals=(1 / self.min_vals) * other,
                 max_vals=(1 / self.max_vals) * other,
-                data_subjects=self.data_subjects,
+                data_subjects=(1 / self.data_subjects) * other,
                 # scalar_manager=self.scalar_manager,
             )
         else:
@@ -1258,7 +1258,7 @@ class GammaTensor:
             child = self.child - other
             min_val = self.min_vals - other
             max_val = self.max_vals - other
-            output_ds = self.data_subjects
+            output_ds = self.data_subjects - other
 
         return GammaTensor(
             child=child,
@@ -1307,7 +1307,7 @@ class GammaTensor:
             max_max = self.max_vals.data * other
             _min_val = np.array(np.min([min_min, min_max, max_min, max_max], axis=0))  # type: ignore
             _max_val = np.array(np.max([min_min, min_max, max_min, max_max], axis=0))  # type: ignore
-            output_ds = self.data_subjects
+            output_ds = self.data_subjects * other
 
         min_val = self.min_vals.copy()
         min_val.data = _min_val
@@ -1435,7 +1435,7 @@ class GammaTensor:
                 return jnp.greater(self.run(state), other)
 
             child = self.child.__gt__(other)
-            output_ds = self.data_subjects
+            output_ds = self.data_subjects.__gt__(other)
 
         min_val = self.min_vals * 0
         max_val = (self.max_vals * 0) + 1
@@ -1483,7 +1483,7 @@ class GammaTensor:
                 return jnp.greater(self.run(state), other)
 
             child = self.child.__lt__(other)
-            output_ds = self.data_subjects
+            output_ds = self.data_subjects.__lt__(other)
 
         min_val = self.min_vals * 0
         max_val = (self.max_vals * 0) + 1
@@ -1565,7 +1565,7 @@ class GammaTensor:
             child=exp(self.child),
             min_vals=min_val,
             max_vals=max_val,
-            data_subjects=self.data_subjects,
+            data_subjects=np.exp(self.data_subjects),
             func=_exp,
             state=output_state,
         )
@@ -1601,7 +1601,7 @@ class GammaTensor:
             child=np.log(self.child),
             min_vals=min_val,
             max_vals=max_val,
-            data_subjects=self.data_subjects,
+            data_subjects=np.log(self.data_subjects),
             func=_log,
             state=output_state,
         )
