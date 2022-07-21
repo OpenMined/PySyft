@@ -1,5 +1,6 @@
 # stdlib
 from typing import Any
+from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
@@ -172,7 +173,9 @@ class BatchNorm(Layer):
         return self.beta, self.gamma
 
     @params.setter
-    def params(self, new_params):
+    def params(
+        self, new_params: List[Union[np.ndarray, PhiTensor, GammaTensor]]
+    ) -> None:
         if len(new_params) != 2:
             raise ValueError(
                 f"Expected Two values Update Params has length{len(new_params)}"

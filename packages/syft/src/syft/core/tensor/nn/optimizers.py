@@ -3,6 +3,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 # third party
 import numpy as np
@@ -10,6 +11,8 @@ from numpy.typing import NDArray
 
 # relative
 from ...common.serde.serializable import serializable
+from ..autodp.gamma_tensor import GammaTensor
+from ..autodp.phi_tensor import PhiTensor
 from .layers.base import Layer
 from .utils import dp_maximum
 
@@ -121,8 +124,8 @@ class Adamax(Optimizer):
         self.iterations += 1
         a_t = self.lr / (1 - np.power(self.beta1, self.iterations))
 
-        params = []
-        grads = []
+        params: List[Union[np.ndarray, PhiTensor, GammaTensor]] = []
+        grads: List[Union[np.ndarray, PhiTensor, GammaTensor]] = []
         for layer in layers:
             params += layer.params
             grads += layer.grads

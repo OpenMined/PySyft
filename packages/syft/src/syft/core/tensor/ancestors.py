@@ -4,17 +4,18 @@ from __future__ import annotations
 # stdlib
 import textwrap
 from typing import Any
+from typing import Callable
 from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Type
 
 # third party
-from nacl.signing import VerifyKey
 import numpy as np
 from numpy.typing import ArrayLike
 
 # relative
+from ..adp.data_subject_ledger import DataSubjectLedger
 from ..adp.data_subject_list import DataSubjectArray
 from .lazy_repeat_array import lazyrepeatarray
 from .manager import TensorChainManager
@@ -331,19 +332,14 @@ class PhiTensorAncestor(TensorChainManager):
 
     def publish(
         self,
-        user_key: VerifyKey,
-        sigma: Optional[float] = None,
-        acc: Optional[Any] = None,
-        ledger: Optional[Any] = None,
-    ) -> PhiTensorAncestor:
-        # relative
-        from .autodp.gamma_tensor import GammaTensor
-
-        # Currently not used for GammaTensor conversion.
-        # Modify before merge: Rasswanth
-        if isinstance(self.child, GammaTensor):
-            return self.child.publish(sigma=sigma, ledger=ledger)  # type: ignore
-        return self.child.publish(acc=acc, sigma=100, user_key=user_key)
+        get_budget_for_user: Callable,
+        deduct_epsilon_for_user: Callable,
+        ledger: DataSubjectLedger,
+        sigma: float,
+    ) -> Any:
+        return self.child.publish(
+            get_budget_for_user, deduct_epsilon_for_user, ledger, sigma
+        )
 
     def copy(self) -> PhiTensorAncestor:
         """This should certainly be implemented by the subclass but adding this here to

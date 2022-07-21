@@ -64,7 +64,7 @@ def decompose_size(size: Tuple[int, ...]) -> Tuple[int, int]:
 
 @serializable(recursive_serde=True)
 class XavierInitialization(Initializer):
-    __attr_allowlist__ = ()
+    __attr_allowlist__: Tuple[str] = ()  # type: ignore
 
     def call(self, size: Tuple[int, ...]) -> NDArray:
         fan_in, fan_out = decompose_size(size)
