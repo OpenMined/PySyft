@@ -1,0 +1,21 @@
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+log:
+  level: INFO
+
+entryPoints:
+  internal-http:
+    address: :80
+  external-http:
+    address: :81
+
+ping:
+  entryPoints:
+    - "external-http"
+    - "internal-http"
+
+providers:
+  file:
+    filename: /etc/traefik/dynamic.yml

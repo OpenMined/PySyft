@@ -14,30 +14,14 @@ services:
       - "${TRAEFIK_PUBLIC_NETWORK?Variable not set}"
       - default
     volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "./traefik/docker/traefik.yml:/etc/traefik/traefik.yml"
+      - "./traefik/docker/dynamic.yml:/etc/traefik/dynamic.yml"
     environment:
       - SERVICE_NAME=proxy
       - RELEASE=${RELEASE:-production}
       - HOSTNAME=${DOMAIN_NAME?Variable not set}
       - HTTP_PORT=${HTTP_PORT}
       - HTTPS_PORT=${HTTPS_PORT}
-    command:
-      - "--providers.docker"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.constraints=Label(`traefik.constraint-label-stack`, `${TRAEFIK_TAG?Variable not set}`)"
-      - "--entrypoints.web.address=:81"
-      - "--entrypoints.vpn.address=:80"
-      # Enable the access log, with HTTP requests
-      - "--accesslog"
-      # Enable the Traefik log, for configurations and errors
-      - "--log"
-      - "--ping=true"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
-      - "traefik.http.routers.ping.rule=PathPrefix(`/ping`)"
-      - "traefik.http.services.ping.loadbalancer.server.port=80"
-      - "traefik.http.routers.ping.service=ping@internal"
     ports:
       - "${HTTP_PORT}:81"
     depends_on:
@@ -80,11 +64,6 @@ services:
       - VERSION_HASH=${VERSION_HASH}
       - HTTP_PORT=${HTTP_PORT}
       - HTTPS_PORT=${HTTPS_PORT}
-    labels:
-      - "traefik.enable=true"
-      - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
-      - "traefik.http.routers.${STACK_NAME?Variable not set}-frontend.rule=PathPrefix(`/`)"
-      - "traefik.http.services.${STACK_NAME?Variable not set}-frontend.loadbalancer.server.port=80"
 
   db:
     restart: always
@@ -151,11 +130,6 @@ services:
       - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
       - CONTAINER_HOST=${CONTAINER_HOST}
     command: /start.sh
-    labels:
-      - "traefik.enable=true"
-      - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
-      - "traefik.http.routers.${STACK_NAME?Variable not set}-backend.rule=PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)" # WARNING: this wont match /api/v1/syft/stream because of length
-      - "traefik.http.services.${STACK_NAME?Variable not set}-backend.loadbalancer.server.port=8001"
     network_mode: service:proxy
 
   backend_stream:
@@ -182,11 +156,6 @@ services:
       - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
       - CONTAINER_HOST=${CONTAINER_HOST}
     command: "/start.sh"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
-      - "traefik.http.routers.${STACK_NAME?Variable not set}-backend-stream.rule=PathPrefix(`/api`) && PathPrefix(`/api/v1/syft/stream`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)" # WARNING: this only matches /api/v1/syft/stream because of length
-      - "traefik.http.services.${STACK_NAME?Variable not set}-backend-stream.loadbalancer.server.port=8011"
     network_mode: service:proxy
 
   celeryworker:
@@ -229,14 +198,6 @@ services:
       - RELEASE=${RELEASE:-production}
       - NETWORK_NAME=omnet
       - STACK_API_KEY=$STACK_API_KEY
-    labels:
-      - "traefik.enable=true"
-      - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
-      - "traefik.http.routers.${STACK_NAME?Variable not set}-vpn.rule=PathPrefix(`/vpn`)"
-      - "traefik.http.routers.${STACK_NAME?Variable not set}-vpn.middlewares=${STACK_NAME?Variable not set}-vpn"
-      - "traefik.http.middlewares.${STACK_NAME?Variable not set}-vpn.stripprefix.prefixes=/vpn"
-      - "traefik.http.middlewares.${STACK_NAME?Variable not set}-vpn.stripprefix.forceslash=true"
-      - "traefik.http.services.${STACK_NAME?Variable not set}-vpn.loadbalancer.server.port=8080"
 
   seaweedfs:
     profiles:
@@ -252,18 +213,6 @@ services:
       - seaweedfs-data:/data
       - ./seaweedfs/s3config.json:/etc/s3config.json
       - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml
-
-    labels:
-      - "traefik.enable=true"
-      - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
-      - "traefik.http.routers.${STACK_NAME?Variable not set}-blob.rule=PathPrefix(`/blob`)"
-      - "traefik.http.routers.${STACK_NAME?Variable not set}-blob.middlewares=${STACK_NAME?Variable not set}-host,${STACK_NAME?Variable not set}-blob"
-      - "traefik.http.middlewares.${STACK_NAME?Variable not set}-host.headers.customrequestheaders.Host=${S3_ENDPOINT}:${S3_PORT}"
-      - "traefik.http.middlewares.${STACK_NAME?Variable not set}-blob.stripprefix.prefixes=/blob"
-      - "traefik.http.middlewares.${STACK_NAME?Variable not set}-blob.stripprefix.forceslash=true"
-      - "traefik.http.services.${STACK_NAME?Variable not set}-blob.loadbalancer.server.port=${S3_PORT}"
-      # by rewriting the customrequestheaders.Host with the same host:port as the
-      # code uses internally any S3 presigned urls will still validate
 
 volumes:
   app-db-data:
