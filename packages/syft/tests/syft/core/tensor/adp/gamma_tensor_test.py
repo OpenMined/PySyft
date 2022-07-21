@@ -75,17 +75,17 @@ def test_gamma_serde(
         min_vals=lower_bound,
     )
     assert tensor1.data_subjects.shape == tensor1.child.shape
-    gamma_tensor1 = tensor1.sum()
+    gamma_tensor1 = tensor1.gamma
 
     print("gamma tensor", gamma_tensor1)
     # Checks to ensure gamma tensor was properly created
     assert isinstance(gamma_tensor1, GammaTensor)
-    assert gamma_tensor1.child == tensor1.child.sum()
+    assert (gamma_tensor1.child == tensor1.child).all()
 
     ser = sy.serialize(gamma_tensor1, to_bytes=True)
     de = sy.deserialize(ser, from_bytes=True)
 
-    assert de.child == gamma_tensor1.child
+    assert (de.child == gamma_tensor1.child).all()
     assert (de.data_subjects == gamma_tensor1.data_subjects).all()
     assert de.min_vals == gamma_tensor1.min_vals
     assert de.max_vals == gamma_tensor1.max_vals

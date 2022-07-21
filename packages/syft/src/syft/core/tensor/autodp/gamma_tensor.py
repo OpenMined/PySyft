@@ -1703,7 +1703,7 @@ class GammaTensor:
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs: Any
     ) -> GammaTensor:
         def _sum(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.sum(self.run(state))
+            return jnp.sum(self.run(state).child)  # type: ignore
 
         output_state = dict()
         output_state[self.id] = self

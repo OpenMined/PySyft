@@ -554,9 +554,8 @@ class DataSubjectArray:
         if isinstance(other, DataSubjectArray):
             return self.data_subjects == other.data_subjects
         elif isinstance(other, np.ndarray):
-            return other == self
+            return np.array(self) == other
         else:
-            print("Other: ", other, type(other))
             raise NotImplementedError
 
     def real(self) -> DataSubjectArray:
