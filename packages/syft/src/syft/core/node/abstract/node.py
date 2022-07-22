@@ -26,6 +26,7 @@ class AbstractNodeClient(Address):
     # TODO: remove hacky in_memory_client_registry
     in_memory_client_registry: Dict[Any, Any]
     signing_key: SigningKey
+    verify_key: VerifyKey
     """"""
 
     @property
@@ -37,7 +38,7 @@ class AbstractNodeClient(Address):
         raise NotImplementedError
 
     def send_immediate_msg_with_reply(
-        self, msg: Any, timeout: Optional[float] = None
+        self, msg: Any, timeout: Optional[float] = None, return_signed: bool = False
     ) -> Any:
         raise NotImplementedError
 

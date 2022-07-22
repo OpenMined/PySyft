@@ -74,13 +74,11 @@ def create_initial_setup(
     node.name = msg.domain_name
 
     # 4 - Create Admin User
-    _node_private_key = node.signing_key.encode(encoder=HexEncoder).decode(
-        "utf-8"
-    )  # type: ignore
+    signing_key = msg.signing_key
 
-    _verify_key = node.signing_key.verify_key.encode(encoder=HexEncoder).decode(
-        "utf-8"
-    )  # type: ignore
+    # convert to hex
+    _node_private_key = signing_key.encode(encoder=HexEncoder).decode("utf-8")  # type: ignore
+    _verify_key = signing_key.verify_key.encode(encoder=HexEncoder).decode("utf-8")  # type: ignore
 
     _admin_role = node.roles.owner_role
 
@@ -97,10 +95,11 @@ def create_initial_setup(
     # 5 - Save Node SetUp Configs
     try:
         node_id = node.target_id.id
-        node.setup.register(
+        node.setup.register_once(
             domain_name=msg.domain_name,
             node_id=node_id.no_dash,
             deployed_on=datetime.now(),
+            signing_key=_node_private_key,
         )
     except Exception as e:
         print("Failed to save setup to database", e)

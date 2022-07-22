@@ -86,6 +86,8 @@ def run_migrations_online() -> None:
         )
 
         with context.begin_transaction():
+            # https://github.com/sqlalchemy/alembic/issues/633
+            connection.execute("SELECT pg_advisory_xact_lock(10000);")
             context.run_migrations()
 
 

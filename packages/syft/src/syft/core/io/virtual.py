@@ -73,7 +73,10 @@ class VirtualClientConnection(ClientConnection):
         self.server.recv_immediate_msg_without_reply(msg=msg)
 
     def send_immediate_msg_with_reply(
-        self, msg: SignedImmediateSyftMessageWithReply, timeout: Optional[float] = None
+        self,
+        msg: SignedImmediateSyftMessageWithReply,
+        timeout: Optional[float] = None,
+        return_signed: bool = False,
     ) -> SignedImmediateSyftMessageWithoutReply:
         return self.server.recv_immediate_msg_with_reply(msg=msg)
 
