@@ -3,6 +3,7 @@ import asyncio
 import collections
 import functools
 import io
+import json
 import logging
 import os
 from typing import Any
@@ -12,7 +13,6 @@ from typing import Tuple
 from typing import Type
 from unittest import result
 import zipfile
-import json
 
 # third party
 from absl.testing import absltest
@@ -21,7 +21,6 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_federated as tff
 from tensorflow_federated.proto.v0 import computation_pb2 as pb
-
 from tensorflow_federated.python.core.backends.native import compiler
 from tensorflow_federated.python.core.impl.context_stack import set_default_context
 from tensorflow_federated.python.core.impl.execution_contexts import (
@@ -33,7 +32,6 @@ from tensorflow_federated.python.core.impl.executors import eager_tf_executor
 from tensorflow_federated.python.core.impl.types import computation_types
 from tensorflow_federated.python.learning.models import functional
 from tensorflow_federated.python.program import value_reference
-
 
 # from pybind11_abseil import status
 import torch as th
@@ -51,6 +49,7 @@ from ..node_service import ImmediateNodeServiceWithReply
 from .tff_messages import TFFMessage
 from .tff_messages import TFFReplyMessage
 
+
 async def tff_train_federated(
     initialize: tff.Computation,
     train: tff.Computation,
@@ -62,8 +61,8 @@ async def tff_train_federated(
     results = []
     state = initialize()
     start_round = 1
-    
-    # This makes tasks run in order 
+
+    # This makes tasks run in order
     async with tff.async_utils.ordered_tasks() as tasks:
 
         train_data_iterator = train_data_source.iterator()
@@ -72,7 +71,7 @@ async def tff_train_federated(
         for round_number in range(start_round, total_rounds + 1):
             tasks.add_callable(
                 functools.partial(
-                    debug, f"Running round {round_number} of training" 
+                    debug, f"Running round {round_number} of training"
                 )
             )
 
@@ -117,13 +116,13 @@ def tff_program(node, params, func_model) -> None:
     dataset = tf.data.Dataset.from_tensor_slices((images, labels))
     datasets = [dataset.map(preprocess)] * number_of_clients
     train_data_source = tff.program.DatasetDataSource(datasets)
-    
-    
+
+
     # Create Iterative Process based on custom functional model
     # TODO: add DP
     def model_fn():
         return tff.learning.models.model_from_functional(func_model)
-    
+
     iterative_process = tff.learning.algorithms.build_unweighted_fed_avg(
         model_fn,
         client_optimizer_fn=lambda: tf.keras.optimizers.SGD(learning_rate=0.02),
@@ -133,7 +132,7 @@ def tff_program(node, params, func_model) -> None:
     initialize = iterative_process.initialize
     train = iterative_process.next
     train_output_managers = [tff.program.LoggingReleaseManager()]
-    
+
     results, state = asyncio.run(
         tff_train_federated(
             initialize=initialize,
@@ -144,9 +143,9 @@ def tff_program(node, params, func_model) -> None:
             train_output_managers=train_output_managers,
         )
     )
-    
+
     return results, state
-    
+
 
 class TFFService(ImmediateNodeServiceWithReply):
     @staticmethod
@@ -157,9 +156,9 @@ class TFFService(ImmediateNodeServiceWithReply):
         if verify_key is None:
             traceback_and_raise("Can't process TFFService with no verification key.")
 
-        # Run specific msg function, currently doesn't do anything 
+        # Run specific msg function, currently doesn't do anything
         result = msg.payload.run(node=node, verify_key=verify_key)
-        
+
         # parse params
         params = msg.payload.params
 
@@ -169,7 +168,7 @@ class TFFService(ImmediateNodeServiceWithReply):
         model = tff.learning.models.load_functional_model(
             "tmp_dir"
         )
-    
+
         # run the training based on the example from:
         # https://github.com/tensorflow/federated/tree/main/tensorflow_federated/examples/program
         metrics, state = tff_program(node, params, model)
@@ -178,15 +177,15 @@ class TFFService(ImmediateNodeServiceWithReply):
         memfile = io.BytesIO()
         np.save(memfile, state.global_model_weights.trainable)
         serialized_trainable = memfile.getvalue()
-        
+
         memfile= io.BytesIO()
         np.save(memfile, state.global_model_weights.non_trainable)
         serialized_non_trainable = memfile.getvalue()
 
         # Full response
         payload = {
-            'metrics': metrics, 
-            'trainable': serialized_trainable, 
+            'metrics': metrics,
+            'trainable': serialized_trainable,
             'non_trainable': serialized_non_trainable
             }
 
