@@ -13,15 +13,21 @@ from ..action.exception_action import ExceptionMessage
 from ..node_service.generic_payload.messages import GenericPayloadMessageWithReply
 from ..node_service.vpn.vpn_messages import VPNJoinMessageWithReply
 from ..node_service.vpn.vpn_messages import VPNStatusMessageWithReply
+from ..node_service.vpn.vpn_messages import VPNJoinSelfMessageWithReply
 
 
 class VPNAPI:
     def __init__(self, client: AbstractNodeClient):
         self.client = client
 
-    def join_network_vpn(self, grid_url: GridURL) -> None:
+    def join_network_vpn(self, grid_url: GridURL) -> None:        
         reply = self.perform_api_request(
-            syft_msg=VPNJoinMessageWithReply, content={"grid_url": grid_url}
+            syft_msg=(
+                VPNJoinSelfMessageWithReply
+                if type(self.client).__name__ == "NetworkClient"
+                else VPNJoinMessageWithReply
+            ),
+            content={"grid_url": grid_url},
         )
         logging.info(reply.payload)
         status = "error"
@@ -31,7 +37,7 @@ class VPNAPI:
             pass
 
         if status == "ok":
-            # print(f"🔌 {self.client} successfully connected to the VPN: {grid_url}")
+            print(f"🔌 {self.client} successfully connected to the VPN: {grid_url}")
             pass
         else:
             print(f"❌ {self.client} failed to connect to the VPN: {grid_url}")
