@@ -10,20 +10,8 @@ services:
     ports:
       - "8080"
     command:
-      - "--providers.docker"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.constraints=Label(`traefik.constraint-label-stack`, `${TRAEFIK_TAG?Variable not set}`)"
-      - "--entrypoints.web.address=:81"
-      - "--entrypoints.vpn.address=:80"
-
-      # Enable the access log, with HTTP requests
-      - "--accesslog"
-      # Enable the Traefik log, for configurations and errors
-      - "--log"
-      # Enable the Dashboard and API
-      - --api # admin panel
-      - --api.insecure=true # admin panel no password
-      - --ping=true
+      - "--api" # admin panel
+      - "--api.insecure=true" # admin panel no password
 
   frontend:
     build:
@@ -66,7 +54,7 @@ services:
       - ../syft:/app/syft
       - ./data/package-cache:/root/.cache
       # - ./profile:/tmp/profile
-    command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /start-reload.sh"
+    command: "/start-reload.sh"
     # command: "sleep 99999"
     environment:
       - PROFILE=true
@@ -80,7 +68,7 @@ services:
       - ../syft:/app/syft
       - ./data/package-cache:/root/.cache
       # - ./profile:/tmp/profile
-    command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /worker-start-reload.sh"
+    command: "/worker-start-reload.sh"
     # command: "sleep 99999"
     environment:
       - PROFILE=true

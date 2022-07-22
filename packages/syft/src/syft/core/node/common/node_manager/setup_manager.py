@@ -21,6 +21,25 @@ class SetupManager(DatabaseManager):
     def __init__(self, database: Engine) -> None:
         super().__init__(db=database, schema=SetupManager.schema)
 
+    def register_once(self, **kwargs: Any) -> Any:
+        """Register a new object into the database.
+
+        Args:
+            parameters : List of object parameters.
+        Returns:
+            object: Database Object
+        """
+        _obj = self._schema(**kwargs)
+        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+
+        with session_local.begin():
+            nrows = len(self)
+            if nrows == 0:
+                session_local.add(_obj)
+                session_local.commit()
+
+        return _obj
+
     @property
     def node_name(self) -> str:
         setup = super().all()[0]
