@@ -2415,8 +2415,8 @@ cli.add_command(version)
 
 
 @click.command(help="Start a fully feaured virtual env and an intro notebook ready!")
-@click.argument("url", required=False)
-def quickstart(url) -> None:
+@click.argument("url", type=str, required=False)
+def quickstart(url: str) -> None:
     try:
         directory = os.path.expanduser("~/.hagrid/quickstart/")
         packages = ["virtualenv", "virtualenv-api"]
