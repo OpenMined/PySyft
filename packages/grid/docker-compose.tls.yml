@@ -11,4 +11,4 @@ services:
       - "${TRAEFIK_TLS_CERTS}:/etc/traefik/certs"
       - "./traefik/docker/traefik-tls.template.yml:/etc/traefik/traefik-tls.template.yml"
       - "./traefik/docker/dynamic-tls.yml:/etc/traefik/conf/dynamic.yml"
-    command: /bin/ash -c "apk add gettext ca-certificates && update-ca-certificates && envsubst < /etc/traefik/traefik-tls.template.yml > /etc/traefik/traefik.yml && traefik"
+    command: /bin/ash -c "apk add gettext && envsubst < /etc/traefik/traefik-tls.template.yml > /etc/traefik/traefik-tls.yml && traefik --configFile=/etc/traefik/traefik-tls.yml"
