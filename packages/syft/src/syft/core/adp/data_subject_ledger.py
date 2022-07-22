@@ -141,9 +141,15 @@ def first_try_branch(
     if max_entity < len(rdp_constants):
         return rdp_constants.at[entity_ids_query].set(summed_constant)
     else:
+        # print(f"Constant: {type(constant)}, {constant.shape}")
+        # print(f"entity_ids_query: {type(entity_ids_query)}, {entity_ids_query.shape}")
+        # print(f"rdp_constants: {len(rdp_constants)}, {rdp_constants.shape}")
         pad_length = max_entity - len(rdp_constants) + 1
         rdp_constants = jnp.concatenate([rdp_constants, jnp.zeros(shape=pad_length)])
-        summed_constant = constant + rdp_constants.take(entity_ids_query)
+        # print(constant.shape, rdp_constants.shape)
+        summed_constant = constant.take(entity_ids_query) + rdp_constants.take(
+            entity_ids_query
+        )
         return rdp_constants.at[entity_ids_query].set(summed_constant)
 
 
@@ -254,6 +260,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         rdp_constants = self._get_batch_rdp_constants(
             entity_ids_query=entity_ids_query, rdp_params=rdp_params, private=private
         )
+        #print("rdp constants", rdp_constants)
 
         # here we iteratively attempt to calculate the overbudget mask and save
         # changes to the database
@@ -430,7 +437,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         mask = np.array(mask, copy=False)
         highest_possible_spend = float(highest_possible_spend)
         user_budget = float(user_budget)
-        print("Epsilon spend ", epsilon_spend)
+        #print("Epsilon spend ", epsilon_spend)
         #print("Highest possible spend ", highest_possible_spend)
         if highest_possible_spend > 0:
             # go spend it in the db

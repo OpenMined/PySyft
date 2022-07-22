@@ -8,6 +8,7 @@ from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
 from ..node.abstract.node import AbstractNodeClient
+from .autodp.gamma_tensor import GammaTensor
 from .autodp.phi_tensor import PhiTensor
 from .fixed_precision_tensor import FixedPrecisionTensor
 from .smpc.share_tensor import ShareTensor
@@ -28,6 +29,7 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         "syft.core.tensor.fixed_precision_tensor",
         "syft.core.tensor.autodp",
         "syft.core.tensor.autodp.phi_tensor",
+        "syft.core.tensor.autodp.gamma_tensor",
     ]
     classes = [
         ("syft.core.tensor.tensor.Tensor", "syft.core.tensor.tensor.Tensor", Tensor),
@@ -35,6 +37,11 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.core.tensor.autodp.phi_tensor.PhiTensor",
             "syft.core.tensor.autodp.phi_tensor.PhiTensor",
             PhiTensor,
+        ),
+        (
+            "syft.core.tensor.autodp.gamma_tensor.GammaTensor",
+            "syft.core.tensor.autodp.gamma_tensor.GammaTensor",
+            GammaTensor,
         ),
         (
             "syft.core.tensor.smpc.share_tensor.ShareTensor",
@@ -157,6 +164,26 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.core.tensor.tensor.Tensor.mpc_swap", "syft.core.tensor.tensor.Tensor"),
         (
             "syft.core.tensor.tensor.Tensor.concatenate",
+            "syft.core.tensor.tensor.Tensor",
+        ),
+        (
+            "syft.core.tensor.tensor.Tensor.exp",
+            "syft.core.tensor.tensor.Tensor",
+        ),
+        (
+            "syft.core.tensor.tensor.Tensor.reciprocal",
+            "syft.core.tensor.tensor.Tensor",
+        ),
+        (
+            "syft.core.tensor.tensor.Tensor.softmax",
+            "syft.core.tensor.tensor.Tensor",
+        ),
+        (
+            "syft.core.tensor.tensor.Tensor.one_hot",
+            "syft.core.tensor.tensor.Tensor",
+        ),
+        (
+            "syft.core.tensor.tensor.Tensor.ones_like",
             "syft.core.tensor.tensor.Tensor",
         ),
         # # SMPC

@@ -265,6 +265,13 @@ def clean(location: str) -> None:
     type=str,
     help="Optional: run docker with a different platform like linux/arm64",
 )
+@click.option(
+    "--vpn",
+    default="true",
+    required=False,
+    type=str,
+    help="Optional: turn tailscale vpn container on or off",
+)
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
     try:
@@ -797,6 +804,11 @@ def create_launch_cmd(
         parsed_kwargs["jupyter"] = str_to_bool(cast(str, kwargs["jupyter"]))
     else:
         parsed_kwargs["jupyter"] = False
+
+    if "vpn" in kwargs and kwargs["vpn"] is not None:
+        parsed_kwargs["vpn"] = str_to_bool(cast(str, kwargs["vpn"]))
+    else:
+        parsed_kwargs["vpn"] = True
 
     # allows changing docker platform to other cpu architectures like arm64
     parsed_kwargs["platform"] = kwargs["platform"] if "platform" in kwargs else None
@@ -1392,6 +1404,10 @@ def create_launch_docker_cmd(
         pull_cmd += " docker compose pull"
 
     cmd += " docker compose -p " + snake_name
+
+    if "vpn" in kwargs and kwargs["vpn"]:
+        cmd += " --profile vpn"
+
     if str(node_type.input) == "network":
         cmd += " --profile network"
     else:
@@ -1400,6 +1416,32 @@ def create_launch_docker_cmd(
     # network frontend disabled
     if str(node_type.input) != "network" and kwargs["headless"] is False:
         cmd += " --profile frontend"
+
+    # new docker compose regression work around
+    default_env = f"{GRID_SRC_PATH}/.env"
+    default_envs = {}
+    with open(default_env, "r") as f:
+        for line in f.readlines():
+            if "=" in line:
+                parts = line.strip().split("=")
+                key = parts[0]
+                value = ""
+                if len(parts) > 1:
+                    value = parts[1]
+                default_envs[key] = value
+    default_envs.update(envs)
+    try:
+        env_file = ""
+        for k, v in default_envs.items():
+            env_file += f"{k}={v}\n"
+
+        env_file_path = os.path.abspath("./.envfile")
+        with open(env_file_path, "w") as f:
+            f.write(env_file)
+
+        cmd += f" --env-file {env_file_path}"
+    except Exception:  # nosec
+        pass
 
     cmd += " --file docker-compose.yml"
     if build:
@@ -2217,10 +2259,10 @@ def debug(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 
 cli.add_command(debug)
 
-DEFAULT_HEALTH_CHECKS = ["host", "login", "api", "ssh", "jupyter"]
+DEFAULT_HEALTH_CHECKS = ["host", "UI (βeta)", "api", "ssh", "jupyter"]
 HEALTH_CHECK_FUNCTIONS = {
     "host": check_host,
-    "login": check_login_page,
+    "UI (βeta)": check_login_page,
     "api": check_api_metadata,
     "ssh": check_ip_for_ssh,
     "jupyter": check_jupyter_server,
@@ -2228,7 +2270,7 @@ HEALTH_CHECK_FUNCTIONS = {
 
 HEALTH_CHECK_ICONS = {
     "host": "🔌",
-    "login": "🖱",
+    "UI (βeta)": "🖱",
     "api": "⚙️",
     "ssh": "🔐",
     "jupyter": "📗",
@@ -2236,7 +2278,7 @@ HEALTH_CHECK_ICONS = {
 
 HEALTH_CHECK_URLS = {
     "host": "{ip_address}",
-    "login": "http://{ip_address}/login",
+    "UI (βeta)": "http://{ip_address}/login",
     "api": "http://{ip_address}/api/v1",
     "ssh": "hagrid ssh {ip_address}",
     "jupyter": "http://{ip_address}:8888",
@@ -2303,13 +2345,24 @@ def create_check_table(
     is_flag=True,
     help="Optional: wait until checks pass",
 )
-def check(ip_addresses: TypeList[str], wait: bool = False) -> None:
+@click.option(
+    "--silent",
+    is_flag=True,
+    help="Optional: don't refresh output during wait",
+)
+def check(
+    ip_addresses: TypeList[str], wait: bool = False, silent: bool = False
+) -> None:
     console = rich.get_console()
     if len(ip_addresses) == 0:
         headers = {"User-Agent": "curl/7.79.1"}
         print("Detecting External IP...")
         ip_res = requests.get("https://ifconfig.co", headers=headers)
         ip_address = ip_res.text.strip()
+        ip_addresses = [ip_address]
+
+    if len(ip_addresses) == 1:
+        ip_address = ip_addresses[0]
         status, table_contents = get_health_checks(ip_address=ip_address)
         table = create_check_table(table_contents=table_contents)
         max_timeout = 600
@@ -2317,17 +2370,28 @@ def check(ip_addresses: TypeList[str], wait: bool = False) -> None:
             table = create_check_table(
                 table_contents=table_contents, time_left=max_timeout
             )
+            if silent:
+                print("Checking...")
             while not status:
-                with Live(table, refresh_per_second=4, screen=True) as live:
+                if not silent:
+                    with Live(table, refresh_per_second=4, screen=True) as live:
+                        max_timeout -= 1
+                        if max_timeout % 5 == 0:
+                            status, table_contents = get_health_checks(ip_address)
+                        table = create_check_table(
+                            table_contents=table_contents, time_left=max_timeout
+                        )
+                        live.update(table)
+                        if status:
+                            break
+                        time.sleep(1)
+                else:
                     max_timeout -= 1
                     if max_timeout % 5 == 0:
                         status, table_contents = get_health_checks(ip_address)
                     table = create_check_table(
                         table_contents=table_contents, time_left=max_timeout
                     )
-                    live.update(table)
-                    if status:
-                        break
                     time.sleep(1)
         console.print(table)
     else:

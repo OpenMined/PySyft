@@ -29,7 +29,7 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -40,7 +40,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -52,7 +52,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -63,7 +63,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
@@ -95,7 +95,7 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -106,7 +106,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -118,7 +118,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -129,7 +129,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
@@ -188,7 +188,7 @@ jobs:
           powershell.exe -command "docker volume prune --force"
         shell: cmd
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -199,7 +199,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -212,7 +212,7 @@ jobs:
         shell: cmd
 
       # - name: pip cache
-      #   uses: actions/cache@v2
+      #   uses: actions/cache@v3
       #   if: steps.changes.outputs.stack == 'true'
       #   with:
       #     path: ${{ steps.pip-cache.outputs.dir }}
@@ -223,7 +223,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
         shell: cmd
 
       - name: Install tox
@@ -272,7 +272,7 @@ jobs:
           set NETWORK_CHECK_INTERVAL=5
           hagrid launch test_network_1 network to docker:9081 --tag=local --tail=false --headless=true --test
           hagrid launch test_domain_1 domain to docker:9082 --tag=local --tail=false --headless=true --test
-          hagrid launch test_domain_2 domain to docker:9083 --tag=local --tail=false --build=false --headless=true --test
+          hagrid launch test_domain_2 domain to docker:9083 --tag=local --tail=false --build=false --headless=true --test --vpn=false
           bash -c "(docker logs test_domain_1-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
           bash -c "(docker logs test_domain_2-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
           docker ps
@@ -315,7 +315,7 @@ jobs:
         run: |
           sudo chown -R $USER:$USER ~/actions-runner/_work/
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -326,7 +326,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -338,7 +338,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -349,7 +349,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Install build essentials
         if: steps.changes.outputs.stack == 'true'
@@ -362,7 +362,7 @@ jobs:
           pip install tox --upgrade
 
       - name: docker cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         if: steps.changes.outputs.stack == 'true'
         continue-on-error: true
         with:
@@ -400,7 +400,7 @@ jobs:
         run: |
           sudo chown -R $USER:$USER ~/actions-runner/_work/
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -411,7 +411,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -423,7 +423,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -434,7 +434,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
@@ -476,11 +476,10 @@ jobs:
 
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
-        continue-on-error: true
         shell: bash
         run: |
           # install k3d
-          wget https://github.com/k3d-io/k3d/releases/download/v5.4.1/k3d-linux-amd64
+          wget https://github.com/k3d-io/k3d/releases/download/v5.4.3/k3d-linux-amd64
           mv k3d-linux-amd64 k3d
           chmod +x k3d
           export PATH=`pwd`:$PATH
@@ -503,7 +502,7 @@ jobs:
       #   run: |
       #     sudo chown -R $USER:$USER ~/actions-runner/_work/
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -514,7 +513,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -526,7 +525,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -537,7 +536,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
@@ -545,7 +544,7 @@ jobs:
           pip install tox --upgrade
 
       - name: docker cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         if: steps.changes.outputs.stack == 'true'
         continue-on-error: true
         with:

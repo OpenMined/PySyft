@@ -19,6 +19,9 @@ from sympy import Float
 from tqdm import tqdm
 
 # relative
+from ..tensor.fixed_precision_tensor import FixedPrecisionTensor
+from ..tensor.lazy_repeat_array import lazyrepeatarray
+from ..tensor.passthrough import PassthroughTensor  # type: ignore
 from .data_subject_ledger import DataSubjectLedger
 from .data_subject_ledger import RDPParams
 from .data_subject_ledger import load_cache
@@ -65,7 +68,6 @@ def calibrate_sigma(
        Adjust the value of sigma chosen to have a 90% chance of being less than query_limit
  
     """
-    
     # RDP Params Initialization
     l2_norms, l2_norm_bounds, sigmas, coeffs = calculate_bounds_for_mechanism(
         value_array=value,
@@ -73,6 +75,7 @@ def calibrate_sigma(
         max_val_array=max_vals,
         sigma=sigma,
     )
+
     print("Query Limit: ",query_limit )
     print("Sigma before Calibration:\n ", sigma)
 
@@ -118,14 +121,14 @@ def vectorized_publish(
     min_vals: np.ndarray,
     max_vals: np.ndarray,
     state_tree: dict[int, "GammaTensor"],
+    data_subjects: DataSubjectList,
     ledger: DataSubjectLedger,
     get_budget_for_user: Callable,
     deduct_epsilon_for_user: Callable,
     is_linear: bool = True,
     sigma: float = 1.5,
     output_func: Callable = lambda x: x,
-    fpt_encode_func: Optional[Callable] = None,
-    query_limit: int = 999999
+    query_limit: int = 5
 ) -> Union[np.ndarray, jax.numpy.DeviceArray]:
     # relative
     from ..tensor.autodp.gamma_tensor import GammaTensor
@@ -134,15 +137,34 @@ def vectorized_publish(
     CONSTANT2EPSILSON_CACHE_FILENAME = "constant2epsilon_1200k.npy"
     _cache_constant2epsilon = load_cache(filename=CONSTANT2EPSILSON_CACHE_FILENAME)
 
+    if isinstance(value, FixedPrecisionTensor):
+        value = value.decode()
+    else:
+        value = value
+
+    while isinstance(value, PassthroughTensor):
+        value = value.child
+
+    if isinstance(min_vals, lazyrepeatarray):
+        min_val_array = min_vals.to_numpy()
+    else:
+        min_val_array = min_vals
+
+    if isinstance(max_vals, lazyrepeatarray):
+        max_val_array = max_vals.to_numpy()
+    else:
+        max_val_array = max_vals
+
+
     calibrated_sigma = calibrate_sigma(
         cache_constant2epsilon=_cache_constant2epsilon,
         value=value,
-        min_vals=min_vals,
-        max_vals=max_vals,
+        min_vals=min_val_array,
+        max_vals=max_val_array,
         is_linear=is_linear,
         query_limit=query_limit,
         sigma=sigma)
-
+    
     input_tensors: List[GammaTensor] = GammaTensor.get_input_tensors(state_tree)
 
     filtered_inputs = []
@@ -150,12 +172,29 @@ def vectorized_publish(
     # This will reveal the # of input tensors to the user- remove this before merging to dev
     for input_tensor in tqdm(input_tensors):
         # TODO: Double check with Andrew if this is correct- if we use the individual min/max values
+        # Calculate everything needed for RDP
+        if isinstance(input_tensor.child, FixedPrecisionTensor):
+            value = input_tensor.child.decode()
+        else:
+            value = input_tensor.child
 
-        #Calculate everything needed for RDP
+        while isinstance(value, PassthroughTensor):
+            value = value.child
+
+        if isinstance(input_tensor.min_val, lazyrepeatarray):
+            min_val_array = input_tensor.min_val.to_numpy()
+        else:
+            min_val_array = input_tensor.min_val
+
+        if isinstance(input_tensor.max_val, lazyrepeatarray):
+            max_val_array = input_tensor.max_val.to_numpy()
+        else:
+            max_val_array = input_tensor.max_val
+
         l2_norms, l2_norm_bounds, sigmas, coeffs = calculate_bounds_for_mechanism(
-            value_array=input_tensor.value,
-            min_val_array=input_tensor.min_val,
-            max_val_array=input_tensor.max_val,
+            value_array=value,
+            min_val_array=min_val_array,
+            max_val_array=max_val_array,
             sigma=calibrated_sigma,
         )
 
@@ -189,7 +228,7 @@ def vectorized_publish(
                 cache_constant2epsilon = _cache_constant2epsilon
             )
             # We had to flatten the mask so the code generalized for N-dim arrays, here we reshape it back
-            reshaped_mask = mask.reshape(input_tensor.value.shape)
+            reshaped_mask = mask.reshape(value.shape)
             # print("Fixed mask shape!")
             # here we have the final mask and highest possible spend has been applied
             # to the data scientists budget field in the database
@@ -200,7 +239,7 @@ def vectorized_publish(
             # print("Obtained overbudgeted entity mask", mask.dtype)
 
             # multiply values by the inverted mask
-            filtered_input_tensor = input_tensor.value * (
+            filtered_input_tensor = value * (
                 1 - reshaped_mask
             )  # + gauss(0, sigma)  # Double check that noise has mean of 0
 
@@ -224,10 +263,8 @@ def vectorized_publish(
         [secrets.SystemRandom().gauss(0, sigma) for _ in range(original_output.size)]
     )
     noise.resize(original_output.shape)
-    #print("noise: ", noise)
-    if fpt_encode_func is not None:
-        noise = fpt_encode_func(noise)
-        #print("Noise after FPT", noise)
+    # print("noise: ", noise)
+
     output = np.asarray(output_func(filtered_inputs) + noise)
     #print("got output", type(output), output.dtype)
     return output.squeeze()

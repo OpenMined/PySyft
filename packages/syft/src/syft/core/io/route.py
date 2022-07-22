@@ -146,7 +146,10 @@ class Route(ObjectWithID):
         traceback_and_raise(NotImplementedError)
 
     def send_immediate_msg_with_reply(
-        self, msg: SignedImmediateSyftMessageWithReply, timeout: Optional[float] = None
+        self,
+        msg: SignedImmediateSyftMessageWithReply,
+        timeout: Optional[float] = None,
+        return_signed: bool = False,
     ) -> SignedImmediateSyftMessageWithoutReply:
         traceback_and_raise(NotImplementedError)
 
@@ -184,7 +187,10 @@ class SoloRoute(Route):
         self.connection.send_eventual_msg_without_reply(msg=msg, timeout=timeout)
 
     def send_immediate_msg_with_reply(
-        self, msg: SignedImmediateSyftMessageWithReply, timeout: Optional[float] = None
+        self,
+        msg: SignedImmediateSyftMessageWithReply,
+        timeout: Optional[float] = None,
+        return_signed: bool = False,
     ) -> SignedImmediateSyftMessageWithoutReply:
         return self.connection.send_immediate_msg_with_reply(msg=msg, timeout=timeout)
 

@@ -1,31 +1,18 @@
-syft.core.smpc.protocol.aby3
-============================
+syft.core.smpc.protocol.aby3 package
+====================================
 
 .. automodule:: syft.core.smpc.protocol.aby3
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-   
-   
-   
+Submodules
+----------
 
-   
-   
-   
+syft.core.smpc.protocol.aby3.aby3 module
+----------------------------------------
 
-   
-   
-   
-
-   
-   
-   
-
-
-
-.. rubric:: Modules
-
-.. autosummary::
-   :toctree:
-   :recursive:
-
-   syft.core.smpc.protocol.aby3.aby3
-
+.. automodule:: syft.core.smpc.protocol.aby3.aby3
+   :members:
+   :undoc-members:
+   :show-inheritance:

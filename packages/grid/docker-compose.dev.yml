@@ -1,12 +1,14 @@
 version: "3.8"
 services:
   tailscale:
-    ports:
-      - "8080"
+    profiles:
+      - vpn
     volumes:
       - ./vpn:/tailscale
 
   proxy:
+    ports:
+      - "8080"
     command:
       - "--providers.docker"
       - "--providers.docker.exposedbydefault=false"
@@ -27,7 +29,7 @@ services:
     build:
       target: "grid-ui-development"
     volumes:
-      - ./frontend/:/app
+      - ./frontend:/app
 
   db:
     ports:
