@@ -199,4 +199,8 @@ def vectorized_publish(
 
     output = np.asarray(output_func(filtered_inputs) + noise)
     print("got output", type(output), output.dtype)
-    return output.squeeze()
+
+    # Temp hack for demo
+    output = output.sum()
+    print("Final result: ", output)
+    return np.array([output])
