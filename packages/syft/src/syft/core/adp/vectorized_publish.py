@@ -221,5 +221,4 @@ def vectorized_publish(
     output = np.asarray(output_func(filtered_inputs) + noise)
     print("got output", output, type(output), output.dtype)
 
-    # TODO: remove extra dimension output, to return output as it is
     return output
