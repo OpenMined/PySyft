@@ -19,10 +19,8 @@ from scipy.ndimage.interpolation import rotate
 # relative
 from .... import lib
 from ....ast.klass import pointerize_args_and_kwargs
-from ....core.adp.data_subject import DataSubject
 from ....core.adp.data_subject_ledger import DataSubjectLedger
 from ....core.adp.data_subject_list import DataSubjectArray
-from ....core.adp.data_subject_list import DataSubjectList
 from ....core.adp.data_subject_list import dslarraytonumpyutf8
 from ....core.adp.data_subject_list import numpyutf8todslarray
 from ....core.node.common.action.get_or_set_property_action import (
@@ -1081,13 +1079,11 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def __init__(
         self,
         child: Union[Sequence, NDArray],
-        data_subjects: Union[
-            DataSubjectArray, List[DataSubject], DataSubjectList, NDArray
-        ],
+        data_subjects: Union[DataSubjectArray, NDArray],
         min_vals: Union[np.ndarray, lazyrepeatarray],
         max_vals: Union[np.ndarray, lazyrepeatarray],
     ) -> None:
-
+        # self.data_subjects: Union[DataSubjectList, np.ndarray]
         # child = the actual private data
         super().__init__(child)
 
@@ -1099,21 +1095,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         self.min_vals = min_vals
         self.max_vals = max_vals
 
-        # if not isinstance(data_subjects, DataSubjectArray):
-        #     data_subjects = DataSubjectArray.from_objs(data_subjects)
-        #
-        # if isinstance(data_subjects, DataSubjectList):
-        #     if len(data_subjects.data_subjects_indexed.shape) != len(self.shape):
-        #         raise ValueError(
-        #             f"DataSubjects shape: {len(data_subjects.shape)} should match data shape: {len(self.shape)}"
-        #         )
-        # else:
-        #     if len(data_subjects.data_subjects_indexed.shape) != len(self.shape):
-        #         raise ValueError(
-        #             f"DataSubjects shape: {len(data_subjects.shape)} should match data shape: {len(self.shape)}"
-        #         )
-
-        self.data_subjects = data_subjects
+        numpy_data_subjects: np.ndarray = DataSubjectArray.from_objs(data_subjects)
+        self.data_subjects = numpy_data_subjects
+        if numpy_data_subjects.shape != self.shape:
+            raise ValueError(
+                f"DataSubjects shape: {numpy_data_subjects.shape} should match data shape: {self.shape}"
+            )
 
     @property
     def proxy_public_kwargs(self) -> Dict[str, Any]:

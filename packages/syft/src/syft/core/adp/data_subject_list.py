@@ -163,7 +163,7 @@ class DataSubjectList:
             data_subjects_indexed=self.data_subjects_indexed.flatten(),
         )
 
-    def tranpose(self: DataSubjectList, axes: Tuple) -> DataSubjectList:
+    def transpose(self: DataSubjectList, axes: Tuple) -> DataSubjectList:
         return DataSubjectList(
             self.one_hot_lookup, np.transpose(self.data_subjects_indexed, axes=axes)
         )
