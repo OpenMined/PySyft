@@ -2442,7 +2442,7 @@ def quickstart(url: str, reset: bool) -> None:
             check_if_dir_is_empty(directory)
 
         cmd = f"source .venv/bin/activate; jupyter lab --notebook-dir={directory}"
-        subprocess.call(cmd, shell=True, cwd=directory)
+        subprocess.call(cmd, shell=True, cwd=directory)  # nosec
 
     except Exception as error:
         print(f"Error running quickstart: {error}")
