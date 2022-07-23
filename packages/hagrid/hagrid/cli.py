@@ -3,6 +3,7 @@ from datetime import datetime
 import json
 import os
 import re
+import shutil
 import socket
 import stat
 import subprocess  # nosec
@@ -2416,42 +2417,82 @@ cli.add_command(version)
 
 @click.command(help="Start a fully feaured virtual env and an intro notebook ready!")
 @click.argument("url", type=str, required=False)
-def quickstart(url: str) -> None:
+@click.option(
+    "--reset",
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help="Reset and start the quickstart setup from scratch",
+)
+def quickstart(url: str, reset: bool) -> None:
     try:
         directory = os.path.expanduser("~/.hagrid/quickstart/")
-        packages = ["virtualenv", "virtualenv-api"]
-        local_syft_dir = os.path.split(os.getcwd())[0] + "/syft"
 
-        for package in packages:
-            print("Installing dependencies: ", package)
-            subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+        if reset:
+            confirm_reset = click.confirm(
+                f"This will lead to the loss of all existing notebooks as well as redownload of the packages in the following directory: {directory}. Are you sure you want to continue?"  # noqa
+            )
 
-        env = VirtualEnvironment(directory)
+        if reset and confirm_reset or not os.path.isdir(directory):
+            quickstart_setup(directory)
 
-        if not url:
-            url = "https://raw.githubusercontent.com/OpenMined/PySyft/dev/notebooks/course3/L5_RemoteDataScience.ipynb"
+        if url:
+            quickstart_download_notebook(url, directory)
+        else:
+            check_if_dir_is_empty(directory)
 
-        file_name = os.path.basename(url).replace("%20", "_")
-        file_path = directory + file_name
-
-        if not os.path.isdir(directory):
-            os.makedirs(directory)
-
-        if not os.path.isfile(file_path):
-            r = requests.get(url, allow_redirects=True)
-            open(os.path.expanduser(file_path), "wb").write(r.content)
-
-        print("Installing Jupyter Labs")
-        env.install("jupyterlab")
-
-        print("Installing Syft in editable mode")
-        env.install("-e " + local_syft_dir)
-
-        cmd = "source bin/activate; jupyter lab " + file_name
+        cmd = f"source .venv/bin/activate; jupyter lab --notebook-dir={directory}"
         subprocess.call(cmd, shell=True, cwd=directory)
 
     except Exception as error:
-        print("Error running quickstart: ", error)
+        print(f"Error running quickstart: {error}")
+
+
+def quickstart_setup(directory: str) -> None:
+    if os.path.exists(directory):
+        shutil.rmtree(directory)
+    os.makedirs(directory)
+
+    virtual_env_dir = directory + ".venv/"
+
+    env = VirtualEnvironment(virtual_env_dir)
+
+    print("Installing Jupyter Labs")
+    env.install("jupyterlab")
+
+    if EDITABLE_MODE:
+        local_syft_dir = os.path.split(os.getcwd())[0] + "/syft"
+        print("Installing Syft in editable mode")
+        env.install("-e " + local_syft_dir)
+    else:
+        print("Installing Syft")
+        env.install("syft")
+
+
+def quickstart_download_notebook(url: str, directory: str) -> None:
+    file_name = os.path.basename(url).replace("%20", "_")
+    file_path = directory + file_name
+
+    file_exists = os.path.isfile(file_path)
+
+    if file_exists:
+        redownload = click.confirm(
+            f"You already have the notebook {file_name}. Are you sure you want to overwrite it?"
+        )
+
+    if file_exists and redownload or not file_exists:
+        print(f"Downloading the notebook: {file_name}")
+        r = requests.get(url, allow_redirects=True)
+        open(os.path.expanduser(file_path), "wb").write(r.content)
+
+
+def check_if_dir_is_empty(directory: str) -> None:
+    files = os.listdir(directory)
+    files.remove(".venv")
+
+    if len(files) == 0:
+        base_notebook = "https://raw.githubusercontent.com/OpenMined/PySyft/dev/notebooks/course3/L5_RemoteDataScience.ipynb"  # noqa
+        quickstart_download_notebook(base_notebook, directory)
 
 
 cli.add_command(quickstart)
