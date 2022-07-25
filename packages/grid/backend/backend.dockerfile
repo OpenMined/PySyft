@@ -38,7 +38,9 @@ RUN --mount=type=cache,target=/root/.cache \
   pip install --user -r requirements.txt
 
 # Backend
-FROM python:3.10.4-slim as backend
+# PySyft asks for 3.10.4 but tff has a problem with legacy numpy
+FROM python:3.9.9-slim as backend 
+ARG TFF
 COPY --from=build /root/.local /root/.local
 
 ENV PYTHONPATH=/app
@@ -70,6 +72,12 @@ COPY grid/backend /app/
 COPY syft/setup.py /app/syft/setup.py
 COPY syft/setup.cfg /app/syft/setup.cfg
 COPY syft/src /app/syft/src
+RUN --mount=type=cache,target=/root/.cache \
+  pip install --user -r requirements.txt
+
+RUN apt update
+RUN pip install --upgrade pip
+RUN if [ "$TFF" = "True" ] ; then pip install --upgrade tensorflow-federated==0.28.0; fi
 
 # install syft
 RUN --mount=type=cache,target=/root/.cache \
