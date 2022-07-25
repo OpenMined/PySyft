@@ -3017,13 +3017,7 @@ spec:
         - image: "openmined/grid-backend:latest"
           name: "container-0"
           command:
-            - "waitforit"
-          args:
-            - "-address=http://backend:80/api/v1/syft/metadata"
-            - "-status=200"
-            - "-timeout=600"
-            - "--"
-            - "/start.sh"
+            - /start.sh
           env:
             - name: DOMAIN_NAME
               value: node
@@ -3175,13 +3169,7 @@ spec:
         - image: "openmined/grid-backend:latest"
           name: "container-0"
           command:
-            - "waitforit"
-          args:
-            - "-address=http://backend:80/api/v1/syft/metadata"
-            - "-status=200"
-            - "-timeout=600"
-            - "--"
-            - "/worker-start.sh"
+            - /worker-start.sh
           env:
             - name: DOMAIN_NAME
               value: node
