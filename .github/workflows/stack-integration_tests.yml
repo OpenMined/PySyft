@@ -108,6 +108,11 @@ jobs:
           args: install visualstudio2019-workload-vctools -y
 
 
+      - name: Install Jaxlib
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          python -c "import platform; import os; os.system('pip install jaxlib===0.3.7 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
+
       - name: Install Docker Compose
         if: runner.os == 'Linux'
         shell: bash
