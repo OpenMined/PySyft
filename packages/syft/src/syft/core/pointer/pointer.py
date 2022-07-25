@@ -203,6 +203,9 @@ class Pointer(AbstractPointer):
         :rtype: StorableObject
         """
 
+        # relative
+        from ...core.node.common.client import GET_OBJECT_TIMEOUT
+
         debug(
             f"> GetObjectAction for id_at_location={self.id_at_location} "
             + f"with delete_obj={delete_obj}"
@@ -214,7 +217,9 @@ class Pointer(AbstractPointer):
             delete_obj=delete_obj,
         )
 
-        obj = self.client.send_immediate_msg_with_reply(msg=obj_msg)
+        obj = self.client.send_immediate_msg_with_reply(
+            msg=obj_msg, timeout=GET_OBJECT_TIMEOUT
+        )
         if not proxy_only and obj.obj.is_proxy:
             presigned_url_path = obj.obj._data.url
             presigned_url = self.client.url_from_path(presigned_url_path)
@@ -364,7 +369,7 @@ class Pointer(AbstractPointer):
     def get(
         self,
         request_block: bool = False,
-        timeout_secs: int = 20,
+        timeout_secs: int = 600,
         reason: str = "",
         delete_obj: bool = True,
         verbose: bool = False,

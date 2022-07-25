@@ -394,7 +394,11 @@ class StoreClient:
         )
 
         results = getattr(
-            self.client.send_immediate_msg_with_reply(msg=msg), "results", None
+            self.client.send_immediate_msg_with_reply(
+                msg=msg, timeout=GET_OBJECT_TIMEOUT
+            ),
+            "results",
+            None,
         )
         if results is None:
             traceback_and_raise(ValueError("TODO"))
