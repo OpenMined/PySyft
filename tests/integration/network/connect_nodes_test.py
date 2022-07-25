@@ -255,11 +255,19 @@ def add_route(
     return response
 
 
-def get_routes(email: str, password: str, port: int, network_host: str, timeout: Optional[int] = None) -> List[Dict]:
+def get_routes(
+    email: str,
+    password: str,
+    port: int,
+    network_host: str,
+    timeout: Optional[int] = None,
+) -> List[Dict]:
     root_client = sy.login(email=email, password=password, port=port)
 
     try:
-        response = root_client.networking.list_routes(client=network_host, timeout=timeout)
+        response = root_client.networking.list_routes(
+            client=network_host, timeout=timeout
+        )
     except Exception as e:
         print(e)
         time.sleep(10)
