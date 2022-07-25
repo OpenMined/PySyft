@@ -1,0 +1,20 @@
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+log:
+  level: INFO
+
+entryPoints:
+  vpn:
+    address: :80
+  web:
+    address: :81
+
+ping:
+  manualRouting: true
+
+providers:
+  file:
+    directory: /etc/traefik/conf
+    watch: true

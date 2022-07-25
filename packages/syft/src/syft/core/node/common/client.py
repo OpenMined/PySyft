@@ -33,6 +33,7 @@ from ...common.message import ImmediateSyftMessageWithoutReply
 from ...common.message import SignedEventualSyftMessageWithoutReply
 from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedImmediateSyftMessageWithoutReply
+from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
@@ -43,6 +44,7 @@ from ...pointer.garbage_collection import GarbageCollection
 from ...pointer.garbage_collection import gc_get_default_strategy
 from ...pointer.pointer import Pointer
 from ..abstract.node import AbstractNodeClient
+from ..common.client_manager.node_networking_api import NodeNetworkingAPI
 from .action.exception_action import ExceptionMessage
 from .node_service.object_search.obj_search_service import ObjectSearchMessage
 
@@ -94,6 +96,7 @@ class Client(AbstractNodeClient):
         self.install_supported_frameworks()
 
         self.store = StoreClient(client=self)
+        self.networking = NodeNetworkingAPI(client=self)
         self.version = version
 
     def obj_exists(self, obj_id: UID) -> bool:
@@ -217,8 +220,9 @@ class Client(AbstractNodeClient):
             Any,  # TEMPORARY until we switch everything to NodeRunnableMessage types.
         ],
         timeout: Optional[float] = None,
+        return_signed: bool = False,
         route_index: int = 0,
-    ) -> SyftMessage:
+    ) -> Union[SyftMessage, SignedMessage]:
 
         # relative
         from .node_service.simple.simple_messages import NodeRunnableMessageWithReply
@@ -254,6 +258,8 @@ class Client(AbstractNodeClient):
                 error(str(exception))
                 traceback_and_raise(exception)
             else:
+                if return_signed:
+                    return response
                 return response.message
 
         traceback_and_raise(
