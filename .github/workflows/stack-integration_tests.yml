@@ -81,7 +81,7 @@ jobs:
 
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
-        timeout-minutes: 30
+        timeout-minutes: 40
         run: |
           tox -e stack.test.integration
 
@@ -157,7 +157,7 @@ jobs:
 
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
-        timeout-minutes: 30
+        timeout-minutes: 40
         run: |
           tox -e stack.test.integration.tls
 
@@ -266,7 +266,7 @@ jobs:
 
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
-        timeout-minutes: 30
+        timeout-minutes: 40
         env:
           HAGRID_ART: false
         run: |
