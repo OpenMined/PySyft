@@ -150,7 +150,7 @@ class NodeNetworkingAPI(NewRequestAPI):
         else:
             return signed_response
 
-    def list_routes(self, client: ClientLike) -> RoutesListMessage.Reply:
+    def list_routes(self, client: ClientLike, timeout: Optional[int] = None) -> RoutesListMessage.Reply:
         # this should be run by a Domain owner against a network
         target_client = self.get_client(client)
         signed_msg = RoutesListMessage(
@@ -161,7 +161,7 @@ class NodeNetworkingAPI(NewRequestAPI):
             signing_key=target_client.signing_key
         )  # type: ignore
 
-        response = target_client.send_immediate_msg_with_reply(msg=signed_msg)
+        response = target_client.send_immediate_msg_with_reply(msg=signed_msg, timeout=timeout)
         if isinstance(response, ExceptionMessage):
             raise response.exception_type
         else:
