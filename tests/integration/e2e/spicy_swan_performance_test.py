@@ -221,4 +221,4 @@ def test_benchmark_datasets() -> None:
     assert benchmark_report[key_size]["upload_secs"] <= 120
     assert benchmark_report[key_size]["dataset_download_secs"] <= 60
     assert benchmark_report[key_size]["sum_secs"] <= 1
-    assert benchmark_report[key_size]["publish_secs"] <= 300
+    assert benchmark_report[key_size]["publish_secs"] <= timeout
