@@ -214,9 +214,9 @@ class Convolution(Layer):
         self, new_params: Tuple[Union[PhiTensor, GammaTensor, NDArray], ...]
     ) -> None:
 
-        if len(new_params) == 2:
+        if len(new_params) != 2:
             raise ValueError(
-                f"Expected two values. Update params has length{len(new_params)}"
+                f"Expected two values. Update params has length {len(new_params)}"
             )
         self.W, self.b = new_params
 
