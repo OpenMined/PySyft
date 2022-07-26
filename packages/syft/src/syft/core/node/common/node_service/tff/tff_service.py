@@ -20,26 +20,8 @@ try:
 
 except:
     pass
-# from tensorflow_federated.proto.v0 import computation_pb2 as pb
-
-# from tensorflow_federated.python.core.backends.native import compiler
-# from tensorflow_federated.python.core.impl.context_stack import set_default_context
-# from tensorflow_federated.python.core.impl.execution_contexts import (
-#     async_execution_context,
-# )
-
-# from tensorflow_federated.python.core.impl.executors import executor_test_utils
-# from tensorflow_federated.python.core.impl.executors import eager_tf_executor
-# from tensorflow_federated.python.core.impl.types import computation_types
-# from tensorflow_federated.python.learning.models import functional
-
-# third party
-# from pybind11_abseil import status
 
 # relative
-from ......core.common.uid import UID
-
-# import torch as th
 from ......logger import debug
 from ......util import traceback_and_raise
 from ....abstract.node import AbstractNode
@@ -50,12 +32,12 @@ from .tff_messages import TFFReplyMessage
 
 
 async def tff_train_federated(
-    initialize,  #: tff.Computation,
-    train,  #: tff.Computation,
-    train_data_source,  #: tff.program.FederatedDataSource,
+    initialize,  #: "tff.Computation",
+    train,  #: "tff.Computation",
+    train_data_source,  #: "tff.program.FederatedDataSource",
     total_rounds: int,
     number_of_clients: int,
-    train_output_managers,  #: List[tff.program.ReleaseManager],
+    train_output_managers,  #: "List[tff.program.ReleaseManager]",
 ) -> None:
     results = []
     state = initialize()
@@ -112,8 +94,6 @@ def tff_program(node, params, func_model) -> None:
     datasets = [dataset.map(preprocess)] * number_of_clients
     train_data_source = tff.program.DatasetDataSource(datasets)
 
-    # Create Iterative Process based on custom functional model
-    # TODO: add DP
     def model_fn():
         return tff.learning.models.model_from_functional(func_model)
 
@@ -132,6 +112,9 @@ def tff_program(node, params, func_model) -> None:
     train = iterative_process.next
     train_output_managers = [tff.program.LoggingReleaseManager()]
 
+
+    # run the federated training and waiting for the metrics and the state
+    # to extract from it the model weights
     results, state = asyncio.run(
         tff_train_federated(
             initialize=initialize,
@@ -142,7 +125,6 @@ def tff_program(node, params, func_model) -> None:
             train_output_managers=train_output_managers,
         )
     )
-
     return results, state
 
 
