@@ -183,8 +183,8 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     print("after it", it.privacy_budget)
 
     assert len(sycure_result[0]) == 10
-    assert sum(sycure_result) > -6000
-    assert sum(sycure_result) < 6000
+    assert sum(sycure_result[0]) > -6000
+    assert sum(sycure_result[0]) < 6000
 
     assert ca.privacy_budget < 9_999_999
     assert ca.privacy_budget > 10
