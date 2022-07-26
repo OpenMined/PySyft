@@ -185,7 +185,6 @@ def recv_association_request_msg(
     info(
         f"Node {node} - recv_association_request_msg: prev request exists {not _previous_request}."
     )
-    print("Message: ", msg.metadata)
     # Create a new Association Request if the handshake value doesn't exist in the database
     if not _previous_request:
         # this side happens on the network
