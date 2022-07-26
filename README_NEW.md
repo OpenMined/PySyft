@@ -6,7 +6,7 @@
 Remote Data Science - Code for `computing on data`, you `do not own` and `cannot see`
 
 <div align="left">
-    <img src="packages/syft/docs/img/Working_infographic.gif" alt="High-Level Architecture" width="1080">
+<img src="packages/syft/docs/img/README_infographic.gif#gh-light-mode-only" alt="High-Level Architecture" width="1080">
 </div>
 
 <br />
