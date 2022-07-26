@@ -6,8 +6,7 @@
 Remote Data Science - Code for `computing on data`, you `do not own` and `cannot see`
 
 <div align="left">
-    <img src="packages/syft/docs/img/README_infographic.gif#gh-light-mode-only" alt="High-Level Architecture" width="1080">
-    <img src="packages/syft/docs/img/README_infographic.gif#gh-dark-mode-only" alt="High-Level Architecture" width="1080">
+    <img src="packages/syft/docs/img/Working_infographic.gif" alt="High-Level Architecture" width="1080">
 </div>
 
 <br />
@@ -47,43 +46,50 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 <tr>
 <th align="center">
 <img width="294" height="1">
-<p>👩🏽‍🔬 Scientist</p>
+<p>👩🏽‍🔬 Scientist (Coming Soon)</p>
 </th>
 <th align="center">
 <img width="294" height="1">
-<p>👨🏻‍💼 Owner</p>
+<p>👨🏻‍💼 Owner (Coming Soon)</p>
 </th>
 <th align="center">
 <img width="294" height="1">
-<p>👷 Engineer</p>
+<p>👷 Engineer (Coming Soon)</p>
 </th>
 </tr>
 <tr>
 <td valign="top">
 <!-- REMOVE THE BACKSLASHES -->
     
-- dot point 1
-- dot point 1
-- dot point 1
-- dot point 1
+- Install Syft
+- Connect to a Domain
+- Search for Datasets
+- Train Models
+- Train Models 
+- Retrieve Secure Results
 
 </td>
 <td valign="top">
 <!-- REMOVE THE BACKSLASHES -->
 
-- dot point 1
-- dot point 1
-- dot point 1
-- dot point 1
+- Deploy a Domain Server
+- Upload Private Data
+- Create User Account
+- Manage Privacy Budget
+- Join a Network
+- PETs Streamline Data Policies
 
 </td>
 <td valign="top">
 <!-- REMOVE THE BACKSLASHES -->
 
-- dot point 1
-- dot point 1
-- dot point 1
-- dot point 1
+- Add Deployment Targets
+- Deploy to SingleVM
+- Deploy to Cloud
+- Setup Dev Mode
+- Customize Networking
+- Modify PyGrid UI
+
 
 </td>
 </tr>
@@ -146,7 +152,8 @@ Provides services to a group of `Data Owners` and `Data Scientists`, such as dat
 The steps performed by the respective personas are shown below:
 
 <div>
-    <img src="packages/syft/docs/img/big-picture.png" alt="big-picture-overview" width="100%">
+    <img src="packages/syft/docs/img/big-picture.png#gh-light-mode-only" alt="big-picture-overview" width="100%">
+    <img src="packages/syft/docs/img/big-picture-dark.png#gh-dark-mode-only" alt="big-picture-overview" width="100%">
 </div>
 
 # Deployment
@@ -212,7 +219,7 @@ Syft is under active development and is not yet ready for total pilots on privat
 Syft exists because of all the great people who contributed to this project. We are very grateful for contributions to Syft and Grid from the following organizations!
 
   <br>
-  <img src="packages/syft/docs/img/Organizational_Contributions.gif" alt="Syft" width="500">
+  <img src="packages/syft/docs/img/Organizational_Contributions.gif" alt="Syft" width="400">
   </br>
 
 # License
