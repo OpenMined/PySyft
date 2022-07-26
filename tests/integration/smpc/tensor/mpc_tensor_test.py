@@ -17,7 +17,7 @@ from syft.core.tensor.smpc.mpc_tensor import ShareTensor
 sy.logger.remove()
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_mpc_tensor
 def test_secret_sharing(get_clients) -> None:
     clients = get_clients(2)
 
@@ -42,7 +42,7 @@ def test_secret_sharing(get_clients) -> None:
     assert (res == data.child).all()
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_mpc_tensor
 @pytest.mark.parametrize("op_str", ["add", "sub", "mul"])
 def test_mpc_private_private_op(get_clients, op_str: str) -> None:
     clients = get_clients(2)
@@ -67,7 +67,7 @@ def test_mpc_private_private_op(get_clients, op_str: str) -> None:
     assert (res == expected.child).all()
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_mpc_tensor
 @pytest.mark.parametrize("op_str", ["add", "sub", "mul"])
 def test_mpc_private_public_op(get_clients, op_str: str) -> None:
     clients = get_clients(2)
@@ -92,7 +92,7 @@ def test_mpc_private_public_op(get_clients, op_str: str) -> None:
 
 # TODO: Rasswanth to fix later after Tensor matmul refactor
 @pytest.mark.skip
-@pytest.mark.smpc
+@pytest.mark.smpc_mpc_tensor
 @pytest.mark.parametrize("op_str", ["matmul"])
 def test_mpc_matmul_public(get_clients, op_str: str) -> None:
     clients = get_clients(2)
@@ -115,7 +115,7 @@ def test_mpc_matmul_public(get_clients, op_str: str) -> None:
     assert (res == expected).all()
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_mpc_tensor
 @pytest.mark.parametrize(
     "method_str, kwargs", [("sum", {"axis": 0}), ("sum", {"axis": 1})]
 )
@@ -142,7 +142,7 @@ def test_mpc_forward_methods(
     assert (res == expected).all()
 
 
-@pytest.mark.smpc_1
+@pytest.mark.smpc_mpc_tensor
 @pytest.mark.parametrize("op_str", ["lt", "gt", "ge", "le", "eq", "ne"])
 def test_comp_mpc_private_private_op(get_clients, op_str: str) -> None:
     clients = get_clients(2)
@@ -167,7 +167,7 @@ def test_comp_mpc_private_private_op(get_clients, op_str: str) -> None:
     assert (res == expected.child).all()
 
 
-@pytest.mark.smpc_1
+@pytest.mark.smpc_mpc_tensor
 @pytest.mark.parametrize("op_str", ["lt", "gt", "ge", "le", "eq", "ne"])
 def test_comp_mpc_private_public_op(get_clients, op_str: str) -> None:
     clients = get_clients(2)
