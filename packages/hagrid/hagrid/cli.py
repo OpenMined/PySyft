@@ -2496,7 +2496,7 @@ def quickstart(
             print(
                 f"Running Jupyter Lab in: {directory}\nUse Control-C to stop this server."
             )
-            proc = subprocess.Popen(
+            proc = subprocess.Popen(  # nosec
                 f"jupyter lab --notebook-dir={directory} {file_path}".split(" "),
                 cwd=directory,
                 env=environ,
