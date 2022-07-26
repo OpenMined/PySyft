@@ -77,6 +77,9 @@ from .lib import load  # noqa: F401
 from .lib import load_lib  # noqa: F401
 from .registry import NetworkRegistry  # noqa: F401
 
+# TFF
+from .core.node.common.node_service import tff # noqa: F401
+
 sys.path.append(str(Path(__file__)))
 
 logger.start()

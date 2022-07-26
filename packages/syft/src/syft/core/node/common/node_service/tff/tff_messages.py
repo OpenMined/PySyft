@@ -29,7 +29,7 @@ from ....abstract.node import AbstractNode
 
 
 @serializable(recursive_serde=True)
-class TFFMessageWithReply():
+class TFFMessageWithReply:
     __attr_allowlist__ = ["address", "params", "model_bytes"]
 
     def __init__(self, params: Dict, model_bytes: bytes) -> None:
