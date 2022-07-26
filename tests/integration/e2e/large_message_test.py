@@ -38,11 +38,11 @@ def test_large_blob_upload() -> None:
     try:
         # multiplier = 1000
         multiplier = 1
-        ndim = 1_000_000
+        ndim = 1_000
 
-        size_name = f"{multiplier}M"
+        size_name = f"{multiplier}K"
         if multiplier == 1000:
-            size_name = "1B"
+            size_name = "1M"
 
         report[size_name] = {}
 
