@@ -120,17 +120,17 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
 
     time.sleep(10)
 
-    # until we fix the code this just accepts all requests in case it gets the
-    # wrong one
+    # # until we fix the code this just accepts all requests in case it gets the
+    # # wrong one
 
-    for req in ca_root.requests:
-        req.accept()
+    # for req in ca_root.requests:
+    #     req.accept()
 
-    for req in it_root.requests:
-        req.accept()
+    # for req in it_root.requests:
+    #     req.accept()
 
-    # ca_root.requests[0].accept()
-    # it_root.requests[0].accept()
+    ca_root.requests[-1].accept()
+    it_root.requests[-1].accept()
 
     time.sleep(10)
 
