@@ -21,6 +21,7 @@ packages = [
     "requests",
     "rich",
     "setuptools",
+    "virtualenv-api",
 ]
 
 if platform.system().lower() != "windows":
