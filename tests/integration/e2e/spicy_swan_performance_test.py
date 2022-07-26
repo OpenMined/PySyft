@@ -150,7 +150,7 @@ def test_benchmark_datasets() -> None:
     benchmark_report: dict = {}
 
     for size_name in reversed(ordered_sizes):
-        timeout = 300
+        timeout = 600
         unique_key = str(hash(time.time()))
         benchmark_report[size_name] = {}
         df = pd.read_parquet(files[size_name])
@@ -221,4 +221,4 @@ def test_benchmark_datasets() -> None:
     assert benchmark_report[key_size]["upload_secs"] <= 120
     assert benchmark_report[key_size]["dataset_download_secs"] <= 60
     assert benchmark_report[key_size]["sum_secs"] <= 1
-    assert benchmark_report[key_size]["publish_secs"] <= 10
+    assert benchmark_report[key_size]["publish_secs"] <= 300
