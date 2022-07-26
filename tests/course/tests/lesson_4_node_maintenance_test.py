@@ -17,10 +17,13 @@ def test_login(tb):
     # Check if login messages were printed
     assert tb.cell_output_text(4) is not None
     # Check if users are present in the domain node
-    assert tb.ref("list(domain_node.users.pandas()['email'].values)") == [
+    expected_emails = [
         "info@openmined.org",
         "sheldon@caltech.edu",
     ]
+    emails = tb.ref("list(domain_node.users.pandas()['email'].values)")
+    assert set(emails) == set(expected_emails)
+
     # Check if data scientist client is initialized
     assert tb.ref("data_scientist_node") is not None
     assert tb.ref("data_scientist_node.version") is not None
