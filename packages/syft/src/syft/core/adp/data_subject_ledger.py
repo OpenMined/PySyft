@@ -41,6 +41,7 @@ from ..common.serde.capnp import serde_magic_header
 from ..common.serde.serializable import serializable
 from .abstract_ledger_store import AbstractDataSubjectLedger
 from .abstract_ledger_store import AbstractLedgerStore
+from .data_subject_list import DataSubjectArray
 
 
 def convert_constants_to_indices(rdp_constant_array: np.ndarray) -> np.ndarray:
@@ -122,6 +123,8 @@ def first_try_branch(
 
         for data_subject in unique_data_subjects:
             # Create a mask where the current data subject is present
+
+            data_subject = DataSubjectArray([data_subject])
             ds_mask = np.isin(entity_ids_query, data_subject).flatten()
 
             # Take only the constants values where current data subject is present

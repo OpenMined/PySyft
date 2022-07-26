@@ -38,7 +38,6 @@ class AvgPool(Layer):
         "pool_size",
         "input_shape",
         "out_shape",
-        "last_input",
         "X_col",
     )
 
@@ -54,7 +53,6 @@ class AvgPool(Layer):
 
         self.input_shape: Optional[Tuple[int, ...]] = None
         self.out_shape: Optional[Tuple[int, ...]] = None
-        self.last_input: Optional[Union[PhiTensor, GammaTensor]] = None
 
     def connect_to(self, prev_layer: Layer) -> None:
 
@@ -86,7 +84,6 @@ class AvgPool(Layer):
         h_out, w_out = self.out_shape[-2:]
 
         # forward
-        self.last_input = input
 
         n, d, h, w = input.shape
         input_reshaped = input.reshape((n * d, 1, h, w))
@@ -153,7 +150,6 @@ class MaxPool(Layer):
         "pool_size",
         "input_shape",
         "out_shape",
-        "last_input",
     )
 
     def __init__(self, pool_size: Union[Tuple[int, ...], int], stride: int = 1) -> None:
@@ -168,7 +164,6 @@ class MaxPool(Layer):
 
         self.input_shape: Optional[Tuple[int, ...]] = None
         self.out_shape: Optional[Tuple[int, ...]] = None
-        self.last_input: Optional[Union[GammaTensor, PhiTensor]] = None
         self.X_col: Optional[Union[GammaTensor, PhiTensor]] = None
         self.max_idx: Optional[Union[int, slice, range, NDArray]] = None
 
@@ -204,7 +199,6 @@ class MaxPool(Layer):
         h_out, w_out = self.out_shape[-2:]
 
         # forward
-        self.last_input = input
 
         n, d, h, w = input.shape
         input_reshaped = input.reshape((n * d, 1, h, w))
