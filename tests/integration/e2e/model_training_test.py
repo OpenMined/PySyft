@@ -8,8 +8,10 @@ import numpy as np
 import syft as sy
 from syft import nn
 from syft.core.adp.data_subject_list import DataSubjectArray
-from syft.core.adp.utils import download_dataset
-from syft.core.adp.utils import split_and_preprocess_dataset
+
+# relative
+from .utils_test import download_dataset
+from .utils_test import split_and_preprocess_dataset
 
 DOMAIN1_PORT = 9082
 DS_EMAIL = "sam@stargate.net"

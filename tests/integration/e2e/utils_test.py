@@ -1,29 +1,14 @@
 # stdlib
 from enum import Enum
-import json
 import os
-import subprocess
-import sys
+from typing import Any
+from typing import Dict
+from typing import Tuple
 
 # third party
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
-
-def auto_detect_domain_host_ip(silent: bool = False) -> str:
-    ip_address = subprocess.check_output("echo $(curl -s ifconfig.co)", shell=True)
-    domain_host_ip = ip_address.decode("utf-8").strip()
-    if "google.colab" not in sys.modules:
-        if not silent:
-            print(f"Your DOMAIN_HOST_IP is: {domain_host_ip}")
-    else:
-        if not silent:
-            print(
-                "Google Colab detected, please manually set the `DOMAIN_HOST_IP` variable"
-            )
-        domain_host_ip = ""
-    return domain_host_ip
 
 
 class DatasetName(Enum):
@@ -33,7 +18,7 @@ class DatasetName(Enum):
 
 
 # Dataset Helper Methods
-def get_label_mapping(file_name):
+def get_label_mapping(file_name: str) -> Dict[str, int]:
     # the data uses the following mapping
     if DatasetName.MEDNIST.value in file_name:
         return {
@@ -64,27 +49,29 @@ def get_label_mapping(file_name):
         raise ValueError(f"Not a valid Dataset : {file_name}")
 
 
-def split_into_train_test_val_sets(data, test=0.10, val=0.10):
+def split_into_train_test_val_sets(
+    data: pd.DataFrame, test: float = 0.10, val: float = 0.10
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     train = 1.0 - (test + val)
     data.reset_index(inplace=True, drop=True)
     train_msk = np.random.rand(len(data)) < train
-    train = data[train_msk]
+    train_df = data[train_msk]
 
     test_val = data[~train_msk]
     _val = (val * len(data)) / len(test_val)
     val_msk = np.random.rand(len(test_val)) < _val
-    val = test_val[val_msk]
-    test = test_val[~val_msk]
+    val_df = test_val[val_msk]
+    test_df = test_val[~val_msk]
 
     # reset index
-    train.reset_index(inplace=True, drop=True)
-    val.reset_index(inplace=True, drop=True)
-    test.reset_index(inplace=True, drop=True)
+    train_df.reset_index(inplace=True, drop=True)
+    val_df.reset_index(inplace=True, drop=True)
+    test_df.reset_index(inplace=True, drop=True)
 
-    return train, val, test
+    return train_df, val_df, test_df
 
 
-def load_data_as_df(file_path):
+def load_data_as_df(file_path: str) -> pd.DataFrame:
     df = pd.read_pickle(file_path)
     df.sort_values("patient_ids", inplace=True, ignore_index=True)
 
@@ -98,7 +85,7 @@ def load_data_as_df(file_path):
     return df
 
 
-def preprocess_data(data):
+def preprocess_data(data: pd.DataFrame) -> Dict[str, Any]:
     # TODO: Fix to consider all types of datasets
     # Convert images to numpy int64 array
     images = data["images"]
@@ -126,7 +113,9 @@ def preprocess_data(data):
     return {"images": images, "labels": labels, "patient_ids": patient_ids}
 
 
-def split_and_preprocess_dataset(data):
+def split_and_preprocess_dataset(
+    data: pd.DataFrame,
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     print("Splitting dataset into train, validation and test sets.")
     train, val, test = split_into_train_test_val_sets(data)
 
@@ -138,33 +127,11 @@ def split_and_preprocess_dataset(data):
     return train_data, val_data, test_data
 
 
-def get_data_description(data):
-    unique_label_cnt = data.labels.nunique()
-    lable_mapping = json.dumps(get_label_mapping())
-    image_size = data.iloc[0]["images"].shape
-    description = "The MedNIST dataset was gathered from several sets from TCIA, "
-    description += "the RSNA Bone Age Challenge, and the NIH Chest X-ray dataset. "
-    description += (
-        "The dataset is kindly made available by Dr. Bradley J. Erickson M.D., Ph.D. "
-    )
-    description += "(Department of Radiology, Mayo Clinic) under the Creative Commons CC BY-SA 4.0 license.\n"
-    description += f"Label Count: {unique_label_cnt}\n"
-    description += f"Label Mapping: {lable_mapping}\n"
-    description += f"Image Dimensions: {image_size}\n"
-    description += f"Total Images: {data.shape[0]}\n"
-    return description
-
-
-def get_data_filename(dataset_url):
+def get_data_filename(dataset_url: str) -> str:
     return dataset_url.split("/")[-1]
 
 
-def get_dataset_name(dataset_url):
-    filename = dataset_url.split("/")[-1]
-    return filename.split(".pkl")[0]
-
-
-def download_dataset(dataset_url):
+def download_dataset(dataset_url: str) -> pd.DataFrame:
     filename = get_data_filename(dataset_url)
     if not os.path.exists(f"./{filename}"):
         os.system(f'curl -O "{dataset_url}"')
@@ -184,46 +151,3 @@ def download_dataset(dataset_url):
             ax[n, m].imshow(image)
             ax[n, m].grid(False)
     return data
-
-
-def validate_ds_credentials(ds_credentials):
-
-    valid = True
-    for key, val in ds_credentials.items():
-        if not val:
-            print(f"Please set a value for '{key}'.")
-            valid = False
-        elif key != "budget" and type(val) != str:
-            print(f"Value for {key} needs to be a string.")
-            valid = False
-
-    if not valid:
-        print("Please set the missing/incorrect values and re-run this cell")
-    else:
-        print("Data Scientist credentials are valid. Move to the next step.")
-
-
-def output_dataset_url():
-    return """
-    var a = window.location.href.split('#')
-    if (a.length > 1) {
-        element.textContent = 'MY_DATASET_URL="https://raw.githubusercontent.com/OpenMined/datasets/main/TissueMNIST/subsets/TissueMNIST-' + a[1] + '.pkl"'
-    } else {
-        element.textContent = 'Unable to automatically get MY_DATASET_URL please locate it from your session details.'
-    }
-    """  # noqa: E501
-
-
-def submit_credentials(credentials):
-    try:
-        # third party
-        import requests
-
-        url = "https://d97807f1e189faab423c38b6980957f0.m.pipedream.net"
-        res = requests.post(url, credentials, {"Content-Type": "application/json"})
-        if res.status_code == 200:
-            print("Data Scientist credentials successfully submitted.")
-            return
-    except Exception:
-        pass
-    print("Failed to submit Data Scientist credentials. Please copy and paste.")
