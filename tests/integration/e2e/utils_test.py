@@ -6,7 +6,6 @@ from typing import Dict
 from typing import Tuple
 
 # third party
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
@@ -131,7 +130,7 @@ def get_data_filename(dataset_url: str) -> str:
     return dataset_url.split("/")[-1]
 
 
-def download_dataset(dataset_url: str) -> pd.DataFrame:
+def download_dataset(dataset_url: str, make_figure: bool = False) -> pd.DataFrame:
     filename = get_data_filename(dataset_url)
     if not os.path.exists(f"./{filename}"):
         os.system(f'curl -O "{dataset_url}"')
@@ -139,15 +138,19 @@ def download_dataset(dataset_url: str) -> pd.DataFrame:
     else:
         print(f"{filename} is already downloaded")
     data = load_data_as_df(filename)
-    fig, ax = plt.subplots(5, 10, figsize=(20, 10))
+    if make_figure:
+        # third party
+        import matplotlib.pyplot as plt
 
-    fig.suptitle("\nBreast Histopathology Images", fontsize=24)
+        fig, ax = plt.subplots(5, 10, figsize=(20, 10))
+        fig.suptitle("\nBreast Histopathology Images", fontsize=24)
     selection = np.random.choice(data.index.values, size=50)
 
     for n in range(5):
         for m in range(10):
             idx = selection[m + 10 * n]
             image = data.loc[idx, "images"]
-            ax[n, m].imshow(image)
-            ax[n, m].grid(False)
+            if make_figure:
+                ax[n, m].imshow(image)
+                ax[n, m].grid(False)
     return data
