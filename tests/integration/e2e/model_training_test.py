@@ -137,6 +137,8 @@ def test_model_training():
     # Perform a single epoch
     model_ptr = model.send(domain, send_to_blob_storage=False)
 
+    assert model_ptr is not None
+
     # Perform a single step
     # A single step performs the following operation on the batch of images:
     # - forward pass
@@ -149,11 +151,15 @@ def test_model_training():
     while not model_ptr.exists:
         time.sleep(2)
 
+    assert model_ptr.exists
+
     run_status = model_ptr.step(X_train, y_train)
 
     # Wait for step operation to be completed on the remote domain.
     while not run_status.exists:
         time.sleep(10)
+
+    assert run_status.exists
 
     # Publish Model Weights
     print(f"Publishing model weights on Domain ({domain.name})")
@@ -164,12 +170,23 @@ def test_model_training():
         time.sleep(2)
     parameters = published_obj.get_copy()
 
+    assert published_obj.exists
+    assert parameters is not None
+
     loss = parameters["loss"]
     print(f"Model loss on Domain  ({domain.name}): {loss}")
+
+    assert loss is not None
+
+    for i, layer in enumerate(model.layers):
+        layer_name = str(layer) + str(i)
+        assert layer_name in parameters
+        assert len(parameters[layer_name]) == len(layer.params)
 
     # Update weights and move onto next domain node
     model = initialize_model(input_shape)
     model.replace_weights(parameters)
+    assert model is not None
     print(f"Model training finished on Domain: - {domain.name}")
 
     print()

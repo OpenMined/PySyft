@@ -8,6 +8,7 @@ from pathlib import Path
 import time
 from typing import Any
 from typing import Callable
+from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Tuple
@@ -106,7 +107,31 @@ class RDPParams:
 
 def get_unique_data_subjects(data_subjects_query: np.ndarray) -> np.ndarray:
     # This might look horribly wrong, but .sum() returns all the unique DS ~ Ishan
-    return data_subjects_query.sum()
+    return sorted(list(data_subjects_query.sum()))
+
+
+def convert_dsa_to_index_array(
+    data_subject_array: np.ndarray,
+) -> Tuple[np.ndarray, int]:
+    """Convert data subject array to data subject index array."""
+
+    unique_data_subjects = get_unique_data_subjects(data_subject_array)
+    max_entity = len(unique_data_subjects)
+
+    input_entities_indexes_list: List[np.ndarray] = []
+
+    for data_subject_idx, data_subject in enumerate(unique_data_subjects):
+        # Create a mask where the current data subject is present
+        data_subject = DataSubjectArray([data_subject])
+        ds_mask = np.isin(data_subject_array, data_subject)
+        input_entity_indexes = ds_mask * (
+            np.ones_like(data_subject_array, np.int64) * (data_subject_idx + 1)
+        )
+        input_entities_indexes_list.append(input_entity_indexes)
+
+    input_entities_indexes: np.ndarray = np.stack(input_entities_indexes_list)
+
+    return input_entities_indexes, max_entity
 
 
 # @partial(jax.jit, static_argnums=3, donate_argnums=(1, 2))
@@ -115,36 +140,28 @@ def first_try_branch(
     rdp_constants: np.ndarray,
     entity_ids_query: np.ndarray,
 ) -> jax.numpy.DeviceArray:
-    unique_data_subjects = get_unique_data_subjects(entity_ids_query)
-    max_entity = len(unique_data_subjects)
+
+    input_entities_indexes, max_entity = convert_dsa_to_index_array(entity_ids_query)
 
     if max_entity < len(rdp_constants):
-        summed_constant = None
+        # Take only the constants values where current data subject is present
+        summed_constant = constant.take(input_entities_indexes) + rdp_constants.take(
+            input_entities_indexes
+        )
 
-        for data_subject in unique_data_subjects:
-            # Create a mask where the current data subject is present
-
-            data_subject = DataSubjectArray([data_subject])
-            ds_mask = np.isin(entity_ids_query, data_subject).flatten()
-
-            # Take only the constants values where current data subject is present
-            summed_constant = constant[ds_mask] + rdp_constants[ds_mask]
-
-            # Set rpd constants for given data subjects
-            rdp_constants[ds_mask] = summed_constant
+        # Set rpd constants for given data subjects
+        rdp_constants[input_entities_indexes] = summed_constant
     else:
         pad_length = max_entity - len(rdp_constants) + 1
         rdp_constants = jnp.concatenate([rdp_constants, jnp.zeros(shape=pad_length)])
 
-        for data_subject in entity_ids_query:
-            # Create a mask where the current data subject is present
-            ds_mask = np.isin(entity_ids_query, data_subject).flatten()
+        # Take only the constants values where current data subject is present
+        summed_constant = constant.take(input_entities_indexes) + rdp_constants.take(
+            input_entities_indexes
+        )
 
-            # Take only the constants values where current data subject is present
-            summed_constant = constant[ds_mask] + rdp_constants[ds_mask]
-
-            # Set rpd constants for given data subjects
-            rdp_constants[entity_ids_query] = summed_constant
+        # Set rpd constants for given data subjects
+        rdp_constants[input_entities_indexes] = summed_constant
 
     return rdp_constants
 
@@ -341,7 +358,6 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         # print("_rdp_constants: ", self._rdp_constants)
         # print("entity ids query", entity_ids_query)
         # print(jnp.max(entity_ids_query))
-
         self._rdp_constants = first_try_branch(
             constant, self._rdp_constants, entity_ids_query
         )
