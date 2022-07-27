@@ -75,11 +75,12 @@ Our next step is an important one. It'll help us make sure our software can inst
 We're going to use a tool called Anaconda to do this. It'll help us create something called a "Virtual Environment."
 
 To install Anaconda, please follow the yellow brick road I lay down here below:
+
 - `Head to the Anaconda website <https://www.anaconda.com/products/individual#Downloads>`_, and find the latest Linux installer.
 - Right click the installer, and select **"Copy Link Address"**
 - Head back to your WSL terminal, and type "wget " and then right click next to it. This should paste the link you copied, which should produce something like::
 
-    wget https://repo.anaconda.com/archive/Anaconda3-2021.05-Linux-x86_64.sh
+    wget https://repo.anaconda.com/archive/Anaconda3-2022.05-Linux-x86_64.sh
 
 - You got it! Not only did you get it, you made it look **easy.** Now just hit enter.
 - At this point, Conda will start installing. Type "yes" and hit Enter for all the various prompts that follow (Accepting the Terms and Conditions, Running Conda Init, etc)
