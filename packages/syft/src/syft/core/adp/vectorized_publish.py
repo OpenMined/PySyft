@@ -201,6 +201,9 @@ def vectorized_publish(
     print("got output", type(output), output.dtype)
 
     # Temp hack for demo
-    output = output.sum()
+    if len(output) == 1:
+        output = output.squeeze()
+    else:
+        output = np.array([output.sum()])
     print("Final result: ", output)
-    return np.array([output])
+    return output
