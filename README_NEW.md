@@ -42,19 +42,19 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 
 # Using Syft as a Data \_\_\_\_
 
-<table>
+<table border="5" bordercolor="grey">
 <tr>
 <th align="center">
-<img width="294" height="1">
-<p>👩🏽‍🔬 Scientist (Coming Soon)</p>
+<img src="packages/syft/docs/img/personas_image/datascientist.png" alt="" width="100" height="100" align="center">
+<p>Scientist (Coming Soon)</p>
 </th>
 <th align="center">
-<img width="294" height="1">
-<p>👨🏻‍💼 Owner (Coming Soon)</p>
+<img src="packages/syft/docs/img/personas_image/dataowner.png" alt="" width="100" height="100" align="center">
+<p>Owner (Coming Soon)</p>
 </th>
 <th align="center">
-<img width="294" height="1">
-<p>👷 Engineer (Coming Soon)</p>
+<img src="packages/syft/docs/img/personas_image/dataengineer.png" alt="" width="100" height="100" align="center">
+<p>Engineer (Coming Soon)</p>
 </th>
 </tr>
 <tr>
@@ -90,14 +90,13 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 - Customize Networking
 - Modify PyGrid UI
 
-
 </td>
 </tr>
 </table>
 
 # Important Terms
 
-<table>
+<table border="5" bordercolor="grey">
 <tr>
 <th align="center">
 <img width="441" height="1">
@@ -174,41 +173,32 @@ Syft provides multiple easy and straightforward options to deploy all of its sta
 1. [Deploy to Cloud]()
 1. [Deploy to Kubernetes]()
 
+# Community
+`Openmined` is a vibrant group of `developers`, `data scientists`, `researchers`, and `decision-makers`. If you want to be a part of OpenMined's `thriving community` and would like to dive deep into the `concepts` of `Remote Data Science`, we offer you to share your `thoughts` with us on our [slack](https://communityinviter.com/apps/openmined/openmined/) channel and follow the below `study materials` to get familiar with the `PySyft` library.
+
+<table border="5" bordercolor="grey">
+  <thead>
+    <tr>
+      <th>Join Slack (14,500+)</th>
+      <th>OpenMined Courses</th>
+      <th>Padawan Program</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><a href='https://communityinviter.com/apps/openmined/openmined/'><img src="packages/syft/docs/img/personas_image/slack.jpeg" height=150 width=220 /></a></td>
+      <td><a href='https://courses.openmined.org/'><img src="packages/syft/docs/img/personas_image/course.png" height=150 width=220 /></a></td>
+      </td>
+      <td><a href='https://blog.openmined.org/work-on-ais-most-exciting-frontier-no-phd-required/'><img src="http://img.youtube.com/vi/SWekBc0wnxY/maxresdefault.jpg" title="Padawan" alt="YouTube Video" height=150 width=220 /></a></td>
+    </tr>
+  </tbody> 
+</table>
+
 # Call for Contributors
 OpenMined and Syft appreciates all contributors, and if you would like to fix a bug or suggest a new feature, please see our [Contribution guidelines](https://openmined.github.io/PySyft/developer_guide/index.html).
 
-If you are still looking for some help in understanding Syft, learn more about the Syft library using the below resources:
+If you are still looking for some help in understanding Syft, learn more about the Syft library using this [resource](https://openmined.github.io/PySyft/resources/index.html).
 
-<table>
-<tr>
-<th align="center">
-<img width="165" height="1">
-<p><a href="https://courses.openmined.org/courses">Courses 📖</a></p>
-</th>
-<th align="center">
-<img width="165" height="1">
-<p><a href="https://openmined.github.io/PySyft/index.html">Documentation 📝</a></p>
-</th>
-<th align="center">
-<img width='165' height='1'>
-<p><a href='https://blog.openmined.org/'>Blogs 📋</a></p>
-</th>
-</tr>
-<tr>
-<th align="center">
-<img width="165" height="1">
-<p><a href='https://blog.openmined.org/work-on-ais-most-exciting-frontier-no-phd-required/'>Padawan Program 👨‍💻</a></p>
-</th>
-<th align="center">
-<img width="165" height="1">
-<p><a href="https://openmined.github.io/PySyft/resources/index.html">Extra Resource 💁</a></p>
-</th>
-<th align="center">
-<img width='165' height='1'>
-<p><a href='https://communityinviter.com/apps/openmined/openmined/'>Slack (14,500+ members)</a></p>
-</th>
-</tr>
-</table>
 
 # Disclaimer
 
