@@ -14,6 +14,7 @@ Remote Data Science - Code for `computing on data`, you `do not own` and `cannot
 # Ouickstart
 
 Few things to remember:
+
 - `PySyft` = Privacy-Preserving Library
 - `PyGrid` = Networking and Management Platform
 - `HAGrid` = Deployment and Command Line Tool
@@ -35,61 +36,68 @@ $ hagrid quickstart
 
 `Syft` is OpenMined's `open source` library that provides `secure` and `private` Deep Learning in Python. Syft decouples `private data` from model training, using techniques like [Federated Learning](https://ai.googleblog.com/2017/04/federated-learning-collaborative.html), [Differential Privacy](https://en.wikipedia.org/wiki/Differential_privacy), and [Encrypted Computation](https://en.wikipedia.org/wiki/Homomorphic_encryption). This is done within main Deep Learning `frameworks` such as `PyTorch` and `TensorFlow` so that you as a `Data Scientist` can maintain your current workflow while using these new `privacy-enhancing techniques`.
 
-### But what does it mean to use PySyft? How to incorporate these privacy-enhancing techniques into your work? 
+### But what does it mean to use PySyft? How to incorporate these privacy-enhancing techniques into your work?
+
 Ultimately, `PySyft` sets the foundation of a framework for a `Data Scientist` to ask `questions` about a `dataset` and, within the `privacy limits` set by the `data owner`, get `answers` to those `questions`, all without needing a direct `copy or access` to the data itself. We call this process `Remote Data Science`. It means in a wide variety of `domains` across society, current `tradeoffs` between the `benefits` of sharing information with someone (innovation, insights, scientific discovery, etc.) and the `risks` that they might `misuse` it (privacy invasion, IP theft, blackmail, etc.) will be broken.
 
 No more cold calls to get `access` to a dataset. No more weeks of `wait times` to get a `result` on your `query`. It also means `1000x more data` in every domain. PySyft opens the doors to a streamlined Data Scientist `workflow`, all with the individual's `privacy` at its heart.
 
-# Using Syft as a Data \_\_\_\_
+# Tutorials
 
 <table border="5" bordercolor="grey">
 <tr>
 <th align="center">
-<img src="packages/syft/docs/img/personas_image/datascientist.png" alt="" width="100" height="100" align="center">
-<p>Scientist (Coming Soon)</p>
-</th>
-<th align="center">
+<img width="441" height="1">
+<div align="center">
 <img src="packages/syft/docs/img/personas_image/dataowner.png" alt="" width="100" height="100" align="center">
-<p>Owner (Coming Soon)</p>
+<p>Data Owner</p></div>
 </th>
 <th align="center">
+<img width="441" height="1">
+<div align="center"><img src="packages/syft/docs/img/personas_image/datascientist.png" alt="" width="100" height="100" align="center">
+<p>Data Scientist</p></div>
+
+</th>
+<th align="center">
+<img width="441" height="1">
+<div align="center">
 <img src="packages/syft/docs/img/personas_image/dataengineer.png" alt="" width="100" height="100" align="center">
-<p>Engineer (Coming Soon)</p>
+<p>Data Engineer</p>
+</div>
 </th>
 </tr>
 <tr>
 <td valign="top">
 <!-- REMOVE THE BACKSLASHES -->
-    
-- Install Syft
-- Connect to a Domain
-- Search for Datasets
+
+- <a href="#">Deploy a Domain Server</a>
+- <a href="#">Upload Private Data</a>
+- <a href="#">Create Accounts</a>
+- <a href="#">Manage Privacy Budget</a>
+- <a href="#">Join a Network</a>
+- Learn how PETs streamline Data Policies
+
+</td>
+<td valign="top">
+<!-- REMOVE THE BACKSLASHES -->
+
+- <a href="#">Install Syft</a>
+- <a href="#">Connect to a Domain</a>
+- <a href="#">Search for Datasets</a>
 - Train Models
-- Train Models 
 - Retrieve Secure Results
+- Learn Differential Privacy
 
 </td>
 <td valign="top">
 <!-- REMOVE THE BACKSLASHES -->
 
-- Deploy a Domain Server
-- Upload Private Data
-- Create User Account
-- Manage Privacy Budget
-- Join a Network
-- PETs Streamline Data Policies
-
-</td>
-<td valign="top">
-<!-- REMOVE THE BACKSLASHES -->
-
-- Add Deployment Targets
-- Deploy to SingleVM
-- Deploy to Cloud
-- Setup Dev Mode
+- <a href="#">Setup Dev Mode</a>
+- Deploy to Azure
+- Deploy to GCP
+- Deploy to Kubernetes
 - Customize Networking
 - Modify PyGrid UI
-
 </td>
 </tr>
 </table>
@@ -111,7 +119,6 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 <td valign="top">
 <!-- REMOVE THE BACKSLASHES -->
 
-    
 Provide `datasets` which they would like to make available for `study` by an `outside party` they may or may not `fully trust` has good intentions.
 
 </td>
@@ -159,7 +166,7 @@ The steps performed by the respective personas are shown below:
 
 '_List with all platforms that are clickable and lead to their respective separate pages_'
 
-```mermaid  
+```mermaid
   graph TD;
       A-->B;
       A-->C;
@@ -174,6 +181,7 @@ Syft provides multiple easy and straightforward options to deploy all of its sta
 1. [Deploy to Kubernetes]()
 
 # Community
+
 `Openmined` is a vibrant group of `developers`, `data scientists`, `researchers`, and `decision-makers`. If you want to be a part of OpenMined's `thriving community` and would like to dive deep into the `concepts` of `Remote Data Science`, we offer you to share your `thoughts` with us on our [slack](https://communityinviter.com/apps/openmined/openmined/) channel and follow the below `study materials` to get familiar with the `PySyft` library.
 
 <table border="5" bordercolor="grey">
@@ -191,14 +199,14 @@ Syft provides multiple easy and straightforward options to deploy all of its sta
       </td>
       <td><a href='https://blog.openmined.org/work-on-ais-most-exciting-frontier-no-phd-required/'><img src="http://img.youtube.com/vi/SWekBc0wnxY/maxresdefault.jpg" title="Padawan" alt="YouTube Video" height=150 width=220 /></a></td>
     </tr>
-  </tbody> 
+  </tbody>
 </table>
 
 # Call for Contributors
+
 OpenMined and Syft appreciates all contributors, and if you would like to fix a bug or suggest a new feature, please see our [Contribution guidelines](https://openmined.github.io/PySyft/developer_guide/index.html).
 
 If you are still looking for some help in understanding Syft, learn more about the Syft library using this [resource](https://openmined.github.io/PySyft/resources/index.html).
-
 
 # Disclaimer
 
@@ -214,4 +222,5 @@ Syft exists because of all the great people who contributed to this project. We 
 
 # License
 
-[Apache License 2.0](https://github.com/OpenMined/PySyft/blob/main/packages/syft/LICENSE)
+[Apache License 2.0](https://github.com/OpenMined/PySyft/blob/main/packages/syft/LICENSE)<br />
+<a href="https://www.flaticon.com/free-icons/person" title="person icons">Person icons created by Freepik - Flaticon</a>
