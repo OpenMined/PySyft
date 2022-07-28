@@ -110,7 +110,11 @@ def initialize_model(input_shape) -> nn.Model:
 def test_model_training():
     """Remotely train on the list of domains."""
 
+    perf_benchmarks = dict()
+
+    start = time.time()
     add_dataset_to_domain()
+    perf_benchmarks["time_to_upload"] = time.time() - start
 
     # Get input shape of the images
     # We assume images on all domains have the same shape.
@@ -131,8 +135,10 @@ def test_model_training():
         raise ValueError("Domain does not have any dataset for Model Training")
 
     # Get pointers to images and labels
+    start = time.time()
     X_train = domain.datasets[-1]["train_images"][:2]
     y_train = domain.datasets[-1]["train_labels"][:2]
+    perf_benchmarks["fetch_dataset_from_store"] = time.time() - start
 
     print(f"Image Shape: {X_train.public_shape}, Label Shape: {y_train.public_shape}")
 
@@ -150,27 +156,39 @@ def test_model_training():
 
     print("waiting for model ptr to be ready !!!")
     # wait for model_ptr to be accessible
+    start = time.time()
     while not model_ptr.exists:
         time.sleep(2)
 
+    perf_benchmarks["model_pointer_ready"] = time.time() - start
+
     assert model_ptr.exists
 
+    start = time.time()
     run_status = model_ptr.step(X_train, y_train)
 
     # Wait for step operation to be completed on the remote domain.
     while not run_status.exists:
         time.sleep(10)
 
+    perf_benchmarks["model_one_step"] = time.time() - start
+
     assert run_status.exists
 
     # Publish Model Weights
+    start = time.time()
     print(f"Publishing model weights on Domain ({domain.name})")
     published_obj = model_ptr.publish(
         sigma=1e4
     )  # PB spent with 1e3 = 690k, thus 1e4 sigma -> 6.9k which is within PB limit of 9999
     while not published_obj.exists:
         time.sleep(2)
+    perf_benchmarks["model_publish"] = time.time() - start
+
+    # Get published results
+    start = time.time()
     parameters = published_obj.get_copy()
+    perf_benchmarks["get_published_results"] = time.time() - start
 
     assert published_obj.exists
     assert parameters is not None
@@ -192,3 +210,6 @@ def test_model_training():
     print(f"Model training finished on Domain: - {domain.name}")
 
     print()
+
+    print("Performance Benchmarks:")
+    print(perf_benchmarks)
