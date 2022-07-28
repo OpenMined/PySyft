@@ -339,12 +339,6 @@ class Pointer(AbstractPointer):
             PublishScalarsAction,
         )
 
-        # attr_path_and_name = self.path_and_name + ".publish"
-        # return_type_name = self.client.lib_ast.query(
-        #     attr_path_and_name
-        # ).return_type_name
-        # resolved_pointer_type = self.client.lib_ast.query(return_type_name)
-        # result = resolved_pointer_type.pointer_type(client=self.client)
         id_at_location = UID()
 
         obj_msg = PublishScalarsAction(

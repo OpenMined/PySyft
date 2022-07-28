@@ -92,7 +92,6 @@ def load_dataset() -> None:
     data = sy.Tensor(data).private(0, 5, data_subjects)
 
     for i in range(PARTIES):
-        print("Enter", i)
         try:
             client = sy.login(
                 email="info@openmined.org",
@@ -108,7 +107,6 @@ def load_dataset() -> None:
             )
             assert len(client.datasets) > 0
             e2e_clients.append(client)
-            print("List", e2e_clients)
         except Exception as e:
             print(f"Cant connect to client {i}. We might have less running. {e}")
 
@@ -120,8 +118,6 @@ def create_data_scientist() -> Callable[[int], List[Any]]:
 
     def _helper_create_ds(port: int, **kwargs) -> None:
         idx = port - PORT
-        print("idx------", idx)
-        print("port", port, "PORT", PORT)
         client = e2e_clients[idx]
         client.users.create(**kwargs)
         assert len(client.users.pandas()) > 1

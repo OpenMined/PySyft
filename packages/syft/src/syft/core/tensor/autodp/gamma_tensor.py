@@ -1177,10 +1177,8 @@ class GammaTensor:
             def _add(state: dict) -> jax.numpy.DeviceArray:
                 return jnp.add(self.run(state), other.run(state))
 
-            # print("this is the other.state", other.state)
             output_state[other.id] = other
             # state.update(other.state)
-            # print("this is the output_state", output_state)
 
             child = self.child + other.child
             min_val = self.min_vals + other.min_vals
@@ -1196,7 +1194,7 @@ class GammaTensor:
             min_val = self.min_vals + other
             max_val = self.max_vals + other
             output_ds = self.data_subjects + other
-        # print("the state we returned is: ", output_state)
+
         return GammaTensor(
             child=child,
             data_subjects=output_ds,
@@ -1877,14 +1875,12 @@ class GammaTensor:
         )
 
     def expand_dims(self, axis: Optional[int] = None) -> GammaTensor:
-        # print("CAN YOU HEAR ME")
+
         result = np.expand_dims(self.child, axis)
-        # print("reshaping to:", result.shape)
-        # print("og shape", self.data_subjects.shape)
+
         target_shape_dsl = list(self.data_subjects.shape)
         if axis:
             target_shape_dsl.insert(axis + 1, 1)
-        # print("target shape", target_shape_dsl)
 
         return GammaTensor(
             child=result,
@@ -2112,7 +2108,7 @@ class GammaTensor:
                     # for idx, row in enumerate(tensor.data_subjects):
                     #     tensor.data_subjects[idx] = jnp.zeros_like(np.zeros_like(row), jnp.int64)
                 else:
-                    print(tensor.data_subjects)
+
                     new_tensor = tensor
                 new_state[new_tensor.id] = new_tensor
             return new_state
@@ -2127,8 +2123,7 @@ class GammaTensor:
         sigma: Optional[float] = None,
         dsl_hack: bool = False,
     ) -> jax.numpy.DeviceArray:
-        print("min_vals", self.min_vals.shape)
-        print("max_vals", self.max_vals.shape)
+
         if dsl_hack is False:
             if sigma is None:
                 sigma = (
@@ -2144,9 +2139,6 @@ class GammaTensor:
                 not self.state
             ):  # if state tree is empty (e.g. publishing a PhiTensor w/ public vals directly)
                 self.state[self.id] = self
-
-            # print("RUNNING SELF.FUNC(NEW_STATE)")
-            # print(self.func(new_state))
 
             return vectorized_publish(
                 min_vals=self.min_vals,
