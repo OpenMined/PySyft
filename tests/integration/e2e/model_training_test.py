@@ -3,6 +3,7 @@ import time
 
 # third party
 import numpy as np
+import pytest
 
 # syft absolute
 import syft as sy
@@ -105,6 +106,7 @@ def initialize_model(input_shape) -> nn.Model:
     return model
 
 
+@pytest.mark.e2e
 def test_model_training():
     """Remotely train on the list of domains."""
 
