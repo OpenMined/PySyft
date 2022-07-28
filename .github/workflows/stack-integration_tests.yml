@@ -21,10 +21,12 @@ on:
 jobs:
   stack-integration-tests:
     strategy:
-      max-parallel: 3
+      max-parallel: 99
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, windows]
         python-version: ["3.10"]
+        pytest-modules: ["frontend network security e2e"]
+      fail-fast: false
 
     runs-on: ${{matrix.os}}
 
@@ -70,27 +72,67 @@ jobs:
         run: |
           pip install tox --upgrade
 
+      - name: Show choco installed packages
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: list --localonly
+
+      - name: Install git
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install git.install --params "/GitAndUnixToolsOnPath /WindowsTerminal /NoAutoCrlf" -y
+
+      - name: Install cmake
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install cmake.portable --installargs 'ADD_CMAKE_TO_PATH=System' -y
+
+      - name: Check cmake version
+        if: steps.changes.outputs.stack == 'true' &&  matrix.os == 'windows'
+        run: |
+          cmake --version
+        shell: cmd
+
+      - name: Install visualcpp-build-tools
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install visualstudio2019-workload-vctools -y
+
+      - name: Install jaxlib
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        run: |
+          python -c "import platform; import os; os.system('pip install jaxlib===0.3.7 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
+
       - name: Install Docker Compose
-        if: runner.os == 'Linux'
+        if: steps.changes.outputs.stack == 'true' && runner.os == 'Linux'
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.3.4
+          DOCKER_COMPOSE_VERSION=v2.7.0
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
-        timeout-minutes: 60
+        timeout-minutes: 30
+        env:
+          HAGRID_ART: false
+          PYTEST_MODULES: "${{ matrix.pytest-modules }}"
         run: |
           tox -e stack.test.integration
 
   stack-integration-tests-tls:
     strategy:
-      max-parallel: 3
+      max-parallel: 99
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.10"]
+        pytest-modules: ["frontend network security e2e"]
+      fail-fast: false
 
     runs-on: ${{matrix.os}}
 
@@ -136,12 +178,47 @@ jobs:
         run: |
           pip install tox --upgrade
 
+      - name: Show choco installed packages
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: list --localonly
+
+      - name: Install git
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install git.install --params "/GitAndUnixToolsOnPath /WindowsTerminal /NoAutoCrlf" -y
+
+      - name: Install cmake
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install cmake.portable --installargs 'ADD_CMAKE_TO_PATH=System' -y
+
+      - name: Check cmake version
+        if: steps.changes.outputs.stack == 'true' &&  matrix.os == 'windows'
+        run: |
+          cmake --version
+        shell: cmd
+
+      - name: Install visualcpp-build-tools
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install visualstudio2019-workload-vctools -y
+
+      - name: Install jaxlib
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        run: |
+          python -c "import platform; import os; os.system('pip install jaxlib===0.3.7 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
+
       - name: Install Docker Compose
-        if: runner.os == 'Linux'
+        if: steps.changes.outputs.stack == 'true' && runner.os == 'Linux'
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.3.4
+          DOCKER_COMPOSE_VERSION=v2.7.0
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 
@@ -150,150 +227,29 @@ jobs:
         shell: bash
         run: |
           sudo apt update && sudo apt install libnss3-tools -y
-          MKCERT_VERSION=v1.4.3
+          MKCERT_VERSION=v1.4.4
           curl -sSL https://github.com/FiloSottile/mkcert/releases/download/${MKCERT_VERSION}/mkcert-${MKCERT_VERSION}-linux-amd64 -o /usr/local/bin/mkcert
           chmod +x /usr/local/bin/mkcert
           which mkcert
 
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
-        timeout-minutes: 60
+        timeout-minutes: 30
+        env:
+          HAGRID_ART: false
+          PYTEST_MODULES: "${{ matrix.pytest-modules }}"
         run: |
           tox -e stack.test.integration.tls
 
-  stack-integration-tests-windows:
-    strategy:
-      max-parallel: 3
-      matrix:
-        os: [Windows-10]
-        python-version: ["3.10"]
-
-    runs-on: [self-hosted, windows]
-
-    steps:
-      - name: Start Docker Desktop
-        run: |
-          powershell.exe -command 'start "C:\Program Files\Docker\Docker\Docker Desktop.exe"'
-        shell: cmd
-
-      - name: Stop all running containers
-        continue-on-error: true
-        run: |
-          powershell.exe -command "docker rm $(docker ps -aq) --force"
-        shell: cmd
-
-      - name: Prune all volumes
-        continue-on-error: true
-        run: |
-          powershell.exe -command "docker volume prune --force"
-        shell: cmd
-
-      - uses: actions/checkout@v3
-
-      - name: Check for file changes
-        uses: dorny/paths-filter@v2
-        id: changes
-        with:
-          base: ${{ github.ref }}
-          token: ${{ github.token }}
-          filters: .github/file-filters.yml
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
-        if: steps.changes.outputs.stack == 'true'
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Get pip cache dir
-        if: steps.changes.outputs.stack == 'true'
-        id: pip-cache
-        run: |
-          echo "::set-output name=dir::$(pip cache dir)"
-        shell: cmd
-
-      # - name: pip cache
-      #   uses: actions/cache@v3
-      #   if: steps.changes.outputs.stack == 'true'
-      #   with:
-      #     path: ${{ steps.pip-cache.outputs.dir }}
-      #     key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-pip-py${{ matrix.python-version }}
-
-      - name: Upgrade pip
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          python -m pip install --upgrade --user pip
-        shell: cmd
-
-      - name: Install tox
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          pip install tox --upgrade
-        shell: cmd
-
-      - name: Check python version
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          python -VV
-        shell: cmd
-
-      - name: Show choco installed packages
-        uses: crazy-max/ghaction-chocolatey@v1
-        with:
-          args: list --localonly
-
-      - name: Install git
-        uses: crazy-max/ghaction-chocolatey@v1
-        with:
-          args: install git.install --params "/GitAndUnixToolsOnPath /WindowsTerminal /NoAutoCrlf" -y
-
-      - name: Install cmake
-        uses: crazy-max/ghaction-chocolatey@v1
-        with:
-          args: install cmake.portable --installargs 'ADD_CMAKE_TO_PATH=System' -y
-
-      - name: Check cmake version
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          cmake --version
-        shell: cmd
-
-      - name: Install visualcpp-build-tools
-        uses: crazy-max/ghaction-chocolatey@v1
-        with:
-          args: install visualstudio2019-workload-vctools -y
-
-      - name: Run integration tests
-        if: steps.changes.outputs.stack == 'true'
-        timeout-minutes: 60
-        env:
-          HAGRID_ART: false
-        run: |
-          where.exe bash
-          tox -e stack.test.integration.windows
-        shell: cmd
-
-      - name: Stop all running containers
-        if: steps.changes.outputs.stack == 'true'
-        continue-on-error: true
-        run: |
-          powershell.exe -command "docker rm $(docker ps -aq) --force"
-        shell: cmd
-
-      - name: Prune all volumes
-        if: steps.changes.outputs.stack == 'true'
-        continue-on-error: true
-        run: |
-          powershell.exe -command "docker volume prune --force"
-        shell: cmd
-
   stack-integration-tests-smpc:
     strategy:
-      max-parallel: 3
+      max-parallel: 99
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.10"]
+        pytest-modules:
+          ["smpc_np smpc_abstract smpc_share_tensor smpc_mpc_tensor"]
+      fail-fast: false
 
     runs-on: [self-hosted, linux]
 
@@ -338,40 +294,63 @@ jobs:
         run: |
           python -m pip install --upgrade --user pip
 
-      - name: Install build essentials
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          sudo apt-get update && sudo apt-get install -y cmake libssl-dev build-essential
-
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
           pip install tox --upgrade
 
-      - name: docker cache
-        uses: actions/cache@v3
-        if: steps.changes.outputs.stack == 'true'
-        continue-on-error: true
+      - name: Show choco installed packages
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
         with:
-          path: .docker-cache
-          key: ${{ runner.os }}-docker
-          restore-keys: |
-            ${{ runner.os }}-docker
+          args: list --localonly
 
-      - name: Run integration tests
-        if: steps.changes.outputs.stack == 'true'
+      - name: Install git
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install git.install --params "/GitAndUnixToolsOnPath /WindowsTerminal /NoAutoCrlf" -y
+
+      - name: Install cmake
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install cmake.portable --installargs 'ADD_CMAKE_TO_PATH=System' -y
+
+      - name: Check cmake version
+        if: steps.changes.outputs.stack == 'true' &&  matrix.os == 'windows'
+        run: |
+          cmake --version
+        shell: cmd
+
+      - name: Install visualcpp-build-tools
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install visualstudio2019-workload-vctools -y
+
+      - name: Install jaxlib
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        run: |
+          python -c "import platform; import os; os.system('pip install jaxlib===0.3.7 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
+
+      - name: Install Docker Compose
+        if: steps.changes.outputs.stack == 'true' && runner.os == 'Linux'
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.3.4
+          DOCKER_COMPOSE_VERSION=v2.7.0
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
-          docker rm `docker ps -aq` --force || true
-          docker buildx use default || true
-          rm -rf .tox
+
+      - name: Run integration tests
+        if: steps.changes.outputs.stack == 'true'
+        timeout-minutes: 30
+        env:
+          HAGRID_ART: false
+          PYTEST_MODULES: "${{ matrix.pytest-modules }}"
+        run: |
           tox -e stack.test.integration.smpc
-          docker rm `docker ps -aq` --force || true
-          docker system prune --volumes --force || true
 
   stack-integration-tests-k8s:
     strategy:
@@ -540,15 +519,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-docker
 
+      - name: Install Docker Compose
+        if: steps.changes.outputs.stack == 'true' && runner.os == 'Linux'
+        shell: bash
+        run: |
+          mkdir -p ~/.docker/cli-plugins
+          DOCKER_COMPOSE_VERSION=v2.7.0
+          curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+          chmod +x ~/.docker/cli-plugins/docker-compose
+
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
         shell: bash
         run: |
-          mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.3.4
-          curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
-          chmod +x ~/.docker/cli-plugins/docker-compose
           docker rm `docker ps -aq` --force || true
-          rm -rf .tox
           tox -e stack.test.course
           docker rm `docker ps -aq` --force || true
