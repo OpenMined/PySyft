@@ -248,7 +248,7 @@ jobs:
         os: [ubuntu-latest]
         python-version: ["3.10"]
         pytest-modules:
-          ["smpc_np", "smpc_abstract", "smpc_share_tensor", "smpc_mpc_tensor"]
+          ["smpc_np smpc_abstract smpc_share_tensor smpc_mpc_tensor"]
       fail-fast: false
 
     runs-on: [self-hosted, linux]
