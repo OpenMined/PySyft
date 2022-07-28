@@ -380,7 +380,7 @@ class Client(AbstractNodeClient):
         return hash(self.id)
 
 
-GET_OBJECT_TIMEOUT = 600  # seconds
+GET_OBJECT_TIMEOUT = 60  # seconds
 
 
 class StoreClient:

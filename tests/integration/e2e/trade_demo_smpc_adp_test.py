@@ -134,8 +134,8 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
 
     time.sleep(20)
 
-    assert round(ca.privacy_budget) == 9_999_999
-    assert round(it.privacy_budget) == 9_999_999
+    assert round(ca.privacy_budget) == 9_999_799
+    assert round(it.privacy_budget) == 9_999_799
 
     ca_data = ca.datasets[-1]["Canada Trade"]
     it_data = it.datasets[-1]["Italy Trade"]

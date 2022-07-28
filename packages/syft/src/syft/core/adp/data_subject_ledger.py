@@ -161,7 +161,8 @@ def first_try_branch(
         )
 
         # Set rpd constants for given data subjects
-        rdp_constants[input_entities_indexes] = summed_constant
+        # jax.interpreters.xla._DeviceArray does not support item assignment
+        rdp_constants = rdp_constants.at[input_entities_indexes].set(summed_constant)
 
     return rdp_constants
 
