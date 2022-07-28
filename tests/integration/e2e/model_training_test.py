@@ -33,20 +33,20 @@ def add_dataset_to_domain():
 
     # Preprocess dataset split
     dataset = download_dataset(dataset_url)
-    train, val, test = split_and_preprocess_dataset(data=dataset)
+    train, _, _ = split_and_preprocess_dataset(data=dataset)
 
-    data_subjects_image = np.ones(train["images"].shape).astype(object)
-    for i, patient in enumerate(train["patient_ids"]):
+    data_subjects_image = np.ones(train["images"][:5].shape).astype(object)
+    for i, patient in enumerate(train["patient_ids"][:5]):
         data_subjects_image[i] = DataSubjectArray([str(patient)])
 
-    data_subjects_labels = np.ones(train["labels"].shape).astype(object)
-    for i, patient in enumerate(train["patient_ids"]):
+    data_subjects_labels = np.ones(train["labels"][:5].shape).astype(object)
+    for i, patient in enumerate(train["patient_ids"][:5]):
         data_subjects_labels[i] = DataSubjectArray([str(patient)])
 
-    train_image_data = sy.Tensor(train["images"]).annotated_with_dp_metadata(
+    train_image_data = sy.Tensor(train["images"][:5]).annotated_with_dp_metadata(
         min_val=0, max_val=255, data_subjects=data_subjects_image
     )
-    train_label_data = sy.Tensor(train["labels"]).annotated_with_dp_metadata(
+    train_label_data = sy.Tensor(train["labels"][:5]).annotated_with_dp_metadata(
         min_val=0, max_val=1, data_subjects=data_subjects_labels
     )
 
@@ -187,7 +187,7 @@ def test_model_training():
 
     # Get published results
     start = time.time()
-    parameters = published_obj.get_copy()
+    parameters = published_obj.get()
     perf_benchmarks["get_published_results"] = time.time() - start
 
     assert published_obj.exists
@@ -213,3 +213,6 @@ def test_model_training():
 
     print("Performance Benchmarks:")
     print(perf_benchmarks)
+
+    print("Purging datasets....")
+    domain.datasets.purge(skip_checks=True)

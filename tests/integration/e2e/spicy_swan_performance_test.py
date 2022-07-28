@@ -205,7 +205,7 @@ def test_benchmark_datasets() -> None:
         start_time = time.time()
         publish_ptr = sum_ptr.publish(sigma=0.5)
         publish_ptr.block_with_timeout(timeout)
-        result = publish_ptr.get(delete_obj=False)
+        result = publish_ptr.get()
         print("result", result)
 
         benchmark_report[size_name]["publish_secs"] = time.time() - start_time
@@ -227,3 +227,6 @@ def test_benchmark_datasets() -> None:
     assert benchmark_report[key_size]["dataset_download_secs"] <= 60
     assert benchmark_report[key_size]["sum_secs"] <= 1
     assert benchmark_report[key_size]["publish_secs"] <= timeout
+
+    print("purge datasets...")
+    domain.datasets.purge(skip_checks=True)
