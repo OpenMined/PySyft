@@ -157,8 +157,8 @@ def test_benchmark_datasets() -> None:
         benchmark_report[size_name] = {}
         df = pd.read_parquet(files[size_name])
 
-        # cap at 10k for now
-        df = df[0:10000]  # time to run is growing exponentially with size
+        # cap at 5k for now
+        df = df[0:5000]  # time to run is growing exponentially with size
 
         upload_size_mb, data_shape, upload_time = time_upload(
             domain=domain, size_name=size_name, unique_key=unique_key, df=df
