@@ -18,6 +18,7 @@ from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
 sy.logger.remove()
 
 PRIVACY_BUDGET = 9_999_999
+BUDGET_INCREASE = 200
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
 print("ROOT_DIR", ROOT_DIR)
@@ -114,10 +115,10 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     # Data Scientist
     ca = sy.login(email=unique_email, password="bazinga", port=9082)
 
-    ca.request_budget(eps=200, reason="increase budget!")
+    ca.request_budget(eps=BUDGET_INCREASE, reason="increase budget!")
     it = sy.login(email=unique_email, password="bazinga", port=9083)
 
-    it.request_budget(eps=200, reason="increase budget!")
+    it.request_budget(eps=BUDGET_INCREASE, reason="increase budget!")
 
     time.sleep(20)
 
@@ -135,8 +136,8 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
 
     time.sleep(20)
 
-    assert round(ca.privacy_budget) == PRIVACY_BUDGET
-    assert round(it.privacy_budget) == PRIVACY_BUDGET
+    assert round(ca.privacy_budget) == PRIVACY_BUDGET + BUDGET_INCREASE
+    assert round(it.privacy_budget) == PRIVACY_BUDGET + BUDGET_INCREASE
 
     ca_data = ca.datasets[-1]["Canada Trade"]
     it_data = it.datasets[-1]["Italy Trade"]
