@@ -446,15 +446,7 @@ deployments:
         containers:
           - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
             command:
-              - waitforit
-            args:
-              [
-                "-address=http://backend:80/api/v1/syft/metadata",
-                "-status=200",
-                "-timeout=600",
-                "--",
-                "/start.sh",
-              ]
+              - /start.sh
             securityContext:
               capabilities:
                 add: ["NET_ADMIN"]
@@ -544,15 +536,7 @@ deployments:
         containers:
           - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
             command:
-              - waitforit
-            args:
-              [
-                "-address=http://backend:80/api/v1/syft/metadata",
-                "-status=200",
-                "-timeout=600",
-                "--",
-                "/worker-start.sh",
-              ]
+              - /worker-start.sh
             securityContext:
               capabilities:
                 add: ["NET_ADMIN"]
