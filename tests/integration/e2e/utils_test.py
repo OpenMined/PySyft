@@ -154,3 +154,17 @@ def download_dataset(dataset_url: str, make_figure: bool = False) -> pd.DataFram
                 ax[n, m].imshow(image)
                 ax[n, m].grid(False)
     return data
+
+
+def clean_datasets_on_domain(domain_port):
+    # syft absolute
+    import syft as sy
+
+    # login as root user
+    domain = sy.login(
+        email="info@openmined.org", password="changethis", port=domain_port
+    )
+    try:
+        domain.datasets.purge(skip_check=True)
+    except Exception as e:
+        print(e)

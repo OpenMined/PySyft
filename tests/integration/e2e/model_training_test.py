@@ -11,6 +11,7 @@ from syft import nn
 from syft.core.adp.data_subject_list import DataSubjectArray
 
 # relative
+from .utils_test import clean_datasets_on_domain
 from .utils_test import download_dataset
 from .utils_test import split_and_preprocess_dataset
 
@@ -185,12 +186,14 @@ def test_model_training():
         time.sleep(2)
     perf_benchmarks["model_publish"] = time.time() - start
 
+    # Check if model pointer exists
+    assert published_obj.exists
+
     # Get published results
     start = time.time()
     parameters = published_obj.get()
     perf_benchmarks["get_published_results"] = time.time() - start
 
-    assert published_obj.exists
     assert parameters is not None
 
     loss = parameters["loss"]
@@ -215,4 +218,4 @@ def test_model_training():
     print(perf_benchmarks)
 
     print("Purging datasets....")
-    domain.datasets.purge(skip_checks=True)
+    clean_datasets_on_domain(DOMAIN1_PORT)

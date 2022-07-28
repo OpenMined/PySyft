@@ -27,6 +27,9 @@ from syft.util import download_file
 from syft.util import get_root_data_path
 from syft.util import size_mb
 
+# relative
+from .utils_test import clean_datasets_on_domain
+
 PRIVACY_BUDGET = 9_999_999
 
 
@@ -229,4 +232,4 @@ def test_benchmark_datasets() -> None:
     assert benchmark_report[key_size]["publish_secs"] <= timeout
 
     print("purge datasets...")
-    domain.datasets.purge(skip_checks=True)
+    clean_datasets_on_domain(DOMAIN1_PORT)
