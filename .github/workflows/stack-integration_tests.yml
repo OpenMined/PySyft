@@ -519,15 +519,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-docker
 
-      - name: Run integration tests
-        if: steps.changes.outputs.stack == 'true'
+      - name: Install Docker Compose
+        if: steps.changes.outputs.stack == 'true' && runner.os == 'Linux'
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
           DOCKER_COMPOSE_VERSION=v2.7.0
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
+
+      - name: Run integration tests
+        if: steps.changes.outputs.stack == 'true'
+        shell: bash
+        run: |
           docker rm `docker ps -aq` --force || true
-          rm -rf .tox
           tox -e stack.test.course
           docker rm `docker ps -aq` --force || true
