@@ -274,7 +274,7 @@ def test_lt(
     print("Published Result ", published_result.get())
 
 
-@pytest.mark.xfail(reason="Disabling due to JSON Error in github CI")
+@pytest.mark.skip(reason="Disabling due to JSON Error in github CI")
 @pytest.mark.e2e
 def test_gt(
     create_data_scientist,
