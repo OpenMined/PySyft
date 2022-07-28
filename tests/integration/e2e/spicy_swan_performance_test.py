@@ -27,6 +27,8 @@ from syft.util import download_file
 from syft.util import get_root_data_path
 from syft.util import size_mb
 
+PRIVACY_BUDGET = 9_999_999
+
 
 def download_spicy_bird_benchmark(
     sizes: Optional[List[str]] = None,
@@ -142,7 +144,7 @@ def test_benchmark_datasets() -> None:
     )
 
     # Upgrade admins budget
-    content = {"user_id": 1, "budget": 9999999}
+    content = {"user_id": 1, "budget": PRIVACY_BUDGET}
     domain._perform_grid_request(grid_msg=UpdateUserMessage, content=content)
 
     budget_before = domain.privacy_budget

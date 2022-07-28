@@ -17,6 +17,7 @@ from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
 
 sy.logger.remove()
 
+PRIVACY_BUDGET = 9_999_999
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
 print("ROOT_DIR", ROOT_DIR)
@@ -31,7 +32,7 @@ def get_user_details(unique_email: str) -> Dict[str, Any]:
         "name": "Sheldon Cooper",
         "email": unique_email,
         "password": "bazinga",
-        "budget": 9_999_799,
+        "budget": PRIVACY_BUDGET,
     }
 
 
@@ -134,8 +135,8 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
 
     time.sleep(20)
 
-    assert round(ca.privacy_budget) == 9_999_799
-    assert round(it.privacy_budget) == 9_999_799
+    assert round(ca.privacy_budget) == PRIVACY_BUDGET
+    assert round(it.privacy_budget) == PRIVACY_BUDGET
 
     ca_data = ca.datasets[-1]["Canada Trade"]
     it_data = it.datasets[-1]["Italy Trade"]
@@ -186,9 +187,9 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     assert sum(sycure_result[0]) > -6000
     assert sum(sycure_result[0]) < 6000
 
-    assert ca.privacy_budget < 9_999_999
+    assert ca.privacy_budget < PRIVACY_BUDGET
     assert ca.privacy_budget > 10
-    assert it.privacy_budget < 9_999_999
+    assert it.privacy_budget < PRIVACY_BUDGET
     assert it.privacy_budget > 10
     # Commenting it out , due to inconsistent budget spent due to 64 bit.
     # assert ca.privacy_budget == it.privacy_budget
