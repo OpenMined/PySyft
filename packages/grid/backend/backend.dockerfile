@@ -10,6 +10,9 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
   apt-get install -y --no-install-recommends \
   curl python3-dev gcc make build-essential cmake git
 
+RUN --mount=type=cache,target=/root/.cache \
+  pip install -U pip
+
 RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) = "x86_64" ]; then \
   pip install --user torch==1.11.0+cpu -f https://download.pytorch.org/whl/torch_stable.html; \
   fi
@@ -55,6 +58,9 @@ RUN chmod +x /start.sh
 RUN chmod +x /start-reload.sh
 RUN chmod +x /worker-start.sh
 RUN chmod +x /worker-start-reload.sh
+
+RUN --mount=type=cache,target=/root/.cache \
+  pip install -U pip
 
 # allow container to wait for other services
 RUN --mount=type=cache,target=/root/.cache \
