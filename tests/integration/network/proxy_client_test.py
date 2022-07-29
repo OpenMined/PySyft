@@ -9,6 +9,7 @@ import torch
 # syft absolute
 import syft as sy
 from syft.core.node.common.action.exception_action import UnknownPrivateException
+from syft.core.node.common.client import GET_OBJECT_TIMEOUT
 
 NETWORK_PORT = 9081
 DOMAIN1_PORT = 9082
@@ -115,7 +116,9 @@ def test_search_network() -> None:
     network_client = sy.login(port=NETWORK_PORT)
 
     query = [unique_tag]
-    results = network_client.search(query=query, pandas=False)
+    results = network_client.search(
+        query=query, pandas=False, timeout=GET_OBJECT_TIMEOUT
+    )
 
     assert len(results) == 2
     vpn_row = None
@@ -152,7 +155,9 @@ def test_proxy_login_logout_network() -> None:
         proxy_client.store[unique_tag].get(delete_obj=False)
 
     proxy_client.login(email="info@openmined.org", password="changethis")
-    res = proxy_client.store[unique_tag].get(delete_obj=False)
+    store_obj = proxy_client.store[unique_tag]
+
+    res = store_obj.get(delete_obj=False, timeout_secs=GET_OBJECT_TIMEOUT)
     assert (res == torch.Tensor([1, 2, 3])).all()
 
     proxy_client.logout()

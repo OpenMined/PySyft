@@ -87,8 +87,11 @@ class FixedPrecisionTensor(PassthroughTensor):
         return getattr(self.child, "dtype", None)
 
     @property
-    def shape(self) -> Optional[Tuple[int, ...]]:
-        return getattr(self.child, "shape", None)
+    def shape(self) -> Tuple[Any, ...]:
+        if self.child is None:
+            return ()
+        else:
+            return self.child.shape
 
     def decode(self) -> Any:
         # relative
