@@ -1,32 +1,39 @@
-<div align="left"> <a href="https://pypi.org/project/syft/"><img src="https://pepy.tech/badge/syft" /></a> <a href="https://pypi.org/project/syft/"><img src="https://badge.fury.io/py/syft.svg" /></a> <a href="https://github.com/OpenMined/PySyft/actions/workflows/syft-version_tests.yml"><img src="https://github.com/OpenMined/PySyft/actions/workflows/syft-version_tests.yml/badge.svg?branch=dev" /></a>
+<div align="left"> <a href="https://pypi.org/project/syft/"><img src="https://pepy.tech/badge/syft" /></a> <a href="https://pypi.org/project/syft/"><img src="https://badge.fury.io/py/syft.svg" /></a> <a href="https://hub.docker.com/u/openmined"><img src="https://img.shields.io/badge/docker-images-blue?logo=docker" /></a> <a href="https://github.com/OpenMined/PySyft/actions/workflows/syft-version_tests.yml"><img src="https://github.com/OpenMined/PySyft/actions/workflows/syft-version_tests.yml/badge.svg?branch=dev" /></a>
  <a href="https://github.com/OpenMined/PySyft/actions/workflows/nightlies-run.yml"><img src="https://github.com/OpenMined/PySyft/actions/workflows/nightlies-run.yml/badge.svg?branch=dev" /></a>
-<a href="https://openmined.slack.com/messages/support"><img src="https://img.shields.io/badge/chat-on%20slack-7A5979.svg" /></a><br /><br /></div>
-<h1>OpenMined: Syft</h1>
+<a href="https://slack.openmined.org/"><img src="https://img.shields.io/badge/chat-on%20slack-purple?logo=slack" /></a> <a href="https://openmined.github.io/PySyft/"><img src="https://img.shields.io/badge/read-docs-yellow?logo=mdbook" /></a>
+<br /><br /></div>
+
+<img src="packages/syft/docs/img/title_syft_light.png#gh-light-mode-only" alt="Syft Logo" width="200px" />
+<img src="packages/syft/docs/img/title_syft_dark.png#gh-dark-mode-only" alt="Syft Logo" width="200px" />
 
 Remote Data Science - Code for `computing on data`, you `do not own` and `cannot see`
 
 <div align="left">
-<img src="packages/syft/docs/img/README_infographic.gif#gh-light-mode-only" alt="High-Level Architecture" width="1080">
+<img src="packages/syft/docs/img/header.png#gh-light-mode-only" alt="Syft Overview" width="100%" />
+<img src="packages/syft/docs/img/header.png#gh-dark-mode-only" alt="Syft Overview" width="100%" />
 </div>
 
 <br />
 
-# Ouickstart
+# Quickstart
 
-Few things to remember:
+✅ `Linux` ✅ `macOS` ✅ `Windows`
+<img src="packages/syft/docs/img/terminalizer.gif" height="400" align="right" />
 
-- `PySyft` = Privacy-Preserving Library
-- `PyGrid` = Networking and Management Platform
-- `HAGrid` = Deployment and Command Line Tool
+- Install our handy python cli tool:
+  🛵 `pip install hagrid`
+- Run our interactive jupyter quickstart tutorial:
+   💻 `hagrid quickstart`
+- Learn how to install and deploy:
+  `PySyft` = our `torch`-like 🐍 Python Library
+  `PyGrid` = our 🐳 `docker` / `k8s` Data Platform
 
-<p align="left"><img src="https://raw.githubusercontent.com/faressoft/terminalizer/master/img/demo.gif?raw=true"/></p>
-
-```bash
-# install our CLI tool
-$ pip install hagrid
-# launch a jupyter notebook tutorial
-$ hagrid quickstart
-```
+- 🛵 HAGrid Requires: 🐍 `python` 🐙 `git` 🐳 `docker`
+  <br />
+  <br />
+  <br />
+  <br />
+  <br />
 
 # What is Syft?
 
@@ -161,24 +168,6 @@ The steps performed by the respective personas are shown below:
     <img src="packages/syft/docs/img/big-picture.png#gh-light-mode-only" alt="big-picture-overview" width="100%">
     <img src="packages/syft/docs/img/big-picture-dark.png#gh-dark-mode-only" alt="big-picture-overview" width="100%">
 </div>
-
-# Deployment
-
-'_List with all platforms that are clickable and lead to their respective separate pages_'
-
-```mermaid
-  graph TD;
-      A-->B;
-      A-->C;
-      B-->D;
-      C-->D;
-```
-
-Syft provides multiple easy and straightforward options to deploy all of its stacks.
-
-1. [Deploy to Single VM]()
-1. [Deploy to Cloud]()
-1. [Deploy to Kubernetes]()
 
 # Community
 
