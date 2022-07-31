@@ -3,13 +3,16 @@ services:
     build:
       args:
         - TFF=True
+        - PYTHON_VERSION=3.9.9
 
   backend_stream:
     build:
       args:
         - TFF=True
+        - PYTHON_VERSION=3.9.9
 
   celeryworker:
     build:
       args:
         - TFF=True
+        - PYTHON_VERSION=3.9.9
