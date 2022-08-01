@@ -84,26 +84,29 @@ def tff_program(node, params, func_model) -> None:
     context = tff.program.NativeFederatedContext(context)
     tff.framework.set_default_context(context)
 
-    # This needs customization
+    # Using the data ids we are fetching the data from the domain store
+    # Currently we do not support training using our DP tensors or our SMPC tensors 
+    # so we will strip those layers and get the raw data
     train_data = node.store.get(train_data_id).data.child.child
     labels = node.store.get(label_data_id).data.child.child
 
     train_shape = list(train_data.shape)
     train_shape[0] = -1
     
+    # If might happen that our targets will be a one dimensional array
+    # like the numerical labels in case of image classification
     label_data_shape = list(labels.shape)
     if len(label_data_shape) == 1:
         label_data_shape = [-1,1]
     else:
         label_data_shape[0] = -1
 
-    print(train_shape)
-    print(label_data_shape)
-
-    # TODO: replace the model so this is not needed
     def preprocess(train_data, labels):
         return [tf.reshape(train_data, train_shape), tf.reshape(labels, label_data_shape)]
 
+    # For our PoC we will only duplicate the data for each client
+    # In the next release we will move this at the level of the network
+    # so we could think of each client as a separate domain
     dataset = tf.data.Dataset.from_tensor_slices((train_data, labels))
     datasets = [dataset.map(preprocess)] * number_of_clients
     train_data_source = tff.program.DatasetDataSource(datasets)
@@ -111,10 +114,12 @@ def tff_program(node, params, func_model) -> None:
     def model_fn():
         return tff.learning.models.model_from_functional(func_model)
 
+    # Currently we support the DP functions from TFF
     aggregation_factory = tff.learning.model_update_aggregator.dp_aggregator(
         noise_multiplier, clients_per_round
     )
 
+    # Some improvements would be parametrizing this two hardcoded values
     iterative_process = tff.learning.algorithms.build_unweighted_fed_avg(
         model_fn,
         client_optimizer_fn=lambda: tf.keras.optimizers.SGD(learning_rate=0.02),

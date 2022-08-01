@@ -28,9 +28,6 @@ def train_model(model_fn, params, domain, timeout=300):
     else:
         label_data_shape[0] = 1
         
-    print(train_data_shape)
-    print(label_data_shape)
-        
     input_spec = (tf.TensorSpec(shape=tuple(train_data_shape), dtype=tf.int64, name=None), 
                 tf.TensorSpec(shape=tuple(label_data_shape), dtype=tf.int64, name=None))
 
