@@ -2,7 +2,9 @@
 from datetime import datetime
 import json
 import os
+from pathlib import Path
 import re
+import shutil
 import socket
 import stat
 import subprocess  # nosec
@@ -24,6 +26,7 @@ import click
 import requests
 import rich
 from rich.live import Live
+from virtualenvapi.manage import VirtualEnvironment
 
 # relative
 from . import __version__
@@ -64,6 +67,8 @@ from .lib import use_branch
 from .mode import EDITABLE_MODE
 from .rand_sec import generate_sec_random_password
 from .style import RichGroup
+
+LATEST_STABLE_SYFT = "0.6"
 
 
 def get_azure_image(short_name: str) -> str:
@@ -2405,12 +2410,193 @@ cli.add_command(check)
 
 
 # add Hagrid info to the cli
-@click.command(help="Show Hagrid info")
+@click.command(help="Show HAGrid info")
 def version() -> None:
-    print(f"Hagrid version: {__version__}")
+    print(f"HAGrid version: {__version__}")
 
 
 cli.add_command(version)
+
+
+@click.command(help="Launch a Syft + Jupyter Session with a Notebook URL / Path")
+@click.argument("url", type=str, required=False)
+@click.option(
+    "--reset",
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help="Force hagrid quickstart to setup a fresh virtualenv",
+)
+@click.option(
+    "--syft",
+    default="latest",
+    help="Choose a syft version or just use latest",
+)
+@click.option(
+    "--quiet",
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help="Silence confirmation prompts",
+)
+@click.option(
+    "--pre",
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help="Install pre-release versions of syft",
+)
+@click.option(
+    "--python",
+    default=None,
+    help="Specify the path to which python to use",
+)
+def quickstart(
+    url: Optional[str] = None,
+    syft: str = "latest",
+    reset: bool = False,
+    quiet: bool = False,
+    pre: bool = False,
+    python: Optional[str] = None,
+) -> None:
+    try:
+        directory = os.path.expanduser("~/.hagrid/quickstart/")
+        confirm_reset = None
+        if reset:
+            if not quiet:
+                confirm_reset = click.confirm(
+                    "This will create a new quickstart virtualenv and reinstall Syft and "
+                    "Jupyter. Are you sure you want to continue?"
+                )
+            else:
+                confirm_reset = True
+        if confirm_reset is False:
+            return
+
+        if reset and confirm_reset or not os.path.isdir(directory):
+            quickstart_setup(
+                directory=directory,
+                syft_version=syft,
+                reset=reset,
+                pre=pre,
+                python=python,
+            )
+
+        if url:
+            file_path = quickstart_download_notebook(
+                url=url, directory=directory, reset=reset
+            )
+        else:
+            file_path = add_intro_notebook(directory=directory, reset=reset)
+
+        # add virtualenv path
+        environ = os.environ.copy()
+        environ["PATH"] = directory + ".venv/bin" + os.pathsep + environ["PATH"]
+        try:
+            print(
+                f"Running Jupyter Lab in: {directory}\nUse Control-C to stop this server."
+            )
+            proc = subprocess.Popen(  # nosec
+                f"jupyter lab --notebook-dir={directory} {file_path}".split(" "),
+                cwd=directory,
+                env=environ,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            proc.communicate()
+        except KeyboardInterrupt:
+            proc.kill()  # make sure jupyter gets killed
+            sys.exit(1)
+    except Exception as e:
+        print(f"Error running quickstart: {e}")
+
+
+def quickstart_setup(
+    directory: str,
+    syft_version: str,
+    reset: bool = False,
+    pre: bool = False,
+    python: Optional[str] = None,
+) -> None:
+    os.makedirs(directory, exist_ok=True)
+    virtual_env_dir = os.path.abspath(directory + ".venv/")
+    if reset and os.path.exists(virtual_env_dir):
+        shutil.rmtree(virtual_env_dir)
+    env = VirtualEnvironment(virtual_env_dir, python=python)
+
+    print("Installing Jupyter Labs")
+    env.install("jupyterlab")
+    env.install("ipywidgets")
+
+    if EDITABLE_MODE:
+        local_syft_dir = Path(os.path.abspath(Path(hagrid_root()) / "../syft"))
+        print("Installing Syft in Editable Mode")
+        env.install("-e " + str(local_syft_dir))
+    else:
+        options = []
+        options.append("--force")
+        if syft_version == "latest":
+            syft_version = LATEST_STABLE_SYFT
+            package = f"syft>={syft_version}"
+            if pre:
+                package = f"{package}.dev0"  # force pre release
+        else:
+            package = f"syft=={syft_version}"
+
+        if pre:
+            options.append("--pre")
+            print(f"Installing {package} --pre")
+        else:
+            print(f"Installing {package}")
+        env.install(package, options=options)
+
+
+def quickstart_download_notebook(url: str, directory: str, reset: bool = False) -> str:
+    file_name = os.path.basename(url).replace("%20", "_")
+    file_path = os.path.abspath(directory + file_name)
+
+    file_exists = os.path.isfile(file_path)
+
+    if file_exists and not reset:
+        reset = click.confirm(
+            f"You already have the notebook {file_name}. "
+            "Are you sure you want to overwrite it?"
+        )
+
+    if not file_exists or file_exists and reset:
+        print(f"Downloading the notebook: {file_name}")
+        r = requests.get(url, allow_redirects=True)
+        with open(os.path.expanduser(file_path), "wb") as f:
+            f.write(r.content)
+    return file_path
+
+
+def add_intro_notebook(directory: str, reset: bool = False) -> str:
+    files = os.listdir(directory)
+    files.remove(".venv")
+
+    filename = "00-quickstart.ipynb"
+    file_path = os.path.abspath(f"{directory}/{filename}")
+
+    if len(files) == 0 or reset:
+        if EDITABLE_MODE:
+            local_src_dir = Path(os.path.abspath(Path(hagrid_root()) / "../../"))
+            shutil.copyfile(
+                local_src_dir / f"notebooks/quickstart/{filename}",
+                file_path,
+            )
+        else:
+            url = (
+                "https://raw.githubusercontent.com/OpenMined/PySyft/dev/"
+                + f"notebooks/quickstart/{filename}"
+            )
+            file_path = quickstart_download_notebook(
+                url=url, directory=directory, reset=reset
+            )
+    return file_path
+
+
+cli.add_command(quickstart)
 
 
 def ssh_into_remote_machine(

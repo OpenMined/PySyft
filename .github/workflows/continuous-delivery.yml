@@ -91,14 +91,14 @@ jobs:
         run: echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_ENV
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Login to Docker
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_LOGIN }}
           password: ${{ secrets.DOCKER_PASSWORD }}
@@ -118,6 +118,7 @@ jobs:
           context: ./packages
           file: ./packages/grid/backend/backend.dockerfile
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta_grid_backend.outputs.tags }}
           target: backend
 
@@ -136,6 +137,7 @@ jobs:
           context: ./packages/grid/frontend
           file: ./packages/grid/frontend/frontend.dockerfile
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta_grid_frontend.outputs.tags }}
           target: grid-ui-production
 
@@ -154,6 +156,7 @@ jobs:
           context: ./packages/grid/vpn
           file: ./packages/grid/vpn/headscale.dockerfile
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta_grid_headscale.outputs.tags }}
 
       - name: Docker meta for Grid-Tailscale
@@ -171,6 +174,7 @@ jobs:
           context: ./packages/grid/vpn
           file: ./packages/grid/vpn/tailscale.dockerfile
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta_grid_tailscale.outputs.tags }}
 
       - name: Docker meta for grid-vpn-iptables
@@ -188,4 +192,5 @@ jobs:
           context: ./packages/grid/vpn
           file: ./packages/grid/vpn/iptables.dockerfile
           push: true
+          platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta_grid_vpn_iptables.outputs.tags }}

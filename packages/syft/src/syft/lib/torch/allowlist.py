@@ -1832,6 +1832,7 @@ allowlist[
 
 # Functional
 allowlist["torch.nn.functional.relu"] = "torch.Tensor"
+allowlist["torch.nn.functional.leaky_relu"] = "torch.Tensor"
 allowlist["torch.nn.functional.gelu"] = "torch.Tensor"
 allowlist["torch.nn.functional.max_pool2d"] = "torch.Tensor"
 allowlist["torch.nn.functional.log_softmax"] = "torch.Tensor"
