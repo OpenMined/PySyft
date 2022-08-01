@@ -29,6 +29,7 @@ from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
 from .tff_messages import TFFMessage
 from .tff_messages import TFFReplyMessage
+from ....common import UID
 
 
 async def tff_train_federated(
@@ -71,26 +72,39 @@ async def tff_train_federated(
 
 
 def tff_program(node, params, func_model) -> None:
-    dataset_id = str(params["dataset_id"])
     total_rounds = int(params["rounds"])
     number_of_clients = int(params["no_clients"])
     noise_multiplier = float(params["noise_multiplier"])
     clients_per_round = int(params["clients_per_round"])
+
+    train_data_id = UID.from_string(str(params["train_data_id"]))
+    label_data_id = UID.from_string(str(params["label_data_id"]))
 
     context = tff.backends.native.create_local_async_python_execution_context()
     context = tff.program.NativeFederatedContext(context)
     tff.framework.set_default_context(context)
 
     # This needs customization
-    dataset_objs = node.datasets.get(dataset_id)[1]
-    images = node.store.get(dataset_objs[0].obj).data.child.child
-    labels = node.store.get(dataset_objs[1].obj).data.child.child
+    train_data = node.store.get(train_data_id).data.child.child
+    labels = node.store.get(label_data_id).data.child.child
+
+    train_shape = list(train_data.shape)
+    train_shape[0] = -1
+    
+    label_data_shape = list(labels.shape)
+    if len(label_data_shape) == 1:
+        label_data_shape = [-1,1]
+    else:
+        label_data_shape[0] = -1
+
+    print(train_shape)
+    print(label_data_shape)
 
     # TODO: replace the model so this is not needed
-    def preprocess(images, labels):
-        return [tf.reshape(images, [-1, 64 * 64]), tf.reshape(labels, [-1, 1])]
+    def preprocess(train_data, labels):
+        return [tf.reshape(train_data, train_shape), tf.reshape(labels, label_data_shape)]
 
-    dataset = tf.data.Dataset.from_tensor_slices((images, labels))
+    dataset = tf.data.Dataset.from_tensor_slices((train_data, labels))
     datasets = [dataset.map(preprocess)] * number_of_clients
     train_data_source = tff.program.DatasetDataSource(datasets)
 

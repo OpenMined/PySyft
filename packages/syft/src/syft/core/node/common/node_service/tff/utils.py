@@ -1,4 +1,5 @@
 import io
+from socket import timeout
 import numpy as np
 import os
 import shutil
@@ -12,14 +13,26 @@ except:
     pass
 
 
-def train_model(model_fn, params, domain):
+def train_model(model_fn, params, domain, timeout=300):
     # disabled in order to keep the names of the layers of the keras model 
     tf.config.optimizer.set_experimental_options({'disable_meta_optimizer': True})
     model = model_fn()
 
     # Save the model using a functional TFF model
-    input_spec = (tf.TensorSpec(shape=(1,64*64), dtype=tf.int32, name=None), 
-                tf.TensorSpec(shape=(1,1), dtype=tf.int32, name=None))
+    train_data_shape = list(domain.store.get(params['train_data_id']).shape)
+    train_data_shape[0] = 1
+    
+    label_data_shape = list(domain.store.get(params['label_data_id']).shape)
+    if len(label_data_shape) == 1:
+        label_data_shape = [1,1]
+    else:
+        label_data_shape[0] = 1
+        
+    print(train_data_shape)
+    print(label_data_shape)
+        
+    input_spec = (tf.TensorSpec(shape=tuple(train_data_shape), dtype=tf.int64, name=None), 
+                tf.TensorSpec(shape=tuple(label_data_shape), dtype=tf.int64, name=None))
 
     functional_model = tff.learning.models.functional_model_from_keras(keras_model=model, 
                                                                     loss_fn=tf.keras.losses.SparseCategoricalCrossentropy(),
@@ -27,7 +40,7 @@ def train_model(model_fn, params, domain):
     tff.learning.models.save_functional_model(functional_model=functional_model, path='_tmp')
 
     # Create one file from the new directory and read the bytes
-    shutil.make_archive('_archive', 'zip', 'tmp')
+    shutil.make_archive('_archive', 'zip', '_tmp')
     with open('_archive.zip', 'rb') as f:
         model_bytes = f.read()
     os.remove('_archive.zip')
@@ -35,7 +48,7 @@ def train_model(model_fn, params, domain):
 
     # Send the train message to the domain
     msg = TFFMessageWithReply(params=params, model_bytes=model_bytes)
-    reply_msg = domain.send_immediate_msg_with_reply(msg)
+    reply_msg = domain.send_immediate_msg_with_reply(msg, timeout=timeout)
     
     # Read the serialized weights 
     payload = eval(reply_msg.payload)
@@ -55,4 +68,4 @@ def train_model(model_fn, params, domain):
     model = model_fn()
     modelweights.assign_weights_to(model)
     
-    return model
+    return model, payload['metrics']
