@@ -93,13 +93,11 @@ def join(
 # a bool for connected, the host details and the peers
 @router.get("/status", status_code=200, response_class=JSONResponse)
 def status(
-    current_user: Any = Depends(get_current_user),
 ) -> Dict[str, Any]:
-    user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
     msg = (
         VPNStatusMessageWithReply(kwargs={})
         .to(address=node.address, reply_to=node.address)
-        .sign(signing_key=user_key)
+        .sign(signing_key=node.signing_key)
     )
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
