@@ -95,7 +95,7 @@ A very convenient way to interact with a deployed node is via Python, using a Ju
 
 .. code-block:: bash
 
-  pip install jupyter-notebook
+  pip install jupyterlab
 
 If you encounter issues, you can also install it using Conda:
 
