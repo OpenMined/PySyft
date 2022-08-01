@@ -5,8 +5,6 @@ Revises: 741a16c345bf, a8ffb9432e29
 Create Date: 2022-08-01 02:56:16.304119
 
 """
-# third party
-from alembic import op  # type: ignore
 
 # revision identifiers, used by Alembic.
 revision = "78fe08da3f53"

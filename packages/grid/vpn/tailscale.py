@@ -86,9 +86,11 @@ shell2http.register_command(
     decorators=[basic_auth_check],
 )
 
+
 def debug_prefs_callback(context: Dict, future: Future) -> None:
     # optional user-defined callback function
     print(context, future.result())
+
 
 shell2http.register_command(
     endpoint="debug",

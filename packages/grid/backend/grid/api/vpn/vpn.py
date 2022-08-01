@@ -92,8 +92,7 @@ def join(
 # this endpoint will ask the node to get the status of the vpn connection which returns
 # a bool for connected, the host details and the peers
 @router.get("/status", status_code=200, response_class=JSONResponse)
-def status(
-) -> Dict[str, Any]:
+def status() -> Dict[str, Any]:
     msg = (
         VPNStatusMessageWithReply(kwargs={})
         .to(address=node.address, reply_to=node.address)
