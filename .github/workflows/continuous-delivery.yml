@@ -10,45 +10,45 @@ on:
         required: false
 
 jobs:
-  call-linting:
-    if: github.repository == 'OpenMined/PySyft' # don't run on forks
-    uses: OpenMined/PySyft/.github/workflows/linting.yml@dev
+  # call-linting:
+  #   if: github.repository == 'OpenMined/PySyft' # don't run on forks
+  #   uses: OpenMined/PySyft/.github/workflows/linting.yml@dev
 
-  call-syft_tests:
-    if: github.repository == 'OpenMined/PySyft' # don't run on forks
-    uses: OpenMined/PySyft/.github/workflows/syft-pr_tests.yml@dev
+  # call-syft_tests:
+  #   if: github.repository == 'OpenMined/PySyft' # don't run on forks
+  #   uses: OpenMined/PySyft/.github/workflows/syft-pr_tests.yml@dev
 
-  call-grid-backend_test:
-    if: github.repository == 'OpenMined/PySyft' # don't run on forks
-    uses: OpenMined/PySyft/.github/workflows/grid-backend_tests.yml@dev
+  # call-grid-backend_test:
+  #   if: github.repository == 'OpenMined/PySyft' # don't run on forks
+  #   uses: OpenMined/PySyft/.github/workflows/grid-backend_tests.yml@dev
 
-  call-grid-frontend_test:
-    if: github.repository == 'OpenMined/PySyft' # don't run on forks
-    uses: OpenMined/PySyft/.github/workflows/grid-frontend_tests.yml@dev
+  # call-grid-frontend_test:
+  #   if: github.repository == 'OpenMined/PySyft' # don't run on forks
+  #   uses: OpenMined/PySyft/.github/workflows/grid-frontend_tests.yml@dev
 
-  call-syft-security:
-    if: github.repository == 'OpenMined/PySyft' # don't run on forks
-    uses: OpenMined/PySyft/.github/workflows/syft-security.yml@dev
+  # call-syft-security:
+  #   if: github.repository == 'OpenMined/PySyft' # don't run on forks
+  #   uses: OpenMined/PySyft/.github/workflows/syft-security.yml@dev
 
-  call-syft-version_tests:
-    if: github.repository == 'OpenMined/PySyft' # don't run on forks
-    uses: OpenMined/PySyft/.github/workflows/syft-version_tests.yml@dev
+  # call-syft-version_tests:
+  #   if: github.repository == 'OpenMined/PySyft' # don't run on forks
+  #   uses: OpenMined/PySyft/.github/workflows/syft-version_tests.yml@dev
 
-  call-stack-integration_tests:
-    if: github.repository == 'OpenMined/PySyft' # don't run on forks
-    uses: OpenMined/PySyft/.github/workflows/stack-integration_tests.yml@dev
+  # call-stack-integration_tests:
+  #   if: github.repository == 'OpenMined/PySyft' # don't run on forks
+  #   uses: OpenMined/PySyft/.github/workflows/stack-integration_tests.yml@dev
 
   deploy-syft:
-    needs:
-      [
-        call-linting,
-        call-syft_tests,
-        call-grid-backend_test,
-        call-syft-security,
-        call-grid-frontend_test,
-        call-syft-version_tests,
-        call-stack-integration_tests,
-      ]
+    # needs:
+    #   [
+    #     call-linting,
+    #     call-syft_tests,
+    #     call-grid-backend_test,
+    #     call-syft-security,
+    #     call-grid-frontend_test,
+    #     call-syft-version_tests,
+    #     call-stack-integration_tests,
+    #   ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -62,30 +62,30 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install --upgrade setuptools wheel twine tox bump2version
-      - name: Bump the Version
-        run: |
-          ls **/VERSION | xargs -I {} python {}
-          cat packages/grid/devspace.yaml | grep '0\.'
-          bump2version prenum --allow-dirty --no-commit
-          tox -e lint || true
-          ls **/VERSION | xargs -I {} python {}
-          cat packages/grid/devspace.yaml | grep '0\.'
-      - name: Commit changes
-        uses: EndBug/add-and-commit@v7
-        with:
-          author_name: Madhava Jay
-          author_email: madhava@openmined.org
-          message: "bump version"
-          add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/grid/frontend/package.json', 'packages/grid/frontend/src/pages/_domain/login.tsx', 'packages/syft/src/syft/__init__.py']"
-          pull_strategy: NO-PULL
+      # - name: Bump the Version
+      #   run: |
+      #     ls **/VERSION | xargs -I {} python {}
+      #     cat packages/grid/devspace.yaml | grep '0\.'
+      #     bump2version prenum --allow-dirty --no-commit
+      #     tox -e lint || true
+      #     ls **/VERSION | xargs -I {} python {}
+      #     cat packages/grid/devspace.yaml | grep '0\.'
+      # - name: Commit changes
+      #   uses: EndBug/add-and-commit@v7
+      #   with:
+      #     author_name: Madhava Jay
+      #     author_email: madhava@openmined.org
+      #     message: "bump version"
+      #     add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/grid/frontend/package.json', 'packages/grid/frontend/src/pages/_domain/login.tsx', 'packages/syft/src/syft/__init__.py']"
+      #     pull_strategy: NO-PULL
 
-      - name: Build and publish
-        env:
-          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run: |
-          tox -e syft.publish
-          twine upload packages/syft/dist/*
+      # - name: Build and publish
+      #   env:
+      #     TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+      #     TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+      #   run: |
+      #     tox -e syft.publish
+      #     twine upload packages/syft/dist/*
 
       - name: Set Grid package version
         run: echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_ENV
@@ -117,7 +117,7 @@ jobs:
         with:
           context: ./packages
           file: ./packages/grid/backend/backend.dockerfile
-          push: true
+          push: false
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta_grid_backend.outputs.tags }}
           target: backend
@@ -136,8 +136,9 @@ jobs:
         with:
           context: ./packages/grid/frontend
           file: ./packages/grid/frontend/frontend.dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
+          push: false
+          # platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           tags: ${{ steps.meta_grid_frontend.outputs.tags }}
           target: grid-ui-production
 
@@ -155,7 +156,7 @@ jobs:
         with:
           context: ./packages/grid/vpn
           file: ./packages/grid/vpn/headscale.dockerfile
-          push: true
+          push: false
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta_grid_headscale.outputs.tags }}
 
@@ -173,7 +174,7 @@ jobs:
         with:
           context: ./packages/grid/vpn
           file: ./packages/grid/vpn/tailscale.dockerfile
-          push: true
+          push: false
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta_grid_tailscale.outputs.tags }}
 
@@ -191,6 +192,6 @@ jobs:
         with:
           context: ./packages/grid/vpn
           file: ./packages/grid/vpn/iptables.dockerfile
-          push: true
+          push: false
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta_grid_vpn_iptables.outputs.tags }}
