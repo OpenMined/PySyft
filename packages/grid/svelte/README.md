@@ -22,6 +22,12 @@ Once you've installed the project and all dependencies, start a development serv
 pnpm dev
 ```
 
+Add the `host` flag to expose the dev server and the `port` flag to specify a port:
+
+```bash
+pnpm dev --host --port=4200
+```
+
 ## Building
 
 We use [Vite](https://vitejs.dev/) with the svelte-kit plugin. Vite exports to `./out`.
