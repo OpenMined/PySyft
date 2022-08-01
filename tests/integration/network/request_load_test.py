@@ -54,7 +54,7 @@ def test_parallel_sync_io_requests() -> None:
     for i in res:
         assert isinstance(i, SleepReplyMessage)
 
-    expected_time = 2
+    expected_time = 60
     if EMULATION != "false":
-        expected_time = 3  # emulation is slow on CI
+        expected_time = 70  # emulation is slow on CI
     assert total <= expected_time

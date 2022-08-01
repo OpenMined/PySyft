@@ -7,23 +7,8 @@ services:
       - TRAEFIK_TLS_CONF=${TRAEFIK_TLS_CONF}
       - TRAEFIK_TLS_CERTS=${TRAEFIK_TLS_CERTS}
     volumes:
-      - "${TRAEFIK_TLS_CONF}:/etc/traefik/dynamic-configurations"
+      - "${TRAEFIK_TLS_CONF}:/etc/traefik/conf/certs.yaml"
       - "${TRAEFIK_TLS_CERTS}:/etc/traefik/certs"
-    command:
-      - "--providers.docker"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.constraints=Label(`traefik.constraint-label-stack`, `${TRAEFIK_TAG?Variable not set}`)"
-      # custom tls cert config
-      - "--providers.file.directory=/etc/traefik/dynamic-configurations"
-      - "--providers.file.watch=true"
-      # redirect http to https
-      - "--entrypoints.web.address=:81"
-      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-      - "--entrypoints.vpn.address=:80"
-      - "--entrypoints.websecure.address=:${HTTPS_PORT}"
-      - "--entrypoints.websecure.http.tls=true"
-      # Enable the access log, with HTTP requests
-      - "--accesslog"
-      # Enable the Traefik log, for configurations and errors
-      - "--log"
+      - "./traefik/docker/traefik-tls.template.yml:/etc/traefik/traefik-tls.template.yml"
+      - "./traefik/docker/dynamic-tls.yml:/etc/traefik/conf/dynamic.yml"
+    command: /bin/ash -c "apk add gettext && envsubst < /etc/traefik/traefik-tls.template.yml > /etc/traefik/traefik-tls.yml && traefik --configFile=/etc/traefik/traefik-tls.yml"

@@ -243,6 +243,7 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
                         ptr_constructor = obj2pointer_type(
                             fqn=proxy_obj.data_fully_qualified_name
                         )
+
                         ptr = ptr_constructor(
                             client=node,
                             id_at_location=obj.id,

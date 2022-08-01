@@ -7,6 +7,7 @@ import subprocess
 import time
 from typing import Dict
 from typing import List
+from typing import Optional
 
 # third party
 import pytest
@@ -254,11 +255,19 @@ def add_route(
     return response
 
 
-def get_routes(email: str, password: str, port: int, network_host: str) -> List[Dict]:
+def get_routes(
+    email: str,
+    password: str,
+    port: int,
+    network_host: str,
+    timeout: Optional[int] = None,
+) -> List[Dict]:
     root_client = sy.login(email=email, password=password, port=port)
 
     try:
-        response = root_client.networking.list_routes(client=network_host)
+        response = root_client.networking.list_routes(
+            client=network_host, timeout=timeout
+        )
     except Exception as e:
         print(e)
         time.sleep(10)
@@ -282,6 +291,7 @@ def test_1_exchange_credentials_domain1_to_network() -> None:
         password=TEST_ROOT_PASS,
         port=DOMAIN1_PORT,
         network_host=NETWORK_PUBLIC_HOST,
+        timeout=60,
     )
 
     assert isinstance(routes, list)
@@ -308,6 +318,7 @@ def test_2_add_route_domain1_to_network() -> None:
         password=TEST_ROOT_PASS,
         port=DOMAIN1_PORT,
         network_host=NETWORK_PUBLIC_HOST,
+        timeout=60,
     )
 
     matching_route = None
@@ -369,6 +380,7 @@ def test_5_add_route_domain2_to_network() -> None:
         password=TEST_ROOT_PASS,
         port=DOMAIN2_PORT,
         network_host=NETWORK_PUBLIC_HOST,
+        timeout=60,
     )
 
     matching_route = None

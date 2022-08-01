@@ -10,9 +10,8 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
   apt-get install -y --no-install-recommends \
   curl python3-dev gcc make build-essential cmake git
 
-ENV WAITFORIT_VERSION="v2.4.1"
-RUN curl -o /usr/local/bin/waitforit -sSL https://github.com/maxcnunes/waitforit/releases/download/$WAITFORIT_VERSION/waitforit-linux_amd64 && \
-  chmod +x /usr/local/bin/waitforit
+RUN --mount=type=cache,target=/root/.cache \
+  pip install -U pip
 
 RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) = "x86_64" ]; then \
   pip install --user torch==1.11.0+cpu -f https://download.pytorch.org/whl/torch_stable.html; \
@@ -44,7 +43,6 @@ RUN --mount=type=cache,target=/root/.cache \
 # Backend
 FROM python:3.10.4-slim as backend
 COPY --from=build /root/.local /root/.local
-COPY --from=build /usr/local/bin/waitforit /usr/local/bin/waitforit
 
 ENV PYTHONPATH=/app
 ENV PATH=/root/.local/bin:$PATH
@@ -60,6 +58,9 @@ RUN chmod +x /start.sh
 RUN chmod +x /start-reload.sh
 RUN chmod +x /worker-start.sh
 RUN chmod +x /worker-start-reload.sh
+
+RUN --mount=type=cache,target=/root/.cache \
+  pip install -U pip
 
 # allow container to wait for other services
 RUN --mount=type=cache,target=/root/.cache \

@@ -15,6 +15,7 @@ from .....common.message import SignedImmediateSyftMessageWithReply
 from .....common.message import SignedImmediateSyftMessageWithoutReply
 from .....common.message import SignedMessageT
 from ....abstract.node import AbstractNode
+from ...client import GET_OBJECT_TIMEOUT
 from ..node_service import SignedNodeServiceWithReply
 from ..node_service import SignedNodeServiceWithoutReply
 
@@ -105,7 +106,7 @@ class SignedMessageWithReplyForwardingService(SignedNodeServiceWithReply):
                     debug(f"> Lookup: {scope_id.emoji()}")
                     client = node.get_peer_client(node_id=scope_id, only_vpn=False)
                     if client:
-                        return client.send_immediate_msg_with_reply(msg=msg, timeout=15)  # type: ignore
+                        return client.send_immediate_msg_with_reply(msg=msg, timeout=GET_OBJECT_TIMEOUT)  # type: ignore
                     else:
                         raise Exception
         except Exception as e:
