@@ -64,13 +64,6 @@ else:
     # third party
     from flax.struct import dataclass
 
-# third party
-import flax
-import jax
-from jax import numpy as jnp
-import numpy as np
-from numpy.random import randint
-from scipy.optimize import shgo
 
 @serializable(recursive_serde=True)
 class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):

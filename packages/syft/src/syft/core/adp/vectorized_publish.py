@@ -3,10 +3,8 @@ from __future__ import annotations
 
 # stdlib
 import secrets
-from signal import Sigmasks
 from typing import Callable
 from typing import List
-from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Union
@@ -15,23 +13,23 @@ from typing import Union
 import jax
 from jax import numpy as jnp
 import numpy as np
-from sympy import Float
 from tqdm import tqdm
 
 # relative
+from ..adp.data_subject_list import DataSubjectList
 from ..tensor.fixed_precision_tensor import FixedPrecisionTensor
 from ..tensor.lazy_repeat_array import lazyrepeatarray
 from ..tensor.passthrough import PassthroughTensor  # type: ignore
 from .data_subject_ledger import DataSubjectLedger
 from .data_subject_ledger import RDPParams
-from .data_subject_ledger import load_cache
 from .data_subject_ledger import compute_rdp_constant
 from .data_subject_ledger import convert_constants_to_indices
-
+from .data_subject_ledger import load_cache
 
 if TYPE_CHECKING:
     # relative
     from ..tensor.autodp.gamma_tensor import GammaTensor
+
 
 @jax.jit
 def calculate_bounds_for_mechanism(
@@ -48,11 +46,12 @@ def calculate_bounds_for_mechanism(
     )
 
     l2_norm = jnp.sqrt(jnp.sum(jnp.square(value_array))) * one_dim
-    
+
     if "float" not in str(sigma):
         raise RuntimeError(f"Sigma is of type {type(sigma)}. Expected type float.")
 
     return l2_norm, worst_case_l2_norm, one_dim * sigma, one_dim
+
 
 def calibrate_sigma(
     cache_constant2epsilon: np.ndarray,
@@ -60,13 +59,13 @@ def calibrate_sigma(
     min_vals: np.ndarray,
     max_vals: np.ndarray,
     is_linear: bool,
-    query_limit: int=5,
-    sigma=1.5,
-   ) -> np.ndarray:
+    query_limit: int = 5,
+    sigma: float = 1.5,
+) -> np.ndarray:
 
-    """ 
-       Adjust the value of sigma chosen to have a 90% chance of being less than query_limit
- 
+    """
+    Adjust the value of sigma chosen to have a 90% chance of being less than query_limit
+
     """
     # RDP Params Initialization
     l2_norms, l2_norm_bounds, sigmas, coeffs = calculate_bounds_for_mechanism(
@@ -76,7 +75,7 @@ def calibrate_sigma(
         sigma=sigma,
     )
 
-    print("Query Limit: ",query_limit )
+    print("Query Limit: ", query_limit)
     print("Sigma before Calibration:\n ", sigma)
 
     if is_linear:
@@ -96,15 +95,17 @@ def calibrate_sigma(
 
     rdp_constants_lookup = convert_constants_to_indices(rdp_constants)
     max_rdp = np.max(rdp_constants_lookup)
-   
+
     budget_spend = cache_constant2epsilon.take((max_rdp).astype(np.int64))
-    
+
     if budget_spend >= query_limit:
         print("****** Budget spent EXCEEDS limit set by data owner")
         # This is the first index in the cache that has an epsilon >= query limit
         threshold_index = np.searchsorted(cache_constant2epsilon, query_limit)
         # There is a 90% chance the final budget spent will be below the query_limit
-        selected_rdp_value = np.random.choice(np.arange(threshold_index - 9, threshold_index + 1))
+        selected_rdp_value = np.random.choice(
+            np.arange(threshold_index - 9, threshold_index + 1)
+        )
         calibrated_sigma = selected_rdp_value * np.sqrt(max_rdp / selected_rdp_value)
 
     else:
@@ -117,7 +118,7 @@ def calibrate_sigma(
 
 
 def vectorized_publish(
-        value: np.ndarray,
+    value: np.ndarray,
     min_vals: np.ndarray,
     max_vals: np.ndarray,
     state_tree: dict[int, "GammaTensor"],
@@ -128,7 +129,7 @@ def vectorized_publish(
     is_linear: bool = True,
     sigma: float = 1.5,
     output_func: Callable = lambda x: x,
-    query_limit: int = 5
+    query_limit: int = 5,
 ) -> Union[np.ndarray, jax.numpy.DeviceArray]:
     # relative
     from ..tensor.autodp.gamma_tensor import GammaTensor
@@ -155,7 +156,6 @@ def vectorized_publish(
     else:
         max_val_array = max_vals
 
-
     calibrated_sigma = calibrate_sigma(
         cache_constant2epsilon=_cache_constant2epsilon,
         value=value,
@@ -163,8 +163,9 @@ def vectorized_publish(
         max_vals=max_val_array,
         is_linear=is_linear,
         query_limit=query_limit,
-        sigma=sigma)
-    
+        sigma=sigma,
+    )
+
     input_tensors: List[GammaTensor] = GammaTensor.get_input_tensors(state_tree)
 
     filtered_inputs = []
@@ -225,7 +226,7 @@ def vectorized_publish(
                 private=True,
                 get_budget_for_user=get_budget_for_user,
                 deduct_epsilon_for_user=deduct_epsilon_for_user,
-                cache_constant2epsilon = _cache_constant2epsilon
+                cache_constant2epsilon=_cache_constant2epsilon,
             )
             # We had to flatten the mask so the code generalized for N-dim arrays, here we reshape it back
             reshaped_mask = mask.reshape(value.shape)
@@ -253,12 +254,12 @@ def vectorized_publish(
             print(traceback.format_exc())
             print(f"Failed to run vectorized_publish. {e}")
 
-    #print("We have filtered all the input tensors. Now to compute the result:")
+    # print("We have filtered all the input tensors. Now to compute the result:")
 
     # noise = secrets.SystemRandom().gauss(0, sigma)
-    #print("Filtered inputs ", filtered_inputs)
+    # print("Filtered inputs ", filtered_inputs)
     original_output = np.asarray(output_func(filtered_inputs))
-    #print("original output (before noise:", original_output)
+    # print("original output (before noise:", original_output)
     noise = np.asarray(
         [secrets.SystemRandom().gauss(0, sigma) for _ in range(original_output.size)]
     )
@@ -266,5 +267,5 @@ def vectorized_publish(
     # print("noise: ", noise)
 
     output = np.asarray(output_func(filtered_inputs) + noise)
-    #print("got output", type(output), output.dtype)
+    # print("got output", type(output), output.dtype)
     return output.squeeze()

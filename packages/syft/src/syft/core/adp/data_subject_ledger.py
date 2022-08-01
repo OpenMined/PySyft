@@ -102,6 +102,7 @@ class RDPParams:
 
         return res
 
+
 # @dataclass
 # class RDPParams:
 #     sigmas: jnp.array
@@ -193,7 +194,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         constants: Optional[np.ndarray] = None,
         update_number: int = 0,
         timestamp_of_last_update: Optional[float] = None,
-        cache_constant2epsilon: Optional[np.ndarray] = None
+        cache_constant2epsilon: Optional[np.ndarray] = None,
     ) -> None:
         self._rdp_constants = (
             constants if constants is not None else np.array([], dtype=np.float64)
@@ -205,7 +206,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
             else time.time()
         )
         self._pending_save = False
-        #self._cache_constant2epsilon = cache_constant2epsilon
+        # self._cache_constant2epsilon = cache_constant2epsilon
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, DataSubjectLedger):
@@ -252,7 +253,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         get_budget_for_user: Callable,
         deduct_epsilon_for_user: Callable,
         cache_constant2epsilon: np.ndarray,
-        private: bool = True
+        private: bool = True,
     ) -> np.ndarray:
         # coerce to np.int64
         entity_ids_query: np.ndarray = unique_entity_ids_query.astype(np.int64)
@@ -260,7 +261,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         rdp_constants = self._get_batch_rdp_constants(
             entity_ids_query=entity_ids_query, rdp_params=rdp_params, private=private
         )
-        #print("rdp constants", rdp_constants)
+        # print("rdp constants", rdp_constants)
 
         # here we iteratively attempt to calculate the overbudget mask and save
         # changes to the database
@@ -268,7 +269,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
             get_budget_for_user=get_budget_for_user,
             deduct_epsilon_for_user=deduct_epsilon_for_user,
             rdp_constants=rdp_constants,
-            cache_constant2epsilon = cache_constant2epsilon
+            cache_constant2epsilon=cache_constant2epsilon,
         )
 
         # at this point we are confident that the database budget field has been updated
@@ -288,9 +289,11 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
             print(f"Failed to write ledger to ledger store. {e}")
             raise e
 
-    def _increase_max_cache(self, new_size: int, cache_constant2epsilon:np.ndarray) -> None:
+    def _increase_max_cache(
+        self, new_size: int, cache_constant2epsilon: np.ndarray
+    ) -> None:
         new_entries = []
-        #print("CACHE CONSTANTS: ",  len(cache_constant2epsilon))
+        # print("CACHE CONSTANTS: ",  len(cache_constant2epsilon))
         current_size = len(cache_constant2epsilon)
         new_alphas = []
         for i in range(new_size - current_size):
@@ -302,7 +305,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
 
         cache_constant2epsilon = np.concatenate(
             [cache_constant2epsilon, np.array(new_entries)]
-        ) 
+        )
 
     # def _increase_max_cache(self, new_size: int) -> None:
     #     new_entries = []
@@ -372,21 +375,22 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         )
         return constant
 
-    def _get_epsilon_spend(self, rdp_constants: np.ndarray, cache_constant2epsilon: np.ndarray) -> np.ndarray:
+    def _get_epsilon_spend(
+        self, rdp_constants: np.ndarray, cache_constant2epsilon: np.ndarray
+    ) -> np.ndarray:
         # rdp_constants_lookup = (rdp_constants - 1).astype(np.int64)
         rdp_constants_lookup = convert_constants_to_indices(rdp_constants)
         try:
             # needed as np.int64 to use take
-            eps_spend = jax.jit(jnp.take)(
-                cache_constant2epsilon, rdp_constants_lookup
-            )
+            eps_spend = jax.jit(jnp.take)(cache_constant2epsilon, rdp_constants_lookup)
         except IndexError:
             print(f"Cache missed the value at {max(rdp_constants_lookup)}")
-            self._increase_max_cache(int(max(rdp_constants_lookup) * 1.1), cache_constant2epsilon)
-            eps_spend = jax.jit(jnp.take)(
-                cache_constant2epsilon, rdp_constants_lookup
+            self._increase_max_cache(
+                int(max(rdp_constants_lookup) * 1.1), cache_constant2epsilon
             )
+            eps_spend = jax.jit(jnp.take)(cache_constant2epsilon, rdp_constants_lookup)
         return eps_spend
+
     # def _get_epsilon_spend(self, rdp_constants: np.ndarray) -> np.ndarray:
     #     # rdp_constants_lookup = (rdp_constants - 1).astype(np.int64)
     #     rdp_constants_lookup = convert_constants_to_indices(rdp_constants)
@@ -415,7 +419,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         get_budget_for_user: Callable,
         deduct_epsilon_for_user: Callable,
         rdp_constants: np.ndarray,
-        cache_constant2epsilon: np.ndarray
+        cache_constant2epsilon: np.ndarray,
     ) -> Tuple[np.ndarray]:
         """TODO:
         In our current implementation, user_budget is obtained by querying the
@@ -423,7 +427,9 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         When we replace the entity2ledger with something else, we could perhaps directly
         add it into this method
         """
-        epsilon_spend = self._get_epsilon_spend(rdp_constants=rdp_constants, cache_constant2epsilon=cache_constant2epsilon)
+        epsilon_spend = self._get_epsilon_spend(
+            rdp_constants=rdp_constants, cache_constant2epsilon=cache_constant2epsilon
+        )
 
         # try first time
         (
@@ -437,8 +443,8 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         mask = np.array(mask, copy=False)
         highest_possible_spend = float(highest_possible_spend)
         user_budget = float(user_budget)
-        #print("Epsilon spend ", epsilon_spend)
-        #print("Highest possible spend ", highest_possible_spend)
+        # print("Epsilon spend ", epsilon_spend)
+        # print("Highest possible spend ", highest_possible_spend)
         if highest_possible_spend > 0:
             # go spend it in the db
             attempts = 0

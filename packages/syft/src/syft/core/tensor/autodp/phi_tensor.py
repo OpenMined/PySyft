@@ -3,7 +3,6 @@ from __future__ import annotations
 
 # stdlib
 from collections.abc import Sequence
-import operator
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -54,7 +53,6 @@ from ..passthrough import SupportedChainType  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
 from ..smpc import utils
 from ..smpc.mpc_tensor import MPCTensor
-from ..smpc.mpc_tensor import ShareTensor
 from ..smpc.utils import TYPE_TO_RING_SIZE
 from ..util import implements
 from .adp_tensor import ADPTensor
@@ -1126,7 +1124,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         ledger: DataSubjectLedger,
         sigma: float,
     ) -> AcceptableSimpleType:
-        #print("PUBLISHING TO GAMMA:")
+        # print("PUBLISHING TO GAMMA:")
         # print(self.child)
 
         gamma = self.gamma
