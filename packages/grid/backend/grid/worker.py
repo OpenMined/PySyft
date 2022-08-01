@@ -1,12 +1,13 @@
 # stdlib
 from typing import Any
+import requests
 
 # syft absolute
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.node.common.node_service.vpn.vpn_messages import (
     VPNJoinSelfMessageWithReply,
 )
-from syft.core.node.common.node_service.vpn.vpn_messages import connect_with_key
+from syft.core.node.common.node_service.vpn.vpn_messages import connect_with_key, get_status, get_network_url
 
 # grid absolute
 from grid.core.celery_app import celery_app
@@ -44,7 +45,10 @@ def domain_reconnect_network_task() -> None:
 
 def domain_reconnect_network() -> None:
     for node_connections in node.node.all():
-        if node_connections.keep_connected:
+        network_vpn_endpoint = get_network_url().with_path("/api/v1/vpn/status")
+        status_ok = requests.get(network_vpn_endpoint).json()['status'] == "ok"
+        not_connected = not status_ok or not network_vpn_endpoint
+        if node_connections.keep_connected and not_connected:
             routes = list(node.node_route.query(node_id=node_connections.id))
             for route in routes:
                 try:
