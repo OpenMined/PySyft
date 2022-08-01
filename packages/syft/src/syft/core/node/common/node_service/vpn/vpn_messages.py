@@ -467,6 +467,21 @@ def get_status(
         print("failed to make request", e)
     return connected, host, peers
 
+def get_network_url(tailscale_host:str = TAILSCALE_URL):
+    data = {"timeout": 5, "force_unique_key": True}
+    command_url = f'{tailscale_host}/commands/debug'
+    host: Dict[str, str] = {}
+    peers: List[Dict[str, str]] = []
+    connected = False
+    network_url = ""
+    try:
+        headers = {"X-STACK-API-KEY": os.environ.get("STACK_API_KEY", "")}
+        resp = requests.post(command_url, json=data, headers=headers)
+        report = get_result(json=resp.json())
+        network_url = GridURL.from_url(json.loads(json.loads(report)['report'])['ControlURL'][:-4])
+    except Exception as e:
+        print("failed to make request", e)
+    return network_url
 
 def get_result(json: Dict) -> str:
     result_url = json.get("result_url", "")
