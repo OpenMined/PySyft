@@ -131,3 +131,4 @@ def pytest_configure(config: _pytest.config.Config) -> None:
     config.addinivalue_line("markers", "k8s: kubernetes integration tests")
     config.addinivalue_line("markers", "e2e: end-to-end integration tests")
     config.addinivalue_line("markers", "security: security integration tests")
+    config.addinivalue_line("markers", "tff: PySyTFF integration tests")
