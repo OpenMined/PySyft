@@ -237,17 +237,19 @@ Provides services to a group of `Data Owners` and `Data Scientists`, such as dat
 # Contributors
 
 OpenMined and Syft appreciates all contributors, if you would like to fix a bug or suggest a new feature, please see our [guidelines](https://openmined.github.io/PySyft/developer_guide/index.html).<br /><br />  
-<a href="https://github.com/OpenMined/PySyft/graphs/contributors"><img src="packages/syft/docs/img/contributors_light.jpg#gh-light-mode-only" alt="Contributors" width="100%" /><img src="packages/syft/docs/img/contributors_dark.jpg#gh-dark-mode-only" alt="Contributors" width="100%" /></a>
+<img src="packages/syft/docs/img/contributors_light.jpg#gh-light-mode-only" alt="Contributors" width="100%" />
+<img src="packages/syft/docs/img/contributors_dark.jpg#gh-dark-mode-only" alt="Contributors" width="100%" />
 
 # Supporters
 
-<a href="https://opencollective.com/openmined"><img src="packages/syft/docs/img/logos_light.png#gh-light-mode-only" alt="Supporters" width="100%" />
-<img src="packages/syft/docs/img/logos_dark.png#gh-dark-mode-only" alt="Supporters" width="100%" /></a>
+<img src="packages/syft/docs/img/logos_light.png#gh-light-mode-only" alt="Supporters" width="100%" />
+<img src="packages/syft/docs/img/logos_dark.png#gh-dark-mode-only" alt="Supporters" width="100%" />
 
 # Open Collective
 
-`OpenMined` is a registered `501(c)(3)` in the United States of America. We are funded by our gracious supporters on Open Collective. <br /><br />
-<a href="https://opencollective.com/openmined"><img src="packages/syft/docs/img/opencollective_light.png#gh-light-mode-only" alt="Contributors" width="100%" /><img src="packages/syft/docs/img/opencollective_dark.png#gh-dark-mode-only" alt="Contributors" width="100%" /></a>
+`OpenMined` is a registered `501(c)(3)` in the United States of America. We are funded by our gracious supporters on <a href="https://opencollective.com/openmined">Open Collective</a>. <br /><br />
+<img src="packages/syft/docs/img/opencollective_light.png#gh-light-mode-only" alt="Contributors" width="100%" />
+<img src="packages/syft/docs/img/opencollective_dark.png#gh-dark-mode-only" alt="Contributors" width="100%" />
 
 # Disclaimer
 
