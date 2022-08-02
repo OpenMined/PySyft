@@ -124,6 +124,10 @@ class Settings(BaseSettings):
         True if os.getenv("TEST_MODE", "false").lower() == "true" else False
     )
 
+    # Oblv
+    OBLV_KEY_NAME: str = "oblv_key"
+    OBLV_KEY_PATH: str = "/app/content"
+
     class Config:
         case_sensitive = True
 

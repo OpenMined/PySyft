@@ -80,6 +80,7 @@ from .common.node_service.user_manager.user_manager_service import UserManagerSe
 from .common.node_service.vpn.vpn_service import VPNConnectService
 from .common.node_service.vpn.vpn_service import VPNJoinService
 from .common.node_service.vpn.vpn_service import VPNStatusService
+from .common.node_service.oblv.oblv_service import OblvRequestAdminService, OblvRequestUserService
 from .common.node_table.utils import create_memory_db_engine
 from .device import Device
 from .device import DeviceClient
@@ -167,7 +168,8 @@ class Domain(Node):
         self.immediate_services_with_reply.append(DatasetManagerService)
         self.immediate_services_with_reply.append(RequestService)
         self.immediate_services_with_reply.append(UserLoginService)
-
+        self.immediate_services_with_reply.append(OblvRequestAdminService)
+        self.immediate_services_with_reply.append(OblvRequestUserService)
         self.immediate_services_without_reply.append(ObjectRequestServiceWithoutReply)
         self.immediate_services_without_reply.append(
             AssociationRequestWithoutReplyService

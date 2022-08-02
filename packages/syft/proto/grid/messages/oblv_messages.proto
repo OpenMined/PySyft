@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package syft.grid.messages;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/io/address.proto";
+
+// Create CreateKeyPairMessage
+message CreateKeyPairMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 3;
+}
+
+// Create CreateKeyPairResponse
+message CreateKeyPairResponse {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string response = 3;
+}
+
+//Create GetPublicKeyMessage
+message GetPublicKeyMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 3;
+}
+
+//Create GetPublicKeyResponse
+message GetPublicKeyResponse {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string response = 3;
+}

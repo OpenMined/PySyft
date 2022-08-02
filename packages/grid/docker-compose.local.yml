@@ -1,0 +1,188 @@
+version: "3.8"
+services:
+  tailscale:
+    image: "${DOCKER_IMAGE_TAILSCALE?Variable not set}:${VERSION-latest}"
+    environment:
+      - SERVICE_NAME=tailscale
+      - RELEASE=${RELEASE:-production}
+      - HOSTNAME=${DOMAIN_NAME?Variable not set}
+      - STACK_API_KEY=$STACK_API_KEY
+    profiles:
+      - vpn
+    volumes:
+      - ./vpn:/tailscale
+    cap_add: # Required for tailscale to work
+      - net_admin
+      - sys_module
+
+  proxy:
+    restart: always
+    hostname: ${DOMAIN_NAME?Variable not set}
+    image: ${DOCKER_IMAGE_TRAEFIK?Variable not set}:${TRAEFIK_VERSION?Variable not set}
+    networks:
+      - default
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    environment:
+      - SERVICE_NAME=proxy
+      - RELEASE=${RELEASE:-production}
+      - HOSTNAME=${DOMAIN_NAME?Variable not set}
+      - HTTP_PORT=${HTTP_PORT}
+      - HTTPS_PORT=${HTTPS_PORT}
+    ports:
+      - "8080"
+    command:
+      - "--providers.docker"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.constraints=Label(`traefik.constraint-label-stack`, `${TRAEFIK_TAG?Variable not set}`)"
+      - "--entrypoints.web.address=:81"
+      - "--entrypoints.vpn.address=:80"
+
+      # Enable the access log, with HTTP requests
+      - "--accesslog"
+      # Enable the Traefik log, for configurations and errors
+      - "--log"
+      # Enable the Dashboard and API
+      - --api # admin panel
+      - --api.insecure=true # admin panel no password
+      - --ping=true
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: frontend.dockerfile
+      target: "grid-ui-development"
+    volumes:
+      - ./frontend:/app
+
+  db:
+    restart: always
+    image: postgres:12
+    volumes:
+      - ./db_data:/var/lib/postgresql/data
+    environment:
+      - SERVICE_NAME=db
+      - RELEASE=development
+    env_file:
+      - .env
+    command:
+      - postgres
+      - --max_connections=1000
+    ports:
+      - "5432:5432"
+
+  redis:
+    restart: always
+    image: redis:${REDIS_VERSION?Variable not set}
+    volumes:
+      - app-redis-data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    environment:
+      - SERVICE_NAME=redis
+    env_file:
+      - .env
+    ports:
+      - "6379"
+  queue:
+    restart: always
+    environment:
+      - SERVICE_NAME=queue
+    volumes:
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+    image: rabbitmq:3-management
+    ports:
+      - "5672"
+      - "15672"
+
+  backend:
+    build:
+      context: ../
+      dockerfile: ./grid/backend/backend.dockerfile
+      target: "backend"
+    depends_on:
+      - db
+    volumes:
+      - ./backend/grid:/app/grid
+      - ./backend/alembic:/app/alembic
+      - ../syft:/app/syft
+      - ./data/package-cache:/root/.cache
+      # - ./profile:/tmp/profile
+    command: /start-reload.sh
+    # command: "sleep 99999"
+    environment:
+      - SERVICE_NAME=backend
+      - RELEASE=development
+      - PROFILE=true
+      - JAEGER_HOST=docker-host
+      - JAEGER_PORT=6831
+    network_mode: service:proxy
+
+  backend_stream:
+    build:
+      context: ../
+      dockerfile: ./grid/backend/backend.dockerfile
+      target: "backend"
+    volumes:
+      - ./backend/grid:/app/grid
+      - ./backend/alembic:/app/alembic
+      - ../syft:/app/syft
+      - ./data/package-cache:/root/.cache
+      # - ./profile:/tmp/profile
+    command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /start-reload.sh"
+    # command: "sleep 99999"
+    environment:
+      - PROFILE=true
+      - JAEGER_HOST=docker-host
+      - JAEGER_PORT=6831
+
+  celeryworker:
+    build:
+      context: ../
+      dockerfile: ./grid/backend/backend.dockerfile
+      target: "backend"
+    volumes:
+      - ./backend/grid:/app/grid
+      - ./backend/alembic:/app/alembic
+      - ../syft:/app/syft
+      - ./data/package-cache:/root/.cache
+      # - ./profile:/tmp/profile
+    command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /worker-start-reload.sh"
+    # command: "sleep 99999"
+    environment:
+      - PROFILE=true
+      - JAEGER_HOST=docker-host
+      - JAEGER_PORT=6831
+
+  headscale:
+    build:
+      context: ./vpn
+      dockerfile: headscale.dockerfile
+    profiles:
+      - network
+    volumes:
+      - ./vpn:/headscale
+    ports:
+      - "4000"
+
+  seaweedfs:
+    profiles:
+      - blob-storage
+    # volumes:
+    #   - ./data/seaweedfs:/data
+    ports:
+      - "9333" # admin
+      - "8888" # filer
+      - "8333" # S3
+    image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}"
+
+volumes:
+  app-db-data_new:
+  tailscale-data:
+  headscale-data:
+  app-redis-data:
+  seaweedfs-data:
+
+networks:
+  traefik-public:
+    # Allow setting it to false for testing
+    external: False

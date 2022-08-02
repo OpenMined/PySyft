@@ -494,7 +494,7 @@ class Node(AbstractNode):
         # message reply
         try:
             debug(
-                f"> Received with Reply {contents.pprint} {contents.id} @ {self.pprint}"
+                f"> Received with Reply updated message {contents.pprint} {contents.id} @ {self.pprint}"
             )
             # try to process message
             response = self.process_message(

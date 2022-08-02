@@ -38,6 +38,7 @@ from .common.client import Client
 from .common.client_manager.association_api import AssociationRequestAPI
 from .common.client_manager.dataset_api import DatasetRequestAPI
 from .common.client_manager.role_api import RoleRequestAPI
+from .common.client_manager.oblv_api import OblvAPI
 from .common.client_manager.user_api import UserRequestAPI
 from .common.client_manager.vpn_api import VPNAPI
 from .common.node_service.get_remaining_budget.get_remaining_budget_messages import (
@@ -71,6 +72,7 @@ class RequestQueueClient(AbstractNodeClient):
         self.roles = RoleRequestAPI(client=self)
         self.association = AssociationRequestAPI(client=self)
         self.datasets = DatasetRequestAPI(client=self)
+        self.oblv = OblvAPI(client=self)
 
     @property
     def requests(self) -> List[RequestMessage]:
@@ -331,6 +333,7 @@ class DomainClient(Client):
         self.association = AssociationRequestAPI(client=self)
         self.datasets = DatasetRequestAPI(client=self)
         self.vpn = VPNAPI(client=self)
+        self.oblv = OblvAPI(client=self)
 
     def obj_exists(self, obj_id: UID) -> bool:
         msg = DoesObjectExistMessage(obj_id=obj_id)

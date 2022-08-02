@@ -22,6 +22,7 @@ from grid.api.settings import settings
 from grid.api.syft import syft
 from grid.api.users.routes import router as user_router
 from grid.api.vpn import vpn
+from grid.api.oblv import oblv_api
 
 api_router = APIRouter()
 api_router.include_router(login.router, tags=["login"])
@@ -41,3 +42,4 @@ api_router.include_router(status.router, prefix="/status")
 api_router.include_router(exam.router, prefix="/exam")
 api_router.include_router(ping.router, prefix="/ping")
 api_router.include_router(vpn.router, prefix="/vpn")
+api_router.include_router(oblv_api.router, prefix="/oblv")

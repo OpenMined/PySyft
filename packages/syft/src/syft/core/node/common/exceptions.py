@@ -202,3 +202,10 @@ class InvalidNodeCredentials(Exception):
         if not message:
             message = "Invalid Credentials, verify_key does not match"
         super().__init__(message)
+
+
+class OblvKeyNotFoundError(Exception):
+    def __init__(self, message: str = "") -> None:
+        if not message:
+            message = "Oblivious public key not found. Request admin to create one."
+        super().__init__(message)
