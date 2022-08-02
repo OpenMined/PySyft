@@ -131,13 +131,25 @@ jobs:
             type=raw,value=${{ env.GRID_VERSION }}
             type=raw,value=latest
 
-      - name: Build and push `grid-frontend` image to DockerHub
+      # yarn cache fails if you build both architectures together
+      - name: Build and push `grid-frontend` image to DockerHub x86
         uses: docker/build-push-action@v3
         with:
           context: ./packages/grid/frontend
           file: ./packages/grid/frontend/frontend.dockerfile
           push: true
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
+          tags: ${{ steps.meta_grid_frontend.outputs.tags }}
+          target: grid-ui-production
+
+      # yarn cache fails if you build both architectures together
+      - name: Build and push `grid-frontend` image to DockerHub arm64
+        uses: docker/build-push-action@v3
+        with:
+          context: ./packages/grid/frontend
+          file: ./packages/grid/frontend/frontend.dockerfile
+          push: true
+          platforms: linux/arm64
           tags: ${{ steps.meta_grid_frontend.outputs.tags }}
           target: grid-ui-production
 
