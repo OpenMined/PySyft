@@ -11,6 +11,8 @@ from pydantic import EmailStr
 from typing_extensions import final
 
 # relative
+from ......util import get_tracer
+from ......util import span
 from .....common.serde.serializable import serializable
 from ....abstract.node_service_interface import NodeServiceInterface
 from ....domain_interface import DomainInterface
@@ -31,6 +33,10 @@ from ..generic_payload.syft_message import ReplyPayload
 from ..generic_payload.syft_message import RequestPayload
 
 
+tracer = get_tracer("User API")
+
+
+@span(tracer, span_msg="Create User")
 @serializable(recursive_serde=True)
 @final
 class CreateUserMessage(SyftMessage, DomainMessageRegistry):
@@ -110,6 +116,7 @@ class CreateUserMessage(SyftMessage, DomainMessageRegistry):
         return [UserCanCreateUsers, IsNodeDaaEnabled]
 
 
+@span(tracer, span_msg="Get User")
 @serializable(recursive_serde=True)
 @final
 class GetUserMessage(SyftMessage, DomainMessageRegistry):
@@ -166,6 +173,7 @@ class GetUserMessage(SyftMessage, DomainMessageRegistry):
         return [UserCanTriageRequest]
 
 
+@span(tracer, span_msg="Get All Users")
 @serializable(recursive_serde=True)
 @final
 class GetUsersMessage(SyftMessage, DomainMessageRegistry):
@@ -219,6 +227,7 @@ class GetUsersMessage(SyftMessage, DomainMessageRegistry):
         return [UserCanTriageRequest]
 
 
+@span(tracer, span_msg="Delete User")
 @serializable(recursive_serde=True)
 @final
 class DeleteUserMessage(SyftMessage, DomainMessageRegistry):
@@ -256,6 +265,7 @@ class DeleteUserMessage(SyftMessage, DomainMessageRegistry):
         return [UserCanCreateUsers, ~UserIsOwner]
 
 
+@span(tracer, span_msg="Update User")
 @serializable(recursive_serde=True)
 @final
 class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
