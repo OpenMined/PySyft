@@ -647,6 +647,14 @@ def span(tracer, span_msg):
         return wrapper
     return decorator
 
+def span_func(tracer, span_msg):
+    def inner(func):
+        def wrapper(*args, **kwargs):
+            with tracer.start_as_current_span(span_msg):
+                func(*args, **kwargs)
+        return wrapper
+    return inner
+
 @contextmanager
 def concurrency_override(count: int = 1) -> Iterator:
     # this only effects local code so its best to use in unit tests
