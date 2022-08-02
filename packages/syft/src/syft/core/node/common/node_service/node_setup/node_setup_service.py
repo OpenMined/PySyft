@@ -95,7 +95,7 @@ def create_initial_setup(
     # 5 - Save Node SetUp Configs
     try:
         node_id = node.target_id.id
-        node.setup.register(
+        node.setup.register_once(
             domain_name=msg.domain_name,
             node_id=node_id.no_dash,
             deployed_on=datetime.now(),

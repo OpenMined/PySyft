@@ -113,15 +113,15 @@ def vectorized_publish(
         while isinstance(value, PassthroughTensor):
             value = value.child
 
-        if isinstance(input_tensor.min_val, lazyrepeatarray):
-            min_val_array = input_tensor.min_val.to_numpy()
+        if isinstance(input_tensor.min_vals, lazyrepeatarray):
+            min_val_array = input_tensor.min_vals.to_numpy()
         else:
-            min_val_array = input_tensor.min_val
+            min_val_array = input_tensor.min_vals
 
-        if isinstance(input_tensor.max_val, lazyrepeatarray):
-            max_val_array = input_tensor.max_val.to_numpy()
+        if isinstance(input_tensor.max_vals, lazyrepeatarray):
+            max_val_array = input_tensor.max_vals.to_numpy()
         else:
-            max_val_array = input_tensor.max_val
+            max_val_array = input_tensor.max_vals
 
         l2_norms, l2_norm_bounds, sigmas, coeffs = calculate_bounds_for_mechanism(
             value_array=value,
@@ -136,7 +136,21 @@ def vectorized_publish(
             lipschitz_bounds = input_tensor.lipschitz_bound
             # raise Exception("gamma_tensor.lipschitz_bound property would be used here")
 
-        input_entities = input_tensor.data_subjects.data_subjects_indexed
+        if isinstance(input_tensor.data_subjects, np.ndarray):
+            # TODO: THIS IS A HACK FOR AA AND SHOULD __NOT__ BE MERGED INTO DEV
+            # Need to convert newDSL to old DSL-> this works because for each step we only use 1 data subject at a time
+            root_child = None
+            while isinstance(input_tensor, PassthroughTensor):
+                root_child = input_tensor.child
+                input_tensor = root_child
+            # input_entities = np.zeros_like(root_child)
+            input_entities = input_tensor.data_subjects
+        elif isinstance(input_tensor.data_subjects, DataSubjectList):
+            input_entities = input_tensor.data_subjects.data_subjects_indexed
+        else:
+            raise NotImplementedError(
+                f"Undefined behaviour for data subjects type: {type(input_tensor.data_subjects)}"
+            )
         # data_subjects.data_subjects_indexed[0].reshape(-1)
         # t2 = time()
         # print("Obtained RDP Params, calculation time", t2 - t1)
@@ -188,7 +202,14 @@ def vectorized_publish(
     print("We have filtered all the input tensors. Now to compute the result:")
 
     # noise = secrets.SystemRandom().gauss(0, sigma)
-    print("Filtered inputs ", filtered_inputs)
+    print(
+        "Filtered inputs ",
+        type(filtered_inputs),
+        type(filtered_input_tensor),
+        filtered_inputs,
+    )
+    # GammaTensor.convert_dsl(state_tree)
+    print("Converted DSLs")
     original_output = np.asarray(output_func(filtered_inputs))
     print("original output (before noise:", original_output)
     noise = np.asarray(
@@ -198,5 +219,7 @@ def vectorized_publish(
     print("noise: ", noise)
 
     output = np.asarray(output_func(filtered_inputs) + noise)
-    print("got output", type(output), output.dtype)
+
+    print("got output", output, type(output), output.dtype)
+
     return output.squeeze()

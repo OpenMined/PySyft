@@ -1,19 +1,29 @@
+"""
+This file can be used to parametrize the benchmarking of autodp tensor operations
+This file can be run as:
+python executor.py MODE_OF_OPERATION SUITE_ARGS PERF_ARGS
+
+Parameters
+----------
+SUITE_ARGS:
+    These arguments control the size of the generated data used in our tests
+PERF_ARGS:
+    These arguments are inherited from the pyperf runner class,
+    for more info: https://pyperf.readthedocs.io/en/latest/runner.html
+
+"""
+# future
+from __future__ import annotations
+
 # stdlib
-import os
-from pathlib import Path
+import argparse
+import inspect
 import subprocess
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
 
 # third party
+from data import get_data_size
 import pyperf
-from syft_benchmarks import run_phitensor_suite
-
-# syft absolute
-from syft.util import download_file
-from syft.util import get_root_data_path
+import syft_benchmarks
 
 
 def get_git_revision_short_hash() -> str:
@@ -24,41 +34,86 @@ def get_git_revision_short_hash() -> str:
     )
 
 
-def download_spicy_bird_benchmark(
-    sizes: Optional[List[str]] = None,
-) -> Tuple[Dict[str, Path], List[str]]:
-    sizes = sizes if sizes else ["100K", "250K", "500K", "750K", "1M"]
-    file_suffix = "_rows_dataset_sample.parquet"
-    BASE_URL = "https://raw.githubusercontent.com/madhavajay/datasets/main/spicy_bird/"
+def new_get_parser(params):
+    parser = argparse.ArgumentParser(description="Process some integers.")
 
-    folder_name = "spicy_bird"
-    dataset_path = get_root_data_path() / folder_name
-    paths = []
-    for size in sizes:
-        filename = f"{size}{file_suffix}"
-        full_path = dataset_path / filename
-        url = f"{BASE_URL}{filename}"
-        if not os.path.exists(full_path):
-            print(url)
-            path = download_file(url=url, full_path=full_path)
-        else:
-            path = Path(full_path)
-        paths.append(path)
-    return dict(zip(sizes, paths)), sizes
+    parser.add_argument(
+        "--select_tests",
+        nargs="*",
+        help="TODO",
+        choices=list(params.keys()),
+        action="store",
+        required=True,
+    )
 
+    for test_name in params:
+        for arg_name in params[test_name]:
+            parser.add_argument(
+                f"--{test_name}_{arg_name}",
+                action="store",
+                type=params[test_name][arg_name],
+                help="TODO",
+            )
 
-key_size = "100K"
-files, ordered_sizes = download_spicy_bird_benchmark(sizes=[key_size])
+    return parser
 
 
-def run_suite() -> None:
+def get_tests_parameters():
+    params = {}
+    for method in dir(syft_benchmarks):
+        if method[:4] == "run_" and method[-6:] == "_suite":
+            suite_name = method[4:-6]
+            params[suite_name] = {}
+            run_func = getattr(syft_benchmarks, method)
+            annotations = inspect.getfullargspec(run_func).annotations
+            for k in annotations:
+                if k != "runner" and k != "return":
+                    params[suite_name][k] = annotations[k]
 
-    data_file = files[key_size]
-    runner = pyperf.Runner()
+    return params
+
+
+def new_add_cmd_args(cmd, args):
+    if len(args.select_tests) > 0:
+        cmd.append("--select_tests")
+        for test_name in args.select_tests:
+            cmd.append(test_name)
+            for name_attr in dir(args):
+                if name_attr.startswith(test_name):
+                    value = getattr(args, name_attr)
+                    if value:
+                        cmd.append(f"--{name_attr}")
+                        cmd.append(str(value))
+
+
+def new_run_suite() -> None:
+    # parse the modules
+    params = get_tests_parameters()
+
+    # create the base parser
+    parser = new_get_parser(params)
+
+    # setup the runner
+    runner = pyperf.Runner(_argparser=parser, add_cmdline_args=new_add_cmd_args)
     runner.parse_args()
+
     runner.metadata["git_commit_hash"] = get_git_revision_short_hash()
 
-    run_phitensor_suite(runner=runner, data_file=data_file)
+    key = "100K"
+    data_file, key = get_data_size(key)
+
+    args = runner.args
+    print(args)
+    for test_name in args.select_tests:
+        method_name = f"run_{test_name}_suite"
+        run_func = getattr(syft_benchmarks, method_name)
+        kwargs_dict = {"runner": runner, "data_file": data_file}
+        for arg_name in params[test_name]:
+            value = getattr(runner.args, f"{test_name}_{arg_name}")
+            if value:
+                kwargs_dict[arg_name] = value
+        run_func(**kwargs_dict)
 
 
-run_suite()
+if __name__ == "__main__":
+    new_run_suite()
