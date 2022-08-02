@@ -639,6 +639,14 @@ def concurrency_count(factor: float = 0.8) -> int:
     mp_count = force_count if force_count >= 1 else int(mp.cpu_count() * factor)
     return mp_count
 
+def span(tracer, span_msg):
+    def decorator(fun):
+        def wrapper(*args, **kwargs):
+                with tracer.start_as_current_span(span_msg):
+                    result = fun(*args, **kwargs)
+                return result
+        return wrapper
+    return decorator
 
 @contextmanager
 def concurrency_override(count: int = 1) -> Iterator:
