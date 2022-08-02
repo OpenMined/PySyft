@@ -188,21 +188,20 @@ Provides services to a group of `Data Owners` and `Data Scientists`, such as dat
 
 <table border="5" bordercolor="grey">
 <tr>
-<th align="center" bgcolor="#323232">
+<th align="center" valign="top">
 <img width="441" height="1">
 <div align="center">
 <a href="https://slack.openmined.org/"><img src="packages/syft/docs/img/panel_slack.png" alt="" width="100%" align="center" /></a>
 </th>
-<th align="center" bgcolor="#323232">
+<th align="center" valign="top">
 <img width="441" height="1">
 <div align="center">
 <img src="packages/syft/docs/img/panel_title_youtube.png" alt="" width="100%" align="center" />
 <p align="left"><sub><sup>- <a href="https://www.youtube.com/watch?v=qVf0tPBzr2k">PETs: Remote Data Science Unleashed - R gov 2021</a><br />- <a href="https://youtu.be/sCoDWKTbh3s?list=PL_lsbAsL_o2BQKXG7mkGFA8LSApCnhljL">Introduction to Remote Data Science - PyTorch Dev 2021</a><br />- <a href="https://youtu.be/kzLeTz_vIeQ?list=PL_lsbAsL_o2BtOz6KUfUI_Zla6Rg5dmyc">The Future of AI Tools - PyTorch Dev 2020</a><br />- <a href="https://www.youtube.com/watch?v=4zrU54VIK6k&t=1s">Privacy Preserving AI - MIT Deep Learning Series</a><br />- <a href="https://www.youtube.com/watch?v=Pr4erdusiW0">Privacy-Preserving Data Science - TWiML Talk #241</a><br />- <a href="https://www.youtube.com/watch?v=NJBBE_SN90A">Privacy Preserving AI - PyTorch Devcon 2019</a>
 </sup></sup></p>
-<img src="packages/syft/docs/img/panel_title_papers.png" alt="" width="100%" align="center" />
 </div>
 </th>
-<th align="center" bgcolor="#323232">
+<th align="center" valign="top">
 <img width="441" height="1">
 <div align="center">
 <a href="https://blog.openmined.org/work-on-ais-most-exciting-frontier-no-phd-required/"><img src="packages/syft/docs/img/panel_padawan.png" alt="" width="100%" align="center"></a>
@@ -237,20 +236,18 @@ Provides services to a group of `Data Owners` and `Data Scientists`, such as dat
 
 # Contributors
 
-OpenMined and Syft appreciates all contributors, if you would like to fix a bug or suggest a new feature, please see our [guidelines](https://openmined.github.io/PySyft/developer_guide/index.html).<br /><br />
-<a href="https://github.com/OpenMined/PySyft/graphs/contributors"><img src="packages/syft/docs/img/contributors_light.jpg#gh-light-mode-only" alt="Contributors" width="100%" /></a>
-<a href="https://github.com/OpenMined/PySyft/graphs/contributors"><img src="packages/syft/docs/img/contributors_dark.jpg#gh-dark-mode-only" alt="Contributors" width="100%" /></a>
+OpenMined and Syft appreciates all contributors, if you would like to fix a bug or suggest a new feature, please see our [guidelines](https://openmined.github.io/PySyft/developer_guide/index.html).<br /><br />  
+<a href="https://github.com/OpenMined/PySyft/graphs/contributors"><img src="packages/syft/docs/img/contributors_light.jpg#gh-light-mode-only" alt="Contributors" width="100%" /><img src="packages/syft/docs/img/contributors_dark.jpg#gh-dark-mode-only" alt="Contributors" width="100%" /></a>
 
 # Supporters
 
-<a href="https://opencollective.com/openmined"><img src="packages/syft/docs/img/logos_light.png#gh-light-mode-only" alt="Supporters" width="100%" /></a>
-<a href="https://opencollective.com/openmined"><img src="packages/syft/docs/img/logos_dark.png#gh-dark-mode-only" alt="Supporters" width="100%" /></a>
+<a href="https://opencollective.com/openmined"><img src="packages/syft/docs/img/logos_light.png#gh-light-mode-only" alt="Supporters" width="100%" />
+<img src="packages/syft/docs/img/logos_dark.png#gh-dark-mode-only" alt="Supporters" width="100%" /></a>
 
 # Open Collective
 
 `OpenMined` is a registered `501(c)(3)` in the United States of America. We are funded by our gracious supporters on Open Collective. <br /><br />
-<a href="https://opencollective.com/openmined"><img src="packages/syft/docs/img/opencollective_light.png#gh-light-mode-only" alt="Contributors" width="100%" /></a>
-<a href="https://opencollective.com/openmined"><img src="packages/syft/docs/img/opencollective_dark.png#gh-dark-mode-only" alt="Contributors" width="100%" /></a>
+<a href="https://opencollective.com/openmined"><img src="packages/syft/docs/img/opencollective_light.png#gh-light-mode-only" alt="Contributors" width="100%" /><img src="packages/syft/docs/img/opencollective_dark.png#gh-dark-mode-only" alt="Contributors" width="100%" /></a>
 
 # Disclaimer
 
