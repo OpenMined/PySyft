@@ -131,7 +131,7 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 </tr>
 </table>
 
-# Important Terms
+# Terminology
 
 <table border="5" bordercolor="grey">
 <tr>
@@ -154,7 +154,7 @@ Provide `datasets` which they would like to make available for `study` by an `ou
 <td valign="top">
 <!-- REMOVE THE BACKSLASHES -->
 
-End `users` who desire to perform `computations` or `answer` a specific `question` using one or more data owners' `datasets`.
+Are end `users` who desire to perform `computations` or `answer` a specific `question` using one or more data owners' `datasets`.
 
 </td>
 </tr>
@@ -184,52 +184,77 @@ Provides services to a group of `Data Owners` and `Data Scientists`, such as dat
 <tr>
 </table>
 
-The steps performed by the respective personas are shown below:
-
-<div>
-    <img src="packages/syft/docs/img/big-picture.png#gh-light-mode-only" alt="big-picture-overview" width="100%">
-    <img src="packages/syft/docs/img/big-picture-dark.png#gh-dark-mode-only" alt="big-picture-overview" width="100%">
-</div>
-
 # Community
 
-`Openmined` is a vibrant group of `developers`, `data scientists`, `researchers`, and `decision-makers`. If you want to be a part of OpenMined's `thriving community` and would like to dive deep into the `concepts` of `Remote Data Science`, we offer you to share your `thoughts` with us on our [slack](https://communityinviter.com/apps/openmined/openmined/) channel and follow the below `study materials` to get familiar with the `PySyft` library.
-
 <table border="5" bordercolor="grey">
-  <thead>
-    <tr>
-      <th>Join Slack (14,500+)</th>
-      <th>OpenMined Courses</th>
-      <th>Padawan Program</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><a href='https://communityinviter.com/apps/openmined/openmined/'><img src="packages/syft/docs/img/personas_image/slack.jpeg" height=150 width=220 /></a></td>
-      <td><a href='https://courses.openmined.org/'><img src="packages/syft/docs/img/personas_image/course.png" height=150 width=220 /></a></td>
-      </td>
-      <td><a href='https://blog.openmined.org/work-on-ais-most-exciting-frontier-no-phd-required/'><img src="http://img.youtube.com/vi/SWekBc0wnxY/maxresdefault.jpg" title="Padawan" alt="YouTube Video" height=150 width=220 /></a></td>
-    </tr>
-  </tbody>
+<tr>
+<th align="center" bgcolor="#323232">
+<img width="441" height="1">
+<div align="center">
+<a href="https://slack.openmined.org/"><img src="packages/syft/docs/img/panel_slack.png" alt="" width="100%" align="center" /></a>
+</th>
+<th align="center" bgcolor="#323232">
+<img width="441" height="1">
+<div align="center">
+<img src="packages/syft/docs/img/panel_title_youtube.png" alt="" width="100%" align="center" />
+<p align="left"><sub><sup>- <a href="https://www.youtube.com/watch?v=qVf0tPBzr2k">PETs: Remote Data Science Unleashed - R gov 2021</a><br />- <a href="https://youtu.be/sCoDWKTbh3s?list=PL_lsbAsL_o2BQKXG7mkGFA8LSApCnhljL">Introduction to Remote Data Science - PyTorch Dev 2021</a><br />- <a href="https://youtu.be/kzLeTz_vIeQ?list=PL_lsbAsL_o2BtOz6KUfUI_Zla6Rg5dmyc">The Future of AI Tools - PyTorch Dev 2020</a><br />- <a href="https://www.youtube.com/watch?v=4zrU54VIK6k&t=1s">Privacy Preserving AI - MIT Deep Learning Series</a><br />- <a href="https://www.youtube.com/watch?v=Pr4erdusiW0">Privacy-Preserving Data Science - TWiML Talk #241</a><br />- <a href="https://www.youtube.com/watch?v=NJBBE_SN90A">Privacy Preserving AI - PyTorch Devcon 2019</a>
+</sup></sup></p>
+<img src="packages/syft/docs/img/panel_title_papers.png" alt="" width="100%" align="center" />
+</div>
+</th>
+<th align="center" bgcolor="#323232">
+<img width="441" height="1">
+<div align="center">
+<a href="https://blog.openmined.org/work-on-ais-most-exciting-frontier-no-phd-required/"><img src="packages/syft/docs/img/panel_padawan.png" alt="" width="100%" align="center"></a>
+</div>
+</th>
+</tr>
 </table>
 
-# Call for Contributors
+# Courses
 
-OpenMined and Syft appreciates all contributors, and if you would like to fix a bug or suggest a new feature, please see our [Contribution guidelines](https://openmined.github.io/PySyft/developer_guide/index.html).
+<table border="5" bordercolor="grey">
+<tr>
+<th align="center">
+<img width="441" height="1">
+<div align="center">
+<a href="https://courses.openmined.org/courses/our-privacy-opportunity"><img src="packages/syft/docs/img/course_privacy.png" alt="" width="100%" align="center" /></a>
+</th>
+<th align="center">
+<img width="441" height="1">
+<div align="center">
+<a href="https://courses.openmined.org/courses/foundations-of-private-computation"><img src="packages/syft/docs/img/course_foundations.png" alt="" width="100%" align="center" /></a>
+</div>
+</th>
+<th align="center">
+<img width="441" height="1">
+<div align="center">
+<a href="https://courses.openmined.org/courses/introduction-to-remote-data-science"><img src="packages/syft/docs/img/course_introduction.png" alt="" width="100%" align="center"></a>
+</div>
+</th>
+</tr>
+</table>
 
-If you are still looking for some help in understanding Syft, learn more about the Syft library using this [resource](https://openmined.github.io/PySyft/resources/index.html).
+# Contributors
+
+OpenMined and Syft appreciates all contributors, if you would like to fix a bug or suggest a new feature, please see our [guidelines](https://openmined.github.io/PySyft/developer_guide/index.html).<br /><br />
+<a href="https://github.com/OpenMined/PySyft/graphs/contributors"><img src="packages/syft/docs/img/contributors_light.jpg#gh-light-mode-only" alt="Contributors" width="100%" /></a>
+<a href="https://github.com/OpenMined/PySyft/graphs/contributors"><img src="packages/syft/docs/img/contributors_dark.jpg#gh-dark-mode-only" alt="Contributors" width="100%" /></a>
+
+# Supporters
+
+<a href="https://opencollective.com/openmined"><img src="packages/syft/docs/img/logos_light.png#gh-light-mode-only" alt="Supporters" width="100%" /></a>
+<a href="https://opencollective.com/openmined"><img src="packages/syft/docs/img/logos_dark.png#gh-dark-mode-only" alt="Supporters" width="100%" /></a>
+
+# Open Collective
+
+`OpenMined` is a registered `501(c)(3)` in the United States of America. We are funded by our gracious supporters on Open Collective. <br /><br />
+<a href="https://opencollective.com/openmined"><img src="packages/syft/docs/img/opencollective_light.png#gh-light-mode-only" alt="Contributors" width="100%" /></a>
+<a href="https://opencollective.com/openmined"><img src="packages/syft/docs/img/opencollective_dark.png#gh-dark-mode-only" alt="Contributors" width="100%" /></a>
 
 # Disclaimer
 
-Syft is under active development and is not yet ready for total pilots on private data without our assistance. As early access participants, please contact us via [Slack](https://communityinviter.com/apps/openmined/openmined/) or email if you would like to ask a question or have a use case that you would like to propose.
-
-# Organisational Contributors
-
-Syft exists because of all the great people who contributed to this project. We are very grateful for contributions to Syft and Grid from the following organizations!
-
-  <br>
-  <img src="packages/syft/docs/img/Organizational_Contributions.gif" alt="Syft" width="400">
-  </br>
+Syft is under active development and is not yet ready for pilots on private data without our assistance. As early access participants, please contact us via [Slack](https://slack.openmined.org/) or email if you would like to ask a question or have a use case that you would like to discuss.
 
 # License
 
