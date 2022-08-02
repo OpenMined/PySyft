@@ -17,23 +17,45 @@ Remote Data Science - Code for `computing on data`, you `do not own` and `cannot
 
 # Quickstart
 
-✅ `Linux` ✅ `macOS` ✅ `Windows`
+✅ `Linux` ✅ `macOS` ✅ `Windows`†‡
 <img src="packages/syft/docs/img/terminalizer.gif" height="400" align="right" />
 
-- Install our handy python cli tool:
-  🛵 `pip install hagrid`
-- Run our interactive jupyter quickstart tutorial:
+1. Install our handy python cli tool:  
+   🛵 `pip install hagrid`
+2. Then run our interactive jupyter quickstart tutorial:  
    💻 `hagrid quickstart`
-- Learn how to install and deploy:
-  `PySyft` = our `torch`-like 🐍 Python Library
+
+- In the tutorial you will learn how to install and deploy:  
+  `PySyft` = our `torch`-like 🐍 Python Library  
   `PyGrid` = our 🐳 `docker` / `k8s` Data Platform
 
-- 🛵 HAGrid Requires: 🐍 `python` 🐙 `git` 🐳 `docker`
-  <br />
-  <br />
-  <br />
-  <br />
-  <br />
+- During quickstart we will deploy `PyGrid` to localhost with 🐳 `docker`, however 🛵 HAGrid can deploy to `k8s` or a 🐧 `ubuntu` VM on `azure` / `gcp` / `ANY_IP_ADDRESS` by using 🔨 `ansible`†
+
+3. Read our 📚 <a href="https://openmined.github.io/PySyft/">Docs</a>
+4. Ask Questions ❔ in `#support` on <a href="https://slack.openmined.org/">Slack</a>
+
+# Install Notes
+
+- HAGrid Requires: 🐍 `python` 🐙 `git` - Run: `pip install hagrid`  
+  †`ansible` is not supported on `Windows` preventing some remote deployment targets
+- PySyft Requires: 🐍 `python 3.7+` - Run: `pip install syft`  
+  ‡`Windows` users must run this first: `pip install jaxlib===0.3.7 -f https://whls.blob.core.windows.net/unstable/index.html`
+- PyGrid Requires: 🐳 `docker` / `k8s` or 🐧 `ubuntu` VM - Run: `hagrid launch ...`
+
+# Versions
+
+`0.8.0 beta` - `dev` branch 👈🏽  
+`0.7.0` - Stable  
+`0.6.0` - <a href="https://github.com/OpenMined/courses/tree/introduction-to-remote-data-science">Course 3</a>  
+`0.5.1` - <a href="https://github.com/OpenMined/courses/tree/foundations-of-private-computation">Course 2</a> + M1 Hotfix  
+`0.2.0` - `0.5.0` Deprecated
+
+PySyft and PyGrid use the same `version` and its best to match them up where possible. We release weekly betas which can be used in each context:
+PySyft: `pip install syft --pre`
+PyGrid: `hagrid launch ... tag=latest`
+Quickstart: `hagrid quickstart --pre`
+
+HAGrid is a cli / deployment tool so the latest version of `hagrid` is usually the best.
 
 # What is Syft?
 
@@ -41,11 +63,11 @@ Remote Data Science - Code for `computing on data`, you `do not own` and `cannot
 
 <img align="right" src="packages/syft/docs/img/logo_big_dark.png#gh-dark-mode-only" alt="Syft" height="250" style="padding-left:30px;">
 
-`Syft` is OpenMined's `open source` library that provides `secure` and `private` Deep Learning in Python. Syft decouples `private data` from model training, using techniques like [Federated Learning](https://ai.googleblog.com/2017/04/federated-learning-collaborative.html), [Differential Privacy](https://en.wikipedia.org/wiki/Differential_privacy), and [Encrypted Computation](https://en.wikipedia.org/wiki/Homomorphic_encryption). This is done within main Deep Learning `frameworks` such as `PyTorch` and `TensorFlow` so that you as a `Data Scientist` can maintain your current workflow while using these new `privacy-enhancing techniques`.
+`Syft` is OpenMined's `open source` stack that provides `secure` and `private` Data Science in Python. Syft decouples `private data` from model training, using techniques like [Federated Learning](https://ai.googleblog.com/2017/04/federated-learning-collaborative.html), [Differential Privacy](https://en.wikipedia.org/wiki/Differential_privacy), and [Encrypted Computation](https://en.wikipedia.org/wiki/Homomorphic_encryption). This is done with a `torch`-like interface and integration with `Deep Learning` frameworks so that you as a `Data Scientist` can maintain your current workflow while using these new `privacy-enhancing techniques`.
 
-### But what does it mean to use PySyft? How to incorporate these privacy-enhancing techniques into your work?
+### Why should I use Syft?
 
-Ultimately, `PySyft` sets the foundation of a framework for a `Data Scientist` to ask `questions` about a `dataset` and, within the `privacy limits` set by the `data owner`, get `answers` to those `questions`, all without needing a direct `copy or access` to the data itself. We call this process `Remote Data Science`. It means in a wide variety of `domains` across society, current `tradeoffs` between the `benefits` of sharing information with someone (innovation, insights, scientific discovery, etc.) and the `risks` that they might `misuse` it (privacy invasion, IP theft, blackmail, etc.) will be broken.
+`Syft` allows a `Data Scientist` to ask `questions` about a `dataset` and, within `privacy limits` set by the `data owner`, get `answers` to those `questions`, all without obtaining a `copy` of the data itself. We call this process `Remote Data Science`. It means in a wide variety of `domains` across society, the current `risks` of sharing information (`copying` data) with someone such as, privacy invasion, IP theft and blackmail will no longer prevent the ability to utilize the vast `benefits` such as innovation, insights and scientific discovery.
 
 No more cold calls to get `access` to a dataset. No more weeks of `wait times` to get a `result` on your `query`. It also means `1000x more data` in every domain. PySyft opens the doors to a streamlined Data Scientist `workflow`, all with the individual's `privacy` at its heart.
 

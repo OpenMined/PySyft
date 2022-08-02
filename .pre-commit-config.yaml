@@ -7,7 +7,7 @@ repos:
         always_run: true
       - id: trailing-whitespace
         always_run: true
-        exclude: ^(docs/)
+        exclude: ^(docs/|.+\.md)
       - id: check-docstring-first
         always_run: true
         exclude: ^(packages/grid/ansible/)
