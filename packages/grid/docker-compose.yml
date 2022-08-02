@@ -214,20 +214,6 @@ services:
       - ./seaweedfs/s3config.json:/etc/s3config.json
       - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml
 
-    depends_on:
-      - redis
-    labels:
-      - "traefik.enable=true"
-      - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
-      - "traefik.http.routers.${STACK_NAME?Variable not set}-blob.rule=PathPrefix(`/blob`)"
-      - "traefik.http.routers.${STACK_NAME?Variable not set}-blob.middlewares=${STACK_NAME?Variable not set}-host,${STACK_NAME?Variable not set}-blob"
-      - "traefik.http.middlewares.${STACK_NAME?Variable not set}-host.headers.customrequestheaders.Host=${S3_ENDPOINT}:${S3_PORT}"
-      - "traefik.http.middlewares.${STACK_NAME?Variable not set}-blob.stripprefix.prefixes=/blob"
-      - "traefik.http.middlewares.${STACK_NAME?Variable not set}-blob.stripprefix.forceslash=true"
-      - "traefik.http.services.${STACK_NAME?Variable not set}-blob.loadbalancer.server.port=${S3_PORT}"
-      # by rewriting the customrequestheaders.Host with the same host:port as the
-      # code uses internally any S3 presigned urls will still validate
-
   mongo:
     image: mongo:latest
     restart: always
