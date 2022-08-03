@@ -212,7 +212,8 @@ Provides services to a group of `Data Owners` and `Data Scientists`, such as dat
 <th align="center" valign="top">
 <img width="441" height="1">
 <div align="center">
-<img src="packages/syft/docs/img/panel_title_videos_papers.png" alt="" width="100%" align="center" />
+<img src="packages/syft/docs/img/panel_title_videos_papers_light.png#gh-light-mode-only" alt="" width="100%" align="center" />
+<img src="packages/syft/docs/img/panel_title_videos_papers.png#gh-dark-mode-only" alt="" width="100%" align="center" />
 <p align="left"><sub><sup>
 🎥 <a href="https://www.youtube.com/watch?v=qVf0tPBzr2k">PETs: Remote Data Science Unleashed - R gov 2021</a><br />
 🎥 <a href="https://youtu.be/sCoDWKTbh3s?list=PL_lsbAsL_o2BQKXG7mkGFA8LSApCnhljL">Introduction to Remote Data Science - PyTorch Dev 2021</a><br />
