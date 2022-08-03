@@ -12,11 +12,13 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.adp.data_subject import DataSubject
+from syft.core.adp.data_subject_list import DataSubjectArray
 from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
 
 sy.logger.remove()
 
+PRIVACY_BUDGET = 9_999_999
+BUDGET_INCREASE = 200
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
 print("ROOT_DIR", ROOT_DIR)
@@ -31,7 +33,7 @@ def get_user_details(unique_email: str) -> Dict[str, Any]:
         "name": "Sheldon Cooper",
         "email": unique_email,
         "password": "bazinga",
-        "budget": 9_999_799,
+        "budget": PRIVACY_BUDGET,
     }
 
 
@@ -51,16 +53,14 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     canada_trade = (
         (np.array(list(ca_data["Trade Value (US$)"])) / 100000)[0:10]
     ).astype(DEFAULT_INT_NUMPY_TYPE)
-    trade_partners = ((list(ca_data["Partner"])))[0:10]
-
-    entities = list()
-    for i in range(len(trade_partners)):
-        entities.append(DataSubject(name=trade_partners[i]))
+    data_subjects_canada = np.broadcast_to(
+        np.array(DataSubjectArray(["Other Asia, nes"])), canada_trade.shape
+    )
 
     sampled_canada_dataset = sy.Tensor(canada_trade)
     sampled_canada_dataset.public_shape = sampled_canada_dataset.shape
     sampled_canada_dataset = sampled_canada_dataset.private(
-        0, 3, data_subjects=[entities[0]] * canada_trade.shape[0]
+        0, 3, data_subjects=data_subjects_canada
     ).tag("trade_flow")
 
     # load dataset
@@ -86,17 +86,15 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     italy_trade = (
         (np.array(list(it_data["Trade Value (US$)"])) / 100000)[0:10]
     ).astype(DEFAULT_INT_NUMPY_TYPE)
-    trade_partners = ((list(it_data["Partner"])))[0:10]
-
-    entities = list()
-    for _ in range(len(trade_partners)):
-        entities.append(DataSubject(name="Other Asia, nes"))
 
     # Upload a private dataset to the Domain object, as the root owner
     sampled_italy_dataset = sy.Tensor(italy_trade)
     sampled_italy_dataset.public_shape = sampled_italy_dataset.shape
+    data_subjects_italy = np.broadcast_to(
+        np.array(DataSubjectArray(["Other Asia, nes"])), italy_trade.shape
+    )
     sampled_italy_dataset = sampled_italy_dataset.private(
-        0, 3, data_subjects=[entities[0]] * italy_trade.shape[0]
+        0, 3, data_subjects=data_subjects_italy
     ).tag("trade_flow")
 
     it_root.load_dataset(
@@ -117,12 +115,12 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     # Data Scientist
     ca = sy.login(email=unique_email, password="bazinga", port=9082)
 
-    ca.request_budget(eps=200, reason="increase budget!")
+    ca.request_budget(eps=BUDGET_INCREASE, reason="increase budget!")
     it = sy.login(email=unique_email, password="bazinga", port=9083)
 
-    it.request_budget(eps=200, reason="increase budget!")
+    it.request_budget(eps=BUDGET_INCREASE, reason="increase budget!")
 
-    time.sleep(10)
+    time.sleep(20)
 
     # until we fix the code this just accepts all requests in case it gets the
     # wrong one
@@ -133,13 +131,13 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     for req in it_root.requests:
         req.accept()
 
-    # ca_root.requests[0].accept()
-    # it_root.requests[0].accept()
+    # ca_root.requests[-1].accept()
+    # it_root.requests[-1].accept()
 
-    time.sleep(10)
+    time.sleep(20)
 
-    assert round(ca.privacy_budget) == 9_999_999
-    assert round(it.privacy_budget) == 9_999_999
+    assert round(ca.privacy_budget) == PRIVACY_BUDGET + BUDGET_INCREASE
+    assert round(it.privacy_budget) == PRIVACY_BUDGET + BUDGET_INCREASE
 
     ca_data = ca.datasets[-1]["Canada Trade"]
     it_data = it.datasets[-1]["Italy Trade"]
@@ -186,13 +184,13 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     print("after ca", ca.privacy_budget)
     print("after it", it.privacy_budget)
 
-    assert len(sycure_result) == 10
-    assert sum(sycure_result) > -6000
-    assert sum(sycure_result) < 6000
+    assert len(sycure_result[0]) == 10
+    assert sum(sycure_result[0]) > -6000
+    assert sum(sycure_result[0]) < 6000
 
-    assert ca.privacy_budget < 9_999_999
+    assert ca.privacy_budget < PRIVACY_BUDGET
     assert ca.privacy_budget > 10
-    assert it.privacy_budget < 9_999_999
+    assert it.privacy_budget < PRIVACY_BUDGET
     assert it.privacy_budget > 10
     # Commenting it out , due to inconsistent budget spent due to 64 bit.
     # assert ca.privacy_budget == it.privacy_budget

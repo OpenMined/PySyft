@@ -380,6 +380,9 @@ class Client(AbstractNodeClient):
         return hash(self.id)
 
 
+GET_OBJECT_TIMEOUT = 60  # seconds
+
+
 class StoreClient:
     def __init__(self, client: Client) -> None:
         self.client = client
@@ -391,7 +394,11 @@ class StoreClient:
         )
 
         results = getattr(
-            self.client.send_immediate_msg_with_reply(msg=msg), "results", None
+            self.client.send_immediate_msg_with_reply(
+                msg=msg, timeout=GET_OBJECT_TIMEOUT
+            ),
+            "results",
+            None,
         )
         if results is None:
             traceback_and_raise(ValueError("TODO"))
@@ -510,7 +517,11 @@ class StoreClient:
                 address=self.client.address, reply_to=self.client.address, obj_id=key
             )
             results = getattr(
-                self.client.send_immediate_msg_with_reply(msg=msg), "results", None
+                self.client.send_immediate_msg_with_reply(
+                    msg=msg, timeout=GET_OBJECT_TIMEOUT
+                ),
+                "results",
+                None,
             )
 
             if results is None:
