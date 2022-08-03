@@ -72,7 +72,7 @@ def create_key_pair_msg(
     _allowed = node.users.can_manage_infrastructure(verify_key=verify_key)
 
     if _allowed:
-        result = subprocess.run(["/usr/local/bin/oblv", "keygen", "--key-name", os.getenv("OBLV_KEY_NAME", "oblv_key"), "--output", os.getenv("OBLV_KEY_PATH", "/app/conent")],capture_output=True)
+        result = subprocess.run(["/usr/local/bin/oblv", "keygen", "--key-name", os.getenv("OBLV_KEY_NAME", "oblv_key"), "--output", os.getenv("OBLV_KEY_PATH", "/app/content")],capture_output=True)
         if result.stderr:
             debug(result.stderr.decode('utf-8'))
             raise subprocess.CalledProcessError(

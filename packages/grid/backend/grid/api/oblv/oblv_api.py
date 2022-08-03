@@ -28,7 +28,7 @@ router = APIRouter()
 async def get_body(request: Request) -> bytes:
     return await request.body()
 
-@router.post("/key", response_model=str, name="key:generate", status_code=status.HTTP_200_OK)
+@router.post("/key", name="key:generate", status_code=status.HTTP_200_OK)
 def generate_oblv_key_pair(
     current_user: Any = Depends(get_current_user),
 ):
@@ -41,7 +41,7 @@ def generate_oblv_key_pair(
 
     # Process syft message
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
-
+    
     # Handle Response types
     if isinstance(reply, ExceptionMessage):
         return {"error": reply.exception_msg}
@@ -49,7 +49,7 @@ def generate_oblv_key_pair(
         return reply.resp_msg
 
 
-@router.get("/key", response_model=str, name="key:get", status_code=status.HTTP_200_OK)
+@router.get("/key", name="key:get", status_code=status.HTTP_200_OK)
 def get_public_key(
     current_user: Any = Depends(get_current_user)
 ):

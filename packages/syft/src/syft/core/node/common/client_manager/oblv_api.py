@@ -4,6 +4,7 @@ from typing import Any
 # relative
 from ...abstract.node import AbstractNodeClient
 from ...enums import ResponseObjectEnum
+from ..action.exception_action import ExceptionMessage
 from ..node_service.oblv.oblv_messages import CreateKeyPairMessage
 from ..node_service.oblv.oblv_messages import GetPublicKeyMessage
 from .request_api import RequestAPI
@@ -20,12 +21,15 @@ class OblvAPI(RequestAPI):
 
     def get(self, **kwargs: Any) -> Any:
         response = self.perform_api_request(syft_msg=self._get_message, content=kwargs)
-        content = getattr(
-            response, "response"
-        )
-        if content is None:
-            raise Exception(f"{type(self)} has no response")
-        return content
+        if isinstance(response, ExceptionMessage):
+            raise response.exception_type
+        else:
+            content = getattr(
+                response, "response"
+            )
+            if content is None:
+                raise Exception(f"{type(self)} has no response")
+            return content
     
     
     def __getitem__(self) -> Any:
