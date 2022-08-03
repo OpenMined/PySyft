@@ -2177,6 +2177,49 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             data_subjects=self.data_subjects,
         )
 
+    def repeat(
+        self, repeats: Union[int, Tuple[int, ...]], axis: Optional[int] = None
+    ) -> PhiTensor:
+        """
+        Repeat elements of an array.
+
+        Parameters
+            repeats: int or array of ints
+
+                The number of repetitions for each element. repeats is broadcasted to fit the shape of the given axis.
+            axis: int, optional
+
+                The axis along which to repeat values. By default, use the flattened input array, and return a flat output array.
+
+        Returns
+
+            repeated_array: PhiTensor
+
+                Output array which has the same shape as a, except along the given axis.
+
+        """
+
+        result = self.child.repeat(repeats, axis)
+        if isinstance(self.min_vals, lazyrepeatarray):
+            minv = lazyrepeatarray(
+                data=self.min_vals.data.min(),
+                shape=result.shape
+            )
+            maxv = lazyrepeatarray(
+                data=self.max_vals.data.max(),
+                shape=result.shape
+            )
+        else:
+            minv = self.min_vals
+            maxv = self.max_vals
+
+        return PhiTensor(
+            child=result,
+            data_subjects=self.data_subjects.repeat(repeats, axis),
+            min_vals=minv,
+            max_vals=maxv
+        )
+
     def _object2bytes(self) -> bytes:
         schema = get_capnp_schema(schema_file="phi_tensor.capnp")
 
