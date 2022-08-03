@@ -9,7 +9,7 @@ from PIL import Image
 from enum import Enum
 from collections import defaultdict
 import numpy as np
-from syft.core.adp.data_subject_list import DataSubjectList
+from syft.core.adp.data_subject_list import DataSubjectArray
   
 def create_keras_model():
       return tf.keras.models.Sequential([
@@ -19,15 +19,17 @@ def create_keras_model():
       ])
 
 def load_dataset(domain):
-    data_subjects = DataSubjectList.from_objs(['Test'])
+    data_subjects = DataSubjectArray.from_objs(['Test'])
 
     train_data = np.random.randint(256,size=(1,100))
     label_data = np.array([0])
 
-    train_image_data = sy.Tensor(train_data).annotated_with_dp_metadata(
-    min_val=0, max_val=255, data_subjects=data_subjects
+    train_data_subjects = np.broadcast_to(np.array(data_subjects), train_data.shape)
+
+    train_image_data = sy.Tensor(train_data).private(
+    min_val=0, max_val=255, data_subjects=train_data_subjects
     )
-    train_label_data = sy.Tensor(label_data).annotated_with_dp_metadata(
+    train_label_data = sy.Tensor(label_data).private(
         min_val=0, max_val=5, data_subjects=data_subjects
     )
 
