@@ -1,1 +1,2 @@
-from .utils import train_model
+# relative
+from .utils import train_model  # noqa: F401

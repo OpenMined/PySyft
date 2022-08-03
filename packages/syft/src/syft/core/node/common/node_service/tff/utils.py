@@ -1,66 +1,81 @@
-import io
-from socket import timeout
-import numpy as np
+# stdlib
 import ast
+import io
 import os
 import shutil
+from typing import Callable
+from typing import Union
+
+# third party
+import numpy as np
+
+# relative
+from ...client import Client
 from .tff_messages import TFFMessageWithReply
-from typing import OrderedDict
+
 try:
+    # third party
     import tensorflow as tf
     import tensorflow_federated as tff
-    from tensorflow_federated.python.learning.model_utils import ModelWeights 
-except:
-    print("TFF is not installed, if you don't plan to use it ignore this message")
+    from tensorflow_federated.python.learning.model_utils import ModelWeights
+except:  # noqa: E722
+    pass
 
 
-
-def train_model(model_fn, params, domain, timeout=300):
-    # disabled in order to keep the names of the layers of the keras model 
-    tf.config.optimizer.set_experimental_options({'disable_meta_optimizer': True})
+def train_model(
+    model_fn: Callable, params: dict, domain: Client, timeout: int = 300
+) -> Union[tf.keras.models.Model, dict]:
+    # disabled in order to keep the names of the layers of the keras model
+    tf.config.optimizer.set_experimental_options({"disable_meta_optimizer": True})
     model = model_fn()
 
     # Save the model using a functional TFF model
-    train_data_shape = list(domain.store.get(params['train_data_id']).shape)
+    train_data_pointer = domain.store.get(params["train_data_id"])
+    train_data_shape = list(train_data_pointer.shape)
     train_data_shape[0] = 1
-    
-    label_data_shape = list(domain.store.get(params['label_data_id']).shape)
+
+    label_data_pointer = domain.store.get(params["label_data_id"])
+    label_data_shape = list(label_data_pointer.shape)
     if len(label_data_shape) == 1:
-        label_data_shape = [1,1]
+        label_data_shape = [1, 1]
     else:
         label_data_shape[0] = 1
-        
-    input_spec = (tf.TensorSpec(shape=tuple(train_data_shape), dtype=tf.int64, name=None), 
-                tf.TensorSpec(shape=tuple(label_data_shape), dtype=tf.int64, name=None))
 
-    functional_model = tff.learning.models.functional_model_from_keras(keras_model=model, 
-                                                                    loss_fn=tf.keras.losses.SparseCategoricalCrossentropy(),
-                                                                    input_spec=input_spec)
-    tff.learning.models.save_functional_model(functional_model=functional_model, path='_tmp')
+    input_spec = (
+        tf.TensorSpec(shape=tuple(train_data_shape), dtype=tf.int64, name=None),
+        tf.TensorSpec(shape=tuple(label_data_shape), dtype=tf.int64, name=None),
+    )
+
+    functional_model = tff.learning.models.functional_model_from_keras(
+        keras_model=model,
+        loss_fn=tf.keras.losses.SparseCategoricalCrossentropy(),
+        input_spec=input_spec,
+    )
+    tff.learning.models.save_functional_model(
+        functional_model=functional_model, path="_tmp"
+    )
 
     # Create one file from the new directory and read the bytes
-    shutil.make_archive('_archive', 'zip', '_tmp')
-    with open('_archive.zip', 'rb') as f:
+    shutil.make_archive("_archive", "zip", "_tmp")
+    with open("_archive.zip", "rb") as f:
         model_bytes = f.read()
-    os.remove('_archive.zip')
-    shutil.rmtree('_tmp')
+    os.remove("_archive.zip")
+    shutil.rmtree("_tmp")
 
     # Send the train message to the domain
     msg = TFFMessageWithReply(params=params, model_bytes=model_bytes)
     reply_msg = domain.send_immediate_msg_with_reply(msg, timeout=timeout)
-    
-    # Read the serialized weights 
-    print(reply_msg.payload)
-    # return reply_msg.payload, None
+
+    # Read the serialized weights
     payload = ast.literal_eval(str(reply_msg.payload))
-    
+
     memfile_trainable = io.BytesIO()
-    memfile_trainable.write(payload['trainable'])
+    memfile_trainable.write(payload["trainable"])
     memfile_trainable.seek(0)
     trainable_weights = np.load(memfile_trainable, allow_pickle=True)
-    
+
     memfile_non_trainable = io.BytesIO()
-    memfile_non_trainable.write(payload['non_trainable'])
+    memfile_non_trainable.write(payload["non_trainable"])
     memfile_non_trainable.seek(0)
     non_trainable_weights = np.load(memfile_non_trainable, allow_pickle=True)
 
@@ -68,5 +83,5 @@ def train_model(model_fn, params, domain, timeout=300):
     modelweights = ModelWeights(list(trainable_weights), list(non_trainable_weights))
     model = model_fn()
     modelweights.assign_weights_to(model)
-    
-    return model, payload['metrics']
+
+    return model, payload["metrics"]

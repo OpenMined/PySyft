@@ -45,7 +45,7 @@ RUN --mount=type=cache,target=/root/.cache \
 # Backend
 # PySyft asks for 3.10.4 but tff has a problem with legacy numpy
 # RUN if [ "$TFF" = "True" ] ; $PYTHON_VERSION='3.9.9'
-FROM python:$PYTHON_VERSION-slim as backend 
+FROM python:$PYTHON_VERSION-slim as backend
 COPY --from=build /root/.local /root/.local
 ARG TFF
 

@@ -1,17 +1,18 @@
 # stdlib
 import asyncio
+import collections
 import functools
 import io
-from typing import Any, OrderedDict
+from typing import Any
 from typing import List
 from typing import Optional
 from typing import Type
+from typing import Union
 import zipfile
 
 # third party
 from nacl.signing import VerifyKey
 import numpy as np
-import collections
 
 try:
     # third party
@@ -19,28 +20,28 @@ try:
     import tensorflow_federated as tff
     from tensorflow_federated.python.program import value_reference
 
-except:
-    print("TFF is not installed, if you don't plan to use it ignore this message")
+except:  # noqa: E722
+    pass
 
 # relative
 from ......logger import debug
 from ......util import traceback_and_raise
 from ....abstract.node import AbstractNode
+from ....common import UID
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
 from .tff_messages import TFFMessage
 from .tff_messages import TFFReplyMessage
-from ....common import UID
 
 
 async def tff_train_federated(
-    initialize,  #: "tff.Computation",
-    train,  #: "tff.Computation",
-    train_data_source,  #: "tff.program.FederatedDataSource",
+    initialize: "tff.Computation",
+    train: "tff.Computation",
+    train_data_source: "tff.program.FederatedDataSource",
     total_rounds: int,
     number_of_clients: int,
-    train_output_managers,  #: "List[tff.program.ReleaseManager]",
-) -> None:
+    train_output_managers: "List[tff.program.ReleaseManager]",
+) -> Union[List, Any]:
     results = []
     state = initialize()
     start_round = 1
@@ -72,7 +73,9 @@ async def tff_train_federated(
     return results, state
 
 
-def tff_program(node, params, func_model) -> None:
+def tff_program(
+    node: AbstractNode, params: dict, func_model: tf.keras.Model
+) -> Union[List, Any]:
     total_rounds = int(params["rounds"])
     number_of_clients = int(params["no_clients"])
     noise_multiplier = float(params["noise_multiplier"])
@@ -86,24 +89,27 @@ def tff_program(node, params, func_model) -> None:
     tff.framework.set_default_context(context)
 
     # Using the data ids we are fetching the data from the domain store
-    # Currently we do not support training using our DP tensors or our SMPC tensors 
+    # Currently we do not support training using our DP tensors or our SMPC tensors
     # so we will strip those layers and get the raw data
     train_data = node.store.get(train_data_id).data.child.child
     labels = node.store.get(label_data_id).data.child.child
 
     train_shape = list(train_data.shape)
     train_shape[0] = -1
-    
+
     # If might happen that our targets will be a one dimensional array
     # like the numerical labels in case of image classification
     label_data_shape = list(labels.shape)
     if len(label_data_shape) == 1:
-        label_data_shape = [-1,1]
+        label_data_shape = [-1, 1]
     else:
         label_data_shape[0] = -1
 
-    def preprocess(train_data, labels):
-        return [tf.reshape(train_data, train_shape), tf.reshape(labels, label_data_shape)]
+    def preprocess(train_data: np.array, labels: np.array) -> list:
+        return [
+            tf.reshape(train_data, train_shape),
+            tf.reshape(labels, label_data_shape),
+        ]
 
     # For our PoC we will only duplicate the data for each client
     # In the next release we will move this at the level of the network
@@ -112,7 +118,7 @@ def tff_program(node, params, func_model) -> None:
     datasets = [dataset.map(preprocess)] * number_of_clients
     train_data_source = tff.program.DatasetDataSource(datasets)
 
-    def model_fn():
+    def model_fn() -> tff.learning.models.Model:
         return tff.learning.models.model_from_functional(func_model)
 
     # Currently we support the DP functions from TFF
@@ -132,7 +138,6 @@ def tff_program(node, params, func_model) -> None:
     train = iterative_process.next
     train_output_managers = [tff.program.LoggingReleaseManager()]
 
-
     # run the federated training and waiting for the metrics and the state
     # to extract from it the model weights
     results, state = asyncio.run(
@@ -147,7 +152,8 @@ def tff_program(node, params, func_model) -> None:
     )
     return results, state
 
-def aux_recursive_od2d(dit):
+
+def aux_recursive_od2d(dit: collections.OrderedDict) -> dict:
     new_dict = {}
     for key in dit:
         if type(dit[key]) == collections.OrderedDict:
@@ -157,12 +163,14 @@ def aux_recursive_od2d(dit):
             new_dict[key] = dit[key]
     return new_dict
 
-def ordereddict2dict(list_dict):
+
+def ordereddict2dict(list_dict: list) -> list:
     new_list = []
     for od in list_dict:
         new_dict = aux_recursive_od2d(od)
         new_list.append(new_dict)
     return new_list
+
 
 class TFFService(ImmediateNodeServiceWithReply):
     @staticmethod
@@ -172,9 +180,6 @@ class TFFService(ImmediateNodeServiceWithReply):
     ) -> TFFReplyMessage:
         if verify_key is None:
             traceback_and_raise("Can't process TFFService with no verification key.")
-
-        # Run specific msg function, currently doesn't do anything
-        _ = msg.payload.run(node=node, verify_key=verify_key)
 
         # parse params
         params = msg.payload.params
@@ -204,7 +209,10 @@ class TFFService(ImmediateNodeServiceWithReply):
             "non_trainable": serialized_non_trainable,
         }
 
-        return TFFReplyMessage(payload=str(payload), address=msg.reply_to)
+        # Run specific msg function, currently doesn't do anything. only for linting
+        res = msg.payload.run(payload=str(payload), node=node, verify_key=verify_key)
+
+        return TFFReplyMessage(payload=res, address=msg.reply_to)
 
     @staticmethod
     def message_handler_types() -> List[Type[TFFMessage]]:

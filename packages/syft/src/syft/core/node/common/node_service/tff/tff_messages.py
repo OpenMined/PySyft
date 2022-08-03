@@ -38,10 +38,10 @@ class TFFMessageWithReply:
         self.params = params
         self.model_bytes = model_bytes
 
-    def run(self, node: AbstractNode, verify_key: Optional[VerifyKey] = None) -> Any:
-        # print(tff.federated_computation(lambda: 'Hello World')())
-
-        return "Hello from TFF Service..."  # leaving this in for the test suite
+    def run(
+        self, payload: str, node: AbstractNode, verify_key: Optional[VerifyKey] = None
+    ) -> Any:
+        return payload  # leaving this in for the linting suite
 
     def prepare(self, address: Address, reply_to: Address) -> "TFFMessage":
         return TFFMessage(address=address, reply_to=reply_to, payload=self)
