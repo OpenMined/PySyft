@@ -118,7 +118,7 @@ def tff_program(
     datasets = [dataset.map(preprocess)] * number_of_clients
     train_data_source = tff.program.DatasetDataSource(datasets)
 
-    def model_fn() -> tff.learning.models.Model:
+    def model_fn() -> tff.learning.Model:
         return tff.learning.models.model_from_functional(func_model)
 
     # Currently we support the DP functions from TFF
