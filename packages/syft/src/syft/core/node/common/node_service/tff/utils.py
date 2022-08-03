@@ -24,7 +24,7 @@ except:  # noqa: E722
 
 def train_model(
     model_fn: Callable, params: dict, domain: Client, timeout: int = 300
-) -> Union[tf.keras.models.Model, dict]:
+) -> "Union[tf.keras.Model, dict]":
     # disabled in order to keep the names of the layers of the keras model
     tf.config.optimizer.set_experimental_options({"disable_meta_optimizer": True})
     model = model_fn()

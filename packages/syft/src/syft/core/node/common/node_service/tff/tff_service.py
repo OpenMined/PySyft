@@ -74,7 +74,7 @@ async def tff_train_federated(
 
 
 def tff_program(
-    node: AbstractNode, params: dict, func_model: tf.keras.Model
+    node: AbstractNode, params: dict, func_model: "tf.keras.Model"
 ) -> Union[List, Any]:
     total_rounds = int(params["rounds"])
     number_of_clients = int(params["no_clients"])
