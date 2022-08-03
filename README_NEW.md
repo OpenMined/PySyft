@@ -13,23 +13,32 @@ Remote Data Science - Code for `computing on data`, you `do not own` and `cannot
 <img src="packages/syft/docs/img/header.png#gh-dark-mode-only" alt="Syft Overview" width="100%" />
 </div>
 
-<br />
+<!-- # Quickstart
 
-# Quickstart
-
-✅ `Linux` ✅ `macOS` ✅ `Windows`†‡
+✅ `Linux` ✅ `macOS`\* ✅ `Windows`†‡
 <img src="packages/syft/docs/img/terminalizer.gif" height="400" align="right" />
 
-1. Install our handy python cli tool:  
+1. Install our handy python cli tool:
    🛵 `pip install hagrid`
-2. Then run our interactive jupyter quickstart tutorial:  
+2. Then run our interactive jupyter quickstart tutorial:
    💻 `hagrid quickstart`
 
-- In the tutorial you will learn how to install and deploy:  
-  `PySyft` = our `torch`-like 🐍 Python Library  
+- In the tutorial you will learn how to install and deploy:
+  `PySyft` = our `torch`-like 🐍 Python Library
   `PyGrid` = our 🐳 `docker` / `k8s` Data Platform
 
 - During quickstart we will deploy `PyGrid` to localhost with 🐳 `docker`, however 🛵 HAGrid can deploy to `k8s` or a 🐧 `ubuntu` VM on `azure` / `gcp` / `ANY_IP_ADDRESS` by using 🔨 `ansible`†
+
+3. Read our 📚 <a href="https://openmined.github.io/PySyft/">Docs</a>
+4. Ask Questions ❔ in `#support` on <a href="https://slack.openmined.org/">Slack</a> -->
+
+# Quickstart
+
+✅ `Linux` ✅ `macOS`\* ✅ `Windows`†‡
+
+- `HAGrid` = our our handy 🛵 cli tool
+- `PySyft` = our `torch`-like 🐍 Python Library
+- `PyGrid` = our 🐳 `docker` / `k8s` Data Platform
 
 3. Read our 📚 <a href="https://openmined.github.io/PySyft/">Docs</a>
 4. Ask Questions ❔ in `#support` on <a href="https://slack.openmined.org/">Slack</a>
@@ -37,15 +46,17 @@ Remote Data Science - Code for `computing on data`, you `do not own` and `cannot
 # Install Notes
 
 - HAGrid Requires: 🐍 `python` 🐙 `git` - Run: `pip install hagrid`  
-  †`ansible` is not supported on `Windows` preventing some remote deployment targets
+  †`Windows` does not support `ansible`, preventing some remote deployment targets
 - PySyft Requires: 🐍 `python 3.7+` - Run: `pip install syft`  
+  \*`macOS` Apple Silicon users need cmake: `brew install cmake`  
   ‡`Windows` users must run this first: `pip install jaxlib===0.3.7 -f https://whls.blob.core.windows.net/unstable/index.html`
 - PyGrid Requires: 🐳 `docker` / `k8s` or 🐧 `ubuntu` VM - Run: `hagrid launch ...`
 
 # Versions
 
-`0.8.0 beta` - `dev` branch 👈🏽  
-`0.7.0` - Stable  
+<!-- `0.8.0 beta` - `dev` branch 👈🏽   -->
+
+`0.7.0 beta` - `dev` branch 👈🏽  
 `0.6.0` - <a href="https://github.com/OpenMined/courses/tree/introduction-to-remote-data-science">Course 3</a>  
 `0.5.1` - <a href="https://github.com/OpenMined/courses/tree/foundations-of-private-computation">Course 2</a> + M1 Hotfix  
 `0.2.0` - `0.5.0` Deprecated
@@ -71,7 +82,7 @@ HAGrid is a cli / deployment tool so the latest version of `hagrid` is usually t
 
 No more cold calls to get `access` to a dataset. No more weeks of `wait times` to get a `result` on your `query`. It also means `1000x more data` in every domain. PySyft opens the doors to a streamlined Data Scientist `workflow`, all with the individual's `privacy` at its heart.
 
-# Tutorials
+<!-- # Tutorials
 
 <table border="5" bordercolor="grey">
 <tr>
@@ -96,10 +107,10 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 </th>
 </tr>
 <tr>
-<td valign="top">
+<td valign="top"> -->
 <!-- REMOVE THE BACKSLASHES -->
 
-- <a href="#">Deploy a Domain Server</a>
+<!-- - <a href="#">Deploy a Domain Server</a>
 - <a href="#">Upload Private Data</a>
 - <a href="#">Create Accounts</a>
 - <a href="#">Manage Privacy Budget</a>
@@ -107,10 +118,10 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 - Learn how PETs streamline Data Policies
 
 </td>
-<td valign="top">
+<td valign="top"> -->
 <!-- REMOVE THE BACKSLASHES -->
 
-- <a href="#">Install Syft</a>
+<!-- - <a href="#">Install Syft</a>
 - <a href="#">Connect to a Domain</a>
 - <a href="#">Search for Datasets</a>
 - Train Models
@@ -118,10 +129,10 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 - Learn Differential Privacy
 
 </td>
-<td valign="top">
+<td valign="top"> -->
 <!-- REMOVE THE BACKSLASHES -->
 
-- <a href="#">Setup Dev Mode</a>
+<!-- - <a href="#">Setup Dev Mode</a>
 - Deploy to Azure
 - Deploy to GCP
 - Deploy to Kubernetes
@@ -129,7 +140,7 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 - Modify PyGrid UI
 </td>
 </tr>
-</table>
+</table> -->
 
 # Terminology
 
@@ -196,8 +207,17 @@ Provides services to a group of `Data Owners` and `Data Scientists`, such as dat
 <th align="center" valign="top">
 <img width="441" height="1">
 <div align="center">
-<img src="packages/syft/docs/img/panel_title_youtube.png" alt="" width="100%" align="center" />
-<p align="left"><sub><sup>- <a href="https://www.youtube.com/watch?v=qVf0tPBzr2k">PETs: Remote Data Science Unleashed - R gov 2021</a><br />- <a href="https://youtu.be/sCoDWKTbh3s?list=PL_lsbAsL_o2BQKXG7mkGFA8LSApCnhljL">Introduction to Remote Data Science - PyTorch Dev 2021</a><br />- <a href="https://youtu.be/kzLeTz_vIeQ?list=PL_lsbAsL_o2BtOz6KUfUI_Zla6Rg5dmyc">The Future of AI Tools - PyTorch Dev 2020</a><br />- <a href="https://www.youtube.com/watch?v=4zrU54VIK6k&t=1s">Privacy Preserving AI - MIT Deep Learning Series</a><br />- <a href="https://www.youtube.com/watch?v=Pr4erdusiW0">Privacy-Preserving Data Science - TWiML Talk #241</a><br />- <a href="https://www.youtube.com/watch?v=NJBBE_SN90A">Privacy Preserving AI - PyTorch Devcon 2019</a>
+<img src="packages/syft/docs/img/panel_title_videos_papers.png" alt="" width="100%" align="center" />
+<p align="left"><sub><sup>
+🎥 <a href="https://www.youtube.com/watch?v=qVf0tPBzr2k">PETs: Remote Data Science Unleashed - R gov 2021</a><br />
+🎥 <a href="https://youtu.be/sCoDWKTbh3s?list=PL_lsbAsL_o2BQKXG7mkGFA8LSApCnhljL">Introduction to Remote Data Science - PyTorch Dev 2021</a><br />
+🎥 <a href="https://youtu.be/kzLeTz_vIeQ?list=PL_lsbAsL_o2BtOz6KUfUI_Zla6Rg5dmyc">The Future of AI Tools - PyTorch Dev 2020</a><br />
+🎥 <a href="https://www.youtube.com/watch?v=4zrU54VIK6k&t=1s">Privacy Preserving AI - MIT Deep Learning Series</a><br />
+🎥 <a href="https://www.youtube.com/watch?v=Pr4erdusiW0">Privacy-Preserving Data Science - TWiML Talk #241</a><br />
+🎥 <a href="https://www.youtube.com/watch?v=NJBBE_SN90A">Privacy Preserving AI - PyTorch Devcon 2019</a><br />
+📖 <a href="https://arxiv.org/pdf/2110.01315.pdf">Towards general-purpose infrastructure for protecting ...</a><br />
+📖 <a href="https://arxiv.org/pdf/2104.12385.pdf">Syft 0.5: A platform for universally deployable structured ...</a><br />
+📖 <a href="https://arxiv.org/pdf/1811.04017.pdf">A generic framework for privacy preserving deep learning</a>
 </sup></sup></p>
 </div>
 </th>
@@ -236,7 +256,7 @@ Provides services to a group of `Data Owners` and `Data Scientists`, such as dat
 
 # Contributors
 
-OpenMined and Syft appreciates all contributors, if you would like to fix a bug or suggest a new feature, please see our [guidelines](https://openmined.github.io/PySyft/developer_guide/index.html).<br /><br />  
+OpenMined and Syft appreciates all contributors, if you would like to fix a bug or suggest a new feature, please see our [guidelines](https://openmined.github.io/PySyft/developer_guide/index.html).<br />  
 <img src="packages/syft/docs/img/contributors_light.jpg#gh-light-mode-only" alt="Contributors" width="100%" />
 <img src="packages/syft/docs/img/contributors_dark.jpg#gh-dark-mode-only" alt="Contributors" width="100%" />
 
@@ -247,7 +267,7 @@ OpenMined and Syft appreciates all contributors, if you would like to fix a bug 
 
 # Open Collective
 
-`OpenMined` is a registered `501(c)(3)` in the United States of America. We are funded by our gracious supporters on <a href="https://opencollective.com/openmined">Open Collective</a>. <br /><br />
+`OpenMined` is a registered `501(c)(3)` in the USA. We are funded by our gracious supporters on <a href="https://opencollective.com/openmined">Open Collective</a>. <br /><br />
 <img src="packages/syft/docs/img/opencollective_light.png#gh-light-mode-only" alt="Contributors" width="100%" />
 <img src="packages/syft/docs/img/opencollective_dark.png#gh-dark-mode-only" alt="Contributors" width="100%" />
 
@@ -257,5 +277,5 @@ Syft is under active development and is not yet ready for pilots on private data
 
 # License
 
-[Apache License 2.0](https://github.com/OpenMined/PySyft/blob/main/packages/syft/LICENSE)<br />
+[Apache License 2.0](https://github.com/OpenMined/PySyft/blob/main/LICENSE)<br />
 <a href="https://www.flaticon.com/free-icons/person" title="person icons">Person icons created by Freepik - Flaticon</a>
