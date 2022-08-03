@@ -21,7 +21,7 @@ try:
     from tensorflow_federated.python.program import value_reference
 
 except:  # noqa: E722
-    pass
+    print('TFF is not enabled')
 
 # relative
 from ......logger import debug

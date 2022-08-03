@@ -19,7 +19,7 @@ try:
     import tensorflow_federated as tff
     from tensorflow_federated.python.learning.model_utils import ModelWeights
 except:  # noqa: E722
-    pass
+    print('TFF is not enabled')
 
 
 def train_model(
