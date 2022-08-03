@@ -29,6 +29,8 @@ RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) != "x86_64" ]; then 
   pip install --user torch==1.11.0 -f https://download.pytorch.org/whl/torch_stable.html; \
   git clone https://github.com/pybind/pybind11 && cd pybind11 && git checkout v2.6.2; \
   pip install --user dm-tree==0.1.7; \
+  # fixes apple silicon in dev mode due to dependency from safety
+  pip install --user ruamel.yaml==0.17.21; \
   fi
 
 RUN --mount=type=cache,target=/root/.cache \
