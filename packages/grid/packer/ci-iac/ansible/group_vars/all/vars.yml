@@ -1,0 +1,7 @@
+---
+om_user: om
+om_group: om
+om_homedir: "/home/{{ om_user }}"
+root_user: root
+root_homedir: "/{{ root_user }}"
+docker_tag: "local"

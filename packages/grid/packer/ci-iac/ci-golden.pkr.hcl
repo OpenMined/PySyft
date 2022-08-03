@@ -41,7 +41,7 @@ source "azure-arm" "ci" {
   tenant_id                         = "${var.tenant}"
   vm_size                           = "Standard_D8ds_v5"
   os_disk_size_gb                   = 512
-  
+
 }
 
 build {
