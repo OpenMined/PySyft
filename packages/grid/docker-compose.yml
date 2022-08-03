@@ -161,12 +161,6 @@ services:
       - CONTAINER_HOST=${CONTAINER_HOST}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
       - S3_ROOT_PWD=${S3_ROOT_PWD?Variable not set}
-    command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /start.sh"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
-      - "traefik.http.routers.${STACK_NAME?Variable not set}-backend-stream.rule=PathPrefix(`/api`) && PathPrefix(`/api/v1/syft/stream`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)" # WARNING: this only matches /api/v1/syft/stream because of length
-      - "traefik.http.services.${STACK_NAME?Variable not set}-backend-stream.loadbalancer.server.port=8011"
     command: "/start.sh"
     network_mode: service:proxy
 
@@ -196,7 +190,6 @@ services:
       - NETWORK_CHECK_INTERVAL=${NETWORK_CHECK_INTERVAL}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
       - S3_ROOT_PWD=${S3_ROOT_PWD?Variable not set}
-    command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /worker-start.sh"
     command: "/worker-start.sh"
     network_mode: service:proxy
 
@@ -223,7 +216,9 @@ services:
     image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}"
     environment:
       - S3_VOLUME_SIZE_MB=${S3_VOLUME_SIZE_MB:-1024}
-    command: "server -s3 -s3.config=/etc/s3config.json -master.volumeSizeLimitMB=${S3_VOLUME_SIZE_MB}"
+      - S3_ROOT_PWD=${S3_ROOT_PWD?Variable not Set}
+      - S3_ROOT_USER=${S3_ROOT_USER?Variable not Set}
+    entrypoint: ["/bin/ash" , "-c" , "set -ex && apk --no-cache add sudo && apk add gettext  && envsubst < /etc/s3config.json > update_config.json && sudo mv update_config.json /etc/update_config.json && weed server -s3 -s3.config=/etc/update_config.json -master.volumeSizeLimitMB=${S3_VOLUME_SIZE_MB}"]
     volumes:
       - seaweedfs-data:/data
       - ./seaweedfs/s3config.json:/etc/s3config.json
