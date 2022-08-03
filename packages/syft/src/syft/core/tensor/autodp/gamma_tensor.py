@@ -2283,8 +2283,37 @@ class GammaTensor:
         else:
             raise NotImplementedError
 
-    def __pos__(self):
+    def __pos__(self) -> GammaTensor:
         return self
+
+    def __neg__(self) -> GammaTensor:
+        return self * -1
+
+    def copy(self, order: str = "C") -> GammaTensor:
+        """
+        Return a copy of the array.
+
+        Parameters
+            order:  {‘C’, ‘F’, ‘A’, ‘K’}, optional
+
+        Controls the memory layout of the copy.
+        ‘C’ means C-order, ‘F’ means F-order,
+        ‘A’ means ‘F’ if a is Fortran contiguous,
+        ‘C’ otherwise.
+        ‘K’ means match the layout of a as closely as possible.
+        (Note that this function and numpy.copy are very similar but have different default values
+        for their order= arguments, and this function always passes sub-classes through.)
+
+
+        """
+        return GammaTensor(
+            child=self.child.copy(order),
+            data_subjects=self.data_subjects.copy(order),
+            min_vals=self.min_vals.copy(order),
+            max_vals=self.max_vals.copy(order),
+            func=self.func,
+            state=self.state
+        )
 
     def repeat(
             self, repeats: Union[int, Tuple[int, ...]], axis: Optional[int] = None
