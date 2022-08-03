@@ -18,7 +18,7 @@ try:
     import tensorflow as tf
     import tensorflow_federated as tff
     from tensorflow_federated.python.learning.model_utils import ModelWeights
-except:  # noqa: E722
+except Exception:
     print("TFF is not enabled")
 
 
@@ -31,11 +31,11 @@ def train_model(
 
     # Save the model using a functional TFF model
     train_data_pointer = domain.store.get(params["train_data_id"])
-    train_data_shape = list(train_data_pointer.shape)
+    train_data_shape = list(train_data_pointer.shape)  # type: ignore
     train_data_shape[0] = 1
 
     label_data_pointer = domain.store.get(params["label_data_id"])
-    label_data_shape = list(label_data_pointer.shape)
+    label_data_shape = list(label_data_pointer.shape)  # type: ignore
     if len(label_data_shape) == 1:
         label_data_shape = [1, 1]
     else:
@@ -67,7 +67,7 @@ def train_model(
     reply_msg = domain.send_immediate_msg_with_reply(msg, timeout=timeout)
 
     # Read the serialized weights
-    payload = ast.literal_eval(str(reply_msg.payload))
+    payload = ast.literal_eval(str(reply_msg.payload))  # type: ignore
 
     memfile_trainable = io.BytesIO()
     memfile_trainable.write(payload["trainable"])

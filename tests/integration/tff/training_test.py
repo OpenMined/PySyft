@@ -1,8 +1,13 @@
 # third party
 import numpy as np
 import pytest
-import tensorflow as tf
-import tensorflow_federated as tff
+
+try:
+    # third party
+    import tensorflow as tf
+    import tensorflow_federated as tff
+except Exception:
+    print("TFF not enabled")
 
 # syft absolute
 import syft as sy

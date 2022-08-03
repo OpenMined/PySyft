@@ -20,7 +20,7 @@ try:
     import tensorflow_federated as tff
     from tensorflow_federated.python.program import value_reference
 
-except:  # noqa: E722
+except Exception:
     print("TFF is not enabled")
 
 # relative
