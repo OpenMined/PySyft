@@ -12,7 +12,7 @@ from syft import Tensor
 from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_abstract
 @pytest.mark.parametrize("op_str", ["add", "sub", "mul"])
 def test_tensor_abstraction_pointer(get_clients, op_str) -> None:
     clients = get_clients(3)
@@ -46,7 +46,7 @@ def test_tensor_abstraction_pointer(get_clients, op_str) -> None:
     assert (mpc_1_2_3.reconstruct() == exp_res.child).all()
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_abstract
 @pytest.mark.parametrize("op_str", ["add", "sub", "mul"])
 def test_tensor_abstraction_subsets(get_clients, op_str) -> None:
     clients = get_clients(3)
@@ -88,7 +88,7 @@ def test_tensor_abstraction_subsets(get_clients, op_str) -> None:
     assert (mpc_1_2_3.reconstruct() == exp_res_3.child).all()
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_abstract
 def test_tensor_abstraction_concat(get_clients) -> None:
     clients = get_clients(3)
 

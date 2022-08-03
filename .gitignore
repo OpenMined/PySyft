@@ -50,9 +50,11 @@ helm-charts/**/*.lock
 
 # notebook data
 notebooks/medical-federated-learning-program/data-owners/MedNIST.pkl
+notebooks/**/*.pkl
 
 # k3d registry
 k3d-registry
 
 .envfile
 packages/hagrid/.envfile
+

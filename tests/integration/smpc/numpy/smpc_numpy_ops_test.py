@@ -8,7 +8,7 @@ from syft.core.tensor.smpc.mpc_tensor import MPCTensor
 from syft.core.tensor.tensor import Tensor
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_np
 def test_repeat(get_clients) -> None:
     clients = get_clients(2)
     value = Tensor(np.array([[1, 2], [3, 4]], dtype=DEFAULT_INT_NUMPY_TYPE))
@@ -26,7 +26,7 @@ def test_repeat(get_clients) -> None:
     assert (res == exp_res.child).all()
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_np
 def test_copy(get_clients) -> None:
     clients = get_clients(2)
     value = Tensor(np.array([[1, 2], [3, 4]], dtype=DEFAULT_INT_NUMPY_TYPE))
@@ -45,7 +45,7 @@ def test_copy(get_clients) -> None:
     assert (res == exp_res).all()
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_np
 def test_diagonal(get_clients) -> None:
     clients = get_clients(2)
     value = Tensor(np.array([[0, 1], [2, 3]], dtype=DEFAULT_INT_NUMPY_TYPE))
@@ -63,7 +63,7 @@ def test_diagonal(get_clients) -> None:
     assert (res == exp_res.child).all()
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_np
 def test_flatten(get_clients) -> None:
     clients = get_clients(2)
     value = Tensor(
@@ -85,7 +85,7 @@ def test_flatten(get_clients) -> None:
     assert (res == exp_res.child).all()
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_np
 def test_transpose(get_clients) -> None:
     clients = get_clients(2)
     value = Tensor(
@@ -107,7 +107,7 @@ def test_transpose(get_clients) -> None:
     assert (res == exp_res.child).all()
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_np
 def test_resize(get_clients) -> None:
     clients = get_clients(2)
     value = Tensor(
@@ -127,7 +127,7 @@ def test_resize(get_clients) -> None:
     assert (res == exp_res.child).all()
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_np
 def test_ravel(get_clients) -> None:
     clients = get_clients(2)
     value = Tensor(
@@ -147,7 +147,7 @@ def test_ravel(get_clients) -> None:
     assert (res == exp_res.child).all()
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_np
 def test_compress(get_clients) -> None:
     clients = get_clients(2)
     value = Tensor(np.array([[1, 2], [3, 4], [5, 6]], dtype=DEFAULT_INT_NUMPY_TYPE))
@@ -165,7 +165,7 @@ def test_compress(get_clients) -> None:
     assert (res == exp_res.child).all()
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_np
 def test_reshape(get_clients) -> None:
     clients = get_clients(2)
     value = Tensor(np.array([[1, 2], [3, 4], [5, 6]], dtype=DEFAULT_INT_NUMPY_TYPE))
@@ -183,7 +183,7 @@ def test_reshape(get_clients) -> None:
     assert (res == exp_res.child).all()
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_np
 def test_squeeze(get_clients) -> None:
     clients = get_clients(2)
     value = Tensor(np.array([[7], [6], [72]], dtype=DEFAULT_INT_NUMPY_TYPE))
@@ -201,7 +201,7 @@ def test_squeeze(get_clients) -> None:
     assert (res == exp_res.child).all()
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_np
 def test_swapaxes(get_clients) -> None:
     clients = get_clients(2)
     value = Tensor(
@@ -221,7 +221,7 @@ def test_swapaxes(get_clients) -> None:
     assert (res == exp_res.child).all()
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_np
 def test_pos(get_clients) -> None:
     clients = get_clients(2)
     value = Tensor(np.array([[5, 2], [3, 7]], dtype=DEFAULT_INT_NUMPY_TYPE))
@@ -239,7 +239,7 @@ def test_pos(get_clients) -> None:
     assert (res == exp_res.child).all()
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_np
 def test_put(get_clients) -> None:
     clients = get_clients(2)
     value = Tensor(np.array([[5, 2], [3, 7]], dtype=DEFAULT_INT_NUMPY_TYPE))
@@ -258,7 +258,7 @@ def test_put(get_clients) -> None:
     assert (res == exp_res.child).all()
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_np
 def test_neg(get_clients) -> None:
     clients = get_clients(2)
     value = Tensor(np.array([[-5, 2], [-3, 7]], dtype=DEFAULT_INT_NUMPY_TYPE))
@@ -276,7 +276,7 @@ def test_neg(get_clients) -> None:
     assert (res == exp_res.child).all()
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_np
 def test_take(get_clients) -> None:
     clients = get_clients(2)
     value = Tensor(np.array([-5, 2, -3, 7, 132, 54, 27], dtype=DEFAULT_INT_NUMPY_TYPE))
@@ -294,7 +294,7 @@ def test_take(get_clients) -> None:
     assert (res == exp_res.child).all()
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_np
 def test_abs(get_clients) -> None:
     clients = get_clients(2)
     value = Tensor(
@@ -314,7 +314,7 @@ def test_abs(get_clients) -> None:
     assert (res == exp_res.child).all()
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_np
 def test_sign(get_clients) -> None:
     clients = get_clients(2)
     value = Tensor(
@@ -335,7 +335,7 @@ def test_sign(get_clients) -> None:
 
 
 @pytest.mark.parametrize("power", [4, 7])
-@pytest.mark.smpc
+@pytest.mark.smpc_np
 def test_pow(get_clients, power) -> None:
     clients = get_clients(2)
     value = Tensor(np.array([1, -2, 3], dtype=DEFAULT_INT_NUMPY_TYPE))
@@ -353,7 +353,7 @@ def test_pow(get_clients, power) -> None:
     assert (res == exp_res.child).all()
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_np
 def test_cumsum(get_clients) -> None:
     clients = get_clients(2)
     value = Tensor(np.array([-5, 2, -3, 7, 132, 54, 27], dtype=DEFAULT_INT_NUMPY_TYPE))
@@ -371,7 +371,7 @@ def test_cumsum(get_clients) -> None:
     assert (res == exp_res.child).all()
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_np
 def test_trace(get_clients) -> None:
     clients = get_clients(2)
     value = Tensor(

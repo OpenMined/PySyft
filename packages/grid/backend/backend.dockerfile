@@ -10,6 +10,9 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
   apt-get install -y --no-install-recommends \
   curl python3-dev gcc make build-essential cmake git
 
+RUN --mount=type=cache,target=/root/.cache \
+  pip install -U pip
+
 RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) = "x86_64" ]; then \
   pip install --user torch==1.11.0+cpu -f https://download.pytorch.org/whl/torch_stable.html; \
   fi
@@ -26,6 +29,8 @@ RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) != "x86_64" ]; then 
   pip install --user torch==1.11.0 -f https://download.pytorch.org/whl/torch_stable.html; \
   git clone https://github.com/pybind/pybind11 && cd pybind11 && git checkout v2.6.2; \
   pip install --user dm-tree==0.1.7; \
+  # fixes apple silicon in dev mode due to dependency from safety
+  pip install --user ruamel.yaml==0.17.21; \
   fi
 
 RUN --mount=type=cache,target=/root/.cache \
@@ -55,6 +60,9 @@ RUN chmod +x /start.sh
 RUN chmod +x /start-reload.sh
 RUN chmod +x /worker-start.sh
 RUN chmod +x /worker-start-reload.sh
+
+RUN --mount=type=cache,target=/root/.cache \
+  pip install -U pip
 
 # allow container to wait for other services
 RUN --mount=type=cache,target=/root/.cache \

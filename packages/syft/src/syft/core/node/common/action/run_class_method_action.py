@@ -216,6 +216,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         # check if resolved_self has changed and if so mark as mutating_internal
         # this prevents someone from mutating an object they own with something they
         # do not own and the read_permissions not flowing backwards
+
         if (
             resolved_self_previous_bytes is not None
             and resolved_self is not None
