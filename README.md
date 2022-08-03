@@ -202,7 +202,12 @@ Provides services to a group of `Data Owners` and `Data Scientists`, such as dat
 <th align="center" valign="top">
 <img width="441" height="1">
 <div align="center">
+<img src="packages/syft/docs/img/panel_slack_title_light.png#gh-light-mode-only" alt="" width="100%" align="center" />
+<img src="packages/syft/docs/img/panel_slack_title_dark.png#gh-dark-mode-only" alt="" width="100%" align="center" />
+
 <a href="https://slack.openmined.org/"><img src="packages/syft/docs/img/panel_slack.png" alt="" width="100%" align="center" /></a>
+
+</div>
 </th>
 <th align="center" valign="top">
 <img width="441" height="1">
@@ -224,7 +229,11 @@ Provides services to a group of `Data Owners` and `Data Scientists`, such as dat
 <th align="center" valign="top">
 <img width="441" height="1">
 <div align="center">
+<img src="packages/syft/docs/img/panel_padawan_title_light.png#gh-light-mode-only" alt="" width="100%" align="center" />
+<img src="packages/syft/docs/img/panel_padawan_title_dark.png#gh-dark-mode-only" alt="" width="100%" align="center" />
+
 <a href="https://blog.openmined.org/work-on-ais-most-exciting-frontier-no-phd-required/"><img src="packages/syft/docs/img/panel_padawan.png" alt="" width="100%" align="center"></a>
+
 </div>
 </th>
 </tr>
