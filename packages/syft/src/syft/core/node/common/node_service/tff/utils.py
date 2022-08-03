@@ -1,6 +1,7 @@
 import io
 from socket import timeout
 import numpy as np
+import ast
 import os
 import shutil
 from .tff_messages import TFFMessageWithReply
@@ -10,7 +11,8 @@ try:
     import tensorflow_federated as tff
     from tensorflow_federated.python.learning.model_utils import ModelWeights 
 except:
-    pass
+    print("TFF is not installed, if you don't plan to use it ignore this message")
+
 
 
 def train_model(model_fn, params, domain, timeout=300):
@@ -48,7 +50,9 @@ def train_model(model_fn, params, domain, timeout=300):
     reply_msg = domain.send_immediate_msg_with_reply(msg, timeout=timeout)
     
     # Read the serialized weights 
-    payload = eval(reply_msg.payload)
+    print(reply_msg.payload)
+    # return reply_msg.payload, None
+    payload = ast.literal_eval(str(reply_msg.payload))
     
     memfile_trainable = io.BytesIO()
     memfile_trainable.write(payload['trainable'])

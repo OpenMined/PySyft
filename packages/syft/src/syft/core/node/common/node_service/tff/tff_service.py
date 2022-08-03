@@ -2,7 +2,7 @@
 import asyncio
 import functools
 import io
-from typing import Any
+from typing import Any, OrderedDict
 from typing import List
 from typing import Optional
 from typing import Type
@@ -11,6 +11,7 @@ import zipfile
 # third party
 from nacl.signing import VerifyKey
 import numpy as np
+import collections
 
 try:
     # third party
@@ -19,7 +20,7 @@ try:
     from tensorflow_federated.python.program import value_reference
 
 except:
-    pass
+    print("TFF is not installed, if you don't plan to use it ignore this message")
 
 # relative
 from ......logger import debug
@@ -146,6 +147,22 @@ def tff_program(node, params, func_model) -> None:
     )
     return results, state
 
+def aux_recursive_od2d(dit):
+    new_dict = {}
+    for key in dit:
+        if type(dit[key]) == collections.OrderedDict:
+            new_elem = aux_recursive_od2d(dit[key])
+            new_dict[key] = new_elem
+        else:
+            new_dict[key] = dit[key]
+    return new_dict
+
+def ordereddict2dict(list_dict):
+    new_list = []
+    for od in list_dict:
+        new_dict = aux_recursive_od2d(od)
+        new_list.append(new_dict)
+    return new_list
 
 class TFFService(ImmediateNodeServiceWithReply):
     @staticmethod
@@ -182,7 +199,7 @@ class TFFService(ImmediateNodeServiceWithReply):
 
         # Full response
         payload = {
-            "metrics": metrics,
+            "metrics": ordereddict2dict(metrics),
             "trainable": serialized_trainable,
             "non_trainable": serialized_non_trainable,
         }
