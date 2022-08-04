@@ -13,6 +13,7 @@ DATA_FILES = {
 packages = [
     "ascii_magic",
     "click",
+    "cryptography>=37.0.2",
     "gitpython",
     "names",
     "paramiko",
