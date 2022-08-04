@@ -1,0 +1,33 @@
+---
+- name: Display all variables/facts known for a host
+  ansible.builtin.debug:
+    var: hostvars[inventory_hostname]
+    verbosity: 1
+
+- name: Stop existing cronjobs if provisioning from outside
+  shell: (crontab -r  || true) && sudo kill -9 $(pgrep cron)
+  become: yes
+  when: inventory_hostname != "localhost"
+
+- name: Stop existing ansible provisioning running against localhost
+  shell: pgrep ansible | xargs -I {} bash -c "ps -o cmd fp {} | grep 'connection=local' | kill {}"
+  become: yes
+  when: inventory_hostname != "localhost"
+
+- name: Apply system changes
+  import_tasks: system.yml
+  when: deploy_only is not defined and install == "true"
+
+- name: Apply security updates
+  import_tasks: security.yml
+  when: deploy_only is not defined and install == "true"
+
+- name: Install docker
+  import_tasks: docker.yml
+  when: deploy_only is not defined and install == "true"
+
+- name: Install jq
+  import_tasks: jq.yml
+  when: deploy_only is not defined and install == "true"
+
+

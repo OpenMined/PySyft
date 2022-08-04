@@ -1,0 +1,10 @@
+- name: Fetch az cli
+  ansible.builtin.uri:
+    url: https://aka.ms/InstallAzureCli
+    return_content: yes
+  register: az_installer
+
+- name: Run rustup installer
+  ansible.builtin.shell:
+    cmd: sh -s -- -y
+    stdin: "{{ az_installer.content }}"
