@@ -58,4 +58,11 @@ build {
     expect_disconnect = true
     scripts           = ["${path.root}/scripts/update.sh", "${path.root}/scripts/motd.sh", "${path.root}/scripts/hyperv.sh", "${path.root}/scripts/cleanup.sh"]
   }
+
+  provisioner "shell" {
+    execute_command = "chmod +x {{ .Path }}; {{ .Vars }} sudo -E sh '{{ .Path }}'"
+    inline          = ["/usr/sbin/waagent -force -deprovision+user && export HISTSIZE=0 && sync"]
+    inline_shebang  = "/bin/sh -x"
+  }
 }
+
