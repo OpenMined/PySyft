@@ -1,10 +1,7 @@
 - name: Install jq packages
   become: yes
   apt:
-    name: "{{ item }}"
-    state: present
+    name: jq
+    state: latest
     update_cache: yes
-  with_items:
-    - "{{ jq_packages }}"
-  tags:
-    - jq
+    autoclean: yes
