@@ -170,3 +170,8 @@ jobs:
         if: steps.changes.outputs.hagrid == 'true'
         run: |
           hagrid debug
+
+      - name: Run hagrid quickstart
+        if: steps.changes.outputs.hagrid == 'true'
+        run: |
+          hagrid quickstart --reset --quiet
