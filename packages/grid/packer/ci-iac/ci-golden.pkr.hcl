@@ -4,7 +4,6 @@ variable "appId" {
   sensitive = true
 }
 
-variable "displayName" {}
 
 variable "password" {
   type =  string
@@ -41,6 +40,8 @@ source "azure-arm" "ci" {
   tenant_id                         = "${var.tenant}"
   vm_size                           = "Standard_D8ds_v5"
   os_disk_size_gb                   = 512
+  managed_image_name                = "ubuntu-ci-managed-image"
+  managed_image_resource_group_name = "CI-Images"
 
 }
 
@@ -49,7 +50,7 @@ build {
   sources = ["source.azure-arm.ci"]
 
   provisioner "ansible" {
-    playbook_file = "../ansible/site.yml"
+    playbook_file = "./ansible/site.yml"
     extra_arguments = [ "-v", "-e", "packer=true", "-e", "repo_branch=0.7.0" ]
   }
 
