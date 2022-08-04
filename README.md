@@ -36,7 +36,7 @@ Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 
 ✅ `Linux` ✅ `macOS`\* ✅ `Windows`†‡
 
-- `PySyft` = our `numpy`-like 🐍 Python library for computing on `private data` in someone else's `Domain` server
+- `PySyft` = our `numpy`-like 🐍 Python library for computing on `private data` in someone else's `Domain`
 - `PyGrid` = our 🐳 `docker` / `k8s` / 🐧 `vm` `Domain` & `Network` Servers where `private data` lives
 - `HAGrid` = our handy 🛵 cli tool which makes `deploying` a `Domain` or `Network` server a one-liner
 
