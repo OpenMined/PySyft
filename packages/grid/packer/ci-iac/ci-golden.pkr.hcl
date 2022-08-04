@@ -60,6 +60,11 @@ build {
   }
 
   provisioner "shell" {
+    expect_disconnect = true
+    script           = ["${path.root}/scripts/setup_githubrunner.sh"]
+  }
+
+  provisioner "shell" {
     execute_command = "chmod +x {{ .Path }}; {{ .Vars }} sudo -E sh '{{ .Path }}'"
     inline          = ["/usr/sbin/waagent -force -deprovision+user && export HISTSIZE=0 && sync"]
     inline_shebang  = "/bin/sh -x"
