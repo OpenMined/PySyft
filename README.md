@@ -6,7 +6,7 @@
 <img src="packages/syft/docs/img/title_syft_light.png#gh-light-mode-only" alt="Syft Logo" width="200px" />
 <img src="packages/syft/docs/img/title_syft_dark.png#gh-dark-mode-only" alt="Syft Logo" width="200px" />
 
-Remote Data Science - Code for `computing on data`, you `do not own` and `cannot see`
+Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 
 <div align="left">
 <img src="packages/syft/docs/img/header.png#gh-light-mode-only" alt="Syft Overview" width="100%" />
@@ -24,7 +24,7 @@ Remote Data Science - Code for `computing on data`, you `do not own` and `cannot
    💻 `hagrid quickstart`
 
 - In the tutorial you will learn how to install and deploy:
-  `PySyft` = our `torch`-like 🐍 Python Library
+  `PySyft` = our `numpy`-like 🐍 Python Library
   `PyGrid` = our 🐳 `docker` / `k8s` Data Platform
 
 - During quickstart we will deploy `PyGrid` to localhost with 🐳 `docker`, however 🛵 HAGrid can deploy to `k8s` or a 🐧 `ubuntu` VM on `azure` / `gcp` / `ANY_IP_ADDRESS` by using 🔨 `ansible`†
@@ -36,9 +36,9 @@ Remote Data Science - Code for `computing on data`, you `do not own` and `cannot
 
 ✅ `Linux` ✅ `macOS`\* ✅ `Windows`†‡
 
-- `HAGrid` = our our handy 🛵 cli tool
-- `PySyft` = our `torch`-like 🐍 Python Library
-- `PyGrid` = our 🐳 `docker` / `k8s` Data Platform
+- `PySyft` = our `numpy`-like 🐍 Python library for computing on `private data` in someone else's `Domain` server
+- `PyGrid` = our 🐳 `docker` / `k8s` / 🐧 `vm` `Domain` & `Network` Servers where `private data` lives
+- `HAGrid` = our our handy 🛵 cli tool which makes `deploying` a `Domain` or `Network` server a one-liner
 
 3. Read our 📚 <a href="https://openmined.github.io/PySyft/">Docs</a>
 4. Ask Questions ❔ in `#support` on <a href="https://slack.openmined.org/">Slack</a>
@@ -64,7 +64,8 @@ Remote Data Science - Code for `computing on data`, you `do not own` and `cannot
 PySyft and PyGrid use the same `version` and its best to match them up where possible. We release weekly betas which can be used in each context:
 PySyft: `pip install syft --pre`
 PyGrid: `hagrid launch ... tag=latest`
-Quickstart: `hagrid quickstart --pre`
+
+<!-- Quickstart: `hagrid quickstart --pre` -->
 
 HAGrid is a cli / deployment tool so the latest version of `hagrid` is usually the best.
 
@@ -74,11 +75,11 @@ HAGrid is a cli / deployment tool so the latest version of `hagrid` is usually t
 
 <img align="right" src="packages/syft/docs/img/logo_big_dark.png#gh-dark-mode-only" alt="Syft" height="250" style="padding-left:30px;">
 
-`Syft` is OpenMined's `open source` stack that provides `secure` and `private` Data Science in Python. Syft decouples `private data` from model training, using techniques like [Federated Learning](https://ai.googleblog.com/2017/04/federated-learning-collaborative.html), [Differential Privacy](https://en.wikipedia.org/wiki/Differential_privacy), and [Encrypted Computation](https://en.wikipedia.org/wiki/Homomorphic_encryption). This is done with a `torch`-like interface and integration with `Deep Learning` frameworks so that you as a `Data Scientist` can maintain your current workflow while using these new `privacy-enhancing techniques`.
+`Syft` is OpenMined's `open source` stack that provides `secure` and `private` Data Science in Python. Syft decouples `private data` from model training, using techniques like [Federated Learning](https://ai.googleblog.com/2017/04/federated-learning-collaborative.html), [Differential Privacy](https://en.wikipedia.org/wiki/Differential_privacy), and [Encrypted Computation](https://en.wikipedia.org/wiki/Homomorphic_encryption). This is done with a `numpy`-like interface and integration with `Deep Learning` frameworks, so that you as a `Data Scientist` can maintain your current workflow while using these new `privacy-enhancing techniques`.
 
 ### Why should I use Syft?
 
-`Syft` allows a `Data Scientist` to ask `questions` about a `dataset` and, within `privacy limits` set by the `data owner`, get `answers` to those `questions`, all without obtaining a `copy` of the data itself. We call this process `Remote Data Science`. It means in a wide variety of `domains` across society, the current `risks` of sharing information (`copying` data) with someone such as, privacy invasion, IP theft and blackmail will no longer prevent the ability to utilize the vast `benefits` such as innovation, insights and scientific discovery.
+`Syft` allows a `Data Scientist` to ask `questions` about a `dataset` and, within `privacy limits` set by the `data owner`, get `answers` to those `questions`, all without obtaining a `copy` of the data itself. We call this process `Remote Data Science`. It means in a wide variety of `domains` across society, the current `risks` of sharing information (`copying` data) with someone such as, privacy invasion, IP theft and blackmail will no longer prevent the vast `benefits` such as innovation, insights and scientific discovery which secure access will provide.
 
 No more cold calls to get `access` to a dataset. No more weeks of `wait times` to get a `result` on your `query`. It also means `1000x more data` in every domain. PySyft opens the doors to a streamlined Data Scientist `workflow`, all with the individual's `privacy` at its heart.
 
@@ -222,7 +223,7 @@ Provides services to a group of `Data Owners` and `Data Scientists`, such as dat
 🎥 <a href="https://www.youtube.com/watch?v=Pr4erdusiW0">Privacy-Preserving Data Science - TWiML Talk #241</a><br />
 🎥 <a href="https://www.youtube.com/watch?v=NJBBE_SN90A">Privacy Preserving AI - PyTorch Devcon 2019</a><br />
 📖 <a href="https://arxiv.org/pdf/2110.01315.pdf">Towards general-purpose infrastructure for protecting ...</a><br />
-📖 <a href="https://arxiv.org/pdf/2104.12385.pdf">Syft 0.5: A platform for universally deployable structured ...</a><br />
+📖 <a href="https://arxiv.org/pdf/2104.12385.pdf">Syft 0.5: A platform for universally deployable ...</a><br />
 📖 <a href="https://arxiv.org/pdf/1811.04017.pdf">A generic framework for privacy preserving deep learning</a>
 </sup></sup></p>
 </div>
@@ -272,8 +273,39 @@ OpenMined and Syft appreciates all contributors, if you would like to fix a bug 
 
 # Supporters
 
-<img src="packages/syft/docs/img/logos_light.png#gh-light-mode-only" alt="Supporters" width="100%" />
-<img src="packages/syft/docs/img/logos_dark.png#gh-dark-mode-only" alt="Supporters" width="100%" />
+<table border="0">
+<tr>
+<th align="center">
+<a href="https://sloan.org/"><img src="packages/syft/docs/img/logo_sloan.png" /></a>
+</th>
+<th align="center">
+<a href="https://opensource.fb.com/"><img src="packages/syft/docs/img/logo_meta.png" /></a>
+</th>
+<th align="center">
+<a href="https://pytorch.org/"><img src="packages/syft/docs/img/logo_torch.png" /></a>
+</th>
+<th align="center">
+<a href="https://www.udacity.com/"><img src="packages/syft/docs/img/logo_udacity.png" /></a>
+</th>
+<th align="center">
+<a href="https://summerofcode.withgoogle.com/"><img src="packages/syft/docs/img/logo_gsoc.png" /></a>
+</th>
+<th align="center">
+<a href="https://developers.google.com/season-of-docs"><img src="packages/syft/docs/img/logo_gsod.png" /></a>
+</th>
+<th align="center">
+<img src="packages/syft/docs/img/logo_arkhn_light.png#gh-light-mode-only" />
+<img src="packages/syft/docs/img/logo_arkhn.png#gh-dark-mode-only" />
+</th>
+<th align="center">
+<img src="packages/syft/docs/img/logo_cape_light.png#gh-light-mode-only" />
+<img src="packages/syft/docs/img/logo_cape.png#gh-dark-mode-only" />
+</th>
+<th align="center">
+<a href="https://begin.ai/"><img src="packages/syft/docs/img/logo_begin.png" /></a>
+</th>
+</tr>
+</table>
 
 # Open Collective
 
