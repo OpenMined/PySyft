@@ -38,7 +38,7 @@ Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 
 - `PySyft` = our `numpy`-like 🐍 Python library for computing on `private data` in someone else's `Domain` server
 - `PyGrid` = our 🐳 `docker` / `k8s` / 🐧 `vm` `Domain` & `Network` Servers where `private data` lives
-- `HAGrid` = our our handy 🛵 cli tool which makes `deploying` a `Domain` or `Network` server a one-liner
+- `HAGrid` = our handy 🛵 cli tool which makes `deploying` a `Domain` or `Network` server a one-liner
 
 3. Read our 📚 <a href="https://openmined.github.io/PySyft/">Docs</a>
 4. Ask Questions ❔ in `#support` on <a href="https://slack.openmined.org/">Slack</a>
@@ -319,5 +319,5 @@ Syft is under active development and is not yet ready for pilots on private data
 
 # License
 
-[Apache License 2.0](https://github.com/OpenMined/PySyft/blob/main/LICENSE)<br />
+[Apache License 2.0](LICENSE)<br />
 <a href="https://www.flaticon.com/free-icons/person" title="person icons">Person icons created by Freepik - Flaticon</a>
