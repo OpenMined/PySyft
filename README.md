@@ -1,962 +1,323 @@
-<h1 align="center">
-
-  <br>
-  <img src="packages/syft/docs/img/monorepo_logo2.png" alt="Syft + Grid" width="400">
-  <br>
-  Code for computing on data<br /> you do not own and cannot see
-  <br>
-
-</h1>
-
-<div align="center"> <a href="https://pypi.org/project/syft/"><img src="https://pepy.tech/badge/syft" /></a> <a href="https://pypi.org/project/syft/"><img src="https://badge.fury.io/py/syft.svg" /></a> <br /> <a href="https://github.com/OpenMined/PySyft/actions/workflows/syft-version_tests.yml"><img src="https://github.com/OpenMined/PySyft/actions/workflows/syft-version_tests.yml/badge.svg?branch=dev" /></a>
+<div align="left"> <a href="https://pypi.org/project/syft/"><img src="https://pepy.tech/badge/syft" /></a> <a href="https://pypi.org/project/syft/"><img src="https://badge.fury.io/py/syft.svg" /></a> <a href="https://hub.docker.com/u/openmined"><img src="https://img.shields.io/badge/docker-images-blue?logo=docker" /></a> <a href="https://github.com/OpenMined/PySyft/actions/workflows/syft-version_tests.yml"><img src="https://github.com/OpenMined/PySyft/actions/workflows/syft-version_tests.yml/badge.svg?branch=dev" /></a>
  <a href="https://github.com/OpenMined/PySyft/actions/workflows/nightlies-run.yml"><img src="https://github.com/OpenMined/PySyft/actions/workflows/nightlies-run.yml/badge.svg?branch=dev" /></a>
-<a href="https://openmined.slack.com/messages/support"><img src="https://img.shields.io/badge/chat-on%20slack-7A5979.svg" /></a>
-<br /><br />
+<a href="https://slack.openmined.org/"><img src="https://img.shields.io/badge/chat-on%20slack-purple?logo=slack" /></a> <a href="https://openmined.github.io/PySyft/"><img src="https://img.shields.io/badge/read-docs-yellow?logo=mdbook" /></a>
+<br /><br /></div>
 
-<div align="center"><a href="#"><img src="https://stars.medv.io/openmined/pysyft.svg" /></a></div>
+<img src="packages/syft/docs/img/title_syft_light.png#gh-light-mode-only" alt="Syft Logo" width="200px" />
+<img src="packages/syft/docs/img/title_syft_dark.png#gh-dark-mode-only" alt="Syft Logo" width="200px" />
 
+Perform `numpy`-like analysis on `data` that remains in `someone else's` server
+
+<div align="left">
+<img src="packages/syft/docs/img/header.png#gh-light-mode-only" alt="Syft Overview" width="100%" />
+<img src="packages/syft/docs/img/header.png#gh-dark-mode-only" alt="Syft Overview" width="100%" />
 </div>
 
-# Syft + Grid provides secure and private Deep Learning in Python
+<!-- # Quickstart
 
-Syft decouples private data from model training, using
-[Federated Learning](https://ai.googleblog.com/2017/04/federated-learning-collaborative.html),
-[Differential Privacy](https://en.wikipedia.org/wiki/Differential_privacy),
-and Encrypted Computation (like
-[Multi-Party Computation (MPC)](https://en.wikipedia.org/wiki/Secure_multi-party_computation)
-and [Homomorphic Encryption (HE)](https://en.wikipedia.org/wiki/Homomorphic_encryption))
-within the main Deep Learning frameworks like PyTorch and TensorFlow. Join the movement on
-[Slack](http://slack.openmined.org/).
+✅ `Linux` ✅ `macOS`\* ✅ `Windows`†‡
+<img src="packages/syft/docs/img/terminalizer.gif" height="400" align="right" />
 
----
+1. Install our handy python cli tool:
+   🛵 `pip install hagrid`
+2. Then run our interactive jupyter quickstart tutorial:
+   💻 `hagrid quickstart`
 
-Most software libraries let you compute over the information you own and see inside of machines you control. However, this means that you cannot compute on information without first obtaining (at least partial) ownership of that information. It also means that you cannot compute using machines without first obtaining control over those machines. This is very limiting to human collaboration and systematically drives the centralization of data, because you cannot work with a bunch of data without first putting it all in one (central) place.
+- In the tutorial you will learn how to install and deploy:
+  `PySyft` = our `numpy`-like 🐍 Python Library
+  `PyGrid` = our 🐳 `docker` / `k8s` Data Platform
 
-The Syft ecosystem seeks to change this system, allowing you to write software which can compute over information you do not own on machines you do not have (total) control over. This not only includes servers in the cloud, but also personal desktops, laptops, mobile phones, websites, and edge devices. Wherever your data wants to live in your ownership, the Syft ecosystem exists to help keep it there while allowing it to be used privately for computation.
+- During quickstart we will deploy `PyGrid` to localhost with 🐳 `docker`, however 🛵 HAGrid can deploy to `k8s` or a 🐧 `ubuntu` VM on `azure` / `gcp` / `ANY_IP_ADDRESS` by using 🔨 `ansible`†
 
-## Stable Release
+3. Read our 📚 <a href="https://openmined.github.io/PySyft/">Docs</a>
+4. Ask Questions ❔ in `#support` on <a href="https://slack.openmined.org/">Slack</a> -->
 
-The current stable release is `0.6.0` which is available on:
+# Quickstart
 
-- [PyPI](https://pypi.org/project/syft/)
-- [Docker Hub](https://hub.docker.com/u/openmined)
+✅ `Linux` ✅ `macOS`\* ✅ `Windows`†‡
 
-For many use cases you can simply use:
+- `PySyft` = our `numpy`-like 🐍 Python library for computing on `private data` in someone else's `Domain`
+- `PyGrid` = our 🐳 `docker` / `k8s` / 🐧 `vm` `Domain` & `Network` Servers where `private data` lives
+- `HAGrid` = our handy 🛵 cli tool which makes `deploying` a `Domain` or `Network` server a one-liner
 
-```
-$ pip install syft
-```
+3. Read our 📚 <a href="https://openmined.github.io/PySyft/">Docs</a>
+4. Ask Questions ❔ in `#support` on <a href="https://slack.openmined.org/">Slack</a>
+
+# Install Notes
 
-If you are doing the [Private AI Series](https://courses.openmined.org/) or you are an external party developing against Syft and Grid please use the [`syft_0.6.0`](https://github.com/OpenMined/pysyft/tree/0.6.0) branch.
-
-## Development Branch
-
-This is the `dev` branch and to accommodate our need to experiment with new ideas and implementations we will be moving a few things around during the early stages of `0.7.0 beta`. Currently the core `syft` library and code will remain fairly stable, while we do some much needed quality improvements and refactors to the `grid` codebase and its tooling for deployment and orchestration of nodes.
-During the process of development we will be moving examples from the `/packages/syft/examples` folder down to the `/notebooks` folder and ensuring they are working and tested with the latest `dev` code.
-
-## Mono Repo 🚝
-
-This repo contains multiple sub-projects which work together.
-
-```
-OpenMined/PySyft
-├── README.md     <-- You are here 📌
-├── notebooks     <-- Notebook Examples and Tutorials
-└── packages
-    ├── grid      <-- Grid - A network aware, persistent & containerized node running Syft
-    └── syft      <-- Syft - A package for doing remote data science on private data
-```
-
-## Syft
-
-To read more about what Syft is please consult the current [`0.6.0` Documentation](https://openmined.github.io/PySyft/).
-
-## Grid
-
-To read more about what Grid is please consult the old [PyGrid README](https://github.com/OpenMined/PyGrid) until we finish writing the new one.
-
-## Dev Requirements
-
-- docker
-- tox
-- python 3.8+
-
-### Docker
-
-You will need `docker` and `docker-compose` to do development on the `monorepo` tooling.
-
-- [Get Docker for macOS](https://docs.docker.com/docker-for-mac/install/)
-- [Get Docker for Windows](https://docs.docker.com/docker-for-windows/install/)
-- [Get Docker for Ubuntu](https://docs.docker.com/engine/install/ubuntu/)
-
-### Dev Compose File
-
-Run the [FastAPI](https://fastapi.tiangolo.com/) Dev environment using:
-
-```
-$ cd packages/grid
-$ source .env && docker compose up
-```
-
-## Rebuilding Docker Containers
-
-```
-$ cd packages/grid
-$ docker compose build
-```
-
-### Tox
-
-You will need `tox` to run some of our build and test tools.
-
-```
-$ pip install tox
-```
-
-### List Build Commands
-
-```
-$ tox -l
-```
-
-You should see the following:
-
-```
-syft.jupyter
-syft.lint
-syft.test.fast
-syft.test.libs
-syft.test.security
-```
-
-These commands can be run like so:
-
-```
-$ tox -e syft.lint
-```
-
-## Single VM Deployment
-
-We are providing a simple way to deploy all of our stack inside a single VM so that no
-matter where you want to run everything you can do so easily by thinking in terms of a
-single machine either bare metal or VM and have it provisioned and auto updated.
-
-To develop against this locally you will want the following:
-
-- vagrant
-- virtualbox
-- ansible
-- hagrid <-- in packages/hagrid
-
-## HAGrid Install
-
-You can install HAGrid with pip:
-
-```
-$ pip install hagrid
-```
-
-### MacOS Instructions
-
-```
-$ brew install vagrant virtualbox ansible
-```
-
-Hagrid the Grid deployment tool:
-
-```
-$ cd packages/hagrid
-$ pip install -e .
-```
-
-## Vagrant
-
-Vagrant allows us to create and manage VMs locally for development. During the startup
-process of creating the VM the ansible provisioning scripts will be applied automatically
-to the VM. If you change the Vagrantfile which describes how the VM is defined you will
-need to either `vagrant reload` or destroy and re-create it.
-
-Making changes to the VM state should be done through the `ansible` scripts so that
-the state of the box is idempotent and re-running the ansible provisioning scripts
-should always result in the same working grid node state.
-
-To allow rapid development we mount the PySyft source repo into the VM at the path:
-`/home/om/PySyft` which is where it would be if it was cloned down on a real remote VM.
-
-The configuration is done via a `Vagrantfile` which is written in ruby.
-
-## Vagrant Networking
-
-### Vagrant IP
-
-The VM will be accessible on the IP `10.0.1.2` which is defined in the `Vagrantfile`.
-
-### Vagrant Landrush Plugin
-
-The Landrush plugin for vagrant gives us an automatic dns service so we can access our
-local VM as though it were a real live domain on the internet.
-
-```
-$ vagrant plugin install landrush
-```
-
-With this enabled you can access the box on:
-`http://node.openmined.grid`
-
-## Starting VM
-
-NOTE: You may need your sudo password to enable the landrush DNS entry on startup.
-
-```
-$ cd packages/grid
-$ vagrant up --provision
-```
-
-## Provisioning the VM
-
-You want to do this any time you are testing out your `ansible` changes.
-
-```
-$ cd packages/grid
-$ vagrant provision
-```
-
-If you want to do a quick deploy where you skip the system provisioning you can run:
-
-```
-$ ANSIBLE_ARGS='--extra-vars "deploy_only=true"' vagrant provision
-```
-
-## Connecting to Vagrant VM
-
-```
-$ cd packages/grid
-$ vagrant ssh
-```
-
-## TLS and Certificates
-
-You can enable TLS in HAGrid by passing in the --tls param:
-
-```
-$ hagrid launch domain to docker:8081+ --tls
-```
-
-This will go looking for a certificate and private key here:
-
-```
-packages/grid/traefik/certs/key.pem
-packages/grid/traefik/certs/cert.pem
-```
-
-These files and their settings are defined in:
-
-```
-packages/grid/traefik/dynamic-configurations/certs.yaml
-```
-
-During development you will need to generate ones which match localhost and then
-enable --test mode so that these invalid self-signed certificates are accepted by various
-code and libraries.
-
-First, get the tool `mkcert`.
-
-### MacOS
-
-```
-$ brew install mkcert
-```
-
-### Generate Dev Cert
-
-```
-cd PySyft
-export GRID=$(pwd)/packages/grid && export CAROOT=$GRID/tls && export CERTS=$GRID/traefik/certs
-mkcert -cert-file="$CERTS/cert.pem" -key-file="$CERTS/key.pem" '*.openmined.grid' docker-host localhost 127.0.0.1 ::1
-```
-
-This will have created the certificate and private key as well as placed the root signing
-certificate (think fake SSL authority who can charge for SSL certs) in the following dir:
-
-```
-packages/grid/tls/rootCA-key.pem
-packages/grid/tls/rootCA.pem
-```
-
-To ensure that tailscale will accept these certs we mount the file into the tailscale
-container like so:
-
-```
-version: "3.8"
-services:
-  tailscale:
-    volumes:
-      - ./tls/rootCA.pem:/usr/local/share/ca-certificates/rootCA.pem
-
-```
-
-The startup script runs `update-ca-certificates` so that the tailscale container is now
-aware of this fake authority and will accept the fake cert you have created for it.
-
-### Install Cert on Host
-
-If you wish to visit web pages with `localhost:8081` or `network1.openmined.grid` and
-have the TLS certificate warning disappear you need to install the certificate with:
-
-```
-$ mkcert -install
-```
-
-### Ignoring TLS Certs
-
-Alternatively as we do in the integration tests you can pass it as an environment variable
-to programming languages like Python like so:
-
-```
-REQUESTS_CA_BUNDLE=packages/grid/tls/rootCA.pem pytest tests/integration ...
-```
-
-When you do this, python will also accept these certificates in libraries like requests.
-Alternatively you can also tell requests to ignore invalid certificates with the `verify`
-kwarg like so:
-
-```python
-import requests
-request.get(url, verify=False)
-```
-
-To make this more convenient we have added an ENV called `IGNORE_TLS_ERRORS` which we
-set using the `--test` param in `hagrid` like so:
-
-```
-$ hagrid launch test_network_1 network to docker:9081 --tail=false --tls --test
-```
-
-You can check for this with `sy.util.verify_tls()` like so:
-
-```python
-import requests
-import syft as sy
-
-request.get(url, verify=sy.util.verify_tls())
-
-```
-
-It is important not to run `IGNORE_TLS_ERRORS=true` in production.
-
-### Ports
-
-Normally web traffic is served over port `80` for `http` and port `443` for `https`.
-Naturally during development we need to use multiple ports for multiple stacks and bind
-them to `localhost` and use things like `docker-host` to resolve this global address
-space from within any isolated containers. Currently what we do is if the `port` you
-supply to `hagrid` is `80` then we assume you are running in production and want port
-`443` for `https`. If you use any other port we will automatically find a port from
-`444` onwards and this port will be included in the `http` -> `https` 301 redirect in
-traefik proxy. Because of this most browsers and network libraries will simply follow
-this redirect so you can continue to use the normal `http` ports for everything.
-
-### Redirects
-
-The Grid API inside Syft detects if a url and port combination provided gets redirected
-to `https` and will change the `base_url` which should mean that login credentials are
-sent over `https` not `http` where possible.
-
-### VPN
-
-Due to the fact that TLS Certificates are only valid for domains and not IPs and the
-VPN is currently configured to use IPs only, we do not redirect or serve `https` over
-the VPN. The traffic being sent by `wireguard` over the VPN is already encrypted so
-there should be no need for `TLS`. The way this works is, when Grid is using `TLS` we
-forward external port `80` traffic to port `81` and then use this for the 301 redirect
-to the `TLS` port `443+`. If traffic arrives on port `80` inside the cluster it does not
-get redirected which allows the VPN IPs to respond via `http`.
-
-### Deploying Custom Certs
-
-To install certs via `hagrid` simply supply the two cert files as arguments:
-
-```
-$ hagrid launch domain to azure --tls --upload_tls_key=/path/to/certs/key.pem --upload_tls_cert=/path/to/certs/cert.pem
-```
-
-Alternatively if your machine is already setup without TLS you can simply reprovision with:
-
-```
-$ hagrid launch node_name domain to 123.x.x.x --tls --upload_tls_key=/path/to/certs/key.pem --upload_tls_cert=/path/to/certs/cert.pem
-```
-
-## Deploy to Cloud
-
-### Azure Marketplace 1-click Deploy
-
-[![Deploy To Azure](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true)](https://azuremarketplace.microsoft.com/en-us/marketplace/apps/madhavajay1632269232059.openmined_mj_grid_domain_ubuntu_1?tab=Overview)
-
-We also have an example [Quickstart Template](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FOpenMined%2FPySyft%2Fdev%2Fpackages%2Fgrid%2Fquickstart%2Ftemplate.json) for use in your own automation pipelines.
-
-### Deploy from CLI to Azure
-
-HAGrid supports creating VMs and provisioning with PyGrid directly using:
-
-```
-$ hagrid launch to azure
-```
-
-Follow the prompts and enter resource groups, size, location, auth credentials etc.
-
-## Deploy from CLI to Google Cloud Platform (GCP)
-
-HAGrid supports creating VMs and provisioning with PyGrid directly using:
-
-```
-$ hagrid launch to gcp
-```
-
-Follow the prompts and enter project id, machine type, zone, auth credentials etc.
-**Note** Since we use the gcloud cli tool for provisioning we rely on the gcloud cli tool
-generated SSH keys so if you use a custom key path other than the default
-(~/.ssh/google_compute_engine) please specify the correct path.
-
-### HAGrid Deployment
-
-Create a VM on your cloud provider with Ubuntu 20.04 with at least:
-
-- 2x CPU
-- 4gb RAM
-- 40gb HDD
-
-Generate or supply a private key and note down the username.
-
-Run the following:
-
-```
-$ hagrid launch node --type=domain --host=104.42.26.195 --username=ubuntu --key_path=~/.ssh/key.pem
-```
-
-### Deploy vs Provision
-
-If you want to later skip the setup process of installing packages and docker engine etc you can pass in --mode=deploy which will skip those steps.
-
-### Use a Custom PySyft Fork
-
-If you wish to use a different fork of PySyft you can pass in --repo=The-PET-Lab-at-the-UN-PPTTT/PySyft --branch=ungp_pet_lab
-
-## Switching to the OpenMined user
-
-```
-$ sudo su - om
-```
-
-## Cloud Images
-
-We are using Packer to build cloud images in a very similar fashion to the dev Vagrant box.
-
-To build images you will need the following:
-
-- packer
-- vagrant
-- virtualbox
-- ansible
-
-### MacOS Instructions
-
-```
-$ brew install packer vagrant virtualbox ansible
-```
-
-## Build a Local Vagrant Box
-
-Go to the following directory:
-
-```
-cd packages/grid/packer
-```
-
-Run:
-
-```
-./build_vagrant.sh
-```
-
-What this does is first build the base image, by downloading a Ubuntu .iso and automating
-an install to a virtual machine. After the base image is created, the same ansible
-provisioning scripts that we use in HAGrid and the Vagrant Dev environment above are
-run against the image and finally a few shell scripts are executed to update some
-Ubuntu packages and clean out a lot of unused stuff to squeeze the image size down.
-
-To verify it worked you can start the Vagrant file like this:
-
-```
-cd packages/grid/packer
-vagrant up
-```
-
-This system will start and automatically have the stack running and available on the local
-ip http://10.0.1.3/ you can also SSH into this box using the credentials in the Vagrantfile.
-
-## Azure Cloud Image
-
-To create the azure cloud image you need to have the `az` cli tool and make sure you are authenticated.
-
-Install the CLI tool:
-
-```
-$ pip install az
-```
-
-Authenticate your CLI tool:
-
-```
-$ az login
-```
-
-You will need to use a resource group and create a storage account within that resource group.
-
-Create a resource group called: `openmined-images`
-
-```
-$ az group create -n openmined-images -l westus
-```
-
-Create an app to use within the packer file:
-
-```
-$ az ad sp create-for-rbac --name openmined-images > azure_vars.json
-```
-
-This will create a file called `azure_vars.json` which will look something like this:
-
-```json
-{
-  "appId": "21b92977-8ad0-467c-ae3a-47c864418126",
-  "displayName": "openmined-images",
-  "password": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-  "tenant": "e3f9defa-1378-49b3-aed7-3dcacb468c41"
-}
-```
-
-You need to know your `subscription_id`:
-
-```bash
-$ SUBSCRIPTION_ID=$(az account show --query id | tr -d '"')
-```
-
-You can now build the image:
-
-```bash
-$ ./build_azure.sh ${SUBSCRIPTION_ID}
-```
-
-### Create a Shared Image Gallery
-
-Create a Shared image gallery within Azure.
-
-## Kubernetes
-
-We provide an option to deploy the stack using kubernetes.
-To test and run this locally we use `k3d` and `devspace`.
-
-## Local Dev
-
-- docker
-- k3d
-- devspace
-- kubectl
-- k9s
-
-## MacOS
-
-### Docker
-
-We will be using docker however you do not need to `enable kubernetes` in your docker desktop app.
-If its enabled, disable it and click `Apply & Restart`.
-
-Instead we will use `k3d` which will create and manage all the k8s resources we require as a normal container in docker engine.
-
-```
-$ brew install k3d
-```
-
-### k3d
-
-k3d lets you create a test registry and cluster like so
-
-```
-$ export NODE_NAME=test-network-1
-$ export NODE_PORT=9081
-$ k3d cluster create $NODE_NAME -p "$NODE_PORT:80@loadbalancer" --registry-use k3d-registry.localhost
-$ k3d cluster start $NODE_NAME
-```
-
-If you ever need to reset things you can just kill the docker containers and volumes:
-
-```
-$ docker rm $(docker ps -aq) --force
-$ docker volume prune --force || true
-```
-
-Once k3s is running you should see the container in docker.
-
-```
-$ docker ps
-CONTAINER ID   IMAGE                                 COMMAND                  CREATED        STATUS              PORTS                                                                                                                                  NAMES
-9b765411a2f2   rancher/k3s:v1.22.7-k3s1         "/bin/k3d-entrypoint…"   20 minutes ago   Up 20 minutes                                                   k3d-test-network-1-server-0
-878bc1bd630c   registry:2                       "/entrypoint.sh /etc…"   20 minutes ago   Up 20 minutes   0.0.0.0:12345->5000/tcp                         k3d-registry.localhost
-```
-
-### Kubectl
-
-kubectl is the CLI tool for kubernetes. If you have ran k3s it should have configured your kubectl to have a context for the local k3s cluster by default.
-
-You should be able to run something like:
-
-```
-$ kubectl get all
-NAME                 TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
-service/kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP   45h
-```
-
-### k8s Namespaces
-
-Think of a namespace as a grouping of resources and permissions which lets you easily create and destroy everything related to a single keyword.
-
-```
-$ kubectl get namespaces
-NAME                   STATUS   AGE
-default                Active   45h
-kube-node-lease        Active   45h
-kube-public            Active   45h
-kube-system            Active   45h
-kubernetes-dashboard   Active   45h
-```
-
-All k8s have a default namespace and the other ones here are from kubernetes.
-
-### Helm Charts
-
-The most popular way to deploy applications to k8s is with a tool called Helm. What helm aims to do is to provide another layer of abstraction over kubernetes yaml configuration with hierarchical variables, templates and a package definition which can be hosted over HTTP allowing custom applications to depend on other prefabricated helm charts or to provide consumable packages of your code as a helm chart itself.
-
-### devspace
-
-To make development and deployment of our kubernetes code easier we use a tool called `devspace` which aims to be like a hot reloading dev optimised version of `docker compose` but for kubernetes. https://devspace.sh/
-
-Additionally `devspace` allows us to deploy using helm by auto-generating the values and charts from the devspace.yaml which means the single source of truth can be created which includes both production helm charts and kubernetes yaml configuration as well as local dev overrides.
-
-```
-$ brew install devspace
-```
-
-### Deploy to local dev
-
-Now run the `dev` command with `devspace`:
-
-To run a network with headscale VPN:
-
-```
-$ cd packages/grid
-$ devspace dev -b -p network
-```
-
-To run a domain without the headscale VPN:
-
-```
-$ cd packages/grid
-$ devspace dev -b -p domain
-```
-
-To deploy to your local k3s do the following:
-
-```
-$ export NODE_NAME=test-network-1
-$ export NODE_PORT=9081
-$ devspace --no-warn --kube-context "k3d-$NODE_NAME" --namespace $NODE_NAME \
-           --var DOMAIN_NAME=$NODE_NAME \
-           --var NETWORK_CHECK_INTERVAL=5 \
-           --var CONTAINER_REGISTRY=k3d-registry.localhost:12345/ \
-           deploy -b -p network
-```
-
-The important thing to note is the custom container registry. This will tag the images with that local registry and k3s will know how to pull them from its custom registry.
-
-You may need to add this to your `/etc/hosts` file if you are not on linux:
-
-```
-127.0.0.1 k3d-registry.localhost
-```
-
-### k9s
-
-There is a tool like ctop which lets you easily see the kubernetes cluster called k9s.
-
-Install it like so:
-
-```
-$ brew install derailed/k9s/k9s
-```
-
-When you run it you can select the local context k3d-test-network-1 and see the namespace you deployed.
-
-### Destroy the local deployment
-
-```
-$ devspace purge
-```
-
-### Delete persistent volumes
-
-The database and the VPN containers have persistent volumes.
-You can check them with:
-
-```
-$ kubectl get persistentvolumeclaim
-```
-
-And then delete PostgreSQL with something like:
-
-```
-$ kubectl delete persistentvolumeclaim app-db-data-db-0
-```
-
-### Check which images / tags are being used
-
-This will show all the unique images and their tags currently deployed which is useful
-when debugging which version is actually running in the cluster.
-
-```
-$ kubectl get pods --all-namespaces -o jsonpath="{.items[*].spec.containers[*].image}" | tr -s '[[:space:]]' '\n' | sort | uniq -c
-```
-
-### Restart a container / pod / deployment
-
-Get all the deployments
-
-```
-$ kubectl get deployments
-NAME             READY   UP-TO-DATE   AVAILABLE   AGE
-backend          1/1     1            1           18m
-backend-stream   1/1     1            1           18m
-backend-worker   1/1     1            1           18m
-frontend         1/1     1            1           18m
-queue            1/1     1            1           19m
-```
-
-Restart the backend-worker
-
-```
-$ kubectl rollout restart deployment backend-worker
-```
-
-### Deploy to Google Kubernetes Engine (GKE)
-
-Configure kubectl context with GKE:
-
-```
-$ gcloud container clusters get-credentials --region us-central1-c staging-cluster-1
-```
-
-Check that you have the correct context
-
-```
-$ kubectx
-```
-
-Configure your Google Container Registry (GCR):
-
-```
-$ gcloud auth configure-docker
-```
-
-Check your settings with print
-
-```
-$ devspace print -p domain --var=CONTAINER_REGISTRY=gcr.io/reflected-space-315806/
-```
-
-You should see that you are creating a domain and that the container registry variable
-changes the image name to:
-
-```
-images:
-  backend:
-    image: gcr.io/reflected-space-315806/openmined/grid-backend
-```
-
-This will tell `devspace` to publish to the GCR for your active GCP project.
-
-Create the openmined namespace
-
-```
-$ kubectl create namespace openmined
-```
-
-Tell devspace to use the openmined namespace
-
-```
-$ devspace use namespace openmined
-```
-
-Deploy to GKE:
-
-```
-$ devspace deploy -p domain --var=CONTAINER_REGISTRY=gcr.io/reflected-space-315806/
-```
-
-Access a container directly:
-
-```
-$ devspace enter
-```
-
-Attach to container stdout:
-
-```
-$ devspace attach
-```
-
-Use port forwarding to access an internal service:
-
-```
-$ kubectl port-forward deployment/tailscale :4000
-```
-
-### Deploy to Azure Kubernetes
-
-Create a cluster and optional registry.
-
-I named my registry: `omazuretest`
-
-Log into the registry with:
-
-```
-$ az acr login -n omazuretest.azurecr.io
-```
-
-Check you have permission by tagging and uploading nginx:
-
-```
-$ docker pull nginx:latest
-$ docker tag nginx omazuretest.azurecr.io/nginx
-$ docker push omazuretest.azurecr.io/nginx
-```
-
-#### Build and Push Images
-
-```
-devspace --no-warn --kube-context "azure-test" --namespace azure-network-1 --var DOMAIN_NAME=azure-network-1 --var CONTAINER_REGISTRY=omazuretest.azurecr.io/ build -b
-```
-
-#### Deploy
-
-```
-devspace --no-warn --kube-context "azure-test" --namespace azure-network-1 --var DOMAIN_NAME=azure-network-1 --var CONTAINER_REGISTRY=omazuretest.azurecr.io/ deploy -p network
-```
-
-### Render Plain Kubernetes Manifests
-
-You can just output plain kubernetes manifests like so:
-
-For domains:
-
-```
-$ devspace render -p domain --skip-build --silent > k8s/rendered/domain.yaml
-```
-
-For networks:
-
-```
-$ devspace render -p network --skip-build --silent > k8s/rendered/network.yaml
-```
-
-## Publish
-
-### HAGrid
-
-#### PyPI
-
-To publish hagrid to pypi create a virtualenv in the `/packages/hagrid` directory.
-
-```
-$ cd packages/hagrid
-```
-
-Use a tool like `pipenv` or manually create and source like so:
-
-```
-$ python3 -m venv ./venv
-$ source .venv/bin/activate
-```
-
-Install some tools:
-
-```
-$ pip install --upgrade bandit safety setuptools wheel twine tox
-```
-
-Bump the version inside `/packages/hagrid/hagrid/__init__.py`
-
-Build a wheel:
-
-```
-$ ./build_wheel.sh
-```
-
-Check with twine:
-
-```
-$ twine check `find -L ./ -name "*.whl"`
-```
-
-Upload with twine:
-
-```
-$ twine upload dist/hagrid-x.x.x-py3-none-any.whl
-```
-
-#### Docker
-
-```
-$ cd packages/hagrid
-```
-
-Build and tag the images:
-
-```
-$ ./build_docker.sh
-```
-
-Publish to docker hub:
-
-```
-$ docker push openmined/hagrid:latest
-$ docker push openmined/hagrid:x.x.x
-```
-
-## Join Slack
-
-Also, join the rapidly growing community of 12,000+ on [Slack](http://slack.openmined.org).
-The Slack community is very friendly and great about quickly answering questions about the use and development of PySyft!
-
-## Disclaimer
-
-This software is in beta. Use at your own risk.
-
-## Support
-
-For support in using this library, please join the **#support** Slack channel. [Click here to join our Slack community!](https://slack.openmined.org)
-
-## Organizational Contributions
-
-We are very grateful for contributions to Syft and Grid from the following organizations!
-
-|                                                                                                                                                                     |                                                                                                                                                                                                              |                                                                                                                                                                                         |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [<img src="https://github.com/udacity/private-ai/blob/master/udacity-logo-vert-white.png?raw=true" alt="Udacity" width="160"/>](https://udacity.com/)               | [<img src="https://raw.githubusercontent.com/OpenMined/PySyft/main/packages/syft/docs/img/organizations/comind.png" alt="coMind" width="160" />](https://github.com/coMindOrg/federated-averaging-tutorials) | [<img src="https://i.ibb.co/vYwcG9N/arkhn-logo.png" alt="Arkhn" width="160" />](http://ark.hn)                                                                                          |
-| [<img src="https://raw.githubusercontent.com/dropoutlabs/files/master/dropout-labs-logo-white-2500.png" alt="Dropout Labs" width="160"/>](https://dropoutlabs.com/) | [<img src="https://raw.githubusercontent.com/OpenMined/PySyft/main/packages/syft/docs/img/organizations/genbu.png" alt="GENBU AI" width="160"/>](https://genbu.ai/)                                          | [<img src="https://raw.githubusercontent.com/OpenMined/PySyft/main/packages/syft/docs/img/organizations/bitdefender.png" alt="Bitdefender" width="160"/>](https://www.bitdefender.com/) |
-
-## License
-
-[Apache License 2.0](https://github.com/OpenMined/PySyft/blob/main/packages/syft/LICENSE)
-
-```
-
-```
+- HAGrid Requires: 🐍 `python` 🐙 `git` - Run: `pip install hagrid`  
+  †`Windows` does not support `ansible`, preventing some remote deployment targets
+- PySyft Requires: 🐍 `python 3.7+` - Run: `pip install syft`  
+  \*`macOS` Apple Silicon users need cmake: `brew install cmake`  
+  ‡`Windows` users must run this first: `pip install jaxlib===0.3.7 -f https://whls.blob.core.windows.net/unstable/index.html`
+- PyGrid Requires: 🐳 `docker` / `k8s` or 🐧 `ubuntu` VM - Run: `hagrid launch ...`
+
+# Versions
+
+<!-- `0.8.0 beta` - `dev` branch 👈🏽   -->
+
+`0.7.0 beta` - `dev` branch 👈🏽  
+`0.6.0` - <a href="https://github.com/OpenMined/courses/tree/introduction-to-remote-data-science">Course 3</a>  
+`0.5.1` - <a href="https://github.com/OpenMined/courses/tree/foundations-of-private-computation">Course 2</a> + M1 Hotfix  
+`0.2.0` - `0.5.0` Deprecated
+
+PySyft and PyGrid use the same `version` and its best to match them up where possible. We release weekly betas which can be used in each context:
+PySyft: `pip install syft --pre`
+PyGrid: `hagrid launch ... tag=latest`
+
+<!-- Quickstart: `hagrid quickstart --pre` -->
+
+HAGrid is a cli / deployment tool so the latest version of `hagrid` is usually the best.
+
+# What is Syft?
+
+<img align="right" src="packages/syft/docs/img/logo_big.png#gh-light-mode-only" alt="Syft" height="250" style="padding-left:30px;">
+
+<img align="right" src="packages/syft/docs/img/logo_big_dark.png#gh-dark-mode-only" alt="Syft" height="250" style="padding-left:30px;">
+
+`Syft` is OpenMined's `open source` stack that provides `secure` and `private` Data Science in Python. Syft decouples `private data` from model training, using techniques like [Federated Learning](https://ai.googleblog.com/2017/04/federated-learning-collaborative.html), [Differential Privacy](https://en.wikipedia.org/wiki/Differential_privacy), and [Encrypted Computation](https://en.wikipedia.org/wiki/Homomorphic_encryption). This is done with a `numpy`-like interface and integration with `Deep Learning` frameworks, so that you as a `Data Scientist` can maintain your current workflow while using these new `privacy-enhancing techniques`.
+
+### Why should I use Syft?
+
+`Syft` allows a `Data Scientist` to ask `questions` about a `dataset` and, within `privacy limits` set by the `data owner`, get `answers` to those `questions`, all without obtaining a `copy` of the data itself. We call this process `Remote Data Science`. It means in a wide variety of `domains` across society, the current `risks` of sharing information (`copying` data) with someone such as, privacy invasion, IP theft and blackmail will no longer prevent the vast `benefits` such as innovation, insights and scientific discovery which secure access will provide.
+
+No more cold calls to get `access` to a dataset. No more weeks of `wait times` to get a `result` on your `query`. It also means `1000x more data` in every domain. PySyft opens the doors to a streamlined Data Scientist `workflow`, all with the individual's `privacy` at its heart.
+
+<!-- # Tutorials
+
+<table border="5" bordercolor="grey">
+<tr>
+<th align="center">
+<img width="441" height="1">
+<div align="center">
+<img src="packages/syft/docs/img/personas_image/dataowner.png" alt="" width="100" height="100" align="center">
+<p>Data Owner</p></div>
+</th>
+<th align="center">
+<img width="441" height="1">
+<div align="center"><img src="packages/syft/docs/img/personas_image/datascientist.png" alt="" width="100" height="100" align="center">
+<p>Data Scientist</p></div>
+
+</th>
+<th align="center">
+<img width="441" height="1">
+<div align="center">
+<img src="packages/syft/docs/img/personas_image/dataengineer.png" alt="" width="100" height="100" align="center">
+<p>Data Engineer</p>
+</div>
+</th>
+</tr>
+<tr>
+<td valign="top"> -->
+<!-- REMOVE THE BACKSLASHES -->
+
+<!-- - <a href="#">Deploy a Domain Server</a>
+- <a href="#">Upload Private Data</a>
+- <a href="#">Create Accounts</a>
+- <a href="#">Manage Privacy Budget</a>
+- <a href="#">Join a Network</a>
+- Learn how PETs streamline Data Policies
+
+</td>
+<td valign="top"> -->
+<!-- REMOVE THE BACKSLASHES -->
+
+<!-- - <a href="#">Install Syft</a>
+- <a href="#">Connect to a Domain</a>
+- <a href="#">Search for Datasets</a>
+- Train Models
+- Retrieve Secure Results
+- Learn Differential Privacy
+
+</td>
+<td valign="top"> -->
+<!-- REMOVE THE BACKSLASHES -->
+
+<!-- - <a href="#">Setup Dev Mode</a>
+- Deploy to Azure
+- Deploy to GCP
+- Deploy to Kubernetes
+- Customize Networking
+- Modify PyGrid UI
+</td>
+</tr>
+</table> -->
+
+# Terminology
+
+<table border="5" bordercolor="grey">
+<tr>
+<th align="center">
+<img width="441" height="1">
+<p>👨🏻‍💼 Data Owners</p>
+</th>
+<th align="center">
+<img width="441" height="1">
+<p>👩🏽‍🔬 Data Scientists</p>
+</th>
+</tr>
+<tr>
+<td valign="top">
+<!-- REMOVE THE BACKSLASHES -->
+
+Provide `datasets` which they would like to make available for `study` by an `outside party` they may or may not `fully trust` has good intentions.
+
+</td>
+<td valign="top">
+<!-- REMOVE THE BACKSLASHES -->
+
+Are end `users` who desire to perform `computations` or `answer` a specific `question` using one or more data owners' `datasets`.
+
+</td>
+</tr>
+<tr>
+<th align="center">
+<img width="441" height="1">
+<p>🏰 Domain Server</p>
+</th>
+<th align="center">
+<img width="441" height="1">
+<p>🔗 Network Server</p>
+</th>
+</tr>
+<tr>
+<td valign="top">
+<!-- REMOVE THE BACKSLASHES -->
+
+Manages the `remote study` of the data by a `Data Scientist` and allows the `Data Owner` to manage the `data` and control the `privacy guarantees` of the subjects under study. It also acts as a `gatekeeper` for the `Data Scientist's` access to the data to compute and experiment with the results.
+
+</td>
+<td valign="top">
+<!-- REMOVE THE BACKSLASHES -->
+
+Provides services to a group of `Data Owners` and `Data Scientists`, such as dataset `search` and bulk `project approval` (legal / technical) to participate in a project. A network server acts as a bridge between it's members (`Domains`) and their subscribers (`Data Scientists`) and can provide access to a collection of `domains` at once.</td>
+
+</tr>
+<tr>
+</table>
+
+# Community
+
+<table border="5" bordercolor="grey">
+<tr>
+<th align="center" valign="top">
+<img width="441" height="1">
+<div align="center">
+<img src="packages/syft/docs/img/panel_slack_title_light.png#gh-light-mode-only" alt="" width="100%" align="center" />
+<img src="packages/syft/docs/img/panel_slack_title_dark.png#gh-dark-mode-only" alt="" width="100%" align="center" />
+
+<a href="https://slack.openmined.org/"><img src="packages/syft/docs/img/panel_slack.png" alt="" width="100%" align="center" /></a>
+
+</div>
+</th>
+<th align="center" valign="top">
+<img width="441" height="1">
+<div align="center">
+<img src="packages/syft/docs/img/panel_title_videos_papers_light.png#gh-light-mode-only" alt="" width="100%" align="center" />
+<img src="packages/syft/docs/img/panel_title_videos_papers.png#gh-dark-mode-only" alt="" width="100%" align="center" />
+<p align="left"><sub><sup>
+🎥 <a href="https://www.youtube.com/watch?v=qVf0tPBzr2k">PETs: Remote Data Science Unleashed - R gov 2021</a><br />
+🎥 <a href="https://youtu.be/sCoDWKTbh3s?list=PL_lsbAsL_o2BQKXG7mkGFA8LSApCnhljL">Introduction to Remote Data Science - PyTorch Dev 2021</a><br />
+🎥 <a href="https://youtu.be/kzLeTz_vIeQ?list=PL_lsbAsL_o2BtOz6KUfUI_Zla6Rg5dmyc">The Future of AI Tools - PyTorch Dev 2020</a><br />
+🎥 <a href="https://www.youtube.com/watch?v=4zrU54VIK6k&t=1s">Privacy Preserving AI - MIT Deep Learning Series</a><br />
+🎥 <a href="https://www.youtube.com/watch?v=Pr4erdusiW0">Privacy-Preserving Data Science - TWiML Talk #241</a><br />
+🎥 <a href="https://www.youtube.com/watch?v=NJBBE_SN90A">Privacy Preserving AI - PyTorch Devcon 2019</a><br />
+📖 <a href="https://arxiv.org/pdf/2110.01315.pdf">Towards general-purpose infrastructure for protecting ...</a><br />
+📖 <a href="https://arxiv.org/pdf/2104.12385.pdf">Syft 0.5: A platform for universally deployable ...</a><br />
+📖 <a href="https://arxiv.org/pdf/1811.04017.pdf">A generic framework for privacy preserving deep learning</a>
+</sup></sup></p>
+</div>
+</th>
+<th align="center" valign="top">
+<img width="441" height="1">
+<div align="center">
+<img src="packages/syft/docs/img/panel_padawan_title_light.png#gh-light-mode-only" alt="" width="100%" align="center" />
+<img src="packages/syft/docs/img/panel_padawan_title_dark.png#gh-dark-mode-only" alt="" width="100%" align="center" />
+
+<a href="https://blog.openmined.org/work-on-ais-most-exciting-frontier-no-phd-required/"><img src="packages/syft/docs/img/panel_padawan.png" alt="" width="100%" align="center"></a>
+
+</div>
+</th>
+</tr>
+</table>
+
+# Courses
+
+<table border="5" bordercolor="grey">
+<tr>
+<th align="center">
+<img width="441" height="1">
+<div align="center">
+<a href="https://courses.openmined.org/courses/our-privacy-opportunity"><img src="packages/syft/docs/img/course_privacy.png" alt="" width="100%" align="center" /></a>
+</th>
+<th align="center">
+<img width="441" height="1">
+<div align="center">
+<a href="https://courses.openmined.org/courses/foundations-of-private-computation"><img src="packages/syft/docs/img/course_foundations.png" alt="" width="100%" align="center" /></a>
+</div>
+</th>
+<th align="center">
+<img width="441" height="1">
+<div align="center">
+<a href="https://courses.openmined.org/courses/introduction-to-remote-data-science"><img src="packages/syft/docs/img/course_introduction.png" alt="" width="100%" align="center"></a>
+</div>
+</th>
+</tr>
+</table>
+
+# Contributors
+
+OpenMined and Syft appreciates all contributors, if you would like to fix a bug or suggest a new feature, please see our [guidelines](https://openmined.github.io/PySyft/developer_guide/index.html).<br />  
+<img src="packages/syft/docs/img/contributors_light.jpg#gh-light-mode-only" alt="Contributors" width="100%" />
+<img src="packages/syft/docs/img/contributors_dark.jpg#gh-dark-mode-only" alt="Contributors" width="100%" />
+
+# Supporters
+
+<table border="0">
+<tr>
+<th align="center">
+<a href="https://sloan.org/"><img src="packages/syft/docs/img/logo_sloan.png" /></a>
+</th>
+<th align="center">
+<a href="https://opensource.fb.com/"><img src="packages/syft/docs/img/logo_meta.png" /></a>
+</th>
+<th align="center">
+<a href="https://pytorch.org/"><img src="packages/syft/docs/img/logo_torch.png" /></a>
+</th>
+<th align="center">
+<a href="https://www.udacity.com/"><img src="packages/syft/docs/img/logo_udacity.png" /></a>
+</th>
+<th align="center">
+<a href="https://summerofcode.withgoogle.com/"><img src="packages/syft/docs/img/logo_gsoc.png" /></a>
+</th>
+<th align="center">
+<a href="https://developers.google.com/season-of-docs"><img src="packages/syft/docs/img/logo_gsod.png" /></a>
+</th>
+<th align="center">
+<img src="packages/syft/docs/img/logo_arkhn_light.png#gh-light-mode-only" />
+<img src="packages/syft/docs/img/logo_arkhn.png#gh-dark-mode-only" />
+</th>
+<th align="center">
+<img src="packages/syft/docs/img/logo_cape_light.png#gh-light-mode-only" />
+<img src="packages/syft/docs/img/logo_cape.png#gh-dark-mode-only" />
+</th>
+<th align="center">
+<a href="https://begin.ai/"><img src="packages/syft/docs/img/logo_begin.png" /></a>
+</th>
+</tr>
+</table>
+
+# Open Collective
+
+`OpenMined` is a registered `501(c)(3)` in the USA. We are funded by our gracious supporters on <a href="https://opencollective.com/openmined">Open Collective</a>. <br /><br />
+<img src="packages/syft/docs/img/opencollective_light.png#gh-light-mode-only" alt="Contributors" width="100%" />
+<img src="packages/syft/docs/img/opencollective_dark.png#gh-dark-mode-only" alt="Contributors" width="100%" />
+
+# Disclaimer
+
+Syft is under active development and is not yet ready for pilots on private data without our assistance. As early access participants, please contact us via [Slack](https://slack.openmined.org/) or email if you would like to ask a question or have a use case that you would like to discuss.
+
+# License
+
+[Apache License 2.0](LICENSE)<br />
+<a href="https://www.flaticon.com/free-icons/person" title="person icons">Person icons created by Freepik - Flaticon</a>
