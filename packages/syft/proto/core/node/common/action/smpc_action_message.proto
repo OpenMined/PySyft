@@ -3,7 +3,7 @@ syntax = "proto3";
 package syft.core.node.common.action;
 
 import "proto/core/common/common_object.proto";
-import "proto/core/io/address.proto";
+import "proto/core/common/recursive_serde.proto";
 
 message SMPCActionMessage {
   string name_action = 1;
@@ -12,6 +12,6 @@ message SMPCActionMessage {
   map<string, syft.core.common.UID> kwargs_id = 4;
   map<string, bytes> kwargs = 5;
   syft.core.common.UID id_at_location = 6;
-  syft.core.io.Address address = 7;
+  syft.core.common.RecursiveSerde address = 7;
   syft.core.common.UID msg_id = 8;
 }

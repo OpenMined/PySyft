@@ -379,9 +379,9 @@ def test_Int_base_limits() -> None:
     with pytest.raises(ValueError):
         Int("0", -909)  # An old magic value base from Python 2.
     with pytest.raises(ValueError):
-        Int("0", base=0 - (2**234))
+        Int("0", base=0 - (2 ** 234))
     with pytest.raises(ValueError):
-        Int("0", base=2**234)
+        Int("0", base=2 ** 234)
     # Bases 2 through 36 are supported.
     for base in range(2, 37):
         assert Int("0", base=base) == 0
@@ -404,14 +404,14 @@ def test_Int_base_indexable() -> None:
             return self.value
 
     # Check out of range bases.
-    for base in 2**100, -(2**100), 1, 37:
+    for base in 2 ** 100, -(2 ** 100), 1, 37:
         with pytest.raises(ValueError):
             Int("43", base)
 
     # Check in-range bases.
     assert Int("101", base=MyIndexable(2)) == 5
     assert Int("101", base=MyIndexable(10)) == 101
-    assert Int("101", base=MyIndexable(36)) == 1 + 36**2
+    assert Int("101", base=MyIndexable(36)) == 1 + 36 ** 2
 
 
 def test_Int_memoryview() -> None:

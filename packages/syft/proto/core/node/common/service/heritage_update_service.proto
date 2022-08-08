@@ -3,10 +3,10 @@ syntax = "proto3";
 package syft.core.node.common.service;
 
 import "proto/core/common/common_object.proto";
-import "proto/core/io/address.proto";
+import "proto/core/common/recursive_serde.proto";
 
 message HeritageUpdateMessage {
   syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  syft.core.io.Address new_ancestry_address = 3;
+  syft.core.common.RecursiveSerde address = 2;
+  syft.core.common.RecursiveSerde new_ancestry_address = 3;
 }

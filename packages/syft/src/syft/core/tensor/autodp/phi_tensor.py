@@ -2209,7 +2209,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         schema = get_capnp_schema(schema_file="phi_tensor.capnp")
         pt_struct: CapnpModule = schema.PT  # type: ignore
         # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
-        MAX_TRAVERSAL_LIMIT = 2**64 - 1
+        MAX_TRAVERSAL_LIMIT = 2 ** 64 - 1
         # to pack or not to pack?
         # pt_msg = pt_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
         pt_msg = pt_struct.from_bytes_packed(

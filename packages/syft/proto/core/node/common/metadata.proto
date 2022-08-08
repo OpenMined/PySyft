@@ -3,12 +3,12 @@ syntax = "proto3";
 package syft.core.node.common;
 
 import "proto/core/common/common_object.proto";
-import "proto/core/io/location.proto";
+import "proto/core/common/recursive_serde.proto";
 
 message Metadata {
   syft.core.common.UID id = 1;
   string name = 2;
-  syft.core.io.SpecificLocation node = 3;
+  syft.core.common.RecursiveSerde node = 3;
   string node_type = 4;
   string version = 5;
 }

@@ -4,9 +4,9 @@
 """Generated protocol buffer code."""
 # third party
 from google.protobuf import descriptor as _descriptor
-from google.protobuf import descriptor_pool as _descriptor_pool
+from google.protobuf import message as _message
+from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -17,42 +17,1722 @@ _sym_db = _symbol_database.Default()
 from syft.proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
-from syft.proto.core.io import address_pb2 as proto_dot_core_dot_io_dot_address__pb2
+from syft.proto.core.common import (
+    recursive_serde_pb2 as proto_dot_core_dot_common_dot_recursive__serde__pb2,
+)
 from syft.proto.lib.python import dict_pb2 as proto_dot_lib_dot_python_dot_dict__pb2
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
-    b'\n\'proto/grid/messages/user_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto\x1a\x1bproto/lib/python/dict.proto"\x8f\x02\n\x11\x43reateUserMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\r\n\x05\x65mail\x18\x03 \x01(\t\x12\x10\n\x08password\x18\x04 \x01(\t\x12\x0c\n\x04role\x18\x05 \x01(\t\x12\x0c\n\x04name\x18\x06 \x01(\t\x12\x0f\n\x07website\x18\t \x01(\t\x12\x13\n\x0binstitution\x18\n \x01(\t\x12\x0f\n\x07\x64\x61\x61_pdf\x18\x0b \x01(\x0c\x12\'\n\x08reply_to\x18\x0c \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0e\n\x06\x62udget\x18\r \x01(\x01"\x99\x01\n\x0eGetUserMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07user_id\x18\x03 \x01(\x05\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xbb\x01\n\x1bProcessUserCandidateMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x14\n\x0c\x63\x61ndidate_id\x18\x02 \x01(\x05\x12\x0e\n\x06status\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x05 \x01(\x0b\x32\x15.syft.core.io.Address"\x88\x01\n\x0fGetUserResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"\x8e\x01\n\x14GetCandidatesMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8e\x01\n\x15GetCandidatesResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x03(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"\x89\x01\n\x0fGetUsersMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x89\x01\n\x10GetUsersResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x03(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"\x9c\x01\n\x11\x44\x65leteUserMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07user_id\x18\x03 \x01(\x05\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xb5\x02\n\x11UpdateUserMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07user_id\x18\x03 \x01(\x05\x12\r\n\x05\x65mail\x18\x04 \x01(\t\x12\x10\n\x08password\x18\x05 \x01(\t\x12\x0c\n\x04role\x18\x06 \x01(\t\x12\x0e\n\x06groups\x18\x07 \x01(\t\x12\x0c\n\x04name\x18\x08 \x01(\t\x12\x0e\n\x06\x62udget\x18\t \x01(\x01\x12\x13\n\x0binstitution\x18\n \x01(\t\x12\x0f\n\x07website\x18\x0b \x01(\t\x12\x14\n\x0cnew_password\x18\x0c \x01(\t\x12\'\n\x08reply_to\x18\r \x01(\x0b\x32\x15.syft.core.io.Address"\xc7\x01\n\x12SearchUsersMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\r\n\x05\x65mail\x18\x03 \x01(\t\x12\x0c\n\x04role\x18\x04 \x01(\t\x12\x0e\n\x06groups\x18\x05 \x01(\t\x12\x0c\n\x04name\x18\x06 \x01(\t\x12\'\n\x08reply_to\x18\x07 \x01(\x0b\x32\x15.syft.core.io.Address"\x8c\x01\n\x13SearchUsersResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x03(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3'
+DESCRIPTOR = _descriptor.FileDescriptor(
+    name="proto/grid/messages/user_messages.proto",
+    package="syft.grid.messages",
+    syntax="proto3",
+    serialized_options=None,
+    create_key=_descriptor._internal_create_key,
+    serialized_pb=b'\n\'proto/grid/messages/user_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\'proto/core/common/recursive_serde.proto\x1a\x1bproto/lib/python/dict.proto"\xa5\x02\n\x11\x43reateUserMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x31\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32 .syft.core.common.RecursiveSerde\x12\r\n\x05\x65mail\x18\x03 \x01(\t\x12\x10\n\x08password\x18\x04 \x01(\t\x12\x0c\n\x04role\x18\x05 \x01(\t\x12\x0c\n\x04name\x18\x06 \x01(\t\x12\x0f\n\x07website\x18\t \x01(\t\x12\x13\n\x0binstitution\x18\n \x01(\t\x12\x0f\n\x07\x64\x61\x61_pdf\x18\x0b \x01(\x0c\x12\x32\n\x08reply_to\x18\x0c \x01(\x0b\x32 .syft.core.common.RecursiveSerde\x12\x0e\n\x06\x62udget\x18\r \x01(\x01"\xaf\x01\n\x0eGetUserMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x31\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32 .syft.core.common.RecursiveSerde\x12\x0f\n\x07user_id\x18\x03 \x01(\x05\x12\x32\n\x08reply_to\x18\x04 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\xd1\x01\n\x1bProcessUserCandidateMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x14\n\x0c\x63\x61ndidate_id\x18\x02 \x01(\x05\x12\x0e\n\x06status\x18\x03 \x01(\t\x12\x31\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32 .syft.core.common.RecursiveSerde\x12\x32\n\x08reply_to\x18\x05 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\x93\x01\n\x0fGetUserResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12\x31\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\xa4\x01\n\x14GetCandidatesMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x31\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32 .syft.core.common.RecursiveSerde\x12\x32\n\x08reply_to\x18\x04 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\x99\x01\n\x15GetCandidatesResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x03(\x0b\x32\x15.syft.lib.python.Dict\x12\x31\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\x9f\x01\n\x0fGetUsersMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x31\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32 .syft.core.common.RecursiveSerde\x12\x32\n\x08reply_to\x18\x04 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\x94\x01\n\x10GetUsersResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x03(\x0b\x32\x15.syft.lib.python.Dict\x12\x31\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\xb2\x01\n\x11\x44\x65leteUserMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x31\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32 .syft.core.common.RecursiveSerde\x12\x0f\n\x07user_id\x18\x03 \x01(\x05\x12\x32\n\x08reply_to\x18\x04 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\xcb\x02\n\x11UpdateUserMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x31\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32 .syft.core.common.RecursiveSerde\x12\x0f\n\x07user_id\x18\x03 \x01(\x05\x12\r\n\x05\x65mail\x18\x04 \x01(\t\x12\x10\n\x08password\x18\x05 \x01(\t\x12\x0c\n\x04role\x18\x06 \x01(\t\x12\x0e\n\x06groups\x18\x07 \x01(\t\x12\x0c\n\x04name\x18\x08 \x01(\t\x12\x0e\n\x06\x62udget\x18\t \x01(\x01\x12\x13\n\x0binstitution\x18\n \x01(\t\x12\x0f\n\x07website\x18\x0b \x01(\t\x12\x14\n\x0cnew_password\x18\x0c \x01(\t\x12\x32\n\x08reply_to\x18\r \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\xdd\x01\n\x12SearchUsersMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x31\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32 .syft.core.common.RecursiveSerde\x12\r\n\x05\x65mail\x18\x03 \x01(\t\x12\x0c\n\x04role\x18\x04 \x01(\t\x12\x0e\n\x06groups\x18\x05 \x01(\t\x12\x0c\n\x04name\x18\x06 \x01(\t\x12\x32\n\x08reply_to\x18\x07 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\x97\x01\n\x13SearchUsersResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x03(\x0b\x32\x15.syft.lib.python.Dict\x12\x31\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32 .syft.core.common.RecursiveSerdeb\x06proto3',
+    dependencies=[
+        proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
+        proto_dot_core_dot_common_dot_recursive__serde__pb2.DESCRIPTOR,
+        proto_dot_lib_dot_python_dot_dict__pb2.DESCRIPTOR,
+    ],
 )
 
-_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
-_builder.BuildTopDescriptorsAndMessages(
-    DESCRIPTOR, "proto.grid.messages.user_messages_pb2", globals()
-)
-if _descriptor._USE_C_DESCRIPTORS == False:
 
-    DESCRIPTOR._options = None
-    _CREATEUSERMESSAGE._serialized_start = 161
-    _CREATEUSERMESSAGE._serialized_end = 432
-    _GETUSERMESSAGE._serialized_start = 435
-    _GETUSERMESSAGE._serialized_end = 588
-    _PROCESSUSERCANDIDATEMESSAGE._serialized_start = 591
-    _PROCESSUSERCANDIDATEMESSAGE._serialized_end = 778
-    _GETUSERRESPONSE._serialized_start = 781
-    _GETUSERRESPONSE._serialized_end = 917
-    _GETCANDIDATESMESSAGE._serialized_start = 920
-    _GETCANDIDATESMESSAGE._serialized_end = 1062
-    _GETCANDIDATESRESPONSE._serialized_start = 1065
-    _GETCANDIDATESRESPONSE._serialized_end = 1207
-    _GETUSERSMESSAGE._serialized_start = 1210
-    _GETUSERSMESSAGE._serialized_end = 1347
-    _GETUSERSRESPONSE._serialized_start = 1350
-    _GETUSERSRESPONSE._serialized_end = 1487
-    _DELETEUSERMESSAGE._serialized_start = 1490
-    _DELETEUSERMESSAGE._serialized_end = 1646
-    _UPDATEUSERMESSAGE._serialized_start = 1649
-    _UPDATEUSERMESSAGE._serialized_end = 1958
-    _SEARCHUSERSMESSAGE._serialized_start = 1961
-    _SEARCHUSERSMESSAGE._serialized_end = 2160
-    _SEARCHUSERSRESPONSE._serialized_start = 2163
-    _SEARCHUSERSRESPONSE._serialized_end = 2303
+_CREATEUSERMESSAGE = _descriptor.Descriptor(
+    name="CreateUserMessage",
+    full_name="syft.grid.messages.CreateUserMessage",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.CreateUserMessage.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.CreateUserMessage.address",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="email",
+            full_name="syft.grid.messages.CreateUserMessage.email",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="password",
+            full_name="syft.grid.messages.CreateUserMessage.password",
+            index=3,
+            number=4,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="role",
+            full_name="syft.grid.messages.CreateUserMessage.role",
+            index=4,
+            number=5,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="name",
+            full_name="syft.grid.messages.CreateUserMessage.name",
+            index=5,
+            number=6,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="website",
+            full_name="syft.grid.messages.CreateUserMessage.website",
+            index=6,
+            number=9,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="institution",
+            full_name="syft.grid.messages.CreateUserMessage.institution",
+            index=7,
+            number=10,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="daa_pdf",
+            full_name="syft.grid.messages.CreateUserMessage.daa_pdf",
+            index=8,
+            number=11,
+            type=12,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"",
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.CreateUserMessage.reply_to",
+            index=9,
+            number=12,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="budget",
+            full_name="syft.grid.messages.CreateUserMessage.budget",
+            index=10,
+            number=13,
+            type=1,
+            cpp_type=5,
+            label=1,
+            has_default_value=False,
+            default_value=float(0),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=173,
+    serialized_end=466,
+)
+
+
+_GETUSERMESSAGE = _descriptor.Descriptor(
+    name="GetUserMessage",
+    full_name="syft.grid.messages.GetUserMessage",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.GetUserMessage.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.GetUserMessage.address",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="user_id",
+            full_name="syft.grid.messages.GetUserMessage.user_id",
+            index=2,
+            number=3,
+            type=5,
+            cpp_type=1,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.GetUserMessage.reply_to",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=469,
+    serialized_end=644,
+)
+
+
+_PROCESSUSERCANDIDATEMESSAGE = _descriptor.Descriptor(
+    name="ProcessUserCandidateMessage",
+    full_name="syft.grid.messages.ProcessUserCandidateMessage",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.ProcessUserCandidateMessage.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="candidate_id",
+            full_name="syft.grid.messages.ProcessUserCandidateMessage.candidate_id",
+            index=1,
+            number=2,
+            type=5,
+            cpp_type=1,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="status",
+            full_name="syft.grid.messages.ProcessUserCandidateMessage.status",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.ProcessUserCandidateMessage.address",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.ProcessUserCandidateMessage.reply_to",
+            index=4,
+            number=5,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=647,
+    serialized_end=856,
+)
+
+
+_GETUSERRESPONSE = _descriptor.Descriptor(
+    name="GetUserResponse",
+    full_name="syft.grid.messages.GetUserResponse",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.GetUserResponse.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.GetUserResponse.content",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.GetUserResponse.address",
+            index=2,
+            number=3,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=859,
+    serialized_end=1006,
+)
+
+
+_GETCANDIDATESMESSAGE = _descriptor.Descriptor(
+    name="GetCandidatesMessage",
+    full_name="syft.grid.messages.GetCandidatesMessage",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.GetCandidatesMessage.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.GetCandidatesMessage.address",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.GetCandidatesMessage.reply_to",
+            index=2,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=1009,
+    serialized_end=1173,
+)
+
+
+_GETCANDIDATESRESPONSE = _descriptor.Descriptor(
+    name="GetCandidatesResponse",
+    full_name="syft.grid.messages.GetCandidatesResponse",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.GetCandidatesResponse.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.GetCandidatesResponse.content",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=3,
+            has_default_value=False,
+            default_value=[],
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.GetCandidatesResponse.address",
+            index=2,
+            number=3,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=1176,
+    serialized_end=1329,
+)
+
+
+_GETUSERSMESSAGE = _descriptor.Descriptor(
+    name="GetUsersMessage",
+    full_name="syft.grid.messages.GetUsersMessage",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.GetUsersMessage.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.GetUsersMessage.address",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.GetUsersMessage.reply_to",
+            index=2,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=1332,
+    serialized_end=1491,
+)
+
+
+_GETUSERSRESPONSE = _descriptor.Descriptor(
+    name="GetUsersResponse",
+    full_name="syft.grid.messages.GetUsersResponse",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.GetUsersResponse.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.GetUsersResponse.content",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=3,
+            has_default_value=False,
+            default_value=[],
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.GetUsersResponse.address",
+            index=2,
+            number=3,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=1494,
+    serialized_end=1642,
+)
+
+
+_DELETEUSERMESSAGE = _descriptor.Descriptor(
+    name="DeleteUserMessage",
+    full_name="syft.grid.messages.DeleteUserMessage",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.DeleteUserMessage.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.DeleteUserMessage.address",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="user_id",
+            full_name="syft.grid.messages.DeleteUserMessage.user_id",
+            index=2,
+            number=3,
+            type=5,
+            cpp_type=1,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.DeleteUserMessage.reply_to",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=1645,
+    serialized_end=1823,
+)
+
+
+_UPDATEUSERMESSAGE = _descriptor.Descriptor(
+    name="UpdateUserMessage",
+    full_name="syft.grid.messages.UpdateUserMessage",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.UpdateUserMessage.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.UpdateUserMessage.address",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="user_id",
+            full_name="syft.grid.messages.UpdateUserMessage.user_id",
+            index=2,
+            number=3,
+            type=5,
+            cpp_type=1,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="email",
+            full_name="syft.grid.messages.UpdateUserMessage.email",
+            index=3,
+            number=4,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="password",
+            full_name="syft.grid.messages.UpdateUserMessage.password",
+            index=4,
+            number=5,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="role",
+            full_name="syft.grid.messages.UpdateUserMessage.role",
+            index=5,
+            number=6,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="groups",
+            full_name="syft.grid.messages.UpdateUserMessage.groups",
+            index=6,
+            number=7,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="name",
+            full_name="syft.grid.messages.UpdateUserMessage.name",
+            index=7,
+            number=8,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="budget",
+            full_name="syft.grid.messages.UpdateUserMessage.budget",
+            index=8,
+            number=9,
+            type=1,
+            cpp_type=5,
+            label=1,
+            has_default_value=False,
+            default_value=float(0),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="institution",
+            full_name="syft.grid.messages.UpdateUserMessage.institution",
+            index=9,
+            number=10,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="website",
+            full_name="syft.grid.messages.UpdateUserMessage.website",
+            index=10,
+            number=11,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="new_password",
+            full_name="syft.grid.messages.UpdateUserMessage.new_password",
+            index=11,
+            number=12,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.UpdateUserMessage.reply_to",
+            index=12,
+            number=13,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=1826,
+    serialized_end=2157,
+)
+
+
+_SEARCHUSERSMESSAGE = _descriptor.Descriptor(
+    name="SearchUsersMessage",
+    full_name="syft.grid.messages.SearchUsersMessage",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.SearchUsersMessage.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.SearchUsersMessage.address",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="email",
+            full_name="syft.grid.messages.SearchUsersMessage.email",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="role",
+            full_name="syft.grid.messages.SearchUsersMessage.role",
+            index=3,
+            number=4,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="groups",
+            full_name="syft.grid.messages.SearchUsersMessage.groups",
+            index=4,
+            number=5,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="name",
+            full_name="syft.grid.messages.SearchUsersMessage.name",
+            index=5,
+            number=6,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.SearchUsersMessage.reply_to",
+            index=6,
+            number=7,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=2160,
+    serialized_end=2381,
+)
+
+
+_SEARCHUSERSRESPONSE = _descriptor.Descriptor(
+    name="SearchUsersResponse",
+    full_name="syft.grid.messages.SearchUsersResponse",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.SearchUsersResponse.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.SearchUsersResponse.content",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=3,
+            has_default_value=False,
+            default_value=[],
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.SearchUsersResponse.address",
+            index=2,
+            number=3,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=2384,
+    serialized_end=2535,
+)
+
+_CREATEUSERMESSAGE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_CREATEUSERMESSAGE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_CREATEUSERMESSAGE.fields_by_name[
+    "reply_to"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_GETUSERMESSAGE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_GETUSERMESSAGE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_GETUSERMESSAGE.fields_by_name[
+    "reply_to"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_PROCESSUSERCANDIDATEMESSAGE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_PROCESSUSERCANDIDATEMESSAGE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_PROCESSUSERCANDIDATEMESSAGE.fields_by_name[
+    "reply_to"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_GETUSERRESPONSE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_GETUSERRESPONSE.fields_by_name[
+    "content"
+].message_type = proto_dot_lib_dot_python_dot_dict__pb2._DICT
+_GETUSERRESPONSE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_GETCANDIDATESMESSAGE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_GETCANDIDATESMESSAGE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_GETCANDIDATESMESSAGE.fields_by_name[
+    "reply_to"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_GETCANDIDATESRESPONSE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_GETCANDIDATESRESPONSE.fields_by_name[
+    "content"
+].message_type = proto_dot_lib_dot_python_dot_dict__pb2._DICT
+_GETCANDIDATESRESPONSE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_GETUSERSMESSAGE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_GETUSERSMESSAGE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_GETUSERSMESSAGE.fields_by_name[
+    "reply_to"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_GETUSERSRESPONSE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_GETUSERSRESPONSE.fields_by_name[
+    "content"
+].message_type = proto_dot_lib_dot_python_dot_dict__pb2._DICT
+_GETUSERSRESPONSE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_DELETEUSERMESSAGE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_DELETEUSERMESSAGE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_DELETEUSERMESSAGE.fields_by_name[
+    "reply_to"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_UPDATEUSERMESSAGE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_UPDATEUSERMESSAGE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_UPDATEUSERMESSAGE.fields_by_name[
+    "reply_to"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_SEARCHUSERSMESSAGE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_SEARCHUSERSMESSAGE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_SEARCHUSERSMESSAGE.fields_by_name[
+    "reply_to"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_SEARCHUSERSRESPONSE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_SEARCHUSERSRESPONSE.fields_by_name[
+    "content"
+].message_type = proto_dot_lib_dot_python_dot_dict__pb2._DICT
+_SEARCHUSERSRESPONSE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+DESCRIPTOR.message_types_by_name["CreateUserMessage"] = _CREATEUSERMESSAGE
+DESCRIPTOR.message_types_by_name["GetUserMessage"] = _GETUSERMESSAGE
+DESCRIPTOR.message_types_by_name[
+    "ProcessUserCandidateMessage"
+] = _PROCESSUSERCANDIDATEMESSAGE
+DESCRIPTOR.message_types_by_name["GetUserResponse"] = _GETUSERRESPONSE
+DESCRIPTOR.message_types_by_name["GetCandidatesMessage"] = _GETCANDIDATESMESSAGE
+DESCRIPTOR.message_types_by_name["GetCandidatesResponse"] = _GETCANDIDATESRESPONSE
+DESCRIPTOR.message_types_by_name["GetUsersMessage"] = _GETUSERSMESSAGE
+DESCRIPTOR.message_types_by_name["GetUsersResponse"] = _GETUSERSRESPONSE
+DESCRIPTOR.message_types_by_name["DeleteUserMessage"] = _DELETEUSERMESSAGE
+DESCRIPTOR.message_types_by_name["UpdateUserMessage"] = _UPDATEUSERMESSAGE
+DESCRIPTOR.message_types_by_name["SearchUsersMessage"] = _SEARCHUSERSMESSAGE
+DESCRIPTOR.message_types_by_name["SearchUsersResponse"] = _SEARCHUSERSRESPONSE
+_sym_db.RegisterFileDescriptor(DESCRIPTOR)
+
+CreateUserMessage = _reflection.GeneratedProtocolMessageType(
+    "CreateUserMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _CREATEUSERMESSAGE,
+        "__module__": "proto.grid.messages.user_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.CreateUserMessage)
+    },
+)
+_sym_db.RegisterMessage(CreateUserMessage)
+
+GetUserMessage = _reflection.GeneratedProtocolMessageType(
+    "GetUserMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _GETUSERMESSAGE,
+        "__module__": "proto.grid.messages.user_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetUserMessage)
+    },
+)
+_sym_db.RegisterMessage(GetUserMessage)
+
+ProcessUserCandidateMessage = _reflection.GeneratedProtocolMessageType(
+    "ProcessUserCandidateMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _PROCESSUSERCANDIDATEMESSAGE,
+        "__module__": "proto.grid.messages.user_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.ProcessUserCandidateMessage)
+    },
+)
+_sym_db.RegisterMessage(ProcessUserCandidateMessage)
+
+GetUserResponse = _reflection.GeneratedProtocolMessageType(
+    "GetUserResponse",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _GETUSERRESPONSE,
+        "__module__": "proto.grid.messages.user_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetUserResponse)
+    },
+)
+_sym_db.RegisterMessage(GetUserResponse)
+
+GetCandidatesMessage = _reflection.GeneratedProtocolMessageType(
+    "GetCandidatesMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _GETCANDIDATESMESSAGE,
+        "__module__": "proto.grid.messages.user_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetCandidatesMessage)
+    },
+)
+_sym_db.RegisterMessage(GetCandidatesMessage)
+
+GetCandidatesResponse = _reflection.GeneratedProtocolMessageType(
+    "GetCandidatesResponse",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _GETCANDIDATESRESPONSE,
+        "__module__": "proto.grid.messages.user_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetCandidatesResponse)
+    },
+)
+_sym_db.RegisterMessage(GetCandidatesResponse)
+
+GetUsersMessage = _reflection.GeneratedProtocolMessageType(
+    "GetUsersMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _GETUSERSMESSAGE,
+        "__module__": "proto.grid.messages.user_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetUsersMessage)
+    },
+)
+_sym_db.RegisterMessage(GetUsersMessage)
+
+GetUsersResponse = _reflection.GeneratedProtocolMessageType(
+    "GetUsersResponse",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _GETUSERSRESPONSE,
+        "__module__": "proto.grid.messages.user_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetUsersResponse)
+    },
+)
+_sym_db.RegisterMessage(GetUsersResponse)
+
+DeleteUserMessage = _reflection.GeneratedProtocolMessageType(
+    "DeleteUserMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _DELETEUSERMESSAGE,
+        "__module__": "proto.grid.messages.user_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.DeleteUserMessage)
+    },
+)
+_sym_db.RegisterMessage(DeleteUserMessage)
+
+UpdateUserMessage = _reflection.GeneratedProtocolMessageType(
+    "UpdateUserMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _UPDATEUSERMESSAGE,
+        "__module__": "proto.grid.messages.user_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.UpdateUserMessage)
+    },
+)
+_sym_db.RegisterMessage(UpdateUserMessage)
+
+SearchUsersMessage = _reflection.GeneratedProtocolMessageType(
+    "SearchUsersMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _SEARCHUSERSMESSAGE,
+        "__module__": "proto.grid.messages.user_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.SearchUsersMessage)
+    },
+)
+_sym_db.RegisterMessage(SearchUsersMessage)
+
+SearchUsersResponse = _reflection.GeneratedProtocolMessageType(
+    "SearchUsersResponse",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _SEARCHUSERSRESPONSE,
+        "__module__": "proto.grid.messages.user_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.SearchUsersResponse)
+    },
+)
+_sym_db.RegisterMessage(SearchUsersResponse)
+
+
 # @@protoc_insertion_point(module_scope)

@@ -169,15 +169,15 @@ def first_try_branch(
 
 @partial(jax.jit, static_argnums=1)
 def compute_rdp_constant(rdp_params: RDPParams, private: bool) -> jax.numpy.DeviceArray:
-    squared_Ls = rdp_params.Ls**2
-    squared_sigma = rdp_params.sigmas**2
+    squared_Ls = rdp_params.Ls ** 2
+    squared_sigma = rdp_params.sigmas ** 2
 
     if private:
         # this is calculated on the private true values
-        squared_l2 = rdp_params.l2_norms**2
+        squared_l2 = rdp_params.l2_norms ** 2
     else:
         # bounds is computed on the metadata
-        squared_l2 = rdp_params.l2_norm_bounds**2
+        squared_l2 = rdp_params.l2_norm_bounds ** 2
 
     return (squared_Ls * squared_l2 / (2 * squared_sigma)) * rdp_params.coeffs
 
@@ -485,7 +485,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         schema = get_capnp_schema(schema_file="data_subject_ledger.capnp")
         dsl_struct: CapnpModule = schema.DataSubjectLedger  # type: ignore
         # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
-        MAX_TRAVERSAL_LIMIT = 2**64 - 1
+        MAX_TRAVERSAL_LIMIT = 2 ** 64 - 1
         # to pack or not to pack?
         dsl_msg = dsl_struct.from_bytes_packed(
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT

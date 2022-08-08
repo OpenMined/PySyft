@@ -1,5 +1,4 @@
 # stdlib
-import sys
 from typing import Any
 from typing import Dict
 from typing import Iterator
@@ -9,7 +8,6 @@ from typing import Tuple
 from typing import Union
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import pandas as pd
@@ -24,9 +22,7 @@ from ....logger import debug
 from ....logger import error
 from ....logger import info
 from ....logger import traceback_and_raise
-from ....proto.core.node.common.client_pb2 import Client as Client_PB
 from ....proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
-from ....util import get_fully_qualified_name
 from ...common.message import EventualSyftMessageWithoutReply
 from ...common.message import ImmediateSyftMessageWithReply
 from ...common.message import ImmediateSyftMessageWithoutReply
@@ -49,7 +45,7 @@ from .action.exception_action import ExceptionMessage
 from .node_service.object_search.obj_search_service import ObjectSearchMessage
 
 
-@serializable()
+@serializable(recursive_serde=True)
 class Client(AbstractNodeClient):
     """Client is an incredibly powerful abstraction in Syft. We assume that,
     no matter where a client is, it can figure out how to communicate with
@@ -57,6 +53,17 @@ class Client(AbstractNodeClient):
     with all of the metadata in it, you should have all the information
     you need to know to interact with a node (although you might not
     have permissions - clients should not store private keys)."""
+
+    __attr_allowlist__ = [
+        "obj_type",
+        "id",
+        "name",
+        "routes",
+        "network",
+        "domain",
+        "device",
+        "vm",
+    ]
 
     def __init__(
         self,
@@ -321,49 +328,6 @@ class Client(AbstractNodeClient):
 
     def set_default_route(self, route_index: int) -> None:
         self.default_route = route_index
-
-    def _object2proto(self) -> Client_PB:
-        client_pb = Client_PB(
-            obj_type=get_fully_qualified_name(obj=self),
-            id=sy.serialize(self.id),
-            name=self.name,
-            routes=[sy.serialize(route) for route in self.routes],
-            network=self.network._object2proto() if self.network else None,
-            domain=self.domain._object2proto() if self.domain else None,
-            device=self.device._object2proto() if self.device else None,
-            vm=self.vm._object2proto() if self.vm else None,
-        )
-        return client_pb
-
-    @staticmethod
-    def _proto2object(proto: Client_PB) -> "Client":
-        module_parts = proto.obj_type.split(".")
-        klass = module_parts.pop()
-        obj_type = getattr(sys.modules[".".join(module_parts)], klass)
-
-        obj = obj_type(
-            name=proto.name,
-            routes=[sy.deserialize(route) for route in proto.routes],
-            network=sy.deserialize(proto.network)
-            if proto.HasField("network")
-            else None,
-            domain=sy.deserialize(proto.domain) if proto.HasField("domain") else None,
-            device=sy.deserialize(proto.device) if proto.HasField("device") else None,
-            vm=sy.deserialize(proto.vm) if proto.HasField("vm") else None,
-        )
-
-        if type(obj) != obj_type:
-            traceback_and_raise(
-                TypeError(
-                    f"Deserializing Client. Expected type {obj_type}. Got {type(obj)}"
-                )
-            )
-
-        return obj
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return Client_PB
 
     @property
     def keys(self) -> str:

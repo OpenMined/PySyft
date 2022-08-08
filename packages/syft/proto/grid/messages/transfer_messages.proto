@@ -3,26 +3,26 @@ syntax = "proto3";
 package syft.grid.messages;
 
 import "proto/core/common/common_object.proto";
-import "proto/core/io/address.proto";
+import "proto/core/common/recursive_serde.proto";
 
 message LoadObjectMessage {
   syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
+  syft.core.common.RecursiveSerde address = 2;
   string content = 3;
-  syft.core.io.Address reply_to = 4;
+  syft.core.common.RecursiveSerde reply_to = 4;
 }
 
 message LoadObjectResponse {
   syft.core.common.UID msg_id = 1;
   int32 status_code = 2;
   string content = 3;
-  syft.core.io.Address address = 4;
+  syft.core.common.RecursiveSerde address = 4;
 }
 
 
 message SaveObjectMessage {
   syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
+  syft.core.common.RecursiveSerde address = 2;
   string content = 3;
 }
 
@@ -30,5 +30,5 @@ message SaveObjectResponse {
   syft.core.common.UID msg_id = 1;
   int32 status_code = 2;
   string content = 3;
-  syft.core.io.Address address = 4;
+  syft.core.common.RecursiveSerde address = 4;
 }

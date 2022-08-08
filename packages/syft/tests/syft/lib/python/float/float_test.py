@@ -347,7 +347,7 @@ def test_Floatconversion():
 
         assert Float(MyIndex(42)) == 42.0
         with pytest.raises(OverflowError):
-            Float(MyIndex(2**2000))
+            Float(MyIndex(2 ** 2000))
 
     class MyInt:
         def __int__(self):
@@ -696,7 +696,7 @@ def test_inf_nan():
 
 
 def test_large_n():
-    for n in [324, 325, 400, 2**31 - 1, 2**31, 2**32, 2**100]:
+    for n in [324, 325, 400, 2 ** 31 - 1, 2 ** 31, 2 ** 32, 2 ** 100]:
         assert round(123.456, n) == 123.456
         assert round(-123.456, n) == -123.456
         assert round(1e300, n) == 1e300
@@ -709,7 +709,7 @@ def test_large_n():
 
 
 def test_small_n():
-    for n in [-308, -309, -400, 1 - 2**31, -(2**31), -(2**31) - 1, -(2**100)]:
+    for n in [-308, -309, -400, 1 - 2 ** 31, -(2 ** 31), -(2 ** 31) - 1, -(2 ** 100)]:
         assert round(123.456, n) == 0.0
         assert round(-123.456, n) == -0.0
         assert round(1e300, n) == 0.0

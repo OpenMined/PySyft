@@ -4,9 +4,9 @@
 """Generated protocol buffer code."""
 # third party
 from google.protobuf import descriptor as _descriptor
-from google.protobuf import descriptor_pool as _descriptor_pool
+from google.protobuf import message as _message
+from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -17,37 +17,1199 @@ _sym_db = _symbol_database.Default()
 from syft.proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
-from syft.proto.core.io import address_pb2 as proto_dot_core_dot_io_dot_address__pb2
-
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
-    b'\n)proto/grid/messages/tensor_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x9e\x01\n\x13\x43reateTensorMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8b\x01\n\x14\x43reateTensorResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9b\x01\n\x10GetTensorMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x88\x01\n\x11GetTensorResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9c\x01\n\x11GetTensorsMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x89\x01\n\x12GetTensorsResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9e\x01\n\x13\x44\x65leteTensorMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8b\x01\n\x14\x44\x65leteTensorResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9e\x01\n\x13UpdateTensorMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8b\x01\n\x14UpdateTensorResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3'
+from syft.proto.core.common import (
+    recursive_serde_pb2 as proto_dot_core_dot_common_dot_recursive__serde__pb2,
 )
 
-_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
-_builder.BuildTopDescriptorsAndMessages(
-    DESCRIPTOR, "proto.grid.messages.tensor_messages_pb2", globals()
+DESCRIPTOR = _descriptor.FileDescriptor(
+    name="proto/grid/messages/tensor_messages.proto",
+    package="syft.grid.messages",
+    syntax="proto3",
+    serialized_options=None,
+    create_key=_descriptor._internal_create_key,
+    serialized_pb=b'\n)proto/grid/messages/tensor_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\'proto/core/common/recursive_serde.proto"\xb4\x01\n\x13\x43reateTensorMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x31\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32 .syft.core.common.RecursiveSerde\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\x32\n\x08reply_to\x18\x04 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\x96\x01\n\x14\x43reateTensorResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\x31\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\xb1\x01\n\x10GetTensorMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x31\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32 .syft.core.common.RecursiveSerde\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\x32\n\x08reply_to\x18\x04 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\x93\x01\n\x11GetTensorResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\x31\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\xb2\x01\n\x11GetTensorsMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x31\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32 .syft.core.common.RecursiveSerde\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\x32\n\x08reply_to\x18\x04 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\x94\x01\n\x12GetTensorsResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\x31\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\xb4\x01\n\x13\x44\x65leteTensorMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x31\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32 .syft.core.common.RecursiveSerde\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\x32\n\x08reply_to\x18\x04 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\x96\x01\n\x14\x44\x65leteTensorResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\x31\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\xb4\x01\n\x13UpdateTensorMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x31\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32 .syft.core.common.RecursiveSerde\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\x32\n\x08reply_to\x18\x04 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\x96\x01\n\x14UpdateTensorResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\x31\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32 .syft.core.common.RecursiveSerdeb\x06proto3',
+    dependencies=[
+        proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
+        proto_dot_core_dot_common_dot_recursive__serde__pb2.DESCRIPTOR,
+    ],
 )
-if _descriptor._USE_C_DESCRIPTORS == False:
 
-    DESCRIPTOR._options = None
-    _CREATETENSORMESSAGE._serialized_start = 134
-    _CREATETENSORMESSAGE._serialized_end = 292
-    _CREATETENSORRESPONSE._serialized_start = 295
-    _CREATETENSORRESPONSE._serialized_end = 434
-    _GETTENSORMESSAGE._serialized_start = 437
-    _GETTENSORMESSAGE._serialized_end = 592
-    _GETTENSORRESPONSE._serialized_start = 595
-    _GETTENSORRESPONSE._serialized_end = 731
-    _GETTENSORSMESSAGE._serialized_start = 734
-    _GETTENSORSMESSAGE._serialized_end = 890
-    _GETTENSORSRESPONSE._serialized_start = 893
-    _GETTENSORSRESPONSE._serialized_end = 1030
-    _DELETETENSORMESSAGE._serialized_start = 1033
-    _DELETETENSORMESSAGE._serialized_end = 1191
-    _DELETETENSORRESPONSE._serialized_start = 1194
-    _DELETETENSORRESPONSE._serialized_end = 1333
-    _UPDATETENSORMESSAGE._serialized_start = 1336
-    _UPDATETENSORMESSAGE._serialized_end = 1494
-    _UPDATETENSORRESPONSE._serialized_start = 1497
-    _UPDATETENSORRESPONSE._serialized_end = 1636
+
+_CREATETENSORMESSAGE = _descriptor.Descriptor(
+    name="CreateTensorMessage",
+    full_name="syft.grid.messages.CreateTensorMessage",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.CreateTensorMessage.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.CreateTensorMessage.address",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.CreateTensorMessage.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.CreateTensorMessage.reply_to",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=146,
+    serialized_end=326,
+)
+
+
+_CREATETENSORRESPONSE = _descriptor.Descriptor(
+    name="CreateTensorResponse",
+    full_name="syft.grid.messages.CreateTensorResponse",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.CreateTensorResponse.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="status_code",
+            full_name="syft.grid.messages.CreateTensorResponse.status_code",
+            index=1,
+            number=2,
+            type=5,
+            cpp_type=1,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.CreateTensorResponse.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.CreateTensorResponse.address",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=329,
+    serialized_end=479,
+)
+
+
+_GETTENSORMESSAGE = _descriptor.Descriptor(
+    name="GetTensorMessage",
+    full_name="syft.grid.messages.GetTensorMessage",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.GetTensorMessage.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.GetTensorMessage.address",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.GetTensorMessage.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.GetTensorMessage.reply_to",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=482,
+    serialized_end=659,
+)
+
+
+_GETTENSORRESPONSE = _descriptor.Descriptor(
+    name="GetTensorResponse",
+    full_name="syft.grid.messages.GetTensorResponse",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.GetTensorResponse.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="status_code",
+            full_name="syft.grid.messages.GetTensorResponse.status_code",
+            index=1,
+            number=2,
+            type=5,
+            cpp_type=1,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.GetTensorResponse.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.GetTensorResponse.address",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=662,
+    serialized_end=809,
+)
+
+
+_GETTENSORSMESSAGE = _descriptor.Descriptor(
+    name="GetTensorsMessage",
+    full_name="syft.grid.messages.GetTensorsMessage",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.GetTensorsMessage.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.GetTensorsMessage.address",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.GetTensorsMessage.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.GetTensorsMessage.reply_to",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=812,
+    serialized_end=990,
+)
+
+
+_GETTENSORSRESPONSE = _descriptor.Descriptor(
+    name="GetTensorsResponse",
+    full_name="syft.grid.messages.GetTensorsResponse",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.GetTensorsResponse.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="status_code",
+            full_name="syft.grid.messages.GetTensorsResponse.status_code",
+            index=1,
+            number=2,
+            type=5,
+            cpp_type=1,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.GetTensorsResponse.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.GetTensorsResponse.address",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=993,
+    serialized_end=1141,
+)
+
+
+_DELETETENSORMESSAGE = _descriptor.Descriptor(
+    name="DeleteTensorMessage",
+    full_name="syft.grid.messages.DeleteTensorMessage",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.DeleteTensorMessage.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.DeleteTensorMessage.address",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.DeleteTensorMessage.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.DeleteTensorMessage.reply_to",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=1144,
+    serialized_end=1324,
+)
+
+
+_DELETETENSORRESPONSE = _descriptor.Descriptor(
+    name="DeleteTensorResponse",
+    full_name="syft.grid.messages.DeleteTensorResponse",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.DeleteTensorResponse.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="status_code",
+            full_name="syft.grid.messages.DeleteTensorResponse.status_code",
+            index=1,
+            number=2,
+            type=5,
+            cpp_type=1,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.DeleteTensorResponse.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.DeleteTensorResponse.address",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=1327,
+    serialized_end=1477,
+)
+
+
+_UPDATETENSORMESSAGE = _descriptor.Descriptor(
+    name="UpdateTensorMessage",
+    full_name="syft.grid.messages.UpdateTensorMessage",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.UpdateTensorMessage.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.UpdateTensorMessage.address",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.UpdateTensorMessage.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.UpdateTensorMessage.reply_to",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=1480,
+    serialized_end=1660,
+)
+
+
+_UPDATETENSORRESPONSE = _descriptor.Descriptor(
+    name="UpdateTensorResponse",
+    full_name="syft.grid.messages.UpdateTensorResponse",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.UpdateTensorResponse.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="status_code",
+            full_name="syft.grid.messages.UpdateTensorResponse.status_code",
+            index=1,
+            number=2,
+            type=5,
+            cpp_type=1,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.UpdateTensorResponse.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.UpdateTensorResponse.address",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=1663,
+    serialized_end=1813,
+)
+
+_CREATETENSORMESSAGE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_CREATETENSORMESSAGE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_CREATETENSORMESSAGE.fields_by_name[
+    "reply_to"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_CREATETENSORRESPONSE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_CREATETENSORRESPONSE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_GETTENSORMESSAGE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_GETTENSORMESSAGE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_GETTENSORMESSAGE.fields_by_name[
+    "reply_to"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_GETTENSORRESPONSE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_GETTENSORRESPONSE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_GETTENSORSMESSAGE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_GETTENSORSMESSAGE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_GETTENSORSMESSAGE.fields_by_name[
+    "reply_to"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_GETTENSORSRESPONSE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_GETTENSORSRESPONSE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_DELETETENSORMESSAGE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_DELETETENSORMESSAGE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_DELETETENSORMESSAGE.fields_by_name[
+    "reply_to"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_DELETETENSORRESPONSE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_DELETETENSORRESPONSE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_UPDATETENSORMESSAGE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_UPDATETENSORMESSAGE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_UPDATETENSORMESSAGE.fields_by_name[
+    "reply_to"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_UPDATETENSORRESPONSE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_UPDATETENSORRESPONSE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+DESCRIPTOR.message_types_by_name["CreateTensorMessage"] = _CREATETENSORMESSAGE
+DESCRIPTOR.message_types_by_name["CreateTensorResponse"] = _CREATETENSORRESPONSE
+DESCRIPTOR.message_types_by_name["GetTensorMessage"] = _GETTENSORMESSAGE
+DESCRIPTOR.message_types_by_name["GetTensorResponse"] = _GETTENSORRESPONSE
+DESCRIPTOR.message_types_by_name["GetTensorsMessage"] = _GETTENSORSMESSAGE
+DESCRIPTOR.message_types_by_name["GetTensorsResponse"] = _GETTENSORSRESPONSE
+DESCRIPTOR.message_types_by_name["DeleteTensorMessage"] = _DELETETENSORMESSAGE
+DESCRIPTOR.message_types_by_name["DeleteTensorResponse"] = _DELETETENSORRESPONSE
+DESCRIPTOR.message_types_by_name["UpdateTensorMessage"] = _UPDATETENSORMESSAGE
+DESCRIPTOR.message_types_by_name["UpdateTensorResponse"] = _UPDATETENSORRESPONSE
+_sym_db.RegisterFileDescriptor(DESCRIPTOR)
+
+CreateTensorMessage = _reflection.GeneratedProtocolMessageType(
+    "CreateTensorMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _CREATETENSORMESSAGE,
+        "__module__": "proto.grid.messages.tensor_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.CreateTensorMessage)
+    },
+)
+_sym_db.RegisterMessage(CreateTensorMessage)
+
+CreateTensorResponse = _reflection.GeneratedProtocolMessageType(
+    "CreateTensorResponse",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _CREATETENSORRESPONSE,
+        "__module__": "proto.grid.messages.tensor_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.CreateTensorResponse)
+    },
+)
+_sym_db.RegisterMessage(CreateTensorResponse)
+
+GetTensorMessage = _reflection.GeneratedProtocolMessageType(
+    "GetTensorMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _GETTENSORMESSAGE,
+        "__module__": "proto.grid.messages.tensor_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetTensorMessage)
+    },
+)
+_sym_db.RegisterMessage(GetTensorMessage)
+
+GetTensorResponse = _reflection.GeneratedProtocolMessageType(
+    "GetTensorResponse",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _GETTENSORRESPONSE,
+        "__module__": "proto.grid.messages.tensor_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetTensorResponse)
+    },
+)
+_sym_db.RegisterMessage(GetTensorResponse)
+
+GetTensorsMessage = _reflection.GeneratedProtocolMessageType(
+    "GetTensorsMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _GETTENSORSMESSAGE,
+        "__module__": "proto.grid.messages.tensor_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetTensorsMessage)
+    },
+)
+_sym_db.RegisterMessage(GetTensorsMessage)
+
+GetTensorsResponse = _reflection.GeneratedProtocolMessageType(
+    "GetTensorsResponse",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _GETTENSORSRESPONSE,
+        "__module__": "proto.grid.messages.tensor_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetTensorsResponse)
+    },
+)
+_sym_db.RegisterMessage(GetTensorsResponse)
+
+DeleteTensorMessage = _reflection.GeneratedProtocolMessageType(
+    "DeleteTensorMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _DELETETENSORMESSAGE,
+        "__module__": "proto.grid.messages.tensor_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.DeleteTensorMessage)
+    },
+)
+_sym_db.RegisterMessage(DeleteTensorMessage)
+
+DeleteTensorResponse = _reflection.GeneratedProtocolMessageType(
+    "DeleteTensorResponse",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _DELETETENSORRESPONSE,
+        "__module__": "proto.grid.messages.tensor_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.DeleteTensorResponse)
+    },
+)
+_sym_db.RegisterMessage(DeleteTensorResponse)
+
+UpdateTensorMessage = _reflection.GeneratedProtocolMessageType(
+    "UpdateTensorMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _UPDATETENSORMESSAGE,
+        "__module__": "proto.grid.messages.tensor_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.UpdateTensorMessage)
+    },
+)
+_sym_db.RegisterMessage(UpdateTensorMessage)
+
+UpdateTensorResponse = _reflection.GeneratedProtocolMessageType(
+    "UpdateTensorResponse",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _UPDATETENSORRESPONSE,
+        "__module__": "proto.grid.messages.tensor_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.UpdateTensorResponse)
+    },
+)
+_sym_db.RegisterMessage(UpdateTensorResponse)
+
+
 # @@protoc_insertion_point(module_scope)

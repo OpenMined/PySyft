@@ -25,7 +25,7 @@ from .common import ImmediateActionWithoutReply
 BEAVER_CACHE: Dict[UID, StorableObject] = {}  # Global cache for spdz mask values
 
 
-@serializable()
+@serializable(recursive_serde=True)
 class BeaverAction(ImmediateActionWithoutReply):
     def __init__(
         self,

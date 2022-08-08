@@ -3,11 +3,11 @@ syntax = "proto3";
 package syft.core.node.common.action;
 
 import "proto/core/common/common_object.proto";
-import "proto/core/io/address.proto";
+import "proto/core/common/recursive_serde.proto";
 import "proto/core/node/common/action/smpc_action_message.proto";
 
 message SMPCActionSeqBatchMessage {
   repeated SMPCActionMessage smpc_actions = 1;
-  syft.core.io.Address address = 2;
+  syft.core.common.RecursiveSerde address = 2;
   syft.core.common.UID msg_id = 3;
 }

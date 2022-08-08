@@ -3,7 +3,7 @@ syntax = "proto3";
 package syft.core.node.domain.service;
 
 import "proto/core/common/common_object.proto";
-import "proto/core/io/address.proto";
+import "proto/core/common/recursive_serde.proto";
 
 message RequestMessage {
   syft.core.common.UID request_id = 1;
@@ -13,8 +13,8 @@ message RequestMessage {
   string status = 5;
   string request_type = 6;
   string date = 7;
-  syft.core.io.Address target_address = 8;
-  syft.core.io.Address owner_address = 9;
+  syft.core.common.RecursiveSerde target_address = 8;
+  syft.core.common.RecursiveSerde owner_address = 9;
   bytes requester_verify_key = 10;
   int32 timeout_secs = 11;
   string object_type = 12;

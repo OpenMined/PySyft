@@ -17,8 +17,8 @@ import numpy as np
 from ..config import DEFAULT_INT_NUMPY_TYPE
 
 RING_SIZE_TO_TYPE: Dict[int, np.dtype] = {
-    2**32: np.dtype("int32"),
-    2**64: np.dtype("int64"),
+    2 ** 32: np.dtype("int32"),
+    2 ** 64: np.dtype("int64"),
     2: np.dtype("bool"),  # Special case: need to do reconstruct and share with XOR
 }
 

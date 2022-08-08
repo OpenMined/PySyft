@@ -4,23 +4,23 @@ package syft.grid.service;
 
 import "proto/core/common/common_object.proto";
 import "proto/core/node/common/metadata.proto";
-import "proto/core/io/address.proto";
+import "proto/core/common/recursive_serde.proto";
 
 message RegisterNewPeerMessage {
   syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  syft.core.io.Address reply_to = 3;
+  syft.core.common.RecursiveSerde address = 2;
+  syft.core.common.RecursiveSerde reply_to = 3;
 }
 
 message PeerSuccessfullyRegistered {
   syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
+  syft.core.common.RecursiveSerde address = 2;
   string peer_id = 3;
 }
 
 message SignalingAnswerMessage {
   syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
+  syft.core.common.RecursiveSerde address = 2;
   string payload = 3;
   syft.core.node.common.Metadata host_metadata = 4;
   string target_peer = 5;
@@ -29,7 +29,7 @@ message SignalingAnswerMessage {
 
 message SignalingOfferMessage {
   syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
+  syft.core.common.RecursiveSerde address = 2;
   string payload = 3;
   syft.core.node.common.Metadata host_metadata = 4;
   string target_peer = 5;
@@ -38,31 +38,31 @@ message SignalingOfferMessage {
 
 message OfferPullRequestMessage {
   syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  syft.core.io.Address reply_to = 3;
+  syft.core.common.RecursiveSerde address = 2;
+  syft.core.common.RecursiveSerde reply_to = 3;
   string target_peer = 4;
   string host_peer = 5;
 }
 
 message AnswerPullRequestMessage {
   syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  syft.core.io.Address reply_to = 3;
+  syft.core.common.RecursiveSerde address = 2;
+  syft.core.common.RecursiveSerde reply_to = 3;
   string target_peer = 4;
   string host_peer = 5;
 }
 
 message SignalingRequestsNotFound {
   syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
+  syft.core.common.RecursiveSerde address = 2;
 }
 
 message InvalidLoopBackRequest {
   syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
+  syft.core.common.RecursiveSerde address = 2;
 }
 
 message CloseConnectionMessage {
   syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
+  syft.core.common.RecursiveSerde address = 2;
 }

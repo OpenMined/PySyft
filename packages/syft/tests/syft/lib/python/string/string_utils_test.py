@@ -123,7 +123,7 @@ def test_find():
     digits = 4
     base = len(charset)
     teststrings = set()
-    for i in range(base**digits):
+    for i in range(base ** digits):
         entry = []
         for j in range(digits):
             i, m = divmod(i, base)
@@ -172,7 +172,7 @@ def test_rfind():
     digits = 3
     base = len(charset)
     teststrings = set()
-    for i in range(base**digits):
+    for i in range(base ** digits):
         entry = []
         for j in range(digits):
             i, m = divmod(i, base)
@@ -3012,8 +3012,8 @@ def test_formatting():
     checkraises(ValueError, String("%10"), "__mod__", (42,))
 
     # Outrageously large width or precision should raise ValueError.
-    checkraises(ValueError, String("%%%df") % (2**64), "__mod__", (3.2))
-    checkraises(ValueError, String("%%.%df") % (2**64), "__mod__", (3.2))
+    checkraises(ValueError, String("%%%df") % (2 ** 64), "__mod__", (3.2))
+    checkraises(ValueError, String("%%.%df") % (2 ** 64), "__mod__", (3.2))
     checkraises(
         OverflowError,
         String("%*s"),

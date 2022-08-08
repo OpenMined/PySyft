@@ -4,9 +4,9 @@
 """Generated protocol buffer code."""
 # third party
 from google.protobuf import descriptor as _descriptor
-from google.protobuf import descriptor_pool as _descriptor_pool
+from google.protobuf import message as _message
+from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -17,41 +17,1438 @@ _sym_db = _symbol_database.Default()
 from syft.proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
-from syft.proto.core.io import address_pb2 as proto_dot_core_dot_io_dot_address__pb2
-
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
-    b'\n(proto/grid/messages/infra_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x9e\x01\n\x13\x43reateWorkerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8b\x01\n\x14\x43reateWorkerResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xa8\x01\n\x1dGetWorkerInstanceTypesMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x95\x01\n\x1eGetWorkerInstanceTypesResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9b\x01\n\x10GetWorkerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x88\x01\n\x11GetWorkerResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9c\x01\n\x11GetWorkersMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x89\x01\n\x12GetWorkersResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9e\x01\n\x13\x44\x65leteWorkerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8b\x01\n\x14\x44\x65leteWorkerResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9e\x01\n\x13UpdateWorkerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8b\x01\n\x14UpdateWorkerResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3'
+from syft.proto.core.common import (
+    recursive_serde_pb2 as proto_dot_core_dot_common_dot_recursive__serde__pb2,
 )
 
-_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
-_builder.BuildTopDescriptorsAndMessages(
-    DESCRIPTOR, "proto.grid.messages.infra_messages_pb2", globals()
+DESCRIPTOR = _descriptor.FileDescriptor(
+    name="proto/grid/messages/infra_messages.proto",
+    package="syft.grid.messages",
+    syntax="proto3",
+    serialized_options=None,
+    create_key=_descriptor._internal_create_key,
+    serialized_pb=b'\n(proto/grid/messages/infra_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\'proto/core/common/recursive_serde.proto"\xb4\x01\n\x13\x43reateWorkerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x31\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32 .syft.core.common.RecursiveSerde\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\x32\n\x08reply_to\x18\x04 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\x96\x01\n\x14\x43reateWorkerResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\x31\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\xbe\x01\n\x1dGetWorkerInstanceTypesMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x31\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32 .syft.core.common.RecursiveSerde\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\x32\n\x08reply_to\x18\x04 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\xa0\x01\n\x1eGetWorkerInstanceTypesResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\x31\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\xb1\x01\n\x10GetWorkerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x31\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32 .syft.core.common.RecursiveSerde\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\x32\n\x08reply_to\x18\x04 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\x93\x01\n\x11GetWorkerResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\x31\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\xb2\x01\n\x11GetWorkersMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x31\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32 .syft.core.common.RecursiveSerde\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\x32\n\x08reply_to\x18\x04 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\x94\x01\n\x12GetWorkersResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\x31\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\xb4\x01\n\x13\x44\x65leteWorkerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x31\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32 .syft.core.common.RecursiveSerde\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\x32\n\x08reply_to\x18\x04 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\x96\x01\n\x14\x44\x65leteWorkerResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\x31\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\xb4\x01\n\x13UpdateWorkerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x31\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32 .syft.core.common.RecursiveSerde\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\x32\n\x08reply_to\x18\x04 \x01(\x0b\x32 .syft.core.common.RecursiveSerde"\x96\x01\n\x14UpdateWorkerResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\x31\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32 .syft.core.common.RecursiveSerdeb\x06proto3',
+    dependencies=[
+        proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
+        proto_dot_core_dot_common_dot_recursive__serde__pb2.DESCRIPTOR,
+    ],
 )
-if _descriptor._USE_C_DESCRIPTORS == False:
 
-    DESCRIPTOR._options = None
-    _CREATEWORKERMESSAGE._serialized_start = 133
-    _CREATEWORKERMESSAGE._serialized_end = 291
-    _CREATEWORKERRESPONSE._serialized_start = 294
-    _CREATEWORKERRESPONSE._serialized_end = 433
-    _GETWORKERINSTANCETYPESMESSAGE._serialized_start = 436
-    _GETWORKERINSTANCETYPESMESSAGE._serialized_end = 604
-    _GETWORKERINSTANCETYPESRESPONSE._serialized_start = 607
-    _GETWORKERINSTANCETYPESRESPONSE._serialized_end = 756
-    _GETWORKERMESSAGE._serialized_start = 759
-    _GETWORKERMESSAGE._serialized_end = 914
-    _GETWORKERRESPONSE._serialized_start = 917
-    _GETWORKERRESPONSE._serialized_end = 1053
-    _GETWORKERSMESSAGE._serialized_start = 1056
-    _GETWORKERSMESSAGE._serialized_end = 1212
-    _GETWORKERSRESPONSE._serialized_start = 1215
-    _GETWORKERSRESPONSE._serialized_end = 1352
-    _DELETEWORKERMESSAGE._serialized_start = 1355
-    _DELETEWORKERMESSAGE._serialized_end = 1513
-    _DELETEWORKERRESPONSE._serialized_start = 1516
-    _DELETEWORKERRESPONSE._serialized_end = 1655
-    _UPDATEWORKERMESSAGE._serialized_start = 1658
-    _UPDATEWORKERMESSAGE._serialized_end = 1816
-    _UPDATEWORKERRESPONSE._serialized_start = 1819
-    _UPDATEWORKERRESPONSE._serialized_end = 1958
+
+_CREATEWORKERMESSAGE = _descriptor.Descriptor(
+    name="CreateWorkerMessage",
+    full_name="syft.grid.messages.CreateWorkerMessage",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.CreateWorkerMessage.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.CreateWorkerMessage.address",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.CreateWorkerMessage.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.CreateWorkerMessage.reply_to",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=145,
+    serialized_end=325,
+)
+
+
+_CREATEWORKERRESPONSE = _descriptor.Descriptor(
+    name="CreateWorkerResponse",
+    full_name="syft.grid.messages.CreateWorkerResponse",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.CreateWorkerResponse.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="status_code",
+            full_name="syft.grid.messages.CreateWorkerResponse.status_code",
+            index=1,
+            number=2,
+            type=5,
+            cpp_type=1,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.CreateWorkerResponse.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.CreateWorkerResponse.address",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=328,
+    serialized_end=478,
+)
+
+
+_GETWORKERINSTANCETYPESMESSAGE = _descriptor.Descriptor(
+    name="GetWorkerInstanceTypesMessage",
+    full_name="syft.grid.messages.GetWorkerInstanceTypesMessage",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.GetWorkerInstanceTypesMessage.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.GetWorkerInstanceTypesMessage.address",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.GetWorkerInstanceTypesMessage.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.GetWorkerInstanceTypesMessage.reply_to",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=481,
+    serialized_end=671,
+)
+
+
+_GETWORKERINSTANCETYPESRESPONSE = _descriptor.Descriptor(
+    name="GetWorkerInstanceTypesResponse",
+    full_name="syft.grid.messages.GetWorkerInstanceTypesResponse",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.GetWorkerInstanceTypesResponse.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="status_code",
+            full_name="syft.grid.messages.GetWorkerInstanceTypesResponse.status_code",
+            index=1,
+            number=2,
+            type=5,
+            cpp_type=1,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.GetWorkerInstanceTypesResponse.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.GetWorkerInstanceTypesResponse.address",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=674,
+    serialized_end=834,
+)
+
+
+_GETWORKERMESSAGE = _descriptor.Descriptor(
+    name="GetWorkerMessage",
+    full_name="syft.grid.messages.GetWorkerMessage",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.GetWorkerMessage.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.GetWorkerMessage.address",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.GetWorkerMessage.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.GetWorkerMessage.reply_to",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=837,
+    serialized_end=1014,
+)
+
+
+_GETWORKERRESPONSE = _descriptor.Descriptor(
+    name="GetWorkerResponse",
+    full_name="syft.grid.messages.GetWorkerResponse",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.GetWorkerResponse.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="status_code",
+            full_name="syft.grid.messages.GetWorkerResponse.status_code",
+            index=1,
+            number=2,
+            type=5,
+            cpp_type=1,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.GetWorkerResponse.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.GetWorkerResponse.address",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=1017,
+    serialized_end=1164,
+)
+
+
+_GETWORKERSMESSAGE = _descriptor.Descriptor(
+    name="GetWorkersMessage",
+    full_name="syft.grid.messages.GetWorkersMessage",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.GetWorkersMessage.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.GetWorkersMessage.address",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.GetWorkersMessage.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.GetWorkersMessage.reply_to",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=1167,
+    serialized_end=1345,
+)
+
+
+_GETWORKERSRESPONSE = _descriptor.Descriptor(
+    name="GetWorkersResponse",
+    full_name="syft.grid.messages.GetWorkersResponse",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.GetWorkersResponse.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="status_code",
+            full_name="syft.grid.messages.GetWorkersResponse.status_code",
+            index=1,
+            number=2,
+            type=5,
+            cpp_type=1,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.GetWorkersResponse.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.GetWorkersResponse.address",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=1348,
+    serialized_end=1496,
+)
+
+
+_DELETEWORKERMESSAGE = _descriptor.Descriptor(
+    name="DeleteWorkerMessage",
+    full_name="syft.grid.messages.DeleteWorkerMessage",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.DeleteWorkerMessage.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.DeleteWorkerMessage.address",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.DeleteWorkerMessage.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.DeleteWorkerMessage.reply_to",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=1499,
+    serialized_end=1679,
+)
+
+
+_DELETEWORKERRESPONSE = _descriptor.Descriptor(
+    name="DeleteWorkerResponse",
+    full_name="syft.grid.messages.DeleteWorkerResponse",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.DeleteWorkerResponse.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="status_code",
+            full_name="syft.grid.messages.DeleteWorkerResponse.status_code",
+            index=1,
+            number=2,
+            type=5,
+            cpp_type=1,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.DeleteWorkerResponse.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.DeleteWorkerResponse.address",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=1682,
+    serialized_end=1832,
+)
+
+
+_UPDATEWORKERMESSAGE = _descriptor.Descriptor(
+    name="UpdateWorkerMessage",
+    full_name="syft.grid.messages.UpdateWorkerMessage",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.UpdateWorkerMessage.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.UpdateWorkerMessage.address",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.UpdateWorkerMessage.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="reply_to",
+            full_name="syft.grid.messages.UpdateWorkerMessage.reply_to",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=1835,
+    serialized_end=2015,
+)
+
+
+_UPDATEWORKERRESPONSE = _descriptor.Descriptor(
+    name="UpdateWorkerResponse",
+    full_name="syft.grid.messages.UpdateWorkerResponse",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="msg_id",
+            full_name="syft.grid.messages.UpdateWorkerResponse.msg_id",
+            index=0,
+            number=1,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="status_code",
+            full_name="syft.grid.messages.UpdateWorkerResponse.status_code",
+            index=1,
+            number=2,
+            type=5,
+            cpp_type=1,
+            label=1,
+            has_default_value=False,
+            default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="content",
+            full_name="syft.grid.messages.UpdateWorkerResponse.content",
+            index=2,
+            number=3,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"".decode("utf-8"),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.grid.messages.UpdateWorkerResponse.address",
+            index=3,
+            number=4,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=2018,
+    serialized_end=2168,
+)
+
+_CREATEWORKERMESSAGE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_CREATEWORKERMESSAGE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_CREATEWORKERMESSAGE.fields_by_name[
+    "reply_to"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_CREATEWORKERRESPONSE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_CREATEWORKERRESPONSE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_GETWORKERINSTANCETYPESMESSAGE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_GETWORKERINSTANCETYPESMESSAGE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_GETWORKERINSTANCETYPESMESSAGE.fields_by_name[
+    "reply_to"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_GETWORKERINSTANCETYPESRESPONSE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_GETWORKERINSTANCETYPESRESPONSE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_GETWORKERMESSAGE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_GETWORKERMESSAGE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_GETWORKERMESSAGE.fields_by_name[
+    "reply_to"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_GETWORKERRESPONSE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_GETWORKERRESPONSE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_GETWORKERSMESSAGE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_GETWORKERSMESSAGE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_GETWORKERSMESSAGE.fields_by_name[
+    "reply_to"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_GETWORKERSRESPONSE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_GETWORKERSRESPONSE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_DELETEWORKERMESSAGE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_DELETEWORKERMESSAGE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_DELETEWORKERMESSAGE.fields_by_name[
+    "reply_to"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_DELETEWORKERRESPONSE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_DELETEWORKERRESPONSE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_UPDATEWORKERMESSAGE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_UPDATEWORKERMESSAGE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_UPDATEWORKERMESSAGE.fields_by_name[
+    "reply_to"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+_UPDATEWORKERRESPONSE.fields_by_name[
+    "msg_id"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_UPDATEWORKERRESPONSE.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+DESCRIPTOR.message_types_by_name["CreateWorkerMessage"] = _CREATEWORKERMESSAGE
+DESCRIPTOR.message_types_by_name["CreateWorkerResponse"] = _CREATEWORKERRESPONSE
+DESCRIPTOR.message_types_by_name[
+    "GetWorkerInstanceTypesMessage"
+] = _GETWORKERINSTANCETYPESMESSAGE
+DESCRIPTOR.message_types_by_name[
+    "GetWorkerInstanceTypesResponse"
+] = _GETWORKERINSTANCETYPESRESPONSE
+DESCRIPTOR.message_types_by_name["GetWorkerMessage"] = _GETWORKERMESSAGE
+DESCRIPTOR.message_types_by_name["GetWorkerResponse"] = _GETWORKERRESPONSE
+DESCRIPTOR.message_types_by_name["GetWorkersMessage"] = _GETWORKERSMESSAGE
+DESCRIPTOR.message_types_by_name["GetWorkersResponse"] = _GETWORKERSRESPONSE
+DESCRIPTOR.message_types_by_name["DeleteWorkerMessage"] = _DELETEWORKERMESSAGE
+DESCRIPTOR.message_types_by_name["DeleteWorkerResponse"] = _DELETEWORKERRESPONSE
+DESCRIPTOR.message_types_by_name["UpdateWorkerMessage"] = _UPDATEWORKERMESSAGE
+DESCRIPTOR.message_types_by_name["UpdateWorkerResponse"] = _UPDATEWORKERRESPONSE
+_sym_db.RegisterFileDescriptor(DESCRIPTOR)
+
+CreateWorkerMessage = _reflection.GeneratedProtocolMessageType(
+    "CreateWorkerMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _CREATEWORKERMESSAGE,
+        "__module__": "proto.grid.messages.infra_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.CreateWorkerMessage)
+    },
+)
+_sym_db.RegisterMessage(CreateWorkerMessage)
+
+CreateWorkerResponse = _reflection.GeneratedProtocolMessageType(
+    "CreateWorkerResponse",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _CREATEWORKERRESPONSE,
+        "__module__": "proto.grid.messages.infra_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.CreateWorkerResponse)
+    },
+)
+_sym_db.RegisterMessage(CreateWorkerResponse)
+
+GetWorkerInstanceTypesMessage = _reflection.GeneratedProtocolMessageType(
+    "GetWorkerInstanceTypesMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _GETWORKERINSTANCETYPESMESSAGE,
+        "__module__": "proto.grid.messages.infra_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetWorkerInstanceTypesMessage)
+    },
+)
+_sym_db.RegisterMessage(GetWorkerInstanceTypesMessage)
+
+GetWorkerInstanceTypesResponse = _reflection.GeneratedProtocolMessageType(
+    "GetWorkerInstanceTypesResponse",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _GETWORKERINSTANCETYPESRESPONSE,
+        "__module__": "proto.grid.messages.infra_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetWorkerInstanceTypesResponse)
+    },
+)
+_sym_db.RegisterMessage(GetWorkerInstanceTypesResponse)
+
+GetWorkerMessage = _reflection.GeneratedProtocolMessageType(
+    "GetWorkerMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _GETWORKERMESSAGE,
+        "__module__": "proto.grid.messages.infra_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetWorkerMessage)
+    },
+)
+_sym_db.RegisterMessage(GetWorkerMessage)
+
+GetWorkerResponse = _reflection.GeneratedProtocolMessageType(
+    "GetWorkerResponse",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _GETWORKERRESPONSE,
+        "__module__": "proto.grid.messages.infra_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetWorkerResponse)
+    },
+)
+_sym_db.RegisterMessage(GetWorkerResponse)
+
+GetWorkersMessage = _reflection.GeneratedProtocolMessageType(
+    "GetWorkersMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _GETWORKERSMESSAGE,
+        "__module__": "proto.grid.messages.infra_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetWorkersMessage)
+    },
+)
+_sym_db.RegisterMessage(GetWorkersMessage)
+
+GetWorkersResponse = _reflection.GeneratedProtocolMessageType(
+    "GetWorkersResponse",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _GETWORKERSRESPONSE,
+        "__module__": "proto.grid.messages.infra_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetWorkersResponse)
+    },
+)
+_sym_db.RegisterMessage(GetWorkersResponse)
+
+DeleteWorkerMessage = _reflection.GeneratedProtocolMessageType(
+    "DeleteWorkerMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _DELETEWORKERMESSAGE,
+        "__module__": "proto.grid.messages.infra_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.DeleteWorkerMessage)
+    },
+)
+_sym_db.RegisterMessage(DeleteWorkerMessage)
+
+DeleteWorkerResponse = _reflection.GeneratedProtocolMessageType(
+    "DeleteWorkerResponse",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _DELETEWORKERRESPONSE,
+        "__module__": "proto.grid.messages.infra_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.DeleteWorkerResponse)
+    },
+)
+_sym_db.RegisterMessage(DeleteWorkerResponse)
+
+UpdateWorkerMessage = _reflection.GeneratedProtocolMessageType(
+    "UpdateWorkerMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _UPDATEWORKERMESSAGE,
+        "__module__": "proto.grid.messages.infra_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.UpdateWorkerMessage)
+    },
+)
+_sym_db.RegisterMessage(UpdateWorkerMessage)
+
+UpdateWorkerResponse = _reflection.GeneratedProtocolMessageType(
+    "UpdateWorkerResponse",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _UPDATEWORKERRESPONSE,
+        "__module__": "proto.grid.messages.infra_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.UpdateWorkerResponse)
+    },
+)
+_sym_db.RegisterMessage(UpdateWorkerResponse)
+
+
 # @@protoc_insertion_point(module_scope)

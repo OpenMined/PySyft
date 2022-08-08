@@ -891,7 +891,7 @@ class ShareTensor(PassthroughTensor):
         schema = get_capnp_schema(schema_file="share_tensor.capnp")
         st_struct: CapnpModule = schema.ShareTensor  # type: ignore
         # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
-        MAX_TRAVERSAL_LIMIT = 2**64 - 1
+        MAX_TRAVERSAL_LIMIT = 2 ** 64 - 1
 
         st_msg = st_struct.from_bytes_packed(
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT

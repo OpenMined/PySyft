@@ -2,20 +2,16 @@
 from typing import Any
 from typing import Optional
 
-# third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
-
 # relative
-from ...proto.core.common.common_object_pb2 import ObjectWithID as ObjectWithID_PB
 from ...util import validate_type
-from .serde.deserialize import _deserialize
 from .serde.serializable import serializable
-from .serde.serialize import _serialize as serialize
 from .uid import UID
 
 
-@serializable()
+@serializable(recursive_serde=True)
 class ObjectWithID:
+    __attr_allowlist__ = ("_id",)
+
     """This object is the superclass for nearly all Syft objects. Subclassing
     from this object will cause an object to be initialized with a unique id
     using the process specified in the UID class.
@@ -108,59 +104,3 @@ class ObjectWithID:
         """
 
         return f"<{type(self).__name__}:{self.id.repr_short()}>"
-
-    def _object2proto(self) -> ObjectWithID_PB:
-        """
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms the current object into the corresponding
-        Protobuf object so that it can be further serialized.
-
-        Returns:
-            a protobuf object that is the serialization of self.
-
-        .. note::
-            This method is purely an internal method. Please use serialize(object) or one of
-            the other public serialization methods if you wish to serialize an
-            object.
-        """
-        return ObjectWithID_PB(id=serialize(self.id))
-
-    @staticmethod
-    def _proto2object(proto: ObjectWithID_PB) -> "ObjectWithID":
-        """Creates a ObjectWithID from a protobuf
-
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms a protobuf object into an instance of this class.
-
-        Args:
-            proto: a protobuf object that we wish to convert to instance of this class
-
-        Returns:
-            an instance of ObjectWithID
-
-        .. note::
-            This method is purely an internal method. Please use syft.deserialize()
-            if you wish to deserialize an object.
-        """
-        _id = validate_type(_object=_deserialize(proto.id), _type=UID, optional=True)
-        return ObjectWithID(id=_id)
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Return the type of protobuf object which stores a class of this type
-
-        As a part of serialization and deserialization, we need the ability to
-        lookup the protobuf object type directly from the object type. This
-        static method allows us to do this.
-
-        Importantly, this method is also used to create the reverse lookup ability within
-        the metaclass of Serializable. In the metaclass, it calls this method and then
-        it takes whatever type is returned from this method and adds an attribute to it
-        with the type of this class attached to it. See the MetaSerializable class for details.
-
-        Returns:
-            the type of protobuf object which corresponds to this class.
-
-        """
-
-        return ObjectWithID_PB

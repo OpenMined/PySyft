@@ -1,11 +1,11 @@
 syntax = "proto3";
 package syft.core.common;
 
+import "proto/core/common/recursive_serde.proto";
+
 message CommonObject {
   syft.core.common.UID uid_object = 1;
-  syft.core.common.ObjectWithID object_with_id_object = 2;
+  syft.core.common.RecursiveSerde object_with_id_object = 2;
 }
-
-message ObjectWithID { syft.core.common.UID id = 1; }
 
 message UID { bytes value = 1; }

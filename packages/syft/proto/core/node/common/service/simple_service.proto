@@ -3,17 +3,17 @@ syntax = "proto3";
 package syft.core.node.common.service;
 
 import "proto/core/common/common_object.proto";
-import "proto/core/io/address.proto";
+import "proto/core/common/recursive_serde.proto";
 
 message SimpleMessage {
   syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
-  syft.core.io.Address reply_to = 3;
+  syft.core.common.RecursiveSerde address = 2;
+  syft.core.common.RecursiveSerde reply_to = 3;
   bytes payload = 4;
 }
 
 message SimpleReplyMessage {
   syft.core.common.UID msg_id = 1;
-  syft.core.io.Address address = 2;
+  syft.core.common.RecursiveSerde address = 2;
   bytes payload = 3;
 }

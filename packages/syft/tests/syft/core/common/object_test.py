@@ -20,15 +20,7 @@ import pytest
 import syft as sy
 from syft.core.common import ObjectWithID
 from syft.core.common import UID
-from syft.core.common.serde.deserialize import PROTOBUF_START_MAGIC_HEADER_BYTES
 from syft.util import get_subclasses
-
-blob_bytes = (
-    b"\n\t"
-    + PROTOBUF_START_MAGIC_HEADER_BYTES
-    + b"\x12$syft.core.common.object.ObjectWithID\x1a\x14\n\x12\n\x10\xfb\x1b"
-    + b"\xb0g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14"
-)
 
 # --------------------- INITIALIZATION ---------------------
 
@@ -98,65 +90,7 @@ def test_object_with_id_default_serialization() -> None:
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     obj = ObjectWithID(id=uid)
 
-    blob = sy.serialize(obj, to_proto=True)
-
-    assert sy.serialize(obj) == blob
-
-
-def test_object_with_id_default_deserialization() -> None:
-    """Tests that default ObjectWithID deserialization works as expected - from Protobuf"""
-
-    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-    obj = ObjectWithID(id=uid)
-
-    blob = ObjectWithID.get_protobuf_schema()(id=sy.serialize(uid))
-
-    obj2 = sy.deserialize(blob=blob)
-    assert obj == obj2
-
-
-def test_object_with_id_proto_serialization() -> None:
-    """Tests that default ObjectWithID serialization works as expected - to Protobuf"""
-
-    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-    obj = ObjectWithID(id=uid)
-
-    blob = ObjectWithID.get_protobuf_schema()(id=sy.serialize(uid))
-
-    assert sy.serialize(obj, to_proto=True) == blob
-    assert sy.serialize(obj, to_proto=True) == blob
-    assert sy.serialize(obj, to_proto=True) == blob
-
-
-def test_object_with_id_proto_deserialization() -> None:
-    """Tests that default UID deserialization works as expected"""
-
-    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-    obj = ObjectWithID(id=uid)
-
-    blob = ObjectWithID.get_protobuf_schema()(id=sy.serialize(uid))
-
-    obj2 = sy.deserialize(blob=blob, from_proto=True)
-    assert obj == obj2
-
-
-def test_object_with_id_binary_serialization() -> None:
-    """Tests that binary ObjectWithID serializes as expected"""
-
-    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-    obj = ObjectWithID(id=uid)
-
-    print(sy.serialize(obj, to_bytes=True), "sy.serialize(obj, to_bytes=True)")
-    assert sy.serialize(obj, to_bytes=True) == blob_bytes
-
-
-def test_object_with_id_binary_deserialization() -> None:
-    """Test that binary ObjectWithID deserialization works as expected"""
-
-    obj = sy.deserialize(blob=blob_bytes, from_bytes=True)
-    assert obj == ObjectWithID(
-        id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-    )
+    assert sy.deserialize(sy.serialize(obj)) == obj
 
 
 # ----------------------- CHILDREN -----------------------

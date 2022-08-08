@@ -9,7 +9,6 @@ from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from typing_extensions import final
 
 # relative
 from ...... import serialize
@@ -23,9 +22,10 @@ from .....common.uid import UID
 from .....io.address import Address
 
 
-@serializable()
-@final
+@serializable(recursive_serde=True)
 class AcceptOrDenyRequestMessage(ImmediateSyftMessageWithoutReply):
+    __attr_allow_list__ = ("msg_id", "address", "accept", "request_id")
+
     def __init__(
         self,
         accept: bool,

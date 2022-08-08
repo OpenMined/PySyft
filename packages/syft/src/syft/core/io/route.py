@@ -93,7 +93,6 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 # relative
 from ...logger import debug
 from ...logger import traceback_and_raise
-from ...proto.core.io.route_pb2 import SoloRoute as SoloRoute_PB
 from ..common.message import SignedEventualSyftMessageWithoutReply
 from ..common.message import SignedImmediateSyftMessageWithReply
 from ..common.message import SignedImmediateSyftMessageWithoutReply
@@ -161,8 +160,10 @@ class Route(ObjectWithID):
         traceback_and_raise(NotImplementedError)
 
 
-@serializable()
+@serializable(recursive_serde=True)
 class SoloRoute(Route):
+    __attr_allowlist__ = ["id", "destination", "connection"]
+
     def __init__(
         self,
         destination: Location,
@@ -193,39 +194,6 @@ class SoloRoute(Route):
         return_signed: bool = False,
     ) -> SignedImmediateSyftMessageWithoutReply:
         return self.connection.send_immediate_msg_with_reply(msg=msg, timeout=timeout)
-
-    def _object2proto(self) -> SoloRoute_PB:
-        route = SoloRoute_PB(
-            id=self.id._object2proto(),
-            destination=self.schema.destination._object2proto(),
-        )
-        if isinstance(self.connection, VirtualClientConnection):
-            route.virtual_connection.CopyFrom(
-                _serialize(self.connection, to_proto=True)
-            )
-        else:
-            route.grid_connection.CopyFrom(_serialize(self.connection, to_proto=True))
-        return route
-
-    @staticmethod
-    def _proto2object(proto: SoloRoute_PB) -> "SoloRoute":
-        if proto.HasField("virtual_connection"):
-            connection = VirtualClientConnection._proto2object(proto.virtual_connection)
-        elif proto.HasField("grid_connection"):
-            connection = _deserialize(proto.grid_connection)
-        else:
-            raise TypeError("Unsupported type of connection")
-
-        route = SoloRoute(
-            destination=SpecificLocation._proto2object(proto.destination),
-            connection=connection,
-        )
-        route._id = _deserialize(proto.id)
-        return route
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return SoloRoute_PB
 
 
 class BroadcastRoute(SoloRoute):

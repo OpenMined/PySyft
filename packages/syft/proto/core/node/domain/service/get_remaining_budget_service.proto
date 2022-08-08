@@ -3,16 +3,16 @@ syntax = "proto3";
 package syft.core.node.common.service;
 
 import "proto/core/common/common_object.proto";
-import "proto/core/io/address.proto";
+import "proto/core/common/recursive_serde.proto";
 
 message GetRemainingBudgetMessage {
   syft.core.common.UID msg_id = 2;
-  syft.core.io.Address address = 3;
-  syft.core.io.Address reply_to = 4;
+  syft.core.common.RecursiveSerde address = 3;
+  syft.core.common.RecursiveSerde reply_to = 4;
 }
 
 message GetRemainingBudgetReplyMessage {
   double budget = 1;
   syft.core.common.UID msg_id = 2;
-  syft.core.io.Address address = 3;
+  syft.core.common.RecursiveSerde address = 3;
 }

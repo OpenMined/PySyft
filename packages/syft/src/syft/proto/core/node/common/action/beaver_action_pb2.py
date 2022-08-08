@@ -4,9 +4,9 @@
 """Generated protocol buffer code."""
 # third party
 from google.protobuf import descriptor as _descriptor
-from google.protobuf import descriptor_pool as _descriptor_pool
+from google.protobuf import message as _message
+from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -17,19 +17,121 @@ _sym_db = _symbol_database.Default()
 from syft.proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
-from syft.proto.core.io import address_pb2 as proto_dot_core_dot_io_dot_address__pb2
-
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
-    b'\n1proto/core/node/common/action/beaver_action.proto\x12\x1csyft.core.node.common.action\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"p\n\x0c\x42\x65\x61verAction\x12\x0e\n\x06values\x18\x01 \x03(\x0c\x12(\n\tlocations\x18\x02 \x03(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3'
+from syft.proto.core.common import (
+    recursive_serde_pb2 as proto_dot_core_dot_common_dot_recursive__serde__pb2,
 )
 
-_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
-_builder.BuildTopDescriptorsAndMessages(
-    DESCRIPTOR, "proto.core.node.common.action.beaver_action_pb2", globals()
+DESCRIPTOR = _descriptor.FileDescriptor(
+    name="proto/core/node/common/action/beaver_action.proto",
+    package="syft.core.node.common.action",
+    syntax="proto3",
+    serialized_options=None,
+    create_key=_descriptor._internal_create_key,
+    serialized_pb=b"\n1proto/core/node/common/action/beaver_action.proto\x12\x1csyft.core.node.common.action\x1a%proto/core/common/common_object.proto\x1a'proto/core/common/recursive_serde.proto\"{\n\x0c\x42\x65\x61verAction\x12\x0e\n\x06values\x18\x01 \x03(\x0c\x12(\n\tlocations\x18\x02 \x03(\x0b\x32\x15.syft.core.common.UID\x12\x31\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32 .syft.core.common.RecursiveSerdeb\x06proto3",
+    dependencies=[
+        proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
+        proto_dot_core_dot_common_dot_recursive__serde__pb2.DESCRIPTOR,
+    ],
 )
-if _descriptor._USE_C_DESCRIPTORS == False:
 
-    DESCRIPTOR._options = None
-    _BEAVERACTION._serialized_start = 151
-    _BEAVERACTION._serialized_end = 263
+
+_BEAVERACTION = _descriptor.Descriptor(
+    name="BeaverAction",
+    full_name="syft.core.node.common.action.BeaverAction",
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    create_key=_descriptor._internal_create_key,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name="values",
+            full_name="syft.core.node.common.action.BeaverAction.values",
+            index=0,
+            number=1,
+            type=12,
+            cpp_type=9,
+            label=3,
+            has_default_value=False,
+            default_value=[],
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="locations",
+            full_name="syft.core.node.common.action.BeaverAction.locations",
+            index=1,
+            number=2,
+            type=11,
+            cpp_type=10,
+            label=3,
+            has_default_value=False,
+            default_value=[],
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.core.node.common.action.BeaverAction.address",
+            index=2,
+            number=3,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax="proto3",
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=163,
+    serialized_end=286,
+)
+
+_BEAVERACTION.fields_by_name[
+    "locations"
+].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_BEAVERACTION.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_common_dot_recursive__serde__pb2._RECURSIVESERDE
+DESCRIPTOR.message_types_by_name["BeaverAction"] = _BEAVERACTION
+_sym_db.RegisterFileDescriptor(DESCRIPTOR)
+
+BeaverAction = _reflection.GeneratedProtocolMessageType(
+    "BeaverAction",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _BEAVERACTION,
+        "__module__": "proto.core.node.common.action.beaver_action_pb2"
+        # @@protoc_insertion_point(class_scope:syft.core.node.common.action.BeaverAction)
+    },
+)
+_sym_db.RegisterMessage(BeaverAction)
+
+
 # @@protoc_insertion_point(module_scope)

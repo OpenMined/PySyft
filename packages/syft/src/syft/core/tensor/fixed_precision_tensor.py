@@ -43,7 +43,7 @@ class FixedPrecisionTensor(PassthroughTensor):
     ) -> None:
         self._base = base
         self._precision = precision
-        self._scale = base**precision
+        self._scale = base ** precision
         if value is not None:
             # TODO :Should modify to be compatiable with torch.
 
@@ -293,7 +293,7 @@ class FixedPrecisionTensor(PassthroughTensor):
         schema = get_capnp_schema(schema_file="fixed_precision_tensor.capnp")
         fpt_struct: CapnpModule = schema.FPT  # type: ignore
         # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
-        MAX_TRAVERSAL_LIMIT = 2**64 - 1
+        MAX_TRAVERSAL_LIMIT = 2 ** 64 - 1
         # to pack or not to pack?
         # fpt_msg = fpt_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
         fpt_msg = fpt_struct.from_bytes_packed(

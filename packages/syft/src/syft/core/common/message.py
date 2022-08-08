@@ -103,7 +103,7 @@ class SyftMessage(AbstractMessage):
         )
 
 
-@serializable()
+@serializable(recursive_serde=True)
 class SignedMessage(SyftMessage):
     """
     SignedMessages are :class:`SyftMessage`s that have been signed by someone.
@@ -117,6 +117,15 @@ class SignedMessage(SyftMessage):
         verify_key (VerifyKey): the signer's public key with which the signature can be verified.
         serialized_message: the serialized original message.
     """
+
+    __attr_allowlist__ = [
+        "msg_id",
+        "address",
+        "obj_type",
+        "signature",
+        "verify_key",
+        "message",
+    ]
 
     obj_type: str
     signature: bytes
