@@ -1,12 +1,11 @@
 Data Owner - Deploy a Domain Server
 ===============================================
 
-Data owners are important ``remote data science`` members with
-``datasets`` 💾 they want to make available for
+Data owners are defined by those with ``datasets`` 💾  they want to make available for
 ``study by an outside party``.
 
-Today’s tutorial will help you understand why and how Data owners can
-``launch`` and ``deploy`` the ``domain node``.
+Today’s tutorial will help you understand why and how a Data owners can
+``launch`` and ``deploy`` their own ``domain node`` or ``private data servers`` to house their datasets.
 
    **Note:** Throughout the tutorials, we also mean Domain Servers whenever we refer to Domain Node. Both mean the same and are used interchangeably. 
 
@@ -18,25 +17,25 @@ that we call ``Domain Server``. It allows people/data owners 👨 to load
 their ``private data`` into these servers and ``create`` an account with
 a username and password for ``Data Scientists`` 💻.
 
-The ``advantage`` of using a ``Domain Server`` is that a Data Scientist
-can now ``answer questions`` (on your dataset) using an organization’s
-domain server as promptly as going to their public website.
+The ``advantage`` of using a Domain Server is that you can ``catalyze`` the impact your dataset can have by allowing...
+
+#. a ``Data Scientist`` to only get ``answers`` to the types of ``questions`` you allow them to
+#. and by allowing them to get those answers ``without`` needing to ``directly`` ``access`` or have a copy of your data
 
 
 |data_owner_tutorial01|
 
 
-Can you notice what’s missing in the above diagram? After ``deploying``
-a domain, there are no ``data partnerships``, ``meetings`` with
-``lawyers``, lengthy ``phone calls``, ``background checks`` or any
-``waiting`` between the organization and the data scientists.
-
-The ``organization`` 🏫 that has deployed the domain (with private data)
-retains ``governance`` 🖊 over the ``information`` they steward and never
-``shares a copy`` of the ``data``.
+This means that by having your organization ``retain governance`` over the information they steward ``without`` 
+needing to share direct ``copies`` of data to collaborators, domain servers create an opportunity for more 
+``collaboration`` and more ``research`` to happen without ``losing control`` of your data and risking things like ``IP``.
 
 Deploy a Domain
 ---------------
+
+How ``collaboration`` gets ``streamlined`` will be covered in our tutorials about connecting to a ``"Network Node."`` We will discuss 
+how ``control`` is ``maintained`` in our tutorials about ``"How to assign a Privacy Budget."`` For this tutorial, however, 
+let's start by learning how to deploy a domain server.
 
 In a nutshell, you will be: 
 
@@ -101,7 +100,7 @@ Step3: Install Syft
 
 One last tool to install is OpenMined’s Syft library. ``PySyft`` is an
 open-source library for ``privacy-enhancing technologies`` like
-``Homographic Encryption``, ``Differential Privacy``, and
+``Homomorphic Encryption``, ``Differential Privacy``, and
 ``Secure Multi-party Computation``. It allows you to do ``private`` &
 ``secure`` deep learning and remote data science in Python.
 
@@ -114,7 +113,7 @@ open-source library for ``privacy-enhancing technologies`` like
 
 For Data Owners, Syft is a library that can ``support`` a Data
 scientist’s workflow without that Data Scientist having a
-``direct copy`` of your data. But more of it in the following tutorials.
+``direct copy`` of your data. 
 
 ``Run`` the below command in your notebook cell:
 
@@ -235,13 +234,11 @@ Congratulations 👏 You have now successfully deployed a Domain Node.
 Now what?
 ---------
 
-Once Data Owners have ``deployed`` the ``Domain Node`` representing
-their theoretical organization’s ``private data servers``, the next step
-is to ``upload private data`` for research or project use.
+Once you, as a Data Owner, have ```deployed``` your ``Domain Node`` representing your theoretical organization's 
+``private data server``, the next step is to ``upload a dataset`` for research or project use.
 
-   In our following tutorial, we will see how Data Owners can preprocess
-   the data, mark it with correct metadata and upload it to the Domain
-   Node(which we just learned to deploy).
+   In our following tutorial, we will see how you as a Data Owners can preprocess the data, mark it with correct 
+   metadata and upload it to the Domain Node you've just deployed.
 
 .. |data_owner_tutorial01| image:: ../../_static/personas_image/DataOwner/data_owner_tutorial01.gif
   :width: 95%

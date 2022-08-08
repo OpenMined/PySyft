@@ -14,7 +14,7 @@ The best place to start is by ``identifying`` your ``role``. If you belong to an
 
 #. PySyft for Data Owner (in-progress)
     * :doc:`Deploy a Domain <Data Owner/Data_Owner_Tutorial01>`
-    * Upload Private Data
+    * :doc:`Upload Private Data <Data Owner/Data_Owner_Tutorial02>`
     * Create Accounts 
     * Manage Privacy Budgets
 
