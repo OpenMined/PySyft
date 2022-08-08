@@ -1370,9 +1370,6 @@ def create_launch_docker_cmd(
         "S3_ROOT_PWD": str(
             generate_sec_random_password(length=48, special_chars=False)
         ),
-        "PGADMIN_DEFAULT_PASSWORD": str(
-            generate_sec_random_password(length=48, special_chars=False)
-        ),
         "POSTGRES_PASSWORD": str(
             generate_sec_random_password(length=48, special_chars=False)
         ),
