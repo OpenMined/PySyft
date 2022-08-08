@@ -65,6 +65,8 @@ from .lib import save_vm_details_as_json
 from .lib import update_repo
 from .lib import use_branch
 from .mode import EDITABLE_MODE
+from .quickstart import quickstart  # noqa: 401
+from .quickstart import quickstart_download_notebook
 from .rand_sec import generate_sec_random_password
 from .style import RichGroup
 
@@ -2451,7 +2453,7 @@ cli.add_command(version)
     default=None,
     help="Specify the path to which python to use",
 )
-def quickstart(
+def quickstart_cli(
     url: Optional[str] = None,
     syft: str = "latest",
     reset: bool = False,
@@ -2483,7 +2485,7 @@ def quickstart(
             )
 
         if url:
-            file_path = quickstart_download_notebook(
+            file_path, _ = quickstart_download_notebook(
                 url=url, directory=directory, reset=reset
             )
         else:
@@ -2532,6 +2534,9 @@ def quickstart_setup(
         local_syft_dir = Path(os.path.abspath(Path(hagrid_root()) / "../syft"))
         print("Installing Syft in Editable Mode")
         env.install("-e " + str(local_syft_dir))
+        local_hagrid_dir = Path(os.path.abspath(Path(hagrid_root()) / "../hagrid"))
+        print("Installing HAGrid in Editable Mode")
+        env.install("-e " + str(local_hagrid_dir))
     else:
         options = []
         options.append("--force")
@@ -2549,26 +2554,8 @@ def quickstart_setup(
         else:
             print(f"Installing {package}")
         env.install(package, options=options)
-
-
-def quickstart_download_notebook(url: str, directory: str, reset: bool = False) -> str:
-    file_name = os.path.basename(url).replace("%20", "_")
-    file_path = os.path.abspath(directory + file_name)
-
-    file_exists = os.path.isfile(file_path)
-
-    if file_exists and not reset:
-        reset = click.confirm(
-            f"You already have the notebook {file_name}. "
-            "Are you sure you want to overwrite it?"
-        )
-
-    if not file_exists or file_exists and reset:
-        print(f"Downloading the notebook: {file_name}")
-        r = requests.get(url, allow_redirects=True)
-        with open(os.path.expanduser(file_path), "wb") as f:
-            f.write(r.content)
-    return file_path
+        print("Installing hagrid")
+        env.install("hagrid", options="-U")
 
 
 def add_intro_notebook(directory: str, reset: bool = False) -> str:
@@ -2590,13 +2577,13 @@ def add_intro_notebook(directory: str, reset: bool = False) -> str:
                 "https://raw.githubusercontent.com/OpenMined/PySyft/dev/"
                 + f"notebooks/quickstart/{filename}"
             )
-            file_path = quickstart_download_notebook(
+            file_path, _ = quickstart_download_notebook(
                 url=url, directory=directory, reset=reset
             )
     return file_path
 
 
-cli.add_command(quickstart)
+cli.add_command(quickstart_cli)
 
 
 def ssh_into_remote_machine(
