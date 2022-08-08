@@ -2583,7 +2583,7 @@ def add_intro_notebook(directory: str, reset: bool = False) -> str:
     return file_path
 
 
-cli.add_command(quickstart_cli)
+cli.add_command(quickstart_cli, "quickstart")
 
 
 def ssh_into_remote_machine(
