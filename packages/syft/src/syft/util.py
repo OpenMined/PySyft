@@ -22,7 +22,6 @@ from typing import Type
 from typing import Union
 
 # third party
-from forbiddenfruit import curse
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from pympler.asizeof import asizeof
@@ -180,8 +179,9 @@ def aggressive_set_attr(obj: object, name: str, attr: object) -> None:
     """
     try:
         setattr(obj, name, attr)
-    except Exception:
-        curse(obj, name, attr)
+    except Exception as e:
+        print(f"Failed to setattr on {obj}. We no longer curse with forbiddenfruit.")
+        raise e
 
 
 def obj2pointer_type(obj: Optional[object] = None, fqn: Optional[str] = None) -> type:
