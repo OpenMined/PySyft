@@ -125,7 +125,7 @@ class MPCTensor(PassthroughTensor):
             )
 
         if shares is None:
-            raise ValueError("Shares should not be None at this step")
+            raise ValueError("Shares should not be None at this step.")
 
         res = list(MPCTensor._mpc_from_shares(shares, parties=parties))
 
