@@ -70,7 +70,7 @@ vars:
   - name: S3_ROOT_USER
     value: admin
   - name: S3_ROOT_PWD
-    value: "python3 ../hagrid/hagrid/rand_sec.py"
+    value: admin
   - name: S3_REGION
     value: "us-east-1"
   - name: S3_PRESIGNED_TIMEOUT_SECS

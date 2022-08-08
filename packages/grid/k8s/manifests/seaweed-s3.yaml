@@ -8,8 +8,8 @@ data:
           "name": "admin",
           "credentials": [
             {
-              "accessKey": "python3 ../../../hagrid/hagrid/rand_sec.py",
-              "secretKey": "python3 ../../../hagrid/hagrid/rand_sec.py"
+              "accessKey": "admin",
+              "secretKey": "admin"
             }
           ],
           "actions": ["Admin", "Read", "List", "Tagging", "Write"]

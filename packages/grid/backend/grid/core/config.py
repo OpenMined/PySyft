@@ -47,7 +47,7 @@ class Settings(BaseSettings):
 
     POSTGRES_SERVER: str = "localhost"
     POSTGRES_USER: str = "user"
-    POSTGRES_PASSWORD: Optional[str] = os.getenv("POSTGRES_PASSWORD", "")
+    POSTGRES_PASSWORD: Optional[str] = None
     POSTGRES_DB: str = "db"
     SQLALCHEMY_DATABASE_URI: Optional[Union[PostgresDsn, str]] = None
 
