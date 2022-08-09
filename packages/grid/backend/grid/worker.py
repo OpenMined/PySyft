@@ -1,14 +1,15 @@
 # stdlib
 from typing import Any
 
-# third party
-import requests
-
 # syft absolute
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.node.common.node_service.vpn.vpn_messages import (
     VPNJoinSelfMessageWithReply,
 )
+from syft.core.node.common.node_service.vpn.vpn_messages import (
+    VPNStatusMessageWithReply,
+)
+from syft.core.node.common.node_service.vpn.vpn_messages import TAILSCALE_URL
 from syft.core.node.common.node_service.vpn.vpn_messages import connect_with_key
 from syft.core.node.common.node_service.vpn.vpn_messages import get_network_url
 
@@ -49,21 +50,25 @@ def domain_reconnect_network_task() -> None:
 def domain_reconnect_network() -> None:
     for node_connections in node.node.all():
         network_vpn_endpoint = get_network_url().with_path("/api/v1/vpn/status")
-        status_ok = requests.get(network_vpn_endpoint).json()["status"] == "ok"
-        not_connected = not status_ok or not network_vpn_endpoint
-        if node_connections.keep_connected and not_connected:
+        msg = (
+            VPNStatusMessageWithReply(kwargs={})
+            .to(address=node.address, reply_to=node.address)
+            .sign(signing_key=node.signing_key)
+        )
+        reply = node.recv_immediate_msg_with_reply(msg=msg)
+        is_connected = reply.message.payload.kwargs["connected"]
+        disconnected = not is_connected or not network_vpn_endpoint
+        if node_connections.keep_connected and disconnected:
             routes = list(node.node_route.query(node_id=node_connections.id))
             for route in routes:
                 try:
                     status, error = connect_with_key(
-                        tailscale_host="http://tailscale:4000",
+                        tailscale_host=TAILSCALE_URL,
                         headscale_host=route.vpn_endpoint,
                         vpn_auth_key=route.vpn_key,
                     )
 
-                    if status:
-                        print({"status": "ok"})
-                    else:
+                    if not status:
                         print("connect with key failed", error)
                 # If for some reason this route didn't work (ex: network node offline, etc),
                 # just skip it, show the error and go to the next one.
