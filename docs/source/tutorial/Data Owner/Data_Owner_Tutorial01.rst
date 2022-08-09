@@ -56,89 +56,33 @@ Few things to make a note of before starting:
 
 ::
 
-   hagrid quickstart https://github.com/OpenMined/PySyft/tree/dev/notebooks/Tutorial_Notebooks/Tutorial_01_DataOwner.ipynb
+   hagrid quickstart https://github.com/OpenMined/PySyft/tree/dev/notebooks/quickstart/Tutorial_Notebooks/Tutorial_01_DataOwner.ipynb
+   
 
-Step1: Install PiP
-~~~~~~~~~~~~~~~~~~
+Step1: Install Required Softwares
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+To ``simplify`` the ``installation`` process, we have made an ``install wizard`` notebook that 
+will help you execute all the ``required`` commands needed to install the latest version of the
+dependencies like ``PiP``, ``HagRID``, and ``Syft``.
 
-Assuming some of you ``don't`` have all the ``packages`` of ``Python``
-installed, the first step is ``installing`` the ``latest pip version``.
-
-In your jupyter ``notebook`` cell, ``execute`` the following command:
-
-::
-
-   In:
-
-   # run this cell
-   ! sudo apt update && sudo apt install python3-pip
-
-   ! echo "\n✅ Step Complete\n"
-
-Step2: Install HAGrid
-~~~~~~~~~~~~~~~~~~~~~
-
-The next step is to ``install`` OpenMined’s ``command line tool`` called
-``HAGrid``. It helps to install needed ``dependencies`` to ``launch``
-and ``run`` a ``domain node`` correctly. HAGrid also allows your IT
-teams to deploy different ``nodes``, continuously ``monitors`` them, and
-ensures they are deployed ``correctly``.
-
-To install it, ``run`` the below command:
+Use the below command to ``import`` the ``install wizard`` notebook into your ``environment``:
 
 ::
 
-   In:
+   hagrid quickstart https://github.com/OpenMined/PySyft/tree/dev/notebooks/quickstart/01-install-wizard.ipynb
 
-   # run this cell
-   ! pip install -U hagrid
 
-   ! echo "\n✅ Step Complete\n"
+**Important:** The next step will show you how to launch a domain node. If
+you run into any ``issue`` running the above installation wizard, consider
+looking for the ``error`` you are getting on our
+`GitHub-Issue <https://github.com/OpenMined/PySyft/issues>`__ page.
+Still not able to figure out the problem, don’t worry. We are here to
+help you. Join the OpenMined
+`slack <https://communityinviter.com/apps/openmined/openmined/>`__
+community and explain your problem in the ``#general`` channel, and
+any one of us might be able to help you.
 
-Step3: Install Syft
-~~~~~~~~~~~~~~~~~~~
-
-One last tool to install is OpenMined’s Syft library. ``PySyft`` is an
-open-source library for ``privacy-enhancing technologies`` like
-``Homomorphic Encryption``, ``Differential Privacy``, and
-``Secure Multi-party Computation``. It allows you to do ``private`` &
-``secure`` deep learning and remote data science in Python.
-
-   **Note:** Syft is under ``active development`` and is not yet ready
-   for total pilots on private data without our assistance. As
-   ``early access`` participants, please ``contact us`` via
-   `slack <https://communityinviter.com/apps/openmined/openmined/>`__ or
-   ``email`` if you would like to ask a ``question`` or have a
-   ``use case`` that you would like to propose.
-
-For Data Owners, Syft is a library that can ``support`` a Data
-scientist’s workflow without that Data Scientist having a
-``direct copy`` of your data. 
-
-``Run`` the below command in your notebook cell:
-
-::
-
-   In:
-
-   # run this cell
-   ! pip install --pre syft
-
-   ! echo "\n✅ Step Complete\n"
-
-..
-
-   **Note:** The next step will show you how to launch a domain node. If
-   you run into an ``issue`` installing the above tools, consider
-   looking for the ``error`` you are getting on our
-   `GitHub-Issue <https://github.com/OpenMined/PySyft/issues>`__ page.
-   Still not able to figure out the problem, don’t worry. We are here to
-   help you. Join the OpenMined
-   `slack <https://communityinviter.com/apps/openmined/openmined/>`__
-   community and explain your problem in the ``#general`` channel, and
-   any one of us might be able to help you.
-
-Step4: Launch Domain
+Step2: Launch Domain
 ~~~~~~~~~~~~~~~~~~~~
 
 Great work, people!! Once you have installed all the dependencies, it is
@@ -180,7 +124,7 @@ While this command runs, you will see ``various`` ``volumes`` and
 the ``next`` step, where we will learn to ``monitor`` the ``health`` of
 our ``Domain`` ``Node``.
 
-Step5: Check Domain
+Step3: Check Domain
 ~~~~~~~~~~~~~~~~~~~
 
 Now, let us do a quick health check to ``ensure`` the Domain Node is
