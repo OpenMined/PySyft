@@ -8,6 +8,9 @@ from typing import Tuple
 import click
 import requests
 
+# relative
+from .nb_output import NBOutput
+
 directory = os.path.expanduser("~/.hagrid/quickstart/")
 
 
@@ -55,15 +58,6 @@ TUTORIALS = {
         ),
     )
 }
-
-
-# alert-info, alert-warning, alert-success, alert-danger
-class NBOutput:
-    def __init__(self, raw_output: str) -> None:
-        self.raw_output = raw_output
-
-    def _repr_html_(self) -> str:
-        return self.raw_output
 
 
 class Quickstart:

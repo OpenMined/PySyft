@@ -36,12 +36,16 @@ from .cache import DEFAULT_BRANCH
 from .cache import arg_cache
 from .deps import DEPENDENCIES
 from .deps import ENVIRONMENT
+from .deps import LATEST_STABLE_SYFT
 from .deps import MissingDependency
 from .deps import allowed_hosts
+from .deps import check_docker_version
 from .deps import docker_info
+from .deps import gather_debug
 from .deps import is_windows
 from .deps import wsl_info
 from .deps import wsl_linux_info
+from .exceptions import MissingDependency
 from .grammar import BadGrammar
 from .grammar import GrammarVerb
 from .grammar import parse_grammar
@@ -51,7 +55,6 @@ from .lib import GIT_REPO
 from .lib import GRID_SRC_PATH
 from .lib import GRID_SRC_VERSION
 from .lib import check_api_metadata
-from .lib import check_docker_version
 from .lib import check_host
 from .lib import check_jupyter_server
 from .lib import check_login_page
@@ -69,8 +72,6 @@ from .quickstart import quickstart  # noqa: 401
 from .quickstart import quickstart_download_notebook
 from .rand_sec import generate_sec_random_password
 from .style import RichGroup
-
-LATEST_STABLE_SYFT = "0.6"
 
 
 def get_azure_image(short_name: str) -> str:
@@ -2243,21 +2244,7 @@ cli.add_command(clean)
 @click.command(help="Show HAGrid debug information")
 @click.argument("args", type=str, nargs=-1)
 def debug(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
-    now = datetime.now().astimezone()
-    dt_string = now.strftime("%d/%m/%Y %H:%M:%S %Z")
-    debug_info: TypeDict[str, Any] = {}
-    debug_info["datetime"] = dt_string
-    debug_info["python_binary"] = sys.executable
-    debug_info["dependencies"] = DEPENDENCIES
-    debug_info["environment"] = ENVIRONMENT
-    debug_info["hagrid"] = __version__
-    debug_info["hagrid_dev"] = EDITABLE_MODE
-    debug_info["hagrid_path"] = hagrid_root()
-    debug_info["hagrid_repo_sha"] = commit_hash()
-    debug_info["docker"] = docker_info()
-    if is_windows():
-        debug_info["wsl"] = wsl_info()
-        debug_info["wsl_linux"] = wsl_linux_info()
+    debug_info = gather_debug()
     print("\n\nWhen reporting bugs, please copy everything between the lines.")
     print("==================================================================\n")
     print(json.dumps(debug_info))
@@ -2511,6 +2498,7 @@ def quickstart_cli(
             sys.exit(1)
     except Exception as e:
         print(f"Error running quickstart: {e}")
+        raise e
 
 
 def quickstart_setup(
@@ -2526,60 +2514,70 @@ def quickstart_setup(
         shutil.rmtree(virtual_env_dir)
     env = VirtualEnvironment(virtual_env_dir, python=python)
 
+    # upgrade pip
+    env.install("pip", options=["-U"])
+    env.install("packaging", options=["-U"])
+
     print("Installing Jupyter Labs")
     env.install("jupyterlab")
     env.install("ipywidgets")
 
     if EDITABLE_MODE:
-        local_syft_dir = Path(os.path.abspath(Path(hagrid_root()) / "../syft"))
-        print("Installing Syft in Editable Mode")
-        env.install("-e " + str(local_syft_dir))
+        # local_syft_dir = Path(os.path.abspath(Path(hagrid_root()) / "../syft"))
+        # print("Installing Syft in Editable Mode")
+        # env.install("-e " + str(local_syft_dir))
         local_hagrid_dir = Path(os.path.abspath(Path(hagrid_root()) / "../hagrid"))
-        print("Installing HAGrid in Editable Mode")
+        print("Installing HAGrid in Editable Mode", str(local_hagrid_dir))
         env.install("-e " + str(local_hagrid_dir))
     else:
-        options = []
-        options.append("--force")
-        if syft_version == "latest":
-            syft_version = LATEST_STABLE_SYFT
-            package = f"syft>={syft_version}"
-            if pre:
-                package = f"{package}.dev0"  # force pre release
-        else:
-            package = f"syft=={syft_version}"
+        # options = []
+        # options.append("--force")
+        # if syft_version == "latest":
+        #     syft_version = LATEST_STABLE_SYFT
+        #     package = f"syft>={syft_version}"
+        #     if pre:
+        #         package = f"{package}.dev0"  # force pre release
+        # else:
+        #     package = f"syft=={syft_version}"
 
-        if pre:
-            options.append("--pre")
-            print(f"Installing {package} --pre")
-        else:
-            print(f"Installing {package}")
-        env.install(package, options=options)
+        # if pre:
+        #     options.append("--pre")
+        #     print(f"Installing {package} --pre")
+        # else:
+        #     print(f"Installing {package}")
+        # env.install(package, options=options)
         print("Installing hagrid")
-        env.install("hagrid", options="-U")
+        env.install("hagrid", options=["-U"])
 
 
 def add_intro_notebook(directory: str, reset: bool = False) -> str:
     files = os.listdir(directory)
-    files.remove(".venv")
+    try:
+        files.remove(".venv")
+    except Exception:
+        pass
 
-    filename = "00-quickstart.ipynb"
-    file_path = os.path.abspath(f"{directory}/{filename}")
+    filenames = ["00-quickstart.ipynb", "01-install-wizard.ipynb"]
 
     if len(files) == 0 or reset:
         if EDITABLE_MODE:
             local_src_dir = Path(os.path.abspath(Path(hagrid_root()) / "../../"))
-            shutil.copyfile(
-                local_src_dir / f"notebooks/quickstart/{filename}",
-                file_path,
-            )
+            for filename in filenames:
+                file_path = os.path.abspath(f"{directory}/{filename}")
+                shutil.copyfile(
+                    local_src_dir / f"notebooks/quickstart/{filename}",
+                    file_path,
+                )
         else:
-            url = (
-                "https://raw.githubusercontent.com/OpenMined/PySyft/dev/"
-                + f"notebooks/quickstart/{filename}"
-            )
-            file_path, _ = quickstart_download_notebook(
-                url=url, directory=directory, reset=reset
-            )
+            for filename in filenames:
+                url = (
+                    "https://raw.githubusercontent.com/OpenMined/PySyft/dev/"
+                    + f"notebooks/quickstart/{filename}"
+                )
+                file_path, _ = quickstart_download_notebook(
+                    url=url, directory=directory, reset=reset
+                )
+    file_path = os.path.abspath(f"{directory}/{filenames[0]}")
     return file_path
 
 
