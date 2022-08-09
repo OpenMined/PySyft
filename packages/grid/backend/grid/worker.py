@@ -112,7 +112,7 @@ if settings.NODE_TYPE.lower() == "domain":
     @celery_app.on_after_configure.connect
     def add_domain_reconnect_periodic_task(sender, **kwargs) -> None:  # type: ignore
         celery_app.add_periodic_task(
-            settings.NETWORK_CHECK_INTERVAL,  # Run every second
+            settings.DOMAIN_CHECK_INTERVAL,  # Run every second
             domain_reconnect_network_task.s(),
             name="Reconnect Domain to Network VPN",
             queue="main-queue",
