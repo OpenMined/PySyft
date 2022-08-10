@@ -87,12 +87,13 @@ class Quickstart:
     def _repr_html_(self) -> str:
         html = ""
         html += "<h2>Tutorials</h2>"
-        html += "<ul>"
-        for name, tutorial in TUTORIALS.items():
-            html += f"<li style='list-style:none;'>📖 <strong>{name}</strong><br />{tutorial.description}</li>"
-        html += "</ul>"
-        first = list(TUTORIALS.keys())[0]
-        html += f'<blockquote>Try running: <br /><code>quickstart.download("{first}")</code></blockquote>'
+        html += "<blockquote>🙏 Coming soon. We have already opened PRs with the first tutorials.</blockquote>"
+        # html += "<ul>"
+        # for name, tutorial in TUTORIALS.items():
+        #     html += f"<li style='list-style:none;'>📖 <strong>{name}</strong><br />{tutorial.description}</li>"
+        # html += "</ul>"
+        # first = list(TUTORIALS.keys())[0]
+        # html += f'<blockquote>Try running: <br /><code>quickstart.download("{first}")</code></blockquote>'
         return html
 
 
