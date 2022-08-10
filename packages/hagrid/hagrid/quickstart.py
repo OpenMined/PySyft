@@ -95,26 +95,3 @@ class Quickstart:
         # first = list(TUTORIALS.keys())[0]
         # html += f'<blockquote>Try running: <br /><code>quickstart.download("{first}")</code></blockquote>'
         return html
-
-
-quickstart = Quickstart()
-
-
-# def quickstart_download_notebook(url: str, directory: str, reset: bool = False) -> str:
-#     file_name = os.path.basename(url).replace("%20", "_")
-#     file_path = os.path.abspath(directory + file_name)
-
-#     file_exists = os.path.isfile(file_path)
-
-#     if file_exists and not reset:
-#         reset = click.confirm(
-#             f"You already have the notebook {file_name}. "
-#             "Are you sure you want to overwrite it?"
-#         )
-
-#     if not file_exists or file_exists and reset:
-#         print(f"Downloading the notebook: {file_name}")
-#         r = requests.get(url, allow_redirects=True)
-#         with open(os.path.expanduser(file_path), "wb") as f:
-#             f.write(r.content)
-#     return file_path

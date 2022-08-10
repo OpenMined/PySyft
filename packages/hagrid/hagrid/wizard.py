@@ -31,6 +31,3 @@ class Wizard:
     @property
     def check_grid_docker(self) -> Union[Dict[str, Dependency], NBOutput]:
         return check_grid_docker()
-
-
-wizard = Wizard()

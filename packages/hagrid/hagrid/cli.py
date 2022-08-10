@@ -28,7 +28,6 @@ from rich.live import Live
 from virtualenvapi.manage import VirtualEnvironment
 
 # relative
-from . import __version__
 from .art import hagrid
 from .auth import AuthCredentials
 from .cache import DEFAULT_BRANCH
@@ -60,10 +59,10 @@ from .lib import save_vm_details_as_json
 from .lib import update_repo
 from .lib import use_branch
 from .mode import EDITABLE_MODE
-from .quickstart import quickstart  # noqa: 401
 from .quickstart import quickstart_download_notebook
 from .rand_sec import generate_sec_random_password
 from .style import RichGroup
+from .version import __version__
 
 
 def get_azure_image(short_name: str) -> str:

@@ -1,12 +1,10 @@
 # stdlib
 import platform
 
-# TODO FIX
-# from hagrid import __version__
-__version__ = "0.2.85"
 # third party
 from setuptools import find_packages
 from setuptools import setup
+from version import __version__
 
 DATA_FILES = {
     "img": ["hagrid/img/*.png"],

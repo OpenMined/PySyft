@@ -33,12 +33,12 @@ from packaging.version import Version
 import requests
 
 # relative
-from . import __version__
 from .exceptions import MissingDependency
 from .lib import commit_hash
 from .lib import hagrid_root
 from .mode import EDITABLE_MODE
 from .nb_output import NBOutput
+from .version import __version__
 
 LATEST_STABLE_SYFT = "0.6"
 
