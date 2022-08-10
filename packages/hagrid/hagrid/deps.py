@@ -238,7 +238,9 @@ def new_pypi_version(
             return (False, current)
     else:
         latest_release = current
-        for release in pypi_json["releases"].keys():
+
+        releases = sorted(list(pypi_json["releases"].keys()))
+        for release in releases:
             pre_release_version = version.parse(release)
             if latest_release < pre_release_version:
                 latest_release = pre_release_version
@@ -253,7 +255,12 @@ def get_pypi_versions(package_name: str) -> Dict[str, Any]:
     try:
         pypi_url = f"https://pypi.org/pypi/{package_name}/json"
         req = requests.get(pypi_url)
-        return json.loads(req.text)
+        # TODO: Fix JSON parsing of version keys
+        # this is broken on my machine for some reason, the version keys are wrong
+        pypi_info = json.loads(req.text)
+        # print(pypi_info["releases"].keys())
+        return pypi_info
+
     except Exception as e:
         print(f"Unable to get JSON from PyPI URL: {pypi_url}. {e}")
         raise e
@@ -572,7 +579,7 @@ def check_syft(
 ) -> Union[Dict[str, Dependency], NBOutput]:
     try:
         deps: Dict[str, Dependency] = {}
-        # deps["os"] = DependencySyftOS(name="os")
+        deps["os"] = DependencySyftOS(name="os")
         deps["python"] = DependencySyftPython(name="python")
         deps["syft"] = DependencyPyPI(
             package_name="syft",
