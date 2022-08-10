@@ -57,11 +57,6 @@ use and development of PySyft!
 
   resources/index
 
-.. toctree::
-  :maxdepth: 1
-  :hidden:
-
-  tutorial/index
 
 .. toctree:
    :caption: API Docs
