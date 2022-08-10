@@ -3,8 +3,8 @@ import sys
 from typing import Any
 
 # relative
-from .quickstart import Quickstart
-from .wizard import Wizard
+from .quickstart_ui import QuickstartUI
+from .wizard_ui import WizardUI
 
 
 def module_property(func: Any) -> None:
@@ -28,10 +28,10 @@ def module_property(func: Any) -> None:
 
 
 @module_property
-def _quickstart() -> Quickstart:
-    return Quickstart()
+def _quickstart() -> QuickstartUI:
+    return QuickstartUI()
 
 
 @module_property
-def _wizard() -> Wizard:
-    return Wizard()
+def _wizard() -> WizardUI:
+    return WizardUI()

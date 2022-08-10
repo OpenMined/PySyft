@@ -11,7 +11,7 @@ from .deps import check_syft_deps
 from .nb_output import NBOutput
 
 
-class Wizard:
+class WizardUI:
     @property
     def check_hagrid(self) -> Union[Dict[str, Dependency], NBOutput]:
         return check_hagrid()

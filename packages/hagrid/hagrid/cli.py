@@ -59,10 +59,28 @@ from .lib import save_vm_details_as_json
 from .lib import update_repo
 from .lib import use_branch
 from .mode import EDITABLE_MODE
-from .quickstart import quickstart_download_notebook
+from .quickstart_ui import quickstart_download_notebook
 from .rand_sec import generate_sec_random_password
 from .style import RichGroup
 from .version import __version__
+
+
+def fix_windows_virtualenv_api(cls: type) -> None:
+    # fix bug in windows
+    def _python_rpath(self: Any) -> str:
+        """The relative path (from environment root) to python."""
+        # Windows virtualenv installation installs pip to the [Ss]cripts
+        # folder. Here's a simple check to support:
+        if sys.platform == "win32":
+            # fix here https://github.com/sjkingo/virtualenv-api/issues/47
+            return os.path.join(self.path, "Scripts", "python.exe")
+        return os.path.join("bin", "python")
+
+    setattr(cls, "_python_rpath", property(_python_rpath))
+
+
+# fix VirtualEnvironment bug in windows
+fix_windows_virtualenv_api(VirtualEnvironment)
 
 
 def get_azure_image(short_name: str) -> str:
@@ -2515,13 +2533,25 @@ def quickstart_cli(
 
         # add virtualenv path
         environ = os.environ.copy()
-        environ["PATH"] = directory + ".venv/bin" + os.pathsep + environ["PATH"]
+        os_bin_path = "Scripts" if is_windows() else "bin"
+        venv_dir = directory + ".venv"
+        environ["PATH"] = (
+            venv_dir + os.pathsep + os_bin_path + os.pathsep + environ["PATH"]
+        )
+        jupyter_binary = "jupyter.exe" if is_windows() else "jupyter"
         try:
             print(
                 f"Running Jupyter Lab in: {directory}\nUse Control-C to stop this server."
             )
+            cmd = (
+                venv_dir
+                + os.sep
+                + os_bin_path
+                + os.sep
+                + f"{jupyter_binary} lab --notebook-dir={directory} {file_path}"
+            )
             proc = subprocess.Popen(  # nosec
-                f"jupyter lab --notebook-dir={directory} {file_path}".split(" "),
+                cmd.split(" "),
                 cwd=directory,
                 env=environ,
                 stdout=subprocess.PIPE,
@@ -2543,46 +2573,50 @@ def quickstart_setup(
     pre: bool = False,
     python: Optional[str] = None,
 ) -> None:
-    os.makedirs(directory, exist_ok=True)
-    virtual_env_dir = os.path.abspath(directory + ".venv/")
-    if reset and os.path.exists(virtual_env_dir):
-        shutil.rmtree(virtual_env_dir)
-    env = VirtualEnvironment(virtual_env_dir, python=python)
+    try:
+        os.makedirs(directory, exist_ok=True)
+        virtual_env_dir = os.path.abspath(directory + ".venv/")
+        if reset and os.path.exists(virtual_env_dir):
+            shutil.rmtree(virtual_env_dir)
+        env = VirtualEnvironment(virtual_env_dir, python=python)
 
-    # upgrade pip
-    env.install("pip", options=["-U"])
-    env.install("packaging", options=["-U"])
+        # upgrade pip
+        env.install("pip", options=["-U"])
+        env.install("packaging", options=["-U"])
 
-    print("Installing Jupyter Labs")
-    env.install("jupyterlab")
-    env.install("ipywidgets")
+        print("Installing Jupyter Labs")
+        env.install("jupyterlab")
+        env.install("ipywidgets")
 
-    if EDITABLE_MODE:
-        # local_syft_dir = Path(os.path.abspath(Path(hagrid_root()) / "../syft"))
-        # print("Installing Syft in Editable Mode")
-        # env.install("-e " + str(local_syft_dir))
-        local_hagrid_dir = Path(os.path.abspath(Path(hagrid_root()) / "../hagrid"))
-        print("Installing HAGrid in Editable Mode", str(local_hagrid_dir))
-        env.install("-e " + str(local_hagrid_dir))
-    else:
-        # options = []
-        # options.append("--force")
-        # if syft_version == "latest":
-        #     syft_version = LATEST_STABLE_SYFT
-        #     package = f"syft>={syft_version}"
-        #     if pre:
-        #         package = f"{package}.dev0"  # force pre release
-        # else:
-        #     package = f"syft=={syft_version}"
+        if EDITABLE_MODE:
+            # local_syft_dir = Path(os.path.abspath(Path(hagrid_root()) / "../syft"))
+            # print("Installing Syft in Editable Mode")
+            # env.install("-e " + str(local_syft_dir))
+            local_hagrid_dir = Path(os.path.abspath(Path(hagrid_root()) / "../hagrid"))
+            print("Installing HAGrid in Editable Mode", str(local_hagrid_dir))
+            env.install("-e " + str(local_hagrid_dir))
+        else:
+            # options = []
+            # options.append("--force")
+            # if syft_version == "latest":
+            #     syft_version = LATEST_STABLE_SYFT
+            #     package = f"syft>={syft_version}"
+            #     if pre:
+            #         package = f"{package}.dev0"  # force pre release
+            # else:
+            #     package = f"syft=={syft_version}"
 
-        # if pre:
-        #     options.append("--pre")
-        #     print(f"Installing {package} --pre")
-        # else:
-        #     print(f"Installing {package}")
-        # env.install(package, options=options)
-        print("Installing hagrid")
-        env.install("hagrid", options=["-U"])
+            # if pre:
+            #     options.append("--pre")
+            #     print(f"Installing {package} --pre")
+            # else:
+            #     print(f"Installing {package}")
+            # env.install(package, options=options)
+            print("Installing hagrid")
+            env.install("hagrid", options=["-U"])
+    except Exception as e:
+        print("failed", e)
+        raise e
 
 
 def add_intro_notebook(directory: str, reset: bool = False) -> str:

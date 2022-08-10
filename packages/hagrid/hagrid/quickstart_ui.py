@@ -60,7 +60,7 @@ TUTORIALS = {
 }
 
 
-class Quickstart:
+class QuickstartUI:
     @property
     def tutorials(self) -> Dict[str, Tutorial]:
         return TUTORIALS
