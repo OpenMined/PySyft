@@ -174,4 +174,4 @@ jobs:
       - name: Run hagrid quickstart
         if: steps.changes.outputs.hagrid == 'true'
         run: |
-          hagrid quickstart --reset --quiet
+          hagrid quickstart --reset --quiet --test
