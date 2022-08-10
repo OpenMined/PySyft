@@ -349,7 +349,7 @@ def test_mean(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
-    ishan: DataSubject,
+    ishan: DataSubjectArray,
     kwargs: Dict,
 ) -> None:
     zeros_tensor = PT(
