@@ -8,7 +8,6 @@ installation commands where applicable."""
 from __future__ import annotations
 
 # stdlib
-from compileall import compile_dir
 from dataclasses import dataclass
 from dataclasses import field
 from datetime import datetime
@@ -87,6 +86,9 @@ class Dependency:
     version: Optional[Version] = None
     valid: bool = False
     issues: List[SetupIssue] = field(default_factory=list)
+
+    def check(self) -> None:
+        pass
 
 
 @dataclass
@@ -223,8 +225,8 @@ def new_pypi_version(
     pypi_json = get_pypi_versions(package_name=package)
     if (
         "info" not in pypi_json
-        or "version" not in pypi_json["info"]
         or "releases" not in pypi_json
+        or "version" not in pypi_json["info"]
     ):
         raise Exception("Bad response from PyPi")
 
@@ -247,7 +249,7 @@ def new_pypi_version(
             return (False, latest_release)
 
 
-def get_pypi_versions(package_name: str):
+def get_pypi_versions(package_name: str) -> Dict[str, Any]:
     try:
         pypi_url = f"https://pypi.org/pypi/{package_name}/json"
         req = requests.get(pypi_url)
@@ -257,7 +259,7 @@ def get_pypi_versions(package_name: str):
         raise e
 
 
-def get_pip_package(package_name) -> Optional[Dict[str, str]]:
+def get_pip_package(package_name: str) -> Optional[Dict[str, str]]:
     packages = get_pip_packages()
     for package in packages:
         if package["name"] == package_name:
@@ -265,27 +267,18 @@ def get_pip_package(package_name) -> Optional[Dict[str, str]]:
     return None
 
 
-def get_pip_packages() -> Dict[str, str]:
+def get_pip_packages() -> List[Dict[str, str]]:
     try:
         cmd = "python -m pip list --format=json"
         output = subprocess.check_output(cmd, shell=True)  # nosec
         return json.loads(str(output.decode("utf-8")))
     except Exception as e:
         print("failed to pip list", e)
-        return str(e)
+        raise e
 
 
 def get_location(binary: str) -> Optional[str]:
-    # todo windows with cmd.exe where.exe
-    returncode, lines = get_cli_output(f"which {binary}")
-    if returncode != 0:
-        return None
-    else:
-        if len(lines) > 0:
-            line = lines[0]
-        else:
-            line = lines
-        return os.path.abspath(line.strip())
+    return shutil.which(binary)
 
 
 @dataclass
@@ -304,14 +297,14 @@ class BinaryInfo:
         + r"[^\d].*"
     )
 
-    def extract_version(self, lines: List[str]) -> Union[str, Version]:
+    def extract_version(self, lines: List[str]) -> None:
         for line in lines:
             matches = re.match(self.version_regex, line)
             if matches is not None:
                 self.version = matches.group(1)
                 try:
                     self.version = version.parse(self.version)
-                except Exception:
+                except Exception:  # nosec
                     pass
                 break
 
@@ -326,16 +319,18 @@ class BinaryInfo:
         return self
 
 
-def get_cli_output(cmd: str) -> Tuple[bool, str]:
+def get_cli_output(cmd: str) -> Tuple[int, List[str]]:
     try:
         proc = subprocess.Popen(  # nosec
             cmd.split(" "),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
-        lines = [line.decode("utf-8") for line in proc.stdout.readlines()]
+        lines = []
+        if proc.stdout and hasattr(proc.stdout, "readlines"):
+            lines = [line.decode("utf-8") for line in proc.stdout.readlines()]
         proc.communicate()
-        return (proc.returncode, lines)
+        return (int(proc.returncode), lines)
     except Exception as e:
         return (-1, [str(e)])
 
@@ -408,14 +403,14 @@ if is_windows():
     commands.append("wsl")
 
 
-def check_deps() -> Dict[str, Optional[str]]:
+def check_deps_old() -> Dict[str, Optional[str]]:
     paths = {}
     for dep in commands:
         paths[dep] = shutil.which(dep)
     return paths
 
 
-DEPENDENCIES = check_deps()
+DEPENDENCIES = check_deps_old()
 
 
 def docker_info() -> str:
@@ -469,7 +464,7 @@ def check_docker_version() -> Optional[str]:
 
 def check_deps(
     deps: Dict[str, Dependency], of: str = "", display: bool = True
-) -> Dict[str, Dependency]:
+) -> Union[Dict[str, Dependency], NBOutput]:
     output = ""
     if len(of) > 0:
         of = f" {of}"
@@ -486,15 +481,18 @@ def check_deps(
             if issue.solution != "":
                 output += f"<strong>Solution</strong>:\n{issue.solution}"
             if issue.command != "":
-                output += f"<blockquote><strong>Command</strong>:\n <tt>[ ]</tt><code>!{issue.command}</code></blockquote>"
+                output += (
+                    "<blockquote><strong>Command</strong>:\n "
+                    + f"<tt>[ ]</tt><code>!{issue.command}</code></blockquote>"
+                )
             output += "\n"
 
     return NBOutput(output).to_html()
 
 
-def check_grid_docker(display: bool = True) -> Dict[str, Dependency]:
+def check_grid_docker(display: bool = True) -> Union[Dict[str, Dependency], NBOutput]:
     try:
-        deps = {}
+        deps: Dict[str, Dependency] = {}
         deps["git"] = DependencyGridGit(name="git")
         deps["docker"] = DependencyGridDocker(name="docker")
         deps["docker_compose"] = DependencyGridDockerCompose(name="docker compose")
@@ -503,7 +501,7 @@ def check_grid_docker(display: bool = True) -> Dict[str, Dependency]:
         try:
             if display:
                 return NBOutput(debug_exception(e=e)).to_html()
-        except Exception as e:
+        except Exception:  # nosec
             pass
 
         print(e)
@@ -532,9 +530,9 @@ def debug_exception(e: Exception) -> str:
     return exception
 
 
-def check_syft_deps(display: bool = True) -> Dict[str, Dependency]:
+def check_syft_deps(display: bool = True) -> Union[Dict[str, Dependency], NBOutput]:
     try:
-        deps = {}
+        deps: Dict[str, Dependency] = {}
         deps["os"] = DependencySyftOS(name="os")
         deps["python"] = DependencySyftPython(name="python")
         return check_deps(of="Syft", deps=deps, display=display)
@@ -542,16 +540,16 @@ def check_syft_deps(display: bool = True) -> Dict[str, Dependency]:
         try:
             if display:
                 return NBOutput(debug_exception(e=e)).to_html()
-        except Exception as e:
+        except Exception:  # nosec
             pass
 
         print(e)
         raise e
 
 
-def check_hagrid(display: bool = True) -> Dict[str, Dependency]:
+def check_hagrid(display: bool = True) -> Union[Dict[str, Dependency], NBOutput]:
     try:
-        deps = {}
+        deps: Dict[str, Dependency] = {}
         deps["hagrid"] = DependencyPyPI(
             package_name="hagrid",
             package_display_name="HAGrid",
@@ -562,16 +560,18 @@ def check_hagrid(display: bool = True) -> Dict[str, Dependency]:
         try:
             if display:
                 return NBOutput(debug_exception(e=e)).to_html()
-        except Exception:
+        except Exception:  # nosec
             pass
 
         print(e)
         raise e
 
 
-def check_syft(display: bool = True, pre: bool = False) -> Dict[str, Dependency]:
+def check_syft(
+    display: bool = True, pre: bool = False
+) -> Union[Dict[str, Dependency], NBOutput]:
     try:
-        deps = {}
+        deps: Dict[str, Dependency] = {}
         # deps["os"] = DependencySyftOS(name="os")
         deps["python"] = DependencySyftPython(name="python")
         deps["syft"] = DependencyPyPI(
@@ -586,7 +586,7 @@ def check_syft(display: bool = True, pre: bool = False) -> Dict[str, Dependency]
         try:
             if display:
                 return NBOutput(debug_exception(e=e)).to_html()
-        except Exception:
+        except Exception:  # nosec
             pass
 
         print(e)
@@ -612,7 +612,9 @@ PACKAGE_MANAGER_COMMANDS = {
         "linux": (
             "mkdir -p ~/.docker/cli-plugins\n"
             + "DOCKER_COMPOSE_VERSION=v2.7.0\n"
-            + "curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose\n"
+            + "curl -sSL https://github.com/docker/compose/releases/download/"
+            + "${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 "
+            + "-o ~/.docker/cli-plugins/docker-compose\n"
             + "chmod +x ~/.docker/cli-plugins/docker-compose"
         ),
         "backup_url": "https://github.com/docker/compose",
@@ -664,7 +666,7 @@ def docker_compose_install() -> SetupIssue:
     )
     return SetupIssue(
         issue_name="docker_compose_install",
-        description=f"You do not have Docker Compose v2 installed.",
+        description="You do not have Docker Compose v2 installed.",
         command=command,
         solution=solution,
     )
@@ -676,7 +678,7 @@ def docker_install() -> SetupIssue:
     )
     return SetupIssue(
         issue_name="docker_install",
-        description=f"You do not have Docker installed.",
+        description="You do not have Docker installed.",
         command=command,
         solution=solution,
     )
@@ -688,37 +690,45 @@ def git_install() -> SetupIssue:
     )
     return SetupIssue(
         issue_name="git_install",
-        description=f"You do not have Git installed.",
+        description="You do not have Git installed.",
         command=command,
         solution=solution,
     )
 
 
 def syft_install(pre: bool = False) -> SetupIssue:
-    command = f"pip install syft"
+    command = "pip install syft"
     if pre:
         command += " --pre"
     return SetupIssue(
         issue_name="syft_install",
-        description=f"You have not installed Syft.",
+        description="You have not installed Syft.",
         command=command,
         solution="You can install Syft with pip.",
     )
 
 
-def syft_update_available(current_version, new_version) -> SetupIssue:
+def syft_update_available(current_version: Version, new_version: Version) -> SetupIssue:
     return SetupIssue(
         issue_name="syft_update_available",
-        description=f"A new release of Syft is available: {str(current_version)} -> {str(new_version)}.",
+        description=(
+            "A new release of Syft is available: "
+            + f"{str(current_version)} -> {str(new_version)}."
+        ),
         command=f"pip install syft=={new_version}",
         solution="You can upgrade Syft with pip.",
     )
 
 
-def hagrid_update_available(current_version, new_version) -> SetupIssue:
+def hagrid_update_available(
+    current_version: Version, new_version: Version
+) -> SetupIssue:
     return SetupIssue(
         issue_name="hagrid_update_available",
-        description=f"A new release of HAGrid is available: {str(current_version)} -> {str(new_version)}.",
+        description=(
+            "A new release of HAGrid is available: "
+            + f"{str(current_version)} -> {str(new_version)}."
+        ),
         command=f"pip install hagrid=={new_version}",
         solution="You can upgrade HAGrid with pip.",
     )
@@ -727,7 +737,10 @@ def hagrid_update_available(current_version, new_version) -> SetupIssue:
 def python_version_unsupported() -> SetupIssue:
     return SetupIssue(
         issue_name="python_version_unsupported",
-        description=f"Syft supports Python >= {SYFT_MINIMUM_PYTHON_VERSION_STRING} and <= {SYFT_MAXIMUM_PYTHON_VERSION_STRING}",
+        description=(
+            f"Syft supports Python >= {SYFT_MINIMUM_PYTHON_VERSION_STRING} "
+            + f"and <= {SYFT_MAXIMUM_PYTHON_VERSION_STRING}"
+        ),
         command="",
         solution="You must install a compatible version of Python",
     )
@@ -742,10 +755,13 @@ def macos_arm64_pycapnp() -> SetupIssue:
     )
 
 
+WINDOWS_JAXLIB_REPO = "https://whls.blob.core.windows.net/unstable/index.html"
+
+
 def windows_jaxlib() -> SetupIssue:
     return SetupIssue(
         issue_name="windows_jaxlib",
         description="Windows Python Wheels for Jax are not available on PyPI yet",
-        command="pip install jaxlib===0.3.7 -f https://whls.blob.core.windows.net/unstable/index.html",
+        command=f"pip install jaxlib===0.3.7 -f {WINDOWS_JAXLIB_REPO}",
         solution="Windows users must install jaxlib before syft",
     )

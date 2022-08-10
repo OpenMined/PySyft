@@ -1,5 +1,4 @@
 # stdlib
-from datetime import datetime
 import json
 import os
 from pathlib import Path
@@ -35,16 +34,10 @@ from .auth import AuthCredentials
 from .cache import DEFAULT_BRANCH
 from .cache import arg_cache
 from .deps import DEPENDENCIES
-from .deps import ENVIRONMENT
-from .deps import LATEST_STABLE_SYFT
-from .deps import MissingDependency
 from .deps import allowed_hosts
 from .deps import check_docker_version
-from .deps import docker_info
 from .deps import gather_debug
 from .deps import is_windows
-from .deps import wsl_info
-from .deps import wsl_linux_info
 from .exceptions import MissingDependency
 from .grammar import BadGrammar
 from .grammar import GrammarVerb
@@ -58,7 +51,6 @@ from .lib import check_api_metadata
 from .lib import check_host
 from .lib import check_jupyter_server
 from .lib import check_login_page
-from .lib import commit_hash
 from .lib import docker_desktop_memory
 from .lib import generate_process_status_table
 from .lib import generate_user_table
@@ -280,6 +272,11 @@ def clean(location: str) -> None:
     type=str,
     help="Optional: turn tailscale vpn container on or off",
 )
+@click.option(
+    "--silent",
+    is_flag=True,
+    help="Optional: prevent lots of launch output",
+)
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
     try:
@@ -297,7 +294,7 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
         cmds = create_launch_cmd(verb=verb, kwargs=kwargs)
         cmds = [cmds] if isinstance(cmds, str) else cmds
     except Exception as e:
-        print(f"{e}")
+        print(f"Error: {e}\n\n")
         return
 
     dry_run = True
@@ -305,13 +302,17 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
         dry_run = False
 
     try:
-        execute_commands(cmds, dry_run=dry_run)
+        silent = bool(kwargs["silent"]) if "silent" in kwargs else False
+        execute_commands(cmds, dry_run=dry_run, silent=silent)
+        print("Success!\n\n")
     except Exception as e:
-        print(f"{e}")
+        print(f"Error: {e}\n\n")
         return
 
 
-def execute_commands(cmds: TypeList, dry_run: bool = False) -> None:
+def execute_commands(
+    cmds: TypeList, dry_run: bool = False, silent: bool = False
+) -> None:
     """Execute the launch commands and display their status in realtime.
 
     Args:
@@ -344,17 +345,26 @@ def execute_commands(cmds: TypeList, dry_run: bool = False) -> None:
                     cwd=GRID_SRC_PATH,
                     shell=True,
                 )
-
                 ip_address = extract_host_ip_from_cmd(cmd)
                 jupyter_token = extract_jupyter_token(cmd)
                 process_list.append((ip_address, process, jupyter_token))
             else:
                 display_jupyter_token(cmd)
-                subprocess.run(  # nosec
-                    cmd_to_exec,
-                    shell=True,
-                    cwd=GRID_SRC_PATH,
-                )
+                if silent:
+                    process = subprocess.Popen(  # nosec
+                        cmd_to_exec,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        cwd=GRID_SRC_PATH,
+                        shell=True,
+                    )
+                    process.communicate()
+                else:
+                    subprocess.run(  # nosec
+                        cmd_to_exec,
+                        shell=True,
+                        cwd=GRID_SRC_PATH,
+                    )
         except Exception as e:
             print(f"Failed to run cmd: {cmd}. {e}")
 
@@ -780,6 +790,7 @@ def create_launch_cmd(
     parsed_kwargs["tls"] = bool(kwargs["tls"]) if "tls" in kwargs else False
     parsed_kwargs["test"] = bool(kwargs["test"]) if "test" in kwargs else False
     parsed_kwargs["dev"] = bool(kwargs["dev"]) if "dev" in kwargs else False
+    parsed_kwargs["silent"] = bool(kwargs["silent"]) if "silent" in kwargs else False
 
     parsed_kwargs["release"] = "production"
     if "release" in kwargs and kwargs["release"] != "production":
@@ -855,7 +866,11 @@ def create_launch_cmd(
                 )
 
             return create_launch_docker_cmd(
-                verb=verb, docker_version=version, tail=tail, kwargs=parsed_kwargs
+                verb=verb,
+                docker_version=version,
+                tail=tail,
+                kwargs=parsed_kwargs,
+                silent=parsed_kwargs["silent"],
             )
 
     elif host in ["vm"]:
@@ -1296,6 +1311,7 @@ def create_launch_docker_cmd(
     docker_version: str,
     kwargs: TypeDict[str, Any],
     tail: bool = True,
+    silent: bool = False,
 ) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
     node_name = verb.get_named_term_type(name="node_name")
@@ -1304,23 +1320,23 @@ def create_launch_docker_cmd(
     snake_name = str(node_name.snake_input)
     tag = name_tag(name=str(node_name.input))
 
-    if ART:
+    if ART and not silent:
         hagrid()
 
     print(
-        "Launching a "
-        + str(node_type.input)
-        + " PyGrid node on port "
+        "Launching a PyGrid "
+        + str(node_type.input).capitalize()
+        + " node on port "
         + str(host_term.free_port)
         + "!\n"
     )
 
     print("  - TYPE: " + str(node_type.input))
     print("  - NAME: " + str(snake_name))
-    print("  - TAG: " + str(tag))
+    # print("  - TAG: " + str(tag))
     print("  - PORT: " + str(host_term.free_port))
     print("  - DOCKER: " + docker_version)
-    print("  - TAIL: " + str(tail))
+    # print("  - TAIL: " + str(tail))
     print("\n")
 
     version_string = kwargs["tag"]
@@ -2088,7 +2104,8 @@ def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
     host = host_term.host if host_term.host is not None else ""
 
     if host in ["docker"]:
-        if verb.get_named_term_grammar("node_name").input == "all":
+        target = verb.get_named_term_grammar("node_name").input
+        if target == "all":
             # subprocess.call("docker rm `docker ps -aq` --force", shell=True) # nosec
             return "docker rm `docker ps -aq` --force"
 
@@ -2206,9 +2223,14 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
     type=str,
     help="Optional: git branch to use for launch / build operations",
 )
+@click.option(
+    "--silent",
+    is_flag=True,
+    help="Optional: prevent lots of land output",
+)
 def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_land_verb()
-
+    silent = bool(kwargs["silent"]) if "silent" in kwargs else False
     try:
         grammar = parse_grammar(args=args, verb=verb)
         verb.load_grammar(grammar=grammar)
@@ -2226,12 +2248,26 @@ def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     except Exception as e:
         print(f"{e}")
         return
-    print("Running: \n", hide_password(cmd=cmd))
+    if not silent:
+        print("Running: \n", hide_password(cmd=cmd))
 
     if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
-        print("Running: \n", cmd)
+        if not silent:
+            print("Running: \n", cmd)
         try:
-            subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)  # nosec
+            if silent:
+                process = subprocess.Popen(  # nosec
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    cwd=GRID_SRC_PATH,
+                    shell=True,
+                )
+                process.communicate()
+                target = verb.get_named_term_grammar("node_name").input
+                print(f"HAGrid land {target} complete!")
+            else:
+                subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)  # nosec
         except Exception as e:
             print(f"Failed to run cmd: {cmd}. {e}")
 
@@ -2273,7 +2309,7 @@ HEALTH_CHECK_ICONS = {
 HEALTH_CHECK_URLS = {
     "host": "{ip_address}",
     "UI (βeta)": "http://{ip_address}/login",
-    "api": "http://{ip_address}/api/v1",
+    "api": "http://{ip_address}/api/v1/openapi.json",
     "ssh": "hagrid ssh {ip_address}",
     "jupyter": "http://{ip_address}:8888",
 }
@@ -2554,7 +2590,7 @@ def add_intro_notebook(directory: str, reset: bool = False) -> str:
     files = os.listdir(directory)
     try:
         files.remove(".venv")
-    except Exception:
+    except Exception:  # nosec
         pass
 
     filenames = ["00-quickstart.ipynb", "01-install-wizard.ipynb"]

@@ -18,7 +18,7 @@ packages = [
     "cryptography>=37.0.2",
     "gitpython",
     "names",
-    "packaging>=21.3.0",
+    "packaging>=21.3",
     "paramiko",
     "pyOpenSSL>=22.0.0",
     "requests",
