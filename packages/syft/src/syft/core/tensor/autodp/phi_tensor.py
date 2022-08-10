@@ -1324,17 +1324,28 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def mean(
         self,
-        axis: Optional[Union[int, Tuple[int, ...]]] = None,
+        *args: Tuple[Any, ...],
         **kwargs: Any,
-    ) -> PhiTensor:
-        result = self.child.mean(axis, **kwargs)
+    ) -> Union[PhiTensor, GammaTensor]:
+        min_vals = self.min_vals.mean(*args, **kwargs)
+        max_vals = self.max_vals.mean(*args, **kwargs)
+        if len(self.data_subjects.sum()) == 1:
+            return PhiTensor(
+                child=self.child.mean(*args, **kwargs),
+                min_vals=min_vals,
+                max_vals=max_vals,
+                data_subjects=self.data_subjects.mean(*args, **kwargs),
+            )
 
-        return PhiTensor(
-            child=result,
-            data_subjects=self.data_subjects.mean(axis, **kwargs),
-            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
-            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
+        # TODO: Expand this later to include more args/kwargs
+        res = GammaTensor(
+            child=self.child.mean(*args, **kwargs),
+            data_subjects=self.data_subjects.mean(),
+            min_vals=min_vals,
+            max_vals=max_vals,
         )
+
+        return res
 
     def std(
         self,
@@ -2035,36 +2046,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=maxv,
             data_subjects=np.expand_dims(self.data_subjects, axis=axis),
         )
-
-        return res
-
-    def mean(
-        self,
-        *args: Tuple[Any, ...],
-        **kwargs: Any,
-    ) -> Union[PhiTensor, GammaTensor]:
-        # TODO: Add support for axes arguments later
-        min_val = self.min_vals.mean(*args, **kwargs)
-        max_val = self.max_vals.mean(*args, **kwargs)
-        if len(self.data_subjects.one_hot_lookup) == 1:
-            return PhiTensor(
-                child=self.child.mean(*args, **kwargs),
-                min_vals=min_val,
-                max_vals=max_val,
-                data_subjects=DataSubjectList.from_objs(
-                    self.data_subjects.one_hot_lookup[0]
-                ),  # Need to check this
-            )
-
-        # TODO: Expand this later to include more args/kwargs
-        res = GammaTensor(
-            child=self.child.mean(*args, **kwargs),
-            data_subjects=self.data_subjects.mean(),
-            min_val=min_val,
-            max_val=max_val,
-        )
-
-        return res
 
     def ones_like(
         self,
