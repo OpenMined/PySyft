@@ -2493,12 +2493,19 @@ cli.add_command(version)
     default=None,
     help="Specify the path to which python to use",
 )
+@click.option(
+    "--test",
+    default=False,
+    is_flag=True,
+    help="CI Test Mode, don't hang on Jupyter",
+)
 def quickstart_cli(
     url: Optional[str] = None,
     syft: str = "latest",
     reset: bool = False,
     quiet: bool = False,
     pre: bool = False,
+    test: bool = False,
     python: Optional[str] = None,
 ) -> None:
     try:
@@ -2548,6 +2555,13 @@ def quickstart_cli(
                 + os.sep
                 + f"{jupyter_binary} lab --notebook-dir={directory} {file_path}"
             )
+            if test:
+                jupyter_path = venv_dir + os.sep + os_bin_path + os.sep + jupyter_binary
+                if not os.path.exists(jupyter_path):
+                    print(f"Failed to install Jupyter in path: {jupyter_path}")
+                    sys.exit(1)
+                print(f"Jupyter exists at: {jupyter_path}. CI Test mode exiting.")
+                sys.exit(0)
             proc = subprocess.Popen(  # nosec
                 cmd.split(" "),
                 cwd=directory,
