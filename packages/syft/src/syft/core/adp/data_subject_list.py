@@ -584,12 +584,8 @@ class DataSubjectArray:
     def sqrt(self, *args: List[Any], **kwargs: Dict[Any, Any]) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)
 
-    def mean(self) -> DataSubjectList:
-        # If mean is used without any arguments then the result is always a singular value
-        return DataSubjectList(
-            self.one_hot_lookup.copy(),
-            self.data_subjects_indexed.mean(),
-        )
+    def mean(self) -> DataSubjectArray:
+        return DataSubjectArray(self.data_subjects)
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs) -> ArrayLike:  # type: ignore
         method_name = ufunc.__name__
