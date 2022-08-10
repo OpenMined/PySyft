@@ -2535,9 +2535,7 @@ def quickstart_cli(
         environ = os.environ.copy()
         os_bin_path = "Scripts" if is_windows() else "bin"
         venv_dir = directory + ".venv"
-        environ["PATH"] = (
-            venv_dir + os.pathsep + os_bin_path + os.pathsep + environ["PATH"]
-        )
+        environ["PATH"] = venv_dir + os.sep + os_bin_path + os.pathsep + environ["PATH"]
         jupyter_binary = "jupyter.exe" if is_windows() else "jupyter"
         try:
             print(
