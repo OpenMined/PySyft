@@ -1,4 +1,4 @@
-Data Owner - Deploy a Domain Server
+Data Owner - How to Deploy a Domain Server
 ===============================================
 
 Data owners are defined by those with ``datasets`` 💾  they want to make available for
