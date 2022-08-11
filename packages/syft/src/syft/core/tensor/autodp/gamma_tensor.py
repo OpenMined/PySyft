@@ -1044,8 +1044,8 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             child=GammaTensor(
                 child=FixedPrecisionTensor(value=None),
                 data_subjects=self.data_subjects,
-                min_val=self.min_vals,  # type: ignore
-                max_val=self.max_vals,  # type: ignore
+                min_vals=self.min_vals,  # type: ignore
+                max_vals=self.max_vals,  # type: ignore
             ),
             public_shape=public_shape,
             public_dtype=public_dtype,
