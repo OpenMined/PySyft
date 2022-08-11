@@ -199,7 +199,7 @@ class DependencyPyPI(Dependency):
                 )
             else:
                 is_newer, latest_version = new_pypi_version(
-                    package="hagrid", current=current_version, pre=self.pre
+                    package=self.package_name, current=current_version, pre=self.pre
                 )
                 if not is_newer:
                     channel = "stable"
