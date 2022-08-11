@@ -13,43 +13,35 @@ Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 <img src="packages/syft/docs/img/header.png#gh-dark-mode-only" alt="Syft Overview" width="100%" />
 </div>
 
-<!-- # Quickstart
-
-✅ `Linux` ✅ `macOS`\* ✅ `Windows`†‡
-<img src="packages/syft/docs/img/terminalizer.gif" height="400" align="right" />
-
-1. Install our handy python cli tool:
-   🛵 `pip install hagrid`
-2. Then run our interactive jupyter quickstart tutorial:
-   💻 `hagrid quickstart`
-
-- In the tutorial you will learn how to install and deploy:
-  `PySyft` = our `numpy`-like 🐍 Python Library
-  `PyGrid` = our 🐳 `docker` / `k8s` Data Platform
-
-- During quickstart we will deploy `PyGrid` to localhost with 🐳 `docker`, however 🛵 HAGrid can deploy to `k8s` or a 🐧 `ubuntu` VM on `azure` / `gcp` / `ANY_IP_ADDRESS` by using 🔨 `ansible`†
-
-3. Read our 📚 <a href="https://openmined.github.io/PySyft/">Docs</a>
-4. Ask Questions ❔ in `#support` on <a href="https://slack.openmined.org/">Slack</a> -->
-
 # Quickstart
 
 ✅ `Linux` ✅ `macOS`\* ✅ `Windows`†‡
+<img src="packages/syft/docs/img/terminalizer.gif" width="50%" align="right" />
 
-- `PySyft` = our `numpy`-like 🐍 Python library for computing on `private data` in someone else's `Domain`
-- `PyGrid` = our 🐳 `docker` / `k8s` / 🐧 `vm` `Domain` & `Network` Servers where `private data` lives
-- `HAGrid` = our handy 🛵 cli tool which makes `deploying` a `Domain` or `Network` server a one-liner
+1. Install our handy 🛵 cli tool which makes deploying a Domain or Network server a one-liner:  
+   `pip install hagrid`
+
+2. Then run our interactive jupyter Install 🧙🏽‍♂️ Wizard<sup>BETA</sup>:  
+   `hagrid quickstart`
+
+- In the tutorial you will learn how to install and deploy:  
+  `PySyft` = our `numpy`-like 🐍 Python library for computing on `private data` in someone else's `Domain`
+
+  `PyGrid` = our 🐳 `docker` / `k8s` / 🐧 `vm` `Domain` & `Network` Servers where `private data` lives
+
+- During quickstart we will deploy `PyGrid` to localhost with 🐳 `docker`, however 🛵 HAGrid can deploy to `k8s` or a 🐧 `ubuntu` VM on `azure` / `gcp` / `ANY_IP_ADDRESS` by using 🔨 `ansible`†
 
 3. Read our 📚 <a href="https://openmined.github.io/PySyft/">Docs</a>
 4. Ask Questions ❔ in `#support` on <a href="https://slack.openmined.org/">Slack</a>
 
 # Install Notes
 
-- HAGrid Requires: 🐍 `python` 🐙 `git` - Run: `pip install hagrid`  
+- HAGrid Requires: 🐍 `python` 🐙 `git` - Run: `pip install hagrid`
+- Interactive Install 🧙🏽‍♂️ Wizard<sup>BETA</sup> Requires 🛵 `hagrid`: - Run: `hagrid quickstart`  
   †`Windows` does not support `ansible`, preventing some remote deployment targets
 - PySyft Requires: 🐍 `python 3.7+` - Run: `pip install syft`  
   \*`macOS` Apple Silicon users need cmake: `brew install cmake`  
-  ‡`Windows` users must run this first: `pip install jaxlib===0.3.7 -f https://whls.blob.core.windows.net/unstable/index.html`
+  ‡`Windows` users must run this first: `pip install jaxlib===0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html`
 - PyGrid Requires: 🐳 `docker` / `k8s` or 🐧 `ubuntu` VM - Run: `hagrid launch ...`
 
 # Versions
