@@ -16,7 +16,7 @@ Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 # Quickstart
 
 ✅ `Linux` ✅ `macOS`\* ✅ `Windows`†‡
-<img src="packages/syft/docs/img/terminalizer.gif" height="400" align="right" />
+<img src="packages/syft/docs/img/terminalizer.gif" width="50%" align="right" />
 
 1. Install our handy 🛵 cli tool which makes deploying a Domain or Network server a one-liner:  
    `pip install hagrid`
