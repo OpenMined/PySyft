@@ -1,7 +1,11 @@
+# stdlib
+from typing import Any
+
+# third party
 import jax
 from jax import numpy as jnp
 import numpy as np
-from typing import Any
+
 #
 # def _add_private(state: dict) -> jax.numpy.DeviceArray:
 #     return jnp.add(self.run(state), other.run(state))
@@ -45,7 +49,9 @@ def no_op(x: Any) -> Any:  # GammaTensor -> GammaTensor, but avoiding circular i
     Whenever you manipulate a private input (i.e. add it to another private tensor),
     the result will have a different function. Thus we can check to see if the f
     """
+    # relative
     from .gamma_tensor import GammaTensor
+
     res = x
     if isinstance(x, GammaTensor) and isinstance(x.data_subjects, np.ndarray):
         res = GammaTensor(

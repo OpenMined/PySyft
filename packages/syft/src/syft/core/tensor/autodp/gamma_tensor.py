@@ -1117,9 +1117,6 @@ def numpy2jax(value: np.array, dtype: np.dtype) -> jnp.array:
     return jnp.asarray(value, dtype=dtype)
 
 
-
-
-
 @dataclass
 @serializable(capnp_bytes=True)
 class GammaTensor:
@@ -2126,10 +2123,14 @@ class GammaTensor:
     ) -> jax.numpy.DeviceArray:
 
         # Use the string to retrieve the function itself
+        # relative
         from .gamma_functions import mapper
+
         func = mapper[self.func_str]
 
-        if not self.state:  # if state tree is empty (e.g. publishing a PhiTensor w/ public vals directly)
+        if (
+            not self.state
+        ):  # if state tree is empty (e.g. publishing a PhiTensor w/ public vals directly)
             self.state[self.id] = self
 
         return vectorized_publish(
@@ -2144,7 +2145,6 @@ class GammaTensor:
             get_budget_for_user=get_budget_for_user,
             deduct_epsilon_for_user=deduct_epsilon_for_user,
         )
-
 
     # def expand_dims(self, axis: int) -> GammaTensor:
     #     def _expand_dims(state: dict) -> jax.numpy.DeviceArray:
@@ -2293,11 +2293,11 @@ class GammaTensor:
             min_vals=self.min_vals.copy(order),
             max_vals=self.max_vals.copy(order),
             func=self.func,
-            state=self.state
+            state=self.state,
         )
 
     def repeat(
-            self, repeats: Union[int, Tuple[int, ...]], axis: Optional[int] = None
+        self, repeats: Union[int, Tuple[int, ...]], axis: Optional[int] = None
     ) -> GammaTensor:
         """
         Repeat elements of an array.
@@ -2320,14 +2320,8 @@ class GammaTensor:
 
         result = self.child.repeat(repeats, axis)
         if isinstance(self.min_vals, lazyrepeatarray):
-            minv = lazyrepeatarray(
-                data=self.min_vals.data.min(),
-                shape=result.shape
-            )
-            maxv = lazyrepeatarray(
-                data=self.max_vals.data.max(),
-                shape=result.shape
-            )
+            minv = lazyrepeatarray(data=self.min_vals.data.min(), shape=result.shape)
+            maxv = lazyrepeatarray(data=self.max_vals.data.max(), shape=result.shape)
         else:
             minv = self.min_vals
             maxv = self.max_vals
@@ -2336,7 +2330,7 @@ class GammaTensor:
             child=result,
             data_subjects=self.data_subjects.repeat(repeats, axis),
             min_vals=minv,
-            max_vals=maxv
+            max_vals=maxv,
         )
 
     @property
@@ -2487,5 +2481,5 @@ class GammaTensor:
                 is_linear=is_linear,
                 state=state,
                 id=id_str,
-                func_str=func_str
+                func_str=func_str,
             )

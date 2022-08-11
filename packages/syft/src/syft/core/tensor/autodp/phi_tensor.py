@@ -2211,14 +2211,8 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         result = self.child.repeat(repeats, axis)
         if isinstance(self.min_vals, lazyrepeatarray):
-            minv = lazyrepeatarray(
-                data=self.min_vals.data.min(),
-                shape=result.shape
-            )
-            maxv = lazyrepeatarray(
-                data=self.max_vals.data.max(),
-                shape=result.shape
-            )
+            minv = lazyrepeatarray(data=self.min_vals.data.min(), shape=result.shape)
+            maxv = lazyrepeatarray(data=self.max_vals.data.max(), shape=result.shape)
         else:
             minv = self.min_vals
             maxv = self.max_vals
@@ -2227,7 +2221,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=result,
             data_subjects=self.data_subjects.repeat(repeats, axis),
             min_vals=minv,
-            max_vals=maxv
+            max_vals=maxv,
         )
 
     def choose(
@@ -2305,7 +2299,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=result,
             data_subjects=self.data_subjects.take(choices),
             min_vals=minv,
-            max_vals=maxv
+            max_vals=maxv,
         )
 
     def _object2bytes(self) -> bytes:
