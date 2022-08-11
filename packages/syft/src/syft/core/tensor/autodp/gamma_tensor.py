@@ -61,6 +61,7 @@ from ..smpc import utils
 from ..smpc.mpc_tensor import MPCTensor
 from ..smpc.utils import TYPE_TO_RING_SIZE
 from ..util import implements
+from .gamma_functions import mapper
 
 if TYPE_CHECKING:
     # stdlib
@@ -1116,6 +1117,9 @@ def numpy2jax(value: np.array, dtype: np.dtype) -> jnp.array:
     return jnp.asarray(value, dtype=dtype)
 
 
+
+
+
 @dataclass
 @serializable(capnp_bytes=True)
 class GammaTensor:
@@ -1126,7 +1130,10 @@ class GammaTensor:
     min_vals: Union[lazyrepeatarray, np.ndarray] = flax.struct.field(pytree_node=False)
     max_vals: Union[lazyrepeatarray, np.ndarray] = flax.struct.field(pytree_node=False)
     is_linear: bool = True
-    func: Callable = flax.struct.field(pytree_node=False, default_factory=lambda: no_op)
+    # func: Callable = flax.struct.field(pytree_node=False, default_factory=lambda: no_op)
+    func_str: str = flax.struct.field(
+        pytree_node=False, default_factory=lambda: "no_op"
+    )
     id: str = flax.struct.field(
         pytree_node=False, default_factory=lambda: str(randint(0, 2**31 - 1))
     )  # TODO: Need to check if there are any scenarios where this is not secure
@@ -1137,10 +1144,6 @@ class GammaTensor:
     ) -> None:  # Might not serve any purpose anymore, since state trees are updated during ops
         if self.state and len(self.state) == 0 and self.func is not no_op:
             self.state[self.id] = self
-
-        # if not isinstance(self.min_vals, lazyrepeatarray):
-        #     self.min_vals = lazyrepeatarray(data=self.min_vals, shape=self.shape)
-        #     self.max_vals = lazyrepeatarray(data=self.max_vals, shape=self.shape)
 
         if isinstance(self.min_vals, lazyrepeatarray):
             if self.min_vals.data.size != 1:
@@ -1156,9 +1159,8 @@ class GammaTensor:
     def run(self, state: dict) -> Union[Callable, GammaTensor]:
         """This method traverses the computational tree and returns all the private inputs"""
         # TODO: Can we eliminate "state" and use self.state below?
-        # we hit a private input
         if self.func is no_op:
-            return self  # .decode()
+            return self
         return self.func(state)
 
     def __add__(self, other: Any) -> GammaTensor:
@@ -2121,49 +2123,28 @@ class GammaTensor:
         deduct_epsilon_for_user: Callable,
         ledger: DataSubjectLedger,
         sigma: Optional[float] = None,
-        dsl_hack: bool = False,
     ) -> jax.numpy.DeviceArray:
 
-        if dsl_hack is False:
-            if sigma is None:
-                sigma = (
-                    self.child.mean() / 4
-                )  # TODO @Ishan: replace this with calibration
+        # Use the string to retrieve the function itself
+        from .gamma_functions import mapper
+        func = mapper[self.func_str]
 
-            # if self.child.dtype != np.int64:
-            #     raise Exception(
-            #         "Data type of private values is not np.int64: ", self.child.dtype
-            #     )
+        if not self.state:  # if state tree is empty (e.g. publishing a PhiTensor w/ public vals directly)
+            self.state[self.id] = self
 
-            if (
-                not self.state
-            ):  # if state tree is empty (e.g. publishing a PhiTensor w/ public vals directly)
-                self.state[self.id] = self
+        return vectorized_publish(
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+            state_tree=self.state,
+            data_subjects=self.data_subjects,
+            is_linear=self.is_linear,
+            sigma=sigma,
+            output_func=func,
+            ledger=ledger,
+            get_budget_for_user=get_budget_for_user,
+            deduct_epsilon_for_user=deduct_epsilon_for_user,
+        )
 
-            return vectorized_publish(
-                min_vals=self.min_vals,
-                max_vals=self.max_vals,
-                state_tree=self.state,
-                data_subjects=self.data_subjects,
-                is_linear=self.is_linear,
-                sigma=sigma,
-                output_func=self.func,
-                ledger=ledger,
-                get_budget_for_user=get_budget_for_user,
-                deduct_epsilon_for_user=deduct_epsilon_for_user,
-            )
-        else:
-            tensor = GammaTensor(
-                child=self.child,
-                data_subjects=np.zeros_like(self.data_subjects),
-                min_vals=self.min_vals,
-                max_vals=self.max_vals,
-                state=GammaTensor.convert_dsl(self.state),
-            )
-
-            return tensor.publish(
-                get_budget_for_user, deduct_epsilon_for_user, ledger, sigma
-            )
 
     # def expand_dims(self, axis: int) -> GammaTensor:
     #     def _expand_dims(state: dict) -> jax.numpy.DeviceArray:
@@ -2415,7 +2396,7 @@ class GammaTensor:
         # TODO: See if we can call np.stack on the output and create a vectorized tensor instead of a list of tensors
         input_tensors = []
         for tensor in state_tree.values():
-            if tensor.func is no_op:
+            if tensor.func_str == "no_op":
                 input_tensors.append(tensor)
             else:
                 input_tensors += GammaTensor.get_input_tensors(tensor.state)
@@ -2429,7 +2410,6 @@ class GammaTensor:
         # this is how we dispatch correct deserialization of bytes
         gamma_msg.magicHeader = serde_magic_header(type(self))
 
-        # what is the difference between inputs and value which do we serde
         # do we need to serde func? if so how?
         # what about the state dict?
 
@@ -2462,6 +2442,7 @@ class GammaTensor:
         gamma_msg.maxVal = serialize(self.max_vals, to_bytes=True)
         gamma_msg.isLinear = self.is_linear
         gamma_msg.id = self.id
+        gamma_msg.func = self.func_str
 
         # return gamma_msg.to_bytes_packed()
         return gamma_msg.to_bytes()
@@ -2496,6 +2477,7 @@ class GammaTensor:
             max_val = deserialize(gamma_msg.maxVal, from_bytes=True)
             is_linear = gamma_msg.isLinear
             id_str = gamma_msg.id
+            func_str = gamma_msg.func_str
 
             return GammaTensor(
                 child=child,
@@ -2505,4 +2487,5 @@ class GammaTensor:
                 is_linear=is_linear,
                 state=state,
                 id=id_str,
+                func_str=func_str
             )

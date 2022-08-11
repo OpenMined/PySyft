@@ -11,4 +11,5 @@ struct GammaTensor {
   isLinear @6 :Bool;
   id @7 :Text;
   isNumpy @8 :Bool;
+  func_str @9 :Text;
 }
