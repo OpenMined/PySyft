@@ -1,5 +1,5 @@
-Data Owner - Upload Private Data
-================================
+Data Owner - How to Upload Private Data to the Domain Server
+============================================================
 
 Welcome back to another Data Owner tutorial. In the last tutorial, you
 learned how Data Owners can deploy the domain node that represents the
