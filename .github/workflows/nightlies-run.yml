@@ -123,6 +123,5 @@ jobs:
 
       - name: Run integration tests
         timeout-minutes: 600
-        continue-on-error: true
         run: |
           EMULATION="true" HAGRID_FLAGS="--tag=local --test --platform linux/arm64" tox -e stack.test.integration

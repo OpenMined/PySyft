@@ -199,7 +199,7 @@ class DependencyPyPI(Dependency):
                 )
             else:
                 is_newer, latest_version = new_pypi_version(
-                    package="hagrid", current=current_version, pre=self.pre
+                    package=self.package_name, current=current_version, pre=self.pre
                 )
                 if not is_newer:
                     channel = "stable"
@@ -769,6 +769,6 @@ def windows_jaxlib() -> SetupIssue:
     return SetupIssue(
         issue_name="windows_jaxlib",
         description="Windows Python Wheels for Jax are not available on PyPI yet",
-        command=f"pip install jaxlib===0.3.7 -f {WINDOWS_JAXLIB_REPO}",
+        command=f"pip install jaxlib==0.3.7 -f {WINDOWS_JAXLIB_REPO}",
         solution="Windows users must install jaxlib before syft",
     )
