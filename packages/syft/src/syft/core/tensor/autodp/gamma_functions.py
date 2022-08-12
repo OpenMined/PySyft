@@ -44,29 +44,6 @@ import numpy as np
 #     return jnp.less_equal(self.run(state), other)
 
 
-def no_op(x: Any) -> Any:  # GammaTensor -> GammaTensor, but avoiding circular imports
-    """A Private input will be initialized with this function.
-    Whenever you manipulate a private input (i.e. add it to another private tensor),
-    the result will have a different function. Thus we can check to see if the f
-    """
-    # relative
-    from .gamma_tensor import GammaTensor
-
-    res = x
-    if isinstance(x, GammaTensor) and isinstance(x.data_subjects, np.ndarray):
-        res = GammaTensor(
-            child=x.child,
-            data_subjects=np.zeros_like(x.data_subjects, np.int64),
-            min_vals=x.min_vals,
-            max_vals=x.max_vals,
-            func=x.func,
-            state=GammaTensor.convert_dsl(x.state),
-        )
-    else:
-        raise NotImplementedError
-    return res
-
-
 mapper = dict()
 # mapper["add_public"] = _add_public
 # mapper["add_private"] = _add_private

@@ -1172,12 +1172,13 @@ class GammaTensor:
             other = other.gamma
 
         if isinstance(other, GammaTensor):
-
-            def _add(state: dict) -> jax.numpy.DeviceArray:
+            func = "add_private"
+            def _add_private(state: dict) -> jax.numpy.DeviceArray:
                 return jnp.add(self.run(state), other.run(state))
 
+            mapper[func] = _add_private
+
             output_state[other.id] = other
-            # state.update(other.state)
 
             child = self.child + other.child
             min_val = self.min_vals + other.min_vals
@@ -1185,9 +1186,10 @@ class GammaTensor:
             output_ds = self.data_subjects + other.data_subjects
 
         else:
-
-            def _add(state: dict) -> jax.numpy.DeviceArray:
+            func = "add_public"
+            def _add_public(state: dict) -> jax.numpy.DeviceArray:
                 return jnp.add(self.run(state), other)
+            mapper[func] = _add_public
 
             child = self.child + other
             min_val = self.min_vals + other
@@ -1199,7 +1201,7 @@ class GammaTensor:
             data_subjects=output_ds,
             min_vals=min_val,
             max_vals=max_val,
-            func=_add,
+            func_str=func,
             state=output_state,
         )
 
@@ -2134,10 +2136,7 @@ class GammaTensor:
             self.state[self.id] = self
 
         return vectorized_publish(
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
             state_tree=self.state,
-            data_subjects=self.data_subjects,
             is_linear=self.is_linear,
             sigma=sigma,
             output_func=func,
