@@ -354,13 +354,21 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
     ) -> jnp.ndarray:
         constant = compute_rdp_constant(rdp_params, private)
         if constant.size == 1:
-            if np.isnan(constant) or np.isinf(constant):
+            if (
+                np.isnan(constant)
+                or np.isinf(constant)
+                or constant > np.iinfo(np.int64).max
+            ):
                 raise Exception(
                     "There is a high likelihood that the privacy budget spent by this query would be too high."
                     "Please consider increasing the value of sigma."
                 )
         else:
-            if any(np.isnan(constant)) or any(np.isinf(constant)):
+            if (
+                any(np.isnan(constant))
+                or any(np.isinf(constant))
+                or any(constant > np.iinfo(np.int64).max)
+            ):
                 raise Exception(
                     "There is a high likelihood that the privacy budget spent by this query would be too high."
                     "Please consider increasing the value of sigma."
