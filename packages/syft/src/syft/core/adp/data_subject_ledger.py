@@ -353,22 +353,29 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         self, entity_ids_query: jnp.ndarray, rdp_params: RDPParams, private: bool = True
     ) -> jnp.ndarray:
         constant = compute_rdp_constant(rdp_params, private)
+        if constant.size == 1:
+            if np.isnan(constant) or np.isinf(constant):
+                raise Exception(
+                    "There is a high likelihood that the privacy budget spent by this query would be too high."
+                    "Please consider increasing the value of sigma."
+                )
+        else:
+            if any(np.isnan(constant)) or any(np.isinf(constant)):
+                raise Exception(
+                    "There is a high likelihood that the privacy budget spent by this query would be too high."
+                    "Please consider increasing the value of sigma."
+                )
         if self._rdp_constants.size == 0:
             self._rdp_constants = np.zeros_like(np.asarray(constant, constant.dtype))
-        # print("constant: ", constant)
-        # print("_rdp_constants: ", self._rdp_constants)
-        # print("entity ids query", entity_ids_query)
-        # print(jnp.max(entity_ids_query))
+
         self._rdp_constants = first_try_branch(
             constant, self._rdp_constants, entity_ids_query
         )
         return constant
 
     def _get_epsilon_spend(self, rdp_constants: np.ndarray) -> np.ndarray:
-        # rdp_constants_lookup = (rdp_constants - 1).astype(np.int64)
         rdp_constants_lookup = convert_constants_to_indices(rdp_constants)
         try:
-            # needed as np.int64 to use take
             eps_spend = jax.jit(jnp.take)(
                 self._cache_constant2epsilon, rdp_constants_lookup
             )
