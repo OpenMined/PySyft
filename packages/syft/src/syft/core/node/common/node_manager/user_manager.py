@@ -20,6 +20,8 @@ from sqlalchemy.orm import Query
 from sqlalchemy.orm import sessionmaker
 
 # relative
+from .....util import span
+from .....util import tracers
 from ..exceptions import InvalidCredentialsError
 from ..exceptions import UserNotFoundError
 from ..node_table.pdf import PDFObject
@@ -30,8 +32,6 @@ from .constants import UserApplicationStatus
 from .database_manager import DatabaseManager
 from .role_manager import RoleManager
 
-from .....util import tracers
-from .....util import span
 
 class RefreshBudgetException(Exception):
     pass

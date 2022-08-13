@@ -1,6 +1,5 @@
 # future
 from __future__ import annotations
-from pprint import pprint
 
 # stdlib
 from typing import Any
@@ -29,7 +28,11 @@ from ....logger import debug
 from ....logger import error
 from ....logger import info
 from ....logger import traceback_and_raise
-from ....util import get_subclasses, span_new_msg
+from ....util import get_subclasses
+from ....util import span
+from ....util import span_new_msg
+from ....util import trace_and_log
+from ....util import tracers
 from ...common.message import EventualSyftMessageWithoutReply
 from ...common.message import ImmediateSyftMessageWithReply
 from ...common.message import ImmediateSyftMessageWithoutReply
@@ -45,13 +48,6 @@ from ...io.route import Route
 from ...io.route import SoloRoute
 from ...io.virtual import create_virtual_connection
 from ..abstract.node import AbstractNode
-
-
-from ....util import trace_and_log
-from ....util import span
-from ....util import span_new_msg
-from ....util import tracers
-
 from .action.exception_action import ExceptionMessage
 from .action.exception_action import UnknownPrivateException
 from .client import Client
@@ -96,6 +92,7 @@ from .node_table.node import Node as NodeRow
 
 # this generic type for Client bound by Client
 ClientT = TypeVar("ClientT", bound=Client)
+
 
 # TODO: Move but right now import loop prevents importing from the RequestMessage
 class DuplicateRequestException(Exception):

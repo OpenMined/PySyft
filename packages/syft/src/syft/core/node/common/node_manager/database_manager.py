@@ -10,9 +10,10 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
 # relative
-from ..node_table import Base
 from .....util import span
 from .....util import tracers
+from ..node_table import Base
+
 
 class DatabaseManager:
     def __init__(self, schema: Type[Base], db: Engine) -> None:
