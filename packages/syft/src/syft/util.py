@@ -691,7 +691,7 @@ def span_func(tracer) -> Callable:
 
 
 def trace_and_log(
-    callable: Callable, args: Dict, tracer: Any, tags: Optional[Dict[str, Any]] = {}
+    callable: Callable, args: Dict, tracer: Any
 ) -> Any:
     return span_func(tracer=tracer)(callable)(**args)
 
