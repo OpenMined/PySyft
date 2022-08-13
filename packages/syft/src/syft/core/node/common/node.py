@@ -141,7 +141,7 @@ class Node(AbstractNode):
         )
 
         self.settings = settings
-        
+
         # TableBase is the base class from which all ORM classes must inherit
         # If one isn't provided then we can simply make one.
         if TableBase is None:
@@ -489,10 +489,7 @@ class Node(AbstractNode):
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
         traceback_and_raise(NotImplementedError)
 
-
-    @span_new_msg(
-        tracer=tracers["msg_with_reply"]
-    )
+    @span_new_msg(tracer=tracers["msg_with_reply"])
     def recv_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
@@ -503,10 +500,12 @@ class Node(AbstractNode):
         try:
             debug(
                 f"> Received with Reply {contents.pprint} {contents.id} @ {self.pprint}"
-            )            
+            )
 
-            response = self.process_message(msg=msg,router=self.immediate_msg_with_reply_router)
-            
+            response = self.process_message(
+                msg=msg, router=self.immediate_msg_with_reply_router
+            )
+
         except Exception as e:
             print(type(e), e)
             error(e)
@@ -540,10 +539,9 @@ class Node(AbstractNode):
         res_msg = trace_and_log(
             tracer=tracers["msg_without_reply"],
             callable=response.sign,
-            args=
-            {
-                "signing_key":self.signing_key,
-            }
+            args={
+                "signing_key": self.signing_key,
+            },
         )
         output = (
             f"> {self.pprint} Signing {res_msg.pprint} with "
@@ -552,9 +550,7 @@ class Node(AbstractNode):
         debug(output)
         return res_msg
 
-    @span_new_msg(
-        tracer=tracers["msg_without_reply"]
-    )
+    @span_new_msg(tracer=tracers["msg_without_reply"])
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
@@ -564,8 +560,8 @@ class Node(AbstractNode):
                 f"> Received without Reply {contents.pprint} {contents.id} @ {self.pprint}"
             )
 
-        self.process_message(msg=msg,router=self.immediate_msg_without_reply_router)
-        
+        self.process_message(msg=msg, router=self.immediate_msg_without_reply_router)
+
         try:
             pass
         except Exception as e:

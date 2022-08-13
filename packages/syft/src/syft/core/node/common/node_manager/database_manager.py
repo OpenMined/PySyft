@@ -45,7 +45,7 @@ class DatabaseManager:
         objects = session_local.query(self._schema).filter_by(**kwargs).all()
         session_local.close()
         return objects
-    
+
     @span(tracer=tracers["database_tracer"])
     def first(self, **kwargs: Any) -> Optional[Any]:
         """Query db objects filtering by parameters

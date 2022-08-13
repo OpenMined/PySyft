@@ -245,7 +245,6 @@ class UserManager(DatabaseManager):
             raise UserNotFoundError
         return result
 
-
     def login(self, email: str, password: str) -> SyftUser:
         """Returns the user object for the given the email and password.
 

@@ -231,7 +231,6 @@ def char_emoji(hex_chars: str) -> str:
     return chr(base + code)
 
 
-
 left_name = [
     "admiring",
     "adoring",
@@ -528,11 +527,13 @@ def get_tracer(service_name: Optional[str] = None) -> Any:
     _tracer = trace.get_tracer(__name__)
     return _tracer
 
+
 tracers = {
-    "msg_with_reply" : get_tracer("New MessageWithReply Received "),
-    "msg_without_reply" : get_tracer("New MessageWithoutReply Received "),
-    "database_tracer": get_tracer("Database Queries")
+    "msg_with_reply": get_tracer("New MessageWithReply Received "),
+    "msg_without_reply": get_tracer("New MessageWithoutReply Received "),
+    "database_tracer": get_tracer("Database Queries"),
 }
+
 
 def initializer(event_loop: Optional[BaseSelectorEventLoop] = None) -> None:
     """Set the same event loop to other threads/processes.
@@ -644,42 +645,56 @@ def concurrency_count(factor: float = 0.8) -> int:
     mp_count = force_count if force_count >= 1 else int(mp.cpu_count() * factor)
     return mp_count
 
+
 def span_new_msg(tracer):
     def decorator(fun):
         def wrapper(*args, **kwargs):
-                msg = kwargs['msg'].message
-                with tracer.start_as_current_span(msg.pprint, attributes={"message.id": msg.id.to_string()}):
-                    result = fun(*args, **kwargs)
-                return result
+            msg = kwargs["msg"].message
+            with tracer.start_as_current_span(
+                msg.pprint, attributes={"message.id": msg.id.to_string()}
+            ):
+                result = fun(*args, **kwargs)
+            return result
+
         return wrapper
+
     return decorator
+
 
 def span(tracer):
     def decorator(fun):
         def wrapper(*args, **kwargs):
-                span_msg = f"{fun.__qualname__}"
-                with tracer.start_as_current_span(span_msg, attributes={"args": args, "kwargs": kwargs}):
-                    result = fun(*args, **kwargs)
-                return result
+            span_msg = f"{fun.__qualname__}"
+            with tracer.start_as_current_span(
+                span_msg, attributes={"args": args, "kwargs": kwargs}
+            ):
+                result = fun(*args, **kwargs)
+            return result
+
         return wrapper
+
     return decorator
+
 
 def span_func(tracer) -> Callable:
     def inner(func):
         def wrapper(*args, **kwargs):
             span_msg = f"{func.__qualname__}"
-            with tracer.start_as_current_span(span_msg, attributes={"args": args, "kwargs": kwargs}):
+            with tracer.start_as_current_span(
+                span_msg, attributes={"args": args, "kwargs": kwargs}
+            ):
                 return func(*args, **kwargs)
+
         return wrapper
+
     return inner
 
+
 def trace_and_log(
-        callable: Callable,
-        args: Dict,
-        tracer: Any,
-        tags: Optional[Dict[str,Any]] = {}
-    ) -> Any:
+    callable: Callable, args: Dict, tracer: Any, tags: Optional[Dict[str, Any]] = {}
+) -> Any:
     return span_func(tracer=tracer)(callable)(**args)
+
 
 @contextmanager
 def concurrency_override(count: int = 1) -> Iterator:
