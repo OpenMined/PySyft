@@ -1,5 +1,6 @@
 # future
 from __future__ import annotations
+from pprint import pprint
 
 # stdlib
 from typing import Any
@@ -28,7 +29,7 @@ from ....logger import debug
 from ....logger import error
 from ....logger import info
 from ....logger import traceback_and_raise
-from ....util import get_subclasses
+from ....util import get_subclasses, span_new_msg
 from ...common.message import EventualSyftMessageWithoutReply
 from ...common.message import ImmediateSyftMessageWithReply
 from ...common.message import ImmediateSyftMessageWithoutReply
@@ -44,6 +45,13 @@ from ...io.route import Route
 from ...io.route import SoloRoute
 from ...io.virtual import create_virtual_connection
 from ..abstract.node import AbstractNode
+
+
+from ....util import trace_and_log
+from ....util import span
+from ....util import span_new_msg
+from ....util import tracers
+
 from .action.exception_action import ExceptionMessage
 from .action.exception_action import UnknownPrivateException
 from .client import Client
@@ -88,7 +96,6 @@ from .node_table.node import Node as NodeRow
 
 # this generic type for Client bound by Client
 ClientT = TypeVar("ClientT", bound=Client)
-
 
 # TODO: Move but right now import loop prevents importing from the RequestMessage
 class DuplicateRequestException(Exception):
@@ -137,7 +144,7 @@ class Node(AbstractNode):
         )
 
         self.settings = settings
-
+        
         # TableBase is the base class from which all ORM classes must inherit
         # If one isn't provided then we can simply make one.
         if TableBase is None:
@@ -485,6 +492,10 @@ class Node(AbstractNode):
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
         traceback_and_raise(NotImplementedError)
 
+
+    @span_new_msg(
+        tracer=tracers["msg_with_reply"]
+    )
     def recv_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
@@ -495,12 +506,10 @@ class Node(AbstractNode):
         try:
             debug(
                 f"> Received with Reply {contents.pprint} {contents.id} @ {self.pprint}"
-            )
-            # try to process message
-            response = self.process_message(
-                msg=msg, router=self.immediate_msg_with_reply_router
-            )
+            )            
 
+            response = self.process_message(msg=msg,router=self.immediate_msg_with_reply_router)
+            
         except Exception as e:
             print(type(e), e)
             error(e)
@@ -531,7 +540,14 @@ class Node(AbstractNode):
 
         # maybe I shouldn't have created process_message because it screws up
         # all the type inference.
-        res_msg = response.sign(signing_key=self.signing_key)  # type: ignore
+        res_msg = trace_and_log(
+            tracer=tracers["msg_without_reply"],
+            callable=response.sign,
+            args=
+            {
+                "signing_key":self.signing_key,
+            }
+        )
         output = (
             f"> {self.pprint} Signing {res_msg.pprint} with "
             + f"{self.key_emoji(key=self.signing_key.verify_key)}"  # type: ignore
@@ -539,6 +555,9 @@ class Node(AbstractNode):
         debug(output)
         return res_msg
 
+    @span_new_msg(
+        tracer=tracers["msg_without_reply"]
+    )
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
@@ -548,7 +567,8 @@ class Node(AbstractNode):
                 f"> Received without Reply {contents.pprint} {contents.id} @ {self.pprint}"
             )
 
-        self.process_message(msg=msg, router=self.immediate_msg_without_reply_router)
+        self.process_message(msg=msg,router=self.immediate_msg_without_reply_router)
+        
         try:
             pass
         except Exception as e:
@@ -602,6 +622,7 @@ class Node(AbstractNode):
         self.process_message(msg=msg, router=self.eventual_msg_without_reply_router)
 
     # TODO: Add SignedEventualSyftMessageWithoutReply and others
+    @span(tracer=tracers["msg_with_reply"])
     def process_message(
         self, msg: SignedMessage, router: dict
     ) -> Union[SyftMessage, None]:
