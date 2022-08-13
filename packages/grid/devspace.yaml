@@ -95,7 +95,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.39"
+      - "0.7.0-beta.40"
     createPullSecret: true
     dockerfile: ./backend/backend.dockerfile
     context: ../
@@ -107,7 +107,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.39"
+      - "0.7.0-beta.40"
     createPullSecret: true
     dockerfile: ./frontend/frontend.dockerfile
     context: ./frontend
@@ -126,7 +126,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.39"
+      - "0.7.0-beta.40"
     createPullSecret: true
     dockerfile: ./vpn/headscale.dockerfile
     context: ./vpn
@@ -138,7 +138,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.39"
+      - "0.7.0-beta.40"
     createPullSecret: true
     dockerfile: ./vpn/tailscale.dockerfile
     context: ./vpn
@@ -150,7 +150,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.39"
+      - "0.7.0-beta.40"
     createPullSecret: true
     dockerfile: ./vpn/iptables.dockerfile
     context: ./vpn
