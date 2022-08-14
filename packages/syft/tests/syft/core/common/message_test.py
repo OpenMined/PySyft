@@ -4,18 +4,12 @@ import uuid
 # third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-import pytest
 
 # syft absolute
-import syft as sy
 from syft import ReprMessage
-from syft import serialize
-from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
-from syft.core.common.serde.deserialize import PROTOBUF_START_MAGIC_HEADER_BYTES
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.core.io.location import SpecificLocation
-from syft.util import get_fully_qualified_name
 
 
 def get_signing_key() -> SigningKey:

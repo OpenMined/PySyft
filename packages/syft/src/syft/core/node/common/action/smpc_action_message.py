@@ -7,16 +7,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 
-# third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
-
-# syft absolute
-import syft as sy
-
 # relative
-from .....proto.core.node.common.action.smpc_action_message_pb2 import (
-    SMPCActionMessage as SMPCActionMessage_PB,
-)
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.serializable import serializable
 from ....common.uid import UID

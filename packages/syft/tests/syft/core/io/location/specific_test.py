@@ -14,7 +14,6 @@ Table of Contents:
 import uuid
 
 # syft absolute
-import syft as sy
 from syft.core.common.serde.deserialize import PROTOBUF_START_MAGIC_HEADER_BYTES
 from syft.core.common.uid import UID
 from syft.core.io.location.specific import SpecificLocation

@@ -3,7 +3,6 @@ from typing import Any
 from typing import Optional
 
 # relative
-from ...util import validate_type
 from .serde.serializable import serializable
 from .uid import UID
 

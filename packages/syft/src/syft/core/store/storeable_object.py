@@ -4,7 +4,6 @@ from typing import List
 from typing import Optional
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from pydantic import BaseSettings
 
 # relative

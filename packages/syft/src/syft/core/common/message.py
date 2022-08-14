@@ -6,7 +6,6 @@ from typing import Type
 from typing import TypeVar
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.exceptions import BadSignatureError
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey

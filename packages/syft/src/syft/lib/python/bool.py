@@ -2,9 +2,16 @@
 from typing import Any
 from typing import Optional
 
+# third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
+
+# syft absolute
+import syft as sy
+
 # relative
 from ...core.common import UID
 from ...core.common.serde.serializable import serializable
+from ...proto.lib.python.bool_pb2 import Bool as Bool_PB
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
@@ -16,11 +23,8 @@ def dispatch_other(obj: Any) -> bool:
     return obj
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class Bool(int, PyPrimitive):
-    __attr_allowlist__ = ["value", "id"]
-    __serde_overrides__ = {"value": (lambda x: int(x), lambda x: bool(x))}
-
     def __new__(cls, value: Any = None, id: Optional[UID] = None) -> "Bool":
         value = bool(value)
         obj = int.__new__(cls, value)
@@ -251,3 +255,14 @@ class Bool(int, PyPrimitive):
 
     def real(self) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=self.value.real)
+
+    def _object2proto(self) -> Bool_PB:
+        return Bool_PB(id=sy.serialize(obj=self.id), data=self)
+
+    @staticmethod
+    def _proto2object(proto: Bool_PB) -> "Bool":
+        return Bool(id=sy.deserialize(blob=proto.id), value=proto.data)
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return Bool_PB

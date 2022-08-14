@@ -25,6 +25,7 @@ from ..generic_payload.syft_message import RequestPayload
 class ObjectDeleteMessage(SyftMessage, DomainMessageRegistry, VMMessageRegistry):
     __attr_allowlist__ = ["id", "address", "reply_to", "kwargs", "reply"]
     # Pydantic Inner class to define expected request payload fields.
+
     class Request(RequestPayload):
         """Payload fields and types used during a User Creation Request."""
 

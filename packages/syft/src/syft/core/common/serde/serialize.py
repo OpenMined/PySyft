@@ -54,20 +54,12 @@ def _serialize(
 
         obj = PrimitiveFactory.generate_primitive(value=obj, temporary_box=True)
         if hasattr(obj, "temporary_box"):
-            # TODO: can remove this once all of PrimitiveFactory.generate_primitive
-            # supports temporary_box and is tested
             obj.temporary_box = True  # type: ignore
 
     if hasattr(obj, "_sy_serializable_wrapper_type"):
         is_serializable = obj._sy_serializable_wrapper_type(value=obj)  # type: ignore
     else:
         is_serializable = obj
-
-    # traceback_and_raise(
-    #     Exception(
-    #         f"Object {type(obj)} is not serializable and has no _sy_serializable_wrapper_type"
-    #     )
-    # )
 
     # capnp_bytes=True
     if hasattr(is_serializable, "_object2bytes"):

@@ -1,5 +1,4 @@
 # stdlib
-import sys
 from typing import Optional
 from typing import Type
 
@@ -9,7 +8,8 @@ from typing_extensions import final
 # relative
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.serializable import serializable
-from ....common.serde.util import serialize_type, deserialize_type
+from ....common.serde.util import deserialize_type
+from ....common.serde.util import serialize_type
 from ....common.uid import UID
 from ....io.address import Address
 
@@ -26,12 +26,10 @@ class ExceptionMessage(ImmediateSyftMessageWithoutReply):
         "address",
         "msg_id_causing_exception",
         "exception_msg",
-        "exception_type"
+        "exception_type",
     ]
 
-    __serde_overrides__ = {
-        "exception_type": (serialize_type, deserialize_type)
-    }
+    __serde_overrides__ = {"exception_type": (serialize_type, deserialize_type)}
 
     def __init__(
         self,

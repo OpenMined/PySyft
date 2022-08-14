@@ -48,7 +48,6 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         "action": (lambda x: int(x.value), lambda x: PropertyActions(int(x)))
     }
 
-
     def __init__(
         self,
         path: str,

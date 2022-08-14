@@ -18,7 +18,6 @@ import uuid
 import pytest
 
 # syft absolute
-import syft as sy
 from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.core.io.location.specific import SpecificLocation

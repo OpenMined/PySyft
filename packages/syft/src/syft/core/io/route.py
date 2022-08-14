@@ -87,9 +87,6 @@ node, propagating the model to all node which asked for it.
 from typing import Optional
 from typing import Union
 
-# third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
-
 # relative
 from ...logger import debug
 from ...logger import traceback_and_raise
@@ -97,14 +94,10 @@ from ..common.message import SignedEventualSyftMessageWithoutReply
 from ..common.message import SignedImmediateSyftMessageWithReply
 from ..common.message import SignedImmediateSyftMessageWithoutReply
 from ..common.object import ObjectWithID
-from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import serializable
-from ..common.serde.serialize import _serialize
 from .connection import BidirectionalConnection
 from .connection import ClientConnection
 from .location import Location
-from .location import SpecificLocation
-from .virtual import VirtualClientConnection
 
 
 class RouteSchema(ObjectWithID):

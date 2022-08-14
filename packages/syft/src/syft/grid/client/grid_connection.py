@@ -8,11 +8,8 @@ from typing import Tuple
 from typing import Union
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 import requests
 from requests.adapters import HTTPAdapter
-
-# from requests.adapters import TimeoutHTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from requests_toolbelt.multipart.encoder import MultipartEncoder
 

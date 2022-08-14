@@ -1,5 +1,8 @@
-from syft.lib.util import full_name_with_qualname
+# stdlib
 import sys
+
+# relative
+from ....lib.util import full_name_with_qualname
 
 
 def serialize_type(serialized_type) -> str:
