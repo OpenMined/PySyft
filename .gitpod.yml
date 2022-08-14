@@ -1,15 +1,12 @@
-# Commands to start on workspace startup
 tasks:
   - init: pip install -e packages/hagrid
-    # command: hagrid launch domain to docker:9082 --tag=latest --dev --tail=false
     command: hagrid quickstart
-# Ports to expose on workspace startup
 ports:
   - name: Jupyter
     port: 8888
     onOpen: open-browser
     visibility: public
-  # - name: Domain
-  #   port: 9082
-  #   onOpen: open-browser
-  #   visibility: public
+  - name: Nodes
+    port: 9081-9083
+    onOpen: open-browser
+    visibility: public

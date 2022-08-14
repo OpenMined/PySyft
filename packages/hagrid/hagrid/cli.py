@@ -19,6 +19,7 @@ from typing import Tuple
 from typing import Tuple as TypeTuple
 from typing import Union
 from typing import cast
+from urllib.parse import urlparse
 
 # third party
 import click
@@ -2553,7 +2554,7 @@ def quickstart_cli(
                 + os.sep
                 + os_bin_path
                 + os.sep
-                + f"{jupyter_binary} lab --notebook-dir={directory} {file_path}"
+                + f"{jupyter_binary} lab --ip 0.0.0.0 --notebook-dir={directory} {file_path}"
             )
             if test:
                 jupyter_path = venv_dir + os.sep + os_bin_path + os.sep + jupyter_binary
@@ -2576,6 +2577,26 @@ def quickstart_cli(
     except Exception as e:
         print(f"Error running quickstart: {e}")
         raise e
+
+
+def extract_jupyter_url(lines: TypeList[str]) -> Tuple[str, str, int]:
+    jupyter_regex = r"^.*(http.*127.*)"
+    try:
+        for line in lines:
+            matches = re.match(jupyter_regex, line)
+            if matches is not None:
+                url = matches.group(1).strip()
+                parts = urlparse(url)
+                host_or_ip_parts = parts.netloc.split(":")
+                # netloc is host:port
+                port = 8888
+                if len(host_or_ip_parts) > 1:
+                    port = int(host_or_ip_parts[1])
+                host_or_ip = host_or_ip_parts[0]
+                return (url, host_or_ip, port)
+    except Exception as e:
+        print("failed to parse jupyter url", e)
+    return ("http://127.0.0.1:8888/lab", "127.0.0.1", 8888)
 
 
 def quickstart_setup(
