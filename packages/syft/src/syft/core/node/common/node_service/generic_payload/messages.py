@@ -18,7 +18,7 @@ from ....abstract.node_service_interface import NodeServiceInterface
 
 
 class GenericPayloadMessage(ImmediateSyftMessageWithReply):
-    __attr_allowlist__ = ["id", "payload", "address", "reply_to", "msg_id"]
+    __attr_allowlist__ = ["id", "payload", "address", "reply_to", "id"]
 
     def __init__(
         self,
@@ -32,7 +32,7 @@ class GenericPayloadMessage(ImmediateSyftMessageWithReply):
 
 
 class GenericPayloadReplyMessage(ImmediateSyftMessageWithoutReply):
-    __attr_allowlist__ = ["id", "payload", "address", "msg_id"]
+    __attr_allowlist__ = ["id", "payload", "address", "id"]
 
     def __init__(
         self,

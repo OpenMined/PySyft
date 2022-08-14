@@ -162,7 +162,7 @@ class Route(ObjectWithID):
 
 @serializable(recursive_serde=True)
 class SoloRoute(Route):
-    __attr_allowlist__ = ["id", "destination", "connection"]
+    __attr_allowlist__ = ["id", "connection"]
 
     def __init__(
         self,

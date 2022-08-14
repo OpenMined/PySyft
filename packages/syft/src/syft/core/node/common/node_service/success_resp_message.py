@@ -14,7 +14,7 @@ from ....io.address import Address
 @serializable(recursive_serde=True)
 @final
 class SuccessResponseMessage(ImmediateSyftMessageWithoutReply):
-    __attr_allowlist__ = ["msg_id", "address", "resp_msg"]
+    __attr_allowlist__ = ["id", "address", "resp_msg"]
 
     def __init__(
         self,
@@ -28,7 +28,7 @@ class SuccessResponseMessage(ImmediateSyftMessageWithoutReply):
 
 @serializable(recursive_serde=True)
 class ErrorResponseMessage(ImmediateSyftMessageWithoutReply):
-    __attr_allowlist__ = ["msg_id", "address", "resp_msg"]
+    __attr_allowlist__ = ["id", "address", "resp_msg"]
 
     def __init__(
         self,

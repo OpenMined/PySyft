@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package syft.lib.python;
-import "proto/core/common/common_object.proto";
+import "proto/core/common/recursive_serde.proto";
 
 message Slice {
   int64 start = 1;
@@ -10,5 +10,5 @@ message Slice {
   bool has_start = 4;
   bool has_stop = 5;
   bool has_step = 6;
-  syft.core.common.UID id = 7;
+  syft.core.common.RecursiveSerde id = 7;
 }

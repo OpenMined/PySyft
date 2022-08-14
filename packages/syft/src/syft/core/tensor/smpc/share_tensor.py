@@ -28,7 +28,6 @@ from .... import logger
 from ....grid import GridURL
 from ....lib.numpy.array import capnp_deserialize
 from ....lib.numpy.array import capnp_serialize
-from ....proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
 from ...common.serde.capnp import CapnpModule
 from ...common.serde.capnp import chunk_bytes
 from ...common.serde.capnp import combine_bytes
@@ -826,40 +825,6 @@ class ShareTensor(PassthroughTensor):
             return ShareTensor.hook_method(self, attr_name)
 
         return object.__getattribute__(self, attr_name)
-
-    # TODO: Add capnp serialization to ShareTensor
-    def _object2proto(self) -> ShareTensor_PB:
-        # This works only for unsigned types.
-        length_rs = self.ring_size.bit_length()
-        rs_bytes = self.ring_size.to_bytes((length_rs + 7) // 8, byteorder="big")
-
-        proto_init_kwargs = {
-            "rank": self.rank,
-            "parties_info": [serialize(party) for party in self.parties_info],
-            "seed_przs": self.seed_przs,
-            "ring_size": rs_bytes,
-        }
-
-        proto_init_kwargs["child"] = serialize(self.child, to_bytes=True)
-
-        return ShareTensor_PB(**proto_init_kwargs)
-
-    @staticmethod
-    def _proto2object(proto: ShareTensor_PB) -> "ShareTensor":
-        init_kwargs = {
-            "rank": proto.rank,
-            "parties_info": [deserialize(party) for party in proto.parties_info],
-            "seed_przs": proto.seed_przs,
-            "ring_size": int.from_bytes(proto.ring_size, "big"),
-        }
-
-        init_kwargs["value"] = deserialize(proto.child, from_bytes=True)
-
-        # init_kwargs["init_clients"] = True
-        res = ShareTensor(**init_kwargs)
-        generator_przs = np.random.default_rng(proto.seed_przs)
-        res.generator_przs = generator_przs
-        return res
 
     def _object2bytes(self) -> bytes:
         schema = get_capnp_schema(schema_file="share_tensor.capnp")

@@ -1,10 +1,10 @@
 syntax = "proto3";
 
 package syft.lib.python;
-import "proto/core/common/common_object.proto";
+import "proto/core/common/recursive_serde.proto";
 
 message String {
   string data = 1;
-  syft.core.common.UID id = 2;
+  syft.core.common.RecursiveSerde id = 2;
   bool temporary_box = 3;
 }

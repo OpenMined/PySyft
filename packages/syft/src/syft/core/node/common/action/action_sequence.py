@@ -3,16 +3,9 @@ from typing import List
 from typing import Optional
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
-# syft absolute
-import syft as sy
-
 # relative
-from .....proto.core.node.common.action.action_sequence_pb2 import (
-    ActionSequence as ActionSequence_PB,
-)
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
@@ -23,7 +16,8 @@ from .save_object_action import SaveObjectAction
 
 @serializable(recursive_serde=True)
 class ActionSequence(ImmediateActionWithoutReply):
-    __attr_allowlist__ = ["obj_lst", "address"]
+    __attr_allowlist__ = ["obj_lst", "address", "id"]
+
     def __init__(
         self,
         obj_lst: List[SaveObjectAction],

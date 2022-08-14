@@ -1,10 +1,10 @@
 syntax = "proto3";
 
 package syft.lib.python;
-import "proto/core/common/common_object.proto";
+import "proto/core/common/recursive_serde.proto";
 
 message Iterator {
-  syft.core.common.UID id = 1;
+  syft.core.common.RecursiveSerde id = 1;
   bytes obj_ref = 2;
   int32 index = 3;
   int32 max_len = 4;

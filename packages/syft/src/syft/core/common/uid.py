@@ -5,13 +5,9 @@ from typing import Optional
 import uuid
 from uuid import UUID as uuid_type
 
-# third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
-
 # relative
 from ...logger import critical
 from ...logger import traceback_and_raise
-from ...proto.core.common.common_object_pb2 import UID as UID_PB
 from .decorators import singleton
 from .serde.serializable import serializable
 
@@ -35,7 +31,7 @@ class UIDValueGenerator:
 uuid_value_generator = UIDValueGenerator().get_uid()
 
 
-@serializable()
+@serializable(recursive_serde=True)
 class UID:
     """A unique ID for every Syft object.
 
@@ -52,6 +48,11 @@ class UID:
     There is no other way in Syft to create an ID for any object.
 
     """
+
+    __attr_allowlist__ = ["value"]
+    __serde_overrides__ = {
+        "value": (lambda x: x.bytes, lambda x: uuid.UUID(bytes=bytes(x)))
+    }
 
     __slots__ = "value"
     value: uuid_type
@@ -177,56 +178,3 @@ class UID:
         UID objects) within other object __repr__ methods."""
 
         return f"..{str(self.value)[-5:]}"
-
-    def _object2proto(self) -> UID_PB:
-        """Returns a protobuf serialization of self.
-
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms the current object into the corresponding
-        Protobuf object so that it can be further serialized.
-
-        :return: returns a protobuf object
-        :rtype: ProtoUID
-
-        .. note::
-            This method is purely an internal method. Please use serialize(object) or one of
-            the other public serialization methods if you wish to serialize an
-            object.
-        """
-
-        return UID_PB(value=self.value.bytes)
-
-    @staticmethod
-    def _proto2object(proto: UID_PB) -> "UID":
-        """Creates a UID from a protobuf
-
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms a protobuf object into an instance of this class.
-
-        :return: returns an instance of UID
-        :rtype: UID
-
-        .. note::
-            This method is purely an internal method. Please use syft.deserialize()
-            if you wish to deserialize an object.
-        """
-        return UID(value=uuid.UUID(bytes=proto.value))
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Return the type of protobuf object which stores a class of this type
-
-        As a part of serialization and deserialization, we need the ability to
-        lookup the protobuf object type directly from the object type. This
-        static method allows us to do this.
-
-        Importantly, this method is also used to create the reverse lookup ability within
-        the metaclass of Serializable. In the metaclass, it calls this method and then
-        it takes whatever type is returned from this method and adds an attribute to it
-        with the type of this class attached to it. See the MetaSerializable class for details.
-
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
-
-        """
-        return UID_PB

@@ -3,12 +3,9 @@ from typing import Any
 from typing import Type
 
 # third party
-from google.protobuf.empty_pb2 import Empty as Empty_PB
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
 # relative
-from ...proto.core.auth.signed_message_pb2 import VerifyAll as VerifyAllWrapper_PB
 from ...proto.core.auth.signed_message_pb2 import VerifyKey as VerifyKey_PB
 from .serde.serializable import serializable
 
@@ -31,25 +28,15 @@ serializable(generate_wrapper=True)(
 
 
 def _create_VERIFYALL() -> Any:
-    @serializable()
+    @serializable(recursive_serde=True)
     class VerifyAll:
+        __attr_allowlist__ = []
         _instance = None
 
         def __new__(cls: Type) -> "VerifyAll":
             if cls._instance is None:
                 cls._instance = object.__new__(cls)
             return cls._instance
-
-        def _object2proto(self) -> VerifyAllWrapper_PB:
-            return VerifyAllWrapper_PB(all=Empty_PB())
-
-        @staticmethod
-        def _proto2object(proto: VerifyAllWrapper_PB) -> "VerifyAll":
-            return VERIFYALL
-
-        @staticmethod
-        def get_protobuf_schema() -> GeneratedProtocolMessageType:
-            return VerifyAllWrapper_PB
 
     return VerifyAll()
 

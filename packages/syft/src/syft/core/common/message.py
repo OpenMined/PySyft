@@ -14,7 +14,6 @@ from nacl.signing import VerifyKey
 # relative
 from ...logger import debug
 from ...logger import traceback_and_raise
-from ...proto.core.auth.signed_message_pb2 import SignedMessage as SignedMessage_PB
 from ...util import get_fully_qualified_name
 from ...util import validate_type
 from ..io.address import Address
@@ -88,7 +87,9 @@ class SyftMessage(AbstractMessage):
 
         """
         debug(f"> Signing with {self.address.key_emoji(key=signing_key.verify_key)}")
+        print(type(self))
         signed_message = signing_key.sign(serialize(self, to_bytes=True))
+        print(type(self))
 
         # signed_type will be the final subclass callee's closest parent signed_type
         # for example ReprMessage -> ImmediateSyftMessageWithoutReply.signed_type
@@ -119,7 +120,7 @@ class SignedMessage(SyftMessage):
     """
 
     __attr_allowlist__ = [
-        "msg_id",
+        "id",
         "address",
         "obj_type",
         "signature",
@@ -172,62 +173,6 @@ class SignedMessage(SyftMessage):
             return False
 
         return True
-
-    def _object2proto(self) -> SignedMessage_PB:
-        debug(f"> {self.icon} -> Proto 🔢 {self.id}")
-
-        # obj_type will be the final subclass callee for example ReprMessage
-        return SignedMessage_PB(
-            msg_id=serialize(self.id, to_proto=True),
-            obj_type=self.obj_type,
-            signature=bytes(self.signature),
-            verify_key=bytes(self.verify_key),
-            message=self.serialized_message,
-        )
-
-    @staticmethod
-    def _proto2object(proto: SignedMessage_PB) -> SignedMessageT:
-        # TODO: horrible temp hack, need to rethink address on SignedMessage
-        sub_message = validate_type(
-            _deserialize(blob=proto.message, from_bytes=True), SyftMessage
-        )
-
-        address = sub_message.address
-
-        # proto.obj_type is final subclass callee for example ReprMessage
-        # but we want the associated signed_type which is
-        # ReprMessage -> ImmediateSyftMessageWithoutReply.signed_type
-        # == SignedImmediateSyftMessageWithoutReply
-        module_parts = proto.obj_type.split(".")
-        klass = module_parts.pop()
-        obj_type = getattr(sys.modules[".".join(module_parts)], klass)
-        obj = obj_type.signed_type(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=address,
-            obj_type=proto.obj_type,
-            signature=proto.signature,
-            verify_key=VerifyKey(proto.verify_key),
-            message=proto.message,
-        )
-
-        icon = "🤷🏾‍♀️"
-        if hasattr(obj, "icon"):
-            icon = obj.icon
-        debug(f"> {icon} <- 🔢 Proto")
-
-        if type(obj) != obj_type.signed_type:
-            traceback_and_raise(
-                TypeError(
-                    "Deserializing SignedMessage. "
-                    + f"Expected type {obj_type.signed_type}. Got {type(obj)}"
-                )
-            )
-
-        return obj
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return SignedMessage_PB
 
     def __hash__(self) -> int:
         return hash((self.signature, self.verify_key))

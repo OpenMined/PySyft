@@ -14,6 +14,10 @@ from ....proto.core.common.recursive_serde_pb2 import (
 from ....util import get_fully_qualified_name
 from ....util import index_syft_by_module_name
 
+primitive_factory = {
+    "bytes": (lambda x: x, lambda x: x),
+}
+
 
 def rs_object2proto(self: Any) -> RecursiveSerde_PB:
     # if __attr_allowlist__ then only include attrs from that list
@@ -25,14 +29,22 @@ def rs_object2proto(self: Any) -> RecursiveSerde_PB:
         attribute_dict = self.__attr_allowlist__
 
     for attr_name in attribute_dict:
-        if hasattr(self, attr_name):
-            msg.fields_name.append(attr_name)
-            transforms = self.__serde_overrides__.get(attr_name, None)
-            if transforms is None:
-                field_obj = getattr(self, attr_name)
-            else:
-                field_obj = transforms[0](getattr(self, attr_name))
-            msg.fields_data.append(sy.serialize(field_obj, to_bytes=True))
+        if not hasattr(self, attr_name):
+            raise ValueError(
+                f"{attr_name} on {type(self)} does not exist, serialization aborted!"
+            )
+
+        field_obj = getattr(self, attr_name)
+        transforms = self.__serde_overrides__.get(attr_name, None)
+
+        if transforms is not None:
+            field_obj = transforms[0](field_obj)
+
+        serialized = sy.serialize(field_obj, to_bytes=True)
+
+        msg.fields_name.append(attr_name)
+        msg.fields_data.append(serialized)
+
     return msg
 
 

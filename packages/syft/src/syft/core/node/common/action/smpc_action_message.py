@@ -23,8 +23,19 @@ from ....common.uid import UID
 from ....io.address import Address
 
 
-@serializable()
+@serializable(recursive_serde=True)
 class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
+    __attr_allowlist__ = [
+        "name_action",
+        "self_id",
+        "args_id",
+        "kwargs_id",
+        "kwargs",
+        "id_at_location",
+        "address",
+        "id",
+    ]
+
     def __init__(
         self,
         name_action: str,
@@ -79,79 +90,3 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
         return res
 
     __repr__ = __str__
-
-    def _object2proto(self) -> SMPCActionMessage_PB:
-        """Returns a protobuf serialization of self.
-
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms the current object into the corresponding
-        Protobuf object so that it can be further serialized.
-
-        :return: returns a protobuf object
-        :rtype: SMPCActionMessage_PB
-
-        .. note::
-            This method is purely an internal method. Please use serialize(object) or one of
-            the other public serialization methods if you wish to serialize an
-            object.
-        """
-
-        return SMPCActionMessage_PB(
-            name_action=self.name_action,
-            self_id=sy.serialize(self.self_id),
-            args_id=list(map(lambda x: sy.serialize(x), self.args_id)),
-            kwargs_id={k: sy.serialize(v) for k, v in self.kwargs_id.items()},
-            kwargs={k: sy.serialize(v, to_bytes=True) for k, v in self.kwargs.items()},
-            id_at_location=sy.serialize(self.id_at_location),
-            address=sy.serialize(self.address),
-            msg_id=sy.serialize(self.id),
-        )
-
-    @staticmethod
-    def _proto2object(proto: SMPCActionMessage_PB) -> SMPCActionMessage:
-        """Creates a ObjectWithID from a protobuf
-
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms a protobuf object into an instance of this class.
-
-        :return: returns an instance of SMPCActionMessage
-        :rtype: SMPCActionMessage
-
-        .. note::
-            This method is purely an internal method. Please use syft.deserialize()
-            if you wish to deserialize an object.
-        """
-
-        return SMPCActionMessage(
-            name_action=proto.name_action,
-            self_id=sy.deserialize(blob=proto.self_id),
-            args_id=list(map(lambda x: sy.deserialize(blob=x), proto.args_id)),
-            kwargs_id={k: sy.deserialize(blob=v) for k, v in proto.kwargs_id.items()},
-            kwargs={
-                k: sy.deserialize(blob=v, from_bytes=True)
-                for k, v in proto.kwargs.items()
-            },
-            result_id=sy.deserialize(blob=proto.id_at_location),
-            address=sy.deserialize(blob=proto.address),
-            msg_id=sy.deserialize(blob=proto.msg_id),
-        )
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Return the type of protobuf object which stores a class of this type
-
-        As a part of serialization and deserialization, we need the ability to
-        lookup the protobuf object type directly from the object type. This
-        static method allows us to do this.
-
-        Importantly, this method is also used to create the reverse lookup ability within
-        the metaclass of Serializable. In the metaclass, it calls this method and then
-        it takes whatever type is returned from this method and adds an attribute to it
-        with the type of this class attached to it. See the MetaSerializable class for details.
-
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
-
-        """
-
-        return SMPCActionMessage_PB

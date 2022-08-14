@@ -104,7 +104,6 @@ def _deserialize(
     if obj_type is None:
         # TODO: This can probably be removed now we have lists of obj_types
         obj_type = getattr(blob, "obj_type", None)
-        print(type(blob))
 
         if isinstance(blob, rs_get_protobuf_schema()):
             res = rs_proto2object(proto=blob)

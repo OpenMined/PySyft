@@ -1,8 +1,0 @@
-syntax = "proto3";
-package syft.core.io;
-
-import "proto/core/common/recursive_serde.proto";
-
-message VirtualServerConnection { syft.core.common.RecursiveSerde node = 1; }
-
-message VirtualClientConnection { VirtualServerConnection server = 1; }

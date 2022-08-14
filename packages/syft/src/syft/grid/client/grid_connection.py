@@ -26,10 +26,6 @@ from ...core.common.serde.serialize import _serialize
 from ...core.node.enums import RequestAPIFields
 from ...core.node.exceptions import RequestAPIException
 from ...logger import debug
-from ...proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
-from ...proto.grid.connections.http_connection_pb2 import (
-    GridHTTPConnection as GridHTTPConnection_PB,
-)
 from ...util import verify_tls
 from ..connections.http_connection import HTTPConnection
 
@@ -54,8 +50,9 @@ class TimeoutHTTPAdapter(HTTPAdapter):
         return super().send(request, **kwargs)
 
 
-@serializable()
+@serializable(recursive_serde=True)
 class GridHTTPConnection(HTTPConnection):
+    __attr_allowlist__ = ["base_url", "session_token", "token_type"]
 
     LOGIN_ROUTE = "/login"
     SYFT_ROUTE = "/syft"
@@ -304,21 +301,3 @@ class GridHTTPConnection(HTTPConnection):
     @property
     def host(self) -> str:
         return self.base_url.base_url
-
-    @staticmethod
-    def _proto2object(proto: GridHTTPConnection_PB) -> "GridHTTPConnection":
-        obj = GridHTTPConnection(url=GridURL.from_url(proto.base_url))
-        obj.session_token = proto.session_token
-        obj.token_type = proto.token_type
-        return obj
-
-    def _object2proto(self) -> GridHTTPConnection_PB:
-        return GridHTTPConnection_PB(
-            base_url=str(self.base_url),
-            session_token=self.session_token,
-            token_type=self.token_type,
-        )
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return GridHTTPConnection_PB

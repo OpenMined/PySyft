@@ -36,8 +36,6 @@ def _serialize(
         - proto
         - binary
 
-    TODO: we could also add "dict" to this list but it's not clear if it would be used.
-
     :param to_proto: set this flag to TRUE if you want to return a protobuf object
     :type to_proto: bool
     :param to_bytes: set this flag to TRUE if you want to return a binary object

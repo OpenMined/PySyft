@@ -22,7 +22,6 @@ from ....logger import debug
 from ....logger import error
 from ....logger import info
 from ....logger import traceback_and_raise
-from ....proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 from ...common.message import EventualSyftMessageWithoutReply
 from ...common.message import ImmediateSyftMessageWithReply
 from ...common.message import ImmediateSyftMessageWithoutReply
@@ -34,7 +33,6 @@ from ...common.message import SyftMessage
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from ...io.location import Location
-from ...io.location import SpecificLocation
 from ...io.route import Route
 from ...pointer.garbage_collection import GarbageCollection
 from ...pointer.garbage_collection import gc_get_default_strategy
@@ -55,7 +53,6 @@ class Client(AbstractNodeClient):
     have permissions - clients should not store private keys)."""
 
     __attr_allowlist__ = [
-        "obj_type",
         "id",
         "name",
         "routes",
@@ -128,14 +125,6 @@ class Client(AbstractNodeClient):
                 icon += s
             icon += "]"
         return icon
-
-    @staticmethod
-    def deserialize_client_metadata_from_node(
-        metadata: Metadata_PB,
-    ) -> Tuple[SpecificLocation, str, UID]:
-        # string of bytes
-        meta = sy.deserialize(blob=metadata)
-        return meta.node, meta.name, meta.id
 
     def install_supported_frameworks(self) -> None:
         self.lib_ast = sy.lib.create_lib_ast(client=self)

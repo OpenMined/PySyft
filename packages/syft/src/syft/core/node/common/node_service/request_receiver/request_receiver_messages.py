@@ -4,19 +4,13 @@ from typing import List
 from typing import Optional
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
 # relative
-from ...... import deserialize
-from ...... import serialize
 from ......logger import critical
 from ......logger import debug
 from ......logger import traceback
 from ......logger import traceback_and_raise
-from ......proto.core.node.domain.service.request_message_pb2 import (
-    RequestMessage as RequestMessage_PB,
-)
 from .....common import UID
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.serializable import serializable
@@ -36,9 +30,26 @@ class RequestStatus(Enum):
 
 # TODO: this message conflates Message functionality with Manager/Request_API functionality
 # TODO: this needs to be split into two separate pieces of functionality.
-@serializable()
+@serializable(recursive_serde=True)
 class RequestMessage(ImmediateSyftMessageWithoutReply):
-
+    __attr_allowlist__ = [
+        "object_tags",
+        "status",
+        "request_type",
+        "date",
+        "user_name",
+        "user_email",
+        "user_role",
+        "requested_budget",
+        "current_budget",
+        "request_description",
+        "request_id",
+        "address",
+        "object_id",
+        "owner_address",
+        "requester_verify_key",
+        "timeout_secs",
+    ]
     __slots__ = ["name", "request_description", "request_id"]
 
     def __init__(
@@ -146,57 +157,3 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         # used to expire requests as their destination, this should never be serialized
         if self._arrival_time is None:
             self._arrival_time = arrival_time
-
-    def _object2proto(self) -> RequestMessage_PB:
-        msg = RequestMessage_PB()
-        msg.object_tags.extend(self.object_tags)
-        msg.object_type = self.object_type
-        msg.status = self.status
-        msg.request_type = self.request_type
-        msg.date = self.date
-        msg.user_name = self.user_name
-        msg.user_email = self.user_email
-        msg.user_role = self.user_role
-        msg.requested_budget = self.requested_budget if self.requested_budget else 0.0
-        msg.current_budget = self.current_budget if self.current_budget else 0.0
-        msg.request_description = self.request_description
-        msg.request_id.CopyFrom(serialize(obj=self.request_id))
-        msg.target_address.CopyFrom(serialize(obj=self.address))
-        msg.object_id.CopyFrom(serialize(obj=self.object_id))
-        msg.owner_address.CopyFrom(serialize(obj=self.owner_address))
-        msg.requester_verify_key = bytes(self.requester_verify_key)
-
-        # -1 will represent no timeout, where as 0 is a valid value for timing out
-        # immediately after checking if there is a rule in place to accept or deny
-        if self.timeout_secs is None or self.timeout_secs < 0:
-            self.timeout_secs = -1
-        msg.timeout_secs = int(self.timeout_secs)
-        return msg
-
-    @staticmethod
-    def _proto2object(proto: RequestMessage_PB) -> "RequestMessage":
-        request_msg = RequestMessage(
-            request_id=deserialize(blob=proto.request_id),
-            status=proto.status,
-            request_type=proto.request_type,
-            date=proto.date,
-            object_tags=proto.object_tags,
-            object_type=proto.object_type,
-            user_name=proto.user_name,
-            user_email=proto.user_email,
-            user_role=proto.user_role,
-            requested_budget=proto.requested_budget,
-            current_budget=proto.current_budget,
-            request_description=proto.request_description,
-            address=deserialize(blob=proto.target_address),
-            object_id=deserialize(blob=proto.object_id),
-            owner_address=deserialize(blob=proto.owner_address),
-            requester_verify_key=VerifyKey(proto.requester_verify_key),
-            timeout_secs=proto.timeout_secs,
-        )
-        request_msg.request_id = deserialize(blob=proto.request_id)
-        return request_msg
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return RequestMessage_PB

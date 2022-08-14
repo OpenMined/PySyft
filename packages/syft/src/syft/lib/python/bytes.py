@@ -11,6 +11,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from ...core.common.serde.serializable import serializable
 from ...proto.lib.python.bytes_pb2 import Bytes as Bytes_PB
 from .primitive_interface import PyPrimitive
+from .util import downcast
 
 
 @serializable()
