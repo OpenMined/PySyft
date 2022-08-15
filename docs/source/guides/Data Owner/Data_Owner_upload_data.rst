@@ -14,11 +14,13 @@ uploading it to our Domain Node/server.
    whenever we refer to Domain Node. Both mean the same and are used
    interchangeably.
 
-Uploading Private Data
-----------------------
+Step to Upload Private Data
+---------------------------
 
-The steps covered in this tutorial include: \* **preprocess** of data \*
-mark it with the correct **metadata** \* **upload** it to Domain node
+The steps covered in this tutorial include: 
+#. **preprocess** of data 
+#. mark it with the correct **metadata** 
+#. **upload** it to Domain node
 
 |Data_Owner_upload_data01|
 
