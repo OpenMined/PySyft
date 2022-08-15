@@ -59,7 +59,7 @@ Few things to make a note of before starting:
    hagrid quickstart https://github.com/OpenMined/PySyft/tree/dev/notebooks/quickstart/Tutorial_Notebooks/Data_Owner_deploy_domain.ipynb
    
 
-Step1: Install all required softwares
+Step 1: Install all required softwares
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To simplify the ``installation`` process, we have made an ``install wizard`` notebook that 
@@ -84,7 +84,7 @@ community and explain your problem in the ``#general`` channel, and
 any one of us might be able to help you.
 
 
-Step2: Launching a domain server
+Step 2: Launching a domain server
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Great work, people!! Once you have installed all the dependencies, it is
@@ -125,7 +125,7 @@ While this command runs, you will see various ``volumes`` and
 the next step, where we will learn to monitor the health of
 our Domain Node.
 
-Step3: Checking the status of domain server
+Step 3: Checking the status of domain server
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Now, let us do a quick ``health`` check to ensure the Domain Node is
