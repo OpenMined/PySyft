@@ -522,6 +522,23 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         """
         return self.gamma.sum(*args, **kwargs)
 
+    def mean(
+        self,
+        *args: Tuple[Any, ...],
+        **kwargs: Any,
+    ) -> Union[
+        TensorWrappedPhiTensorPointer, MPCTensor, TensorWrappedGammaTensorPointer
+    ]:
+        """Apply the "truediv" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return self.gamma.mean(*args, **kwargs)
+
     def __getitem__(
         self, key: Union[int, bool, slice]
     ) -> TensorWrappedPhiTensorPointer:
@@ -1322,31 +1339,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         shape = self.shape
         return np.unravel_index(arg_result, shape)
 
-    def mean(
-        self,
-        *args: Tuple[Any, ...],
-        **kwargs: Any,
-    ) -> Union[PhiTensor, GammaTensor]:
-        min_vals = self.min_vals.mean(*args, **kwargs)
-        max_vals = self.max_vals.mean(*args, **kwargs)
-        if len(self.data_subjects.sum()) == 1:
-            return PhiTensor(
-                child=self.child.mean(*args, **kwargs),
-                min_vals=min_vals,
-                max_vals=max_vals,
-                data_subjects=self.data_subjects.mean(*args, **kwargs),
-            )
-
-        # TODO: Expand this later to include more args/kwargs
-        res = GammaTensor(
-            child=self.child.mean(*args, **kwargs),
-            data_subjects=self.data_subjects.mean(),
-            min_vals=min_vals,
-            max_vals=max_vals,
-        )
-
-        return res
-
     def std(
         self,
         axis: Optional[Union[int, Tuple[int, ...]]] = None,
@@ -2032,6 +2024,13 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         #     min_vals=min_val,
         #     max_vals=max_val,
         # )
+
+    def mean(
+        self,
+        axis: Optional[Union[int, Tuple[int, ...]]] = None,
+        **kwargs: Any,
+    ) -> Union[PhiTensor, GammaTensor]:
+        return self.gamma.mean(axis, **kwargs)
 
     def expand_dims(self, axis: int) -> PhiTensor:
         result = np.expand_dims(self.child, axis=axis)
