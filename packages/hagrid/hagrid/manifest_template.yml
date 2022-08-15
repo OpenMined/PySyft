@@ -1,0 +1,29 @@
+manifestVersion: 0.1
+version: ""
+baseUrl: "https://raw.githubusercontent.com/OpenMined/PySyft/"
+hash: "dev"
+target_dir: "~/.hagrid/"
+files:
+  - app/devspace.yml: packages/grid/devspace.yaml
+  - app/docker-compose.build.yml: packages/grid/docker-compose.build.yml
+  - app/docker-compose.dev.yml: packages/grid/docker-compose.dev.yml
+  - app/docker-compose.test.yml: packages/grid/docker-compose.test.yml
+  - app/docker-compose.tls.yml: packages/grid/docker-compose.tls.yml
+  - app/docker-compose.yml: packages/grid/docker-compose.yml
+  - app/ansible.cfg: packages/grid/ansible.cfg
+  - app/.dockerignore: packages/grid/.dockerignore
+  - app/rabbitmq/rabbitmq.conf: packages/grid/rabbitmq/rabbitmq.conf
+  - app/redis/redis.conf: packages/grid/redis/redis.conf
+  - app/seaweedfs/filer.toml: packages/grid/seaweedfs/filer.toml
+  - app/seaweedfs/s3config.json: packages/grid/seaweedfs/s3config.json
+  - app/traefik/docker/dynamic-tls.yml: packages/grid/traefik/docker/dynamic-tls.yml
+  - app/traefik/docker/dynamic.yml: packages/grid/traefik/docker/dynamic.yml
+  - app/traefik/docker/traefik-tls.template.yml: packages/grid/traefik/docker/traefik-tls.template.yml
+  - app/traefik/docker/traefik.yml: packages/grid/traefik/docker/traefik.yml
+  - app/traefik/k8s/dynamic.yml: packages/grid/traefik/k8s/dynamic.yml
+  - app/traefik/k8s/traefik.yml: packages/grid/traefik/k8s/traefik.yml
+  - app/vpn/config.yaml: packages/grid/vpn/config.yaml
+  - app/vpn/headscale.dockerfile: packages/grid/vpn/headscale.dockerfile
+  - app/vpn/tailscale.dockerfile: packages/grid/vpn/tailscale.dockerfile
+  - app/Vagrantfile: packages/grid/Vagrantfile
+  - app/.env: packages/grid/.env

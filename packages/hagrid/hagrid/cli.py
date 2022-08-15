@@ -65,6 +65,7 @@ from .lib import save_vm_details_as_json
 from .lib import update_repo
 from .lib import use_branch
 from .mode import EDITABLE_MODE
+from .parse_template import setup_from_manifest
 from .rand_sec import generate_sec_random_password
 from .style import RichGroup
 
@@ -346,11 +347,13 @@ def execute_commands(cmds: TypeList, dry_run: bool = False) -> None:
                 jupyter_token = extract_jupyter_token(cmd)
                 process_list.append((ip_address, process, jupyter_token))
             else:
+
+                print(f"GRID_SRC_PATH: {GRID_SRC_PATH}")
                 display_jupyter_token(cmd)
                 subprocess.run(  # nosec
                     cmd_to_exec,
                     shell=True,
-                    cwd=GRID_SRC_PATH,
+                    cwd=os.getcwd(),
                 )
         except Exception as e:
             print(f"Failed to run cmd: {cmd}. {e}")
@@ -1423,7 +1426,8 @@ def create_launch_docker_cmd(
         cmd += " --profile frontend"
 
     # new docker compose regression work around
-    default_env = f"{GRID_SRC_PATH}/.env"
+    default_env = os.path.expanduser("~/.hagrid/app/.env")
+    # default_env = f"{GRID_SRC_PATH}/.env"
     default_envs = {}
     with open(default_env, "r") as f:
         for line in f.readlines():
@@ -2684,3 +2688,11 @@ def ssh(ip_address: str, cmd: str) -> None:
 
 
 cli.add_command(ssh)
+
+
+@click.command(help="launch domain using a manifest template")
+def template():
+    setup_from_manifest()
+
+
+cli.add_command(template)
