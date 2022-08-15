@@ -262,6 +262,16 @@ class FixedPrecisionTensor(PassthroughTensor):
             res.child = self.child.sum(axis=axis)
         return res
 
+    def mean(
+        self, axis: Optional[Union[int, Tuple[int, ...]]] = None
+    ) -> FixedPrecisionTensor:
+        res = FixedPrecisionTensor(base=self._base, precision=self._precision)
+        if isinstance(self.child, np.ndarray):
+            res.child = np.array(self.child.mean(axis=axis))
+        else:
+            res.child = self.child.mean(axis=axis)
+        return res
+
     def _object2bytes(self) -> bytes:
         schema = get_capnp_schema(schema_file="fixed_precision_tensor.capnp")
 
