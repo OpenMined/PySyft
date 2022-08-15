@@ -578,6 +578,71 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
 
         return result
 
+    def mean(
+        self,
+        *args: Tuple[Any, ...],
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the "truediv" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.mean"
+        min_vals = self.min_vals.mean(*args, **kwargs)
+        max_vals = self.max_vals.mean(*args, **kwargs)
+
+        result = TensorWrappedGammaTensorPointer(
+            data_subjects=self.data_subjects,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[],
+            kwargs={},
+        )
+        dummy_res = np.empty(self.public_shape).mean(*args, **kwargs)
+        result.public_shape = dummy_res.shape
+        result.public_dtype = self.public_dtype
+
+        return result
+
     def __getitem__(
         self, key: Union[int, bool, slice]
     ) -> TensorWrappedGammaTensorPointer:
@@ -1730,6 +1795,29 @@ class GammaTensor:
             state=output_state,
         )
 
+    def mean(
+        self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs: Any
+    ) -> GammaTensor:
+        def _mean(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.mean(self.run(state).child)  # type: ignore
+
+        output_state = dict()
+        output_state[self.id] = self
+
+        child = self.child.mean(axis=axis, **kwargs)
+
+        min_v = child.min()
+        max_v = child.max()
+
+        return GammaTensor(
+            child=child,
+            data_subjects=np.array(self.data_subjects.mean(axis=axis, **kwargs)),
+            min_vals=lazyrepeatarray(data=min_v, shape=child.shape),
+            max_vals=lazyrepeatarray(data=max_v, shape=child.shape),
+            func=_mean,
+            state=output_state,
+        )
+
     def ones_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> GammaTensor:
         def _ones_like(state: dict) -> jax.numpy.DeviceArray:
             return jnp.ones_like(self.run(state))
@@ -1844,35 +1932,6 @@ class GammaTensor:
 
     def _argmax(self, axis: Optional[int]) -> np.ndarray:
         return self.child.argmax(axis)
-
-    def mean(self, axis: Union[int, Tuple[int, ...]], **kwargs: Any) -> GammaTensor:
-        output_state = dict()
-        output_state[self.id] = self
-
-        def _mean(
-            state: dict, axis: Union[int, Tuple[int, ...]] = axis
-        ) -> jax.numpy.DeviceArray:
-            return jnp.mean(self.run(state), axis)
-
-        result = self.child.mean(axis, **kwargs)
-        minv = (
-            self.min_vals.data
-            if isinstance(self.min_vals, lazyrepeatarray)
-            else self.min_vals
-        )
-        maxv = (
-            self.max_vals.data
-            if isinstance(self.max_vals, lazyrepeatarray)
-            else self.max_vals
-        )
-        return GammaTensor(
-            child=result,
-            data_subjects=self.data_subjects.mean(axis, **kwargs),
-            min_vals=lazyrepeatarray(data=minv, shape=result.shape),
-            max_vals=lazyrepeatarray(data=(maxv + minv) / 2, shape=result.shape),
-            state=output_state,
-            func=_mean,
-        )
 
     def expand_dims(self, axis: Optional[int] = None) -> GammaTensor:
 
