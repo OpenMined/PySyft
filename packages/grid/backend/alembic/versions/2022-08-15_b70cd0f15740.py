@@ -1,8 +1,8 @@
-"""ADD keep_connected column
+"""empty message
 
-Revision ID: a8ffb9432e29
-Revises: f712122fe780
-Create Date: 2022-05-08 20:07:54.218896
+Revision ID: b70cd0f15740
+Revises: 741a16c345bf
+Create Date: 2022-08-15 03:52:45.076651
 
 """
 # third party
@@ -10,8 +10,8 @@ from alembic import op  # type: ignore
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = "a8ffb9432e29"
-down_revision = "f712122fe780"
+revision = "b70cd0f15740"
+down_revision = "741a16c345bf"
 branch_labels = None
 depends_on = None
 

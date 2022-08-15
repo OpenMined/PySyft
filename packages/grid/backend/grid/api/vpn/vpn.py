@@ -11,6 +11,9 @@ from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 
 # syft absolute
+from syft.core.node.common.node_service.association_request.association_request_service import (
+    get_vpn_status_metadata,
+)
 from syft.core.node.common.node_service.vpn.vpn_messages import (
     VPNConnectMessageWithReply,
 )
@@ -92,11 +95,14 @@ def join(
 # this endpoint will ask the node to get the status of the vpn connection which returns
 # a bool for connected, the host details and the peers
 @router.get("/status", status_code=200, response_class=JSONResponse)
-def status() -> Dict[str, Any]:
+def status(
+    current_user: Any = Depends(get_current_user),
+) -> Dict[str, Any]:
+    user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
     msg = (
         VPNStatusMessageWithReply(kwargs={})
         .to(address=node.address, reply_to=node.address)
-        .sign(signing_key=node.signing_key)
+        .sign(signing_key=user_key)
     )
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
 
@@ -125,15 +131,18 @@ if settings.NODE_TYPE.lower() == "network":
 
         result = {"status": "error"}
         try:
+            # get the host_or_ip from tailscale
+            try:
+                vpn_metadata = get_vpn_status_metadata(node=node)
+                result["host_or_ip"] = vpn_metadata["host_or_ip"]
+            except Exception as e:
+                print(f"failed to get get_vpn_status_metadata. {e}")
+                result["host_or_ip"] = "100.64.0.1"
             result["node_id"] = str(node.target_id.id.no_dash)
-            # status = get_status(tailscale_host="http://tailscale:4000")
-            # result["host_or_ip"] = status[1]["ip"]
-            result["host_or_ip"] = "100.64.0.1"
             result["node_name"] = str(node.name)
             result["status"] = str(reply.payload.kwargs.get("status"))
             result["vpn_auth_key"] = str(reply.payload.kwargs.get("vpn_auth_key"))
         except Exception as e:
             print("failed", e, type(reply), type(reply.payload))
-            pass
 
         return result

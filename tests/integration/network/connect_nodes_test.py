@@ -172,8 +172,8 @@ def exec_node_command(command: str, node_name: str) -> None:
     else:
         pod = "proxy-0"
         container = "container-1"
-        context = "k3d-" + node_name
-        namespace = node_name
+        context = "k3d-" + node_name.replace("_", "-")
+        namespace = node_name.replace("_", "-")
 
         try:
             cmd = (
