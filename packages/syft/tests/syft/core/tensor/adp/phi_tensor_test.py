@@ -352,6 +352,7 @@ def test_mean(
     ishan: DataSubjectArray,
     kwargs: Dict,
 ) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
     zeros_tensor = PT(
         child=reference_data * 0,
         data_subjects=ishan,
@@ -365,9 +366,11 @@ def test_mean(
         min_vals=lower_bound,
     )
 
-    tensor_mean = tensor.mean(**kwargs)
+    tensor_mean = tensor.mean()
+    tensor_mean_axis_1 = tensor.mean(**kwargs)
 
-    assert (tensor_mean.child == reference_data.mean(**kwargs)).all()
+    assert (tensor_mean.child == reference_data.mean()).all()
+    assert (tensor_mean_axis_1.child == reference_data.mean(**kwargs)).all()
     assert zeros_tensor.mean().child == 0
 
 
