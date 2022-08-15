@@ -182,6 +182,7 @@ services:
       - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
       - CONTAINER_HOST=${CONTAINER_HOST}
       - NETWORK_CHECK_INTERVAL=${NETWORK_CHECK_INTERVAL}
+      - DOMAIN_CHECK_INTERVAL=${DOMAIN_CHECK_INTERVAL}
     command: "/worker-start.sh"
     network_mode: service:proxy
 

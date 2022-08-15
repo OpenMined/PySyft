@@ -85,6 +85,8 @@ vars:
     value: traefik-domain.yaml
   - name: NETWORK_CHECK_INTERVAL
     value: "60"
+  - name: DOMAIN_CHECK_INTERVAL
+    value: "60"
   - name: TEST_MODE
     value: "0"
 
@@ -598,6 +600,8 @@ deployments:
                 value: ${RELEASE}
               - name: NETWORK_CHECK_INTERVAL
                 value: $!{NETWORK_CHECK_INTERVAL}
+              - name: DOMAIN_CHECK_INTERVAL
+                value: $!{DOMAIN_CHECK_INTERVAL}
               - name: USE_BLOB_STORAGE
                 value: ${USE_BLOB_STORAGE}
               - name: TEST_MODE
