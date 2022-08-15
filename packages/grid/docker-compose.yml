@@ -226,7 +226,7 @@ services:
       - mongo-data:/data/db
 
   arango:
-    image: arangodb:latest
+    image: arangodb/arangodb:3.9.2-noavx
     restart: always
     environment:
       ARANGO_ROOT_PASSWORD: somepassword
