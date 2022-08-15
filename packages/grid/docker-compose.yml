@@ -6,64 +6,56 @@ services:
       - net_admin
       - net_raw
 
-  tailscale:
+  proxy:
+    restart: always
     hostname: ${DOMAIN_NAME?Variable not set}
+    image: ${DOCKER_IMAGE_TRAEFIK?Variable not set}:${TRAEFIK_VERSION?Variable not set}
+    networks:
+      - "${TRAEFIK_PUBLIC_NETWORK?Variable not set}"
+      - default
+    volumes:
+      - "./traefik/docker/traefik.yml:/etc/traefik/traefik.yml"
+      - "./traefik/docker/dynamic.yml:/etc/traefik/conf/dynamic.yml"
+    environment:
+      - SERVICE_NAME=proxy
+      - RELEASE=${RELEASE:-production}
+      - HOSTNAME=${DOMAIN_NAME?Variable not set}
+      - HTTP_PORT=${HTTP_PORT}
+      - HTTPS_PORT=${HTTPS_PORT}
+    ports:
+      - "${HTTP_PORT}:81"
+    depends_on:
+      - "docker-host"
+
+  tailscale:
+    profiles:
+      - vpn
     image: "${DOCKER_IMAGE_TAILSCALE?Variable not set}:${VERSION-latest}"
     environment:
       - SERVICE_NAME=tailscale
       - RELEASE=${RELEASE:-production}
       - HOSTNAME=${DOMAIN_NAME?Variable not set}
       - STACK_API_KEY=$STACK_API_KEY
-      - HTTP_PORT=${HTTP_PORT}
-      - HTTPS_PORT=${HTTPS_PORT}
     volumes:
       - tailscale-data:/var/lib/tailscale
       - "/dev/net/tun:/dev/net/tun" # Required for tailscale to work
     cap_add: # Required for tailscale to work
       - net_admin
       - sys_module
-    ports:
-      - "${HTTP_PORT}:81"
-      - "41641/udp"
-      - "4000"
+    # ports:
+    #   - "41641/udp"
+    #   - "4000"
     depends_on:
-      - "docker-host"
-
-  proxy:
-    restart: always
-    image: ${DOCKER_IMAGE_TRAEFIK?Variable not set}:${TRAEFIK_VERSION?Variable not set}
-    networks:
-      - "${TRAEFIK_PUBLIC_NETWORK?Variable not set}"
-      - default
-    network_mode: service:tailscale
-    volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock"
-    environment:
-      - SERVICE_NAME=proxy
-      - RELEASE=${RELEASE:-production}
-    command:
-      - "--providers.docker"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.constraints=Label(`traefik.constraint-label-stack`, `${TRAEFIK_TAG?Variable not set}`)"
-      - "--entrypoints.web.address=:81"
-      - "--entrypoints.vpn.address=:80"
-      # Enable the access log, with HTTP requests
-      - "--accesslog"
-      # Enable the Traefik log, for configurations and errors
-      - "--log"
-      - "--ping=true"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
-      - "traefik.http.routers.ping.rule=PathPrefix(`/ping`)"
-      - "traefik.http.services.ping.loadbalancer.server.port=80"
-      - "traefik.http.routers.ping.service=ping@internal"
+      - proxy
+    network_mode: service:proxy
 
   frontend:
     restart: always
     image: "${DOCKER_IMAGE_FRONTEND?Variable not set}:${VERSION-latest}"
     profiles:
       - frontend
+    depends_on:
+      - proxy
     environment:
       - SERVICE_NAME=frontend
       - RELEASE=${RELEASE:-production}
@@ -72,11 +64,6 @@ services:
       - VERSION_HASH=${VERSION_HASH}
       - HTTP_PORT=${HTTP_PORT}
       - HTTPS_PORT=${HTTPS_PORT}
-    labels:
-      - "traefik.enable=true"
-      - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
-      - "traefik.http.routers.${STACK_NAME?Variable not set}-frontend.rule=PathPrefix(`/`)"
-      - "traefik.http.services.${STACK_NAME?Variable not set}-frontend.loadbalancer.server.port=80"
 
   db:
     restart: always
@@ -124,6 +111,7 @@ services:
     restart: always
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
     depends_on:
+      - proxy
       - db
     env_file:
       - .env
@@ -142,19 +130,14 @@ services:
       - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
       - CONTAINER_HOST=${CONTAINER_HOST}
     command: /start.sh
-    labels:
-      - "traefik.enable=true"
-      - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
-      - "traefik.http.routers.${STACK_NAME?Variable not set}-backend.rule=PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)" # WARNING: this wont match /api/v1/syft/stream because of length
-      - "traefik.http.services.${STACK_NAME?Variable not set}-backend.loadbalancer.server.port=8001"
     network_mode: service:proxy
 
   backend_stream:
     restart: always
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
     depends_on:
+      - proxy
       - db
-      - backend
     env_file:
       - .env
     environment:
@@ -172,18 +155,14 @@ services:
       - HTTPS_PORT=${HTTPS_PORT}
       - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
       - CONTAINER_HOST=${CONTAINER_HOST}
-    command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /start.sh"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
-      - "traefik.http.routers.${STACK_NAME?Variable not set}-backend-stream.rule=PathPrefix(`/api`) && PathPrefix(`/api/v1/syft/stream`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)" # WARNING: this only matches /api/v1/syft/stream because of length
-      - "traefik.http.services.${STACK_NAME?Variable not set}-backend-stream.loadbalancer.server.port=8011"
+    command: "/start.sh"
     network_mode: service:proxy
 
   celeryworker:
     restart: always
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
     depends_on:
+      - proxy
       - db
       - queue
     env_file:
@@ -203,12 +182,14 @@ services:
       - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
       - CONTAINER_HOST=${CONTAINER_HOST}
       - NETWORK_CHECK_INTERVAL=${NETWORK_CHECK_INTERVAL}
-    command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /worker-start.sh"
+    command: "/worker-start.sh"
     network_mode: service:proxy
 
   headscale:
     profiles:
       - network
+    depends_on:
+      - proxy
     hostname: headscale
     image: "${DOCKER_IMAGE_HEADSCALE?Variable not set}:${VERSION-latest}"
     volumes:
@@ -217,18 +198,13 @@ services:
       - RELEASE=${RELEASE:-production}
       - NETWORK_NAME=omnet
       - STACK_API_KEY=$STACK_API_KEY
-    labels:
-      - "traefik.enable=true"
-      - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
-      - "traefik.http.routers.${STACK_NAME?Variable not set}-vpn.rule=PathPrefix(`/vpn`)"
-      - "traefik.http.routers.${STACK_NAME?Variable not set}-vpn.middlewares=${STACK_NAME?Variable not set}-vpn"
-      - "traefik.http.middlewares.${STACK_NAME?Variable not set}-vpn.stripprefix.prefixes=/vpn"
-      - "traefik.http.middlewares.${STACK_NAME?Variable not set}-vpn.stripprefix.forceslash=true"
-      - "traefik.http.services.${STACK_NAME?Variable not set}-vpn.loadbalancer.server.port=8080"
 
   seaweedfs:
     profiles:
       - blob-storage
+    depends_on:
+      - proxy
+      - redis
     image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}"
     environment:
       - S3_VOLUME_SIZE_MB=${S3_VOLUME_SIZE_MB:-1024}
@@ -237,20 +213,6 @@ services:
       - seaweedfs-data:/data
       - ./seaweedfs/s3config.json:/etc/s3config.json
       - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml
-
-    depends_on:
-      - redis
-    labels:
-      - "traefik.enable=true"
-      - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
-      - "traefik.http.routers.${STACK_NAME?Variable not set}-blob.rule=PathPrefix(`/blob`)"
-      - "traefik.http.routers.${STACK_NAME?Variable not set}-blob.middlewares=${STACK_NAME?Variable not set}-host,${STACK_NAME?Variable not set}-blob"
-      - "traefik.http.middlewares.${STACK_NAME?Variable not set}-host.headers.customrequestheaders.Host=${S3_ENDPOINT}:${S3_PORT}"
-      - "traefik.http.middlewares.${STACK_NAME?Variable not set}-blob.stripprefix.prefixes=/blob"
-      - "traefik.http.middlewares.${STACK_NAME?Variable not set}-blob.stripprefix.forceslash=true"
-      - "traefik.http.services.${STACK_NAME?Variable not set}-blob.loadbalancer.server.port=${S3_PORT}"
-      # by rewriting the customrequestheaders.Host with the same host:port as the
-      # code uses internally any S3 presigned urls will still validate
 
 volumes:
   app-db-data:

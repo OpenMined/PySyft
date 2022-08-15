@@ -389,7 +389,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return self.__class__(self.child.transpose(*args, **kwargs))
 
     def __getitem__(
-        self, key: Union[int, bool, np.array, PassthroughTensor, slice, Ellipsis]
+        self, key: Union[int, bool, np.array, PassthroughTensor, slice]
     ) -> Union[PassthroughTensor, AcceptableSimpleType]:
         if isinstance(key, PassthroughTensor):
             return self.__class__(self.child.__getitem__(key.child))
@@ -543,15 +543,17 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     ) -> PassthroughTensor:
         return self.__class__(self.child.std(axis=axis))
 
-    # numpy.sum(a, axis=None, dtype=None, out=None, keepdims=<no value>, initial=<no value>, where=<no value>)
-    def sum(
-        self, axis: Optional[Union[int, TypeTuple[int, ...]]] = None
-    ) -> PassthroughTensor:
-        result = self.child.sum(axis=axis)
+    def sum(self, *args, **kwargs) -> PassthroughTensor:
+        result = self.child.sum(*args, **kwargs)
         if hasattr(self, "copy_tensor"):
             tensor = self.copy_tensor()
             tensor.child = result
             return tensor
+        return self.__class__(result)
+
+    def ones_like(self, *args, **kwargs) -> PassthroughTensor:
+        result = self.child.ones_like(*args, **kwargs)
+
         return self.__class__(result)
 
     # numpy.take(a, indices, axis=None, out=None, mode='raise')

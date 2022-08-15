@@ -32,7 +32,10 @@ class HTTPConnection(ClientConnection):
             raise Exception(f"Invalid GridURL. {self.base_url}")
 
     def send_immediate_msg_with_reply(
-        self, msg: SignedImmediateSyftMessageWithReply, timeout: Optional[float] = None
+        self,
+        msg: SignedImmediateSyftMessageWithReply,
+        timeout: Optional[float] = None,
+        return_signed: bool = False,
     ) -> SignedImmediateSyftMessageWithoutReply:
         """
         Sends high priority messages and wait for their responses.

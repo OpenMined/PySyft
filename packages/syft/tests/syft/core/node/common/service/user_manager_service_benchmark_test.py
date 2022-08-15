@@ -87,7 +87,7 @@ class TestCreateUserMessageBenchmarking:
     def setup_users(self, domain: DomainInterface, faker: Faker) -> None:
 
         # Register domain setup configuration
-        domain.setup.register(domain_name=domain.name)
+        domain.setup.register_once(domain_name=domain.name)
 
         self.do_users = []
 

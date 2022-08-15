@@ -14,3 +14,5 @@ class Node(Base):
     id = Column(Integer(), primary_key=True, autoincrement=True)
     node_uid = Column(String(255))
     node_name = Column(String(255))
+    node_type = Column(String(255))
+    verify_key = Column(String(2048))

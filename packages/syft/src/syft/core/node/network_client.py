@@ -34,6 +34,8 @@ from .common.node_service.network_search.network_search_messages import (
 )
 from .enums import RequestAPIFields
 
+DEFAULT_SEARCH_TIMEOUT = 120  # seconds
+
 
 @final
 class NetworkClient(Client):
@@ -161,9 +163,14 @@ class NetworkClient(Client):
     def vpn_status(self) -> Dict[str, Any]:
         return self.vpn.get_status()
 
-    def search(self, query: List, pandas: bool = True) -> Any:
+    def search(
+        self,
+        query: List,
+        pandas: bool = True,
+        timeout: Optional[int] = DEFAULT_SEARCH_TIMEOUT,
+    ) -> Any:
         response = self._perform_grid_request(
-            grid_msg=NetworkSearchMessage, content={"content": query}
+            grid_msg=NetworkSearchMessage, content={"content": query}, timeout=timeout
         )
         result = response.content  # type: ignore
         if result["status"] == "ok":
@@ -176,7 +183,10 @@ class NetworkClient(Client):
         return result
 
     def _perform_grid_request(
-        self, grid_msg: Any, content: Optional[Dict[Any, Any]] = None
+        self,
+        grid_msg: Any,
+        content: Optional[Dict[Any, Any]] = None,
+        timeout: Optional[int] = None,
     ) -> SyftMessage:
         if content is None:
             content = {}
@@ -185,7 +195,7 @@ class NetworkClient(Client):
         content[RequestAPIFields.REPLY_TO] = self.address
         signed_msg = grid_msg(**content).sign(signing_key=self.signing_key)
         # Send to the dest
-        response = self.send_immediate_msg_with_reply(msg=signed_msg)
+        response = self.send_immediate_msg_with_reply(msg=signed_msg, timeout=timeout)
         if isinstance(response, ExceptionMessage):
             raise response.exception_type
         else:

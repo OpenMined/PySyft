@@ -12,6 +12,8 @@ import pytest
 
 # syft absolute
 import syft as sy
+from syft.core.adp.data_subject_list import DataSubjectArray
+from syft.core.node.common.client import Client
 
 clients = []  # clients for smpc test
 PORT = 9082  # domain port start
@@ -60,6 +62,25 @@ def reference_data(data_shape: np.ndarray, data_max: int) -> np.ndarray:
     return np.random.random(size=data_shape) * data_max
 
 
+@pytest.fixture
+def domain_owner() -> Client:
+    return sy.login(email="info@openmined.org", password="changethis", port=PORT)
+
+
+@pytest.fixture
+def cleanup_storage(domain_owner):
+    # Delete any dataset remaining before the test
+    for dataset in domain_owner.datasets.all():
+        domain_owner.datasets.delete(dataset_id=dataset.get("id"))
+
+    # Execute tests
+    yield
+
+    # Delete any dataset remaining after the test
+    for dataset in domain_owner.datasets.all():
+        domain_owner.datasets.delete(dataset_id=dataset.get("id"))
+
+
 e2e_clients = []  # clients for e2e test
 
 
@@ -67,7 +88,8 @@ def load_dataset() -> None:
     PARTIES = 2
 
     data = np.array([[1.2, 2.7], [3.4, 4.8]])
-    data = sy.Tensor(data).private(0, 5, data_subjects=["Mars"] * data.shape[0])
+    data_subjects = np.broadcast_to(np.array(DataSubjectArray(["Mars"])), data.shape)
+    data = sy.Tensor(data).private(0, 5, data_subjects)
 
     for i in range(PARTIES):
         try:

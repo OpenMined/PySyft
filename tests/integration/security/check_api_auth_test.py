@@ -1,11 +1,13 @@
 # stdlib
 import os
+import platform
 import subprocess
 
 # third party
 import pytest
 
 CONTAINER_HOST = os.environ.get("CONTAINER_HOST", "docker")
+OS = platform.system().lower()
 print("CONTAINER_HOST", CONTAINER_HOST)
 
 
@@ -17,7 +19,7 @@ def make_curl_cmd(url: str, key: str) -> str:
         container = "test_network_1-tailscale-1"
         return f'echo "{container_cmd}" | docker exec -i {container} bash 2>&1'
     else:
-        pod = "tailscale-0"
+        pod = "proxy-0"
         container = "container-1"
         context = "k3d-test-network-1"
         namespace = "test-network-1"
@@ -25,7 +27,9 @@ def make_curl_cmd(url: str, key: str) -> str:
             f"kubectl exec -it {pod} -c {container}  --context {context} "
             + f"--namespace {namespace} -- "
         )
-        return f"{kubectl_run} {add_curl} &&" f"{kubectl_run} {run_curl}"
+        return (
+            f'{kubectl_run} bash -c "{add_curl}" && {kubectl_run} bash -c "{run_curl}"'
+        )
 
 
 def make_get_key_cmd() -> str:
@@ -56,9 +60,12 @@ def get_stack_key() -> str:
 
 @pytest.mark.security
 def test_api_auth() -> None:
+    # TODO: make work on Windows
+    if OS == "windows":
+        return
     urls = [
         "http://headscale:4000/commands/generate_key",
-        "http://tailscale:4000/commands/status",
+        "http://proxy:4000/commands/status",
     ]
 
     old_stack_key = "hex_key_value"

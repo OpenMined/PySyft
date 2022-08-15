@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 from typing import Any
 from typing import Dict
+from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
@@ -12,6 +13,7 @@ from typing import Union
 
 # third party
 import numpy as np
+from scipy.ndimage.interpolation import rotate
 
 # relative
 from ..common.serde.serializable import serializable
@@ -54,10 +56,27 @@ class lazyrepeatarray:
             data = np.array(data)
 
         # verify broadcasting works on shapes
-        np.broadcast_shapes(data.shape, shape)
+        if -1 not in shape:
+            np.broadcast_shapes(data.shape, shape)
 
         self.data = data
         self.shape = shape
+        if isinstance(shape, Iterable):
+            for val in shape:
+                if val < 0:
+                    raise ValueError(f"Invalid shape: {shape}")
+
+    def __getitem__(self, item: Union[str, int, slice]) -> lazyrepeatarray:
+        if self.data.shape == self.shape:
+            output = self.data[item]
+            return lazyrepeatarray(data=output, shape=output.shape)
+        elif self.data.size == 1:
+            test_arr = np.ones(self.shape)[
+                item
+            ]  # TODO: Is there a better way to determine output shape?
+            return lazyrepeatarray(data=self.data, shape=test_arr.shape)
+        else:
+            raise NotImplementedError
 
     def __add__(self, other: Any) -> lazyrepeatarray:
         """
@@ -129,15 +148,23 @@ class lazyrepeatarray:
                 )
             return self.__class__(data=self.data.__matmul__(other), shape=new_shape)
 
-        if self.shape[-1] != other.shape[0]:
+        if self.shape[-1] != other.shape[-2]:
             raise Exception(
-                "cannot matrix multiply tensors with different shapes: {self.shape} and {other.shape}"
+                f"cannot matrix multiply tensors with different shapes: {self.shape} and {other.shape}"
             )
 
         result = self.to_numpy() @ other.to_numpy()
         return self.__class__(data=result, shape=result.shape)
 
         # raise Exception("not sure how to do this yet")
+
+    def zeros_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
+        res = np.array(np.zeros_like(self.to_numpy(), *args, **kwargs))
+        return lazyrepeatarray(data=res, shape=res.shape)
+
+    def __rtruediv__(self, other: Any) -> lazyrepeatarray:
+        res = (1 / self.data) * other
+        return lazyrepeatarray(data=res, shape=self.shape)
 
     def __rmatmul__(self, other: Any) -> lazyrepeatarray:
         """
@@ -169,6 +196,61 @@ class lazyrepeatarray:
             return self * self
         raise Exception("not sure how to do this yet")
 
+    def pad(self, pad_width: int, mode: str = "reflect") -> lazyrepeatarray:
+        if mode == "reflect":
+            new_shape = tuple([i + pad_width * 2 for i in self.shape])
+            if self.data.shape == self.shape:
+                return lazyrepeatarray(
+                    data=np.pad(self.data, pad_width=pad_width, mode="reflect"),
+                    shape=new_shape,
+                )
+            elif self.data.size == 1:
+                return lazyrepeatarray(data=self.data, shape=new_shape)
+            else:
+                raise NotImplementedError
+        else:
+            raise NotImplementedError
+
+    def horizontal_flip(self) -> lazyrepeatarray:
+        if self.data.shape == self.shape:
+            return lazyrepeatarray(data=np.fliplr(self.data), shape=self.shape)
+        elif self.data.size == 1:
+            return lazyrepeatarray(data=self.data, shape=self.shape)
+        else:
+            raise NotImplementedError
+
+    def vertical_flip(self) -> lazyrepeatarray:
+        if self.data.shape == self.shape:
+            return lazyrepeatarray(data=np.flipud(self.data), shape=self.shape)
+        elif self.data.size == 1:
+            return lazyrepeatarray(data=self.data, shape=self.shape)
+        else:
+            raise NotImplementedError
+
+    def rotate(self, angle: int) -> lazyrepeatarray:
+        if self.data.shape == self.shape:
+            return lazyrepeatarray(data=rotate(self.data, angle), shape=self.shape)
+        elif self.data.size == 1:
+            # TODO: This is almost certainly incorrect
+            return lazyrepeatarray(data=self.data, shape=self.shape)
+        else:
+            raise NotImplementedError
+
+    def reshape(self, target_shape: Tuple) -> lazyrepeatarray:
+        if self.data.shape == self.shape:
+            return lazyrepeatarray(
+                data=self.data.reshape(target_shape), shape=target_shape
+            )
+        elif self.data.size == 1:
+            return lazyrepeatarray(data=self.data, shape=target_shape)
+        else:
+            if not np.broadcast_shapes(self.data.shape, target_shape):
+                raise NotImplementedError(
+                    f"data= {self.data.shape}, shape: {self.shape}"
+                )
+            else:
+                return lazyrepeatarray(data=self.data, shape=target_shape)
+
     def copy(self, order: Optional[str] = "K") -> lazyrepeatarray:
         return self.__class__(data=self.data.copy(order=order), shape=self.shape)
 
@@ -176,12 +258,13 @@ class lazyrepeatarray:
     def size(self) -> int:
         return np.prod(self.shape)
 
-    def sum(self, *args: Tuple[Any, ...], **kwargs: Any) -> np.ndarray:
-        if "axis" in kwargs and kwargs["axis"] is None:
-            # TODO: make fast
-            return np.array(self.to_numpy().sum())
-        else:
-            raise Exception("not sure how to do this yet")
+    def sum(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
+        res = np.array(self.to_numpy().sum(*args, **kwargs))
+        return lazyrepeatarray(data=res, shape=res.shape)
+
+    def ones_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
+        res = np.array(np.ones_like(self.to_numpy(), *args, **kwargs))
+        return lazyrepeatarray(data=res, shape=res.shape)
 
     def __eq__(self, other: Any) -> lazyrepeatarray:  # type: ignore
         if isinstance(other, lazyrepeatarray):

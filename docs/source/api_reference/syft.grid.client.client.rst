@@ -15,11 +15,16 @@ syft.grid.client.client
    
       connect
       login
-      register
    
    
 
    
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      GridClient
    
    
 
