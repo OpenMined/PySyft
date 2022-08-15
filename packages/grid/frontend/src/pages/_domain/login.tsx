@@ -62,7 +62,7 @@ export default function Login() {
           <Text className="text-gray-600 text-center">
             {t('running-version')}{' '}
             <span className="text-gray-800">
-              {settings?.version ?? '0.7.0-beta.40'}
+              {settings?.version ?? '0.7.0-beta.41'}
             </span>{' '}
             <BetaBadge />
           </Text>
