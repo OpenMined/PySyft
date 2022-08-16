@@ -3398,6 +3398,8 @@ spec:
               value: production
             - name: NETWORK_CHECK_INTERVAL
               value: "60"
+            - name: DOMAIN_CHECK_INTERVAL
+              value: "60"
             - name: USE_BLOB_STORAGE
               value: "True"
           envFrom:
