@@ -225,16 +225,6 @@ services:
     volumes:
       - mongo-data:/data/db
 
-  arango:
-    image: arangodb/arangodb:3.9.2-noavx
-    restart: always
-    environment:
-      ARANGO_ROOT_PASSWORD: somepassword
-    ports:
-      - "8529"
-    volumes:
-      - arango-data:/var/lib/arangodb3
-
 volumes:
   app-db-data:
   tailscale-data:
@@ -242,7 +232,6 @@ volumes:
   app-redis-data:
   seaweedfs-data:
   mongo-data:
-  arango-data:
 
 networks:
   traefik-public:
