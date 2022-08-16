@@ -4,23 +4,25 @@ from typing import Dict
 
 # third party
 import numpy as np
+from numpy.typing import ArrayLike
 import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.adp.data_subject import DataSubject
+from syft.core.adp.data_subject_list import DataSubjectArray
+from syft.core.tensor.autodp.gamma_tensor import GammaTensor
 from syft.core.tensor.autodp.phi_tensor import PhiTensor as PT
 from syft.core.tensor.tensor import Tensor
 
 
 @pytest.fixture
-def ishan() -> DataSubject:
-    return DataSubject(name="φhishan")
+def ishan() -> ArrayLike:
+    return np.array(DataSubjectArray(["φhishan"]))
 
 
 @pytest.fixture
-def traskmaster() -> DataSubject:
-    return DataSubject(name="λamdrew")
+def traskmaster() -> ArrayLike:
+    return np.ndarray(DataSubjectArray(["λamdrew"]))
 
 
 @pytest.fixture
@@ -79,9 +81,9 @@ def test_pos(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
-    ishan: DataSubject,
+    ishan: DataSubjectArray,
 ) -> None:
-
+    ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
         child=reference_data,
         data_subjects=ishan,
@@ -94,16 +96,17 @@ def test_pos(
     assert (output.child == reference_tensor.child).all()
     assert (output.min_vals == reference_tensor.min_vals).all()
     assert (output.max_vals == reference_tensor.max_vals).all()
-    assert output.data_subjects == reference_tensor.data_subjects
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
 
 
 def test_eq(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
-    ishan: DataSubject,
+    ishan: DataSubjectArray,
 ) -> None:
     """Test equality between two identical PhiTensors"""
+    ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
         child=reference_data,
         data_subjects=ishan,
@@ -128,9 +131,10 @@ def test_add_wrong_types(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
-    ishan: DataSubject,
+    ishan: DataSubjectArray,
 ) -> None:
     """Ensure that addition with incorrect types aren't supported"""
+    ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
         child=reference_data,
         data_subjects=ishan,
@@ -147,11 +151,12 @@ def test_add_tensor_types(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
-    ishan: DataSubject,
+    ishan: DataSubjectArray,
     highest: int,
     dims: int,
 ) -> None:
     """Test addition of a PT with various other kinds of Tensors"""
+    ishan = np.broadcast_to(ishan, reference_data.shape)
     # TODO: Add tests for GammaTensor, etc when those are built out.
     reference_tensor = PT(
         child=reference_data,
@@ -171,19 +176,20 @@ def test_add_tensor_types(
         assert isinstance(result, PT), "PT + Tensor != PT"
         assert (
             result.max_vals == reference_tensor.max_vals + simple_tensor.child.max()
-        ), "PT + Tensor: incorrect max_val"
+        ), "PT + Tensor: incorrect max_vals"
         assert (
             result.min_vals == reference_tensor.min_vals + simple_tensor.child.min()
-        ), "PT + Tensor: incorrect min_val"
+        ), "PT + Tensor: incorrect min_vals"
 
 
 def test_add_single_data_subjects(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
-    ishan: DataSubject,
+    ishan: DataSubjectArray,
 ) -> None:
     """Test the addition of PhiTensors"""
+    ishan = np.broadcast_to(ishan, reference_data.shape)
     tensor1 = PT(
         child=reference_data,
         data_subjects=ishan,
@@ -198,13 +204,15 @@ def test_add_single_data_subjects(
     )
 
     result = tensor2 + tensor1
-    assert isinstance(result, PT), "Addition of two PTs is wrong type"
+    # TODO: As we currently convert all operations to gamma tensor,
+    # so we include gammatensor for the assert, it should be reverted back to PhiTensor
+    assert isinstance(result, (PT, GammaTensor)), "Addition of two PTs is wrong type"
     assert (
         result.max_vals == 2 * upper_bound
-    ).all(), "Addition of two PTs results in incorrect max_val"
+    ).all(), "Addition of two PTs results in incorrect max_vals"
     assert (
         result.min_vals == 2 * lower_bound
-    ).all(), "Addition of two PTs results in incorrect min_val"
+    ).all(), "Addition of two PTs results in incorrect min_vals"
 
     # Try with negative values
     tensor3 = PT(
@@ -215,22 +223,23 @@ def test_add_single_data_subjects(
     )
 
     result = tensor3 + tensor1
-    assert isinstance(result, PT), "Addition of two PTs is wrong type"
+    assert isinstance(result, (PT, GammaTensor)), "Addition of two PTs is wrong type"
     assert (
         result.max_vals == tensor3.max_vals + tensor1.max_vals
-    ).all(), "PT + PT results in incorrect max_val"
+    ).all(), "PT + PT results in incorrect max_vals"
     assert (
         result.min_vals == tensor3.min_vals + tensor1.min_vals
-    ).all(), "PT + PT results in incorrect min_val"
+    ).all(), "PT + PT results in incorrect min_vals"
 
 
 def test_serde(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
-    ishan: DataSubject,
+    ishan: DataSubjectArray,
 ) -> None:
     """Test basic serde for PT"""
+    ishan = np.broadcast_to(ishan, reference_data.shape)
     tensor1 = PT(
         child=reference_data,
         data_subjects=ishan,
@@ -245,7 +254,7 @@ def test_serde(
     assert (de.child == tensor1.child).all()
     assert (de.min_vals == tensor1.min_vals).all()
     assert (de.max_vals == tensor1.max_vals).all()
-    assert de.data_subjects == tensor1.data_subjects
+    assert (de.data_subjects == tensor1.data_subjects).all()
 
     assert np.shares_memory(tensor1.child, tensor1.child)
     assert not np.shares_memory(de.child, tensor1.child)
@@ -255,9 +264,10 @@ def test_copy(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
-    ishan: DataSubject,
+    ishan: DataSubjectArray,
 ) -> None:
     """Test copy for PT"""
+    ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
         child=reference_data,
         data_subjects=ishan,
@@ -276,9 +286,10 @@ def test_copy_with(
     reference_binary_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
-    ishan: DataSubject,
+    ishan: DataSubjectArray,
 ) -> None:
     """Test copy_with for PT"""
+    ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
         child=reference_data,
         data_subjects=ishan,
@@ -310,9 +321,10 @@ def test_sum(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
-    ishan: DataSubject,
+    ishan: DataSubjectArray,
     kwargs: Dict,
 ) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
     zeros_tensor = PT(
         child=reference_data * 0,
         data_subjects=ishan,
@@ -336,10 +348,11 @@ def test_ne_vals(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
-    ishan: DataSubject,
+    ishan: DataSubjectArray,
 ) -> None:
     """Test inequality between two different PhiTensors"""
     # TODO: Add tests for GammaTensor when having same values but different entites.
+    ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
         child=reference_data,
         data_subjects=ishan,
@@ -363,9 +376,10 @@ def test_neg(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
-    ishan: DataSubject,
+    ishan: DataSubjectArray,
 ) -> None:
     """Test neg for PT"""
+    ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
         child=reference_data,
         data_subjects=ishan,

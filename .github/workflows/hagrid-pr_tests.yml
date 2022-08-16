@@ -9,6 +9,8 @@ on:
       - main
       - "0.6.0"
       - "0.7.0"
+      - "0.8"
+
 defaults:
   run:
     working-directory: ./packages/hagrid
@@ -170,3 +172,8 @@ jobs:
         if: steps.changes.outputs.hagrid == 'true'
         run: |
           hagrid debug
+
+      - name: Run hagrid quickstart
+        if: steps.changes.outputs.hagrid == 'true'
+        run: |
+          hagrid quickstart --reset --quiet --test

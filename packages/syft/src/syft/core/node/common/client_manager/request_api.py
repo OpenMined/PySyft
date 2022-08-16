@@ -49,8 +49,9 @@ class RequestAPI:
             )
             logging.info(response.message)
         else:
+            timeout = kwargs.pop("timeout")
             response = self.perform_api_request(  # type: ignore
-                syft_msg=self._create_message, content=kwargs
+                syft_msg=self._create_message, content=kwargs, timeout=timeout
             )
             logging.info(response.resp_msg)
 
