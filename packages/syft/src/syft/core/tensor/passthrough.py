@@ -551,14 +551,6 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
             return tensor
         return self.__class__(result)
 
-    def mean(self, *args, **kwargs) -> PassthroughTensor:
-        result = self.child.mean(*args, **kwargs)
-        if hasattr(self, "copy_tensor"):
-            tensor = self.copy_tensor()
-            tensor.child = result
-            return tensor
-        return self.__class__(result)
-
     def ones_like(self, *args, **kwargs) -> PassthroughTensor:
         result = self.child.ones_like(*args, **kwargs)
 
