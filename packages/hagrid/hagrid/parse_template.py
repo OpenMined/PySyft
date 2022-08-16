@@ -5,7 +5,7 @@ from typing import Optional
 from urllib.request import urlretrieve
 
 # third party
-from jinja2 import Template
+# from jinja2 import Template
 import yaml
 
 HAGRID_TEMPLATE = "manifest_template.yml"
@@ -31,12 +31,12 @@ def git_url_for_file(file_path: str, base_url: str, hash: str) -> str:
     return os.path.join(base_url, hash, file_path)
 
 
-def get_local_abs_path(target_dir, file_path):
+def get_local_abs_path(target_dir: str, file_path: str) -> str:
     local_path = os.path.join(target_dir, file_path)
     return os.path.expanduser(local_path)
 
 
-def setup_from_manifest():
+def setup_from_manifest() -> None:
     template = read_yml_file(HAGRID_TEMPLATE)
 
     if template is None:

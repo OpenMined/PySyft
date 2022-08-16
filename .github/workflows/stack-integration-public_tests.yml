@@ -60,6 +60,5 @@ jobs:
 
       - name: Run integration tests
         timeout-minutes: 30
-        continue-on-error: true
         run: |
           HAGRID_FLAGS="--tag=latest --test" tox -e stack.test.integration
