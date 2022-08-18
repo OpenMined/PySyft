@@ -29,8 +29,6 @@ from ....core.node.common.action.get_or_set_property_action import (
     GetOrSetPropertyAction,
 )
 from ....core.node.common.action.get_or_set_property_action import PropertyActions
-from ....lib.numpy.array import capnp_deserialize
-from ....lib.numpy.array import capnp_serialize
 from ....lib.python.util import upcast
 from ....util import inherit_tags
 from ...adp.data_subject_ledger import DataSubjectLedger

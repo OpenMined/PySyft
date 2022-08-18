@@ -13,8 +13,6 @@ from typing import Union
 import numpy as np
 
 # relative
-from ...lib.numpy.array import capnp_deserialize
-from ...lib.numpy.array import capnp_serialize
 from ..common.serde.capnp import CapnpModule
 from ..common.serde.capnp import chunk_bytes
 from ..common.serde.capnp import combine_bytes

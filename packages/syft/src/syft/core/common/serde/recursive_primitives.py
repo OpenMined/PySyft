@@ -100,6 +100,6 @@ recursive_serde_register(
 
 recursive_serde_register(
     bool,
-    serialize=lambda x: b"0" if x else b"1",
+    serialize=lambda x: b"1" if x else b"0",
     deserialize=lambda x: False if x == b"0" else True,
 )

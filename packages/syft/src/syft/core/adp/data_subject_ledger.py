@@ -34,8 +34,6 @@ from scipy.optimize import minimize_scalar
 
 # relative
 from ...core.node.common.node_manager.user_manager import RefreshBudgetException
-from ...lib.numpy.array import capnp_deserialize
-from ...lib.numpy.array import capnp_serialize
 from ..common.serde.capnp import CapnpModule
 from ..common.serde.capnp import get_capnp_schema
 from ..common.serde.capnp import serde_magic_header

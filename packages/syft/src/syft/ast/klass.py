@@ -20,6 +20,7 @@ import warnings
 from .. import ast
 from .. import lib
 from ..core.common.group import VERIFYALL
+from ..core.common.serde.serializable import serializable
 from ..core.common.uid import UID
 from ..core.node.common.action.action_sequence import ActionSequence
 from ..core.node.common.action.get_or_set_property_action import GetOrSetPropertyAction
@@ -654,6 +655,9 @@ class Class(Callable):
             if part not in parent.__dict__:
                 parent.__dict__[part] = module_type(name=part)
             parent = parent.__dict__[part]
+
+        serializable(recursive_serde=True)(klass_pointer)
+
         parent.__dict__[name] = klass_pointer
 
     def store_init_args(outer_self: Any) -> None:

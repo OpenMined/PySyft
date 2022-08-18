@@ -84,13 +84,6 @@ def _deserialize(
 
         blob.ParseFromString(data_message.content)
 
-    obj_type = getattr(type(blob), "schema2type", None)
-
-    if obj_type is not None:
-        _proto2object = getattr(obj_type, "_proto2object", None)
-        res = _proto2object(proto=blob)
-        return res
-
     if isinstance(blob, RecursiveSerde_PB):
         return rs_proto2object(blob)
 
