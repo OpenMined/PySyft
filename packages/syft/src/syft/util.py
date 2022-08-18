@@ -26,6 +26,7 @@ from forbiddenfruit import curse
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from pympler.asizeof import asizeof
+from opentelemetry import trace
 import requests
 
 # syft absolute
@@ -180,7 +181,7 @@ def aggressive_set_attr(obj: object, name: str, attr: object) -> None:
     """
     try:
         setattr(obj, name, attr)
-    except Exception:  # nosec
+    except Exception:
         curse(obj, name, attr)
 
 
@@ -482,14 +483,13 @@ def ssl_test() -> bool:
 _tracer = None
 
 
-def get_tracer(service_name: Optional[str] = None) -> Any:
+def get_tracer() -> Any:
     global _tracer
     if _tracer is not None:  # type: ignore
         return _tracer  # type: ignore
 
     PROFILE_MODE = str_to_bool(os.environ.get("PROFILE", "False"))
     if not PROFILE_MODE:
-
         class NoopTracer:
             @contextmanager
             def start_as_current_span(*args: Any, **kwargs: Any) -> Any:
@@ -499,8 +499,7 @@ def get_tracer(service_name: Optional[str] = None) -> Any:
         return _tracer
 
     print("Profile mode with OpenTelemetry enabled")
-    if service_name is None:
-        service_name = os.environ.get("SERVICE_NAME", "client")
+    service_name = os.environ.get("SERVICE_NAME", "client")
 
     jaeger_host = os.environ.get("JAEGER_HOST", "localhost")
     jaeger_port = int(os.environ.get("JAEGER_PORT", "6831"))
@@ -528,11 +527,7 @@ def get_tracer(service_name: Optional[str] = None) -> Any:
     return _tracer
 
 
-tracers = {
-    "msg_with_reply": get_tracer("New MessageWithReply Received "),
-    "msg_without_reply": get_tracer("New MessageWithoutReply Received "),
-    "database_tracer": get_tracer("Database Queries"),
-}
+ot_tracer = get_tracer() # OpenTelemetry Tracer 
 
 
 def initializer(event_loop: Optional[BaseSelectorEventLoop] = None) -> None:
@@ -646,14 +641,26 @@ def concurrency_count(factor: float = 0.8) -> int:
     return mp_count
 
 
-def span_new_msg(tracer):
+def span_recv_new_msg(tracer):
     def decorator(fun):
         def wrapper(*args, **kwargs):
             msg = kwargs["msg"].message
-            with tracer.start_as_current_span(
-                msg.pprint, attributes={"message.id": msg.id.to_string()}
-            ):
-                result = fun(*args, **kwargs)
+            ctx_dict =  getattr(msg,"ctx",{})
+            if ctx_dict:
+                ctx_dict['span_id'] = int(ctx_dict['span_id'])
+                ctx_dict['trace_id'] = int(ctx_dict['trace_id'])
+                print("\n\n\n My Context Dict: ", ctx_dict, "\n\n\n")
+                ctx = trace.SpanContext(**ctx_dict)
+                link = trace.Link(ctx)
+                with tracer.start_as_current_span(
+                    msg.pprint,links=[link],attributes={"message.id": msg.id.to_string()}
+                ):
+                    result = fun(*args, **kwargs)
+            else:
+                with tracer.start_as_current_span(
+                    msg.pprint, attributes={"message.id": msg.id.to_string()}
+                ):
+                    result = fun(*args, **kwargs)
             return result
 
         return wrapper
@@ -676,24 +683,38 @@ def span(tracer):
     return decorator
 
 
-def span_func(tracer) -> Callable:
+def span_func(tracer, ctx: Optional[Dict[Any,Any]]) -> Callable:
     def inner(func):
         def wrapper(*args, **kwargs):
-            span_msg = f"{func.__qualname__}"
-            with tracer.start_as_current_span(
-                span_msg, attributes={"args": args, "kwargs": kwargs}
-            ):
+            # If not dev/debug mode, just exec the method
+            PROFILE_MODE = str_to_bool(os.environ.get("PROFILE", "False"))
+            if not PROFILE_MODE:
                 return func(*args, **kwargs)
+            
 
+            span_msg = f"{func.__qualname__}"
+
+            if not ctx:
+                with tracer.start_as_current_span(
+                    span_msg, attributes={"args": args, "kwargs": kwargs}
+                ):
+                    return func(*args, **kwargs)
+            else:
+                span_ctx = trace.SpanContext(**ctx)
+                link = trace.link(span_ctx)
+                with tracer.start_as_current_span(
+                    span_msg, links=[link], attributes={"args": args, "kwargs": kwargs}
+                ):
+                    return func(*args, **kwargs)
         return wrapper
 
     return inner
 
 
 def trace_and_log(
-    callable: Callable, args: Dict, tracer: Any
+    callable: Callable, args: Dict, tracer: Any, ctx: Optional[Dict] = {}
 ) -> Any:
-    return span_func(tracer=tracer)(callable)(**args)
+    return span_func(tracer=tracer, ctx=ctx)(callable)(**args)
 
 
 @contextmanager
