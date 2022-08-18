@@ -157,12 +157,6 @@ class DataSubjectList:
             self.data_subjects_indexed.reshape((-1, *target_shape)),
         )
 
-    def mean(self) -> DataSubjectList:
-        return DataSubjectList(
-            one_hot_lookup=self.one_hot_lookup.copy(),
-            data_subjects_indexed=self.data_subjects_indexed.mean(),
-        )
-
     def flatten(self) -> DataSubjectList:
         return DataSubjectList(
             one_hot_lookup=self.one_hot_lookup.copy(),
