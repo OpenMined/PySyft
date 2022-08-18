@@ -1,4 +1,4 @@
-Data Owner - How to Upload Private Data to the Domain Server
+01 - How to Upload Private Data to the Domain Server
 ============================================================
 
 Welcome back to another ``Data Owner tutorial``. In the last tutorial,
@@ -18,11 +18,12 @@ Step to Upload Private Data
 ---------------------------
 
 The steps covered in this tutorial include: 
+
 #. **preprocess** of data 
-#. mark it with the correct **metadata** 
+#. **mark** it with the correct metadata 
 #. **upload** it to Domain node
 
-|Data_Owner_upload_data01|
+|01-upload-data-00|
 
    **Note:** For the ease of running all the steps shown in this
    tutorial, we prefer using the below command.
@@ -30,7 +31,7 @@ The steps covered in this tutorial include:
 ::
 
 
-   hagrid quickstart https://github.com/OpenMined/PySyft/tree/dev/notebooks/quickstart/Tutorial_Notebooks/Data_Owner_upload_data.ipynb
+   hagrid quickstart https://github.com/OpenMined/PySyft/tree/dev/notebooks/quickstart/data-owner/01-upload-data.ipynb
 
 Step 1: Import Syft
 ~~~~~~~~~~~~~~~~~~~
@@ -204,6 +205,5 @@ able to download them.
    In the following tutorial, we will see how Data Scientists can find
    datasets and work across all the different Domain nodes.
 
-.. |Data_Owner_upload_data01| image:: ../../_static/personas_image/DataOwner/Data_Owner_upload_data01.jpg
+.. |01-upload-data-00| image:: ../../_static/personas-image/data-owner/01-upload-data-00.jpg
   :width: 95%
-  :alt: Data Owner-Upload Private Data

@@ -1,4 +1,4 @@
-Data Owner - How to Deploy a Domain Server
+00 - How to Deploy a Domain Server
 ===============================================
 
 Data owners are defined by those with ``datasets`` 💾  they want to make available for
@@ -23,7 +23,7 @@ The advantage of using a Domain Server is that you can catalyze the impact your 
 #. and by allowing them to get those answers without needing to directly ``access`` or have a copy of your data
 
 
-|Data_Owner_deploy_domain01|
+|00-deploy-domain-00|
 
 
 This means that by having your organization retain governance over the information they steward without 
@@ -43,7 +43,7 @@ In a nutshell, you will be:
 * **running** the servers 
 * **checking** the status of deployed server
 
-|Data_Owner_deploy_domain02|
+|00-deploy-domain-01|
 
 Few things to make a note of before starting: 
 
@@ -56,7 +56,7 @@ Few things to make a note of before starting:
 
 ::
 
-   hagrid quickstart https://github.com/OpenMined/PySyft/tree/dev/notebooks/quickstart/Tutorial_Notebooks/Data_Owner_deploy_domain.ipynb
+   hagrid quickstart https://github.com/OpenMined/PySyft/tree/dev/notebooks/quickstart/data-owner/00-deploy-domain.ipynb
    
 
 Step 1: Install all required softwares
@@ -185,10 +185,8 @@ private data server, the next step is to ``upload a private dataset to the domai
    In our following tutorial, we will see how you as a Data Owners can preprocess the data, mark it with correct 
    metadata and upload it to the Domain Node you've just deployed.
 
-.. |Data_Owner_deploy_domain01| image:: ../../_static/personas_image/DataOwner/Data_Owner_deploy_domain01.gif
+.. |00-deploy-domain-00| image:: ../../_static/personas-image/data-owner/00-deploy-domain-00.gif
   :width: 95%
-  :alt: Data Owner-Deploy Domain Node
 
-.. |Data_Owner_deploy_domain02| image:: ../../_static/personas_image/DataOwner/Data_Owner_deploy_domain02.jpg
+.. |00-deploy-domain-01| image:: ../../_static/personas-image/data-owner/00-deploy-domain-01.jpg
   :width: 95%
-  :alt: Data Owner-Deploy Domain Node

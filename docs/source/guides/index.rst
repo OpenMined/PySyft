@@ -25,8 +25,8 @@ Once you have the installation completed, the best place to start is by identify
 
 
 #. How to use PySyft for Data Owner (in-progress)
-    #. :doc:`How to Deploy a Domain Server <Data Owner/Data_Owner_deploy_domain>`
-    #. :doc:`How to Upload Private Data to the Domain Server <Data Owner/Data_Owner_upload_data>`
+    #. :doc:`How to Deploy a Domain Server <data-owner/00-deploy-domain>`
+    #. :doc:`How to Upload Private Data to the Domain Server <data-owner/01-upload-data>`
     #. How to create a Data Scientist account on your Domain server 
     #. How to configure your Domain server with a privacy budget
 
