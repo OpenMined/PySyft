@@ -583,10 +583,10 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         *args: Tuple[Any, ...],
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-        """Apply the "truediv" operation between "self" and "other"
+        """Apply the "mean" operation to "self"
 
         Args:
-            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+            y Tuple[Any, ...] : second operand.
 
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.

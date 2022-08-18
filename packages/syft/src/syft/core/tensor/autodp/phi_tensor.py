@@ -529,10 +529,10 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
     ) -> Union[
         TensorWrappedPhiTensorPointer, MPCTensor, TensorWrappedGammaTensorPointer
     ]:
-        """Apply the "truediv" operation between "self" and "other"
+        """Apply the "mean" operation to "self"
 
         Args:
-            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+            y Tuple[Any, ...] : second operand.
 
         Returns:
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
