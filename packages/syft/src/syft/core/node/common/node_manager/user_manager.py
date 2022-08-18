@@ -20,8 +20,8 @@ from sqlalchemy.orm import Query
 from sqlalchemy.orm import sessionmaker
 
 # relative
-from .....util import span
 from .....util import ot_tracer
+from .....util import span
 from ..exceptions import InvalidCredentialsError
 from ..exceptions import UserNotFoundError
 from ..node_table.pdf import PDFObject

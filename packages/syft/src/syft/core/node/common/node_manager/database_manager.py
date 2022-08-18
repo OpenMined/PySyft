@@ -10,8 +10,8 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
 # relative
-from .....util import span
 from .....util import ot_tracer
+from .....util import span
 from ..node_table import Base
 
 

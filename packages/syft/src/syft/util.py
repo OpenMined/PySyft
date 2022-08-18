@@ -25,8 +25,8 @@ from typing import Union
 from forbiddenfruit import curse
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-from pympler.asizeof import asizeof
 from opentelemetry import trace
+from pympler.asizeof import asizeof
 import requests
 
 # syft absolute
@@ -490,6 +490,7 @@ def get_tracer() -> Any:
 
     PROFILE_MODE = str_to_bool(os.environ.get("PROFILE", "False"))
     if not PROFILE_MODE:
+
         class NoopTracer:
             @contextmanager
             def start_as_current_span(*args: Any, **kwargs: Any) -> Any:
@@ -527,7 +528,7 @@ def get_tracer() -> Any:
     return _tracer
 
 
-ot_tracer = get_tracer() # OpenTelemetry Tracer 
+ot_tracer = get_tracer()  # OpenTelemetry Tracer
 
 
 def initializer(event_loop: Optional[BaseSelectorEventLoop] = None) -> None:
@@ -645,15 +646,17 @@ def span_recv_new_msg(tracer):
     def decorator(fun):
         def wrapper(*args, **kwargs):
             msg = kwargs["msg"].message
-            ctx_dict =  getattr(msg,"ctx",{})
+            ctx_dict = getattr(msg, "ctx", {})
             if ctx_dict:
-                ctx_dict['span_id'] = int(ctx_dict['span_id'])
-                ctx_dict['trace_id'] = int(ctx_dict['trace_id'])
+                ctx_dict["span_id"] = int(ctx_dict["span_id"])
+                ctx_dict["trace_id"] = int(ctx_dict["trace_id"])
                 print("\n\n\n My Context Dict: ", ctx_dict, "\n\n\n")
                 ctx = trace.SpanContext(**ctx_dict)
                 link = trace.Link(ctx)
                 with tracer.start_as_current_span(
-                    msg.pprint,links=[link],attributes={"message.id": msg.id.to_string()}
+                    msg.pprint,
+                    links=[link],
+                    attributes={"message.id": msg.id.to_string()},
                 ):
                     result = fun(*args, **kwargs)
             else:
@@ -683,14 +686,13 @@ def span(tracer):
     return decorator
 
 
-def span_func(tracer, ctx: Optional[Dict[Any,Any]]) -> Callable:
+def span_func(tracer, ctx: Optional[Dict[Any, Any]]) -> Callable:
     def inner(func):
         def wrapper(*args, **kwargs):
             # If not dev/debug mode, just exec the method
             PROFILE_MODE = str_to_bool(os.environ.get("PROFILE", "False"))
             if not PROFILE_MODE:
                 return func(*args, **kwargs)
-            
 
             span_msg = f"{func.__qualname__}"
 
@@ -706,6 +708,7 @@ def span_func(tracer, ctx: Optional[Dict[Any,Any]]) -> Callable:
                     span_msg, links=[link], attributes={"args": args, "kwargs": kwargs}
                 ):
                     return func(*args, **kwargs)
+
         return wrapper
 
     return inner

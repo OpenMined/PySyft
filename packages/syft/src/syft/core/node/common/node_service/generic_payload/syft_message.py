@@ -52,7 +52,15 @@ class NewSyftMessage(ImmediateSyftMessage):
         This will eventually replace the old `SyftMessage` class.
     """
 
-    __attr_allowlist__ = ["id", "address", "reply_to", "reply", "msg_id", "kwargs", "ctx"]
+    __attr_allowlist__ = [
+        "id",
+        "address",
+        "reply_to",
+        "reply",
+        "msg_id",
+        "kwargs",
+        "ctx",
+    ]
 
     signed_type = SignedMessage
     request_payload_type = RequestPayload
@@ -65,7 +73,7 @@ class NewSyftMessage(ImmediateSyftMessage):
         msg_id: Optional[UID] = None,
         reply_to: Optional[Address] = None,
         reply: bool = False,
-        ctx: Optional[Dict[Any,Any]] = {}
+        ctx: Optional[Dict[str, Any]] = {},
     ) -> None:
         super().__init__(address=address, msg_id=msg_id)
         self.reply_to = reply_to

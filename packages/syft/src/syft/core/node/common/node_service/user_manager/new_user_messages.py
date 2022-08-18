@@ -33,8 +33,6 @@ from ..generic_payload.syft_message import ReplyPayload
 from ..generic_payload.syft_message import RequestPayload
 
 
-
-
 @serializable(recursive_serde=True)
 @final
 class CreateUserMessage(SyftMessage, DomainMessageRegistry):
@@ -114,7 +112,6 @@ class CreateUserMessage(SyftMessage, DomainMessageRegistry):
         return [UserCanCreateUsers, IsNodeDaaEnabled]
 
 
-
 @serializable(recursive_serde=True)
 @final
 class GetUserMessage(SyftMessage, DomainMessageRegistry):
@@ -171,7 +168,6 @@ class GetUserMessage(SyftMessage, DomainMessageRegistry):
         return [UserCanTriageRequest]
 
 
-
 @serializable(recursive_serde=True)
 @final
 class GetUsersMessage(SyftMessage, DomainMessageRegistry):
@@ -225,7 +221,6 @@ class GetUsersMessage(SyftMessage, DomainMessageRegistry):
         return [UserCanTriageRequest]
 
 
-
 @serializable(recursive_serde=True)
 @final
 class DeleteUserMessage(SyftMessage, DomainMessageRegistry):
@@ -261,7 +256,6 @@ class DeleteUserMessage(SyftMessage, DomainMessageRegistry):
     def get_permissions(self) -> List[Union[Type[BasePermission], UnaryOperation]]:
         """Returns the list of permission classes applicable to this message."""
         return [UserCanCreateUsers, ~UserIsOwner]
-
 
 
 @serializable(recursive_serde=True)

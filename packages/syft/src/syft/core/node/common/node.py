@@ -29,10 +29,10 @@ from ....logger import error
 from ....logger import info
 from ....logger import traceback_and_raise
 from ....util import get_subclasses
+from ....util import ot_tracer
 from ....util import span
 from ....util import span_recv_new_msg
 from ....util import trace_and_log
-from ....util import ot_tracer
 from ...common.message import EventualSyftMessageWithoutReply
 from ...common.message import ImmediateSyftMessageWithReply
 from ...common.message import ImmediateSyftMessageWithoutReply
@@ -548,7 +548,7 @@ class Node(AbstractNode):
         self.tput = (
             f"> {self.pprint} Signing {res_msg.pprint} with "
             + f"{self.key_emoji(key=self.signing_key.verify_key)}"  # type: ignore
-        )   
+        )
         debug(self.tput)
         return res_msg
 
