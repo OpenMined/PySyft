@@ -1,6 +1,7 @@
 # stdlib
 import builtins
-from collections import OrderedDict
+from collections import OrderedDict, UserList, UserDict, UserString
+from collections import Set
 import functools
 from typing import Iterable
 from typing import Mapping
@@ -12,7 +13,7 @@ from .recursive import recursive_serde_register
 from .recursive import rs_bytes2object
 from .recursive import rs_object2proto
 
-#test
+
 def serialize_iterable(iterable: Iterable) -> bytes:
     message = Iterable_PB()
 
@@ -102,4 +103,29 @@ recursive_serde_register(
     bool,
     serialize=lambda x: b"0" if x else b"1",
     deserialize=lambda x: False if x == b"0" else True,
+)
+
+recursive_serde_register(
+    set,
+    serialize=serialize_iterable,
+    deserialize=functools.partial(deserialize_iterable, set)
+)
+
+recursive_serde_register(
+    complex,
+    serialize=lambda x: serialize_iterable((x.real, x.imag)),
+    deserialize=lambda x: complex(*deserialize_iterable(tuple, x)),
+)
+
+recursive_serde_register(
+    range,
+    serialize=lambda x: serialize_iterable((x.start, x.stop, x.step)),
+    deserialize=lambda x: range(*deserialize_iterable(tuple, x)),
+)
+
+
+recursive_serde_register(
+    slice,
+    serialize=lambda x: serialize_iterable((x.start, x.stop, x.step)),
+    deserialize=lambda x: slice(*deserialize_iterable(tuple, x)),
 )
