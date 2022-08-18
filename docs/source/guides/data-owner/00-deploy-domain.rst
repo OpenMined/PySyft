@@ -90,7 +90,7 @@ Step 2: Launching a domain server
 Great work, people!! Once you have installed all the dependencies, it is
 time to use ``HAGrid`` to launch your Domain Node.
 
-To launch a domain node, there are three different things that you
+To launch a domain node, there are three things that you
 need to know: 
 
 1. **What type of node do you need to deploy?** 
@@ -180,7 +180,7 @@ Now what?
 ---------
 
 Once you, as a Data Owner, have deployed your Domain Node representing your theoretical organization's 
-private data server, the next step is to ``upload a private dataset to the domain server`` for research or project use.
+private data server, the next step is to :doc:`upload private data to the domain server <01-upload-data>` for research or project use.
 
    In our following tutorial, we will see how you as a Data Owners can preprocess the data, mark it with correct 
    metadata and upload it to the Domain Node you've just deployed.

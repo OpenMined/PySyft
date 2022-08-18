@@ -21,7 +21,7 @@ Use the below command to import the install wizard notebook into your environmen
    hagrid quickstart https://github.com/OpenMined/PySyft/tree/dev/notebooks/quickstart/01-install-wizard.ipynb
 
 
-Once you have the installation completed, the best place to start is by identifying your ``role``. 
+Once you have the installation completed, the best place to start is by ``identifying`` your role. 
 
 
 #. How to use PySyft for Data Owner (in-progress)

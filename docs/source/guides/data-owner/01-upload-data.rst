@@ -1,9 +1,9 @@
 01 - How to Upload Private Data to the Domain Server
 ============================================================
 
-Welcome back to another ``Data Owner tutorial``. In the last tutorial,
-you learned how Data Owners can deploy the domain node that represents
-the theoretical organization’s ``private data servers``. But right now,
+Welcome back to another Data Owner tutorial. In the last tutorial,
+you learned :doc:`how to deploy a domain server <00-deploy-domain>` that represents
+the theoretical organization’s private data servers. But right now,
 the node you just deployed is empty.
 
 After today’s tutorial, you will learn how to ``upload`` the
@@ -59,8 +59,10 @@ It is important to note that only the Domain node ``administrator`` can
 upload data. So before the Domain node lets you upload private data, you
 must prove you are an admin by ``logging`` in.
 
-In this case, you have to give some default credentials like: \* IP
-Address of the host \* Email and password
+In this case, you have to give some default credentials like: 
+
+* IP Address of the host 
+* Email and password
 
    **WARNING:** CHANGE YOUR USERNAME AND PASSWORD!!!
 
@@ -197,9 +199,9 @@ private data.
 
 What’s Next? 
 ------------
-Alright, so we have walked through **“How to deploy a
-Domain Node”** and **“How to prepare and upload a dataset to that Domain
-Node”** so that Data Scientists can study our datasets without being
+Alright, so we have walked through :doc:`How to deploy a
+Domain Node <00-deploy-domain>` and :doc:`How to prepare and upload a dataset to that Domain
+Node <01-upload-data>` so that Data Scientists can study our datasets without being
 able to download them.
 
    In the following tutorial, we will see how Data Scientists can find
