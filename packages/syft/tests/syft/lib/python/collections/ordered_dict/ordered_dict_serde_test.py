@@ -40,11 +40,9 @@ def test_dict_serde() -> None:
     syft_list = OrderedDict({Int(1): t1, Int(2): t2})
     assert type(getattr(syft_list, "id", None)) is UID
 
-    serialized = syft_list._object2proto()
+    serialized = sy.serialize(syft_list)
 
-    assert isinstance(serialized, OrderedDict_PB)
-
-    deserialized = OrderedDict._proto2object(proto=serialized)
+    deserialized = sy.deserialize(serialized)
 
     assert isinstance(deserialized, OrderedDict)
     assert isinstance(deserialized, PyOrderectDict)

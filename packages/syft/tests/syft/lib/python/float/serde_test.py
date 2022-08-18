@@ -9,11 +9,9 @@ from syft.lib.python.float import Float
 def test_serde() -> None:
     syft_float = Float(5)
 
-    serialized = syft_float._object2proto()
+    serialized = sy.serialize(syft_float)
 
-    assert isinstance(serialized, Float_PB)
-
-    deserialized = Float._proto2object(proto=serialized)
+    deserialized = sy.deserialize(serialized)
 
     assert isinstance(deserialized, Float)
     assert deserialized.id == syft_float.id
