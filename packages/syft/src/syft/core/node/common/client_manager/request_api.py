@@ -12,6 +12,7 @@ from typing import Type
 # third party
 from pandas import DataFrame
 
+
 # relative
 from .....experimental_flags import flags
 from ....common.message import SyftMessage  # type: ignore
@@ -20,7 +21,8 @@ from ...enums import RequestAPIFields
 from ..action.exception_action import ExceptionMessage
 from ..node_service.generic_payload.messages import GenericPayloadMessageWithReply
 from ..node_service.generic_payload.syft_message import NewSyftMessage
-
+from .....util import ot_tracer
+from .....util import trace
 
 class RequestAPI:
     def __init__(
@@ -162,11 +164,29 @@ class RequestAPI:
             content = {}
 
         if issubclass(syft_msg, NewSyftMessage):
-            signed_msg = syft_msg_constructor(  # type: ignore
-                address=self.client.address, reply_to=self.client.address, kwargs=content  # type: ignore
-            ).sign(  # type: ignore
-                signing_key=self.client.signing_key
-            )
+
+            with ot_tracer.start_as_current_span(
+                syft_msg_constructor.__name__
+            ):
+                span_ctx = trace.get_current_span().get_span_context()
+                ctx = {
+                    "span_id" : str(span_ctx.span_id),
+                    "trace_id": str(span_ctx.trace_id),
+                    "is_remote": True,
+                }
+                print("My Context dictionary ; ", ctx)
+                # 1 - Build Message Object
+                unsigned_msg = syft_msg_constructor(  # type: ignore
+                    address=self.client.address, reply_to=self.client.address, ctx=ctx, kwargs=content  # type: ignore
+                )
+
+                # 2 - Signing Message withg User Signing Key
+                signed_msg = unsigned_msg.sign(
+                    signing_key=self.client.signing_key
+                )
+                response = self.client.send_immediate_msg_with_reply(
+                    msg=signed_msg, timeout=timeout
+                )
         else:
             signed_msg = (
                 syft_msg_constructor(kwargs=content)  # type: ignore
@@ -175,9 +195,10 @@ class RequestAPI:
                 )
                 .sign(signing_key=self.client.signing_key)
             )
-        response = self.client.send_immediate_msg_with_reply(
-            msg=signed_msg, timeout=timeout
-        )
+            response = self.client.send_immediate_msg_with_reply(
+                msg=signed_msg, timeout=timeout
+            )
+        
         if isinstance(response, ExceptionMessage):
             raise response.exception_type
         else:
