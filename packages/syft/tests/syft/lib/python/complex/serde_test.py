@@ -6,11 +6,9 @@ from syft.lib.python.complex import Complex
 def test_serde() -> None:
     syft_complex = Complex("2+3j")
 
-    serialized = syft_complex._object2proto()
+    serialized = sy.serialize(syft_complex)
 
-    assert isinstance(serialized, Complex_PB)
-
-    deserialized = Complex._proto2object(proto=serialized)
+    deserialized = sy.deserialize(serialized)
 
     assert isinstance(deserialized, Complex)
     assert deserialized.id == syft_complex.id
