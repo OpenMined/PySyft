@@ -4,116 +4,30 @@
 """Generated protocol buffer code."""
 # third party
 from google.protobuf import descriptor as _descriptor
-from google.protobuf import message as _message
-from google.protobuf import reflection as _reflection
+from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
 
 
-DESCRIPTOR = _descriptor.FileDescriptor(
-    name="proto/core/common/recursive_serde.proto",
-    package="syft.core.common",
-    syntax="proto3",
-    serialized_options=None,
-    create_key=_descriptor._internal_create_key,
-    serialized_pb=b"\n'proto/core/common/recursive_serde.proto\x12\x10syft.core.common\"X\n\x0eRecursiveSerde\x12\x13\n\x0b\x66ields_name\x18\x01 \x03(\t\x12\x13\n\x0b\x66ields_data\x18\x02 \x03(\x0c\x12\x1c\n\x14\x66ully_qualified_name\x18\x03 \x01(\tb\x06proto3",
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
+    b'\n\'proto/core/common/recursive_serde.proto\x12\x10syft.core.common"\x18\n\x08Iterable\x12\x0c\n\x04\x64\x61ta\x18\x01 \x03(\x0c"*\n\nKVIterable\x12\x0c\n\x04keys\x18\x01 \x03(\x0c\x12\x0e\n\x06values\x18\x02 \x03(\x0c"s\n\x0eRecursiveSerde\x12\x13\n\x0b\x66ields_name\x18\x01 \x03(\t\x12\x13\n\x0b\x66ields_data\x18\x02 \x03(\x0c\x12\x1c\n\x14\x66ully_qualified_name\x18\x03 \x01(\t\x12\x19\n\x11nonrecursive_blob\x18\x04 \x01(\x0c\x62\x06proto3'
 )
 
-
-_RECURSIVESERDE = _descriptor.Descriptor(
-    name="RecursiveSerde",
-    full_name="syft.core.common.RecursiveSerde",
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name="fields_name",
-            full_name="syft.core.common.RecursiveSerde.fields_name",
-            index=0,
-            number=1,
-            type=9,
-            cpp_type=9,
-            label=3,
-            has_default_value=False,
-            default_value=[],
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="fields_data",
-            full_name="syft.core.common.RecursiveSerde.fields_data",
-            index=1,
-            number=2,
-            type=12,
-            cpp_type=9,
-            label=3,
-            has_default_value=False,
-            default_value=[],
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="fully_qualified_name",
-            full_name="syft.core.common.RecursiveSerde.fully_qualified_name",
-            index=2,
-            number=3,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"".decode("utf-8"),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax="proto3",
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=61,
-    serialized_end=149,
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
+_builder.BuildTopDescriptorsAndMessages(
+    DESCRIPTOR, "proto.core.common.recursive_serde_pb2", globals()
 )
+if _descriptor._USE_C_DESCRIPTORS == False:
 
-DESCRIPTOR.message_types_by_name["RecursiveSerde"] = _RECURSIVESERDE
-_sym_db.RegisterFileDescriptor(DESCRIPTOR)
-
-RecursiveSerde = _reflection.GeneratedProtocolMessageType(
-    "RecursiveSerde",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _RECURSIVESERDE,
-        "__module__": "proto.core.common.recursive_serde_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.common.RecursiveSerde)
-    },
-)
-_sym_db.RegisterMessage(RecursiveSerde)
-
-
+    DESCRIPTOR._options = None
+    _ITERABLE._serialized_start = 61
+    _ITERABLE._serialized_end = 85
+    _KVITERABLE._serialized_start = 87
+    _KVITERABLE._serialized_end = 129
+    _RECURSIVESERDE._serialized_start = 131
+    _RECURSIVESERDE._serialized_end = 246
 # @@protoc_insertion_point(module_scope)

@@ -1,6 +1,0 @@
-syntax = "proto3";
-package syft.core.auth;
-
-import "google/protobuf/empty.proto";
-
-message VerifyKey { bytes verify_key = 1; }

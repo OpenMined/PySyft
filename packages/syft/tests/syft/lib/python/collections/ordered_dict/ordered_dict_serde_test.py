@@ -13,9 +13,6 @@ from syft.core.common.uid import UID
 from syft.lib.python.collections.ordered_dict import OrderedDict
 from syft.lib.python.int import Int
 from syft.lib.python.string import String
-from syft.proto.lib.python.collections.ordered_dict_pb2 import (
-    OrderedDict as OrderedDict_PB,
-)
 
 
 def test_dict_creation() -> None:

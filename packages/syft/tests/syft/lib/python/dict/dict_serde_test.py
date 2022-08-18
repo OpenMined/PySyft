@@ -11,7 +11,6 @@ from syft.core.common.uid import UID
 from syft.lib.python.dict import Dict
 from syft.lib.python.int import Int
 from syft.lib.python.string import String
-from syft.proto.lib.python.dict_pb2 import Dict as Dict_PB
 
 
 def test_dict_creation() -> None:

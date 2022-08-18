@@ -70,7 +70,6 @@ def construct_dummy_message(
 
     return msg_class(
         address=address,
-        obj_type="signed_message",
         signature=b"my_signature",
         verify_key=key,
         message=b"hello_world",

@@ -5,23 +5,16 @@ from typing import Optional
 from typing import Union
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import Literal
 from typing_extensions import SupportsIndex
 
-# syft absolute
-import syft as sy
-
 # relative
 from ...core.common import UID
-from ...core.common.serde.serializable import serializable
-from ...proto.lib.python.int_pb2 import Int as Int_PB
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
 
 
-@serializable()
 class Int(int, PyPrimitive):
     def __new__(
         cls, value: Any = None, base: Any = 10, id: Optional[UID] = None
@@ -270,25 +263,6 @@ class Int(int, PyPrimitive):
 
     def __pos__(self) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=super().__pos__())
-
-    def _object2proto(self) -> Int_PB:
-        int_pb = Int_PB()
-        int_pb.data = self
-        int_pb.id.CopyFrom(sy.serialize(obj=self.id))
-        return int_pb
-
-    @staticmethod
-    def _proto2object(proto: Int_PB) -> "Int":
-        int_id: UID = sy.deserialize(blob=proto.id)
-
-        de_int = Int(value=proto.data)
-        de_int._id = int_id  # can't use uid=int_id for some reason
-
-        return de_int
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return Int_PB
 
     def as_integer_ratio(self) -> SyPrimitiveRet:
         if sys.version_info < (3, 8):

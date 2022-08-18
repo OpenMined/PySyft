@@ -1,11 +1,9 @@
 # third party
-# third party
 import torch as th
 
 # syft absolute
 import syft as sy
 from syft.lib.python.list import List
-from syft.proto.lib.python.list_pb2 import List as List_PB
 
 
 def test_list_serde() -> None:

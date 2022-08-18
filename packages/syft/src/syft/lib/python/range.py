@@ -3,23 +3,14 @@ from typing import Any
 from typing import Optional
 from typing import Union
 
-# third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
-
-# syft absolute
-import syft as sy
-
 # relative
 from ...core.common import UID
-from ...core.common.serde.serializable import serializable
-from ...proto.lib.python.range_pb2 import Range as Range_PB
 from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
 
 
-@serializable()
 class Range(PyPrimitive):
     __slots__ = ["_id", "_index"]
 
@@ -109,27 +100,3 @@ class Range(PyPrimitive):
 
     def upcast(self) -> range:
         return self.value
-
-    def _object2proto(self) -> Range_PB:
-        range_pb = Range_PB()
-
-        range_pb.start = self.start
-        range_pb.stop = self.stop
-        range_pb.step = self.step
-        range_pb.id.CopyFrom(self._id._object2proto())
-
-        return range_pb
-
-    @staticmethod
-    def _proto2object(proto: Range_PB) -> "Range":
-
-        return Range(
-            start=proto.start,
-            stop=proto.stop,
-            step=proto.step,
-            id=sy.deserialize(blob=proto.id),
-        )
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return Range_PB

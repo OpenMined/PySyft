@@ -1,11 +1,9 @@
 # third party
-# third party
 import torch as th
 
 # syft absolute
 import syft as sy
 from syft.lib.python.slice import Slice
-from syft.proto.lib.python.slice_pb2 import Slice as Slice_PB
 
 
 def test_slice_serde() -> None:

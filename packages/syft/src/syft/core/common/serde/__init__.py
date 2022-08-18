@@ -129,4 +129,5 @@ the source code of :py:mod:`syft.core.common.object.ObjectWithID`.
 
 # relative
 from .deserialize import _deserialize  # noqa: F401
+from .recursive_primitives import *
 from .serialize import _serialize  # noqa: F401

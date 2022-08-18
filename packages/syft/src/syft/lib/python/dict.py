@@ -9,28 +9,18 @@ from typing import Iterable
 from typing import Optional
 from typing import Union
 
-# third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
-
-# syft absolute
-import syft as sy
-
 # relative
 from ...core.common import UID
-from ...core.common.serde.serializable import serializable
 from ...logger import traceback_and_raise
 from ...logger import warning
-from ...proto.lib.python.dict_pb2 import Dict as Dict_PB
 from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory
 from .primitive_factory import isprimitive
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
-from .util import downcast
 from .util import upcast
 
 
-@serializable()
 class Dict(UserDict, PyPrimitive):
     # the incoming types to UserDict __init__ are overloaded and weird
     # see https://github.com/python/cpython/blob/master/Lib/collections/__init__.py
@@ -205,50 +195,3 @@ class Dict(UserDict, PyPrimitive):
         # we get the None return and create a SyNone
         # this is to make sure someone doesn't rewrite the method to return nothing
         return PrimitiveFactory.generate_primitive(value=super().clear())
-
-    def _object2proto(self) -> Dict_PB:
-        id_ = sy.serialize(obj=self.id)
-
-        keys = [
-            sy.serialize(obj=downcast(value=element), to_bytes=True)
-            for element in self.data.keys()
-        ]
-
-        values = [
-            sy.serialize(obj=downcast(value=element), to_bytes=True)
-            for element in self.data.values()
-        ]
-
-        if hasattr(self, "temporary_box"):
-            temporary_box = self.temporary_box
-        else:
-            temporary_box = False
-
-        return Dict_PB(
-            id=id_,
-            keys=keys,
-            values=values,
-            temporary_box=temporary_box,
-        )
-
-    @staticmethod
-    def _proto2object(proto: Dict_PB) -> "Dict":
-        id_: UID = sy.deserialize(blob=proto.id)
-
-        values = [
-            upcast(value=sy.deserialize(blob=element, from_bytes=True))
-            for element in proto.values
-        ]
-
-        keys = [
-            upcast(value=sy.deserialize(blob=element, from_bytes=True))
-            for element in proto.keys
-        ]
-        new_dict = Dict(dict(zip(keys, values)))
-        new_dict.temporary_box = proto.temporary_box
-        new_dict._id = id_
-        return new_dict
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return Dict_PB

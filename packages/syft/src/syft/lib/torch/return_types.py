@@ -9,11 +9,9 @@ from packaging import version
 import torch
 
 # relative
-from ...core.common.serde.serializable import serializable
-from ...proto.lib.torch.returntypes_pb2 import ReturnTypes as ReturnTypes_PB
-from ..util import full_name_with_name
-from .tensor_util import tensor_deserializer
-from .tensor_util import tensor_serializer
+from ...core.common.serde import _deserialize
+from ...core.common.serde import _serialize
+from ...core.common.serde import recursive_serde_register
 
 # TODO: a better way. Loot at https://github.com/OpenMined/PySyft/issues/5249
 module_type = type(torch)
@@ -104,28 +102,15 @@ def get_supported_types_fields() -> Dict[type, List]:
 
 
 def wrap_type(typ: type, fields: List[str]) -> None:
-    def object2proto(obj: object) -> ReturnTypes_PB:
-        proto = ReturnTypes_PB()
+    def serialize(obj: object) -> bytes:
+        return _serialize(
+            [getattr(obj, field, None) for field in fields], to_bytes=True
+        )
 
-        obj_type = full_name_with_name(klass=obj._sy_serializable_wrapper_type)  # type: ignore
-        proto.obj_type = obj_type
+    def deserialize(bytes: bytes) -> object:
+        return typ(_deserialize(bytes, from_bytes=True))
 
-        values = [getattr(obj, field, None) for field in fields]
-        proto.values.extend(list(map(lambda x: tensor_serializer(x), values)))
-
-        return proto
-
-    def proto2object(proto: ReturnTypes_PB) -> "typ":  # type: ignore
-        values = [tensor_deserializer(x) for x in proto.values]
-        return typ(values)
-
-    serializable(generate_wrapper=True)(
-        wrapped_type=typ,
-        import_path=f"{typ.__module__}.{typ.__name__}",
-        protobuf_scheme=ReturnTypes_PB,
-        type_object2proto=object2proto,
-        type_proto2object=proto2object,
-    )
+    recursive_serde_register(typ, serialize=serialize, deserialize=deserialize)
 
     # TODO: a better way. Loot at https://github.com/OpenMined/PySyft/issues/5249
     # add type to torch.return_types

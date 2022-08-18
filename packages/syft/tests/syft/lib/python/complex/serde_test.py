@@ -1,7 +1,6 @@
 # syft absolute
 import syft as sy
 from syft.lib.python.complex import Complex
-from syft.proto.lib.python.complex_pb2 import Complex as Complex_PB
 
 
 def test_serde() -> None:

@@ -7,6 +7,8 @@ from ....proto.util.data_message_pb2 import DataMessage
 from ....util import get_fully_qualified_name
 from ....util import validate_type
 from .deserialize import PROTOBUF_START_MAGIC_HEADER
+from .recursive import recursive_serde
+from .recursive import rs_object2proto
 from .types import Deserializeable
 
 
@@ -44,18 +46,6 @@ def _serialize(
     :rtype: Union[str, bytes, Message]
     """
 
-    # relative
-    from ....lib.python.primitive_factory import isprimitive
-
-    # we have an unboxed primitive type so we need to mirror that on deserialize
-    if isprimitive(obj):
-        # relative
-        from ....lib.python.primitive_factory import PrimitiveFactory
-
-        obj = PrimitiveFactory.generate_primitive(value=obj, temporary_box=True)
-        if hasattr(obj, "temporary_box"):
-            obj.temporary_box = True  # type: ignore
-
     if hasattr(obj, "_sy_serializable_wrapper_type"):
         is_serializable = obj._sy_serializable_wrapper_type(value=obj)  # type: ignore
     else:
@@ -67,10 +57,11 @@ def _serialize(
         return validate_type(is_serializable._object2bytes(), bytes)
 
     if to_bytes:
-        # debug(f"Serializing {type(is_serializable)}")
-        # indent=None means no white space or \n in the serialized version
-        # this is compatible with json.dumps(x, indent=None)
-        serialized_data = is_serializable._object2proto().SerializeToString()
+        if recursive_serde(type(is_serializable)):
+            serialized_data = rs_object2proto(is_serializable).SerializeToString()
+        else:
+            # keeping for now backwards compatibility
+            serialized_data = is_serializable._object2proto().SerializeToString()
         obj_type = get_fully_qualified_name(obj=is_serializable)
         blob: Message = DataMessage(
             magic_header=create_protobuf_magic_header(),
@@ -79,6 +70,11 @@ def _serialize(
         )
         return validate_type(blob.SerializeToString(), bytes)
     elif to_proto:
+        if recursive_serde(type(is_serializable)):
+            return rs_object2proto(is_serializable)
+        else:
+            # keeping for now backwards compatibility
+            return is_serializable._object2proto()
         return validate_type(is_serializable._object2proto(), Message)
     else:
         traceback_and_raise(

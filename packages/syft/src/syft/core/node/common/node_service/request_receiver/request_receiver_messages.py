@@ -33,6 +33,7 @@ class RequestStatus(Enum):
 @serializable(recursive_serde=True)
 class RequestMessage(ImmediateSyftMessageWithoutReply):
     __attr_allowlist__ = [
+        "_id",
         "object_tags",
         "status",
         "request_type",

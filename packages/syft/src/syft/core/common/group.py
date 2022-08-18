@@ -6,24 +6,13 @@ from typing import Type
 from nacl.signing import VerifyKey
 
 # relative
-from ...proto.core.auth.signed_message_pb2 import VerifyKey as VerifyKey_PB
+from .serde import recursive_serde_register
 from .serde.serializable import serializable
 
-
-def object2proto(obj: Any) -> VerifyKey_PB:
-    return VerifyKey_PB(verify_key=bytes(obj))
-
-
-def proto2object(proto: VerifyKey_PB) -> VerifyKey:
-    return VerifyKey(proto.verify_key)
-
-
-serializable(generate_wrapper=True)(
-    wrapped_type=VerifyKey,
-    import_path="nacl.signing.VerifyKey",
-    protobuf_scheme=VerifyKey_PB,
-    type_object2proto=object2proto,
-    type_proto2object=proto2object,
+recursive_serde_register(
+    VerifyKey,
+    serialize=lambda key: bytes(key),
+    deserialize=lambda key_bytes: VerifyKey(key_bytes),
 )
 
 

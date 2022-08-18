@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-package syft.lib.python;
-import "proto/core/common/recursive_serde.proto";
-
-message SyNone {
-    syft.core.common.RecursiveSerde id = 1;
-    bool temporary_box = 2;
-}

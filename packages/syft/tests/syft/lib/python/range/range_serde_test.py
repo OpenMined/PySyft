@@ -1,7 +1,6 @@
 # syft absolute
 import syft as sy
 from syft.lib.python.range import Range
-from syft.proto.lib.python.range_pb2 import Range as Range_PB
 
 
 def test_range_serde() -> None:

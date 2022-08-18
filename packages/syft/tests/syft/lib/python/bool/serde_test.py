@@ -1,7 +1,6 @@
 # syft absolute
 import syft as sy
 from syft.lib.python.bool import Bool
-from syft.proto.lib.python.bool_pb2 import Bool as Bool_PB
 
 
 def test_serde() -> None:

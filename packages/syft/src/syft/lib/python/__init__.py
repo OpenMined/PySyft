@@ -8,6 +8,9 @@ from ...ast import add_dynamic_objects
 from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
+from ...core.common.serde import _deserialize
+from ...core.common.serde import _serialize
+from ...core.common.serde.recursive import recursive_serde_register
 from ...core.node.abstract.node import AbstractNodeClient
 from ..misc.union import UnionGenerator
 from .bool import Bool
@@ -27,8 +30,9 @@ from .set import Set
 from .slice import Slice
 from .string import String
 from .tuple import Tuple
+from .util import downcast
 
-for syft_type in [
+SyTypes = [
     Bool,
     Complex,
     Dict,
@@ -42,8 +46,17 @@ for syft_type in [
     String,
     Tuple,
     Bytes,
-]:
+    List,
+]
+
+for syft_type in SyTypes:
     syft_type.__module__ = __name__
+
+    recursive_serde_register(
+        syft_type,
+        serialize=lambda x: _serialize(x.upcast(), to_bytes=True),
+        deserialize=lambda x: downcast(_deserialize(x, from_bytes=True)),
+    )
 
 
 def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:

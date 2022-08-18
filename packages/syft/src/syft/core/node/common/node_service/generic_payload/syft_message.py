@@ -52,7 +52,7 @@ class NewSyftMessage(ImmediateSyftMessage):
         This will eventually replace the old `SyftMessage` class.
     """
 
-    __attr_allowlist__ = ["id", "address", "reply_to", "reply", "id", "kwargs"]
+    __attr_allowlist__ = ["id", "address", "reply_to", "reply", "kwargs"]
 
     signed_type = SignedMessage
     request_payload_type = RequestPayload

@@ -4,24 +4,14 @@ from typing import Iterable
 from typing import Optional
 from typing import Set as TypeSet
 
-# third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
-
-# syft absolute
-import syft as sy
-
 # relative
-from ...core.common.serde.serializable import serializable
 from ...core.common.uid import UID
-from ...proto.lib.python.set_pb2 import Set as Set_PB
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
-from .util import downcast
 from .util import upcast
 
 
-@serializable()
 class Set(set, PyPrimitive):
     def __init__(self, iterable: Iterable, _id: Optional[UID] = None):
         super().__init__(iterable)
@@ -170,24 +160,3 @@ class Set(set, PyPrimitive):
     def update(self, *args: Any) -> None:
         res = super().update(*args)
         return PrimitiveFactory.generate_primitive(value=res)
-
-    def _object2proto(self) -> Set_PB:
-        id_ = sy.serialize(obj=self.id)
-        downcasted = [downcast(value=element) for element in self]
-        data = [sy.serialize(obj=element, to_bytes=True) for element in downcasted]
-        return Set_PB(id=id_, data=data)
-
-    @staticmethod
-    def _proto2object(proto: Set_PB) -> "Set":
-        id_: UID = sy.deserialize(blob=proto.id)
-        value = [
-            upcast(sy.deserialize(blob=element, from_bytes=True))
-            for element in proto.data
-        ]
-        new_list = Set(value)
-        new_list._id = id_
-        return new_list
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return Set_PB

@@ -4,7 +4,6 @@ import sys
 # syft absolute
 import syft as sy
 from syft.lib.python.float import Float
-from syft.proto.lib.python.float_pb2 import Float as Float_PB
 
 
 def test_serde() -> None:

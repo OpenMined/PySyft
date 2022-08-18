@@ -1,7 +1,6 @@
 # stdlib
 from typing import Any
 from typing import Callable as CallableT
-import warnings
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -12,6 +11,7 @@ import syft
 # relative
 from ....util import aggressive_set_attr
 from .capnp import CAPNP_REGISTRY
+from .recursive import recursive_serde_register
 
 module_type = type(syft)
 
@@ -91,29 +91,11 @@ def GenerateProtobufWrapper(
 
 def serializable(
     generate_wrapper: bool = False,
-    protobuf_object: bool = False,
     recursive_serde: bool = False,
     capnp_bytes: bool = False,
 ) -> Any:
     def rs_decorator(cls: Any) -> Any:
-        # relative
-        from .recursive import rs_get_protobuf_schema
-        from .recursive import rs_object2proto
-        from .recursive import rs_proto2object
-
-        if not hasattr(cls, "__attr_allowlist__"):
-            warnings.warn(
-                f"__attr_allowlist__ not defined for type {cls.__name__},"
-                " even if it uses recursive serde, defaulting on the empty list."
-            )
-            cls.__attr_allowlist__ = []
-
-        if not hasattr(cls, "__serde_overrides__"):
-            cls.__serde_overrides__ = {}
-
-        cls._object2proto = rs_object2proto
-        cls._proto2object = staticmethod(rs_proto2object)
-        cls.get_protobuf_schema = staticmethod(rs_get_protobuf_schema)
+        recursive_serde_register(cls)
         return cls
 
     def serializable_decorator(cls: Any) -> Any:

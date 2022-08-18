@@ -9,16 +9,10 @@ from typing import Optional
 from typing import Union
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import SupportsIndex
-
-# syft absolute
-import syft as sy
 
 # relative
 from ...core.common import UID
-from ...core.common.serde.serializable import serializable
-from ...proto.lib.python.string_pb2 import String as String_PB
 from .int import Int
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
@@ -26,7 +20,6 @@ from .slice import Slice
 from .types import SyPrimitiveRet
 
 
-@serializable()
 class String(UserString, PyPrimitive):
     def __init__(
         self,
@@ -396,30 +389,3 @@ class String(UserString, PyPrimitive):
         :rtype: UID
         """
         return self._id
-
-    def _object2proto(self) -> String_PB:
-        return String_PB(
-            data=self.data,
-            id=sy.serialize(obj=self.id),
-            temporary_box=self.temporary_box,
-        )
-
-    @staticmethod
-    def _proto2object(proto: String_PB) -> "String":
-        str_id: UID = sy.deserialize(blob=proto.id)
-        return String(
-            value=proto.data,
-            id=str_id,
-            temporary_box=proto.temporary_box,
-        )
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return String_PB
-
-    # fixes __rmod__ in python <= 3.7
-    # https://github.com/python/cpython/commit/7abf8c60819d5749e6225b371df51a9c5f1ea8e9
-    def __rmod__(
-        self, template: Union[PyPrimitive, str, object]
-    ) -> Union[SyPrimitiveRet, String]:
-        return self.__class__(str(template) % self)

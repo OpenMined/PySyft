@@ -75,7 +75,7 @@ def test_pow() -> None:
     array = np.array([1, 1, 1])
     lazyarray = lazyrepeatarray(data=np.array([1]), shape=array.shape)
 
-    assert lazyarray ** 2 == array ** 2
+    assert lazyarray**2 == array**2
 
 
 def test_astype() -> None:

@@ -1,7 +1,6 @@
 # syft absolute
 import syft as sy
 from syft.lib.python.string import String
-from syft.proto.lib.python.string_pb2 import String as String_PB
 
 
 def test_string_serde() -> None:

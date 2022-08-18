@@ -59,6 +59,10 @@ class ObjectWithID:
         """
         return self._id
 
+    @id.setter
+    def id(self, new_id: UID) -> None:
+        self._id = new_id
+
     def __eq__(self, other: Any) -> bool:
         """Checks to see if two ObjectWithIDs are actually the same object.
 

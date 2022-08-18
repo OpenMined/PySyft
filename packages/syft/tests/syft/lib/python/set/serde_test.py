@@ -1,7 +1,6 @@
 # syft absolute
 import syft as sy
 from syft.lib.python.set import Set
-from syft.proto.lib.python.set_pb2 import Set as Set_PB
 
 
 def test_serde() -> None:

@@ -1,7 +1,6 @@
 # syft absolute
 import syft as sy
 from syft.lib.python.int import Int
-from syft.proto.lib.python.int_pb2 import Int as Int_PB
 
 
 def test_serde() -> None:

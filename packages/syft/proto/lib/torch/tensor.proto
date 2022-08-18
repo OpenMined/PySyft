@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package syft.lib.torch;
 
-import "proto/lib/torch/device.proto";
+import "proto/core/common/recursive_serde.proto";
 
 message ProtobufContent {
   repeated int64 shape = 1;
@@ -61,5 +61,5 @@ message TensorProto {
   bytes tensor = 1;
   bool requires_grad = 2;
   bytes grad = 3;
-  syft.lib.torch.Device device = 4;
+  syft.core.common.RecursiveSerde device = 4;
 }
