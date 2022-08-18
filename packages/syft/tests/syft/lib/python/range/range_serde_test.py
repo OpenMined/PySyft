@@ -6,11 +6,9 @@ from syft.lib.python.range import Range
 def test_range_serde() -> None:
     syft_range = Range(5, 1, -1)
 
-    serialized = syft_range._object2proto()
+    serialized = sy.serialize(syft_range)
 
-    assert isinstance(serialized, Range_PB)
-
-    deserialized = Range._proto2object(proto=serialized)
+    deserialized = sy.deserialize(serialized)
 
     assert isinstance(deserialized, Range)
     assert deserialized.id == syft_range.id

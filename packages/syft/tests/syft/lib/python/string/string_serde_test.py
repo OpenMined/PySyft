@@ -6,11 +6,9 @@ from syft.lib.python.string import String
 def test_string_serde() -> None:
     syft_string = String("Hello OpenMined")
 
-    serialized = syft_string._object2proto()
+    serialized = sy.serialize(syft_string)
 
-    assert isinstance(serialized, String_PB)
-
-    deserialized = String._proto2object(proto=serialized)
+    deserialized = sy.deserialize(serialized)
 
     assert isinstance(deserialized, String)
     assert deserialized.id == syft_string.id
