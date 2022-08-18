@@ -14,6 +14,9 @@ from .capnp import CAPNP_REGISTRY
 from .capnp import CAPNP_START_MAGIC_HEADER
 from .capnp import CAPNP_START_MAGIC_HEADER_BYTES
 from .types import Deserializeable
+from .recursive import RecursiveSerde_PB
+from .recursive import recursive_serde
+from .recursive import rs_proto2object
 
 PROTOBUF_START_MAGIC_HEADER = "protobuf:"
 PROTOBUF_START_MAGIC_HEADER_BYTES = PROTOBUF_START_MAGIC_HEADER.encode("utf-8")
@@ -24,68 +27,16 @@ def _deserialize(
     from_proto: bool = True,
     from_bytes: bool = False,
 ) -> Any:
-    deserialization_error = TypeError(
-        "You tried to deserialize an unsupported type. This can be caused by "
-        "several reasons. Either you are actively writing Syft code and forgot "
-        "to create one, or you are trying to deserialize an object which was "
-        "serialized using a different version of Syft and the object you tried "
-        "to deserialize is not supported in this version."
-    )
-
-    # try to decode capnp first
-    if isinstance(blob, bytes):
-        try:
-            return deserialize_capnp(buf=blob)
-        except CapnpMagicBytesNotFound:  # nosec
-            # probably not capnp bytes
-            pass
-        except Exception as e:
-            # capnp magic bytes found but another problem has occured
-            print("failed capnp deserialize", e)
-            raise e
-
-    # relative
-    from .recursive import RecursiveSerde_PB
-    from .recursive import recursive_serde
-    from .recursive import rs_proto2object
-
-    def parse_recursive_serde_object(recursive_serde_blob: bytes) -> object:
-        message = RecursiveSerde_PB()
-        message.ParseFromString(recursive_serde_blob)
-        return rs_proto2object(message)
 
     if from_bytes:
-        # stdlib
-        import sys
+        message = RecursiveSerde_PB()
+        message.ParseFromString(blob)
+        blob = message
 
-        data_message = DataMessage()
-        data_message.ParseFromString(blob)
-        module_parts = data_message.obj_type.split(".")
-        klass = module_parts.pop()
+    if not isinstance(blob, RecursiveSerde_PB):
+        raise TypeError(f"Wrong deserialization format.")
 
-        if klass == "NoneType":
-            obj_type = None
-        else:
-            obj_type = getattr(sys.modules[".".join(module_parts)], klass)
-
-        if recursive_serde(obj_type):
-            return parse_recursive_serde_object(data_message.content)
-        else:
-            get_protobuf_schema = getattr(obj_type, "get_protobuf_schema", None)
-
-        if not callable(get_protobuf_schema):
-            traceback_and_raise(deserialization_error)
-
-        protobuf_type = get_protobuf_schema()
-        blob = protobuf_type()
-
-        if not isinstance(blob, Message):
-            traceback_and_raise(deserialization_error)
-
-        blob.ParseFromString(data_message.content)
-
-    if isinstance(blob, RecursiveSerde_PB):
-        return rs_proto2object(blob)
+    return rs_proto2object(blob)
 
 
 class CapnpMagicBytesNotFound(Exception):

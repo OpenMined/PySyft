@@ -162,6 +162,7 @@ def get_fully_qualified_name(obj: object) -> str:
     """
 
     fqn = obj.__class__.__module__
+
     try:
         fqn += "." + obj.__class__.__name__
     except Exception as e:

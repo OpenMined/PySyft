@@ -621,7 +621,6 @@ class Class(Callable):
         name = parts.pop(-1)
         attrs["__name__"] = name
         attrs["__module__"] = ".".join(parts)
-
         # if the object already has a pointer class specified, use that instead of creating
         # an empty subclass of Pointer
         if hasattr(self.object_ref, "PointerClassOverride"):

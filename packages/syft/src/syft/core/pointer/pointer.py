@@ -124,7 +124,6 @@ from ..store.storeable_object import StorableObject
 class Pointer(AbstractPointer):
     __attr_allowlist__ = [
         "id_at_location",
-        "client",
         "tags",
         "description",
         "object_type",

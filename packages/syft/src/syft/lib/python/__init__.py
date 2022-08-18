@@ -48,6 +48,9 @@ SyTypes = [
     Bytes,
     List,
 ]
+def deserde(x):
+    print(f"SALUUUUT: {x}")
+    return downcast(_deserialize(x, from_bytes=True))
 
 for syft_type in SyTypes:
     syft_type.__module__ = __name__
@@ -55,7 +58,8 @@ for syft_type in SyTypes:
     recursive_serde_register(
         syft_type,
         serialize=lambda x: _serialize(x.upcast(), to_bytes=True),
-        deserialize=lambda x: downcast(_deserialize(x, from_bytes=True)),
+        deserialize=deserde
+        # deserialize=lambda x: downcast(_deserialize(x, from_bytes=True)),
     )
 
 
