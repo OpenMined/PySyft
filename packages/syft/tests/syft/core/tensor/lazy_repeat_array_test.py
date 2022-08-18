@@ -97,7 +97,7 @@ def test_sum() -> None:
 
 
 def test_mean() -> None:
-    array = np.array([1, 2, 3])
-    lazyarray = lazyrepeatarray(data=np.array([1, 2, 3]), shape=array.shape)
+    array = np.array([1, 1, 1])
+    lazyarray = lazyrepeatarray(data=np.array([1]), shape=array.shape)
 
     assert lazyarray.mean(axis=None).data == array.mean(axis=None)
