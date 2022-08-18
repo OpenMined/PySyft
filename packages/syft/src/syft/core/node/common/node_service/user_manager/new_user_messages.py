@@ -11,8 +11,6 @@ from pydantic import EmailStr
 from typing_extensions import final
 
 # relative
-from ......util import get_tracer
-from ......util import span
 from .....common.serde.serializable import serializable
 from ....abstract.node_service_interface import NodeServiceInterface
 from ....domain_interface import DomainInterface

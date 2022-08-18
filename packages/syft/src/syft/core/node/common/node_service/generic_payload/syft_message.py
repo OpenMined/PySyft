@@ -73,13 +73,13 @@ class NewSyftMessage(ImmediateSyftMessage):
         msg_id: Optional[UID] = None,
         reply_to: Optional[Address] = None,
         reply: bool = False,
-        ctx: Optional[Dict[str, Any]] = {},
+        ctx: Optional[Dict[str, Any]] = None,
     ) -> None:
         super().__init__(address=address, msg_id=msg_id)
         self.reply_to = reply_to
         self.reply = reply
         self.kwargs = kwargs if kwargs else {}
-        self.ctx = ctx
+        self.ctx = ctx if ctx else {}
 
     @property
     def payload(self) -> Payload:

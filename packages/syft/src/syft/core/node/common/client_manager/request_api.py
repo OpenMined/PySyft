@@ -168,18 +168,22 @@ class RequestAPI:
             with ot_tracer.start_as_current_span(syft_msg_constructor.__name__):
                 span_ctx = trace.get_current_span().get_span_context()
                 ctx = {
-                    "span_id": str(span_ctx.span_id),
-                    "trace_id": str(span_ctx.trace_id),
+                    "span_id": str(
+                        span_ctx.span_id
+                    ),  # NOTE : Integer out of range during syft serialization
+                    "trace_id": str(
+                        span_ctx.trace_id
+                    ),  # NOTE : Integer out of range during syft serialization
                     "is_remote": True,
                 }
-                print("My Context dictionary ; ", ctx)
                 # 1 - Build Message Object
                 unsigned_msg = syft_msg_constructor(  # type: ignore
                     address=self.client.address, reply_to=self.client.address, ctx=ctx, kwargs=content  # type: ignore
                 )
-
                 # 2 - Signing Message withg User Signing Key
-                signed_msg = unsigned_msg.sign(signing_key=self.client.signing_key)
+                signed_msg = unsigned_msg.sign(  # type: ignore
+                    signing_key=self.client.signing_key
+                )
                 response = self.client.send_immediate_msg_with_reply(
                     msg=signed_msg, timeout=timeout
                 )

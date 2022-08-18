@@ -642,15 +642,19 @@ def concurrency_count(factor: float = 0.8) -> int:
     return mp_count
 
 
-def span_recv_new_msg(tracer):
-    def decorator(fun):
-        def wrapper(*args, **kwargs):
+def span_recv_new_msg(tracer: Any) -> Any:
+    def decorator(fun: Callable) -> Any:
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            # If not dev/debug mode, just exec the method
+            PROFILE_MODE = str_to_bool(os.environ.get("PROFILE", "False"))
+            if not PROFILE_MODE:
+                return fun(*args, **kwargs)
+
             msg = kwargs["msg"].message
             ctx_dict = getattr(msg, "ctx", {})
             if ctx_dict:
                 ctx_dict["span_id"] = int(ctx_dict["span_id"])
                 ctx_dict["trace_id"] = int(ctx_dict["trace_id"])
-                print("\n\n\n My Context Dict: ", ctx_dict, "\n\n\n")
                 ctx = trace.SpanContext(**ctx_dict)
                 link = trace.Link(ctx)
                 with tracer.start_as_current_span(
@@ -671,9 +675,14 @@ def span_recv_new_msg(tracer):
     return decorator
 
 
-def span(tracer):
-    def decorator(fun):
-        def wrapper(*args, **kwargs):
+def span(tracer: Any) -> Any:
+    def decorator(fun: Callable) -> Any:
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            # If not dev/debug mode, just exec the method
+            PROFILE_MODE = str_to_bool(os.environ.get("PROFILE", "False"))
+            if not PROFILE_MODE:
+                return fun(*args, **kwargs)
+
             span_msg = f"{fun.__qualname__}"
             with tracer.start_as_current_span(
                 span_msg, attributes={"args": args, "kwargs": kwargs}
@@ -686,9 +695,9 @@ def span(tracer):
     return decorator
 
 
-def span_func(tracer, ctx: Optional[Dict[Any, Any]]) -> Callable:
-    def inner(func):
-        def wrapper(*args, **kwargs):
+def span_func(tracer: Any, ctx: Optional[Dict[Any, Any]]) -> Callable:
+    def inner(func: Callable) -> Any:
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             # If not dev/debug mode, just exec the method
             PROFILE_MODE = str_to_bool(os.environ.get("PROFILE", "False"))
             if not PROFILE_MODE:
@@ -715,7 +724,7 @@ def span_func(tracer, ctx: Optional[Dict[Any, Any]]) -> Callable:
 
 
 def trace_and_log(
-    callable: Callable, args: Dict, tracer: Any, ctx: Optional[Dict] = {}
+    callable: Callable, args: Dict, tracer: Any, ctx: Optional[Dict] = None
 ) -> Any:
     return span_func(tracer=tracer, ctx=ctx)(callable)(**args)
 

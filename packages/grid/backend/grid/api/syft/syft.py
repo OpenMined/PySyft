@@ -51,6 +51,7 @@ def delete(current_user: UserPrivate = Depends(get_current_user)) -> Response:
 
     return Response(json.dumps(response))
 
+
 @router.post("", response_model=str)
 def syft_route(data: bytes = Depends(get_body)) -> Any:
     obj_msg = deserialize(blob=data, from_bytes=True)
