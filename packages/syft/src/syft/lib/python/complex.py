@@ -41,7 +41,7 @@ class Complex(complex, PyPrimitive):
         return self._id
 
     def upcast(self) -> complex:
-        return super().complex(self)  # type: ignore
+        return complex(self.real, self.imag)# type: ignore
 
     def __add__(self, x: complex) -> SyPrimitiveRet:
         result = complex.__add__(self, x)

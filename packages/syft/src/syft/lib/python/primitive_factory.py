@@ -132,7 +132,7 @@ class PrimitiveFactory(ABC):
 
         if type(value) in [dict, UserDict, OrderedDict]:
             constructor = (
-                python.collections.OrderedDict
+                python.collections.SyOrderedDict
                 if type(value) is OrderedDict
                 else python.Dict
             )

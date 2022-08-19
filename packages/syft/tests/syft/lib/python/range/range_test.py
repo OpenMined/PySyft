@@ -403,10 +403,10 @@ class RangeTest(unittest.TestCase):
         self.assertEqual(len(Range(sys.maxsize, sys.maxsize + 10)), 10)
 
     def test_repr(self):
-        self.assertEqual(repr(Range(1))[:35], "<syft.lib.python.range.Range object")
-        self.assertEqual(repr(Range(1, 2))[:35], "<syft.lib.python.range.Range object")
+        self.assertEqual(repr(Range(1))[:29], "<syft.lib.python.Range object")
+        self.assertEqual(repr(Range(1, 2))[:29], "<syft.lib.python.Range object")
         self.assertEqual(
-            repr(Range(1, 2, 3))[:35], "<syft.lib.python.range.Range object"
+            repr(Range(1, 2, 3))[:29], "<syft.lib.python.Range object"
         )
 
     @pytest.mark.xfail

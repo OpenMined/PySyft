@@ -25,7 +25,8 @@ from ..util import downcast
 from ..util import upcast
 
 
-class OrderedDict(PyOrderedDict, PyPrimitive):
+class SyOrderedDict(PyOrderedDict, PyPrimitive):
+
     def __init__(self, *args: Any, _id: UID = UID(), **kwds: Any):
         super().__init__(*args, **kwds)
         self._id = _id
@@ -145,4 +146,4 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
 
     def upcast(self) -> PyOrderedDict:
         # recursively upcast
-        return OrderedDict((k, upcast(v)) for k, v in self.items())
+        return PyOrderedDict((k, upcast(v)) for k, v in self.items())
