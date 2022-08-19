@@ -370,7 +370,15 @@ def test_mean(
     tensor_mean_axis_1 = tensor.mean(**kwargs)
 
     assert (tensor_mean.child == reference_data.mean()).all()
+    assert tensor_mean.shape == reference_data.mean().shape
+    assert (tensor_mean.min_vals == tensor.min_vals).all()
+    assert (tensor_mean.max_vals == tensor.max_vals).all()
+
     assert (tensor_mean_axis_1.child == reference_data.mean(**kwargs)).all()
+    assert tensor_mean_axis_1.shape == reference_data.mean(**kwargs).shape
+    assert (tensor_mean_axis_1.min_vals == tensor.min_vals).all()
+    assert (tensor_mean_axis_1.max_vals == tensor.max_vals).all()
+
     assert zeros_tensor.mean().child == 0
 
 
