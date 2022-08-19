@@ -38,6 +38,7 @@ from ...adp.data_subject_list import DataSubjectList
 from ...adp.data_subject_list import dslarraytonumpyutf8
 from ...adp.data_subject_list import numpyutf8todslarray
 from ...adp.vectorized_publish import vectorized_publish
+from ...adp.vectorized_publish import publish
 from ...common.serde.capnp import CapnpModule
 from ...common.serde.capnp import chunk_bytes
 from ...common.serde.capnp import combine_bytes
@@ -1783,6 +1784,16 @@ class GammaTensor:
             state=output_state,
         )
 
+    def filtered(self) -> GammaTensor:
+        # This is only used during publish to filter out data in GammaTensors with no_op. It serves no other purpose.
+        return GammaTensor(
+            child=jnp.zeros_like(self.child),
+            data_subjects=self.data_subjects,
+            min_vals=self.min_vals * 0,
+            max_vals=self.max_vals * 1,
+            func_str="no_op"
+        )
+
     def ravel(self) -> GammaTensor:
         def _ravel(state: dict) -> jax.numpy.DeviceArray:
             return jnp.ravel(self.run(state))
@@ -2122,7 +2133,7 @@ class GammaTensor:
         deduct_epsilon_for_user: Callable,
         ledger: DataSubjectLedger,
         sigma: Optional[float] = None,
-    ) -> jax.numpy.DeviceArray:
+    ) -> np.ndarray:
 
         # Use the string to retrieve the function itself
         # relative
@@ -2135,14 +2146,13 @@ class GammaTensor:
         ):  # if state tree is empty (e.g. publishing a PhiTensor w/ public vals directly)
             self.state[self.id] = self
 
-        return vectorized_publish(
-            state_tree=self.state,
-            is_linear=self.is_linear,
-            sigma=sigma,
-            output_func=func,
+        return publish(
+            tensor=self,
             ledger=ledger,
             get_budget_for_user=get_budget_for_user,
             deduct_epsilon_for_user=deduct_epsilon_for_user,
+            sigma=sigma,
+            is_linear=self.is_linear
         )
 
     # def expand_dims(self, axis: int) -> GammaTensor:
