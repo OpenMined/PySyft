@@ -92,12 +92,11 @@ from typing import Optional
 import warnings
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 import requests
 
 # syft absolute
-import syft as sy
+from ..common.serde import _serialize
 
 # relative
 from ...logger import debug
@@ -124,12 +123,16 @@ from ..store.storeable_object import StorableObject
 class Pointer(AbstractPointer):
     __attr_allowlist__ = [
         "id_at_location",
+        "client",
         "tags",
         "description",
         "object_type",
         "_exhausted",
         "gc_enabled",
     ]
+    __serde_overrides__ = {
+        "client": (lambda client: _serialize(client.address, to_bytes=True), lambda blob: _deserialize(blob, from_bytes=True))
+    }
 
     """
     The pointer is the handler when interacting with remote data.

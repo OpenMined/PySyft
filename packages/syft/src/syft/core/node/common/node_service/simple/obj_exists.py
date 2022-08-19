@@ -6,11 +6,13 @@ from nacl.signing import VerifyKey
 
 # relative
 from ... import UID
+from .....common.serde.serializable import serializable
 from ......logger import info
 from ....abstract.node import AbstractNode
 from .simple_messages import NodeRunnableMessageWithReply
 
 
+@serializable(recursive_serde=True)
 class DoesObjectExistMessage(NodeRunnableMessageWithReply):
 
     __attr_allowlist__ = ["obj_id"]
