@@ -31,6 +31,8 @@ from .slice import Slice
 from .string import String
 from .tuple import Tuple
 from .util import downcast
+from .collections import OrderedDict
+
 
 SyTypes = [
     Bool,
@@ -47,6 +49,9 @@ SyTypes = [
     Tuple,
     Bytes,
     List,
+    Set,
+    Range,
+    # OrderedDict
 ]
 
 for syft_type in SyTypes:
