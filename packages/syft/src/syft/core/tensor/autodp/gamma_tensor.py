@@ -1161,6 +1161,26 @@ class GammaTensor:
             return self
         return self.func(state)
 
+    def reconstruct(self, state: Optional[dict] = None) -> GammaTensor:
+        if self.func_str == "no_op":
+            return self
+        else:
+            if state is None:
+                return mapper[self.func_str](self.state)
+            else:
+                return mapper[self.func_str](state)
+
+    def swap_state(self, state: dict) -> GammaTensor:
+        return GammaTensor(
+            child=self.reconstruct(state),
+            data_subjects=self.data_subjects,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+            state=state,
+            func_str=self.func_str,
+            is_linear=self.is_linear
+        )
+
     def __add__(self, other: Any) -> GammaTensor:
         # relative
         from .phi_tensor import PhiTensor

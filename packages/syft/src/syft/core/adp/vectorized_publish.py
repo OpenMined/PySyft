@@ -222,7 +222,7 @@ def publish(
                 parent_branch += [input_tensor.state for _ in input_tensor.state.values()]
 
         # Recompute the tensor's value now that some of its inputs have been filtered, and repeat epsilon calculations
-        new_tensor = tensor.run(state=filtered_sourcetree)
+        new_tensor = tensor.swap_state(filtered_sourcetree)
         return new_tensor.publish(
             get_budget_for_user=get_budget_for_user,
             deduct_epsilon_for_user=deduct_epsilon_for_user,
