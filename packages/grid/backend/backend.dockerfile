@@ -86,7 +86,7 @@ RUN --mount=type=cache,target=/root/.cache \
 
 RUN apt update
 RUN pip install --upgrade pip
-RUN if [ "$TFF" = "True" ] ; then pip install --upgrade tensorflow-federated==0.28.0; fi
+RUN if [ "$TFF" = "True" ] ; then pip install --upgrade tensorflow-federated; fi
 
 # install syft
 RUN --mount=type=cache,target=/root/.cache \
