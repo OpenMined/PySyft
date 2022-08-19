@@ -1,5 +1,7 @@
 # stdlib
+from types import new_class
 from typing import Optional
+from uuid import UUID
 
 # relative
 from . import collections
@@ -31,7 +33,7 @@ from .slice import Slice
 from .string import String
 from .tuple import Tuple
 from .util import downcast
-from .collections import OrderedDict
+from .collections import SyOrderedDict
 
 
 SyTypes = [
@@ -51,7 +53,7 @@ SyTypes = [
     List,
     Set,
     Range,
-    # OrderedDict
+    SyOrderedDict
 ]
 
 # TODO Tudor: FIX THIS, we can't rely on _serialize/_deserialize like this (I think)
@@ -59,11 +61,17 @@ SyTypes = [
 def serialize(x):
     print("SALUT SERIALIZARE")
     print(type(x))
-    return _serialize(x.upcast(), to_bytes=True)
+    new_id = getattr(x, 'id', None)
+    return _serialize((x.upcast(), new_id), to_bytes=True)
+
 
 def deserialize(x):
     print(f"SALUT DESERIALIZARE: {x}")
-    return downcast(_deserialize(x, from_bytes=True))
+    up_obj, old_id = _deserialize(x, from_bytes=True)
+    new_obj = downcast(up_obj)
+    if old_id:
+        new_obj._id = old_id 
+    return new_obj
 
 for syft_type in SyTypes:
     syft_type.__module__ = __name__
@@ -97,9 +105,9 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.Iterator", "syft.lib.python.Iterator", Iterator),
         ("syft.lib.python.Set", "syft.lib.python.Set", Set),
         (
-            "syft.lib.python.collections.OrderedDict",
-            "syft.lib.python.collections.OrderedDict",
-            collections.OrderedDict,
+            "syft.lib.python.collections.SyOrderedDict",
+            "syft.lib.python.collections.SyOrderedDict",
+            collections.SyOrderedDict,
         ),
     ]
 
@@ -514,85 +522,85 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.Set.union", "syft.lib.python.Set"),
         ("syft.lib.python.Set.update", "syft.lib.python._SyNone"),
         (
-            "syft.lib.python.collections.OrderedDict.__contains__",
+            "syft.lib.python.collections.SyOrderedDict.__contains__",
             "syft.lib.python.Bool",
         ),
         (
-            "syft.lib.python.collections.OrderedDict.__delitem__",
+            "syft.lib.python.collections.SyOrderedDict.__delitem__",
             "syft.lib.python._SyNone",
         ),
         (
-            "syft.lib.python.collections.OrderedDict.__eq__",
+            "syft.lib.python.collections.SyOrderedDict.__eq__",
             "syft.lib.python.Bool",
         ),
         (
-            "syft.lib.python.collections.OrderedDict.__ge__",
+            "syft.lib.python.collections.SyOrderedDict.__ge__",
             "syft.lib.python.Bool",
         ),
         (
-            "syft.lib.python.collections.OrderedDict.__getitem__",
+            "syft.lib.python.collections.SyOrderedDict.__getitem__",
             "syft.lib.python.Any",
         ),
         (
-            "syft.lib.python.collections.OrderedDict.__gt__",
+            "syft.lib.python.collections.SyOrderedDict.__gt__",
             "syft.lib.python.Bool",
         ),
         (
-            "syft.lib.python.collections.OrderedDict.__le__",
+            "syft.lib.python.collections.SyOrderedDict.__le__",
             "syft.lib.python.Bool",
         ),
         (
-            "syft.lib.python.collections.OrderedDict.__iter__",
+            "syft.lib.python.collections.SyOrderedDict.__iter__",
             "syft.lib.python.Iterator",
         ),
-        ("syft.lib.python.collections.OrderedDict.__len__", "syft.lib.python.Int"),
+        ("syft.lib.python.collections.SyOrderedDict.__len__", "syft.lib.python.Int"),
         (
-            "syft.lib.python.collections.OrderedDict.__lt__",
+            "syft.lib.python.collections.SyOrderedDict.__lt__",
             "syft.lib.python.Bool",
         ),
         (
-            "syft.lib.python.collections.OrderedDict.__ne__",
+            "syft.lib.python.collections.SyOrderedDict.__ne__",
             "syft.lib.python.Bool",
         ),
         (
-            "syft.lib.python.collections.OrderedDict.__setitem__",
+            "syft.lib.python.collections.SyOrderedDict.__setitem__",
             "syft.lib.python._SyNone",
         ),
         (
-            "syft.lib.python.collections.OrderedDict.clear",
+            "syft.lib.python.collections.SyOrderedDict.clear",
             "syft.lib.python._SyNone",
         ),
         (
-            "syft.lib.python.collections.OrderedDict.copy",
-            "syft.lib.python.collections.OrderedDict",
+            "syft.lib.python.collections.SyOrderedDict.copy",
+            "syft.lib.python.collections.SyOrderedDict",
         ),
         (
-            "syft.lib.python.collections.OrderedDict.fromkeys",
-            "syft.lib.python.collections.OrderedDict",
+            "syft.lib.python.collections.SyOrderedDict.fromkeys",
+            "syft.lib.python.collections.SyOrderedDict",
         ),
-        ("syft.lib.python.collections.OrderedDict.items", "syft.lib.python.Iterator"),
-        ("syft.lib.python.collections.OrderedDict.keys", "syft.lib.python.Iterator"),
+        ("syft.lib.python.collections.SyOrderedDict.items", "syft.lib.python.Iterator"),
+        ("syft.lib.python.collections.SyOrderedDict.keys", "syft.lib.python.Iterator"),
         (
-            "syft.lib.python.collections.OrderedDict.move_to_end",
+            "syft.lib.python.collections.SyOrderedDict.move_to_end",
             "syft.lib.python._SyNone",
         ),
-        ("syft.lib.python.collections.OrderedDict.pop", "syft.lib.python.Any"),
-        ("syft.lib.python.collections.OrderedDict.popitem", "syft.lib.python.Any"),
+        ("syft.lib.python.collections.SyOrderedDict.pop", "syft.lib.python.Any"),
+        ("syft.lib.python.collections.SyOrderedDict.popitem", "syft.lib.python.Any"),
         (
-            "syft.lib.python.collections.OrderedDict.setdefault",
+            "syft.lib.python.collections.SyOrderedDict.setdefault",
             "syft.lib.python.Any",
         ),
         (
-            "syft.lib.python.collections.OrderedDict.update",
+            "syft.lib.python.collections.SyOrderedDict.update",
             "syft.lib.python._SyNone",
         ),
         (
-            "syft.lib.python.collections.OrderedDict.values",
+            "syft.lib.python.collections.SyOrderedDict.values",
             "syft.lib.python.Iterator",
         ),
-        ("syft.lib.python.collections.OrderedDict.items", "syft.lib.python.List"),
+        ("syft.lib.python.collections.SyOrderedDict.items", "syft.lib.python.List"),
         (
-            "syft.lib.python.collections.OrderedDict.dict_get",
+            "syft.lib.python.collections.SyOrderedDict.dict_get",
             "syft.lib.python.Any",
         ),
     ]
