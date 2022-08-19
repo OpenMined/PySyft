@@ -11,7 +11,7 @@ from .types import SyPrimitiveRet
 NoneType = type(None)
 
 
-class _SyNone(PyPrimitive):
+class   _SyNone(PyPrimitive):
     __name__ = "_SyNone"
 
     def __init__(self, id: Optional[UID] = None, temporary_box: bool = False):

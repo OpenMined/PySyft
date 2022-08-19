@@ -246,3 +246,4 @@ class Bool(int, PyPrimitive):
 
     def real(self) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=self.value.real)
+

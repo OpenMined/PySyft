@@ -169,7 +169,6 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
     __attr_allowlist__ = [
         "id",
         "address",
-        "user_id",
         "email",
         "password",
         "new_password",

@@ -9,7 +9,7 @@ import syft as sy
 from ....proto.core.common.recursive_serde_pb2 import (
     RecursiveSerde as RecursiveSerde_PB,
 )
-from ....util import get_fully_qualified_name
+from ....util import get_fully_qualified_name, index_syft_by_module_name
 
 TYPE_BANK = {}
 
@@ -30,16 +30,16 @@ def recursive_serde_register(
     else:
         nonrecursive = False
 
-    serialize = serialize if nonrecursive else rs_object2proto
-    deserialize = deserialize if nonrecursive else rs_proto2object
+    _serialize = serialize if nonrecursive else rs_object2proto
+    _deserialize = deserialize if nonrecursive else rs_proto2object
 
     attribute_list = getattr(cls, "__attr_allowlist__", None)
     serde_overrides = getattr(cls, "__serde_overrides__", {})
 
     TYPE_BANK[cls.__name__] = (
         nonrecursive,
-        serialize,
-        deserialize,
+        _serialize,
+        _deserialize,
         attribute_list,
         serde_overrides,
     )
@@ -88,13 +88,18 @@ def rs_bytes2object(blob: bytes) -> Any:
 
 
 def rs_proto2object(proto: RecursiveSerde_PB) -> Any:
+    from .deserialize import _deserialize
+    # clean this mess, Tudor
     module_parts = proto.fully_qualified_name.split(".")
     klass = module_parts.pop()
-    # clean this mess, Tudor
+
     if klass == "NoneType":
         class_type = type(None)
     else:
-        class_type = getattr(sys.modules[".".join(module_parts)], klass)
+        try:
+            class_type = index_syft_by_module_name(proto.fully_qualified_name)
+        except:
+            class_type = getattr(sys.modules[".".join(module_parts)], klass)
 
     nonrecursive, serialize, deserialize, attribute_list, serde_overrides = TYPE_BANK[
         class_type.__name__
@@ -105,8 +110,8 @@ def rs_proto2object(proto: RecursiveSerde_PB) -> Any:
 
     obj = class_type.__new__(class_type)  # type: ignore
     for attr_name, attr_bytes in zip(proto.fields_name, proto.fields_data):
-
-        attr_value = sy.deserialize(attr_bytes, from_bytes=True)
+        print(attr_name)
+        attr_value = _deserialize(attr_bytes, from_bytes=True)
         transforms = serde_overrides.get(attr_name, None)
         if transforms is None:
             setattr(obj, attr_name, attr_value)

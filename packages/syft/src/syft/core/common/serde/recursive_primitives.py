@@ -96,7 +96,7 @@ recursive_serde_register(
 )
 
 recursive_serde_register(
-    type(None), serialize=lambda _: b"", deserialize=lambda _: None
+    type(None), serialize=lambda _: b"1", deserialize=lambda _: None
 )
 
 recursive_serde_register(
