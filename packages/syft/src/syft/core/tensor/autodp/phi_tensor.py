@@ -2029,8 +2029,16 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         self,
         axis: Optional[Union[int, Tuple[int, ...]]] = None,
         **kwargs: Any,
-    ) -> Union[PhiTensor, GammaTensor]:
-        return self.gamma.mean(axis, **kwargs)
+    ) -> PhiTensor:
+        child = self.child.mean(axis=axis, **kwargs)
+        data_subjects = np.array(self.data_subjects.mean(axis=axis, **kwargs))
+
+        return PhiTensor(
+            child=child,
+            data_subjects=data_subjects,
+            min_vals=self.min_vals.mean(),
+            max_vals=self.max_vals.mean(),
+        )
 
     def expand_dims(self, axis: int) -> PhiTensor:
         result = np.expand_dims(self.child, axis=axis)
