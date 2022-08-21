@@ -23,6 +23,7 @@ packages = [
     "requests",
     "rich",
     "setuptools",
+    "validators",
     "virtualenv-api",
     "virtualenv",
 ]

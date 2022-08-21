@@ -10,6 +10,7 @@ import subprocess  # nosec
 import sys
 import tempfile
 import time
+import validators
 from typing import Any
 from typing import Callable
 from typing import Dict as TypeDict
@@ -2499,6 +2500,20 @@ cli.add_command(version)
     is_flag=True,
     help="CI Test Mode, don't hang on Jupyter",
 )
+@click.option(
+    "--repo",
+    default="openmined/pysyft",
+    help="Choose a repo to fetch the notebook from or just use OpenMined/PySyft",
+)
+@click.option(
+    "--branch",
+    default="dev",
+    help="Choose a branch to fetch from or just use dev",
+)
+@click.option(
+    "--commit",
+    help="Choose a specific commit to fetch the notebook from",
+)
 def quickstart_cli(
     url: Optional[str] = None,
     syft: str = "latest",
@@ -2506,6 +2521,9 @@ def quickstart_cli(
     quiet: bool = False,
     pre: bool = False,
     test: bool = False,
+    repo: str = "openmined/pysyft",
+    branch: str = "dev",
+    commit: Optional[str] = None,
     python: Optional[str] = None,
 ) -> None:
     try:
@@ -2532,6 +2550,10 @@ def quickstart_cli(
             )
 
         if url:
+            url = generate_url_from_repo_branch_subdir(
+                repo=repo, branch=branch, commit=commit, url=url
+            )
+
             file_path, _ = quickstart_download_notebook(
                 url=url, directory=directory, reset=reset
             )
@@ -2660,6 +2682,24 @@ def add_intro_notebook(directory: str, reset: bool = False) -> str:
                 )
     file_path = os.path.abspath(f"{directory}/{filenames[0]}")
     return file_path
+
+
+def generate_url_from_repo_branch_subdir(
+    repo: str, branch: str, commit: Optional[str], url: str
+):
+    url_is_valid = validators.url(url)  # add where deps are mentioned
+    if url_is_valid != True:
+        core_url = "https://raw.githubusercontent.com/" + repo + "/"
+
+        if commit == None:
+            core_url = core_url + branch + "/" + "notebooks/quickstart/" + url
+        else:
+            core_url = core_url + commit + "/" + "notebooks/quickstart/" + url
+
+        if core_url.endswith(".ipynb") != True:
+            core_url = core_url + ".ipynb"
+        return core_url
+    return url
 
 
 cli.add_command(quickstart_cli, "quickstart")
