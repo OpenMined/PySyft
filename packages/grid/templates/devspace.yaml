@@ -1,0 +1,836 @@
+version: v1beta11
+
+vars:
+  - name: CONTAINER_REGISTRY
+    value: ""
+  - name: DOCKER_IMAGE_DB
+    value: postgres:12
+  - name: DOCKER_IMAGE_QUEUE
+    value: rabbitmq:3
+  - name: SERVICE_NAME_DB
+    value: db
+  - name: SERVICE_NAME_QUEUE
+    value: queue
+  - name: SERVICE_NAME_BACKEND
+    value: backend
+  - name: SERVICE_NAME_BACKEND_STREAM
+    value: backend-stream
+  - name: SERVICE_NAME_BACKEND_WORKER
+    value: backend-worker
+  - name: SERVICE_NAME_FRONTEND
+    value: frontend
+  - name: SERVICE_NAME_HEADSCALE
+    value: headscale
+  - name: SERVICE_NAME_TAILSCALE
+    value: tailscale
+  - name: SERVICE_NAME_REDIS
+    value: redis
+  - name: SERVICE_NAME_PROXY
+    value: proxy
+  - name: SERVICE_NAME_SEAWEEDFS
+    value: seaweedfs
+  - name: VERSION
+    command: "python3 ../../VERSION"
+  - name: VERSION_HASH
+    command: "python3 ../../VERSION hash"
+  - name: STACK_API_KEY
+    command: "python3 ../hagrid/hagrid/rand_sec.py"
+  - name: NODE_TYPE
+    value: "network"
+  - name: RELEASE
+    value: production
+  - name: CONTAINER_HOST
+    value: kubernetes
+  - name: DOCKER_IMAGE_TRAEFIK
+    value: traefik
+  - name: TRAEFIK_VERSION
+    value: "v2.5"
+  - name: DOCKER_IMAGE_REDIS
+    value: redis
+  - name: REDIS_STORE_DB_ID
+    value: "0"
+  - name: REDIS_LEDGER_DB_ID
+    value: "1"
+  - name: REDIS_HOST
+    value: redis
+  - name: REDIS_PORT
+    value: "6379"
+  - name: JAX_ENABLE_X64
+    value: "True"
+  - name: NEXT_PUBLIC_API_URL
+    value: "/api/v1"
+  - name: USE_NEW_SERVICE
+    value: "True"
+  - name: DOCKER_IMAGE_SEAWEEDFS
+    value: "chrislusf/seaweedfs:latest"
+  - name: S3_ENDPOINT
+    value: seaweedfs
+  - name: S3_PORT
+    value: "8333"
+  - name: S3_ROOT_USER
+    value: admin
+  - name: S3_ROOT_PWD
+    value: admin
+  - name: S3_REGION
+    value: "us-east-1"
+  - name: S3_PRESIGNED_TIMEOUT_SECS
+    value: "1800"
+  - name: S3_VOLUME_SIZE_MB
+    value: "1024"
+  - name: USE_BLOB_STORAGE
+    value: "True"
+  - name: DOMAIN_NAME
+    value: node
+  - name: TRAEFIK_CONFIG_FILE
+    value: traefik-domain.yaml
+  - name: NETWORK_CHECK_INTERVAL
+    value: "60"
+  - name: DOMAIN_CHECK_INTERVAL
+    value: "60"
+  - name: TEST_MODE
+    value: "0"
+
+images:
+  backend:
+    image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
+    # rebuildStrategy: ignoreContextChanges
+    tags:
+      - "######"
+      - latest
+      - "0.7.0-beta.41"
+    createPullSecret: true
+    dockerfile: ./backend/backend.dockerfile
+    context: ../
+    build:
+      buildKit: {}
+  frontend:
+    image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}
+    # rebuildStrategy: ignoreContextChanges
+    tags:
+      - "######"
+      - latest
+      - "0.7.0-beta.41"
+    createPullSecret: true
+    dockerfile: ./frontend/frontend.dockerfile
+    context: ./frontend
+    build:
+      docker:
+        options:
+          target: "grid-ui-development"
+          buildArgs:
+            NODE_TYPE: ${NODE_TYPE}
+            FRONTEND_ENV: development
+      buildKit:
+        args: ["--target", "grid-ui-development"]
+  headscale:
+    image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_HEADSCALE}
+    # rebuildStrategy: ignoreContextChanges
+    tags:
+      - "######"
+      - latest
+      - "0.7.0-beta.41"
+    createPullSecret: true
+    dockerfile: ./vpn/headscale.dockerfile
+    context: ./vpn
+    build:
+      buildKit: {}
+  tailscale:
+    image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}
+    # rebuildStrategy: ignoreContextChanges
+    tags:
+      - "######"
+      - latest
+      - "0.7.0-beta.41"
+    createPullSecret: true
+    dockerfile: ./vpn/tailscale.dockerfile
+    context: ./vpn
+    build:
+      buildKit: {}
+  vpn-iptables:
+    image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_VPN_IPTABLES}
+    # rebuildStrategy: ignoreContextChanges
+    tags:
+      - "######"
+      - latest
+      - "0.7.0-beta.41"
+    createPullSecret: true
+    dockerfile: ./vpn/iptables.dockerfile
+    context: ./vpn
+    build:
+      buildKit: {}
+
+deployments:
+  # config maps
+  - name: traefik-main-config
+    kubectl:
+      manifests:
+        - k8s/manifests/${TRAEFIK_CONFIG_FILE}
+
+  - name: redis-config
+    kubectl:
+      manifests:
+        - k8s/manifests/redis.yaml
+
+  - name: seaweed-config-filer
+    kubectl:
+      manifests:
+        - k8s/manifests/seaweed-filer.yaml
+
+  - name: seaweed-config-s3
+    kubectl:
+      manifests:
+        - k8s/manifests/seaweed-s3.yaml
+
+  # - name: vpn-iptables
+  #   kubectl:
+  #     kustomize: true
+  #     manifests:
+  #       - k8s/manifests/vpn-iptables
+
+  # containers
+  - name: proxy
+    helm:
+      componentChart: true
+      values:
+        containers:
+          - image: ${DOCKER_IMAGE_TRAEFIK}:${TRAEFIK_VERSION}
+            volumeMounts:
+              - containerPath: /etc/traefik
+                volume:
+                  name: traefik-conf
+            env:
+              - name: SERVICE_NAME
+                value: ${SERVICE_NAME_PROXY}
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}
+            securityContext:
+              capabilities:
+                add: ["NET_ADMIN", "SYS_MODULE"]
+              privileged: true
+            env:
+              - name: HOSTNAME
+                value: ${DOMAIN_NAME}
+              - name: STACK_API_KEY
+                value: ${STACK_API_KEY}
+            volumeMounts:
+              - containerPath: /var/lib/tailscale
+                volume:
+                  name: tailscale-data
+                  subPath: /tailscale-data
+                  readOnly: false
+        volumes:
+          - name: tailscale-data
+            size: "100Mi"
+          - name: traefik-conf
+            configMap:
+              name: traefik-main-config
+        service:
+          name: ${SERVICE_NAME_PROXY}
+          ports:
+            - name: proxy
+              port: 80
+            - name: api
+              port: 4000
+
+  - name: queue
+    helm:
+      componentChart: true
+      values:
+        containers:
+          - image: ${DOCKER_IMAGE_QUEUE}
+        service:
+          name: ${SERVICE_NAME_QUEUE}
+          ports:
+            - name: ampq
+              port: 5672
+            - name: management
+              port: 15672
+
+  - name: redis
+    helm:
+      componentChart: true
+      values:
+        containers:
+          - image: ${DOCKER_IMAGE_REDIS}:${REDIS_VERSION}
+            env:
+              - name: SERVICE_NAME
+                value: redis
+              - name: RELEASE
+                value: ${RELEASE}
+            volumeMounts:
+              - containerPath: /data
+                volume:
+                  name: app-redis-data
+                  subPath: /
+                  readOnly: false
+              - containerPath: /usr/local/etc/redis
+                volume:
+                  name: redis-conf
+        volumes:
+          - name: app-redis-data
+            size: "5Gi"
+          - name: redis-conf
+            configMap:
+              name: redis-config
+        service:
+          name: ${SERVICE_NAME_REDIS}
+          ports:
+            - port: 6379
+
+  - name: seaweedfs
+    helm:
+      componentChart: true
+      values:
+        containers:
+          - image: ${DOCKER_IMAGE_SEAWEEDFS}
+            command:
+              - weed
+            args:
+              [
+                "server",
+                "-s3",
+                "-s3.config=/etc/s3config.json",
+                "-master.volumeSizeLimitMB=${S3_VOLUME_SIZE_MB}",
+              ]
+            env:
+              - name: SERVICE_NAME
+                value: ${SERVICE_NAME_SEAWEEDFS}
+              - name: RELEASE
+                value: ${RELEASE}
+              - name: S3_VOLUME_SIZE_MB
+                value: ${S3_VOLUME_SIZE_MB}
+            volumeMounts:
+              - containerPath: /data
+                volume:
+                  name: seaweedfs-data
+                  subPath: /
+                  readOnly: false
+              - containerPath: /etc/s3config.json
+                volume:
+                  name: seaweed-conf-s3
+                  subPath: /s3config.json
+              - containerPath: /etc/seaweedfs/filer.toml
+                volume:
+                  name: seaweed-conf-filer
+                  subPath: /filer.toml
+        volumes:
+          - name: seaweedfs-data
+            size: "20Gi"
+          - name: seaweed-conf-s3
+            configMap:
+              name: seaweed-config-s3
+          - name: seaweed-conf-filer
+            configMap:
+              name: seaweed-config-filer
+        service:
+          name: ${SERVICE_NAME_SEAWEEDFS}
+          ports:
+            - port: 8333
+
+  - name: db
+    helm:
+      componentChart: true
+      values:
+        containers:
+          - image: ${DOCKER_IMAGE_DB}
+            env:
+              - name: POSTGRES_DB
+                value: ${POSTGRES_DB}
+              - name: POSTGRES_USER
+                value: ${POSTGRES_USER}
+              - name: POSTGRES_PASSWORD
+                value: ${POSTGRES_PASSWORD}
+            volumeMounts:
+              - containerPath: /var/lib/postgresql/data
+                volume:
+                  name: app-db-data
+                  subPath: /pgdata
+                  readOnly: false
+        volumes:
+          - name: app-db-data
+            size: "5Gi"
+        service:
+          name: ${SERVICE_NAME_DB}
+          ports:
+            - port: 5432
+
+  - name: backend
+    helm:
+      componentChart: true
+      values:
+        containers:
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
+            command:
+              - /start.sh
+            securityContext:
+              capabilities:
+                add: ["NET_ADMIN"]
+              privileged: true
+            livenessProbe:
+              httpGet:
+                path: /api/v1/status
+                port: 80
+              initialDelaySeconds: 5
+              periodSeconds: 60
+              successThreshold: 1
+              failureThreshold: 3
+            readinessProbe:
+              httpGet:
+                path: /api/v1/status
+                port: 80
+              initialDelaySeconds: 5
+              periodSeconds: 60
+              successThreshold: 1
+              failureThreshold: 3
+            env:
+              - name: DOMAIN_NAME
+                value: ${DOMAIN_NAME}
+              - name: POSTGRES_SERVER
+                value: ${SERVICE_NAME_DB}
+              - name: POSTGRES_DB
+                value: ${POSTGRES_DB}
+              - name: POSTGRES_USER
+                value: ${POSTGRES_USER}
+              - name: POSTGRES_PASSWORD
+                value: ${POSTGRES_PASSWORD}
+              - name: VERSION
+                value: ${VERSION}
+              - name: VERSION_HASH
+                value: ${VERSION_HASH}
+              - name: SERVER_HOST
+                value: ${SERVER_HOST}
+              - name: LOG_LEVEL
+                value: debug
+              - name: NODE_TYPE
+                value: ${NODE_TYPE}
+              - name: STACK_API_KEY
+                value: ${STACK_API_KEY}
+              - name: CONTAINER_HOST
+                value: ${CONTAINER_HOST}
+              - name: JAX_ENABLE_X64
+                value: ${JAX_ENABLE_X64}
+              - name: USE_NEW_SERVICE
+                value: ${USE_NEW_SERVICE}
+              - name: REDIS_STORE_DB_ID
+                value: ${REDIS_STORE_DB_ID}
+              - name: REDIS_LEDGER_DB_ID
+                value: ${REDIS_LEDGER_DB_ID}
+              - name: REDIS_HOST
+                value: ${REDIS_HOST}
+              - name: REDIS_PORT
+                value: ${REDIS_PORT}
+              - name: S3_ENDPOINT
+                value: ${S3_ENDPOINT}
+              - name: S3_PORT
+                value: ${S3_PORT}
+              - name: S3_ROOT_USER
+                value: ${S3_ROOT_USER}
+              - name: S3_ROOT_PWD
+                value: ${S3_ROOT_PWD}
+              - name: S3_REGION
+                value: ${S3_REGION}
+              - name: S3_PRESIGNED_TIMEOUT_SECS
+                value: ${S3_PRESIGNED_TIMEOUT_SECS}
+              - name: RELEASE
+                value: ${RELEASE}
+              - name: USE_BLOB_STORAGE
+                value: ${USE_BLOB_STORAGE}
+              - name: TEST_MODE
+                value: $!{TEST_MODE}
+        service:
+          name: ${SERVICE_NAME_BACKEND}
+          ports:
+            - port: 80
+
+  - name: backend-stream
+    helm:
+      componentChart: true
+      values:
+        containers:
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
+            command:
+              - /start.sh
+            securityContext:
+              capabilities:
+                add: ["NET_ADMIN"]
+              privileged: true
+            livenessProbe:
+              httpGet:
+                path: /api/v1/status
+                port: 80
+              initialDelaySeconds: 5
+              periodSeconds: 60
+              successThreshold: 1
+              failureThreshold: 3
+            readinessProbe:
+              httpGet:
+                path: /api/v1/status
+                port: 80
+              initialDelaySeconds: 5
+              periodSeconds: 60
+              successThreshold: 1
+              failureThreshold: 3
+            env:
+              - name: DOMAIN_NAME
+                value: ${DOMAIN_NAME}
+              - name: POSTGRES_SERVER
+                value: ${SERVICE_NAME_DB}
+              - name: POSTGRES_DB
+                value: ${POSTGRES_DB}
+              - name: POSTGRES_USER
+                value: ${POSTGRES_USER}
+              - name: POSTGRES_PASSWORD
+                value: ${POSTGRES_PASSWORD}
+              - name: VERSION
+                value: ${VERSION}
+              - name: VERSION_HASH
+                value: ${VERSION_HASH}
+              - name: SERVER_HOST
+                value: ${SERVER_HOST}
+              - name: LOG_LEVEL
+                value: debug
+              - name: STREAM_QUEUE
+                value: "1"
+              - name: NODE_TYPE
+                value: ${NODE_TYPE}
+              - name: STACK_API_KEY
+                value: ${STACK_API_KEY}
+              - name: CONTAINER_HOST
+                value: ${CONTAINER_HOST}
+              - name: JAX_ENABLE_X64
+                value: ${JAX_ENABLE_X64}
+              - name: USE_NEW_SERVICE
+                value: ${USE_NEW_SERVICE}
+              - name: REDIS_STORE_DB_ID
+                value: ${REDIS_STORE_DB_ID}
+              - name: REDIS_LEDGER_DB_ID
+                value: ${REDIS_LEDGER_DB_ID}
+              - name: REDIS_HOST
+                value: ${REDIS_HOST}
+              - name: REDIS_PORT
+                value: ${REDIS_PORT}
+              - name: S3_ENDPOINT
+                value: ${S3_ENDPOINT}
+              - name: S3_PORT
+                value: ${S3_PORT}
+              - name: S3_ROOT_USER
+                value: ${S3_ROOT_USER}
+              - name: S3_ROOT_PWD
+                value: ${S3_ROOT_PWD}
+              - name: S3_REGION
+                value: ${S3_REGION}
+              - name: S3_PRESIGNED_TIMEOUT_SECS
+                value: ${S3_PRESIGNED_TIMEOUT_SECS}
+              - name: RELEASE
+                value: ${RELEASE}
+              - name: USE_BLOB_STORAGE
+                value: ${USE_BLOB_STORAGE}
+              - name: TEST_MODE
+                value: $!{TEST_MODE}
+        service:
+          name: ${SERVICE_NAME_BACKEND_STREAM}
+          ports:
+            - port: 80
+
+  - name: backend-worker
+    helm:
+      componentChart: true
+      values:
+        containers:
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
+            command:
+              - /worker-start.sh
+            securityContext:
+              capabilities:
+                add: ["NET_ADMIN"]
+              privileged: true
+            env:
+              - name: DOMAIN_NAME
+                value: ${DOMAIN_NAME}
+              - name: POSTGRES_SERVER
+                value: ${SERVICE_NAME_DB}
+              - name: POSTGRES_DB
+                value: ${POSTGRES_DB}
+              - name: POSTGRES_USER
+                value: ${POSTGRES_USER}
+              - name: POSTGRES_PASSWORD
+                value: ${POSTGRES_PASSWORD}
+              - name: VERSION
+                value: ${VERSION}
+              - name: VERSION_HASH
+                value: ${VERSION_HASH}
+              - name: SERVER_HOST
+                value: ${SERVER_HOST}
+              - name: CELERY_WORKER
+                value: "true"
+              - name: RUN
+                value: "celery -A grid.worker worker -l info -Q main-queue --pool=gevent -c 500"
+              - name: NODE_TYPE
+                value: ${NODE_TYPE}
+              - name: C_FORCE_ROOT
+                value: "1"
+              - name: STACK_API_KEY
+                value: ${STACK_API_KEY}
+              - name: CONTAINER_HOST
+                value: ${CONTAINER_HOST}
+              - name: JAX_ENABLE_X64
+                value: ${JAX_ENABLE_X64}
+              - name: USE_NEW_SERVICE
+                value: ${USE_NEW_SERVICE}
+              - name: REDIS_STORE_DB_ID
+                value: ${REDIS_STORE_DB_ID}
+              - name: REDIS_LEDGER_DB_ID
+                value: ${REDIS_LEDGER_DB_ID}
+              - name: REDIS_HOST
+                value: ${REDIS_HOST}
+              - name: REDIS_PORT
+                value: ${REDIS_PORT}
+              - name: S3_ENDPOINT
+                value: ${S3_ENDPOINT}
+              - name: S3_PORT
+                value: ${S3_PORT}
+              - name: S3_ROOT_USER
+                value: ${S3_ROOT_USER}
+              - name: S3_ROOT_PWD
+                value: ${S3_ROOT_PWD}
+              - name: S3_REGION
+                value: ${S3_REGION}
+              - name: S3_PRESIGNED_TIMEOUT_SECS
+                value: ${S3_PRESIGNED_TIMEOUT_SECS}
+              - name: RELEASE
+                value: ${RELEASE}
+              - name: NETWORK_CHECK_INTERVAL
+                value: $!{NETWORK_CHECK_INTERVAL}
+              - name: DOMAIN_CHECK_INTERVAL
+                value: $!{DOMAIN_CHECK_INTERVAL}
+              - name: USE_BLOB_STORAGE
+                value: ${USE_BLOB_STORAGE}
+              - name: TEST_MODE
+                value: $!{TEST_MODE}
+
+  - name: frontend
+    helm:
+      componentChart: true
+      values:
+        containers:
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}
+            env:
+              - name: VERSION
+                value: ${VERSION}
+              - name: VERSION_HASH
+                value: ${VERSION_HASH}
+              - name: NODE_TYPE
+                value: ${NODE_TYPE}
+              - name: NEXT_PUBLIC_API_URL
+                value: ${NEXT_PUBLIC_API_URL}
+        service:
+          name: ${SERVICE_NAME_FRONTEND}
+          ports:
+            - port: 80
+
+  - name: headscale
+    helm:
+      componentChart: true
+      values:
+        containers:
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_HEADSCALE}
+            env:
+              - name: NETWORK_NAME
+                value: ${NETWORK_NAME}
+              - name: STACK_API_KEY
+                value: ${STACK_API_KEY}
+            volumeMounts:
+              - containerPath: /headscale/data
+                volume:
+                  name: headscale-data
+                  subPath: /headscale-data
+                  readOnly: false
+        volumes:
+          - name: headscale-data
+            size: "100Mi"
+        service:
+          name: ${SERVICE_NAME_HEADSCALE}
+          ports:
+            - name: vpn
+              port: 8080
+            - name: api
+              port: 4000
+
+  - name: vpn-iptables
+    helm:
+      componentChart: true
+      values:
+        hostNetwork: true
+        containers:
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_VPN_IPTABLES}
+            command: ["sh", "-c", "/iptables.sh"]
+            resources:
+              requests:
+                cpu: 5m
+                memory: 10Mi
+            securityContext:
+              capabilities:
+                add: ["NET_ADMIN", "SYS_MODULE"]
+              privileged: true
+
+  # ingress
+  - name: grid-stack-ingress
+    kubectl:
+      manifests:
+        - k8s/manifests/ingress.yaml
+
+dev:
+  ports:
+    # - name: backend
+    #   labelSelector:
+    #     app.kubernetes.io/component: ${SERVICE_NAME_BACKEND}
+    #   forward:
+    #     - port: 8082
+    #       remotePort: 80
+    # - name: backend-stream
+    #   labelSelector:
+    #     app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_STREAM}
+    #   forward:
+    #     - port: 8083
+    #       remotePort: 80
+    # - name: db
+    #   labelSelector:
+    #     app.kubernetes.io/component: ${SERVICE_NAME_DB}
+    #   forward:
+    #     - port: 5432
+    #       remotePort: 5432
+    # - name: queue
+    #   labelSelector:
+    #     app.kubernetes.io/component: ${SERVICE_NAME_QUEUE}
+    #   forward:
+    #     - port: 15672
+    # - name: frontend
+    #   labelSelector:
+    #     app.kubernetes.io/component: ${SERVICE_NAME_FRONTEND}
+    #   forward:
+    #     - port: 8085
+    #       remotePort: 80
+    # - name: headscale
+    #   labelSelector:
+    #     app.kubernetes.io/component: ${SERVICE_NAME_HEADSCALE}
+    #   forward:
+    #     - port: 8086
+    #       remotePort: 8080
+    # - name: headscale-api
+    #   labelSelector:
+    #     app.kubernetes.io/component: ${SERVICE_NAME_HEADSCALE}
+    #   forward:
+    #     - port: 8087
+    #       remotePort: 4000
+    # - name: tailscale-api
+    #   labelSelector:
+    #     app.kubernetes.io/component: ${SERVICE_NAME_TAILSCALE}
+    #   forward:
+    #     - port: 8088
+    #       remotePort: 4000
+
+  # sync:
+  # - name: traefik
+  #   disableDownload: true
+  #   labelSelector:
+  #     app.kubernetes.io/component: ${SERVICE_NAME_TAILSCALE}
+  #   localSubPath: traefik/k8s
+  #   containerPath: /etc/traefik
+  #   - name: backendsyft
+  #     disableDownload: true
+  #     labelSelector:
+  #       app.kubernetes.io/component: ${SERVICE_NAME_BACKEND}
+  #     localSubPath: ../syft
+  #     containerPath: /app/syft
+  #     excludePaths: ["../syft/examples", "../syft/tests"]
+  #   - name: backendapp
+  #     disableDownload: true
+  #     labelSelector:
+  #       app.kubernetes.io/component: ${SERVICE_NAME_BACKEND}
+  #     localSubPath: ./backend/grid
+  #     containerPath: /app/grid
+  #     excludePaths: []
+  #   - name: backendcache
+  #     labelSelector:
+  #       app.kubernetes.io/component: ${SERVICE_NAME_BACKEND}
+  #     localSubPath: ./data/package-cache
+  #     containerPath: /root/.cache
+  #     excludePaths: []
+  #   - name: backend-streamsyft
+  #     disableDownload: true
+  #     labelSelector:
+  #       app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_STREAM}
+  #     localSubPath: ../syft
+  #     containerPath: /app/syft
+  #     excludePaths: ["../syft/examples", "../syft/tests"]
+  #   - name: backend-streamapp
+  #     disableDownload: true
+  #     labelSelector:
+  #       app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_STREAM}
+  #     localSubPath: ./backend/grid
+  #     containerPath: /app/grid
+  #     excludePaths: []
+  #   - name: backend-streamcache
+  #     labelSelector:
+  #       app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_STREAM}
+  #     localSubPath: ./data/package-cache
+  #     containerPath: /root/.cache
+  #     excludePaths: []
+  #   - name: backend-workersyft
+  #     disableDownload: true
+  #     labelSelector:
+  #       app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_WORKER}
+  #     localSubPath: ../syft
+  #     containerPath: /app/syft
+  #     excludePaths: ["../syft/examples", "../syft/tests"]
+  #   - name: backend-workerapp
+  #     disableDownload: true
+  #     labelSelector:
+  #       app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_WORKER}
+  #     localSubPath: ./backend/grid
+  #     containerPath: /app/grid
+  #     excludePaths: []
+  #   - name: backend-workercache
+  #     labelSelector:
+  #       app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_WORKER}
+  #     localSubPath: ./data/package-cache
+  #     containerPath: /root/.cache
+  #     excludePaths: []
+  #   - name: frontend
+  #     disableDownload: true
+  #     labelSelector:
+  #       app.kubernetes.io/component: ${SERVICE_NAME_FRONTEND}
+  #     localSubPath: ./frontend/src
+  #     containerPath: /app/src
+  #     excludePaths: []
+profiles:
+  - name: domain
+    patches:
+      - op: replace
+        path: vars.name=NODE_TYPE.value
+        value: domain
+      - op: remove
+        path: dev.ports.name=headscale-api
+      - op: remove
+        path: deployments.name=headscale
+      - op: remove
+        path: images.name=headscale
+      - op: remove
+        path: deployments.name=grid-vpn-ingress
+
+  - name: network
+    patches:
+      - op: replace
+        path: vars.name=NODE_TYPE.value
+        value: network
+      - op: replace
+        path: vars.name=USE_BLOB_STORAGE.value
+        value: "False"
+      - op: remove
+        path: deployments.name=seaweedfs
+      - op: remove
+        path: deployments.name=grid-blob-storage-ingress
+      - op: remove
+        path: deployments.name=frontend
+      - op: replace
+        path: vars.name=TRAEFIK_CONFIG_FILE.value
+        value: traefik-network.yaml

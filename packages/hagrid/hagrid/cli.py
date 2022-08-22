@@ -59,7 +59,8 @@ from .lib import save_vm_details_as_json
 from .lib import update_repo
 from .lib import use_branch
 from .mode import EDITABLE_MODE
-from .parse_template import setup_from_manifest
+from .parse_template import render_templates
+from .parse_template import setup_from_manifest_template
 from .quickstart_ui import quickstart_download_notebook
 from .rand_sec import generate_sec_random_password
 from .style import RichGroup
@@ -295,6 +296,13 @@ def clean(location: str) -> None:
     is_flag=True,
     help="Optional: prevent lots of launch output",
 )
+@click.option(
+    "--template",
+    default="false",
+    required=False,
+    type=str,
+    help="Optional: launch node using the manifest template",
+)
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
     try:
@@ -367,8 +375,6 @@ def execute_commands(
                 jupyter_token = extract_jupyter_token(cmd)
                 process_list.append((ip_address, process, jupyter_token))
             else:
-
-                print(f"GRID_SRC_PATH: {GRID_SRC_PATH}")
                 display_jupyter_token(cmd)
                 if silent:
                     process = subprocess.Popen(  # nosec
@@ -811,6 +817,9 @@ def create_launch_cmd(
     parsed_kwargs["test"] = bool(kwargs["test"]) if "test" in kwargs else False
     parsed_kwargs["dev"] = bool(kwargs["dev"]) if "dev" in kwargs else False
     parsed_kwargs["silent"] = bool(kwargs["silent"]) if "silent" in kwargs else False
+    parsed_kwargs["from_template"] = (
+        str_to_bool(kwargs["template"]) if "template" in kwargs else False
+    )
 
     parsed_kwargs["release"] = "production"
     if "release" in kwargs and kwargs["release"] != "production":
@@ -851,6 +860,9 @@ def create_launch_cmd(
 
     # allows changing docker platform to other cpu architectures like arm64
     parsed_kwargs["platform"] = kwargs["platform"] if "platform" in kwargs else None
+
+    if parsed_kwargs["from_template"]:
+        setup_from_manifest_template(parsed_kwargs["release"])
 
     if host in ["docker"]:
 
@@ -1362,6 +1374,7 @@ def create_launch_docker_cmd(
     version_string = kwargs["tag"]
     version_hash = "dockerhub"
     build = kwargs["build"]
+    from_template = kwargs["from_template"]
     if "release" in kwargs and kwargs["release"] == "development":
         # force version to have -dev at the end in dev mode
         # during development we can use the latest beta version
@@ -1462,8 +1475,8 @@ def create_launch_docker_cmd(
         cmd += " --profile frontend"
 
     # new docker compose regression work around
-    default_env = os.path.expanduser("~/.hagrid/app/.env")
-    # default_env = f"{GRID_SRC_PATH}/.env"
+    # default_env = os.path.expanduser("~/.hagrid/app/.env")
+    default_env = f"{GRID_SRC_PATH}/.env"
     default_envs = {}
     with open(default_env, "r") as f:
         for line in f.readlines():
@@ -1475,6 +1488,10 @@ def create_launch_docker_cmd(
                     value = parts[1]
                 default_envs[key] = value
     default_envs.update(envs)
+
+    if from_template:
+        render_templates(env_vars=default_envs, release_type=kwargs["release"])
+
     try:
         env_file = ""
         for k, v in default_envs.items():
@@ -2754,11 +2771,3 @@ def ssh(ip_address: str, cmd: str) -> None:
 
 
 cli.add_command(ssh)
-
-
-@click.command(help="launch domain using a manifest template")
-def template() -> None:
-    setup_from_manifest()
-
-
-cli.add_command(template)

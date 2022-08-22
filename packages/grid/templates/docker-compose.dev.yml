@@ -1,0 +1,94 @@
+version: "3.8"
+services:
+  tailscale:
+    profiles:
+      - vpn
+    volumes:
+      - ./vpn:/tailscale
+
+  proxy:
+    ports:
+      - "8080"
+    command:
+      - "--api" # admin panel
+      - "--api.insecure=true" # admin panel no password
+
+  frontend:
+    build:
+      target: "grid-ui-development"
+    volumes:
+      - ./frontend:/app
+
+  db:
+    ports:
+      - "5432"
+
+  redis:
+    ports:
+      - "6379"
+
+  queue:
+    image: rabbitmq:3-management
+    ports:
+      - "5672"
+      - "15672"
+
+  backend:
+    volumes:
+      - ./backend/grid:/app/grid
+      - ./backend/alembic:/app/alembic
+      - ../syft:/app/syft
+      - ./data/package-cache:/root/.cache
+      # - ./profile:/tmp/profile
+    command: /start-reload.sh
+    # command: "sleep 99999"
+    environment:
+      - PROFILE=true
+      - JAEGER_HOST=docker-host
+      - JAEGER_PORT=6831
+
+  backend_stream:
+    volumes:
+      - ./backend/grid:/app/grid
+      - ./backend/alembic:/app/alembic
+      - ../syft:/app/syft
+      - ./data/package-cache:/root/.cache
+      # - ./profile:/tmp/profile
+    command: "/start-reload.sh"
+    # command: "sleep 99999"
+    environment:
+      - PROFILE=true
+      - JAEGER_HOST=docker-host
+      - JAEGER_PORT=6831
+
+  celeryworker:
+    volumes:
+      - ./backend/grid:/app/grid
+      - ./backend/alembic:/app/alembic
+      - ../syft:/app/syft
+      - ./data/package-cache:/root/.cache
+      # - ./profile:/tmp/profile
+    command: "/worker-start-reload.sh"
+    # command: "sleep 99999"
+    environment:
+      - PROFILE=true
+      - JAEGER_HOST=docker-host
+      - JAEGER_PORT=6831
+
+  headscale:
+    profiles:
+      - network
+    volumes:
+      - ./vpn:/headscale
+    ports:
+      - "4000"
+
+  seaweedfs:
+    profiles:
+      - blob-storage
+    # volumes:
+    #   - ./data/seaweedfs:/data
+    ports:
+      - "9333" # admin
+      - "8888" # filer
+      - "8333" # S3

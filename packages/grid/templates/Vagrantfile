@@ -1,0 +1,87 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.ssh.insert_key = true
+  config.vm.provision :ansible do |ansible|
+    ansible.extra_vars = { vagrant: true}
+    ansible.raw_arguments = Shellwords.shellsplit(ENV['ANSIBLE_ARGS']) if ENV['ANSIBLE_ARGS']
+    ansible.compatibility_mode = "auto"
+    ansible.playbook = "./ansible/site.yml"
+    ansible.groups = {
+      "network" => [
+        "network1",
+      ],
+      "domain" => [
+        "domain1",
+        "domain2",
+      ],
+    }
+  end
+
+  config.landrush.enabled = true
+
+  config.vm.define "network1" do |node|
+    node.vm.box = "ubuntu/focal64"
+    node.vm.box_check_update = false
+
+    node.landrush.enabled = true
+    node.landrush.tld = "openmined.grid"
+    node.landrush.host "network1.openmined.grid", "10.0.1.2"
+
+    node.vm.hostname = "network1.openmined.grid"
+    node.vm.network :private_network, ip: "10.0.1.2"
+    node.vm.network "forwarded_port", guest: 8080, host: 8080
+
+    node.vm.synced_folder "../../", "/home/om/PySyft",
+      mount_options: ["dmode=775,fmode=774"]
+    node.vm.provider "virtualbox" do |vb|
+      vb.memory = "4096"
+      vb.cpus = "2"
+      vb.name = "network1"
+    end
+  end
+
+  config.vm.define "domain1" do |node|
+    node.vm.box = "ubuntu/focal64"
+    node.vm.box_check_update = false
+
+    node.landrush.enabled = true
+    node.landrush.tld = "openmined.grid"
+    node.landrush.host "domain1.openmined.grid", "10.0.1.3"
+
+    node.vm.hostname = "domain1.openmined.grid"
+    node.vm.network :private_network, ip: "10.0.1.3"
+
+    node.vm.synced_folder "../../", "/home/om/PySyft",
+      mount_options: ["dmode=775,fmode=774"]
+    node.vm.provider "virtualbox" do |vb|
+      vb.memory = "4096"
+      vb.cpus = "2"
+      vb.name = "domain1"
+    end
+  end
+
+  config.vm.define "domain2" do |node|
+    node.vm.box = "ubuntu/focal64"
+    node.vm.box_check_update = false
+
+    node.landrush.enabled = true
+    node.landrush.tld = "openmined.grid"
+    node.landrush.host "domain2.openmined.grid", "10.0.1.4"
+
+    node.vm.hostname = "domain2.openmined.grid"
+    node.vm.network :private_network, ip: "10.0.1.4"
+
+    node.vm.synced_folder "../../", "/home/om/PySyft",
+      mount_options: ["dmode=775,fmode=774"]
+    node.vm.provider "virtualbox" do |vb|
+      vb.memory = "4096"
+      vb.cpus = "2"
+      vb.name = "domain2"
+    end
+  end
+
+end

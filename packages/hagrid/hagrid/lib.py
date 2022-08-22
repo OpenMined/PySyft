@@ -50,11 +50,19 @@ def asset_path() -> os.PathLike:
     return Path(hagrid_root()) / "hagrid"
 
 
+def manifest_template_path() -> os.PathLike:
+    return Path(asset_path()) / "manifest_template.yml"
+
+
+def hagrid_cache_dir() -> os.PathLike:
+    return Path("~/.hagrid").expanduser()
+
+
 def repo_src_path() -> Path:
     if EDITABLE_MODE:
         return Path(os.path.abspath(Path(hagrid_root()) / "../../"))
     else:
-        return Path(hagrid_root()) / "hagrid" / "PySyft"
+        return Path(os.path.join(Path(hagrid_cache_dir()) / "PySyft"))
 
 
 def grid_src_path() -> str:

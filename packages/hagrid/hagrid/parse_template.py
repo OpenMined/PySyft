@@ -1,24 +1,29 @@
 # stdlib
 import os
+from pathlib import Path
+import shutil
 from typing import Dict
 from typing import Optional
 from urllib.request import urlretrieve
 
 # third party
-# from jinja2 import Template
+from jinja2 import Environment
+from jinja2 import FileSystemLoader
+from jinja2 import Template
 import yaml
 
-HAGRID_TEMPLATE = "manifest_template.yml"
+# relative
+from .lib import manifest_template_path
+from .lib import repo_src_path
+
+HAGRID_TEMPLATE_PATH = str(manifest_template_path())
 
 
 def read_yml_file(filename: str) -> Optional[Dict]:
 
-    # stdlib
-    from importlib import resources as pkg_resources
-
     template = None
 
-    with pkg_resources.open_text("hagrid", filename) as fp:
+    with open(filename) as fp:
         try:
             template = yaml.safe_load(fp)
         except yaml.YAMLError as exc:
@@ -36,12 +41,12 @@ def get_local_abs_path(target_dir: str, file_path: str) -> str:
     return os.path.expanduser(local_path)
 
 
-def setup_from_manifest() -> None:
-    template = read_yml_file(HAGRID_TEMPLATE)
+def setup_from_manifest_template(release_type: str) -> None:
+    template = read_yml_file(HAGRID_TEMPLATE_PATH)
 
     if template is None:
         raise ValueError(
-            f"Failed to read {HAGRID_TEMPLATE}. Please check the file name or path is correct."
+            f"Failed to read {HAGRID_TEMPLATE_PATH}. Please check the file name or path is correct."
         )
 
     git_hash = template["hash"]
@@ -52,13 +57,59 @@ def setup_from_manifest() -> None:
 
     for files in files_to_download:
         for trg_file_path, src_file_path in files.items():
-            print(src_file_path, trg_file_path)
-            link_to_file = git_url_for_file(src_file_path, git_base_url, git_hash)
-            local_destination = get_local_abs_path(target_dir, trg_file_path)
-            download_file(
-                link_to_file=link_to_file, local_destination=local_destination
-            )
-            # TODO: Add step for updating vars using Jinja Templating.
+            if release_type == "development":
+                copy_files_from_repo(
+                    src_file_path=src_file_path, trg_file_path=trg_file_path
+                )
+            else:
+                local_destination = get_local_abs_path(target_dir, trg_file_path)
+                link_to_file = git_url_for_file(src_file_path, git_base_url, git_hash)
+                download_file(
+                    link_to_file=link_to_file, local_destination=local_destination
+                )
+
+
+def render_templates(env_vars: dict, release_type: str) -> None:
+    template = read_yml_file(HAGRID_TEMPLATE_PATH)
+
+    if template is None:
+        raise ValueError("Failed to read hagrid template.")
+
+    print("Rendering ...............")
+
+    files_to_download = template["files"]
+    target_dir = (
+        repo_src_path() if release_type == "development" else template["target_dir"]
+    )
+
+    jinja_template = JinjaTemplate(target_dir)
+
+    for files in files_to_download:
+        for trg_file_path, _ in files.items():
+            jinja_template.substitute_vars(trg_file_path, env_vars)
+
+    print("Rendering ............... DOne...........")
+
+
+class JinjaTemplate(object):
+    def __init__(self, template_dir: str) -> None:
+        self.directory = os.path.expanduser(template_dir)
+        self.environ = Environment(loader=FileSystemLoader(self.directory))
+
+    def read_template_from_path(self, filepath: str) -> Template:
+        print(filepath)
+        return self.environ.get_template(name=filepath)
+
+    def substitute_vars(self, template_path: str, vars_to_substitute: dict) -> None:
+
+        template = self.read_template_from_path(template_path)
+        rendered_template = template.render(vars_to_substitute)
+        self.save_to(rendered_template, template.name)
+
+    def save_to(self, message: str, filename: str) -> None:
+        base_dir = self.directory
+        with open(os.path.join(base_dir, filename), "w") as fp:
+            fp.write(message)
 
 
 def download_file(link_to_file: str, local_destination: str) -> str:
@@ -73,3 +124,31 @@ def download_file(link_to_file: str, local_destination: str) -> str:
     except Exception as e:
         raise e
     return resultFilePath
+
+
+def copy_files_from_repo(src_file_path: str, trg_file_path: str) -> None:
+
+    repo_directory = Path(repo_src_path())
+
+    local_src_path = repo_directory / src_file_path
+    local_destination = repo_directory / trg_file_path
+
+    file_dir = os.path.dirname(local_destination)
+    os.makedirs(file_dir, exist_ok=True)
+    try:
+        shutil.copyfile(local_src_path, local_destination)
+    except shutil.SameFileError:
+        print(f"{src_file_path}: Source and destination represents the same file.")
+
+    # If destination is a directory.
+    except IsADirectoryError:
+        print("Destination is a directory.")
+
+    # If there is any permission issue
+    except PermissionError:
+        print("Permission denied.")
+
+    except Exception as e:
+        print(
+            f"While copying file from src: {src_file_path} to dest: {trg_file_path}, following exception occurred: {e}"
+        )
