@@ -10,29 +10,34 @@ from typing import List
 from typing import Type
 from typing import Union
 from base64 import encodebytes
+import requests
 
 # third party
 from nacl.signing import VerifyKey
 from cryptography import x509
+from oblv import OblvClient
 
 # relative
 from ......grid import GridURL
 from .....common.message import ImmediateSyftMessageWithReply
 from ....domain_interface import DomainInterface
-from ...exceptions import AuthorizationError
-from ...exceptions import OblvKeyNotFoundError
+from ...exceptions import AuthorizationError, OblvEnclaveError, OblvEnclaveUnAuthorizedError
+from ...exceptions import OblvKeyNotFoundError, OblvProxyConnectPCRError
 from ...exceptions import RequestError
 from ...exceptions import RoleNotFoundError
 from ...node_table.utils import model_to_json
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
 from ..node_service import ImmediateNodeServiceWithoutReply
-from .oblv_messages import CreateKeyPairMessage
+from .oblv_messages import CheckEnclaveConnectionMessage, CreateKeyPairMessage
+from .oblv_messages import PublishDatasetMessage
 from .oblv_messages import GetPublicKeyMessage
 from .oblv_messages import CreateKeyPairResponse
 from .oblv_messages import GetPublicKeyResponse
 from ..success_resp_message import SuccessResponseMessage
+from ....common.action.get_object_action import GetObjectAction, GetObjectResponseMessage
 from ......logger import debug
+from .....common.uid import UID
 
 
 import subprocess
@@ -41,21 +46,24 @@ import subprocess
 INPUT_TYPE = Union[
     Type[CreateKeyPairMessage],
     Type[GetPublicKeyMessage],
+    Type[PublishDatasetMessage]
 ]
 
-INPUT_MESSAGES = Union[
-    CreateKeyPairMessage,
+USER_INPUT_MESSAGES = Union[
     GetPublicKeyMessage,
+    PublishDatasetMessage,
 ]
 
-OUTPUT_MESSAGES = Union[SuccessResponseMessage, CreateKeyPairResponse, GetPublicKeyResponse]
+USER_OUTPUT_MESSAGES = Union[SuccessResponseMessage, GetPublicKeyResponse]
 
 def create_key_pair_msg(
     msg: CreateKeyPairMessage,
     node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
-    """Creates a new role in the database.
+    
+    """
+    Creates a new role in the database.
 
     Args:
         msg (CreateKeyPairMessage): stores msg address.
@@ -68,11 +76,12 @@ def create_key_pair_msg(
     Returns:
         SuccessResponseMessage: Success message on key pair generation.
     """
+    
     # Check if user has permissions to create new roles
     _allowed = node.users.can_manage_infrastructure(verify_key=verify_key)
 
     if _allowed:
-        result = subprocess.run(["/usr/local/bin/oblv", "keygen", "--key-name", os.getenv("OBLV_KEY_NAME", "oblv_key"), "--output", os.getenv("OBLV_KEY_PATH", "/app/content")],capture_output=True)
+        result = subprocess.run(["/usr/local/bin/oblv_proxy", "keygen", "--key-name", os.getenv("OBLV_KEY_NAME", "oblv_key"), "--output", os.getenv("OBLV_KEY_PATH", "/app/content")],capture_output=True)
         if result.stderr:
             debug(result.stderr.decode('utf-8'))
             raise subprocess.CalledProcessError(
@@ -109,7 +118,6 @@ def get_public_key_msg(msg: GetPublicKeyMessage,
     Returns:
         SuccessResponseMessage: Success message on key pair generation.
     """
-    # Check if user has permissions to create new roles
     file_name = os.getenv("OBLV_KEY_PATH", "/app/content") + "/" + os.getenv("OBLV_KEY_NAME", "oblv_key") + "_public.der"
     try:
         with open(file_name, "rb") as f:
@@ -121,6 +129,131 @@ def get_public_key_msg(msg: GetPublicKeyMessage,
         address=msg.reply_to,
         response=data
     )
+
+def publish_dataset(msg: PublishDatasetMessage,
+    node: DomainInterface,
+    verify_key: VerifyKey,
+    ) -> SuccessResponseMessage:
+    
+    """Publish dataset to enclave
+
+    Args:
+        msg (PublishDatasetMessage): stores msg address.
+        node (DomainInterface): domain node.
+        verify_key (VerifyKey): public digital signature/key of the user.
+
+    Raises:
+        AuthorizationError: If user does not have permissions to create new role.
+        OblvKeyNotFoundError: If no key found.
+        OblvProxyConnectPCRError: If unauthorized deployment code used
+
+    Returns:
+        SuccessResponseMessage: Success message on key pair generation.
+    """
+
+    cli = OblvClient(
+        msg.client.token,msg.client.oblivious_user_id
+        )
+    public_file_name = os.getenv("OBLV_KEY_PATH", "/app/content") + "/" + os.getenv("OBLV_KEY_NAME", "oblv_key") + "_public.der"
+    private_file_name = os.getenv("OBLV_KEY_PATH", "/app/content") + "/" + os.getenv("OBLV_KEY_NAME", "oblv_key") + "_private.der"
+    process = subprocess.Popen([
+        "/usr/local/bin/oblv_proxy", "connect",
+        "--private-key", private_file_name,
+        "--public-key", public_file_name,
+        "--url", cli.deployment_info(msg.deployment_id).instance.service_url,
+        "--port","443",
+        "--lport","3030",
+        "--disable-pcr-check"
+    ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    while process.poll() is None:
+        d = process.stderr.readline().decode()
+        debug(d)
+        if d.__contains__("Error:  Invalid PCR Values"):
+            raise OblvProxyConnectPCRError()
+        elif d.__contains__("listening on"):
+            break
+        
+    obj = node.store.get(UID.from_string(msg.dataset_id))
+    obj_bytes = obj.data._object2bytes()
+    req = requests.post("http://127.0.0.1:3030/tensor/dataset/add", headers={'Content-Type': 'application/octet-stream'}, data=obj_bytes, params={"dataset_name":node.datasets.get(msg.dataset_id)})
+    if req.status_code==401:
+        raise OblvEnclaveUnAuthorizedError()
+    debug("API Called. Now closing")
+    process.kill()
+    process.wait(1)
+
+    return SuccessResponseMessage(
+        address=msg.reply_to,
+        resp_msg="Success",
+    )
+
+def check_connection(msg: CheckEnclaveConnectionMessage,
+    node: DomainInterface,
+    verify_key: VerifyKey,
+    ) -> SuccessResponseMessage:
+    
+    """Publish dataset to enclave
+
+    Args:
+        msg (CheckEnclaveConnectionMessage): stores msg address.
+        node (DomainInterface): domain node.
+        verify_key (VerifyKey): public digital signature/key of the user.
+
+    Raises:
+        AuthorizationError: If user does not have permissions to create new role.
+        OblvKeyNotFoundError: If no key found.
+        OblvProxyConnectPCRError: If unauthorized deployment code used
+
+    Returns:
+        SuccessResponseMessage: Success message on key pair generation.
+    """
+    _allowed = node.users.can_manage_infrastructure(verify_key=verify_key)
+
+    if _allowed:
+        cli = OblvClient(
+            msg.client.token,msg.client.oblivious_user_id
+            )
+        debug("URL = "+cli.deployment_info(msg.deployment_id).instance.service_url)
+        public_file_name = os.getenv("OBLV_KEY_PATH", "/app/content") + "/" + os.getenv("OBLV_KEY_NAME", "oblv_key") + "_public.der"
+        private_file_name = os.getenv("OBLV_KEY_PATH", "/app/content") + "/" + os.getenv("OBLV_KEY_NAME", "oblv_key") + "_private.der"
+        process = subprocess.Popen([
+            "/usr/local/bin/oblv_proxy", "connect",
+            "--private-key", private_file_name,
+            "--public-key", public_file_name,
+            "--url", cli.deployment_info(msg.deployment_id).instance.service_url,
+            "--port","443",
+            "--lport","3030",
+            "--disable-pcr-check"
+        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        while process.poll() is None:
+            d = process.stderr.readline().decode()
+            debug(d)
+            if d.__contains__("Error:  Invalid PCR Values"):
+                raise OblvProxyConnectPCRError()
+            elif d.__contains__("Error"):
+                raise OblvEnclaveError(message=d)
+            elif d.__contains__("listening on"):
+                break
+        
+        debug("Found listening. Now ending the process")
+        process.kill()
+        process.wait(1)
+        
+           
+        #To Do - Timeout, and process not found
+            
+        # dataset, objs = node.datasets.get(msg.dataset_id)
+        # requests.post("http://127.0.0.1:3030", headers={'Content-Type': 'application/octet-stream'})
+        
+    else:
+        raise AuthorizationError("You're not allowed to create a new key pair!")
+
+    return SuccessResponseMessage(
+        address=msg.reply_to,
+        resp_msg="Successfully connected to the enclave",
+    )
+    
+    # return
 
 
 class OblvRequestAdminService(ImmediateNodeServiceWithReply):
@@ -146,25 +279,24 @@ class OblvRequestAdminService(ImmediateNodeServiceWithReply):
     @staticmethod
     def message_handler_types() -> List[Type[ImmediateSyftMessageWithReply]]:
         return [
-            CreateKeyPairMessage, GetPublicKeyMessage
+            CreateKeyPairMessage
         ]
 
 class OblvRequestUserService(ImmediateNodeServiceWithReply):
     
     msg_handler_map: Dict[type, Callable] = {
         GetPublicKeyMessage: get_public_key_msg,
+        PublishDatasetMessage: publish_dataset,
+        CheckEnclaveConnectionMessage: check_connection
     }
 
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
         node: DomainInterface,
-        msg: GetPublicKeyMessage,
+        msg: USER_INPUT_MESSAGES,
         verify_key: VerifyKey,
-    ) -> Union[
-        SuccessResponseMessage,
-        GetPublicKeyResponse
-    ]:
+    ) -> USER_OUTPUT_MESSAGES:
         return OblvRequestUserService.msg_handler_map[type(msg)](
             msg=msg, node=node, verify_key=verify_key
         )
@@ -172,6 +304,6 @@ class OblvRequestUserService(ImmediateNodeServiceWithReply):
     @staticmethod
     def message_handler_types() -> List[Type[ImmediateSyftMessageWithReply]]:
         return [
-            GetPublicKeyMessage
+            GetPublicKeyMessage, PublishDatasetMessage, CheckEnclaveConnectionMessage
         ]
 

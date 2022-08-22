@@ -21,6 +21,8 @@ from sqlalchemy.orm import declarative_base
 # syft absolute
 import syft as sy
 
+from ..common.exceptions import OblvKeyNotFoundError, OblvProxyConnectPCRError
+
 # relative
 from ....grid import GridURL
 from ....lib import lib_ast
@@ -507,6 +509,12 @@ class Node(AbstractNode):
             public_exception: Exception
             if isinstance(e, AuthorizationException):
                 private_log_msg = "An AuthorizationException has been triggered"
+                public_exception = e
+            elif isinstance(e, OblvKeyNotFoundError):
+                private_log_msg = "An OblvException has been triggered"
+                public_exception = e
+            elif isinstance(e, OblvProxyConnectPCRError):
+                private_log_msg = "An OblvException has been triggered"
                 public_exception = e
             else:
                 private_log_msg = f"An {type(e)} has been triggered"  # dont send

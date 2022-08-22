@@ -4,6 +4,18 @@ package syft.grid.messages;
 
 import "proto/core/common/common_object.proto";
 import "proto/core/io/address.proto";
+import "proto/lib/python/dict.proto";
+
+//Create SyftOblvClient
+message SyftOblvClient {
+  string token = 1;
+  string oblivious_user_id = 2;
+  syft.lib.python.Dict cookies = 3;
+  syft.lib.python.Dict headers = 4;
+  float timeout = 5;
+  bool verify_ssl = 6;
+
+}
 
 // Create CreateKeyPairMessage
 message CreateKeyPairMessage {
@@ -31,4 +43,24 @@ message GetPublicKeyResponse {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
   string response = 3;
+}
+
+
+//Create PublishDatasetMessage
+message PublishDatasetMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string dataset_id = 3;
+  string deployment_id = 4;
+  syft.grid.messages.SyftOblvClient client = 5;
+  syft.core.io.Address reply_to = 6;
+}
+
+//Create CheckEnclaveConnectionMessage
+message CheckEnclaveConnectionMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string deployment_id = 3;
+  syft.grid.messages.SyftOblvClient client = 4;
+  syft.core.io.Address reply_to = 5;
 }

@@ -209,3 +209,21 @@ class OblvKeyNotFoundError(Exception):
         if not message:
             message = "Oblivious public key not found. Request admin to create one."
         super().__init__(message)
+        
+class OblvProxyConnectPCRError(Exception):
+    def __init__(self, message: str = "") -> None:
+        if not message:
+            message = "Failed to connect to enclave. Unauthorized deployment provided."
+        super().__init__(message)
+        
+class OblvEnclaveUnAuthorizedError(Exception):
+    def __init__(self, message: str = "") -> None:
+        if not message:
+            message = "Domain unauthorized to perform this action in enclave"
+        super().__init__(message)
+        
+class OblvEnclaveError(Exception):
+    def __init__(self, message: str = "") -> None:
+        if not message:
+            message = "Failed to connect to the enclave"
+        super().__init__(message)

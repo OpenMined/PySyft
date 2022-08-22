@@ -1,0 +1,7 @@
+INFRA = "m5.2xlarge"
+REPO_OWNER = "vinalb-oblivious"
+REPO_NAME = "FastAPI-Enclave-Services"
+REF = "master"
+REGION = "us-east-1"
+VCS = "github"
+VISIBILITY = "private"
