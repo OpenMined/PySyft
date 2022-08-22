@@ -1,5 +1,5 @@
 manifestVersion: 0.1
-version: ""
+version: "0.2.89"
 baseUrl: "https://raw.githubusercontent.com/OpenMined/PySyft/"
 hash: "650adf9ab4ca5502740d66f06ec0093a73eab64d"
 target_dir: "~/.hagrid/PySyft/"
