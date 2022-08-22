@@ -1,7 +1,7 @@
 manifestVersion: 0.1
 version: ""
 baseUrl: "https://raw.githubusercontent.com/OpenMined/PySyft/"
-hash: "bd5e26231323a2bcd0a21bef62018d3fa21ea358"
+hash: "650adf9ab4ca5502740d66f06ec0093a73eab64d"
 target_dir: "~/.hagrid/PySyft/"
 files:
   - packages/grid/.env: packages/grid/.env
