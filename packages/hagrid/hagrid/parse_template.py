@@ -11,6 +11,7 @@ from jinja2 import Environment
 from jinja2 import FileSystemLoader
 from jinja2 import Template
 import requests
+from tqdm import tqdm
 import yaml
 
 # relative
@@ -56,7 +57,7 @@ def setup_from_manifest_template(release_type: str) -> None:
 
     files_to_download = template["files"]
 
-    for files in files_to_download:
+    for files in tqdm(files_to_download, desc="Copying files... "):
         for trg_file_path, src_file_path in files.items():
             if release_type == "development":
                 copy_files_from_repo(
@@ -76,14 +77,14 @@ def render_templates(env_vars: dict, release_type: str) -> None:
     if template is None:
         raise ValueError("Failed to read hagrid template.")
 
-    files_to_download = template["files"]
+    files_to_render = template["files"]
     target_dir = (
         repo_src_path() if release_type == "development" else template["target_dir"]
     )
 
     jinja_template = JinjaTemplate(target_dir)
 
-    for files in files_to_download:
+    for files in tqdm(files_to_render, desc="Substituting vars... "):
         for trg_file_path, _ in files.items():
             jinja_template.substitute_vars(trg_file_path, env_vars)
 
@@ -96,14 +97,13 @@ class JinjaTemplate(object):
         )
 
     def read_template_from_path(self, filepath: str) -> Template:
-        print(filepath)
         return self.environ.get_template(name=filepath)
 
     def substitute_vars(self, template_path: str, vars_to_substitute: dict) -> None:
 
         template = self.read_template_from_path(template_path)
         rendered_template = template.render(vars_to_substitute)
-        self.save_to(rendered_template, template.name)
+        self.save_to(rendered_template, template_path)
 
     def save_to(self, message: str, filename: str) -> None:
         base_dir = self.directory
@@ -114,12 +114,9 @@ class JinjaTemplate(object):
 def download_file(link_to_file: str, local_destination: str) -> None:
 
     file_dir = os.path.dirname(local_destination)
-    print("File Dir: ", file_dir)
     os.makedirs(file_dir, exist_ok=True)
 
     try:
-        print("Link to file", link_to_file)
-
         # download file
         response = requests.get(link_to_file)
         if response.status_code != 200:
