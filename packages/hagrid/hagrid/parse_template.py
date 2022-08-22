@@ -4,12 +4,13 @@ from pathlib import Path
 import shutil
 from typing import Dict
 from typing import Optional
-from urllib.request import urlretrieve
+from typing import Union
 
 # third party
 from jinja2 import Environment
 from jinja2 import FileSystemLoader
 from jinja2 import Template
+import requests
 import yaml
 
 # relative
@@ -75,8 +76,6 @@ def render_templates(env_vars: dict, release_type: str) -> None:
     if template is None:
         raise ValueError("Failed to read hagrid template.")
 
-    print("Rendering ...............")
-
     files_to_download = template["files"]
     target_dir = (
         repo_src_path() if release_type == "development" else template["target_dir"]
@@ -88,13 +87,13 @@ def render_templates(env_vars: dict, release_type: str) -> None:
         for trg_file_path, _ in files.items():
             jinja_template.substitute_vars(trg_file_path, env_vars)
 
-    print("Rendering ............... DOne...........")
-
 
 class JinjaTemplate(object):
-    def __init__(self, template_dir: str) -> None:
+    def __init__(self, template_dir: Union[str, os.PathLike]) -> None:
         self.directory = os.path.expanduser(template_dir)
-        self.environ = Environment(loader=FileSystemLoader(self.directory))
+        self.environ = Environment(
+            loader=FileSystemLoader(self.directory), autoescape=True
+        )
 
     def read_template_from_path(self, filepath: str) -> Template:
         print(filepath)
@@ -112,7 +111,7 @@ class JinjaTemplate(object):
             fp.write(message)
 
 
-def download_file(link_to_file: str, local_destination: str) -> str:
+def download_file(link_to_file: str, local_destination: str) -> None:
 
     file_dir = os.path.dirname(local_destination)
     print("File Dir: ", file_dir)
@@ -120,10 +119,17 @@ def download_file(link_to_file: str, local_destination: str) -> str:
 
     try:
         print("Link to file", link_to_file)
-        resultFilePath, _ = urlretrieve(link_to_file, local_destination)
+
+        # download file
+        response = requests.get(link_to_file)
+        if response.status_code != 200:
+            raise Exception(f"Failed to download: {link_to_file}")
+
+        # Save file to the local destination
+        open(local_destination, "wb").write(response.content)
+
     except Exception as e:
         raise e
-    return resultFilePath
 
 
 def copy_files_from_repo(src_file_path: str, trg_file_path: str) -> None:
