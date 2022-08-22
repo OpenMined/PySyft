@@ -6,11 +6,14 @@ from typing import Optional
 from typing import Type
 
 # third party
+from pymongo.collection import Collection
+from pymongo.database import Database
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
 # relative
 from ..node_table import Base
+from ..node_table.user import SyftObject
 
 
 class DatabaseManager:
@@ -106,3 +109,125 @@ class DatabaseManager:
         local_session.query(self._schema).delete()
         local_session.commit()
         local_session.close()
+
+
+class NoSQLDatabaseManager:
+    _collection_name: str
+    _collection: Collection
+
+    def __init__(self, db: Database) -> None:
+        self._collection = db[self._collection_name]
+
+    def add(self, obj: SyftObject) -> None:
+        self._collection.insert_one(obj.to_mongo())
+
+    def drop(self) -> None:
+        self._collection.drop()
+
+    def delete(self) -> None:
+        pass
+
+    def update(self) -> None:
+        pass
+
+    def find(self, search_params: Dict[str, Any]) -> List[SyftObject]:
+        results = []
+        res = self._collection.find(search_params)
+        for d in res:
+            results.append(SyftObject.from_mongo(d))
+        return results
+
+    def find_one(self, search_params: Dict[str, Any]) -> Optional[SyftObject]:
+        d = self._collection.find_one(search_params)
+        if d is None:
+            return d
+        return SyftObject.from_mongo(d)
+
+    # def register(self, **kwargs: Any) -> Any:
+    #     """Register a new object into the database.
+
+    #     Args:
+    #         parameters : List of object parameters.
+    #     Returns:
+    #         object: Database Object
+    #     """
+    #     _obj = self._schema(**kwargs)
+    #     session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+    #     session_local.add(_obj)
+    #     session_local.commit()
+    #     return _obj
+
+    # def query(self, **kwargs: Any) -> List[Any]:
+    #     """Query db objects filtering by parameters
+    #     Args:
+    #         parameters : List of parameters used to filter.
+    #     """
+    #     session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+    #     objects = session_local.query(self._schema).filter_by(**kwargs).all()
+    #     session_local.close()
+    #     return objects
+
+    # def first(self, **kwargs: Any) -> Optional[Any]:
+    #     """Query db objects filtering by parameters
+    #     Args:
+    #         parameters : List of parameters used to filter.
+    #     """
+    #     session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+    #     objects = session_local.query(self._schema).filter_by(**kwargs).first()
+    #     session_local.close()
+    #     return objects
+
+    # def last(self, **kwargs: Any) -> Optional[Any]:
+    #     """Query and return the last occurrence.
+
+    #     Args:
+    #         parameters: List of parameters used to filter.
+    #     Return:
+    #         obj: Last object instance.
+    #     """
+    #     session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+    #     obj = session_local.query(self._schema).filter_by(**kwargs).all()[-1]
+    #     session_local.close()
+    #     return obj
+
+    # def all(self) -> List[Any]:
+    #     session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+    #     result = list(session_local.query(self._schema).all())
+    #     session_local.close()
+    #     return result
+
+    # def delete(self, **kwargs: Any) -> None:
+    #     """Delete an object from the database.
+
+    #     Args:
+    #         parameters: Parameters used to filter the object.
+    #     """
+    #     session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+    #     session_local.query(self._schema).filter_by(**kwargs).delete()
+    #     session_local.commit()
+    #     session_local.close()
+
+    # def modify(self, query: Dict[Any, Any], values: Dict[Any, Any]) -> None:
+    #     """Modifies one or many records."""
+    #     session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+    #     session_local.query(self._schema).filter_by(**query).update(values)
+    #     session_local.commit()
+    #     session_local.close()
+
+    # def contain(self, **kwargs: Any) -> bool:
+    #     session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+    #     objects = session_local.query(self._schema).filter_by(**kwargs).all()
+    #     session_local.close()
+    #     return len(objects) != 0
+
+    # def __len__(self) -> int:
+    #     session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+    #     result = session_local.query(self._schema).count()
+    #     session_local.close()
+    #     return result
+
+    # def clear(self) -> None:
+    #     local_session = sessionmaker(bind=self.db)()
+    #     local_session.query(self._schema).delete()
+    #     local_session.commit()
+    #     local_session.close()
