@@ -297,7 +297,7 @@ def clean(location: str) -> None:
     help="Optional: prevent lots of launch output",
 )
 @click.option(
-    "--template",
+    "--from_template",
     default="false",
     required=False,
     type=str,
@@ -818,7 +818,7 @@ def create_launch_cmd(
     parsed_kwargs["dev"] = bool(kwargs["dev"]) if "dev" in kwargs else False
     parsed_kwargs["silent"] = bool(kwargs["silent"]) if "silent" in kwargs else False
     parsed_kwargs["from_template"] = (
-        str_to_bool(kwargs["template"]) if "template" in kwargs else False
+        str_to_bool(kwargs["from_template"]) if "from_template" in kwargs else False
     )
 
     parsed_kwargs["release"] = "production"
