@@ -26,6 +26,7 @@ packages = [
     "setuptools",
     "virtualenv-api",
     "virtualenv",
+    "PyYAML"
 ]
 
 if platform.system().lower() != "windows":
