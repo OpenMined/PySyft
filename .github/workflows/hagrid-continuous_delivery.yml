@@ -50,6 +50,7 @@ jobs:
         if: ${{needs.hagrid-deploy.outputs.current_hash}} != ${{needs.hagrid-deploy.outputs.previous_hash}}
         run: |
           python3 hagrid/version.py
+          python3 scripts/update_manifest.py
           bump2version patch --allow-dirty --no-commit
           tox -e lint || true
           python3 hagrid/version.py
