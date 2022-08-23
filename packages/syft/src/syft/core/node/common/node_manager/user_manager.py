@@ -257,8 +257,8 @@ class UserManager(DatabaseManager):
         """
         return self.__login_validation(email, password)
 
-    @span(tracer=ot_tracer)
-    def set(  # nosec
+    @span(tracer=ot_tracer) # nosec
+    def set(
         self,
         user_id: str,
         email: str = "",
