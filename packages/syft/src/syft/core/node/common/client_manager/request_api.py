@@ -162,11 +162,11 @@ class RequestAPI:
 
         if content is None:
             content = {}
-        
+
         if issubclass(syft_msg, NewSyftMessage):
-            
+
             # Build and send the message tracing by opentelemetry
-            if self.client.dev_mode:
+            if self.client.dev_mode:  # type: ignore
                 with ot_tracer.start_as_current_span(syft_msg_constructor.__name__):
                     span_ctx = trace.get_current_span().get_span_context()
                     ctx = {
@@ -180,8 +180,12 @@ class RequestAPI:
                     }
                     # 1 - Build Message Object
                     unsigned_msg = syft_msg_constructor(  # type: ignore
-                        address=self.client.address, reply_to=self.client.address, ctx=ctx, kwargs=content  # type: ignore
+                        address=self.client.address,
+                        reply_to=self.client.address,
+                        ctx=ctx,
+                        kwargs=content,  # type: ignore
                     )
+
                     # 2 - Signing Message withg User Signing Key
                     signed_msg = unsigned_msg.sign(  # type: ignore
                         signing_key=self.client.signing_key
@@ -190,7 +194,7 @@ class RequestAPI:
                     response = self.client.send_immediate_msg_with_reply(
                         msg=signed_msg, timeout=timeout
                     )
-            else: # Do not trace message building/sending
+            else:  # Do not trace message building/sending
                 signed_msg = syft_msg_constructor(  # type: ignore
                     address=self.client.address, reply_to=self.client.address, kwargs=content  # type: ignore
                 ).sign(  # type: ignore
