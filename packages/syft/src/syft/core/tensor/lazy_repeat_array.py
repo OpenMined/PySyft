@@ -37,7 +37,9 @@ class lazyrepeatarray:
 
     __attr_allowlist__ = ["data", "shape"]
 
-    def __init__(self, data: np.ndarray, shape: Tuple[int, ...]) -> None:
+    def __init__(
+        self, data: np.ndarray, shape: Tuple[int, ...], data_type="none"
+    ) -> None:
         """
         data: the raw data values without repeats
         shape: the shape of 'data' if repeats were included
@@ -65,6 +67,14 @@ class lazyrepeatarray:
             for val in shape:
                 if val < 0:
                     raise ValueError(f"Invalid shape: {shape}")
+
+        if self.data.size > 1:
+            if data_type == "min_val":
+                self.data = data.min()
+            elif data_type == "max_val":
+                self.data = data.max()
+            # else:
+            #     raise NotImplementedError("What on earth are you using this class for?")
 
     def __getitem__(self, item: Union[str, int, slice]) -> lazyrepeatarray:
         if self.data.shape == self.shape:
@@ -264,7 +274,16 @@ class lazyrepeatarray:
 
     def mean(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
         res = np.array(self.to_numpy().mean(*args, **kwargs))
-        return lazyrepeatarray(data=res, shape=res.shape)
+        data_type = "none"
+        if res.size > 0:
+            all_min_val = np.all(res == res.min())
+            all_max_val = np.all(res == res.max())
+
+        if all_min_val:
+            data_type = "min_val"
+        elif all_max_val:
+            data_type = "max_val"
+        return lazyrepeatarray(data=res, shape=res.shape, data_type=data_type)
 
     def ones_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
         res = np.array(np.ones_like(self.to_numpy(), *args, **kwargs))
