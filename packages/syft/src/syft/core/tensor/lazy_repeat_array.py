@@ -38,7 +38,7 @@ class lazyrepeatarray:
     __attr_allowlist__ = ["data", "shape"]
 
     def __init__(
-        self, data: np.ndarray, shape: Tuple[int, ...], data_type="none"
+        self, data: np.ndarray, shape: Tuple[int, ...], data_type: str = "none"
     ) -> None:
         """
         data: the raw data values without repeats
