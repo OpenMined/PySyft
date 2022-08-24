@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package syft.lib.nacl;
+
+message VerifyKeyProto {
+  bytes data = 1;
+}

@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package syft.lib.nacl;
+
+message SigningKeyProto {
+  bytes data = 1;
+
+}

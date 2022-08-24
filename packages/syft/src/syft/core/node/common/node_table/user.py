@@ -11,6 +11,7 @@ from typing import Optional
 from typing import Type
 
 # third party
+from nacl.signing import SigningKey
 import pydantic
 from pydantic import BaseModel
 from sqlalchemy import Column
@@ -20,8 +21,12 @@ from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
 
+# syft absolute
+import syft as sy
+
 # relative
 from . import Base
+from .....lib.python import Dict as SyDict
 from ....common import UID
 
 
@@ -129,19 +134,30 @@ class SyftObject(BaseModel, SyftObjectRegistry):
     __canonical_name__: str  # the name which doesn't change even when there are multiple classes
     __version__: int  # data is always versioned
     __attr_state__: List[str]  # persistent recursive serde keys
+    __attr_searchable__: List[str]  # keys which can be searched in the ORM
     __attr_unique__: List[
         str
     ]  # the unique keys for the particular Collection the objects will be stored in
 
     def to_mongo(self) -> Dict[str, Any]:
         d = {}
-        for k in self.__attr_state__:
+        for k in self.__attr_searchable__:
             d[k] = getattr(self, k)
+        blob = self.to_bytes()
         d["_id"] = self.id.value  # type: ignore
         d["__canonical_name__"] = self.__canonical_name__
         d["__version__"] = self.__version__
+        d["__blob__"] = blob
 
         return d
+
+    def to_bytes(self) -> bytes:
+        d = SyDict(**self)
+        return sy.serialize(d, to_bytes=True)
+
+    @staticmethod
+    def from_bytes(blob: bytes) -> SyftObject:
+        return sy.deserialize(blob, from_bytes=True)
 
     @staticmethod
     def from_mongo(bson: Any) -> SyftObject:
@@ -152,7 +168,7 @@ class SyftObject(BaseModel, SyftObjectRegistry):
             raise ValueError(
                 "Versioned class should not be None for initialization of SyftObject."
             )
-        return constructor(**bson)
+        return constructor(**sy.deserialize(bson["__blob__"], from_bytes=True).upcast())
 
     # allows splatting with **
     def keys(self) -> KeysView[str]:
@@ -184,7 +200,33 @@ class NoSQLSyftUser(SyftObject):
     # fields
     email: str
     name: str
+    budget: float
+    hashed_password: str
+    salt: str
+    private_key: SigningKey
+    verify_key: Optional[str]
+    role: dict
+    added_by: Optional[str]
+    website: Optional[str]
+    institution: Optional[str]
+    daa_pdf: Optional[str]
+    created_at: Optional[str]
 
     # serde / storage rules
-    __attr_state__ = ["email", "name"]
+    __attr_state__ = [
+        "email",
+        "name",
+        "budget",
+        "hashed_password",
+        "salt",
+        "private_key",
+        "verify_key",
+        "role",
+        "added_by",
+        "website",
+        "institution",
+        "daa_pdf",
+        "created_at",
+    ]
+    __attr_searchable__ = ["email"]
     __attr_unique__ = ["email"]
