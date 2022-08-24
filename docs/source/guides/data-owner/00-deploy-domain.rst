@@ -1,6 +1,14 @@
 00 - How to Deploy a Domain Server
 ===============================================
 
+.. note:: 
+   To run all the steps in this tutorial interactively, we prefer using the below command.
+
+::
+
+   hagrid quickstart https://github.com/OpenMined/PySyft/tree/dev/notebooks/quickstart/data-owner/00-deploy-domain.ipynb
+
+
 Data owners are defined by those with ``datasets`` 💾  they want to make available for
 study by an outside party.
 
@@ -51,14 +59,6 @@ Few things to make a note of before starting:
 - **PyGrid** = Networking and Management Platform 
 - **HAGrid** = Deployment and Command Line Tool
 
-   **Note:** For the ease of running all the steps shown in this tutorial, we
-   prefer using the below command.
-
-::
-
-   hagrid quickstart https://github.com/OpenMined/PySyft/tree/dev/notebooks/quickstart/data-owner/00-deploy-domain.ipynb
-   
-
 Step 1: Install all required softwares
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -73,15 +73,16 @@ Use the below command to import the install wizard notebook into your environmen
    hagrid quickstart https://github.com/OpenMined/PySyft/tree/dev/notebooks/quickstart/01-install-wizard.ipynb
 
 
-**Important:** The next step will show you how to launch a domain node. If
-you run into any ``issue`` running the above installation wizard, consider
-looking for the ``error`` you are getting on our
-`GitHub-Issue <https://github.com/OpenMined/PySyft/issues>`__ page.
-Still not able to figure out the problem, don’t worry. We are here to
-help you. Join the OpenMined
-`slack <https://communityinviter.com/apps/openmined/openmined/>`__
-community and explain your problem in the ``#general`` channel, and
-any one of us might be able to help you.
+.. warning:: 
+   The next step will show you how to launch a domain node. If
+   you run into any ``issue`` running the above installation wizard, consider
+   looking for the ``error`` you are getting on our
+   `GitHub-Issue <https://github.com/OpenMined/PySyft/issues>`__ page.
+   Still not able to figure out the problem, don’t worry. We are here to
+   help you. Join the OpenMined
+   `slack <https://communityinviter.com/apps/openmined/openmined/>`__
+   community and explain your problem in the ``#general`` channel, and
+   any one of us might be able to help you.
 
 
 Step 2: Launching a domain server
@@ -116,9 +117,7 @@ node will be launched.
 
    DOMAIN_NAME = "My Institution Name"
 
-   ! hagrid launch {DOMAIN_NAME} to docker:80 --tag=latest --tail=false
-
-   ! echo "\n✅ Step Complete\n"
+   ! hagrid launch {DOMAIN_NAME} to docker:9038 --tag=latest --tail=false --silent
 
 While this command runs, you will see various ``volumes`` and
 ``containers`` being created. Once this step is complete, move on to
@@ -141,9 +140,7 @@ running and is healthy.
    In:
 
    # run this cell
-   ! hagrid check --wait --silent
-
-   ! echo "\n✅ Step Complete\n"
+   ! hagrid check localhost:9038 --silent
 
    Out: 
 
@@ -158,8 +155,6 @@ running and is healthy.
    │ jupyter   │ http://20.31.143.254:8888   │ ✅ │
    └───────────┴─────────────────────────────┴────┘
 
-   ✅ Step Complete
-
 If your output is similar to the above image, voila!! A
 ``Domain`` ``Node`` was just ``born``. When it’s ready, you will see the
 following in the output:
@@ -173,7 +168,7 @@ following in the output:
 -  **jupyter:** Notebook ``environment`` you will use to upload your
    datasets.
 
-Congratulations 👏 You have now successfully deployed a Domain Node.
+Congratulations 👏 You have now successfully deployed a Domain Node
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Now what?

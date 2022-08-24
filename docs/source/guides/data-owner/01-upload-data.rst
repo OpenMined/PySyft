@@ -1,6 +1,13 @@
 01 - How to Upload Private Data to the Domain Server
 ============================================================
 
+.. note:: 
+   To run all the steps in this tutorial interactively, we prefer using the below command.
+
+::
+
+   hagrid quickstart https://github.com/OpenMined/PySyft/tree/dev/notebooks/quickstart/data-owner/01-upload-data.ipynb
+
 Welcome back to another Data Owner tutorial. In the last tutorial,
 you learned :doc:`how to deploy a domain server <00-deploy-domain>` that represents
 the theoretical organization’s private data servers. But right now,
@@ -25,14 +32,6 @@ The steps covered in this tutorial include:
 
 |01-upload-data-00|
 
-   **Note:** For the ease of running all the steps shown in this
-   tutorial, we prefer using the below command.
-
-::
-
-
-   hagrid quickstart https://github.com/OpenMined/PySyft/tree/dev/notebooks/quickstart/data-owner/01-upload-data.ipynb
-
 Step 1: Import Syft
 ~~~~~~~~~~~~~~~~~~~
 
@@ -47,7 +46,6 @@ Lets import Syft by running the below cell:
 
    # run this cell
    import syft as sy
-   from utils import *
    print("Syft is imported")
 
    Out: Syft is imported
@@ -71,9 +69,9 @@ In this case, you have to give some default credentials like:
    In:
 
    domain_client = sy.login(
-       url="20.31.143.254",
-       email="info@openmined.org",
-       password="changethis"
+      port=9038,
+      email="info@openmined.org",
+      password="changethis"
    )
 
    Out:
@@ -96,7 +94,10 @@ members.
 
    In:
 
+   # !pip install pandas
+   # install pandas by un-commenting the above command
    # import pandas
+   
    import pandas as pd
 
    data = {'ID': ['011', '015', '022', '034'],
@@ -140,7 +141,7 @@ Important steps:
    data_subjects = DataSubjectList.from_series(dataset["ID"])
 
    age_data = sy.Tensor(dataset["Age"]).annotated_with_dp_metadata(
-       min_val=0, max_val=100, data_subjects=data_subjects
+      min_val=0, max_val=100, data_subjects=data_subjects
    )
 
 ..
@@ -165,12 +166,12 @@ what this dataset represents.
 
    # run this cell
    domain_client.load_dataset(
-       name="Family_Age_Dataset",
-       assets={
-           "Age_Data": age_data,
-       },
-       description="Our data set contains Age of Family of 4 members with \ 
-       their unique ID's. There are two columns and 4 rows in our dataset."
+      name="Family_Age_Dataset",
+      assets={
+         "Age_Data": age_data,
+      },
+      description="Our data set contains Age of Family of 4 members with \ 
+      their unique ID's. There are two columns and 4 rows in our dataset."
    )
 
    Out: 
@@ -188,7 +189,7 @@ Domain with their Names, Descriptions, Assets, and Unique IDs.
    # run this cell
    domain_client.datasets
 
-Awesome 👏 !! You have uploaded the dataset onto your Domain node.
+Awesome 👏 !! You have uploaded the dataset onto your Domain node
 -----------------------------------------------------------------
 
 By uploading the dataset onto the Domain Node, Data Owners are opening
