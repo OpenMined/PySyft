@@ -58,3 +58,5 @@ k3d-registry
 .envfile
 packages/hagrid/.envfile
 
+# new svelte
+packages/grid/svelte
