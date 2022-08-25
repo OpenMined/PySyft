@@ -2740,24 +2740,6 @@ def add_intro_notebook(directory: str, reset: bool = False) -> str:
     return file_path
 
 
-def generate_url_from_repo_branch_subdir(
-    repo: str, branch: str, commit: Optional[str], url: str
-) -> str:
-    url_is_valid = validators.url(url)  # add where deps are mentioned
-    if not url_is_valid:
-        core_url = "https://raw.githubusercontent.com/" + repo + "/"
-
-        if commit is None:
-            core_url = core_url + branch + "/" + "notebooks/quickstart/" + url
-        else:
-            core_url = core_url + commit + "/" + "notebooks/quickstart/" + url
-
-        if not core_url.endswith(".ipynb"):
-            core_url = core_url + ".ipynb"
-        return core_url
-    return url
-
-
 cli.add_command(quickstart_cli, "quickstart")
 
 
