@@ -2587,7 +2587,7 @@ def quickstart_cli(
 
             disable_toolbar_extension = f"{jupyter_binary} labextension disable @jupyterlab/cell-toolbar-extension"
 
-            subprocess.run(
+            subprocess.run(  # nosec
                 disable_toolbar_extension.split(" "), cwd=directory, env=environ
             )
             proc = subprocess.Popen(  # nosec
