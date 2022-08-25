@@ -2,9 +2,10 @@
 import platform
 
 # third party
-from hagrid import __version__
 from setuptools import find_packages
 from setuptools import setup
+
+__version__ = "0.2.89"
 
 DATA_FILES = {
     "img": ["hagrid/img/*.png"],
@@ -16,12 +17,14 @@ packages = [
     "cryptography>=37.0.2",
     "gitpython",
     "names",
+    "packaging>=21.3",
     "paramiko",
     "pyOpenSSL>=22.0.0",
     "requests",
     "rich",
     "setuptools",
     "virtualenv-api",
+    "virtualenv",
 ]
 
 if platform.system().lower() != "windows":
