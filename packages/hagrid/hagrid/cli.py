@@ -10,7 +10,6 @@ import subprocess  # nosec
 import sys
 import tempfile
 import time
-import validators
 from typing import Any
 from typing import Callable
 from typing import Dict as TypeDict
@@ -26,6 +25,7 @@ import click
 import requests
 import rich
 from rich.live import Live
+import validators
 from virtualenvapi.manage import VirtualEnvironment
 
 # relative
@@ -2692,17 +2692,17 @@ def add_intro_notebook(directory: str, reset: bool = False) -> str:
 
 def generate_url_from_repo_branch_subdir(
     repo: str, branch: str, commit: Optional[str], url: str
-):
+) -> str:
     url_is_valid = validators.url(url)  # add where deps are mentioned
-    if url_is_valid != True:
+    if not url_is_valid:
         core_url = "https://raw.githubusercontent.com/" + repo + "/"
 
-        if commit == None:
+        if commit is None:
             core_url = core_url + branch + "/" + "notebooks/quickstart/" + url
         else:
             core_url = core_url + commit + "/" + "notebooks/quickstart/" + url
 
-        if core_url.endswith(".ipynb") != True:
+        if not core_url.endswith(".ipynb"):
             core_url = core_url + ".ipynb"
         return core_url
     return url
