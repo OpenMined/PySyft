@@ -2673,7 +2673,7 @@ def get_urls_from_dir(
     branch: str,
     commit: Optional[str],
     url: str,
-) -> list[str]:
+) -> List[str]:
     notebooks = []
     if commit is not None:
         gh_api_call = (
