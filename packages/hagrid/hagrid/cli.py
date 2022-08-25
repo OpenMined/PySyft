@@ -2550,13 +2550,22 @@ def quickstart_cli(
             )
 
         if url:
-            url = generate_url_from_repo_branch_subdir(
-                repo=repo, branch=branch, commit=commit, url=url
-            )
+            url_is_valid = validators.url(url)
+            if not url_is_valid:
+                notebooks = get_urls_from_dir(
+                    repo=repo, branch=branch, commit=commit, url=url
+                )
+                for notebook_url in notebooks:
+                    file_path, _ = quickstart_download_notebook(
+                        url=notebook_url,
+                        directory=directory + "/" + url + "/",
+                        reset=reset,
+                    )
 
-            file_path, _ = quickstart_download_notebook(
-                url=url, directory=directory, reset=reset
-            )
+            else:
+                file_path, _ = quickstart_download_notebook(
+                    url=url, directory=directory, reset=reset
+                )
         else:
             file_path = add_intro_notebook(directory=directory, reset=reset)
 
@@ -2657,6 +2666,47 @@ def quickstart_setup(
     except Exception as e:
         print("failed", e)
         raise e
+
+
+def get_urls_from_dir(
+    repo: str,
+    branch: str,
+    commit: Optional[str],
+    url: str,
+) -> list[str]:
+    notebooks = []
+    if commit is not None:
+        gh_api_call = (
+            "https://api.github.com/repos/"
+            + repo
+            + "/git/trees/"
+            + commit
+            + "?recursive=1"
+        )
+    else:
+        gh_api_call = (
+            "https://api.github.com/repos/"
+            + repo
+            + "/git/trees/"
+            + branch
+            + "?recursive=1"
+        )
+    r = requests.get(gh_api_call)
+    res = r.json()
+
+    for file in res["tree"]:
+        if file["path"].startswith("notebooks/quickstart/" + url):
+            if file["path"].endswith(".ipynb"):
+                temp_url = (
+                    "https://raw.githubusercontent.com/"
+                    + repo
+                    + "/"
+                    + branch
+                    + "/"
+                    + file["path"]
+                )
+                notebooks.append(temp_url)
+    return notebooks
 
 
 def add_intro_notebook(directory: str, reset: bool = False) -> str:
