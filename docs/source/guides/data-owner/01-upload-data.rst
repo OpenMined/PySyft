@@ -10,11 +10,11 @@
 
 Welcome back to another Data Owner tutorial. In the last tutorial,
 you learned :doc:`how to deploy a domain server <00-deploy-domain>` that represents
-the theoretical organization’s private data servers. But right now,
+the organization’s private data servers. But right now,
 the node you just deployed is empty.
 
-After today’s tutorial, you will learn how to ``upload`` the
-``private data``, which involves annotating and doing ETL before
+After today’s tutorial, you will learn how to ``upload data`` to your new 
+``domain node``, which involves annotating and doing ETL before
 uploading it to our Domain Node/server.
 
    **Note:** Throughout the tutorials, we also mean Domain Servers
@@ -26,17 +26,18 @@ Step to Upload Private Data
 
 The steps covered in this tutorial include: 
 
-#. **preprocess** of data 
-#. **mark** it with the correct metadata 
-#. **upload** it to Domain node
+#. **Preprocessing** Data 
+#. **Marking** it with Differential Privacy Metadata 
+#. **Uploading** it to your Domain Node
 
 |01-upload-data-00|
 
 Step 1: Import Syft
 ~~~~~~~~~~~~~~~~~~~
 
-The first step is to ``configure`` Privacy Enhancing Technologies
-(PETs). For this, you need OpenMined’s Syft library.
+To utilize the privacy-enhancing features offered in PyGrid and to 
+communicate with your domain node, you must first ``import`` OpenMined's 
+``private`` deep learning library: PySyft.
 
 Lets import Syft by running the below cell:
 
@@ -50,19 +51,19 @@ Lets import Syft by running the below cell:
 
    Out: Syft is imported
 
-Step 2: Python Client Login
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Step 2: Login to Your Domain
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-It is important to note that only the Domain node ``administrator`` can
-upload data. So before the Domain node lets you upload private data, you
-must prove you are an admin by ``logging`` in.
+By default, only the Domain node ``Admin`` can upload data, 
+so to upload your data, you will need to first login as the admin. 
+(*Upload data permissions can be customized after logging into the domain node.*)
 
-In this case, you have to give some default credentials like: 
+To login to your Domain node, you will need to define which Domain you are logging into and who you are. In this case, it will take the form of:
 
-* IP Address of the host 
-* Email and password
+* IP Address of the domain host
+* Your user account Email and Password
 
-   **WARNING:** CHANGE YOUR USERNAME AND PASSWORD!!!
+   **WARNING:** Change the default username and password below to a more secure and private combination of your preference.
 
 ::
 
@@ -83,12 +84,11 @@ Lovely :) You have just logged in to your Domain.
 Step 3: Get Dataset
 ~~~~~~~~~~~~~~~~~~~
 
-For this tutorial, we will use the simple ``age`` data of a family of 4
-members.
+For this tutorial, we will import a simple ``age`` dataset to help illustrate 
+the steps further down.
 
-   **IMPORTANT:** In real-world applications, the dataset is broken into
-   subsets and dispersed among participants in the event of Remote Data
-   Science.
+In this example, we have a dataset of a family of four with the 
+ages of 40, 39, 9, and 8.
 
 ::
 
@@ -96,7 +96,6 @@ members.
 
    # !pip install pandas
    # install pandas by un-commenting the above command
-   # import pandas
    
    import pandas as pd
 
@@ -116,10 +115,13 @@ members.
 Step 4: Annotate Data for Automatic DP
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In the next step, we annotate our data with some Auto DP
-``(Automatic Differential Privacy)`` metadata using PETs. This allows
-the syft library to ``protect`` and ``adjust`` the visibility different
-data scientists have into any one of the data subjects.
+Now that we have our dataset, we can begin annotating it with 
+privacy-specific metadata called Auto DP metadata. Auto DP 
+metadata allows the PySyft library to protect and adjust the 
+visibility different Data Scientists will have into any one of 
+our data subjects. ``Data Subjects`` are the entities whose privacy 
+we want to protect. So, in this case, they are the individual 
+family members.
 
 Important steps:
 ^^^^^^^^^^^^^^^^
