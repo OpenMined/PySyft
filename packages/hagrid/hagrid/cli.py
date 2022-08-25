@@ -10,7 +10,7 @@ import subprocess  # nosec
 import sys
 import tempfile
 import time
-from typing import Any
+from typing import Any, List
 from typing import Callable
 from typing import Dict as TypeDict
 from typing import List as TypeList
