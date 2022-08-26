@@ -1,28 +1,37 @@
 manifestVersion: 0.1
-version: 0.2.89
+hagrid_version: 0.2.89
+syft_version: 0.7.0-beta.42
+# ansible files
+# what files we want to download if don't use git
+# target: docker or ansible or
 baseUrl: https://raw.githubusercontent.com/OpenMined/PySyft/
 hash: 487ef73282f0637b230266edf7be2f517d11bba4
 target_dir: ~/.hagrid/PySyft/
 files:
-- packages/grid/.env: packages/grid/.env
-- packages/grid/devspace.yml: packages/grid/templates/devspace.yaml
-- packages/grid/docker-compose.build.yml: packages/grid/templates/docker-compose.build.yml
-- packages/grid/docker-compose.dev.yml: packages/grid/templates/docker-compose.dev.yml
-- packages/grid/docker-compose.test.yml: packages/grid/templates/docker-compose.test.yml
-- packages/grid/docker-compose.tls.yml: packages/grid/templates/docker-compose.tls.yml
-- packages/grid/docker-compose.yml: packages/grid/templates/docker-compose.yml
-- packages/grid/ansible.cfg: packages/grid/templates/ansible.cfg
-- packages/grid/rabbitmq/rabbitmq.conf: packages/grid/templates/rabbitmq/rabbitmq.conf
-- packages/grid/redis/redis.conf: packages/grid/templates/redis/redis.conf
-- packages/grid/seaweedfs/filer.toml: packages/grid/templates/seaweedfs/filer.toml
-- packages/grid/seaweedfs/s3config.json: packages/grid/templates/seaweedfs/s3config.json
-- packages/grid/traefik/docker/dynamic-tls.yml: packages/grid/templates/traefik/docker/dynamic-tls.yml
-- packages/grid/traefik/docker/dynamic.yml: packages/grid/templates/traefik/docker/dynamic.yml
-- packages/grid/traefik/docker/traefik-tls.template.yml: packages/grid/templates/traefik/docker/traefik-tls.template.yml
-- packages/grid/traefik/docker/traefik.yml: packages/grid/templates/traefik/docker/traefik.yml
-- packages/grid/traefik/k8s/dynamic.yml: packages/grid/templates/traefik/k8s/dynamic.yml
-- packages/grid/traefik/k8s/traefik.yml: packages/grid/templates/traefik/k8s/traefik.yml
-- packages/grid/vpn/config.yaml: packages/grid/templates/vpn/config.yaml
-- packages/grid/vpn/headscale.dockerfile: packages/grid/templates/vpn/headscale.dockerfile
-- packages/grid/vpn/tailscale.dockerfile: packages/grid/templates/vpn/tailscale.dockerfile
-- packages/grid/Vagrantfile: packages/grid/templates/Vagrantfile
+  common:
+  - packages/grid/rabbitmq/rabbitmq.conf
+  - packages/grid/redis/redis.conf
+  - packages/grid/seaweedfs/filer.toml
+  - packages/grid/seaweedfs/s3config.json
+  - packages/grid/vpn/config.yaml
+  docker:
+  - packages/grid/.env
+  - packages/grid/docker-compose.build.yml
+  - packages/grid/docker-compose.dev.yml
+  - packages/grid/docker-compose.test.yml
+  - packages/grid/docker-compose.tls.yml
+  - packages/grid/docker-compose.yml
+  - packages/grid/traefik/docker/dynamic-tls.yml
+  - packages/grid/traefik/docker/dynamic.yml
+  - packages/grid/traefik/docker/traefik-tls.template.yml
+  - packages/grid/traefik/docker/traefik.yml
+  - packages/grid/vpn/headscale.dockerfile
+  - packages/grid/vpn/tailscale.dockerfile
+  k8s:
+  - packages/grid/devspace.yaml
+  - packages/grid/traefik/k8s/dynamic.yml
+  - packages/grid/traefik/k8s/traefik.yml
+
+#- docker:
+#- templates: only list of these
+#- relative paths in the dockerfile

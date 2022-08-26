@@ -7,9 +7,7 @@ from setuptools import setup
 
 __version__ = "0.2.89"
 
-DATA_FILES = {
-    "img": ["hagrid/img/*.png"],
-}
+DATA_FILES = {"img": ["hagrid/img/*.png"], "hagrid": ["*.yml"]}
 
 packages = [
     "ascii_magic",

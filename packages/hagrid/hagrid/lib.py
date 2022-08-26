@@ -90,8 +90,8 @@ def get_git_repo() -> git.Repo:
             git.Repo.clone_from(
                 git_url, repo_src_path(), single_branch=False, b=repo_branch
             )
-        except Exception:  # nosec
-            print(f"Failed to clone {git_url} to {repo_src_path()}")
+        except Exception as e:  # nosec
+            print(f"Failed to clone {git_url} to {repo_src_path()} with error: {e}")
     return git.Repo(repo_src_path())
 
 

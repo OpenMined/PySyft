@@ -55,6 +55,7 @@ from .lib import generate_process_status_table
 from .lib import generate_user_table
 from .lib import hagrid_root
 from .lib import name_tag
+from .lib import repo_src_path
 from .lib import save_vm_details_as_json
 from .lib import update_repo
 from .lib import use_branch
@@ -361,6 +362,10 @@ def execute_commands(
 
         # use powershell if environment is Windows
         cmd_to_exec = ["powershell.exe", "-Command", cmd] if is_windows() else cmd
+
+        # GRID_SRC_PATH = os.path.expanduser("~/.hagrid/PySyft/packages/grid")
+
+        print("Grid src path: ", GRID_SRC_PATH)
 
         try:
             if len(cmds) > 1:
@@ -861,8 +866,10 @@ def create_launch_cmd(
     # allows changing docker platform to other cpu architectures like arm64
     parsed_kwargs["platform"] = kwargs["platform"] if "platform" in kwargs else None
 
-    if parsed_kwargs["from_template"]:
-        setup_from_manifest_template(parsed_kwargs["release"])
+    if parsed_kwargs["from_template"] and host is not None:
+        setup_from_manifest_template(
+            release_type=parsed_kwargs["release"], host_type=host
+        )
 
     if host in ["docker"]:
 
@@ -1489,15 +1496,23 @@ def create_launch_docker_cmd(
                 default_envs[key] = value
     default_envs.update(envs)
 
-    if from_template:
-        render_templates(env_vars=default_envs, release_type=kwargs["release"])
+    if from_template and host_term.host is not None:
+        render_templates(
+            env_vars=default_envs,
+            release_type=kwargs["release"],
+            host_type=host_term.host,
+        )
 
     try:
         env_file = ""
         for k, v in default_envs.items():
             env_file += f"{k}={v}\n"
 
-        env_file_path = os.path.abspath("./.envfile")
+        # rendered_dir -> fix path of ./.envfile
+        # or render .env to envfile.
+
+        # TODO: Fix this
+        env_file_path = repo_src_path() / ".envfile"
         with open(env_file_path, "w") as f:
             f.write(env_file)
 

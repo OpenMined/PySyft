@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import shutil
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Union
 
@@ -43,7 +44,7 @@ def get_local_abs_path(target_dir: str, file_path: str) -> str:
     return os.path.expanduser(local_path)
 
 
-def setup_from_manifest_template(release_type: str) -> None:
+def setup_from_manifest_template(release_type: str, host_type: str) -> None:
     template = read_yml_file(HAGRID_TEMPLATE_PATH)
 
     if template is None:
@@ -54,39 +55,82 @@ def setup_from_manifest_template(release_type: str) -> None:
     git_hash = template["hash"]
     git_base_url = template["baseUrl"]
     target_dir = template["target_dir"]
+    template_files = template["files"]
+    files_to_download = []
 
-    files_to_download = template["files"]
+    # common files
+    files_to_download += template_files["common"]
 
-    for files in tqdm(files_to_download, desc="Copying files... "):
-        for trg_file_path, src_file_path in files.items():
-            if release_type == "development":
-                copy_files_from_repo(
-                    src_file_path=src_file_path, trg_file_path=trg_file_path
-                )
-            else:
-                local_destination = get_local_abs_path(target_dir, trg_file_path)
-                link_to_file = git_url_for_file(src_file_path, git_base_url, git_hash)
-                download_file(
-                    link_to_file=link_to_file, local_destination=local_destination
-                )
+    # docker related files
+    if host_type in ["docker"]:
+        files_to_download += template_files["docker"]
+
+    # add k8s related files
+    # elif host_type in ["k8s"]:
+    #     files_to_download += template_files["k8s"]
+
+    else:
+        raise Exception(f"Hagrid template does not currently support {host_type}.")
+
+    download_files(
+        files_to_download=files_to_download,
+        release_type=release_type,
+        git_hash=git_hash,
+        git_base_url=git_base_url,
+        target_dir=target_dir,
+    )
 
 
-def render_templates(env_vars: dict, release_type: str) -> None:
+def download_files(
+    files_to_download: List[str],
+    release_type: str,
+    git_hash: str,
+    git_base_url: str,
+    target_dir: str,
+) -> None:
+
+    for src_file_path in tqdm(files_to_download, desc="Copying files... "):
+
+        # For now target file path is same as source file path
+        trg_file_path = src_file_path
+
+        if release_type == "development":
+            copy_files_from_repo(
+                src_file_path=src_file_path, trg_file_path=trg_file_path
+            )
+        else:
+            local_destination = get_local_abs_path(target_dir, trg_file_path)
+            link_to_file = git_url_for_file(src_file_path, git_base_url, git_hash)
+            download_file(
+                link_to_file=link_to_file, local_destination=local_destination
+            )
+
+
+def render_templates(env_vars: dict, release_type: str, host_type: str) -> None:
     template = read_yml_file(HAGRID_TEMPLATE_PATH)
 
     if template is None:
         raise ValueError("Failed to read hagrid template.")
 
-    files_to_render = template["files"]
+    template_files = template["files"]
+
+    files_to_render = []
+
+    # common files
+    files_to_render += template_files["common"]
+
+    # docker related files
+    if host_type in ["docker"]:
+        files_to_render += template_files["docker"]
+
     target_dir = (
         repo_src_path() if release_type == "development" else template["target_dir"]
     )
 
     jinja_template = JinjaTemplate(target_dir)
 
-    for files in tqdm(files_to_render, desc="Substituting vars... "):
-        for trg_file_path, _ in files.items():
-            jinja_template.substitute_vars(trg_file_path, env_vars)
+    for file_path in tqdm(files_to_render, desc="Substituting vars... "):
+        jinja_template.substitute_vars(file_path, env_vars)
 
 
 class JinjaTemplate(object):
