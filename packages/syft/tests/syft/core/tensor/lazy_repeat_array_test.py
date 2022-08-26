@@ -94,10 +94,3 @@ def test_sum() -> None:
     lazyarray = lazyrepeatarray(data=np.array([1]), shape=array.shape)
 
     assert lazyarray.sum(axis=None).data == array.sum(axis=None)
-
-
-def test_mean() -> None:
-    array = np.array([1, 1, 1])
-    lazyarray = lazyrepeatarray(data=np.array([1]), shape=array.shape)
-
-    assert lazyarray.mean(axis=None).data == array.mean(axis=None)
