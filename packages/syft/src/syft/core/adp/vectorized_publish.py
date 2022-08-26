@@ -141,6 +141,8 @@ def publish(
     epsilon_spend = max(
         all_epsilons
     )  # This is the epsilon spend for the QUERY, a single float.
+    if not isinstance(epsilon_spend, float):
+        epsilon_spend = float(epsilon_spend)
     if epsilon_spend < 0:
         raise Exception(
             "Negative budget spend not allowed in PySyft for safety reasons. Please contact the OpenMined"
@@ -228,7 +230,7 @@ def publish(
                 # Privacy loss associated with this private data specifically
                 epsilon = max(
                     ledger.calculate_epsilon_spend(
-                        compute_rdp_constant(rdp_params, private=True)
+                        np.asarray(compute_rdp_constant(rdp_params, private=True))
                     )
                 )
 
@@ -252,6 +254,7 @@ def publish(
 
         print("About to publish again with filtered source_tree!")
         # TODO: Technically this isn't the most efficient way to do it since we can reuse params we've already calc'd
+        # TODO: Add a way to prevent infinite publishing
         return new_tensor.publish(
             get_budget_for_user=get_budget_for_user,
             deduct_epsilon_for_user=deduct_epsilon_for_user,
