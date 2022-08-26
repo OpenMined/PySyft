@@ -351,9 +351,13 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
 
     def update_rdp_constants(self, query_constants, entity_ids_query) -> None:
         if self._rdp_constants.size == 0:
-            self._rdp_constants = np.zeros_like(np.asarray(query_constants, query_constants.dtype))
+            self._rdp_constants = np.zeros_like(
+                np.asarray(query_constants, query_constants.dtype)
+            )
 
-        self._rdp_constants = first_try_branch(query_constants, self._rdp_constants, entity_ids_query=entity_ids_query)
+        self._rdp_constants = first_try_branch(
+            query_constants, self._rdp_constants, entity_ids_query=entity_ids_query
+        )
         return None
 
     def _get_batch_rdp_constants(
@@ -361,7 +365,9 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
     ) -> jnp.ndarray:
         query_constants = compute_rdp_constant(rdp_params, private)
 
-        self.update_rdp_constants(query_constants=query_constants, entity_ids_query=entity_ids_query)
+        self.update_rdp_constants(
+            query_constants=query_constants, entity_ids_query=entity_ids_query
+        )
         return query_constants
 
     def _get_epsilon_spend(self, rdp_constants: np.ndarray) -> np.ndarray:

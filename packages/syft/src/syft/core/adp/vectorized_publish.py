@@ -2,13 +2,13 @@
 from __future__ import annotations
 
 # stdlib
+from copy import deepcopy
 import secrets
 from typing import Callable
 from typing import List
 from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Union
-from copy import deepcopy
 
 # third party
 import jax
@@ -129,15 +129,23 @@ def publish(
 
     # rdp_constant = all terms in Theorem. 2.7 or 2.8 of https://arxiv.org/abs/2008.11193 EXCEPT alpha
     rdp_constants = compute_rdp_constant(rdp_params, private=True)
-    all_epsilons = ledger.calculate_epsilon_spend(rdp_constants)  # This is the epsilon spend for ALL data subjects
+    all_epsilons = ledger.calculate_epsilon_spend(
+        rdp_constants
+    )  # This is the epsilon spend for ALL data subjects
     if any(all_epsilons < 0):
-        raise Exception("Negative budget spend not allowed in PySyft for safety reasons. Please contact the OpenMined"
-                        "support team for help.")
+        raise Exception(
+            "Negative budget spend not allowed in PySyft for safety reasons. Please contact the OpenMined"
+            "support team for help."
+        )
 
-    epsilon_spend = max(all_epsilons)  # This is the epsilon spend for the QUERY, a single float.
+    epsilon_spend = max(
+        all_epsilons
+    )  # This is the epsilon spend for the QUERY, a single float.
     if epsilon_spend < 0:
-        raise Exception("Negative budget spend not allowed in PySyft for safety reasons. Please contact the OpenMined"
-                        "support team for help.")
+        raise Exception(
+            "Negative budget spend not allowed in PySyft for safety reasons. Please contact the OpenMined"
+            "support team for help."
+        )
 
     # Step 3: Check if the user has enough privacy budget for this query
     privacy_budget = get_budget_for_user(verify_key=ledger.user_key)
@@ -150,7 +158,10 @@ def publish(
         # We sample noise from a cryptographically secure distribution
         # TODO: Replace with discrete gaussian distribution instead of regular gaussian to eliminate floating pt vulns
         noise = np.asarray(
-            [secrets.SystemRandom().gauss(0, sigma) for _ in range(original_output.size)]
+            [
+                secrets.SystemRandom().gauss(0, sigma)
+                for _ in range(original_output.size)
+            ]
         ).reshape(original_output.shape)
 
         # The user spends their privacy budget before getting the result
@@ -161,14 +172,14 @@ def publish(
                 ledger.spend_epsilon(
                     deduct_epsilon_for_user=deduct_epsilon_for_user,
                     epsilon_spend=epsilon_spend,
-                    old_user_budget=privacy_budget
+                    old_user_budget=privacy_budget,
                 )
                 break
             except RefreshBudgetException:  # nosec
                 ledger.spend_epsilon(
                     deduct_epsilon_for_user=deduct_epsilon_for_user,
                     epsilon_spend=epsilon_spend,
-                    old_user_budget=privacy_budget
+                    old_user_budget=privacy_budget,
                 )
 
             except Exception as e:
@@ -176,7 +187,9 @@ def publish(
                 raise e
 
         # The RDP constants are adjusted to account for the amount of exposure every data subject's data has had.
-        ledger.update_rdp_constants(query_constants=rdp_constants, entity_ids_query=input_entities)
+        ledger.update_rdp_constants(
+            query_constants=rdp_constants, entity_ids_query=input_entities
+        )
         ledger._write_ledger()
         return original_output + noise
 
@@ -186,15 +199,21 @@ def publish(
         # So we will remove data belonging to these data subjects from the computation.
 
         # Step 4.1: Figure out which data subjects are within the PB & the highest possible spend
-        within_budget_filter = jnp.ones_like(all_epsilons) * privacy_budget >= all_epsilons
+        within_budget_filter = (
+            jnp.ones_like(all_epsilons) * privacy_budget >= all_epsilons
+        )
         highest_possible_spend = jnp.max(all_epsilons * within_budget_filter)
 
         # Step 4.2: Figure out which Tensors in the Source dictionary have those data subjects
         filtered_sourcetree = deepcopy(tensor.state)
         input_tensors = list(filtered_sourcetree.values())
-        parent_branch = [filtered_sourcetree for _ in input_tensors]  # TODO: Ensure this isn't deepcopying!
+        parent_branch = [
+            filtered_sourcetree for _ in input_tensors
+        ]  # TODO: Ensure this isn't deepcopying!
         for parent_state, input_tensor in zip(parent_branch, input_tensors):
-            if input_tensor.func_str == "no_op":  # This is raw, unprocessed private data. Filter if eps spend > PB!
+            if (
+                input_tensor.func_str == "no_op"
+            ):  # This is raw, unprocessed private data. Filter if eps spend > PB!
                 # Calculate epsilon spend for this tensor
                 l2_norms = jnp.sqrt(jnp.sum(jnp.square(input_tensor.child)))
 
@@ -207,7 +226,11 @@ def publish(
                 )
 
                 # Privacy loss associated with this private data specifically
-                epsilon = max(ledger.calculate_epsilon_spend(compute_rdp_constant(rdp_params, private=True)))
+                epsilon = max(
+                    ledger.calculate_epsilon_spend(
+                        compute_rdp_constant(rdp_params, private=True)
+                    )
+                )
 
                 # Filter if > privacy budget
                 if epsilon > privacy_budget:
@@ -220,7 +243,9 @@ def publish(
                 # If epsilon <= privacy budget, we don't need to do anything- the user has enough PB to use the data.
             else:
                 input_tensors += list(input_tensor.state.values())
-                parent_branch += [input_tensor.state for _ in input_tensor.state.values()]
+                parent_branch += [
+                    input_tensor.state for _ in input_tensor.state.values()
+                ]
 
         # Recompute the tensor's value now that some of its inputs have been filtered, and repeat epsilon calculations
         new_tensor = tensor.swap_state(filtered_sourcetree)
@@ -231,10 +256,10 @@ def publish(
             get_budget_for_user=get_budget_for_user,
             deduct_epsilon_for_user=deduct_epsilon_for_user,
             ledger=ledger,
-            sigma=sigma
+            sigma=sigma,
         )
     # Step 5: Revel in happiness.
-    
+
     else:
         raise Exception
 
@@ -248,9 +273,11 @@ def vectorized_publish(
     is_linear: bool = True,
     output_func: Callable = lambda x: x,
 ) -> Union[np.ndarray, jax.numpy.DeviceArray]:
+    # third party
+    from tqdm import tqdm
+
     # relative
     from ..tensor.autodp.gamma_tensor import GammaTensor
-    from tqdm import tqdm
 
     input_tensors = List[GammaTensor] = GammaTensor.get_input_tensors(state_tree)
     # TODO: Vectorize this to return a larger GammaTensor instead of a list of Tensors
@@ -340,7 +367,7 @@ def vectorized_publish(
 
             # multiply values by the inverted mask
             filtered_input_tensor = value * (
-                    1 - reshaped_mask
+                1 - reshaped_mask
             )  # + gauss(0, sigma)  # Double check that noise has mean of 0
 
             filtered_inputs.append(filtered_input_tensor)

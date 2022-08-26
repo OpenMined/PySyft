@@ -37,8 +37,8 @@ from ...adp.data_subject_ledger import DataSubjectLedger
 from ...adp.data_subject_list import DataSubjectList
 from ...adp.data_subject_list import dslarraytonumpyutf8
 from ...adp.data_subject_list import numpyutf8todslarray
-from ...adp.vectorized_publish import vectorized_publish
 from ...adp.vectorized_publish import publish
+from ...adp.vectorized_publish import vectorized_publish
 from ...common.serde.capnp import CapnpModule
 from ...common.serde.capnp import chunk_bytes
 from ...common.serde.capnp import combine_bytes
@@ -1162,7 +1162,9 @@ class GammaTensor:
         return self.func(state)
 
     @staticmethod
-    def build_from_state(state: dict, func_str: str) -> Union[np.ndarray, jnp.DeviceArray]:
+    def build_from_state(
+        state: dict, func_str: str
+    ) -> Union[np.ndarray, jnp.DeviceArray]:
         print("the things inside your source tree are:")
         for v in state.values():
             print(v.child)
@@ -1187,7 +1189,7 @@ class GammaTensor:
             max_vals=self.max_vals,
             state=state,
             func_str=self.func_str,
-            is_linear=self.is_linear
+            is_linear=self.is_linear,
         )
 
     def __add__(self, other: Any) -> GammaTensor:
@@ -1203,6 +1205,7 @@ class GammaTensor:
 
         if isinstance(other, GammaTensor):
             func = "add_private"
+
             def _add_private(state: dict) -> jax.numpy.DeviceArray:
                 # return jnp.add(self.reconstruct(state), other.reconstruct(state))
                 return jnp.add(*[i.reconstruct() for i in state.values()])
@@ -1218,8 +1221,10 @@ class GammaTensor:
 
         else:
             func = "add_public"
+
             def _add_public(state: dict) -> jax.numpy.DeviceArray:
                 return jnp.add(self.reconstruct(state), other)
+
             mapper[func] = _add_public
 
             child = self.child + other
@@ -1821,7 +1826,7 @@ class GammaTensor:
             data_subjects=self.data_subjects,
             min_vals=self.min_vals * 0,
             max_vals=self.max_vals * 1,
-            func_str="no_op"
+            func_str="no_op",
         )
 
     def ravel(self) -> GammaTensor:
@@ -2182,7 +2187,7 @@ class GammaTensor:
             get_budget_for_user=get_budget_for_user,
             deduct_epsilon_for_user=deduct_epsilon_for_user,
             sigma=sigma,
-            is_linear=self.is_linear
+            is_linear=self.is_linear,
         )
 
     # def expand_dims(self, axis: int) -> GammaTensor:
