@@ -2480,7 +2480,7 @@ class GammaTensor:
         gamma_msg.maxVal = serialize(self.max_vals, to_bytes=True)
         gamma_msg.isLinear = self.is_linear
         gamma_msg.id = self.id
-        gamma_msg.func = self.func_str
+        gamma_msg.funcStr = self.func_str
 
         # return gamma_msg.to_bytes_packed()
         return gamma_msg.to_bytes()
@@ -2515,7 +2515,7 @@ class GammaTensor:
             max_val = deserialize(gamma_msg.maxVal, from_bytes=True)
             is_linear = gamma_msg.isLinear
             id_str = gamma_msg.id
-            func_str = gamma_msg.func_str
+            func_str = gamma_msg.funcStr
 
             return GammaTensor(
                 child=child,
