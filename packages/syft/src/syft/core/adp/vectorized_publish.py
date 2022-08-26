@@ -214,23 +214,27 @@ def publish(
                     filtered_tensor = input_tensor.filtered()
 
                     # Replace the original tensor with this filtered one.
-                    parent_state[input_tensor.id] = filtered_tensor
+                    del parent_state[input_tensor.id]
+                    parent_state[filtered_tensor.id] = filtered_tensor
 
                 # If epsilon <= privacy budget, we don't need to do anything- the user has enough PB to use the data.
             else:
-                input_tensors.append(list(input_tensor.state.values()))
+                input_tensors += list(input_tensor.state.values())
                 parent_branch += [input_tensor.state for _ in input_tensor.state.values()]
 
         # Recompute the tensor's value now that some of its inputs have been filtered, and repeat epsilon calculations
         new_tensor = tensor.swap_state(filtered_sourcetree)
+
+        print("About to publish again with filtered source_tree!")
+        # TODO: Technically this isn't the most efficient way to do it since we can reuse params we've already calc'd
         return new_tensor.publish(
             get_budget_for_user=get_budget_for_user,
             deduct_epsilon_for_user=deduct_epsilon_for_user,
             ledger=ledger,
             sigma=sigma
         )
-
     # Step 5: Revel in happiness.
+    
     else:
         raise Exception
 

@@ -465,7 +465,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         old_user_budget: float,
     ) -> float:
 
-        if epsilon_spend >= 0:
+        if epsilon_spend < 0:
             raise Exception(
                 "Deducting a negative epsilon spend would result in potentially infinite PB. "
                 "Please contact the OpenMined support team."

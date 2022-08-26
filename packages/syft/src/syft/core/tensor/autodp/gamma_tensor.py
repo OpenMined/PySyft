@@ -1161,13 +1161,22 @@ class GammaTensor:
             return self
         return self.func(state)
 
+    @staticmethod
+    def build_from_state(state: dict, func_str: str) -> Union[np.ndarray, jnp.DeviceArray]:
+        print("the things inside your source tree are:")
+        for v in state.values():
+            print(v.child)
+        return mapper[func_str](state)
+
     def reconstruct(self, state: Optional[dict] = None) -> GammaTensor:
         if self.func_str == "no_op":
-            return self
+            return self.child
         else:
             if state is None:
+                print("Using self state")
                 return mapper[self.func_str](self.state)
             else:
+                print("Using provided state", [v.child for v in state.values()])
                 return mapper[self.func_str](state)
 
     def swap_state(self, state: dict) -> GammaTensor:
@@ -1195,7 +1204,8 @@ class GammaTensor:
         if isinstance(other, GammaTensor):
             func = "add_private"
             def _add_private(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.add(self.run(state), other.run(state))
+                # return jnp.add(self.reconstruct(state), other.reconstruct(state))
+                return jnp.add(*[i.reconstruct() for i in state.values()])
 
             mapper[func] = _add_private
 
@@ -1209,7 +1219,7 @@ class GammaTensor:
         else:
             func = "add_public"
             def _add_public(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.add(self.run(state), other)
+                return jnp.add(self.reconstruct(state), other)
             mapper[func] = _add_public
 
             child = self.child + other
