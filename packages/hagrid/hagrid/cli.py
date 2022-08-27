@@ -2502,7 +2502,7 @@ cli.add_command(version)
 )
 @click.option(
     "--repo",
-    default="openmined/pysyft",
+    default=arg_cache.repo,
     help="Choose a repo to fetch the notebook from or just use OpenMined/PySyft",
 )
 @click.option(
@@ -2521,7 +2521,7 @@ def quickstart_cli(
     quiet: bool = False,
     pre: bool = False,
     test: bool = False,
-    repo: str = "openmined/pysyft",
+    repo: str = arg_cache.repo,
     branch: str = "dev",
     commit: Optional[str] = None,
     python: Optional[str] = None,
@@ -2557,6 +2557,7 @@ def quickstart_cli(
                 notebooks = get_urls_from_dir(
                     repo=repo, branch=branch, commit=commit, url=url
                 )
+                print(notebooks)
                 for notebook_url in notebooks:
                     file_path, _ = quickstart_download_notebook(
                         url=notebook_url,
