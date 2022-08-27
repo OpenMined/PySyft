@@ -19,13 +19,13 @@ from typing import Tuple
 from typing import Tuple as TypeTuple
 from typing import Union
 from typing import cast
+from urllib.parse import urlparse
 
 # third party
 import click
 import requests
 import rich
 from rich.live import Live
-import validators
 from virtualenvapi.manage import VirtualEnvironment
 
 # relative
@@ -2550,8 +2550,10 @@ def quickstart_cli(
             )
 
         if url:
-            url_is_valid = validators.url(url)
-            if not url_is_valid:
+            allowed_schemes_as_url = ["http", "https"]
+            url_scheme = urlparse(url).scheme
+
+            if url_scheme not in allowed_schemes_as_url:
                 notebooks = get_urls_from_dir(
                     repo=repo, branch=branch, commit=commit, url=url
                 )
