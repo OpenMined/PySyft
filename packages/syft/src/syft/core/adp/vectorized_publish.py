@@ -79,6 +79,7 @@ def publish(
         value = tensor.child
 
     while isinstance(value, PassthroughTensor):
+        # TODO: Ask Rasswanth why this check is necessary
         value = value.child
 
     # Step 1: We obtain all the parameters needed to calculate Epsilons
@@ -253,8 +254,9 @@ def publish(
         new_tensor = tensor.swap_state(filtered_sourcetree)
 
         print("About to publish again with filtered source_tree!")
-        # TODO: Technically this isn't the most efficient way to do it since we can reuse params we've already calc'd
-        # TODO: Add a way to prevent infinite publishing
+        # TODO: This isn't the most efficient way to do it since we can reuse sigmas, coeffs, etc.
+        # TODO: Add a way to prevent infinite publishing?
+        # TODO: Should we implement exponential backoff as a means of rate-limiting?
         return new_tensor.publish(
             get_budget_for_user=get_budget_for_user,
             deduct_epsilon_for_user=deduct_epsilon_for_user,
