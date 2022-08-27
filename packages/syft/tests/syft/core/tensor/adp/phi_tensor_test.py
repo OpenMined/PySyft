@@ -354,7 +354,7 @@ def test_mean(
 ) -> None:
     ishan = np.broadcast_to(ishan, reference_data.shape)
     zeros_tensor = PT(
-        child=reference_data * 0,
+        child=np.zeros_like(reference_data),
         data_subjects=ishan,
         max_vals=upper_bound,
         min_vals=lower_bound,
@@ -373,11 +373,15 @@ def test_mean(
     assert tensor_mean.shape == reference_data.mean().shape
     assert (tensor_mean.min_vals == tensor.min_vals).all()
     assert (tensor_mean.max_vals == tensor.max_vals).all()
+    assert tensor_mean.child.shape == tensor_mean.min_vals.shape
+    assert tensor_mean.child.shape == tensor_mean.max_vals.shape
 
     assert (tensor_mean_axis_1.child == reference_data.mean(**kwargs)).all()
     assert tensor_mean_axis_1.shape == reference_data.mean(**kwargs).shape
     assert (tensor_mean_axis_1.min_vals == tensor.min_vals).all()
     assert (tensor_mean_axis_1.max_vals == tensor.max_vals).all()
+    assert tensor_mean_axis_1.child.shape == tensor_mean_axis_1.min_vals.shape
+    assert tensor_mean_axis_1.child.shape == tensor_mean_axis_1.max_vals.shape
 
     assert zeros_tensor.mean().child == 0
 
