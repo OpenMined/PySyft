@@ -2557,7 +2557,6 @@ def quickstart_cli(
                 notebooks = get_urls_from_dir(
                     repo=repo, branch=branch, commit=commit, url=url
                 )
-                print(notebooks)
                 for notebook_url in notebooks:
                     file_path, _ = quickstart_download_notebook(
                         url=notebook_url,
@@ -2695,6 +2694,12 @@ def get_urls_from_dir(
             + "?recursive=1"
         )
     r = requests.get(gh_api_call)
+    if r.status_code != 200:
+        print(
+            f"Failed to fetch notebook from the given URL: {gh_api_call}.\nPlease verify and try again with the correct parameters!"
+        )
+        sys.exit(1)
+
     res = r.json()
 
     for file in res["tree"]:
