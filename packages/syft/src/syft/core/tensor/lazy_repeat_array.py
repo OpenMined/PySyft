@@ -63,21 +63,18 @@ class lazyrepeatarray:
 
         self.data = data
         self.shape = shape
-        self.data_type = data_type
         if isinstance(shape, Iterable):
             for val in shape:
                 if val < 0:
                     raise ValueError(f"Invalid shape: {shape}")
 
-        if self.data.size > 1 and data_type != "none":
+        if self.data.size > 1:
             if data_type == "min_val":
                 self.data = data.min()
             elif data_type == "max_val":
                 self.data = data.max()
-            else:
-                raise NotImplementedError(
-                    "lazyrepeatarray.data_type should be either min_val or max_val"
-                )
+            # else:
+            #     raise NotImplementedError("What on earth are you using this class for?")
 
     def __getitem__(self, item: Union[str, int, slice]) -> lazyrepeatarray:
         if self.data.shape == self.shape:
@@ -276,10 +273,17 @@ class lazyrepeatarray:
         return lazyrepeatarray(data=res, shape=res.shape)
 
     def mean(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
-        """
-        implemented directly in PhiTensor and GammaTensor for performance reasons
-        """
-        raise NotImplementedError()
+        res = np.array(self.to_numpy().mean(*args, **kwargs))
+        data_type = "none"
+        if res.size > 0:
+            all_min_val = np.all(res == res.min())
+            all_max_val = np.all(res == res.max())
+
+        if all_min_val:
+            data_type = "min_val"
+        elif all_max_val:
+            data_type = "max_val"
+        return lazyrepeatarray(data=res, shape=res.shape, data_type=data_type)
 
     def ones_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
         res = np.array(np.ones_like(self.to_numpy(), *args, **kwargs))
