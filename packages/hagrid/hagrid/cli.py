@@ -10,9 +10,10 @@ import subprocess  # nosec
 import sys
 import tempfile
 import time
-from typing import Any, List
+from typing import Any
 from typing import Callable
 from typing import Dict as TypeDict
+from typing import List
 from typing import List as TypeList
 from typing import Optional
 from typing import Tuple
@@ -2696,7 +2697,7 @@ def get_urls_from_dir(
     r = requests.get(gh_api_call)
     if r.status_code != 200:
         print(
-            f"Failed to fetch notebook from the given URL: {gh_api_call}.\nPlease verify and try again with the correct parameters!"
+            f"Failed to fetch notebook from: {gh_api_call}.\nPlease try again with the correct parameters!"
         )
         sys.exit(1)
 
