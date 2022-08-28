@@ -68,13 +68,16 @@ class lazyrepeatarray:
                 if val < 0:
                     raise ValueError(f"Invalid shape: {shape}")
 
+        # TODO: use enum for data_type per suggestion from Madhava: https://github.com/OpenMined/PySyft/pull/6634/files#r952129748
         if self.data.size > 1:
             if data_type == "min_val":
                 self.data = data.min()
             elif data_type == "max_val":
                 self.data = data.max()
-            # else:
-            #     raise NotImplementedError("What on earth are you using this class for?")
+            else:
+                raise NotImplementedError(
+                    "The data_type should be either a min or max val"
+                )
 
     def __getitem__(self, item: Union[str, int, slice]) -> lazyrepeatarray:
         if self.data.shape == self.shape:
