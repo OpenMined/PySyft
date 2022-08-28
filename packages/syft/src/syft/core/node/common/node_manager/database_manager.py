@@ -143,6 +143,10 @@ class NoSQLDatabaseManager:
             return d
         return SyftObject.from_mongo(d)
 
+    def __len__(self) -> int:
+        # empty document filter counts all documents.
+        return self._collection.count_documents(filter={})
+
     # def register(self, **kwargs: Any) -> Any:
     #     """Register a new object into the database.
 
