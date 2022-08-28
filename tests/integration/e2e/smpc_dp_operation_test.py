@@ -315,54 +315,6 @@ def test_gt(
     print("Published Result ", published_result.get())
 
 
-@pytest.mark.e2e
-def test_mean(
-    create_data_scientist,
-    domain1_port: int,
-    domain2_port: int,
-    email: str,
-    password: str,
-) -> None:
-    """This tests DP mean, end to end"""
-
-    create_data_scientist(domain1_port, **data_scientist(email, password))
-    create_data_scientist(domain2_port, **data_scientist(email, password))
-
-    # Data Scientist logs in to both domains
-    domain1 = sy.login(email=email, password=password, port=domain1_port)
-    domain2 = sy.login(email=email, password=password, port=domain2_port)
-
-    # Check that datasets are visible
-    assert len(domain1.datasets) > 0
-    assert len(domain2.datasets) > 0
-
-    # Check PB is available
-    assert domain1.privacy_budget > 100
-    assert domain2.privacy_budget > 100
-    prev_domain1_budget = domain1.privacy_budget
-    prev_domain2_budget = domain2.privacy_budget
-
-    domain1_data = domain1.datasets[-1]["data"]
-    domain2_data = domain2.datasets[-1]["data"]
-
-    result1 = domain1_data.mean()
-    result2 = domain2_data.mean()
-    result1.block_with_timeout(90)
-    result2.block_with_timeout(90)
-    published_result1 = result1.publish(sigma=10)
-    published_result2 = result2.publish(sigma=10)
-    published_result1.block_with_timeout(90)
-    published_result2.block_with_timeout(90)
-    value1 = published_result1.get()
-    value2 = published_result2.get()
-
-    assert value1.shape == ()
-    assert value2.shape == ()
-    assert domain1.privacy_budget < prev_domain1_budget
-    assert domain2.privacy_budget < prev_domain2_budget
-    print("Published Results ", value1, value2)
-
-
 # NOTE: Less than Comparison is the basic operation we use to perform other comparision
 # The below comparision tests work, would be enabled after moving to
 # Parallel prefix adder for comparison as they are compute intensive now.
