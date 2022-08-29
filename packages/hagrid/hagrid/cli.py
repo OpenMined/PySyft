@@ -2558,11 +2558,21 @@ def quickstart_cli(
                 notebooks = get_urls_from_dir(
                     repo=repo, branch=branch, commit=commit, url=url
                 )
+                if not reset:
+                    overwrite_all_notebooks = click.confirm(
+                        # text="You have "
+                        # + str(len(notebooks))
+                        # + " conflicting notebooks. Would you like to overwrite them all?",
+                        text=f"You have {len(notebooks)} conflicting notebooks. Would you like to overwrite them all?",
+                        default=False,
+                    )
+
                 for notebook_url in notebooks:
                     file_path, _ = quickstart_download_notebook(
                         url=notebook_url,
                         directory=directory + "/" + url + "/",
                         reset=reset,
+                        overwrite_all_notebooks=overwrite_all_notebooks,
                     )
 
             else:
