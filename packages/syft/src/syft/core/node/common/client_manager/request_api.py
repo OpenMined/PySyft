@@ -14,7 +14,7 @@ from pandas import DataFrame
 
 # relative
 from .....experimental_flags import flags
-from .....util import ot_tracer
+from .....util import get_tracer
 from .....util import trace
 from ....common.message import SyftMessage  # type: ignore
 from ...abstract.node import AbstractNodeClient
@@ -167,7 +167,7 @@ class RequestAPI:
 
             # Build and send the message tracing by opentelemetry
             if self.client.dev_mode:  # type: ignore
-                with ot_tracer.start_as_current_span(syft_msg_constructor.__name__):
+                with get_tracer().start_as_current_span(syft_msg_constructor.__name__):
                     span_ctx = trace.get_current_span().get_span_context()
                     ctx = {
                         "span_id": str(
