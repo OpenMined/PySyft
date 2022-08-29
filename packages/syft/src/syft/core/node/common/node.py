@@ -29,7 +29,7 @@ from ....logger import error
 from ....logger import info
 from ....logger import traceback_and_raise
 from ....util import get_subclasses
-from ....util import ot_tracer
+from ....util import get_tracer
 from ....util import span
 from ....util import span_recv_new_msg
 from ....util import trace_and_log
@@ -489,7 +489,7 @@ class Node(AbstractNode):
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
         traceback_and_raise(NotImplementedError)
 
-    @span_recv_new_msg(tracer=ot_tracer)
+    @span_recv_new_msg(tracer=get_tracer())
     def recv_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
@@ -539,7 +539,7 @@ class Node(AbstractNode):
         # maybe I shouldn't have created process_message because it screws up
         # all the type inference.
         res_msg = trace_and_log(
-            tracer=ot_tracer,
+            tracer=get_tracer(),
             callable=response.sign,
             args={
                 "signing_key": self.signing_key,
@@ -552,7 +552,7 @@ class Node(AbstractNode):
         debug(self.tput)
         return res_msg
 
-    @span_recv_new_msg(tracer=ot_tracer)
+    @span_recv_new_msg(tracer=get_tracer())
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
@@ -617,7 +617,7 @@ class Node(AbstractNode):
         self.process_message(msg=msg, router=self.eventual_msg_without_reply_router)
 
     # TODO: Add SignedEventualSyftMessageWithoutReply and others
-    @span(tracer=ot_tracer)
+    @span(tracer=get_tracer())
     def process_message(
         self, msg: SignedMessage, router: dict
     ) -> Union[SyftMessage, None]:
