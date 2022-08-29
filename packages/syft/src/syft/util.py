@@ -484,18 +484,20 @@ _tracer = None
 
 
 def get_tracer() -> Any:
+    class NoopTracer:
+        @contextmanager
+        def start_as_current_span(*args: Any, **kwargs: Any) -> Any:
+            yield None
+
+        def __bool__(self):
+                return False
+    
     global _tracer
-    if _tracer is not None:  # type: ignore
+    if _tracer:  # type: ignore
         return _tracer  # type: ignore
 
     PROFILE_MODE = str_to_bool(os.environ.get("PROFILE", "False"))
     if not PROFILE_MODE:
-
-        class NoopTracer:
-            @contextmanager
-            def start_as_current_span(*args: Any, **kwargs: Any) -> Any:
-                yield None
-
         _tracer = NoopTracer()
         return _tracer
 
@@ -526,9 +528,6 @@ def get_tracer() -> Any:
 
     _tracer = trace.get_tracer(__name__)
     return _tracer
-
-
-ot_tracer = get_tracer()  # OpenTelemetry Tracer
 
 
 def initializer(event_loop: Optional[BaseSelectorEventLoop] = None) -> None:

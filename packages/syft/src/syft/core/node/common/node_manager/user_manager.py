@@ -20,7 +20,7 @@ from sqlalchemy.orm import Query
 from sqlalchemy.orm import sessionmaker
 
 # relative
-from .....util import ot_tracer
+from .....util import get_tracer
 from .....util import span
 from ..exceptions import InvalidCredentialsError
 from ..exceptions import UserNotFoundError
@@ -71,7 +71,7 @@ class UserManager(DatabaseManager):
             org_users = org_users + list(super().query(role=role.id))
         return org_users
 
-    @span(tracer=ot_tracer)
+    @span(tracer=get_tracer())
     def create_user_application(
         self,
         name: str,
@@ -122,7 +122,7 @@ class UserManager(DatabaseManager):
         session_local.close()
         return _obj_id
 
-    @span(tracer=ot_tracer)
+    @span(tracer=get_tracer())
     def get_all_applicant(self) -> List[UserApplication]:
         """Returns the application data of all the applicants in the database.
 
@@ -134,7 +134,7 @@ class UserManager(DatabaseManager):
         session_local.close()
         return result
 
-    @span(tracer=ot_tracer)
+    @span(tracer=get_tracer())
     def process_user_application(
         self, candidate_id: int, status: str, verify_key: VerifyKey
     ) -> None:
@@ -195,7 +195,7 @@ class UserManager(DatabaseManager):
         session_local.commit()
         session_local.close()
 
-    @span(tracer=ot_tracer)
+    @span(tracer=get_tracer())
     def signup(
         self,
         name: str,
@@ -233,12 +233,12 @@ class UserManager(DatabaseManager):
             created_at=datetime.now(),
         )
 
-    @span(tracer=ot_tracer)
+    @span(tracer=get_tracer())
     def query(self, **kwargs: Any) -> Query:
         results = super().query(**kwargs)
         return results
 
-    @span(tracer=ot_tracer)
+    @span(tracer=get_tracer())
     def first(self, **kwargs: Any) -> SyftUser:
         result = super().first(**kwargs)
         if not result:
@@ -257,7 +257,7 @@ class UserManager(DatabaseManager):
         """
         return self.__login_validation(email, password)
 
-    @span(tracer=ot_tracer)
+    @span(tracer=get_tracer())
     def set(
         self,
         user_id: str,
@@ -371,7 +371,7 @@ class UserManager(DatabaseManager):
             raise UserNotFoundError
         return self.roles.first(id=user.role)
 
-    @span(tracer=ot_tracer)
+    @span(tracer=get_tracer())
     def get_user(self, verify_key: VerifyKey) -> Optional[SyftUser]:
         """Returns the user for the given public digital signature."""
         return self.first(
