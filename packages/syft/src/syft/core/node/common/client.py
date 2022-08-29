@@ -134,10 +134,8 @@ class Client(AbstractNodeClient):
         # We're assuming the dev mode will use the updated service  messages.
         if not active:
             os.environ["PROFILE"] = "False"
-            os.environ["USE_NEW_SERVICE"] = "False"
         else:
             os.environ["PROFILE"] = "True"
-            os.environ["USE_NEW_SERVICE"] = "True"
         self._dev_mode = active
 
     @staticmethod

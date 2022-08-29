@@ -1,6 +1,7 @@
 # stdlib
 from typing import Any
 from typing import Callable
+from typing import Dict
 
 # relative
 from .....experimental_flags import flags
@@ -8,13 +9,12 @@ from .....logger import logger
 from ...abstract.node import AbstractNodeClient
 from ...enums import ResponseObjectEnum
 from ..exceptions import AuthorizationError
-
-# type: ignore[override]
-from ..node_service.user_manager.user_messages import CreateUserMessage  # type: ignore
-from ..node_service.user_manager.user_messages import DeleteUserMessage  # type: ignore
-from ..node_service.user_manager.user_messages import GetUserMessage  # type: ignore
-from ..node_service.user_manager.user_messages import GetUsersMessage  # type: ignore
-from ..node_service.user_manager.user_messages import UpdateUserMessage  # type: ignore
+from ..node_service.user_auth.user_auth_messages import UserLoginMessageWithReply
+from ..node_service.user_manager.user_messages import CreateUserMessage
+from ..node_service.user_manager.user_messages import DeleteUserMessage
+from ..node_service.user_manager.user_messages import GetUserMessage
+from ..node_service.user_manager.user_messages import GetUsersMessage
+from ..node_service.user_manager.user_messages import UpdateUserMessage
 from .request_api import RequestAPI
 
 
@@ -78,13 +78,21 @@ class UserRequestAPI(RequestAPI):
 
             raise e
 
+    def login(self, email: str, password: str) -> Dict[str, Any]:
+        response = self.perform_api_request_generic(
+            syft_msg=UserLoginMessageWithReply,
+            content={"email": email, "password": password},
+        )
+
+        return response.payload.kwargs.upcast()  # type: ignore
+
     @property
     def send_new_message_request(self) -> Callable:
         self.__update_message_type_import()
         return self.perform_request
 
     def __update_message_type_import(self) -> None:
-        # Auxiliar method used to exchange between Old and New User Messages in execution time.
+        # Auxiliar method used to swtich between Old and New User Messages in execution time.
         # NOTE: This auxiliar method is necessary only for User API and should be deleted after
         # Message refactory task.
         if flags.USE_NEW_SERVICE:
@@ -115,21 +123,11 @@ class UserRequestAPI(RequestAPI):
         else:
             # relative
             # type: ignore[override]
-            from ..node_service.user_manager.user_messages import (
-                CreateUserMessage,  # type: ignore
-            )
-            from ..node_service.user_manager.user_messages import (
-                DeleteUserMessage,  # type: ignore
-            )
-            from ..node_service.user_manager.user_messages import (
-                GetUserMessage,  # type: ignore
-            )
-            from ..node_service.user_manager.user_messages import (
-                GetUsersMessage,  # type: ignore
-            )
-            from ..node_service.user_manager.user_messages import (
-                UpdateUserMessage,  # type: ignore
-            )
+            from ..node_service.user_manager.user_messages import CreateUserMessage
+            from ..node_service.user_manager.user_messages import DeleteUserMessage
+            from ..node_service.user_manager.user_messages import GetUserMessage
+            from ..node_service.user_manager.user_messages import GetUsersMessage
+            from ..node_service.user_manager.user_messages import UpdateUserMessage
 
             self._create_message = CreateUserMessage
             self._get_message = GetUserMessage
