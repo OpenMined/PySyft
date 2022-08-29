@@ -68,7 +68,8 @@ class lazyrepeatarray:
                 if val < 0:
                     raise ValueError(f"Invalid shape: {shape}")
 
-        # TODO: use enum for data_type per suggestion from Madhava: https://github.com/OpenMined/PySyft/pull/6634/files#r952129748
+        # TODO: use enum for data_type per suggestion from Madhava:
+        # https://github.com/OpenMined/PySyft/pull/6634/files#r952129748
         if self.data.size > 1:
             if data_type == "min_val":
                 self.data = data.min()
