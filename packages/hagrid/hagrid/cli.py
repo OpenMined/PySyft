@@ -2560,9 +2560,6 @@ def quickstart_cli(
                 )
                 if not reset:
                     overwrite_all_notebooks = click.confirm(
-                        # text="You have "
-                        # + str(len(notebooks))
-                        # + " conflicting notebooks. Would you like to overwrite them all?",
                         text=f"You have {len(notebooks)} conflicting notebooks. Would you like to overwrite them all?",
                         default=False,
                     )
