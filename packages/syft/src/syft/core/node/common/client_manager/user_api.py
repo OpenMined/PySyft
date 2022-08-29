@@ -1,6 +1,6 @@
 # stdlib
 from typing import Any
-from typing import Dict
+from typing import Callable
 
 # relative
 from .....experimental_flags import flags
@@ -8,16 +8,13 @@ from .....logger import logger
 from ...abstract.node import AbstractNodeClient
 from ...enums import ResponseObjectEnum
 from ..exceptions import AuthorizationError
-from ..node_service.user_auth.user_auth_messages import UserLoginMessageWithReply
 
-# relative
+# type: ignore[override]
 from ..node_service.user_manager.user_messages import CreateUserMessage  # type: ignore
 from ..node_service.user_manager.user_messages import DeleteUserMessage  # type: ignore
 from ..node_service.user_manager.user_messages import GetUserMessage  # type: ignore
 from ..node_service.user_manager.user_messages import GetUsersMessage  # type: ignore
 from ..node_service.user_manager.user_messages import UpdateUserMessage  # type: ignore
-
-# relative
 from .request_api import RequestAPI
 
 
@@ -80,34 +77,62 @@ class UserRequestAPI(RequestAPI):
                 print("No permission to check users", exc)
 
             raise e
-    
+
     @property
-    def send_new_message_request(self):
+    def send_new_message_request(self) -> Callable:
         self.__update_message_type_import()
         return self.perform_request
-    
+
     def __update_message_type_import(self) -> None:
         # Auxiliar method used to exchange between Old and New User Messages in execution time.
         # NOTE: This auxiliar method is necessary only for User API and should be deleted after
-        # Message refactory task.        
+        # Message refactory task.
         if flags.USE_NEW_SERVICE:
             # relative
-            from ..node_service.user_manager.new_user_messages import CreateUserMessage as CreateUserMessage
-            from ..node_service.user_manager.new_user_messages import DeleteUserMessage as GetUserMessage
-            from ..node_service.user_manager.new_user_messages import GetUserMessage as GetUsersMessage
-            from ..node_service.user_manager.new_user_messages import GetUsersMessage as UpdateUserMessage
-            from ..node_service.user_manager.new_user_messages import UpdateUserMessage as DeleteUserMessage
+            # type: ignore[override]
+            from ..node_service.user_manager.new_user_messages import (
+                CreateUserMessage as NewCreateUserMessage,
+            )
+            from ..node_service.user_manager.new_user_messages import (
+                DeleteUserMessage as NewDeleteUserMessage,
+            )
+            from ..node_service.user_manager.new_user_messages import (
+                GetUserMessage as NewGetUserMessage,
+            )
+            from ..node_service.user_manager.new_user_messages import (
+                GetUsersMessage as NewGetUsersMessage,
+            )
+            from ..node_service.user_manager.new_user_messages import (
+                UpdateUserMessage as NewUpdateUserMessage,
+            )
+
+            self._create_message = NewCreateUserMessage
+            self._get_message = NewGetUserMessage
+            self._get_all_message = NewGetUsersMessage
+            self._update_message = NewUpdateUserMessage
+            self._delete_message = NewDeleteUserMessage
+
         else:
             # relative
             # type: ignore[override]
-            from ..node_service.user_manager.user_messages import CreateUserMessage  # type: ignore
-            from ..node_service.user_manager.user_messages import DeleteUserMessage  # type: ignore
-            from ..node_service.user_manager.user_messages import GetUserMessage  # type: ignore
-            from ..node_service.user_manager.user_messages import GetUsersMessage  # type: ignore
-            from ..node_service.user_manager.user_messages import UpdateUserMessage  # type: ignore
-        
-        self._create_message=CreateUserMessage
-        self._get_message=GetUserMessage
-        self._get_all_message=GetUsersMessage
-        self._update_message=UpdateUserMessage
-        self._delete_message=DeleteUserMessage
+            from ..node_service.user_manager.user_messages import (
+                CreateUserMessage,  # type: ignore
+            )
+            from ..node_service.user_manager.user_messages import (
+                DeleteUserMessage,  # type: ignore
+            )
+            from ..node_service.user_manager.user_messages import (
+                GetUserMessage,  # type: ignore
+            )
+            from ..node_service.user_manager.user_messages import (
+                GetUsersMessage,  # type: ignore
+            )
+            from ..node_service.user_manager.user_messages import (
+                UpdateUserMessage,  # type: ignore
+            )
+
+            self._create_message = CreateUserMessage
+            self._get_message = GetUserMessage
+            self._get_all_message = GetUsersMessage
+            self._update_message = UpdateUserMessage
+            self._delete_message = DeleteUserMessage

@@ -2,7 +2,6 @@
 from getpass import getpass
 import json
 import logging
-from optparse import Option
 import sys
 import time
 from typing import Dict

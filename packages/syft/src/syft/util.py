@@ -489,9 +489,9 @@ def get_tracer() -> Any:
         def start_as_current_span(*args: Any, **kwargs: Any) -> Any:
             yield None
 
-        def __bool__(self):
-                return False
-    
+        def __bool__(self) -> bool:
+            return False
+
     global _tracer
     if _tracer:  # type: ignore
         return _tracer  # type: ignore

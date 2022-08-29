@@ -267,7 +267,7 @@ class UserManager(DatabaseManager):
         website: str = "",
         institution: str = "",
         budget: float = 0.0,
-    ) -> None: # nosec
+    ) -> None:  # nosec
         """Updates the information for the given user id.
 
         Args:
