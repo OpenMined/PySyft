@@ -2508,7 +2508,7 @@ cli.add_command(version)
 )
 @click.option(
     "--branch",
-    default="dev",
+    default=DEFAULT_BRANCH,
     help="Choose a branch to fetch from or just use dev",
 )
 @click.option(
@@ -2523,7 +2523,7 @@ def quickstart_cli(
     pre: bool = False,
     test: bool = False,
     repo: str = arg_cache.repo,
-    branch: str = "dev",
+    branch: str = DEFAULT_BRANCH,
     commit: Optional[str] = None,
     python: Optional[str] = None,
 ) -> None:
