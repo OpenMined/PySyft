@@ -2,6 +2,7 @@
 from getpass import getpass
 import json
 import logging
+from optparse import Option
 import sys
 import time
 from typing import Dict
@@ -37,6 +38,7 @@ def connect(
     credentials: Optional[Dict] = None,
     user_key: Optional[SigningKey] = None,
     timeout: Optional[float] = None,
+    dev_mode: Optional[bool] = False,
 ) -> Client:
     # Use Server metadata
     # to build client route
@@ -79,6 +81,7 @@ def connect(
         "routes": [route],
         "signing_key": _user_key,
         "version": metadata.version,
+        "dev_mode": dev_mode,
     }
 
     if client_type is NetworkClient:
@@ -103,6 +106,7 @@ def login(
     verbose: Optional[bool] = True,
     timeout: Optional[float] = None,
     retry: Optional[int] = None,
+    dev_mode: Optional[bool] = False,
 ) -> Client:
 
     retry = 5 if retry is None else retry  # Default to 5 retries
@@ -166,6 +170,7 @@ def login(
                 credentials=credentials,
                 conn_type=conn_type,
                 timeout=timeout,
+                dev_mode=dev_mode,
             )
         except requests.ConnectTimeout:
             raise requests.ConnectTimeout(

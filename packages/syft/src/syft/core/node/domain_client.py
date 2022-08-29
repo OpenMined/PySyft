@@ -321,10 +321,10 @@ class DomainClient(Client):
             signing_key=signing_key,
             verify_key=verify_key,
             version=version,
+            dev_mode=dev_mode,
         )
 
         self.requests = RequestQueueClient(client=self)
-        self.dev_mode = dev_mode
         self.post_init()
 
         self.users = UserRequestAPI(client=self)

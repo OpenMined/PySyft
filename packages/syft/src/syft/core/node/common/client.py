@@ -7,6 +7,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+import os
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -69,6 +70,7 @@ class Client(AbstractNodeClient):
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
         version: Optional[str] = None,
+        dev_mode: Optional[bool] = False,
     ):
         name = f"{name}" if name is not None else None
         super().__init__(
@@ -77,7 +79,8 @@ class Client(AbstractNodeClient):
 
         self.routes = routes
         self.default_route_index = 0
-
+        self.dev_mode = dev_mode
+        
         gc_strategy_name = gc_get_default_strategy()
         self.gc = GarbageCollection(gc_strategy_name)
 
@@ -86,6 +89,9 @@ class Client(AbstractNodeClient):
             self.signing_key = SigningKey.generate()
         else:
             self.signing_key = signing_key
+
+
+            
 
         # if verify key isn't provided, get verify key from signing key
         if verify_key is None:
@@ -122,6 +128,21 @@ class Client(AbstractNodeClient):
             icon += "]"
         return icon
 
+    @property
+    def dev_mode(self):
+        return self._dev_mode
+    
+    @dev_mode.setter
+    def dev_mode(self,active: bool) -> None:
+        # We're assuming the dev mode will use the updated service  messages.
+        if not active:
+            os.environ['PROFILE'] = "False"
+            os.environ['USE_NEW_SERVICE'] = "False"
+        else:
+            os.environ['PROFILE'] = "True"
+            os.environ['USE_NEW_SERVICE'] = "True"
+        self._dev_mode = active
+    
     @staticmethod
     def deserialize_client_metadata_from_node(
         metadata: Metadata_PB,
