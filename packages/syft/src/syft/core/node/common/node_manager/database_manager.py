@@ -118,8 +118,9 @@ class NoSQLDatabaseManager:
     def __init__(self, db: Database) -> None:
         self._collection = db[self._collection_name]
 
-    def add(self, obj: SyftObject) -> None:
+    def add(self, obj: SyftObject) -> SyftObject:
         self._collection.insert_one(obj.to_mongo())
+        return obj
 
     def drop(self) -> None:
         self._collection.drop()

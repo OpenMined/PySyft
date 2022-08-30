@@ -73,7 +73,6 @@ def create_initial_setup(
     # 3 - Change Node Name
     node.name = msg.domain_name
 
-    # 4 - Create Admin User
     signing_key = msg.signing_key
 
     # convert to hex
@@ -82,11 +81,12 @@ def create_initial_setup(
 
     _admin_role = node.roles.owner_role
 
+    # 4 - Create Admin User
     _ = node.users.signup(
         name=msg.name,
         email=msg.email,
         password=msg.password,
-        role=_admin_role.id,
+        role=_admin_role,  # type: ignore
         budget=msg.budget,
         private_key=_node_private_key,
         verify_key=_verify_key,

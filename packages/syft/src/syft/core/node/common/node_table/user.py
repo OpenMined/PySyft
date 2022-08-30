@@ -11,7 +11,6 @@ from typing import Optional
 from typing import Type
 
 # third party
-from nacl.signing import SigningKey
 import pydantic
 from pydantic import BaseModel
 from sqlalchemy import Column
@@ -203,7 +202,7 @@ class NoSQLSyftUser(SyftObject):
     budget: float
     hashed_password: str
     salt: str
-    private_key: SigningKey
+    private_key: str
     verify_key: Optional[str]
     role: dict
     added_by: Optional[str]
@@ -228,5 +227,5 @@ class NoSQLSyftUser(SyftObject):
         "daa_pdf",
         "created_at",
     ]
-    __attr_searchable__ = ["email"]
+    __attr_searchable__ = ["email", "verify_key"]
     __attr_unique__ = ["email"]

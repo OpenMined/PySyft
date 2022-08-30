@@ -24,6 +24,7 @@ from ..exceptions import InvalidCredentialsError
 from ..exceptions import UserNotFoundError
 from ..node_table.pdf import PDFObject
 from ..node_table.roles import Role
+from ..node_table.user import NoSQLSyftUser
 from ..node_table.user import SyftUser
 from ..node_table.user import UserApplication
 from .constants import UserApplicationStatus
@@ -592,42 +593,43 @@ class NoSQLUserManager(NoSQLDatabaseManager):
     #     session_local.commit()
     #     session_local.close()
 
-    # def signup(
-    #     self,
-    #     name: str,
-    #     email: str,
-    #     password: str,
-    #     budget: float,
-    #     role: int,
-    #     private_key: str,
-    #     verify_key: str,
-    # ) -> SyftUser:
-    #     """Registers a user in the database, when they signup on a domain.
+    def signup(
+        self,
+        name: str,
+        email: str,
+        password: str,
+        budget: float,
+        role: dict,
+        private_key: SigningKey,
+        verify_key: VerifyKey,
+    ) -> NoSQLSyftUser:
+        """Registers a user in the database, when they signup on a domain.
 
-    #     Args:
-    #         name (str): name of the user.
-    #         email (str): email of the user.
-    #         password (str): password set by the user.
-    #         budget (float): privacy budget alloted to the user.
-    #         role (int): role of the user when they signup on the domain.
-    #         private_key (str): private digital signature of the user.
-    #         verify_key (str): public digital signature of the user.
+        Args:
+            name (str): name of the user.
+            email (str): email of the user.
+            password (str): password set by the user.
+            budget (float): privacy budget alloted to the user.
+            role (int): role of the user when they signup on the domain.
+            private_key (str): private digital signature of the user.
+            verify_key (str): public digital signature of the user.
 
-    #     Returns:
-    #         SyftUser: the registered user object.
-    #     """
-    #     salt, hashed = self.__salt_and_hash_password(password, 12)
-    #     return self.register(
-    #         name=name,
-    #         email=email,
-    #         role=role,
-    #         budget=budget,
-    #         private_key=private_key,
-    #         verify_key=verify_key,
-    #         hashed_password=hashed,
-    #         salt=salt,
-    #         created_at=datetime.now(),
-    #     )
+        Returns:
+            SyftUser: the registered user object.
+        """
+        salt, hashed = self.__salt_and_hash_password(password, 12)
+        user = NoSQLSyftUser(
+            name=name,
+            email=email,
+            role=role,
+            budget=budget,
+            private_key=private_key,
+            verify_key=verify_key,
+            hashed_password=hashed,
+            salt=salt,
+            created_at=str(datetime.now()),
+        )
+        return self.add(user)
 
     # def query(self, **kwargs: Any) -> Query:
     #     results = super().query(**kwargs)
@@ -802,15 +804,15 @@ class NoSQLUserManager(NoSQLDatabaseManager):
     #     except UserNotFoundError:
     #         raise InvalidCredentialsError
 
-    # def __salt_and_hash_password(self, password: str, rounds: int) -> Tuple[str, str]:
-    #     bytes_pass = password.encode("UTF-8")
-    #     salt = gensalt(rounds=rounds)
-    #     salt_len = len(salt)
-    #     hashed = hashpw(bytes_pass, salt)
-    #     hashed = hashed[salt_len:]
-    #     hashed = hashed.decode("UTF-8")
-    #     salt = salt.decode("UTF-8")
-    #     return salt, hashed
+    def __salt_and_hash_password(self, password: str, rounds: int) -> Tuple[str, str]:
+        bytes_pass = password.encode("UTF-8")
+        salt = gensalt(rounds=rounds)
+        salt_len = len(salt)
+        hashed = hashpw(bytes_pass, salt)
+        hashed = hashed[salt_len:]
+        hashed = hashed.decode("UTF-8")
+        salt = salt.decode("UTF-8")
+        return salt, hashed
 
     # def get_budget_for_user(self, verify_key: VerifyKey) -> float:
     #     encoded_vk = verify_key.encode(encoder=HexEncoder).decode("utf-8")
