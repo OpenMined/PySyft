@@ -3,45 +3,47 @@ This file defines all the functions/classes to perform oblv actions, for a given
 """
 
 # stdlib
+from base64 import encodebytes
 import os
+import subprocess
 from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Type
 from typing import Union
-from base64 import encodebytes
-import requests
 
 # third party
-from nacl.signing import VerifyKey
 from cryptography import x509
+from nacl.signing import VerifyKey
 from oblv import OblvClient
+import requests
 
 # relative
 from ......grid import GridURL
+from ......logger import debug
 from .....common.message import ImmediateSyftMessageWithReply
+from .....common.uid import UID
+from ....common.action.get_object_action import GetObjectAction
+from ....common.action.get_object_action import GetObjectResponseMessage
 from ....domain_interface import DomainInterface
-from ...exceptions import AuthorizationError, OblvEnclaveError, OblvEnclaveUnAuthorizedError
-from ...exceptions import OblvKeyNotFoundError, OblvProxyConnectPCRError
+from ...exceptions import AuthorizationError
+from ...exceptions import OblvEnclaveError
+from ...exceptions import OblvEnclaveUnAuthorizedError
+from ...exceptions import OblvKeyNotFoundError
+from ...exceptions import OblvProxyConnectPCRError
 from ...exceptions import RequestError
 from ...exceptions import RoleNotFoundError
 from ...node_table.utils import model_to_json
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
 from ..node_service import ImmediateNodeServiceWithoutReply
-from .oblv_messages import CheckEnclaveConnectionMessage, CreateKeyPairMessage
-from .oblv_messages import PublishDatasetMessage
-from .oblv_messages import GetPublicKeyMessage
-from .oblv_messages import CreateKeyPairResponse
-from .oblv_messages import GetPublicKeyResponse
 from ..success_resp_message import SuccessResponseMessage
-from ....common.action.get_object_action import GetObjectAction, GetObjectResponseMessage
-from ......logger import debug
-from .....common.uid import UID
-
-
-import subprocess
-
+from .oblv_messages import CheckEnclaveConnectionMessage
+from .oblv_messages import CreateKeyPairMessage
+from .oblv_messages import CreateKeyPairResponse
+from .oblv_messages import GetPublicKeyMessage
+from .oblv_messages import GetPublicKeyResponse
+from .oblv_messages import PublishDatasetMessage
 
 INPUT_TYPE = Union[
     Type[CreateKeyPairMessage],
@@ -81,7 +83,7 @@ def create_key_pair_msg(
     _allowed = node.users.can_manage_infrastructure(verify_key=verify_key)
 
     if _allowed:
-        result = subprocess.run(["/usr/local/bin/oblv_proxy", "keygen", "--key-name", os.getenv("OBLV_KEY_NAME", "oblv_key"), "--output", os.getenv("OBLV_KEY_PATH", "/app/content")],capture_output=True)
+        result = subprocess.run(["/usr/local/bin/oblv", "keygen", "--key-name", os.getenv("OBLV_KEY_NAME", "oblv_key"), "--output", os.getenv("OBLV_KEY_PATH", "/app/content")],capture_output=True)
         if result.stderr:
             debug(result.stderr.decode('utf-8'))
             raise subprocess.CalledProcessError(
@@ -157,7 +159,7 @@ def publish_dataset(msg: PublishDatasetMessage,
     public_file_name = os.getenv("OBLV_KEY_PATH", "/app/content") + "/" + os.getenv("OBLV_KEY_NAME", "oblv_key") + "_public.der"
     private_file_name = os.getenv("OBLV_KEY_PATH", "/app/content") + "/" + os.getenv("OBLV_KEY_NAME", "oblv_key") + "_private.der"
     process = subprocess.Popen([
-        "/usr/local/bin/oblv_proxy", "connect",
+        "/usr/local/bin/oblv", "connect",
         "--private-key", private_file_name,
         "--public-key", public_file_name,
         "--url", cli.deployment_info(msg.deployment_id).instance.service_url,
@@ -170,12 +172,14 @@ def publish_dataset(msg: PublishDatasetMessage,
         debug(d)
         if d.__contains__("Error:  Invalid PCR Values"):
             raise OblvProxyConnectPCRError()
+        elif d.__contains__("Error"):
+            raise OblvEnclaveError(message=d)
         elif d.__contains__("listening on"):
             break
         
     obj = node.store.get(UID.from_string(msg.dataset_id))
     obj_bytes = obj.data._object2bytes()
-    req = requests.post("http://127.0.0.1:3030/tensor/dataset/add", headers={'Content-Type': 'application/octet-stream'}, data=obj_bytes, params={"dataset_name":node.datasets.get(msg.dataset_id)})
+    req = requests.post("http://127.0.0.1:3030/tensor/dataset/add", headers={'Content-Type': 'application/octet-stream'}, data=obj_bytes, params={"dataset_name": msg.dataset_id})
     if req.status_code==401:
         raise OblvEnclaveUnAuthorizedError()
     debug("API Called. Now closing")
@@ -207,7 +211,7 @@ def check_connection(msg: CheckEnclaveConnectionMessage,
     Returns:
         SuccessResponseMessage: Success message on key pair generation.
     """
-    _allowed = node.users.can_manage_infrastructure(verify_key=verify_key)
+    _allowed = True
 
     if _allowed:
         cli = OblvClient(
@@ -217,7 +221,7 @@ def check_connection(msg: CheckEnclaveConnectionMessage,
         public_file_name = os.getenv("OBLV_KEY_PATH", "/app/content") + "/" + os.getenv("OBLV_KEY_NAME", "oblv_key") + "_public.der"
         private_file_name = os.getenv("OBLV_KEY_PATH", "/app/content") + "/" + os.getenv("OBLV_KEY_NAME", "oblv_key") + "_private.der"
         process = subprocess.Popen([
-            "/usr/local/bin/oblv_proxy", "connect",
+            "/usr/local/bin/oblv", "connect",
             "--private-key", private_file_name,
             "--public-key", public_file_name,
             "--url", cli.deployment_info(msg.deployment_id).instance.service_url,
@@ -246,7 +250,7 @@ def check_connection(msg: CheckEnclaveConnectionMessage,
         # requests.post("http://127.0.0.1:3030", headers={'Content-Type': 'application/octet-stream'})
         
     else:
-        raise AuthorizationError("You're not allowed to create a new key pair!")
+        raise AuthorizationError("You're not allowed to test connection!")
 
     return SuccessResponseMessage(
         address=msg.reply_to,

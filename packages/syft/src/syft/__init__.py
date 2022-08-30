@@ -80,10 +80,11 @@ from .grid.client.client import register  # noqa: F401
 from .lib import lib_ast  # noqa: F401
 from .lib import load  # noqa: F401
 from .lib import load_lib  # noqa: F401
-from .registry import NetworkRegistry  # noqa: F401
-
-from .oblv import login as oblv_login
+from .oblv import check_oblv_proxy_installation_status
 from .oblv import create_deployment
+from .oblv import install_oblv_proxy
+from .oblv import login as oblv_login
+from .registry import NetworkRegistry  # noqa: F401
 
 sys.path.append(str(Path(__file__)))
 

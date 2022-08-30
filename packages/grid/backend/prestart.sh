@@ -23,7 +23,7 @@ wget -O oblv-ccli-0.3.0-x86_64-unknown-linux-musl.zip https://oblv-cli-binary.s3
 unzip -o oblv-ccli-0.3.0-x86_64-unknown-linux-musl.zip
 cd oblv-ccli-0.3.0-x86_64-unknown-linux-musl/
 chmod +x $(pwd)/oblv
-ln -sf $(pwd)/oblv /usr/local/bin/oblv_proxy  #-f is for force
+ln -sf $(pwd)/oblv /usr/local/bin/oblv  #-f is for force
 
 # Let the DB start
 python /app/grid/backend_prestart.py
