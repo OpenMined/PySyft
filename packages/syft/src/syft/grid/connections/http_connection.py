@@ -19,10 +19,12 @@ from ...core.io.connection import ClientConnection
 from ...core.node.enums import RequestAPIFields
 from ...core.node.exceptions import RequestAPIException
 from ...proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
+from ...telemetry import instrument
 
 DEFAULT_TIMEOUT = 30  # seconds
 
 
+@instrument
 class HTTPConnection(ClientConnection):
     proxies: TypeDict[str, str] = {}
 

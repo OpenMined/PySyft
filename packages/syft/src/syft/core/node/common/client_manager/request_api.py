@@ -14,8 +14,7 @@ from pandas import DataFrame
 
 # relative
 from .....experimental_flags import flags
-from .....util import get_tracer
-from .....util import trace
+from .....telemetry import instrument
 from ....common.message import SyftMessage  # type: ignore
 from ...abstract.node import AbstractNodeClient
 from ...enums import RequestAPIFields
@@ -24,6 +23,7 @@ from ..node_service.generic_payload.messages import GenericPayloadMessageWithRep
 from ..node_service.generic_payload.syft_message import NewSyftMessage
 
 
+@instrument
 class RequestAPI:
     def __init__(
         self,
@@ -147,12 +147,14 @@ class RequestAPI:
         else:
             return response
 
+    @instrument
     def perform_api_request_generic(
         self,
         syft_msg: Optional[Type[GenericPayloadMessageWithReply] | Type[NewSyftMessage]],  # type: ignore
         content: Optional[Dict[Any, Any]] = None,
         timeout: Optional[int] = None,
     ) -> Any:
+        print("perform_api_request_generic", type(syft_msg))
         if syft_msg is None:
             raise ValueError(
                 "Can't perform this type of api request, the message is None."
@@ -164,45 +166,34 @@ class RequestAPI:
             content = {}
 
         if issubclass(syft_msg, NewSyftMessage):
-
             # Build and send the message tracing by opentelemetry
-            if self.client.dev_mode:  # type: ignore
-                with get_tracer().start_as_current_span(syft_msg_constructor.__name__):
-                    span_ctx = trace.get_current_span().get_span_context()
-                    ctx = {
-                        "span_id": str(
-                            span_ctx.span_id
-                        ),  # NOTE : Integer out of range during syft serialization
-                        "trace_id": str(
-                            span_ctx.trace_id
-                        ),  # NOTE : Integer out of range during syft serialization
-                        "is_remote": True,
-                    }
-                    # 1 - Build Message Object
-                    unsigned_msg = syft_msg_constructor(  # type: ignore
-                        address=self.client.address,
-                        reply_to=self.client.address,
-                        ctx=ctx,
-                        kwargs=content,  # type: ignore
-                    )
+            # if self.client.dev_mode:  # type: ignore
+            #     ctx = {}
+            #     # 1 - Build Message Object
+            #     unsigned_msg = syft_msg_constructor(  # type: ignore
+            #         address=self.client.address,
+            #         reply_to=self.client.address,
+            #         ctx=ctx,
+            #         kwargs=content,  # type: ignore
+            #     )
 
-                    # 2 - Signing Message withg User Signing Key
-                    signed_msg = unsigned_msg.sign(  # type: ignore
-                        signing_key=self.client.signing_key
-                    )
+            #     # 2 - Signing Message withg User Signing Key
+            #     signed_msg = unsigned_msg.sign(  # type: ignore
+            #         signing_key=self.client.signing_key
+            #     )
 
-                    response = self.client.send_immediate_msg_with_reply(
-                        msg=signed_msg, timeout=timeout
-                    )
-            else:  # Do not trace message building/sending
-                signed_msg = syft_msg_constructor(  # type: ignore
-                    address=self.client.address, reply_to=self.client.address, kwargs=content  # type: ignore
-                ).sign(  # type: ignore
-                    signing_key=self.client.signing_key
-                )
-                response = self.client.send_immediate_msg_with_reply(
-                    msg=signed_msg, timeout=timeout
-                )
+            #     response = self.client.send_immediate_msg_with_reply(
+            #         msg=signed_msg, timeout=timeout
+            #     )
+            # else:  # Do not trace message building/sending
+            signed_msg = syft_msg_constructor(  # type: ignore
+                address=self.client.address, reply_to=self.client.address, kwargs=content  # type: ignore
+            ).sign(  # type: ignore
+                signing_key=self.client.signing_key
+            )
+            response = self.client.send_immediate_msg_with_reply(
+                msg=signed_msg, timeout=timeout
+            )
         else:
             signed_msg = (
                 syft_msg_constructor(kwargs=content)  # type: ignore

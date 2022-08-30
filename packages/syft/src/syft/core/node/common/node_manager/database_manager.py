@@ -10,17 +10,16 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
 # relative
-from .....util import get_tracer
-from .....util import span
+from .....telemetry import instrument
 from ..node_table import Base
 
 
+@instrument
 class DatabaseManager:
     def __init__(self, schema: Type[Base], db: Engine) -> None:
         self._schema = schema
         self.db = db
 
-    @span(tracer=get_tracer())
     def register(self, **kwargs: Any) -> Any:
         """Register a new object into the database.
 
@@ -35,7 +34,6 @@ class DatabaseManager:
         session_local.commit()
         return _obj
 
-    @span(tracer=get_tracer())
     def query(self, **kwargs: Any) -> List[Any]:
         """Query db objects filtering by parameters
         Args:
@@ -46,7 +44,6 @@ class DatabaseManager:
         session_local.close()
         return objects
 
-    @span(tracer=get_tracer())
     def first(self, **kwargs: Any) -> Optional[Any]:
         """Query db objects filtering by parameters
         Args:
@@ -57,7 +54,6 @@ class DatabaseManager:
         session_local.close()
         return objects
 
-    @span(tracer=get_tracer())
     def last(self, **kwargs: Any) -> Optional[Any]:
         """Query and return the last occurrence.
 
@@ -71,14 +67,12 @@ class DatabaseManager:
         session_local.close()
         return obj
 
-    @span(tracer=get_tracer())
     def all(self) -> List[Any]:
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
         result = list(session_local.query(self._schema).all())
         session_local.close()
         return result
 
-    @span(tracer=get_tracer())
     def delete(self, **kwargs: Any) -> None:
         """Delete an object from the database.
 
@@ -90,7 +84,6 @@ class DatabaseManager:
         session_local.commit()
         session_local.close()
 
-    @span(tracer=get_tracer())
     def modify(self, query: Dict[Any, Any], values: Dict[Any, Any]) -> None:
         """Modifies one or many records."""
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
@@ -98,21 +91,18 @@ class DatabaseManager:
         session_local.commit()
         session_local.close()
 
-    @span(tracer=get_tracer())
     def contain(self, **kwargs: Any) -> bool:
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
         objects = session_local.query(self._schema).filter_by(**kwargs).all()
         session_local.close()
         return len(objects) != 0
 
-    @span(tracer=get_tracer())
     def __len__(self) -> int:
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
         result = session_local.query(self._schema).count()
         session_local.close()
         return result
 
-    @span(tracer=get_tracer())
     def clear(self) -> None:
         local_session = sessionmaker(bind=self.db)()
         local_session.query(self._schema).delete()

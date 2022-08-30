@@ -55,11 +55,9 @@ services:
       - ./backend/alembic:/app/alembic
       - ../syft:/app/syft
       - ./data/package-cache:/root/.cache
-      # - ./profile:/tmp/profile
     command: /start-reload.sh
-    # command: "sleep 99999"
     environment:
-      - PROFILE=true
+      - TRACE=true
       - JAEGER_HOST=docker-host
       - JAEGER_PORT=6831
 
@@ -69,11 +67,9 @@ services:
       - ./backend/alembic:/app/alembic
       - ../syft:/app/syft
       - ./data/package-cache:/root/.cache
-      # - ./profile:/tmp/profile
     command: "/start-reload.sh"
-    # command: "sleep 99999"
     environment:
-      - PROFILE=true
+      - TRACE=true
       - JAEGER_HOST=docker-host
       - JAEGER_PORT=6831
 
@@ -83,11 +79,9 @@ services:
       - ./backend/alembic:/app/alembic
       - ../syft:/app/syft
       - ./data/package-cache:/root/.cache
-      # - ./profile:/tmp/profile
     command: "/worker-start-reload.sh"
-    # command: "sleep 99999"
     environment:
-      - PROFILE=true
+      - TRACE=true
       - JAEGER_HOST=docker-host
       - JAEGER_PORT=6831
 

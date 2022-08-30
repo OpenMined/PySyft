@@ -6,6 +6,7 @@ from typing import Dict
 # relative
 from .....experimental_flags import flags
 from .....logger import logger
+from .....telemetry import instrument
 from ...abstract.node import AbstractNodeClient
 from ...enums import ResponseObjectEnum
 from ..exceptions import AuthorizationError
@@ -18,6 +19,7 @@ from ..node_service.user_manager.user_messages import UpdateUserMessage
 from .request_api import RequestAPI
 
 
+@instrument
 class UserRequestAPI(RequestAPI):
     def __init__(self, client: AbstractNodeClient):
         super().__init__(

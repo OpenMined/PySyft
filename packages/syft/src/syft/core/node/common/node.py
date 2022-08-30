@@ -28,11 +28,8 @@ from ....logger import debug
 from ....logger import error
 from ....logger import info
 from ....logger import traceback_and_raise
+from ....telemetry import instrument
 from ....util import get_subclasses
-from ....util import get_tracer
-from ....util import span
-from ....util import span_recv_new_msg
-from ....util import trace_and_log
 from ...common.message import EventualSyftMessageWithoutReply
 from ...common.message import ImmediateSyftMessageWithReply
 from ...common.message import ImmediateSyftMessageWithoutReply
@@ -99,6 +96,7 @@ class DuplicateRequestException(Exception):
     pass
 
 
+@instrument
 class Node(AbstractNode):
 
     """
@@ -489,7 +487,6 @@ class Node(AbstractNode):
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
         traceback_and_raise(NotImplementedError)
 
-    @span_recv_new_msg(tracer=get_tracer())
     def recv_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
@@ -538,21 +535,8 @@ class Node(AbstractNode):
 
         # maybe I shouldn't have created process_message because it screws up
         # all the type inference.
-        res_msg = trace_and_log(
-            tracer=get_tracer(),
-            callable=response.sign,
-            args={
-                "signing_key": self.signing_key,
-            },
-        )
-        self.tput = (
-            f"> {self.pprint} Signing {res_msg.pprint} with "
-            + f"{self.key_emoji(key=self.signing_key.verify_key)}"  # type: ignore
-        )
-        debug(self.tput)
-        return res_msg
+        return response.sign(signing_key=self.signing_key)  # type: ignore
 
-    @span_recv_new_msg(tracer=get_tracer())
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
@@ -617,7 +601,6 @@ class Node(AbstractNode):
         self.process_message(msg=msg, router=self.eventual_msg_without_reply_router)
 
     # TODO: Add SignedEventualSyftMessageWithoutReply and others
-    @span(tracer=get_tracer())
     def process_message(
         self, msg: SignedMessage, router: dict
     ) -> Union[SyftMessage, None]:

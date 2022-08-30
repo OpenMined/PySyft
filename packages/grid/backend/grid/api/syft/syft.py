@@ -15,6 +15,7 @@ from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.common.message import SignedMessage
 from syft.core.node.enums import RequestAPIFields
+from syft.telemetry import TRACE_MODE
 
 # grid absolute
 from grid.api.dependencies.current_user import get_current_user
@@ -52,24 +53,53 @@ def delete(current_user: UserPrivate = Depends(get_current_user)) -> Response:
     return Response(json.dumps(response))
 
 
+if TRACE_MODE:
+    # third party
+    from opentelemetry import trace
+    from opentelemetry.propagate import extract
+
+
 @router.post("", response_model=str)
-def syft_route(data: bytes = Depends(get_body)) -> Any:
-    obj_msg = deserialize(blob=data, from_bytes=True)
-    is_isr = isinstance(obj_msg, SignedImmediateSyftMessageWithReply) or isinstance(
-        obj_msg, SignedMessage
-    )
-    if is_isr:
-        reply = node.recv_immediate_msg_with_reply(msg=obj_msg)
-        r = Response(
-            serialize(obj=reply, to_bytes=True),
-            media_type="application/octet-stream",
-        )
-        return r
-    elif isinstance(obj_msg, SignedImmediateSyftMessageWithoutReply):
-        celery_app.send_task("grid.worker.msg_without_reply", args=[obj_msg])
+def syft_route(request: Request, data: bytes = Depends(get_body)) -> Any:
+    if TRACE_MODE:
+        with trace.get_tracer(__name__).start_as_current_span(
+            "syft_route",
+            context=extract(request.headers),
+            kind=trace.SpanKind.SERVER,
+        ):
+            obj_msg = deserialize(blob=data, from_bytes=True)
+            is_isr = isinstance(
+                obj_msg, SignedImmediateSyftMessageWithReply
+            ) or isinstance(obj_msg, SignedMessage)
+            if is_isr:
+                reply = node.recv_immediate_msg_with_reply(msg=obj_msg)
+                r = Response(
+                    serialize(obj=reply, to_bytes=True),
+                    media_type="application/octet-stream",
+                )
+                return r
+            elif isinstance(obj_msg, SignedImmediateSyftMessageWithoutReply):
+                celery_app.send_task("grid.worker.msg_without_reply", args=[obj_msg])
+            else:
+                node.recv_eventual_msg_without_reply(msg=obj_msg)
+            return ""
     else:
-        node.recv_eventual_msg_without_reply(msg=obj_msg)
-    return ""
+        obj_msg = deserialize(blob=data, from_bytes=True)
+        is_isr = isinstance(obj_msg, SignedImmediateSyftMessageWithReply) or isinstance(
+            obj_msg, SignedMessage
+        )
+        if is_isr:
+            reply = node.recv_immediate_msg_with_reply(msg=obj_msg)
+            r = Response(
+                serialize(obj=reply, to_bytes=True),
+                media_type="application/octet-stream",
+            )
+            return r
+        elif isinstance(obj_msg, SignedImmediateSyftMessageWithoutReply):
+            celery_app.send_task("grid.worker.msg_without_reply", args=[obj_msg])
+        else:
+            node.recv_eventual_msg_without_reply(msg=obj_msg)
+        return ""
 
 
 @router.post("/stream", response_model=str)

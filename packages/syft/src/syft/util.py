@@ -25,7 +25,6 @@ from typing import Union
 from forbiddenfruit import curse
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-from opentelemetry import trace
 from pympler.asizeof import asizeof
 import requests
 
@@ -480,56 +479,6 @@ def ssl_test() -> bool:
     return len(os.environ.get("REQUESTS_CA_BUNDLE", "")) > 0
 
 
-_tracer = None
-
-
-def get_tracer() -> Any:
-    class NoopTracer:
-        @contextmanager
-        def start_as_current_span(*args: Any, **kwargs: Any) -> Any:
-            yield None
-
-        def __bool__(self) -> bool:
-            return False
-
-    global _tracer
-    if _tracer:  # type: ignore
-        return _tracer  # type: ignore
-
-    PROFILE_MODE = str_to_bool(os.environ.get("PROFILE", "False"))
-    if not PROFILE_MODE:
-        _tracer = NoopTracer()
-        return _tracer
-
-    print("Profile mode with OpenTelemetry enabled")
-    service_name = os.environ.get("SERVICE_NAME", "client")
-
-    jaeger_host = os.environ.get("JAEGER_HOST", "localhost")
-    jaeger_port = int(os.environ.get("JAEGER_PORT", "6831"))
-
-    # third party
-    from opentelemetry import trace
-    from opentelemetry.exporter.jaeger.thrift import JaegerExporter
-    from opentelemetry.sdk.resources import Resource
-    from opentelemetry.sdk.resources import SERVICE_NAME
-    from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import BatchSpanProcessor
-
-    trace.set_tracer_provider(
-        TracerProvider(resource=Resource.create({SERVICE_NAME: service_name}))
-    )
-
-    jaeger_exporter = JaegerExporter(
-        agent_host_name=jaeger_host,
-        agent_port=jaeger_port,
-    )
-
-    trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(jaeger_exporter))
-
-    _tracer = trace.get_tracer(__name__)
-    return _tracer
-
-
 def initializer(event_loop: Optional[BaseSelectorEventLoop] = None) -> None:
     """Set the same event loop to other threads/processes.
     This is needed because there are new threads/processes started with
@@ -639,93 +588,6 @@ def concurrency_count(factor: float = 0.8) -> int:
     force_count = int(os.environ.get("FORCE_CONCURRENCY_COUNT", 0))
     mp_count = force_count if force_count >= 1 else int(mp.cpu_count() * factor)
     return mp_count
-
-
-def span_recv_new_msg(tracer: Any) -> Any:
-    def decorator(fun: Callable) -> Any:
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
-            # If not dev/debug mode, just exec the method
-            PROFILE_MODE = str_to_bool(os.environ.get("PROFILE", "False"))
-            if not PROFILE_MODE:
-                return fun(*args, **kwargs)
-
-            msg = kwargs["msg"].message
-            ctx_dict = getattr(msg, "ctx", {})
-            if ctx_dict:
-                ctx_dict["span_id"] = int(ctx_dict["span_id"])
-                ctx_dict["trace_id"] = int(ctx_dict["trace_id"])
-                ctx = trace.SpanContext(**ctx_dict)
-                link = trace.Link(ctx)
-                with tracer.start_as_current_span(
-                    msg.pprint,
-                    links=[link],
-                    attributes={"message.id": msg.id.to_string()},
-                ):
-                    result = fun(*args, **kwargs)
-            else:
-                with tracer.start_as_current_span(
-                    msg.pprint, attributes={"message.id": msg.id.to_string()}
-                ):
-                    result = fun(*args, **kwargs)
-            return result
-
-        return wrapper
-
-    return decorator
-
-
-def span(tracer: Any) -> Any:
-    def decorator(fun: Callable) -> Any:
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
-            # If not dev/debug mode, just exec the method
-            PROFILE_MODE = str_to_bool(os.environ.get("PROFILE", "False"))
-            if not PROFILE_MODE:
-                return fun(*args, **kwargs)
-
-            span_msg = f"{fun.__qualname__}"
-            with tracer.start_as_current_span(
-                span_msg, attributes={"args": args, "kwargs": kwargs}
-            ):
-                result = fun(*args, **kwargs)
-            return result
-
-        return wrapper
-
-    return decorator
-
-
-def span_func(tracer: Any, ctx: Optional[Dict[Any, Any]]) -> Callable:
-    def inner(func: Callable) -> Any:
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
-            # If not dev/debug mode, just exec the method
-            PROFILE_MODE = str_to_bool(os.environ.get("PROFILE", "False"))
-            if not PROFILE_MODE:
-                return func(*args, **kwargs)
-
-            span_msg = f"{func.__qualname__}"
-
-            if not ctx:
-                with tracer.start_as_current_span(
-                    span_msg, attributes={"args": args, "kwargs": kwargs}
-                ):
-                    return func(*args, **kwargs)
-            else:
-                span_ctx = trace.SpanContext(**ctx)
-                link = trace.link(span_ctx)
-                with tracer.start_as_current_span(
-                    span_msg, links=[link], attributes={"args": args, "kwargs": kwargs}
-                ):
-                    return func(*args, **kwargs)
-
-        return wrapper
-
-    return inner
-
-
-def trace_and_log(
-    callable: Callable, args: Dict, tracer: Any, ctx: Optional[Dict] = None
-) -> Any:
-    return span_func(tracer=tracer, ctx=ctx)(callable)(**args)
 
 
 @contextmanager

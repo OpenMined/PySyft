@@ -17,6 +17,7 @@ import pandas as pd
 
 # relative
 from ...logger import traceback_and_raise
+from ...telemetry import instrument
 from ...util import validate_field
 from ..common.message import SyftMessage
 from ..common.serde.serialize import _serialize as serialize  # noqa: F401
@@ -293,6 +294,7 @@ class RequestHandlerQueueClient:
         return pd.DataFrame(handler_lines)
 
 
+@instrument
 class DomainClient(Client):
 
     domain: SpecificLocation
