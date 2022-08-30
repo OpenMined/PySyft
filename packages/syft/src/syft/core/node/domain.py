@@ -17,6 +17,7 @@ import ascii_magic
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from pydantic import BaseSettings
+from pymongo import MongoClient
 
 # relative
 from ...lib.python import String
@@ -43,6 +44,7 @@ from .common.node_manager.redis_store import RedisStore
 from .common.node_manager.request_manager import RequestManager
 from .common.node_manager.role_manager import RoleManager
 from .common.node_manager.user_manager import UserManager
+from .common.node_manager.user_manager import NoSQLUserManager
 from .common.node_service.association_request.association_request_service import (
     AssociationRequestService,
 )
@@ -134,8 +136,11 @@ class Domain(Node):
         self.domain = SpecificLocation(name=self.name)
         self.root_key = root_key
 
+        nosql_db_engine = MongoClient(host='mongo', port=27017, username="root", password="example", uuidRepresentation="standard")
+        
         # Database Management Instances
-        self.users = UserManager(db_engine)
+        self.users = NoSQLUserManager(nosql_db_engine)
+        # self.users = UserManager(db_engine)
         self.roles = RoleManager(db_engine)
         self.environments = EnvironmentManager(db_engine)
         self.association_requests = AssociationRequestManager(db_engine)
