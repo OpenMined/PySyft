@@ -450,6 +450,7 @@ class DomainClient(Client):
                     print(
                         f"Domain version: {self.version}\nNetwork Version: {client.version}"  # type: ignore
                     )
+
             self.join_network(client=client)
 
             timeout = 30
