@@ -53,7 +53,6 @@ class NetworkClient(Client):
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
         version: Optional[str] = None,
-        dev_mode: Optional[bool] = False,
     ):
         super().__init__(
             name=name,
@@ -65,7 +64,6 @@ class NetworkClient(Client):
             signing_key=signing_key,
             verify_key=verify_key,
             version=version,
-            dev_mode=dev_mode,
         )
 
         self.users = UserRequestAPI(client=self)

@@ -54,6 +54,11 @@ def setup_tracer() -> Any:
     # trace.get_tracer_provider().add_span_processor(span_processor)
 
     # third party
+    import opentelemetry.instrumentation.requests
+
+    opentelemetry.instrumentation.requests.RequestsInstrumentor().instrument()
+
+    # third party
     from opentelemetry.instrumentation.digma.trace_decorator import (
         instrument as _instrument,
     )

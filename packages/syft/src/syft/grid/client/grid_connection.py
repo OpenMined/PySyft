@@ -30,7 +30,6 @@ from ...proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 from ...proto.grid.connections.http_connection_pb2 import (
     GridHTTPConnection as GridHTTPConnection_PB,
 )
-from ...telemetry import TRACE_MODE
 from ...util import verify_tls
 from ..connections.http_connection import HTTPConnection
 
@@ -120,12 +119,6 @@ class GridHTTPConnection(HTTPConnection):
         timeout = timeout if timeout is not None else DEFAULT_TIMEOUT
 
         # if sys.getsizeof(msg_bytes) < GridHTTPConnection.SIZE_THRESHOLD:
-
-        if TRACE_MODE:
-            # third party
-            import opentelemetry.instrumentation.requests
-
-            opentelemetry.instrumentation.requests.RequestsInstrumentor().instrument()
 
         r = requests.post(
             url=str(self.base_url) + route,

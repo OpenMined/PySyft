@@ -166,26 +166,6 @@ class RequestAPI:
             content = {}
 
         if issubclass(syft_msg, NewSyftMessage):
-            # Build and send the message tracing by opentelemetry
-            # if self.client.dev_mode:  # type: ignore
-            #     ctx = {}
-            #     # 1 - Build Message Object
-            #     unsigned_msg = syft_msg_constructor(  # type: ignore
-            #         address=self.client.address,
-            #         reply_to=self.client.address,
-            #         ctx=ctx,
-            #         kwargs=content,  # type: ignore
-            #     )
-
-            #     # 2 - Signing Message withg User Signing Key
-            #     signed_msg = unsigned_msg.sign(  # type: ignore
-            #         signing_key=self.client.signing_key
-            #     )
-
-            #     response = self.client.send_immediate_msg_with_reply(
-            #         msg=signed_msg, timeout=timeout
-            #     )
-            # else:  # Do not trace message building/sending
             signed_msg = syft_msg_constructor(  # type: ignore
                 address=self.client.address, reply_to=self.client.address, kwargs=content  # type: ignore
             ).sign(  # type: ignore
