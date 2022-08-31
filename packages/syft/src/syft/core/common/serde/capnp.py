@@ -1,6 +1,7 @@
 # stdlib
 import os
 from pathlib import Path
+from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import List
@@ -12,16 +13,22 @@ from capnp.lib.capnp import _DynamicStructBuilder
 import numpy as np
 
 # relative
-from ....lib.numpy.array import arrow_deserialize
-from ....lib.numpy.array import arrow_serialize
+from .arrow import arrow_deserialize
+from .arrow import arrow_serialize
 
 CAPNP_START_MAGIC_HEADER = "capnp:"
 CAPNP_END_MAGIC_HEADER = ":capnp"
 CAPNP_START_MAGIC_HEADER_BYTES = CAPNP_START_MAGIC_HEADER.encode("utf-8")
 CAPNP_END_MAGIC_HEADER_BYTES = CAPNP_END_MAGIC_HEADER.encode("utf-8")
+PROTOBUF_START_MAGIC_HEADER = "protobuf:"
+PROTOBUF_START_MAGIC_HEADER_BYTES = PROTOBUF_START_MAGIC_HEADER.encode("utf-8")
 CAPNP_REGISTRY: Dict[str, Callable] = {}
 
 CapnpModule = capnp.lib.capnp._StructModule
+
+
+def create_protobuf_magic_header() -> str:
+    return f"{PROTOBUF_START_MAGIC_HEADER}"
 
 
 def get_capnp_schema(schema_file: str) -> type:
@@ -91,10 +98,10 @@ def capnp_serialize(obj: np.ndarray, to_bytes: bool = False) -> _DynamicStructBu
     metadata_schema = array_struct.TensorMetadata  # type: ignore
     array_metadata = metadata_schema.new_message()
 
-    obj_bytes, obj_decompressed_size = arrow_serialize(obj)
+    obj_bytes = arrow_serialize(obj)
     chunk_bytes(obj_bytes, "array", array_msg)  # type: ignore
     array_metadata.dtype = str(obj.dtype)
-    array_metadata.decompressedSize = obj_decompressed_size
+    # array_metadata.decompressedSize = obj_decompressed_size
 
     array_msg.arrayMetadata = array_metadata
 
@@ -102,3 +109,50 @@ def capnp_serialize(obj: np.ndarray, to_bytes: bool = False) -> _DynamicStructBu
         return array_msg
     else:
         return array_msg.to_bytes_packed()
+
+
+class CapnpMagicBytesNotFound(Exception):
+    pass
+
+
+def deserialize_capnp(buf: bytes) -> Any:
+    # only search 1000 bytes to prevent wasting time on large files
+    search_range = 1000
+    header_bytes = buf[0:search_range]
+    chars = bytearray()
+    # filter header bytes
+    for i in header_bytes:
+        # only allow ascii letters or : in headers and class name to prevent lookup
+        # breaking somehow, when packing weird stuff like \x03 ends up in the string
+        # e.g. PhiTensor -> ND\x03imEntityPhiTensor
+        if i in range(65, 91) or i in range(97, 123) or i == 58:
+            chars.append(i)
+    header_bytes = bytes(chars)
+
+    proto_start_index = header_bytes.find(PROTOBUF_START_MAGIC_HEADER_BYTES)
+    start_index = header_bytes.find(CAPNP_START_MAGIC_HEADER_BYTES)
+    if proto_start_index != -1 and (proto_start_index < start_index):
+        # we have protobuf on the outside
+        raise CapnpMagicBytesNotFound(
+            f"protobuf Magic Header {PROTOBUF_START_MAGIC_HEADER} found in bytes"
+        )
+    if start_index == -1:
+        raise CapnpMagicBytesNotFound(
+            f"capnp Magic Header {CAPNP_START_MAGIC_HEADER}" + "not found in bytes"
+        )
+    start_index += len(CAPNP_START_MAGIC_HEADER_BYTES)
+    end_index = start_index + header_bytes[start_index:].index(
+        CAPNP_END_MAGIC_HEADER_BYTES
+    )
+    class_name_bytes = header_bytes[start_index:end_index]
+    class_name = class_name_bytes.decode("utf-8")
+
+    if end_index <= start_index:
+        raise ValueError("End Index should always be greater than Start index")
+
+    if class_name not in CAPNP_REGISTRY:
+        raise Exception(
+            f"Found capnp Magic Header: {CAPNP_START_MAGIC_HEADER} "
+            + f"and Class {class_name} but no mapping in capnp registry {CAPNP_REGISTRY}"
+        )
+    return CAPNP_REGISTRY[class_name](buf=buf)

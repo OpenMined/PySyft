@@ -1,12 +1,7 @@
 # relative
 from ....util import validate_type
-from .deserialize import PROTOBUF_START_MAGIC_HEADER
 from .recursive import rs_object2proto
 from .types import Deserializeable
-
-
-def create_protobuf_magic_header() -> str:
-    return f"{PROTOBUF_START_MAGIC_HEADER}"
 
 
 def _serialize(

@@ -13,9 +13,6 @@ Table of Contents:
 # stdlib
 import uuid
 
-# third party
-import pytest
-
 # syft absolute
 import syft as sy
 from syft.core.common import ObjectWithID
@@ -31,25 +28,6 @@ def test_basic_init() -> None:
 
     obj = ObjectWithID()
     assert isinstance(obj.id, UID)
-
-
-def test_immutability_of_id() -> None:
-    """We shouldn't allow people to modify the id of an
-    ObjectWithID because this can create all sorts of errors.
-
-    Put the other way around - blocking people from modifying
-    the ID of an object means we can build a codebase which more
-    firmly relies on the id being truthful. It also will avoid
-    people initialising objects in weird ways (setting ids later).
-    """
-    obj = ObjectWithID()
-
-    with pytest.raises(AttributeError):
-
-        # TODO: filter on this error to only include errors
-        #  with the string "Can't set attribute"
-
-        obj.id = ""
 
 
 # --------------------- CLASS METHODS ---------------------

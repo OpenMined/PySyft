@@ -19,12 +19,6 @@ from ....util import index_syft_by_module_name
 TYPE_BANK = {}
 
 
-# def recursive_serde(cls: Optional[str]) -> bool:
-#     if cls is None:
-#         return True
-#     return cls.__name__ in TYPE_BANK
-
-
 def recursive_serde_register(
     cls: Union[object, type],
     serialize: Optional[Callable] = None,
@@ -44,7 +38,9 @@ def recursive_serde_register(
     attribute_list = getattr(cls, "__attr_allowlist__", None)
     serde_overrides = getattr(cls, "__serde_overrides__", {})
 
-    TYPE_BANK[cls.__name__] = (
+    # without fqn duplicate class names overwrite
+    fqn = f"{cls.__module__}.{cls.__name__}"
+    TYPE_BANK[fqn] = (
         nonrecursive,
         _serialize,
         _deserialize,
@@ -55,11 +51,10 @@ def recursive_serde_register(
 
 def rs_object2proto(self: Any) -> RecursiveSerde_PB:
     # if __attr_allowlist__ then only include attrs from that list
-    msg = RecursiveSerde_PB(fully_qualified_name=get_fully_qualified_name(self))
-    type_name = type(self).__name__
-
+    fqn = get_fully_qualified_name(self)
+    msg = RecursiveSerde_PB(fully_qualified_name=fqn)
     nonrecursive, serialize, deserialize, attribute_list, serde_overrides = TYPE_BANK[
-        type_name
+        fqn
     ]
 
     if nonrecursive:
@@ -115,7 +110,7 @@ def rs_proto2object(proto: RecursiveSerde_PB) -> Any:
             class_type = getattr(sys.modules[".".join(module_parts)], klass)
 
     nonrecursive, serialize, deserialize, attribute_list, serde_overrides = TYPE_BANK[
-        class_type.__name__
+        proto.fully_qualified_name
     ]
 
     if nonrecursive:

@@ -14,18 +14,10 @@ Table of Contents:
 import uuid
 
 # syft absolute
-from syft.core.common.serde.deserialize import PROTOBUF_START_MAGIC_HEADER_BYTES
 from syft.core.common.uid import UID
 from syft.core.io.location.specific import SpecificLocation
 
 # --------------------- INITIALIZATION ---------------------
-
-blob_bytes = (
-    b"\n\t"
-    + PROTOBUF_START_MAGIC_HEADER_BYTES
-    + b"\x12/syft.core.io.location.specific.SpecificLocation\x1a\x1a\n\x12\n\x10"
-    + b"\xfb\x1b\xb0g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14\x12\x04Test"
-)
 
 
 def test_specific_location_init_without_arguments() -> None:

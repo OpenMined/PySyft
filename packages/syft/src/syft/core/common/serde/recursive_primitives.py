@@ -53,9 +53,10 @@ def deserialize_kv(mapping_type: type, blob: bytes) -> Mapping:
     return mapping_type(pairs)
 
 
+# bit_length + 1 for signed
 recursive_serde_register(
     int,
-    serialize=lambda x: x.to_bytes((x.bit_length() + 7) // 8, "big", signed=True),
+    serialize=lambda x: x.to_bytes((x.bit_length() + 7) // 8 + 1, "big", signed=True),
     deserialize=lambda x_bytes: int.from_bytes(x_bytes, "big", signed=True),
 )
 
