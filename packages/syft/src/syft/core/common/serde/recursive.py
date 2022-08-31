@@ -53,6 +53,8 @@ def rs_object2proto(self: Any) -> RecursiveSerde_PB:
     # if __attr_allowlist__ then only include attrs from that list
     fqn = get_fully_qualified_name(self)
     msg = RecursiveSerde_PB(fully_qualified_name=fqn)
+    if fqn not in TYPE_BANK:
+        raise Exception(f"{fqn} not in TYPE_BANK")
     nonrecursive, serialize, deserialize, attribute_list, serde_overrides = TYPE_BANK[
         fqn
     ]
@@ -109,6 +111,9 @@ def rs_proto2object(proto: RecursiveSerde_PB) -> Any:
         except Exception:  # nosec
             class_type = getattr(sys.modules[".".join(module_parts)], klass)
 
+    if proto.fully_qualified_name not in TYPE_BANK:
+        raise Exception(f"{proto.fully_qualified_name} not in TYPE_BANK")
+
     nonrecursive, serialize, deserialize, attribute_list, serde_overrides = TYPE_BANK[
         proto.fully_qualified_name
     ]
@@ -122,7 +127,6 @@ def rs_proto2object(proto: RecursiveSerde_PB) -> Any:
 
     obj = class_type.__new__(class_type)  # type: ignore
     for attr_name, attr_bytes in zip(proto.fields_name, proto.fields_data):
-        print(attr_name)
         attr_value = _deserialize(attr_bytes, from_bytes=True)
         transforms = serde_overrides.get(attr_name, None)
         if transforms is None:
