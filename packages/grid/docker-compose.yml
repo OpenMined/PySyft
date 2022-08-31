@@ -65,6 +65,24 @@ services:
       - HTTP_PORT=${HTTP_PORT}
       - HTTPS_PORT=${HTTPS_PORT}
 
+  svelte:
+    restart: always
+    image: "${DOCKER_IMAGE_SVELTE?Variable not set}:${VERSION-latest}"
+    profiles:
+      - frontend
+    depends_on:
+      - proxy
+    environment:
+      - SERVICE_NAME=frontend
+      - RELEASE=${RELEASE:-production}
+      - NODE_TYPE=${NODE_TYPE?Variable not set}
+      - VERSION=${VERSION}
+      - VERSION_HASH=${VERSION_HASH}
+      - HTTP_PORT=${HTTP_PORT}
+      - HTTPS_PORT=${HTTPS_PORT}
+    ports:
+      - "3000"
+
   db:
     restart: always
     image: postgres:12
