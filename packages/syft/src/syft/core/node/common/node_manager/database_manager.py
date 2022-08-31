@@ -10,9 +10,11 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
 # relative
+from .....telemetry import instrument
 from ..node_table import Base
 
 
+@instrument
 class DatabaseManager:
     def __init__(self, schema: Type[Base], db: Engine) -> None:
         self._schema = schema
