@@ -18,6 +18,7 @@ from .. import GridURL
 from ...core.common.message import ImmediateSyftMessageWithoutReply
 from ...core.common.message import SignedImmediateSyftMessageWithoutReply
 from ...core.common.message import SyftMessage
+from ...core.common.serde.deserialize import _deserialize
 from ...core.common.serde.serializable import serializable
 from ...core.common.serde.serialize import _serialize
 from ...core.node.enums import RequestAPIFields
@@ -144,9 +145,12 @@ class GridHTTPConnection(HTTPConnection):
         if response.status_code != requests.codes.ok:
             raise Exception(content["detail"])
 
+        print("what is metadata?", content)
         metadata = content["metadata"].encode("ISO-8859-1")
-        metadata_pb = Metadata_PB()
-        metadata_pb.ParseFromString(metadata)
+        # metadata_pb = Metadata_PB()
+        # TODO: refactor
+        metadata_pb = _deserialize(metadata)
+        # metadata_pb.ParseFromString(metadata)
 
         # If success
         # Save session token
@@ -190,8 +194,11 @@ class GridHTTPConnection(HTTPConnection):
         except Exception as e:
             print(f"Failed to upgrade to HTTPS. {e}")
 
-        metadata_pb = Metadata_PB()
-        metadata_pb.ParseFromString(response.content)
+        # metadata_pb = Metadata_PB()
+        # metadata_pb.ParseFromString(response.content)
+        print("response.content", response.content)
+        # TODO: fix
+        metadata_pb = _deserialize(response.content)
 
         return metadata_pb
 

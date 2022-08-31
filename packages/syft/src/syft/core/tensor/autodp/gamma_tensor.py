@@ -9,6 +9,7 @@ from typing import Deque
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Union
@@ -37,6 +38,8 @@ from ...adp.data_subject_list import dslarraytonumpyutf8
 from ...adp.data_subject_list import numpyutf8todslarray
 from ...adp.vectorized_publish import vectorized_publish
 from ...common.serde.capnp import CapnpModule
+from ...common.serde.capnp import capnp_deserialize
+from ...common.serde.capnp import capnp_serialize
 from ...common.serde.capnp import chunk_bytes
 from ...common.serde.capnp import combine_bytes
 from ...common.serde.capnp import get_capnp_schema
@@ -87,7 +90,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         "public_shape",
     ]
 
-    __serde_overrides__ = {
+    __serde_overrides__: Dict[str, Sequence[Callable]] = {
         "client": [lambda x: x.address, lambda y: y],
         "public_shape": [lambda x: x, lambda y: upcast(y)],
         "data_subjects": [dslarraytonumpyutf8, numpyutf8todslarray],
@@ -2348,7 +2351,7 @@ class GammaTensor:
         schema = get_capnp_schema(schema_file="gamma_tensor.capnp")
 
         gamma_tensor_struct: CapnpModule = schema.GammaTensor  # type: ignore
-        gamma_msg = gamma_tensor_struct.new_message()
+        gamma_msg = gamma_tensor_struct.new_message()  # type: ignore
         # this is how we dispatch correct deserialization of bytes
         gamma_msg.magicHeader = serde_magic_header(type(self))
 
@@ -2396,7 +2399,7 @@ class GammaTensor:
         # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
         MAX_TRAVERSAL_LIMIT = 2**64 - 1
         # capnp from_bytes is now a context
-        with gamma_struct.from_bytes(
+        with gamma_struct.from_bytes(  # type: ignore
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
         ) as gamma_msg:
 

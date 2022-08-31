@@ -1,7 +1,7 @@
 # stdlib
-from types import new_class
+from typing import Any as AnyAny
 from typing import Optional
-from uuid import UUID
+from typing import cast
 
 # relative
 from . import collections
@@ -17,6 +17,7 @@ from ...core.node.abstract.node import AbstractNodeClient
 from ..misc.union import UnionGenerator
 from .bool import Bool
 from .bytes import Bytes
+from .collections import SyOrderedDict
 from .complex import Complex
 from .dict import Dict
 from .float import Float
@@ -33,8 +34,6 @@ from .slice import Slice
 from .string import String
 from .tuple import Tuple
 from .util import downcast
-from .collections import SyOrderedDict
-
 
 SyTypes = [
     Bool,
@@ -53,34 +52,31 @@ SyTypes = [
     List,
     Set,
     Range,
-    SyOrderedDict
+    SyOrderedDict,
 ]
 
 # TODO Tudor: FIX THIS, we can't rely on _serialize/_deserialize like this (I think)
 
-def serialize(x):
-    print("SALUT SERIALIZARE")
-    print(type(x))
-    new_id = getattr(x, 'id', None)
-    return _serialize((x.upcast(), new_id), to_bytes=True)
+
+def serialize(x: AnyAny) -> bytes:
+    new_id = getattr(x, "id", None)
+    if hasattr(x, "upcast"):
+        x = x.upcast()
+    return cast(bytes, _serialize((x, new_id), to_bytes=True))
 
 
-def deserialize(x):
-    print(f"SALUT DESERIALIZARE: {x}")
+def deserialize(x: bytes) -> AnyAny:
     up_obj, old_id = _deserialize(x, from_bytes=True)
     new_obj = downcast(up_obj)
     if old_id:
-        new_obj._id = old_id 
+        new_obj._id = old_id
     return new_obj
+
 
 for syft_type in SyTypes:
     syft_type.__module__ = __name__
 
-    recursive_serde_register(
-        syft_type,
-        serialize=serialize,
-        deserialize=deserialize
-    )
+    recursive_serde_register(syft_type, serialize=serialize, deserialize=deserialize)
 
 
 def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:

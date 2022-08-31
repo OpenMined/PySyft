@@ -1,108 +1,23 @@
-"""A Pointer is the main handler when interacting with remote data.
-A Pointer object represents an API for interacting with data (of any type)
-at a specific location. The pointer should never be instantiated, only subclassed.
-
-The relation between pointers and data is many to one,
-there can be multiple pointers pointing to the same piece of data, meanwhile,
-a pointer cannot point to multiple data sources.
-
-A pointer is just an object id on a remote location and a set of methods that can be
-executed on the remote machine directly on that object. One note that has to be made
-is that all operations between pointers will return a pointer, the only way to have access
-to the result is by calling .get() on the pointer.
-
-There are two proper ways of receiving a pointer on some data:
-
-1. When sending that data on a remote machine the user receives a pointer.
-2. When the user searches for the data in an object store it receives a pointer to that data,
-   if it has the correct permissions for that.
-
-After receiving a pointer, one might want to get the data behind the pointer locally. For that the
-user should:
-
-1. Request access by calling .request().
-
-Example:
-
-.. code-block::
-
-    pointer_object.request(name = "Request name", reason = "Request reason")
-
-2. The data owner has to approve the request (check the domain node docs).
-3. The data user checks if the request has been approved (check the domain node docs).
-4. After the request has been approved, the data user can call .get() on the pointer to get the
-   data locally.
-
-Example:
-
-.. code-block::
-
-    pointer_object.get()
-
-Pointers are being generated for most types of objects in the data science scene, but what you can
-do on them is not the pointers job, see the lib module for more details. One can see the pointer
-as a proxy to the actual data, the filtering and the security being applied where the data is being
-held.
-
-Example:
-
-.. code-block::
-
-    # creating the data holder domain
-    domain_1 = Domain(name="Data holder domain")
-
-    # creating dummy data
-    tensor = th.tensor([1, 2, 3])
-
-    # creating the data holder client
-    domain_1_client = domain_1.get_root_client()
-
-    # sending the data to the client and receiving a pointer of that data.
-    data_ptr_domain_1 = tensor.send(domain_1_client)
-
-    # creating the data user domain
-    domain_2 = Domain(name="Data user domain")
-
-    # creating a request to access the data
-    data_ptr_domain_1.request(
-        name="My Request", reason="I'd lke to see this pointer"
-    )
-
-    # getting the remote id of the object
-    requested_object = data_ptr_domain_1.id_at_location
-
-    # getting the request id
-    message_request_id = domain_1_client.requests.get_request_id_from_object_id(
-        object_id=requested_object
-    )
-
-    # the data holder accepts the request
-    domain_1.requests[0].owner_client_if_available = domain_1_client
-    domain_1.requests[0].accept()
-
-    # the data user checks if the data holder approved his request
-    response = data_ptr_domain_1.check_access(node=domain_2, request_id=message_request_id)
-
-"""
 # stdlib
 import time
 from typing import Any
+from typing import Callable
+from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sequence
 import warnings
 
 # third party
 from nacl.signing import VerifyKey
 import requests
 
-# syft absolute
-from ..common.serde import _serialize
-
 # relative
 from ...logger import debug
 from ...logger import error
 from ...logger import warning
 from ..common.pointer import AbstractPointer
+from ..common.serde import _serialize
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import serializable
 from ..common.uid import UID
@@ -130,8 +45,11 @@ class Pointer(AbstractPointer):
         "_exhausted",
         "gc_enabled",
     ]
-    __serde_overrides__ = {
-        "client": (lambda client: _serialize(client.address, to_bytes=True), lambda blob: _deserialize(blob, from_bytes=True))
+    __serde_overrides__: Dict[str, Sequence[Callable]] = {
+        "client": (
+            lambda client: _serialize(client.address, to_bytes=True),
+            lambda blob: _deserialize(blob, from_bytes=True),
+        )
     }
 
     """

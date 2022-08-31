@@ -1,7 +1,5 @@
 # stdlib
-import builtins
-from collections import OrderedDict, UserList, UserDict, UserString
-from collections import Set
+from collections import OrderedDict
 import functools
 from typing import Iterable
 from typing import Mapping
@@ -18,7 +16,7 @@ def serialize_iterable(iterable: Iterable) -> bytes:
     message = Iterable_PB()
 
     for it in iterable:
-        message.data.append(rs_object2proto(it).SerializeToString())
+        message.values.append(rs_object2proto(it).SerializeToString())
 
     return message.SerializeToString()
 
@@ -27,11 +25,11 @@ def deserialize_iterable(iterable_type: type, blob: bytes) -> Iterable:
     message = Iterable_PB()
     message.ParseFromString(blob)
 
-    data = []
-    for element in message.data:
-        data.append(rs_bytes2object(element))
+    values = []
+    for element in message.values:
+        values.append(rs_bytes2object(element))
 
-    return iterable_type(data)
+    return iterable_type(values)
 
 
 def serialze_kv(map: Mapping) -> bytes:
@@ -48,11 +46,11 @@ def deserialize_kv(mapping_type: type, blob: bytes) -> Mapping:
     message = KVIterable_PB()
     message.ParseFromString(blob)
 
-    data = []
+    pairs = []
     for k, v in zip(message.keys, message.values):
-        data.append((rs_bytes2object(k), rs_bytes2object(v)))
+        pairs.append((rs_bytes2object(k), rs_bytes2object(v)))
 
-    return mapping_type(data)
+    return mapping_type(pairs)
 
 
 recursive_serde_register(
@@ -108,7 +106,7 @@ recursive_serde_register(
 recursive_serde_register(
     set,
     serialize=serialize_iterable,
-    deserialize=functools.partial(deserialize_iterable, set)
+    deserialize=functools.partial(deserialize_iterable, set),
 )
 
 recursive_serde_register(

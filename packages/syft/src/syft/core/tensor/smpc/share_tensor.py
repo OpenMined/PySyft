@@ -27,6 +27,8 @@ from . import utils
 from .... import logger
 from ....grid import GridURL
 from ...common.serde.capnp import CapnpModule
+from ...common.serde.capnp import capnp_deserialize
+from ...common.serde.capnp import capnp_serialize
 from ...common.serde.capnp import chunk_bytes
 from ...common.serde.capnp import combine_bytes
 from ...common.serde.capnp import get_capnp_schema
@@ -828,7 +830,7 @@ class ShareTensor(PassthroughTensor):
         schema = get_capnp_schema(schema_file="share_tensor.capnp")
 
         st_struct: CapnpModule = schema.ShareTensor  # type: ignore
-        st_msg = st_struct.new_message()
+        st_msg = st_struct.new_message()  # type: ignore
         # this is how we dispatch correct deserialization of bytes
         st_msg.magicHeader = serde_magic_header(type(self))
 
@@ -856,7 +858,7 @@ class ShareTensor(PassthroughTensor):
         # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
         MAX_TRAVERSAL_LIMIT = 2**64 - 1
 
-        st_msg = st_struct.from_bytes_packed(
+        st_msg = st_struct.from_bytes_packed(  # type: ignore
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
         )
 

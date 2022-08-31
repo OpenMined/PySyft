@@ -2,9 +2,11 @@
 from enum import Enum
 import inspect
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Tuple
 from typing import Union
 
@@ -44,7 +46,7 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         "map_to_dyn",
     ]
 
-    __serde_overrides__ = {
+    __serde_overrides__: Dict[str, Sequence[Callable]] = {
         "action": (lambda x: int(x.value), lambda x: PropertyActions(int(x)))
     }
 

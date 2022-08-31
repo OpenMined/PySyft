@@ -378,14 +378,3 @@ class String(UserString, PyPrimitive):
     def __contains__(self, val: object) -> SyPrimitiveRet:
         res = super().__contains__(val)
         return PrimitiveFactory.generate_primitive(value=res)
-
-    @property
-    def id(self) -> UID:
-        """We reveal PyPrimitive.id as a property to discourage users and
-        developers of Syft from modifying .id attributes after an object
-        has been initialized.
-
-        :return: returns the unique id of the object
-        :rtype: UID
-        """
-        return self._id

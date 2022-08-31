@@ -1,9 +1,14 @@
+# stdlib
+from typing import cast
+
 # third party
 import torch as th
 from torch.nn import Parameter
 
-from ...core.common.serde import _serialize, _deserialize, recursive_serde_register
 # relative
+from ...core.common.serde import _deserialize
+from ...core.common.serde import _serialize
+from ...core.common.serde import recursive_serde_register
 from .tensor_util import tensor_deserializer
 from .tensor_util import tensor_serializer
 
@@ -28,7 +33,9 @@ def serialize(obj: Parameter) -> bytes:
     if grad_sample is not None:
         grad_sample = tensor_serializer(grad_sample)
 
-    return _serialize((tensor, requires_grad, grad, grad_sample), to_bytes=True)
+    return cast(
+        bytes, _serialize((tensor, requires_grad, grad, grad_sample), to_bytes=True)
+    )
 
 
 def deserialize(message: bytes) -> Parameter:
@@ -47,8 +54,7 @@ def deserialize(message: bytes) -> Parameter:
 
     return param
 
+
 recursive_serde_register(
-    torch_parameter_type,
-    serialize=serialize,
-    deserialize=deserialize
+    torch_parameter_type, serialize=serialize, deserialize=deserialize
 )

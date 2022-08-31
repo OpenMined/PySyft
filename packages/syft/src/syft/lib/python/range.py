@@ -3,6 +3,9 @@ from typing import Any
 from typing import Optional
 from typing import Union
 
+# third party
+from typing_extensions import SupportsIndex
+
 # relative
 from ...core.common import UID
 from .iterator import Iterator
@@ -17,8 +20,8 @@ class Range(PyPrimitive):
     def __init__(
         self,
         start: Any = None,
-        stop: Union[Any] = None,
-        step: Union[Any] = 1,
+        stop: Optional[Any] = None,
+        step: SupportsIndex = 1,
         id: Optional[UID] = None,
     ):
         if stop is None:
@@ -26,17 +29,6 @@ class Range(PyPrimitive):
             start = 0
         self.value = range(start, stop, step)
         self._id: UID = id if id else UID()
-
-    @property
-    def id(self) -> UID:
-        """We reveal PyPrimitive.id as a property to discourage users and
-        developers of Syft from modifying .id attributes after an object
-        has been initialized.
-
-        :return: returns the unique id of the object
-        :rtype: UID
-        """
-        return self._id
 
     def __contains__(self, other: Any) -> SyPrimitiveRet:
         res = self.value.__contains__(other)

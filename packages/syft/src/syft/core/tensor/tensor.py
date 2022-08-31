@@ -632,7 +632,7 @@ class Tensor(
     def _object2bytes(self) -> bytes:
         schema = get_capnp_schema(schema_file="tensor.capnp")
         tensor_struct: CapnpModule = schema.Tensor  # type: ignore
-        tensor_msg = tensor_struct.new_message()
+        tensor_msg = tensor_struct.new_message()  # type: ignore
 
         # this is how we dispatch correct deserialization of bytes
         tensor_msg.magicHeader = serde_magic_header(type(self))
@@ -656,7 +656,7 @@ class Tensor(
         tensor_struct: CapnpModule = schema.Tensor  # type: ignore
         # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
         MAX_TRAVERSAL_LIMIT = 2**64 - 1
-        tensor_msg = tensor_struct.from_bytes_packed(
+        tensor_msg = tensor_struct.from_bytes_packed(  # type: ignore
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
         )
 

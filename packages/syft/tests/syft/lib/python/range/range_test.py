@@ -405,9 +405,7 @@ class RangeTest(unittest.TestCase):
     def test_repr(self):
         self.assertEqual(repr(Range(1))[:29], "<syft.lib.python.Range object")
         self.assertEqual(repr(Range(1, 2))[:29], "<syft.lib.python.Range object")
-        self.assertEqual(
-            repr(Range(1, 2, 3))[:29], "<syft.lib.python.Range object"
-        )
+        self.assertEqual(repr(Range(1, 2, 3))[:29], "<syft.lib.python.Range object")
 
     @pytest.mark.xfail
     def test_pickling(self):

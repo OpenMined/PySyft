@@ -42,18 +42,6 @@ class Slice(PyPrimitive):
         self.value = slice(start, stop, step)
         self._id: UID = id if id else UID()
 
-    @property
-    def id(self) -> UID:
-        """
-        We reveal PyPrimitive.id as a property to discourage users and
-        developers of Syft from modifying .id attributes after an object
-        has been initialized.
-
-        Returns:
-            UID: The unique ID of the object.
-        """
-        return self._id
-
     def __eq__(self, other: Any) -> SyPrimitiveRet:
         """
         Compare if self == other.

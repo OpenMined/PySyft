@@ -6,9 +6,6 @@ from typing import Union
 # third party
 from typing_extensions import SupportsIndex
 
-# syft absolute
-import syft as sy
-
 # relative
 from ...core.common import UID
 from .iterator import Iterator
@@ -27,17 +24,6 @@ class TupleIterator(Iterator):
 class Tuple(tuple, PyPrimitive):
     def __init__(self, *args: Any):
         self._id = UID()
-
-    @property
-    def id(self) -> UID:
-        """We reveal PyPrimitive.id as a property to discourage users and
-        developers of Syft from modifying .id attributes after an object
-        has been initialized.
-
-        :return: returns the unique id of the object
-        :rtype: UID
-        """
-        return self._id
 
     def upcast(self) -> tuple:
         # recursively upcast

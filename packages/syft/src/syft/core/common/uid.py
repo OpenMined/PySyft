@@ -1,8 +1,11 @@
 # stdlib
 from typing import Any
+from typing import Callable
+from typing import Dict
 from typing import Generator
 from typing import List
 from typing import Optional
+from typing import Sequence
 import uuid
 from uuid import UUID as uuid_type
 
@@ -51,7 +54,7 @@ class UID:
     """
 
     __attr_allowlist__ = ["value"]
-    __serde_overrides__ = {
+    __serde_overrides__: Dict[str, Sequence[Callable]] = {
         "value": (lambda x: x.bytes, lambda x: uuid.UUID(bytes=bytes(x)))
     }
 

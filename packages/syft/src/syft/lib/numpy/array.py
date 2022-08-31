@@ -1,9 +1,14 @@
+# stdlib
+from typing import cast
+
 # third party
 import numpy as np
 import pyarrow as pa
 
-from ...core.common.serde import _serialize, _deserialize, recursive_serde_register
 # relative
+from ...core.common.serde import _deserialize
+from ...core.common.serde import _serialize
+from ...core.common.serde import recursive_serde_register
 from ...experimental_flags import ApacheArrowCompression
 from ...experimental_flags import flags
 
@@ -33,6 +38,7 @@ DTYPE_REFACTOR = {
     np.dtype("uint64"): np.int64,
 }
 
+
 def arrow_serialize(obj: np.ndarray) -> bytes:
     original_dtype = obj.dtype
     apache_arrow = pa.Tensor.from_numpy(obj=obj)
@@ -47,7 +53,7 @@ def arrow_serialize(obj: np.ndarray) -> bytes:
         )
     dtype = original_dtype.name
 
-    return _serialize((numpy_bytes, buffer.size, dtype), to_bytes=True)
+    return cast(bytes, _serialize((numpy_bytes, buffer.size, dtype), to_bytes=True))
 
 
 def arrow_deserialize(buf: bytes) -> np.ndarray:
@@ -70,7 +76,5 @@ def arrow_deserialize(buf: bytes) -> np.ndarray:
 
 
 recursive_serde_register(
-    np.ndarray,
-    serialize=arrow_serialize,
-    deserialize=arrow_deserialize
+    np.ndarray, serialize=arrow_serialize, deserialize=arrow_deserialize
 )

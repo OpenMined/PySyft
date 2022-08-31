@@ -1,5 +1,6 @@
 # stdlib
 from typing import Any
+from typing import Sequence
 from typing import Type
 
 # third party
@@ -19,7 +20,7 @@ recursive_serde_register(
 def _create_VERIFYALL() -> Any:
     @serializable(recursive_serde=True)
     class VerifyAll:
-        __attr_allowlist__ = []
+        __attr_allowlist__: Sequence[str] = []
         _instance = None
 
         def __new__(cls: Type) -> "VerifyAll":

@@ -1,8 +1,10 @@
 # stdlib
 from enum import Enum
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import Optional
+from typing import Sequence
 
 # third party
 from nacl.signing import VerifyKey
@@ -34,7 +36,7 @@ class GetSetStaticAttributeAction(ImmediateActionWithoutReply):
         "set_arg",
     ]
 
-    __serde_overrides__ = {
+    __serde_overrides__: Dict[str, Sequence[Callable]] = {
         "action": (
             lambda status: int(status.value),
             lambda int_status: StaticAttributeAction(int(int_status)),

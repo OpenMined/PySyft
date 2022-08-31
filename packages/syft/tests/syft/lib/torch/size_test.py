@@ -4,7 +4,9 @@ import torch
 
 # syft absolute
 import syft as sy
-from syft import serialize, deserialize
+from syft import deserialize
+from syft import serialize
+
 
 @pytest.mark.parametrize("apache_arrow_backend", [True, False])
 def test_protobuf_torch_size_serializer_deserializer(

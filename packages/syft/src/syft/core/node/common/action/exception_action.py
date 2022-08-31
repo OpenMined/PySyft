@@ -1,5 +1,8 @@
 # stdlib
+from typing import Callable
+from typing import Dict
 from typing import Optional
+from typing import Sequence
 from typing import Type
 
 # third party
@@ -29,7 +32,9 @@ class ExceptionMessage(ImmediateSyftMessageWithoutReply):
         "exception_type",
     ]
 
-    __serde_overrides__ = {"exception_type": (serialize_type, deserialize_type)}
+    __serde_overrides__: Dict[str, Sequence[Callable]] = {
+        "exception_type": (serialize_type, deserialize_type)
+    }
 
     def __init__(
         self,

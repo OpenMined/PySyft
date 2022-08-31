@@ -1,6 +1,10 @@
 # stdlib
 import sys
 from typing import Any
+from typing import Callable
+from typing import Optional
+from typing import Type
+from typing import Union
 
 # syft absolute
 import syft as sy
@@ -9,22 +13,26 @@ import syft as sy
 from ....proto.core.common.recursive_serde_pb2 import (
     RecursiveSerde as RecursiveSerde_PB,
 )
-from ....util import get_fully_qualified_name, index_syft_by_module_name
+from ....util import get_fully_qualified_name
+from ....util import index_syft_by_module_name
 
 TYPE_BANK = {}
 
 
-def recursive_serde(cls: str) -> bool:
-    if cls is None:
-        return True
-    return cls.__name__ in TYPE_BANK
+# def recursive_serde(cls: Optional[str]) -> bool:
+#     if cls is None:
+#         return True
+#     return cls.__name__ in TYPE_BANK
 
 
 def recursive_serde_register(
-    cls: type,
-    serialize=None,
-    deserialize=None,
+    cls: Union[object, type],
+    serialize: Optional[Callable] = None,
+    deserialize: Optional[Callable] = None,
 ) -> None:
+    if not isinstance(cls, type):
+        cls = type(cls)
+
     if serialize is not None and deserialize is not None:
         nonrecursive = True
     else:
@@ -55,13 +63,17 @@ def rs_object2proto(self: Any) -> RecursiveSerde_PB:
     ]
 
     if nonrecursive:
+        if serialize is None:
+            raise Exception(
+                f"Cant serialize {type(self)} nonrecursive without serialize."
+            )
         msg.nonrecursive_blob = serialize(self)
         return msg
 
     if attribute_list is None:
         attribute_list = self.__dict__.keys()
 
-    for attr_name in attribute_list:
+    for attr_name in sorted(attribute_list):
         if not hasattr(self, attr_name):
             raise ValueError(
                 f"{attr_name} on {type(self)} does not exist, serialization aborted!"
@@ -88,17 +100,18 @@ def rs_bytes2object(blob: bytes) -> Any:
 
 
 def rs_proto2object(proto: RecursiveSerde_PB) -> Any:
+    # relative
     from .deserialize import _deserialize
+
     # clean this mess, Tudor
     module_parts = proto.fully_qualified_name.split(".")
     klass = module_parts.pop()
 
-    if klass == "NoneType":
-        class_type = type(None)
-    else:
+    class_type: Type = type(None)
+    if klass != "NoneType":
         try:
-            class_type = index_syft_by_module_name(proto.fully_qualified_name)
-        except:
+            class_type = index_syft_by_module_name(proto.fully_qualified_name)  # type: ignore
+        except Exception:  # nosec
             class_type = getattr(sys.modules[".".join(module_parts)], klass)
 
     nonrecursive, serialize, deserialize, attribute_list, serde_overrides = TYPE_BANK[
@@ -106,6 +119,10 @@ def rs_proto2object(proto: RecursiveSerde_PB) -> Any:
     ]
 
     if nonrecursive:
+        if deserialize is None:
+            raise Exception(
+                f"Cant serialize {type(proto)} nonrecursive without serialize."
+            )
         return deserialize(proto.nonrecursive_blob)
 
     obj = class_type.__new__(class_type)  # type: ignore

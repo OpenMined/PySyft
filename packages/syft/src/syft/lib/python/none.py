@@ -11,23 +11,12 @@ from .types import SyPrimitiveRet
 NoneType = type(None)
 
 
-class   _SyNone(PyPrimitive):
+class _SyNone(PyPrimitive):
     __name__ = "_SyNone"
 
     def __init__(self, id: Optional[UID] = None, temporary_box: bool = False):
         self._id: UID = id if id else UID()
         self.temporary_box = temporary_box
-
-    @property
-    def id(self) -> UID:
-        """We reveal PyPrimitive.id as a property to discourage users and
-        developers of Syft from modifying .id attributes after an object
-        has been initialized.
-
-        :return: returns the unique id of the object
-        :rtype: UID
-        """
-        return self._id
 
     def upcast(self) -> NoneType:
         return None

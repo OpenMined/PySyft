@@ -1,7 +1,6 @@
 # relative
 from ....util import validate_type
 from .deserialize import PROTOBUF_START_MAGIC_HEADER
-from .recursive import recursive_serde
 from .recursive import rs_object2proto
 from .types import Deserializeable
 
@@ -18,7 +17,7 @@ def _serialize(
     # capnp_bytes=True
     if hasattr(obj, "_object2bytes"):
         # capnp proto
-        return validate_type(obj._object2bytes(), bytes)
+        return validate_type(obj._object2bytes(), bytes)  # type: ignore
 
     proto = rs_object2proto(obj)
 

@@ -69,17 +69,6 @@ class Dict(UserDict, PyPrimitive):
                 temporary_box=temporary_box,
             )
 
-    @property
-    def id(self) -> UID:
-        """We reveal PyPrimitive.id as a property to discourage users and
-        developers of Syft from modifying .id attributes after an object
-        has been initialized.
-
-        :return: returns the unique id of the object
-        :rtype: UID
-        """
-        return self._id
-
     def upcast(self) -> TypeDict:
         # recursively upcast
         result = {k: upcast(v) for k, v in self.items()}

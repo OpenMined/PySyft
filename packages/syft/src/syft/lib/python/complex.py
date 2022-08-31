@@ -29,19 +29,8 @@ class Complex(complex, PyPrimitive):
         complex.__init__(self)
         self._id = id or UID()
 
-    @property
-    def id(self) -> UID:
-        """We reveal PyPrimitive.id as a property to discourage users and
-        developers of Syft from modifying .id attributes after an object
-        has been initialized.
-
-        :return: returns the unique id of the object
-        :rtype: UID
-        """
-        return self._id
-
     def upcast(self) -> complex:
-        return complex(self.real, self.imag)# type: ignore
+        return complex(self.real, self.imag)  # type: ignore
 
     def __add__(self, x: complex) -> SyPrimitiveRet:
         result = complex.__add__(self, x)

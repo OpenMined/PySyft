@@ -2,12 +2,12 @@
 from __future__ import annotations
 
 # stdlib
-from collections.abc import Sequence
 from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Tuple
 from typing import Union
 
@@ -30,6 +30,8 @@ from ....core.node.common.action.get_or_set_property_action import PropertyActio
 from ....lib.python.util import upcast
 from ....util import inherit_tags
 from ...common.serde.capnp import CapnpModule
+from ...common.serde.capnp import capnp_deserialize
+from ...common.serde.capnp import capnp_serialize
 from ...common.serde.capnp import chunk_bytes
 from ...common.serde.capnp import combine_bytes
 from ...common.serde.capnp import get_capnp_schema
@@ -78,7 +80,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         "public_shape",
     ]
 
-    __serde_overrides__ = {
+    __serde_overrides__: Dict[str, Sequence[Callable]] = {
         "client": [lambda x: x.address, lambda y: y],
         "public_shape": [lambda x: x, lambda y: upcast(y)],
         "data_subjects": [dslarraytonumpyutf8, numpyutf8todslarray],
@@ -2179,7 +2181,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         schema = get_capnp_schema(schema_file="phi_tensor.capnp")
 
         pt_struct: CapnpModule = schema.PT  # type: ignore
-        pt_msg = pt_struct.new_message()
+        pt_msg = pt_struct.new_message()  # type: ignore
         # this is how we dispatch correct deserialization of bytes
         pt_msg.magicHeader = serde_magic_header(type(self))
 
@@ -2210,7 +2212,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         MAX_TRAVERSAL_LIMIT = 2**64 - 1
         # to pack or not to pack?
         # pt_msg = pt_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
-        pt_msg = pt_struct.from_bytes_packed(
+        pt_msg = pt_struct.from_bytes_packed(  # type: ignore
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
         )
 

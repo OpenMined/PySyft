@@ -1,8 +1,13 @@
+# stdlib
+from typing import cast
+
 # third party
 import torch as th
 
-from ...core.common.serde import _serialize, recursive_serde_register, _deserialize
 # relative
+from ...core.common.serde import _deserialize
+from ...core.common.serde import _serialize
+from ...core.common.serde import recursive_serde_register
 from ...logger import warning
 from .tensor_util import tensor_deserializer
 from .tensor_util import tensor_serializer
@@ -13,7 +18,7 @@ torch_tensor_type = type(th.tensor([1, 2, 3]))
 def serialize(obj: object) -> bytes:
     serialized_tensor = tensor_serializer(obj)
     requires_grad = getattr(obj, "requires_grad", False)
-    device = obj.device
+    device = getattr(obj, "device", th.device("cpu"))
 
     if requires_grad:
         grad = getattr(obj, "grad", None)
@@ -22,10 +27,16 @@ def serialize(obj: object) -> bytes:
     else:
         grad = None
 
-    return _serialize((serialized_tensor, device, requires_grad, grad), to_bytes=True)
+    return cast(
+        bytes,
+        _serialize((serialized_tensor, device, requires_grad, grad), to_bytes=True),
+    )
+
 
 def deserialize(message: bytes) -> th.Tensor:
-    (serialized_tensor, device, requires_grad, grad) = _deserialize(message, from_bytes=True)
+    (serialized_tensor, device, requires_grad, grad) = _deserialize(
+        message, from_bytes=True
+    )
 
     tensor = tensor_deserializer(serialized_tensor)
 
@@ -52,8 +63,5 @@ def deserialize(message: bytes) -> th.Tensor:
 
 
 recursive_serde_register(
-    torch_tensor_type,
-    serialize=serialize,
-    deserialize=deserialize
+    torch_tensor_type, serialize=serialize, deserialize=deserialize
 )
-

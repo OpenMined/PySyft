@@ -1,6 +1,7 @@
 # stdlib
 from typing import Any
 from typing import Optional
+from typing import Sequence
 
 # relative
 from .serde.serializable import serializable
@@ -9,7 +10,7 @@ from .uid import UID
 
 @serializable(recursive_serde=True)
 class ObjectWithID:
-    __attr_allowlist__ = ("_id",)
+    __attr_allowlist__: Sequence[str] = ("_id",)
 
     """This object is the superclass for nearly all Syft objects. Subclassing
     from this object will cause an object to be initialized with a unique id

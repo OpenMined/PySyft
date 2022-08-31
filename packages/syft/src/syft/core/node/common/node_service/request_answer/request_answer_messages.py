@@ -1,3 +1,8 @@
+# stdlib
+from typing import Callable
+from typing import Dict
+from typing import Sequence
+
 # relative
 from .....common import UID
 from .....common.message import ImmediateSyftMessageWithReply
@@ -21,7 +26,7 @@ class RequestAnswerMessage(ImmediateSyftMessageWithReply):
 class RequestAnswerResponse(ImmediateSyftMessageWithoutReply):
     __attr_allowlist__ = ["status", "address", "request_id"]
     __slots__ = ["status", "request_id"]
-    __serde_overrides__ = {
+    __serde_overrides__: Dict[str, Sequence[Callable]] = {
         "status": (
             lambda status: int(status.value),
             lambda int_status: RequestStatus(int(int_status)),

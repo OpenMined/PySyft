@@ -18,17 +18,6 @@ class Set(set, PyPrimitive):
 
         self._id = UID() if _id is None else _id
 
-    @property
-    def id(self) -> UID:
-        """We reveal PyPrimitive.id as a property to discourage users and
-        developers of Syft from modifying .id attributes after an object
-        has been initialized.
-
-        :return: returns the unique id of the object
-        :rtype: UID
-        """
-        return self._id
-
     def upcast(self) -> TypeSet:
         # recursively upcast
         return {upcast(v) for v in self}

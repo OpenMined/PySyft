@@ -41,17 +41,6 @@ class List(UserList, PyPrimitive):
         self._id: UID = id if id else UID()
         self._index = 0
 
-    @property
-    def id(self) -> UID:
-        """We reveal PyPrimitive.id as a property to discourage users and
-        developers of Syft from modifying .id attributes after an object
-        has been initialized.
-
-        :return: returns the unique id of the object
-        :rtype: UID
-        """
-        return self._id
-
     def upcast(self) -> ListType:
         # recursively upcast
         new_list = []

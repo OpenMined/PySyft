@@ -6,8 +6,8 @@ from nacl.signing import VerifyKey
 
 # relative
 from ... import UID
-from .....common.serde.serializable import serializable
 from ......logger import info
+from .....common.serde.serializable import serializable
 from ....abstract.node import AbstractNode
 from .simple_messages import NodeRunnableMessageWithReply
 

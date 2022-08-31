@@ -1,7 +1,7 @@
 # stdlib
-import sys
 from typing import Generic
 from typing import Optional
+from typing import Sequence
 from typing import Type
 from typing import TypeVar
 
@@ -13,7 +13,6 @@ from nacl.signing import VerifyKey
 # relative
 from ...logger import debug
 from ...logger import traceback_and_raise
-from ...util import get_fully_qualified_name
 from ...util import validate_type
 from ..io.address import Address
 from .object import ObjectWithID
@@ -165,7 +164,7 @@ class SignedMessage(SyftMessage):
 
 @serializable(recursive_serde=True)
 class SignedImmediateSyftMessageWithReply(SignedMessage):
-    __attr_allowlist__ = [
+    __attr_allowlist__: Sequence[str] = [
         "id",
         "address",
         "signature",
@@ -176,7 +175,7 @@ class SignedImmediateSyftMessageWithReply(SignedMessage):
 
 @serializable(recursive_serde=True)
 class SignedImmediateSyftMessageWithoutReply(SignedMessage):
-    __attr_allowlist__ = [
+    __attr_allowlist__: Sequence[str] = [
         "id",
         "address",
         "signature",
@@ -187,7 +186,7 @@ class SignedImmediateSyftMessageWithoutReply(SignedMessage):
 
 @serializable(recursive_serde=True)
 class SignedEventualSyftMessageWithoutReply(SignedMessage):
-    __attr_allowlist__ = [
+    __attr_allowlist__: Sequence[str] = [
         "id",
         "address",
         "signature",
@@ -198,7 +197,7 @@ class SignedEventualSyftMessageWithoutReply(SignedMessage):
 
 @serializable(recursive_serde=True)
 class ImmediateSyftMessage(SyftMessage):
-    __attr_allowlist__ = [
+    __attr_allowlist__: Sequence[str] = [
         "id",
         "address",
         "message",
@@ -207,7 +206,7 @@ class ImmediateSyftMessage(SyftMessage):
 
 @serializable(recursive_serde=True)
 class EventualSyftMessage(SyftMessage):
-    __attr_allowlist__ = [
+    __attr_allowlist__: Sequence[str] = [
         "id",
         "address",
         "message",
@@ -216,7 +215,7 @@ class EventualSyftMessage(SyftMessage):
 
 @serializable(recursive_serde=True)
 class SyftMessageWithReply(SyftMessage):
-    __attr_allowlist__ = [
+    __attr_allowlist__: Sequence[str] = [
         "id",
         "address",
         "message",
@@ -225,7 +224,7 @@ class SyftMessageWithReply(SyftMessage):
 
 @serializable(recursive_serde=True)
 class SyftMessageWithoutReply(SyftMessage):
-    __attr_allowlist__ = [
+    __attr_allowlist__: Sequence[str] = [
         "id",
         "address",
         "message",
@@ -234,7 +233,7 @@ class SyftMessageWithoutReply(SyftMessage):
 
 @serializable(recursive_serde=True)
 class ImmediateSyftMessageWithoutReply(ImmediateSyftMessage, SyftMessageWithoutReply):
-    __attr_allowlist__ = [
+    __attr_allowlist__: Sequence[str] = [
         "id",
         "address",
         "message",
@@ -247,7 +246,7 @@ class ImmediateSyftMessageWithoutReply(ImmediateSyftMessage, SyftMessageWithoutR
 
 @serializable(recursive_serde=True)
 class EventualSyftMessageWithoutReply(EventualSyftMessage, SyftMessageWithoutReply):
-    __attr_allowlist__ = [
+    __attr_allowlist__: Sequence[str] = [
         "id",
         "address",
         "message",
@@ -261,7 +260,7 @@ class EventualSyftMessageWithoutReply(EventualSyftMessage, SyftMessageWithoutRep
 
 @serializable(recursive_serde=True)
 class ImmediateSyftMessageWithReply(ImmediateSyftMessage, SyftMessageWithReply):
-    __attr_allowlist__ = [
+    __attr_allowlist__: Sequence[str] = [
         "id",
         "address",
         "reply_to",

@@ -1,5 +1,6 @@
 # stdlib
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 
@@ -72,7 +73,7 @@ class StorableObject(AbstractStorableObject):
         # the dict key of "verify key" objects corresponding to people
         # the value is the original request_id to allow lookup later
         # who are allowed to call .get() and download this object.
-        self.read_permissions = read_permissions if read_permissions else {}
+        self.read_permissions: Dict = read_permissions if read_permissions else {}
 
         # the dict key of "verify key" objects corresponding to people
         # the value is the original request_id to allow lookup later

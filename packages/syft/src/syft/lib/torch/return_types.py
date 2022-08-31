@@ -3,6 +3,7 @@ import re
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import cast
 
 # third party
 from packaging import version
@@ -103,8 +104,9 @@ def get_supported_types_fields() -> Dict[type, List]:
 
 def wrap_type(typ: type, fields: List[str]) -> None:
     def serialize(obj: object) -> bytes:
-        return _serialize(
-            [getattr(obj, field, None) for field in fields], to_bytes=True
+        return cast(
+            bytes,
+            _serialize([getattr(obj, field, None) for field in fields], to_bytes=True),
         )
 
     def deserialize(bytes: bytes) -> object:

@@ -1,8 +1,13 @@
+# stdlib
+from typing import cast
+
 # third party
 import pyarrow as pa
 import torch as th
 
-from ...core.common.serde import _serialize, _deserialize
+# relative
+from ...core.common.serde import _deserialize
+from ...core.common.serde import _serialize
 
 # Torch dtypes to string (and back) mappers
 TORCH_DTYPE_STR = {
@@ -56,10 +61,15 @@ def tensor_serializer(tensor: th.Tensor) -> bytes:
         zero_point = None
 
     dtype = TORCH_DTYPE_STR[tensor.dtype]
-    return _serialize((arrow_data, dtype, is_quantized, scale, zero_point), to_bytes=True)
+    return cast(
+        bytes,
+        _serialize((arrow_data, dtype, is_quantized, scale, zero_point), to_bytes=True),
+    )
 
 
-def arrow_data_decoding(data, dtype, is_quantized, scale, zero_point) -> th.Tensor:
+def arrow_data_decoding(
+    data: bytes, dtype: str, is_quantized: bool, scale: float, zero_point: int
+) -> th.Tensor:
     reader = pa.BufferReader(data)
     buf = reader.read_buffer()
     result = pa.ipc.read_tensor(buf)
@@ -68,9 +78,7 @@ def arrow_data_decoding(data, dtype, is_quantized, scale, zero_point) -> th.Tens
     data = th.from_numpy(np_array)
 
     if is_quantized:
-        result = th._make_per_tensor_quantized_tensor(
-            data, scale, zero_point
-        )
+        result = th._make_per_tensor_quantized_tensor(data, scale, zero_point)
     else:
         result = data
 

@@ -7,7 +7,6 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from typing_extensions import final
 
-from ..common.serde.serializable import serializable
 # relative
 from ..common.uid import UID
 from ..io.location import Location

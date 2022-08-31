@@ -1,11 +1,12 @@
 # stdlib
 import sys
+from typing import Any
 
 # relative
 from ....lib.util import full_name_with_qualname
 
 
-def serialize_type(serialized_type) -> str:
+def serialize_type(serialized_type: Any) -> str:
     fqn = full_name_with_qualname(klass=serialized_type)
     module_parts = fqn.split(".")
     _ = module_parts.pop()  # remove incorrect .type ending

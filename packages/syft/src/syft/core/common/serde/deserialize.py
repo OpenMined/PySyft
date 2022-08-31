@@ -1,22 +1,14 @@
 # stdlib
-import re
 from typing import Any
 
-# third party
-from google.protobuf.message import Message
-
 # relative
-from ....logger import traceback_and_raise
-from ....proto.util.data_message_pb2 import DataMessage
-from ....util import index_syft_by_module_name
 from .capnp import CAPNP_END_MAGIC_HEADER_BYTES
 from .capnp import CAPNP_REGISTRY
 from .capnp import CAPNP_START_MAGIC_HEADER
 from .capnp import CAPNP_START_MAGIC_HEADER_BYTES
-from .types import Deserializeable
 from .recursive import RecursiveSerde_PB
-from .recursive import recursive_serde
 from .recursive import rs_proto2object
+from .types import Deserializeable
 
 PROTOBUF_START_MAGIC_HEADER = "protobuf:"
 PROTOBUF_START_MAGIC_HEADER_BYTES = PROTOBUF_START_MAGIC_HEADER.encode("utf-8")
@@ -34,7 +26,7 @@ def _deserialize(
         blob = message
 
     if not isinstance(blob, RecursiveSerde_PB):
-        raise TypeError(f"Wrong deserialization format.")
+        raise TypeError("Wrong deserialization format.")
 
     return rs_proto2object(blob)
 

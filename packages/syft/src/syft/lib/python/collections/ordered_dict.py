@@ -6,14 +6,7 @@ from collections.abc import ValuesView
 from typing import Any
 from typing import Optional
 
-# third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
-
-# syft absolute
-import syft as sy
-
 # relative
-from ....core.common.serde.serializable import serializable
 from ....core.common.uid import UID
 from ....logger import traceback_and_raise
 from ..iterator import Iterator
@@ -21,26 +14,13 @@ from ..primitive_factory import PrimitiveFactory
 from ..primitive_factory import isprimitive
 from ..primitive_interface import PyPrimitive
 from ..types import SyPrimitiveRet
-from ..util import downcast
 from ..util import upcast
 
 
 class SyOrderedDict(PyOrderedDict, PyPrimitive):
-
     def __init__(self, *args: Any, _id: UID = UID(), **kwds: Any):
         super().__init__(*args, **kwds)
         self._id = _id
-
-    @property
-    def id(self) -> UID:
-        """We reveal PyPrimitive.id as a property to discourage users and
-        developers of Syft from modifying .id attributes after an object
-        has been initialized.
-
-        :return: returns the unique id of the object
-        :rtype: UID
-        """
-        return self._id
 
     def __contains__(self, other: Any) -> SyPrimitiveRet:
         res = super().__contains__(other)

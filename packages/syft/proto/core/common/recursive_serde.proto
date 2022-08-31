@@ -3,7 +3,7 @@ syntax = "proto3";
 package syft.core.common;
 
 message Iterable {
-  repeated bytes data = 1;
+  repeated bytes values = 1;
 }
 
 message KVIterable {
