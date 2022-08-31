@@ -11,6 +11,7 @@ from pydantic import EmailStr
 from typing_extensions import final
 
 # relative
+from ......telemetry import instrument
 from .....common.serde.serializable import serializable
 from ....abstract.node_service_interface import NodeServiceInterface
 from ....domain_interface import DomainInterface
@@ -31,6 +32,7 @@ from ..generic_payload.syft_message import ReplyPayload
 from ..generic_payload.syft_message import RequestPayload
 
 
+@instrument
 @serializable(recursive_serde=True)
 @final
 class CreateUserMessage(SyftMessage, DomainMessageRegistry):
@@ -77,7 +79,6 @@ class CreateUserMessage(SyftMessage, DomainMessageRegistry):
         Returns:
             ReplyPayload: Message on successful user creation.
         """
-
         # Check if this email was already registered
         try:
             node.users.first(email=self.payload.email)

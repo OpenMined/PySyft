@@ -18,10 +18,12 @@ from ...core.common.serde.serialize import _serialize
 from ...core.io.connection import ClientConnection
 from ...core.node.enums import RequestAPIFields
 from ...core.node.exceptions import RequestAPIException
+from ...telemetry import instrument
 
 DEFAULT_TIMEOUT = 30  # seconds
 
 
+@instrument
 class HTTPConnection(ClientConnection):
     proxies: TypeDict[str, str] = {}
 

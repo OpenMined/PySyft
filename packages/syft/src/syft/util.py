@@ -181,7 +181,7 @@ def aggressive_set_attr(obj: object, name: str, attr: object) -> None:
     """
     try:
         setattr(obj, name, attr)
-    except Exception:  # nosec
+    except Exception:
         curse(obj, name, attr)
 
 
@@ -478,55 +478,6 @@ def verify_tls() -> bool:
 
 def ssl_test() -> bool:
     return len(os.environ.get("REQUESTS_CA_BUNDLE", "")) > 0
-
-
-_tracer = None
-
-
-def get_tracer(service_name: Optional[str] = None) -> Any:
-    global _tracer
-    if _tracer is not None:  # type: ignore
-        return _tracer  # type: ignore
-
-    PROFILE_MODE = str_to_bool(os.environ.get("PROFILE", "False"))
-    if not PROFILE_MODE:
-
-        class NoopTracer:
-            @contextmanager
-            def start_as_current_span(*args: Any, **kwargs: Any) -> Any:
-                yield None
-
-        _tracer = NoopTracer()
-        return _tracer
-
-    print("Profile mode with OpenTelemetry enabled")
-    if service_name is None:
-        service_name = os.environ.get("SERVICE_NAME", "client")
-
-    jaeger_host = os.environ.get("JAEGER_HOST", "localhost")
-    jaeger_port = int(os.environ.get("JAEGER_PORT", "6831"))
-
-    # third party
-    from opentelemetry import trace
-    from opentelemetry.exporter.jaeger.thrift import JaegerExporter
-    from opentelemetry.sdk.resources import Resource
-    from opentelemetry.sdk.resources import SERVICE_NAME
-    from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import BatchSpanProcessor
-
-    trace.set_tracer_provider(
-        TracerProvider(resource=Resource.create({SERVICE_NAME: service_name}))
-    )
-
-    jaeger_exporter = JaegerExporter(
-        agent_host_name=jaeger_host,
-        agent_port=jaeger_port,
-    )
-
-    trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(jaeger_exporter))
-
-    _tracer = trace.get_tracer(__name__)
-    return _tracer
 
 
 def initializer(event_loop: Optional[BaseSelectorEventLoop] = None) -> None:

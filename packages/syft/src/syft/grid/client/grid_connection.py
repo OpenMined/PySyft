@@ -114,7 +114,7 @@ class GridHTTPConnection(HTTPConnection):
         timeout = timeout if timeout is not None else DEFAULT_TIMEOUT
 
         # if sys.getsizeof(msg_bytes) < GridHTTPConnection.SIZE_THRESHOLD:
-        # if True:
+
         r = requests.post(
             url=str(self.base_url) + route,
             data=msg_bytes,

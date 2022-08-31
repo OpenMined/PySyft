@@ -14,6 +14,7 @@ from pandas import DataFrame
 
 # relative
 from .....experimental_flags import flags
+from .....telemetry import instrument
 from ....common.message import SyftMessage  # type: ignore
 from ...abstract.node import AbstractNodeClient
 from ...enums import RequestAPIFields
@@ -22,6 +23,7 @@ from ..node_service.generic_payload.messages import GenericPayloadMessageWithRep
 from ..node_service.generic_payload.syft_message import NewSyftMessage
 
 
+@instrument
 class RequestAPI:
     def __init__(
         self,
@@ -145,12 +147,14 @@ class RequestAPI:
         else:
             return response
 
+    @instrument
     def perform_api_request_generic(
         self,
         syft_msg: Optional[Type[GenericPayloadMessageWithReply] | Type[NewSyftMessage]],  # type: ignore
         content: Optional[Dict[Any, Any]] = None,
         timeout: Optional[int] = None,
     ) -> Any:
+        print("perform_api_request_generic", type(syft_msg))
         if syft_msg is None:
             raise ValueError(
                 "Can't perform this type of api request, the message is None."
@@ -167,6 +171,9 @@ class RequestAPI:
             ).sign(  # type: ignore
                 signing_key=self.client.signing_key
             )
+            response = self.client.send_immediate_msg_with_reply(
+                msg=signed_msg, timeout=timeout
+            )
         else:
             signed_msg = (
                 syft_msg_constructor(kwargs=content)  # type: ignore
@@ -175,9 +182,10 @@ class RequestAPI:
                 )
                 .sign(signing_key=self.client.signing_key)
             )
-        response = self.client.send_immediate_msg_with_reply(
-            msg=signed_msg, timeout=timeout
-        )
+            response = self.client.send_immediate_msg_with_reply(
+                msg=signed_msg, timeout=timeout
+            )
+
         if isinstance(response, ExceptionMessage):
             raise response.exception_type
         else:
