@@ -75,10 +75,7 @@ class NewSyftMessage(ImmediateSyftMessage):
     def payload(self) -> Payload:
         kwargs_dict = {}
 
-        if hasattr(self.kwargs, "upcast"):
-            kwargs_dict = self.kwargs.upcast()  # type: ignore
-        else:
-            kwargs_dict = self.kwargs  # type: ignore
+        kwargs_dict = self.kwargs  # type: ignore
 
         try:
             # If it's not a reply message then load kwargs as a proper request payload.

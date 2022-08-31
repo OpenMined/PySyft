@@ -192,7 +192,7 @@ def update_dataset_msg(
     _allowed = node.users.can_upload_data(verify_key=verify_key)
     if _allowed:
         metadata = {
-            key: msg.metadata[key].upcast()
+            key: msg.metadata[key]
             for (key, value) in msg.metadata.items()
             if msg.metadata[key] is not None
         }

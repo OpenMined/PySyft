@@ -50,8 +50,6 @@ class GenericPayloadMessageWithReply:
     message_reply_type = GenericPayloadReplyMessage
 
     def __init__(self, kwargs: Optional[Dict[str, Any]] = None) -> None:
-        if hasattr(kwargs, "upcast"):
-            kwargs = kwargs.upcast()  # type: ignore
         self.kwargs: Dict[str, Any] = kwargs if kwargs is not None else {}
 
     def run(

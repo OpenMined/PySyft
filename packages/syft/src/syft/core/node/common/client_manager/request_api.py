@@ -77,8 +77,6 @@ class RequestAPI:
             for content in self.perform_api_request(
                 syft_msg=self._get_all_message
             ).content:
-                if hasattr(content, "upcast"):
-                    content = content.upcast()
                 result.append(content)
         return result
 

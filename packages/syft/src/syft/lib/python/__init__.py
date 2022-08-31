@@ -55,8 +55,6 @@ SyTypes = [
     SyOrderedDict,
 ]
 
-# TODO Tudor: FIX THIS, we can't rely on _serialize/_deserialize like this (I think)
-
 
 def serialize(x: AnyAny) -> bytes:
     new_id = getattr(x, "id", None)

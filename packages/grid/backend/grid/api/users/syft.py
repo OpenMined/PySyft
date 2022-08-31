@@ -63,7 +63,7 @@ def get_user_requests(current_user: UserPrivate) -> List[UserCandidate]:
     reply = send_message_with_reply(
         signing_key=current_user.get_signing_key(), message_type=GetCandidatesMessage
     )
-    return [user.upcast() for user in reply.content]
+    return [user for user in reply.content]
 
 
 def process_applicant_request(
