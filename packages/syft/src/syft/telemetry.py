@@ -26,7 +26,7 @@ def setup_tracer() -> Any:
     print("OpenTelemetry Tracing enabled")
     service_name = os.environ.get("SERVICE_NAME", "client")
     jaeger_host = os.environ.get("JAEGER_HOST", "localhost")
-    # jaeger_port = int(os.environ.get("JAEGER_PORT", "6831"))
+    jaeger_port = int(os.environ.get("JAEGER_PORT", "14268"))
 
     # third party
     from opentelemetry import trace
@@ -42,7 +42,7 @@ def setup_tracer() -> Any:
     jaeger_exporter = JaegerExporter(
         # agent_host_name=jaeger_host,
         # agent_port=jaeger_port,
-        collector_endpoint=f"http://{jaeger_host}:14268/api/traces?format=jaeger.thrift",
+        collector_endpoint=f"http://{jaeger_host}:{jaeger_port}/api/traces?format=jaeger.thrift",
         # udp_split_oversized_batches=True,
     )
 
