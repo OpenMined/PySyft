@@ -179,6 +179,7 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
         "website",
         "name",
         "reply_to",
+        "user_id"
     ]
 
     def __init__(  # nosec

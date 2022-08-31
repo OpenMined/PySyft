@@ -147,10 +147,6 @@ class GridHTTPConnection(HTTPConnection):
 
         print("what is metadata?", content)
         metadata = content["metadata"].encode("ISO-8859-1")
-        # metadata_pb = Metadata_PB()
-        # TODO: refactor
-        metadata_pb = _deserialize(metadata)
-        # metadata_pb.ParseFromString(metadata)
 
         # If success
         # Save session token
@@ -158,7 +154,7 @@ class GridHTTPConnection(HTTPConnection):
         self.token_type = content["token_type"]
 
         # Return node metadata / user private key
-        return (metadata_pb, content["key"])
+        return (metadata, content["key"])
 
     def _get_metadata(self, timeout: Optional[float] = 2) -> Tuple:
         """Request Node's metadata
@@ -194,13 +190,7 @@ class GridHTTPConnection(HTTPConnection):
         except Exception as e:
             print(f"Failed to upgrade to HTTPS. {e}")
 
-        # metadata_pb = Metadata_PB()
-        # metadata_pb.ParseFromString(response.content)
-        print("response.content", response.content)
-        # TODO: fix
-        metadata_pb = _deserialize(response.content)
-
-        return metadata_pb
+        return response.content
 
     def setup(self, **content: Dict[str, Any]) -> Any:
         response = json.loads(
