@@ -816,10 +816,11 @@ def create_launch_cmd(
     parsed_kwargs["dev"] = bool(kwargs["dev"]) if "dev" in kwargs else False
     parsed_kwargs["silent"] = bool(kwargs["silent"]) if "silent" in kwargs else False
 
+    parsed_kwargs["trace"] = False
     if ("trace" not in kwargs or kwargs["trace"] is None) and parsed_kwargs["dev"]:
         # default to trace on in dev mode
         parsed_kwargs["trace"] = True
-    else:
+    elif "trace" in kwargs:
         parsed_kwargs["trace"] = str_to_bool(cast(str, kwargs["trace"]))
 
     parsed_kwargs["release"] = "production"
