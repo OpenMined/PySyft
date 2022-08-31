@@ -51,6 +51,7 @@ from .lib import check_host
 from .lib import check_jupyter_server
 from .lib import check_login_page
 from .lib import docker_desktop_memory
+from .lib import find_available_port
 from .lib import generate_process_status_table
 from .lib import generate_user_table
 from .lib import hagrid_root
@@ -293,6 +294,12 @@ def clean(location: str) -> None:
     "--silent",
     is_flag=True,
     help="Optional: prevent lots of launch output",
+)
+@click.option(
+    "--trace",
+    required=False,
+    type=str,
+    help="Optional: allow trace to be turned on or off",
 )
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
@@ -808,6 +815,13 @@ def create_launch_cmd(
     parsed_kwargs["test"] = bool(kwargs["test"]) if "test" in kwargs else False
     parsed_kwargs["dev"] = bool(kwargs["dev"]) if "dev" in kwargs else False
     parsed_kwargs["silent"] = bool(kwargs["silent"]) if "silent" in kwargs else False
+
+    parsed_kwargs["trace"] = False
+    if ("trace" not in kwargs or kwargs["trace"] is None) and parsed_kwargs["dev"]:
+        # default to trace on in dev mode
+        parsed_kwargs["trace"] = True
+    elif "trace" in kwargs:
+        parsed_kwargs["trace"] = str_to_bool(cast(str, kwargs["trace"]))
 
     parsed_kwargs["release"] = "production"
     if "release" in kwargs and kwargs["release"] != "production":
@@ -1405,6 +1419,13 @@ def create_launch_docker_cmd(
         ),
     }
 
+    if "trace" in kwargs and kwargs["trace"] is True:
+        envs["TRACE"] = "True"
+        envs["JAEGER_HOST"] = "docker-host"
+        envs["JAEGER_PORT"] = int(
+            find_available_port(host="localhost", port=14268, search=True)
+        )
+
     if "platform" in kwargs and kwargs["platform"] is not None:
         envs["DOCKER_DEFAULT_PLATFORM"] = kwargs["platform"]
 
@@ -1457,6 +1478,9 @@ def create_launch_docker_cmd(
     # network frontend disabled
     if str(node_type.input) != "network" and kwargs["headless"] is False:
         cmd += " --profile frontend"
+
+    if "trace" in kwargs and kwargs["trace"]:
+        cmd += " --profile telemetry"
 
     # new docker compose regression work around
     default_env = f"{GRID_SRC_PATH}/.env"

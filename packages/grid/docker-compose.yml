@@ -147,6 +147,9 @@ services:
       - HTTPS_PORT=${HTTPS_PORT}
       - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
       - CONTAINER_HOST=${CONTAINER_HOST}
+      - TRACE=${TRACE}
+      - JAEGER_HOST=${JAEGER_HOST}
+      - JAEGER_PORT=${JAEGER_PORT}
     command: /start.sh
     network_mode: service:proxy
 
@@ -173,6 +176,9 @@ services:
       - HTTPS_PORT=${HTTPS_PORT}
       - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
       - CONTAINER_HOST=${CONTAINER_HOST}
+      - TRACE=${TRACE}
+      - JAEGER_HOST=${JAEGER_HOST}
+      - JAEGER_PORT=${JAEGER_PORT}
     command: "/start.sh"
     network_mode: service:proxy
 
@@ -201,6 +207,9 @@ services:
       - CONTAINER_HOST=${CONTAINER_HOST}
       - NETWORK_CHECK_INTERVAL=${NETWORK_CHECK_INTERVAL}
       - DOMAIN_CHECK_INTERVAL=${DOMAIN_CHECK_INTERVAL}
+      - TRACE=${TRACE}
+      - JAEGER_HOST=${JAEGER_HOST}
+      - JAEGER_PORT=${JAEGER_PORT}
     command: "/worker-start.sh"
     network_mode: service:proxy
 
@@ -232,6 +241,25 @@ services:
       - seaweedfs-data:/data
       - ./seaweedfs/s3config.json:/etc/s3config.json
       - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml
+
+  jaeger:
+    profiles:
+      - telemetry
+    image: jaegertracing/all-in-one:1.37
+    environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=9411
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "${JAEGER_PORT}:14268" # http collector
+      - "16686" # ui
+      # - "6831:6831/udp"
+      # - "6832:6832/udp"
+      # - "5778:5778"
+      # - "4317:4317"
+      # - "4318:4318"
+      # - "14250:14250"
+      # - "14269:14269"
+      # - "9411:9411"
 
 volumes:
   app-db-data:

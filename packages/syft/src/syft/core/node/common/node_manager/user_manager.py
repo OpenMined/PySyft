@@ -20,6 +20,7 @@ from sqlalchemy.orm import Query
 from sqlalchemy.orm import sessionmaker
 
 # relative
+from .....telemetry import instrument
 from ..exceptions import InvalidCredentialsError
 from ..exceptions import UserNotFoundError
 from ..node_table.pdf import PDFObject
@@ -43,6 +44,7 @@ class NotEnoughBudgetException(Exception):
     pass
 
 
+@instrument
 class UserManager(DatabaseManager):
     """Class to manage user database actions."""
 
@@ -249,23 +251,21 @@ class UserManager(DatabaseManager):
         """
         return self.__login_validation(email, password)
 
-    def set(  # nosec
+    def set(
         self,
         user_id: str,
         email: str = "",
-        password: str = "",
         role: int = 0,
         name: str = "",
         website: str = "",
         institution: str = "",
         budget: float = 0.0,
-    ) -> None:
+    ) -> None:  # nosec
         """Updates the information for the given user id.
 
         Args:
             user_id (str): unique id of the user in the database.
             email (str, optional): email of the user. Defaults to "".
-            password (str, optional): password of the user. Defaults to "".
             role (int, optional): role of the user. Defaults to 0.
             name (str, optional): name of the user. Defaults to "".
             website (str, optional): website of the institution of the user. Defaults to "".
