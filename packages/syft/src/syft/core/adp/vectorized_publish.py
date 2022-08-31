@@ -198,6 +198,7 @@ def publish(
 
     # Step 4- Path 2: User doesn't have enough privacy budget.
     elif not has_budget:
+        print("Not enough privacy budget, about to start filtering.")
         # If the user doesn't have enough PB, they shouldn't see data of high epsilon data subjects (privacy violation)
         # So we will remove data belonging to these data subjects from the computation.
 
@@ -206,6 +207,7 @@ def publish(
             jnp.ones_like(all_epsilons) * privacy_budget >= all_epsilons
         )
         highest_possible_spend = jnp.max(all_epsilons * within_budget_filter)
+        # TODO: Modify to work with private/public operations (when input_tensor is a scalar)
 
         # Step 4.2: Figure out which Tensors in the Source dictionary have those data subjects
         filtered_sourcetree = deepcopy(tensor.state)
@@ -213,42 +215,47 @@ def publish(
         parent_branch = [
             filtered_sourcetree for _ in input_tensors
         ]  # TODO: Ensure this isn't deepcopying!
+        from ..tensor.autodp.gamma_tensor import GammaTensor
         for parent_state, input_tensor in zip(parent_branch, input_tensors):
-            if (
-                input_tensor.func_str == "no_op"
-            ):  # This is raw, unprocessed private data. Filter if eps spend > PB!
-                # Calculate epsilon spend for this tensor
-                l2_norms = jnp.sqrt(jnp.sum(jnp.square(input_tensor.child)))
+            if isinstance(input_tensor, GammaTensor):
+                if (
+                    input_tensor.func_str == "no_op"
+                ):  # This is raw, unprocessed private data. Filter if eps spend > PB!
+                    # Calculate epsilon spend for this tensor
+                    l2_norms = jnp.sqrt(jnp.sum(jnp.square(input_tensor.child)))
 
-                rdp_params = RDPParams(
-                    sigmas=sigmas,
-                    l2_norms=l2_norms,
-                    l2_norm_bounds=l2_norm_bounds,
-                    Ls=lipschitz_bounds,
-                    coeffs=coeffs,
-                )
-
-                # Privacy loss associated with this private data specifically
-                epsilon = max(
-                    ledger.calculate_epsilon_spend(
-                        np.asarray(compute_rdp_constant(rdp_params, private=True))
+                    rdp_params = RDPParams(
+                        sigmas=sigmas,
+                        l2_norms=l2_norms,
+                        l2_norm_bounds=l2_norm_bounds,
+                        Ls=lipschitz_bounds,
+                        coeffs=coeffs,
                     )
-                )
 
-                # Filter if > privacy budget
-                if epsilon > privacy_budget:
-                    filtered_tensor = input_tensor.filtered()
+                    # Privacy loss associated with this private data specifically
+                    epsilon = max(
+                        ledger.calculate_epsilon_spend(
+                            np.asarray(compute_rdp_constant(rdp_params, private=True))
+                        )
+                    )
 
-                    # Replace the original tensor with this filtered one.
-                    del parent_state[input_tensor.id]
-                    parent_state[filtered_tensor.id] = filtered_tensor
+                    # Filter if > privacy budget
+                    if epsilon > privacy_budget:
+                        filtered_tensor = input_tensor.filtered()
 
-                # If epsilon <= privacy budget, we don't need to do anything- the user has enough PB to use the data.
+                        # Replace the original tensor with this filtered one.
+                        del parent_state[input_tensor.id]
+                        parent_state[filtered_tensor.id] = filtered_tensor
+
+                    # If epsilon <= privacy budget, we don't need to do anything- the user has enough PB to use the data.
+                else:
+                    input_tensors += list(input_tensor.state.values())
+                    parent_branch += [
+                        input_tensor.state for _ in input_tensor.state.values()
+                    ]
             else:
-                input_tensors += list(input_tensor.state.values())
-                parent_branch += [
-                    input_tensor.state for _ in input_tensor.state.values()
-                ]
+                # This is a public value, we don't touch 'em.
+                continue
 
         # Recompute the tensor's value now that some of its inputs have been filtered, and repeat epsilon calculations
         new_tensor = tensor.swap_state(filtered_sourcetree)

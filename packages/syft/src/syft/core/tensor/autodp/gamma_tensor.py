@@ -1178,7 +1178,7 @@ class GammaTensor:
                 print("Using self state")
                 return mapper[self.func_str](self.state)
             else:
-                print("Using provided state", [v.child for v in state.values()])
+                print("Using provided state", [v.child if isinstance(v, GammaTensor) else v for v in state.values()])
                 return mapper[self.func_str](state)
 
     def swap_state(self, state: dict) -> GammaTensor:
@@ -1207,7 +1207,7 @@ class GammaTensor:
             func = "add_private"
 
             def _add_private(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.add(*[i.reconstruct() for i in state.values()])
+                return jnp.add(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
 
             mapper[func] = _add_private
 
@@ -1230,6 +1230,7 @@ class GammaTensor:
             min_val = self.min_vals + other
             max_val = self.max_vals + other
             output_ds = self.data_subjects + other
+            output_state[np.random.randint(low=0, high=2**31-1)] = other
 
         return GammaTensor(
             child=child,
@@ -1266,9 +1267,11 @@ class GammaTensor:
             other = other.gamma
 
         if isinstance(other, GammaTensor):
+            func = "sub_private"
 
-            def _sub(state: dict) -> jax.numpy.DeviceArray:
+            def _sub_private(state: dict) -> jax.numpy.DeviceArray:
                 return jnp.subtract(*[i.reconstruct() for i in state.values()])
+            mapper[func] = _sub_private
 
             output_state[other.id] = other
 
@@ -1287,21 +1290,25 @@ class GammaTensor:
             output_ds = self.data_subjects - other.data_subjects
 
         else:
+            func = "sub_public"
 
-            def _sub(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.subtract(self.run(state), other)
+            def _sub_public(state: dict) -> jax.numpy.DeviceArray:
+                return jnp.subtract(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
+            mapper[func] = _sub_public
 
             child = self.child - other
             min_val = self.min_vals - other
             max_val = self.max_vals - other
             output_ds = self.data_subjects - other
+            output_state[np.random.randint(low=0, high=2**31-1)] = other
+
 
         return GammaTensor(
             child=child,
             data_subjects=output_ds,
             min_vals=min_val,
             max_vals=max_val,
-            func=_sub,
+            func_str=func,
             state=output_state,
         )
 
@@ -1317,9 +1324,11 @@ class GammaTensor:
             other = other.gamma
 
         if isinstance(other, GammaTensor):
+            func = "mul_private"
 
-            def _mul(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.multiply(*[i.reconstruct() for i in state.values()])
+            def _mul_private(state: dict) -> jax.numpy.DeviceArray:
+                return jnp.multiply(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
+            mapper[func] = _mul_private
 
             output_state[other.id] = other
             child = self.child * other.child
@@ -1332,9 +1341,11 @@ class GammaTensor:
             output_ds = self.data_subjects * other.data_subjects
 
         else:
+            func = "mul_public"
 
-            def _mul(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.multiply(self.run(state), other)
+            def _mul_public(state: dict) -> jax.numpy.DeviceArray:
+                return jnp.multiply(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
+            mapper[func] = _mul_public
 
             child = self.child * other
             min_min = self.min_vals.data * other
@@ -1344,6 +1355,7 @@ class GammaTensor:
             _min_val = np.array(np.min([min_min, min_max, max_min, max_max], axis=0))  # type: ignore
             _max_val = np.array(np.max([min_min, min_max, max_min, max_max], axis=0))  # type: ignore
             output_ds = self.data_subjects * other
+            output_state[np.random.randint(low=0, high=2**31-1)] = other
 
         min_val = self.min_vals.copy()
         min_val.data = _min_val
@@ -1355,7 +1367,7 @@ class GammaTensor:
             data_subjects=output_ds,
             min_vals=min_val,
             max_vals=max_val,
-            func=_mul,
+            func_str=func,
             state=output_state,
         )
 
@@ -1371,9 +1383,11 @@ class GammaTensor:
             other = other.gamma
 
         if isinstance(other, GammaTensor):
+            func = "matmul_private"
 
-            def _matmul(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.matmul(*[i.reconstruct() for i in state.values()])
+            def _matmul_private(state: dict) -> jax.numpy.DeviceArray:
+                return jnp.matmul(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
+            mapper[func] = _matmul_private
 
             output_state[other.id] = other
             child = self.child @ other.child
@@ -1382,22 +1396,25 @@ class GammaTensor:
             output_ds = self.data_subjects @ other.data_subjects
 
         else:
+            func = "matmul_public"
 
-            def _matmul(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.matmul(self.run(state), other)
+            def _matmul_public(state: dict) -> jax.numpy.DeviceArray:
+                return jnp.matmul(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
+            mapper[func] = _matmul_public
 
             child = self.child @ other
             min_val = self.min_vals.__matmul__(other)
             max_val = self.max_vals.__matmul__(other)
 
             output_ds = self.data_subjects @ other
+            output_state[np.random.randint(low=0, high=2**31-1)] = other
 
         return GammaTensor(
             child=child,
             data_subjects=output_ds,
             min_vals=min_val,
             max_vals=max_val,
-            func=_matmul,
+            func_str=func,
             state=output_state,
         )
 
@@ -1415,7 +1432,7 @@ class GammaTensor:
         if isinstance(other, GammaTensor):
 
             def _rmatmul(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.matmul(*[i.reconstruct() for i in state.values()])
+                return jnp.matmul(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
 
             output_state[other.id] = other
             child = self.child.__rmatmul__(other.child)
@@ -1426,12 +1443,13 @@ class GammaTensor:
         else:
 
             def _rmatmul(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.matmul(other, self.run(state))
+                return jnp.matmul(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
 
             child = self.child.__rmatmul__(other)
             min_val = self.min_vals.__rmatmul__(other)
             max_val = self.max_vals.__rmatmul__(other)
             output_ds = self.data_subjects.__rmatmul__(other)
+            output_state[np.random.randint(low=0, high=2**31-1)] = other
 
         return GammaTensor(
             child=child,
@@ -1456,7 +1474,7 @@ class GammaTensor:
         if isinstance(other, GammaTensor):
 
             def _gt(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.greater(*[i.reconstruct() for i in state.values()])
+                return jnp.greater(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
 
             output_state[other.id] = other
             child = self.child.__gt__(other.child)
@@ -1465,10 +1483,11 @@ class GammaTensor:
         else:
 
             def _gt(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.greater(self.run(state), other)
+                return jnp.greater(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
 
             child = self.child.__gt__(other)
             output_ds = self.data_subjects.__gt__(other)
+            output_state[np.random.randint(low=0, high=2**31-1)] = other
 
         min_val = self.min_vals * 0
         max_val = (self.max_vals * 0) + 1
@@ -1504,7 +1523,7 @@ class GammaTensor:
         if isinstance(other, GammaTensor):
 
             def _lt(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.less(*[i.reconstruct() for i in state.values()])
+                return jnp.less(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
 
             output_state[other.id] = other
             child = self.child.__lt__(other.child)
@@ -1513,10 +1532,11 @@ class GammaTensor:
         else:
 
             def _lt(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.greater(self.run(state), other)
+                return jnp.greater(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
 
             child = self.child.__lt__(other)
             output_ds = self.data_subjects.__lt__(other)
+            output_state[np.random.randint(low=0, high=2**31-1)] = other
 
         min_val = self.min_vals * 0
         max_val = (self.max_vals * 0) + 1
@@ -1544,7 +1564,7 @@ class GammaTensor:
         if isinstance(other, GammaTensor):
 
             def _le(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.less_equal(*[i.reconstruct() for i in state.values()])
+                return jnp.less_equal(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
 
             output_state[other.id] = other
             child = self.child.__le__(other.child)
@@ -1553,10 +1573,11 @@ class GammaTensor:
         else:
 
             def _le(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.less_equal(self.run(state), other)
+                return jnp.less_equal(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
 
             child = self.child.__le__(other)
             output_ds = self.data_subjects
+            output_state[np.random.randint(low=0, high=2**31-1)] = other
 
         min_val = self.min_vals * 0
         max_val = (self.max_vals * 0) + 1
@@ -1592,7 +1613,7 @@ class GammaTensor:
         max_val.data = np.array(exp_reduction(max_val.data))
 
         def _exp(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.log(self.run(state))
+            return jnp.exp(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
 
         return GammaTensor(
             child=exp(self.child),
@@ -1628,7 +1649,7 @@ class GammaTensor:
             )
 
         def _log(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.log(self.run(state))
+            return jnp.log(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
 
         return GammaTensor(
             child=np.log(self.child),
@@ -1719,7 +1740,7 @@ class GammaTensor:
         output_state[self.id] = self
 
         def _transpose(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.transpose(self.run(state))
+            return jnp.transpose(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
 
         output_ds = self.data_subjects.transpose(*args)
         output_data = self.child.transpose(*args)
@@ -1744,7 +1765,7 @@ class GammaTensor:
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs: Any
     ) -> GammaTensor:
         def _sum(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.sum(self.run(state).child)  # type: ignore
+            return jnp.sum(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
 
         output_state = dict()
         output_state[self.id] = self
@@ -1765,7 +1786,7 @@ class GammaTensor:
 
     def ones_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> GammaTensor:
         def _ones_like(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.ones_like(self.run(state))
+            return jnp.ones_like(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
 
         output_state = dict()
         output_state[self.id] = self
@@ -1791,7 +1812,7 @@ class GammaTensor:
 
     def zeros_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> GammaTensor:
         def _zeros_like(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.zeros_like(self.run(state))
+            return jnp.zeros_like(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
 
         output_state = dict()
         output_state[self.id] = self
@@ -1827,7 +1848,7 @@ class GammaTensor:
 
     def ravel(self) -> GammaTensor:
         def _ravel(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.ravel(self.run(state))
+            return jnp.ravel(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
 
         output_state = dict()
         output_state[self.id] = self
@@ -1851,6 +1872,7 @@ class GammaTensor:
         )
 
     def reshape(self, shape: Tuple[int, ...]) -> GammaTensor:
+        # TODO: Check if this can publish properly since source changes aren't made
         child = self.child.reshape(shape)
         output_shape = child.shape
 
