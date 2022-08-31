@@ -210,6 +210,7 @@ class NoSQLSyftUser(SyftObject):
     institution: Optional[str]
     daa_pdf: Optional[str]
     created_at: Optional[str]
+    id_int: Optional[int]
 
     # serde / storage rules
     __attr_state__ = [
@@ -226,6 +227,42 @@ class NoSQLSyftUser(SyftObject):
         "institution",
         "daa_pdf",
         "created_at",
+        "id_int",
     ]
-    __attr_searchable__ = ["email", "verify_key"]
+    __attr_searchable__ = ["email", "verify_key", "id_int"]
     __attr_unique__ = ["email"]
+
+
+# class NoSQLUserApplication(SyftObject):
+#     # version
+#     __canonical_name__ = "UserApplication"
+#     __version__ = 1
+
+#     # fields
+#     email: str
+#     name: str
+#     hashed_password: str
+#     salt: str
+#     daa_pdf: Optional[int]
+#     status: str
+#     added_by: Optional[str]
+#     website: Optional[str]
+#     institution: Optional[str]
+#     budget: float
+#     id_int: int
+
+#     # serde / storage rules
+#     __attr_state__ = [
+#         "email",
+#         "name",
+#         "budget",
+#         "hashed_password",
+#         "salt",
+#         "added_by",
+#         "website",
+#         "institution",
+#         "daa_pdf",
+#         "id_int",
+#     ]
+#     __attr_searchable__ = ["email","id_int","status"]
+#     __attr_unique__ = ["email"]

@@ -78,9 +78,9 @@ node.loud_print()
 if len(node.setup):  # Check if setup was defined previously
     node.name = node.setup.node_name
 
-# Moving this to get called WITHIN Domain and Network so that they can operate in standalone mode
-if not len(node.roles):  # Check if roles were registered previously
-    seed_db(get_db_session())
+# # Moving this to get called WITHIN Domain and Network so that they can operate in standalone mode
+# if not len(node.roles):  # Check if roles were registered previously
+#     seed_db(get_db_session())
 
 
 def get_client(signing_key: Optional[SigningKey] = None) -> Client:

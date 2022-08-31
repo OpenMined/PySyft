@@ -130,7 +130,7 @@ def get_setup(
 def update_settings(
     msg: UpdateSetupMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> UpdateSetupResponse:
-    if node.users.role(verify_key=verify_key).id == node.roles.owner_role.id:
+    if node.users.role(verify_key=verify_key)["name"] == "Owner":
         if msg.domain_name:
             node.name = msg.domain_name
 

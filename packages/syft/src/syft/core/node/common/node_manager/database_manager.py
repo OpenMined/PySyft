@@ -144,6 +144,12 @@ class NoSQLDatabaseManager:
             return d
         return SyftObject.from_mongo(d)
 
+    def first(self, search_params: Dict[str, Any]) -> Optional[SyftObject]:
+        d = self._collection.find_one(search_params)
+        if d is None:
+            return d
+        return SyftObject.from_mongo(d)
+
     def __len__(self) -> int:
         # empty document filter counts all documents.
         return self._collection.count_documents(filter={})
@@ -162,15 +168,17 @@ class NoSQLDatabaseManager:
     #     session_local.commit()
     #     return _obj
 
-    # def query(self, **kwargs: Any) -> List[Any]:
-    #     """Query db objects filtering by parameters
-    #     Args:
-    #         parameters : List of parameters used to filter.
-    #     """
-    #     session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
-    #     objects = session_local.query(self._schema).filter_by(**kwargs).all()
-    #     session_local.close()
-    #     return objects
+    def query(self, search_params: Dict[str, Any]) -> List[SyftObject]:
+        """Query db objects filtering by parameters
+        Args:
+            parameters : List of parameters used to filter.
+        """
+        cursor = self._collection.find(search_params)
+        objects = [SyftObject.from_mongo(obj) for obj in list(cursor)]
+        return objects
+
+    def update_one(self, query: dict, field_set: dict) -> None:
+        self._collection.update_one(query, field_set)
 
     # def first(self, **kwargs: Any) -> Optional[Any]:
     #     """Query db objects filtering by parameters

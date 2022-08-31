@@ -25,6 +25,7 @@ from ..exceptions import UserNotFoundError
 from ..node_table.pdf import PDFObject
 from ..node_table.roles import Role
 from ..node_table.user import NoSQLSyftUser
+from ..node_table.user import SyftObject
 from ..node_table.user import SyftUser
 from ..node_table.user import UserApplication
 from .constants import UserApplicationStatus
@@ -455,23 +456,6 @@ class NoSQLUserManager(NoSQLDatabaseManager):
     _collection_name = "syft_users"
     __canonical_object_name__ = "SyftUser"
 
-    # @property
-    # def common_users(self) -> list:
-    #     """Return users having the common role access."""
-    #     common_users: List[SyftUser] = []
-    #     for role in self.roles.common_roles:
-    #         common_users = common_users + list(super().query(role=role.id))
-
-    #     return common_users
-
-    # @property
-    # def org_users(self) -> list:
-    #     """Return all the users in the organization."""
-    #     org_users: List[SyftUser] = []
-    #     for role in self.roles.org_roles:
-    #         org_users = org_users + list(super().query(role=role.id))
-    #     return org_users
-
     # def create_user_application(
     #     self,
     #     name: str,
@@ -593,6 +577,57 @@ class NoSQLUserManager(NoSQLDatabaseManager):
     #     session_local.commit()
     #     session_local.close()
 
+    def create_user(
+        self,
+        name: str,
+        email: str,
+        password: str,
+        daa_pdf: int,
+        institution: str,
+        website: str,
+        budget: float,
+        role: dict,
+    ) -> None:
+        """Process the application for the given candidate.
+
+        If the application of the user was accepted, then register the user
+        and its details in the database. Finally update the application status
+        for the given user/candidate in the database.
+
+        Args:
+            candidate_id (int): user id of the candidate.
+            status (str): application status.
+            verify_key (VerifyKey): public digital signature of the user.
+        """
+
+        _private_key = SigningKey.generate()
+        salt, hashed_password = self.__salt_and_hash_password(password, 12)
+
+        encoded_pk = _private_key.encode(encoder=HexEncoder).decode("utf-8")
+        encoded_vk = _private_key.verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        added_by = self.get_user(verify_key).name  # type: ignore
+
+        # Register the user in the database
+        self.signup(
+            name=name,
+            email=email,
+            role=role,
+            budget=budget,
+            private_key=encoded_pk,
+            verify_key=encoded_vk,
+            hashed_password=hashed_password,
+            salt=salt,
+            daa_pdf=daa_pdf,
+            added_by=added_by,
+            institution=institution,
+            website=website,
+            created_at=datetime.now(),
+        )
+
+    def is_owner(self, verify_key: VerifyKey) -> bool:
+        user = self.get_user(verify_key)
+        return user.role["name"] == "Owner"
+
     def signup(
         self,
         name: str,
@@ -618,6 +653,7 @@ class NoSQLUserManager(NoSQLDatabaseManager):
             SyftUser: the registered user object.
         """
         salt, hashed = self.__salt_and_hash_password(password, 12)
+        curr_len = len(self)
         user = NoSQLSyftUser(
             name=name,
             email=email,
@@ -628,181 +664,178 @@ class NoSQLUserManager(NoSQLDatabaseManager):
             hashed_password=hashed,
             salt=salt,
             created_at=str(datetime.now()),
+            id_int=curr_len + 1,
         )
         return self.add(user)
 
-    # def query(self, **kwargs: Any) -> Query:
-    #     results = super().query(**kwargs)
-    #     return results
+    def query(self, **kwargs: Any) -> List[NoSQLSyftUser]:
+        results = super().query(**kwargs)
+        return results
 
-    # def first(self, **kwargs: Any) -> SyftUser:
-    #     result = super().first(**kwargs)
-    #     if not result:
-    #         raise UserNotFoundError
-    #     return result
+    def first(self, **kwargs: Any) -> NoSQLSyftUser:
+        result = super().find_one(kwargs)
+        if not result:
+            raise UserNotFoundError
+        return result
 
-    # def login(self, email: str, password: str) -> SyftUser:
-    #     """Returns the user object for the given the email and password.
+    def login(self, email: str, password: str) -> NoSQLSyftUser:
+        """Returns the user object for the given the email and password.
 
-    #     Args:
-    #         email (str): email of the user.
-    #         password (str): password of the user.
+        Args:
+            email (str): email of the user.
+            password (str): password of the user.
 
-    #     Returns:
-    #         SyftUser: user object for the given email and password.
-    #     """
-    #     return self.__login_validation(email, password)
+        Returns:
+            SyftUser: user object for the given email and password.
+        """
+        return self.__login_validation(email, password)
 
-    # def set(  # nosec
-    #     self,
-    #     user_id: str,
-    #     email: str = "",
-    #     password: str = "",
-    #     role: int = 0,
-    #     name: str = "",
-    #     website: str = "",
-    #     institution: str = "",
-    #     budget: float = 0.0,
-    # ) -> None:
-    #     """Updates the information for the given user id.
+    def set(self, **kwargs) -> None:  # nosec
+        """Updates the information for the given user id.
 
-    #     Args:
-    #         user_id (str): unique id of the user in the database.
-    #         email (str, optional): email of the user. Defaults to "".
-    #         password (str, optional): password of the user. Defaults to "".
-    #         role (int, optional): role of the user. Defaults to 0.
-    #         name (str, optional): name of the user. Defaults to "".
-    #         website (str, optional): website of the institution of the user. Defaults to "".
-    #         institution (str, optional): name of the institution of the user. Defaults to "".
-    #         budget (float, optional): privacy budget allocated to the user. Defaults to 0.0.
+        Args:
+            user_id (str): unique id of the user in the database.
+            email (str, optional): email of the user. Defaults to "".
+            password (str, optional): password of the user. Defaults to "".
+            role (int, optional): role of the user. Defaults to 0.
+            name (str, optional): name of the user. Defaults to "".
+            website (str, optional): website of the institution of the user. Defaults to "".
+            institution (str, optional): name of the institution of the user. Defaults to "".
+            budget (float, optional): privacy budget allocated to the user. Defaults to 0.0.
 
-    #     Raises:
-    #         UserNotFoundError: Raised when a user does not exits for the given user id.
-    #         Exception: Raised when an invalid argument/property is passed.
-    #     """
-    #     if not self.contain(id=user_id):
-    #         raise UserNotFoundError
+        Raises:
+            UserNotFoundError: Raised when a user does not exits for the given user id.
+            Exception: Raised when an invalid argument/property is passed.
+        """
+        attributes = {}
+        user_id = kwargs["user_id"]
+        user = self.first(id_int=int(user_id))
+        if not user:
+            raise UserNotFoundError
 
-    #     key: str
-    #     value: Union[str, int, float]
+        for k, v in kwargs.items():
+            if k in user.__attr_searchable__:
+                attributes[k] = v
 
-    #     if email:
-    #         key = "email"
-    #         value = email
-    #     elif role != 0:
-    #         key = "role"
-    #         value = role
-    #     elif name:
-    #         key = "name"
-    #         value = name
-    #     elif budget:
-    #         key = "budget"
-    #         value = budget
-    #     elif website:
-    #         key = "website"
-    #         value = website
-    #     elif budget:
-    #         key = "budget"
-    #         value = budget
-    #     elif institution:
-    #         key = "institution"
-    #         value = institution
-    #     else:
-    #         raise Exception
+        if kwargs.get("email", None):
+            user.email = kwargs["email"]
+        elif kwargs.get("role", None):
+            user.role = kwargs["role"]
+        elif kwargs.get("name", None):
+            user.name = kwargs["name"]
+        elif kwargs.get("budget", None):
+            user.budget = kwargs["budget"]
+        elif kwargs.get("website", None):
+            user.website = kwargs["website"]
+        elif kwargs.get("institution", None):
+            user.institution = kwargs["institution"]
+        else:
+            raise Exception
 
-    #     self.modify({"id": user_id}, {key: value})
+        attributes["__blob__"] = user.to_bytes()
 
-    # def change_password(self, user_id: str, current_pwd: str, new_pwd: str) -> None:
-    #     user = self.first(id=user_id)
+        self.update_one({"id_int": int(user_id)}, {"$set": attributes})
 
-    #     hashed = user.hashed_password.encode("UTF-8")
-    #     salt = user.salt.encode("UTF-8")
-    #     bytes_pass = current_pwd.encode("UTF-8")
+    def change_password(self, user_id: str, current_pwd: str, new_pwd: str) -> None:
+        user = self.first(id_int=int(user_id))
 
-    #     if checkpw(bytes_pass, salt + hashed):
-    #         salt, hashed = self.__salt_and_hash_password(new_pwd, 12)
-    #         self.modify({"id": user_id}, {"salt": salt, "hashed_password": hashed})
-    #     else:
-    #         # Should it warn the user about his wrong current password input?
-    #         raise InvalidCredentialsError
+        hashed = user.hashed_password.encode("UTF-8")
+        salt = user.salt.encode("UTF-8")
+        bytes_pass = current_pwd.encode("UTF-8")
 
-    # def can_create_users(self, verify_key: VerifyKey) -> bool:
-    #     """Checks if a user has permissions to create new users."""
-    #     try:
-    #         return self.role(verify_key=verify_key).can_create_users
-    #     except UserNotFoundError:
-    #         return False
+        if checkpw(bytes_pass, salt + hashed):
+            salt, hashed = self.__salt_and_hash_password(new_pwd, 12)
+            user.salt = salt
+            user.hashed_password = hashed
+            self.update_one(
+                {"id_int": int(user_id)}, {"$set": {"__blob__": user.to_bytes()}}
+            )
+        else:
+            # Should it warn the user about his wrong current password input?
+            raise InvalidCredentialsError
 
-    # def can_upload_data(self, verify_key: VerifyKey) -> bool:
-    #     """Checks if a user has permissions to upload data to the node."""
-    #     try:
-    #         return self.role(verify_key=verify_key).can_upload_data
-    #     except UserNotFoundError:
-    #         return False
+    def can_create_users(self, verify_key: VerifyKey) -> bool:
+        """Checks if a user has permissions to create new users."""
+        try:
+            user = self.get_user(verify_key)
+            return user.role.get("can_create_users", False)
+        except UserNotFoundError:
+            return False
 
-    # def can_triage_requests(self, verify_key: VerifyKey) -> bool:
-    #     """Checks if a user has permissions to triage requests."""
-    #     try:
-    #         return self.role(verify_key=verify_key).can_triage_data_requests
-    #     except UserNotFoundError:
-    #         return False
+    def can_upload_data(self, verify_key: VerifyKey) -> bool:
+        """Checks if a user has permissions to upload data to the node."""
+        try:
+            user = self.get_user(verify_key)
+            return user.role.get("can_upload_data", False)
+        except UserNotFoundError:
+            return False
 
-    # def can_manage_infrastructure(self, verify_key: VerifyKey) -> bool:
-    #     """Checks if a user has permissions to manage the deployed infrastructure."""
-    #     try:
-    #         return self.role(verify_key=verify_key).can_manage_infrastructure
-    #     except UserNotFoundError:
-    #         return False
+    def can_triage_requests(self, verify_key: VerifyKey) -> bool:
+        """Checks if a user has permissions to triage requests."""
+        try:
+            user = self.get_user(verify_key)
+            return user.role.get("can_triage_requests", False)
+        except UserNotFoundError:
+            return False
 
-    # def can_edit_roles(self, verify_key: VerifyKey) -> bool:
-    #     """Checks if a user has permission to edit roles of other users."""
-    #     try:
-    #         return self.role(verify_key=verify_key).can_edit_roles
-    #     except UserNotFoundError:
-    #         return False
+    def can_manage_infrastructure(self, verify_key: VerifyKey) -> bool:
+        """Checks if a user has permissions to manage the deployed infrastructure."""
+        try:
+            user = self.get_user(verify_key)
+            return user.role.get("can_manage_infrastructure", False)
+        except UserNotFoundError:
+            return False
 
-    # def role(self, verify_key: VerifyKey) -> Role:
-    #     """Returns the role of the given user."""
-    #     user = self.get_user(verify_key)
-    #     if not user:
-    #         raise UserNotFoundError
-    #     return self.roles.first(id=user.role)
+    def can_edit_roles(self, verify_key: VerifyKey) -> bool:
+        """Checks if a user has permission to edit roles of other users."""
+        try:
+            user = self.get_user(verify_key)
+            return user.role.get("can_edit_roles", False)
+        except UserNotFoundError:
+            return False
 
-    # def get_user(self, verify_key: VerifyKey) -> Optional[SyftUser]:
-    #     """Returns the user for the given public digital signature."""
-    #     return self.first(
-    #         verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
-    #     )
+    def role(self, verify_key: VerifyKey) -> Role:
+        """Returns the role of the given user."""
+        user = self.get_user(verify_key)
+        return user.role
 
-    # def __login_validation(self, email: str, password: str) -> SyftUser:
-    #     """Validates and returns the user object for the given credentials.
+    def get_user(self, verify_key: VerifyKey) -> Optional[SyftUser]:
+        """Returns the user for the given public digital signature."""
+        user = self.first(
+            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        )
+        if not user:
+            raise UserNotFoundError
 
-    #     Args:
-    #         email (str): email of the user.
-    #         password (str): password of the user.
+    def __login_validation(self, email: str, password: str) -> NoSQLSyftUser:
+        """Validates and returns the user object for the given credentials.
 
-    #     Raises:
-    #         UserNotFoundError: Raised if the user does not exist for the email.
-    #         InvalidCredentialsError: Raised if either the password or email is incorrect.
+        Args:
+            email (str): email of the user.
+            password (str): password of the user.
 
-    #     Returns:
-    #         SyftUser: Returns the user for the given credentials.
-    #     """
-    #     try:
-    #         user = self.first(email=email)
-    #         if not user:
-    #             raise UserNotFoundError
+        Raises:
+            UserNotFoundError: Raised if the user does not exist for the email.
+            InvalidCredentialsError: Raised if either the password or email is incorrect.
 
-    #         hashed = user.hashed_password.encode("UTF-8")
-    #         salt = user.salt.encode("UTF-8")
-    #         bytes_pass = password.encode("UTF-8")
+        Returns:
+            SyftUser: Returns the user for the given credentials.
+        """
+        try:
+            user = self.first(email=email)
+            if not user:
+                raise UserNotFoundError
 
-    #         if checkpw(bytes_pass, salt + hashed):
-    #             return user
-    #         else:
-    #             raise InvalidCredentialsError
-    #     except UserNotFoundError:
-    #         raise InvalidCredentialsError
+            hashed = user.hashed_password.encode("UTF-8")
+            salt = user.salt.encode("UTF-8")
+            bytes_pass = password.encode("UTF-8")
+
+            if checkpw(bytes_pass, salt + hashed):
+                return user
+            else:
+                raise InvalidCredentialsError
+        except UserNotFoundError:
+            raise InvalidCredentialsError
 
     def __salt_and_hash_password(self, password: str, rounds: int) -> Tuple[str, str]:
         bytes_pass = password.encode("UTF-8")
@@ -814,38 +847,28 @@ class NoSQLUserManager(NoSQLDatabaseManager):
         salt = salt.decode("UTF-8")
         return salt, hashed
 
-    # def get_budget_for_user(self, verify_key: VerifyKey) -> float:
-    #     encoded_vk = verify_key.encode(encoder=HexEncoder).decode("utf-8")
-    #     user = self.first(verify_key=encoded_vk)
-    #     if user is None:
-    #         raise Exception(f"No user for verify_key: {verify_key}")
-    #     return user.budget
+    def get_budget_for_user(self, verify_key: VerifyKey) -> float:
+        user = self.get_user(verify_key=verify_key)
+        return user.budget
 
-    # def deduct_epsilon_for_user(
-    #     self, verify_key: VerifyKey, old_budget: float, epsilon_spend: float
-    # ) -> bool:
-    #     session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
-    #     with session_local.begin():
-    #         encoded_vk = verify_key.encode(encoder=HexEncoder).decode("utf-8")
-    #         user = self.first(verify_key=encoded_vk)
-    #         if user.budget != old_budget:
-    #             raise RefreshBudgetException(
-    #                 "The budget used does not match the current budget in the database."
-    #                 + "Try refreshing again"
-    #             )
-    #         if user.budget < 0:
-    #             raise NegativeBudgetException(
-    #                 f"Budget is somehow negative {user.budget}"
-    #             )
+    def deduct_epsilon_for_user(
+        self, verify_key: VerifyKey, old_budget: float, epsilon_spend: float
+    ) -> bool:
+        user = self.get_user(verify_key=verify_key)
+        if user.budget != old_budget:
+            raise RefreshBudgetException(
+                "The budget used does not match the current budget in the database."
+                + "Try refreshing again"
+            )
+        if user.budget < 0:
+            raise NegativeBudgetException(f"Budget is somehow negative {user.budget}")
 
-    #         if old_budget - abs(epsilon_spend) < 0:
-    #             raise NotEnoughBudgetException(
-    #                 f"The user does not have enough budget: {user.budget} for epsilon spend: {epsilon_spend}"
-    #             )
+        if old_budget - abs(epsilon_spend) < 0:
+            raise NotEnoughBudgetException(
+                f"The user does not have enough budget: {user.budget} for epsilon spend: {epsilon_spend}"
+            )
 
-    #         user.budget = user.budget - epsilon_spend
-    #         session_local.add(user)
+        user.budget = user.budget - epsilon_spend
+        self.update_one({"_id": user.id.value}, {"$set": {"__blob__": user.to_bytes()}})
 
-    #     session_local.commit()
-    #     session_local.close()
-    #     return True
+        return True
