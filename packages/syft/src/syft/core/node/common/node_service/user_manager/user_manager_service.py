@@ -16,6 +16,7 @@ from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import UserNotFoundError
 from ...node_table.utils import model_to_json
+from ...node_table.utils import syft_object_to_json
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
 from ..success_resp_message import SuccessResponseMessage
@@ -243,9 +244,9 @@ def get_all_users_msg(
         users = node.users.all()
         _msg = []
         for user in users:
-            _user_json = model_to_json(user)
+            _user_json = syft_object_to_json(user)
             # Use role name instead of role ID.
-            _user_json["role"] = node.roles.first(id=_user_json["role"]).name
+            _user_json["role"] = _user_json["role"].get("name",None)
 
             # Remove private key
             del _user_json["private_key"]

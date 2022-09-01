@@ -774,7 +774,7 @@ class NoSQLUserManager(NoSQLDatabaseManager):
         """Checks if a user has permissions to triage requests."""
         try:
             user = self.get_user(verify_key)
-            return user.role.get("can_triage_requests", False)
+            return user.role.get("can_triage_data_requests", False)
         except UserNotFoundError:
             return False
 
@@ -801,11 +801,13 @@ class NoSQLUserManager(NoSQLDatabaseManager):
 
     def get_user(self, verify_key: VerifyKey) -> Optional[SyftUser]:
         """Returns the user for the given public digital signature."""
+        encoded_vk = verify_key.encode(encoder=HexEncoder).decode("utf-8")
         user = self.first(
-            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+            verify_key=encoded_vk
         )
         if not user:
             raise UserNotFoundError
+        return user
 
     def __login_validation(self, email: str, password: str) -> NoSQLSyftUser:
         """Validates and returns the user object for the given credentials.

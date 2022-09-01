@@ -203,11 +203,8 @@ class NoSQLDatabaseManager:
     #     session_local.close()
     #     return obj
 
-    # def all(self) -> List[Any]:
-    #     session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
-    #     result = list(session_local.query(self._schema).all())
-    #     session_local.close()
-    #     return result
+    def all(self) -> List[SyftObject]:
+        return self.find({})
 
     # def delete(self, **kwargs: Any) -> None:
     #     """Delete an object from the database.

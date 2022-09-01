@@ -9,6 +9,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import sessionmaker
+from syft.core.node.common.node_table.user import SyftObject
 
 # relative
 from . import Base
@@ -35,6 +36,26 @@ def model_to_json(model: Base) -> Dict[str, Any]:
                 json[col] = str(getattr(model, col))
             else:
                 json[col] = getattr(model, col)
+    return json
+
+
+def syft_object_to_json(obj: SyftObject) -> Dict[str, Any]:
+    """
+    Returns a JSON representation of an NoSQL-backed object.
+
+    Args:
+        model: NoSQL Syft Object document
+    Returns:
+        Dict: Python dictionary representing the NoSQL object.
+    """
+    json = {}     
+    for field in obj.__attr_state__:
+        if field!="hashed_password" and field!="salt":
+            if field in datetime_cols:
+                json[field] = str(getattr(obj,field))
+            else:
+                json[field] = getattr(obj,field)
+
     return json
 
 
