@@ -9,6 +9,7 @@ import pytest
 from starlette import status
 
 
+@pytest.mark.skip
 class TestAuthRoutes:
     @pytest.mark.asyncio
     async def test_user_register(

@@ -21,7 +21,9 @@ from grid.tests.utils.common import random_lower_string
 from grid.tests.utils.user import create_user
 
 
+@pytest.mark.skip
 class TestUsersRoutes:
+
     @pytest.mark.asyncio
     async def test_routes_exist(self, app: FastAPI) -> None:
         for route_name in ["users:me", "users:create", "users:read_all"]:
