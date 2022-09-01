@@ -306,15 +306,13 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
             or self.payload.website
         )
 
-        # Change own information
-        _valid_user = node.users.contain(id=self.payload.user_id)
 
         if not _valid_parameters:
             raise MissingRequestKeyError(
                 "Missing json fields ( email,password,role,groups, name )"
             )
 
-        if not _valid_user:
+        if not node.users.contain(id_int=self.payload.user_id):
             raise UserNotFoundError
 
         payload_dict = self.payload.dict(exclude_unset=True)
