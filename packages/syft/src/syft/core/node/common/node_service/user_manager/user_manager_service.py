@@ -131,9 +131,9 @@ def update_user_msg(
     _allowed = msg.user_id == 0 or node.users.can_create_users(verify_key=verify_key)
     # Change own information
     if msg.user_id == 0:
-        msg.user_id = int(node.users.get_user(verify_key).id)  # type: ignore
+        msg.user_id = int(node.users.get_user(verify_key).id_int)  # type: ignore
 
-    _valid_user = node.users.contain(id=msg.user_id)
+    _valid_user = node.users.contain(id_int=msg.user_id)
 
     if not _valid_parameters:
         raise MissingRequestKeyError(
