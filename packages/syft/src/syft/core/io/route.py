@@ -90,7 +90,6 @@ from typing import Union
 # relative
 from ...logger import debug
 from ...logger import traceback_and_raise
-from ..common.message import SignedEventualSyftMessageWithoutReply
 from ..common.message import SignedImmediateSyftMessageWithReply
 from ..common.message import SignedImmediateSyftMessageWithoutReply
 from ..common.object import ObjectWithID
@@ -145,13 +144,6 @@ class Route(ObjectWithID):
     ) -> SignedImmediateSyftMessageWithoutReply:
         traceback_and_raise(NotImplementedError)
 
-    def send_eventual_msg_without_reply(
-        self,
-        msg: SignedEventualSyftMessageWithoutReply,
-        timeout: Optional[float] = None,
-    ) -> None:
-        traceback_and_raise(NotImplementedError)
-
 
 @serializable(recursive_serde=True)
 class SoloRoute(Route):
@@ -172,13 +164,6 @@ class SoloRoute(Route):
     ) -> None:
         debug(f"> Routing {msg.pprint} via {self.pprint}")
         self.connection.send_immediate_msg_without_reply(msg=msg, timeout=timeout)
-
-    def send_eventual_msg_without_reply(
-        self,
-        msg: SignedEventualSyftMessageWithoutReply,
-        timeout: Optional[float] = None,
-    ) -> None:
-        self.connection.send_eventual_msg_without_reply(msg=msg, timeout=timeout)
 
     def send_immediate_msg_with_reply(
         self,

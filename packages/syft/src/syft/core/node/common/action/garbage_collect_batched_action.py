@@ -11,11 +11,11 @@ from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
 from ...abstract.node import AbstractNode
-from .common import EventualActionWithoutReply
+from .common import ImmediateActionWithoutReply
 
 
 @serializable(recursive_serde=True)
-class GarbageCollectBatchedAction(EventualActionWithoutReply):
+class GarbageCollectBatchedAction(ImmediateActionWithoutReply):
     __attr_allowlist__ = ["ids_at_location", "address", "id"]
 
     def __init__(

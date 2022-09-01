@@ -1,3 +1,6 @@
+# future
+from __future__ import annotations
+
 # stdlib
 from typing import Generic
 from typing import Optional
@@ -85,9 +88,7 @@ class SyftMessage(AbstractMessage):
 
         """
         debug(f"> Signing with {self.address.key_emoji(key=signing_key.verify_key)}")
-        print(type(self))
         signed_message = signing_key.sign(serialize(self, to_bytes=True))
-        print(type(self))
 
         # signed_type will be the final subclass callee's closest parent signed_type
         # for example ReprMessage -> ImmediateSyftMessageWithoutReply.signed_type
@@ -118,6 +119,14 @@ class SignedMessage(SyftMessage):
     signature: bytes
     verify_key: VerifyKey
 
+    __attr_allowlist__: Sequence[str] = [
+        "id",
+        "address",
+        "signature",
+        "verify_key",
+        "serialized_message",
+    ]
+
     def __init__(
         self,
         address: Address,
@@ -133,7 +142,11 @@ class SignedMessage(SyftMessage):
         self.cached_deseralized_message: Optional[SyftMessage] = None
 
     @property
-    def message(self) -> "SyftMessage":
+    def message(self) -> SyftMessage:
+        # from deserialize we might not have this attr because __init__ is skipped
+        if not hasattr(self, "cached_deseralized_message"):
+            self.cached_deseralized_message = None
+
         if self.cached_deseralized_message is None:
             _syft_msg = validate_type(
                 _deserialize(blob=self.serialized_message, from_bytes=True), SyftMessage
@@ -164,112 +177,38 @@ class SignedMessage(SyftMessage):
 
 @serializable(recursive_serde=True)
 class SignedImmediateSyftMessageWithReply(SignedMessage):
-    __attr_allowlist__: Sequence[str] = [
-        "id",
-        "address",
-        "signature",
-        "verify_key",
-        "message",
-    ]
+    pass
 
 
 @serializable(recursive_serde=True)
 class SignedImmediateSyftMessageWithoutReply(SignedMessage):
-    __attr_allowlist__: Sequence[str] = [
-        "id",
-        "address",
-        "signature",
-        "verify_key",
-        "message",
-    ]
+    pass
 
 
 @serializable(recursive_serde=True)
-class SignedEventualSyftMessageWithoutReply(SignedMessage):
-    __attr_allowlist__: Sequence[str] = [
-        "id",
-        "address",
-        "signature",
-        "verify_key",
-        "message",
-    ]
+class SignedImmediateSyftMessage(SignedMessage):
+    pass
 
 
-@serializable(recursive_serde=True)
 class ImmediateSyftMessage(SyftMessage):
-    __attr_allowlist__: Sequence[str] = [
-        "id",
-        "address",
-        "message",
-    ]
+    signed_type = SignedImmediateSyftMessage
 
 
-@serializable(recursive_serde=True)
-class EventualSyftMessage(SyftMessage):
-    __attr_allowlist__: Sequence[str] = [
-        "id",
-        "address",
-        "message",
-    ]
-
-
-@serializable(recursive_serde=True)
 class SyftMessageWithReply(SyftMessage):
-    __attr_allowlist__: Sequence[str] = [
-        "id",
-        "address",
-        "message",
-    ]
-
-
-@serializable(recursive_serde=True)
-class SyftMessageWithoutReply(SyftMessage):
-    __attr_allowlist__: Sequence[str] = [
-        "id",
-        "address",
-        "message",
-    ]
-
-
-@serializable(recursive_serde=True)
-class ImmediateSyftMessageWithoutReply(ImmediateSyftMessage, SyftMessageWithoutReply):
-    __attr_allowlist__: Sequence[str] = [
-        "id",
-        "address",
-        "message",
-    ]
-    signed_type = SignedImmediateSyftMessageWithoutReply
-
-    def __init__(self, address: Address, msg_id: Optional[UID] = None) -> None:
-        super().__init__(address=address, msg_id=msg_id)
-
-
-@serializable(recursive_serde=True)
-class EventualSyftMessageWithoutReply(EventualSyftMessage, SyftMessageWithoutReply):
-    __attr_allowlist__: Sequence[str] = [
-        "id",
-        "address",
-        "message",
-    ]
-
-    signed_type = SignedEventualSyftMessageWithoutReply
-
-    def __init__(self, address: Address, msg_id: Optional[UID] = None) -> None:
-        super().__init__(address=address, msg_id=msg_id)
-
-
-@serializable(recursive_serde=True)
-class ImmediateSyftMessageWithReply(ImmediateSyftMessage, SyftMessageWithReply):
-    __attr_allowlist__: Sequence[str] = [
-        "id",
-        "address",
-        "reply_to",
-    ]
-
-    signed_type = SignedImmediateSyftMessageWithReply
-
     def __init__(
         self, reply_to: Address, address: Address, msg_id: Optional[UID] = None
     ) -> None:
         super().__init__(address=address, msg_id=msg_id)
         self.reply_to = reply_to
+
+
+class SyftMessageWithoutReply(SyftMessage):
+    pass
+
+
+class ImmediateSyftMessageWithoutReply(SyftMessageWithoutReply):
+    signed_type = SignedImmediateSyftMessageWithoutReply
+
+
+class ImmediateSyftMessageWithReply(SyftMessageWithReply):
+    signed_type = SignedImmediateSyftMessageWithReply

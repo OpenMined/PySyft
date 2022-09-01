@@ -11,7 +11,6 @@ from typing import Optional
 from typing_extensions import final
 
 # relative
-from ..common.message import SignedEventualSyftMessageWithoutReply
 from ..common.message import SignedImmediateSyftMessageWithReply
 from ..common.message import SignedImmediateSyftMessageWithoutReply
 from ..common.serde.serializable import serializable
@@ -38,11 +37,6 @@ class VirtualServerConnection(ServerConnection):
     ) -> None:
         self.node.recv_immediate_msg_without_reply(msg=msg)
 
-    def recv_eventual_msg_without_reply(
-        self, msg: SignedEventualSyftMessageWithoutReply
-    ) -> None:
-        self.node.recv_eventual_msg_without_reply(msg=msg)
-
 
 @final
 @serializable(recursive_serde=True)
@@ -66,13 +60,6 @@ class VirtualClientConnection(ClientConnection):
         return_signed: bool = False,
     ) -> SignedImmediateSyftMessageWithoutReply:
         return self.server.recv_immediate_msg_with_reply(msg=msg)
-
-    def send_eventual_msg_without_reply(
-        self,
-        msg: SignedEventualSyftMessageWithoutReply,
-        timeout: Optional[float] = None,
-    ) -> None:
-        return self.server.recv_eventual_msg_without_reply(msg=msg)
 
 
 def create_virtual_connection(node: AbstractNode) -> VirtualClientConnection:

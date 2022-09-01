@@ -7,7 +7,6 @@ from nacl.bindings.crypto_sign import crypto_sign_keypair
 from nacl.signing import VerifyKey
 
 # syft absolute
-from syft.core.common.message import SignedEventualSyftMessageWithoutReply
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.common.uid import UID
@@ -31,11 +30,6 @@ class MockNode(Node):
     ) -> None:
         return None
 
-    def recv_eventual_msg_without_reply(
-        self, msg: SignedImmediateSyftMessageWithReply
-    ) -> None:
-        return None
-
     def recv_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
@@ -55,13 +49,11 @@ def _construct_address() -> Address:
 def construct_dummy_message(
     msg_class: Callable,
 ) -> Union[
-    SignedEventualSyftMessageWithoutReply,
     SignedImmediateSyftMessageWithReply,
     SignedImmediateSyftMessageWithoutReply,
 ]:
     """
     Helper method to construct a dummy SignedMessage of the following:
-    - SignedEventualSyftMessageWithoutReply
     - SignedImmediateSyftMessageWithReply
     - SignedImmediateSyftMessageWithoutReply
     """

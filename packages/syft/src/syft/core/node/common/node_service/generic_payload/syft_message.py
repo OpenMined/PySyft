@@ -14,7 +14,6 @@ from pydantic.error_wrappers import ValidationError as PydanticValidationError
 
 # relative
 from .....common.message import ImmediateSyftMessage
-from .....common.message import SignedMessage
 from .....common.uid import UID
 from .....io.address import Address
 from ....abstract.node_service_interface import NodeServiceInterface
@@ -54,7 +53,6 @@ class NewSyftMessage(ImmediateSyftMessage):
 
     __attr_allowlist__ = ["id", "address", "reply_to", "reply", "kwargs"]
 
-    signed_type = SignedMessage
     request_payload_type = RequestPayload
     reply_payload_type = ReplyPayload
 

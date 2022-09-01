@@ -9,7 +9,6 @@ import requests
 
 # relative
 from .. import GridURL
-from ...core.common.message import SignedEventualSyftMessageWithoutReply
 from ...core.common.message import SignedImmediateSyftMessageWithReply
 from ...core.common.message import SignedImmediateSyftMessageWithoutReply
 from ...core.common.message import SyftMessage
@@ -77,21 +76,6 @@ class HTTPConnection(ClientConnection):
 
         """
         # Serializes SignedImmediateSyftMessageWithoutReply
-        # and send it using HTTP protocol
-        self._send_msg(msg=msg, timeout=timeout)
-
-    def send_eventual_msg_without_reply(
-        self,
-        msg: SignedEventualSyftMessageWithoutReply,
-        timeout: Optional[float] = None,
-    ) -> None:
-        """
-        Sends low priority messages without waiting for their reply.
-
-        This method implements a HTTP version of the
-        ClientConnection.send_eventual_msg_without_reply
-        """
-        # Serializes SignedEventualSyftMessageWithoutReply in json format
         # and send it using HTTP protocol
         self._send_msg(msg=msg, timeout=timeout)
 

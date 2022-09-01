@@ -6,6 +6,7 @@ from typing import Dict
 from typing import Optional
 from typing import Tuple
 from typing import Union
+from typing import cast
 
 # third party
 import requests
@@ -145,8 +146,9 @@ class GridHTTPConnection(HTTPConnection):
         if response.status_code != requests.codes.ok:
             raise Exception(content["detail"])
 
-        print("what is metadata?", content)
-        metadata = content["metadata"].encode("ISO-8859-1")
+        metadata = _deserialize(
+            content["metadata"].encode("ISO-8859-1"), from_bytes=True
+        )
 
         # If success
         # Save session token
@@ -190,7 +192,7 @@ class GridHTTPConnection(HTTPConnection):
         except Exception as e:
             print(f"Failed to upgrade to HTTPS. {e}")
 
-        return response.content
+        return cast(tuple, _deserialize(response.content, from_bytes=True))
 
     def setup(self, **content: Dict[str, Any]) -> Any:
         response = json.loads(

@@ -21,10 +21,8 @@ from ....logger import debug
 from ....logger import error
 from ....logger import info
 from ....logger import traceback_and_raise
-from ...common.message import EventualSyftMessageWithoutReply
 from ...common.message import ImmediateSyftMessageWithReply
 from ...common.message import ImmediateSyftMessageWithoutReply
-from ...common.message import SignedEventualSyftMessageWithoutReply
 from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedImmediateSyftMessageWithoutReply
 from ...common.message import SignedMessage
@@ -278,26 +276,6 @@ class Client(AbstractNodeClient):
         debug(f"> Sending {msg.pprint} {self.pprint} ➡️  {msg.address.pprint}")
         self.routes[route_index].send_immediate_msg_without_reply(
             msg=msg, timeout=timeout
-        )
-
-    def send_eventual_msg_without_reply(
-        self,
-        msg: EventualSyftMessageWithoutReply,
-        route_index: int = 0,
-        timeout: Optional[float] = None,
-    ) -> None:
-        route_index = route_index or self.default_route_index
-        output = (
-            f"> {self.pprint} Signing {msg.pprint} with "
-            + f"{self.key_emoji(key=self.signing_key.verify_key)}"
-        )
-        debug(output)
-        signed_msg: SignedEventualSyftMessageWithoutReply = msg.sign(
-            signing_key=self.signing_key
-        )
-
-        self.routes[route_index].send_eventual_msg_without_reply(
-            msg=signed_msg, timeout=timeout
         )
 
     def url_from_path(self, path: str) -> str:
