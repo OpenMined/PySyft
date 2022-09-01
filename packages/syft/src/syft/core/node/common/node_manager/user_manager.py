@@ -678,6 +678,9 @@ class NoSQLUserManager(NoSQLDatabaseManager):
         results = super().query(**kwargs)
         return results
 
+    def contain(self, **kwargs: Any ) -> bool:
+        return bool(super().find_one(kwargs))    
+    
     def first(self, **kwargs: Any) -> NoSQLSyftUser:
         result = super().find_one(kwargs)
         if not result:
