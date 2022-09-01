@@ -43,9 +43,7 @@ from .common.node_manager.node_route_manager import NodeRouteManager
 from .common.node_manager.redis_store import RedisStore
 from .common.node_manager.request_manager import RequestManager
 from .common.node_manager.role_manager import NewRoleManager
-from .common.node_manager.role_manager import RoleManager
 from .common.node_manager.user_manager import NoSQLUserManager
-from .common.node_manager.user_manager import UserManager
 from .common.node_service.association_request.association_request_service import (
     AssociationRequestService,
 )

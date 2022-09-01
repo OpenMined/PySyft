@@ -10,14 +10,12 @@ from nacl.signing import SigningKey
 from syft import Domain  # type: ignore
 from syft import Network  # type: ignore
 from syft.core.node.common.client import Client
-from syft.core.node.common.node_table.utils import seed_db
 from syft.core.node.common.util import get_s3_client
 
 # grid absolute
 from grid.core.config import Settings
 from grid.core.config import settings
 from grid.db.session import get_db_engine
-from grid.db.session import get_db_session
 
 SEAWEEDFS_MAX_RETRIES = 5
 
@@ -78,6 +76,7 @@ node.loud_print()
 if len(node.setup):  # Check if setup was defined previously
     node.name = node.setup.node_name
 
+# Commented out as we have a singleton class for RoleManager.
 # # Moving this to get called WITHIN Domain and Network so that they can operate in standalone mode
 # if not len(node.roles):  # Check if roles were registered previously
 #     seed_db(get_db_session())

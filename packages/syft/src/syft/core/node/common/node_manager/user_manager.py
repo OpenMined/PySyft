@@ -3,6 +3,7 @@
 # stdlib
 from datetime import datetime
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -25,7 +26,6 @@ from ..exceptions import UserNotFoundError
 from ..node_table.pdf import PDFObject
 from ..node_table.roles import Role
 from ..node_table.user import NoSQLSyftUser
-from ..node_table.user import SyftObject
 from ..node_table.user import SyftUser
 from ..node_table.user import UserApplication
 from .constants import UserApplicationStatus
@@ -587,6 +587,7 @@ class NoSQLUserManager(NoSQLDatabaseManager):
         website: str,
         budget: float,
         role: dict,
+        verify_key: VerifyKey,
     ) -> None:
         """Process the application for the given candidate.
 
@@ -601,7 +602,6 @@ class NoSQLUserManager(NoSQLDatabaseManager):
         """
 
         _private_key = SigningKey.generate()
-        salt, hashed_password = self.__salt_and_hash_password(password, 12)
 
         encoded_pk = _private_key.encode(encoder=HexEncoder).decode("utf-8")
         encoded_vk = _private_key.verify_key.encode(encoder=HexEncoder).decode("utf-8")
@@ -611,17 +611,15 @@ class NoSQLUserManager(NoSQLDatabaseManager):
         self.signup(
             name=name,
             email=email,
+            password=password,
             role=role,
             budget=budget,
             private_key=encoded_pk,
             verify_key=encoded_vk,
-            hashed_password=hashed_password,
-            salt=salt,
             daa_pdf=daa_pdf,
             added_by=added_by,
             institution=institution,
             website=website,
-            created_at=datetime.now(),
         )
 
     def is_owner(self, verify_key: VerifyKey) -> bool:
@@ -637,6 +635,10 @@ class NoSQLUserManager(NoSQLDatabaseManager):
         role: dict,
         private_key: SigningKey,
         verify_key: VerifyKey,
+        daa_pdf: Optional[int] = None,
+        added_by: Optional[str] = "",
+        institution: Optional[str] = "",
+        website: Optional[str] = "",
     ) -> NoSQLSyftUser:
         """Registers a user in the database, when they signup on a domain.
 
@@ -665,6 +667,10 @@ class NoSQLUserManager(NoSQLDatabaseManager):
             salt=salt,
             created_at=str(datetime.now()),
             id_int=curr_len + 1,
+            daa_pdf=daa_pdf,
+            added_by=added_by,
+            institution=institution,
+            website=website,
         )
         return self.add(user)
 
@@ -690,7 +696,7 @@ class NoSQLUserManager(NoSQLDatabaseManager):
         """
         return self.__login_validation(email, password)
 
-    def set(self, **kwargs) -> None:  # nosec
+    def set(self, **kwargs: Dict[str, Any]) -> None:  # nosec
         """Updates the information for the given user id.
 
         Args:
@@ -708,8 +714,8 @@ class NoSQLUserManager(NoSQLDatabaseManager):
             Exception: Raised when an invalid argument/property is passed.
         """
         attributes = {}
-        user_id = kwargs["user_id"]
-        user = self.first(id_int=int(user_id))
+        user_id: int = int(kwargs["user_id"])
+        user = self.first(id_int=user_id)
         if not user:
             raise UserNotFoundError
 
@@ -734,7 +740,7 @@ class NoSQLUserManager(NoSQLDatabaseManager):
 
         attributes["__blob__"] = user.to_bytes()
 
-        self.update_one({"id_int": int(user_id)}, {"$set": attributes})
+        self.update_one({"id_int": user_id}, {"$set": attributes})
 
     def change_password(self, user_id: str, current_pwd: str, new_pwd: str) -> None:
         user = self.first(id_int=int(user_id))
@@ -744,9 +750,9 @@ class NoSQLUserManager(NoSQLDatabaseManager):
         bytes_pass = current_pwd.encode("UTF-8")
 
         if checkpw(bytes_pass, salt + hashed):
-            salt, hashed = self.__salt_and_hash_password(new_pwd, 12)
-            user.salt = salt
-            user.hashed_password = hashed
+            new_salt, new_hashed = self.__salt_and_hash_password(new_pwd, 12)
+            user.salt = new_salt
+            user.hashed_password = new_hashed
             self.update_one(
                 {"id_int": int(user_id)}, {"$set": {"__blob__": user.to_bytes()}}
             )
@@ -799,12 +805,10 @@ class NoSQLUserManager(NoSQLDatabaseManager):
         user = self.get_user(verify_key)
         return user.role
 
-    def get_user(self, verify_key: VerifyKey) -> Optional[SyftUser]:
+    def get_user(self, verify_key: VerifyKey) -> NoSQLSyftUser:
         """Returns the user for the given public digital signature."""
         encoded_vk = verify_key.encode(encoder=HexEncoder).decode("utf-8")
-        user = self.first(
-            verify_key=encoded_vk
-        )
+        user = self.first(verify_key=encoded_vk)
         if not user:
             raise UserNotFoundError
         return user
@@ -874,3 +878,6 @@ class NoSQLUserManager(NoSQLDatabaseManager):
         self.update_one({"_id": user.id.value}, {"$set": {"__blob__": user.to_bytes()}})
 
         return True
+    
+    def clear(self) -> None:
+        super().clear()

@@ -144,7 +144,7 @@ class NoSQLDatabaseManager:
             return d
         return SyftObject.from_mongo(d)
 
-    def first(self, search_params: Dict[str, Any]) -> Optional[SyftObject]:
+    def first(self, **search_params: Dict[str, Any]) -> Optional[SyftObject]:
         d = self._collection.find_one(search_params)
         if d is None:
             return d
@@ -168,7 +168,7 @@ class NoSQLDatabaseManager:
     #     session_local.commit()
     #     return _obj
 
-    def query(self, search_params: Dict[str, Any]) -> List[SyftObject]:
+    def query(self, **search_params: Dict[str, Any]) -> List[SyftObject]:
         """Query db objects filtering by parameters
         Args:
             parameters : List of parameters used to filter.
@@ -236,8 +236,5 @@ class NoSQLDatabaseManager:
     #     session_local.close()
     #     return result
 
-    # def clear(self) -> None:
-    #     local_session = sessionmaker(bind=self.db)()
-    #     local_session.query(self._schema).delete()
-    #     local_session.commit()
-    #     local_session.close()
+    def clear(self) -> None:
+        self.drop()

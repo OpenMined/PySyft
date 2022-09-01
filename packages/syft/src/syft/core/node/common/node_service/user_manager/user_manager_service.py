@@ -71,6 +71,7 @@ def create_user_msg(
         website=msg.website,
         budget=msg.budget,
         role=node.roles.ds_role,
+        verify_key=verify_key,
     )
 
     # app_id = node.users.create_user_application(
@@ -246,7 +247,7 @@ def get_all_users_msg(
         for user in users:
             _user_json = syft_object_to_json(user)
             # Use role name instead of role ID.
-            _user_json["role"] = _user_json["role"].get("name",None)
+            _user_json["role"] = _user_json["role"].get("name", None)
 
             # Remove private key
             del _user_json["private_key"]
