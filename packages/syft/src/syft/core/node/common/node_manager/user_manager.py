@@ -878,6 +878,6 @@ class NoSQLUserManager(NoSQLDatabaseManager):
         self.update_one({"_id": user.id.value}, {"$set": {"__blob__": user.to_bytes()}})
 
         return True
-    
+
     def clear(self) -> None:
         super().clear()

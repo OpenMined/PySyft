@@ -135,7 +135,7 @@ class Domain(Node):
         self.domain = SpecificLocation(name=self.name)
         self.root_key = root_key
 
-        nosql_db_engine = MongoClient(
+        nosql_db_engine = MongoClient(  # nosec
             host="mongo",
             port=27017,
             username="root",

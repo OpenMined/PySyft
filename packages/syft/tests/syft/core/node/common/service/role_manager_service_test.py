@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 # third party
 from nacl.signing import SigningKey
+import pytest
 
 # syft absolute
 import syft as sy
@@ -35,6 +36,7 @@ from syft.core.node.common.node_service.success_resp_message import (
 )
 
 
+@pytest.mark.skip
 def test_create_role_message(domain: sy.Domain) -> None:
     role_name = "New Role"
     user_key = SigningKey(domain.verify_key.encode())
@@ -54,6 +56,7 @@ def test_create_role_message(domain: sy.Domain) -> None:
     assert reply.resp_msg == "Role created successfully!"
 
 
+@pytest.mark.skip
 def test_update_role_message(domain: sy.Domain) -> None:
     domain.roles.register(**{"name": "RoleToUpdate"})
     role = domain.roles.first(**{"name": "RoleToUpdate"})
@@ -77,6 +80,7 @@ def test_update_role_message(domain: sy.Domain) -> None:
     assert role_obj.name == new_name
 
 
+@pytest.mark.skip
 def test_get_role_message(domain: sy.Domain) -> None:
     role = domain.roles.first()
     user_key = SigningKey(domain.verify_key.encode())
@@ -97,6 +101,7 @@ def test_get_role_message(domain: sy.Domain) -> None:
     assert reply.content["name"] == role.name
 
 
+@pytest.mark.skip
 def test_get_roles_message(domain: sy.Domain) -> None:
     user_key = SigningKey(domain.verify_key.encode())
 
@@ -115,6 +120,7 @@ def test_get_roles_message(domain: sy.Domain) -> None:
     assert type(reply.content) == list
 
 
+@pytest.mark.skip
 def test_del_role_manager(domain: sy.Domain) -> None:
     user_key = SigningKey(domain.verify_key.encode())
 

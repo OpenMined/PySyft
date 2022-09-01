@@ -190,3 +190,9 @@ class NewRoleManager(metaclass=Singleton):
         if role is None:
             raise ValueError("Admin role not populated.")
         return role
+
+    def contain(self, name: str) -> bool:
+        for _, v in self.role_dict.items():
+            if v["name"] == name:
+                return True
+        return False
