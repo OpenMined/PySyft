@@ -1,37 +1,33 @@
 manifestVersion: 0.1
 hagrid_version: 0.2.89
 syft_version: 0.7.0-beta.42
-# ansible files
-# what files we want to download if don't use git
-# target: docker or ansible or
+dockerTag: latest
 baseUrl: https://raw.githubusercontent.com/OpenMined/PySyft/
 hash: 487ef73282f0637b230266edf7be2f517d11bba4
 target_dir: ~/.hagrid/PySyft/
 files:
-  common:
-  - packages/grid/rabbitmq/rabbitmq.conf
-  - packages/grid/redis/redis.conf
-  - packages/grid/seaweedfs/filer.toml
-  - packages/grid/seaweedfs/s3config.json
-  - packages/grid/vpn/config.yaml
-  docker:
-  - packages/grid/.env
-  - packages/grid/docker-compose.build.yml
-  - packages/grid/docker-compose.dev.yml
-  - packages/grid/docker-compose.test.yml
-  - packages/grid/docker-compose.tls.yml
-  - packages/grid/docker-compose.yml
-  - packages/grid/traefik/docker/dynamic-tls.yml
-  - packages/grid/traefik/docker/dynamic.yml
-  - packages/grid/traefik/docker/traefik-tls.template.yml
-  - packages/grid/traefik/docker/traefik.yml
-  - packages/grid/vpn/headscale.dockerfile
-  - packages/grid/vpn/tailscale.dockerfile
-  k8s:
-  - packages/grid/devspace.yaml
-  - packages/grid/traefik/k8s/dynamic.yml
-  - packages/grid/traefik/k8s/traefik.yml
-
-#- docker:
-#- templates: only list of these
-#- relative paths in the dockerfile
+  grid:
+    path: "packages/grid/"
+    common:
+    - rabbitmq/rabbitmq.conf
+    - redis/redis.conf
+    - seaweedfs/filer.toml
+    - seaweedfs/s3config.json
+    - vpn/config.yaml
+    docker:
+    - .env
+    - docker-compose.build.yml
+    - docker-compose.dev.yml
+    - docker-compose.test.yml
+    - docker-compose.tls.yml
+    - docker-compose.yml
+    - traefik/docker/dynamic-tls.yml
+    - traefik/docker/dynamic.yml
+    - traefik/docker/traefik-tls.template.yml
+    - traefik/docker/traefik.yml
+    - vpn/headscale.dockerfile
+    - vpn/tailscale.dockerfile
+    k8s:
+    - devspace.yaml
+    - traefik/k8s/dynamic.yml
+    - traefik/k8s/traefik.yml

@@ -7,6 +7,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import shutil
 import socket
 import subprocess  # nosec
 from typing import List
@@ -87,9 +88,12 @@ def get_git_repo() -> git.Repo:
         print(f"Fetching Syft + Grid Source from {git_url} to {repo_src_path()}")
         try:
             repo_branch = DEFAULT_BRANCH
-            git.Repo.clone_from(
-                git_url, repo_src_path(), single_branch=False, b=repo_branch
-            )
+            repo_path = repo_src_path()
+
+            if repo_path.exists():
+                shutil.rmtree(repo_path)
+
+            git.Repo.clone_from(git_url, repo_path, single_branch=False, b=repo_branch)
         except Exception as e:  # nosec
             print(f"Failed to clone {git_url} to {repo_src_path()} with error: {e}")
     return git.Repo(repo_src_path())

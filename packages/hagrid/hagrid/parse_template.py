@@ -1,7 +1,5 @@
 # stdlib
 import os
-from pathlib import Path
-import shutil
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -16,6 +14,7 @@ from tqdm import tqdm
 import yaml
 
 # relative
+from .cache import RENDERED_DIR
 from .lib import manifest_template_path
 from .lib import repo_src_path
 
@@ -55,22 +54,31 @@ def setup_from_manifest_template(release_type: str, host_type: str) -> None:
     git_hash = template["hash"]
     git_base_url = template["baseUrl"]
     target_dir = template["target_dir"]
-    template_files = template["files"]
+    all_template_files = template["files"]
     files_to_download = []
 
-    # common files
-    files_to_download += template_files["common"]
+    for package_name in all_template_files:
 
-    # docker related files
-    if host_type in ["docker"]:
-        files_to_download += template_files["docker"]
+        # Get all files w.r.t that package e.g. grid, syft, hagrid
+        template_files = all_template_files[package_name]
+        package_path = template_files["path"]
+        to_absolute_file_path = lambda x: os.path.join(package_path, x)  # noqa: E731
 
-    # add k8s related files
-    # elif host_type in ["k8s"]:
-    #     files_to_download += template_files["k8s"]
+        # common files
+        files_to_download += list(map(to_absolute_file_path, template_files["common"]))
 
-    else:
-        raise Exception(f"Hagrid template does not currently support {host_type}.")
+        # docker related files
+        if host_type in ["docker"]:
+            files_to_download += list(
+                map(to_absolute_file_path, template_files["docker"])
+            )
+
+        # add k8s related files
+        # elif host_type in ["k8s"]:
+        #     files_to_download += template_files["k8s"]
+
+        else:
+            raise Exception(f"Hagrid template does not currently support {host_type}.")
 
     download_files(
         files_to_download=files_to_download,
@@ -89,21 +97,17 @@ def download_files(
     target_dir: str,
 ) -> None:
 
+    if release_type == "development":
+        print("Skipping copying files in dev mode.")
+        return
+
     for src_file_path in tqdm(files_to_download, desc="Copying files... "):
 
         # For now target file path is same as source file path
         trg_file_path = src_file_path
-
-        if release_type == "development":
-            copy_files_from_repo(
-                src_file_path=src_file_path, trg_file_path=trg_file_path
-            )
-        else:
-            local_destination = get_local_abs_path(target_dir, trg_file_path)
-            link_to_file = git_url_for_file(src_file_path, git_base_url, git_hash)
-            download_file(
-                link_to_file=link_to_file, local_destination=local_destination
-            )
+        local_destination = get_local_abs_path(target_dir, trg_file_path)
+        link_to_file = git_url_for_file(src_file_path, git_base_url, git_hash)
+        download_file(link_to_file=link_to_file, local_destination=local_destination)
 
 
 def render_templates(env_vars: dict, release_type: str, host_type: str) -> None:
@@ -112,25 +116,40 @@ def render_templates(env_vars: dict, release_type: str, host_type: str) -> None:
     if template is None:
         raise ValueError("Failed to read hagrid template.")
 
-    template_files = template["files"]
-
-    files_to_render = []
-
-    # common files
-    files_to_render += template_files["common"]
-
-    # docker related files
-    if host_type in ["docker"]:
-        files_to_render += template_files["docker"]
-
     target_dir = (
         repo_src_path() if release_type == "development" else template["target_dir"]
     )
+    all_template_files = template["files"]
+
+    # Create the target dir if it does not exist
+    os.makedirs(target_dir, exist_ok=True)
 
     jinja_template = JinjaTemplate(target_dir)
 
-    for file_path in tqdm(files_to_render, desc="Substituting vars... "):
-        jinja_template.substitute_vars(file_path, env_vars)
+    files_to_render = []
+    for package_name in all_template_files:
+        template_files = all_template_files[package_name]
+        package_path = template_files["path"]
+
+        # Aggregate all the files to be rendered
+
+        # common files
+        files_to_render += template_files["common"]
+
+        # docker related files
+        if host_type in ["docker"]:
+            files_to_render += template_files["docker"]
+
+        # Render the files
+        for file_path in files_to_render:
+            src_file_path = os.path.join(package_path, file_path)
+            target_file_path = (
+                os.path.join(package_path, RENDERED_DIR, file_path)
+                if release_type == "development"
+                else src_file_path
+            )
+            print("Target", target_file_path)
+            jinja_template.substitute_vars(src_file_path, env_vars, target_file_path)
 
 
 class JinjaTemplate(object):
@@ -143,15 +162,25 @@ class JinjaTemplate(object):
     def read_template_from_path(self, filepath: str) -> Template:
         return self.environ.get_template(name=filepath)
 
-    def substitute_vars(self, template_path: str, vars_to_substitute: dict) -> None:
+    def substitute_vars(
+        self, template_path: str, vars_to_substitute: dict, target_path: str
+    ) -> None:
 
         template = self.read_template_from_path(template_path)
         rendered_template = template.render(vars_to_substitute)
-        self.save_to(rendered_template, template_path)
+        self.save_to(rendered_template, target_path)
 
     def save_to(self, message: str, filename: str) -> None:
         base_dir = self.directory
-        with open(os.path.join(base_dir, filename), "w") as fp:
+        filepath = os.path.join(base_dir, filename)
+
+        print("Filepath", filepath)
+
+        # Create sub directories if does not exist
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+
+        # Save template to filepath
+        with open(filepath, "w") as fp:
             fp.write(message)
 
 
@@ -171,31 +200,3 @@ def download_file(link_to_file: str, local_destination: str) -> None:
 
     except Exception as e:
         raise e
-
-
-def copy_files_from_repo(src_file_path: str, trg_file_path: str) -> None:
-
-    repo_directory = Path(repo_src_path())
-
-    local_src_path = repo_directory / src_file_path
-    local_destination = repo_directory / trg_file_path
-
-    file_dir = os.path.dirname(local_destination)
-    os.makedirs(file_dir, exist_ok=True)
-    try:
-        shutil.copyfile(local_src_path, local_destination)
-    except shutil.SameFileError:
-        print(f"{src_file_path}: Source and destination represents the same file.")
-
-    # If destination is a directory.
-    except IsADirectoryError:
-        print("Destination is a directory.")
-
-    # If there is any permission issue
-    except PermissionError:
-        print("Permission denied.")
-
-    except Exception as e:
-        print(
-            f"While copying file from src: {src_file_path} to dest: {trg_file_path}, following exception occurred: {e}"
-        )
