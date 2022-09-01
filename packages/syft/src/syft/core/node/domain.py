@@ -24,6 +24,7 @@ from ...logger import critical
 from ...logger import debug
 from ...logger import info
 from ...logger import traceback
+from ...telemetry import instrument
 from ..adp.ledger_store import RedisLedgerStore
 from ..common.message import SignedImmediateSyftMessageWithReply
 from ..common.message import SignedMessage
@@ -87,6 +88,7 @@ from .domain_client import DomainClient
 from .domain_service import DomainServiceClass
 
 
+@instrument
 class Domain(Node):
     domain: SpecificLocation
     root_key: Optional[VerifyKey]
@@ -439,7 +441,7 @@ class Domain(Node):
             self.handled_requests[request.id] = time.time()
         return handled
 
-    def clean_up_handlers(self) -> None:
+    def _clean_up_handlers(self) -> None:
         # this makes sure handlers with timeout expire
         now = time.time()
         alive_handlers = []
@@ -467,7 +469,7 @@ class Domain(Node):
 
         return False
 
-    def clean_up_requests(self) -> None:
+    def _clean_up_requests(self) -> None:
         # this allows a request to be re-handled if the handler somehow failed
         now = time.time()
         processing_wait_secs = 5
@@ -498,8 +500,8 @@ class Domain(Node):
         while True:
             await asyncio.sleep(0.01)
             try:
-                self.clean_up_handlers()
-                self.clean_up_requests()
+                self._clean_up_handlers()
+                self._clean_up_requests()
                 if len(self.request_handlers) > 0:
                     for request in self.requests:
                         # check if we have previously already handled this in an earlier iter
