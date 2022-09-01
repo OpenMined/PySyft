@@ -164,7 +164,7 @@ def create_budget_request_msg(
         user_id=current_user.id,
         user_name=current_user.name,
         user_email=current_user.email,
-        user_role=node.roles.first(id=current_user.role).name,
+        user_role=current_user.role['name'],
         user_budget=current_user.budget,
         institution=current_user.institution,
         website=current_user.website,
@@ -231,9 +231,9 @@ def get_all_request_msg(
         for request in requests:
             # Get current state user
             if node.data_requests.status(request.id) == RequestStatus.Pending:
-                _user = node.users.first(id=request.user_id)
+                _user = node.users.first(id_int=int(request.user_id))
                 user = model_to_json(_user)
-                user["role"] = node.roles.first(id=_user.role).name
+                user["role"] = _user.role['name']
                 user["current_budget"] = user["budget"]
             # Get History state user
             else:
@@ -267,7 +267,7 @@ def get_all_budget_requests(
             if node.data_requests.status(request.id) == RequestStatus.Pending:
                 _user = node.users.first(id=request.user_id)
                 user = model_to_json(_user)
-                user["role"] = node.roles.first(id=_user.role).name
+                user["role"] = _user.role['name']
                 user["current_budget"] = user["budget"]
                 request = model_to_json(request)
             # Get History state user
@@ -568,7 +568,7 @@ def build_request_message(
         user_id=current_user.id,
         user_name=current_user.name,
         user_email=current_user.email,
-        user_role=node.roles.first(id=current_user.role).name,
+        user_role=current_user.role['name'],
         user_budget=current_user.budget,
         institution=current_user.institution,
         website=current_user.website,
@@ -638,7 +638,7 @@ def accept_or_deny_request(
         {
             "status": status,
             "reviewer_name": current_user.name,
-            "reviewer_role": node.roles.first(id=current_user.role).name,
+            "reviewer_role": current_user.role['name'],
             "reviewer_comment": "",
             "updated_on": datetime.now(),
         },
