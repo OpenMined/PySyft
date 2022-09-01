@@ -586,7 +586,7 @@ class NoSQLUserManager(NoSQLDatabaseManager):
         institution: str,
         website: str,
         budget: float,
-        role: dict,
+        role: Dict[Any, Any],
         verify_key: VerifyKey,
     ) -> None:
         """Process the application for the given candidate.
@@ -678,14 +678,17 @@ class NoSQLUserManager(NoSQLDatabaseManager):
         results = super().query(**kwargs)
         return results
 
-    def contain(self, **kwargs: Any ) -> bool:
-        return bool(super().find_one(kwargs))    
-    
+    def contain(self, **kwargs: Any) -> bool:
+        return bool(super().find_one(kwargs))
+
     def first(self, **kwargs: Any) -> NoSQLSyftUser:
         result = super().find_one(kwargs)
         if not result:
             raise UserNotFoundError
         return result
+
+    def delete(self, **kwargs: Any) -> None:
+        super().delete(**kwargs)
 
     def login(self, email: str, password: str) -> NoSQLSyftUser:
         """Returns the user object for the given the email and password.
@@ -699,7 +702,7 @@ class NoSQLUserManager(NoSQLDatabaseManager):
         """
         return self.__login_validation(email, password)
 
-    def set(self, **kwargs: Dict[str, Any]) -> None:  # nosec
+    def set(self, **kwargs: Any) -> None:  # nosec
         """Updates the information for the given user id.
 
         Args:
@@ -803,7 +806,7 @@ class NoSQLUserManager(NoSQLDatabaseManager):
         except UserNotFoundError:
             return False
 
-    def role(self, verify_key: VerifyKey) -> Role:
+    def role(self, verify_key: VerifyKey) -> Dict[Any, Any]:
         """Returns the role of the given user."""
         user = self.get_user(verify_key)
         return user.role
@@ -878,7 +881,7 @@ class NoSQLUserManager(NoSQLDatabaseManager):
             )
 
         user.budget = user.budget - epsilon_spend
-        self.update_one({"_id": user.id.value}, {"$set": {"__blob__": user.to_bytes()}})
+        self.update_one({"_id": user.id.value}, {"$set": {"__blob__": user.to_bytes()}})  # type: ignore
 
         return True
 

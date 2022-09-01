@@ -164,28 +164,28 @@ class NewRoleManager(metaclass=Singleton):
         self.role_dict[role_name] = kwargs
 
     @property
-    def ds_role(self) -> Role:
+    def ds_role(self) -> Dict[str, Any]:
         role = self.role_dict.get("ds_role", None)
         if role is None:
             raise ValueError("Data Scientist role not populated.")
         return role
 
     @property
-    def owner_role(self) -> Role:
+    def owner_role(self) -> Dict[str, Any]:
         role = self.role_dict.get("owner_role", None)
         if role is None:
             raise ValueError("Owner role not populated.")
         return role
 
     @property
-    def compliance_officer_role(self) -> Role:
+    def compliance_officer_role(self) -> Dict[str, Any]:
         role = self.role_dict.get("compliance_officer_role", None)
         if role is None:
             raise ValueError("Compliance Officer role not populated.")
         return role
 
     @property
-    def admin_role(self) -> Role:
+    def admin_role(self) -> Dict[str, Any]:
         role = self.role_dict.get("admin_role", None)
         if role is None:
             raise ValueError("Admin role not populated.")

@@ -115,8 +115,8 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     # Data Scientist
     ca = sy.login(email=unique_email, password="bazinga", port=9082)
 
-    #FIXME: Reenable update budget requests after porting requests table to NOSQL.
-    
+    # FIXME: Reenable update budget requests after porting requests table to NOSQL.
+
     # ca.request_budget(eps=BUDGET_INCREASE, reason="increase budget!")
     it = sy.login(email=unique_email, password="bazinga", port=9083)
 

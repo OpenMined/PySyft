@@ -35,7 +35,7 @@ def login_access_token(
     except InvalidCredentialsError as err:
         logger.bind(payload={"email": email}).error(err)
         raise HTTPException(status_code=401, detail="Incorrect email or password")
-    
+
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = security.create_access_token(
         user.id_int, expires_delta=access_token_expires

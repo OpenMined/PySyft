@@ -7,7 +7,6 @@ from fastapi import HTTPException
 from fastapi import status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
-from syft.logger import info
 
 # grid absolute
 from grid.api.token import TokenPayload

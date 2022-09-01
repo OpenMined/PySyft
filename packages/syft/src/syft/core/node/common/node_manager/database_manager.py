@@ -125,8 +125,8 @@ class NoSQLDatabaseManager:
     def drop(self) -> None:
         self._collection.drop()
 
-    def delete(self) -> None:
-        pass
+    def delete(self, **search_params: Dict[str, Any]) -> None:
+        self._collection.delete_many(search_params)
 
     def update(self) -> None:
         pass

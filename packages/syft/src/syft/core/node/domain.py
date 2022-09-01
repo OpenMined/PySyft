@@ -467,7 +467,8 @@ class Domain(Node):
 
     def clear(self, user_role: int) -> bool:
         # Cleanup database tables
-        if user_role == self.roles.owner_role.id:
+        # FIXME: modify to use role manager.
+        if user_role == self.roles.owner_role.id:  # type: ignore
             self.store.clear()
             self.data_requests.clear()
             self.users.clear()

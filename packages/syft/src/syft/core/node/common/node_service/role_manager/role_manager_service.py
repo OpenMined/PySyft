@@ -80,13 +80,14 @@ def create_role_msg(
 
     # Check if this role name was already registered
     try:
-        node.roles.first(name=msg.name)
+        # FIXME: Ignoring typing errors , as the role manager service is not used.
+        node.roles.first(name=msg.name)  # type: ignore
         raise RequestError(message="The role name already exists!")
     except RoleNotFoundError:
         pass
 
     if _allowed:
-        node.roles.register(
+        node.roles.register(  # type: ignore
             name=msg.name,
             can_make_data_requests=msg.can_make_data_requests,
             can_triage_data_requests=msg.can_triage_data_requests,
@@ -148,10 +149,12 @@ def update_role_msg(
     # Check if user has permissions to edit roles
     _allowed = node.users.can_edit_roles(verify_key=verify_key) and str(
         msg.role_id
-    ) != str(node.roles.owner_role.id)
+    ) != str(
+        node.roles.owner_role.id  # type: ignore
+    )
 
     if _allowed:
-        node.roles.set(role_id=msg.role_id, params=params)
+        node.roles.set(role_id=msg.role_id, params=params)  # type: ignore
     else:
         raise AuthorizationError("You're not authorized to edit this role!")
 
@@ -184,7 +187,7 @@ def get_role_msg(
     _allowed = node.users.can_triage_requests(verify_key=verify_key)
 
     if _allowed:
-        role = node.roles.first(id=msg.role_id)
+        role = node.roles.first(id=msg.role_id)  # type: ignore
         _msg = model_to_json(role)
     else:
         raise AuthorizationError(
@@ -217,7 +220,7 @@ def get_all_roles_msg(
     _allowed = node.users.can_triage_requests(verify_key=verify_key)
 
     if _allowed:
-        roles = node.roles.all()
+        roles = node.roles.all()  # type: ignore
 
         _msg = [model_to_json(role) for role in roles if role.name != "Owner"]
     else:
@@ -249,7 +252,7 @@ def del_role_msg(
     _allowed = node.users.can_edit_roles(verify_key=verify_key)
 
     if _allowed:
-        node.roles.delete(id=msg.role_id)
+        node.roles.delete(id=msg.role_id)  # type: ignore
     else:
         raise AuthorizationError("You're not authorized to delete this role!")
 
