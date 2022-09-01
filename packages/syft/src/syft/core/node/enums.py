@@ -1,5 +1,11 @@
 # stdlib
 from enum import Enum
+import functools
+
+# relative
+from ..common.serde import recursive_serde_register
+from ..common.serde.recursive_primitives import deserialize_enum
+from ..common.serde.recursive_primitives import serialize_enum
 
 
 class PyGridClientEnums(str, Enum):
@@ -27,6 +33,13 @@ class AssociationRequestResponses(str, Enum):
     ACCEPT = "ACCEPTED"
     DENY = "REJECTED"
     PENDING = "PENDING"
+
+
+recursive_serde_register(
+    AssociationRequestResponses,
+    serialize=serialize_enum,
+    deserialize=functools.partial(deserialize_enum, AssociationRequestResponses),
+)
 
 
 class ResponseObjectEnum(str, Enum):

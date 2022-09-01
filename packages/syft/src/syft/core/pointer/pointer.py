@@ -44,6 +44,7 @@ class Pointer(AbstractPointer):
         "object_type",
         "_exhausted",
         "gc_enabled",
+        "is_enum",
     ]
     __serde_overrides__: Dict[str, Sequence[Callable]] = {
         "client": (

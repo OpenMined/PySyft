@@ -1,6 +1,8 @@
 # stdlib
 from collections import OrderedDict
+from enum import Enum
 import functools
+import sys
 from typing import Iterable
 from typing import Mapping
 
@@ -8,49 +10,95 @@ from typing import Mapping
 from ....proto.core.common.recursive_serde_pb2 import Iterable as Iterable_PB
 from ....proto.core.common.recursive_serde_pb2 import KVIterable as KVIterable_PB
 from .recursive import recursive_serde_register
-from .recursive import rs_bytes2object
-from .recursive import rs_object2proto
 
 
 def serialize_iterable(iterable: Iterable) -> bytes:
+    # relative
+    from .serialize import _serialize
+
     message = Iterable_PB()
 
     for it in iterable:
-        message.values.append(rs_object2proto(it).SerializeToString())
+        message.values.append(_serialize(it, to_bytes=True))
 
     return message.SerializeToString()
 
 
 def deserialize_iterable(iterable_type: type, blob: bytes) -> Iterable:
+    # relative
+    from .deserialize import _deserialize
+
     message = Iterable_PB()
     message.ParseFromString(blob)
 
     values = []
     for element in message.values:
-        values.append(rs_bytes2object(element))
+        values.append(_deserialize(element, from_bytes=True))
 
     return iterable_type(values)
 
 
 def serialze_kv(map: Mapping) -> bytes:
+    # relative
+    from .serialize import _serialize
+
     message = KVIterable_PB()
 
     for k, v in map.items():
-        message.keys.append(rs_object2proto(k).SerializeToString())
-        message.values.append(rs_object2proto(v).SerializeToString())
+        message.keys.append(_serialize(k, to_bytes=True))
+        message.values.append(_serialize(v, to_bytes=True))
 
     return message.SerializeToString()
 
 
 def deserialize_kv(mapping_type: type, blob: bytes) -> Mapping:
+    # relative
+    from .deserialize import _deserialize
+
     message = KVIterable_PB()
     message.ParseFromString(blob)
 
     pairs = []
     for k, v in zip(message.keys, message.values):
-        pairs.append((rs_bytes2object(k), rs_bytes2object(v)))
+        pairs.append(
+            (_deserialize(k, from_bytes=True), _deserialize(v, from_bytes=True))
+        )
 
     return mapping_type(pairs)
+
+
+def serialize_enum(enum: Enum) -> bytes:
+    # relative
+    from .serialize import _serialize
+
+    return _serialize(enum.value, to_bytes=True)
+
+
+def deserialize_enum(enum_type: type, enum_buf: bytes) -> Enum:
+    # relative
+    from .deserialize import _deserialize
+
+    enum_value = _deserialize(enum_buf, from_bytes=True)
+    return enum_type(enum_value)
+
+
+def serialize_type(serialized_type: type) -> bytes:
+    # relative
+    from ....lib.util import full_name_with_qualname
+
+    fqn = full_name_with_qualname(klass=serialized_type)
+    module_parts = fqn.split(".")
+    _ = module_parts.pop()  # remove incorrect .type ending
+    module_parts.append(serialized_type.__name__)
+    return ".".join(module_parts).encode()
+
+
+def deserialize_type(type_blob: bytes) -> type:
+    deserialized_type = type_blob.decode()
+    module_parts = deserialized_type.split(".")
+    klass = module_parts.pop()
+    exception_type = getattr(sys.modules[".".join(module_parts)], klass)
+    return exception_type
 
 
 # bit_length + 1 for signed
@@ -128,3 +176,6 @@ recursive_serde_register(
     serialize=lambda x: serialize_iterable((x.start, x.stop, x.step)),
     deserialize=lambda x: slice(*deserialize_iterable(tuple, x)),
 )
+
+
+recursive_serde_register(type, serialize=serialize_type, deserialize=deserialize_type)

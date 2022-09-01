@@ -1,5 +1,4 @@
 # stdlib
-from abc import ABC
 from collections import OrderedDict
 from collections import UserDict
 from collections import UserList
@@ -65,7 +64,7 @@ def isprimitive(value: Any) -> bool:
     return False
 
 
-class PrimitiveFactory(ABC):
+class PrimitiveFactory:
     def upcast(self) -> Union[int, float, bool, complex, list, str, None]:
         traceback_and_raise(NotImplementedError)
 
