@@ -41,6 +41,7 @@ def test_user_details_and_permissions(tb):
         elif user["email"] == "info@openmined.org":
             assert user["role"] == "Owner"
 
+
 @pytest.mark.skip(reason="Would be reenable after porting requests to NoSQL.")
 def test_budget_requests(tb):
     data_scientist_node = tb.ref("data_scientist_node")
