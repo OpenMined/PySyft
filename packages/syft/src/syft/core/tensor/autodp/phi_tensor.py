@@ -1815,6 +1815,32 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=max_vals,
         )
 
+    def flatten(self, order: Optional[str] = "C"):
+        """
+        Return a copy of the array collapsed into one dimension.
+
+        Parameters
+            order{‘C’, ‘F’, ‘A’, ‘K’}, optional
+                ‘C’ means to flatten in row-major (C-style) order.
+                ‘F’ means to flatten in column-major (Fortran- style) order.
+                ‘A’ means to flatten in column-major order if a is Fortran contiguous in memory,
+                        row-major order otherwise.
+                ‘K’ means to flatten a in the order the elements occur in memory. The default is ‘C’.
+        Returns
+            PhiTensor
+                A copy of the input array, flattened to one dimension.
+        """
+        if order not in ["C", "F", "A", "K"]:
+            raise NotImplementedError(f"Flatten is not implemented for order={order}")
+
+        output_data = self.child.flatten(order=order)
+        return PhiTensor(
+            child=output_data,
+            data_subjects=self.data_subjects.reshape(output_data.shape),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape),
+        )
+
     def concatenate(
         self,
         other: Union[np.ndarray, PhiTensor],
