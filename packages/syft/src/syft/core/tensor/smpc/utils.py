@@ -76,13 +76,13 @@ def get_shape(
     dummy_y = np.empty(y_shape)
     if op_str in OPERATOR_OPS:
         op = getattr(operator, op_str)
-        res = op(dummy_x, dummy_y)
+        res = op(dummy_x, dummy_y).shape
     elif op_str in NUMPY_OPS:
         res = getattr(np, op_str)([dummy_x, dummy_y]).shape
     else:
         res = getattr(dummy_x, op_str)(dummy_y).shape
 
-    res = cast(Tuple[int], tuple(res))
+    res = cast(Tuple[int], res)
     return res
 
 
