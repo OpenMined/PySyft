@@ -1466,27 +1466,50 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             + f"min_vals={self.min_vals}, max_vals={self.max_vals})"
         )
 
-    def __eq__(self, other: Any) -> Union[PhiTensor, GammaTensor]:  # type: ignore
-        # TODO: what about data_subjects and min / max values?
-        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
-            gamma_output = False
-            if is_acceptable_simple_type(other):
-                result = self.child == other
+    def __eq__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
+        if is_acceptable_simple_type(other):
+            return PhiTensor(
+                child=(self.child == other) * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(data=0, shape=self.shape),
+                max_vals=lazyrepeatarray(data=1, shape=self.shape)
+            )
+        elif isinstance(other, PhiTensor):
+            if (self.data_subjects != other.data_subjects).any():
+                return self.gamma == other.gamma
             else:
-                # check data_subjects match, if they dont gamma_output = True
-                result = self.child == other.child
-                if isinstance(result, GammaTensor):  # TODO: Check this
-                    gamma_output = True
-            if not gamma_output:
-                # min_vals=self.min_vals * 0.0,
-                # max_vals=self.max_vals * 0.0 + 1.0,
-                return self.copy_with(child=result)
-            else:
-                return self.copy_with(child=result).gamma
+                return PhiTensor(
+                    child=(self.child == other.child) * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(data=0, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=1, shape=self.shape)
+                )
         else:
-            raise Exception(
-                "Tensor dims do not match for __eq__: "
-                + f"{len(self.child)} != {len(other.child)}"
+            raise NotImplementedError(
+                f"__eq__ not implemented between PhiTensor and {type(other)}."
+            )
+
+    def __ne__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
+        if is_acceptable_simple_type(other):
+            return PhiTensor(
+                child=(self.child != other) * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(data=0, shape=self.shape),
+                max_vals=lazyrepeatarray(data=1, shape=self.shape)
+            )
+        elif isinstance(other, PhiTensor):
+            if (self.data_subjects != other.data_subjects).any():
+                return self.gamma != other.gamma
+            else:
+                return PhiTensor(
+                    child=(self.child != other.child) * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(data=0, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=1, shape=self.shape)
+                )
+        else:
+            raise NotImplementedError(
+                f"__ne__ not implemented between PhiTensor and {type(other)}."
             )
 
     def __add__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
@@ -1655,7 +1678,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             )
         else:
             raise NotImplementedError(f"truediv not supported between PhiTensor & {type(other)}")
-
 
     def __rtruediv__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
@@ -2031,6 +2053,53 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         else:
             raise NotImplementedError  # type: ignore
 
+    def __ge__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
+
+        # if the tensor being compared is also private
+        if isinstance(other, PhiTensor):
+            return self.gamma.__ge__(other.gamma)
+
+            # if self.data_subjects != other.data_subjects:
+            #     # return self.gamma < other.gamma
+            #     raise NotImplementedError
+
+            # if len(self.child) != len(other.child):
+            #     raise Exception(
+            #         f"Tensor dims do not match for __le__: {len(self.child)} != {len(other.child)}"  # type: ignore
+            #     )
+
+            # data = (
+            #     self.child <= other.child
+            # )  # the * 1 just makes sure it returns integers instead of True/False
+            # min_vals = self.min_vals * 0
+            # max_vals = (self.max_vals * 0) + 1
+            # data_subjects = self.data_subjects
+
+            # return PhiTensor(
+            #     child=data,
+            #     data_subjects=data_subjects,
+            #     min_vals=min_vals,
+            #     max_vals=max_vals,
+            # )
+
+        # if the tensor being compared is a public tensor / int / float / etc.
+        elif is_acceptable_simple_type(other):
+
+            data = self.child >= other
+            min_vals = self.min_vals * 0
+            max_vals = (self.max_vals * 0) + 1
+            data_subjects = self.data_subjects
+
+            return PhiTensor(
+                child=data,
+                data_subjects=data_subjects,
+                min_vals=min_vals,
+                max_vals=max_vals,
+            )
+
+        else:
+            return NotImplementedError  # type: ignore
+
     # Re enable after testing
     def dot(
         self, other: Union[PhiTensor, GammaTensor, np.ndarray]
@@ -2118,28 +2187,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=max_vals,
             data_subjects=self.data_subjects,
         )
-
-    def __ne__(self, other: Any) -> Union[PhiTensor, GammaTensor]:  # type: ignore
-        # TODO: what about data_subjects and min / max values?
-        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
-            gamma_output = False
-            if is_acceptable_simple_type(other):
-                result = self.child != other
-            else:
-                # check data_subjects match, if they dont gamma_output = True
-                #
-                result = self.child != other.child
-                if isinstance(result, GammaTensor):
-                    gamma_output = True
-            if not gamma_output:
-                return self.copy_with(child=result)
-            else:
-                return self.copy_with(child=result).gamma
-        else:
-            raise Exception(
-                "Tensor dims do not match for __eq__: "
-                + f"{len(self.child)} != {len(other.child)}"
-            )
 
     def __neg__(self) -> PhiTensor:
 
