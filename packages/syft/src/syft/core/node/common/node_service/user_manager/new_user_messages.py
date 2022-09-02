@@ -158,7 +158,7 @@ class GetUserMessage(SyftMessage, DomainMessageRegistry):
 
         # Get budget spent
         reply.budget_spent = node.users.get_budget_for_user(  # type: ignore
-            verify_key=VerifyKey(user.verify_key, encoder=HexEncoder)
+            verify_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder)
         )
         return reply
 

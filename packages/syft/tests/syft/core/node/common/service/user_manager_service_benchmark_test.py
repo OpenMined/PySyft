@@ -84,7 +84,7 @@ def _signup_user(
     return user, verify_key
 
 
-# FIXME: Skipped the tests, as the local domain user creation tests used nosql-lite before
+# FIXME: Ionesio,Rasswanth Skipped the tests, as the local domain user creation tests used nosql-lite before
 # we could replace it with a local version of nosql.
 @pytest.mark.skip
 class TestCreateUserMessageBenchmarking:

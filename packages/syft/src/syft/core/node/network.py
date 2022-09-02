@@ -104,6 +104,7 @@ class Network(Node):
         self.network = SpecificLocation(name=self.name)
         self.root_key = root_key
 
+        # FIXME: Modify to use environment variable
         nosql_db_engine = MongoClient(  # nosec
             host="mongo",
             port=27017,
@@ -114,9 +115,6 @@ class Network(Node):
 
         # Database Management Instances
         self.users = NoSQLUserManager(nosql_db_engine["app"])
-
-        # self.users = UserManager(db_engine)
-        # self.roles = RoleManager(db_engine)
         self.roles = NewRoleManager()
         self.node = NodeManager(db_engine)
         self.node_route = NodeRouteManager(db_engine)

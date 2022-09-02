@@ -135,6 +135,7 @@ class Domain(Node):
         self.domain = SpecificLocation(name=self.name)
         self.root_key = root_key
 
+        # FIXME: Modify to use environment variable
         nosql_db_engine = MongoClient(  # nosec
             host="mongo",
             port=27017,
@@ -145,9 +146,6 @@ class Domain(Node):
 
         # Database Management Instances
         self.users = NoSQLUserManager(nosql_db_engine["app"])
-
-        # self.users = UserManager(db_engine)
-        # self.roles = RoleManager(db_engine)
         self.roles = NewRoleManager()
         self.environments = EnvironmentManager(db_engine)
         self.association_requests = AssociationRequestManager(db_engine)

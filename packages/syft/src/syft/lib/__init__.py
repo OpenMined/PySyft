@@ -28,8 +28,6 @@ from ..logger import critical
 from ..logger import traceback_and_raise
 from ..logger import warning
 from .misc import create_union_ast
-from .nacl import signing_key  # noqa: F401
-from .nacl import verify_key  # noqa: F401
 from .numpy import create_ast
 from .python import create_python_ast
 from .torch import create_torch_ast

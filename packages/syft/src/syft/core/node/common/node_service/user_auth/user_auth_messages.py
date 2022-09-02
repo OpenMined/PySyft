@@ -88,7 +88,6 @@ class UserLoginMessageWithReply(GenericPayloadMessageWithReply):
             #     .SerializeToString()
             #     .decode("ISO-8859-1")
             # )
-            print("User Logged in......")
 
             data = {
                 # "access_token": access_token,
