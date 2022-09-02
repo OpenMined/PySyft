@@ -158,11 +158,14 @@ def publish_dataset(msg: PublishDatasetMessage,
         )
     public_file_name = os.getenv("OBLV_KEY_PATH", "/app/content") + "/" + os.getenv("OBLV_KEY_NAME", "oblv_key") + "_public.der"
     private_file_name = os.getenv("OBLV_KEY_PATH", "/app/content") + "/" + os.getenv("OBLV_KEY_NAME", "oblv_key") + "_private.der"
+    depl = cli.deployment_info(msg.deployment_id)
+    if depl.is_deleted==True:
+        raise OblvEnclaveError("User cannot connect to this deployment, as it is no longer available.")
     process = subprocess.Popen([
         "/usr/local/bin/oblv", "connect",
         "--private-key", private_file_name,
         "--public-key", public_file_name,
-        "--url", cli.deployment_info(msg.deployment_id).instance.service_url,
+        "--url", depl.instance.service_url,
         "--port","443",
         "--lport","3030",
         "--disable-pcr-check"
@@ -180,11 +183,13 @@ def publish_dataset(msg: PublishDatasetMessage,
     obj = node.store.get(UID.from_string(msg.dataset_id))
     obj_bytes = obj.data._object2bytes()
     req = requests.post("http://127.0.0.1:3030/tensor/dataset/add", headers={'Content-Type': 'application/octet-stream'}, data=obj_bytes, params={"dataset_name": msg.dataset_id})
-    if req.status_code==401:
-        raise OblvEnclaveUnAuthorizedError()
-    debug("API Called. Now closing")
     process.kill()
     process.wait(1)
+    if req.status_code==401:
+        raise OblvEnclaveUnAuthorizedError()
+    elif req.status_code!=200:
+        raise OblvEnclaveError("Request to publish dataset failed with status {}".format(req.status_code))
+    debug("API Called. Now closing")
 
     return SuccessResponseMessage(
         address=msg.reply_to,
@@ -220,11 +225,14 @@ def check_connection(msg: CheckEnclaveConnectionMessage,
         debug("URL = "+cli.deployment_info(msg.deployment_id).instance.service_url)
         public_file_name = os.getenv("OBLV_KEY_PATH", "/app/content") + "/" + os.getenv("OBLV_KEY_NAME", "oblv_key") + "_public.der"
         private_file_name = os.getenv("OBLV_KEY_PATH", "/app/content") + "/" + os.getenv("OBLV_KEY_NAME", "oblv_key") + "_private.der"
+        depl = cli.deployment_info(msg.deployment_id)
+        if depl.is_deleted==True:
+            raise OblvEnclaveError("User cannot connect to this deployment, as it is no longer available.")
         process = subprocess.Popen([
             "/usr/local/bin/oblv", "connect",
             "--private-key", private_file_name,
             "--public-key", public_file_name,
-            "--url", cli.deployment_info(msg.deployment_id).instance.service_url,
+            "--url", depl.instance.service_url,
             "--port","443",
             "--lport","3030",
             "--disable-pcr-check"
