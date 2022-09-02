@@ -23,7 +23,9 @@ from .data_subject import DataSubject
 # allow us to serialize and deserialize np.arrays with strings inside as two np.arrays
 # one containing the uint8 bytes and the other the offsets between strings
 # TODO: Should move to a vectorized version.
-def numpyutf8tolist(string_index: Tuple[np.ndarray, np.ndarray]) -> np.ndarray:
+def numpyutf8tolist(
+    string_index: Tuple[np.ndarray, np.ndarray]
+) -> np.ndarray:  # pragma: no cover
     index_length = int(string_index[-1])
     index_array = string_index[-(index_length + 1) : -1]  # noqa
     string_array: np.ndarray = string_index[: -(index_length + 1)]
@@ -38,7 +40,9 @@ def numpyutf8tolist(string_index: Tuple[np.ndarray, np.ndarray]) -> np.ndarray:
     return np.array(output_list)
 
 
-def liststrtonumpyutf8(string_list: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def liststrtonumpyutf8(
+    string_list: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray]:  # pragma: no cover
     bytes_list = []
     indexes = []
     offset = 0
@@ -61,8 +65,9 @@ def liststrtonumpyutf8(string_list: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
     return output_array
 
 
+# INFO: excluding coverage of the whole class , as we intend to replace with new DSA
 @serializable(recursive_serde=True)
-class DataSubjectList:
+class DataSubjectList:  # pragma: no cover
     __attr_allowlist__ = ("one_hot_lookup", "data_subjects_indexed")
     __slots__ = ("one_hot_lookup", "data_subjects_indexed")
 

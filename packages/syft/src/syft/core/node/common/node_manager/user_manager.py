@@ -46,7 +46,7 @@ class NotEnoughBudgetException(Exception):
     pass
 
 
-class UserManager(DatabaseManager):
+class UserManager(DatabaseManager):  # pragma: no cover
     """Class to manage user database actions."""
 
     schema = SyftUser
