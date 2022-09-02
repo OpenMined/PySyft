@@ -1666,8 +1666,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
                     max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape)
                 )
-
-        if isinstance(other, GammaTensor):
+        elif isinstance(other, GammaTensor):
             return self.gamma / other
         elif is_acceptable_simple_type(other):
             return PhiTensor(
@@ -1687,7 +1686,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 min_vals=(1 / self.min_vals) * other,
                 max_vals=(1 / self.max_vals) * other,
                 data_subjects=self.data_subjects,
-                # scalar_manager=self.scalar_manager,
             )
 
         elif isinstance(other, GammaTensor):
