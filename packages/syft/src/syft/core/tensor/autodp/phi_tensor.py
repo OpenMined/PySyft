@@ -1600,39 +1600,23 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         if isinstance(other, PhiTensor):
             if (self.data_subjects == other.data_subjects).all():
+                min_min = self.min_vals.data * other.min_vals.data
+                min_max = self.min_vals.data * other.max_vals.data
+                max_min = self.max_vals.data * other.min_vals.data
+                max_max = self.max_vals.data * other.max_vals.data
+
+                _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+                _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+
                 return PhiTensor(
                     child=self.child * other.child,
                     data_subjects=self.data_subjects,
-                    min_vals=lazyrepeatarray(data=self.min_vals.data * other.min_vals.data, shape=self.shape),
-                    max_vals=lazyrepeatarray(data=self.max_vals.data * other.max_vals.data, shape=self.shape)
+                    min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape)
                 )
             else:
                 return self.gamma * other.gamma
-            # if self.data_subjects != other.data_subjects:
-            #     return self.gamma * other.gamma
 
-            # data = self.child * other.child
-
-            # min_min = self.min_vals.data * other.min_vals.data
-            # min_max = self.min_vals.data * other.max_vals.data
-            # max_min = self.max_vals.data * other.min_vals.data
-            # max_max = self.max_vals.data * other.max_vals.data
-
-            # _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            # _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            # min_vals = self.min_vals.copy()
-            # min_vals.data = _min_vals
-            # max_vals = self.max_vals.copy()
-            # max_vals.data = _max_vals
-
-            # data_subjects = self.data_subjects
-
-            # return PhiTensor(
-            #     child=data,
-            #     data_subjects=data_subjects,
-            #     min_vals=min_vals,
-            #     max_vals=max_vals,
-            # )
         elif is_acceptable_simple_type(other):
 
             data = self.child * other
@@ -1666,13 +1650,21 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def __truediv__(self, other) -> Union[PhiTensor, GammaTensor]:
         if isinstance(other, PhiTensor):
             if (self.data_subjects != other.data_subjects).all():
-                other = other.gamma
+                return self.gamma / other.gamma
             else:
+                min_min = self.min_vals.data / other.min_vals.data
+                min_max = self.min_vals.data / other.max_vals.data
+                max_min = self.max_vals.data / other.min_vals.data
+                max_max = self.max_vals.data / other.max_vals.data
+
+                _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+                _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+
                 return PhiTensor(
-                    child=self.child/other.child,
+                    child=self.child / other.child,
                     data_subjects=self.data_subjects,
-                    min_vals=lazyrepeatarray(data=self.min_vals.data/other.max_vals.data, shape=self.shape),
-                    max_vals=lazyrepeatarray(data=self.max_vals.data/other.min_vals.data, shape=self.shape),
+                    min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape)
                 )
 
         if isinstance(other, GammaTensor):
