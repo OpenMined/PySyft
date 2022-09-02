@@ -1599,7 +1599,15 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def __mul__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         if isinstance(other, PhiTensor):
-            return self.gamma + other.gamma
+            if (self.data_subjects == other.data_subjects).all():
+                return PhiTensor(
+                    child=self.child * other.child,
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(data=self.min_vals.data * other.min_vals.data, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=self.max_vals.data * other.max_vals.data, shape=self.shape)
+                )
+            else:
+                return self.gamma * other.gamma
             # if self.data_subjects != other.data_subjects:
             #     return self.gamma * other.gamma
 
@@ -1657,7 +1665,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def __truediv__(self, other) -> Union[PhiTensor, GammaTensor]:
         if isinstance(other, PhiTensor):
-            if self.data_subjects != other.data_subjects:
+            if (self.data_subjects != other.data_subjects).all():
                 other = other.gamma
             else:
                 return PhiTensor(
