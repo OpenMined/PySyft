@@ -44,8 +44,9 @@ def get_local_abs_path(target_dir: str, file_path: str) -> str:
     return os.path.expanduser(local_path)
 
 
-def setup_from_manifest_template(host_type: str) -> None:
+def setup_from_manifest_template(host_type: str) -> Dict:
     template = read_yml_file(HAGRID_TEMPLATE_PATH)
+    kwargs_to_parse = {}
 
     if template is None:
         raise ValueError(
@@ -56,6 +57,7 @@ def setup_from_manifest_template(host_type: str) -> None:
     git_base_url = template["baseUrl"]
     target_dir = template["target_dir"]
     all_template_files = template["files"]
+    docker_tag = template["dockerTag"]
     files_to_download = []
 
     for package_name in all_template_files:
@@ -87,6 +89,10 @@ def setup_from_manifest_template(host_type: str) -> None:
         git_base_url=git_base_url,
         target_dir=target_dir,
     )
+
+    kwargs_to_parse["tag"] = docker_tag
+
+    return kwargs_to_parse
 
 
 def download_files(

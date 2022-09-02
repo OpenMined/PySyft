@@ -330,7 +330,10 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 
     try:
         silent = bool(kwargs["silent"]) if "silent" in kwargs else False
-        from_rendered_dir = bool(kwargs["from_template"]) and EDITABLE_MODE
+        from_rendered_dir = (
+            str_to_bool(cast(str, kwargs["from_template"])) and EDITABLE_MODE
+        )
+
         execute_commands(
             cmds, dry_run=dry_run, silent=silent, from_rendered_dir=from_rendered_dir
         )
@@ -367,7 +370,7 @@ def execute_commands(
         else GRID_SRC_PATH
     )
 
-    print("GRID SRC PATH: ", cwd)
+    print("Current Working Directory: ", cwd)
 
     for cmd in cmds:
         if dry_run:
@@ -878,7 +881,13 @@ def create_launch_cmd(
 
     if parsed_kwargs["from_template"] and host is not None:
         # Setup the files from the manifest_template.yml
-        setup_from_manifest_template(host_type=host)
+        kwargs = setup_from_manifest_template(host_type=host)
+
+        # Override template tag with user input tag
+        if parsed_kwargs["tag"] is not None:
+            kwargs.pop("tag")
+
+        parsed_kwargs.update(kwargs)
 
     if host in ["docker"]:
 
