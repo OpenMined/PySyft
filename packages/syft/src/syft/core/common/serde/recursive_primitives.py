@@ -5,6 +5,7 @@ import functools
 import sys
 from typing import Iterable
 from typing import Mapping
+from typing import cast
 
 # relative
 from ....proto.core.common.recursive_serde_pb2 import Iterable as Iterable_PB
@@ -71,7 +72,7 @@ def serialize_enum(enum: Enum) -> bytes:
     # relative
     from .serialize import _serialize
 
-    return _serialize(enum.value, to_bytes=True)
+    return cast(bytes, _serialize(enum.value, to_bytes=True))
 
 
 def deserialize_enum(enum_type: type, enum_buf: bytes) -> Enum:
