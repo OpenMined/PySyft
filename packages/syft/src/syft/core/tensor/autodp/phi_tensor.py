@@ -1632,6 +1632,31 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
 
+    def __truediv__(self, other) -> Union[PhiTensor, GammaTensor]:
+        if isinstance(other, PhiTensor):
+            if self.data_subjects != other.data_subjects:
+                other = other.gamma
+            else:
+                return PhiTensor(
+                    child=self.child/other.child,
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(data=self.min_vals.data/other.max_vals.data, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=self.max_vals.data/other.min_vals.data, shape=self.shape),
+                )
+
+        if isinstance(other, GammaTensor):
+            return self.gamma / other
+        elif is_acceptable_simple_type(other):
+            return PhiTensor(
+                child=self.child / other,
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(data=self.min_vals.data / other, shape=self.min_vals.shape),
+                max_vals=lazyrepeatarray(data=self.max_vals.data / other, shape=self.max_vals.shape)
+            )
+        else:
+            raise NotImplementedError(f"truediv not supported between PhiTensor & {type(other)}")
+
+
     def __rtruediv__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         if is_acceptable_simple_type(other):

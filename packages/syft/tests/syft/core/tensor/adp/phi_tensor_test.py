@@ -420,3 +420,103 @@ def test_flatten(
     assert flattened_array.max_vals.shape == target_shape
     assert flattened_array.data_subjects.shape == target_shape
     assert (flattened_array.data_subjects == ishan.flatten()).all(), "Data Subjects not flattened properly"
+
+
+@pytest.mark.public_op
+def test_add_public(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    output = reference_tensor + 5
+    assert output.shape == reference_tensor.shape
+    assert (output.child == reference_data + 5).all()
+    assert output.min_vals.data == reference_tensor.min_vals + 5
+    assert output.min_vals.shape == reference_tensor.shape
+    assert output.max_vals.data == reference_tensor.max_vals + 5
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.public_op
+def test_sub_public(
+        reference_data: np.ndarray,
+        upper_bound: np.ndarray,
+        lower_bound: np.ndarray,
+        ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    output = reference_tensor - 5
+    assert output.shape == reference_tensor.shape
+    assert (output.child == reference_data - 5).all()
+    assert output.min_vals.data == reference_tensor.min_vals - 5
+    assert output.min_vals.shape == reference_tensor.shape
+    assert output.max_vals.data == reference_tensor.max_vals - 5
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.public_op
+def test_mul_public(
+        reference_data: np.ndarray,
+        upper_bound: np.ndarray,
+        lower_bound: np.ndarray,
+        ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    output = reference_tensor * 5
+    assert output.shape == reference_tensor.shape
+    assert (output.child == reference_data * 5).all()
+    assert (output.min_vals.data == reference_tensor.min_vals.data * 5).all()
+    assert output.min_vals.shape == reference_tensor.shape
+    assert (output.max_vals.data == reference_tensor.max_vals.data * 5).all()
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.public_op
+def test_truediv_public(
+        reference_data: np.ndarray,
+        upper_bound: np.ndarray,
+        lower_bound: np.ndarray,
+        ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    output = reference_tensor / 5
+    assert output.shape == reference_tensor.shape
+    assert (output.child == reference_data / 5).all()
+    assert (output.min_vals.data == reference_tensor.min_vals.data / 5).all()
+    assert output.min_vals.shape == reference_tensor.shape
+    assert (output.max_vals.data == reference_tensor.max_vals.data / 5).all()
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
