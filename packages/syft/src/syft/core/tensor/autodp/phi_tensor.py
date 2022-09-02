@@ -1913,7 +1913,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def __lt__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
         if isinstance(other, PhiTensor):
-            if self.data_subjects == other.data_subjects:
+            if (self.data_subjects == other.data_subjects).all():
                 return PhiTensor(
                     child=(self.child < other.child) * 1,
                     data_subjects=self.data_subjects,
@@ -1947,7 +1947,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         # if the tensor being compared is also private
         if isinstance(other, PhiTensor):
-            if self.data_subjects == other.data_subjects:
+            if (self.data_subjects == other.data_subjects).all():
                 return PhiTensor(
                     child=(self.child <= other.child) * 1,
                     data_subjects=self.data_subjects,
@@ -1981,9 +1981,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         # if the tensor being compared is also private
         if isinstance(other, PhiTensor):
-            if self.data_subjects == other.data_subjects:
+            if (self.data_subjects == other.data_subjects).all():
                 return PhiTensor(
-                    child=(self.child < other.child) * 1,
+                    child=(self.child > other.child) * 1,
                     data_subjects=self.data_subjects,
                     min_vals=lazyrepeatarray(data=0, shape=self.shape),
                     max_vals=lazyrepeatarray(data=1, shape=self.shape)
@@ -2014,9 +2014,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         # if the tensor being compared is also private
         if isinstance(other, PhiTensor):
-            if self.data_subjects == other.data_subjects:
+            if (self.data_subjects == other.data_subjects).all():
                 return PhiTensor(
-                    child=(self.child < other.child) * 1,
+                    child=(self.child >= other.child) * 1,
                     data_subjects=self.data_subjects,
                     min_vals=lazyrepeatarray(data=0, shape=self.shape),
                     max_vals=lazyrepeatarray(data=1, shape=self.shape)

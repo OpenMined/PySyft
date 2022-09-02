@@ -12,6 +12,7 @@ from syft.core.adp.data_subject_list import DataSubjectArray
 from syft.core.adp.ledger_store import DictLedgerStore
 from syft.core.tensor.autodp.gamma_tensor import GammaTensor
 from syft.core.tensor.autodp.phi_tensor import PhiTensor as PT
+from syft.core.tensor.lazy_repeat_array import lazyrepeatarray as lra
 
 
 @pytest.fixture
@@ -48,15 +49,13 @@ def reference_data(highest, dims) -> np.ndarray:
 @pytest.fixture
 def upper_bound(reference_data: np.ndarray, highest: int) -> np.ndarray:
     """This is used to specify the max_vals that is either binary or randomly generated b/w 0-1"""
-    max_values = np.ones_like(reference_data) * highest
-    return max_values
+    return lra(data=highest, shape=reference_data.shape)
 
 
 @pytest.fixture
 def lower_bound(reference_data: np.ndarray, highest: int) -> np.ndarray:
     """This is used to specify the min_vals that is either binary or randomly generated b/w 0-1"""
-    min_values = np.ones_like(reference_data) * -highest
-    return min_values
+    return lra(data=-highest, shape=reference_data.shape)
 
 
 def test_gamma_serde(
@@ -138,3 +137,5 @@ def test_gamma_publish(
     assert results < upper_bound.sum() + 10
     assert -10 + lower_bound.sum() < results
     print(ledger_store.kv_store)
+
+
