@@ -2199,10 +2199,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             "dataSubjects",
             pt_msg,
         )
-        # to pack or not to pack?
-        # to_bytes = pt_msg.to_bytes()
-
-        return pt_msg.to_bytes_packed()
+        return pt_msg.to_bytes()
 
     @staticmethod
     def _bytes2object(buf: bytes) -> PhiTensor:
@@ -2212,9 +2209,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         MAX_TRAVERSAL_LIMIT = 2**64 - 1
         # to pack or not to pack?
         # pt_msg = pt_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
-        pt_msg = pt_struct.from_bytes_packed(  # type: ignore
+        with pt_struct.from_bytes(  # type: ignore
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        )
+        ) as msg:
+            pt_msg = msg
 
         if pt_msg.isNumpy:
             child = capnp_deserialize(combine_bytes(pt_msg.child), from_bytes=True)

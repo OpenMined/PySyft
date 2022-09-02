@@ -2373,7 +2373,7 @@ class GammaTensor:
             chunk_bytes(serialize(self.child, to_bytes=True), "child", gamma_msg)  # type: ignore
             gamma_msg.isNumpy = False
 
-        gamma_msg.state = serialize(self.state, to_bytes=True)
+        chunk_bytes(serialize(self.state, to_bytes=True), "state", gamma_msg)  # type: ignore
         chunk_bytes(
             capnp_serialize(dslarraytonumpyutf8(self.data_subjects), to_bytes=True),
             "dataSubjects",
@@ -2389,7 +2389,6 @@ class GammaTensor:
         gamma_msg.isLinear = self.is_linear
         gamma_msg.id = self.id
 
-        # return gamma_msg.to_bytes_packed()
         return gamma_msg.to_bytes()
 
     @staticmethod
@@ -2401,34 +2400,30 @@ class GammaTensor:
         # capnp from_bytes is now a context
         with gamma_struct.from_bytes(  # type: ignore
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        ) as gamma_msg:
+        ) as msg:
+            gamma_msg = msg
 
-            if gamma_msg.isNumpy:
-                child = capnp_deserialize(
-                    combine_bytes(gamma_msg.child), from_bytes=True
-                )
-            else:
-                child = deserialize(combine_bytes(gamma_msg.child), from_bytes=True)
+        if gamma_msg.isNumpy:
+            child = capnp_deserialize(combine_bytes(gamma_msg.child), from_bytes=True)
+        else:
+            child = deserialize(combine_bytes(gamma_msg.child), from_bytes=True)
 
-            state = deserialize(gamma_msg.state, from_bytes=True)
+        state = deserialize(combine_bytes(gamma_msg.state), from_bytes=True)
+        data_subjects = numpyutf8todslarray(
+            capnp_deserialize(combine_bytes(gamma_msg.dataSubjects), from_bytes=True)
+        )
 
-            data_subjects = numpyutf8todslarray(
-                capnp_deserialize(
-                    combine_bytes(gamma_msg.dataSubjects), from_bytes=True
-                )
-            )
+        min_val = deserialize(gamma_msg.minVal, from_bytes=True)
+        max_val = deserialize(gamma_msg.maxVal, from_bytes=True)
+        is_linear = gamma_msg.isLinear
+        id_str = gamma_msg.id
 
-            min_val = deserialize(gamma_msg.minVal, from_bytes=True)
-            max_val = deserialize(gamma_msg.maxVal, from_bytes=True)
-            is_linear = gamma_msg.isLinear
-            id_str = gamma_msg.id
-
-            return GammaTensor(
-                child=child,
-                data_subjects=data_subjects,
-                min_vals=min_val,
-                max_vals=max_val,
-                is_linear=is_linear,
-                state=state,
-                id=id_str,
-            )
+        return GammaTensor(
+            child=child,
+            data_subjects=data_subjects,
+            min_vals=min_val,
+            max_vals=max_val,
+            is_linear=is_linear,
+            state=state,
+            id=id_str,
+        )

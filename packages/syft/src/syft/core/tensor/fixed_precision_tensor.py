@@ -286,7 +286,7 @@ class FixedPrecisionTensor(PassthroughTensor):
         # to pack or not to pack?
         # to_bytes = fpt_msg.to_bytes()
 
-        return fpt_msg.to_bytes_packed()
+        return fpt_msg.to_bytes()
 
     @staticmethod
     def _bytes2object(buf: bytes) -> FixedPrecisionTensor:
@@ -296,9 +296,10 @@ class FixedPrecisionTensor(PassthroughTensor):
         MAX_TRAVERSAL_LIMIT = 2**64 - 1
         # to pack or not to pack?
         # fpt_msg = fpt_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
-        fpt_msg = fpt_struct.from_bytes_packed(  # type: ignore
+        with fpt_struct.from_bytes(  # type: ignore
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        )
+        ) as msg:
+            fpt_msg = msg
 
         if fpt_msg.isNumpy:
             child = capnp_deserialize(combine_bytes(fpt_msg.child), from_bytes=True)

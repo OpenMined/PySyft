@@ -478,7 +478,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         dsl_msg.updateNumber = self._update_number
         dsl_msg.timestamp = self._timestamp_of_last_update
 
-        return dsl_msg.to_bytes_packed()
+        return dsl_msg.to_bytes()
 
     @staticmethod
     def _bytes2object(buf: bytes) -> DataSubjectLedger:
@@ -487,9 +487,10 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
         MAX_TRAVERSAL_LIMIT = 2**64 - 1
         # to pack or not to pack?
-        dsl_msg = dsl_struct.from_bytes_packed(  # type: ignore
+        with dsl_struct.from_bytes(  # type: ignore
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        )
+        ) as msg:
+            dsl_msg = msg
 
         constants = capnp_deserialize(dsl_msg.constants)
         update_number = dsl_msg.updateNumber

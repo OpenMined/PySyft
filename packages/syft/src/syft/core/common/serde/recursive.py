@@ -87,6 +87,12 @@ def rs_object2proto(self: Any) -> RecursiveSerde_PB:
         msg.fields_name.append(attr_name)
         msg.fields_data.append(serialized)
 
+    # TODO: remove this coupling
+    # relative
+    from .capnp import create_protobuf_magic_header
+
+    msg.magic_header = create_protobuf_magic_header()
+
     return msg
 
 

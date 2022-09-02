@@ -15,9 +15,11 @@ from .recursive import recursive_serde_register
 
 def serialize_iterable(iterable: Iterable) -> bytes:
     # relative
+    from .capnp import create_protobuf_magic_header
     from .serialize import _serialize
 
     message = Iterable_PB()
+    message.magic_header = create_protobuf_magic_header()
 
     for it in iterable:
         message.values.append(_serialize(it, to_bytes=True))
@@ -41,9 +43,11 @@ def deserialize_iterable(iterable_type: type, blob: bytes) -> Iterable:
 
 def serialze_kv(map: Mapping) -> bytes:
     # relative
+    from .capnp import create_protobuf_magic_header
     from .serialize import _serialize
 
     message = KVIterable_PB()
+    message.magic_header = create_protobuf_magic_header()
 
     for k, v in map.items():
         message.keys.append(_serialize(k, to_bytes=True))

@@ -77,9 +77,10 @@ def capnp_deserialize(
         MAX_TRAVERSAL_LIMIT = 2**64 - 1
         # to pack or not to pack?
         # array_msg = array_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
-        array_msg = array_struct.from_bytes_packed(  # type: ignore
+        with array_struct.from_bytes(  # type: ignore
             msg, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        )
+        ) as msg:
+            array_msg = msg
     else:
         array_msg = msg
 
@@ -108,7 +109,7 @@ def capnp_serialize(obj: np.ndarray, to_bytes: bool = False) -> _DynamicStructBu
     if not to_bytes:
         return array_msg
     else:
-        return array_msg.to_bytes_packed()
+        return array_msg.to_bytes()
 
 
 class CapnpMagicBytesNotFound(Exception):

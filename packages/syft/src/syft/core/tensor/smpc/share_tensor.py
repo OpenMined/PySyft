@@ -849,7 +849,7 @@ class ShareTensor(PassthroughTensor):
         st_msg.seedPrzs = self.seed_przs
         st_msg.ringSize = str(self.ring_size)
 
-        return st_msg.to_bytes_packed()
+        return st_msg.to_bytes()
 
     @staticmethod
     def _bytes2object(buf: bytes) -> ShareTensor:
@@ -858,9 +858,10 @@ class ShareTensor(PassthroughTensor):
         # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
         MAX_TRAVERSAL_LIMIT = 2**64 - 1
 
-        st_msg = st_struct.from_bytes_packed(  # type: ignore
+        with st_struct.from_bytes(  # type: ignore
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        )
+        ) as msg:
+            st_msg = msg
 
         if st_msg.isNumpy:
             child = capnp_deserialize(combine_bytes(st_msg.child), from_bytes=True)
