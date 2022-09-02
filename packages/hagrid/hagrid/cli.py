@@ -330,8 +330,7 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 
     try:
         silent = bool(kwargs["silent"]) if "silent" in kwargs else False
-        is_dev = kwargs["release"] == "development" or bool(kwargs["dev"])
-        from_rendered_dir = bool(kwargs["from_template"]) and is_dev
+        from_rendered_dir = bool(kwargs["from_template"]) and EDITABLE_MODE
         execute_commands(
             cmds, dry_run=dry_run, silent=silent, from_rendered_dir=from_rendered_dir
         )
@@ -879,9 +878,7 @@ def create_launch_cmd(
 
     if parsed_kwargs["from_template"] and host is not None:
         # Setup the files from the manifest_template.yml
-        setup_from_manifest_template(
-            release_type=parsed_kwargs["release"], host_type=host
-        )
+        setup_from_manifest_template(host_type=host)
 
     if host in ["docker"]:
 
@@ -1515,12 +1512,11 @@ def create_launch_docker_cmd(
     # Render templates if creating stack from the manifest_template.yml
     if from_template and host_term.host is not None:
         # If release is development, update relative path
-        if kwargs["release"] == "development" or kwargs["dev"]:
+        if EDITABLE_MODE:
             default_envs["RELATIVE_PATH"] = "../"
 
         render_templates(
             env_vars=default_envs,
-            release_type=kwargs["release"],
             host_type=host_term.host,
         )
 
