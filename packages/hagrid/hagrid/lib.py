@@ -91,9 +91,11 @@ def get_git_repo() -> git.Repo:
             repo_path = repo_src_path()
 
             if repo_path.exists():
-                shutil.rmtree(repo_path)
+                shutil.rmtree(str(repo_path))
 
-            git.Repo.clone_from(git_url, repo_path, single_branch=False, b=repo_branch)
+            git.Repo.clone_from(
+                git_url, str(repo_path), single_branch=False, b=repo_branch
+            )
         except Exception as e:  # nosec
             print(f"Failed to clone {git_url} to {repo_src_path()} with error: {e}")
     return git.Repo(repo_src_path())

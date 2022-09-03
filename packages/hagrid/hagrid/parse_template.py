@@ -124,9 +124,6 @@ def render_templates(env_vars: dict, host_type: str) -> None:
     target_dir = repo_src_path() if EDITABLE_MODE else template["target_dir"]
     all_template_files = template["files"]
 
-    # Create the target dir if it does not exist
-    os.makedirs(target_dir, exist_ok=True)
-
     jinja_template = JinjaTemplate(target_dir)
 
     files_to_render = []
@@ -151,7 +148,6 @@ def render_templates(env_vars: dict, host_type: str) -> None:
                 if EDITABLE_MODE
                 else src_file_path
             )
-            print("Target", target_file_path)
             jinja_template.substitute_vars(src_file_path, env_vars, target_file_path)
 
 
@@ -175,9 +171,7 @@ class JinjaTemplate(object):
 
     def save_to(self, message: str, filename: str) -> None:
         base_dir = self.directory
-        filepath = os.path.join(base_dir, filename)
-
-        print("Filepath", filepath)
+        filepath = os.path.abspath(os.path.join(base_dir, filename))
 
         # Create sub directories if does not exist
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
