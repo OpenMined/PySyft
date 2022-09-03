@@ -2229,23 +2229,21 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             data_subjects=self.data_subjects,
         )
 
-
     def resize(self, new_shape: Union[int, Tuple[int, ...]]) -> PhiTensor:
         out_child = np.resize(self.child.data, new_shape)
         return PhiTensor(
             child=out_child,
-            min_vals=lazyrepeatarray(self.min_vals.data.min(), out_child.shape),
-            max_vals=lazyrepeatarray(self.max_vals.data.max(), out_child.shape),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
             data_subjects=np.resize(self.data_subjects, new_shape)
         ) 
-
 
     def compress(self, condition: List[bool], axis: int = None) -> PhiTensor:
         out_child = self.child.compress(condition, axis)
         return PhiTensor(
             child=out_child,
-            min_vals=lazyrepeatarray(self.min_vals.data.min(), out_child.shape),
-            max_vals=lazyrepeatarray(self.max_vals.data.max(), out_child.shape),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
             data_subjects=self.data_subjects.compress(condition, axis)
         ) 
 
@@ -2253,8 +2251,8 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         out_child = self.child.squeeze(axis)
         return PhiTensor(
             child=out_child,
-            min_vals=self.min_vals.reshape(out_child.shape),
-            max_vals=self.max_vals.reshape(out_child.shape),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
             data_subjects=np.squeeze(self.data_subjects, axis)
         )
 
