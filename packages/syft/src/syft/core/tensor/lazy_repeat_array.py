@@ -237,6 +237,7 @@ class lazyrepeatarray:
             raise NotImplementedError
 
     def reshape(self, target_shape: Tuple) -> lazyrepeatarray:
+        # TODO: Can we reshape without creating new objects
         if self.data.shape == self.shape:
             return lazyrepeatarray(
                 data=self.data.reshape(target_shape), shape=target_shape

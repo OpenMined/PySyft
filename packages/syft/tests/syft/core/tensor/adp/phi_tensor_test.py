@@ -12,6 +12,7 @@ import syft as sy
 from syft.core.adp.data_subject_list import DataSubjectArray
 from syft.core.tensor.autodp.gamma_tensor import GammaTensor
 from syft.core.tensor.autodp.phi_tensor import PhiTensor as PT
+from syft.core.tensor.lazy_repeat_array import lazyrepeatarray as lra
 from syft.core.tensor.tensor import Tensor
 
 
@@ -57,17 +58,15 @@ def reference_data(highest, dims) -> np.ndarray:
 
 
 @pytest.fixture
-def upper_bound(reference_data: np.ndarray, highest: int) -> np.ndarray:
+def upper_bound(reference_data: np.ndarray, highest: int) -> lra:
     """This is used to specify the max_vals that is either binary or randomly generated b/w 0-1"""
-    max_values = np.ones_like(reference_data) * highest
-    return max_values
+    return lra(data=highest, shape=reference_data.shape)
 
 
 @pytest.fixture
-def lower_bound(reference_data: np.ndarray, highest: int) -> np.ndarray:
+def lower_bound(reference_data: np.ndarray, highest: int) -> lra:
     """This is used to specify the min_vals that is either binary or randomly generated b/w 0-1"""
-    min_values = np.ones_like(reference_data) * -highest
-    return min_values
+    return lra(data=-highest, shape=reference_data.shape)
 
 
 @pytest.fixture
@@ -393,6 +392,584 @@ def test_neg(
     assert (neg_tensor.min_vals == reference_tensor.max_vals * -1).all()
     assert (neg_tensor.max_vals == reference_tensor.min_vals * -1).all()
     assert neg_tensor.shape == reference_tensor.shape
+
+
+def test_flatten(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    # Default behaviour
+    flattened_array = reference_tensor.flatten()
+
+    target_shape = reference_data.flatten().shape
+    assert flattened_array.child.shape == target_shape, "Private data not flattened correctly"
+    assert flattened_array.min_vals.data == reference_tensor.min_vals.data, "Min vals changed incorrectly in flatten"
+    assert flattened_array.max_vals.data == reference_tensor.max_vals.data, "Max vals changed incorrectly in flatten"
+    assert flattened_array.min_vals.shape == target_shape
+    assert flattened_array.max_vals.shape == target_shape
+    assert flattened_array.data_subjects.shape == target_shape
+    assert (flattened_array.data_subjects == ishan.flatten()).all(), "Data Subjects not flattened properly"
+
+
+@pytest.mark.arithmetic
+@pytest.mark.public_op
+def test_add_public(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    output = reference_tensor + 5
+    assert output.shape == reference_tensor.shape
+    assert (output.child == reference_data + 5).all()
+    assert output.min_vals.data == reference_tensor.min_vals + 5
+    assert output.min_vals.shape == reference_tensor.shape
+    assert output.max_vals.data == reference_tensor.max_vals + 5
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.arithmetic
+@pytest.mark.public_op
+def test_sub_public(
+        reference_data: np.ndarray,
+        upper_bound: np.ndarray,
+        lower_bound: np.ndarray,
+        ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    output = reference_tensor - 5
+    assert output.shape == reference_tensor.shape
+    assert (output.child == reference_data - 5).all()
+    assert output.min_vals.data == reference_tensor.min_vals - 5
+    assert output.min_vals.shape == reference_tensor.shape
+    assert output.max_vals.data == reference_tensor.max_vals - 5
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.arithmetic
+@pytest.mark.public_op
+def test_mul_public(
+        reference_data: np.ndarray,
+        upper_bound: np.ndarray,
+        lower_bound: np.ndarray,
+        ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    output = reference_tensor * 5
+    assert output.shape == reference_tensor.shape
+    assert (output.child == reference_data * 5).all()
+    assert (output.min_vals.data == reference_tensor.min_vals.data * 5).all()
+    assert output.min_vals.shape == reference_tensor.shape
+    assert (output.max_vals.data == reference_tensor.max_vals.data * 5).all()
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.arithmetic
+@pytest.mark.public_op
+def test_truediv_public(
+        reference_data: np.ndarray,
+        upper_bound: np.ndarray,
+        lower_bound: np.ndarray,
+        ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    output = reference_tensor / 5
+    assert output.shape == reference_tensor.shape
+    assert (output.child == reference_data / 5).all()
+    assert (output.min_vals.data == reference_tensor.min_vals.data / 5).all()
+    assert output.min_vals.shape == reference_tensor.shape
+    assert (output.max_vals.data == reference_tensor.max_vals.data / 5).all()
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.arithmetic
+@pytest.mark.private_op
+def test_add_private(
+        reference_data: np.ndarray,
+        upper_bound: np.ndarray,
+        lower_bound: np.ndarray,
+        ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    tensor2 = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    output = reference_tensor + tensor2
+    assert output.shape == reference_tensor.shape
+    assert (output.child == reference_data * 2).all()
+    assert output.min_vals.data == reference_tensor.min_vals.data * 2
+    assert output.min_vals.shape == reference_tensor.shape
+    assert output.max_vals.data == reference_tensor.max_vals.data * 2
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.arithmetic
+@pytest.mark.private_op
+def test_sub_private(
+        reference_data: np.ndarray,
+        upper_bound: np.ndarray,
+        lower_bound: np.ndarray,
+        ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    tensor2 = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    output = reference_tensor - tensor2
+    assert output.shape == reference_tensor.shape
+    assert (output.child == 0).all()
+    assert output.min_vals.data <= output.max_vals.data
+    assert output.min_vals.shape == reference_tensor.shape
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.arithmetic
+@pytest.mark.private_op
+def test_mul_private(
+        reference_data: np.ndarray,
+        upper_bound: np.ndarray,
+        lower_bound: np.ndarray,
+        ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    tensor2 = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    output = reference_tensor * tensor2
+    assert output.shape == reference_tensor.shape
+    assert (output.child == reference_data ** 2).all()
+    assert output.min_vals.data <= output.max_vals.data
+    assert output.min_vals.shape == reference_tensor.shape
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.arithmetic
+@pytest.mark.private_op
+def test_truediv_private(
+        reference_data: np.ndarray,
+        upper_bound: np.ndarray,
+        lower_bound: np.ndarray,
+        ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.ones_like(reference_data),
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    tensor2 = PT(
+        child=np.ones_like(reference_data),
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    output = reference_tensor / tensor2
+    assert output.shape == reference_tensor.shape
+    assert (output.child == 1).all()
+    assert output.min_vals.data <= output.max_vals.data
+    assert output.min_vals.shape == reference_tensor.shape
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+
+@pytest.mark.equality
+@pytest.mark.public_op
+def test_eq_public(
+        reference_data: np.ndarray,
+        upper_bound: lra,
+        lower_bound: lra,
+        ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.ones_like(reference_data),
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    # Test that it IS equal
+    output = reference_tensor == 1
+    assert output.shape == reference_tensor.shape
+    assert output.child.all()
+    assert (output.min_vals.data == 0).all()
+    assert output.min_vals.shape == reference_tensor.shape
+    assert (output.max_vals.data == 1).all()
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.equality
+@pytest.mark.public_op
+def test_ne_public(
+        reference_data: np.ndarray,
+        upper_bound: lra,
+        lower_bound: lra,
+        ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.ones_like(reference_data),
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    output = reference_tensor != 0
+    assert output.shape == reference_tensor.shape
+    assert output.child.all()
+    assert (output.min_vals.data == 0).all()
+    assert output.min_vals.shape == reference_tensor.shape
+    assert (output.max_vals.data == 1).all()
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.equality
+@pytest.mark.public_op
+def test_lt_public(
+        reference_data: np.ndarray,
+        upper_bound: lra,
+        lower_bound: lra,
+        ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.ones_like(reference_data),
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    output = reference_tensor < 2
+    assert output.shape == reference_tensor.shape
+    assert output.child.all()
+    assert (output.min_vals.data == 0).all()
+    assert output.min_vals.shape == reference_tensor.shape
+    assert (output.max_vals.data == 1).all()
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+
+@pytest.mark.equality
+@pytest.mark.public_op
+def test_gt_public(
+        reference_data: np.ndarray,
+        upper_bound: lra,
+        lower_bound: lra,
+        ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.ones_like(reference_data),
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    output = reference_tensor > 0
+    assert output.shape == reference_tensor.shape
+    assert output.child.all()
+    assert (output.min_vals.data == 0).all()
+    assert output.min_vals.shape == reference_tensor.shape
+    assert (output.max_vals.data == 1).all()
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.equality
+@pytest.mark.public_op
+def test_le_public(
+        reference_data: np.ndarray,
+        upper_bound: lra,
+        lower_bound: lra,
+        ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.ones_like(reference_data),
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    output = reference_tensor <= 2
+    assert output.shape == reference_tensor.shape
+    assert output.child.all()
+    assert (output.min_vals.data == 0).all()
+    assert output.min_vals.shape == reference_tensor.shape
+    assert (output.max_vals.data == 1).all()
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.equality
+@pytest.mark.public_op
+def test_ge_public(
+        reference_data: np.ndarray,
+        upper_bound: lra,
+        lower_bound: lra,
+        ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.ones_like(reference_data),
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    output = reference_tensor >= 0
+    assert output.shape == reference_tensor.shape
+    assert output.child.all()
+    assert (output.min_vals.data == 0).all()
+    assert output.min_vals.shape == reference_tensor.shape
+    assert (output.max_vals.data == 1).all()
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+
+@pytest.mark.equality
+@pytest.mark.private_op
+def test_eq_private(
+        reference_data: np.ndarray,
+        upper_bound: lra,
+        lower_bound: lra,
+        ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.ones_like(reference_data),
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    # Test that it IS equal
+    output = reference_tensor == reference_tensor.ones_like()
+    assert output.shape == reference_tensor.shape
+    assert output.child.all()
+    assert (output.min_vals.data == 0).all()
+    assert output.min_vals.shape == reference_tensor.shape
+    assert (output.max_vals.data == 1).all()
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.equality
+@pytest.mark.private_op
+def test_ne_private(
+        reference_data: np.ndarray,
+        upper_bound: lra,
+        lower_bound: lra,
+        ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.ones_like(reference_data),
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    output = reference_tensor != reference_tensor.zeros_like()
+    assert output.shape == reference_tensor.shape
+    assert output.child.all()
+    assert (output.min_vals.data == 0).all()
+    assert output.min_vals.shape == reference_tensor.shape
+    assert (output.max_vals.data == 1).all()
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.equality
+@pytest.mark.private_op
+def test_lt_private(
+        reference_data: np.ndarray,
+        upper_bound: lra,
+        lower_bound: lra,
+        ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.ones_like(reference_data),
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    output = reference_tensor < reference_tensor.ones_like() + 5
+    assert output.shape == reference_tensor.shape
+    assert output.child.all()
+    assert (output.min_vals.data == 0).all()
+    assert output.min_vals.shape == reference_tensor.shape
+    assert (output.max_vals.data == 1).all()
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+
+@pytest.mark.equality
+@pytest.mark.private_op
+def test_gt_private(
+        reference_data: np.ndarray,
+        upper_bound: lra,
+        lower_bound: lra,
+        ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.ones_like(reference_data),
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    output = reference_tensor + 5 > reference_tensor.zeros_like()
+    assert output.shape == reference_tensor.shape
+    assert output.child.all()
+    assert (output.min_vals.data == 0).all()
+    assert output.min_vals.shape == reference_tensor.shape
+    assert (output.max_vals.data == 1).all()
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.equality
+@pytest.mark.private_op
+def test_le_private(
+        reference_data: np.ndarray,
+        upper_bound: lra,
+        lower_bound: lra,
+        ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.ones_like(reference_data),
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    output = reference_tensor <= reference_tensor.ones_like() + 5
+    assert output.shape == reference_tensor.shape
+    assert output.child.all()
+    assert (output.min_vals.data == 0).all()
+    assert output.min_vals.shape == reference_tensor.shape
+    assert (output.max_vals.data == 1).all()
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.equality
+@pytest.mark.private_op
+def test_ge_private(
+        reference_data: np.ndarray,
+        upper_bound: lra,
+        lower_bound: lra,
+        ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.ones_like(reference_data),
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    output = reference_tensor + 5 >= reference_tensor.zeros_like()
+    assert output.shape == reference_tensor.shape
+    assert output.child.all()
+    assert (output.min_vals.data == 0).all()
+    assert output.min_vals.shape == reference_tensor.shape
+    assert (output.max_vals.data == 1).all()
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
 
 def test_resize(
     reference_data: np.ndarray,

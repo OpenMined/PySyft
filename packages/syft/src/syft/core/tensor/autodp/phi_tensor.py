@@ -1466,27 +1466,50 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             + f"min_vals={self.min_vals}, max_vals={self.max_vals})"
         )
 
-    def __eq__(self, other: Any) -> Union[PhiTensor, GammaTensor]:  # type: ignore
-        # TODO: what about data_subjects and min / max values?
-        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
-            gamma_output = False
-            if is_acceptable_simple_type(other):
-                result = self.child == other
+    def __eq__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
+        if is_acceptable_simple_type(other):
+            return PhiTensor(
+                child=(self.child == other) * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(data=0, shape=self.shape),
+                max_vals=lazyrepeatarray(data=1, shape=self.shape)
+            )
+        elif isinstance(other, PhiTensor):
+            if (self.data_subjects != other.data_subjects).any():
+                return self.gamma == other.gamma
             else:
-                # check data_subjects match, if they dont gamma_output = True
-                result = self.child == other.child
-                if isinstance(result, GammaTensor):  # TODO: Check this
-                    gamma_output = True
-            if not gamma_output:
-                # min_vals=self.min_vals * 0.0,
-                # max_vals=self.max_vals * 0.0 + 1.0,
-                return self.copy_with(child=result)
-            else:
-                return self.copy_with(child=result).gamma
+                return PhiTensor(
+                    child=(self.child == other.child) * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(data=0, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=1, shape=self.shape)
+                )
         else:
-            raise Exception(
-                "Tensor dims do not match for __eq__: "
-                + f"{len(self.child)} != {len(other.child)}"
+            raise NotImplementedError(
+                f"__eq__ not implemented between PhiTensor and {type(other)}."
+            )
+
+    def __ne__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
+        if is_acceptable_simple_type(other):
+            return PhiTensor(
+                child=(self.child != other) * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(data=0, shape=self.shape),
+                max_vals=lazyrepeatarray(data=1, shape=self.shape)
+            )
+        elif isinstance(other, PhiTensor):
+            if (self.data_subjects != other.data_subjects).any():
+                return self.gamma != other.gamma
+            else:
+                return PhiTensor(
+                    child=(self.child != other.child) * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(data=0, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=1, shape=self.shape)
+                )
+        else:
+            raise NotImplementedError(
+                f"__ne__ not implemented between PhiTensor and {type(other)}."
             )
 
     def __add__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
@@ -1576,32 +1599,24 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def __mul__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         if isinstance(other, PhiTensor):
-            return self.gamma + other.gamma
-            # if self.data_subjects != other.data_subjects:
-            #     return self.gamma * other.gamma
+            if (self.data_subjects == other.data_subjects).all():
+                min_min = self.min_vals.data * other.min_vals.data
+                min_max = self.min_vals.data * other.max_vals.data
+                max_min = self.max_vals.data * other.min_vals.data
+                max_max = self.max_vals.data * other.max_vals.data
 
-            # data = self.child * other.child
+                _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+                _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
 
-            # min_min = self.min_vals.data * other.min_vals.data
-            # min_max = self.min_vals.data * other.max_vals.data
-            # max_min = self.max_vals.data * other.min_vals.data
-            # max_max = self.max_vals.data * other.max_vals.data
+                return PhiTensor(
+                    child=self.child * other.child,
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape)
+                )
+            else:
+                return self.gamma * other.gamma
 
-            # _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            # _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            # min_vals = self.min_vals.copy()
-            # min_vals.data = _min_vals
-            # max_vals = self.max_vals.copy()
-            # max_vals.data = _max_vals
-
-            # data_subjects = self.data_subjects
-
-            # return PhiTensor(
-            #     child=data,
-            #     data_subjects=data_subjects,
-            #     min_vals=min_vals,
-            #     max_vals=max_vals,
-            # )
         elif is_acceptable_simple_type(other):
 
             data = self.child * other
@@ -1632,6 +1647,37 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
 
+    def __truediv__(self, other) -> Union[PhiTensor, GammaTensor]:
+        if isinstance(other, PhiTensor):
+            if (self.data_subjects != other.data_subjects).all():
+                return self.gamma / other.gamma
+            else:
+                min_min = self.min_vals.data / other.min_vals.data
+                min_max = self.min_vals.data / other.max_vals.data
+                max_min = self.max_vals.data / other.min_vals.data
+                max_max = self.max_vals.data / other.max_vals.data
+
+                _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+                _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+
+                return PhiTensor(
+                    child=self.child / other.child,
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape)
+                )
+        elif isinstance(other, GammaTensor):
+            return self.gamma / other
+        elif is_acceptable_simple_type(other):
+            return PhiTensor(
+                child=self.child / other,
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(data=self.min_vals.data / other, shape=self.min_vals.shape),
+                max_vals=lazyrepeatarray(data=self.max_vals.data / other, shape=self.max_vals.shape)
+            )
+        else:
+            raise NotImplementedError(f"truediv not supported between PhiTensor & {type(other)}")
+
     def __rtruediv__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         if is_acceptable_simple_type(other):
@@ -1640,7 +1686,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 min_vals=(1 / self.min_vals) * other,
                 max_vals=(1 / self.max_vals) * other,
                 data_subjects=self.data_subjects,
-                # scalar_manager=self.scalar_manager,
             )
 
         elif isinstance(other, GammaTensor):
@@ -1815,6 +1860,32 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=max_vals,
         )
 
+    def flatten(self, order: Optional[str] = "C"):
+        """
+        Return a copy of the array collapsed into one dimension.
+
+        Parameters
+            order{‘C’, ‘F’, ‘A’, ‘K’}, optional
+                ‘C’ means to flatten in row-major (C-style) order.
+                ‘F’ means to flatten in column-major (Fortran- style) order.
+                ‘A’ means to flatten in column-major order if a is Fortran contiguous in memory,
+                        row-major order otherwise.
+                ‘K’ means to flatten a in the order the elements occur in memory. The default is ‘C’.
+        Returns
+            PhiTensor
+                A copy of the input array, flattened to one dimension.
+        """
+        if order not in ["C", "F", "A", "K"]:
+            raise NotImplementedError(f"Flatten is not implemented for order={order}")
+
+        output_data = self.child.flatten(order=order)
+        return PhiTensor(
+            child=output_data,
+            data_subjects=self.data_subjects.reshape(output_data.shape),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape),
+        )
+
     def concatenate(
         self,
         other: Union[np.ndarray, PhiTensor],
@@ -1841,33 +1912,18 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             raise NotImplementedError
 
     def __lt__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
-
-        # if the tensor being compared is also private
         if isinstance(other, PhiTensor):
-            return self.gamma.__lt__(other.gamma)
-
-            # if self.data_subjects != other.data_subjects:
-            #     # return self.gamma < other.gamma
-            #     raise NotImplementedError
-
-            # if len(self.child) != len(other.child):
-            #     raise Exception(
-            #         f"Tensor dims do not match for __lt__: {len(self.child)} != {len(other.child)}"  # type: ignore
-            #     )
-
-            # data = (
-            #     self.child < other.child
-            # )  # the * 1 just makes sure it returns integers instead of True/False
-            # min_vals = self.min_vals * 0
-            # max_vals = (self.max_vals * 0) + 1
-            # data_subjects = self.data_subjects
-
-            # return PhiTensor(
-            #     child=data,
-            #     data_subjects=data_subjects,
-            #     min_vals=min_vals,
-            #     max_vals=max_vals,
-            # )
+            if (self.data_subjects == other.data_subjects).all():
+                return PhiTensor(
+                    child=(self.child < other.child) * 1,
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(data=0, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=1, shape=self.shape)
+                )
+            else:
+                return self.gamma.__lt__(other.gamma)
+        elif isinstance(other, GammaTensor):
+            return self.gamma.__lt__(other)
 
         # if the tensor being compared is a public tensor / int / float / etc.
         elif is_acceptable_simple_type(other):
@@ -1885,36 +1941,23 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             )
 
         else:
-            return NotImplementedError  # type: ignore
+            raise NotImplementedError
 
     def __le__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         # if the tensor being compared is also private
         if isinstance(other, PhiTensor):
-            return self.gamma.__le__(other.gamma)
-
-            # if self.data_subjects != other.data_subjects:
-            #     # return self.gamma < other.gamma
-            #     raise NotImplementedError
-
-            # if len(self.child) != len(other.child):
-            #     raise Exception(
-            #         f"Tensor dims do not match for __le__: {len(self.child)} != {len(other.child)}"  # type: ignore
-            #     )
-
-            # data = (
-            #     self.child <= other.child
-            # )  # the * 1 just makes sure it returns integers instead of True/False
-            # min_vals = self.min_vals * 0
-            # max_vals = (self.max_vals * 0) + 1
-            # data_subjects = self.data_subjects
-
-            # return PhiTensor(
-            #     child=data,
-            #     data_subjects=data_subjects,
-            #     min_vals=min_vals,
-            #     max_vals=max_vals,
-            # )
+            if (self.data_subjects == other.data_subjects).all():
+                return PhiTensor(
+                    child=(self.child <= other.child) * 1,
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(data=0, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=1, shape=self.shape)
+                )
+            else:
+                return self.gamma.__le__(other.gamma)
+        elif isinstance(other, GammaTensor):
+            return self.gamma.__le__(other)
 
         # if the tensor being compared is a public tensor / int / float / etc.
         elif is_acceptable_simple_type(other):
@@ -1932,36 +1975,23 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             )
 
         else:
-            return NotImplementedError  # type: ignore
+            raise NotImplementedError
 
     def __gt__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         # if the tensor being compared is also private
         if isinstance(other, PhiTensor):
-            return self.gamma.__gt__(other.gamma)
-
-            # if self.data_subjects != other.data_subjects:
-            #     # return self.gamma < other.gamma
-            #     raise NotImplementedError
-
-            # if len(self.child) != len(other.child):
-            #     raise Exception(
-            #         f"Tensor dims do not match for __gt__: {len(self.child)} != {len(other.child)}"  # type: ignore
-            #     )
-
-            # data = (
-            #     self.child > other.child
-            # )  # the * 1 just makes sure it returns integers instead of True/False
-            # min_vals = self.min_vals * 0
-            # max_vals = (self.max_vals * 0) + 1
-            # data_subjects = self.data_subjects
-
-            # return PhiTensor(
-            #     child=data,
-            #     data_subjects=data_subjects,
-            #     min_vals=min_vals,
-            #     max_vals=max_vals,
-            # )
+            if (self.data_subjects == other.data_subjects).all():
+                return PhiTensor(
+                    child=(self.child > other.child) * 1,
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(data=0, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=1, shape=self.shape)
+                )
+            else:
+                return self.gamma.__gt__(other.gamma)
+        elif isinstance(other, GammaTensor):
+            return self.gamma.__gt__(other)
 
         # if the tensor being compared is a public tensor / int / float / etc.
         elif is_acceptable_simple_type(other):
@@ -1979,6 +2009,40 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             )
         else:
             raise NotImplementedError  # type: ignore
+
+    def __ge__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
+
+        # if the tensor being compared is also private
+        if isinstance(other, PhiTensor):
+            if (self.data_subjects == other.data_subjects).all():
+                return PhiTensor(
+                    child=(self.child >= other.child) * 1,
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(data=0, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=1, shape=self.shape)
+                )
+            else:
+                return self.gamma.__ge__(other.gamma)
+        elif isinstance(other, GammaTensor):
+            return self.gamma.__ge__(other)
+
+        # if the tensor being compared is a public tensor / int / float / etc.
+        elif is_acceptable_simple_type(other):
+
+            data = self.child >= other
+            min_vals = self.min_vals * 0
+            max_vals = (self.max_vals * 0) + 1
+            data_subjects = self.data_subjects
+
+            return PhiTensor(
+                child=data,
+                data_subjects=data_subjects,
+                min_vals=min_vals,
+                max_vals=max_vals,
+            )
+
+        else:
+            return NotImplementedError  # type: ignore
 
     # Re enable after testing
     def dot(
@@ -2067,28 +2131,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=max_vals,
             data_subjects=self.data_subjects,
         )
-
-    def __ne__(self, other: Any) -> Union[PhiTensor, GammaTensor]:  # type: ignore
-        # TODO: what about data_subjects and min / max values?
-        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
-            gamma_output = False
-            if is_acceptable_simple_type(other):
-                result = self.child != other
-            else:
-                # check data_subjects match, if they dont gamma_output = True
-                #
-                result = self.child != other.child
-                if isinstance(result, GammaTensor):
-                    gamma_output = True
-            if not gamma_output:
-                return self.copy_with(child=result)
-            else:
-                return self.copy_with(child=result).gamma
-        else:
-            raise Exception(
-                "Tensor dims do not match for __eq__: "
-                + f"{len(self.child)} != {len(other.child)}"
-            )
 
     def __neg__(self) -> PhiTensor:
 
