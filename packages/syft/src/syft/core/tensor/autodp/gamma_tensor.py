@@ -1239,16 +1239,17 @@ class GammaTensor:
         # Add this tensor to the chain
         output_state[self.id] = self
 
+        func = "sub"
+
+        def _sub(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.subtract(*[i.reconstruct() for i in state.values()])
+
+        mapper[func] = _sub
+
         if isinstance(other, PhiTensor):
             other = other.gamma
 
         if isinstance(other, GammaTensor):
-            func = "sub_private"
-
-            def _sub_private(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.subtract(*[i.reconstruct() for i in state.values()])
-            mapper[func] = _sub_private
-
             output_state[other.id] = other
 
             child = self.child - other.child
@@ -1258,24 +1259,16 @@ class GammaTensor:
             max_max = self.max_vals.data - other.max_vals.data
             _min_val = np.minimum.reduce([min_min, min_max, max_min, max_max])
             _max_val = np.maximum.reduce([min_min, min_max, max_min, max_max])
-            min_val = self.min_vals.copy()
-            min_val.data = _min_val
-            max_val = self.max_vals.copy()
-            max_val.data = _max_val
+            min_val = lazyrepeatarray(data=_min_val, shape=self.shape)
+            max_val = lazyrepeatarray(data=_max_val, shape=self.shape)
 
             output_ds = self.data_subjects - other.data_subjects
 
         else:
-            func = "sub_public"
-
-            def _sub_public(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.subtract(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
-            mapper[func] = _sub_public
-
             child = self.child - other
             min_val = self.min_vals - other
             max_val = self.max_vals - other
-            output_ds = self.data_subjects - other
+            output_ds = self.data_subjects
             output_state[np.random.randint(low=0, high=2**31-1)] = other
 
         return GammaTensor(
@@ -1359,7 +1352,7 @@ class GammaTensor:
             return jnp.divide(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
 
         mapper[func] = _truediv
-        
+
         if isinstance(other, PhiTensor):
             other = other.gamma
 
