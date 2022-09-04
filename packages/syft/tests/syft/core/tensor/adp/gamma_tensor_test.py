@@ -145,8 +145,8 @@ def test_gamma_publish(
     )
 
     assert results.dtype == np.float64
-    assert results < upper_bound.sum() + 10
-    assert -10 + lower_bound.sum() < results
+    assert results < upper_bound.to_numpy().sum() + 10
+    assert -10 + lower_bound.to_numpy().sum() < results
     print(ledger_store.kv_store)
 
 
