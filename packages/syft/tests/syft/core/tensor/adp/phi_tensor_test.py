@@ -207,10 +207,10 @@ def test_add_single_data_subjects(
     # so we include gammatensor for the assert, it should be reverted back to PhiTensor
     assert isinstance(result, (PT, GammaTensor)), "Addition of two PTs is wrong type"
     assert (
-        result.max_vals == 2 * upper_bound
+        result.max_vals.data == 2 * upper_bound.data
     ).all(), "Addition of two PTs results in incorrect max_vals"
     assert (
-        result.min_vals == 2 * lower_bound
+        result.min_vals.data == 2 * lower_bound.data
     ).all(), "Addition of two PTs results in incorrect min_vals"
 
     # Try with negative values
