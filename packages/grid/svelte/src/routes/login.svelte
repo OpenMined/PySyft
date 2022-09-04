@@ -4,6 +4,7 @@
   import Button from '$lib/components/Button.svelte';
   import Capital from '$lib/components/Capital.svelte';
   import FormControl from '$lib/components/FormControl.svelte';
+  import StatusIndicator from '$lib/components/StatusIndicator.svelte';
 </script>
 
 <div class="fixed top-0 right-0 w-full h-full max-w-[808px] max-h-[880px] z-[-1]">
@@ -53,10 +54,15 @@
       <Capital>
         <!-- Capital Header (slot: header) -->
         <div slot="header">
-          <h2 class="flex justify-center text-gray-800 font-rubik text-2xl leading-normal font-medium">
+          <h2
+            class="flex justify-center text-gray-800 font-rubik text-2xl leading-normal font-medium"
+          >
             Welcome Back
           </h2>
-          <p class="flex justify-center">Domain Online</p>
+          <div class="flex justify-center items-center">
+            <StatusIndicator status="active" />
+            <p class="pl-2 flex justify-center">Domain Online</p>
+          </div>
         </div>
         <!-- Capital Body (slot: body) -->
         <div class="flex flex-col gap-y-4 gap-x-6" slot="body">
@@ -70,7 +76,9 @@
 
         <!-- Capital Footer (slot: footer) -->
         <div class="space-y-6" slot="footer">
-          <p class="text-center">Don't have an account yet? <a href="/signup">Apply for an account here</a></p>
+          <p class="text-center">
+            Don't have an account yet? <a href="/signup">Apply for an account here</a>
+          </p>
           <Button>Login</Button>
         </div>
       </Capital>
