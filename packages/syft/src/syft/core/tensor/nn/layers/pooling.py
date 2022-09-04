@@ -53,6 +53,7 @@ class AvgPool(Layer):
 
         self.input_shape: Optional[Tuple[int, ...]] = None
         self.out_shape: Optional[Tuple[int, ...]] = None
+        self.X_col = None
 
     def connect_to(self, prev_layer: Layer) -> None:
 

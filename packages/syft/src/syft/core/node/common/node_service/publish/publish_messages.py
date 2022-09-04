@@ -19,6 +19,7 @@ class PublishScalarsAction(ImmediateSyftMessageWithoutReply):
         "address",
         "publish_ids_at_location",
         "sigma",
+        "_id"
     ]
 
     def __init__(
