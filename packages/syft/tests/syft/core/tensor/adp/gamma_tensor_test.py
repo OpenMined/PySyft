@@ -102,7 +102,7 @@ def test_gamma_serde(
     assert de.is_linear == gamma_tensor1.is_linear
     assert de.func_str == gamma_tensor1.func_str
     assert de.id == gamma_tensor1.id
-    assert de.state.keys() == gamma_tensor1.state.keys()
+    assert de.sources.keys() == gamma_tensor1.sources.keys()
 
 
 def test_gamma_publish(

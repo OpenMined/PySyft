@@ -1426,7 +1426,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         gamma = self.gamma
         # gamma.func = lambda x: x
-        gamma.state[gamma.id] = gamma
+        gamma.sources[gamma.id] = gamma
 
         res = gamma.publish(
             get_budget_for_user=get_budget_for_user,

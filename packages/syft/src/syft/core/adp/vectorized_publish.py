@@ -210,7 +210,7 @@ def publish(
         # TODO: Modify to work with private/public operations (when input_tensor is a scalar)
 
         # Step 4.2: Figure out which Tensors in the Source dictionary have those data subjects
-        filtered_sourcetree = deepcopy(tensor.state)
+        filtered_sourcetree = deepcopy(tensor.sources)
         input_tensors = list(filtered_sourcetree.values())
         parent_branch = [
             filtered_sourcetree for _ in input_tensors
@@ -250,9 +250,9 @@ def publish(
 
                     # If epsilon <= privacy budget, we don't need to do anything- the user has enough PB to use the data.
                 else:
-                    input_tensors += list(input_tensor.state.values())
+                    input_tensors += list(input_tensor.sources.values())
                     parent_branch += [
-                        input_tensor.state for _ in input_tensor.state.values()
+                        input_tensor.sources for _ in input_tensor.sources.values()
                     ]
             else:
                 # This is a public value, we don't touch 'em.

@@ -1104,7 +1104,7 @@ def no_op(x: GammaTensor) -> GammaTensor:
             min_vals=x.min_vals,
             max_vals=x.max_vals,
             func_str=x.func_str,
-            state=GammaTensor.convert_dsl(x.state),
+            sources=GammaTensor.convert_dsl(x.sources),
         )
     return res
 
@@ -1121,6 +1121,57 @@ def numpy2jax(value: np.array, dtype: np.dtype) -> jnp.array:
 @dataclass
 @serializable(capnp_bytes=True)
 class GammaTensor:
+    """
+    A differential privacy tensor that contains data belonging to atleast 2 or more unique data subjects.
+
+    Attributes:
+        child: jnp.array
+            The private data itself.
+        data_subjects: DataSubjectArray
+            (DP Metadata) A custom NumPy class that keeps track of which data subjects contribute which datapoints in
+            this tensor.
+        min_vals: lazyrepeatarray
+            (DP Metadata) A custom class that keeps track of (data-independent) minimum values for this tensor.
+        max_vals: lazyrepeatarray
+            (DP Metadata) A custom class that keeps track of (data-independent) maximum values for this tensor.
+        func_str: str
+            A string that will determine which function was used to build the current tensor.
+        is_linear: bool
+            Whether or not the "func_str" for this tensor is a linear query or not. This impacts the epsilon calculations
+            when publishing.
+        sources: dict
+            A dictionary containing all the Tensors, integers, etc that were used to create this tensor.
+            It maps an integer to each input object.
+        id: int
+            A 32-bit integer that is used when this GammaTensor needs to be added to the "sources" dictionary.
+
+    Methods:
+        All efforts were made to make this tensor's API as similar to the NumPy API as possible.
+        Special, unique methods are listed below:
+
+        reconstruct(sources: Optional[dict]):
+            rebuilds the tensor from the sources dictionary provided, or from the current self.sources.
+            This is exclusively used when adding DP Noise, if the data scientist doesn't have enough privacy budget to
+            use one of the input tensors, thus requiring that tensor's data to be removed from the computation.
+
+        swap_state(sources: Optional[Dict]):
+            calls reconstruct() and populates the rest of the GammaTensor's attributes based on the current tensor.
+            Used exclusively when adding DP Noise.
+
+
+
+        decode():
+            occasionally the use of a FixedPrecisionTensor (FPT) is needed during SMPC[1]. This helps convert back from
+            FPT to regular numpy/jax arrays.
+
+            (https://en.wikipedia.org/wiki/Secure_multi-party_computation)
+
+
+
+
+
+    """
+
     PointerClassOverride = TensorWrappedGammaTensorPointer
 
     child: jnp.array
@@ -1134,13 +1185,13 @@ class GammaTensor:
     id: str = flax.struct.field(
         pytree_node=False, default_factory=lambda: str(randint(0, 2**31 - 1))
     )  # TODO: Need to check if there are any scenarios where this is not secure
-    state: dict = flax.struct.field(pytree_node=False, default_factory=dict)
+    sources: dict = flax.struct.field(pytree_node=False, default_factory=dict)
 
     def __post_init__(
         self,
     ) -> None:  # Might not serve any purpose anymore, since state trees are updated during ops
-        if self.state and len(self.state) == 0 and self.func_str is not "no_op":
-            self.state[self.id] = self
+        if self.sources and len(self.sources) == 0 and self.func_str is not "no_op":
+            self.sources[self.id] = self
 
         if isinstance(self.min_vals, lazyrepeatarray):
             if self.min_vals.data.size != 1:
@@ -1160,7 +1211,7 @@ class GammaTensor:
         else:
             if state is None:
                 print("Using self state")
-                return mapper[self.func_str](self.state)
+                return mapper[self.func_str](self.sources)
             else:
                 print("Using provided state", [v.child if isinstance(v, GammaTensor) else v for v in state.values()])
                 return mapper[self.func_str](state)
@@ -1171,7 +1222,7 @@ class GammaTensor:
             data_subjects=self.data_subjects,
             min_vals=self.min_vals,
             max_vals=self.max_vals,
-            state=state,
+            sources=state,
             func_str=self.func_str,
             is_linear=self.is_linear,
         )
@@ -1215,7 +1266,7 @@ class GammaTensor:
             min_vals=min_val,
             max_vals=max_val,
             func_str=func,
-            state=output_state,
+            sources=output_state,
         )
 
     def __rtruediv__(self, other: SupportedChainType) -> GammaTensor:
@@ -1277,7 +1328,7 @@ class GammaTensor:
             min_vals=min_val,
             max_vals=max_val,
             func_str=func,
-            state=output_state,
+            sources=output_state,
         )
 
     def __mul__(self, other: Any) -> GammaTensor:
@@ -1336,7 +1387,7 @@ class GammaTensor:
             min_vals=min_val,
             max_vals=max_val,
             func_str=func,
-            state=output_state,
+            sources=output_state,
         )
 
     def __truediv__(self, other: Any) -> GammaTensor:
@@ -1389,7 +1440,7 @@ class GammaTensor:
             min_vals=min_val,
             max_vals=max_val,
             func_str=func,
-            state=output_state,
+            sources=output_state,
         )
 
     def __matmul__(self, other: Any) -> GammaTensor:
@@ -1436,7 +1487,7 @@ class GammaTensor:
             min_vals=min_val,
             max_vals=max_val,
             func_str=func,
-            state=output_state,
+            sources=output_state,
         )
 
     def __rmatmul__(self, other: Any) -> GammaTensor:
@@ -1478,7 +1529,7 @@ class GammaTensor:
             min_vals=min_val,
             max_vals=max_val,
             func=_rmatmul,
-            state=output_state,
+            sources=output_state,
         )
 
     def __gt__(self, other: Any) -> GammaTensor:
@@ -1517,7 +1568,7 @@ class GammaTensor:
             min_vals=min_val,
             max_vals=max_val,
             func_str=func,
-            state=output_state,
+            sources=output_state,
         )
 
     def __ge__(self, other: Any) -> GammaTensor:
@@ -1556,7 +1607,7 @@ class GammaTensor:
             min_vals=min_val,
             max_vals=max_val,
             func_str=func,
-            state=output_state,
+            sources=output_state,
         )
 
     def __eq__(self, other: Any) -> GammaTensor:
@@ -1596,7 +1647,7 @@ class GammaTensor:
             min_vals=min_val,
             max_vals=max_val,
             func_str=func,
-            state=output_state,
+            sources=output_state,
         )
 
     def __ne__(self, other: Any) -> GammaTensor:
@@ -1636,7 +1687,7 @@ class GammaTensor:
             min_vals=min_val,
             max_vals=max_val,
             func_str=func,
-            state=output_state,
+            sources=output_state,
         )
 
     def __lt__(self, other: Any) -> GammaTensor:
@@ -1675,7 +1726,7 @@ class GammaTensor:
             min_vals=min_val,
             max_vals=max_val,
             func_str=func,
-            state=output_state,
+            sources=output_state,
         )
 
     def __le__(self, other: Any) -> GammaTensor:
@@ -1715,7 +1766,7 @@ class GammaTensor:
             min_vals=min_val,
             max_vals=max_val,
             func_str=func,
-            state=output_state,
+            sources=output_state,
         )
 
     def exp(self) -> GammaTensor:
@@ -1751,7 +1802,7 @@ class GammaTensor:
             max_vals=max_val,
             data_subjects=self.data_subjects,
             func_str=func,
-            state=output_state,
+            sources=output_state,
         )
 
     def log(self) -> GammaTensor:
@@ -1787,7 +1838,7 @@ class GammaTensor:
             max_vals=max_val,
             data_subjects=self.data_subjects,
             func_str=func,
-            state=output_state,
+            sources=output_state,
         )
 
     def reciprocal(self) -> GammaTensor:
@@ -1826,7 +1877,7 @@ class GammaTensor:
             max_vals=max_val,
             data_subjects=self.data_subjects,
             func_str=func,
-            state=output_state,
+            sources=output_state,
         )
 
     def softmax(self) -> GammaTensor:
@@ -1865,7 +1916,7 @@ class GammaTensor:
             max_vals=max_val,
             data_subjects=self.data_subjects,
             func=_softmax,
-            state=output_state,
+            sources=output_state,
         )
 
     def flatten(self, order):
@@ -1910,7 +1961,7 @@ class GammaTensor:
             min_vals=min_vals,
             max_vals=max_vals,
             func_str=func,
-            state=output_state,
+            sources=output_state,
         )
 
     @property
@@ -1920,7 +1971,7 @@ class GammaTensor:
     def sum(
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs: Any
     ) -> GammaTensor:
-        func="sum"
+        func = "sum"
 
         def _sum(state: dict) -> jax.numpy.DeviceArray:
             return jnp.sum(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
@@ -1940,7 +1991,7 @@ class GammaTensor:
             min_vals=lazyrepeatarray(data=min_v, shape=child.shape),
             max_vals=lazyrepeatarray(data=max_v, shape=child.shape),
             func_str=func,
-            state=output_state,
+            sources=output_state,
         )
 
     def ones_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> GammaTensor:
@@ -1968,7 +2019,7 @@ class GammaTensor:
             min_vals=min_val,
             max_vals=max_val,
             func_str=func,
-            state=output_state,
+            sources=output_state,
         )
 
     def zeros_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> GammaTensor:
@@ -1997,7 +2048,7 @@ class GammaTensor:
             min_vals=min_val,
             max_vals=max_val,
             func_str=func,
-            state=output_state,
+            sources=output_state,
         )
 
     def filtered(self) -> GammaTensor:
@@ -2032,7 +2083,7 @@ class GammaTensor:
             min_vals=min_val,
             max_vals=max_val,
             func=_ravel,
-            state=output_state,
+            sources=output_state,
         )
 
     def reshape(self, shape: Tuple[int, ...]) -> GammaTensor:
@@ -2099,7 +2150,7 @@ class GammaTensor:
             data_subjects=self.data_subjects.mean(axis, **kwargs),
             min_vals=lazyrepeatarray(data=minv, shape=result.shape),
             max_vals=lazyrepeatarray(data=(maxv + minv) / 2, shape=result.shape),
-            state=output_state,
+            sources=output_state,
             func=_mean,
         )
 
@@ -2145,7 +2196,7 @@ class GammaTensor:
             max_vals=lazyrepeatarray(
                 data=0.25 * (maxv + minv) ** 2, shape=result.shape
             ),
-            state=output_state,
+            sources=output_state,
             func=_std,
         )
 
@@ -2241,7 +2292,7 @@ class GammaTensor:
                 min_vals=minv,
                 max_vals=maxv,
                 func=_dot,
-                state=output_state,
+                sources=output_state,
             )
         else:
             raise NotImplementedError(
@@ -2253,7 +2304,7 @@ class GammaTensor:
             return jnp.sqrt(self.run(state))
 
         state = dict()
-        state.update(self.state)
+        state.update(self.sources)
 
         min_v = jnp.sqrt(self.min_vals.data)
         max_v = jnp.sqrt(self.min_vals.data)
@@ -2268,7 +2319,7 @@ class GammaTensor:
             min_vals=min_val,
             max_vals=max_val,
             func=_sqrt,
-            state=state,
+            sources=state,
         )
 
     def abs(self) -> GammaTensor:
@@ -2276,7 +2327,7 @@ class GammaTensor:
             return jnp.abs(self.run(state))
 
         state = dict()
-        state.update(self.state)
+        state.update(self.sources)
 
         data = self.child
         output = np.abs(data)
@@ -2290,7 +2341,7 @@ class GammaTensor:
             min_vals=lazyrepeatarray(min_v, shape=output.shape),
             max_vals=lazyrepeatarray(max_v, shape=output.shape),
             func=_abs,
-            state=state,
+            sources=state,
         )
 
     def clip(self, a_min: float, a_max: float) -> GammaTensor:
@@ -2298,7 +2349,7 @@ class GammaTensor:
             return jnp.clip(self.run(state))
 
         state = dict()
-        state.update(self.state)
+        state.update(self.sources)
 
         output_data = self.child.clip(a_min, a_max)
 
@@ -2314,7 +2365,7 @@ class GammaTensor:
             min_vals=min_vals,
             max_vals=max_vals,
             func=_clip,
-            state=state,
+            sources=state,
         )
 
     @staticmethod
@@ -2332,7 +2383,7 @@ class GammaTensor:
                         min_vals=tensor.min_vals,
                         max_vals=tensor.max_vals,
                         func=tensor.func,
-                        state=GammaTensor.convert_dsl(tensor.state, {}),
+                        sources=GammaTensor.convert_dsl(tensor.sources, {}),
                     )
                     # for idx, row in enumerate(tensor.data_subjects):
                     #     tensor.data_subjects[idx] = jnp.zeros_like(np.zeros_like(row), jnp.int64)
@@ -2359,9 +2410,9 @@ class GammaTensor:
         func = mapper[self.func_str]
 
         if (
-            not self.state
+            not self.sources
         ):  # if state tree is empty (e.g. publishing a PhiTensor w/ public vals directly)
-            self.state[self.id] = self
+            self.sources[self.id] = self
 
         return publish(
             tensor=self,
@@ -2385,7 +2436,7 @@ class GammaTensor:
     #         min_vals=self.min_vals,
     #         max_vals=self.max_vals,
     #         func=_expand_dims,
-    #         state=state,
+    #         sources=state,
     #     )
 
     def squeeze(self, axis: Optional[int] = None) -> GammaTensor:
@@ -2393,14 +2444,14 @@ class GammaTensor:
             return jnp.squeeze(self.run(state), axis)
 
         state = dict()
-        state.update(self.state)
+        state.update(self.sources)
         return GammaTensor(
             child=jnp.squeeze(self.child, axis),
             data_subjects=jnp.squeeze(self.data_subjects, None),
             min_vals=self.min_vals,
             max_vals=self.max_vals,
             func=_squeeze,
-            state=state,
+            sources=state,
         )
 
     def __len__(self) -> int:
@@ -2519,7 +2570,7 @@ class GammaTensor:
             min_vals=self.min_vals.copy(order),
             max_vals=self.max_vals.copy(order),
             func=self.func,
-            state=self.state,
+            sources=self.sources,
         )
 
     def repeat(
@@ -2574,7 +2625,7 @@ class GammaTensor:
         print("Traced self.func with jax's jit, now calculating gradient")
         grad_fn = jax.grad(fn)
         print("Obtained gradient, creating lookup tables")
-        i2k, k2i, i2v, i2s = create_new_lookup_tables(self.state)
+        i2k, k2i, i2v, i2s = create_new_lookup_tables(self.sources)
 
         print("created lookup tables, now getting bounds")
         i2minval = jnp.concatenate([x for x in i2v]).reshape(-1, 1)
@@ -2619,7 +2670,7 @@ class GammaTensor:
             if tensor.func_str == "no_op":
                 input_tensors.append(tensor)
             else:
-                input_tensors += GammaTensor.get_input_tensors(tensor.state)
+                input_tensors += GammaTensor.get_input_tensors(tensor.sources)
         return input_tensors
 
     def _object2bytes(self) -> bytes:
@@ -2647,7 +2698,7 @@ class GammaTensor:
             chunk_bytes(serialize(self.child, to_bytes=True), "child", gamma_msg)  # type: ignore
             gamma_msg.isNumpy = False
 
-        gamma_msg.state = serialize(self.state, to_bytes=True)
+        gamma_msg.sources = serialize(self.sources, to_bytes=True)
         chunk_bytes(
             capnp_serialize(dslarraytonumpyutf8(self.data_subjects), to_bytes=True),
             "dataSubjects",
@@ -2685,7 +2736,7 @@ class GammaTensor:
             else:
                 child = deserialize(combine_bytes(gamma_msg.child), from_bytes=True)
 
-            state = deserialize(gamma_msg.state, from_bytes=True)
+            state = deserialize(gamma_msg.sources, from_bytes=True)
 
             data_subjects = numpyutf8todslarray(
                 capnp_deserialize(
@@ -2705,7 +2756,7 @@ class GammaTensor:
                 min_vals=min_val,
                 max_vals=max_val,
                 is_linear=is_linear,
-                state=state,
+                sources=state,
                 id=id_str,
                 func_str=func_str,
             )
