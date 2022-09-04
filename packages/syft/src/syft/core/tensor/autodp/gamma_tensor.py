@@ -1446,23 +1446,21 @@ class GammaTensor:
         if isinstance(other, PhiTensor):
             other = other.gamma
 
+        func = "gt"
+
+        def _gt(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.greater(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
+        mapper[func] = _gt
+
         if isinstance(other, GammaTensor):
-
-            def _gt(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.greater(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
-
             output_state[other.id] = other
             child = self.child.__gt__(other.child)
-            output_ds = self.data_subjects > other.data_subjects
+            output_ds = self.data_subjects + other.data_subjects
 
         else:
-
-            def _gt(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.greater(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
-
-            child = self.child.__gt__(other)
-            output_ds = self.data_subjects.__gt__(other)
             output_state[np.random.randint(low=0, high=2**31-1)] = other
+            child = self.child.__gt__(other)
+            output_ds = self.data_subjects
 
         min_val = self.min_vals * 0
         max_val = (self.max_vals * 0) + 1
@@ -1472,7 +1470,7 @@ class GammaTensor:
             data_subjects=output_ds,
             min_vals=min_val,
             max_vals=max_val,
-            func=_gt,
+            func_str=func,
             state=output_state,
         )
 
