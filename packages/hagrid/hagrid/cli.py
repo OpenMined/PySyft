@@ -13,12 +13,14 @@ import time
 from typing import Any
 from typing import Callable
 from typing import Dict as TypeDict
+from typing import List
 from typing import List as TypeList
 from typing import Optional
 from typing import Tuple
 from typing import Tuple as TypeTuple
 from typing import Union
 from typing import cast
+from urllib.parse import urlparse
 
 # third party
 import click
@@ -2499,6 +2501,20 @@ cli.add_command(version)
     is_flag=True,
     help="CI Test Mode, don't hang on Jupyter",
 )
+@click.option(
+    "--repo",
+    default=arg_cache.repo,
+    help="Choose a repo to fetch the notebook from or just use OpenMined/PySyft",
+)
+@click.option(
+    "--branch",
+    default=DEFAULT_BRANCH,
+    help="Choose a branch to fetch from or just use dev",
+)
+@click.option(
+    "--commit",
+    help="Choose a specific commit to fetch the notebook from",
+)
 def quickstart_cli(
     url: Optional[str] = None,
     syft: str = "latest",
@@ -2506,6 +2522,9 @@ def quickstart_cli(
     quiet: bool = False,
     pre: bool = False,
     test: bool = False,
+    repo: str = arg_cache.repo,
+    branch: str = DEFAULT_BRANCH,
+    commit: Optional[str] = None,
     python: Optional[str] = None,
 ) -> None:
     try:
@@ -2532,9 +2551,32 @@ def quickstart_cli(
             )
 
         if url:
-            file_path, _ = quickstart_download_notebook(
-                url=url, directory=directory, reset=reset
-            )
+            allowed_schemes_as_url = ["http", "https"]
+            url_scheme = urlparse(url).scheme
+
+            if url_scheme not in allowed_schemes_as_url:
+                notebooks = get_urls_from_dir(
+                    repo=repo, branch=branch, commit=commit, url=url
+                )
+                overwrite_all_notebooks = False
+                if not reset:
+                    overwrite_all_notebooks = click.confirm(
+                        text=f"You have {len(notebooks)} conflicting notebooks. Would you like to overwrite them all?",
+                        default=False,
+                    )
+
+                for notebook_url in notebooks:
+                    file_path, _ = quickstart_download_notebook(
+                        url=notebook_url,
+                        directory=directory + "/" + url + "/",
+                        reset=reset,
+                        overwrite_all_notebooks=overwrite_all_notebooks,
+                    )
+
+            else:
+                file_path, _ = quickstart_download_notebook(
+                    url=url, directory=directory, reset=reset
+                )
         else:
             file_path = add_intro_notebook(directory=directory, reset=reset)
 
@@ -2562,6 +2604,12 @@ def quickstart_cli(
                     sys.exit(1)
                 print(f"Jupyter exists at: {jupyter_path}. CI Test mode exiting.")
                 sys.exit(0)
+
+            disable_toolbar_extension = f"{jupyter_binary} labextension disable @jupyterlab/cell-toolbar-extension"
+
+            subprocess.run(  # nosec
+                disable_toolbar_extension.split(" "), cwd=directory, env=environ
+            )
             proc = subprocess.Popen(  # nosec
                 cmd.split(" "),
                 cwd=directory,
@@ -2629,6 +2677,53 @@ def quickstart_setup(
     except Exception as e:
         print("failed", e)
         raise e
+
+
+def get_urls_from_dir(
+    repo: str,
+    branch: str,
+    commit: Optional[str],
+    url: str,
+) -> List[str]:
+    notebooks = []
+    if commit is not None:
+        gh_api_call = (
+            "https://api.github.com/repos/"
+            + repo
+            + "/git/trees/"
+            + commit
+            + "?recursive=1"
+        )
+    else:
+        gh_api_call = (
+            "https://api.github.com/repos/"
+            + repo
+            + "/git/trees/"
+            + branch
+            + "?recursive=1"
+        )
+    r = requests.get(gh_api_call)
+    if r.status_code != 200:
+        print(
+            f"Failed to fetch notebook from: {gh_api_call}.\nPlease try again with the correct parameters!"
+        )
+        sys.exit(1)
+
+    res = r.json()
+
+    for file in res["tree"]:
+        if file["path"].startswith("notebooks/quickstart/" + url):
+            if file["path"].endswith(".ipynb"):
+                temp_url = (
+                    "https://raw.githubusercontent.com/"
+                    + repo
+                    + "/"
+                    + branch
+                    + "/"
+                    + file["path"]
+                )
+                notebooks.append(temp_url)
+    return notebooks
 
 
 def add_intro_notebook(directory: str, reset: bool = False) -> str:
