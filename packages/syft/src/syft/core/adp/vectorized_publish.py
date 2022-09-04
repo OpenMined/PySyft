@@ -215,6 +215,7 @@ def publish(
         parent_branch = [
             filtered_sourcetree for _ in input_tensors
         ]  # TODO: Ensure this isn't deepcopying!
+        # relative
         from ..tensor.autodp.gamma_tensor import GammaTensor
         for parent_state, input_tensor in zip(parent_branch, input_tensors):
             if isinstance(input_tensor, GammaTensor):
