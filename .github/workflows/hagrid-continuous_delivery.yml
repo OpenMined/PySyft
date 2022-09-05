@@ -50,6 +50,7 @@ jobs:
         if: ${{needs.hagrid-deploy.outputs.current_hash}} != ${{needs.hagrid-deploy.outputs.previous_hash}}
         run: |
           python3 hagrid/version.py
+          python3 scripts/update_manifest.py
           bump2version patch --allow-dirty --no-commit
           tox -e lint || true
           python3 hagrid/version.py
@@ -66,7 +67,7 @@ jobs:
           author_name: Madhava Jay
           author_email: madhava@openmined.org
           message: "bump version"
-          add: "['./packages/hagrid/.bumpversion.cfg','./packages/hagrid/setup.py','./packages/hagrid/hagrid/version.py', './scripts/hagrid_hash']"
+          add: "['./packages/hagrid/.bumpversion.cfg','./packages/hagrid/setup.py','./packages/hagrid/hagrid/version.py', './scripts/hagrid_hash', './packages/hagrid/hagrid/manifest_template.yml']"
           pull_strategy: NO-PULL
 
       - name: Build and publish
