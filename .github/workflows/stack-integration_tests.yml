@@ -445,6 +445,7 @@ jobs:
 
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
+        timeout-minutes: 60
         shell: bash
         run: |
           # install k3d
