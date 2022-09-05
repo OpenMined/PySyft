@@ -349,7 +349,9 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
 
         return results.x, results.fun
 
-    def update_rdp_constants(self, query_constants, entity_ids_query) -> None:
+    def update_rdp_constants(
+        self, query_constants: jnp.DeviceArray, entity_ids_query: jnp.DeviceArray
+    ) -> None:
         if self._rdp_constants.size == 0:
             self._rdp_constants = np.zeros_like(
                 np.asarray(query_constants, query_constants.dtype)

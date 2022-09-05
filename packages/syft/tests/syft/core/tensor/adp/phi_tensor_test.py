@@ -412,13 +412,21 @@ def test_flatten(
     flattened_array = reference_tensor.flatten()
 
     target_shape = reference_data.flatten().shape
-    assert flattened_array.child.shape == target_shape, "Private data not flattened correctly"
-    assert flattened_array.min_vals.data == reference_tensor.min_vals.data, "Min vals changed incorrectly in flatten"
-    assert flattened_array.max_vals.data == reference_tensor.max_vals.data, "Max vals changed incorrectly in flatten"
+    assert (
+        flattened_array.child.shape == target_shape
+    ), "Private data not flattened correctly"
+    assert (
+        flattened_array.min_vals.data == reference_tensor.min_vals.data
+    ), "Min vals changed incorrectly in flatten"
+    assert (
+        flattened_array.max_vals.data == reference_tensor.max_vals.data
+    ), "Max vals changed incorrectly in flatten"
     assert flattened_array.min_vals.shape == target_shape
     assert flattened_array.max_vals.shape == target_shape
     assert flattened_array.data_subjects.shape == target_shape
-    assert (flattened_array.data_subjects == ishan.flatten()).all(), "Data Subjects not flattened properly"
+    assert (
+        flattened_array.data_subjects == ishan.flatten()
+    ).all(), "Data Subjects not flattened properly"
 
 
 @pytest.mark.arithmetic
@@ -450,10 +458,10 @@ def test_add_public(
 @pytest.mark.arithmetic
 @pytest.mark.public_op
 def test_sub_public(
-        reference_data: np.ndarray,
-        upper_bound: np.ndarray,
-        lower_bound: np.ndarray,
-        ishan: DataSubjectArray,
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
 ) -> None:
     ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
@@ -476,10 +484,10 @@ def test_sub_public(
 @pytest.mark.arithmetic
 @pytest.mark.public_op
 def test_mul_public(
-        reference_data: np.ndarray,
-        upper_bound: np.ndarray,
-        lower_bound: np.ndarray,
-        ishan: DataSubjectArray,
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
 ) -> None:
     ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
@@ -502,10 +510,10 @@ def test_mul_public(
 @pytest.mark.arithmetic
 @pytest.mark.public_op
 def test_truediv_public(
-        reference_data: np.ndarray,
-        upper_bound: np.ndarray,
-        lower_bound: np.ndarray,
-        ishan: DataSubjectArray,
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
 ) -> None:
     ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
@@ -528,10 +536,10 @@ def test_truediv_public(
 @pytest.mark.arithmetic
 @pytest.mark.private_op
 def test_add_private(
-        reference_data: np.ndarray,
-        upper_bound: np.ndarray,
-        lower_bound: np.ndarray,
-        ishan: DataSubjectArray,
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
 ) -> None:
     ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
@@ -561,10 +569,10 @@ def test_add_private(
 @pytest.mark.arithmetic
 @pytest.mark.private_op
 def test_sub_private(
-        reference_data: np.ndarray,
-        upper_bound: np.ndarray,
-        lower_bound: np.ndarray,
-        ishan: DataSubjectArray,
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
 ) -> None:
     ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
@@ -593,10 +601,10 @@ def test_sub_private(
 @pytest.mark.arithmetic
 @pytest.mark.private_op
 def test_mul_private(
-        reference_data: np.ndarray,
-        upper_bound: np.ndarray,
-        lower_bound: np.ndarray,
-        ishan: DataSubjectArray,
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
 ) -> None:
     ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
@@ -615,7 +623,7 @@ def test_mul_private(
 
     output = reference_tensor * tensor2
     assert output.shape == reference_tensor.shape
-    assert (output.child == reference_data ** 2).all()
+    assert (output.child == reference_data**2).all()
     assert output.min_vals.data <= output.max_vals.data
     assert output.min_vals.shape == reference_tensor.shape
     assert output.max_vals.shape == reference_tensor.shape
@@ -625,10 +633,10 @@ def test_mul_private(
 @pytest.mark.arithmetic
 @pytest.mark.private_op
 def test_truediv_private(
-        reference_data: np.ndarray,
-        upper_bound: np.ndarray,
-        lower_bound: np.ndarray,
-        ishan: DataSubjectArray,
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
 ) -> None:
     ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
@@ -654,14 +662,13 @@ def test_truediv_private(
     assert (output.data_subjects == reference_tensor.data_subjects).all()
 
 
-
 @pytest.mark.equality
 @pytest.mark.public_op
 def test_eq_public(
-        reference_data: np.ndarray,
-        upper_bound: lra,
-        lower_bound: lra,
-        ishan: DataSubjectArray,
+    reference_data: np.ndarray,
+    upper_bound: lra,
+    lower_bound: lra,
+    ishan: DataSubjectArray,
 ) -> None:
     ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
@@ -685,10 +692,10 @@ def test_eq_public(
 @pytest.mark.equality
 @pytest.mark.public_op
 def test_ne_public(
-        reference_data: np.ndarray,
-        upper_bound: lra,
-        lower_bound: lra,
-        ishan: DataSubjectArray,
+    reference_data: np.ndarray,
+    upper_bound: lra,
+    lower_bound: lra,
+    ishan: DataSubjectArray,
 ) -> None:
     ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
@@ -711,10 +718,10 @@ def test_ne_public(
 @pytest.mark.equality
 @pytest.mark.public_op
 def test_lt_public(
-        reference_data: np.ndarray,
-        upper_bound: lra,
-        lower_bound: lra,
-        ishan: DataSubjectArray,
+    reference_data: np.ndarray,
+    upper_bound: lra,
+    lower_bound: lra,
+    ishan: DataSubjectArray,
 ) -> None:
     ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
@@ -734,14 +741,13 @@ def test_lt_public(
     assert (output.data_subjects == reference_tensor.data_subjects).all()
 
 
-
 @pytest.mark.equality
 @pytest.mark.public_op
 def test_gt_public(
-        reference_data: np.ndarray,
-        upper_bound: lra,
-        lower_bound: lra,
-        ishan: DataSubjectArray,
+    reference_data: np.ndarray,
+    upper_bound: lra,
+    lower_bound: lra,
+    ishan: DataSubjectArray,
 ) -> None:
     ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
@@ -764,10 +770,10 @@ def test_gt_public(
 @pytest.mark.equality
 @pytest.mark.public_op
 def test_le_public(
-        reference_data: np.ndarray,
-        upper_bound: lra,
-        lower_bound: lra,
-        ishan: DataSubjectArray,
+    reference_data: np.ndarray,
+    upper_bound: lra,
+    lower_bound: lra,
+    ishan: DataSubjectArray,
 ) -> None:
     ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
@@ -790,10 +796,10 @@ def test_le_public(
 @pytest.mark.equality
 @pytest.mark.public_op
 def test_ge_public(
-        reference_data: np.ndarray,
-        upper_bound: lra,
-        lower_bound: lra,
-        ishan: DataSubjectArray,
+    reference_data: np.ndarray,
+    upper_bound: lra,
+    lower_bound: lra,
+    ishan: DataSubjectArray,
 ) -> None:
     ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
@@ -813,14 +819,13 @@ def test_ge_public(
     assert (output.data_subjects == reference_tensor.data_subjects).all()
 
 
-
 @pytest.mark.equality
 @pytest.mark.private_op
 def test_eq_private(
-        reference_data: np.ndarray,
-        upper_bound: lra,
-        lower_bound: lra,
-        ishan: DataSubjectArray,
+    reference_data: np.ndarray,
+    upper_bound: lra,
+    lower_bound: lra,
+    ishan: DataSubjectArray,
 ) -> None:
     ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
@@ -844,10 +849,10 @@ def test_eq_private(
 @pytest.mark.equality
 @pytest.mark.private_op
 def test_ne_private(
-        reference_data: np.ndarray,
-        upper_bound: lra,
-        lower_bound: lra,
-        ishan: DataSubjectArray,
+    reference_data: np.ndarray,
+    upper_bound: lra,
+    lower_bound: lra,
+    ishan: DataSubjectArray,
 ) -> None:
     ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
@@ -870,10 +875,10 @@ def test_ne_private(
 @pytest.mark.equality
 @pytest.mark.private_op
 def test_lt_private(
-        reference_data: np.ndarray,
-        upper_bound: lra,
-        lower_bound: lra,
-        ishan: DataSubjectArray,
+    reference_data: np.ndarray,
+    upper_bound: lra,
+    lower_bound: lra,
+    ishan: DataSubjectArray,
 ) -> None:
     ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
@@ -893,14 +898,13 @@ def test_lt_private(
     assert (output.data_subjects == reference_tensor.data_subjects).all()
 
 
-
 @pytest.mark.equality
 @pytest.mark.private_op
 def test_gt_private(
-        reference_data: np.ndarray,
-        upper_bound: lra,
-        lower_bound: lra,
-        ishan: DataSubjectArray,
+    reference_data: np.ndarray,
+    upper_bound: lra,
+    lower_bound: lra,
+    ishan: DataSubjectArray,
 ) -> None:
     ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
@@ -923,10 +927,10 @@ def test_gt_private(
 @pytest.mark.equality
 @pytest.mark.private_op
 def test_le_private(
-        reference_data: np.ndarray,
-        upper_bound: lra,
-        lower_bound: lra,
-        ishan: DataSubjectArray,
+    reference_data: np.ndarray,
+    upper_bound: lra,
+    lower_bound: lra,
+    ishan: DataSubjectArray,
 ) -> None:
     ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
@@ -949,10 +953,10 @@ def test_le_private(
 @pytest.mark.equality
 @pytest.mark.private_op
 def test_ge_private(
-        reference_data: np.ndarray,
-        upper_bound: lra,
-        lower_bound: lra,
-        ishan: DataSubjectArray,
+    reference_data: np.ndarray,
+    upper_bound: lra,
+    lower_bound: lra,
+    ishan: DataSubjectArray,
 ) -> None:
     ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(

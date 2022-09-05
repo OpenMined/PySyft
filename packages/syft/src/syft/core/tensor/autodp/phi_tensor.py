@@ -1466,46 +1466,50 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             + f"min_vals={self.min_vals}, max_vals={self.max_vals})"
         )
 
-    def __eq__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
+    def __eq__(self, other: Any) -> Union[PhiTensor, GammaTensor]:  # type: ignore
         if is_acceptable_simple_type(other):
             return PhiTensor(
-                child=(self.child == other) * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
+                child=(self.child == other)
+                * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
                 data_subjects=self.data_subjects,
                 min_vals=lazyrepeatarray(data=0, shape=self.shape),
-                max_vals=lazyrepeatarray(data=1, shape=self.shape)
+                max_vals=lazyrepeatarray(data=1, shape=self.shape),
             )
         elif isinstance(other, PhiTensor):
             if (self.data_subjects != other.data_subjects).any():
                 return self.gamma == other.gamma
             else:
                 return PhiTensor(
-                    child=(self.child == other.child) * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
+                    child=(self.child == other.child)
+                    * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
                     data_subjects=self.data_subjects,
                     min_vals=lazyrepeatarray(data=0, shape=self.shape),
-                    max_vals=lazyrepeatarray(data=1, shape=self.shape)
+                    max_vals=lazyrepeatarray(data=1, shape=self.shape),
                 )
         else:
             raise NotImplementedError(
                 f"__eq__ not implemented between PhiTensor and {type(other)}."
             )
 
-    def __ne__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
+    def __ne__(self, other: Any) -> Union[PhiTensor, GammaTensor]:  # type: ignore
         if is_acceptable_simple_type(other):
             return PhiTensor(
-                child=(self.child != other) * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
+                child=(self.child != other)
+                * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
                 data_subjects=self.data_subjects,
                 min_vals=lazyrepeatarray(data=0, shape=self.shape),
-                max_vals=lazyrepeatarray(data=1, shape=self.shape)
+                max_vals=lazyrepeatarray(data=1, shape=self.shape),
             )
         elif isinstance(other, PhiTensor):
             if (self.data_subjects != other.data_subjects).any():
                 return self.gamma != other.gamma
             else:
                 return PhiTensor(
-                    child=(self.child != other.child) * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
+                    child=(self.child != other.child)
+                    * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
                     data_subjects=self.data_subjects,
                     min_vals=lazyrepeatarray(data=0, shape=self.shape),
-                    max_vals=lazyrepeatarray(data=1, shape=self.shape)
+                    max_vals=lazyrepeatarray(data=1, shape=self.shape),
                 )
         else:
             raise NotImplementedError(
@@ -1612,7 +1616,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     child=self.child * other.child,
                     data_subjects=self.data_subjects,
                     min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
-                    max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape)
+                    max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
                 )
             else:
                 return self.gamma * other.gamma
@@ -1647,7 +1651,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
 
-    def __truediv__(self, other) -> Union[PhiTensor, GammaTensor]:
+    def __truediv__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
         if isinstance(other, PhiTensor):
             if (self.data_subjects != other.data_subjects).all():
                 return self.gamma / other.gamma
@@ -1664,7 +1668,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     child=self.child / other.child,
                     data_subjects=self.data_subjects,
                     min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
-                    max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape)
+                    max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
                 )
         elif isinstance(other, GammaTensor):
             return self.gamma / other
@@ -1672,11 +1676,17 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             return PhiTensor(
                 child=self.child / other,
                 data_subjects=self.data_subjects,
-                min_vals=lazyrepeatarray(data=self.min_vals.data / other, shape=self.min_vals.shape),
-                max_vals=lazyrepeatarray(data=self.max_vals.data / other, shape=self.max_vals.shape)
+                min_vals=lazyrepeatarray(
+                    data=self.min_vals.data / other, shape=self.min_vals.shape
+                ),
+                max_vals=lazyrepeatarray(
+                    data=self.max_vals.data / other, shape=self.max_vals.shape
+                ),
             )
         else:
-            raise NotImplementedError(f"truediv not supported between PhiTensor & {type(other)}")
+            raise NotImplementedError(
+                f"truediv not supported between PhiTensor & {type(other)}"
+            )
 
     def __rtruediv__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
@@ -1860,7 +1870,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=max_vals,
         )
 
-    def flatten(self, order: Optional[str] = "C"):
+    def flatten(self, order: Optional[str] = "C") -> PhiTensor:
         """
         Return a copy of the array collapsed into one dimension.
 
@@ -1918,7 +1928,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     child=(self.child < other.child) * 1,
                     data_subjects=self.data_subjects,
                     min_vals=lazyrepeatarray(data=0, shape=self.shape),
-                    max_vals=lazyrepeatarray(data=1, shape=self.shape)
+                    max_vals=lazyrepeatarray(data=1, shape=self.shape),
                 )
             else:
                 return self.gamma.__lt__(other.gamma)
@@ -1952,7 +1962,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     child=(self.child <= other.child) * 1,
                     data_subjects=self.data_subjects,
                     min_vals=lazyrepeatarray(data=0, shape=self.shape),
-                    max_vals=lazyrepeatarray(data=1, shape=self.shape)
+                    max_vals=lazyrepeatarray(data=1, shape=self.shape),
                 )
             else:
                 return self.gamma.__le__(other.gamma)
@@ -1986,7 +1996,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     child=(self.child > other.child) * 1,
                     data_subjects=self.data_subjects,
                     min_vals=lazyrepeatarray(data=0, shape=self.shape),
-                    max_vals=lazyrepeatarray(data=1, shape=self.shape)
+                    max_vals=lazyrepeatarray(data=1, shape=self.shape),
                 )
             else:
                 return self.gamma.__gt__(other.gamma)
@@ -2019,7 +2029,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     child=(self.child >= other.child) * 1,
                     data_subjects=self.data_subjects,
                     min_vals=lazyrepeatarray(data=0, shape=self.shape),
-                    max_vals=lazyrepeatarray(data=1, shape=self.shape)
+                    max_vals=lazyrepeatarray(data=1, shape=self.shape),
                 )
             else:
                 return self.gamma.__ge__(other.gamma)
