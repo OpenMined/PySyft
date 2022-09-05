@@ -38,7 +38,6 @@ from ...adp.data_subject_list import DataSubjectList
 from ...adp.data_subject_list import dslarraytonumpyutf8
 from ...adp.data_subject_list import numpyutf8todslarray
 from ...adp.vectorized_publish import publish
-from ...adp.vectorized_publish import vectorized_publish
 from ...common.serde.capnp import CapnpModule
 from ...common.serde.capnp import chunk_bytes
 from ...common.serde.capnp import combine_bytes
@@ -1137,7 +1136,7 @@ class GammaTensor:
         func_str: str
             A string that will determine which function was used to build the current tensor.
         is_linear: bool
-            Whether or not the "func_str" for this tensor is a linear query or not. This impacts the epsilon calculations
+            Whether the "func_str" for this tensor is a linear query or not. This impacts the epsilon calculations
             when publishing.
         sources: dict
             A dictionary containing all the Tensors, integers, etc that were used to create this tensor.
@@ -2529,12 +2528,6 @@ class GammaTensor:
         sigma: Optional[float] = None,
     ) -> np.ndarray:
 
-        # Use the string to retrieve the function itself
-        # relative
-        from .gamma_functions import mapper
-
-        func = mapper[self.func_str]
-
         if (
             not self.sources
         ):  # if state tree is empty (e.g. publishing a PhiTensor w/ public vals directly)
@@ -2709,9 +2702,11 @@ class GammaTensor:
             repeats: int or array of ints
 
                 The number of repetitions for each element. repeats is broadcasted to fit the shape of the given axis.
+
             axis: int, optional
 
-                The axis along which to repeat values. By default, use the flattened input array, and return a flat output array.
+                The axis along which to repeat values. By default, use the flattened input array, and return a flat
+                output array.
 
         Returns
 

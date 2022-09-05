@@ -2251,7 +2251,8 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 The number of repetitions for each element. repeats is broadcasted to fit the shape of the given axis.
             axis: int, optional
 
-                The axis along which to repeat values. By default, use the flattened input array, and return a flat output array.
+                The axis along which to repeat values.
+                By default, use the flattened input array, and return a flat output array.
 
         Returns
 

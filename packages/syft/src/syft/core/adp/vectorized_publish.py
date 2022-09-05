@@ -5,10 +5,8 @@ from __future__ import annotations
 from copy import deepcopy
 import secrets
 from typing import Callable
-from typing import List
 from typing import TYPE_CHECKING
 from typing import Tuple
-from typing import Union
 
 # third party
 import jax
@@ -203,10 +201,10 @@ def publish(
         # So we will remove data belonging to these data subjects from the computation.
 
         # Step 4.1: Figure out which data subjects are within the PB & the highest possible spend
-        within_budget_filter = (
-            jnp.ones_like(all_epsilons) * privacy_budget >= all_epsilons
-        )
-        highest_possible_spend = jnp.max(all_epsilons * within_budget_filter)
+        # within_budget_filter = (
+        #     jnp.ones_like(all_epsilons) * privacy_budget >= all_epsilons
+        # )
+        # highest_possible_spend = jnp.max(all_epsilons * within_budget_filter)
         # TODO: Modify to work with private/public operations (when input_tensor is a scalar)
 
         # Step 4.2: Figure out which Tensors in the Source dictionary have those data subjects
@@ -249,7 +247,7 @@ def publish(
                         del parent_state[input_tensor.id]
                         parent_state[filtered_tensor.id] = filtered_tensor
 
-                    # If epsilon <= privacy budget, we don't need to do anything- the user has enough PB to use the data.
+                    # If epsilon <= privacy budget, we don't need to do anything- the user has enough PB to use the data
                 else:
                     input_tensors += list(input_tensor.sources.values())
                     parent_branch += [
@@ -265,7 +263,7 @@ def publish(
         print("About to publish again with filtered source_tree!")
         # TODO: This isn't the most efficient way to do it since we can reuse sigmas, coeffs, etc.
         # TODO: Add a way to prevent infinite publishing?
-        # TODO: Should we implement exponential backoff as a means of rate-limiting?
+        # TODO: Should we implement exponential backoff or something as a means of rate-limiting?
         return new_tensor.publish(
             get_budget_for_user=get_budget_for_user,
             deduct_epsilon_for_user=deduct_epsilon_for_user,
