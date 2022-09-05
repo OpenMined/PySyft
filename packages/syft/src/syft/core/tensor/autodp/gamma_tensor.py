@@ -2239,6 +2239,106 @@ class GammaTensor:
             sources=output_state,
         )
 
+    def resize(self, new_shape: Union[int, Tuple[int, ...]]) -> GammaTensor:
+        func = "resize"
+
+        def _resize(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.resize(
+                *[
+                    i.reconstruct() if isinstance(i, GammaTensor) else i
+                    for i in state.values()
+                ]
+            )
+
+        mapper[func] = _resize
+
+        output_state = dict()
+        output_state[self.id] = self
+
+        data = self.child
+        output_data = np.resize(data, new_shape)
+        output_data_subjects = np.resize(self.data_subjects, new_shape)
+
+        min_val = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape)
+        max_val = lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape)
+
+        return GammaTensor(
+            child=output_data,
+            data_subjects=output_data_subjects,
+            min_vals=min_val,
+            max_vals=max_val,
+            func_str=func,
+            sources=output_state,
+        )
+
+    def compress(
+        self, condition: List[bool], axis: Optional[int] = None
+    ) -> GammaTensor:
+        func = "compress"
+
+        def _compress(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.compress(
+                *[
+                    i.reconstruct() if isinstance(i, GammaTensor) else i
+                    for i in state.values()
+                ]
+            )
+
+        mapper[func] = _compress
+
+        output_state = dict()
+        output_state[self.id] = self
+
+        data = self.child
+        output_data = data.compress(condition, axis)
+        output_data_subjects = self.data_subjects.compress(condition, axis)
+
+        min_val = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape)
+        max_val = lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape)
+
+        return GammaTensor(
+            child=output_data,
+            data_subjects=output_data_subjects,
+            min_vals=min_val,
+            max_vals=max_val,
+            func_str=func,
+            sources=output_state,
+        )
+
+    def squeeze(
+        self, axis: Optional[Union[int, Tuple[int, ...]]] = None
+    ) -> GammaTensor:
+        func = "squeeze"
+
+        def _squeeze(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.squeeze(
+                *[
+                    i.reconstruct() if isinstance(i, GammaTensor) else i
+                    for i in state.values()
+                ]
+            )
+
+        mapper[func] = _squeeze
+
+        output_state = dict()
+        output_state[self.id] = self
+
+        data = self.child
+        output_data = np.squeeze(data, axis)
+        output_data_subjects = np.squeeze(self.data_subjects, axis)
+
+        min_val = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape)
+        max_val = lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape)
+
+        return GammaTensor(
+            child=output_data,
+            data_subjects=output_data_subjects,
+            min_vals=min_val,
+            max_vals=max_val,
+            func_str=func,
+            sources=output_state,
+        )
+
     def reshape(self, shape: Tuple[int, ...]) -> GammaTensor:
         # TODO: Check if this can publish properly since source changes aren't made
         child = self.child.reshape(shape)
@@ -2638,30 +2738,6 @@ class GammaTensor:
     #         func=_expand_dims,
     #         sources=state,
     #     )
-
-    def squeeze(self, axis: Optional[int] = None) -> GammaTensor:
-        func = "squeeze"
-
-        def _squeeze(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.squeeze(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
-
-        mapper[func] = _squeeze
-
-        state = dict()
-        state.update(self.sources)
-        return GammaTensor(
-            child=jnp.squeeze(self.child, axis),
-            data_subjects=jnp.squeeze(self.data_subjects, None),
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
-            func_str=func,
-            sources=state,
-        )
 
     def __len__(self) -> int:
         return len(self.child)

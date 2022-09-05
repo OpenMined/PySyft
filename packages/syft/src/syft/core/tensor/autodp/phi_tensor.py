@@ -2239,6 +2239,33 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             data_subjects=self.data_subjects,
         )
 
+    def resize(self, new_shape: Union[int, Tuple[int, ...]]) -> PhiTensor:
+        out_child = np.resize(self.child.data, new_shape)
+        return PhiTensor(
+            child=out_child,
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
+            data_subjects=np.resize(self.data_subjects, new_shape),
+        )
+
+    def compress(self, condition: List[bool], axis: Optional[int] = None) -> PhiTensor:
+        out_child = self.child.compress(condition, axis)
+        return PhiTensor(
+            child=out_child,
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
+            data_subjects=self.data_subjects.compress(condition, axis),
+        )
+
+    def squeeze(self, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> PhiTensor:
+        out_child = self.child.squeeze(axis)
+        return PhiTensor(
+            child=out_child,
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
+            data_subjects=np.squeeze(self.data_subjects, axis),
+        )
+
     def repeat(
         self, repeats: Union[int, Tuple[int, ...]], axis: Optional[int] = None
     ) -> PhiTensor:
