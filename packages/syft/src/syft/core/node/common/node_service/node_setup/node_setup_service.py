@@ -59,7 +59,7 @@ def create_initial_setup(
     print("Performing initial setup...")
 
     # 1 - Should not run if Node has an owner
-    if len(node.users):
+    if len(node.users) and len(node.setup):
         set_node_uid(node=node)  # make sure the node always has the same UID
         raise OwnerAlreadyExistsError
 
@@ -78,28 +78,30 @@ def create_initial_setup(
     # convert to hex
     _node_private_key = signing_key.encode(encoder=HexEncoder).decode("utf-8")  # type: ignore
     _verify_key = signing_key.verify_key.encode(encoder=HexEncoder).decode("utf-8")  # type: ignore
-
     _admin_role = node.roles.owner_role
 
-    # 4 - Create Admin User
-    _ = node.users.signup(
-        name=msg.name,
-        email=msg.email,
-        password=msg.password,
-        role=_admin_role,
-        budget=msg.budget,
-        private_key=_node_private_key,
-        verify_key=_verify_key,
-    )
-
-    # 5 - Save Node SetUp Configs
+    # this should be a transaction because there was a weird race condition where
+    # the user got created but not the setup row and then failed to pass the if statement
+    # above on future runs
     try:
+        # 5 - Save Node SetUp Configs
         node_id = node.target_id.id
         node.setup.register_once(
             domain_name=msg.domain_name,
             node_id=node_id.no_dash,
             deployed_on=datetime.now(),
             signing_key=_node_private_key,
+        )
+
+        # 4 - Create Admin User
+        _ = node.users.signup(
+            name=msg.name,
+            email=msg.email,
+            password=msg.password,
+            role=_admin_role,
+            budget=msg.budget,
+            private_key=_node_private_key,
+            verify_key=_verify_key,
         )
     except Exception as e:
         print("Failed to save setup to database", e)
