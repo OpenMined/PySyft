@@ -723,9 +723,15 @@ def test_resize(
     assert reference_tensor == resized_tensor.sources[reference_tensor.id]
 
     assert (flatten_ref == flatten_res[0:no_of_elems]).all()
-    assert (flatten_ref == flatten_res[no_of_elems : no_of_elems * 2]).all()
-    assert (flatten_ref == flatten_res[no_of_elems * 2 : no_of_elems * 3]).all()
-    assert (flatten_ref == flatten_res[no_of_elems * 3 : no_of_elems * 4]).all()
+    assert (
+        flatten_ref == flatten_res[no_of_elems : no_of_elems * 2]  # noqa: E203
+    ).all()
+    assert (
+        flatten_ref == flatten_res[no_of_elems * 2 : no_of_elems * 3]  # noqa: E203
+    ).all()
+    assert (
+        flatten_ref == flatten_res[no_of_elems * 3 : no_of_elems * 4]  # noqa: E203
+    ).all()
 
     assert resized_tensor.min_vals.shape == new_shape
     assert resized_tensor.max_vals.shape == new_shape
@@ -733,12 +739,17 @@ def test_resize(
     data_subjects_ref = reference_tensor.data_subjects.flatten()
     data_subjects_res = resized_tensor.data_subjects.flatten()
     assert (data_subjects_ref == data_subjects_res[0:no_of_elems]).all()
-    assert (data_subjects_ref == data_subjects_res[no_of_elems : no_of_elems * 2]).all()
     assert (
-        data_subjects_ref == data_subjects_res[no_of_elems * 2 : no_of_elems * 3]
+        data_subjects_ref
+        == data_subjects_res[no_of_elems : no_of_elems * 2]  # noqa: E203
     ).all()
     assert (
-        data_subjects_ref == data_subjects_res[no_of_elems * 3 : no_of_elems * 4]
+        data_subjects_ref
+        == data_subjects_res[no_of_elems * 2 : no_of_elems * 3]  # noqa: E203
+    ).all()
+    assert (
+        data_subjects_ref
+        == data_subjects_res[no_of_elems * 3 : no_of_elems * 4]  # noqa: E203
     ).all()
 
 
