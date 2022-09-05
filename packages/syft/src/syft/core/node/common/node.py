@@ -28,6 +28,7 @@ from ....logger import debug
 from ....logger import error
 from ....logger import info
 from ....logger import traceback_and_raise
+from ....telemetry import instrument
 from ....util import get_subclasses
 from ...common.message import EventualSyftMessageWithoutReply
 from ...common.message import ImmediateSyftMessageWithReply
@@ -95,6 +96,7 @@ class DuplicateRequestException(Exception):
     pass
 
 
+@instrument
 class Node(AbstractNode):
 
     """
@@ -496,7 +498,7 @@ class Node(AbstractNode):
             debug(
                 f"> Received with Reply {contents.pprint} {contents.id} @ {self.pprint}"
             )
-            # try to process message
+
             response = self.process_message(
                 msg=msg, router=self.immediate_msg_with_reply_router
             )
@@ -510,7 +512,9 @@ class Node(AbstractNode):
                 public_exception = e
             else:
                 private_log_msg = f"An {type(e)} has been triggered"  # dont send
-                public_exception = UnknownPrivateException(str(e))
+                public_exception = UnknownPrivateException(
+                    "UnknownPrivateException has been triggered."
+                )
             try:
                 # try printing a useful message
                 private_log_msg += f" by {type(contents)} "
@@ -531,13 +535,7 @@ class Node(AbstractNode):
 
         # maybe I shouldn't have created process_message because it screws up
         # all the type inference.
-        res_msg = response.sign(signing_key=self.signing_key)  # type: ignore
-        output = (
-            f"> {self.pprint} Signing {res_msg.pprint} with "
-            + f"{self.key_emoji(key=self.signing_key.verify_key)}"  # type: ignore
-        )
-        debug(output)
-        return res_msg
+        return response.sign(signing_key=self.signing_key)  # type: ignore
 
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
@@ -549,6 +547,7 @@ class Node(AbstractNode):
             )
 
         self.process_message(msg=msg, router=self.immediate_msg_without_reply_router)
+
         try:
             pass
         except Exception as e:

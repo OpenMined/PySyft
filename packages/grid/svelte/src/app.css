@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'Roboto-offline';
+  font-style: normal;
+  font-weight: 400;
+  src: url(/fonts/Roboto-Regular.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Roboto-offline';
+  font-style: normal;
+  font-weight: 700;
+  src: url(/fonts/Roboto-Bold.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Roboto-offline';
+  font-style: italic;
+  font-weight: 400;
+  src: url(/fonts/Roboto-Italic.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Roboto-offline';
+  font-style: italic;
+  font-weight: 700;
+  src: url(/fonts/Roboto-BoldItalic.ttf) format('truetype');
+}
+
+@font-face {
+  font-family: 'Rubik-offline';
+  font-style: normal;
+  font-weight: 500;
+  src: url(/fonts/Rubik-Medium.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Rubik-offline';
+  font-style: normal;
+  font-weight: 900;
+  src: url(/fonts/Rubik-Black.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Rubik-offline';
+  font-style: italic;
+  font-weight: 500;
+  src: url(/fonts/Rubik-MediumItalic.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Rubik-offline';
+  font-style: italic;
+  font-weight: 700;
+  src: url(/fonts/Rubik-BlackItalic.ttf) format('truetype');
+}
+
+@font-face {
+  font-family: 'Fira Code-offline';
+  font-style: normal;
+  font-weight: 400;
+  src: url(/fonts/FiraCode-Regular.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Fira Code-offline';
+  font-style: normal;
+  font-weight: 700;
+  src: url(/fonts/FiraCode-Bold.ttf) format('truetype');
+}
+
+@layer base {
+  html,
+  body {
+    @apply box-border w-full h-full min-w-screen min-h-screen;
+  }
+
+  a {
+    @apply text-primary-600 underline;
+  }
+}
