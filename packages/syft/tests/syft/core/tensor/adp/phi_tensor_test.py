@@ -975,13 +975,14 @@ def test_ge_private(
     assert output.max_vals.shape == reference_tensor.shape
     assert (output.data_subjects == reference_tensor.data_subjects).all()
 
+
 def test_resize(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
     ishan: DataSubjectArray,
 ) -> None:
-    
+
     ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
         child=reference_data,
@@ -989,31 +990,34 @@ def test_resize(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    
-    new_shape = tuple(map(lambda x: x*2,reference_data.shape))
+
+    new_shape = tuple(map(lambda x: x * 2, reference_data.shape))
     resized_tensor = reference_tensor.resize(new_shape)
 
     no_of_elems = new_shape[0] * new_shape[1] // 4
-    
+
     flatten_ref = reference_tensor.child.flatten()
     flatten_res = resized_tensor.child.flatten()
     assert (flatten_ref == flatten_res[0:no_of_elems]).all()
-    assert (flatten_ref == flatten_res[no_of_elems:no_of_elems*2]).all()  
-    assert (flatten_ref == flatten_res[no_of_elems*2:no_of_elems*3]).all()
-    assert (flatten_ref == flatten_res[no_of_elems*3:no_of_elems*4]).all()
-    
+    assert (flatten_ref == flatten_res[no_of_elems : no_of_elems * 2]).all()
+    assert (flatten_ref == flatten_res[no_of_elems * 2 : no_of_elems * 3]).all()
+    assert (flatten_ref == flatten_res[no_of_elems * 3 : no_of_elems * 4]).all()
+
     assert resized_tensor.min_vals.shape == new_shape
     assert resized_tensor.max_vals.shape == new_shape
-    
+
     data_subjects_ref = reference_tensor.data_subjects.flatten()
     data_subjects_res = resized_tensor.data_subjects.flatten()
     assert (data_subjects_ref == data_subjects_res[0:no_of_elems]).all()
-    assert (data_subjects_ref == data_subjects_res[no_of_elems:no_of_elems*2]).all()  
-    assert (data_subjects_ref == data_subjects_res[no_of_elems*2:no_of_elems*3]).all()
-    assert (data_subjects_ref == data_subjects_res[no_of_elems*3:no_of_elems*4]).all()
-    
-    
-    
+    assert (data_subjects_ref == data_subjects_res[no_of_elems : no_of_elems * 2]).all()
+    assert (
+        data_subjects_ref == data_subjects_res[no_of_elems * 2 : no_of_elems * 3]
+    ).all()
+    assert (
+        data_subjects_ref == data_subjects_res[no_of_elems * 3 : no_of_elems * 4]
+    ).all()
+
+
 def test_compress(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1027,22 +1031,30 @@ def test_compress(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    
-    
+
     condition = list(np.random.choice(a=[False, True], size=(reference_data.shape[0])))
     compressed_tensor = reference_tensor.compress(condition, axis=0)
-    
-    new_shape = (reference_tensor.shape[0] - len([0 for c in condition if not c]), reference_tensor.shape[1])
-    
+
+    new_shape = (
+        reference_tensor.shape[0] - len([0 for c in condition if not c]),
+        reference_tensor.shape[1],
+    )
+
     comp_ind = 0
-    for i,cond in enumerate(condition):
+    for i, cond in enumerate(condition):
         if cond:
-            assert (compressed_tensor.child[comp_ind,:] == reference_tensor.child[i,:]).all()
-            assert (compressed_tensor.data_subjects[comp_ind,:] == reference_tensor.data_subjects[i,:]).all()
+            assert (
+                compressed_tensor.child[comp_ind, :] == reference_tensor.child[i, :]
+            ).all()
+            assert (
+                compressed_tensor.data_subjects[comp_ind, :]
+                == reference_tensor.data_subjects[i, :]
+            ).all()
             comp_ind += 1
-    
+
     assert compressed_tensor.min_vals.shape == new_shape
     assert compressed_tensor.max_vals.shape == new_shape
+
 
 def test_squeeze(
     reference_data: np.ndarray,
@@ -1057,10 +1069,8 @@ def test_squeeze(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    
+
     squeezed_tensor = reference_tensor.squeeze()
     assert squeezed_tensor.shape == reference_data.shape
     assert (squeezed_tensor.child == reference_data).all()
     assert (squeezed_tensor.data_subjects == ishan).all()
-    
-    

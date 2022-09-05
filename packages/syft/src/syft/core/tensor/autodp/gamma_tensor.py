@@ -2241,15 +2241,20 @@ class GammaTensor:
 
     def resize(self, new_shape: Union[int, Tuple[int, ...]]) -> GammaTensor:
         func = "resize"
-        
-        def _resize(state:dict) -> jax.numpy.DeviceArray:
-            return jnp.resize(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
-        
+
+        def _resize(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.resize(
+                *[
+                    i.reconstruct() if isinstance(i, GammaTensor) else i
+                    for i in state.values()
+                ]
+            )
+
         mapper[func] = _resize
-        
+
         output_state = dict()
         output_state[self.id] = self
-       
+
         data = self.child
         output_data = np.resize(data, new_shape)
         output_data_subjects = np.resize(self.data_subjects, new_shape)
@@ -2264,16 +2269,23 @@ class GammaTensor:
             max_vals=max_val,
             func_str=func,
             sources=output_state,
-        ) 
+        )
 
-    def compress(self, condition: List[bool], axis: int = None) -> GammaTensor:
+    def compress(
+        self, condition: List[bool], axis: Optional[int] = None
+    ) -> GammaTensor:
         func = "compress"
-        
-        def _compress(state:dict) -> jax.numpy.DeviceArray:
-            return jnp.compress(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
+
+        def _compress(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.compress(
+                *[
+                    i.reconstruct() if isinstance(i, GammaTensor) else i
+                    for i in state.values()
+                ]
+            )
 
         mapper[func] = _compress
-        
+
         output_state = dict()
         output_state[self.id] = self
 
@@ -2291,20 +2303,26 @@ class GammaTensor:
             max_vals=max_val,
             func_str=func,
             sources=output_state,
-        ) 
+        )
 
-
-    def squeeze(self, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> GammaTensor:
+    def squeeze(
+        self, axis: Optional[Union[int, Tuple[int, ...]]] = None
+    ) -> GammaTensor:
         func = "squeeze"
-        
-        def _squeeze(state:dict) -> jax.numpy.DeviceArray:
-            return jnp.squeeze(*[i.reconstruct() if isinstance(i, GammaTensor) else i for i in state.values()])
-        
+
+        def _squeeze(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.squeeze(
+                *[
+                    i.reconstruct() if isinstance(i, GammaTensor) else i
+                    for i in state.values()
+                ]
+            )
+
         mapper[func] = _squeeze
-        
+
         output_state = dict()
         output_state[self.id] = self
-       
+
         data = self.child
         output_data = np.squeeze(data, axis)
         output_data_subjects = np.squeeze(self.data_subjects, axis)
@@ -2319,7 +2337,7 @@ class GammaTensor:
             max_vals=max_val,
             func_str=func,
             sources=output_state,
-        ) 
+        )
 
     def reshape(self, shape: Tuple[int, ...]) -> GammaTensor:
         # TODO: Check if this can publish properly since source changes aren't made
@@ -2720,7 +2738,6 @@ class GammaTensor:
     #         func=_expand_dims,
     #         sources=state,
     #     )
-
 
     def __len__(self) -> int:
         return len(self.child)
