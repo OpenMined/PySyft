@@ -77,7 +77,7 @@ jobs:
           author_name: Madhava Jay
           author_email: madhava@openmined.org
           message: "bump version"
-          add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/grid/frontend/package.json', 'packages/grid/frontend/src/pages/_domain/login.tsx', 'packages/syft/src/syft/__init__.py', 'packages/hagrid/scripts/update_manifest.py']"
+          add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/grid/frontend/package.json', 'packages/grid/frontend/src/pages/_domain/login.tsx', 'packages/syft/src/syft/__init__.py', 'packages/hagrid/hagrid/manifest_template.yml']"
           pull_strategy: NO-PULL
 
       - name: Build and publish
