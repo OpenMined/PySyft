@@ -70,13 +70,14 @@ jobs:
           tox -e lint || true
           ls **/VERSION | xargs -I {} python {}
           cat packages/grid/devspace.yaml | grep '0\.'
+          python packages/hagrid/scripts/update_manifest.py $(python packages/grid/VERSION)
       - name: Commit changes
         uses: EndBug/add-and-commit@v7
         with:
           author_name: Madhava Jay
           author_email: madhava@openmined.org
           message: "bump version"
-          add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/grid/frontend/package.json', 'packages/grid/frontend/src/pages/_domain/login.tsx', 'packages/syft/src/syft/__init__.py']"
+          add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/grid/frontend/package.json', 'packages/grid/frontend/src/pages/_domain/login.tsx', 'packages/syft/src/syft/__init__.py', 'packages/hagrid/hagrid/manifest_template.yml']"
           pull_strategy: NO-PULL
 
       - name: Build and publish

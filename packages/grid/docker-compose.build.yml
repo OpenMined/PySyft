@@ -2,34 +2,34 @@ version: "3.8"
 services:
   tailscale:
     build:
-      context: ./vpn
+      context: ${RELATIVE_PATH}./vpn
       dockerfile: tailscale.dockerfile
 
   frontend:
     build:
-      context: ./frontend
+      context: ${RELATIVE_PATH}./frontend
       dockerfile: frontend.dockerfile
       target: "grid-ui-production"
 
   backend:
     build:
-      context: ../
+      context: ${RELATIVE_PATH}../
       dockerfile: ./grid/backend/backend.dockerfile
       target: "backend"
 
   backend_stream:
     build:
-      context: ../
+      context: ${RELATIVE_PATH}../
       dockerfile: ./grid/backend/backend.dockerfile
       target: "backend"
 
   celeryworker:
     build:
-      context: ../
+      context: ${RELATIVE_PATH}../
       dockerfile: ./grid/backend/backend.dockerfile
       target: "backend"
 
   headscale:
     build:
-      context: ./vpn
+      context: ${RELATIVE_PATH}./vpn
       dockerfile: headscale.dockerfile
