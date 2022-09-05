@@ -1,6 +1,6 @@
 {
   "name": "pygrid-ui",
-  "version": "0.7.0-beta.39",
+  "version": "0.7.0-beta.42",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -35,7 +35,7 @@
     "ky-universal": "^0.9.1",
     "lodash.clonedeep": "^4.5.0",
     "lodash.get": "^4.4.2",
-    "next": "^12.1.6",
+    "next": "^12.2.4",
     "nookies": "^2.5.2",
     "react": "^18.1.0",
     "react-animate-height": "^2.0.23",

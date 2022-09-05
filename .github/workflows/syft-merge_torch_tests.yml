@@ -17,6 +17,7 @@ on:
       - dev
       - "0.6.0"
       - "0.7.0"
+      - "0.8"
     paths:
       - ".github/workflows/syft-*.yml"
       - "packages/syft/**.py"
