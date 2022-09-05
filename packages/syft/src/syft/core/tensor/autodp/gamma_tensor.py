@@ -1538,19 +1538,20 @@ class GammaTensor:
         # Add this tensor to the chain
         output_state[self.id] = self
 
+        func = "rmatmul"
+        def _rmatmul(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.matmul(
+                *[
+                    i.reconstruct() if isinstance(i, GammaTensor) else i
+                    for i in state.values()
+                ]
+            )
+        mapper[func] = _rmatmul
+
         if isinstance(other, PhiTensor):
             other = other.gamma
 
         if isinstance(other, GammaTensor):
-
-            def _rmatmul(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.matmul(
-                    *[
-                        i.reconstruct() if isinstance(i, GammaTensor) else i
-                        for i in state.values()
-                    ]
-                )
-
             output_state[other.id] = other
             child = self.child.__rmatmul__(other.child)
             min_val = self.min_vals.__rmatmul__(other.min_vals)
@@ -1558,15 +1559,6 @@ class GammaTensor:
             output_ds = self.data_subjects.__rmatmul__(other.data_subjects)
 
         else:
-
-            def _rmatmul(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.matmul(
-                    *[
-                        i.reconstruct() if isinstance(i, GammaTensor) else i
-                        for i in state.values()
-                    ]
-                )
-
             child = self.child.__rmatmul__(other)
             min_val = self.min_vals.__rmatmul__(other)
             max_val = self.max_vals.__rmatmul__(other)
@@ -1578,7 +1570,7 @@ class GammaTensor:
             data_subjects=output_ds,
             min_vals=min_val,
             max_vals=max_val,
-            func=_rmatmul,
+            func=func,
             sources=output_state,
         )
 
@@ -1672,7 +1664,7 @@ class GammaTensor:
             sources=output_state,
         )
 
-    def __eq__(self, other: Any) -> GammaTensor:
+    def __eq__(self, other: Any) -> GammaTensor:  # type: ignore
         # relative
         from .phi_tensor import PhiTensor
 
@@ -1717,7 +1709,7 @@ class GammaTensor:
             sources=output_state,
         )
 
-    def __ne__(self, other: Any) -> GammaTensor:
+    def __ne__(self, other: Any) -> GammaTensor:  # type: ignore
         # relative
         from .phi_tensor import PhiTensor
 
@@ -2015,7 +2007,7 @@ class GammaTensor:
             sources=output_state,
         )
 
-    def flatten(self, order):
+    def flatten(self, order: str = "C"):
         """
         Return a copy of the array collapsed into one dimension.
 
@@ -2031,8 +2023,31 @@ class GammaTensor:
         A copy of the input array, flattened to one dimension.
 
         """
+        if order not in ["C", "F", "A", "K"]:
+            raise NotImplementedError(f"Flatten not implemented for order={order}")
 
-        pass
+        output_sources = dict()
+        output_sources[self.id] = self
+
+        func = "flatten"
+        def _flatten(state: dict) -> jax.numpy.DeviceArray:
+            tensor = state.values()
+            if isinstance(tensor, GammaTensor):
+                return tensor.reconstruct().flatten(order).child
+            else:
+                raise NotImplementedError(f"Flatten Not Implemented for type: {type(tensor)}")
+        mapper[func] = _flatten
+
+        result = self.child.flatten(order)
+        return GammaTensor(
+            child=result,
+            data_subjects=self.data_subjects.flatten(order),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
+            is_linear=True,
+            func_str=func,
+            sources=output_sources
+        )
 
     def transpose(self, *args: Any, **kwargs: Any) -> GammaTensor:
         output_state = dict()
@@ -2525,7 +2540,7 @@ class GammaTensor:
         get_budget_for_user: Callable,
         deduct_epsilon_for_user: Callable,
         ledger: DataSubjectLedger,
-        sigma: Optional[float] = None,
+        sigma: float,
     ) -> np.ndarray:
 
         if (
