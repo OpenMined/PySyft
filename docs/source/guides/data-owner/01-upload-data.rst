@@ -140,7 +140,7 @@ Important steps:
    In: 
 
    # run this cell
-   data_subjects = DataSubjectArray.from_series(dataset["ID"])
+   data_subjects = sy.DataSubjectArray.from_objs(dataset["ID"])
 
    age_data = sy.Tensor(dataset["Age"]).annotated_with_dp_metadata(
       min_val=0, max_val=100, data_subjects=data_subjects
