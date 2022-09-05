@@ -163,8 +163,9 @@ class NoSQLDatabaseManager:
         objects = [SyftObject.from_mongo(obj) for obj in list(cursor)]
         return objects
 
-    def update_one(self, query: dict, field_set: dict) -> None:
-        self._collection.update_one(query, field_set)
+    def update_one(self, query: dict, values: dict) -> None:
+        values = {"$set": values}
+        self._collection.update_one(query, values)
 
     def all(self) -> List[SyftObject]:
         return self.find({})

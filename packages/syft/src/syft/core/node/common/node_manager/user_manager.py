@@ -317,7 +317,7 @@ class NoSQLUserManager(NoSQLDatabaseManager):
 
         attributes["__blob__"] = user.to_bytes()
 
-        self.update_one({"id_int": user_id}, {"$set": attributes})
+        self.update_one(query={"id_int": user_id}, values=attributes)
 
     def change_password(self, user_id: str, current_pwd: str, new_pwd: str) -> None:
         user = self.first(id_int=int(user_id))
@@ -331,7 +331,7 @@ class NoSQLUserManager(NoSQLDatabaseManager):
             user.salt = new_salt
             user.hashed_password = new_hashed
             self.update_one(
-                {"id_int": int(user_id)}, {"$set": {"__blob__": user.to_bytes()}}
+                query={"id_int": int(user_id)}, values={"__blob__": user.to_bytes()}
             )
         else:
             # Should it warn the user about his wrong current password input?
@@ -448,6 +448,6 @@ class NoSQLUserManager(NoSQLDatabaseManager):
             )
 
         user.budget = user.budget - epsilon_spend
-        self.update_one({"_id": user.id.value}, {"$set": {"__blob__": user.to_bytes()}})  # type: ignore
+        self.update_one(query={"_id": user.id.value}, values={"__blob__": user.to_bytes()})  # type: ignore
 
         return True
