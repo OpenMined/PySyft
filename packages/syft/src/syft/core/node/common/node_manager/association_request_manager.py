@@ -98,7 +98,7 @@ class NoSQLAssociationRequestManager(NoSQLDatabaseManager):
 
         try:
             association_request = self.first(**{"source": source, "target": target})
-            attributes = {}
+            attributes: Dict[str, Any] = {}
             for k, v in table_fields.items():
                 if k not in association_request.__attr_state__:
                     raise ValueError(f"Cannot set an non existing field:{k} to Node")

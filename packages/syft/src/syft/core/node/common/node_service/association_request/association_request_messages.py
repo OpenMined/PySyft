@@ -130,7 +130,7 @@ class ReceiveAssociationRequestMessage(ImmediateSyftMessageWithoutReply):
         target: str,
         metadata: Dict[str, str],
         msg_id: Optional[UID] = None,
-        response: Optional[str] = "",
+        response: str = "",
     ):
         super().__init__(address=address, msg_id=msg_id)
         self.metadata = metadata
