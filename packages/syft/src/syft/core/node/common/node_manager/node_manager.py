@@ -84,8 +84,8 @@ class NoSQLNodeManager(NoSQLDatabaseManager):
         protocol: str = "http",
         port: int = 80,
         vpn_endpoint: str = "",
-        vpn_key="",
-    ):
+        vpn_key: str = "",
+    ) -> Dict[str, Any]:
         if host_or_ip is None:
             raise ValueError(f"Route addition required valid host_or_ip:{host_or_ip}")
         return {
@@ -103,9 +103,9 @@ class NoSQLNodeManager(NoSQLDatabaseManager):
         node_uid: str,
         node_name: str,
         host_or_ip: str,
-        is_vpn: Optional[bool] = False,
-        vpn_endpoint: Optional[str] = "",
-        vpn_key: Optional[str] = "",
+        is_vpn: bool = False,
+        vpn_endpoint: str = "",
+        vpn_key: str = "",
     ) -> NoSQLNode:
         # node_uid is a UID as a string with no_dash
         try:
@@ -114,7 +114,7 @@ class NoSQLNodeManager(NoSQLDatabaseManager):
 
             _exists = False  # Flag to check if route already present.
             for route in node.node_route:
-                if not "host_or_ip" in route.keys():
+                if "host_or_ip" not in route.keys():
                     raise ValueError(
                         f"The route dict:{route} should have host_or_ip attribute."
                     )
@@ -210,7 +210,7 @@ class NoSQLNodeManager(NoSQLDatabaseManager):
             if node.node_uid == curr_node.node_uid:
                 continue
             for route in node.node_route:
-                if not "host_or_ip" in route.keys() or not "port" in route.keys():
+                if "host_or_ip" not in route.keys() or "port" not in route.keys():
                     raise ValueError(
                         f"The route dict:{route} should have host_or_ip and port attribute"
                     )
@@ -240,7 +240,7 @@ class NoSQLNodeManager(NoSQLDatabaseManager):
         try:
             node = self.first(node_uid=curr_node.node_uid)
             for idx, route in enumerate(node.node_route):
-                if not "host_or_ip" in route.keys():
+                if "host_or_ip" not in route.keys():
                     raise ValueError(
                         f"The route dict:{route} should have host_or_ip attribute."
                     )

@@ -1,6 +1,7 @@
 # stdlib
 from datetime import datetime
 from typing import Any
+from typing import Dict
 
 # third party
 from sqlalchemy.engine import Engine
@@ -8,7 +9,6 @@ from sqlalchemy.engine import Engine
 # relative
 from ...enums import RequestAPIFields
 from ..exceptions import AssociationRequestError
-from ..node_table import association_request
 from ..node_table.association_request import AssociationRequest
 from ..node_table.association_request import NoSQLAssociationRequest
 from .database_manager import DatabaseManager
@@ -125,7 +125,7 @@ class NoSQLAssociationRequestManager(NoSQLDatabaseManager):
         association_request = self.first(**{"source": source, "target": target})
         association_request.status = response
         association_request.processed_date = str(datetime.now().strftime("%m/%d/%Y"))
-        attributes = {}
+        attributes: Dict[str, Any] = {}
         attributes["__blob__"] = association_request.to_bytes()
 
         self.update_one(

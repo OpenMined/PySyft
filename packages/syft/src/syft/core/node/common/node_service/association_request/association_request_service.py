@@ -224,7 +224,11 @@ def recv_association_request_msg(
         info(
             f"Node {node} - recv_association_request_msg: answering an existing association request."
         )
-        node.association_requests.accept_or_deny(source=msg.source, target=msg.target, response=msg.response)  # type: ignore
+
+        response = msg.response
+        node.association_requests.accept_or_deny(
+            source=msg.source, target=msg.target, response=response
+        )
 
     # get or create a new node and node_route which represents the opposing node which
     # is supplied in the metadata
@@ -258,12 +262,14 @@ def respond_association_request_msg(
     resp_msg = "Association request replied!"
 
     info(
-        f"Node {node} - respond_association_request_msg: user can approve/deny association requests."
+        f"Node {node} - respond_association_request_msg: user can accept/deny association requests."
     )
     if allowed:
         # Set the status of the Association Request according to the "value" field received
 
-        node.association_requests.accept_or_deny(source=msg.source, target=msg.target, response=msg.response)  # type: ignore
+        node.association_requests.accept_or_deny(
+            source=msg.source, target=msg.target, response=msg.response
+        )
         user_priv_key = SigningKey(
             node.users.get_user(verify_key).private_key.encode(), encoder=HexEncoder  # type: ignore
         )

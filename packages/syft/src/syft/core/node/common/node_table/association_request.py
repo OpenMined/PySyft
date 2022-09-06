@@ -1,6 +1,7 @@
 # stdlib
 from typing import Any
 from typing import Dict
+from typing import List
 from typing import Optional
 
 # third party
@@ -82,8 +83,8 @@ class NoSQLAssociationRequest(SyftObject):
         "source",
         "target",
     ]
-    __attr_searchable__ = ["source", "target", "id_int"]
-    __attr_unique__ = []
+    __attr_searchable__: List[str] = ["source", "target", "id_int"]
+    __attr_unique__: List[str] = []
 
     def to_dict(self) -> Dict[Any, Any]:
         attr_dict = super().to_dict()
