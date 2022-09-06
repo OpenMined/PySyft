@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import os
 from typing import Optional
+from typing import Sequence
 from typing import Union
 from urllib.parse import urlparse
 
@@ -18,7 +19,13 @@ from ..util import verify_tls
 
 @serializable(recursive_serde=True)
 class GridURL:
-    __attr_allowlist__ = ["protocol", "host_or_ip", "port", "path", "query"]
+    __attr_allowlist__: Sequence[str] = [
+        "protocol",
+        "host_or_ip",
+        "port",
+        "path",
+        "query",
+    ]
 
     @staticmethod
     def from_url(url: Union[str, GridURL]) -> GridURL:
@@ -66,7 +73,7 @@ class GridURL:
             port = 80
 
         self.host_or_ip = host_or_ip
-        self.path = path
+        self.path: str = path
         self.port = port
         self.protocol = protocol
         self.query = query

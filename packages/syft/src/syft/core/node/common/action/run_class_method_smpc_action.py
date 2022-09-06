@@ -8,18 +8,11 @@ from typing import List
 from typing import Optional
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
-
-# syft absolute
-import syft as sy
 
 # relative
 from ..... import lib
 from .....logger import traceback_and_raise
-from .....proto.core.node.common.action.run_class_method_smpc_pb2 import (
-    RunClassMethodSMPCAction as RunClassMethodSMPCAction_PB,
-)
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
@@ -31,8 +24,18 @@ from .common import ImmediateActionWithoutReply
 from .greenlets_switch import retrieve_object
 
 
-@serializable()
+@serializable(recursive_serde=True)
 class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
+    __attr_allowlist__ = [
+        "path",
+        "_self",
+        "args",
+        "kwargs",
+        "id_at_location",
+        "seed_id_locations",
+        "address",
+        "id",
+    ]
     """
     When executing a RunClassMethodSMPCAction, a list of SMPCActionMessages is sent to the
     to the same node (using a rabbitMQ)
@@ -186,79 +189,6 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
             )
 
         node.store[id_at_location] = result
-
-    def _object2proto(self) -> RunClassMethodSMPCAction_PB:
-        """Returns a protobuf serialization of self.
-
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms the current object into the corresponding
-        Protobuf object so that it can be further serialized.
-
-        :return: returns a protobuf object
-        :rtype: RunClassMethodSMPCAction_PB
-
-        .. note::
-            This method is purely an internal method. Please use sy.serialize(object) or one of
-            the other public serialization methods if you wish to serialize an
-            object.
-        """
-
-        return RunClassMethodSMPCAction_PB(
-            path=self.path,
-            _self=sy.serialize(self._self, to_bytes=True),
-            args=list(map(lambda x: sy.serialize(x), self.args)),
-            kwargs={k: sy.serialize(v) for k, v in self.kwargs.items()},
-            id_at_location=sy.serialize(self.id_at_location),
-            seed_id_locations=str(self.seed_id_locations),
-            address=sy.serialize(self.address),
-            msg_id=sy.serialize(self.id),
-        )
-
-    @staticmethod
-    def _proto2object(proto: RunClassMethodSMPCAction_PB) -> "RunClassMethodSMPCAction":
-        """Creates a ObjectWithID from a protobuf
-
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms a protobuf object into an instance of this class.
-
-        :return: returns an instance of RunClassMethodSMPCAction
-        :rtype: RunClassMethodSMPCAction
-
-        .. note::
-            This method is purely an internal method. Please use syft.deserialize()
-            if you wish to deserialize an object.
-        """
-
-        return RunClassMethodSMPCAction(
-            path=proto.path,
-            _self=sy.deserialize(blob=proto._self, from_bytes=True),
-            args=list(map(lambda x: sy.deserialize(blob=x), proto.args)),
-            kwargs={k: sy.deserialize(blob=v) for k, v in proto.kwargs.items()},
-            id_at_location=sy.deserialize(blob=proto.id_at_location),
-            seed_id_locations=int(proto.seed_id_locations),
-            address=sy.deserialize(blob=proto.address),
-            msg_id=sy.deserialize(blob=proto.msg_id),
-        )
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Return the type of protobuf object which stores a class of this type
-
-        As a part of serialization and deserialization, we need the ability to
-        lookup the protobuf object type directly from the object type. This
-        static method allows us to do this.
-
-        Importantly, this method is also used to create the reverse lookup ability within
-        the metaclass of Serializable. In the metaclass, it calls this method and then
-        it takes whatever type is returned from this method and adds an attribute to it
-        with the type of this class attached to it. See the MetaSerializable class for details.
-
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
-
-        """
-
-        return RunClassMethodSMPCAction_PB
 
 
 # #### NOTE: DO NOT DELETE THIS CODE######

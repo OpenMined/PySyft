@@ -7,18 +7,11 @@ from typing import Tuple
 from typing import Union
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
-
-# syft absolute
-import syft as sy
 
 # relative
 from ..... import lib
 from .....logger import traceback_and_raise
-from .....proto.core.node.common.action.run_function_or_constructor_pb2 import (
-    RunFunctionOrConstructorAction as RunFunctionOrConstructorAction_PB,
-)
 from .....util import inherit_tags
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
@@ -33,8 +26,10 @@ from .common import ImmediateActionWithoutReply
 from .greenlets_switch import retrieve_object
 
 
-@serializable()
+@serializable(recursive_serde=True)
 class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
+    __attr_allowlist__ = ["path", "args", "kwargs", "id_at_location", "address", "id"]
+
     """
     When executing a RunFunctionOrConstructorAction, a :class:`Node` will run
     a function defined by the action's path attribute and keep the returned value
@@ -188,79 +183,6 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
             [f"{k}={v.__class__.__name__}" for k, v in self.kwargs.items()]
         )
         return f"FunctionOrConstructorAction {method_name}({arg_names}, {kwargs_names})"
-
-    def _object2proto(self) -> RunFunctionOrConstructorAction_PB:
-        """Returns a protobuf serialization of self.
-
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms the current object into the corresponding
-        Protobuf object so that it can be further serialized.
-
-        :return: returns a protobuf object
-        :rtype: RunFunctionOrConstructorAction_PB
-
-        .. note::
-            This method is purely an internal method. Please use serialize(object) or one of
-            the other public serialization methods if you wish to serialize an
-            object.
-        """
-        return RunFunctionOrConstructorAction_PB(
-            path=self.path,
-            args=[sy.serialize(x, to_bytes=True) for x in self.args],
-            kwargs={k: sy.serialize(v, to_bytes=True) for k, v in self.kwargs.items()},
-            id_at_location=sy.serialize(self.id_at_location),
-            address=sy.serialize(self.address),
-            msg_id=sy.serialize(self.id),
-        )
-
-    @staticmethod
-    def _proto2object(
-        proto: RunFunctionOrConstructorAction_PB,
-    ) -> "RunFunctionOrConstructorAction":
-        """Creates a ObjectWithID from a protobuf
-
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms a protobuf object into an instance of this class.
-
-        :return: returns an instance of RunFunctionOrConstructorAction
-        :rtype: RunFunctionOrConstructorAction
-
-        .. note::
-            This method is purely an internal method. Please use deserialize()
-            if you wish to deserialize an object.
-        """
-
-        return RunFunctionOrConstructorAction(
-            path=proto.path,
-            args=tuple(sy.deserialize(blob=x, from_bytes=True) for x in proto.args),
-            kwargs={
-                k: sy.deserialize(blob=v, from_bytes=True)
-                for k, v in proto.kwargs.items()
-            },
-            id_at_location=sy.deserialize(blob=proto.id_at_location),
-            address=sy.deserialize(blob=proto.address),
-            msg_id=sy.deserialize(blob=proto.msg_id),
-        )
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Return the type of protobuf object which stores a class of this type
-
-        As a part of serialization and deserialization, we need the ability to
-        lookup the protobuf object type directly from the object type. This
-        static method allows us to do this.
-
-        Importantly, this method is also used to create the reverse lookup ability within
-        the metaclass of Serializable. In the metaclass, it calls this method and then
-        it takes whatever type is returned from this method and adds an attribute to it
-        with the type of this class attached to it. See the MetaSerializable class for details.
-
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
-
-        """
-
-        return RunFunctionOrConstructorAction_PB
 
     def remap_input(self, current_input: Any, new_input: Any) -> None:
         """Redefines some of the arguments of the function"""

@@ -1,20 +1,16 @@
 # third party
-# third party
 import torch as th
 
 # syft absolute
 import syft as sy
 from syft.lib.python.slice import Slice
-from syft.proto.lib.python.slice_pb2 import Slice as Slice_PB
 
 
 def test_slice_serde() -> None:
     syft_slice = Slice(1, 3, -1)
-    serialized = syft_slice._object2proto()
+    serialized = sy.serialize(syft_slice)
 
-    assert isinstance(serialized, Slice_PB)
-
-    deserialized = Slice._proto2object(proto=serialized)
+    deserialized = sy.deserialize(serialized)
 
     assert isinstance(deserialized, Slice)
     assert deserialized.id == syft_slice.id

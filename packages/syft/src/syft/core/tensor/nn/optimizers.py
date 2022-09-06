@@ -2,6 +2,7 @@
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Tuple
 from typing import Union
 
@@ -36,7 +37,7 @@ class Optimizer:
         When adapting step rates, do not move above this value. Default is inf.
     """
 
-    __attr_allowlist__: Tuple[str, ...] = (
+    __attr_allowlist__: Sequence[str] = (
         "lr",
         "clip",
         "decay",

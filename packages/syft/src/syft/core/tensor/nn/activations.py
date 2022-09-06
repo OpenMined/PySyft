@@ -1,7 +1,7 @@
 # stdlib
 from typing import Dict
 from typing import Optional
-from typing import Tuple
+from typing import Sequence
 from typing import Type
 from typing import Union
 
@@ -15,7 +15,7 @@ from ..autodp.phi_tensor import PhiTensor
 class Activation(object):
     """Base class for activations."""
 
-    __attr_allowlist__: Tuple[str, ...] = ("last_forward",)
+    __attr_allowlist__: Sequence[str] = ("last_forward",)
 
     def __init__(self) -> None:
         self.last_forward: Optional[Union[PhiTensor, GammaTensor]] = None

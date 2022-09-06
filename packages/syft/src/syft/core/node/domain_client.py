@@ -574,7 +574,7 @@ class DomainClient(Client):
         skip_checks: bool = False,
         chunk_size: int = 536870912,  # 500 MB
         use_blob_storage: bool = True,
-        **metadata: Dict,
+        **metadata: Any,
     ) -> None:
         sys.stdout.write("Loading dataset...")
         if assets is None or not isinstance(assets, dict):
@@ -685,13 +685,11 @@ class DomainClient(Client):
                     # if pref == "n":
                     #     raise Exception("Dataset loading cancelled.")
 
-        # serialize metadata
-        metadata["name"] = bytes(name, "utf-8")  # type: ignore
-        metadata["description"] = bytes(description, "utf-8")  # type: ignore
+        metadata["name"] = name
+        metadata["description"] = description
 
         for k, v in metadata.items():
-            if isinstance(v, str):  # type: ignore
-                metadata[k] = bytes(v, "utf-8")  # type: ignore
+            metadata[k] = v
 
         # blob storage can only be used if domain node has blob storage enabled.
         if not self.settings.get("use_blob_storage", False):

@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
-    b"\n'proto/core/common/recursive_serde.proto\x12\x10syft.core.common\"X\n\x0eRecursiveSerde\x12\x13\n\x0b\x66ields_name\x18\x01 \x03(\t\x12\x13\n\x0b\x66ields_data\x18\x02 \x03(\x0c\x12\x1c\n\x14\x66ully_qualified_name\x18\x03 \x01(\tb\x06proto3"
+    b'\n\'proto/core/common/recursive_serde.proto\x12\x10syft.core.common"0\n\x08Iterable\x12\x14\n\x0cmagic_header\x18\x01 \x01(\t\x12\x0e\n\x06values\x18\x02 \x03(\x0c"@\n\nKVIterable\x12\x14\n\x0cmagic_header\x18\x01 \x01(\t\x12\x0c\n\x04keys\x18\x02 \x03(\x0c\x12\x0e\n\x06values\x18\x03 \x03(\x0c"\x89\x01\n\x0eRecursiveSerde\x12\x14\n\x0cmagic_header\x18\x01 \x01(\t\x12\x13\n\x0b\x66ields_name\x18\x02 \x03(\t\x12\x13\n\x0b\x66ields_data\x18\x03 \x03(\x0c\x12\x1c\n\x14\x66ully_qualified_name\x18\x04 \x01(\t\x12\x19\n\x11nonrecursive_blob\x18\x05 \x01(\x0c\x62\x06proto3'
 )
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
@@ -24,6 +24,10 @@ _builder.BuildTopDescriptorsAndMessages(
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None
-    _RECURSIVESERDE._serialized_start = 61
-    _RECURSIVESERDE._serialized_end = 149
+    _ITERABLE._serialized_start = 61
+    _ITERABLE._serialized_end = 109
+    _KVITERABLE._serialized_start = 111
+    _KVITERABLE._serialized_end = 175
+    _RECURSIVESERDE._serialized_start = 178
+    _RECURSIVESERDE._serialized_end = 315
 # @@protoc_insertion_point(module_scope)

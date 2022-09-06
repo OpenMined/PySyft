@@ -65,26 +65,20 @@ def connect(
     else:
         client_type = NetworkClient
 
-    (
-        spec_location,
-        name,
-        client_id,
-    ) = client_type.deserialize_client_metadata_from_node(metadata=metadata)
-
     # Create a new Solo Route using the selected connection type
-    route = SoloRoute(destination=spec_location, connection=conn)
+    route = SoloRoute(destination=metadata.node, connection=conn)
 
     kwargs = {
-        "name": name,
+        "name": metadata.name,
         "routes": [route],
         "signing_key": _user_key,
         "version": metadata.version,
     }
 
     if client_type is NetworkClient:
-        kwargs["network"] = spec_location
+        kwargs["network"] = metadata.node
     elif client_type is DomainClient:
-        kwargs["domain"] = spec_location
+        kwargs["domain"] = metadata.node
     else:
         raise NotImplementedError
 

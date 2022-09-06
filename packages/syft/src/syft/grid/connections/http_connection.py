@@ -9,7 +9,6 @@ import requests
 
 # relative
 from .. import GridURL
-from ...core.common.message import SignedEventualSyftMessageWithoutReply
 from ...core.common.message import SignedImmediateSyftMessageWithReply
 from ...core.common.message import SignedImmediateSyftMessageWithoutReply
 from ...core.common.message import SyftMessage
@@ -18,7 +17,6 @@ from ...core.common.serde.serialize import _serialize
 from ...core.io.connection import ClientConnection
 from ...core.node.enums import RequestAPIFields
 from ...core.node.exceptions import RequestAPIException
-from ...proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 from ...telemetry import instrument
 
 DEFAULT_TIMEOUT = 30  # seconds
@@ -81,21 +79,6 @@ class HTTPConnection(ClientConnection):
         # and send it using HTTP protocol
         self._send_msg(msg=msg, timeout=timeout)
 
-    def send_eventual_msg_without_reply(
-        self,
-        msg: SignedEventualSyftMessageWithoutReply,
-        timeout: Optional[float] = None,
-    ) -> None:
-        """
-        Sends low priority messages without waiting for their reply.
-
-        This method implements a HTTP version of the
-        ClientConnection.send_eventual_msg_without_reply
-        """
-        # Serializes SignedEventualSyftMessageWithoutReply in json format
-        # and send it using HTTP protocol
-        self._send_msg(msg=msg, timeout=timeout)
-
     def _send_msg(
         self, msg: SyftMessage, timeout: Optional[float] = None
     ) -> requests.Response:
@@ -125,17 +108,3 @@ class HTTPConnection(ClientConnection):
         # Return request's response object
         # r.text provides the response body as a str
         return r
-
-    def _get_metadata(self) -> Metadata_PB:
-        """
-        Request Node's metadata
-
-        :return: returns node metadata
-        :rtype: str of bytes
-        """
-        data: bytes = requests.get(
-            str(self.base_url) + "/metadata", timeout=1, proxies=HTTPConnection.proxies
-        ).content
-        metadata_pb = Metadata_PB()
-        metadata_pb.ParseFromString(data)
-        return metadata_pb

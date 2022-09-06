@@ -63,7 +63,7 @@ def get_user_requests(current_user: UserPrivate) -> List[UserCandidate]:
     reply = send_message_with_reply(
         signing_key=current_user.get_signing_key(), message_type=GetCandidatesMessage
     )
-    return [user.upcast() for user in reply.content]
+    return [user for user in reply.content]
 
 
 def process_applicant_request(
@@ -85,7 +85,7 @@ def get_all_users(current_user: UserPrivate) -> List[User]:
     if flags.USE_NEW_SERVICE:
         reply = reply.users
     else:
-        reply = [user.upcast() for user in reply.content]
+        reply = [user for user in reply.content]
     return reply
 
 
@@ -95,8 +95,9 @@ def get_user(user_id: int, current_user: UserPrivate) -> User:
         message_type=GetUserMessage,
         user_id=user_id,
     )
+
     if not flags.USE_NEW_SERVICE:
-        result = result.content.upcast()
+        result = result.content
 
     return result
 
