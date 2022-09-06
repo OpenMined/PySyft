@@ -153,9 +153,10 @@ class NotifyNodeWithRouteUpdateMessage(
         if node_row is None:
             raise Exception("No node with that verify_key exists")
 
+        
         # check that the url isn't already assigned to another node
-        valid = node.node_route.validate_route_update(
-            node_row=node_row, route_update=route_update, verify_key=verify_key
+        valid = node.node.validate_route_update(
+            node_collection=node.node.all(),curr_node=node_row, route_update=route_update
         )
         if not valid:
             raise Exception("host_or_ip and port are already assigned to another node")
@@ -200,7 +201,7 @@ class NotifyNodeWithRouteUpdateMessage(
             raise Exception("Request key doesn't match verify response key.")
 
         # save route to node_route table
-        node.node_route.update_route(node_row=node_row, route_update=route_update)
+        node.node.update_route(curr_node=node_row, route_update=route_update)
 
         return self.Reply()
 
@@ -295,6 +296,5 @@ class RoutesListMessage(SyftMessage, DomainMessageRegistry, NetworkMessageRegist
         if not node_row:
             raise Exception("There is no node for this verify_key")
 
-        routes = node.node_route.get_routes(node_row=node_row)
-        routes_list = [row._asdict() for row in routes]
+        routes_list: List[dict] = node.node.get_routes(node_row=node_row)
         return self.Reply(routes_list=routes_list)
