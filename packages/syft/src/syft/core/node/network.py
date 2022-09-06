@@ -19,6 +19,8 @@ from pymongo import MongoClient
 # relative
 from ...lib.python import String
 from ...logger import error
+from ...shylock import ShylockPymongoBackend
+from ...shylock import configure
 from ..common.message import SignedImmediateSyftMessageWithReply
 from ..common.message import SignedMessage
 from ..common.message import SyftMessage
@@ -113,8 +115,11 @@ class Network(Node):
             uuidRepresentation="standard",
         )
 
+        db_name = "app"
+        configure(ShylockPymongoBackend.create(nosql_db_engine, db_name))
+
         # Database Management Instances
-        self.users = NoSQLUserManager(nosql_db_engine["app"])
+        self.users = NoSQLUserManager(nosql_db_engine, db_name)
         self.roles = NewRoleManager()
         self.node = NodeManager(db_engine)
         self.node_route = NodeRouteManager(db_engine)

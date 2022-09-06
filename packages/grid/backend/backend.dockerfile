@@ -73,15 +73,21 @@ WORKDIR /app
 # copy grid
 COPY grid/backend /app/
 
-# copy syft
-# until we have stable releases make sure to install syft
+# copy skeleton to do package install
 COPY syft/setup.py /app/syft/setup.py
 COPY syft/setup.cfg /app/syft/setup.cfg
-COPY syft/src /app/syft/src
+COPY syft/pyproject.toml /app/syft/pyproject.toml
+COPY syft/MANIFEST.in /app/syft/MANIFEST.in
+COPY syft/src/syft/VERSION /app/syft/src/syft/VERSION
+COPY syft/src/syft/capnp /app/syft/src/syft/capnp
+COPY syft/src/syft/cache /app/syft/src/syft/cache
 
 # install syft
 RUN --mount=type=cache,target=/root/.cache \
   pip install --user -e /app/syft
+
+# copy any changed source
+COPY syft/src /app/syft/src
 
 # change to worker-start.sh or start-reload.sh as needed
 CMD ["bash", "start.sh"]

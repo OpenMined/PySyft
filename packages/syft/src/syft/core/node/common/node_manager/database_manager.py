@@ -7,7 +7,7 @@ from typing import Type
 
 # third party
 from pymongo.collection import Collection
-from pymongo.database import Database
+from pymongo.mongo_client import MongoClient
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
@@ -117,8 +117,10 @@ class NoSQLDatabaseManager:
     _collection_name: str
     _collection: Collection
 
-    def __init__(self, db: Database) -> None:
-        self._collection = db[self._collection_name]
+    def __init__(self, client: MongoClient, db_name: str) -> None:
+        self._client = client
+        self._database = client[db_name]
+        self._collection = self._database[self._collection_name]
 
     def add(self, obj: SyftObject) -> SyftObject:
         self._collection.insert_one(obj.to_mongo())

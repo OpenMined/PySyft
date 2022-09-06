@@ -10,7 +10,7 @@ else
     elif docker ps | grep ":${PORT}" | grep -q 'postgres'; then
         open postgresql://postgres:changethis@127.0.0.1:${PORT}/app
     elif docker ps | grep ":${PORT}" | grep -q 'mongo'; then
-        open mongodb://root:example@127.0.0.1:${PORT}/app
+        open mongodb://root:example@127.0.0.1:${PORT}
     else
         open http://localhost:${PORT}
     fi

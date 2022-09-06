@@ -25,6 +25,8 @@ from ...logger import critical
 from ...logger import debug
 from ...logger import info
 from ...logger import traceback
+from ...shylock import ShylockPymongoBackend
+from ...shylock import configure
 from ...telemetry import instrument
 from ..adp.ledger_store import RedisLedgerStore
 from ..common.message import SignedImmediateSyftMessageWithReply
@@ -145,9 +147,11 @@ class Domain(Node):
             password="example",
             uuidRepresentation="standard",
         )
+        db_name = "app"
+        configure(ShylockPymongoBackend.create(nosql_db_engine, db_name))
 
         # Database Management Instances
-        self.users = NoSQLUserManager(nosql_db_engine["app"])
+        self.users = NoSQLUserManager(nosql_db_engine, db_name)
         self.roles = NewRoleManager()
         self.environments = EnvironmentManager(db_engine)
         self.association_requests = AssociationRequestManager(db_engine)

@@ -222,7 +222,7 @@ class NoSQLUserManager(NoSQLDatabaseManager):
         added_by: Optional[str] = "",
         institution: Optional[str] = "",
         website: Optional[str] = "",
-    ) -> NoSQLSyftUser:
+    ) -> Optional[NoSQLSyftUser]:
         """Registers a user in the database, when they signup on a domain.
 
         Args:
@@ -239,23 +239,29 @@ class NoSQLUserManager(NoSQLDatabaseManager):
         """
         salt, hashed = self.__salt_and_hash_password(password, 12)
         curr_len = len(self)
-        user = NoSQLSyftUser(
-            name=name,
-            email=email,
-            role=role,
-            budget=budget,
-            private_key=private_key,
-            verify_key=verify_key,
-            hashed_password=hashed,
-            salt=salt,
-            created_at=str(datetime.now()),
-            id_int=curr_len + 1,
-            daa_pdf=daa_pdf,
-            added_by=added_by,
-            institution=institution,
-            website=website,
-        )
-        return self.add(user)
+
+        row_exists = self.find_one({email: email})
+        if row_exists:
+            return None
+        else:
+            user = NoSQLSyftUser(
+                name=name,
+                email=email,
+                role=role,
+                budget=budget,
+                private_key=private_key,
+                verify_key=verify_key,
+                hashed_password=hashed,
+                salt=salt,
+                created_at=str(datetime.now()),
+                id_int=curr_len + 1,
+                daa_pdf=daa_pdf,
+                added_by=added_by,
+                institution=institution,
+                website=website,
+            )
+            self._collection.insert_one(user.to_mongo())
+            return user
 
     def first(self, **kwargs: Any) -> NoSQLSyftUser:
         result = super().find_one(kwargs)

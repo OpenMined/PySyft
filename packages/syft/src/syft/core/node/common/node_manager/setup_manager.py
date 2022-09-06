@@ -33,12 +33,14 @@ class SetupManager(DatabaseManager):
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
 
         with session_local.begin():
-            nrows = len(self)
-            if nrows == 0:
+            try:
+                _obj.id = 1  # force a single row
                 session_local.add(_obj)
                 session_local.commit()
+            except Exception as e:
+                raise e
 
-        return _obj
+        return kwargs
 
     @property
     def node_name(self) -> str:
