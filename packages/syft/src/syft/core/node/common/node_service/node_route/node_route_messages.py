@@ -153,10 +153,11 @@ class NotifyNodeWithRouteUpdateMessage(
         if node_row is None:
             raise Exception("No node with that verify_key exists")
 
-        
         # check that the url isn't already assigned to another node
         valid = node.node.validate_route_update(
-            node_collection=node.node.all(),curr_node=node_row, route_update=route_update
+            node_collection=node.node.all(),
+            curr_node=node_row,
+            route_update=route_update,
         )
         if not valid:
             raise Exception("host_or_ip and port are already assigned to another node")

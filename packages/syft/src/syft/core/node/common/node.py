@@ -1,8 +1,8 @@
 # future
 from __future__ import annotations
-from configparser import NoSectionError
 
 # stdlib
+from configparser import NoSectionError
 from typing import Any
 from typing import Dict
 from typing import List
@@ -85,7 +85,8 @@ from .node_service.resolve_pointer_type.resolve_pointer_type_service import (
 from .node_service.testing_services.repr_service import ReprService
 from .node_service.vpn.vpn_messages import VPNRegisterMessage
 from .node_table import Base
-from .node_table.node import NoSQLNode, Node as NodeRow
+from .node_table.node import NoSQLNode
+from .node_table.node import Node as NodeRow
 
 # this generic type for Client bound by Client
 ClientT = TypeVar("ClientT", bound=Client)

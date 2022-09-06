@@ -27,7 +27,8 @@ from ....enums import AssociationRequestResponses
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...node_service.vpn.vpn_messages import VPNStatusMessageWithReply
-from ...node_table.association_request import AssociationRequest, NoSQLAssociationRequest
+from ...node_table.association_request import AssociationRequest
+from ...node_table.association_request import NoSQLAssociationRequest
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
 from ..node_service import ImmediateNodeServiceWithoutReply
@@ -230,9 +231,12 @@ def recv_association_request_msg(
     try:
         is_vpn = check_if_is_vpn(host_or_ip=msg.metadata["host_or_ip"])
         node.node.create_or_get_node(  # type: ignore
-            node_uid=msg.metadata["node_id"], node_name=msg.metadata["node_name"],host_or_ip=msg.metadata["host_or_ip"], is_vpn=is_vpn
+            node_uid=msg.metadata["node_id"],
+            node_name=msg.metadata["node_name"],
+            host_or_ip=msg.metadata["host_or_ip"],
+            is_vpn=is_vpn,
         )
-        
+
     except Exception as e:
         error(f"Failed to save the node and node_route rows. {e}")
 
@@ -333,7 +337,7 @@ def get_association_request_msg(
 
     return GetAssociationRequestResponse(
         address=msg.reply_to,
-        content=association_request.get_metadata(),
+        content=association_request.to_dict(),
         source=association_request.source,
         target=association_request.target,
     )
@@ -348,7 +352,9 @@ def get_all_association_request_msg(
 
     # If allowed
     if allowed:
-        association_requests: List[NoSQLAssociationRequest] = node.association_requests.all()
+        association_requests: List[
+            NoSQLAssociationRequest
+        ] = node.association_requests.all()
 
         association_requests_json = [
             association_request.to_dict()

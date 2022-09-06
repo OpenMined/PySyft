@@ -60,7 +60,7 @@ def domain_reconnect_network() -> None:
         disconnected = not is_connected or not network_vpn_endpoint
         if node_connections.keep_connected and disconnected:
             routes = node.node.get_routes(node_connections)
-            
+
             for route in routes:
                 try:
                     status, error = connect_with_key(
