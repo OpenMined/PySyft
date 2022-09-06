@@ -82,25 +82,6 @@ def create_initial_setup(
         _verify_key = signing_key.verify_key.encode(encoder=HexEncoder).decode("utf-8")  # type: ignore
         _admin_role = node.roles.owner_role
 
-        create_user = False
-        try:
-            # 4 - Create Admin User
-            # use a lock in mongodb to ensure we only create one of these
-            with Lock(f"syft_users_{msg.email}"):
-                if len(node.users) == 0:
-                    node.users.signup(
-                        name=msg.name,
-                        email=msg.email,
-                        password=msg.password,
-                        role=_admin_role,
-                        budget=msg.budget,
-                        private_key=_node_private_key,
-                        verify_key=_verify_key,
-                    )
-                    create_user = True
-        except Exception as e:
-            print("Failed to save setup to database", e)
-
         create_setup = False
         try:
             # 5 - Save Node SetUp Configs
@@ -115,6 +96,24 @@ def create_initial_setup(
                 create_setup = True
         except Exception as e:
             print("Failed to save user to database", e)
+
+        create_user = False
+        try:
+            # 4 - Create Admin User
+            # use a lock in mongodb to ensure we only create one of these
+            with Lock(f"syft_users_{msg.email}"):
+                if len(node.users) == 0:
+                    node.users.create_admin(
+                        name=msg.name,
+                        email=msg.email,
+                        password=msg.password,
+                        role=_admin_role,
+                        budget=msg.budget,
+                        node=node,
+                    )
+                    create_user = True
+        except Exception as e:
+            print("Failed to save setup to database", e)
 
         if create_user and create_setup:
             print("CreateInitialSetUpMessage Successful!")
