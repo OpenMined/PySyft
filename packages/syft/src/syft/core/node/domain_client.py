@@ -686,12 +686,11 @@ class DomainClient(Client):
                     #     raise Exception("Dataset loading cancelled.")
 
         # serialize metadata
-        metadata["name"] = bytes(name, "utf-8")  # type: ignore
-        metadata["description"] = bytes(description, "utf-8")  # type: ignore
+        metadata["name"] = name
+        metadata["description"] = description
 
         for k, v in metadata.items():
-            if isinstance(v, str):  # type: ignore
-                metadata[k] = bytes(v, "utf-8")  # type: ignore
+            metadata[k] = v
 
         # blob storage can only be used if domain node has blob storage enabled.
         if not self.settings.get("use_blob_storage", False):
