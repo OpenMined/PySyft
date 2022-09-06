@@ -53,7 +53,7 @@ class AvgPool(Layer):
 
         self.input_shape: Optional[Tuple[int, ...]] = None
         self.out_shape: Optional[Tuple[int, ...]] = None
-        self.X_col = None
+        self.X_col: Optional[Union[PhiTensor, GammaTensor]] = None
 
     def connect_to(self, prev_layer: Layer) -> None:
 
@@ -105,6 +105,12 @@ class AvgPool(Layer):
         if self.input_shape is None:
             raise ValueError(
                 "Input shape is None. \
+                Please check if the input shape is correctly initialized from the prev_layer."
+            )
+
+        if self.X_col is None:
+            raise ValueError(
+                "X_col is None. \
                 Please check if the input shape is correctly initialized from the prev_layer."
             )
 
