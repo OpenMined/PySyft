@@ -1,5 +1,7 @@
 # stdlib
-from typing import Dict,Optional
+from typing import Any
+from typing import Dict
+from typing import Optional
 
 # third party
 from sqlalchemy import Column
@@ -56,12 +58,12 @@ class NoSQLAssociationRequest(SyftObject):
     # fields
     id_int: int
     requested_date: str
-    processed_date: Optional[str]
+    processed_date: str = ""
     node_name: str = ""
     node_address: str = ""
     name: str = ""
     email: str = ""
-    reason: Optional[str]= ""
+    reason: Optional[str] = ""
     status: str = ""
     source: str = ""
     target: str = ""
@@ -78,7 +80,14 @@ class NoSQLAssociationRequest(SyftObject):
         "reason",
         "status",
         "source",
-        "target"
+        "target",
     ]
-    __attr_searchable__ = [ "source","target" , "id_int"]
+    __attr_searchable__ = ["source", "target", "id_int"]
     __attr_unique__ = []
+
+    def to_dict(self) -> Dict[Any, Any]:
+        attr_dict = super().to_dict()
+        del attr_dict["id"]
+        attr_dict["association_id"] = str(attr_dict["id_int"])
+        del attr_dict["id_int"]
+        return attr_dict

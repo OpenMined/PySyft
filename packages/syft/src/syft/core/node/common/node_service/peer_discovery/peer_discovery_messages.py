@@ -15,7 +15,8 @@ from typing_extensions import final
 # relative
 from .....common.serde.serializable import serializable
 from ....abstract.node_service_interface import NodeServiceInterface
-from ...node_table.node import NoSQLNode, Node as NodeRow
+from ...node_table.node import NoSQLNode
+from ...node_table.node import Node as NodeRow
 from ..generic_payload.messages import GenericPayloadMessage
 from ..generic_payload.messages import GenericPayloadMessageWithReply
 from ..generic_payload.messages import GenericPayloadReplyMessage

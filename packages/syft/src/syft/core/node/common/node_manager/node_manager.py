@@ -1,7 +1,8 @@
 # stdlib
 from typing import Any
 from typing import Dict
-from typing import Optional, List
+from typing import List
+from typing import Optional
 
 # third party
 from nacl.encoding import HexEncoder
@@ -191,7 +192,6 @@ class NoSQLNodeManager(NoSQLDatabaseManager):
             verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
         )
 
-    
     def validate_route_update(
         self,
         node_collection: List[NoSQLNode],
@@ -210,7 +210,7 @@ class NoSQLNodeManager(NoSQLDatabaseManager):
             if node.node_uid == curr_node.node_uid:
                 continue
             for route in node.node_route:
-                if not "host_or_ip" in route.keys() or not "port" in route.keys() :
+                if not "host_or_ip" in route.keys() or not "port" in route.keys():
                     raise ValueError(
                         f"The route dict:{route} should have host_or_ip and port attribute"
                     )
@@ -236,11 +236,9 @@ class NoSQLNodeManager(NoSQLDatabaseManager):
             private=route_update.private,
             is_vpn=is_vpn,
         )
-        route_index = -1 #Stores the index of the route with the above host_or_ip
+        route_index = -1  # Stores the index of the route with the above host_or_ip
         try:
-            node = self.first(
-                 node_uid=curr_node.node_uid
-            )
+            node = self.first(node_uid=curr_node.node_uid)
             for idx, route in enumerate(node.node_route):
                 if not "host_or_ip" in route.keys():
                     raise ValueError(
@@ -249,7 +247,7 @@ class NoSQLNodeManager(NoSQLDatabaseManager):
                 if route["host_or_ip"] == source_url.host_or_ip:
                     route_index = idx
                     break
-            if route_index==-1: #route does not exists add new route
+            if route_index == -1:  # route does not exists add new route
                 curr_node.node_route.append(new_route)
             else:
                 curr_node.node_route[route_index] = new_route
@@ -265,8 +263,9 @@ class NoSQLNodeManager(NoSQLDatabaseManager):
             )
 
         except NodeNotFoundError:
-            raise NodeNotFoundError(f"Update Route does not have valid node to update with uid: {curr_node.node_uid}")
-    
+            raise NodeNotFoundError(
+                f"Update Route does not have valid node to update with uid: {curr_node.node_uid}"
+            )
 
     def get_routes(self, node_row: NoSQLNode) -> List[Dict]:
         return node_row.node_route

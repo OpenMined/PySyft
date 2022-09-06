@@ -1,5 +1,6 @@
 # stdlib
-from typing import Optional, List
+from typing import List
+from typing import Optional
 
 # third party
 from sqlalchemy import Boolean
