@@ -16,7 +16,7 @@ from .....io.address import Address
 
 @serializable(recursive_serde=True)
 class AcceptOrDenyRequestMessage(ImmediateSyftMessageWithoutReply):
-    __attr_allow_list__ = ("id", "address", "accept", "request_id")
+    __attr_allowlist__ = ("id", "address", "accept", "request_id")
 
     def __init__(
         self,
