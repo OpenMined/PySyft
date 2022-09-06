@@ -7,6 +7,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import shutil
 import socket
 import subprocess  # nosec
 from typing import List
@@ -21,31 +22,8 @@ from rich.table import Table
 
 # relative
 from .cache import DEFAULT_BRANCH
-from .deps import MissingDependency
-from .deps import is_windows
 from .mode import EDITABLE_MODE
 from .mode import hagrid_root
-
-DOCKER_ERROR = """
-You are running an old version of docker, possibly on Linux. You need to install v2.
-At the time of writing this, if you are on linux you need to run the following:
-
-DOCKER_COMPOSE_VERSION=v2.7.0
-curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 \
-     -o ~/.docker/cli-plugins/docker-compose
-chmod +x ~/.docker/cli-plugins/docker-compose
-
-ALERT: you may need to run the following command to make sure you can run without sudo.
-
-echo $USER              //(should return your username)
-sudo usermod -aG docker $USER
-
-... now LOG ALL THE WAY OUT!!!
-
-...and then you should be good to go. You can check your installation by running:
-
-docker compose version
-"""
 
 
 class ProcessStatus(Enum):
@@ -73,11 +51,19 @@ def asset_path() -> os.PathLike:
     return Path(hagrid_root()) / "hagrid"
 
 
+def manifest_template_path() -> os.PathLike:
+    return Path(asset_path()) / "manifest_template.yml"
+
+
+def hagrid_cache_dir() -> os.PathLike:
+    return Path("~/.hagrid").expanduser()
+
+
 def repo_src_path() -> Path:
     if EDITABLE_MODE:
         return Path(os.path.abspath(Path(hagrid_root()) / "../../"))
     else:
-        return Path(hagrid_root()) / "hagrid" / "PySyft"
+        return Path(os.path.join(Path(hagrid_cache_dir()) / "PySyft"))
 
 
 def grid_src_path() -> str:
@@ -102,11 +88,16 @@ def get_git_repo() -> git.Repo:
         print(f"Fetching Syft + Grid Source from {git_url} to {repo_src_path()}")
         try:
             repo_branch = DEFAULT_BRANCH
+            repo_path = repo_src_path()
+
+            if repo_path.exists():
+                shutil.rmtree(str(repo_path))
+
             git.Repo.clone_from(
-                git_url, repo_src_path(), single_branch=False, b=repo_branch
+                git_url, str(repo_path), single_branch=False, b=repo_branch
             )
-        except Exception:  # nosec
-            print(f"Failed to clone {git_url} to {repo_src_path()}")
+        except Exception as e:  # nosec
+            print(f"Failed to clone {git_url} to {repo_src_path()} with error: {e}")
     return git.Repo(repo_src_path())
 
 
@@ -187,25 +178,6 @@ def find_available_port(host: str, port: int, search: bool = False) -> int:
         )
         raise Exception(error)
     return port
-
-
-def check_docker_version() -> Optional[str]:
-    if is_windows():
-        return "N/A"  # todo fix to work with windows
-    result = os.popen("docker compose version", "r").read()  # nosec
-    version = None
-    if "version" in result:
-        version = result.split()[-1]
-    else:
-        print("This may be a linux machine, either that or docker compose isn't s")
-        print("Result:" + result)
-        out = subprocess.run(  # nosec
-            ["docker", "compose"], capture_output=True, text=True
-        )
-        if "'compose' is not a docker command" in out.stderr:
-            raise MissingDependency(DOCKER_ERROR)
-
-    return version
 
 
 def get_version_module() -> Tuple[str, str]:
