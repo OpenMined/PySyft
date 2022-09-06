@@ -26,9 +26,8 @@ from ..common.uid import UID
 from ..io.location import Location
 from ..io.location import SpecificLocation
 from .common.node import Node
-from .common.node_manager.association_request_manager import AssociationRequestManager
-from .common.node_manager.node_manager import NodeManager
-from .common.node_manager.node_route_manager import NodeRouteManager
+from .common.node_manager.association_request_manager import NoSQLAssociationRequestManager
+from .common.node_manager.node_manager import NoSQLNodeManager
 from .common.node_manager.role_manager import NewRoleManager
 from .common.node_manager.user_manager import NoSQLUserManager
 from .common.node_service.association_request.association_request_service import (
@@ -116,9 +115,8 @@ class Network(Node):
         # Database Management Instances
         self.users = NoSQLUserManager(nosql_db_engine["app"])
         self.roles = NewRoleManager()
-        self.node = NodeManager(db_engine)
-        self.node_route = NodeRouteManager(db_engine)
-        self.association_requests = AssociationRequestManager(db_engine)
+        self.node = NoSQLNodeManager(nosql_db_engine["app"])
+        self.association_requests = NoSQLAssociationRequestManager(nosql_db_engine["app"])
 
         # Grid Network Services
         self.immediate_services_with_reply.append(AssociationRequestService)

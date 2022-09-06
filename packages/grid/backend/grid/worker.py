@@ -59,13 +59,14 @@ def domain_reconnect_network() -> None:
         is_connected = reply.message.payload.kwargs["connected"]
         disconnected = not is_connected or not network_vpn_endpoint
         if node_connections.keep_connected and disconnected:
-            routes = list(node.node_route.query(node_id=node_connections.id))
+            routes = node.node.get_routes(node_connections)
+            
             for route in routes:
                 try:
                     status, error = connect_with_key(
                         tailscale_host=TAILSCALE_URL,
-                        headscale_host=route.vpn_endpoint,
-                        vpn_auth_key=route.vpn_key,
+                        headscale_host=route["vpn_endpoint"],
+                        vpn_auth_key=route["vpn_key"],
                     )
 
                     if not status:

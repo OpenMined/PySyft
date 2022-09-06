@@ -214,12 +214,9 @@ class VPNJoinMessageWithReply(GenericPayloadMessageWithReply):
             )
 
             if status:
-                node_id = node.node.create_or_get_node(  # type: ignore
+                node.node.create_or_get_node(  # type: ignore
                     node_uid=res_json["node_id"],
                     node_name=res_json["node_name"],
-                )
-                node.node_route.update_route_for_node(  # type: ignore
-                    node_id=node_id,
                     host_or_ip=res_json["host_or_ip"],
                     vpn_endpoint=str(grid_url.with_path("/vpn")),
                     vpn_key=res_json["vpn_auth_key"],

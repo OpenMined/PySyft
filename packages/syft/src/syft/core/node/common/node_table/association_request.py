@@ -1,5 +1,5 @@
 # stdlib
-from typing import Dict
+from typing import Dict,Optional
 
 # third party
 from sqlalchemy import Column
@@ -8,6 +8,7 @@ from sqlalchemy import String
 
 # relative
 from . import Base
+from .user import SyftObject
 
 
 class AssociationRequest(Base):
@@ -45,3 +46,39 @@ class AssociationRequest(Base):
             "node_name": self.node_name,
             "node_address": self.node_address,
         }
+
+
+class NoSQLAssociationRequest(SyftObject):
+    # version
+    __canonical_name__ = "AssociationRequest"
+    __version__ = 1
+
+    # fields
+    id_int: int
+    requested_date: str
+    processed_date: Optional[str]
+    node_name: str = ""
+    node_address: str = ""
+    name: str = ""
+    email: str = ""
+    reason: Optional[str]= ""
+    status: str = ""
+    source: str = ""
+    target: str = ""
+
+    # serde / storage rules
+    __attr_state__ = [
+        "id_int",
+        "requested_date",
+        "processed_date",
+        "node_name",
+        "node_address",
+        "name",
+        "email",
+        "reason",
+        "status",
+        "source",
+        "target"
+    ]
+    __attr_searchable__ = [ "source","target" , "id_int"]
+    __attr_unique__ = []

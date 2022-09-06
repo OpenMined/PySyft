@@ -15,8 +15,7 @@ from typing_extensions import final
 # relative
 from .....common.serde.serializable import serializable
 from ....abstract.node_service_interface import NodeServiceInterface
-from ...node_table.node import Node as NodeRow
-from ...node_table.node_route import NodeRoute as NodeRouteRow
+from ...node_table.node import NoSQLNode, Node as NodeRow
 from ..generic_payload.messages import GenericPayloadMessage
 from ..generic_payload.messages import GenericPayloadMessageWithReply
 from ..generic_payload.messages import GenericPayloadReplyMessage
@@ -35,19 +34,19 @@ class PeerDiscoveryReplyMessage(GenericPayloadReplyMessage):
 
 
 def node_id_to_peer_route_metadata(
-    node: NodeServiceInterface, node_row: NodeRow
+    node: NodeServiceInterface, node_row: NoSQLNode
 ) -> List[Dict[str, Any]]:
-    routes: List[NodeRouteRow] = node.node_route.query(node_id=node_row.id)
+    routes: List[dict] = node.node_route
     routes_meta = []
     for route in routes:
         peer_route = {}
         peer_route["id"] = node_row.node_uid
         peer_route["name"] = node_row.node_name
-        peer_route["host_or_ip"] = route.host_or_ip
-        peer_route["is_vpn"] = route.is_vpn
-        peer_route["private"] = route.private
-        peer_route["protocol"] = route.protocol
-        peer_route["port"] = route.port
+        peer_route["host_or_ip"] = route["host_or_ip"]
+        peer_route["is_vpn"] = route["is_vpn"]
+        peer_route["private"] = route["private"]
+        peer_route["protocol"] = route["protocol"]
+        peer_route["port"] = route["port"]
         routes_meta.append(peer_route)
     return routes_meta
 

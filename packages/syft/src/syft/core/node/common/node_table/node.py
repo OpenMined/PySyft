@@ -1,6 +1,5 @@
 # stdlib
-# stdlib
-from typing import Optional
+from typing import Optional, List
 
 # third party
 from sqlalchemy import Boolean
@@ -34,33 +33,35 @@ class NoSQLNode(SyftObject):
     id_int: int
     node_uid: str
     node_name: str
-    host_or_ip: Optional[str]
     node_type: Optional[str]
     verify_key: Optional[str]
     keep_connected: Optional[bool] = True
-    is_vpn: Optional[bool] = False
-    private: Optional[bool] = False
-    protocol: Optional[str] = "http"
-    port: Optional[int] = 80
-    vpn_endpoint: Optional[str] = ""
-    vpn_key: Optional[str] = ""
+    node_route: List[dict] = []
+    # host_or_ip: Optional[str]
+    # is_vpn: Optional[bool] = False
+    # protocol: Optional[str] = "http"
+    # port: Optional[int] = 80
+    # private: Optional[bool] = False
+    # vpn_endpoint: Optional[str] = ""
+    # vpn_key: Optional[str] = ""
 
     # serde / storage rules
     __attr_state__ = [
         "id_int",
         "node_uid",
         "node_name",
-        "host_or_ip",
         "node_type",
         "verify_key",
         "keep_connected",
-        "is_vpn",
-        "private",
-        "protocol",
-        "port",
-        "vpn_endpoint",
-        "vpn_key",
+        "node_route",
+        # "host_or_ip",
+        # "is_vpn",
+        # "private",
+        # "protocol",
+        # "port",
+        # "vpn_endpoint",
+        # "vpn_key",
     ]
 
-    __attr_searchable__ = ["node_uid", "verify_key", "id_int", "host_or_ip", "port"]
+    __attr_searchable__ = ["node_uid", "verify_key", "id_int"]
     __attr_unique__ = ["node_uid"]

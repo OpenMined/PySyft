@@ -150,6 +150,9 @@ class SyftObject(BaseModel, SyftObjectRegistry):
 
         return d
 
+    def to_dict(self) -> Dict[Any,Any]:
+        return dict(**self)
+        
     def to_bytes(self) -> bytes:
         d = SyDict(**self)
         return sy.serialize(d, to_bytes=True)
