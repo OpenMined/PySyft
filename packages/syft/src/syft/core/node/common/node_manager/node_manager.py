@@ -157,9 +157,9 @@ class NoSQLNodeManager(NoSQLDatabaseManager):
         return self.first(node_uid=node_uid)
 
     def add_or_update_node_credentials(self, credentials: NodeCredentials) -> None:
-        node = self.first(node_uid=credentials.node_uid)
         credentials_dict: Dict[str, Any] = {**credentials}
-        if node:
+        try:
+            node = self.first(node_uid=credentials.node_uid)
             if node.verify_key is not None:
                 credentials.validate(key=node.verify_key)
             attributes = {}
@@ -173,7 +173,7 @@ class NoSQLNodeManager(NoSQLDatabaseManager):
             attributes["__blob__"] = node.to_bytes()
 
             self.update_one(query={"node_uid": credentials.node_uid}, values=attributes)
-        else:
+        except NodeNotFoundError:
             curr_len = len(self)
             node_row = NoSQLNode(
                 id_int=curr_len + 1,
