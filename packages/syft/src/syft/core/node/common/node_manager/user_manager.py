@@ -270,11 +270,11 @@ class NoSQLUserManager(NoSQLDatabaseManager):
         password: str,
         budget: float,
         role: dict,
+        node: Any,
         daa_pdf: Optional[int] = None,
         added_by: Optional[str] = "",
         institution: Optional[str] = "",
         website: Optional[str] = "",
-        node: Any,
     ) -> Optional[NoSQLSyftUser]:
         salt, hashed = self.__salt_and_hash_password(password, 12)
         curr_len = len(self)
@@ -289,8 +289,10 @@ class NoSQLUserManager(NoSQLDatabaseManager):
                 email=email,
                 role=role,
                 budget=budget,
-                private_key=private_key.encode(encoder=HexEncoder).decode('utf-8'),
-                verify_key=private_key.verify_key.encode(encoder=HexEncoder).decode('utf-8'),
+                private_key=private_key.encode(encoder=HexEncoder).decode("utf-8"),
+                verify_key=private_key.verify_key.encode(encoder=HexEncoder).decode(
+                    "utf-8"
+                ),
                 hashed_password=hashed,
                 salt=salt,
                 created_at=str(datetime.now()),
