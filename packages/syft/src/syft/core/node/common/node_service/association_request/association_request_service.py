@@ -25,7 +25,6 @@ from ....enums import AssociationRequestResponses
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...node_service.vpn.vpn_messages import VPNStatusMessageWithReply
-from ...node_table.association_request import AssociationRequest
 from ...node_table.association_request import NoSQLAssociationRequest
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
@@ -331,7 +330,7 @@ def get_association_request_msg(
     allowed = node.users.can_manage_infrastructure(verify_key=verify_key)
     # If allowed
     if allowed:
-        association_request: AssociationRequest = node.association_requests.first(
+        association_request: NoSQLAssociationRequest = node.association_requests.first(
             id_int=msg.association_id
         )
     else:  # Otherwise
