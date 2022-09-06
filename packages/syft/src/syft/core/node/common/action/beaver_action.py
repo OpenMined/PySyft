@@ -23,6 +23,8 @@ BEAVER_CACHE: Dict[UID, StorableObject] = {}  # Global cache for spdz mask value
 
 @serializable(recursive_serde=True)
 class BeaverAction(ImmediateActionWithoutReply):
+    __attr_allowlist__ = ["id", "values", "locations", "address"]
+
     def __init__(
         self,
         values: List[ShareTensor],

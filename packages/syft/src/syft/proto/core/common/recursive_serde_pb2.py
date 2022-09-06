@@ -5,9 +5,8 @@
 # third party
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
-from google.protobuf import message as _message
-from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -18,43 +17,10 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b'\n\'proto/core/common/recursive_serde.proto\x12\x10syft.core.common"0\n\x08Iterable\x12\x14\n\x0cmagic_header\x18\x01 \x01(\t\x12\x0e\n\x06values\x18\x02 \x03(\x0c"@\n\nKVIterable\x12\x14\n\x0cmagic_header\x18\x01 \x01(\t\x12\x0c\n\x04keys\x18\x02 \x03(\x0c\x12\x0e\n\x06values\x18\x03 \x03(\x0c"\x89\x01\n\x0eRecursiveSerde\x12\x14\n\x0cmagic_header\x18\x01 \x01(\t\x12\x13\n\x0b\x66ields_name\x18\x02 \x03(\t\x12\x13\n\x0b\x66ields_data\x18\x03 \x03(\x0c\x12\x1c\n\x14\x66ully_qualified_name\x18\x04 \x01(\t\x12\x19\n\x11nonrecursive_blob\x18\x05 \x01(\x0c\x62\x06proto3'
 )
 
-
-_ITERABLE = DESCRIPTOR.message_types_by_name["Iterable"]
-_KVITERABLE = DESCRIPTOR.message_types_by_name["KVIterable"]
-_RECURSIVESERDE = DESCRIPTOR.message_types_by_name["RecursiveSerde"]
-Iterable = _reflection.GeneratedProtocolMessageType(
-    "Iterable",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _ITERABLE,
-        "__module__": "proto.core.common.recursive_serde_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.common.Iterable)
-    },
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
+_builder.BuildTopDescriptorsAndMessages(
+    DESCRIPTOR, "proto.core.common.recursive_serde_pb2", globals()
 )
-_sym_db.RegisterMessage(Iterable)
-
-KVIterable = _reflection.GeneratedProtocolMessageType(
-    "KVIterable",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _KVITERABLE,
-        "__module__": "proto.core.common.recursive_serde_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.common.KVIterable)
-    },
-)
-_sym_db.RegisterMessage(KVIterable)
-
-RecursiveSerde = _reflection.GeneratedProtocolMessageType(
-    "RecursiveSerde",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _RECURSIVESERDE,
-        "__module__": "proto.core.common.recursive_serde_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.common.RecursiveSerde)
-    },
-)
-_sym_db.RegisterMessage(RecursiveSerde)
-
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None
