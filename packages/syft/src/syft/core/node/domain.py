@@ -114,6 +114,7 @@ class Domain(Node):
         store_type: type = RedisStore,
         ledger_store_type: type = RedisLedgerStore,
         settings: Optional[BaseSettings] = None,
+        document_store: bool = False,
     ):
 
         if db_engine is None:
@@ -148,7 +149,8 @@ class Domain(Node):
             uuidRepresentation="standard",
         )
         db_name = "app"
-        configure(ShylockPymongoBackend.create(nosql_db_engine, db_name))
+        if document_store:
+            configure(ShylockPymongoBackend.create(nosql_db_engine, db_name))
 
         # Database Management Instances
         self.users = NoSQLUserManager(nosql_db_engine, db_name)

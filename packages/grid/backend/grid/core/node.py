@@ -55,12 +55,16 @@ def create_s3_bucket(bucket_name: str, settings: Settings, attempt: int = 0) -> 
 
 
 if settings.NODE_TYPE.lower() == "domain":
-    node = Domain("Domain", db_engine=get_db_engine(), settings=settings)
+    node = Domain(
+        "Domain", db_engine=get_db_engine(), settings=settings, document_store=True
+    )
     if settings.USE_BLOB_STORAGE:
         create_s3_bucket(bucket_name=node.id.no_dash, settings=settings)
 
 elif settings.NODE_TYPE.lower() == "network":
-    node = Network("Network", db_engine=get_db_engine(), settings=settings)
+    node = Network(
+        "Network", db_engine=get_db_engine(), settings=settings, document_store=True
+    )
     format = "%(asctime)s: %(message)s"
     logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
 else:

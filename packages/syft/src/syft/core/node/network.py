@@ -86,6 +86,7 @@ class Network(Node):
         root_key: Optional[VerifyKey] = None,
         db_engine: Any = None,
         settings: Optional[BaseSettings] = None,
+        document_store: bool = False,
     ):
         super().__init__(
             name=name,
@@ -116,7 +117,8 @@ class Network(Node):
         )
 
         db_name = "app"
-        configure(ShylockPymongoBackend.create(nosql_db_engine, db_name))
+        if document_store:
+            configure(ShylockPymongoBackend.create(nosql_db_engine, db_name))
 
         # Database Management Instances
         self.users = NoSQLUserManager(nosql_db_engine, db_name)

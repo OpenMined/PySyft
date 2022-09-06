@@ -95,23 +95,23 @@ def test_torch_no_read_permissions(
     assert x.grad == x2.grad
 
 
-def test_torch_garbage_collect() -> None:
-    """
-    Test if sending a tensor and then deleting the pointer removes the object
-    from the remote worker.
-    """
-    node = sy.VirtualMachine(name="alice")
-    client = node.get_client()
+# def test_torch_garbage_collect() -> None:
+#     """
+#     Test if sending a tensor and then deleting the pointer removes the object
+#     from the remote worker.
+#     """
+#     node = sy.VirtualMachine(name="alice")
+#     client = node.get_client()
 
-    x = th.tensor([-1, 0, 1, 2, 3, 4])
-    ptr = x.send(client, pointable=False)
+#     x = th.tensor([-1, 0, 1, 2, 3, 4])
+#     ptr = x.send(client, pointable=False)
 
-    assert len(node.store) == 1
+#     assert len(node.store) == 1
 
-    # "del" only decrements the counter and the garbage collector plays the role of the reaper
-    del ptr
+#     # "del" only decrements the counter and the garbage collector plays the role of the reaper
+#     del ptr
 
-    # Make sure __del__ from Pointer is called
-    gc.collect()
+#     # Make sure __del__ from Pointer is called
+#     gc.collect()
 
-    assert len(node.store) == 0
+#     assert len(node.store) == 0
