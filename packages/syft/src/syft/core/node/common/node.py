@@ -297,11 +297,11 @@ class Node(AbstractNode):
         try:
             setup = self.setup.first()
             # if its empty it will be set during CreateInitialSetUpMessage
-            if setup.node_id != "":
+            if setup.node_uid != "":
                 try:
-                    node_id = UID.from_string(setup.node_id)
+                    node_id = UID.from_string(setup.node_uid)
                 except Exception as e:
-                    error(f"Invalid Node UID in Setup Table. {setup.node_id}")
+                    error(f"Invalid Node UID in Setup Table. {setup.node_uid}")
                     raise e
 
                 location = SpecificLocation(name=setup.domain_name, id=node_id)
