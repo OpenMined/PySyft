@@ -15,7 +15,4 @@ class UserEnvironment(Base):
     environment = Column(Integer, ForeignKey("environment.id"))
 
     def __str__(self) -> str:
-        return (
-            f"<UserGroup id: {self.id},"
-            f"group: {self.environment}>"
-        )
+        return f"<UserGroup id: {self.id}," f"group: {self.environment}>"

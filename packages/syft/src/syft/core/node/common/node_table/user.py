@@ -49,7 +49,6 @@ class UserApplication(Base):
         )
 
 
-
 class SyftObjectRegistry:
     __object_version_registry__: Dict[str, Dict[int, Type[SyftObject]]] = defaultdict(
         lambda: {}
