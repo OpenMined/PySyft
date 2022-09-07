@@ -96,6 +96,7 @@ class Network(Node):
             verify_key=verify_key,
             db_engine=db_engine,
             settings=settings,
+            document_store=document_store,
         )
 
         # share settings with the FastAPI application level
