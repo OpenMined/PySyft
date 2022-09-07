@@ -61,7 +61,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install --upgrade setuptools wheel twine tox bump2version
+          pip install --upgrade setuptools wheel twine tox bump2version PyYAML
       - name: Bump the Version
         run: |
           ls **/VERSION | xargs -I {} python {}
