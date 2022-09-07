@@ -37,9 +37,9 @@ def set_node_uid(node: DomainInterface) -> None:
         print("Missing Setup Table entry", e)
 
     try:
-        node_id = UID.from_string(setup.node_id)
+        node_id = UID.from_string(setup.node_uid)
     except Exception as e:
-        print(f"Invalid Node UID in Setup Table. {setup.node_id}")
+        print(f"Invalid Node UID in Setup Table. {setup.node_uid}")
         raise e
 
     location = SpecificLocation(name=setup.domain_name, id=node_id)
