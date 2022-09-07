@@ -1,6 +1,5 @@
 # stdlib
 from datetime import datetime
-from json import dumps
 from json import loads
 from typing import Callable
 from typing import Dict
@@ -21,7 +20,6 @@ from ....domain_interface import DomainInterface
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import OwnerAlreadyExistsError
-from ...node_table.utils import model_to_json
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
 from ..success_resp_message import SuccessResponseMessage
@@ -89,7 +87,7 @@ def create_initial_setup(
                 node.setup.register_once(
                     domain_name=msg.domain_name,
                     node_id=node_id.no_dash,
-                    deployed_on=datetime.now(),
+                    deployed_on=str(datetime.now()),
                     signing_key=_node_private_key,
                 )
                 create_setup = True
@@ -131,7 +129,7 @@ def get_setup(
     msg: GetSetUpMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> GetSetUpResponse:
 
-    _setup = model_to_json(node.setup.first(domain_name=node.name))
+    _setup = node.setup.first(domain_name=node.name).to_dict()
     _setup["tags"] = loads(_setup["tags"])
     # TODO: Make this a little more defensive so we dont accidentally spill secrets
     # from node.settings. Perhaps we should add a public settings interface
@@ -157,7 +155,7 @@ def update_settings(
             daa=msg.daa,
             contact=msg.contact,
             daa_document=msg.daa_document,
-            tags=dumps(msg.tags),
+            tags=msg.tags,
         )
     else:
         raise AuthorizationError("You're not allowed to get setup configs!")

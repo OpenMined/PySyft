@@ -15,6 +15,7 @@ from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from pydantic import BaseSettings
+from pymongo import MongoClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base
 
@@ -28,6 +29,8 @@ from ....logger import debug
 from ....logger import error
 from ....logger import info
 from ....logger import traceback_and_raise
+from ....shylock import ShylockPymongoBackend
+from ....shylock import configure
 from ....telemetry import instrument
 from ....util import get_subclasses
 from ...common.message import ImmediateSyftMessageWithReply
@@ -48,7 +51,7 @@ from .action.exception_action import UnknownPrivateException
 from .client import Client
 from .metadata import Metadata
 from .node_manager.redis_store import RedisStore
-from .node_manager.setup_manager import SetupManager
+from .node_manager.setup_manager import NoSQLSetupManager
 from .node_service.auth import AuthorizationException
 from .node_service.child_node_lifecycle.child_node_lifecycle_service import (
     ChildNodeLifecycleService,
@@ -122,6 +125,7 @@ class Node(AbstractNode):
         db_engine: Any = None,
         store_type: type = RedisStore,
         settings: Optional[BaseSettings] = None,
+        document_store: bool = False,
     ):
 
         # The node has a name - it exists purely to help the
@@ -145,6 +149,18 @@ class Node(AbstractNode):
             db_engine = create_engine("sqlite://", echo=False)
             Base.metadata.create_all(db_engine)  # type: ignore
 
+        # FIXME: Modify to use environment variable
+        nosql_db_engine = MongoClient(  # nosec
+            host="mongo",
+            port=27017,
+            username="root",
+            password="example",
+            uuidRepresentation="standard",
+        )
+        db_name = "app"
+        if document_store:
+            configure(ShylockPymongoBackend.create(nosql_db_engine, db_name))
+
         # cache these variables on self
         self.TableBase = TableBase
         self.db_engine = db_engine
@@ -163,7 +179,7 @@ class Node(AbstractNode):
         # self.store is the elastic memory.
 
         self.store = store_type(db=self.db_engine, settings=settings)
-        self.setup = SetupManager(database=self.db_engine)
+        self.setup = NoSQLSetupManager(nosql_db_engine, db_name)
 
         # We need to register all the services once a node is created
         # On the off chance someone forgot to do this (super unlikely)

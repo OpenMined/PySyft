@@ -132,6 +132,7 @@ class Domain(Node):
             db_engine=db_engine,
             store_type=store_type,
             settings=settings,
+            document_store=document_store,
         )
 
         # share settings with the FastAPI application level
