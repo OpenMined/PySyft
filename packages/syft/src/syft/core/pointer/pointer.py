@@ -576,4 +576,5 @@ class Pointer(AbstractPointer):
 
         if self.gc_enabled:
             # this is not being used in the node currenetly
-            self.client.gc.apply(self)
+            # self.client.gc.apply(self)
+            pass

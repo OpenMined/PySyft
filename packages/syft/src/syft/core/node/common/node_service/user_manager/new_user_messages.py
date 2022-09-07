@@ -90,19 +90,20 @@ class CreateUserMessage(SyftMessage, DomainMessageRegistry):
             # If email not registered, a new user can be created.
             pass
 
-        app_id = node.users.create_user_application(
-            name=self.payload.name,
-            email=self.payload.email,
-            password=self.payload.password,
-            daa_pdf=self.payload.daa_pdf,
-            institution=self.payload.institution,
-            website=self.payload.website,
-            budget=self.payload.budget,
-        )
+        # FIXME: Re-enable when we have integration UserApplication Document in the codebase.
+        # app_id = node.users.create_user_application(
+        #     name=self.payload.name,
+        #     email=self.payload.email,
+        #     password=self.payload.password,
+        #     daa_pdf=self.payload.daa_pdf,
+        #     institution=self.payload.institution,
+        #     website=self.payload.website,
+        #     budget=self.payload.budget,
+        # )
 
-        node.users.process_user_application(
-            candidate_id=app_id, status="accepted", verify_key=verify_key
-        )
+        # node.users.process_user_application(
+        #     candidate_id=app_id, status="accepted", verify_key=verify_key
+        # )
 
         return CreateUserMessage.Reply()
 
@@ -148,7 +149,7 @@ class GetUserMessage(SyftMessage, DomainMessageRegistry):
             ReplyPayload: Details of the user.
         """
         # Retrieve User Model
-        user = node.users.first(id=self.payload.user_id)  # type: ignore
+        user = node.users.first(id_int=self.payload.user_id)  # type: ignore
 
         # Build Reply
         reply = GetUserMessage.Reply(**model_to_json(user))
@@ -201,7 +202,7 @@ class GetUsersMessage(SyftMessage, DomainMessageRegistry):
             user_model = GetUserMessage.Reply(**model_to_json(user))
 
             # Use role name instead of role ID.
-            user_model.role = node.roles.first(id=user_model.role).name
+            user_model.role = user.role["name"]
 
             # Remaining Budget
             # TODO:
@@ -307,15 +308,12 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
             or self.payload.website
         )
 
-        # Change own information
-        _valid_user = node.users.contain(id=self.payload.user_id)
-
         if not _valid_parameters:
             raise MissingRequestKeyError(
                 "Missing json fields ( email,password,role,groups, name )"
             )
 
-        if not _valid_user:
+        if not node.users.contain(id_int=self.payload.user_id):
             raise UserNotFoundError
 
         payload_dict = self.payload.dict(exclude_unset=True)
@@ -325,11 +323,12 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
         # has proper permissions.
         # TODO: This can also be simplified further.
         if self.payload.role:  # type: ignore
-            target_user = node.users.first(id=user_id)
+            target_user = node.users.first(id_int=user_id)
             _allowed = (
-                self.payload.role != node.roles.owner_role.name  # Target Role != Owner
-                and target_user.role
-                != node.roles.owner_role.id  # Target User Role != Owner
+                self.payload.role
+                != node.roles.owner_role["name"]  # Target Role != Owner
+                and target_user.role["name"]
+                != node.roles.owner_role["name"]  # Target User Role != Owner
                 and node.users.can_create_users(
                     verify_key=verify_key
                 )  # Key Permissions
@@ -338,9 +337,11 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
             # If all premises were respected
             if _allowed:
                 role = payload_dict.pop("role")
-                new_role_id = node.roles.first(name=role).id
-                node.users.set(user_id=user_id, role=new_role_id)  # type: ignore
-            elif target_user.role == node.roles.owner_role.id:
+                for k, v in node.roles.role_dict:
+                    if v["name"] == role:
+                        break
+                node.users.set(user_id=user_id, role=v)  # type: ignore
+            elif target_user.role["name"] == node.roles.owner_role["name"]:
                 raise AuthorizationError(
                     "You're not allowed to change Owner user roles!"
                 )
