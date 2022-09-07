@@ -15,6 +15,7 @@ on:
       - main
       - "0.6.0"
       - "0.7.0"
+      - "0.8"
 defaults:
   run:
     working-directory: ./packages/syft
@@ -75,8 +76,7 @@ jobs:
         run: |
           pip install packaging wheel --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
-          python -c "import platform; import os; os.system('pip install jaxlib===0.3.7 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
-          pip install pycapnp
+          python -c "import platform; import os; os.system('pip install jaxlib==0.3.7 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
           pip install -e .[dev] -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: Scan for security issues python 3.8+
@@ -95,4 +95,4 @@ jobs:
       - name: Run normal tests
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pytest -s -m 'fast or slow' --cov syft --cov-fail-under 67 -n auto --durations=50
+          pytest -s -m 'fast or slow' --cov syft --cov-fail-under 65 -n auto --durations=50

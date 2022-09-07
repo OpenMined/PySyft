@@ -10,9 +10,14 @@ do
     sleep 1
 done
 
-pip install --user -e /app/syft[dev]
-
-python /app/grid/backend_prestart.py
+PRE_START_PATH=${PRE_START_PATH:-/app/prestart.sh}
+echo "Checking for script in $PRE_START_PATH"
+if [ -f $PRE_START_PATH ] ; then
+    echo "Running script $PRE_START_PATH"
+    . "$PRE_START_PATH"
+else
+    echo "There is no script $PRE_START_PATH"
+fi
 
 celery -A grid.worker beat -l info --detach
 watchmedo auto-restart --directory=/app --pattern=*.py --recursive -- celery -A grid.worker worker -l info -Q main-queue --pool=gevent -c 500

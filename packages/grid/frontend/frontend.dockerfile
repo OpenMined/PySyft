@@ -6,7 +6,10 @@ ENV NEXT_TELEMETRY_DISABLED 1
 
 WORKDIR /app
 COPY package.json yarn.lock /app/
-RUN --mount=type=cache,target=/root/.yarn YARN_CACHE_FOLDER=/root/.yarn yarn install --frozen-lockfile
+# cant use the cache for multi architecture builds in CI because it fails
+# https://github.com/docker/buildx/issues/549
+# RUN --mount=type=cache,target=/root/.yarn YARN_CACHE_FOLDER=/root/.yarn yarn install --frozen-lockfile
+RUN yarn install --frozen-lockfile
 COPY . .
 CMD ["sh", "/app/scripts/run.sh"]
 

@@ -237,7 +237,7 @@ class Domain(Node):
     def loud_print(self) -> None:
         try:
             install_path = os.path.abspath(
-                os.path.join(os.path.realpath(__file__), "../../../../img/")
+                os.path.join(os.path.realpath(__file__), "../../../img/")
             )
             ascii_magic.to_terminal(
                 ascii_magic.from_image_file(

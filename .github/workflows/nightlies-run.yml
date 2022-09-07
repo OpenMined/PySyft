@@ -109,7 +109,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.3.4
+          DOCKER_COMPOSE_VERSION=v2.7.0
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 
@@ -123,6 +123,5 @@ jobs:
 
       - name: Run integration tests
         timeout-minutes: 600
-        continue-on-error: true
         run: |
           EMULATION="true" HAGRID_FLAGS="--tag=local --test --platform linux/arm64" tox -e stack.test.integration

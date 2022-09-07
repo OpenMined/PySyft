@@ -1,0 +1,33 @@
+manifestVersion: 0.1
+hagrid_version: 0.2.92
+syft_version: 0.7.0-beta.42
+dockerTag: 0.7.0-beta.42
+baseUrl: https://raw.githubusercontent.com/OpenMined/PySyft/
+hash: c4810275e8bda725cf78e74aed3f8fd65fdf5edd
+target_dir: ~/.hagrid/PySyft/
+files:
+  grid:
+    path: packages/grid/
+    common:
+    - rabbitmq/rabbitmq.conf
+    - redis/redis.conf
+    - seaweedfs/filer.toml
+    - seaweedfs/s3config.json
+    - vpn/config.yaml
+    docker:
+    - .env
+    - docker-compose.build.yml
+    - docker-compose.dev.yml
+    - docker-compose.test.yml
+    - docker-compose.tls.yml
+    - docker-compose.yml
+    - traefik/docker/dynamic-tls.yml
+    - traefik/docker/dynamic.yml
+    - traefik/docker/traefik-tls.template.yml
+    - traefik/docker/traefik.yml
+    - vpn/headscale.dockerfile
+    - vpn/tailscale.dockerfile
+    k8s:
+    - devspace.yaml
+    - traefik/k8s/dynamic.yml
+    - traefik/k8s/traefik.yml

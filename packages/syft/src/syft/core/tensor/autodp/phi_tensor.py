@@ -13,15 +13,16 @@ from typing import Union
 
 # third party
 import numpy as np
+from numpy.typing import NDArray
+from scipy.ndimage.interpolation import rotate
 
 # relative
 from .... import lib
 from ....ast.klass import pointerize_args_and_kwargs
-from ....core.adp.data_subject import DataSubject
 from ....core.adp.data_subject_ledger import DataSubjectLedger
-from ....core.adp.data_subject_list import DataSubjectList
-from ....core.adp.data_subject_list import liststrtonumpyutf8
-from ....core.adp.data_subject_list import numpyutf8tolist
+from ....core.adp.data_subject_list import DataSubjectArray
+from ....core.adp.data_subject_list import dslarraytonumpyutf8
+from ....core.adp.data_subject_list import numpyutf8todslarray
 from ....core.node.common.action.get_or_set_property_action import (
     GetOrSetPropertyAction,
 )
@@ -82,13 +83,14 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
     __serde_overrides__ = {
         "client": [lambda x: x.address, lambda y: y],
         "public_shape": [lambda x: x, lambda y: upcast(y)],
+        "data_subjects": [dslarraytonumpyutf8, numpyutf8todslarray],
     }
     _exhausted = False
     is_enum = False
 
     def __init__(
         self,
-        data_subjects: DataSubjectList,
+        data_subjects: np.ndarray,
         min_vals: np.typing.ArrayLike,
         max_vals: np.typing.ArrayLike,
         client: Any,
@@ -269,7 +271,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             Tuple[MPCTensor,Union[MPCTensor,int,float,np.ndarray]] : Result of the operation
         """
         if isinstance(other, TensorWrappedPhiTensorPointer):
-            if self.data_subjects != other.data_subjects:
+            if (self.data_subjects != other.data_subjects).all():  # type: ignore
                 return getattr(self.gamma, op_str)(other.gamma)
         elif isinstance(other, TensorWrappedGammaTensorPointer):
             return getattr(self.gamma, op_str)(other)
@@ -518,24 +520,29 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         Returns:
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.sum"
-        result: Union[TensorWrappedGammaTensorPointer, TensorWrappedPhiTensorPointer]
-        min_vals = self.min_vals.sum(*args, **kwargs)
-        max_vals = self.max_vals.sum(*args, **kwargs)
-        if len(self.data_subjects.one_hot_lookup) == 1:
-            result = TensorWrappedPhiTensorPointer(
-                data_subjects=self.data_subjects,
-                min_vals=min_vals,
-                max_vals=max_vals,
-                client=self.client,
-            )
-        else:
-            result = TensorWrappedGammaTensorPointer(
-                data_subjects=self.data_subjects,
-                min_vals=min_vals,
-                max_vals=max_vals,
-                client=self.client,
-            )
+        return self.gamma.sum(*args, **kwargs)
+
+    def __getitem__(
+        self, key: Union[int, bool, slice]
+    ) -> TensorWrappedPhiTensorPointer:
+        """Apply the slice  operation on "self"
+        Args:
+            y (Union[int,bool,slice]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.__getitem__"
+        result: TensorWrappedPhiTensorPointer
+        min_vals = self.min_vals.__getitem__(key)
+        max_vals = self.max_vals.__getitem__(key)
+
+        result = TensorWrappedPhiTensorPointer(
+            data_subjects=self.data_subjects,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            client=self.client,
+        )
 
         # QUESTION can the id_at_location be None?
         result_id_at_location = getattr(result, "id_at_location", None)
@@ -545,7 +552,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             (
                 downcast_args,
                 downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+            ) = lib.python.util.downcast_args_and_kwargs(args=[key], kwargs={})
 
             # then we convert anything which isnt a pointer into a pointer
             pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
@@ -569,10 +576,10 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             attr_path_and_name=attr_path_and_name,
             result=result,
             self_obj=self,
-            args=[],
+            args=[key],
             kwargs={},
         )
-        dummy_res = np.empty(self.public_shape).sum(*args, **kwargs)
+        dummy_res = np.empty(self.public_shape).__getitem__(key)
         result.public_shape = dummy_res.shape
         result.public_dtype = self.public_dtype
 
@@ -980,7 +987,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         public_dtype = getattr(self, "public_dtype", None)
         return Tensor(
             child=PhiTensor(
-                child=FixedPrecisionTensor(value=None),
+                child=FixedPrecisionTensor(value=np.empty(self.data_subjects.shape)),
                 data_subjects=self.data_subjects,
                 min_vals=self.min_vals,  # type: ignore
                 max_vals=self.max_vals,  # type: ignore
@@ -1012,12 +1019,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def __init__(
         self,
-        child: Sequence,
-        data_subjects: Union[List[DataSubject], DataSubjectList],
-        min_vals: np.ndarray,
-        max_vals: np.ndarray,
+        child: Union[Sequence, NDArray],
+        data_subjects: Union[DataSubjectArray, NDArray],
+        min_vals: Union[np.ndarray, lazyrepeatarray],
+        max_vals: Union[np.ndarray, lazyrepeatarray],
     ) -> None:
-
+        # self.data_subjects: Union[DataSubjectList, np.ndarray]
         # child = the actual private data
         super().__init__(child)
 
@@ -1029,10 +1036,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         self.min_vals = min_vals
         self.max_vals = max_vals
 
-        if not isinstance(data_subjects, DataSubjectList):
-            data_subjects = DataSubjectList.from_objs(data_subjects)
-
-        self.data_subjects = data_subjects
+        numpy_data_subjects: np.ndarray = DataSubjectArray.from_objs(data_subjects)
+        self.data_subjects = numpy_data_subjects
+        if numpy_data_subjects.shape != self.shape:
+            raise ValueError(
+                f"DataSubjects shape: {numpy_data_subjects.shape} should match data shape: {self.shape}"
+            )
 
     @property
     def proxy_public_kwargs(self) -> Dict[str, Any]:
@@ -1075,7 +1084,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=self.child.copy(order=order),
             min_vals=self.min_vals.copy(order=order),
             max_vals=self.max_vals.copy(order=order),
-            data_subjects=self.data_subjects.copy(order=order),
+            data_subjects=self.data_subjects.copy(),
         )
 
     def all(self) -> bool:
@@ -1091,31 +1100,309 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def __getitem__(self, item: Union[str, int, slice, PassthroughTensor]) -> PhiTensor:
         if isinstance(item, PassthroughTensor):
+            data = self.child[item.child]
             return PhiTensor(
-                child=self.child.getitem(item.child),
-                min_vals=self.min_vals,
-                max_vals=self.max_vals,
-                data_subjects=self.data_subjects,
+                child=data,
+                min_vals=lazyrepeatarray(data=data, shape=data.shape),
+                max_vals=lazyrepeatarray(data=data, shape=data.shape),
+                data_subjects=self.data_subjects[item.child],
             )
         else:
+            data = self.child[item]
             return PhiTensor(
-                child=self.child.getitem(item),
+                child=data,
+                min_vals=lazyrepeatarray(data=data, shape=data.shape),
+                max_vals=lazyrepeatarray(data=data, shape=data.shape),
+                data_subjects=self.data_subjects[item],
+            )
+
+    def zeros_like(
+        self,
+        *args: Tuple[Any, ...],
+        **kwargs: Any,
+    ) -> Union[PhiTensor, GammaTensor]:
+        # TODO: Add support for axes arguments later
+        min_vals = self.min_vals.zeros_like(*args, **kwargs)
+        max_vals = self.max_vals.zeros_like(*args, **kwargs)
+
+        child = (
+            np.zeros_like(self.child, *args, **kwargs)
+            if isinstance(self.child, np.ndarray)
+            else self.child.ones_like(*args, **kwargs)
+        )
+
+        return PhiTensor(
+            child=child,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            data_subjects=self.data_subjects,
+        )
+
+    def __setitem__(
+        self,
+        key: Union[int, slice, NDArray],
+        value: Union[PhiTensor, GammaTensor, np.ndarray],
+    ) -> Union[PhiTensor, GammaTensor]:
+        if isinstance(value, PhiTensor):
+            self.child[key] = value.child
+            minv = value.child.min()
+            maxv = value.child.max()
+
+            if minv < self.min_vals.data.min():
+                self.min_vals.data = minv
+
+            if maxv > self.max_vals.data.max():
+                self.max_vals.data = maxv
+
+            gamma_output = self.gamma
+            gamma_output[key] = value.gamma
+            # print("It's on the right track")
+            return gamma_output
+
+        elif isinstance(value, GammaTensor):
+            gamma = self.gamma
+            gamma[key] = value
+            return gamma
+        elif isinstance(value, np.ndarray):
+            self.child[key] = value
+            minv = value.min()
+            maxv = value.max()
+
+            if minv < self.min_vals.data.min():
+                self.min_vals.data = minv
+
+            if maxv > self.max_vals.data.max():
+                self.max_vals.data = maxv
+
+            return PhiTensor(
+                child=self.child,
+                data_subjects=self.data_subjects,
                 min_vals=self.min_vals,
                 max_vals=self.max_vals,
-                data_subjects=self.data_subjects,
             )
+        else:
+            raise NotImplementedError
+
+    def abs(self) -> PhiTensor:
+        data = self.child
+        output = np.abs(data)
+
+        return PhiTensor(
+            child=output,
+            data_subjects=self.data_subjects,
+            min_vals=np.abs(self.min_vals.data),
+            max_vals=np.abs(self.min_vals.data),
+        )
+
+    def reshape(self, *shape: Tuple[int, ...]) -> PhiTensor:
+
+        data = self.child
+        output_data = np.reshape(data, *shape)
+
+        return PhiTensor(
+            child=output_data,
+            data_subjects=np.reshape(self.data_subjects, *shape),
+            min_vals=output_data.min(),
+            max_vals=output_data.max(),
+        )
+
+    def pad(self, width: int, padding_mode: str = "reflect") -> PhiTensor:
+        data = self.child
+
+        if padding_mode == "reflect":
+            pad_left = pad_right = pad_top = pad_bottom = width
+            # RGB image
+            if len(data.shape) == 3:
+                output_data = np.pad(
+                    data,
+                    ((pad_top, pad_bottom), (pad_left, pad_right), (0, 0)),
+                    padding_mode,
+                )
+                output_data_subjects = np.pad(
+                    self.data_subjects,
+                    ((pad_top, pad_bottom), (pad_left, pad_right), (0, 0)),
+                    padding_mode,
+                )
+            # Grayscale image
+            elif len(data.shape) == 2:
+                output_data = np.pad(
+                    data, ((pad_top, pad_bottom), (pad_left, pad_right)), padding_mode
+                )
+                output_data_subjects = np.pad(
+                    self.data_subjects,
+                    ((pad_top, pad_bottom), (pad_left, pad_right)),
+                    padding_mode,
+                )
+            else:
+                output_data = np.pad(data, width, padding_mode)
+                output_data_subjects = np.pad(self.data_subjects, width, padding_mode)
+        else:
+            raise NotImplementedError
+
+        output_min_val, output_max_val = output_data.min(), output_data.max()
+        return PhiTensor(
+            child=output_data,
+            data_subjects=output_data_subjects,
+            min_vals=output_min_val,
+            max_vals=output_max_val,
+        )
+
+    def ravel(self) -> PhiTensor:
+        data = self.child
+        output_data = data.ravel()
+
+        output_data_subjects = self.data_subjects.ravel()
+
+        min_vals = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape)
+        max_vals = lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape)
+
+        return PhiTensor(
+            child=output_data,
+            data_subjects=output_data_subjects,
+            min_vals=min_vals,
+            max_vals=max_vals,
+        )
+
+    def random_horizontal_flip(self, p: float = 0.5) -> PhiTensor:
+        """Could make more efficient by not encoding/decoding FPT"""
+        if np.random.random() <= p:
+            return PhiTensor(
+                child=np.fliplr(self.child),
+                data_subjects=self.data_subjects,
+                min_vals=self.min_vals.horizontal_flip(),
+                max_vals=self.max_vals.horizontal_flip(),
+            )
+        else:
+            return self
+
+    def random_vertical_flip(self, p: float = 0.5) -> PhiTensor:
+        """Could make more efficient by not encoding/decoding FPT"""
+        if np.random.random() <= p:
+            return PhiTensor(
+                child=np.flipud(self.child),
+                data_subjects=self.data_subjects,
+                min_vals=self.min_vals.vertical_flip(),
+                max_vals=self.max_vals.vertical_flip(),
+            )
+        else:
+            return self
+
+    def random_rotation(self, degrees: Union[int, Tuple]) -> PhiTensor:
+        if isinstance(degrees, int):
+            angle = np.random.randint(low=-degrees, high=degrees)
+        elif isinstance(degrees, tuple):
+            angle = np.random.randint(low=degrees[0], high=degrees[1])
+
+        rotated_data_value = rotate(self.child, angle)
+
+        return PhiTensor(
+            child=rotated_data_value,
+            data_subjects=self.data_subjects,
+            min_vals=rotated_data_value.min(),
+            max_vals=rotated_data_value.max(),
+        )
+
+    def max(self, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> PhiTensor:
+        indices = self.child.argmax(axis)
+        result = self.child.max(axis)
+        return PhiTensor(
+            child=result,
+            data_subjects=self.data_subjects[indices],
+            min_vals=lazyrepeatarray(data=result.min(), shape=result.shape),
+            max_vals=lazyrepeatarray(data=result.max(), shape=result.shape),
+        )
+
+    def _argmax(self, axis: Optional[int]) -> PhiTensor:
+        return self.child.argmax(axis)
+
+    def unravel_argmax(
+        self, axis: Optional[int] = None
+    ) -> Tuple[np.ndarray]:  # possible privacy violation?
+        arg_result = self._argmax(axis=axis)
+        shape = self.shape
+        return np.unravel_index(arg_result, shape)
+
+    def mean(
+        self,
+        axis: Optional[Union[int, Tuple[int, ...]]] = None,
+        **kwargs: Any,
+    ) -> PhiTensor:
+        result = self.child.mean(axis, **kwargs)
+
+        return PhiTensor(
+            child=result,
+            data_subjects=self.data_subjects.mean(axis, **kwargs),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
+        )
+
+    def std(
+        self,
+        axis: Optional[Union[int, Tuple[int, ...]]] = None,
+        **kwargs: Any,
+    ) -> PhiTensor:
+        result = self.child.std(axis, **kwargs)
+        return PhiTensor(
+            child=result,
+            data_subjects=self.data_subjects.std(axis, **kwargs),
+            min_vals=lazyrepeatarray(data=0, shape=result.shape),
+            max_vals=lazyrepeatarray(
+                data=0.25
+                * (self.max_vals.data - self.min_vals.data)
+                ** 2,  # rough approximation, could be off
+                shape=result.shape,
+            ),
+        )
+
+    def sqrt(self) -> PhiTensor:
+        result = np.sqrt(self.child)
+        return PhiTensor(
+            child=result,
+            data_subjects=np.sqrt(self.data_subjects),
+            min_vals=lazyrepeatarray(
+                data=np.sqrt(self.min_vals.data), shape=result.shape
+            ),
+            max_vals=lazyrepeatarray(
+                data=np.sqrt(self.max_vals.data), shape=result.shape
+            ),
+        )
+
+    def normalize(
+        self, mean: Union[float, Sequence[float]], std: Union[float, Sequence[float]]
+    ) -> PhiTensor:
+        # TODO: Double check if normalization bounds are correct; they might be data dependent
+        if isinstance(mean, float) and isinstance(std, float):
+            return PhiTensor(
+                child=(self.child - mean) / std,
+                data_subjects=self.data_subjects,
+                min_vals=(self.min_vals - mean) * (1 / std),
+                max_vals=(self.max_vals - mean) * (1 / std),
+            )
+        else:
+            # This is easily doable in the future
+            raise NotImplementedError
 
     def create_gamma(self) -> GammaTensor:
         """Return a new Gamma tensor based on this phi tensor"""
-
         gamma_tensor = GammaTensor(
             child=self.child,
             data_subjects=self.data_subjects,
-            min_val=self.min_vals,
-            max_val=self.max_vals,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
         )
 
         return gamma_tensor
+
+    def view(self, *args: List[Any]) -> PhiTensor:
+        # TODO: Figure out how to fix lazyrepeatarray reshape
+
+        data = self.child.reshape(*args)
+        return PhiTensor(
+            child=data,
+            data_subjects=self.data_subjects,
+            min_vals=lazyrepeatarray(data=self.min_vals.data.min(), shape=data.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data.max(), shape=data.shape),
+        )
 
     def publish(
         self,
@@ -1157,7 +1444,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     @property
     def shape(self) -> Tuple[Any, ...]:
-        return self.child.shape
+        if self.child is None:
+            return ()
+        else:
+            return self.child.shape
 
     def __repr__(self) -> str:
         """Pretty print some information, optimized for Jupyter notebook viewing."""
@@ -1193,25 +1483,26 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         # if the tensor being added is also private
         if isinstance(other, PhiTensor):
-            if self.data_subjects != other.data_subjects:
-                return self.gamma + other.gamma
+            return self.gamma + other.gamma
+            # if self.data_subjects != other.data_subjects:
+            #     return self.gamma + other.gamma
 
-            return PhiTensor(
-                child=self.child + other.child,
-                min_vals=self.min_vals + other.min_vals,
-                max_vals=self.max_vals + other.max_vals,
-                data_subjects=self.data_subjects,
-                # scalar_manager=self.scalar_manager,
-            )
+            # return PhiTensor(
+            #     child=self.child + other.child,
+            #     min_vals=self.min_vals + other.min_vals,
+            #     max_vals=self.max_vals + other.max_vals,
+            #     data_subjects=self.data_subjects,
+            #     # scalar_manager=self.scalar_manager,
+            # )
 
         # if the tensor being added is a public tensor / int / float / etc.
         elif is_acceptable_simple_type(other):
+
             return PhiTensor(
                 child=self.child + other,
                 min_vals=self.min_vals + other,
                 max_vals=self.max_vals + other,
                 data_subjects=self.data_subjects,
-                # scalar_manager=self.scalar_manager,
             )
 
         elif isinstance(other, GammaTensor):
@@ -1223,24 +1514,32 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def __sub__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         if isinstance(other, PhiTensor):
-            if self.data_subjects != other.data_subjects:
-                # return self.gamma - other.gamma
-                raise NotImplementedError
+            return self.gamma - other.gamma
+            # diff_data_subjects = (
+            #     self.data_subjects.one_hot_lookup != other.data_subjects.one_hot_lookup
+            # )
+            # diff_data_subjects = (
+            #     diff_data_subjects
+            #     if isinstance(diff_data_subjects, bool)
+            #     else diff_data_subjects.any()
+            # )
+            # if diff_data_subjects:
+            #     return self.gamma - other.gamma
+            #     # raise NotImplementedError
 
-            data = self.child - other.child
+            # data = self.child - other.child
+            # min_min = self.min_vals.data - other.min_vals.data
+            # min_max = self.min_vals.data - other.max_vals.data
+            # max_min = self.max_vals.data - other.min_vals.data
+            # max_max = self.max_vals.data - other.max_vals.data
+            # _min_vals = np.minimum.reduce([min_min, min_max, max_min, max_max])
+            # _max_vals = np.maximum.reduce([min_min, min_max, max_min, max_max])
+            # min_vals = self.min_vals.copy()
+            # min_vals.data = _min_vals
+            # max_vals = self.max_vals.copy()
+            # max_vals.data = _max_vals
 
-            min_min = self.min_vals.data - other.min_vals.data
-            min_max = self.min_vals.data - other.max_vals.data
-            max_min = self.max_vals.data - other.min_vals.data
-            max_max = self.max_vals.data - other.max_vals.data
-            _min_vals = np.minimum.reduce([min_min, min_max, max_min, max_max])
-            _max_vals = np.maximum.reduce([min_min, min_max, max_min, max_max])
-            min_vals = self.min_vals.copy()
-            min_vals.data = _min_vals
-            max_vals = self.max_vals.copy()
-            max_vals.data = _max_vals
-
-            data_subjects = self.data_subjects
+            # data_subjects = self.data_subjects
 
         elif is_acceptable_simple_type(other):
             if isinstance(other, np.ndarray):
@@ -1267,32 +1566,32 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def __mul__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         if isinstance(other, PhiTensor):
-            if self.data_subjects != other.data_subjects:
-                print("Entities are not the same?!?!?!")
-                return self.gamma * other.gamma
+            return self.gamma + other.gamma
+            # if self.data_subjects != other.data_subjects:
+            #     return self.gamma * other.gamma
 
-            data = self.child * other.child
+            # data = self.child * other.child
 
-            min_min = self.min_vals.data * other.min_vals.data
-            min_max = self.min_vals.data * other.max_vals.data
-            max_min = self.max_vals.data * other.min_vals.data
-            max_max = self.max_vals.data * other.max_vals.data
+            # min_min = self.min_vals.data * other.min_vals.data
+            # min_max = self.min_vals.data * other.max_vals.data
+            # max_min = self.max_vals.data * other.min_vals.data
+            # max_max = self.max_vals.data * other.max_vals.data
 
-            _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            min_vals = self.min_vals.copy()
-            min_vals.data = _min_vals
-            max_vals = self.max_vals.copy()
-            max_vals.data = _max_vals
+            # _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            # _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            # min_vals = self.min_vals.copy()
+            # min_vals.data = _min_vals
+            # max_vals = self.max_vals.copy()
+            # max_vals.data = _max_vals
 
-            data_subjects = self.data_subjects
+            # data_subjects = self.data_subjects
 
-            return PhiTensor(
-                child=data,
-                data_subjects=data_subjects,
-                min_vals=min_vals,
-                max_vals=max_vals,
-            )
+            # return PhiTensor(
+            #     child=data,
+            #     data_subjects=data_subjects,
+            #     min_vals=min_vals,
+            #     max_vals=max_vals,
+            # )
         elif is_acceptable_simple_type(other):
 
             data = self.child * other
@@ -1323,6 +1622,23 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
 
+    def __rtruediv__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
+
+        if is_acceptable_simple_type(other):
+            return PhiTensor(
+                child=(1 / self.child) * other,
+                min_vals=(1 / self.min_vals) * other,
+                max_vals=(1 / self.max_vals) * other,
+                data_subjects=self.data_subjects,
+                # scalar_manager=self.scalar_manager,
+            )
+
+        elif isinstance(other, GammaTensor):
+            return (1 / self.gamma) * other
+        else:
+            print("Type is unsupported:" + str(type(other)))
+            raise NotImplementedError
+
     def __matmul__(
         self, other: Union[np.ndarray, PhiTensor]
     ) -> Union[PhiTensor, GammaTensor]:
@@ -1341,24 +1657,26 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     data = self.child.__matmul__(other)
                     min_vals = self.min_vals.__matmul__(other)
                     max_vals = self.max_vals.__matmul__(other)
+                    output_ds = self.data_subjects @ other
                 elif isinstance(other, PhiTensor):
-                    if self.data_subjects != other.data_subjects:
-                        # return convert_to_gamma_tensor(self).__matmul__(convert_to_gamma_tensor(other))
-                        raise NotImplementedError
-                    else:
-                        data = self.child.__matmul__(other.child)
-                        # _min_vals = np.array(
-                        #     [self.min_vals.data.__matmul__(other.min_vals.data)]
-                        # )
-                        # _max_vals = np.array(
-                        #     [self.max_vals.data.__matmul__(other.max_vals.data)]
-                        # )
-                        # min_vals = self.min_vals.copy()
-                        # min_vals.data = _min_vals
-                        # max_vals = self.max_vals.copy()
-                        # max_vals.data = _max_vals
-                        min_vals = self.min_vals.__matmul__(other.min_vals)
-                        max_vals = self.max_vals.__matmul__(other.max_vals)
+                    return self.gamma @ other.gamma
+                    # if self.data_subjects != other.data_subjects:
+                    #     return self.gamma @ other.gamma
+                    # else:
+                    #     data = self.child.__matmul__(other.child)
+                    #     min_vals = self.min_vals.__matmul__(other.min_vals)
+                    #     max_vals = self.max_vals.__matmul__(other.max_vals)
+                    #     output_ds = DataSubjectList(
+                    #         one_hot_lookup=np.concatenate(
+                    #             (
+                    #                 self.data_subjects.one_hot_lookup,
+                    #                 other.data_subjects.one_hot_lookup,
+                    #             )
+                    #         ),
+                    #         data_subjects_indexed=np.concatenate(
+                    #             (np.zeros_like(data), np.ones_like(data))
+                    #         ),  # replace with (1, *data.shape) if inc shape
+                    #     )
 
                 elif isinstance(other, GammaTensor):
                     return self.gamma @ other
@@ -1370,7 +1688,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     child=data,
                     max_vals=max_vals,
                     min_vals=min_vals,
-                    data_subjects=self.data_subjects,
+                    data_subjects=output_ds,
                 )
 
     def __rmatmul__(
@@ -1391,24 +1709,26 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     data = self.child.__rmatmul__(other)
                     min_vals = self.min_vals.__rmatmul__(other)
                     max_vals = self.max_vals.__rmatmul__(other)
+                    output_ds = self.data_subjects.__rmatmul__(other)
                 elif isinstance(other, PhiTensor):
-                    if self.data_subjects != other.data_subjects:
-                        # return convert_to_gamma_tensor(self).__matmul__(convert_to_gamma_tensor(other))
-                        raise NotImplementedError
-                    else:
-                        data = self.child.__rmatmul__(other.child)
-                        # _min_vals = np.array(
-                        #     [self.min_vals.data.__matmul__(other.min_vals.data)]
-                        # )
-                        # _max_vals = np.array(
-                        #     [self.max_vals.data.__matmul__(other.max_vals.data)]
-                        # )
-                        # min_vals = self.min_vals.copy()
-                        # min_vals.data = _min_vals
-                        # max_vals = self.max_vals.copy()
-                        # max_vals.data = _max_vals
-                        min_vals = self.min_vals.__rmatmul__(other.min_vals)
-                        max_vals = self.max_vals.__rmatmul__(other.max_vals)
+                    return self.gamma.__rmatmul__(other.gamma)
+                    # if self.data_subjects != other.data_subjects:
+                    #     # return convert_to_gamma_tensor(self).__matmul__(convert_to_gamma_tensor(other))
+                    #     raise NotImplementedError
+                    # else:
+                    #     data = self.child.__rmatmul__(other.child)
+                    #     # _min_vals = np.array(
+                    #     #     [self.min_vals.data.__matmul__(other.min_vals.data)]
+                    #     # )
+                    #     # _max_vals = np.array(
+                    #     #     [self.max_vals.data.__matmul__(other.max_vals.data)]
+                    #     # )
+                    #     # min_vals = self.min_vals.copy()
+                    #     # min_vals.data = _min_vals
+                    #     # max_vals = self.max_vals.copy()
+                    #     # max_vals.data = _max_vals
+                    #     min_vals = self.min_vals.__rmatmul__(other.min_vals)
+                    #     max_vals = self.max_vals.__rmatmul__(other.max_vals)
 
                 else:
                     print("Type is unsupported:" + str(type(other)))
@@ -1418,12 +1738,28 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     child=data,
                     max_vals=max_vals,
                     min_vals=min_vals,
-                    data_subjects=self.data_subjects,
+                    data_subjects=output_ds,
                 )
+
+    def clip(self, a_min: float, a_max: float) -> PhiTensor:
+        output_data = np.clip(self.child, a_min, a_max)
+
+        min_v = np.clip(self.min_vals.data, a_min, a_max)
+        max_v = np.clip(self.max_vals.data, a_min, a_max)
+
+        min_vals = lazyrepeatarray(data=min_v, shape=output_data.shape)
+        max_vals = lazyrepeatarray(data=max_v, shape=output_data.shape)
+
+        return PhiTensor(
+            child=output_data,
+            data_subjects=self.data_subjects,
+            min_vals=min_vals,
+            max_vals=max_vals,
+        )
 
     def transpose(self, *args: Any, **kwargs: Any) -> PhiTensor:
         """Transposes self.child, min_vals, and max_vals if these can be transposed, otherwise doesn't change them."""
-        data: Sequence
+        data: np.ndarray
         if (
             isinstance(self.child, int)
             or isinstance(self.child, float)
@@ -1437,7 +1773,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         else:
             data = self.child.transpose(*args)
 
-        # TODO: Should we give warnings for min_val and max_val being single floats/integers/booleans too?
+        # TODO: Should we give warnings for min_vals and max_vals being single floats/integers/booleans too?
         if (
             isinstance(self.min_vals, int)
             or isinstance(self.min_vals, float)
@@ -1447,7 +1783,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             min_vals = self.min_vals
             # print(f'Warning: Tensor data was of type {type(data)}, transpose operation had no effect.')
         else:
-            min_vals = self.min_vals.transpose(*args)
+            min_vals = data.min()
 
         if (
             isinstance(self.max_vals, int)
@@ -1458,11 +1794,13 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals = self.max_vals
             # print(f'Warning: Tensor data was of type {type(data)}, transpose operation had no effect.')
         else:
-            max_vals = self.max_vals.transpose(*args)
+            max_vals = data.max()
+
+        output_ds = self.data_subjects.transpose(*args)
 
         return PhiTensor(
             child=data,
-            data_subjects=self.data_subjects,
+            data_subjects=output_ds,
             min_vals=min_vals,
             max_vals=max_vals,
         )
@@ -1496,29 +1834,30 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         # if the tensor being compared is also private
         if isinstance(other, PhiTensor):
+            return self.gamma.__lt__(other.gamma)
 
-            if self.data_subjects != other.data_subjects:
-                # return self.gamma < other.gamma
-                raise NotImplementedError
+            # if self.data_subjects != other.data_subjects:
+            #     # return self.gamma < other.gamma
+            #     raise NotImplementedError
 
-            if len(self.child) != len(other.child):
-                raise Exception(
-                    f"Tensor dims do not match for __lt__: {len(self.child)} != {len(other.child)}"  # type: ignore
-                )
+            # if len(self.child) != len(other.child):
+            #     raise Exception(
+            #         f"Tensor dims do not match for __lt__: {len(self.child)} != {len(other.child)}"  # type: ignore
+            #     )
 
-            data = (
-                self.child < other.child
-            )  # the * 1 just makes sure it returns integers instead of True/False
-            min_vals = self.min_vals * 0
-            max_vals = (self.max_vals * 0) + 1
-            data_subjects = self.data_subjects
+            # data = (
+            #     self.child < other.child
+            # )  # the * 1 just makes sure it returns integers instead of True/False
+            # min_vals = self.min_vals * 0
+            # max_vals = (self.max_vals * 0) + 1
+            # data_subjects = self.data_subjects
 
-            return PhiTensor(
-                child=data,
-                data_subjects=data_subjects,
-                min_vals=min_vals,
-                max_vals=max_vals,
-            )
+            # return PhiTensor(
+            #     child=data,
+            #     data_subjects=data_subjects,
+            #     min_vals=min_vals,
+            #     max_vals=max_vals,
+            # )
 
         # if the tensor being compared is a public tensor / int / float / etc.
         elif is_acceptable_simple_type(other):
@@ -1538,23 +1877,39 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         else:
             return NotImplementedError  # type: ignore
 
-    def __gt__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
+    def __le__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         # if the tensor being compared is also private
         if isinstance(other, PhiTensor):
+            return self.gamma.__le__(other.gamma)
 
-            if self.data_subjects != other.data_subjects:
-                # return self.gamma < other.gamma
-                raise NotImplementedError
+            # if self.data_subjects != other.data_subjects:
+            #     # return self.gamma < other.gamma
+            #     raise NotImplementedError
 
-            if len(self.child) != len(other.child):
-                raise Exception(
-                    f"Tensor dims do not match for __gt__: {len(self.child)} != {len(other.child)}"  # type: ignore
-                )
+            # if len(self.child) != len(other.child):
+            #     raise Exception(
+            #         f"Tensor dims do not match for __le__: {len(self.child)} != {len(other.child)}"  # type: ignore
+            #     )
 
-            data = (
-                self.child > other.child
-            )  # the * 1 just makes sure it returns integers instead of True/False
+            # data = (
+            #     self.child <= other.child
+            # )  # the * 1 just makes sure it returns integers instead of True/False
+            # min_vals = self.min_vals * 0
+            # max_vals = (self.max_vals * 0) + 1
+            # data_subjects = self.data_subjects
+
+            # return PhiTensor(
+            #     child=data,
+            #     data_subjects=data_subjects,
+            #     min_vals=min_vals,
+            #     max_vals=max_vals,
+            # )
+
+        # if the tensor being compared is a public tensor / int / float / etc.
+        elif is_acceptable_simple_type(other):
+
+            data = self.child <= other
             min_vals = self.min_vals * 0
             max_vals = (self.max_vals * 0) + 1
             data_subjects = self.data_subjects
@@ -1565,6 +1920,38 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 min_vals=min_vals,
                 max_vals=max_vals,
             )
+
+        else:
+            return NotImplementedError  # type: ignore
+
+    def __gt__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
+
+        # if the tensor being compared is also private
+        if isinstance(other, PhiTensor):
+            return self.gamma.__gt__(other.gamma)
+
+            # if self.data_subjects != other.data_subjects:
+            #     # return self.gamma < other.gamma
+            #     raise NotImplementedError
+
+            # if len(self.child) != len(other.child):
+            #     raise Exception(
+            #         f"Tensor dims do not match for __gt__: {len(self.child)} != {len(other.child)}"  # type: ignore
+            #     )
+
+            # data = (
+            #     self.child > other.child
+            # )  # the * 1 just makes sure it returns integers instead of True/False
+            # min_vals = self.min_vals * 0
+            # max_vals = (self.max_vals * 0) + 1
+            # data_subjects = self.data_subjects
+
+            # return PhiTensor(
+            #     child=data,
+            #     data_subjects=data_subjects,
+            #     min_vals=min_vals,
+            #     max_vals=max_vals,
+            # )
 
         # if the tensor being compared is a public tensor / int / float / etc.
         elif is_acceptable_simple_type(other):
@@ -1584,61 +1971,70 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             raise NotImplementedError  # type: ignore
 
     # Re enable after testing
-    # def dot(
-    #     self, other: Union[PhiTensor, GammaTensor, np.ndarray]
-    # ) -> Union[PhiTensor, GammaTensor]:
-    #     if isinstance(other, np.ndarray):
-    #         print("We here or what?")
-    #         return PhiTensor(
-    #             child=np.dot(self.child, other),
-    #             min_vals=np.dot(self.min_vals, other),
-    #             max_vals=np.dot(self.max_vals, other),
-    #             data_subjects=self.data_subjects,
-    #         )
-    #     elif isinstance(other, PhiTensor):
-    #         if (
-    #             len(self.data_subjects.one_hot_lookup) > 1
-    #             or len(other.data_subjects.one_hot_lookup) > 1
-    #         ):
-    #             return self.gamma.dot(other.gamma)
-    #         elif (
-    #             len(self.data_subjects.one_hot_lookup) == 1
-    #             and len(other.data_subjects.one_hot_lookup) == 1
-    #             and self.data_subjects.one_hot_lookup != other.data_subjects.one_hot_lookup
-    #         ):
-    #             return self.gamma.dot(other.gamma)
-    #     elif isinstance(other, GammaTensor):
-    #         return self.gamma.dot(other)
-    #     else:
-    #         raise NotImplementedError
+    def dot(
+        self, other: Union[PhiTensor, GammaTensor, np.ndarray]
+    ) -> Union[PhiTensor, GammaTensor]:
+        if isinstance(other, np.ndarray):
+            return PhiTensor(
+                child=np.dot(self.child, other),
+                min_vals=np.dot(self.min_vals, other),
+                max_vals=np.dot(self.max_vals, other),
+                data_subjects=np.dot(self.data_subjects, other),
+            )
+        elif isinstance(other, PhiTensor):
+            return self.gamma.dot(other.gamma)
+            # if self.data_subjects.one_hot_lookup == other.data_subjects.one_hot_lookup:
+            #     return PhiTensor(
+            #         child=np.dot(self.child, other.child),
+            #         min_vals=np.dot(self.min_vals, other.min_vals),
+            #         max_vals=np.dot(self.max_vals, other.max_vals),
+            #         data_subjects=self.data_subjects,
+            #     )
+            # else:
+            #     return self.gamma.dot(other.gamma)
+        elif isinstance(other, GammaTensor):
+            return self.gamma.dot(other)
+        else:
+            raise NotImplementedError
 
     def sum(
         self,
-        *args: Tuple[Any, ...],
+        axis: Optional[Union[int, Tuple[int, ...]]] = None,
         **kwargs: Any,
     ) -> Union[PhiTensor, GammaTensor]:
-        # TODO: Add support for axes arguments later
-        min_val = self.min_vals.sum(*args, **kwargs)
-        max_val = self.max_vals.sum(*args, **kwargs)
-        if len(self.data_subjects.one_hot_lookup) == 1:
-            return PhiTensor(
-                child=self.child.sum(*args, **kwargs),
-                min_vals=min_val,
-                max_vals=max_val,
-                data_subjects=DataSubjectList.from_objs(
-                    self.data_subjects.one_hot_lookup[0]
-                ),  # Need to check this
-            )
+        return self.gamma.sum(axis, **kwargs)
+        # # TODO: Add support for axes arguments later
+        # min_val = self.min_vals.sum(axis=axis)
+        # max_val = self.max_vals.sum(axis=axis)
+        # if len(self.data_subjects.one_hot_lookup) == 1:
+        #     result = self.child.sum(axis=axis)
+        #     return PhiTensor(
+        #         child=result,
+        #         min_vals=min_val,
+        #         max_vals=max_val,
+        #         data_subjects=self.data_subjects.sum(target_shape=result.shape),
+        #     )
+        # result = self.child.sum(axis=axis)
+        # return GammaTensor(
+        #     child=result,
+        #     data_subjects=self.data_subjects.sum(target_shape=result.shape),
+        #     min_vals=min_val,
+        #     max_vals=max_val,
+        # )
 
-        # TODO: Expand this later to include more args/kwargs
-        res = GammaTensor(
-            child=self.child.sum(*args, **kwargs),
-            data_subjects=self.data_subjects.sum(),
-            min_val=min_val,
-            max_val=max_val,
+    def expand_dims(self, axis: int) -> PhiTensor:
+        result = np.expand_dims(self.child, axis=axis)
+        minv = self.min_vals.copy()
+        minv.shape = result.shape
+        maxv = self.max_vals.copy()
+        maxv.shape = result.shape
+
+        return PhiTensor(
+            child=result,
+            min_vals=minv,
+            max_vals=maxv,
+            data_subjects=np.expand_dims(self.data_subjects, axis=axis),
         )
-
-        return res
 
     def ones_like(
         self,
@@ -1789,19 +2185,20 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         # this is how we dispatch correct deserialization of bytes
         pt_msg.magicHeader = serde_magic_header(type(self))
 
-        # We always have FPT as the child of an PT in the tensor chain.
-        chunk_bytes(serialize(self.child, to_bytes=True), "child", pt_msg)  # type: ignore
+        if isinstance(self.child, np.ndarray) or np.isscalar(self.child):
+            chunk_bytes(capnp_serialize(np.array(self.child), to_bytes=True), "child", pt_msg)  # type: ignore
+            pt_msg.isNumpy = True
+        else:
+            chunk_bytes(serialize(self.child, to_bytes=True), "child", pt_msg)  # type: ignore
+            pt_msg.isNumpy = False
 
         pt_msg.minVals = serialize(self.min_vals, to_bytes=True)
         pt_msg.maxVals = serialize(self.max_vals, to_bytes=True)
-        pt_msg.dataSubjectsIndexed = capnp_serialize(
-            self.data_subjects.data_subjects_indexed
+        chunk_bytes(
+            capnp_serialize(dslarraytonumpyutf8(self.data_subjects), to_bytes=True),
+            "dataSubjects",
+            pt_msg,
         )
-
-        pt_msg.oneHotLookup = capnp_serialize(
-            liststrtonumpyutf8(self.data_subjects.one_hot_lookup)
-        )
-
         # to pack or not to pack?
         # to_bytes = pt_msg.to_bytes()
 
@@ -1819,17 +2216,20 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
         )
 
-        child = deserialize(combine_bytes(pt_msg.child), from_bytes=True)
+        if pt_msg.isNumpy:
+            child = capnp_deserialize(combine_bytes(pt_msg.child), from_bytes=True)
+        else:
+            child = deserialize(combine_bytes(pt_msg.child), from_bytes=True)
+
         min_vals = deserialize(pt_msg.minVals, from_bytes=True)
         max_vals = deserialize(pt_msg.maxVals, from_bytes=True)
-        data_subjects_indexed = capnp_deserialize(pt_msg.dataSubjectsIndexed)
-        one_hot_lookup = numpyutf8tolist(capnp_deserialize(pt_msg.oneHotLookup))
-
-        data_subjects_list = DataSubjectList(one_hot_lookup, data_subjects_indexed)
+        data_subjects = numpyutf8todslarray(
+            capnp_deserialize(combine_bytes(pt_msg.dataSubjects), from_bytes=True)
+        )
 
         return PhiTensor(
             child=child,
             min_vals=min_vals,
             max_vals=max_vals,
-            data_subjects=data_subjects_list,
+            data_subjects=data_subjects,
         )

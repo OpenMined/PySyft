@@ -180,7 +180,7 @@ def aggressive_set_attr(obj: object, name: str, attr: object) -> None:
     """
     try:
         setattr(obj, name, attr)
-    except Exception:
+    except Exception:  # nosec
         curse(obj, name, attr)
 
 
@@ -355,6 +355,7 @@ right_name = [
     "chomsky",
     "dean",
     "dolgov",
+    "eckersley",
     "fridman",
     "gardner",
     "goertzel",
@@ -450,9 +451,12 @@ def get_root_data_path() -> Path:
     return data_dir
 
 
-def download_file(url: str, full_path: Union[str, Path]) -> Path:
+def download_file(url: str, full_path: Union[str, Path]) -> Optional[Path]:
     if not os.path.exists(full_path):
         r = requests.get(url, allow_redirects=True, verify=verify_tls())  # nosec
+        if r.status_code < 199 or 299 < r.status_code:
+            print(f"Got {r.status_code} trying to download {url}")
+            return None
         path = os.path.dirname(full_path)
         os.makedirs(path, exist_ok=True)
         with open(full_path, "wb") as f:

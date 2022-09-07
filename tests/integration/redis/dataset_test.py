@@ -1,15 +1,18 @@
 # third party
+import numpy as np
 import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.adp.data_subject_list import DataSubjectList
+from syft.core.adp.data_subject_list import DataSubjectArray
 
 
 def create_test_dataset(client, name: str = "TSTDataset"):
-    data = [1, 2, 3, 4, 5]
+    data = np.array([1, 2, 3, 4, 5])
     data_subject_name = "testing"
-    entities = DataSubjectList.from_objs([data_subject_name] * len(data))
+    entities = np.broadcast_to(
+        np.array(DataSubjectArray([data_subject_name])), data.shape
+    )
 
     train_data = sy.Tensor(data).private(min_val=0, max_val=255, data_subjects=entities)
     test_data = sy.Tensor(data).private(min_val=0, max_val=255, data_subjects=entities)

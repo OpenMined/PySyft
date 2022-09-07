@@ -59,6 +59,8 @@ from .common.util import upload_to_s3_using_presigned
 from .enums import PyGridClientEnums
 from .enums import RequestAPIFields
 
+SAVE_DATASET_TIMEOUT = 300  # seconds
+
 
 class RequestQueueClient(AbstractNodeClient):
     def __init__(self, client: Client) -> None:
@@ -448,6 +450,7 @@ class DomainClient(Client):
                     print(
                         f"Domain version: {self.version}\nNetwork Version: {client.version}"  # type: ignore
                     )
+
             self.join_network(client=client)
 
             timeout = 30
@@ -727,7 +730,10 @@ class DomainClient(Client):
             dataset_bytes = serialize(assets, to_bytes=True)
 
         self.datasets.create_syft(
-            dataset=dataset_bytes, metadata=metadata, platform="syft"
+            dataset=dataset_bytes,
+            metadata=metadata,
+            platform="syft",
+            timeout=SAVE_DATASET_TIMEOUT,
         )
         sys.stdout.write("\rDataset is uploaded successfully !!! 🎉")
 

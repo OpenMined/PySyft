@@ -85,6 +85,8 @@ vars:
     value: traefik-domain.yaml
   - name: NETWORK_CHECK_INTERVAL
     value: "60"
+  - name: DOMAIN_CHECK_INTERVAL
+    value: "60"
   - name: TEST_MODE
     value: "0"
 
@@ -95,7 +97,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.30"
+      - "0.7.0-beta.42"
     createPullSecret: true
     dockerfile: ./backend/backend.dockerfile
     context: ../
@@ -107,7 +109,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.30"
+      - "0.7.0-beta.42"
     createPullSecret: true
     dockerfile: ./frontend/frontend.dockerfile
     context: ./frontend
@@ -126,7 +128,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.30"
+      - "0.7.0-beta.42"
     createPullSecret: true
     dockerfile: ./vpn/headscale.dockerfile
     context: ./vpn
@@ -138,7 +140,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.30"
+      - "0.7.0-beta.42"
     createPullSecret: true
     dockerfile: ./vpn/tailscale.dockerfile
     context: ./vpn
@@ -150,7 +152,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.30"
+      - "0.7.0-beta.42"
     createPullSecret: true
     dockerfile: ./vpn/iptables.dockerfile
     context: ./vpn
@@ -446,15 +448,7 @@ deployments:
         containers:
           - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
             command:
-              - waitforit
-            args:
-              [
-                "-address=http://backend:80/api/v1/syft/metadata",
-                "-status=200",
-                "-timeout=600",
-                "--",
-                "/start.sh",
-              ]
+              - /start.sh
             securityContext:
               capabilities:
                 add: ["NET_ADMIN"]
@@ -544,15 +538,7 @@ deployments:
         containers:
           - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
             command:
-              - waitforit
-            args:
-              [
-                "-address=http://backend:80/api/v1/syft/metadata",
-                "-status=200",
-                "-timeout=600",
-                "--",
-                "/worker-start.sh",
-              ]
+              - /worker-start.sh
             securityContext:
               capabilities:
                 add: ["NET_ADMIN"]
@@ -614,6 +600,8 @@ deployments:
                 value: ${RELEASE}
               - name: NETWORK_CHECK_INTERVAL
                 value: $!{NETWORK_CHECK_INTERVAL}
+              - name: DOMAIN_CHECK_INTERVAL
+                value: $!{DOMAIN_CHECK_INTERVAL}
               - name: USE_BLOB_STORAGE
                 value: ${USE_BLOB_STORAGE}
               - name: TEST_MODE

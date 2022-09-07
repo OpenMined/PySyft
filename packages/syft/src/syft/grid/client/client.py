@@ -117,8 +117,8 @@ def login(
             )
         else:
             print(
-                "WARNING: CHANGE YOUR PASSWORD!!! \n\nAnyone can login as an admin to your node"
-                + " right now because your password is still the default PySyft password!!!\n"
+                "WARNING: CHANGE YOUR PASSWORD!!! \n\nAnyone can login into your account"
+                + " right now because your password is the default PySyft password!!!\n"
             )
 
     # TRASK: please keep this so that people will stop putting their passwords in notebooks.
