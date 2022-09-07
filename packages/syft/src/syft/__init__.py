@@ -81,6 +81,7 @@ from .lib import lib_ast  # noqa: F401
 from .lib import load  # noqa: F401
 from .lib import load_lib  # noqa: F401
 from .registry import NetworkRegistry  # noqa: F401
+from .telemetry import instrument  # noqa: F401
 
 sys.path.append(str(Path(__file__)))
 

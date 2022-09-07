@@ -25,6 +25,9 @@ from ...logger import critical
 from ...logger import debug
 from ...logger import info
 from ...logger import traceback
+from ...shylock import ShylockPymongoBackend
+from ...shylock import configure
+from ...telemetry import instrument
 from ..adp.ledger_store import RedisLedgerStore
 from ..common.message import SignedImmediateSyftMessageWithReply
 from ..common.message import SignedMessage
@@ -89,6 +92,7 @@ from .domain_client import DomainClient
 from .domain_service import DomainServiceClass
 
 
+@instrument
 class Domain(Node):
     domain: SpecificLocation
     root_key: Optional[VerifyKey]
@@ -111,6 +115,7 @@ class Domain(Node):
         store_type: type = RedisStore,
         ledger_store_type: type = RedisLedgerStore,
         settings: Optional[BaseSettings] = None,
+        document_store: bool = False,
     ):
 
         if db_engine is None:
@@ -144,9 +149,12 @@ class Domain(Node):
             password="example",
             uuidRepresentation="standard",
         )
+        db_name = "app"
+        if document_store:
+            configure(ShylockPymongoBackend.create(nosql_db_engine, db_name))
 
         # Database Management Instances
-        self.users = NoSQLUserManager(nosql_db_engine["app"])
+        self.users = NoSQLUserManager(nosql_db_engine, db_name)
         self.roles = NewRoleManager()
         self.environments = EnvironmentManager(db_engine)
         self.association_requests = NoSQLAssociationRequestManager(
@@ -451,7 +459,7 @@ class Domain(Node):
             self.handled_requests[request.id] = time.time()
         return handled
 
-    def clean_up_handlers(self) -> None:
+    def _clean_up_handlers(self) -> None:
         # this makes sure handlers with timeout expire
         now = time.time()
         alive_handlers = []
@@ -480,7 +488,7 @@ class Domain(Node):
 
         return False
 
-    def clean_up_requests(self) -> None:
+    def _clean_up_requests(self) -> None:
         # this allows a request to be re-handled if the handler somehow failed
         now = time.time()
         processing_wait_secs = 5
@@ -511,8 +519,8 @@ class Domain(Node):
         while True:
             await asyncio.sleep(0.01)
             try:
-                self.clean_up_handlers()
-                self.clean_up_requests()
+                self._clean_up_handlers()
+                self._clean_up_requests()
                 if len(self.request_handlers) > 0:
                     for request in self.requests:
                         # check if we have previously already handled this in an earlier iter

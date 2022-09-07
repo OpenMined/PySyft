@@ -2,24 +2,14 @@
 from typing import Any
 from typing import Optional
 
-# third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
-
-# syft absolute
-import syft as sy
-
 # relative
-from .. import python as py
-from ...core.common.serde.serializable import serializable
 from ...core.common.uid import UID
 from ...logger import traceback_and_raise
-from ...proto.lib.python.iterator_pb2 import Iterator as Iterator_PB
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
 
 
-@serializable()
 class Iterator(PyPrimitive):
     def __init__(self, _ref: Any, max_len: Optional[int] = None):
         super().__init__()
@@ -128,46 +118,3 @@ class Iterator(PyPrimitive):
 
     def upcast(self) -> Any:
         return iter(self._obj_ref)
-
-    # TODO: Fix based on message from Tudor Cebere
-    # So, when we add a new builtin type we want to have feature parity with cython ones.
-    # When we tried to do this for iterators in the early days we had some problems when the iterators are infinite
-    # (most likely an iterator from a generator). This pattern is common in functional programming, when you use
-    # infinite iterators for different purposes. I then said that it makes sense to force the user to exhaust the
-    # iterator himself and then to serde the type. Here, it might be a bit problematic because somebody might slip
-    # in this kind of iterator and when we exhaust it (through list conversion), we go into infinite computation.
-    # And there are similar edge cases to this.
-
-    def _object2proto(self) -> Iterator_PB:
-        id_ = sy.serialize(obj=self._id)
-        obj_ref_ = sy.serialize(py.list.List(list(self._obj_ref)), to_bytes=True)
-        index_ = self._index
-        max_len_ = self.max_len
-        exhausted_ = self.exhausted
-        return Iterator_PB(
-            id=id_,
-            obj_ref=obj_ref_,
-            index=index_,
-            max_len=max_len_,
-            exhausted=exhausted_,
-        )
-
-    @staticmethod
-    def _proto2object(proto: Iterator_PB) -> "Iterator":
-        id_: UID = sy.deserialize(blob=proto.id)
-        obj_ref_ = sy.deserialize(blob=proto.obj_ref, from_bytes=True)
-        index_ = proto.index
-        max_len_ = proto.max_len
-        exhausted_ = proto.exhausted
-
-        new_iter = Iterator(_ref=obj_ref_, max_len=max_len_)
-
-        new_iter._index = index_
-        new_iter.exhausted = exhausted_
-        new_iter._id = id_
-
-        return new_iter
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return Iterator_PB

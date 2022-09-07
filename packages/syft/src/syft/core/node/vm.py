@@ -14,6 +14,7 @@ from ...logger import critical
 from ...logger import traceback_and_raise
 from ..common.message import SignedMessage
 from ..common.message import SyftMessage
+from ..common.serde.serializable import serializable
 from ..common.uid import UID
 from ..io.location import Location
 from ..io.location import SpecificLocation
@@ -23,6 +24,7 @@ from .service import VMServiceClass
 from .vm_client import VirtualMachineClient
 
 
+@serializable(recursive_serde=True)
 @final
 class VirtualMachine(Node):
     client_type = VirtualMachineClient

@@ -28,11 +28,10 @@ from ....logger import debug
 from ....logger import error
 from ....logger import info
 from ....logger import traceback_and_raise
+from ....telemetry import instrument
 from ....util import get_subclasses
-from ...common.message import EventualSyftMessageWithoutReply
 from ...common.message import ImmediateSyftMessageWithReply
 from ...common.message import ImmediateSyftMessageWithoutReply
-from ...common.message import SignedEventualSyftMessageWithoutReply
 from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedImmediateSyftMessageWithoutReply
 from ...common.message import SignedMessage
@@ -63,11 +62,7 @@ from .node_service.msg_forwarding.msg_forwarding_service import (
     SignedMessageWithoutReplyForwardingService,
 )
 from .node_service.node_credential.node_credential_messages import NodeCredentials
-from .node_service.node_service import EventualNodeServiceWithoutReply
 from .node_service.node_service import ImmediateNodeServiceWithReply
-from .node_service.object_action.obj_action_service import (
-    EventualObjectActionServiceWithoutReply,
-)
 from .node_service.object_action.obj_action_service import (
     ImmediateObjectActionServiceWithReply,
 )
@@ -95,6 +90,7 @@ class DuplicateRequestException(Exception):
     pass
 
 
+@instrument
 class Node(AbstractNode):
 
     """
@@ -212,12 +208,6 @@ class Node(AbstractNode):
             Type[ImmediateSyftMessageWithoutReply], Any
         ] = {}
 
-        # for messages which don't need to be run right now
-        # and will not generate a reply.
-        self.eventual_msg_without_reply_router: Dict[
-            Type[EventualSyftMessageWithoutReply], EventualNodeServiceWithoutReply
-        ] = {}
-
         # This is the list of services which all node support.
         # You can read more about them by reading their respective
         # class documentation.
@@ -242,12 +232,6 @@ class Node(AbstractNode):
         self.immediate_services_with_reply.append(ImmediateObjectSearchService)
         self.immediate_services_with_reply.append(GetReprService)
         self.immediate_services_with_reply.append(ResolvePointerTypeService)
-
-        # for services which can run at a later time and do not return a reply
-        self.eventual_services_without_reply = list()
-        self.eventual_services_without_reply.append(
-            EventualObjectActionServiceWithoutReply
-        )
 
         # This is a special service which cannot be listed in any
         # of the other services because it handles messages of all types.
@@ -496,7 +480,7 @@ class Node(AbstractNode):
             debug(
                 f"> Received with Reply {contents.pprint} {contents.id} @ {self.pprint}"
             )
-            # try to process message
+
             response = self.process_message(
                 msg=msg, router=self.immediate_msg_with_reply_router
             )
@@ -510,7 +494,9 @@ class Node(AbstractNode):
                 public_exception = e
             else:
                 private_log_msg = f"An {type(e)} has been triggered"  # dont send
-                public_exception = UnknownPrivateException(str(e))
+                public_exception = UnknownPrivateException(
+                    "UnknownPrivateException has been triggered."
+                )
             try:
                 # try printing a useful message
                 private_log_msg += f" by {type(contents)} "
@@ -531,13 +517,7 @@ class Node(AbstractNode):
 
         # maybe I shouldn't have created process_message because it screws up
         # all the type inference.
-        res_msg = response.sign(signing_key=self.signing_key)  # type: ignore
-        output = (
-            f"> {self.pprint} Signing {res_msg.pprint} with "
-            + f"{self.key_emoji(key=self.signing_key.verify_key)}"  # type: ignore
-        )
-        debug(output)
-        return res_msg
+        return response.sign(signing_key=self.signing_key)  # type: ignore
 
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
@@ -549,6 +529,7 @@ class Node(AbstractNode):
             )
 
         self.process_message(msg=msg, router=self.immediate_msg_without_reply_router)
+
         try:
             pass
         except Exception as e:
@@ -596,12 +577,6 @@ class Node(AbstractNode):
             #     )
         return None
 
-    def recv_eventual_msg_without_reply(
-        self, msg: SignedEventualSyftMessageWithoutReply
-    ) -> None:
-        self.process_message(msg=msg, router=self.eventual_msg_without_reply_router)
-
-    # TODO: Add SignedEventualSyftMessageWithoutReply and others
     def process_message(
         self, msg: SignedMessage, router: dict
     ) -> Union[SyftMessage, None]:
@@ -713,22 +688,6 @@ class Node(AbstractNode):
                     self.immediate_msg_without_reply_router[
                         handler_type_subclass
                     ] = iswr_instance
-
-        for eswr in self.eventual_services_without_reply:
-            # Create a single instance of the service to cache in the router corresponding
-            # to one or more message types.
-            eswr_instance = eswr()
-            for handler_type in eswr.message_handler_types():
-
-                # for each explicitly supported type, add it to the router
-                self.eventual_msg_without_reply_router[handler_type] = eswr_instance
-
-                # for all sub-classes of the explicitly supported type, add them
-                # to the router as well.
-                for handler_type_subclass in get_subclasses(obj_type=handler_type):
-                    self.eventual_msg_without_reply_router[
-                        handler_type_subclass
-                    ] = eswr_instance
 
         # Set the services_registered flag to true so that we know that all services
         # have been properly registered. This mostly exists because someone might

@@ -42,18 +42,7 @@ class ImmediateNodeService(NodeService):
     pass
 
 
-class EventualNodeService(NodeService):
-    """A service for messages which need not be immediately executed
-    but which can be executed at the worker's convenience"""
-
-    pass
-
-
 class ImmediateNodeServiceWithReply(ImmediateNodeService):
-    pass
-
-
-class EventualNodeServiceWithoutReply(NodeService):
     pass
 
 

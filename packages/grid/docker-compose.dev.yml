@@ -19,6 +19,10 @@ services:
     volumes:
       - ./frontend:/app
 
+  # svelte:
+  #   volumes:
+  #     - ./svelte:/app
+
   db:
     ports:
       - "5432"
@@ -39,13 +43,7 @@ services:
       - ./backend/alembic:/app/alembic
       - ../syft:/app/syft
       - ./data/package-cache:/root/.cache
-      # - ./profile:/tmp/profile
     command: /start-reload.sh
-    # command: "sleep 99999"
-    environment:
-      - PROFILE=true
-      - JAEGER_HOST=docker-host
-      - JAEGER_PORT=6831
 
   backend_stream:
     volumes:
@@ -53,13 +51,7 @@ services:
       - ./backend/alembic:/app/alembic
       - ../syft:/app/syft
       - ./data/package-cache:/root/.cache
-      # - ./profile:/tmp/profile
     command: "/start-reload.sh"
-    # command: "sleep 99999"
-    environment:
-      - PROFILE=true
-      - JAEGER_HOST=docker-host
-      - JAEGER_PORT=6831
 
   celeryworker:
     volumes:
@@ -67,13 +59,7 @@ services:
       - ./backend/alembic:/app/alembic
       - ../syft:/app/syft
       - ./data/package-cache:/root/.cache
-      # - ./profile:/tmp/profile
     command: "/worker-start-reload.sh"
-    # command: "sleep 99999"
-    environment:
-      - PROFILE=true
-      - JAEGER_HOST=docker-host
-      - JAEGER_PORT=6831
 
   headscale:
     profiles:

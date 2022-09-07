@@ -94,11 +94,7 @@ class UserIsOwner(BasePermission):
         verify_key: Optional[VerifyKey],
     ) -> bool:
 
-        if hasattr(msg.kwargs, "upcast"):
-            msg_kwargs = msg.kwargs.upcast()  # type: ignore
-        else:
-            msg_kwargs = msg.kwargs
-
+        msg_kwargs = msg.kwargs  # type: ignore
         user_id = msg_kwargs.get("user_id")
 
         if not user_id:
@@ -129,11 +125,7 @@ class UserHasWritePermissionToData(BasePermission):
         node: NodeServiceInterface,
         verify_key: Optional[VerifyKey],
     ) -> bool:
-        if hasattr(msg.kwargs, "upcast"):
-            msg_kwargs = msg.kwargs.upcast()  # type: ignore
-        else:
-            msg_kwargs = msg.kwargs
-
+        msg_kwargs = msg.kwargs
         id_at_location = msg_kwargs.get("id_at_location")
 
         if id_at_location:

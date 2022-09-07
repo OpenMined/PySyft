@@ -34,9 +34,9 @@ from scipy.optimize import minimize_scalar
 
 # relative
 from ...core.node.common.node_manager.user_manager import RefreshBudgetException
-from ...lib.numpy.array import capnp_deserialize
-from ...lib.numpy.array import capnp_serialize
 from ..common.serde.capnp import CapnpModule
+from ..common.serde.capnp import capnp_deserialize
+from ..common.serde.capnp import capnp_serialize
 from ..common.serde.capnp import get_capnp_schema
 from ..common.serde.capnp import serde_magic_header
 from ..common.serde.serializable import serializable
@@ -469,7 +469,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         schema = get_capnp_schema(schema_file="data_subject_ledger.capnp")
 
         dsl_struct: CapnpModule = schema.DataSubjectLedger  # type: ignore
-        dsl_msg = dsl_struct.new_message()
+        dsl_msg = dsl_struct.new_message()  # type: ignore
         # this is how we dispatch correct deserialization of bytes
         dsl_msg.magicHeader = serde_magic_header(type(self))
         self._rdp_constants = np.array(self._rdp_constants, copy=False)
@@ -478,7 +478,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         dsl_msg.updateNumber = self._update_number
         dsl_msg.timestamp = self._timestamp_of_last_update
 
-        return dsl_msg.to_bytes_packed()
+        return dsl_msg.to_bytes()
 
     @staticmethod
     def _bytes2object(buf: bytes) -> DataSubjectLedger:
@@ -487,9 +487,10 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
         MAX_TRAVERSAL_LIMIT = 2**64 - 1
         # to pack or not to pack?
-        dsl_msg = dsl_struct.from_bytes_packed(
+        with dsl_struct.from_bytes(  # type: ignore
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        )
+        ) as msg:
+            dsl_msg = msg
 
         constants = capnp_deserialize(dsl_msg.constants)
         update_number = dsl_msg.updateNumber

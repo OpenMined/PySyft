@@ -3,9 +3,11 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import Iterator
 from typing import List
+from typing import Sequence
 from typing import Set
 from typing import Tuple
 from typing import Union
@@ -23,9 +25,7 @@ from .data_subject import DataSubject
 # allow us to serialize and deserialize np.arrays with strings inside as two np.arrays
 # one containing the uint8 bytes and the other the offsets between strings
 # TODO: Should move to a vectorized version.
-def numpyutf8tolist(
-    string_index: Tuple[np.ndarray, np.ndarray]
-) -> np.ndarray:  # pragma: no cover
+def numpyutf8tolist(string_index: Tuple[np.ndarray, np.ndarray]) -> np.ndarray:
     index_length = int(string_index[-1])
     index_array = string_index[-(index_length + 1) : -1]  # noqa
     string_array: np.ndarray = string_index[: -(index_length + 1)]
@@ -42,7 +42,7 @@ def numpyutf8tolist(
 
 def liststrtonumpyutf8(
     string_list: np.ndarray,
-) -> Tuple[np.ndarray, np.ndarray]:  # pragma: no cover
+) -> Tuple[np.ndarray, np.ndarray]:
     bytes_list = []
     indexes = []
     offset = 0
@@ -67,12 +67,12 @@ def liststrtonumpyutf8(
 
 # INFO: excluding coverage of the whole class , as we intend to replace with new DSA
 @serializable(recursive_serde=True)
-class DataSubjectList:  # pragma: no cover
+class DataSubjectList:
     __attr_allowlist__ = ("one_hot_lookup", "data_subjects_indexed")
     __slots__ = ("one_hot_lookup", "data_subjects_indexed")
 
     # one_hot_lookup is a numpy array of unicode strings which can't be serialized
-    __serde_overrides__ = {
+    __serde_overrides__: Dict[str, Sequence[Callable]] = {
         "one_hot_lookup": [liststrtonumpyutf8, numpyutf8tolist],
     }
 

@@ -1,17 +1,14 @@
 # syft absolute
 import syft as sy
 from syft.lib.python.set import Set
-from syft.proto.lib.python.set_pb2 import Set as Set_PB
 
 
 def test_serde() -> None:
     syft_int = Set([1, 2, 3, 4])
 
-    serialized = syft_int._object2proto()
+    serialized = sy.serialize(syft_int)
 
-    assert isinstance(serialized, Set_PB)
-
-    deserialized = Set._proto2object(proto=serialized)
+    deserialized = sy.deserialize(serialized)
 
     assert isinstance(deserialized, Set)
     assert deserialized.id == syft_int.id

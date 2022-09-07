@@ -1,11 +1,9 @@
 # third party
-# third party
 import torch as th
 
 # syft absolute
 import syft as sy
 from syft.lib.python.list import List
-from syft.proto.lib.python.list_pb2 import List as List_PB
 
 
 def test_list_serde() -> None:
@@ -14,11 +12,9 @@ def test_list_serde() -> None:
 
     syft_list = List([t1, t2])
 
-    serialized = syft_list._object2proto()
+    serialized = sy.serialize(syft_list)
 
-    assert isinstance(serialized, List_PB)
-
-    deserialized = List._proto2object(proto=serialized)
+    deserialized = sy.deserialize(serialized)
 
     assert isinstance(deserialized, List)
     assert deserialized.id == syft_list.id

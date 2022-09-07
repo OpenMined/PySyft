@@ -13,9 +13,9 @@ from typing import Union
 import numpy as np
 
 # relative
-from ...lib.numpy.array import capnp_deserialize
-from ...lib.numpy.array import capnp_serialize
 from ..common.serde.capnp import CapnpModule
+from ..common.serde.capnp import capnp_deserialize
+from ..common.serde.capnp import capnp_serialize
 from ..common.serde.capnp import chunk_bytes
 from ..common.serde.capnp import combine_bytes
 from ..common.serde.capnp import get_capnp_schema
@@ -266,7 +266,7 @@ class FixedPrecisionTensor(PassthroughTensor):
         schema = get_capnp_schema(schema_file="fixed_precision_tensor.capnp")
 
         fpt_struct: CapnpModule = schema.FPT  # type: ignore
-        fpt_msg = fpt_struct.new_message()
+        fpt_msg = fpt_struct.new_message()  # type: ignore
         # this is how we dispatch correct deserialization of bytes
         fpt_msg.magicHeader = serde_magic_header(type(self))
 
@@ -286,7 +286,7 @@ class FixedPrecisionTensor(PassthroughTensor):
         # to pack or not to pack?
         # to_bytes = fpt_msg.to_bytes()
 
-        return fpt_msg.to_bytes_packed()
+        return fpt_msg.to_bytes()
 
     @staticmethod
     def _bytes2object(buf: bytes) -> FixedPrecisionTensor:
@@ -296,9 +296,10 @@ class FixedPrecisionTensor(PassthroughTensor):
         MAX_TRAVERSAL_LIMIT = 2**64 - 1
         # to pack or not to pack?
         # fpt_msg = fpt_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
-        fpt_msg = fpt_struct.from_bytes_packed(
+        with fpt_struct.from_bytes(  # type: ignore
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        )
+        ) as msg:
+            fpt_msg = msg
 
         if fpt_msg.isNumpy:
             child = capnp_deserialize(combine_bytes(fpt_msg.child), from_bytes=True)

@@ -1,5 +1,0 @@
-syntax = "proto3";
-
-package syft.lib.python;
-
-message Bytes { bytes data = 1; }

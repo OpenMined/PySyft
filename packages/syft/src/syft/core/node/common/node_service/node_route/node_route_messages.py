@@ -93,7 +93,7 @@ class InitiateRouteUpdateToNodeMessage(
 
         # see NotifyNodeWithRouteUpdateMessage below
         # TODO: Add retry mechanism with multiple routes in the above client
-        _ = target_client.networking.notify_node_with_route_update(
+        _ = target_client.networking.notify_node_with_route_update(  # type: ignore
             route_update=route_update
         )
 
@@ -190,7 +190,7 @@ class NotifyNodeWithRouteUpdateMessage(
         target_client = connect(url=target_url, timeout=10, user_key=node.signing_key)
 
         # try to connect to the node and make sure its the one we expect
-        signed_response = target_client.networking.verify_route()
+        signed_response = target_client.networking.verify_route()  # type: ignore
 
         # since we're getting back the SignedMessage it can't hurt to check once more
         if not signed_response.is_valid:

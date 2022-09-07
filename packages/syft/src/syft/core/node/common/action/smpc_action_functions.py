@@ -29,9 +29,7 @@ def get_id_at_location_from_op(seed: int, operation_str: str) -> UID:
     return UID(UUID(bytes=generator.bytes(16)))
 
 
-def private_mul(
-    x: ShareTensor, y: ShareTensor, op_str: str
-) -> ShareTensor:  # pragma: no cover
+def private_mul(x: ShareTensor, y: ShareTensor, op_str: str) -> ShareTensor:
     """Performs SMPC Private Multiplication using Beaver Triples.
 
     Args:
@@ -86,7 +84,7 @@ def spdz_mask(
     a_share: ShareTensor,
     b_share: ShareTensor,
     node: Optional[AbstractNode] = None,
-) -> None:  # pragma: no cover
+) -> None:
 
     if node is None:
         raise ValueError("Node context should be passed to spdz mask")
@@ -121,7 +119,7 @@ def spdz_multiply(
     b_share: ShareTensor,
     c_share: ShareTensor,
     node: Optional[Any] = None,
-) -> ShareTensor:  # pragma: no cover
+) -> ShareTensor:
 
     nr_parties = x.nr_parties
     ring_size = x.ring_size
@@ -149,9 +147,7 @@ def spdz_multiply(
     return share
 
 
-def public_divide(
-    x: ShareTensor, y: Union[int, np.integer]
-) -> ShareTensor:  # pragma: no cover
+def public_divide(x: ShareTensor, y: Union[int, np.integer]) -> ShareTensor:
     """Performs SMPC Public Division.
 
     Args:
@@ -207,7 +203,7 @@ def divide_mask(
     r: ShareTensor,
     z_id: UID,
     node: Optional[AbstractNode] = None,
-) -> None:  # pragma: no cover
+) -> None:
 
     if node is None:
         raise ValueError("Node context should be passed to spdz mask")
@@ -238,7 +234,7 @@ def divide_wrap_correction(
     r_share: ShareTensor,
     theta_r_sh: ShareTensor,
     node: Optional[AbstractNode] = None,
-) -> ShareTensor:  # pragma: no cover
+) -> ShareTensor:
     """Privately computes the number of wraparounds for a set a shares.
     Adapted From Crypten
 
@@ -280,9 +276,7 @@ def divide_wrap_correction(
     return theta_x
 
 
-def _decomposition(
-    x: ShareTensor, ring_size: int, bitwise: bool
-) -> None:  # pragma: no cover
+def _decomposition(x: ShareTensor, ring_size: int, bitwise: bool) -> None:
     seed_id_locations = context.SMPC_CONTEXT.get("seed_id_locations", None)
     node = context.SMPC_CONTEXT.get("node", None)
     read_permissions = context.SMPC_CONTEXT.get("read_permissions", None)
@@ -304,7 +298,7 @@ def local_decomposition(
     seed_id_locations: int,
     node: Any,
     read_permissions: Dict[Any, Any],
-) -> None:  # pragma: no cover
+) -> None:
     """Performs local decomposition to generate shares of shares.
 
     Args:
