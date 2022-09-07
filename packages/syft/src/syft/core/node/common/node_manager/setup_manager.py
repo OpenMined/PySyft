@@ -2,6 +2,7 @@
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
 
 # third party
 from sqlalchemy.engine import Engine
@@ -91,7 +92,7 @@ class NoSQLSetupManager(NoSQLDatabaseManager):
     _collection_name = "setup"
     __canonical_object_name__ = "Setup"
 
-    def register_once(self, **kwargs: Any) -> None:
+    def register_once(self, **kwargs: Any) -> Optional[NoSQLSetup]:
         """Register a new object into the database.
 
         Args:
@@ -103,6 +104,9 @@ class NoSQLSetupManager(NoSQLDatabaseManager):
         if curr_len == 0:
             _obj = NoSQLSetup(id_int=1, **kwargs)
             self.add(_obj)
+            return _obj
+
+        return None
 
     @property
     def node_name(self) -> str:

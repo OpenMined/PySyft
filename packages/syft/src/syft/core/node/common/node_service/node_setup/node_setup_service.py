@@ -85,7 +85,7 @@ def create_initial_setup(
                 node_id = node.target_id.id
                 node.setup.register_once(
                     domain_name=msg.domain_name,
-                    node_id=node_id.no_dash,
+                    node_uid=node_id.no_dash,
                     deployed_on=str(datetime.now()),
                     signing_key=_node_private_key,
                 )
