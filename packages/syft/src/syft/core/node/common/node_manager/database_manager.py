@@ -14,7 +14,7 @@ from sqlalchemy.orm import sessionmaker
 # relative
 from .....telemetry import instrument
 from ..node_table import Base
-from ..node_table.user import SyftObject
+from ..node_table.syft_object import SyftObject
 
 
 @instrument
