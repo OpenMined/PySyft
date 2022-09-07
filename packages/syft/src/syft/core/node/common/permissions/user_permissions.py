@@ -94,17 +94,13 @@ class UserIsOwner(BasePermission):
         verify_key: Optional[VerifyKey],
     ) -> bool:
 
-        if hasattr(msg.kwargs, "upcast"):
-            msg_kwargs = msg.kwargs.upcast()  # type: ignore
-        else:
-            msg_kwargs = msg.kwargs
-
+        msg_kwargs = msg.kwargs  # type: ignore
         user_id = msg_kwargs.get("user_id")
 
         if not user_id:
             return False
 
-        _target_user = node.users.first(id=user_id)
+        _target_user = node.users.first(id_int=user_id)
         request_user = (
             node.users.get_user(verify_key=verify_key) if verify_key else None
         )
@@ -112,12 +108,11 @@ class UserIsOwner(BasePermission):
         _is_owner = False
         if _target_user:  # If target user exists
             if (
-                node.roles.first(id=_target_user.role).name
-                == node.roles.owner_role.name
+                _target_user.role["name"] == node.roles.owner_role["name"]
             ):  # If the user has role `Owner`
                 _is_owner = True
             elif request_user and (
-                _target_user.id == request_user.id
+                _target_user.id_int == request_user.id_int
             ):  # request user is the target user
                 _is_owner = True
         return _is_owner
@@ -130,11 +125,7 @@ class UserHasWritePermissionToData(BasePermission):
         node: NodeServiceInterface,
         verify_key: Optional[VerifyKey],
     ) -> bool:
-        if hasattr(msg.kwargs, "upcast"):
-            msg_kwargs = msg.kwargs.upcast()  # type: ignore
-        else:
-            msg_kwargs = msg.kwargs
-
+        msg_kwargs = msg.kwargs
         id_at_location = msg_kwargs.get("id_at_location")
 
         if id_at_location:

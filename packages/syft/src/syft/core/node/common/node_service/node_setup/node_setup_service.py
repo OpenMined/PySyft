@@ -13,6 +13,7 @@ from nacl.encoding import HexEncoder
 from nacl.signing import VerifyKey
 
 # relative
+from ......shylock import Lock
 from .....common import UID
 from .....common.message import ImmediateSyftMessageWithReply
 from .....io.location import SpecificLocation
@@ -55,59 +56,75 @@ def set_node_uid(node: DomainInterface) -> None:
 def create_initial_setup(
     msg: CreateInitialSetUpMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> SuccessResponseMessage:
-
+    # use a lock in mongodb to ensure we run this on each backend container in sequence
     print("Performing initial setup...")
+    with Lock("create_initial_setup"):
+        # 1 - Should not run if Node has an owner
 
-    # 1 - Should not run if Node has an owner
-    if len(node.users):
-        set_node_uid(node=node)  # make sure the node always has the same UID
-        raise OwnerAlreadyExistsError
+        if len(node.users) and len(node.setup):
+            set_node_uid(node=node)  # make sure the node always has the same UID
+            raise OwnerAlreadyExistsError
 
-    # 2 - Check if email/password/node_name fields are empty
-    _mandatory_request_fields = msg.email and msg.password and msg.domain_name
-    if not _mandatory_request_fields:
-        raise MissingRequestKeyError(
-            message="Invalid request payload, empty fields (email/password/domain_name)!"
+        # 2 - Check if email/password/node_name fields are empty
+        _mandatory_request_fields = msg.email and msg.password and msg.domain_name
+        if not _mandatory_request_fields:
+            raise MissingRequestKeyError(
+                message="Invalid request payload, empty fields (email/password/domain_name)!"
+            )
+
+        # 3 - Change Node Name
+        node.name = msg.domain_name
+
+        signing_key = msg.signing_key
+
+        # convert to hex
+        _node_private_key = signing_key.encode(encoder=HexEncoder).decode("utf-8")  # type: ignore
+        _admin_role = node.roles.owner_role
+
+        create_setup = False
+        try:
+            # 5 - Save Node SetUp Configs
+            if len(node.setup) == 0:
+                node_id = node.target_id.id
+                node.setup.register_once(
+                    domain_name=msg.domain_name,
+                    node_id=node_id.no_dash,
+                    deployed_on=datetime.now(),
+                    signing_key=_node_private_key,
+                )
+                create_setup = True
+        except Exception as e:
+            print("Failed to save user to database", e)
+
+        create_user = False
+        try:
+            # 4 - Create Admin User
+            # use a lock in mongodb to ensure we only create one of these
+            with Lock(f"syft_users_{msg.email}"):
+                if len(node.users) == 0:
+                    node.users.create_admin(
+                        name=msg.name,
+                        email=msg.email,
+                        password=msg.password,
+                        role=_admin_role,
+                        budget=msg.budget,
+                        node=node,
+                    )
+                    create_user = True
+        except Exception as e:
+            print("Failed to save setup to database", e)
+
+        if create_user and create_setup:
+            print("CreateInitialSetUpMessage Successful!")
+        else:
+            print(
+                f"Failed CreateInitialSetUpMessage User: {create_user} Setup: {create_setup}"
+            )
+
+        return SuccessResponseMessage(
+            address=msg.reply_to,
+            resp_msg="Running initial setup!",
         )
-
-    # 3 - Change Node Name
-    node.name = msg.domain_name
-
-    # 4 - Create Admin User
-    signing_key = msg.signing_key
-
-    # convert to hex
-    _node_private_key = signing_key.encode(encoder=HexEncoder).decode("utf-8")  # type: ignore
-    _verify_key = signing_key.verify_key.encode(encoder=HexEncoder).decode("utf-8")  # type: ignore
-
-    _admin_role = node.roles.owner_role
-
-    _ = node.users.signup(
-        name=msg.name,
-        email=msg.email,
-        password=msg.password,
-        role=_admin_role.id,
-        budget=msg.budget,
-        private_key=_node_private_key,
-        verify_key=_verify_key,
-    )
-
-    # 5 - Save Node SetUp Configs
-    try:
-        node_id = node.target_id.id
-        node.setup.register_once(
-            domain_name=msg.domain_name,
-            node_id=node_id.no_dash,
-            deployed_on=datetime.now(),
-            signing_key=_node_private_key,
-        )
-    except Exception as e:
-        print("Failed to save setup to database", e)
-
-    return SuccessResponseMessage(
-        address=msg.reply_to,
-        resp_msg="Running initial setup!",
-    )
 
 
 def get_setup(
@@ -130,7 +147,7 @@ def get_setup(
 def update_settings(
     msg: UpdateSetupMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> UpdateSetupResponse:
-    if node.users.role(verify_key=verify_key).id == node.roles.owner_role.id:
+    if node.users.role(verify_key=verify_key)["name"] == "Owner":
         if msg.domain_name:
             node.name = msg.domain_name
 

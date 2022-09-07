@@ -15,13 +15,15 @@ directory = os.path.expanduser("~/.hagrid/quickstart/")
 
 
 def quickstart_download_notebook(
-    url: str, directory: str, reset: bool = False
+    url: str, directory: str, reset: bool = False, overwrite_all_notebooks: bool = False
 ) -> Tuple[str, bool]:
     os.makedirs(directory, exist_ok=True)
     file_name = os.path.basename(url).replace("%20", "_")
     file_path = os.path.abspath(directory + file_name)
 
     file_exists = os.path.isfile(file_path)
+    if overwrite_all_notebooks:
+        reset = True
 
     if file_exists and not reset:
         reset = click.confirm(

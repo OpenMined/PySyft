@@ -2,22 +2,13 @@
 from typing import Any
 from typing import Optional
 
-# third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
-
-# syft absolute
-import syft as sy
-
 # relative
 from ...core.common import UID
-from ...core.common.serde.serializable import serializable
-from ...proto.lib.python.float_pb2 import Float as Float_PB
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
 
 
-@serializable()
 class Float(float, PyPrimitive):
     def __new__(cls, value: Any = None, id: Optional[UID] = None) -> "Float":
         if value is None:
@@ -31,17 +22,6 @@ class Float(float, PyPrimitive):
         float.__init__(value)
 
         self._id: UID = id if id else UID()
-
-    @property
-    def id(self) -> UID:
-        """We reveal PyPrimitive.id as a property to discourage users and
-        developers of Syft from modifying .id attributes after an object
-        has been initialized.
-
-        :return: returns the unique id of the object
-        :rtype: UID
-        """
-        return self._id
 
     def upcast(self) -> float:
         return float(self)
@@ -223,17 +203,3 @@ class Float(float, PyPrimitive):
 
     def __hash__(self) -> int:
         return super().__hash__()
-
-    def _object2proto(self) -> Float_PB:
-        return Float_PB(
-            id=sy.serialize(obj=self.id),
-            data=self,
-        )
-
-    @staticmethod
-    def _proto2object(proto: Float_PB) -> "Float":
-        return Float(value=proto.data, id=sy.deserialize(blob=proto.id))
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return Float_PB

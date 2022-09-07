@@ -1,12 +1,14 @@
+# future
+from __future__ import annotations
+
 # stdlib
-import sys
 from typing import Generic
 from typing import Optional
+from typing import Sequence
 from typing import Type
 from typing import TypeVar
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.exceptions import BadSignatureError
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
@@ -14,8 +16,6 @@ from nacl.signing import VerifyKey
 # relative
 from ...logger import debug
 from ...logger import traceback_and_raise
-from ...proto.core.auth.signed_message_pb2 import SignedMessage as SignedMessage_PB
-from ...util import get_fully_qualified_name
 from ...util import validate_type
 from ..io.address import Address
 from .object import ObjectWithID
@@ -96,14 +96,12 @@ class SyftMessage(AbstractMessage):
         return self.signed_type(
             msg_id=self.id,
             address=self.address,
-            obj_type=get_fully_qualified_name(obj=self),
             signature=signed_message.signature,
             verify_key=signing_key.verify_key,
             message=signed_message.message,
         )
 
 
-@serializable()
 class SignedMessage(SyftMessage):
     """
     SignedMessages are :class:`SyftMessage`s that have been signed by someone.
@@ -118,28 +116,37 @@ class SignedMessage(SyftMessage):
         serialized_message: the serialized original message.
     """
 
-    obj_type: str
     signature: bytes
     verify_key: VerifyKey
+
+    __attr_allowlist__: Sequence[str] = [
+        "id",
+        "address",
+        "signature",
+        "verify_key",
+        "serialized_message",
+    ]
 
     def __init__(
         self,
         address: Address,
-        obj_type: str,
         signature: bytes,
         verify_key: VerifyKey,
         message: bytes,
         msg_id: Optional[UID] = None,
     ) -> None:
         super().__init__(msg_id=msg_id, address=address)
-        self.obj_type = obj_type
         self.signature = signature
         self.verify_key = verify_key
         self.serialized_message = message
         self.cached_deseralized_message: Optional[SyftMessage] = None
 
     @property
-    def message(self) -> "SyftMessage":
+    def message(self) -> SyftMessage:
+        # from deserialize we might not have this attr because __init__ is skipped
+        if not hasattr(self, "cached_deseralized_message"):
+            self.cached_deseralized_message = None
+
         if self.cached_deseralized_message is None:
             _syft_msg = validate_type(
                 _deserialize(blob=self.serialized_message, from_bytes=True), SyftMessage
@@ -164,118 +171,44 @@ class SignedMessage(SyftMessage):
 
         return True
 
-    def _object2proto(self) -> SignedMessage_PB:
-        debug(f"> {self.icon} -> Proto 🔢 {self.id}")
-
-        # obj_type will be the final subclass callee for example ReprMessage
-        return SignedMessage_PB(
-            msg_id=serialize(self.id, to_proto=True),
-            obj_type=self.obj_type,
-            signature=bytes(self.signature),
-            verify_key=bytes(self.verify_key),
-            message=self.serialized_message,
-        )
-
-    @staticmethod
-    def _proto2object(proto: SignedMessage_PB) -> SignedMessageT:
-        # TODO: horrible temp hack, need to rethink address on SignedMessage
-        sub_message = validate_type(
-            _deserialize(blob=proto.message, from_bytes=True), SyftMessage
-        )
-
-        address = sub_message.address
-
-        # proto.obj_type is final subclass callee for example ReprMessage
-        # but we want the associated signed_type which is
-        # ReprMessage -> ImmediateSyftMessageWithoutReply.signed_type
-        # == SignedImmediateSyftMessageWithoutReply
-        module_parts = proto.obj_type.split(".")
-        klass = module_parts.pop()
-        obj_type = getattr(sys.modules[".".join(module_parts)], klass)
-        obj = obj_type.signed_type(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=address,
-            obj_type=proto.obj_type,
-            signature=proto.signature,
-            verify_key=VerifyKey(proto.verify_key),
-            message=proto.message,
-        )
-
-        icon = "🤷🏾‍♀️"
-        if hasattr(obj, "icon"):
-            icon = obj.icon
-        debug(f"> {icon} <- 🔢 Proto")
-
-        if type(obj) != obj_type.signed_type:
-            traceback_and_raise(
-                TypeError(
-                    "Deserializing SignedMessage. "
-                    + f"Expected type {obj_type.signed_type}. Got {type(obj)}"
-                )
-            )
-
-        return obj
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return SignedMessage_PB
-
     def __hash__(self) -> int:
         return hash((self.signature, self.verify_key))
 
 
+@serializable(recursive_serde=True)
 class SignedImmediateSyftMessageWithReply(SignedMessage):
-    """ """
+    pass
 
 
+@serializable(recursive_serde=True)
 class SignedImmediateSyftMessageWithoutReply(SignedMessage):
-    """ """
-
-    # do stuff
+    pass
 
 
-class SignedEventualSyftMessageWithoutReply(SignedMessage):
-    """ """
+@serializable(recursive_serde=True)
+class SignedImmediateSyftMessage(SignedMessage):
+    pass
 
 
 class ImmediateSyftMessage(SyftMessage):
-    """ """
-
-
-class EventualSyftMessage(SyftMessage):
-    """ """
+    signed_type = SignedImmediateSyftMessage
 
 
 class SyftMessageWithReply(SyftMessage):
-    """ """
-
-
-class SyftMessageWithoutReply(SyftMessage):
-    """ """
-
-
-class ImmediateSyftMessageWithoutReply(ImmediateSyftMessage, SyftMessageWithoutReply):
-
-    signed_type = SignedImmediateSyftMessageWithoutReply
-
-    def __init__(self, address: Address, msg_id: Optional[UID] = None) -> None:
-        super().__init__(address=address, msg_id=msg_id)
-
-
-class EventualSyftMessageWithoutReply(EventualSyftMessage, SyftMessageWithoutReply):
-
-    signed_type = SignedEventualSyftMessageWithoutReply
-
-    def __init__(self, address: Address, msg_id: Optional[UID] = None) -> None:
-        super().__init__(address=address, msg_id=msg_id)
-
-
-class ImmediateSyftMessageWithReply(ImmediateSyftMessage, SyftMessageWithReply):
-
-    signed_type = SignedImmediateSyftMessageWithReply
-
     def __init__(
         self, reply_to: Address, address: Address, msg_id: Optional[UID] = None
     ) -> None:
         super().__init__(address=address, msg_id=msg_id)
         self.reply_to = reply_to
+
+
+class SyftMessageWithoutReply(SyftMessage):
+    pass
+
+
+class ImmediateSyftMessageWithoutReply(SyftMessageWithoutReply):
+    signed_type = SignedImmediateSyftMessageWithoutReply
+
+
+class ImmediateSyftMessageWithReply(SyftMessageWithReply):
+    signed_type = SignedImmediateSyftMessageWithReply

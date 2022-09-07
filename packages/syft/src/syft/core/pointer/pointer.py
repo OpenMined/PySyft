@@ -1,110 +1,23 @@
-"""A Pointer is the main handler when interacting with remote data.
-A Pointer object represents an API for interacting with data (of any type)
-at a specific location. The pointer should never be instantiated, only subclassed.
-
-The relation between pointers and data is many to one,
-there can be multiple pointers pointing to the same piece of data, meanwhile,
-a pointer cannot point to multiple data sources.
-
-A pointer is just an object id on a remote location and a set of methods that can be
-executed on the remote machine directly on that object. One note that has to be made
-is that all operations between pointers will return a pointer, the only way to have access
-to the result is by calling .get() on the pointer.
-
-There are two proper ways of receiving a pointer on some data:
-
-1. When sending that data on a remote machine the user receives a pointer.
-2. When the user searches for the data in an object store it receives a pointer to that data,
-   if it has the correct permissions for that.
-
-After receiving a pointer, one might want to get the data behind the pointer locally. For that the
-user should:
-
-1. Request access by calling .request().
-
-Example:
-
-.. code-block::
-
-    pointer_object.request(name = "Request name", reason = "Request reason")
-
-2. The data owner has to approve the request (check the domain node docs).
-3. The data user checks if the request has been approved (check the domain node docs).
-4. After the request has been approved, the data user can call .get() on the pointer to get the
-   data locally.
-
-Example:
-
-.. code-block::
-
-    pointer_object.get()
-
-Pointers are being generated for most types of objects in the data science scene, but what you can
-do on them is not the pointers job, see the lib module for more details. One can see the pointer
-as a proxy to the actual data, the filtering and the security being applied where the data is being
-held.
-
-Example:
-
-.. code-block::
-
-    # creating the data holder domain
-    domain_1 = Domain(name="Data holder domain")
-
-    # creating dummy data
-    tensor = th.tensor([1, 2, 3])
-
-    # creating the data holder client
-    domain_1_client = domain_1.get_root_client()
-
-    # sending the data to the client and receiving a pointer of that data.
-    data_ptr_domain_1 = tensor.send(domain_1_client)
-
-    # creating the data user domain
-    domain_2 = Domain(name="Data user domain")
-
-    # creating a request to access the data
-    data_ptr_domain_1.request(
-        name="My Request", reason="I'd lke to see this pointer"
-    )
-
-    # getting the remote id of the object
-    requested_object = data_ptr_domain_1.id_at_location
-
-    # getting the request id
-    message_request_id = domain_1_client.requests.get_request_id_from_object_id(
-        object_id=requested_object
-    )
-
-    # the data holder accepts the request
-    domain_1.requests[0].owner_client_if_available = domain_1_client
-    domain_1.requests[0].accept()
-
-    # the data user checks if the data holder approved his request
-    response = data_ptr_domain_1.check_access(node=domain_2, request_id=message_request_id)
-
-"""
 # stdlib
 import time
 from typing import Any
+from typing import Callable
+from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sequence
 import warnings
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 import requests
-
-# syft absolute
-import syft as sy
 
 # relative
 from ...logger import debug
 from ...logger import error
 from ...logger import warning
-from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
 from ..common.pointer import AbstractPointer
+from ..common.serde import _serialize
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import serializable
 from ..common.uid import UID
@@ -121,8 +34,25 @@ from ..store.storeable_object import StorableObject
 
 
 # TODO: Fix the Client, Address, Location confusion
-@serializable()
+@serializable(recursive_serde=True)
 class Pointer(AbstractPointer):
+    __attr_allowlist__ = [
+        "id_at_location",
+        "client",
+        "tags",
+        "description",
+        "object_type",
+        "_exhausted",
+        "gc_enabled",
+        "is_enum",
+    ]
+    __serde_overrides__: Dict[str, Sequence[Callable]] = {
+        "client": (
+            lambda client: _serialize(client.address, to_bytes=True),
+            lambda blob: _deserialize(blob, from_bytes=True),
+        )
+    }
+
     """
     The pointer is the handler when interacting with remote data.
 
@@ -160,6 +90,7 @@ class Pointer(AbstractPointer):
         # when delete_obj is True and network call
         # has already been made
         self._exhausted = False
+        self.gc_enabled = True
 
     @property
     def block(self) -> AbstractPointer:
@@ -414,90 +345,6 @@ class Pointer(AbstractPointer):
 
         return result
 
-    def _object2proto(self) -> Pointer_PB:
-        """Returns a protobuf serialization of self.
-
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms the current object into the corresponding
-        Protobuf object so that it can be further serialized.
-
-        :return: returns a protobuf object
-        :rtype: Pointer_PB
-
-        .. note::
-            This method is purely an internal method. Please use sy.serialize(object) or one of
-            the other public serialization methods if you wish to serialize an
-            object.
-        """
-
-        return Pointer_PB(
-            points_to_object_with_path=self.path_and_name,
-            pointer_name=type(self).__name__,
-            id_at_location=sy.serialize(self.id_at_location),
-            location=sy.serialize(self.client.address),
-            tags=self.tags,
-            description=self.description,
-            object_type=self.object_type,
-            attribute_name=getattr(self, "attribute_name", ""),
-            public_shape=sy.serialize(
-                getattr(self, "public_shape", None), to_bytes=True
-            ),
-        )
-
-    @staticmethod
-    def _proto2object(proto: Pointer_PB) -> "Pointer":
-        """Creates a Pointer from a protobuf
-
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms a protobuf object into an instance of this class.
-
-        :return: returns an instance of Pointer
-        :rtype: Pointer
-
-        .. note::
-            This method is purely an internal method. Please use syft.deserialize()
-            if you wish to deserialize an object.
-        """
-        # TODO: we need _proto2object to include a reference to the node doing the
-        # deserialization so that we can convert location into a client object. At present
-        # it is an address object which will cause things to break later.
-        points_to_type = sy.lib_ast.query(proto.points_to_object_with_path)
-        pointer_type = getattr(points_to_type, proto.pointer_name)
-
-        # WARNING: This is sending a serialized Address back to the constructor
-        # which currently depends on a Client for send_immediate_msg_with_reply
-
-        out = pointer_type(
-            id_at_location=_deserialize(blob=proto.id_at_location),
-            client=_deserialize(blob=proto.location),
-            tags=proto.tags,
-            description=proto.description,
-            object_type=proto.object_type,
-        )
-
-        out.public_shape = sy.deserialize(proto.public_shape, from_bytes=True)
-        return out
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Return the type of protobuf object which stores a class of this type
-
-        As a part of serialization and deserialization, we need the ability to
-        lookup the protobuf object type directly from the object type. This
-        static method allows us to do this.
-
-        Importantly, this method is also used to create the reverse lookup ability within
-        the metaclass of Serializable. In the metaclass, it calls this method and then
-        it takes whatever type is returned from this method and adds an attribute to it
-        with the type of this class attached to it. See the MetaSerializable class for details.
-
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
-
-        """
-
-        return Pointer_PB
-
     def request(
         self,
         reason: str = "",
@@ -729,4 +576,5 @@ class Pointer(AbstractPointer):
 
         if self.gc_enabled:
             # this is not being used in the node currenetly
-            self.client.gc.apply(self)
+            # self.client.gc.apply(self)
+            pass

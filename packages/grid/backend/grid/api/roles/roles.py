@@ -125,7 +125,7 @@ def get_all_roles_route(
     if isinstance(reply, ExceptionMessage):
         return {"error": reply.exception_msg}
     else:
-        return [role.upcast() for role in reply.content]
+        return [role for role in reply.content]
 
 
 @router.get("/{role_id}", status_code=200, response_class=JSONResponse)
@@ -157,7 +157,7 @@ def get_specific_role_route(
     if isinstance(reply, ExceptionMessage):
         return {"error": reply.exception_msg}
     else:
-        return reply.content.upcast()
+        return reply.content
 
 
 @router.patch("/{role_id}", status_code=200, response_class=JSONResponse)

@@ -135,6 +135,8 @@ def time_dataset_download(domain: Domain, dataset_index: int, asset_name: str):
     return total_time
 
 
+# TODO: This test is flapping, we should fix it
+@pytest.mark.xfail
 @pytest.mark.e2e
 def test_benchmark_datasets() -> None:
 

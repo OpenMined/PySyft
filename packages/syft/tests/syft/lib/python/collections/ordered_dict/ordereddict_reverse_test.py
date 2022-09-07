@@ -3,7 +3,7 @@ import syft as sy
 
 
 def test_ordereddict_reversed() -> None:
-    s = sy.lib.python.collections.OrderedDict()
+    s = sy.lib.python.collections.SyOrderedDict()
     s["1"] = 1
     s["2"] = 2
     s["3"] = 3

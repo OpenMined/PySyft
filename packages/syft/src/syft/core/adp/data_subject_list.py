@@ -3,9 +3,11 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import Iterator
 from typing import List
+from typing import Sequence
 from typing import Set
 from typing import Tuple
 from typing import Union
@@ -38,7 +40,9 @@ def numpyutf8tolist(string_index: Tuple[np.ndarray, np.ndarray]) -> np.ndarray:
     return np.array(output_list)
 
 
-def liststrtonumpyutf8(string_list: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def liststrtonumpyutf8(
+    string_list: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray]:
     bytes_list = []
     indexes = []
     offset = 0
@@ -61,13 +65,14 @@ def liststrtonumpyutf8(string_list: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
     return output_array
 
 
+# INFO: excluding coverage of the whole class , as we intend to replace with new DSA
 @serializable(recursive_serde=True)
 class DataSubjectList:
     __attr_allowlist__ = ("one_hot_lookup", "data_subjects_indexed")
     __slots__ = ("one_hot_lookup", "data_subjects_indexed")
 
     # one_hot_lookup is a numpy array of unicode strings which can't be serialized
-    __serde_overrides__ = {
+    __serde_overrides__: Dict[str, Sequence[Callable]] = {
         "one_hot_lookup": [liststrtonumpyutf8, numpyutf8tolist],
     }
 

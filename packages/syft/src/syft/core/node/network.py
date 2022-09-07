@@ -14,10 +14,13 @@ import ascii_magic
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from pydantic import BaseSettings
+from pymongo import MongoClient
 
 # relative
 from ...lib.python import String
 from ...logger import error
+from ...shylock import ShylockPymongoBackend
+from ...shylock import configure
 from ..common.message import SignedImmediateSyftMessageWithReply
 from ..common.message import SignedMessage
 from ..common.message import SyftMessage
@@ -28,8 +31,8 @@ from .common.node import Node
 from .common.node_manager.association_request_manager import AssociationRequestManager
 from .common.node_manager.node_manager import NodeManager
 from .common.node_manager.node_route_manager import NodeRouteManager
-from .common.node_manager.role_manager import RoleManager
-from .common.node_manager.user_manager import UserManager
+from .common.node_manager.role_manager import NewRoleManager
+from .common.node_manager.user_manager import NoSQLUserManager
 from .common.node_service.association_request.association_request_service import (
     AssociationRequestService,
 )
@@ -83,6 +86,7 @@ class Network(Node):
         root_key: Optional[VerifyKey] = None,
         db_engine: Any = None,
         settings: Optional[BaseSettings] = None,
+        document_store: bool = False,
     ):
         super().__init__(
             name=name,
@@ -103,9 +107,22 @@ class Network(Node):
         self.network = SpecificLocation(name=self.name)
         self.root_key = root_key
 
+        # FIXME: Modify to use environment variable
+        nosql_db_engine = MongoClient(  # nosec
+            host="mongo",
+            port=27017,
+            username="root",
+            password="example",
+            uuidRepresentation="standard",
+        )
+
+        db_name = "app"
+        if document_store:
+            configure(ShylockPymongoBackend.create(nosql_db_engine, db_name))
+
         # Database Management Instances
-        self.users = UserManager(db_engine)
-        self.roles = RoleManager(db_engine)
+        self.users = NoSQLUserManager(nosql_db_engine, db_name)
+        self.roles = NewRoleManager()
         self.node = NodeManager(db_engine)
         self.node_route = NodeRouteManager(db_engine)
         self.association_requests = AssociationRequestManager(db_engine)

@@ -37,4 +37,4 @@ class GCSimple(GCStrategy):
         )
 
         # Send the message
-        pointer.client.send_eventual_msg_without_reply(msg=msg)
+        pointer.client.send_immediate_msg_without_reply(msg=msg)

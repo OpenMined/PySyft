@@ -5,22 +5,23 @@ from __future__ import annotations
 from typing import List
 from typing import Optional
 
-# third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
-
-# syft absolute
-import syft as sy
-
 # relative
-from ...proto.core.store.dataset_pb2 import Dataset as Dataset_PB
-from ...util import get_fully_qualified_name
 from ..common.serde.serializable import serializable
 from ..common.uid import UID
 from .storeable_object import StorableObject
 
 
-@serializable()
+@serializable(recursive_serde=True)
 class Dataset:
+    __attr_allowlist__ = [
+        "id",
+        "data",
+        "description",
+        "tags",
+        "search_permissions",
+        "read_permissions",
+    ]
+
     """
     Dataset is a wrapper over a collection of Serializable objects.
 
@@ -96,88 +97,3 @@ class Dataset:
 
     def __delitem__(self, _id: UID) -> None:
         self.data = [el for el in self.data if el.id != _id]
-
-    def _object2proto(self) -> Dataset_PB:
-        proto = Dataset_PB()
-
-        # Step 1: Serialize the id to protobuf and copy into protobuf
-        id = sy.serialize(self.id)
-        proto.id.CopyFrom(id)
-
-        # Step 2: Save the type of wrapper to use to deserialize
-        proto.obj_type = get_fully_qualified_name(obj=self)
-
-        # Step 3: Serialize data to protobuf and pack into proto
-        if hasattr(self, "data"):
-            if self.data is not None:
-                for _d in self.data:
-                    proto_storable = _d._object2proto()
-                    proto.data.append(proto_storable)
-
-        if hasattr(self, "description"):
-            # Step 4: save the description into proto
-            proto.description = self.description
-
-        # QUESTION: Which one do we want, self.data.tags or self.tags or both???
-        if hasattr(self, "tags"):
-            # Step 5: save tags into proto if they exist
-            if self.tags is not None:
-                for tag in self.tags:
-                    proto.tags.append(tag)
-
-        # Step 6: save read permissions
-        if len(self.read_permissions.keys()) > 0:
-            permission_data = sy.lib.python.Dict()
-            for k, v in self.read_permissions.items():
-                permission_data[k] = v
-            proto.read_permissions = sy.serialize(permission_data, to_bytes=True)
-
-        # Step 7: save search permissions
-        if len(self.search_permissions.keys()) > 0:
-            permission_data = sy.lib.python.Dict()
-            for k, v in self.search_permissions.items():
-                permission_data[k] = v
-            proto.search_permissions = sy.serialize(permission_data, to_bytes=True)
-
-        return proto
-
-    @staticmethod
-    def _proto2object(proto: Dataset_PB) -> "Dataset":
-
-        # Step 1: deserialize the ID
-        id = sy.deserialize(blob=proto.id)
-
-        if not isinstance(id, UID):
-            raise ValueError("TODO")
-
-        # Step 2: Deserialize data from protobuf
-        data = list(proto.data) if proto.data else []
-        data = [StorableObject._proto2object(proto=d) for d in data]
-
-        # Step 3: get the description from proto
-        description = proto.description if proto.description else ""
-
-        # Step 4: get the tags from proto of they exist
-        tags = list(proto.tags) if proto.tags else []
-
-        result = Dataset(id=id, data=data, description=description, tags=tags)
-        return result
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Return the type of protobuf object which stores a class of this type
-
-        As a part of serialization and deserialization, we need the ability to
-        lookup the protobuf object type directly from the object type. This
-        static method allows us to do this.
-
-        Importantly, this method is also used to create the reverse lookup ability within
-        the metaclass of Serializable. In the metaclass, it calls this method and then
-        it takes whatever type is returned from this method and adds an attribute to it
-        with the type of this class attached to it. See the MetaSerializable class for details.
-
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
-
-        """
-        return Dataset_PB

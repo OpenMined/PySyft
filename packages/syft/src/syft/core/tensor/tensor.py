@@ -169,7 +169,7 @@ class TensorPointer(Pointer):
             other_dtype = other.public_dtype
         elif isinstance(other, (int, float)):
             other_shape = (1,)
-            other_dtype = np.int32
+            other_dtype = np.int64
         elif isinstance(other, bool):
             other_shape = (1,)
             other_dtype = np.dtype("bool")
@@ -632,7 +632,7 @@ class Tensor(
     def _object2bytes(self) -> bytes:
         schema = get_capnp_schema(schema_file="tensor.capnp")
         tensor_struct: CapnpModule = schema.Tensor  # type: ignore
-        tensor_msg = tensor_struct.new_message()
+        tensor_msg = tensor_struct.new_message()  # type: ignore
 
         # this is how we dispatch correct deserialization of bytes
         tensor_msg.magicHeader = serde_magic_header(type(self))
@@ -648,7 +648,7 @@ class Tensor(
         tensor_msg.publicDtype = public_dtype_func()
         tensor_msg.tagName = self.tag_name
 
-        return tensor_msg.to_bytes_packed()
+        return tensor_msg.to_bytes()
 
     @staticmethod
     def _bytes2object(buf: bytes) -> Tensor:
@@ -656,9 +656,10 @@ class Tensor(
         tensor_struct: CapnpModule = schema.Tensor  # type: ignore
         # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
         MAX_TRAVERSAL_LIMIT = 2**64 - 1
-        tensor_msg = tensor_struct.from_bytes_packed(
+        with tensor_struct.from_bytes(  # type: ignore
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        )
+        ) as msg:
+            tensor_msg = msg
 
         tensor = Tensor(
             child=sy.deserialize(combine_bytes(tensor_msg.child), from_bytes=True),

@@ -4,16 +4,12 @@ from typing import List
 from typing import Optional
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
 # syft absolute
 import syft as sy
 
 # relative
-from .....proto.core.node.common.action.beaver_action_pb2 import (
-    BeaverAction as BeaverAction_PB,
-)
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
@@ -25,8 +21,10 @@ from .common import ImmediateActionWithoutReply
 BEAVER_CACHE: Dict[UID, StorableObject] = {}  # Global cache for spdz mask values
 
 
-@serializable()
+@serializable(recursive_serde=True)
 class BeaverAction(ImmediateActionWithoutReply):
+    __attr_allowlist__ = ["id", "values", "locations", "address"]
+
     def __init__(
         self,
         values: List[ShareTensor],
@@ -87,20 +85,3 @@ class BeaverAction(ImmediateActionWithoutReply):
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         for value, location in zip(self.values, self.locations):
             BeaverAction.beaver_populate(value, location, node)
-
-    def _object2proto(self) -> BeaverAction_PB:
-        values = [sy.serialize(value, to_bytes=True) for value in self.values]
-        locations = [sy.serialize(location) for location in self.locations]
-        addr = sy.serialize(self.address)
-        return BeaverAction_PB(values=values, locations=locations, address=addr)
-
-    @staticmethod
-    def _proto2object(proto: BeaverAction_PB) -> "BeaverAction":
-        values = [sy.deserialize(value, from_bytes=True) for value in proto.values]
-        locations = [sy.deserialize(location) for location in proto.locations]
-        addr = sy.deserialize(blob=proto.address)
-        return BeaverAction(values=values, locations=locations, address=addr)
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return BeaverAction_PB

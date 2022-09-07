@@ -41,7 +41,7 @@ class PRZSAction(ImmediateActionWithoutReply):
         "id_at_location",
         "is_dp_tensor",
         "address",
-        "msg_id",
+        "id",
         "_id",
     ]
 

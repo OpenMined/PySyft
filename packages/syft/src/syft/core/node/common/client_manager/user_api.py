@@ -86,7 +86,7 @@ class UserRequestAPI(RequestAPI):
             content={"email": email, "password": password},
         )
 
-        return response.payload.kwargs.upcast()  # type: ignore
+        return response.payload.kwargs  # type: ignore
 
     @property
     def send_new_message_request(self) -> Callable:

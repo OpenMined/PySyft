@@ -17,6 +17,7 @@ import ascii_magic
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from pydantic import BaseSettings
+from pymongo import MongoClient
 
 # relative
 from ...lib.python import String
@@ -24,6 +25,8 @@ from ...logger import critical
 from ...logger import debug
 from ...logger import info
 from ...logger import traceback
+from ...shylock import ShylockPymongoBackend
+from ...shylock import configure
 from ...telemetry import instrument
 from ..adp.ledger_store import RedisLedgerStore
 from ..common.message import SignedImmediateSyftMessageWithReply
@@ -42,8 +45,8 @@ from .common.node_manager.node_manager import NodeManager
 from .common.node_manager.node_route_manager import NodeRouteManager
 from .common.node_manager.redis_store import RedisStore
 from .common.node_manager.request_manager import RequestManager
-from .common.node_manager.role_manager import RoleManager
-from .common.node_manager.user_manager import UserManager
+from .common.node_manager.role_manager import NewRoleManager
+from .common.node_manager.user_manager import NoSQLUserManager
 from .common.node_service.association_request.association_request_service import (
     AssociationRequestService,
 )
@@ -111,6 +114,7 @@ class Domain(Node):
         store_type: type = RedisStore,
         ledger_store_type: type = RedisLedgerStore,
         settings: Optional[BaseSettings] = None,
+        document_store: bool = False,
     ):
 
         if db_engine is None:
@@ -136,9 +140,21 @@ class Domain(Node):
         self.domain = SpecificLocation(name=self.name)
         self.root_key = root_key
 
+        # FIXME: Modify to use environment variable
+        nosql_db_engine = MongoClient(  # nosec
+            host="mongo",
+            port=27017,
+            username="root",
+            password="example",
+            uuidRepresentation="standard",
+        )
+        db_name = "app"
+        if document_store:
+            configure(ShylockPymongoBackend.create(nosql_db_engine, db_name))
+
         # Database Management Instances
-        self.users = UserManager(db_engine)
-        self.roles = RoleManager(db_engine)
+        self.users = NoSQLUserManager(nosql_db_engine, db_name)
+        self.roles = NewRoleManager()
         self.environments = EnvironmentManager(db_engine)
         self.association_requests = AssociationRequestManager(db_engine)
         self.data_requests = RequestManager(db_engine)
@@ -457,7 +473,8 @@ class Domain(Node):
 
     def clear(self, user_role: int) -> bool:
         # Cleanup database tables
-        if user_role == self.roles.owner_role.id:
+        # FIXME: modify to use role manager.
+        if user_role == self.roles.owner_role.id:  # type: ignore
             self.store.clear()
             self.data_requests.clear()
             self.users.clear()

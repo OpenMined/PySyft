@@ -16,6 +16,7 @@ from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import UserNotFoundError
 from ...node_table.utils import model_to_json
+from ...node_table.utils import syft_object_to_json
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
 from ..success_resp_message import SuccessResponseMessage
@@ -61,26 +62,35 @@ def create_user_msg(
         # If email not registered, a new user can be created.
         pass
 
-    app_id = node.users.create_user_application(
+    budget = 0.0
+    if msg.budget:
+        budget = msg.budget
+    node.users.create_user(
         name=msg.name,
         email=msg.email,
         password=msg.password,
-        daa_pdf=msg.daa_pdf,
+        daa_pdf=msg.daa_pdf,  # type: ignore
         institution=msg.institution,
         website=msg.website,
-        budget=msg.budget,
+        budget=budget,
+        role=node.roles.ds_role,
+        verify_key=verify_key,
     )
+    # FIXME: Re-enable when we have integration UserApplication Document in the codebase.
+    # app_id = node.users.create_user_application(
+    #     name=msg.name,
+    #     email=msg.email,
+    #     password=msg.password,
+    #     daa_pdf=msg.daa_pdf,
+    #     institution=msg.institution,
+    #     website=msg.website,
+    #     budget=msg.budget,
+    # )
 
-    user_role_id = -1
-    try:
-        user_role_id = node.users.role(verify_key=verify_key).id
-    except Exception as e:
-        print("verify_key not in db", e)
-
-    if node.roles.can_create_users(role_id=user_role_id):
-        node.users.process_user_application(
-            candidate_id=app_id, status="accepted", verify_key=verify_key
-        )
+    # if node.users.can_create_users(verify_key=verify_key):
+    #     node.users.process_user_application(
+    #         candidate_id=app_id, status="accepted", verify_key=verify_key
+    #     )
 
     return SuccessResponseMessage(
         address=msg.reply_to,
@@ -93,14 +103,15 @@ def accept_or_deny_candidate(
     node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
-    if True:  # node.users.can_create_users(verify_key=verify_key):
-        node.users.process_user_application(
-            candidate_id=msg.candidate_id, status=msg.status, verify_key=verify_key
-        )
-    else:
-        raise AuthorizationError(
-            message="You're not allowed to create a new User using this email!"
-        )
+    # if True:  # node.users.can_create_users(verify_key=verify_key):
+
+    #     node.users.process_user_application(
+    #         candidate_id=msg.candidate_id, status=msg.status, verify_key=verify_key
+    #     )
+    # else:
+    #     raise AuthorizationError(
+    #         message="You're not allowed to create a new User using this email!"
+    #     )
 
     return SuccessResponseMessage(
         address=msg.reply_to,
@@ -124,9 +135,9 @@ def update_user_msg(
     _allowed = msg.user_id == 0 or node.users.can_create_users(verify_key=verify_key)
     # Change own information
     if msg.user_id == 0:
-        msg.user_id = int(node.users.get_user(verify_key).id)  # type: ignore
+        msg.user_id = int(node.users.get_user(verify_key).id_int)  # type: ignore
 
-    _valid_user = node.users.contain(id=msg.user_id)
+    _valid_user = node.users.contain(id_int=msg.user_id)
 
     if not _valid_parameters:
         raise MissingRequestKeyError(
@@ -168,17 +179,19 @@ def update_user_msg(
     if msg.role:
         target_user = node.users.first(id=msg.user_id)
         _allowed = (
-            msg.role != node.roles.owner_role.name  # Target Role != Owner
-            and target_user.role
-            != node.roles.owner_role.id  # Target User Role != Owner
+            msg.role != node.roles.owner_role["name"]  # Target Role != Owner
+            and target_user.role["name"]
+            != node.roles.owner_role["name"]  # Target User Role != Owner
             and node.users.can_create_users(verify_key=verify_key)  # Key Permissions
         )
 
         # If all premises were respected
         if _allowed:
-            new_role_id = node.roles.first(name=msg.role).id
-            node.users.set(user_id=msg.user_id, role=new_role_id)  # type: ignore
-        elif target_user.role == node.roles.owner_role.id:
+            for k, v in node.roles.role_dict:
+                if v["name"] == msg.role:
+                    break
+            node.users.set(user_id=msg.user_id, role=v)  # type: ignore
+        elif target_user.role["name"] == node.roles.owner_role["name"]:
             raise AuthorizationError("You're not allowed to change Owner user roles!")
         else:
             raise AuthorizationError("You're not allowed to change User roles!")
@@ -206,14 +219,14 @@ def get_user_msg(
         _msg = model_to_json(user)
 
         # Use role name instead of role ID.
-        _msg["role"] = node.roles.first(id=_msg["role"]).name
+        _msg["role"] = user.role["name"]
 
         # Remove private key
         del _msg["private_key"]
 
         # Get budget spent
         _msg["budget_spent"] = node.users.get_budget_for_user(
-            verify_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder)
+            verify_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder)  # type: ignore
         )
 
     return GetUserResponse(
@@ -238,9 +251,9 @@ def get_all_users_msg(
         users = node.users.all()
         _msg = []
         for user in users:
-            _user_json = model_to_json(user)
+            _user_json = syft_object_to_json(user)
             # Use role name instead of role ID.
-            _user_json["role"] = node.roles.first(id=_user_json["role"]).name
+            _user_json["role"] = _user_json["role"].get("name", None)
 
             # Remove private key
             del _user_json["private_key"]
@@ -274,7 +287,8 @@ def get_applicant_users(
         )
     else:
         # Get All Users
-        users = node.users.get_all_applicant()
+        # FIXME: Re-enable after adding UserApplication collection
+        users = node.users.get_all_applicant()  # type: ignore
         _msg = []
         _user_json = {}
         for user in users:
@@ -295,10 +309,8 @@ def del_user_msg(
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
 
-    _target_user = node.users.first(id=msg.user_id)
-    _not_owner = (
-        node.roles.first(id=_target_user.role).name != node.roles.owner_role.name
-    )
+    _target_user = node.users.first(id_int=msg.user_id)
+    _not_owner = _target_user.role["name"] != node.roles.owner_role["name"]
 
     _allowed = (
         node.users.can_create_users(verify_key=verify_key)  # Key Permission
@@ -322,7 +334,7 @@ def search_users_msg(
 ) -> SearchUsersResponse:
     user_parameters = {
         "email": msg.email,
-        "role": node.roles.first(name=msg.role).id,
+        "role": {"name": msg.role},
     }
 
     filtered_parameters = filter(
