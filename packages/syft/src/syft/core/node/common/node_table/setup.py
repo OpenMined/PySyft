@@ -4,7 +4,7 @@ from typing import Dict
 from typing import List
 
 # relative
-from .user import SyftObject
+from .syft_object import SyftObject
 
 
 class NoSQLSetup(SyftObject):

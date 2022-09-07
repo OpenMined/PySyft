@@ -5,7 +5,7 @@ from typing import List
 from typing import Optional
 
 # relative
-from .user import SyftObject
+from .syft_object import SyftObject
 
 
 class NoSQLAssociationRequest(SyftObject):
