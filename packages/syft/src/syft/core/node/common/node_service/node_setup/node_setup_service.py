@@ -1,6 +1,5 @@
 # stdlib
 from datetime import datetime
-from json import loads
 from typing import Callable
 from typing import Dict
 from typing import List
@@ -130,7 +129,7 @@ def get_setup(
 ) -> GetSetUpResponse:
 
     _setup = node.setup.first(domain_name=node.name).to_dict()
-    _setup["tags"] = loads(_setup["tags"])
+    _setup["tags"] = _setup["tags"]
     # TODO: Make this a little more defensive so we dont accidentally spill secrets
     # from node.settings. Perhaps we should add a public settings interface
     _setup["use_blob_storage"] = getattr(node.settings, "USE_BLOB_STORAGE", False)
