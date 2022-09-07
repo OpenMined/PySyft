@@ -124,9 +124,9 @@ class Network(Node):
         # Database Management Instances
         self.users = NoSQLUserManager(nosql_db_engine, db_name)
         self.roles = NewRoleManager()
-        self.node = NoSQLNodeManager(nosql_db_engine["app"])
+        self.node = NoSQLNodeManager(nosql_db_engine, db_name)
         self.association_requests = NoSQLAssociationRequestManager(
-            nosql_db_engine["app"]
+            nosql_db_engine, db_name
         )
 
         # Grid Network Services
