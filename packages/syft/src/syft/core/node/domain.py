@@ -158,11 +158,11 @@ class Domain(Node):
         self.roles = NewRoleManager()
         self.environments = EnvironmentManager(db_engine)
         self.association_requests = NoSQLAssociationRequestManager(
-            nosql_db_engine["app"]
+            nosql_db_engine, db_name
         )
         self.data_requests = RequestManager(db_engine)
         self.datasets = DatasetManager(db_engine)
-        self.node = NoSQLNodeManager(nosql_db_engine["app"])
+        self.node = NoSQLNodeManager(nosql_db_engine, db_name)
         self.ledger_store = ledger_store_type(settings=settings)
 
         # self.immediate_services_without_reply.append(RequestReceiverService)
