@@ -79,7 +79,6 @@ def create_initial_setup(
 
         # convert to hex
         _node_private_key = signing_key.encode(encoder=HexEncoder).decode("utf-8")  # type: ignore
-        _verify_key = signing_key.verify_key.encode(encoder=HexEncoder).decode("utf-8")  # type: ignore
         _admin_role = node.roles.owner_role
 
         create_setup = False
