@@ -2,18 +2,19 @@
 ===============================================
 
 .. note:: 
-   To run all the steps in this tutorial interactively, we prefer using the below command.
+   TIP: To run this tutorial interactively in Jupyter Lab on your own machine type:
 
-::
+:: 
+   | pip install hagrid
+   | hagrid quickstart data-owner
 
-   hagrid quickstart https://github.com/OpenMined/PySyft/tree/dev/notebooks/quickstart/data-owner/00-deploy-domain.ipynb
 
 
-Data owners are defined by those with ``datasets`` 💾  they want to make available for
+Data owners are defined by those with ``datasets`` 💾 they want to make available for
 study by an outside party.
 
-Today’s tutorial will help you understand why and how a Data owners can
-launch and ``deploy`` their own domain node or private data servers to house their datasets.
+This tutorial will help you understand how a Data Owner can
+``launch`` their own Domain Server to securely host private datasets.
 
    **Note:** Throughout the tutorials, we also mean Domain Servers whenever we refer to Domain Node. Both mean the same and are used interchangeably. 
 
