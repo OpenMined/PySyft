@@ -37,7 +37,7 @@ class UserApplication(Base):
     name = Column(String(255), default="")
     hashed_password = Column(String(512))
     salt = Column(String(255))
-    daa_pdf = Column(Integer, ForeignKey("daa_pdf.id"))
+    # daa_pdf = Column(Integer, ForeignKey("daa_pdf.id"))
     status = Column(String(255), default="pending")
     added_by = Column(String(2048))
     website = Column(String(2048))
@@ -66,7 +66,7 @@ class SyftUser(Base):
     added_by = Column(String(2048))
     website = Column(String(2048))
     institution = Column(String(2048))
-    daa_pdf = Column(Integer, ForeignKey("daa_pdf.id"))
+    # daa_pdf = Column(Integer, ForeignKey("daa_pdf.id"))
     created_at = Column(DateTime())
 
     def __str__(self) -> str:
