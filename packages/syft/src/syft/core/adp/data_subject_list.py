@@ -3,9 +3,11 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import Iterator
 from typing import List
+from typing import Sequence
 from typing import Set
 from typing import Tuple
 from typing import Union
@@ -70,7 +72,7 @@ class DataSubjectList:
     __slots__ = ("one_hot_lookup", "data_subjects_indexed")
 
     # one_hot_lookup is a numpy array of unicode strings which can't be serialized
-    __serde_overrides__ = {
+    __serde_overrides__: Dict[str, Sequence[Callable]] = {
         "one_hot_lookup": [liststrtonumpyutf8, numpyutf8tolist],
     }
 

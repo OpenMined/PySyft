@@ -6,23 +6,16 @@ from typing import Optional
 from typing import Union
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import SupportsIndex
-
-# syft absolute
-import syft as sy
 
 # relative
 from ...core.common import UID
-from ...core.common.serde.serializable import serializable
-from ...proto.lib.python.list_pb2 import List as List_PB
 from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory
 from .primitive_factory import isprimitive
 from .primitive_interface import PyPrimitive
 from .slice import Slice
 from .types import SyPrimitiveRet
-from .util import downcast
 from .util import upcast
 
 
@@ -30,7 +23,6 @@ class ListIterator(Iterator):
     pass
 
 
-@serializable()
 class List(UserList, PyPrimitive):
     __slots__ = ["_id", "_index"]
 
@@ -48,17 +40,6 @@ class List(UserList, PyPrimitive):
 
         self._id: UID = id if id else UID()
         self._index = 0
-
-    @property
-    def id(self) -> UID:
-        """We reveal PyPrimitive.id as a property to discourage users and
-        developers of Syft from modifying .id attributes after an object
-        has been initialized.
-
-        :return: returns the unique id of the object
-        :rtype: UID
-        """
-        return self._id
 
     def upcast(self) -> ListType:
         # recursively upcast
@@ -154,32 +135,3 @@ class List(UserList, PyPrimitive):
     def count(self, other: Any) -> SyPrimitiveRet:
         res = super().count(other)
         return PrimitiveFactory.generate_primitive(value=res)
-
-    def _object2proto(self) -> List_PB:
-        id_ = sy.serialize(obj=self.id)
-        downcasted = [downcast(value=element) for element in self.data]
-        data = [sy.serialize(obj=element, to_bytes=True) for element in downcasted]
-        return List_PB(
-            id=id_,
-            data=data,
-            temporary_box=self.temporary_box,
-        )
-
-    @staticmethod
-    def _proto2object(proto: List_PB) -> "List":
-        id_: UID = sy.deserialize(blob=proto.id)
-        value = []
-        # list comprehension doesn't work since it results in a
-        # [generator()] which is not equal to an empty list
-        for element in proto.data:
-            value.append(upcast(sy.deserialize(blob=element, from_bytes=True)))
-        new_list = List(
-            value=value,
-            temporary_box=proto.temporary_box,
-        )
-        new_list._id = id_
-        return new_list
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return List_PB

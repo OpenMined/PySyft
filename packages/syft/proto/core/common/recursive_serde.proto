@@ -2,8 +2,22 @@ syntax = "proto3";
 
 package syft.core.common;
 
+message Iterable {
+  string magic_header = 1;
+  repeated bytes values = 2;
+}
+
+message KVIterable {
+  string magic_header = 1;
+  repeated bytes keys = 2;
+  repeated bytes values = 3;
+}
+
 message RecursiveSerde {
-  repeated string fields_name = 1;
-  repeated bytes fields_data = 2;
-  string fully_qualified_name = 3;
+  string magic_header = 1;
+  repeated string fields_name = 2;
+  repeated bytes fields_data = 3;
+  string fully_qualified_name = 4;
+
+  bytes nonrecursive_blob = 5;
 }

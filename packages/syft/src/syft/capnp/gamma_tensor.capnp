@@ -4,7 +4,7 @@ using Array = import "array.capnp".Array;
 struct GammaTensor {
   magicHeader @0 :Data;
   child @1 :List(Data);
-  state @2 :Data;
+  state @2 :List(Data);
   dataSubjects @3 :List(Data);
   minVal @4 :Data;
   maxVal @5 :Data;

@@ -395,10 +395,6 @@ def test_pos():
     assert SyFalse.__pos__() == PyFalse.__pos__()
 
 
-def test_protobuf_schema():
-    assert Bool.get_protobuf_schema()
-
-
 def test_to_bytes():
     assert Bool.from_bytes(SyTrue.to_bytes(4, "big"), "big")
     assert not Bool.from_bytes(SyFalse.to_bytes(4, "big"), "big")

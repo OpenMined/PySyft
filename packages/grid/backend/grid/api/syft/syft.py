@@ -39,7 +39,7 @@ async def get_body(request: Request) -> bytes:
 @router.get("/metadata", response_model=str)
 def syft_metadata() -> Response:
     return Response(
-        node.get_metadata_for_client()._object2proto().SerializeToString(),
+        serialize(node.get_metadata_for_client(), to_bytes=True),
         media_type="application/octet-stream",
     )
 
@@ -72,8 +72,6 @@ def handle_syft_route(data: bytes) -> Any:
         return r
     elif isinstance(obj_msg, SignedImmediateSyftMessageWithoutReply):
         celery_app.send_task("grid.worker.msg_without_reply", args=[obj_msg])
-    else:
-        node.recv_eventual_msg_without_reply(msg=obj_msg)
     return ""
 
 

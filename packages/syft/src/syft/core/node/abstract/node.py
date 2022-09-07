@@ -12,7 +12,6 @@ from pydantic import BaseSettings
 
 # relative
 from ....logger import traceback_and_raise
-from ...common.message import SignedEventualSyftMessageWithoutReply
 from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedImmediateSyftMessageWithoutReply
 from ...common.uid import UID
@@ -81,11 +80,6 @@ class AbstractNode(Address):
 
     @property
     def known_child_nodes(self) -> List[Any]:
-        traceback_and_raise(NotImplementedError)
-
-    def recv_eventual_msg_without_reply(
-        self, msg: SignedEventualSyftMessageWithoutReply
-    ) -> None:
         traceback_and_raise(NotImplementedError)
 
     def recv_immediate_msg_without_reply(

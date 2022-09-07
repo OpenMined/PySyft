@@ -29,7 +29,7 @@ def get_all_requests(current_user: UserPrivate) -> List[Request]:
     reply = send_message_with_reply(
         signing_key=current_user.get_signing_key(), message_type=GetRequestsMessage
     )
-    return [request.upcast() for request in reply.content]  # upcast?
+    return [request for request in reply.content]  # upcast?
 
 
 def get_all_budget_requests(current_user: UserPrivate) -> List[BudgetRequestResponse]:
@@ -37,7 +37,7 @@ def get_all_budget_requests(current_user: UserPrivate) -> List[BudgetRequestResp
         signing_key=current_user.get_signing_key(),
         message_type=GetBudgetRequestsMessage,
     )
-    return [request.upcast() for request in reply.content]  # upcast?
+    return [request for request in reply.content]  # upcast?
 
 
 def get_request(current_user: UserPrivate, request_id: str) -> Request:
@@ -46,7 +46,7 @@ def get_request(current_user: UserPrivate, request_id: str) -> Request:
         message_type=GetRequestMessage,
         request_id=request_id,
     )
-    return reply.upcast()
+    return reply
 
 
 def update_request(

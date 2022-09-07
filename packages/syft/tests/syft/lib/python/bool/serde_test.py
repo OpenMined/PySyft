@@ -1,17 +1,13 @@
 # syft absolute
 import syft as sy
 from syft.lib.python.bool import Bool
-from syft.proto.lib.python.bool_pb2 import Bool as Bool_PB
 
 
 def test_serde() -> None:
     syft_bool = Bool(True)
 
-    serialized = syft_bool._object2proto()
-
-    assert isinstance(serialized, Bool_PB)
-
-    deserialized = Bool._proto2object(proto=serialized)
+    serialized = sy.serialize(syft_bool, to_bytes=True)
+    deserialized = sy.deserialize(serialized, from_bytes=True)
 
     assert isinstance(deserialized, Bool)
     assert deserialized.id == syft_bool.id

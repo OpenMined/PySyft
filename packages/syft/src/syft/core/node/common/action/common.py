@@ -5,7 +5,6 @@ from typing import Union
 from nacl.signing import VerifyKey
 
 # relative
-from ....common.message import EventualSyftMessageWithoutReply
 from ....common.message import ImmediateSyftMessageWithReply
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.message import SyftMessage
@@ -22,13 +21,6 @@ class Action(SyftMessage):
 
 
 class ImmediateActionWithoutReply(Action, ImmediateSyftMessageWithoutReply):
-    """ """
-
-    def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
-        raise NotImplementedError
-
-
-class EventualActionWithoutReply(Action, EventualSyftMessageWithoutReply):
     """ """
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:

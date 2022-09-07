@@ -6,13 +6,11 @@ from typing import Dict
 from typing import Optional
 from typing import Tuple
 from typing import Union
+from typing import cast
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 import requests
 from requests.adapters import HTTPAdapter
-
-# from requests.adapters import TimeoutHTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from requests_toolbelt.multipart.encoder import MultipartEncoder
 
@@ -21,15 +19,12 @@ from .. import GridURL
 from ...core.common.message import ImmediateSyftMessageWithoutReply
 from ...core.common.message import SignedImmediateSyftMessageWithoutReply
 from ...core.common.message import SyftMessage
+from ...core.common.serde.deserialize import _deserialize
 from ...core.common.serde.serializable import serializable
 from ...core.common.serde.serialize import _serialize
 from ...core.node.enums import RequestAPIFields
 from ...core.node.exceptions import RequestAPIException
 from ...logger import debug
-from ...proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
-from ...proto.grid.connections.http_connection_pb2 import (
-    GridHTTPConnection as GridHTTPConnection_PB,
-)
 from ...util import verify_tls
 from ..connections.http_connection import HTTPConnection
 
@@ -54,8 +49,9 @@ class TimeoutHTTPAdapter(HTTPAdapter):
         return super().send(request, **kwargs)
 
 
-@serializable()
+@serializable(recursive_serde=True)
 class GridHTTPConnection(HTTPConnection):
+    __attr_allowlist__ = ["base_url", "session_token", "token_type"]
 
     LOGIN_ROUTE = "/login"
     SYFT_ROUTE = "/syft"
@@ -150,9 +146,9 @@ class GridHTTPConnection(HTTPConnection):
         if response.status_code != requests.codes.ok:
             raise Exception(content["detail"])
 
-        metadata = content["metadata"].encode("ISO-8859-1")
-        metadata_pb = Metadata_PB()
-        metadata_pb.ParseFromString(metadata)
+        metadata = _deserialize(
+            content["metadata"].encode("ISO-8859-1"), from_bytes=True
+        )
 
         # If success
         # Save session token
@@ -160,7 +156,7 @@ class GridHTTPConnection(HTTPConnection):
         self.token_type = content["token_type"]
 
         # Return node metadata / user private key
-        return (metadata_pb, content["key"])
+        return (metadata, content["key"])
 
     def _get_metadata(self, timeout: Optional[float] = 2) -> Tuple:
         """Request Node's metadata
@@ -196,10 +192,7 @@ class GridHTTPConnection(HTTPConnection):
         except Exception as e:
             print(f"Failed to upgrade to HTTPS. {e}")
 
-        metadata_pb = Metadata_PB()
-        metadata_pb.ParseFromString(response.content)
-
-        return metadata_pb
+        return cast(tuple, _deserialize(response.content, from_bytes=True))
 
     def setup(self, **content: Dict[str, Any]) -> Any:
         response = json.loads(
@@ -304,21 +297,3 @@ class GridHTTPConnection(HTTPConnection):
     @property
     def host(self) -> str:
         return self.base_url.base_url
-
-    @staticmethod
-    def _proto2object(proto: GridHTTPConnection_PB) -> "GridHTTPConnection":
-        obj = GridHTTPConnection(url=GridURL.from_url(proto.base_url))
-        obj.session_token = proto.session_token
-        obj.token_type = proto.token_type
-        return obj
-
-    def _object2proto(self) -> GridHTTPConnection_PB:
-        return GridHTTPConnection_PB(
-            base_url=str(self.base_url),
-            session_token=self.session_token,
-            token_type=self.token_type,
-        )
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return GridHTTPConnection_PB
