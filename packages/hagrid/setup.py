@@ -5,17 +5,16 @@ import platform
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = "0.2.90"
+__version__ = "0.2.91"
 
-DATA_FILES = {
-    "img": ["hagrid/img/*.png"],
-}
+DATA_FILES = {"img": ["hagrid/img/*.png"], "hagrid": ["*.yml"]}
 
 packages = [
     "ascii_magic",
     "click",
     "cryptography>=37.0.2",
     "gitpython",
+    "jinja2",
     "names",
     "packaging>=21.3",
     "paramiko",
@@ -25,6 +24,8 @@ packages = [
     "setuptools",
     "virtualenv-api",
     "virtualenv",
+    "PyYAML",
+    "tqdm",
 ]
 
 if platform.system().lower() != "windows":

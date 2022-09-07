@@ -4,7 +4,7 @@ services:
     profiles:
       - vpn
     volumes:
-      - ./vpn:/tailscale
+      - ${RELATIVE_PATH}./vpn:/tailscale
 
   proxy:
     ports:
@@ -17,7 +17,7 @@ services:
     build:
       target: "grid-ui-development"
     volumes:
-      - ./frontend:/app
+      - ${RELATIVE_PATH}./frontend/:/app
 
   db:
     ports:
@@ -35,10 +35,10 @@ services:
 
   backend:
     volumes:
-      - ./backend/grid:/app/grid
-      - ./backend/alembic:/app/alembic
-      - ../syft:/app/syft
-      - ./data/package-cache:/root/.cache
+      - ${RELATIVE_PATH}./backend/grid:/app/grid
+      - ${RELATIVE_PATH}./backend/alembic:/app/alembic
+      - ${RELATIVE_PATH}../syft:/app/syft
+      - ${RELATIVE_PATH}./data/package-cache:/root/.cache
       # - ./profile:/tmp/profile
     command: /start-reload.sh
     # command: "sleep 99999"
@@ -49,10 +49,10 @@ services:
 
   backend_stream:
     volumes:
-      - ./backend/grid:/app/grid
-      - ./backend/alembic:/app/alembic
-      - ../syft:/app/syft
-      - ./data/package-cache:/root/.cache
+      - ${RELATIVE_PATH}./backend/grid:/app/grid
+      - ${RELATIVE_PATH}./backend/alembic:/app/alembic
+      - ${RELATIVE_PATH}../syft:/app/syft
+      - ${RELATIVE_PATH}./data/package-cache:/root/.cache
       # - ./profile:/tmp/profile
     command: "/start-reload.sh"
     # command: "sleep 99999"
@@ -63,10 +63,10 @@ services:
 
   celeryworker:
     volumes:
-      - ./backend/grid:/app/grid
-      - ./backend/alembic:/app/alembic
-      - ../syft:/app/syft
-      - ./data/package-cache:/root/.cache
+      - ${RELATIVE_PATH}./backend/grid:/app/grid
+      - ${RELATIVE_PATH}./backend/alembic:/app/alembic
+      - ${RELATIVE_PATH}../syft/:/app/syft
+      - ${RELATIVE_PATH}./data/package-cache:/root/.cache
       # - ./profile:/tmp/profile
     command: "/worker-start-reload.sh"
     # command: "sleep 99999"
@@ -79,7 +79,7 @@ services:
     profiles:
       - network
     volumes:
-      - ./vpn:/headscale
+      - ${RELATIVE_PATH}./vpn:/headscale
     ports:
       - "4000"
 

@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 # stdlib
-import operator
 import secrets
 from typing import Any
 from typing import Callable
@@ -212,26 +211,19 @@ class TensorPointer(Pointer):
         Returns:
             Tuple[MPCTensor,Union[MPCTensor,int,float,np.ndarray]] : Result of the operation
         """
-
         if isinstance(other, TensorPointer) and self.client != other.client:
-
             parties = [self.client, other.client]
             self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=parties)
             other_mpc = MPCTensor(
                 secret=other, shape=other.public_shape, parties=parties
             )
-            if op_str != "concatenate":
-                op = getattr(operator, op_str)
-                return op(self_mpc, other_mpc)
-            else:
-                return self_mpc.concatenate(other_mpc)
-
+            func = getattr(self_mpc, op_str)
+            return func(other_mpc)
         elif isinstance(other, MPCTensor):
-            if op_str != "concatenate":
-                op = getattr(operator, op_str)
-                return op(other, self)
-            else:
-                return other.concatenate(self)
+            # "self" should be secretly shared
+            other_mpc, self_mpc = MPCTensor.sanity_checks(other, self)
+            func = getattr(self_mpc, op_str)
+            return func(other_mpc)
 
         return self._apply_tensor_op(other=other, op_str=op_str, **kwargs)
 
