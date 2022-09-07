@@ -150,16 +150,16 @@ class Node(AbstractNode):
             Base.metadata.create_all(db_engine)  # type: ignore
 
         # FIXME: Modify to use environment variable
-        nosql_db_engine = MongoClient(  # nosec
+        self.nosql_db_engine = MongoClient(  # nosec
             host="mongo",
             port=27017,
             username="root",
             password="example",
             uuidRepresentation="standard",
         )
-        db_name = "app"
+        self.db_name = "app"
         if document_store:
-            configure(ShylockPymongoBackend.create(nosql_db_engine, db_name))
+            configure(ShylockPymongoBackend.create(self.nosql_db_engine, self.db_name))
 
         # cache these variables on self
         self.TableBase = TableBase
@@ -179,7 +179,7 @@ class Node(AbstractNode):
         # self.store is the elastic memory.
 
         self.store = store_type(db=self.db_engine, settings=settings)
-        self.setup = NoSQLSetupManager(nosql_db_engine, db_name)
+        self.setup = NoSQLSetupManager(self.nosql_db_engine, self.db_name)
 
         # We need to register all the services once a node is created
         # On the off chance someone forgot to do this (super unlikely)
