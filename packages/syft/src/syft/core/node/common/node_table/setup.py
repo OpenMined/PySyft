@@ -13,11 +13,11 @@ class NoSQLSetup(SyftObject):
     __version__ = 1
 
     # fields
-    domain_name: str = ""
+    domain_name: str
     description: str = ""
     contact: str = ""
     daa: bool = False
-    node_uid: str = ""
+    node_uid: str
     daa_document: bytes = b""
     tags: List[str] = []
     deployed_on: str
