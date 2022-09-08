@@ -480,6 +480,13 @@ class Tensor(
                 f"Data: {child} ,type: {type(child)} must be list or nd.array "
             )
 
+        # Temp fix for windows
+        if getattr(child, "dtype", None):
+            if "int" in str(child.dtype) and "64" not in str(child.dtype):
+                child = child.astype(DEFAULT_INT_NUMPY_TYPE)  # type: ignore
+            if "float" in str(child.dtype) and "64" not in str(child.dtype):
+                child = child.astype(DEFAULT_FLOAT_NUMPY_TYPE)  # type: ignore
+
         if not isinstance(child, (np.ndarray, PassthroughTensor, GammaTensor)) or (
             getattr(child, "dtype", None)
             not in [DEFAULT_INT_NUMPY_TYPE, DEFAULT_FLOAT_NUMPY_TYPE, np.bool_]
