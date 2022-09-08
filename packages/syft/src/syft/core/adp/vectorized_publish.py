@@ -55,18 +55,22 @@ def publish(
     is_linear: bool = True,
 ) -> np.ndarray:
     """
-    This method applies Individual Differential Privacy (IDP) as defined in https://arxiv.org/abs/2008.11193
+    This method applies Individual Differential Privacy (IDP) as defined in
+    https://arxiv.org/abs/2008.11193
         - Key results: Theorem 2.7 and 2.8 show how much privacy budget is spent by a query.
 
-    Given a tensor, it checks if the user (a data scientist) has enough privacy budget (PB) to see data from every data
-    subject.
-    - If the user has enough privacy budget, then DP noise is directly added to the result, and PB is deducted.
-    - If the user doesn't have enough PB, then every data subject with a higher epsilon than their PB's data is removed.
-        - The epsilons are then recomputed to see if the user now has enough PB to see the remaining data or not.
-
+    Given a tensor, it checks if the user (a data scientist) has enough privacy budget (PB)
+    to see data from every data subject.
+    - If the user has enough privacy budget, then DP noise is directly added to the result,
+      and PB is deducted.
+    - If the user doesn't have enough PB, then every data subject with a higher epsilon
+      than their PB's data is removed.
+        - The epsilons are then recomputed to see if the user now has enough PB to see the
+          remaining data or not.
 
     Notes:
-        - The privacy budget spent by a query equals the maximum epsilon increase of any data subject in the dataset.
+        - The privacy budget spent by a query equals the maximum epsilon increase of any
+          data subject in the dataset.
     """
 
     # Step 0: Ensure our Tensor's private data is in a form that is usable.
@@ -78,6 +82,8 @@ def publish(
 
     while isinstance(value, PassthroughTensor):
         # TODO: Ask Rasswanth why this check is necessary
+        # ATTENTION: we do the same unboxing below with root_child
+        # is this still needed to be done twice?
         value = value.child
 
     # Step 1: We obtain all the parameters needed to calculate Epsilons
@@ -112,8 +118,14 @@ def publish(
     )
 
     zeros_like = jnp.zeros_like(tensor.child)
-    
-    while not (tensor.child == zeros_like).all():# tensor.shape != ():
+
+    # this prevents us from running in an infinite loop
+    previous_budget = None
+    previous_spend = None
+
+    # if we dont return below we will terminate if the tensor gets replaced with zeros
+    while not (tensor.child == zeros_like).all():  # tensor.shape != ():
+
         if is_linear:
             lipschitz_bounds = coeffs.copy()
         else:
@@ -136,32 +148,52 @@ def publish(
         )  # This is the epsilon spend for ALL data subjects
         if any(all_epsilons < 0):
             raise Exception(
-                "Negative budget spend not allowed in PySyft for safety reasons. Please contact the OpenMined"
-                "support team for help."
+                "Negative budget spend not allowed in PySyft for safety reasons."
+                "Please contact the OpenMined support team for help."
             )
 
         epsilon_spend = max(
             all_epsilons
         )  # This is the epsilon spend for the QUERY, a single float.
+
         if not isinstance(epsilon_spend, float):
             epsilon_spend = float(epsilon_spend)
+
         if epsilon_spend < 0:
             raise Exception(
-                "Negative budget spend not allowed in PySyft for safety reasons. Please contact the OpenMined"
-                "support team for help."
+                "Negative budget spend not allowed in PySyft for safety reasons."
+                "Please contact the OpenMined support team for help."
             )
 
         # Step 3: Check if the user has enough privacy budget for this query
-    
         privacy_budget = get_budget_for_user(verify_key=ledger.user_key)
         has_budget = epsilon_spend <= privacy_budget
 
-        # Step 4- Path 1: If the User has enough Privacy Budget, we just add noise, deduct budget, and return the result.
+        # if we see the same budget and spend twice in a row we have failed to reduce it
+        if (
+            privacy_budget == previous_budget
+            and epsilon_spend == previous_spend
+            and not has_budget
+        ):
+            raise Exception(
+                "Publish has failed to reduce spend. "
+                f"With Budget: {previous_budget} Spend: {epsilon_spend}. Aborting."
+            )
+
+        if previous_budget is None:
+            previous_budget = privacy_budget
+
+        if previous_spend is None:
+            previous_spend = epsilon_spend
+
+        # Step 4: Path 1 - If the User has enough Privacy Budget, we just add noise,
+        # deduct budget, and return the result.
         if has_budget:
             original_output = tensor.child
 
             # We sample noise from a cryptographically secure distribution
-            # TODO: Replace with discrete gaussian distribution instead of regular gaussian to eliminate floating pt vulns
+            # TODO: Replace with discrete gaussian distribution instead of regular
+            # gaussian to eliminate floating pt vulns
             noise = np.asarray(
                 [
                     secrets.SystemRandom().gauss(0, sigma)
@@ -191,20 +223,23 @@ def publish(
                     print(f"Problem spending epsilon. {e}")
                     raise e
 
-            # The RDP constants are adjusted to account for the amount of exposure every data subject's data has had.
+            # The RDP constants are adjusted to account for the amount of exposure every
+            # data subject's data has had.
             ledger.update_rdp_constants(
                 query_constants=rdp_constants, entity_ids_query=input_entities
             )
             ledger._write_ledger()
-            return original_output + noise
+            return np.array(original_output + noise)  # no jax
 
-        # Step 4- Path 2: User doesn't have enough privacy budget.
+        # Step 4: Path 2 - User doesn't have enough privacy budget.
         elif not has_budget:
             print("Not enough privacy budget, about to start filtering.")
-            # If the user doesn't have enough PB, they shouldn't see data of high epsilon data subjects (privacy violation)
+            # If the user doesn't have enough PB, they shouldn't see data of high
+            # epsilon data subjects (privacy violation)
             # So we will remove data belonging to these data subjects from the computation.
 
-            # Step 4.1: Figure out which data subjects are within the PB & the highest possible spend
+            # Step 4.1: Figure out which data subjects are within the PB & the highest
+            # possible spend
             # within_budget_filter = (
             #     jnp.ones_like(all_epsilons) * privacy_budget >= all_epsilons
             # )
@@ -212,15 +247,21 @@ def publish(
             # TODO: Modify to work with private/public operations (when input_tensor is a scalar)
 
             # Step 4.2: Figure out which Tensors in the Source dictionary have those data subjects
+
+            # create a seperate iterable of the keys so they can be mutated below
             filtered_sourcetree = deepcopy(tensor.sources)
             input_tensors = list(filtered_sourcetree.values())
+
             parent_branch = [
                 filtered_sourcetree for _ in input_tensors
             ]  # TODO: Ensure this isn't deepcopying!
+
             # relative
             from ..tensor.autodp.gamma_tensor import GammaTensor
 
+            # ATTENTION: is this the same as tensor.sources.items() ?
             for parent_state, input_tensor in zip(parent_branch, input_tensors):
+
                 if isinstance(input_tensor, GammaTensor):
                     if (
                         input_tensor.func_str == "no_op"
@@ -239,7 +280,9 @@ def publish(
                         # Privacy loss associated with this private data specifically
                         epsilon = max(
                             ledger.calculate_epsilon_spend(
-                                np.asarray(compute_rdp_constant(rdp_params, private=True))
+                                np.asarray(
+                                    compute_rdp_constant(rdp_params, private=True)
+                                )
                             )
                         )
 
@@ -247,12 +290,23 @@ def publish(
                         if epsilon > privacy_budget:
                             filtered_tensor = input_tensor.filtered()
 
-                            # Replace the original tensor with this filtered one.
+                            # Replace the original tensor with this filtered one
+                            # remove the original state id
                             del parent_state[input_tensor.id]
+
+                            # add the new zeroed state id tensor
                             parent_state[filtered_tensor.id] = filtered_tensor
 
-                        # If epsilon <= privacy budget, we don't need to do anything- the user has enough PB to use the data
+                        # If epsilon <= privacy budget, we don't need to do anything -
+                        # the user has enough PB to use the data
                     else:
+                        # Is this supposed to search the entire state tree with no_op
+                        # data nodes being the leaves?
+
+                        # ATTENTION: is this intended to walk the state tree?
+                        # now that we no longer use recursion, I don't think this will
+                        # work so we might want to have a stack / queue above to
+                        # explore the frontier
                         input_tensors += list(input_tensor.sources.values())
                         parent_branch += [
                             input_tensor.sources for _ in input_tensor.sources.values()
@@ -261,9 +315,15 @@ def publish(
                     # This is a public value, we don't touch 'em.
                     continue
 
-            # Recompute the tensor's value now that some of its inputs have been filtered, and repeat epsilon calculations
+            # Recompute the tensor's value now that some of its inputs have been
+            # filtered, and repeat epsilon calculations
+
+            # ATTENTION: When we swap state we need to handle the base case so that
+            # the .child gets replaced not the .source (state) otherwise it never
+            # terminates
             tensor = tensor.swap_state(filtered_sourcetree)
             print("About to publish again with filtered source_tree!")
+
             # TODO: This isn't the most efficient way to do it since we can reuse sigmas, coeffs, etc.
             # TODO: Add a way to prevent infinite publishing?
             # TODO: Should we implement exponential backoff or something as a means of rate-limiting?
@@ -279,9 +339,6 @@ def publish(
             raise Exception
 
     noise = np.asarray(
-                [
-                    secrets.SystemRandom().gauss(0, sigma)
-                    for _ in range(zeros_like.size)
-                ]
-            ).reshape(zeros_like.shape)
-    return zeros_like + noise
+        [secrets.SystemRandom().gauss(0, sigma) for _ in range(zeros_like.size)]
+    ).reshape(zeros_like.shape)
+    return np.array(zeros_like + noise)  # not jax

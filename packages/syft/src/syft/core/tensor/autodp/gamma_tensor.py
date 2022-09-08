@@ -1204,8 +1204,24 @@ class GammaTensor:
         else:
             return self.child
 
-    def reconstruct(self, state: Optional[dict] = None) -> GammaTensor:
+    def reconstruct(self, state: Optional[Dict] = None) -> GammaTensor:
         if self.func_str == "no_op":
+            # ATTENTION:
+            # during publish we attempt to remove nodes if the we exceed budget
+            # if we call swap_state on a terminal Tensor we need to replace the
+            # child with zeros not the current level tensors child which is
+            # not zeroed yet
+            if state is not None and len(state.keys()) == 1:
+                # return the swapped state child to replace
+                try:
+                    return list(state.values())[0].child
+                except Exception as e:
+                    print("Something bad has happened in reconstruct", state)
+                    raise e
+            else:
+                # ATTENTION:
+                # can we have a terminal no_op tensor with multiple state keys?
+                pass
             return self.child
         else:
             if state is None:
