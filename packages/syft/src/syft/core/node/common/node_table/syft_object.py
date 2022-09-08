@@ -1,10 +1,12 @@
 # stdlib
 from collections import defaultdict
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import KeysView
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Type
 
 # third party
@@ -58,6 +60,9 @@ class SyftObject(BaseModel, SyftObjectRegistry):
     __attr_unique__: List[
         str
     ]  # the unique keys for the particular Collection the objects will be stored in
+    __serde_overrides__: Dict[
+        str, Sequence[Callable]
+    ] = {}  # List of attributes names which require a serde override.
 
     def to_mongo(self) -> Dict[str, Any]:
         d = {}
@@ -77,6 +82,9 @@ class SyftObject(BaseModel, SyftObjectRegistry):
 
     def to_bytes(self) -> bytes:
         d = SyDict(**self)
+        for attr, funcs in self.__serde_overrides__.items():
+            if attr in d:
+                d[attr] = funcs[0](d[attr])
         return serialize(d, to_bytes=True)  # type: ignore
 
     @staticmethod
@@ -92,7 +100,11 @@ class SyftObject(BaseModel, SyftObjectRegistry):
             raise ValueError(
                 "Versioned class should not be None for initialization of SyftObject."
             )
-        return constructor(**deserialize(bson["__blob__"], from_bytes=True).upcast())
+        de = deserialize(bson["__blob__"], from_bytes=True).upcast()
+        for attr, funcs in constructor.__serde_overrides__.items():
+            if attr in de:
+                de[attr] = funcs[1](de[attr])
+        return constructor(**de)
 
     # allows splatting with **
     def keys(self) -> KeysView[str]:
