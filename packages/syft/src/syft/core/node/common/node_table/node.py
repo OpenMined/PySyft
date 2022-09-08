@@ -13,7 +13,6 @@ class NoSQLNode(SyftObject):
     __version__ = 1
 
     # fields
-    id_int: int
     node_uid: str
     node_name: str
     node_type: Optional[str]
@@ -23,7 +22,6 @@ class NoSQLNode(SyftObject):
 
     # serde / storage rules
     __attr_state__ = [
-        "id_int",
         "node_uid",
         "node_name",
         "node_type",
@@ -32,5 +30,5 @@ class NoSQLNode(SyftObject):
         "node_route",
     ]
 
-    __attr_searchable__ = ["node_uid", "verify_key", "id_int"]
+    __attr_searchable__ = ["node_uid", "verify_key"]
     __attr_unique__ = ["node_uid"]

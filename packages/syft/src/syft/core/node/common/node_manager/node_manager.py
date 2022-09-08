@@ -93,10 +93,7 @@ class NoSQLNodeManager(NoSQLDatabaseManager):
                 values=attributes,
             )
         except NodeNotFoundError:
-            curr_len = len(self)
-
             node_row = NoSQLNode(
-                id_int=curr_len + 1,
                 node_uid=node_uid,
                 node_name=node_name,
             )
@@ -129,9 +126,7 @@ class NoSQLNodeManager(NoSQLDatabaseManager):
 
             self.update_one(query={"node_uid": credentials.node_uid}, values=attributes)
         except NodeNotFoundError:
-            curr_len = len(self)
             node_row = NoSQLNode(
-                id_int=curr_len + 1,
                 **credentials_dict,
             )
             self.add(node_row)
