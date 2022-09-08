@@ -6,14 +6,15 @@ from typing import Any
 STABLE_BRANCH = "0.6.0"
 DEFAULT_BRANCH = "dev"
 RENDERED_DIR = "rendered"
+DEFAULT_REPO = "OpenMined/PySyft"
 
 arg_defaults = {
-    "repo": "OpenMined/PySyft",
+    "repo": DEFAULT_REPO,
     "branch": STABLE_BRANCH,
     "username": "root",
     "auth_type": "key",
     "key_path": "~/.ssh/id_rsa",
-    "azure_repo": "OpenMined/PySyft",
+    "azure_repo": DEFAULT_REPO,
     "azure_branch": STABLE_BRANCH,
     "azure_username": "azureuser",
     "azure_key_path": "~/.ssh/id_rsa",
@@ -25,7 +26,7 @@ arg_defaults = {
     "gcp_project_id": "",
     "gcp_username": "",
     "gcp_key_path": "~/.ssh/google_compute_engine",
-    "gcp_repo": "OpenMined/PySyft",
+    "gcp_repo": DEFAULT_REPO,
     "gcp_branch": STABLE_BRANCH,
 }
 
