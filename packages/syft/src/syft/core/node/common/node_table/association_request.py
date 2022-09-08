@@ -17,14 +17,14 @@ class NoSQLAssociationRequest(SyftObject):
     id_int: int
     requested_date: str
     processed_date: str = ""
-    node_name: str = ""
-    node_address: str = ""
+    node_name: str
+    node_address: str
     name: str = ""
     email: str = ""
     reason: Optional[str] = ""
-    status: str = ""
-    source: str = ""
-    target: str = ""
+    status: str
+    source: str
+    target: str
 
     # serde / storage rules
     __attr_state__ = [
