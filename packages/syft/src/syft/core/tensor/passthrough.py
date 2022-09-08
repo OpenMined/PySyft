@@ -63,6 +63,22 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return tuple(self.child.shape)
 
     @property
+    def size(self) -> int:
+        if (
+            isinstance(self.child, float)
+            or isinstance(self.child, int)
+            or isinstance(self.child, bool)
+        ):
+            return (1,)
+
+        if hasattr(self.child, "size"):
+            return self.child.size
+        elif hasattr(self.child, "shape"):
+            return np.prod(self.child.shape)
+
+        raise Exception(f"{type(self)} has no attribute size.")
+
+    @property
     def dtype(self) -> np.dtype:
         return self.child.dtype
 
