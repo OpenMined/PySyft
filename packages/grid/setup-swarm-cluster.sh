@@ -45,9 +45,9 @@ do
     az vm run-command invoke -g $RG -n $VM --command-id RunShellScript --scripts "chmod 777 /var/run/docker.sock"  #This is for test and we need to do it right for sec issue
 done
 
-# #Get the IP address of the first VM
-VMs=$(echo $VMs | cut -d' ' -f2-)
-consul_machine=${VMs%% *}
+
+# Get the name of the first VM
+consul_machine=$(az vm list -g $RG --query "[0].name" -o tsv)
 echo $consul_machine
 consul_machine_eth0_inet_ip=$(az vm show -g $RG -n $consul_machine --query privateIps -d --out tsv)
 echo $consul_machine_eth0_inet_ip
@@ -57,8 +57,7 @@ az vm run-command invoke -g $RG -n $consul_machine --command-id RunShellScript -
 
 
 # #Get the name & IP address of the second VM
-VMs=$(echo $VMs | cut -d' ' -f2-)
-manager_machine1=${VMs%% *}
+manager_machine1=$(az vm list -g $RG --query "[1].name" -o tsv)
 echo $manager_machine1
 manager_machine1_eth0_inet_ip=$(az vm show -g $RG -n $manager_machine1 --query privateIps -d --out tsv)
 echo $manager_machine1_eth0_inet_ip
@@ -68,8 +67,7 @@ az vm run-command invoke -g $RG -n $manager_machine1 --command-id RunShellScript
 
 
 # #Get the name & IP address of the third VM
-VMs=$(echo $VMs | cut -d' ' -f2-)
-manager_machine2=${VMs%% *}
+manager_machine2=$(az vm list -g $RG --query "[2].name" -o tsv)
 echo $manager_machine2
 manager_machine2_eth0_inet_ip=$(az vm show -g $RG -n $manager_machine2 --query privateIps -d --out tsv)
 echo $manager_machine2_eth0_inet_ip
@@ -79,8 +77,7 @@ az vm run-command invoke -g $RG -n $manager_machine2 --command-id RunShellScript
 
 
 #  #Get the name & IP address of the fourth VM
-VMs=$(echo $VMs | cut -d' ' -f2-)
-worker_machine1=${VMs%% *}
+worker_machine1=$(az vm list -g $RG --query "[3].name" -o tsv)
 echo $worker_machine1
 worker_machine1_eth0_inet_ip=$(az vm show -g $RG -n $worker_machine1 --query privateIps -d --out tsv)
 echo $worker_machine1_eth0_inet_ip
@@ -89,8 +86,7 @@ echo $worker_machine1_eth0_inet_ip
 az vm run-command invoke -g $RG -n $worker_machine1 --command-id RunShellScript --scripts "docker run -d swarm join --advertise=$worker_machine1_eth0_inet_ip:2375 consul://$consul_machine_eth0_inet_ip:8500"
 
 #Get the name & IP address of the fifth VM
-VMs=$(echo $VMs | cut -d' ' -f2-)
-worker_machine2=${VMs%% *}
+worker_machine2=$(az vm list -g $RG --query "[4].name" -o tsv)
 echo $worker_machine2
 worker_machine2_eth0_inet_ip=$(az vm show -g $RG -n $worker_machine2 --query privateIps -d --out tsv)
 echo $worker_machine2_eth0_inet_ip
