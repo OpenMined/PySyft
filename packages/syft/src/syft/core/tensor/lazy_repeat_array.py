@@ -18,6 +18,8 @@ from scipy.ndimage.interpolation import rotate
 # relative
 from ..common.serde.serializable import serializable
 from .broadcastable import is_broadcastable
+from .config import DEFAULT_FLOAT_NUMPY_TYPE
+from .config import DEFAULT_INT_NUMPY_TYPE
 from .passthrough import is_acceptable_simple_type  # type: ignore
 from .smpc.utils import get_shape
 
@@ -70,6 +72,10 @@ class lazyrepeatarray:
 
         if isinstance(data, (bool, int, float)):
             data = np.array(data)
+            if isinstance(data, int):
+                data = data.astype(DEFAULT_INT_NUMPY_TYPE)  # type: ignore
+            if isinstance(data, float):
+                data = data.astype(DEFAULT_FLOAT_NUMPY_TYPE)  # type: ignore
 
         # verify broadcasting works on shapes
         if -1 not in shape:

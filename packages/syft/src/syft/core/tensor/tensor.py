@@ -482,7 +482,7 @@ class Tensor(
 
         if not isinstance(child, (np.ndarray, PassthroughTensor, GammaTensor)) or (
             getattr(child, "dtype", None)
-            not in [DEFAULT_INT_NUMPY_TYPE, DEFAULT_FLOAT_NUMPY_TYPE, np.bool]
+            not in [DEFAULT_INT_NUMPY_TYPE, DEFAULT_FLOAT_NUMPY_TYPE, np.bool_]
             and getattr(child, "dtype", None) is not None
         ):
             raise TypeError(
