@@ -26,7 +26,7 @@ class NoSQLSetupManager(NoSQLDatabaseManager):
         """
         curr_len = len(self)
         if curr_len == 0:
-            _obj = NoSQLSetup(id_int=1, **kwargs)
+            _obj = NoSQLSetup(**kwargs)
             self.add(_obj)
             return _obj
 
@@ -36,11 +36,6 @@ class NoSQLSetupManager(NoSQLDatabaseManager):
     def node_name(self) -> str:
         setup = super().all()[0]
         return setup.domain_name
-
-    @property
-    def id(self) -> int:
-        setup = super().all()[0]
-        return setup.id_int
 
     def first(self, **kwargs: Any) -> NoSQLSetup:
         result = super().all()
@@ -66,4 +61,4 @@ class NoSQLSetupManager(NoSQLDatabaseManager):
                 attributes[k] = v
         attributes["__blob__"] = setup.to_bytes()
 
-        self.update_one(query={"id_int": setup.id_int}, values=attributes)
+        self.update_one(query={"node_uid": setup.node_uid}, values=attributes)
