@@ -12,6 +12,7 @@ from .....common.serde.serializable import serializable
 from ....domain_msg_registry import DomainMessageRegistry
 from ....network_msg_registry import NetworkMessageRegistry
 from ....node_service import NodeServiceInterface
+from ...node_table.node import NoSQLNodeRoute
 from ...permissions.user_permissions import NoRestriction
 from ...permissions.user_permissions import UserIsOwner
 from ..generic_payload.syft_message import NewSyftMessage as SyftMessage
@@ -297,5 +298,6 @@ class RoutesListMessage(SyftMessage, DomainMessageRegistry, NetworkMessageRegist
         if not node_row:
             raise Exception("There is no node for this verify_key")
 
-        routes_list: List[dict] = node.node.get_routes(node_row=node_row)
-        return self.Reply(routes_list=routes_list)
+        routes_list: List[NoSQLNodeRoute] = node.node.get_routes(node_row=node_row)
+        routes_dict = [route.to_dict() for route in routes_list]
+        return self.Reply(routes_list=routes_dict)

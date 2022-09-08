@@ -379,11 +379,11 @@ class Node(AbstractNode):
                 self.add_route(
                     node_id=UID.from_string(value=peer.node_uid),
                     node_name=peer.node_name,
-                    host_or_ip=route["host_or_ip"],
-                    is_vpn=route["is_vpn"],
-                    private=route["private"],
-                    port=route["port"],
-                    protocol=route["protocol"],
+                    host_or_ip=route.host_or_ip,
+                    is_vpn=route.is_vpn,
+                    private=route.private,
+                    port=route.port,
+                    protocol=route.protocol,
                 )
         except Exception as e:
             error(f"Failed to add route to peer {peer}. {e}")
