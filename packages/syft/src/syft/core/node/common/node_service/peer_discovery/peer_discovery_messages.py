@@ -33,7 +33,7 @@ class PeerDiscoveryReplyMessage(GenericPayloadReplyMessage):
 
 
 def node_id_to_peer_route_metadata(node_document: NoSQLNode) -> List[Dict[str, Any]]:
-    routes: List[dict] = node_document.node_route
+    routes: List[Dict] = node_document.node_route
     routes_meta = []
     for route in routes:
         peer_route = {}

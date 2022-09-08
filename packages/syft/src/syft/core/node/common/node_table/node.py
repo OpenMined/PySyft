@@ -1,4 +1,5 @@
 # stdlib
+from typing import Dict
 from typing import List
 from typing import Optional
 
@@ -18,7 +19,7 @@ class NoSQLNode(SyftObject):
     node_type: Optional[str]
     verify_key: Optional[str]
     keep_connected: Optional[bool] = True
-    node_route: List[dict] = []
+    node_route: List[Dict] = []
 
     # serde / storage rules
     __attr_state__ = [
