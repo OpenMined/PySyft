@@ -1,3 +1,6 @@
+# stdlib
+from typing import List
+
 # third party
 from sqlalchemy import Column
 from sqlalchemy import DateTime
@@ -8,6 +11,8 @@ from sqlalchemy import String
 
 # relative
 from . import Base
+from ....common.uid import UID
+from .syft_object import SyftObject
 
 
 class Request(Base):
@@ -55,3 +60,60 @@ class Request(Base):
             f"< Request id : {self.id}, user: {self.user_id}, Date: {self.date}, Object: {self.object_id},"
             f" reason: {self.reason}, status: {self.status}, type: {self.object_type} >"
         )
+
+
+class NoSQLRequest(SyftObject):
+    # version
+    __canonical_name__ = "Request"
+    __version__ = 1
+
+    # fields
+    id: UID
+    date: str
+    user_id: int
+    user_name: str
+    user_email: str
+    user_role: str
+    user_budget: float
+    institution: str
+    website: str
+    object_id: str
+    reason: str
+    status: str = "pending"
+    request_type: str
+    verify_key: str
+    object_type: str
+    tags: List[str] = []
+    updated_on: str
+    reviewer_name: str
+    reviewer_role: str
+    reviewer_comment: str
+    requested_budget: float
+    current_budget: float
+
+    # serde / storage rules
+    __attr_state__ = [
+        "id",
+        "date",
+        "user_id",
+        "user_name",
+        "user_email" "user_role",
+        "user_budget",
+        "institution",
+        "website",
+        "object_id",
+        "reason",
+        "status",
+        "request_type",
+        "verify_key",
+        "object_type",
+        "tags",
+        "updated_on",
+        "reviewer_name",
+        "reviewer_role",
+        "reviewer_comment",
+        "requested_budget",
+        "current_budget",
+    ]
+    __attr_searchable__: List[str] = ["id", "user_email"]
+    __attr_unique__: List[str] = []
