@@ -12,6 +12,7 @@ from .....grid import GridURL
 from ..node_service.node_credential.node_credentials import NodeCredentials
 from ..node_service.node_route.route_update import RouteUpdate
 from ..node_table.node import NoSQLNode
+from ..node_table.node import NoSQLNodeRoute
 from .database_manager import NoSQLDatabaseManager
 
 
@@ -31,7 +32,7 @@ class NoSQLNodeManager(NoSQLDatabaseManager):
             raise NodeNotFoundError
         return result
 
-    def create_route_dict(
+    def create_route(
         self,
         host_or_ip: str,
         is_vpn: bool = False,
@@ -40,18 +41,18 @@ class NoSQLNodeManager(NoSQLDatabaseManager):
         port: int = 80,
         vpn_endpoint: str = "",
         vpn_key: str = "",
-    ) -> Dict[str, Any]:
+    ) -> NoSQLNodeRoute:
         if host_or_ip is None:
-            raise ValueError(f"Route addition required valid host_or_ip:{host_or_ip}")
-        return {
-            "host_or_ip": host_or_ip,
-            "is_vpn": is_vpn,
-            "private": private,
-            "protocol": protocol,
-            "port": port,
-            "vpn_endpoint": vpn_endpoint,
-            "vpn_key": vpn_key,
-        }
+            raise ValueError(f"Route addition requires valid host_or_ip:{host_or_ip}")
+        return NoSQLNodeRoute(
+            host_or_ip=host_or_ip,
+            is_vpn=is_vpn,
+            private=private,
+            protocol=protocol,
+            port=port,
+            vpn_endpoint=vpn_endpoint,
+            vpn_key=vpn_key,
+        )
 
     def create_or_get_node(
         self,
@@ -69,16 +70,12 @@ class NoSQLNodeManager(NoSQLDatabaseManager):
 
             _exists = False  # Flag to check if route already present.
             for route in node.node_route:
-                if "host_or_ip" not in route.keys():
-                    raise ValueError(
-                        f"The route dict:{route} should have host_or_ip attribute."
-                    )
-                if route["host_or_ip"] == host_or_ip:
+                if route.host_or_ip == host_or_ip:
                     _exists = True
                     break
 
             if not _exists:
-                new_route = self.create_route_dict(
+                new_route: NoSQLNodeRoute = self.create_route(
                     host_or_ip=host_or_ip,
                     is_vpn=is_vpn,
                     vpn_endpoint=vpn_endpoint,
@@ -97,7 +94,7 @@ class NoSQLNodeManager(NoSQLDatabaseManager):
                 node_uid=node_uid,
                 node_name=node_name,
             )
-            new_route = self.create_route_dict(
+            new_route = self.create_route(
                 host_or_ip=host_or_ip,
                 is_vpn=is_vpn,
                 vpn_endpoint=vpn_endpoint,
@@ -160,11 +157,7 @@ class NoSQLNodeManager(NoSQLDatabaseManager):
             if node.node_uid == curr_node.node_uid:
                 continue
             for route in node.node_route:
-                if "host_or_ip" not in route.keys() or "port" not in route.keys():
-                    raise ValueError(
-                        f"The route dict:{route} should have host_or_ip and port attribute"
-                    )
-                if host_or_ip == route["host_or_ip"] and port == route["port"]:
+                if host_or_ip == route.host_or_ip and port == route.port:
                     _valid = False
                     break
             if not _valid:
@@ -179,7 +172,7 @@ class NoSQLNodeManager(NoSQLDatabaseManager):
             raise Exception("source_node_url is missing")
         source_url = GridURL.from_url(route_update.source_node_url)
 
-        new_route = self.create_route_dict(
+        new_route = self.create_route(
             host_or_ip=source_url.host_or_ip,
             protocol=source_url.protocol,
             port=source_url.port,
@@ -190,11 +183,7 @@ class NoSQLNodeManager(NoSQLDatabaseManager):
         try:
             node = self.first(node_uid=curr_node.node_uid)
             for idx, route in enumerate(node.node_route):
-                if "host_or_ip" not in route.keys():
-                    raise ValueError(
-                        f"The route dict:{route} should have host_or_ip attribute."
-                    )
-                if route["host_or_ip"] == source_url.host_or_ip:
+                if route.host_or_ip == source_url.host_or_ip:
                     route_index = idx
                     break
             if route_index == -1:  # route does not exists add new route
@@ -217,5 +206,5 @@ class NoSQLNodeManager(NoSQLDatabaseManager):
                 f"Update Route does not have valid node to update with uid: {curr_node.node_uid}"
             )
 
-    def get_routes(self, node_row: NoSQLNode) -> List[Dict]:
+    def get_routes(self, node_row: NoSQLNode) -> List[NoSQLNodeRoute]:
         return node_row.node_route

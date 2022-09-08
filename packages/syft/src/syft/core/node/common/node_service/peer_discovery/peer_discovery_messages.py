@@ -15,6 +15,7 @@ from typing_extensions import final
 from .....common.serde.serializable import serializable
 from ....abstract.node_service_interface import NodeServiceInterface
 from ...node_table.node import NoSQLNode
+from ...node_table.node import NoSQLNodeRoute
 from ..generic_payload.messages import GenericPayloadMessage
 from ..generic_payload.messages import GenericPayloadMessageWithReply
 from ..generic_payload.messages import GenericPayloadReplyMessage
@@ -33,17 +34,17 @@ class PeerDiscoveryReplyMessage(GenericPayloadReplyMessage):
 
 
 def node_id_to_peer_route_metadata(node_document: NoSQLNode) -> List[Dict[str, Any]]:
-    routes: List[Dict] = node_document.node_route
+    routes: List[NoSQLNodeRoute] = node_document.node_route
     routes_meta = []
     for route in routes:
-        peer_route = {}
+        peer_route: Dict[str, Any] = {}
         peer_route["id"] = node_document.node_uid
         peer_route["name"] = node_document.node_name
-        peer_route["host_or_ip"] = route["host_or_ip"]
-        peer_route["is_vpn"] = route["is_vpn"]
-        peer_route["private"] = route["private"]
-        peer_route["protocol"] = route["protocol"]
-        peer_route["port"] = route["port"]
+        peer_route["host_or_ip"] = route.host_or_ip
+        peer_route["is_vpn"] = route.is_vpn
+        peer_route["private"] = route.private
+        peer_route["protocol"] = route.protocol
+        peer_route["port"] = route.port
         routes_meta.append(peer_route)
     return routes_meta
 
@@ -79,13 +80,13 @@ class GetPeerInfoMessageWithReply(GenericPayloadMessageWithReply):
         try:
             # TODO: handle multiple routes and possibly prefer vpn connections
             peer = node.node.first(node_uid=str(self.kwargs["uid"]))
-            peer_route = {}
+            peer_route: Dict[str, Any] = {}
             if peer:
                 for route in peer.node_route:
                     peer_route["id"] = peer.node_uid
                     peer_route["name"] = peer.node_name
-                    peer_route["host_or_ip"] = route["host_or_ip"]
-                    peer_route["is_vpn"] = route["is_vpn"]
+                    peer_route["host_or_ip"] = route.host_or_ip
+                    peer_route["is_vpn"] = route.is_vpn
             return {"status": "ok", "data": peer_route}
         except Exception as e:
             print(f"Failed to run {type(self)}", self.kwargs, e)

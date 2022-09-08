@@ -65,8 +65,8 @@ def domain_reconnect_network() -> None:
                 try:
                     status, error = connect_with_key(
                         tailscale_host=TAILSCALE_URL,
-                        headscale_host=route["vpn_endpoint"],
-                        vpn_auth_key=route["vpn_key"],
+                        headscale_host=route.vpn_endpoint,
+                        vpn_auth_key=route.vpn_key,
                     )
 
                     if not status:
