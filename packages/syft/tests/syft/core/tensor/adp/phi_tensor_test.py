@@ -1036,14 +1036,20 @@ def test_compress(
     ishan: DataSubjectArray,
 ) -> None:
     ishan = np.broadcast_to(ishan, reference_data.shape)
+
     reference_tensor = PT(
         child=reference_data,
         data_subjects=ishan,
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-
     condition = list(np.random.choice(a=[False, True], size=(reference_data.shape[0])))
+    # if we have all False compress throws an exception because the size of the slices is 0
+    while not any(condition):
+        condition = list(
+            np.random.choice(a=[False, True], size=(reference_data.shape[0]))
+        )
+
     compressed_tensor = reference_tensor.compress(condition, axis=0)
 
     new_shape = (

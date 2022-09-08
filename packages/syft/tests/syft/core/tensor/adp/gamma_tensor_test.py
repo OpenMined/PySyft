@@ -768,6 +768,11 @@ def test_compress(
     ).gamma
 
     condition = list(np.random.choice(a=[False, True], size=(reference_data.shape[0])))
+    # if we have all False compress throws an exception because the size of the slices is 0
+    while not any(condition):
+        condition = list(
+            np.random.choice(a=[False, True], size=(reference_data.shape[0]))
+        )
     compressed_tensor = reference_tensor.compress(condition, axis=0)
 
     assert compressed_tensor.func_str == "compress"
