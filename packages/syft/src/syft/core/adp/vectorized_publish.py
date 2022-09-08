@@ -111,166 +111,177 @@ def publish(
         sigma=sigma,
     )
 
-    if is_linear:
-        lipschitz_bounds = coeffs.copy()
-    else:
-        lipschitz_bounds = tensor.lipschitz_bound
+    zeros_like = jnp.zeros_like(tensor.child)
+    
+    while not (tensor.child == zeros_like).all():# tensor.shape != ():
+        if is_linear:
+            lipschitz_bounds = coeffs.copy()
+        else:
+            lipschitz_bounds = tensor.lipschitz_bound
 
-    rdp_params = RDPParams(
-        sigmas=sigmas,
-        l2_norms=l2_norms,
-        l2_norm_bounds=l2_norm_bounds,
-        Ls=lipschitz_bounds,
-        coeffs=coeffs,
-    )
-
-    # Step 2: Calculate the epsilon spend for this query
-
-    # rdp_constant = all terms in Theorem. 2.7 or 2.8 of https://arxiv.org/abs/2008.11193 EXCEPT alpha
-    rdp_constants = compute_rdp_constant(rdp_params, private=True)
-    all_epsilons = ledger.calculate_epsilon_spend(
-        rdp_constants
-    )  # This is the epsilon spend for ALL data subjects
-    if any(all_epsilons < 0):
-        raise Exception(
-            "Negative budget spend not allowed in PySyft for safety reasons. Please contact the OpenMined"
-            "support team for help."
+        rdp_params = RDPParams(
+            sigmas=sigmas,
+            l2_norms=l2_norms,
+            l2_norm_bounds=l2_norm_bounds,
+            Ls=lipschitz_bounds,
+            coeffs=coeffs,
         )
 
-    epsilon_spend = max(
-        all_epsilons
-    )  # This is the epsilon spend for the QUERY, a single float.
-    if not isinstance(epsilon_spend, float):
-        epsilon_spend = float(epsilon_spend)
-    if epsilon_spend < 0:
-        raise Exception(
-            "Negative budget spend not allowed in PySyft for safety reasons. Please contact the OpenMined"
-            "support team for help."
-        )
+        # Step 2: Calculate the epsilon spend for this query
 
-    # Step 3: Check if the user has enough privacy budget for this query
-    privacy_budget = get_budget_for_user(verify_key=ledger.user_key)
-    has_budget = epsilon_spend <= privacy_budget
+        # rdp_constant = all terms in Theorem. 2.7 or 2.8 of https://arxiv.org/abs/2008.11193 EXCEPT alpha
+        rdp_constants = compute_rdp_constant(rdp_params, private=True)
+        all_epsilons = ledger.calculate_epsilon_spend(
+            rdp_constants
+        )  # This is the epsilon spend for ALL data subjects
+        if any(all_epsilons < 0):
+            raise Exception(
+                "Negative budget spend not allowed in PySyft for safety reasons. Please contact the OpenMined"
+                "support team for help."
+            )
 
-    # Step 4- Path 1: If the User has enough Privacy Budget, we just add noise, deduct budget, and return the result.
-    if has_budget:
-        original_output = tensor.child
+        epsilon_spend = max(
+            all_epsilons
+        )  # This is the epsilon spend for the QUERY, a single float.
+        if not isinstance(epsilon_spend, float):
+            epsilon_spend = float(epsilon_spend)
+        if epsilon_spend < 0:
+            raise Exception(
+                "Negative budget spend not allowed in PySyft for safety reasons. Please contact the OpenMined"
+                "support team for help."
+            )
 
-        # We sample noise from a cryptographically secure distribution
-        # TODO: Replace with discrete gaussian distribution instead of regular gaussian to eliminate floating pt vulns
-        noise = np.asarray(
-            [
-                secrets.SystemRandom().gauss(0, sigma)
-                for _ in range(original_output.size)
-            ]
-        ).reshape(original_output.shape)
+        # Step 3: Check if the user has enough privacy budget for this query
+    
+        privacy_budget = get_budget_for_user(verify_key=ledger.user_key)
+        has_budget = epsilon_spend <= privacy_budget
 
-        # The user spends their privacy budget before getting the result
-        attempts = 0
-        while attempts < 5:
-            attempts += 1
-            try:
-                ledger.spend_epsilon(
-                    deduct_epsilon_for_user=deduct_epsilon_for_user,
-                    epsilon_spend=epsilon_spend,
-                    old_user_budget=privacy_budget,
-                )
-                break
-            except RefreshBudgetException:  # nosec
-                ledger.spend_epsilon(
-                    deduct_epsilon_for_user=deduct_epsilon_for_user,
-                    epsilon_spend=epsilon_spend,
-                    old_user_budget=privacy_budget,
-                )
+        # Step 4- Path 1: If the User has enough Privacy Budget, we just add noise, deduct budget, and return the result.
+        if has_budget:
+            original_output = tensor.child
 
-            except Exception as e:
-                print(f"Problem spending epsilon. {e}")
-                raise e
+            # We sample noise from a cryptographically secure distribution
+            # TODO: Replace with discrete gaussian distribution instead of regular gaussian to eliminate floating pt vulns
+            noise = np.asarray(
+                [
+                    secrets.SystemRandom().gauss(0, sigma)
+                    for _ in range(original_output.size)
+                ]
+            ).reshape(original_output.shape)
 
-        # The RDP constants are adjusted to account for the amount of exposure every data subject's data has had.
-        ledger.update_rdp_constants(
-            query_constants=rdp_constants, entity_ids_query=input_entities
-        )
-        ledger._write_ledger()
-        return original_output + noise
-
-    # Step 4- Path 2: User doesn't have enough privacy budget.
-    elif not has_budget:
-        print("Not enough privacy budget, about to start filtering.")
-        # If the user doesn't have enough PB, they shouldn't see data of high epsilon data subjects (privacy violation)
-        # So we will remove data belonging to these data subjects from the computation.
-
-        # Step 4.1: Figure out which data subjects are within the PB & the highest possible spend
-        # within_budget_filter = (
-        #     jnp.ones_like(all_epsilons) * privacy_budget >= all_epsilons
-        # )
-        # highest_possible_spend = jnp.max(all_epsilons * within_budget_filter)
-        # TODO: Modify to work with private/public operations (when input_tensor is a scalar)
-
-        # Step 4.2: Figure out which Tensors in the Source dictionary have those data subjects
-        filtered_sourcetree = deepcopy(tensor.sources)
-        input_tensors = list(filtered_sourcetree.values())
-        parent_branch = [
-            filtered_sourcetree for _ in input_tensors
-        ]  # TODO: Ensure this isn't deepcopying!
-        # relative
-        from ..tensor.autodp.gamma_tensor import GammaTensor
-
-        for parent_state, input_tensor in zip(parent_branch, input_tensors):
-            if isinstance(input_tensor, GammaTensor):
-                if (
-                    input_tensor.func_str == "no_op"
-                ):  # This is raw, unprocessed private data. Filter if eps spend > PB!
-                    # Calculate epsilon spend for this tensor
-                    l2_norms = jnp.sqrt(jnp.sum(jnp.square(input_tensor.child)))
-
-                    rdp_params = RDPParams(
-                        sigmas=sigmas,
-                        l2_norms=l2_norms,
-                        l2_norm_bounds=l2_norm_bounds,
-                        Ls=lipschitz_bounds,
-                        coeffs=coeffs,
+            # The user spends their privacy budget before getting the result
+            attempts = 0
+            while attempts < 5:
+                attempts += 1
+                try:
+                    ledger.spend_epsilon(
+                        deduct_epsilon_for_user=deduct_epsilon_for_user,
+                        epsilon_spend=epsilon_spend,
+                        old_user_budget=privacy_budget,
+                    )
+                    break
+                except RefreshBudgetException:  # nosec
+                    ledger.spend_epsilon(
+                        deduct_epsilon_for_user=deduct_epsilon_for_user,
+                        epsilon_spend=epsilon_spend,
+                        old_user_budget=privacy_budget,
                     )
 
-                    # Privacy loss associated with this private data specifically
-                    epsilon = max(
-                        ledger.calculate_epsilon_spend(
-                            np.asarray(compute_rdp_constant(rdp_params, private=True))
+                except Exception as e:
+                    print(f"Problem spending epsilon. {e}")
+                    raise e
+
+            # The RDP constants are adjusted to account for the amount of exposure every data subject's data has had.
+            ledger.update_rdp_constants(
+                query_constants=rdp_constants, entity_ids_query=input_entities
+            )
+            ledger._write_ledger()
+            return original_output + noise
+
+        # Step 4- Path 2: User doesn't have enough privacy budget.
+        elif not has_budget:
+            print("Not enough privacy budget, about to start filtering.")
+            # If the user doesn't have enough PB, they shouldn't see data of high epsilon data subjects (privacy violation)
+            # So we will remove data belonging to these data subjects from the computation.
+
+            # Step 4.1: Figure out which data subjects are within the PB & the highest possible spend
+            # within_budget_filter = (
+            #     jnp.ones_like(all_epsilons) * privacy_budget >= all_epsilons
+            # )
+            # highest_possible_spend = jnp.max(all_epsilons * within_budget_filter)
+            # TODO: Modify to work with private/public operations (when input_tensor is a scalar)
+
+            # Step 4.2: Figure out which Tensors in the Source dictionary have those data subjects
+            filtered_sourcetree = deepcopy(tensor.sources)
+            input_tensors = list(filtered_sourcetree.values())
+            parent_branch = [
+                filtered_sourcetree for _ in input_tensors
+            ]  # TODO: Ensure this isn't deepcopying!
+            # relative
+            from ..tensor.autodp.gamma_tensor import GammaTensor
+
+            for parent_state, input_tensor in zip(parent_branch, input_tensors):
+                if isinstance(input_tensor, GammaTensor):
+                    if (
+                        input_tensor.func_str == "no_op"
+                    ):  # This is raw, unprocessed private data. Filter if eps spend > PB!
+                        # Calculate epsilon spend for this tensor
+                        l2_norms = jnp.sqrt(jnp.sum(jnp.square(input_tensor.child)))
+
+                        rdp_params = RDPParams(
+                            sigmas=sigmas,
+                            l2_norms=l2_norms,
+                            l2_norm_bounds=l2_norm_bounds,
+                            Ls=lipschitz_bounds,
+                            coeffs=coeffs,
                         )
-                    )
 
-                    # Filter if > privacy budget
-                    if epsilon > privacy_budget:
-                        filtered_tensor = input_tensor.filtered()
+                        # Privacy loss associated with this private data specifically
+                        epsilon = max(
+                            ledger.calculate_epsilon_spend(
+                                np.asarray(compute_rdp_constant(rdp_params, private=True))
+                            )
+                        )
 
-                        # Replace the original tensor with this filtered one.
-                        del parent_state[input_tensor.id]
-                        parent_state[filtered_tensor.id] = filtered_tensor
+                        # Filter if > privacy budget
+                        if epsilon > privacy_budget:
+                            filtered_tensor = input_tensor.filtered()
 
-                    # If epsilon <= privacy budget, we don't need to do anything- the user has enough PB to use the data
+                            # Replace the original tensor with this filtered one.
+                            del parent_state[input_tensor.id]
+                            parent_state[filtered_tensor.id] = filtered_tensor
+
+                        # If epsilon <= privacy budget, we don't need to do anything- the user has enough PB to use the data
+                    else:
+                        input_tensors += list(input_tensor.sources.values())
+                        parent_branch += [
+                            input_tensor.sources for _ in input_tensor.sources.values()
+                        ]
                 else:
-                    input_tensors += list(input_tensor.sources.values())
-                    parent_branch += [
-                        input_tensor.sources for _ in input_tensor.sources.values()
-                    ]
-            else:
-                # This is a public value, we don't touch 'em.
-                continue
+                    # This is a public value, we don't touch 'em.
+                    continue
 
-        # Recompute the tensor's value now that some of its inputs have been filtered, and repeat epsilon calculations
-        new_tensor = tensor.swap_state(filtered_sourcetree)
+            # Recompute the tensor's value now that some of its inputs have been filtered, and repeat epsilon calculations
+            tensor = tensor.swap_state(filtered_sourcetree)
+            print("About to publish again with filtered source_tree!")
+            # TODO: This isn't the most efficient way to do it since we can reuse sigmas, coeffs, etc.
+            # TODO: Add a way to prevent infinite publishing?
+            # TODO: Should we implement exponential backoff or something as a means of rate-limiting?
+            # return new_tensor.publish(
+            #     get_budget_for_user=get_budget_for_user,
+            #     deduct_epsilon_for_user=deduct_epsilon_for_user,
+            #     ledger=ledger,
+            #     sigma=sigma,
+            # )
+        # Step 5: Revel in happiness.
 
-        print("About to publish again with filtered source_tree!")
-        # TODO: This isn't the most efficient way to do it since we can reuse sigmas, coeffs, etc.
-        # TODO: Add a way to prevent infinite publishing?
-        # TODO: Should we implement exponential backoff or something as a means of rate-limiting?
-        return new_tensor.publish(
-            get_budget_for_user=get_budget_for_user,
-            deduct_epsilon_for_user=deduct_epsilon_for_user,
-            ledger=ledger,
-            sigma=sigma,
-        )
-    # Step 5: Revel in happiness.
+        else:
+            raise Exception
 
-    else:
-        raise Exception
+    noise = np.asarray(
+                [
+                    secrets.SystemRandom().gauss(0, sigma)
+                    for _ in range(zeros_like.size)
+                ]
+            ).reshape(zeros_like.shape)
+    return zeros_like + noise
