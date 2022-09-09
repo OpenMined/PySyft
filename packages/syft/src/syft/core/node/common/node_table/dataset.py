@@ -25,9 +25,9 @@ class Dataset(Base):
     blob_metadata = Column(JSON())
 
 
-class NoSQLAssociationRequest(SyftObject):
+class NoSQLDataset(SyftObject):
     # version
-    __canonical_name__ = "AssociationRequest"
+    __canonical_name__ = "Dataset"
     __version__ = 1
 
     # fields
