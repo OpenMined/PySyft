@@ -1248,6 +1248,22 @@ class GammaTensor:
             is_linear=self.is_linear,
         )
 
+    @property
+    def size(self) -> int:
+        if (
+            isinstance(self.child, float)
+            or isinstance(self.child, int)
+            or isinstance(self.child, bool)
+        ):
+            return 1
+
+        if hasattr(self.child, "size"):
+            return self.child.size
+        elif hasattr(self.child, "shape"):
+            return np.prod(self.child.shape)
+
+        raise Exception(f"{type(self)} has no attribute size.")
+
     def __add__(self, other: Any) -> GammaTensor:
         # relative
         from .phi_tensor import PhiTensor

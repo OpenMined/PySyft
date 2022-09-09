@@ -117,7 +117,8 @@ def publish(
         sigma=sigma,
     )
 
-    zeros_like = jnp.zeros_like(tensor.child)
+    # its important that its the same type so that eq comparisons below dont break
+    zeros_like = tensor.zeros_like()
 
     # this prevents us from running in an infinite loop
     previous_budget = None
@@ -229,7 +230,7 @@ def publish(
                 query_constants=rdp_constants, entity_ids_query=input_entities
             )
             ledger._write_ledger()
-            return np.array(original_output + noise)  # no jax
+            return original_output + noise
 
         # Step 4: Path 2 - User doesn't have enough privacy budget.
         elif not has_budget:
@@ -341,4 +342,7 @@ def publish(
     noise = np.asarray(
         [secrets.SystemRandom().gauss(0, sigma) for _ in range(zeros_like.size)]
     ).reshape(zeros_like.shape)
-    return np.array(zeros_like + noise)  # not jax
+    zeros = np.zeros_like(
+        a=np.array([]), dtype=zeros_like.dtype, shape=zeros_like.shape
+    )
+    return zeros + noise
