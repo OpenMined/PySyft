@@ -735,6 +735,10 @@ class ShareTensor(PassthroughTensor):
 
         # return True
 
+        # ATTENTION: Why are we getting here now when we never did before?
+        if not hasattr(other, "child"):
+            return self.child == other
+
         return self.child == other.child
 
     # TRASK: commenting out because ShareTEnsor doesn't appear to have .session_uuid or .config

@@ -33,6 +33,7 @@ from virtualenvapi.manage import VirtualEnvironment
 from .art import hagrid
 from .auth import AuthCredentials
 from .cache import DEFAULT_BRANCH
+from .cache import DEFAULT_REPO
 from .cache import RENDERED_DIR
 from .cache import arg_cache
 from .deps import DEPENDENCIES
@@ -2567,7 +2568,7 @@ cli.add_command(version)
 )
 @click.option(
     "--repo",
-    default=arg_cache.repo,
+    default=DEFAULT_REPO,
     help="Choose a repo to fetch the notebook from or just use OpenMined/PySyft",
 )
 @click.option(
@@ -2586,7 +2587,7 @@ def quickstart_cli(
     quiet: bool = False,
     pre: bool = False,
     test: bool = False,
-    repo: str = arg_cache.repo,
+    repo: str = DEFAULT_REPO,
     branch: str = DEFAULT_BRANCH,
     commit: Optional[str] = None,
     python: Optional[str] = None,
@@ -2613,36 +2614,58 @@ def quickstart_cli(
                 pre=pre,
                 python=python,
             )
-
+        downloaded_files = []
         if url:
             allowed_schemes_as_url = ["http", "https"]
             url_scheme = urlparse(url).scheme
-
+            # relative mode
             if url_scheme not in allowed_schemes_as_url:
                 notebooks = get_urls_from_dir(
                     repo=repo, branch=branch, commit=commit, url=url
                 )
-                overwrite_all_notebooks = False
-                if not reset:
-                    overwrite_all_notebooks = click.confirm(
-                        text=f"You have {len(notebooks)} conflicting notebooks. Would you like to overwrite them all?",
-                        default=False,
-                    )
 
+                url_dir = os.path.dirname(url) if os.path.dirname(url) else url
+                notebook_files = []
+                existing_count = 0
                 for notebook_url in notebooks:
-                    file_path, _ = quickstart_download_notebook(
-                        url=notebook_url,
-                        directory=directory + "/" + url + "/",
-                        reset=reset,
-                        overwrite_all_notebooks=overwrite_all_notebooks,
+                    url_filename = os.path.basename(notebook_url)
+                    url_dirname = os.path.dirname(notebook_url)
+                    if (
+                        url_dirname.endswith(url_dir)
+                        and os.path.isdir(directory + url_dir)
+                        and os.path.isfile(directory + url_dir + os.sep + url_filename)
+                    ):
+                        notebook_files.append(url_dir + os.sep + url_filename)
+                        existing_count += 1
+
+                if existing_count > 0:
+                    plural = "s" if existing_count > 1 else ""
+                    print(
+                        f"You have {existing_count} existing notebook{plural} matching: {url}"
                     )
+                    for nb in notebook_files:
+                        print(nb)
+
+                overwrite_all = False
+                for notebook_url in notebooks:
+                    file_path, _, overwrite_all = quickstart_download_notebook(
+                        url=notebook_url,
+                        directory=directory + os.sep + url_dir + os.sep,
+                        reset=reset,
+                        overwrite_all=overwrite_all,
+                    )
+                    downloaded_files.append(file_path)
 
             else:
-                file_path, _ = quickstart_download_notebook(
+                file_path, _, _ = quickstart_download_notebook(
                     url=url, directory=directory, reset=reset
                 )
+                downloaded_files.append(file_path)
         else:
             file_path = add_intro_notebook(directory=directory, reset=reset)
+            downloaded_files.append(file_path)
+
+        file_path = sorted(downloaded_files)[0]
 
         # add virtualenv path
         environ = os.environ.copy()
@@ -2744,28 +2767,17 @@ def quickstart_setup(
 
 
 def get_urls_from_dir(
+    url: str,
     repo: str,
     branch: str,
-    commit: Optional[str],
-    url: str,
+    commit: Optional[str] = None,
 ) -> List[str]:
     notebooks = []
-    if commit is not None:
-        gh_api_call = (
-            "https://api.github.com/repos/"
-            + repo
-            + "/git/trees/"
-            + commit
-            + "?recursive=1"
-        )
-    else:
-        gh_api_call = (
-            "https://api.github.com/repos/"
-            + repo
-            + "/git/trees/"
-            + branch
-            + "?recursive=1"
-        )
+    slug = commit if commit else branch
+
+    gh_api_call = (
+        "https://api.github.com/repos/" + repo + "/git/trees/" + slug + "?recursive=1"
+    )
     r = requests.get(gh_api_call)
     if r.status_code != 200:
         print(
@@ -2782,7 +2794,7 @@ def get_urls_from_dir(
                     "https://raw.githubusercontent.com/"
                     + repo
                     + "/"
-                    + branch
+                    + slug
                     + "/"
                     + file["path"]
                 )
@@ -2814,7 +2826,7 @@ def add_intro_notebook(directory: str, reset: bool = False) -> str:
                     "https://raw.githubusercontent.com/OpenMined/PySyft/dev/"
                     + f"notebooks/quickstart/{filename}"
                 )
-                file_path, _ = quickstart_download_notebook(
+                file_path, _, _ = quickstart_download_notebook(
                     url=url, directory=directory, reset=reset
                 )
     file_path = os.path.abspath(f"{directory}/{filenames[0]}")
