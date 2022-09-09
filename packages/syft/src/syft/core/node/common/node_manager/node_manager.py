@@ -111,17 +111,10 @@ class NoSQLNodeManager(NoSQLDatabaseManager):
             node = self.first(node_uid=credentials.node_uid)
             if node.verify_key is not None:
                 credentials.validate(key=node.verify_key)
-            attributes = {}
-            for k, v in credentials_dict.items():
-                if k not in node.__attr_state__:
-                    raise ValueError(f"Cannot set an non existing field:{k} to Node")
-                else:
-                    setattr(node, k, v)
-                if k in node.__attr_searchable__:
-                    attributes[k] = v
-            attributes["__blob__"] = node.to_bytes()
-
-            self.update_one(query={"node_uid": credentials.node_uid}, values=attributes)
+            self.update(
+                search_params={"node_uid": credentials.node_uid},
+                updated_args=credentials_dict,
+            )
         except NodeNotFoundError:
             node_row = NoSQLNode(
                 **credentials_dict,
