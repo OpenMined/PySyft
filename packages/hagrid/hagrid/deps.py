@@ -100,7 +100,7 @@ class DependencySyftOS(Dependency):
         if is_windows():
             self.issues.append(windows_jaxlib())
         elif is_apple_silicon():
-            self.issues.append(macos_arm64_pycapnp())
+            pass
 
 
 @dataclass
@@ -750,15 +750,6 @@ def python_version_unsupported() -> SetupIssue:
         ),
         command="",
         solution="You must install a compatible version of Python",
-    )
-
-
-def macos_arm64_pycapnp() -> SetupIssue:
-    return SetupIssue(
-        issue_name="macos_arm64_pycapnp",
-        description="Apple Silicon Python Wheels for pycapnp are not available on PyPI yet",
-        command="brew install cmake",
-        solution="You must install cmake so Python can compile pycapnp",
     )
 
 

@@ -33,6 +33,8 @@ from virtualenvapi.manage import VirtualEnvironment
 from .art import hagrid
 from .auth import AuthCredentials
 from .cache import DEFAULT_BRANCH
+from .cache import DEFAULT_REPO
+from .cache import RENDERED_DIR
 from .cache import arg_cache
 from .deps import DEPENDENCIES
 from .deps import allowed_hosts
@@ -61,6 +63,8 @@ from .lib import save_vm_details_as_json
 from .lib import update_repo
 from .lib import use_branch
 from .mode import EDITABLE_MODE
+from .parse_template import render_templates
+from .parse_template import setup_from_manifest_template
 from .quickstart_ui import quickstart_download_notebook
 from .rand_sec import generate_sec_random_password
 from .style import RichGroup
@@ -296,6 +300,13 @@ def clean(location: str) -> None:
     is_flag=True,
     help="Optional: prevent lots of launch output",
 )
+@click.option(
+    "--from_template",
+    default="false",
+    required=False,
+    type=str,
+    help="Optional: launch node using the manifest template",
+)
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
     try:
@@ -322,7 +333,13 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 
     try:
         silent = bool(kwargs["silent"]) if "silent" in kwargs else False
-        execute_commands(cmds, dry_run=dry_run, silent=silent)
+        from_rendered_dir = (
+            str_to_bool(cast(str, kwargs["from_template"])) and EDITABLE_MODE
+        )
+
+        execute_commands(
+            cmds, dry_run=dry_run, silent=silent, from_rendered_dir=from_rendered_dir
+        )
         print("Success!\n\n")
     except Exception as e:
         print(f"Error: {e}\n\n")
@@ -330,7 +347,10 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 
 
 def execute_commands(
-    cmds: TypeList, dry_run: bool = False, silent: bool = False
+    cmds: TypeList,
+    dry_run: bool = False,
+    silent: bool = False,
+    from_rendered_dir: bool = False,
 ) -> None:
     """Execute the launch commands and display their status in realtime.
 
@@ -347,6 +367,14 @@ def execute_commands(
     # display VM credentials
     console.print(generate_user_table(username=username, password=password))
 
+    cwd = (
+        os.path.join(GRID_SRC_PATH, RENDERED_DIR)
+        if from_rendered_dir
+        else GRID_SRC_PATH
+    )
+
+    print("Current Working Directory: ", cwd)
+
     for cmd in cmds:
         if dry_run:
             print("Running: \n", hide_password(cmd=cmd))
@@ -361,7 +389,7 @@ def execute_commands(
                     cmd_to_exec,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
-                    cwd=GRID_SRC_PATH,
+                    cwd=cwd,
                     shell=True,
                 )
                 ip_address = extract_host_ip_from_cmd(cmd)
@@ -374,7 +402,7 @@ def execute_commands(
                         cmd_to_exec,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
-                        cwd=GRID_SRC_PATH,
+                        cwd=cwd,
                         shell=True,
                     )
                     process.communicate()
@@ -382,7 +410,7 @@ def execute_commands(
                     subprocess.run(  # nosec
                         cmd_to_exec,
                         shell=True,
-                        cwd=GRID_SRC_PATH,
+                        cwd=cwd,
                     )
         except Exception as e:
             print(f"Failed to run cmd: {cmd}. {e}")
@@ -810,6 +838,9 @@ def create_launch_cmd(
     parsed_kwargs["test"] = bool(kwargs["test"]) if "test" in kwargs else False
     parsed_kwargs["dev"] = bool(kwargs["dev"]) if "dev" in kwargs else False
     parsed_kwargs["silent"] = bool(kwargs["silent"]) if "silent" in kwargs else False
+    parsed_kwargs["from_template"] = (
+        str_to_bool(kwargs["from_template"]) if "from_template" in kwargs else False
+    )
 
     parsed_kwargs["release"] = "production"
     if "release" in kwargs and kwargs["release"] != "production":
@@ -850,6 +881,16 @@ def create_launch_cmd(
 
     # allows changing docker platform to other cpu architectures like arm64
     parsed_kwargs["platform"] = kwargs["platform"] if "platform" in kwargs else None
+
+    if parsed_kwargs["from_template"] and host is not None:
+        # Setup the files from the manifest_template.yml
+        kwargs = setup_from_manifest_template(host_type=host)
+
+        # Override template tag with user input tag
+        if parsed_kwargs["tag"] is not None:
+            kwargs.pop("tag")
+
+        parsed_kwargs.update(kwargs)
 
     if host in ["docker"]:
 
@@ -1361,6 +1402,8 @@ def create_launch_docker_cmd(
     version_string = kwargs["tag"]
     version_hash = "dockerhub"
     build = kwargs["build"]
+    from_template = kwargs["from_template"]
+
     if "release" in kwargs and kwargs["release"] == "development":
         # force version to have -dev at the end in dev mode
         # during development we can use the latest beta version
@@ -1461,6 +1504,7 @@ def create_launch_docker_cmd(
         cmd += " --profile frontend"
 
     # new docker compose regression work around
+    # default_env = os.path.expanduser("~/.hagrid/app/.env")
     default_env = f"{GRID_SRC_PATH}/.env"
     default_envs = {}
     with open(default_env, "r") as f:
@@ -1473,12 +1517,28 @@ def create_launch_docker_cmd(
                     value = parts[1]
                 default_envs[key] = value
     default_envs.update(envs)
+
+    # env file path
+    env_file_path = os.path.join(GRID_SRC_PATH, ".envfile")
+
+    # Render templates if creating stack from the manifest_template.yml
+    if from_template and host_term.host is not None:
+        # If release is development, update relative path
+        if EDITABLE_MODE:
+            default_envs["RELATIVE_PATH"] = "../"
+
+        render_templates(
+            env_vars=default_envs,
+            host_type=host_term.host,
+        )
+
+        env_file_path = os.path.join(GRID_SRC_PATH, RENDERED_DIR, ".envfile")
+
     try:
         env_file = ""
         for k, v in default_envs.items():
             env_file += f"{k}={v}\n"
 
-        env_file_path = os.path.abspath("./.envfile")
         with open(env_file_path, "w") as f:
             f.write(env_file)
 
@@ -2503,7 +2563,7 @@ cli.add_command(version)
 )
 @click.option(
     "--repo",
-    default=arg_cache.repo,
+    default=DEFAULT_REPO,
     help="Choose a repo to fetch the notebook from or just use OpenMined/PySyft",
 )
 @click.option(
@@ -2522,7 +2582,7 @@ def quickstart_cli(
     quiet: bool = False,
     pre: bool = False,
     test: bool = False,
-    repo: str = arg_cache.repo,
+    repo: str = DEFAULT_REPO,
     branch: str = DEFAULT_BRANCH,
     commit: Optional[str] = None,
     python: Optional[str] = None,
@@ -2549,36 +2609,58 @@ def quickstart_cli(
                 pre=pre,
                 python=python,
             )
-
+        downloaded_files = []
         if url:
             allowed_schemes_as_url = ["http", "https"]
             url_scheme = urlparse(url).scheme
-
+            # relative mode
             if url_scheme not in allowed_schemes_as_url:
                 notebooks = get_urls_from_dir(
                     repo=repo, branch=branch, commit=commit, url=url
                 )
-                overwrite_all_notebooks = False
-                if not reset:
-                    overwrite_all_notebooks = click.confirm(
-                        text=f"You have {len(notebooks)} conflicting notebooks. Would you like to overwrite them all?",
-                        default=False,
-                    )
 
+                url_dir = os.path.dirname(url) if os.path.dirname(url) else url
+                notebook_files = []
+                existing_count = 0
                 for notebook_url in notebooks:
-                    file_path, _ = quickstart_download_notebook(
-                        url=notebook_url,
-                        directory=directory + "/" + url + "/",
-                        reset=reset,
-                        overwrite_all_notebooks=overwrite_all_notebooks,
+                    url_filename = os.path.basename(notebook_url)
+                    url_dirname = os.path.dirname(notebook_url)
+                    if (
+                        url_dirname.endswith(url_dir)
+                        and os.path.isdir(directory + url_dir)
+                        and os.path.isfile(directory + url_dir + os.sep + url_filename)
+                    ):
+                        notebook_files.append(url_dir + os.sep + url_filename)
+                        existing_count += 1
+
+                if existing_count > 0:
+                    plural = "s" if existing_count > 1 else ""
+                    print(
+                        f"You have {existing_count} existing notebook{plural} matching: {url}"
                     )
+                    for nb in notebook_files:
+                        print(nb)
+
+                overwrite_all = False
+                for notebook_url in notebooks:
+                    file_path, _, overwrite_all = quickstart_download_notebook(
+                        url=notebook_url,
+                        directory=directory + os.sep + url_dir + os.sep,
+                        reset=reset,
+                        overwrite_all=overwrite_all,
+                    )
+                    downloaded_files.append(file_path)
 
             else:
-                file_path, _ = quickstart_download_notebook(
+                file_path, _, _ = quickstart_download_notebook(
                     url=url, directory=directory, reset=reset
                 )
+                downloaded_files.append(file_path)
         else:
             file_path = add_intro_notebook(directory=directory, reset=reset)
+            downloaded_files.append(file_path)
+
+        file_path = sorted(downloaded_files)[0]
 
         # add virtualenv path
         environ = os.environ.copy()
@@ -2680,28 +2762,17 @@ def quickstart_setup(
 
 
 def get_urls_from_dir(
+    url: str,
     repo: str,
     branch: str,
-    commit: Optional[str],
-    url: str,
+    commit: Optional[str] = None,
 ) -> List[str]:
     notebooks = []
-    if commit is not None:
-        gh_api_call = (
-            "https://api.github.com/repos/"
-            + repo
-            + "/git/trees/"
-            + commit
-            + "?recursive=1"
-        )
-    else:
-        gh_api_call = (
-            "https://api.github.com/repos/"
-            + repo
-            + "/git/trees/"
-            + branch
-            + "?recursive=1"
-        )
+    slug = commit if commit else branch
+
+    gh_api_call = (
+        "https://api.github.com/repos/" + repo + "/git/trees/" + slug + "?recursive=1"
+    )
     r = requests.get(gh_api_call)
     if r.status_code != 200:
         print(
@@ -2718,7 +2789,7 @@ def get_urls_from_dir(
                     "https://raw.githubusercontent.com/"
                     + repo
                     + "/"
-                    + branch
+                    + slug
                     + "/"
                     + file["path"]
                 )
@@ -2750,7 +2821,7 @@ def add_intro_notebook(directory: str, reset: bool = False) -> str:
                     "https://raw.githubusercontent.com/OpenMined/PySyft/dev/"
                     + f"notebooks/quickstart/{filename}"
                 )
-                file_path, _ = quickstart_download_notebook(
+                file_path, _, _ = quickstart_download_notebook(
                     url=url, directory=directory, reset=reset
                 )
     file_path = os.path.abspath(f"{directory}/{filenames[0]}")
