@@ -13,6 +13,7 @@ from sqlalchemy.orm import sessionmaker
 
 # relative
 from .....telemetry import instrument
+from ..exceptions import ObjectNotFoundError
 from ..node_table import Base
 from ..node_table.syft_object import SyftObject
 
@@ -132,8 +133,21 @@ class NoSQLDatabaseManager:
     def delete(self, **search_params: Any) -> None:
         self._collection.delete_many(search_params)
 
-    def update(self) -> None:
-        pass
+    def update(
+        self, search_params: Dict[str, Any], updated_args: Dict[str, Any]
+    ) -> None:
+        obj = self.first(**search_params)
+        attributes: Dict[str, Any] = {}
+        for k, v in updated_args.items():
+            if k not in obj.__attr_state__:  # type: ignore
+                raise ValueError(f"Cannot set an non existing field:{k} to Node")
+            else:
+                setattr(obj, k, v)
+            if k in obj.__attr_searchable__:  # type: ignore
+                attributes[k] = v
+        attributes["__blob__"] = obj.to_bytes()  # type: ignore
+
+        self.update_one(query=search_params, values=attributes)
 
     def find(self, search_params: Dict[str, Any]) -> List[SyftObject]:
         results = []
@@ -151,7 +165,7 @@ class NoSQLDatabaseManager:
     def first(self, **search_params: Dict[str, Any]) -> Optional[SyftObject]:
         d = self._collection.find_one(search_params)
         if d is None:
-            return d
+            raise ObjectNotFoundError
         return SyftObject.from_mongo(d)
 
     def __len__(self) -> int:
