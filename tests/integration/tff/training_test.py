@@ -63,7 +63,6 @@ def test_training():
         "no_clients": 5,
         "noise_multiplier": 0.05,
         "clients_per_round": 2,
-        "dataset_id": domain.datasets[0].id,
         "train_data_id": domain.datasets[0]["images"].id_at_location.to_string(),
         "label_data_id": domain.datasets[0]["labels"].id_at_location.to_string(),
     }
