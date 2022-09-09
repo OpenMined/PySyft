@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from collections import deque
+from collections.abc import Iterable
 from typing import Any
 from typing import Callable
 from typing import Deque
@@ -1117,6 +1118,8 @@ def numpy2jax(value: np.array, dtype: np.dtype) -> jnp.array:
     return jnp.asarray(value, dtype=dtype)
 
 
+# ATTENTION: Shouldn't this be a subclass of some kind of base tensor so all the numpy
+# methods and properties don't need to be re-implemented on it?
 @dataclass
 @serializable(capnp_bytes=True)
 class GammaTensor:
@@ -1263,6 +1266,13 @@ class GammaTensor:
             return np.prod(self.child.shape)
 
         raise Exception(f"{type(self)} has no attribute size.")
+
+    def all(self) -> bool:
+        if hasattr(self.child, "all"):
+            return self.child.all()
+        elif isinstance(self.child, Iterable):
+            return all(self.child)
+        return bool(self.child)
 
     def __add__(self, other: Any) -> GammaTensor:
         # relative
@@ -2212,7 +2222,7 @@ class GammaTensor:
 
         child = (
             np.zeros_like(self.child, *args, **kwargs)
-            if isinstance(self.child, np.ndarray)
+            if not hasattr(self.child, "zeros_like")
             else self.child.zeros_like(*args, **kwargs)
         )
 
