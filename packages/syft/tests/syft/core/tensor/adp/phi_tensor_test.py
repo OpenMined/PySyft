@@ -1092,6 +1092,7 @@ def test_squeeze(
     assert (squeezed_tensor.child == reference_data).all()
     assert (squeezed_tensor.data_subjects == ishan).all()
 
+
 def test_any(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1107,17 +1108,18 @@ def test_any(
     )
 
     result = (reference_tensor == reference_data).any()
-    assert (result.child == True) 
+    assert result.child
 
     result = (reference_tensor == reference_data).any(axis=0)
-    assert result.shape == (reference_data.shape[0], )
-    
+    assert result.shape == (reference_data.shape[0],)
+
     result = (reference_tensor == reference_data).any(keepdims=True)
     assert result.shape == (1, 1)
-    
+
     result = (reference_tensor == reference_data).any(keepdims=True, axis=0)
     assert result.shape == (1, reference_tensor.shape[0])
-    
+
+
 def test_all(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1133,17 +1135,18 @@ def test_all(
     )
 
     result = (reference_tensor == reference_data).any()
-    assert (result.child == True) 
+    assert result.child
 
     result = (reference_tensor == reference_data).any(axis=0)
-    assert result.shape == (reference_data.shape[0], )
-    
+    assert result.shape == (reference_data.shape[0],)
+
     result = (reference_tensor == reference_data).any(keepdims=True)
     assert result.shape == (1, 1)
-    
+
     result = (reference_tensor == reference_data).any(keepdims=True, axis=0)
     assert result.shape == (1, reference_tensor.shape[0])
-    
+
+
 def test_and(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1158,12 +1161,13 @@ def test_and(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    
+
     result = reference_tensor & True
     assert (result.child == (reference_data & True)).all()
-    
+
     result = reference_tensor & False
     assert (result.child == (reference_data & False)).all()
+
 
 def test_or(
     reference_data: np.ndarray,
@@ -1179,9 +1183,9 @@ def test_or(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    
+
     result = reference_tensor | True
     assert (result.child == (reference_data | True)).all()
-    
+
     result = reference_tensor | False
     assert (result.child == (reference_data | False)).all()

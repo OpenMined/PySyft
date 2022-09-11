@@ -13,7 +13,8 @@ from typing import Union
 
 # third party
 import numpy as np
-from numpy.typing import NDArray, ArrayLike
+from numpy.typing import ArrayLike
+from numpy.typing import NDArray
 from scipy.ndimage.interpolation import rotate
 
 # relative
@@ -1088,17 +1089,19 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         )
 
     def any(
-        self, 
-        axis: Optional[Union[int, Tuple[int, ...]]]= None, 
-        keepdims: Optional[bool] = False, 
-        where: Optional[ArrayLike] = None
+        self,
+        axis: Optional[Union[int, Tuple[int, ...]]] = None,
+        keepdims: Optional[bool] = False,
+        where: Optional[ArrayLike] = None,
     ) -> PhiTensor:
-        # TODO: properly define data subjects and 
-        # figure out if it is not a privacy violation to return bool 
+        # TODO: properly define data subjects and
+        # figure out if it is not a privacy violation to return bool
         if where is None:
             out_child = np.array(self.child.any(axis=axis, keepdims=keepdims))
         else:
-            out_child = np.array(self.child.any(axis=axis, keepdims=keepdims, where=where)) 
+            out_child = np.array(
+                self.child.any(axis=axis, keepdims=keepdims, where=where)
+            )
 
         new_data_subjects = DataSubjectArray.from_objs(np.empty(out_child.shape))
 
@@ -1108,18 +1111,20 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=lazyrepeatarray(data=True, shape=out_child.shape),
             data_subjects=new_data_subjects,
         )
-        
+
     def all(
-        self, 
-        axis: Optional[Union[int, Tuple[int, ...]]] = None, 
-        keepdims: Optional[bool] = None, 
+        self,
+        axis: Optional[Union[int, Tuple[int, ...]]] = None,
+        keepdims: Optional[bool] = None,
         where: Optional[ArrayLike] = None,
     ) -> PhiTensor:
         # TODO: properly define data subjects
         if where is None:
             out_child = np.array(self.child.all(axis=axis, keepdims=keepdims))
         else:
-            out_child = np.array(self.child.all(axis=axis, keepdims=keepdims, where=where)) 
+            out_child = np.array(
+                self.child.all(axis=axis, keepdims=keepdims, where=where)
+            )
 
         new_data_subjects = DataSubjectArray.from_objs(np.empty(out_child.shape))
 
@@ -1130,7 +1135,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             data_subjects=new_data_subjects,
         )
 
-    def __and__(self, value) -> PhiTensor:
+    def __and__(self, value) -> PhiTensor:  # type: ignore
         out_child = self.child & value
         return PhiTensor(
             child=out_child,
@@ -1139,7 +1144,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             data_subjects=self.data_subjects,
         )
 
-    def __or__(self, value) -> PhiTensor:
+    def __or__(self, value) -> PhiTensor:  # type: ignore
         out_child = self.child | value
         return PhiTensor(
             child=out_child,
