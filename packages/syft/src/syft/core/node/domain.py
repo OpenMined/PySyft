@@ -39,7 +39,6 @@ from .common.node_manager.association_request_manager import (
     NoSQLAssociationRequestManager,
 )
 from .common.node_manager.dataset_manager import NoSQLDatasetManager
-from .common.node_manager.environment_manager import EnvironmentManager
 from .common.node_manager.node_manager import NoSQLNodeManager
 from .common.node_manager.redis_store import RedisStore
 from .common.node_manager.request_manager import NoSQLRequestManager
@@ -142,7 +141,6 @@ class Domain(Node):
         # Database Management Instances
         self.users = NoSQLUserManager(self.nosql_db_engine, self.db_name)
         self.roles = NewRoleManager()
-        self.environments = EnvironmentManager(db_engine)
         self.association_requests = NoSQLAssociationRequestManager(
             self.nosql_db_engine, self.db_name
         )
@@ -466,7 +464,6 @@ class Domain(Node):
             self.store.clear()
             self.data_requests.clear()
             self.users.clear()
-            self.environments.clear()
             self.association_requests.clear()
             self.datasets.clear()
             self.initial_setup(signing_key=self.signing_key)
