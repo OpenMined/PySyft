@@ -24,6 +24,7 @@ from ....store.store_interface import StoreKey
 from ....store.storeable_object import StorableObject
 from ..node_table.bin_obj_metadata import ObjectMetadata
 from .dataset_manager import NoSQLDatasetManager
+from .obj_metadata_manager import NoSQLObjectMetadataManager
 
 
 class RedisStore(ObjectStore):
@@ -45,6 +46,9 @@ class RedisStore(ObjectStore):
                 db=self.settings.REDIS_STORE_DB_ID,
             )
             self.dataset_manager = NoSQLDatasetManager(nosql_db_engine, db_name)
+            self.obj_metadata_manager = NoSQLObjectMetadataManager(
+                nosql_db_engine, db_name
+            )
         except Exception as e:
             print("failed to load redis", e)
             raise e
@@ -100,9 +104,8 @@ class RedisStore(ObjectStore):
         local_session = sessionmaker(bind=self.db)()
 
         obj = self.redis.get(key_str)
-        obj_metadata = (
-            local_session.query(ObjectMetadata).filter_by(obj=key_str).first()
-        )
+        obj_metadata = self.obj_metadata_manager.first(obj=key_str)
+
         if obj is None or obj_metadata is None:
             raise KeyError(f"Object not found! for UID: {key_str}")
 
@@ -157,45 +160,35 @@ class RedisStore(ObjectStore):
             bin = syft.serialize(value.data, to_bytes=True)
         self.redis.set(key_str, bin)
 
-        create_metadata = True
-        local_session = sessionmaker(bind=self.db)()
-        try:
-            # use existing metadata row to prevent more than 1
-            metadata_obj = (
-                local_session.query(ObjectMetadata).filter_by(obj=key_str).all()[-1]
-            )
-            create_metadata = False
-        except Exception:
-            pass
-            # no metadata row exists lets insert one
-            metadata_obj = ObjectMetadata()
+        if self.obj_metadata_manager.contain(obj=key_str):
+            raise Exception(f"Already an Existing Metadata with id:{key_str} exits ")
 
-        metadata_obj.obj = key_str
-        metadata_obj.tags = value.tags
-        metadata_obj.description = value.description
-        metadata_obj.read_permissions = cast(
+        read_permissions = cast(
             bytes,
             syft.serialize(syft.lib.python.Dict(value.read_permissions), to_bytes=True),
         ).hex()
-        metadata_obj.search_permissions = cast(
+        search_permissions = cast(
             bytes,
             syft.serialize(
                 syft.lib.python.Dict(value.search_permissions), to_bytes=True
             ),
         ).hex()
-        metadata_obj.write_permissions = cast(
+        write_permissions = cast(
             bytes,
             syft.serialize(
                 syft.lib.python.Dict(value.write_permissions), to_bytes=True
             ),
         ).hex()
-        metadata_obj.is_proxy_dataset = is_proxy_dataset
 
-        local_session = sessionmaker(bind=self.db)()
-        if create_metadata:
-            local_session.add(metadata_obj)
-        local_session.commit()
-        local_session.close()
+        self.obj_metadata_manager.create_metadata(
+            obj=key_str,
+            tags=value.tags,
+            description=value.description,
+            read_permissions=read_permissions,
+            search_permissions=search_permissions,
+            write_permissions=write_permissions,
+            is_proxy_dataset=is_proxy_dataset,
+        )
 
     def delete(self, key: UID) -> None:
         try:
@@ -224,10 +217,7 @@ class RedisStore(ObjectStore):
 
     def clear(self) -> None:
         self.redis.flushdb()
-        local_session = sessionmaker(bind=self.db)()
-        local_session.query(ObjectMetadata).delete()
-        local_session.commit()
-        local_session.close()
+        self.obj_metadata_manager.clear()
 
     def __repr__(self) -> str:
         return f"{type(self)}"
