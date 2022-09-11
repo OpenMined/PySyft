@@ -13,7 +13,7 @@ from typing import Union
 
 # third party
 import numpy as np
-from numpy.typing import NDArray
+from numpy.typing import NDArray, ArrayLike
 from scipy.ndimage.interpolation import rotate
 
 # relative
@@ -1087,11 +1087,66 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             data_subjects=self.data_subjects.copy(),
         )
 
-    def all(self) -> bool:
-        return self.child.all()
+    def any(
+        self, 
+        axis: Optional[Union[int, Tuple[int, ...]]]= None, 
+        keepdims: Optional[bool] = False, 
+        where: Optional[ArrayLike] = None
+    ) -> PhiTensor:
+        # TODO: properly define data subjects and 
+        # figure out if it is not a privacy violation to return bool 
+        if where is None:
+            out_child = np.array(self.child.any(axis=axis, keepdims=keepdims))
+        else:
+            out_child = np.array(self.child.any(axis=axis, keepdims=keepdims, where=where)) 
 
-    def any(self) -> bool:
-        return self.child.any()
+        new_data_subjects = DataSubjectArray.from_objs(np.empty(out_child.shape))
+
+        return PhiTensor(
+            child=out_child,
+            min_vals=lazyrepeatarray(data=False, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=True, shape=out_child.shape),
+            data_subjects=new_data_subjects,
+        )
+        
+    def all(
+        self, 
+        axis: Optional[Union[int, Tuple[int, ...]]] = None, 
+        keepdims: Optional[bool] = None, 
+        where: Optional[ArrayLike] = None,
+    ) -> PhiTensor:
+        # TODO: properly define data subjects
+        if where is None:
+            out_child = np.array(self.child.all(axis=axis, keepdims=keepdims))
+        else:
+            out_child = np.array(self.child.all(axis=axis, keepdims=keepdims, where=where)) 
+
+        new_data_subjects = DataSubjectArray.from_objs(np.empty(out_child.shape))
+
+        return PhiTensor(
+            child=out_child,
+            min_vals=lazyrepeatarray(data=False, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=True, shape=out_child.shape),
+            data_subjects=new_data_subjects,
+        )
+
+    def __and__(self, value) -> PhiTensor:
+        out_child = self.child & value
+        return PhiTensor(
+            child=out_child,
+            min_vals=lazyrepeatarray(data=False, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=True, shape=out_child.shape),
+            data_subjects=self.data_subjects,
+        )
+
+    def __or__(self, value) -> PhiTensor:
+        out_child = self.child | value
+        return PhiTensor(
+            child=out_child,
+            min_vals=lazyrepeatarray(data=False, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=True, shape=out_child.shape),
+            data_subjects=self.data_subjects,
+        )
 
     def copy_with(self, child: np.ndarray) -> PhiTensor:
         new_tensor = self.copy()
