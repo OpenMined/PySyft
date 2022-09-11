@@ -148,7 +148,7 @@ def update_settings(
         if msg.domain_name:
             node.name = msg.domain_name
 
-        node.setup.update(
+        node.setup.update_config(
             domain_name=node.name,
             description=msg.description,
             daa=msg.daa,

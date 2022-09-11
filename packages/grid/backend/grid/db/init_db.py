@@ -38,6 +38,6 @@ def init_db(db: Session, signing_key: Optional[SigningKey] = None) -> None:
             signing_key = SigningKey(
                 owner.private_key.encode("utf-8"), encoder=HexEncoder
             )
-            node.setup.update(**{"signing_key": owner.private_key})
+            node.setup.update_config(**{"signing_key": owner.private_key})
 
         type(node).set_keys(node=node, signing_key=signing_key)
