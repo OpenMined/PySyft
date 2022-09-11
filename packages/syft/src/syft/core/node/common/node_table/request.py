@@ -1,5 +1,8 @@
 # stdlib
+from typing import Any
+from typing import Dict
 from typing import List
+from typing import Optional
 
 # third party
 from sqlalchemy import Column
@@ -74,22 +77,22 @@ class NoSQLRequest(SyftObject):
     user_name: str
     user_email: str
     user_role: str
-    user_budget: float
-    institution: str
-    website: str
-    object_id: str
+    user_budget: Optional[float]
+    institution: Optional[str]
+    website: Optional[str]
+    object_id: UID
     reason: str
     status: str = "pending"
     request_type: str
     verify_key: str
     object_type: str
-    tags: List[str] = []
-    updated_on: str
-    reviewer_name: str
-    reviewer_role: str
-    reviewer_comment: str
-    requested_budget: float
-    current_budget: float
+    tags: Optional[List[str]] = []
+    updated_on: Optional[str]
+    reviewer_name: Optional[str]
+    reviewer_role: Optional[str]
+    reviewer_comment: Optional[str]
+    requested_budget: Optional[float]
+    current_budget: Optional[float]
 
     # serde / storage rules
     __attr_state__ = [
@@ -115,5 +118,11 @@ class NoSQLRequest(SyftObject):
         "requested_budget",
         "current_budget",
     ]
-    __attr_searchable__: List[str] = ["id", "user_email"]
+    __attr_searchable__: List[str] = ["status", "verify_key", "request_type"]
     __attr_unique__: List[str] = []
+
+    def to_dict(self) -> Dict[Any, Any]:
+        attr_dict = super().to_dict()
+        attr_dict["id"] = attr_dict["id"].to_string()
+        attr_dict["object_id"] = attr_dict["object_id"].to_string()
+        return attr_dict

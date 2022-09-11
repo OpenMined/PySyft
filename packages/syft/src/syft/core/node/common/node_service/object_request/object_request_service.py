@@ -26,7 +26,8 @@ from ...exceptions import InvalidParameterValueError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import RequestError
 from ...node import DuplicateRequestException
-from ...node_table.utils import model_to_json
+from ...node_table.request import NoSQLRequest
+from ...node_table.utils import syft_object_to_json
 from ..accept_or_deny_request.accept_or_deny_request_messages import (
     AcceptOrDenyRequestMessage,
 )
@@ -86,10 +87,15 @@ def create_request_msg(
 
     # since we reject/accept requests based on the ID, we don't want there to be
     # multiple requests with the same ID because this could cause security problems.
-    _duplicate_request = node.data_requests.contain(
-        object_id=object_id,
-        verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8"),
-    )
+
+    object_uid = UID._check_or_convert(object_id)
+
+    for req in node.data_requests.query(
+        verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+    ):
+        if req.object_id == object_uid:
+            _duplicate_request = True
+            break
 
     if _duplicate_request:
         raise DuplicateRequestException(
@@ -111,19 +117,20 @@ def create_request_msg(
         )
 
     requests = node.data_requests
-    object_uid = UID.from_string(object_id)
 
     request_obj = requests.create_request(
-        user_id=current_user.id,
-        user_name=current_user.email,
-        object_id=object_id,
+        user_id=current_user.id_int,
+        user_name=current_user.name,
+        user_email=current_user.email,
+        user_role=current_user.role["name"],
+        object_id=object_uid,
         reason=reason,
         request_type=request_type,
         verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8"),
         object_type=object_type,
         tags=node.store.get(object_uid, proxy_only=True)._tags,
     )
-    request_json = model_to_json(request_obj)
+    request_json = request_obj.to_dict()
 
     return CreateRequestResponse(
         address=msg.reply_to,
@@ -161,7 +168,7 @@ def create_budget_request_msg(
     )
 
     node.data_requests.create_request(
-        user_id=current_user.id,
+        user_id=current_user.id_int,
         user_name=current_user.name,
         user_email=current_user.email,
         user_role=current_user.role["name"],
@@ -169,7 +176,7 @@ def create_budget_request_msg(
         institution=current_user.institution,
         website=current_user.website,
         reason=msg.reason,
-        object_id=str(UID().value),
+        object_id=UID(),
         object_type="<Budget>",
         requested_budget=msg.budget,
         request_type="budget",
@@ -186,14 +193,14 @@ def get_request_msg(
     # Get Payload Content
     request_id = msg.request_id
     current_user = node.users.first(verify_key=verify_key)
-    current_user_id = current_user.id
+    current_user_id = current_user.id_int
 
     users = node.users
 
     if not current_user_id:
         current_user_id = users.first(
             verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
-        ).id
+        ).id_int
 
     requests = node.data_requests
     request = requests.first(id=request_id)
@@ -205,7 +212,7 @@ def get_request_msg(
     )
 
     if allowed:
-        request_json = model_to_json(request)
+        request_json = request.to_dict()
     else:
         raise AuthorizationError("You're not allowed to get Request information!")
 
@@ -232,14 +239,14 @@ def get_all_request_msg(
             # Get current state user
             if node.data_requests.status(request.id) == RequestStatus.Pending:
                 _user = node.users.first(id_int=int(request.user_id))
-                user = model_to_json(_user)
+                user = syft_object_to_json(_user)
                 user["role"] = _user.role["name"]
                 user["current_budget"] = user["budget"]
             # Get History state user
             else:
                 user = node.data_requests.get_user_info(request_id=request.id)
-            request = model_to_json(request)
-            response.append({"user": user, "req": request})
+            request_dict = request.to_dict()
+            response.append({"user": user, "req": request_dict})
 
     else:
         raise AuthorizationError("You're not allowed to get Request information!")
@@ -266,15 +273,15 @@ def get_all_budget_requests(
             # Get current state user
             if node.data_requests.status(request.id) == RequestStatus.Pending:
                 _user = node.users.first(id=request.user_id)
-                user = model_to_json(_user)
+                user = syft_object_to_json(_user)
                 user["role"] = _user.role["name"]
                 user["current_budget"] = user["budget"]
-                request = model_to_json(request)
+                request_dict = request.to_dict()
             # Get History state user
             else:
                 user = node.data_requests.get_user_info(request_id=request.id)
-                request = node.data_requests.get_req_info(request_id=request.id)
-            response.append({"user": user, "req": request})
+                request_dict = node.data_requests.get_req_info(request_id=request.id)
+            response.append({"user": user, "req": request_dict})
     else:
         raise AuthorizationError("You're not allowed to get Request information!")
     return GetBudgetRequestsResponse(
@@ -300,10 +307,15 @@ def update_request_msg(
             message="Invalid request payload, empty fields (status)!"
         )
 
-    _req = node.data_requests.first(id=request_id)
+    _req: NoSQLRequest = node.data_requests.first(id=request_id)
 
     if not _req:
         raise RequestError(message=f"Request ID: {request_id} not found.")
+
+    if _req.requested_budget is None:
+        raise ValueError(
+            "The Requested budget should not be None(f:<update_request_msg>)"
+        )
 
     if status not in ["accepted", "denied"]:
         raise InvalidParameterValueError(
@@ -322,15 +334,15 @@ def update_request_msg(
         if "<Budget>" in _req.object_type:
             current_user = node.users.first(verify_key=_req.verify_key)
             node.users.set(
-                user_id=current_user.id,
+                user_id=current_user.id_int,
                 budget=current_user.budget + _req.requested_budget,
             )
         else:
-            tmp_obj = node.store.get(UID.from_string(_req.object_id), proxy_only=True)
+            tmp_obj = node.store.get(_req.object_id, proxy_only=True)
             tmp_obj.read_permissions[
                 VerifyKey(_req.verify_key.encode("utf-8"), encoder=HexEncoder)
             ] = _req.id
-            node.store[UID.from_string(_req.object_id)] = tmp_obj
+            node.store[_req.object_id] = tmp_obj
         # this should be an enum not a string
         node.data_requests.set(request_id=_req.id, status=status)  # type: ignore
     elif status == "denied" and (_can_triage_request or _req_owner):
@@ -357,7 +369,7 @@ def del_request_msg(
 
     current_user_id = node.users.first(
         verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
-    ).id
+    ).id_int
 
     requests = node.data_requests
     request = requests.first(id=request_id)
@@ -419,11 +431,11 @@ def get_all_requests(
             current_budget=req.user_budget,
             date=str(req.date),
             request_type=req.request_type,
-            request_id=UID.from_string(req.id),
+            request_id=req.id,
             request_description=req.reason,
             address=node.address,
             owner_address=node.address,
-            object_id=UID.from_string(req.object_id),
+            object_id=req.object_id,
             object_type=req.object_type,
             object_tags=req.tags,
             requester_verify_key=VerifyKey(
@@ -548,10 +560,14 @@ def build_request_message(
 
     # since we reject/accept requests based on the ID, we don't want there to be
     # multiple requests with the same ID because this could cause security problems.
-    _duplicate_request = node.data_requests.contain(
-        object_id=str(msg.object_id.value),
-        verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8"),
-    )
+    object_uid = UID._check_or_convert(msg.object_id)
+
+    for req in node.data_requests.query(
+        verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+    ):
+        if req.object_id == object_uid:
+            _duplicate_request = True
+            break
 
     if _duplicate_request:
         raise DuplicateRequestException(
@@ -565,14 +581,14 @@ def build_request_message(
     )
 
     node.data_requests.create_request(
-        user_id=current_user.id,
+        user_id=current_user.id_int,
         user_name=current_user.name,
         user_email=current_user.email,
         user_role=current_user.role["name"],
         user_budget=current_user.budget,
         institution=current_user.institution,
         website=current_user.website,
-        object_id=str(msg.object_id.value),
+        object_id=object_uid,
         reason=msg.request_description,
         request_type="data",
         verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8"),
@@ -597,7 +613,13 @@ def accept_or_deny_request(
         verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
     )
     # Check if there is any pending request with this id.
-    _req = node.data_requests.first(id=str(_msg.request_id.value), status="pending")
+    _req: NoSQLRequest = node.data_requests.first(
+        id=str(_msg.request_id.value), status="pending"
+    )
+    if _req.requested_budget is None:
+        raise ValueError(
+            "The Requested budget should not be None(f:<accept_or_deny_request>)"
+        )
 
     _can_triage_request = node.users.can_triage_requests(verify_key=verify_key)
     if _msg.accept:
@@ -605,17 +627,15 @@ def accept_or_deny_request(
             if "<Budget>" in _req.object_type:
                 current_user = node.users.first(verify_key=_req.verify_key)
                 node.users.set(
-                    user_id=current_user.id,
+                    user_id=current_user.id_int,
                     budget=current_user.budget + _req.requested_budget,
                 )
             else:
-                tmp_obj = node.store.get(
-                    UID.from_string(_req.object_id), proxy_only=True
-                )
+                tmp_obj = node.store.get(_req.object_id, proxy_only=True)
                 tmp_obj.read_permissions[
                     VerifyKey(_req.verify_key.encode("utf-8"), encoder=HexEncoder)
                 ] = _req.id
-                node.store[UID.from_string(_req.object_id)] = tmp_obj
+                node.store[_req.object_id] = tmp_obj
 
             # TODO: In the future we'll probably need to keep a request history
             # So, instead of deleting a data access request, we would like to just change its
@@ -633,14 +653,14 @@ def accept_or_deny_request(
             # node.data_requests.delete(id=_req.id)
             status = "denied"
 
-    node.data_requests.modify(
+    node.data_requests.update(
         {"id": _req.id},
         {
             "status": status,
             "reviewer_name": current_user.name,
             "reviewer_role": current_user.role["name"],
             "reviewer_comment": "",
-            "updated_on": datetime.now(),
+            "updated_on": str(datetime.now()),
         },
     )  # type: ignore
 

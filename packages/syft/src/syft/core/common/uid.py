@@ -6,6 +6,7 @@ from typing import Generator
 from typing import List
 from typing import Optional
 from typing import Sequence
+from typing import Union
 import uuid
 from uuid import UUID as uuid_type
 
@@ -182,3 +183,16 @@ class UID:
         UID objects) within other object __repr__ methods."""
 
         return f"..{str(self.value)[-5:]}"
+
+    def _check_or_convert(value: Union[str, "UID", uuid.UUID]) -> "UID":
+        if isinstance(value, uuid.UUID):
+            return UID(value)
+        elif isinstance(value, str):
+            return UID.from_string(value)
+        elif isinstance(value, UID):
+            return value
+        else:
+            # Ask @Madhava , can we check for  invalid types , even though type annotation is specified.
+            return ValueError(  # type: ignore
+                f"Incorrect value,type:{value,type(value)} for conversion to UID, expected Union[str,UID,UUID]"
+            )
