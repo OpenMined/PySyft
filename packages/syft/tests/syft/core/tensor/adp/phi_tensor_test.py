@@ -1091,3 +1091,97 @@ def test_squeeze(
     assert squeezed_tensor.shape == reference_data.shape
     assert (squeezed_tensor.child == reference_data).all()
     assert (squeezed_tensor.data_subjects == ishan).all()
+
+def test_any(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array(reference_data),
+        data_subjects=np.array(ishan),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    result = (reference_tensor == reference_data).any()
+    assert (result.child == True) 
+
+    result = (reference_tensor == reference_data).any(axis=0)
+    assert result.shape == (reference_data.shape[0], )
+    
+    result = (reference_tensor == reference_data).any(keepdims=True)
+    assert result.shape == (1, 1)
+    
+    result = (reference_tensor == reference_data).any(keepdims=True, axis=0)
+    assert result.shape == (1, reference_tensor.shape[0])
+    
+def test_all(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array(reference_data),
+        data_subjects=np.array(ishan),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    result = (reference_tensor == reference_data).any()
+    assert (result.child == True) 
+
+    result = (reference_tensor == reference_data).any(axis=0)
+    assert result.shape == (reference_data.shape[0], )
+    
+    result = (reference_tensor == reference_data).any(keepdims=True)
+    assert result.shape == (1, 1)
+    
+    result = (reference_tensor == reference_data).any(keepdims=True, axis=0)
+    assert result.shape == (1, reference_tensor.shape[0])
+    
+def test_and(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    # TODO
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array([reference_data]),
+        data_subjects=np.array([ishan]),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+    
+    result = reference_tensor & True
+    assert (result.child == (reference_data & True)).all()
+    
+    result = reference_tensor & False
+    assert (result.child == (reference_data & False)).all()
+
+def test_or(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    # TODO
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array([reference_data]),
+        data_subjects=np.array([ishan]),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+    
+    result = reference_tensor | True
+    assert (result.child == (reference_data | True)).all()
+    
+    result = reference_tensor | False
+    assert (result.child == (reference_data | False)).all()
