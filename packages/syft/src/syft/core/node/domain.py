@@ -38,11 +38,11 @@ from .common.node import Node
 from .common.node_manager.association_request_manager import (
     NoSQLAssociationRequestManager,
 )
-from .common.node_manager.dataset_manager import DatasetManager
+from .common.node_manager.dataset_manager import NoSQLDatasetManager
 from .common.node_manager.environment_manager import EnvironmentManager
 from .common.node_manager.node_manager import NoSQLNodeManager
 from .common.node_manager.redis_store import RedisStore
-from .common.node_manager.request_manager import RequestManager
+from .common.node_manager.request_manager import NoSQLRequestManager
 from .common.node_manager.role_manager import NewRoleManager
 from .common.node_manager.user_manager import NoSQLUserManager
 from .common.node_service.association_request.association_request_service import (
@@ -146,8 +146,8 @@ class Domain(Node):
         self.association_requests = NoSQLAssociationRequestManager(
             self.nosql_db_engine, self.db_name
         )
-        self.data_requests = RequestManager(db_engine)
-        self.datasets = DatasetManager(db_engine)
+        self.data_requests = NoSQLRequestManager(self.nosql_db_engine, self.db_name)
+        self.datasets = NoSQLDatasetManager(self.nosql_db_engine, self.db_name)
         self.node = NoSQLNodeManager(self.nosql_db_engine, self.db_name)
         self.ledger_store = ledger_store_type(settings=settings)
 

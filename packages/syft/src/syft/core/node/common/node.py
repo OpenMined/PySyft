@@ -178,7 +178,12 @@ class Node(AbstractNode):
         # become quite numerous (or otherwise fill up RAM).
         # self.store is the elastic memory.
 
-        self.store = store_type(db=self.db_engine, settings=settings)
+        self.store = store_type(
+            db=self.db_engine,
+            settings=settings,
+            nosql_db_engine=self.nosql_db_engine,
+            db_name=self.db_name,
+        )
         self.setup = NoSQLSetupManager(self.nosql_db_engine, self.db_name)
 
         # We need to register all the services once a node is created

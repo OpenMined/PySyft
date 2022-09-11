@@ -303,7 +303,7 @@ class DatasetRequestAPI(RequestAPI):
                 + assets
                 + """</td>
             <td>"""
-                + d.id
+                + d.id.to_string()
                 + """</td>
           </tr>"""
             )

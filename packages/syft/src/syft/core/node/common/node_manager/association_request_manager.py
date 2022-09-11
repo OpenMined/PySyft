@@ -42,19 +42,9 @@ class NoSQLAssociationRequestManager(NoSQLDatabaseManager):
         table_fields["node_address"] = node_address
 
         try:
-            association_request = self.first(**{"source": source, "target": target})
-            attributes: Dict[str, Any] = {}
-            for k, v in table_fields.items():
-                if k not in association_request.__attr_state__:
-                    raise ValueError(f"Cannot set an non existing field:{k} to Node")
-                else:
-                    setattr(association_request, k, v)
-                if k in association_request.__attr_searchable__:
-                    attributes[k] = v
-            attributes["__blob__"] = association_request.to_bytes()
-
-            self.update_one(
-                query={"source": source, "target": target}, values=attributes
+            self.update(
+                search_params={"source": source, "target": target},
+                updated_args=table_fields,
             )
         except AssociationRequestError:
             # no existing AssociationRequest so lets make one

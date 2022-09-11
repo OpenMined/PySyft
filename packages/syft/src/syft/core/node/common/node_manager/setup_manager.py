@@ -1,6 +1,5 @@
 # stdlib
 from typing import Any
-from typing import Dict
 from typing import List
 from typing import Optional
 
@@ -49,16 +48,9 @@ class NoSQLSetupManager(NoSQLDatabaseManager):
             raise SetupNotFoundError
         return results
 
-    def update(self, **kwargs: Any) -> None:
+    def update_config(self, **kwargs: Any) -> None:
         setup: NoSQLSetup = self.all()[0]
-        attributes: Dict[str, Any] = {}
-        for k, v in kwargs.items():
-            if k not in setup.__attr_state__:
-                raise ValueError(f"Cannot set an non existing field:{k} to Node")
-            else:
-                setattr(setup, k, v)
-            if k in setup.__attr_searchable__:
-                attributes[k] = v
-        attributes["__blob__"] = setup.to_bytes()
-
-        self.update_one(query={"node_uid": setup.node_uid}, values=attributes)
+        self.update(
+            search_params={"node_uid": setup.node_uid},
+            updated_args=kwargs,
+        )

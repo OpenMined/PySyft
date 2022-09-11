@@ -22,6 +22,13 @@ class BadPayloadException(PyGridError):
         super().__init__(message)
 
 
+class ObjectNotFoundError(PyGridError):
+    def __init__(self, message: str = "") -> None:
+        if not message:
+            message = "Syft Object instance not found!"
+        super().__init__(message)
+
+
 class AuthorizationError(PyGridError):
     def __init__(self, message: str = "") -> None:
         if not message:

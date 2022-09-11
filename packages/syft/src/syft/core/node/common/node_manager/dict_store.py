@@ -10,6 +10,7 @@ from typing import cast
 
 # third party
 from pydantic import BaseSettings
+from pymongo import MongoClient
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
 
@@ -27,7 +28,13 @@ from ..node_table.bin_obj_metadata import ObjectMetadata
 
 
 class DictStore(ObjectStore):
-    def __init__(self, db: Session, settings: BaseSettings) -> None:
+    def __init__(
+        self,
+        db: Session,
+        settings: BaseSettings,
+        nosql_db_engine: MongoClient,
+        db_name: str,
+    ) -> None:
         self.db = db
         self.settings = settings
         self.kv_store: Dict[UID, Any] = {}
