@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 from collections import deque
 from collections.abc import Iterable
+from re import I
 from typing import Any
 from typing import Callable
 from typing import Deque
@@ -20,7 +21,7 @@ import jax
 from jax import numpy as jnp
 import numpy as np
 from numpy.random import randint
-from numpy.typing import NDArray
+from numpy.typing import NDArray, ArrayLike
 from scipy.optimize import shgo
 
 # relative
@@ -36,6 +37,7 @@ from ....lib.python.util import upcast
 from ....util import inherit_tags
 from ...adp.data_subject_ledger import DataSubjectLedger
 from ...adp.data_subject_list import DataSubjectList
+from ....core.adp.data_subject_list import DataSubjectArray
 from ...adp.data_subject_list import dslarraytonumpyutf8
 from ...adp.data_subject_list import numpyutf8todslarray
 from ...adp.vectorized_publish import publish
@@ -2381,6 +2383,183 @@ class GammaTensor:
             sources=output_state,
         )
 
+    def any(self,
+        axis: Optional[Union[int, Tuple[int, ...]]]= None, 
+        keepdims: Optional[bool] = False, 
+        where: Optional[ArrayLike] = None
+    ) -> GammaTensor:
+        func = "any"
+        
+        def _any(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.any(
+                *[
+                    i.reconstruct() if isinstance(i, GammaTensor) else i
+                    for i in state.values()
+                ]
+            )
+            
+        output_state = dict()
+        output_state[self.id] = self
+        
+        mapper[func] = _any
+        
+        if where is None:
+            out_child = np.array(self.child.any(axis=axis, keepdims=keepdims))
+        else:
+            out_child = np.array(self.child.any(axis=axis, keepdims=keepdims, where=where)) 
+
+        new_data_subjects = DataSubjectArray.from_objs(np.empty(out_child.shape))
+        
+        return GammaTensor(
+            child=out_child,
+            data_subjects=new_data_subjects,
+            min_vals=lazyrepeatarray(data=False, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=True, shape=out_child.shape),
+            func_str=func,
+            sources=output_state
+        )
+    
+    def all(self,
+        axis: Optional[Union[int, Tuple[int, ...]]]= None, 
+        keepdims: Optional[bool] = False, 
+        where: Optional[ArrayLike] = None
+    ) -> GammaTensor:
+        func = "all"
+        
+        def _all(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.all(
+                *[
+                    i.reconstruct() if isinstance(i, GammaTensor) else i
+                    for i in state.values()
+                ]
+            )
+            
+        output_state = dict()
+        output_state[self.id] = self
+        
+        mapper[func] = _all
+        
+        if where is None:
+            out_child = np.array(self.child.all(axis=axis, keepdims=keepdims))
+        else:
+            out_child = np.array(self.child.all(axis=axis, keepdims=keepdims, where=where)) 
+
+        new_data_subjects = DataSubjectArray.from_objs(np.empty(out_child.shape))
+        
+        return GammaTensor(
+            child=out_child,
+            data_subjects=new_data_subjects,
+            min_vals=lazyrepeatarray(data=False, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=True, shape=out_child.shape),
+            func_str=func,
+            sources=output_state
+        )
+    
+    
+    def __and__(self, value) -> GammaTensor:
+        func = "and"
+        
+        def _and(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.__and__(
+                *[
+                    i.reconstruct() if isinstance(i, GammaTensor) else i
+                    for i in state.values()
+                ]
+            )
+            
+        output_state = dict()
+        output_state[self.id] = self
+        
+        mapper[func] = _and
+        
+        output_data = self.child & value
+        
+        return GammaTensor(
+            child=output_data,
+            data_subjects=self.data_subjects,
+            min_vals=lazyrepeatarray(data=False, shape=output_data.shape),
+            max_vals=lazyrepeatarray(data=True, shape=output_data.shape),
+            func_str=func,
+            sources=output_state
+        )
+
+    def __or__(self, value) -> GammaTensor:
+        func = "or"
+        
+        def _or(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.__or__(
+                *[
+                    i.reconstruct() if isinstance(i, GammaTensor) else i
+                    for i in state.values()
+                ]
+            )
+            
+        output_state = dict()
+        output_state[self.id] = self
+        
+        mapper[func] = _or
+        
+        output_data = self.child | value
+        
+        return GammaTensor(
+            child=output_data,
+            data_subjects=self.data_subjects,
+            min_vals=lazyrepeatarray(data=False, shape=output_data.shape),
+            max_vals=lazyrepeatarray(data=True, shape=output_data.shape),
+            func_str=func,
+            sources=output_state
+        )
+
+    def __pos__(self) -> GammaTensor:
+        func = "pos"
+        
+        def _pos(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.pos(
+                *[
+                    i.reconstruct() if isinstance(i, GammaTensor) else i
+                    for i in state.values()
+                ]
+            )
+        
+        output_state = dict()
+        output_state[self.id] = self
+        
+        mapper[func] = _pos
+        
+        return GammaTensor(
+            child=self.child ,
+            data_subjects=self.data_subjects,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+            func_str=func,
+            sources=output_state
+        ) 
+
+    def __neg__(self) -> GammaTensor:
+        func = "neg"
+        
+        def _neg(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.neg(
+                *[
+                    i.reconstruct() if isinstance(i, GammaTensor) else i
+                    for i in state.values()
+                ]
+            )
+        
+        output_state = dict()
+        output_state[self.id] = self
+        
+        mapper[func] = _neg
+        
+        return GammaTensor(
+            child=self.child * -1,
+            data_subjects=self.data_subjects,
+            min_vals=self.max_vals * -1,
+            max_vals=self.min_vals * -1,
+            func_str=func,
+            sources=output_state
+        )
+
     def reshape(self, shape: Tuple[int, ...]) -> GammaTensor:
         # TODO: Check if this can publish properly since source changes aren't made
         child = self.child.reshape(shape)
@@ -2868,11 +3047,6 @@ class GammaTensor:
         else:
             raise NotImplementedError
 
-    def __pos__(self) -> GammaTensor:
-        return self
-
-    def __neg__(self) -> GammaTensor:
-        return self * -1
 
     def copy(self, order: str = "C") -> GammaTensor:
         """
