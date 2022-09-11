@@ -184,6 +184,7 @@ class UID:
 
         return f"..{str(self.value)[-5:]}"
 
+    @staticmethod
     def _check_or_convert(value: Union[str, "UID", uuid.UUID]) -> "UID":
         if isinstance(value, uuid.UUID):
             return UID(value)

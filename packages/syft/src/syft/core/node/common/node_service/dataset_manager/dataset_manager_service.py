@@ -22,7 +22,6 @@ from .....store.storeable_object import StorableObject
 from ....domain_interface import DomainInterface
 from ...exceptions import AuthorizationError
 from ...exceptions import DatasetNotFoundError
-from ...node_table.utils import model_to_json
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
 from ..success_resp_message import SuccessResponseMessage
@@ -76,10 +75,10 @@ def _handle_dataset_creation_grid_ui(
             )
             node.store[storable.id] = storable
 
-            node.datasets.add(
+            node.datasets.add_obj(
                 name=item.name,
-                dataset_id=str(dataset_id),
-                obj_id=str(id_at_location.value),
+                dataset_id=dataset_id,
+                obj_id=id_at_location,
                 dtype=df.__class__.__name__,
                 shape=str(tuple(df.shape)),
             )
@@ -91,7 +90,9 @@ def _handle_dataset_creation_syft(
     result = deserialize(msg.dataset, from_bytes=True)
     dataset_id = msg.metadata.get("dataset_id")
     if not dataset_id:
-        dataset_id = node.datasets.register(**msg.metadata)
+        dataset_uid = node.datasets.register(**msg.metadata)
+    else:
+        dataset_uid = UID._check_or_convert(dataset_id)
 
     for table_name, table in result.items():
         id_at_location = UID()
@@ -106,10 +107,10 @@ def _handle_dataset_creation_syft(
 
         node.store[storable.id] = storable
 
-        node.datasets.add(
+        node.datasets.add_obj(
             name=table_name,
-            dataset_id=str(dataset_id),
-            obj_id=str(id_at_location.value),
+            dataset_id=dataset_uid,
+            obj_id=id_at_location,
             dtype=str(getattr(table, "dtype", type(table).__name__)),
             shape=str(table.shape),
         )
@@ -145,10 +146,10 @@ def get_dataset_metadata_msg(
     ds, objs = node.datasets.get(msg.dataset_id)
     if not ds:
         raise DatasetNotFoundError
-    dataset_json = model_to_json(ds)
+    dataset_json = ds.to_dict()
     # these types seem broken
     dataset_json["data"] = [
-        {"name": obj.name, "id": obj.obj, "dtype": obj.dtype, "shape": obj.shape}  # type: ignore
+        {"name": obj.name, "id": obj.obj_id.to_string(), "dtype": obj.dtype, "shape": obj.shape}  # type: ignore
         for obj in objs
     ]
     return GetDatasetResponse(
@@ -164,13 +165,13 @@ def get_all_datasets_metadata_msg(
 ) -> GetDatasetsResponse:
     datasets = []
     for dataset in node.datasets.all():
-        ds = model_to_json(dataset)
+        ds = dataset.to_dict()
         _, objs = node.datasets.get(dataset.id)
         # these types seem broken
         ds["data"] = [
             {
                 "name": obj.name,  # type: ignore
-                "id": obj.obj,  # type: ignore
+                "id": obj.obj_id.to_string(),  # type: ignore
                 "dtype": obj.dtype,  # type: ignore
                 "shape": obj.shape,  # type: ignore
             }
@@ -227,7 +228,7 @@ def delete_dataset_msg(
                 raise DatasetNotFoundError
             # Delete all the bin objects related to the dataset
             for obj in objs:
-                node.store.delete(UID(obj.obj))  # type: ignore
+                node.store.delete(obj.obj_id)  # type: ignore
 
             node.datasets.delete(id=msg.dataset_id)
     else:

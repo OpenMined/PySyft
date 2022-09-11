@@ -8,6 +8,7 @@ from typing import cast
 
 # third party
 from pydantic import BaseSettings
+from pymongo import MongoClient
 import redis
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
@@ -17,16 +18,22 @@ import syft
 
 # relative
 from ....common.uid import UID
-from ....node.common.node_table.bin_obj_dataset import BinObjDataset
 from ....store import ObjectStore
 from ....store.proxy_dataset import ProxyDataset
 from ....store.store_interface import StoreKey
 from ....store.storeable_object import StorableObject
 from ..node_table.bin_obj_metadata import ObjectMetadata
+from .dataset_manager import NoSQLDatasetManager
 
 
 class RedisStore(ObjectStore):
-    def __init__(self, db: Session, settings: Optional[BaseSettings] = None) -> None:
+    def __init__(
+        self,
+        db: Session,
+        nosql_db_engine: MongoClient,
+        db_name: str,
+        settings: Optional[BaseSettings] = None,
+    ) -> None:
         self.db = db
         if settings is None:
             raise Exception("RedisStore requires Settings")
@@ -37,6 +44,7 @@ class RedisStore(ObjectStore):
                 port=self.settings.REDIS_PORT,
                 db=self.settings.REDIS_STORE_DB_ID,
             )
+            self.dataset_manager = NoSQLDatasetManager(nosql_db_engine, db_name)
         except Exception as e:
             print("failed to load redis", e)
             raise e
@@ -128,13 +136,7 @@ class RedisStore(ObjectStore):
         return obj
 
     def is_dataset(self, key: UID) -> bool:
-        local_session = sessionmaker(bind=self.db)()
-        is_dataset_obj = (
-            local_session.query(BinObjDataset).filter_by(obj=str(key.value)).exists()
-        )
-        is_dataset_obj = local_session.query(is_dataset_obj).scalar()
-        local_session.close()
-        return is_dataset_obj
+        return self.dataset_manager.contain(id=key)
 
     def __getitem__(self, key: StoreKey) -> StorableObject:
         raise Exception("obj = store[key] not allowed because additional args required")
@@ -203,9 +205,8 @@ class RedisStore(ObjectStore):
                 .filter_by(obj=str(key.value))
                 .first()
             )
-            obj_dataset_to_delete = (
-                local_session.query(BinObjDataset).filter_by(obj=str(key.value)).first()
-            )
+
+            self.dataset_manager.delete_bin_obj(bin_obj_id=key)
             # Check if the uploaded data is a proxy dataset
             if metadata_to_delete and metadata_to_delete.is_proxy_dataset:
                 # Retrieve proxy dataset from store
@@ -216,7 +217,6 @@ class RedisStore(ObjectStore):
 
             self.redis.delete(str(key.value))
             local_session.delete(metadata_to_delete)
-            local_session.delete(obj_dataset_to_delete)
             local_session.commit()
             local_session.close()
         except Exception as e:
