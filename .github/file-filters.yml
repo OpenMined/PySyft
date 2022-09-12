@@ -12,7 +12,6 @@ stack:
   - "**.mako"
   - "**.lock"
   - "**.json"
-  - "**.svelte"
 
 backend:
   - .github/workflows/grid-backend_tests.yml
@@ -72,4 +71,3 @@ frontend:
   - packages/grid/backend/**/*.lock
   - packages/grid/backend/**/*.ts
   - packages/grid/backend/**/*.tsx
-  - packages/grid/backend/**/*.svelte
