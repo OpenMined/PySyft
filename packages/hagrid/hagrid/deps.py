@@ -404,7 +404,7 @@ def is_gitpod() -> bool:
 def gitpod_url(port: Optional[int] = None) -> str:
     workspace_url = os.environ.get("GITPOD_WORKSPACE_URL", "")
     if port:
-        workspace_url.replace("https://", f"https://{port}-")
+        workspace_url = workspace_url.replace("https://", f"https://{port}-")
     return workspace_url
 
 
