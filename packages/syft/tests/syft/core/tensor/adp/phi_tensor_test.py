@@ -277,7 +277,9 @@ def test_copy(
     # Copy the tensor and check if it works
     copy_tensor = reference_tensor.copy()
 
-    assert (reference_tensor.child == copy_tensor.child).all(), "Copying of the PT fails"
+    assert (
+        reference_tensor.child == copy_tensor.child
+    ).all(), "Copying of the PT fails"
 
 
 def test_copy_with(
