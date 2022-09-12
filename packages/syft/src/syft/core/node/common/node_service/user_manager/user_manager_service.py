@@ -15,7 +15,6 @@ from ....domain_interface import DomainInterface
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import UserNotFoundError
-from ...node_table.utils import model_to_json
 from ...node_table.utils import syft_object_to_json
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
@@ -65,32 +64,21 @@ def create_user_msg(
     budget = 0.0
     if msg.budget:
         budget = msg.budget
-    node.users.create_user(
+
+    app_id = node.users.create_user_application(
         name=msg.name,
         email=msg.email,
         password=msg.password,
-        daa_pdf=msg.daa_pdf,  # type: ignore
+        daa_pdf=msg.daa_pdf,
         institution=msg.institution,
         website=msg.website,
         budget=budget,
-        role=node.roles.ds_role,
-        verify_key=verify_key,
     )
-    # FIXME: Re-enable when we have integration UserApplication Document in the codebase.
-    # app_id = node.users.create_user_application(
-    #     name=msg.name,
-    #     email=msg.email,
-    #     password=msg.password,
-    #     daa_pdf=msg.daa_pdf,
-    #     institution=msg.institution,
-    #     website=msg.website,
-    #     budget=msg.budget,
-    # )
 
-    # if node.users.can_create_users(verify_key=verify_key):
-    #     node.users.process_user_application(
-    #         candidate_id=app_id, status="accepted", verify_key=verify_key
-    #     )
+    if node.users.can_create_users(verify_key=verify_key):
+        node.users.process_user_application(
+            candidate_id=app_id, status="accepted", verify_key=verify_key
+        )
 
     return SuccessResponseMessage(
         address=msg.reply_to,
@@ -215,8 +203,8 @@ def get_user_msg(
         )
     else:
         # Extract User Columns
-        user = node.users.first(id=msg.user_id)
-        _msg = model_to_json(user)
+        user = node.users.first(id_int=msg.user_id)
+        _msg = syft_object_to_json(user)
 
         # Use role name instead of role ID.
         _msg["role"] = user.role["name"]
@@ -292,7 +280,7 @@ def get_applicant_users(
         _msg = []
         _user_json = {}
         for user in users:
-            _user_json = model_to_json(user)
+            _user_json = syft_object_to_json(user)
             if user.daa_pdf:
                 _user_json["daa_pdf"] = user.daa_pdf
             _msg.append(_user_json)
@@ -347,7 +335,7 @@ def search_users_msg(
     if _allowed:
         try:
             users = node.users.query(**user_parameters)
-            _msg = [model_to_json(user) for user in users]
+            _msg = [syft_object_to_json(user) for user in users]
         except UserNotFoundError:
             _msg = []
     else:

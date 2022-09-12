@@ -90,20 +90,19 @@ class CreateUserMessage(SyftMessage, DomainMessageRegistry):
             # If email not registered, a new user can be created.
             pass
 
-        # FIXME: Re-enable when we have integration UserApplication Document in the codebase.
-        # app_id = node.users.create_user_application(
-        #     name=self.payload.name,
-        #     email=self.payload.email,
-        #     password=self.payload.password,
-        #     daa_pdf=self.payload.daa_pdf,
-        #     institution=self.payload.institution,
-        #     website=self.payload.website,
-        #     budget=self.payload.budget,
-        # )
+        app_id = node.users.create_user_application(
+            name=self.payload.name,
+            email=self.payload.email,
+            password=self.payload.password,
+            daa_pdf=self.payload.daa_pdf,
+            institution=self.payload.institution,
+            website=self.payload.website,
+            budget=self.payload.budget,
+        )
 
-        # node.users.process_user_application(
-        #     candidate_id=app_id, status="accepted", verify_key=verify_key
-        # )
+        node.users.process_user_application(
+            candidate_id=app_id, status="accepted", verify_key=verify_key
+        )
 
         return CreateUserMessage.Reply()
 

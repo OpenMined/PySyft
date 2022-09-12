@@ -166,7 +166,7 @@ class NoSQLDatabaseManager:
         attributes: Dict[str, Any] = {}
         for k, v in updated_args.items():
             if k not in obj.__attr_state__:  # type: ignore
-                raise ValueError(f"Cannot set an non existing field:{k} to Node")
+                raise ValueError(f"Cannot set an non existing field:{k} to Syft Object")
             else:
                 setattr(obj, k, v)
             if k in obj.__attr_searchable__:  # type: ignore
