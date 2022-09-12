@@ -122,7 +122,7 @@ def test_eq(
     )
 
     assert (
-        reference_tensor == same_tensor
+        reference_tensor.child == same_tensor.child
     ).all(), "Equality between identical PTs fails"
 
 
@@ -277,7 +277,7 @@ def test_copy(
     # Copy the tensor and check if it works
     copy_tensor = reference_tensor.copy()
 
-    assert (reference_tensor == copy_tensor).all(), "Copying of the PT fails"
+    assert (reference_tensor.child == copy_tensor.child).all(), "Copying of the PT fails"
 
 
 def test_copy_with(
@@ -307,11 +307,11 @@ def test_copy_with(
     copy_with_binary_tensor = reference_tensor.copy_with(reference_binary_data)
 
     assert (
-        reference_tensor == copy_with_tensor
+        reference_tensor.child == copy_with_tensor.child
     ).all(), "Copying of the PT with the given child fails"
 
     assert (
-        reference_binary_tensor == copy_with_binary_tensor
+        reference_binary_tensor.child == copy_with_binary_tensor.child
     ).all(), "Copying of the PT with the given child fails"
 
 
@@ -367,7 +367,7 @@ def test_ne_vals(
     )
 
     assert (
-        reference_tensor != comparison_tensor
+        reference_tensor.child != comparison_tensor.child
     ).all(), "Inequality between different PTs fails"
 
 
