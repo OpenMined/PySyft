@@ -160,35 +160,35 @@ class RedisStore(ObjectStore):
             bin = syft.serialize(value.data, to_bytes=True)
         self.redis.set(key_str, bin)
 
-        if self.obj_metadata_manager.contain(obj=key_str):
-            raise Exception(f"Already an Existing Metadata with id:{key_str} exits ")
+        if not self.obj_metadata_manager.contain(obj=key_str):
+            read_permissions = cast(
+                bytes,
+                syft.serialize(
+                    syft.lib.python.Dict(value.read_permissions), to_bytes=True
+                ),
+            ).hex()
+            search_permissions = cast(
+                bytes,
+                syft.serialize(
+                    syft.lib.python.Dict(value.search_permissions), to_bytes=True
+                ),
+            ).hex()
+            write_permissions = cast(
+                bytes,
+                syft.serialize(
+                    syft.lib.python.Dict(value.write_permissions), to_bytes=True
+                ),
+            ).hex()
 
-        read_permissions = cast(
-            bytes,
-            syft.serialize(syft.lib.python.Dict(value.read_permissions), to_bytes=True),
-        ).hex()
-        search_permissions = cast(
-            bytes,
-            syft.serialize(
-                syft.lib.python.Dict(value.search_permissions), to_bytes=True
-            ),
-        ).hex()
-        write_permissions = cast(
-            bytes,
-            syft.serialize(
-                syft.lib.python.Dict(value.write_permissions), to_bytes=True
-            ),
-        ).hex()
-
-        self.obj_metadata_manager.create_metadata(
-            obj=key_str,
-            tags=value.tags,
-            description=value.description,
-            read_permissions=read_permissions,
-            search_permissions=search_permissions,
-            write_permissions=write_permissions,
-            is_proxy_dataset=is_proxy_dataset,
-        )
+            self.obj_metadata_manager.create_metadata(
+                obj=key_str,
+                tags=value.tags,
+                description=value.description,
+                read_permissions=read_permissions,
+                search_permissions=search_permissions,
+                write_permissions=write_permissions,
+                is_proxy_dataset=is_proxy_dataset,
+            )
 
     def delete(self, key: UID) -> None:
         try:
