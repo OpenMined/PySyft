@@ -48,7 +48,7 @@ class CreateUserMessage(SyftMessage, DomainMessageRegistry):
         institution: Optional[str]
         website: Optional[str]
         budget: Optional[float] = 0.0
-        daa_pdf: Optional[bytes] = b""
+        daa_pdf: Optional[bytes] = None
 
     # Pydantic Inner class to define expected reply payload fields.
     class Reply(ReplyPayload):

@@ -41,7 +41,7 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
         role: Optional[str] = "",
         website: str = "",
         institution: str = "",
-        daa_pdf: Optional[bytes] = b"",
+        daa_pdf: Optional[bytes] = None,
         msg_id: Optional[UID] = None,
         budget: Optional[float] = 0.0,
     ):

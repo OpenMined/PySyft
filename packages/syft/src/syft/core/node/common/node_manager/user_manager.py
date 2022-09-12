@@ -274,7 +274,7 @@ class NoSQLUserManager(NoSQLDatabaseManager):
         budget: float,
         role: dict,
         node: Any,
-        daa_pdf: Optional[bytes] = b"",
+        daa_pdf: Optional[bytes] = None,
         added_by: Optional[str] = "",
         institution: Optional[str] = "",
         website: Optional[str] = "",
