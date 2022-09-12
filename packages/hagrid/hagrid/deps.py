@@ -310,6 +310,9 @@ class BinaryInfo:
             if matches is not None:
                 self.version = matches.group(1)
                 try:
+                    if "-gitpod" in self.version:
+                        parts = self.version.split("-gitpod")
+                        self.version = parts[0]
                     self.version = version.parse(self.version)
                 except Exception:  # nosec
                     pass
