@@ -1285,15 +1285,15 @@ class GammaTensor:
 
         func = "add"
 
-        def _add(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.add(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
+        # def _add(state: dict) -> jax.numpy.DeviceArray:
+        #     return jnp.add(
+        #         *[
+        #             i.reconstruct() if isinstance(i, GammaTensor) else i
+        #             for i in state.values()
+        #         ]
+        #     )
 
-        mapper[func] = _add
+        # mapper[func] = _add
 
         if isinstance(other, PhiTensor):
             other = other.gamma
@@ -1346,10 +1346,10 @@ class GammaTensor:
 
         func = "sub"
 
-        def _sub(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.subtract(*[i.reconstruct() for i in state.values()])
+        # def _sub(state: dict) -> jax.numpy.DeviceArray:
+        #     return jnp.subtract(*[i.reconstruct() for i in state.values()])
 
-        mapper[func] = _sub
+        # mapper[func] = _sub
 
         if isinstance(other, PhiTensor):
             other = other.gamma
@@ -1399,15 +1399,15 @@ class GammaTensor:
         if isinstance(other, GammaTensor):
             func = "mul_private"
 
-            def _mul_private(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.multiply(
-                    *[
-                        i.reconstruct() if isinstance(i, GammaTensor) else i
-                        for i in state.values()
-                    ]
-                )
+            # def _mul_private(state: dict) -> jax.numpy.DeviceArray:
+            #     return jnp.multiply(
+            #         *[
+            #             i.reconstruct() if isinstance(i, GammaTensor) else i
+            #             for i in state.values()
+            #         ]
+            #     )
 
-            mapper[func] = _mul_private
+            # mapper[func] = _mul_private
 
             output_state[other.id] = other
             child = self.child * other.child
@@ -1422,15 +1422,15 @@ class GammaTensor:
         else:
             func = "mul_public"
 
-            def _mul_public(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.multiply(
-                    *[
-                        i.reconstruct() if isinstance(i, GammaTensor) else i
-                        for i in state.values()
-                    ]
-                )
+            # def _mul_public(state: dict) -> jax.numpy.DeviceArray:
+            #     return jnp.multiply(
+            #         *[
+            #             i.reconstruct() if isinstance(i, GammaTensor) else i
+            #             for i in state.values()
+            #         ]
+            #     )
 
-            mapper[func] = _mul_public
+            # mapper[func] = _mul_public
 
             child = self.child * other
             min_min = self.min_vals.data * other
@@ -1465,15 +1465,15 @@ class GammaTensor:
         output_state[self.id] = self
         func = "truediv"
 
-        def _truediv(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.divide(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
+        # def _truediv(state: dict) -> jax.numpy.DeviceArray:
+        #     return jnp.divide(
+        #         *[
+        #             i.reconstruct() if isinstance(i, GammaTensor) else i
+        #             for i in state.values()
+        #         ]
+        #     )
 
-        mapper[func] = _truediv
+        # mapper[func] = _truediv
 
         if isinstance(other, PhiTensor):
             other = other.gamma
@@ -1528,15 +1528,15 @@ class GammaTensor:
         if isinstance(other, GammaTensor):
             func = "matmul_private"
 
-            def _matmul_private(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.matmul(
-                    *[
-                        i.reconstruct() if isinstance(i, GammaTensor) else i
-                        for i in state.values()
-                    ]
-                )
+            # def _matmul_private(state: dict) -> jax.numpy.DeviceArray:
+            #     return jnp.matmul(
+            #         *[
+            #             i.reconstruct() if isinstance(i, GammaTensor) else i
+            #             for i in state.values()
+            #         ]
+            #     )
 
-            mapper[func] = _matmul_private
+            # mapper[func] = _matmul_private
 
             output_state[other.id] = other
             child = self.child @ other.child
@@ -1547,15 +1547,15 @@ class GammaTensor:
         else:
             func = "matmul_public"
 
-            def _matmul_public(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.matmul(
-                    *[
-                        i.reconstruct() if isinstance(i, GammaTensor) else i
-                        for i in state.values()
-                    ]
-                )
+            # def _matmul_public(state: dict) -> jax.numpy.DeviceArray:
+            #     return jnp.matmul(
+            #         *[
+            #             i.reconstruct() if isinstance(i, GammaTensor) else i
+            #             for i in state.values()
+            #         ]
+            #     )
 
-            mapper[func] = _matmul_public
+            # mapper[func] = _matmul_public
 
             child = self.child @ other
             min_val = self.min_vals.__matmul__(other)
@@ -1583,15 +1583,15 @@ class GammaTensor:
 
         func = "rmatmul"
 
-        def _rmatmul(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.matmul(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
+        # def _rmatmul(state: dict) -> jax.numpy.DeviceArray:
+        #     return jnp.matmul(
+        #         *[
+        #             i.reconstruct() if isinstance(i, GammaTensor) else i
+        #             for i in state.values()
+        #         ]
+        #     )
 
-        mapper[func] = _rmatmul
+        # mapper[func] = _rmatmul
 
         if isinstance(other, PhiTensor):
             other = other.gamma
@@ -1632,15 +1632,15 @@ class GammaTensor:
 
         func = "gt"
 
-        def _gt(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.greater(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
+        # def _gt(state: dict) -> jax.numpy.DeviceArray:
+        #     return jnp.greater(
+        #         *[
+        #             i.reconstruct() if isinstance(i, GammaTensor) else i
+        #             for i in state.values()
+        #         ]
+        #     )
 
-        mapper[func] = _gt
+        # mapper[func] = _gt
 
         if isinstance(other, GammaTensor):
             output_state[other.id] = other
@@ -1677,15 +1677,15 @@ class GammaTensor:
 
         func = "ge"
 
-        def _ge(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.greater_equal(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
+        # def _ge(state: dict) -> jax.numpy.DeviceArray:
+        #     return jnp.greater_equal(
+        #         *[
+        #             i.reconstruct() if isinstance(i, GammaTensor) else i
+        #             for i in state.values()
+        #         ]
+        #     )
 
-        mapper[func] = _ge
+        # mapper[func] = _ge
 
         if isinstance(other, GammaTensor):
             output_state[other.id] = other
@@ -1722,15 +1722,15 @@ class GammaTensor:
 
         func = "eq"
 
-        def _eq(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.equal(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
+        # def _eq(state: dict) -> jax.numpy.DeviceArray:
+        #     return jnp.equal(
+        #         *[
+        #             i.reconstruct() if isinstance(i, GammaTensor) else i
+        #             for i in state.values()
+        #         ]
+        #     )
 
-        mapper[func] = _eq
+        # mapper[func] = _eq
 
         if isinstance(other, GammaTensor):
             output_state[other.id] = other
@@ -1767,15 +1767,15 @@ class GammaTensor:
 
         func = "ne"
 
-        def _ne(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.equal(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
+        # def _ne(state: dict) -> jax.numpy.DeviceArray:
+        #     return jnp.equal(
+        #         *[
+        #             i.reconstruct() if isinstance(i, GammaTensor) else i
+        #             for i in state.values()
+        #         ]
+        #     )
 
-        mapper[func] = _ne
+        # mapper[func] = _ne
 
         if isinstance(other, GammaTensor):
             output_state[other.id] = other
@@ -1812,15 +1812,15 @@ class GammaTensor:
 
         func = "lt"
 
-        def _lt(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.less(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
+        # def _lt(state: dict) -> jax.numpy.DeviceArray:
+        #     return jnp.less(
+        #         *[
+        #             i.reconstruct() if isinstance(i, GammaTensor) else i
+        #             for i in state.values()
+        #         ]
+        #     )
 
-        mapper[func] = _lt
+        # mapper[func] = _lt
 
         if isinstance(other, GammaTensor):
             output_state[other.id] = other
@@ -1912,15 +1912,15 @@ class GammaTensor:
 
         func = "exp"
 
-        def _exp(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.exp(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
+        # def _exp(state: dict) -> jax.numpy.DeviceArray:
+        #     return jnp.exp(
+        #         *[
+        #             i.reconstruct() if isinstance(i, GammaTensor) else i
+        #             for i in state.values()
+        #         ]
+        #     )
 
-        mapper[func] = _exp
+        # mapper[func] = _exp
 
         return GammaTensor(
             child=exp(self.child),
@@ -2109,15 +2109,15 @@ class GammaTensor:
 
         func = "transpose"
 
-        def _transpose(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.transpose(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
+        # def _transpose(state: dict) -> jax.numpy.DeviceArray:
+        #     return jnp.transpose(
+        #         *[
+        #             i.reconstruct() if isinstance(i, GammaTensor) else i
+        #             for i in state.values()
+        #         ]
+        #     )
 
-        mapper[func] = _transpose
+        # mapper[func] = _transpose
 
         output_ds = self.data_subjects.transpose(*args)
         output_data = self.child.transpose(*args)
@@ -2143,15 +2143,15 @@ class GammaTensor:
     ) -> GammaTensor:
         func = "sum"
 
-        def _sum(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.sum(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
+        # def _sum(state: dict) -> jax.numpy.DeviceArray:
+        #     return jnp.sum(
+        #         *[
+        #             i.reconstruct() if isinstance(i, GammaTensor) else i
+        #             for i in state.values()
+        #         ]
+        #     )
 
-        mapper[func] = _sum
+        # mapper[func] = _sum
 
         output_state = dict()
         output_state[self.id] = self
@@ -2173,15 +2173,15 @@ class GammaTensor:
     def ones_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> GammaTensor:
         func = "ones_like"
 
-        def _ones_like(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.ones_like(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
+        # def _ones_like(state: dict) -> jax.numpy.DeviceArray:
+        #     return jnp.ones_like(
+        #         *[
+        #             i.reconstruct() if isinstance(i, GammaTensor) else i
+        #             for i in state.values()
+        #         ]
+        #     )
 
-        mapper[func] = _ones_like
+        # mapper[func] = _ones_like
 
         output_state = dict()
         output_state[self.id] = self
@@ -2207,15 +2207,15 @@ class GammaTensor:
     def zeros_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> GammaTensor:
         func = "zeros_like"
 
-        def _zeros_like(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.zeros_like(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
+        # def _zeros_like(state: dict) -> jax.numpy.DeviceArray:
+        #     return jnp.zeros_like(
+        #         *[
+        #             i.reconstruct() if isinstance(i, GammaTensor) else i
+        #             for i in state.values()
+        #         ]
+        #     )
 
-        mapper[func] = _zeros_like
+        # mapper[func] = _zeros_like
 
         output_state = dict()
         output_state[self.id] = self
@@ -2252,15 +2252,15 @@ class GammaTensor:
     def ravel(self) -> GammaTensor:
         func = "ravel"
 
-        def _ravel(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.ravel(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
+        # def _ravel(state: dict) -> jax.numpy.DeviceArray:
+        #     return jnp.ravel(
+        #         *[
+        #             i.reconstruct() if isinstance(i, GammaTensor) else i
+        #             for i in state.values()
+        #         ]
+        #     )
 
-        mapper[func] = _ravel
+        # mapper[func] = _ravel
 
         output_state = dict()
         output_state[self.id] = self
@@ -2285,15 +2285,15 @@ class GammaTensor:
     def resize(self, new_shape: Union[int, Tuple[int, ...]]) -> GammaTensor:
         func = "resize"
 
-        def _resize(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.resize(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
+        # def _resize(state: dict) -> jax.numpy.DeviceArray:
+        #     return jnp.resize(
+        #         *[
+        #             i.reconstruct() if isinstance(i, GammaTensor) else i
+        #             for i in state.values()
+        #         ]
+        #     )
 
-        mapper[func] = _resize
+        # mapper[func] = _resize
 
         output_state = dict()
         output_state[self.id] = self
@@ -2319,15 +2319,15 @@ class GammaTensor:
     ) -> GammaTensor:
         func = "compress"
 
-        def _compress(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.compress(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
+        # def _compress(state: dict) -> jax.numpy.DeviceArray:
+        #     return jnp.compress(
+        #         *[
+        #             i.reconstruct() if isinstance(i, GammaTensor) else i
+        #             for i in state.values()
+        #         ]
+        #     )
 
-        mapper[func] = _compress
+        # mapper[func] = _compress
 
         output_state = dict()
         output_state[self.id] = self
@@ -2353,15 +2353,15 @@ class GammaTensor:
     ) -> GammaTensor:
         func = "squeeze"
 
-        def _squeeze(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.squeeze(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
+        # def _squeeze(state: dict) -> jax.numpy.DeviceArray:
+        #     return jnp.squeeze(
+        #         *[
+        #             i.reconstruct() if isinstance(i, GammaTensor) else i
+        #             for i in state.values()
+        #         ]
+        #     )
 
-        mapper[func] = _squeeze
+        # mapper[func] = _squeeze
 
         output_state = dict()
         output_state[self.id] = self
@@ -2390,18 +2390,20 @@ class GammaTensor:
     ) -> GammaTensor:
         func = "any"
 
-        def _any(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.any(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
-
+        # def _any(state: dict) -> jax.numpy.DeviceArray:
+        #     return jnp.any(
+        #         *[
+        #             i.reconstruct() if isinstance(i, GammaTensor) else i
+        #             for i in state.values()
+        #         ]
+        #     )
+        # mapper[func] = _any
+        
+        
         output_state = dict()
         output_state[self.id] = self
 
-        mapper[func] = _any
+
 
         if where is None:
             out_child = np.array(self.child.any(axis=axis, keepdims=keepdims))
@@ -2429,18 +2431,18 @@ class GammaTensor:
     ) -> GammaTensor:
         func = "all"
 
-        def _all(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.all(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
+        # def _all(state: dict) -> jax.numpy.DeviceArray:
+        #     return jnp.all(
+        #         *[
+        #             i.reconstruct() if isinstance(i, GammaTensor) else i
+        #             for i in state.values()
+        #         ]
+        #     )
+        # mapper[func] = _all
 
         output_state = dict()
         output_state[self.id] = self
 
-        mapper[func] = _all
 
         if where is None:
             out_child = np.array(self.child.all(axis=axis, keepdims=keepdims))
@@ -2463,18 +2465,18 @@ class GammaTensor:
     def __and__(self, value) -> GammaTensor:  # type: ignore
         func = "and"
 
-        def _and(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.__and__(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
+        # def _and(state: dict) -> jax.numpy.DeviceArray:
+        #     return jnp.__and__(
+        #         *[
+        #             i.reconstruct() if isinstance(i, GammaTensor) else i
+        #             for i in state.values()
+        #         ]
+        #     )
+
+        # mapper[func] = _and
 
         output_state = dict()
         output_state[self.id] = self
-
-        mapper[func] = _and
 
         output_data = self.child & value
 
@@ -2490,18 +2492,17 @@ class GammaTensor:
     def __or__(self, value) -> GammaTensor:  # type: ignore
         func = "or"
 
-        def _or(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.__or__(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
+        # def _or(state: dict) -> jax.numpy.DeviceArray:
+        #     return jnp.__or__(
+        #         *[
+        #             i.reconstruct() if isinstance(i, GammaTensor) else i
+        #             for i in state.values()
+        #         ]
+        #     )
+        # mapper[func] = _or
 
         output_state = dict()
         output_state[self.id] = self
-
-        mapper[func] = _or
 
         output_data = self.child | value
 
@@ -2517,18 +2518,17 @@ class GammaTensor:
     def __pos__(self) -> GammaTensor:
         func = "pos"
 
-        def _pos(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.pos(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
+        # def _pos(state: dict) -> jax.numpy.DeviceArray:
+        #     return jnp.pos(
+        #         *[
+        #             i.reconstruct() if isinstance(i, GammaTensor) else i
+        #             for i in state.values()
+        #         ]
+        #     )
+        # mapper[func] = _pos
 
         output_state = dict()
         output_state[self.id] = self
-
-        mapper[func] = _pos
 
         return GammaTensor(
             child=self.child,
@@ -2542,18 +2542,17 @@ class GammaTensor:
     def __neg__(self) -> GammaTensor:
         func = "neg"
 
-        def _neg(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.neg(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
+        # def _neg(state: dict) -> jax.numpy.DeviceArray:
+        #     return jnp.neg(
+        #         *[
+        #             i.reconstruct() if isinstance(i, GammaTensor) else i
+        #             for i in state.values()
+        #         ]
+        #     )
+        # mapper[func] = _neg
 
         output_state = dict()
         output_state[self.id] = self
-
-        mapper[func] = _neg
 
         return GammaTensor(
             child=self.child * -1,
@@ -2609,16 +2608,16 @@ class GammaTensor:
 
         func = "mean"
 
-        def _mean(state: dict) -> jax.numpy.DeviceArray:
-            # TODO: Figure out if any modifications need to be done if adding axis/args/kwargs to source/state
-            return jnp.mean(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
+        # def _mean(state: dict) -> jax.numpy.DeviceArray:
+        #     # TODO: Figure out if any modifications need to be done if adding axis/args/kwargs to source/state
+        #     return jnp.mean(
+        #         *[
+        #             i.reconstruct() if isinstance(i, GammaTensor) else i
+        #             for i in state.values()
+        #         ]
+        #     )
 
-        mapper[func] = _mean
+        # mapper[func] = _mean
 
         result = self.child.mean(axis, **kwargs)
         minv = (
@@ -2661,17 +2660,17 @@ class GammaTensor:
 
         func = "std"
 
-        def _std(
-            state: dict, axis: Union[int, Tuple[int, ...]] = axis
-        ) -> jax.numpy.DeviceArray:
-            return jnp.std(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
+        # def _std(
+        #     state: dict, axis: Union[int, Tuple[int, ...]] = axis
+        # ) -> jax.numpy.DeviceArray:
+        #     return jnp.std(
+        #         *[
+        #             i.reconstruct() if isinstance(i, GammaTensor) else i
+        #             for i in state.values()
+        #         ]
+        #     )
 
-        mapper[func] = _std
+        # mapper[func] = _std
 
         result = self.child.std(axis, **kwargs)
         minv = (
@@ -2744,15 +2743,15 @@ class GammaTensor:
 
             func = "dot"
 
-            def _dot(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.dot(
-                    *[
-                        i.reconstruct() if isinstance(i, GammaTensor) else i
-                        for i in state.values()
-                    ]
-                )
+            # def _dot(state: dict) -> jax.numpy.DeviceArray:
+            #     return jnp.dot(
+            #         *[
+            #             i.reconstruct() if isinstance(i, GammaTensor) else i
+            #             for i in state.values()
+            #         ]
+            #     )
 
-            mapper[func] = _dot
+            # mapper[func] = _dot
 
             result = jnp.dot(self.child, other.child)
 
@@ -2838,15 +2837,15 @@ class GammaTensor:
     def abs(self) -> GammaTensor:
         func = "abs"
 
-        def _abs(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.abs(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
+        # def _abs(state: dict) -> jax.numpy.DeviceArray:
+        #     return jnp.abs(
+        #         *[
+        #             i.reconstruct() if isinstance(i, GammaTensor) else i
+        #             for i in state.values()
+        #         ]
+        #     )
 
-        mapper[func] = _abs
+        # mapper[func] = _abs
 
         state = dict()
         state.update(self.sources)
@@ -2869,15 +2868,15 @@ class GammaTensor:
     def clip(self, a_min: float, a_max: float) -> GammaTensor:
         func = "clip"
 
-        def _clip(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.clip(
-                *[
-                    i.reconstruct() if isinstance(i, GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
+        # def _clip(state: dict) -> jax.numpy.DeviceArray:
+        #     return jnp.clip(
+        #         *[
+        #             i.reconstruct() if isinstance(i, GammaTensor) else i
+        #             for i in state.values()
+        #         ]
+        #     )
 
-        mapper[func] = _clip
+        # mapper[func] = _clip
 
         state = dict()
         state.update(self.sources)
