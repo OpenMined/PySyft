@@ -1,16 +1,25 @@
-01 - How to Upload Private Data to the Domain Server
+Uploading Private Data to a Domain Server
 ============================================================
 
+**Data Owner Tutorials**
+
+☑️ 00-deploy-domain
+
+◻️ 01-upload-data👈
+
 .. note:: 
-   To run all the steps in this tutorial interactively, we prefer using the below command.
+   **TIP:** To run this tutorial interactively in Jupyter Lab on your own machine type:
 
-::
+:: 
+   
+   pip install hagrid
+   hagrid quickstart data-owner
 
-   hagrid quickstart https://github.com/OpenMined/PySyft/tree/dev/notebooks/quickstart/data-owner/01-upload-data.ipynb
+
 
 Welcome back to another Data Owner tutorial. In the last tutorial,
-you learned :doc:`how to deploy a domain server <00-deploy-domain>` that represents
-the organization’s private data servers. But right now,
+you learned :doc:`How to Deploy a Domain Server <00-deploy-domain>` that represents
+your organization’s private data servers. But right now,
 the node you just deployed is empty.
 
 After today’s tutorial, you will learn how to ``upload data`` to your new 
@@ -24,11 +33,11 @@ uploading it to our Domain Node/server.
 Step to Upload Private Data
 ---------------------------
 
-The steps covered in this tutorial include: 
+📒 Overview of this tutorial:  
 
-#. **Preprocessing** Data 
-#. **Marking** it with Differential Privacy Metadata 
-#. **Uploading** it to your Domain Node
+#. **Preprocessing** of Data 
+#. **Marking** it with correct metadata 
+#. **Uploading** data to Domain Server
 
 |01-upload-data-00|
 
@@ -46,12 +55,15 @@ Lets import Syft by running the below cell:
    In:
 
    # run this cell
-   import syft as sy
-   print("Syft is imported")
+   try:
+      import syft as sy
+      print("Syft is imported")
+   except:
+      print("Syft is not installed. Please use the 🧙🏽‍♂️ Install Wizard above.")
 
    Out: Syft is imported
 
-Step 2: Login to Your Domain
+Step 2: Log into Domain
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 By default, only the Domain node ``Admin`` can upload data, 
@@ -69,11 +81,15 @@ To login to your Domain node, you will need to define which Domain you are loggi
 
    In:
 
-   domain_client = sy.login(
-      port=9038,
-      email="info@openmined.org",
-      password="changethis"
-   )
+   # run this cell
+   try:
+      domain_client = sy.login(
+         port=8081,
+         email="info@openmined.org",
+         password="changethis"
+      )
+   except Exception as e:
+      print("Unable to login. Please check your domain is up with `!hagrid check localhost:8081 --silent`")
 
    Out:
 
@@ -81,28 +97,26 @@ To login to your Domain node, you will need to define which Domain you are loggi
 
 Lovely :) You have just logged in to your Domain.
 
-Step 3: Get Dataset
-~~~~~~~~~~~~~~~~~~~
+Step 3: Prepare Dataset
+~~~~~~~~~~~~~~~~~~~~~~~
 
-For this tutorial, we will import a simple ``age`` dataset to help illustrate 
-the steps further down.
+For this tutorial, we will use a simple dataset of four peoples ``ages``.
 
-In this example, we have a dataset of a family of four with the 
-ages of 40, 39, 9, and 8.
 
 ::
 
    In:
 
-   # !pip install pandas
-   # install pandas by un-commenting the above command
-   
-   import pandas as pd
+   # run this cell
+   try:
+      import pandas as pd
+      data = {'ID': ['011', '015', '022', '034'],
+            'Age': [40, 39, 9, 8]}
 
-   data = {'ID': ['011', '015', '022', '034'],
-           'Age': [40, 39, 9, 8]}
-
-   dataset = pd.DataFrame(data)
+      dataset = pd.DataFrame(data)
+      print(dataset.head())
+   except Exception:
+      print("Install the latest version of Pandas using the command: !pip install pandas")
 
    Out:
 
@@ -133,7 +147,7 @@ Important steps:
    ``theoretical`` amount of values that could be learned about that
    aspect.
 -  in our case, the minimum age can be ``0``; theoretically, the maximum
-   age can be ``115`` or the oldest living person to date.
+   age can be ``100`` or the oldest living person to date.
 
 ::
 
@@ -151,8 +165,8 @@ Important steps:
    **Note:** If your project has a training set, validation set and test
    set, you must annotate each data set with Auto DP metadata.
 
-Step 5: Upload & Check the Dataset
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Step 5: Upload the Dataset
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Once you have prepared your data, it’s time to upload it to the Domain
 node. To help Data Scientists later ``search`` and ``discover`` our
@@ -172,14 +186,16 @@ what this dataset represents.
       assets={
          "Age_Data": age_data,
       },
-      description="Our data set contains Age of Family of 4 members with \ 
-      their unique ID's. There are two columns and 4 rows in our dataset."
+      description="Our dataset contains the Ages of our four Family members with unique ID's. There are 2 columns and 4 rows in our dataset."
    )
 
    Out: 
 
    Dataset is uploaded successfully !!!
 
+
+Step 6: Check the Dataset
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 To ``check`` the dataset you uploaded to the Domain Node, go ahead and
 run the below command, and it will list ``all`` the datasets on this
 Domain with their Names, Descriptions, Assets, and Unique IDs.
@@ -191,8 +207,8 @@ Domain with their Names, Descriptions, Assets, and Unique IDs.
    # run this cell
    domain_client.datasets
 
-Awesome 👏 !! You have uploaded the dataset onto your Domain node
------------------------------------------------------------------
+Awesome 👏 !! You have uploaded the dataset onto your Domain Server!
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 By uploading the dataset onto the Domain Node, Data Owners are opening
 up the possibilities of different Data Scientists being able to study it

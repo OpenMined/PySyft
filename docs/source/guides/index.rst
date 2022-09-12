@@ -6,27 +6,23 @@
 How-to Guides
 ======================
 
-The PySyft guides are written in ``Jupyter Notebooks`` in a hosted network environment that requires no setup. Follow the instructions to get started. 
+The PySyft guides are written in ``Jupyter Labs`` in a hosted network environment. Follow the instructions to get started. 
 
     **Note:** This section is incomplete and currently in progress.
 
-**Important:** To simplify the ``installation`` process, we have made an ``install wizard`` notebook that 
-will help you execute all the required commands needed to install the latest version of the 
-dependencies like ``PiP``, ``HagRID``, and ``Syft``.
+**Important:** To run all the tutorials interactively in Jupyter Lab on your own machine type:
 
-Use the below command to import the install wizard notebook into your environment:
-
-::
-
-   hagrid quickstart https://github.com/OpenMined/PySyft/tree/dev/notebooks/quickstart/01-install-wizard.ipynb
-
+:: 
+   
+   pip install hagrid
+   hagrid quickstart
 
 Once you have the installation completed, the best place to start is by ``identifying`` your role. 
 
 
 #. How to use PySyft for Data Owner (in-progress)
-    #. :doc:`How to Deploy a Domain Server <data-owner/00-deploy-domain>`
-    #. :doc:`How to Upload Private Data to the Domain Server <data-owner/01-upload-data>`
+    #. :doc:`Deploying your own Domain Server <data-owner/00-deploy-domain>`
+    #. :doc:`Uploading Private Data to a Domain Server <data-owner/01-upload-data>`
     #. How to create a Data Scientist account and configure your domain server with a privacy budget
 
 #. How to use PySyft for Data Scientist (coming soon)

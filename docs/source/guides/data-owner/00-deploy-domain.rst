@@ -1,12 +1,19 @@
-00 - How to Deploy a Domain Server
+Deploying your own Domain Server
 ===============================================
 
+**Data Owner Tutorials**
+
+◻️ 00-deploy-domain 👈 
+
+◻️ 01-upload-data
+
 .. note:: 
-   TIP: To run this tutorial interactively in Jupyter Lab on your own machine type:
+   **TIP:** To run this tutorial interactively in Jupyter Lab on your own machine type:
 
 :: 
-   | pip install hagrid
-   | hagrid quickstart data-owner
+   
+   pip install hagrid
+   hagrid quickstart data-owner
 
 
 
@@ -46,11 +53,11 @@ How collaboration gets streamlined will be covered in our tutorials about connec
 how control is maintained in our tutorials about ``"How to assign a Privacy Budget."`` For this tutorial, however, 
 let's start by learning how to deploy a domain server.
 
-In a nutshell, you will be: 
+📒 Overview of this tutorial: 
 
-* **installing** the required software 
-* **running** the servers 
-* **checking** the status of deployed server
+* **Installing** the required software 
+* **Running** the servers 
+* **Checking** the status of deployed server
 
 |00-deploy-domain-01|
 
@@ -60,18 +67,17 @@ Few things to make a note of before starting:
 - **PyGrid** = Networking and Management Platform 
 - **HAGrid** = Deployment and Command Line Tool
 
-Step 1: Install all required softwares
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Step 1: Install wizard
+~~~~~~~~~~~~~~~~~~~~~~~
 
-To simplify the ``installation`` process, we have made an ``install wizard`` notebook that 
-will help you execute all the required commands needed to install the latest version of the 
-dependencies like ``PiP``, ``HagRID``, and ``Syft``.
+To simplify the installation process, we have an `install wizard` will help you 
+setup the latest versions of `hagrid` and `syft` on your machine.
 
-Use the below command to import the install wizard notebook into your environment:
+You can go to the install wizard at any time by running the below command:
 
 ::
 
-   hagrid quickstart https://github.com/OpenMined/PySyft/tree/dev/notebooks/quickstart/01-install-wizard.ipynb
+   hagrid quickstart
 
 
 .. warning:: 
@@ -86,8 +92,8 @@ Use the below command to import the install wizard notebook into your environmen
    any one of us might be able to help you.
 
 
-Step 2: Launching a domain server
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Step 2: Launching a Domain Server
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Great work, people!! Once you have installed all the dependencies, it is
 time to use ``HAGrid`` to launch your Domain Node.
@@ -101,14 +107,13 @@ default, HAGrid launches the ``primary`` node that is our Domain Node.
 
 2. **Where are you going to launch this node to?** 
 We need to specify that we want to launch it to the ``docker container`` at
-port ``80``. 
+port ``8081``. 
 
 3. **What is the name of your Domain Node going to be?**
 For that, don’t forget to specify the ``DOMAIN_NAME`` to your
 preference.
 
-You can simply run the below commands in your notebook, and a domain
-node will be launched.
+After completing the Install Wizard, run the cell below to launch your very first domain node.
 
 ::
 
@@ -116,32 +121,29 @@ node will be launched.
 
    # edit DOMAIN_NAME and run this cell
 
-   DOMAIN_NAME = "My Institution Name"
+   DOMAIN_NAME = "My Domain"
 
-   ! hagrid launch {DOMAIN_NAME} to docker:9038 --tag=latest --tail=false --silent
+   !hagrid launch {DOMAIN_NAME} to docker:8081 --tag=latest --tail=false --silent
 
 While this command runs, you will see various ``volumes`` and
 ``containers`` being created. Once this step is complete, move on to
 the next step, where we will learn to monitor the health of
 our Domain Node.
 
-Step 3: Checking the status of domain server
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Step 3: Checking your Domain Server
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Now, let us do a quick ``health`` check to ensure the Domain Node is
-running and is healthy.
+One exciting benefit of HAGrid is that it makes it easier for your organization/ IT department 
+to ``monitor`` & ``maintain`` the status of your system as you move forward with other steps. 
+Let's do a quick health check to ensure the Domain is up and running.
 
-   **Note:** One exciting benefit of HAGrid is that it makes it
-   easier for your organization/ IT department to ``monitor`` &
-   ``maintain`` the status of your system as you move forward with other
-   steps.
 
 ::
 
    In:
 
    # run this cell
-   ! hagrid check localhost:9038 --silent
+   !hagrid check localhost:8081 --silent
 
    Out: 
 
@@ -169,14 +171,14 @@ following in the output:
 -  **jupyter:** Notebook ``environment`` you will use to upload your
    datasets.
 
-Congratulations 👏 You have now successfully deployed a Domain Node
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Congratulations 👏 You have now successfully deployed a Domain Server!
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Now what?
 ---------
 
 Once you, as a Data Owner, have deployed your Domain Node representing your theoretical organization's 
-private data server, the next step is to :doc:`upload private data to the domain server <01-upload-data>` for research or project use.
+private data server, the next step is to :doc:`Upload Private Data to a Domain Server <01-upload-data>` for research or project use.
 
    In our following tutorial, we will see how you as a Data Owners can preprocess the data, mark it with correct 
    metadata and upload it to the Domain Node you've just deployed.
