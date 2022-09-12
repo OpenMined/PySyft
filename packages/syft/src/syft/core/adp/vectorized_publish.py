@@ -125,7 +125,7 @@ def publish(
     previous_spend = None
 
     # if we dont return below we will terminate if the tensor gets replaced with zeros
-    while not (tensor.child == zeros_like).all():  # tensor.shape != ():
+    while not (tensor.child == zeros_like.child).all():  # tensor.shape != ():
 
         if is_linear:
             lipschitz_bounds = coeffs.copy()
