@@ -2746,7 +2746,7 @@ def display_jupyter_url(url_parts: Tuple[str, str, int]) -> None:
     if is_gitpod():
         parts = urlparse(url)
         query = getattr(parts, "query", "")
-        url = gitpod_url(port=url_parts[2]) + query
+        url = gitpod_url(port=url_parts[2]) + "?" + query
 
     print(
         f"Jupyter Server is running at:\n{url}\n"
