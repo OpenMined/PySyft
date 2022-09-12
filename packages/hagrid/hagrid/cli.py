@@ -2731,8 +2731,8 @@ def quickstart_cli(
                 except KeyboardInterrupt:
                     proc.kill()  # make sure jupyter gets killed
                     sys.exit(1)
-                except Exception:
-                    pass
+                except Exception:  # nosec
+                    pass  # nosec
         except KeyboardInterrupt:
             proc.kill()  # make sure jupyter gets killed
             sys.exit(1)
