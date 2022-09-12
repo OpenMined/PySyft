@@ -4,7 +4,6 @@
   import Button from '$lib/components/Button.svelte';
   import Capital from '$lib/components/Capital.svelte';
   import FormControl from '$lib/components/FormControl.svelte';
-  import StatusIndicator from '$lib/components/StatusIndicator.svelte';
 </script>
 
 <div class="fixed top-0 right-0 w-full h-full max-w-[808px] max-h-[880px] z-[-1]">
@@ -60,7 +59,6 @@
             Welcome Back
           </h2>
           <div class="flex justify-center items-center">
-            <StatusIndicator status="active" />
             <p class="pl-2 flex justify-center">Domain Online</p>
           </div>
         </div>
