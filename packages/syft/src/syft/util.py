@@ -355,6 +355,7 @@ right_name = [
     "chomsky",
     "dean",
     "dolgov",
+    "eckersley",
     "fridman",
     "gardner",
     "goertzel",

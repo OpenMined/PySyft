@@ -15,28 +15,40 @@ directory = os.path.expanduser("~/.hagrid/quickstart/")
 
 
 def quickstart_download_notebook(
-    url: str, directory: str, reset: bool = False
-) -> Tuple[str, bool]:
+    url: str, directory: str, reset: bool = False, overwrite_all: bool = False
+) -> Tuple[str, bool, bool]:
     os.makedirs(directory, exist_ok=True)
     file_name = os.path.basename(url).replace("%20", "_")
     file_path = os.path.abspath(directory + file_name)
 
     file_exists = os.path.isfile(file_path)
+    if overwrite_all:
+        reset = True
 
     if file_exists and not reset:
-        reset = click.confirm(
-            f"You already have the notebook {file_name}. "
-            "Are you sure you want to overwrite it?"
+        response = click.prompt(
+            f"\nOverwrite {file_name}?",
+            prompt_suffix="(a/y/N)",
+            default="n",
+            show_default=False,
         )
+        if response.lower() == "a":
+            reset = True
+            overwrite_all = True
+        elif response.lower() == "y":
+            reset = True
+        else:
+            print(f"Skipping {file_name}")
+            reset = False
 
     downloaded = False
     if not file_exists or file_exists and reset:
-        print(f"Downloading the notebook: {file_name}")
+        print(f"Downloading notebook: {file_name}")
         r = requests.get(url, allow_redirects=True)
         with open(os.path.expanduser(file_path), "wb") as f:
             f.write(r.content)
         downloaded = True
-    return file_path, downloaded
+    return file_path, downloaded, overwrite_all
 
 
 @dataclass
@@ -72,7 +84,7 @@ class QuickstartUI:
             )
         else:
             tutorial = TUTORIALS[tutorial_name]
-            file_path, downloaded = quickstart_download_notebook(
+            file_path, downloaded, _ = quickstart_download_notebook(
                 tutorial.url, directory, reset=reset
             )
             jupyter_path = file_path.replace(os.path.abspath(directory) + "/", "")
