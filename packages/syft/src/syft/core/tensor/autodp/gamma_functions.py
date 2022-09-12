@@ -1,22 +1,32 @@
+# third party
 import jax
 from jax import numpy as jnp
-from . import gamma_tensor as GT 
+
+# relative
+from . import gamma_tensor as GT
 
 mapper = dict()
 mapper["no_op"] = lambda x: x
 
+
 def _add(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.add(
-                *[
-                    i.reconstruct() if isinstance(i, GT.GammaTensor) else i
-                    for i in state.values()
-                ]
-            )
+    return jnp.add(
+        *[
+            i.reconstruct() if isinstance(i, GT.GammaTensor) else i
+            for i in state.values()
+        ]
+    )
+
+
 mapper["add"] = _add
 
+
 def _sub(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.subtract(*[i.reconstruct() for i in state.values()])
+    return jnp.subtract(*[i.reconstruct() for i in state.values()])
+
+
 mapper["sub"] = _sub
+
 
 def _mul_private(state: dict) -> jax.numpy.DeviceArray:
     return jnp.multiply(
@@ -25,16 +35,22 @@ def _mul_private(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["mul_private"] = _mul_private
 
+
 def _mul_public(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.multiply(
-                    *[
-                        i.reconstruct() if isinstance(i, GT.GammaTensor) else i
-                        for i in state.values()
-                    ]
-                )
+    return jnp.multiply(
+        *[
+            i.reconstruct() if isinstance(i, GT.GammaTensor) else i
+            for i in state.values()
+        ]
+    )
+
+
 mapper["mul_public"] = _mul_public
+
 
 def _truediv(state: dict) -> jax.numpy.DeviceArray:
     return jnp.divide(
@@ -43,7 +59,10 @@ def _truediv(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["truediv"] = _truediv
+
 
 def _matmul_private(state: dict) -> jax.numpy.DeviceArray:
     return jnp.matmul(
@@ -52,7 +71,10 @@ def _matmul_private(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["matmul_private"] = _matmul_private
+
 
 def _matmul_public(state: dict) -> jax.numpy.DeviceArray:
     return jnp.matmul(
@@ -61,7 +83,10 @@ def _matmul_public(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["matmul_public"] = _matmul_public
+
 
 def _rmatmul(state: dict) -> jax.numpy.DeviceArray:
     return jnp.matmul(
@@ -70,7 +95,10 @@ def _rmatmul(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["rmatmul"] = _rmatmul
+
 
 def _gt(state: dict) -> jax.numpy.DeviceArray:
     return jnp.greater(
@@ -79,7 +107,10 @@ def _gt(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["gt"] = _gt
+
 
 def _ge(state: dict) -> jax.numpy.DeviceArray:
     return jnp.greater_equal(
@@ -88,7 +119,10 @@ def _ge(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["ge"] = _ge
+
 
 def _eq(state: dict) -> jax.numpy.DeviceArray:
     return jnp.equal(
@@ -97,7 +131,10 @@ def _eq(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["eq"] = _eq
+
 
 def _ne(state: dict) -> jax.numpy.DeviceArray:
     return jnp.equal(
@@ -106,6 +143,8 @@ def _ne(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["ne"] = _ne
 
 
@@ -116,7 +155,10 @@ def _lt(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["lt"] = _lt
+
 
 def _le(state: dict) -> jax.numpy.DeviceArray:
     return jnp.less_equal(
@@ -125,7 +167,10 @@ def _le(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["le"] = _le
+
 
 def _exp(state: dict) -> jax.numpy.DeviceArray:
     return jnp.exp(
@@ -134,7 +179,10 @@ def _exp(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["exp"] = _exp
+
 
 def _log(state: dict) -> jax.numpy.DeviceArray:
     return jnp.log(
@@ -143,7 +191,10 @@ def _log(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["log"] = _log
+
 
 def _transpose(state: dict) -> jax.numpy.DeviceArray:
     return jnp.transpose(
@@ -152,7 +203,10 @@ def _transpose(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["transpose"] = _transpose
+
 
 def _sum(state: dict) -> jax.numpy.DeviceArray:
     return jnp.sum(
@@ -161,7 +215,10 @@ def _sum(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["sum"] = _sum
+
 
 def _ones_like(state: dict) -> jax.numpy.DeviceArray:
     return jnp.ones_like(
@@ -170,7 +227,10 @@ def _ones_like(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["ones_like"] = _ones_like
+
 
 def _zeros_like(state: dict) -> jax.numpy.DeviceArray:
     return jnp.zeros_like(
@@ -179,7 +239,10 @@ def _zeros_like(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["zeros_like"] = _zeros_like
+
 
 def _ravel(state: dict) -> jax.numpy.DeviceArray:
     return jnp.ravel(
@@ -188,7 +251,10 @@ def _ravel(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["ravel"] = _ravel
+
 
 def _resize(state: dict) -> jax.numpy.DeviceArray:
     return jnp.resize(
@@ -197,6 +263,8 @@ def _resize(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["resize"] = _resize
 
 
@@ -208,7 +276,9 @@ def _compress(state: dict) -> jax.numpy.DeviceArray:
         ]
     )
 
+
 mapper["compress"] = _compress
+
 
 def _squeeze(state: dict) -> jax.numpy.DeviceArray:
     return jnp.squeeze(
@@ -218,7 +288,9 @@ def _squeeze(state: dict) -> jax.numpy.DeviceArray:
         ]
     )
 
+
 mapper["squeeze"] = _squeeze
+
 
 def _any(state: dict) -> jax.numpy.DeviceArray:
     return jnp.any(
@@ -227,7 +299,10 @@ def _any(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["any"] = _any
+
 
 def _all(state: dict) -> jax.numpy.DeviceArray:
     return jnp.all(
@@ -236,7 +311,10 @@ def _all(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["all"] = _all
+
 
 def _and(state: dict) -> jax.numpy.DeviceArray:
     return jnp.__and__(
@@ -245,6 +323,8 @@ def _and(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["and"] = _and
 
 
@@ -255,7 +335,10 @@ def _or(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["or"] = _or
+
 
 def _pos(state: dict) -> jax.numpy.DeviceArray:
     return jnp.pos(
@@ -264,7 +347,10 @@ def _pos(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["pos"] = _pos
+
 
 def _neg(state: dict) -> jax.numpy.DeviceArray:
     return jnp.neg(
@@ -273,7 +359,10 @@ def _neg(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["neg"] = _neg
+
 
 def _mean(state: dict) -> jax.numpy.DeviceArray:
     # TODO: Figure out if any modifications need to be done if adding axis/args/kwargs to source/state
@@ -284,10 +373,12 @@ def _mean(state: dict) -> jax.numpy.DeviceArray:
         ]
     )
 
+
 mapper["mean"] = _mean
 
+
 def _std(
-    state: dict, #axis: Union[int, Tuple[int, ...]] = axis
+    state: dict,  # axis: Union[int, Tuple[int, ...]] = axis
 ) -> jax.numpy.DeviceArray:
     return jnp.std(
         *[
@@ -295,7 +386,10 @@ def _std(
             for i in state.values()
         ]
     )
+
+
 mapper["std"] = _std
+
 
 def _dot(state: dict) -> jax.numpy.DeviceArray:
     return jnp.dot(
@@ -304,7 +398,10 @@ def _dot(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["dot"] = _dot
+
 
 def _sqrt(state: dict) -> jax.numpy.DeviceArray:
     return jnp.sqrt(
@@ -313,7 +410,10 @@ def _sqrt(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["sqrt"] = _sqrt
+
 
 def _abs(state: dict) -> jax.numpy.DeviceArray:
     return jnp.abs(
@@ -322,7 +422,10 @@ def _abs(state: dict) -> jax.numpy.DeviceArray:
             for i in state.values()
         ]
     )
+
+
 mapper["abs"] = _abs
+
 
 def _clip(state: dict) -> jax.numpy.DeviceArray:
     return jnp.clip(
@@ -332,6 +435,5 @@ def _clip(state: dict) -> jax.numpy.DeviceArray:
         ]
     )
 
+
 mapper["clip"] = _clip
-
-

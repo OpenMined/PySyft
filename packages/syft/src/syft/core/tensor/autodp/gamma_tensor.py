@@ -27,7 +27,6 @@ from scipy.optimize import shgo
 from .... import lib
 from ....ast.klass import pointerize_args_and_kwargs
 from ....core.adp.data_subject import DataSubject
-from ....core.adp.data_subject_list import DataSubjectArray
 from ....core.node.common.action.get_or_set_property_action import (
     GetOrSetPropertyAction,
 )
@@ -2399,12 +2398,9 @@ class GammaTensor:
         #         ]
         #     )
         # mapper[func] = _any
-        
-        
+
         output_state = dict()
         output_state[self.id] = self
-
-
 
         if where is None:
             out_child = np.array(self.child.any(axis=axis, keepdims=keepdims))
@@ -2413,7 +2409,13 @@ class GammaTensor:
                 self.child.any(axis=axis, keepdims=keepdims, where=where)
             )
 
-        new_data_subjects = np.add.reduce(self.data_subjects, axis=axis, keepdims=keepdims, initial=DataSubject(),where=where)
+        new_data_subjects = np.add.reduce(
+            self.data_subjects,
+            axis=axis,
+            keepdims=keepdims,
+            initial=DataSubject(),
+            where=where,
+        )
 
         return GammaTensor(
             child=out_child,
@@ -2444,7 +2446,6 @@ class GammaTensor:
         output_state = dict()
         output_state[self.id] = self
 
-
         if where is None:
             out_child = np.array(self.child.all(axis=axis, keepdims=keepdims))
         else:
@@ -2452,7 +2453,13 @@ class GammaTensor:
                 self.child.all(axis=axis, keepdims=keepdims, where=where)
             )
 
-        new_data_subjects = np.add.reduce(self.data_subjects, axis=axis, keepdims=keepdims, initial=DataSubject(),where=where)
+        new_data_subjects = np.add.reduce(
+            self.data_subjects,
+            axis=axis,
+            keepdims=keepdims,
+            initial=DataSubject(),
+            where=where,
+        )
 
         return GammaTensor(
             child=out_child,

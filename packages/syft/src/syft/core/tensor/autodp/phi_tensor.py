@@ -1104,7 +1104,13 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 self.child.any(axis=axis, keepdims=keepdims, where=where)
             )
 
-        new_data_subjects = np.add.reduce(self.data_subjects, axis=axis, keepdims=keepdims, initial=DataSubject(),where=where)
+        new_data_subjects = np.add.reduce(
+            self.data_subjects,
+            axis=axis,
+            keepdims=keepdims,
+            initial=DataSubject(),
+            where=where,
+        )
 
         return PhiTensor(
             child=out_child,
@@ -1127,7 +1133,13 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 self.child.all(axis=axis, keepdims=keepdims, where=where)
             )
 
-        new_data_subjects = np.add.reduce(self.data_subjects, axis=axis, keepdims=keepdims, initial=DataSubject(),where=where)
+        new_data_subjects = np.add.reduce(
+            self.data_subjects,
+            axis=axis,
+            keepdims=keepdims,
+            initial=DataSubject(),
+            where=where,
+        )
 
         return PhiTensor(
             child=out_child,
