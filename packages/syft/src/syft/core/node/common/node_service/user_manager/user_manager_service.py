@@ -274,8 +274,6 @@ def get_applicant_users(
             "get_applicant_users You're not allowed to get User information!"
         )
     else:
-        # Get All Users
-        # FIXME: Re-enable after adding UserApplication collection
         users = node.users.get_all_applicant()  # type: ignore
         _msg = []
         _user_json = {}
