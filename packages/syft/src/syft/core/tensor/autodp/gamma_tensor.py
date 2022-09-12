@@ -2415,8 +2415,8 @@ class GammaTensor:
         return GammaTensor(
             child=out_child,
             data_subjects=new_data_subjects,
-            min_vals=lazyrepeatarray(data=False, shape=out_child.shape),
-            max_vals=lazyrepeatarray(data=True, shape=out_child.shape),
+            min_vals=lazyrepeatarray(data=0, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=1, shape=out_child.shape),
             func_str=func,
             sources=output_state,
         )
@@ -2454,8 +2454,8 @@ class GammaTensor:
         return GammaTensor(
             child=out_child,
             data_subjects=new_data_subjects,
-            min_vals=lazyrepeatarray(data=False, shape=out_child.shape),
-            max_vals=lazyrepeatarray(data=True, shape=out_child.shape),
+            min_vals=lazyrepeatarray(data=0, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=1, shape=out_child.shape),
             func_str=func,
             sources=output_state,
         )
@@ -2481,8 +2481,8 @@ class GammaTensor:
         return GammaTensor(
             child=output_data,
             data_subjects=self.data_subjects,
-            min_vals=lazyrepeatarray(data=False, shape=output_data.shape),
-            max_vals=lazyrepeatarray(data=True, shape=output_data.shape),
+            min_vals=lazyrepeatarray(data=0, shape=output_data.shape),
+            max_vals=lazyrepeatarray(data=1, shape=output_data.shape),
             func_str=func,
             sources=output_state,
         )
@@ -2508,8 +2508,8 @@ class GammaTensor:
         return GammaTensor(
             child=output_data,
             data_subjects=self.data_subjects,
-            min_vals=lazyrepeatarray(data=False, shape=output_data.shape),
-            max_vals=lazyrepeatarray(data=True, shape=output_data.shape),
+            min_vals=lazyrepeatarray(data=0, shape=output_data.shape),
+            max_vals=lazyrepeatarray(data=1, shape=output_data.shape),
             func_str=func,
             sources=output_state,
         )
