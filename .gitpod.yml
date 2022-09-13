@@ -1,0 +1,12 @@
+tasks:
+  - init: pip install -e packages/hagrid
+    command: hagrid quickstart
+ports:
+  - name: Jupyter
+    port: 8888
+    onOpen: open-browser
+    visibility: public
+  - name: Nodes
+    port: 8081-8083
+    onOpen: open-browser
+    visibility: public
