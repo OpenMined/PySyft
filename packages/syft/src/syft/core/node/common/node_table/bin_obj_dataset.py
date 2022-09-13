@@ -14,6 +14,6 @@ class BinObjDataset(Base):
     id = Column(Integer(), primary_key=True, autoincrement=True)
     name = Column(String(256))
     obj = Column(String(256))
-    dataset = Column(String(256), ForeignKey("dataset.id", ondelete="CASCADE"))
+    dataset = Column(String(256))
     dtype = Column(String(256))
     shape = Column(String(256))
