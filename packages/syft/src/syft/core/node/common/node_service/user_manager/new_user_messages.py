@@ -19,7 +19,7 @@ from ....domain_msg_registry import DomainMessageRegistry
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import UserNotFoundError
-from ...node_table.utils import model_to_json
+from ...node_table.utils import syft_object_to_json
 from ...permissions.permissions import BasePermission
 from ...permissions.permissions import BinaryOperation
 from ...permissions.permissions import UnaryOperation
@@ -150,11 +150,12 @@ class GetUserMessage(SyftMessage, DomainMessageRegistry):
         # Retrieve User Model
         user = node.users.first(id_int=self.payload.user_id)  # type: ignore
 
-        # Build Reply
-        reply = GetUserMessage.Reply(**model_to_json(user))
+        user_dict = syft_object_to_json(user)
+        user_dict["id"] = user.id_int
+        user_dict["role"] = user.role["name"]
 
-        # Use role name instead of role ID.
-        reply.role = node.roles.first(id=reply.role).name  # type: ignore
+        # Build Reply
+        reply = GetUserMessage.Reply(**user_dict)
 
         # Get budget spent
         reply.budget_spent = node.users.get_budget_for_user(  # type: ignore
@@ -198,10 +199,11 @@ class GetUsersMessage(SyftMessage, DomainMessageRegistry):
         users = node.users.all()
         users_list = list()
         for user in users:
-            user_model = GetUserMessage.Reply(**model_to_json(user))
+            user_dict = syft_object_to_json(user)
+            user_dict["id"] = user.id_int
+            user_dict["role"] = user.role["name"]
 
-            # Use role name instead of role ID.
-            user_model.role = user.role["name"]
+            user_model = GetUserMessage.Reply(**user_dict)
 
             # Remaining Budget
             # TODO:
@@ -248,7 +250,7 @@ class DeleteUserMessage(SyftMessage, DomainMessageRegistry):
             ReplyPayload: message on successful user deletion.
         """
 
-        node.users.delete(id=self.payload.user_id)
+        node.users.delete(id_int=self.payload.user_id)
 
         return DeleteUserMessage.Reply()
 

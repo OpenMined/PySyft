@@ -465,6 +465,7 @@ class NoSQLUserManager(NoSQLDatabaseManager):
             else:
                 raise InvalidCredentialsError
         except UserNotFoundError:
+
             raise InvalidCredentialsError
 
     def __salt_and_hash_password(self, password: str, rounds: int) -> Tuple[str, str]:

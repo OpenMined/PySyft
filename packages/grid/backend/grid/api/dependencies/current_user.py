@@ -10,11 +10,11 @@ from jose import jwt
 
 # grid absolute
 from grid.api.token import TokenPayload
+from grid.api.users.models import UserPrivate
 from grid.core import security
 from grid.core.config import settings
 from grid.core.node import node
 from grid.db.session import get_db_session
-from grid.api.users.models import UserPrivate
 
 reusable_oauth2 = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/login")
 
@@ -38,8 +38,11 @@ def get_current_user(token: str = Depends(reusable_oauth2)) -> UserPrivate:
         #       directly through node
         user = node.users.first(id_int=int(token_data.sub))
         user_dict = user.to_dict()
-        user_dict['id'] = user.id_int
-        return UserPrivate(**user_dict)
+        user_dict["id"] = user.id_int
+        user_dict["role"] = user.role["name"]
+        user_private = UserPrivate(**user_dict)
+
+        return user_private
     except Exception:
         # TODO: Improve error handling
         raise HTTPException(

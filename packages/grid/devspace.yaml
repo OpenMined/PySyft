@@ -25,8 +25,6 @@ vars:
     value: tailscale
   - name: SERVICE_NAME_REDIS
     value: redis
-  - name: SERVICE_NAME_MONGO
-    value: mongo
   - name: SERVICE_NAME_PROXY
     value: proxy
   - name: SERVICE_NAME_SEAWEEDFS
@@ -363,9 +361,9 @@ deployments:
           - image: mongo:latest
             env:
               - name: MONGO_INITDB_ROOT_USERNAME
-                value: root
+                value: ${MONGO_USERNAME}
               - name: MONGO_INITDB_ROOT_PASSWORD
-                value: example
+                value: ${MONGO_PASSWORD}
             volumeMounts:
               - containerPath: /data/db
                 volume:
@@ -376,7 +374,7 @@ deployments:
           - name: mongo-data
             size: "5Gi"
         service:
-          name: ${SERVICE_NAME_MONGO}
+          name: ${MONGO_HOST}
           ports:
             - port: 27017
 
@@ -463,6 +461,14 @@ deployments:
                 value: ${USE_BLOB_STORAGE}
               - name: TEST_MODE
                 value: $!{TEST_MODE}
+              - name: MONGO_USERNAME
+                value: ${MONGO_USERNAME}
+              - name: MONGO_PASSWORD
+                value: ${MONGO_PASSWORD}
+              - name: MONGO_HOST
+                value: ${MONGO_HOST}
+              - name: MONGO_PORT
+                value: ${MONGO_PORT}
         service:
           name: ${SERVICE_NAME_BACKEND}
           ports:

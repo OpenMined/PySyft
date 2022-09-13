@@ -15,7 +15,6 @@ from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from pydantic import BaseSettings
-from pymongo import MongoClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base
 
@@ -149,14 +148,24 @@ class Node(AbstractNode):
             db_engine = create_engine("sqlite://", echo=False)
             Base.metadata.create_all(db_engine)  # type: ignore
 
-        # FIXME: Modify to use environment variable
-        self.nosql_db_engine = MongoClient(  # nosec
-            host="mongo",
-            port=27017,
-            username="root",
-            password="example",
-            uuidRepresentation="standard",
-        )
+        if self.settings and self.settings.MONGO_USERNAME:
+            # third party
+            from pymongo import MongoClient
+
+            # FIXME: Modify to use environment variable
+            self.nosql_db_engine = MongoClient(  # nosec
+                host=self.settings.MONGO_USERNAME,
+                port=self.settings.MONGO_PORT,
+                username=self.settings.MONGO_USERNAME,
+                password=self.settings.MONGO_PASSWORD,
+                uuidRepresentation="standard",
+            )
+        else:
+            # third party
+            from pymongo_inmemory import MongoClient
+
+            self.nosql_db_engine = MongoClient(uuidRepresentation="standard")
+
         self.db_name = "app"
         if document_store:
             configure(ShylockPymongoBackend.create(self.nosql_db_engine, self.db_name))
@@ -601,6 +610,7 @@ class Node(AbstractNode):
     def process_message(
         self, msg: SignedMessage, router: dict
     ) -> Union[SyftMessage, None]:
+
         self.message_counter += 1
         try:
             contents = getattr(
