@@ -18,6 +18,8 @@ from scipy.ndimage.interpolation import rotate
 # relative
 from ..common.serde.serializable import serializable
 from .broadcastable import is_broadcastable
+from .config import DEFAULT_FLOAT_NUMPY_TYPE
+from .config import DEFAULT_INT_NUMPY_TYPE
 from .passthrough import is_acceptable_simple_type  # type: ignore
 from .smpc.utils import get_shape
 
@@ -29,10 +31,26 @@ if TYPE_CHECKING:
 @serializable(recursive_serde=True)
 class lazyrepeatarray:
     """
-    When data is repeated along one or more dimensions, store it using lazyrepeatarray
-    so that you can save on RAM and CPU when computing with it. Think like the opposite
-    of np.broadcast, repeated values along an axis are collapsed but the .shape
+    A class representing Differential Privacy metadata (minimum and maximum values) in a way that saves RAM/CPU.
+
+    We store large arrays of a single repeating value as a single tuple (shape) and a single value (int/float/etc)
+    e.g. np.array([8,8,8,8,8,8]) = lazyrepeatarray(data=8, shape=(6,))
+
+    Think like the opposite of np.broadcast, repeated values along an axis are collapsed but the .shape
     attribute of the higher dimensional projection is retained for operations.
+
+    ...
+
+    Attributes:
+        data: int/float
+            the actual value that is repeating.
+        shape: tuple
+            the shape that the fully expanded array would be.
+
+    Methods:
+        to_numpy():
+            expands the lazyrepeatarray into the full sized numpy array it was representing.
+
     """
 
     __attr_allowlist__ = ["data", "shape"]
@@ -56,6 +74,10 @@ class lazyrepeatarray:
 
         if isinstance(data, (bool, int, float)):
             data = np.array(data)
+            if isinstance(data, int):
+                data = data.astype(DEFAULT_INT_NUMPY_TYPE)  # type: ignore
+            if isinstance(data, float):
+                data = data.astype(DEFAULT_FLOAT_NUMPY_TYPE)  # type: ignore
 
         # verify broadcasting works on shapes
         if -1 not in shape:
@@ -118,7 +140,7 @@ class lazyrepeatarray:
         """
         if is_acceptable_simple_type(other):
             res = self.data - other
-            return self.__class__(data=res, shape=res.shape)
+            return self.__class__(data=res, shape=self.shape)
 
         if not is_broadcastable(self.shape, other.shape):
             raise Exception(
@@ -251,6 +273,7 @@ class lazyrepeatarray:
             raise NotImplementedError
 
     def reshape(self, target_shape: Tuple) -> lazyrepeatarray:
+        # TODO: Can we reshape without creating new objects
         if self.data.shape == self.shape:
             return lazyrepeatarray(
                 data=self.data.reshape(target_shape), shape=target_shape
