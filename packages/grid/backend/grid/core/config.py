@@ -122,7 +122,7 @@ class Settings(BaseSettings):
     DOMAIN_CHECK_INTERVAL: int = int(os.getenv("DOMAIN_CHECK_INTERVAL", 60))
     CONTAINER_HOST: str = str(os.getenv("CONTAINER_HOST", "docker"))
     MONGO_HOST: str = str(os.getenv("MONGO_HOST", ""))
-    MONGO_PORT: str = str(os.getenv("MONGO_PORT", ""))
+    MONGO_PORT: int = int(os.getenv("MONGO_PORT", 0))
     MONGO_USERNAME: str = str(os.getenv("MONGO_USERNAME", ""))
     MONGO_PASSWORD: str = str(os.getenv("MONGO_PASSWORD", ""))
 

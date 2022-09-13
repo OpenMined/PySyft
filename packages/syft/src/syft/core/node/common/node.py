@@ -151,10 +151,9 @@ class Node(AbstractNode):
         if self.settings and self.settings.MONGO_USERNAME:
             # third party
             from pymongo import MongoClient
-
             # FIXME: Modify to use environment variable
             self.nosql_db_engine = MongoClient(  # nosec
-                host=self.settings.MONGO_USERNAME,
+                host=self.settings.MONGO_HOST,
                 port=self.settings.MONGO_PORT,
                 username=self.settings.MONGO_USERNAME,
                 password=self.settings.MONGO_PASSWORD,
