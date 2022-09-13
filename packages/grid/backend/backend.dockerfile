@@ -88,6 +88,7 @@ RUN --mount=type=cache,target=/root/.cache \
 
 RUN apt update
 RUN pip install --upgrade pip
+RUN pip install tensorflow_probability==0.17.0
 RUN if [ "$TFF" = "True" ] ; then pip install --upgrade tensorflow-federated; fi
 
 # install syft
