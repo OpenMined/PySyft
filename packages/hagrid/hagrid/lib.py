@@ -22,6 +22,8 @@ from rich.table import Table
 
 # relative
 from .cache import DEFAULT_BRANCH
+from .deps import gitpod_url
+from .deps import is_gitpod
 from .mode import EDITABLE_MODE
 from .mode import hagrid_root
 
@@ -210,8 +212,12 @@ def check_host(ip: str, silent: bool = False) -> bool:
 # Check status of login page
 def check_login_page(ip: str, timeout: int = 30, silent: bool = False) -> bool:
     try:
-        url = f"http://{ip}/login"
-        response = requests.get(url, timeout=timeout)
+        if is_gitpod():
+            gitpod_url = gitpod_url()
+            url = f"{gitpod_url}/login"
+        else:
+            url = f"http://{ip}/login"
+            response = requests.get(url, timeout=timeout)
         if response.status_code == 200:
             return True
         else:
@@ -225,8 +231,12 @@ def check_login_page(ip: str, timeout: int = 30, silent: bool = False) -> bool:
 # Check api metadata
 def check_api_metadata(ip: str, timeout: int = 30, silent: bool = False) -> bool:
     try:
-        url = f"http://{ip}/api/v1/syft/metadata"
-        response = requests.get(url, timeout=timeout)
+        if is_gitpod():
+            gitpod_url = gitpod_url()
+            url = f"{gitpod_url}/api/metadata"
+        else:
+            url = f"http://{ip}/api/v1/syft/metadata"
+            response = requests.get(url, timeout=timeout)
         if response.status_code == 200:
             return True
         else:
@@ -351,6 +361,11 @@ def check_jupyter_server(
         if not silent:
             print(f"Failed to check jupyter server status {host_ip}. {e}")
         return False
+
+
+# Detect Gitpod
+def is_gitpod() -> bool:
+    return os.getenv("GITPOD_WORKSPACE_ID") is not None
 
 
 GIT_REPO = get_git_repo()
