@@ -25,6 +25,8 @@ vars:
     value: tailscale
   - name: SERVICE_NAME_REDIS
     value: redis
+  - name: SERVICE_NAME_MONGO
+    value: mongo
   - name: SERVICE_NAME_PROXY
     value: proxy
   - name: SERVICE_NAME_SEAWEEDFS
@@ -374,7 +376,7 @@ deployments:
           - name: mongo-data
             size: "5Gi"
         service:
-          name: ${MONGO_HOST}
+          name: ${SERVICE_NAME_MONGO}
           ports:
             - port: 27017
 
