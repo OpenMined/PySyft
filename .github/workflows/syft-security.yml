@@ -66,7 +66,6 @@ jobs:
         run: |
           pip install packaging wheel --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
-          pip install pycapnp
           pip install -e .[dev] -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: Scan for security issues

@@ -2526,60 +2526,7 @@ def version() -> None:
 cli.add_command(version)
 
 
-@click.command(help="Launch a Syft + Jupyter Session with a Notebook URL / Path")
-@click.argument("url", type=str, required=False)
-@click.option(
-    "--reset",
-    is_flag=True,
-    show_default=True,
-    default=False,
-    help="Force hagrid quickstart to setup a fresh virtualenv",
-)
-@click.option(
-    "--syft",
-    default="latest",
-    help="Choose a syft version or just use latest",
-)
-@click.option(
-    "--quiet",
-    is_flag=True,
-    show_default=True,
-    default=False,
-    help="Silence confirmation prompts",
-)
-@click.option(
-    "--pre",
-    is_flag=True,
-    show_default=True,
-    default=False,
-    help="Install pre-release versions of syft",
-)
-@click.option(
-    "--python",
-    default=None,
-    help="Specify the path to which python to use",
-)
-@click.option(
-    "--test",
-    default=False,
-    is_flag=True,
-    help="CI Test Mode, don't hang on Jupyter",
-)
-@click.option(
-    "--repo",
-    default=DEFAULT_REPO,
-    help="Choose a repo to fetch the notebook from or just use OpenMined/PySyft",
-)
-@click.option(
-    "--branch",
-    default=DEFAULT_BRANCH,
-    help="Choose a branch to fetch from or just use dev",
-)
-@click.option(
-    "--commit",
-    help="Choose a specific commit to fetch the notebook from",
-)
-def quickstart_cli(
+def run_quickstart(
     url: Optional[str] = None,
     syft: str = "latest",
     reset: bool = False,
@@ -2664,6 +2611,8 @@ def quickstart_cli(
             file_path = add_intro_notebook(directory=directory, reset=reset)
             downloaded_files.append(file_path)
 
+        if len(downloaded_files) == 0:
+            raise Exception(f"Unable to find files at: {url}")
         file_path = sorted(downloaded_files)[0]
 
         # add virtualenv path
@@ -2739,6 +2688,88 @@ def quickstart_cli(
     except Exception as e:
         print(f"Error running quickstart: {e}")
         raise e
+
+
+@click.command(help="Launch a Syft + Jupyter Session with a Notebook URL / Path")
+@click.argument("url", type=str, required=False)
+@click.option(
+    "--reset",
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help="Force hagrid quickstart to setup a fresh virtualenv",
+)
+@click.option(
+    "--syft",
+    default="latest",
+    help="Choose a syft version or just use latest",
+)
+@click.option(
+    "--quiet",
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help="Silence confirmation prompts",
+)
+@click.option(
+    "--pre",
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help="Install pre-release versions of syft",
+)
+@click.option(
+    "--python",
+    default=None,
+    help="Specify the path to which python to use",
+)
+@click.option(
+    "--test",
+    default=False,
+    is_flag=True,
+    help="CI Test Mode, don't hang on Jupyter",
+)
+@click.option(
+    "--repo",
+    default=DEFAULT_REPO,
+    help="Choose a repo to fetch the notebook from or just use OpenMined/PySyft",
+)
+@click.option(
+    "--branch",
+    default=DEFAULT_BRANCH,
+    help="Choose a branch to fetch from or just use dev",
+)
+@click.option(
+    "--commit",
+    help="Choose a specific commit to fetch the notebook from",
+)
+def quickstart_cli(
+    url: Optional[str] = None,
+    syft: str = "latest",
+    reset: bool = False,
+    quiet: bool = False,
+    pre: bool = False,
+    test: bool = False,
+    repo: str = DEFAULT_REPO,
+    branch: str = DEFAULT_BRANCH,
+    commit: Optional[str] = None,
+    python: Optional[str] = None,
+) -> None:
+    return run_quickstart(
+        url=url,
+        syft=syft,
+        reset=reset,
+        quiet=quiet,
+        pre=pre,
+        test=test,
+        repo=repo,
+        branch=branch,
+        commit=commit,
+        python=python,
+    )
+
+
+cli.add_command(quickstart_cli, "quickstart")
 
 
 def display_jupyter_url(url_parts: Tuple[str, str, int]) -> None:
@@ -2859,6 +2890,20 @@ def get_urls_from_dir(
                     + file["path"]
                 )
                 notebooks.append(temp_url)
+
+    if len(notebooks) == 0:
+        for file in res["tree"]:
+            if file["path"].startswith("notebooks/" + url):
+                if file["path"].endswith(".ipynb"):
+                    temp_url = (
+                        "https://raw.githubusercontent.com/"
+                        + repo
+                        + "/"
+                        + slug
+                        + "/"
+                        + file["path"]
+                    )
+                    notebooks.append(temp_url)
     return notebooks
 
 
@@ -2893,7 +2938,30 @@ def add_intro_notebook(directory: str, reset: bool = False) -> str:
     return file_path
 
 
-cli.add_command(quickstart_cli, "quickstart")
+@click.command(help="Walk the Path")
+@click.option(
+    "--repo",
+    default=DEFAULT_REPO,
+    help="Choose a repo to fetch the notebook from or just use OpenMined/PySyft",
+)
+@click.option(
+    "--branch",
+    default=DEFAULT_BRANCH,
+    help="Choose a branch to fetch from or just use dev",
+)
+@click.option(
+    "--commit",
+    help="Choose a specific commit to fetch the notebook from",
+)
+def dagobah(
+    repo: str = DEFAULT_REPO,
+    branch: str = DEFAULT_BRANCH,
+    commit: Optional[str] = None,
+) -> None:
+    return run_quickstart(url="padawan", repo=repo, branch=branch, commit=commit)
+
+
+cli.add_command(dagobah)
 
 
 def ssh_into_remote_machine(
