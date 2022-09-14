@@ -1,0 +1,425 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Deploying your own Domain Server &#8212; PySyft  documentation</title>
+    
+  <link href="../../_static/css/theme.css" rel="stylesheet">
+  <link href="../../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/pysyft.css" />
+    
+  <link rel="preload" as="script" href="../../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/clipboard.min.js"></script>
+    <script src="../../_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="None">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../../index.html">
+  <img src="../../_static/logo.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../getting_started/index.html">
+  Getting Started
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../api_reference/index.html">
+  API reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../developer_guide/index.html">
+  Contributor Guidelines
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../deployment/glossary.html">
+  Glossary
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../resources/index.html">
+  Resources
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../index.html">
+  How-to Guides
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/OpenMined/PySyft" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/openminedorg" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+              
+              <div class="toc-item">
+                
+<div class="tocsection onthispage pt-5 pb-3">
+    <i class="fas fa-list"></i> On this page
+</div>
+
+<nav id="bd-toc-nav">
+    <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#why-do-data-owners-deploy-domain-servers">
+   Why do Data Owners Deploy Domain Servers?
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#steps-to-deploy-a-domain">
+   Steps To Deploy a Domain
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#step-1-install-wizard">
+     Step 1: Install wizard
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#step-2-launching-a-domain-server">
+     Step 2: Launching a Domain Server
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#step-3-checking-your-domain-server">
+     Step 3: Checking your Domain Server
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#congratulations-you-have-now-successfully-deployed-a-domain-server">
+     Congratulations 👏 You have now successfully deployed a Domain Server!
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#now-what">
+   Now what?
+  </a>
+ </li>
+</ul>
+
+</nav>
+              </div>
+              
+              <div class="toc-item">
+                
+              </div>
+              
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <section id="deploying-your-own-domain-server">
+<h1>Deploying your own Domain Server<a class="headerlink" href="#deploying-your-own-domain-server" title="Permalink to this headline">¶</a></h1>
+<p><strong>Data Owner Tutorials</strong></p>
+<p>◻️ 00-deploy-domain 👈</p>
+<p>◻️ 01-upload-data</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><strong>TIP:</strong> To run this tutorial interactively in Jupyter Lab on your own machine type:</p>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">hagrid</span>
+<span class="n">hagrid</span> <span class="n">quickstart</span> <span class="n">data</span><span class="o">-</span><span class="n">owner</span>
+</pre></div>
+</div>
+<p>Data owners are defined by those with <code class="docutils literal notranslate"><span class="pre">datasets</span></code> 💾 they want to make available for
+study by an outside party.</p>
+<p>This tutorial will help you understand how a Data Owner can
+<code class="docutils literal notranslate"><span class="pre">launch</span></code> their own Domain Server to securely host private datasets.</p>
+<blockquote>
+<div><p><strong>Note:</strong> Throughout the tutorials, we also mean Domain Servers whenever we refer to Domain Node. Both mean the same and are used interchangeably.</p>
+</div></blockquote>
+<section id="why-do-data-owners-deploy-domain-servers">
+<h2>Why do Data Owners Deploy Domain Servers?<a class="headerlink" href="#why-do-data-owners-deploy-domain-servers" title="Permalink to this headline">¶</a></h2>
+<p>The concept of Remote Data Science starts with a server-based model
+that we call <code class="docutils literal notranslate"><span class="pre">Domain</span> <span class="pre">Server</span></code>. It allows people/data owners 👨 to load
+their <code class="docutils literal notranslate"><span class="pre">private</span></code> data into these servers and create an account with
+a username and password for Data Scientists💻.</p>
+<p>The advantage of using a Domain Server is that you can catalyze the impact your dataset can have by allowing…</p>
+<ol class="arabic simple">
+<li><p>a Data Scientist to only get <code class="docutils literal notranslate"><span class="pre">answers</span></code> to the types of <code class="docutils literal notranslate"><span class="pre">questions</span></code> you allow them to</p></li>
+<li><p>and by allowing them to get those answers without needing to directly <code class="docutils literal notranslate"><span class="pre">access</span></code> or have a copy of your data</p></li>
+</ol>
+<p><a class="reference internal" href="../../_images/00-deploy-domain-00.gif"><img alt="00-deploy-domain-00" src="../../_images/00-deploy-domain-00.gif" style="width: 95%;" /></a></p>
+<p>This means that by having your organization retain governance over the information they steward without
+needing to share direct <code class="docutils literal notranslate"><span class="pre">copies</span></code> of data to collaborators, domain servers create an opportunity for more
+collaboration and more research to happen without losing <code class="docutils literal notranslate"><span class="pre">control</span></code> of your data and risking things like IP.</p>
+</section>
+<section id="steps-to-deploy-a-domain">
+<h2>Steps To Deploy a Domain<a class="headerlink" href="#steps-to-deploy-a-domain" title="Permalink to this headline">¶</a></h2>
+<p>How collaboration gets streamlined will be covered in our tutorials about connecting to a <code class="docutils literal notranslate"><span class="pre">&quot;Network</span> <span class="pre">Node.&quot;</span></code> We will discuss
+how control is maintained in our tutorials about <code class="docutils literal notranslate"><span class="pre">&quot;How</span> <span class="pre">to</span> <span class="pre">assign</span> <span class="pre">a</span> <span class="pre">Privacy</span> <span class="pre">Budget.&quot;</span></code> For this tutorial, however,
+let’s start by learning how to deploy a domain server.</p>
+<p>📒 Overview of this tutorial:</p>
+<ul class="simple">
+<li><p><strong>Installing</strong> the required software</p></li>
+<li><p><strong>Running</strong> the servers</p></li>
+<li><p><strong>Checking</strong> the status of deployed server</p></li>
+</ul>
+<p><a class="reference internal" href="../../_images/00-deploy-domain-01.jpg"><img alt="00-deploy-domain-01" src="../../_images/00-deploy-domain-01.jpg" style="width: 95%;" /></a></p>
+<p>Few things to make a note of before starting:</p>
+<ul class="simple">
+<li><p><strong>PySyft</strong> = Privacy-Preserving Library</p></li>
+<li><p><strong>PyGrid</strong> = Networking and Management Platform</p></li>
+<li><p><strong>HAGrid</strong> = Deployment and Command Line Tool</p></li>
+</ul>
+<section id="step-1-install-wizard">
+<h3>Step 1: Install wizard<a class="headerlink" href="#step-1-install-wizard" title="Permalink to this headline">¶</a></h3>
+<p>To simplify the installation process, we have an <cite>install wizard</cite> will help you
+setup the latest versions of <cite>hagrid</cite> and <cite>syft</cite> on your machine.</p>
+<p>You can go to the install wizard at any time by running the below command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hagrid</span> <span class="n">quickstart</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The next step will show you how to launch a domain node. If
+you run into any <code class="docutils literal notranslate"><span class="pre">issue</span></code> running the above installation wizard, consider
+looking for the <code class="docutils literal notranslate"><span class="pre">error</span></code> you are getting on our
+<a class="reference external" href="https://github.com/OpenMined/PySyft/issues">GitHub-Issue</a> page.
+Still not able to figure out the problem, don’t worry. We are here to
+help you. Join the OpenMined
+<a class="reference external" href="https://communityinviter.com/apps/openmined/openmined/">slack</a>
+community and explain your problem in the <code class="docutils literal notranslate"><span class="pre">#general</span></code> channel, and
+any one of us might be able to help you.</p>
+</div>
+</section>
+<section id="step-2-launching-a-domain-server">
+<h3>Step 2: Launching a Domain Server<a class="headerlink" href="#step-2-launching-a-domain-server" title="Permalink to this headline">¶</a></h3>
+<p>Great work, people!! Once you have installed all the dependencies, it is
+time to use <code class="docutils literal notranslate"><span class="pre">HAGrid</span></code> to launch your Domain Node.</p>
+<p>To launch a domain node, there are three things that you
+need to know:</p>
+<p>1. <strong>What type of node do you need to deploy?</strong>
+There are two different types of nodes: Domain Node and Network Node. By
+default, HAGrid launches the <code class="docutils literal notranslate"><span class="pre">primary</span></code> node that is our Domain Node.</p>
+<p>2. <strong>Where are you going to launch this node to?</strong>
+We need to specify that we want to launch it to the <code class="docutils literal notranslate"><span class="pre">docker</span> <span class="pre">container</span></code> at
+port <code class="docutils literal notranslate"><span class="pre">8081</span></code>.</p>
+<p>3. <strong>What is the name of your Domain Node going to be?</strong>
+For that, don’t forget to specify the <code class="docutils literal notranslate"><span class="pre">DOMAIN_NAME</span></code> to your
+preference.</p>
+<p>After completing the Install Wizard, run the cell below to launch your very first domain node.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>In:
+
+# edit DOMAIN_NAME and run this cell
+
+DOMAIN_NAME = &quot;My Domain&quot;
+
+!hagrid launch {DOMAIN_NAME} to docker:8081 --tag=latest --tail=false --silent
+</pre></div>
+</div>
+<p>While this command runs, you will see various <code class="docutils literal notranslate"><span class="pre">volumes</span></code> and
+<code class="docutils literal notranslate"><span class="pre">containers</span></code> being created. Once this step is complete, move on to
+the next step, where we will learn to monitor the health of
+our Domain Node.</p>
+</section>
+<section id="step-3-checking-your-domain-server">
+<h3>Step 3: Checking your Domain Server<a class="headerlink" href="#step-3-checking-your-domain-server" title="Permalink to this headline">¶</a></h3>
+<p>One exciting benefit of HAGrid is that it makes it easier for your organization/ IT department
+to <code class="docutils literal notranslate"><span class="pre">monitor</span></code> &amp; <code class="docutils literal notranslate"><span class="pre">maintain</span></code> the status of your system as you move forward with other steps.
+Let’s do a quick health check to ensure the Domain is up and running.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>In:
+
+# run this cell
+!hagrid check localhost:8081 --silent
+
+Out:
+
+Detecting External IP...
+┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━┓
+┃ PyGrid    ┃ Info                        ┃    ┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━┩
+│ host      │ 20.31.143.254               │ ✅ │
+│ UI (βeta) │ http://20.31.143.254/login  │ ✅ │
+│ api       │ http://20.31.143.254/api/v1 │ ✅ │
+│ ssh       │ hagrid ssh 20.31.143.254    │ ✅ │
+│ jupyter   │ http://20.31.143.254:8888   │ ✅ │
+└───────────┴─────────────────────────────┴────┘
+</pre></div>
+</div>
+<p>If your output is similar to the above image, voila!! A
+<code class="docutils literal notranslate"><span class="pre">Domain</span></code> <code class="docutils literal notranslate"><span class="pre">Node</span></code> was just <code class="docutils literal notranslate"><span class="pre">born</span></code>. When it’s ready, you will see the
+following in the output:</p>
+<ul class="simple">
+<li><p><strong>host:</strong> <code class="docutils literal notranslate"><span class="pre">IP</span> <span class="pre">address</span></code> of the launched Domain Node.</p></li>
+<li><p><strong>UI (Beta):</strong> Link to an <code class="docutils literal notranslate"><span class="pre">admin</span> <span class="pre">portal</span></code> that allows you to
+control Domain Node from a web browser.</p></li>
+<li><p><strong>api:</strong> <code class="docutils literal notranslate"><span class="pre">Application</span> <span class="pre">layer</span></code> that we run in our notebooks to make
+the experience more straightforward and intuitive.</p></li>
+<li><p><strong>Ssh:</strong> <code class="docutils literal notranslate"><span class="pre">Key</span></code> to get into virtual machine.</p></li>
+<li><p><strong>jupyter:</strong> Notebook <code class="docutils literal notranslate"><span class="pre">environment</span></code> you will use to upload your
+datasets.</p></li>
+</ul>
+</section>
+<section id="congratulations-you-have-now-successfully-deployed-a-domain-server">
+<h3>Congratulations 👏 You have now successfully deployed a Domain Server!<a class="headerlink" href="#congratulations-you-have-now-successfully-deployed-a-domain-server" title="Permalink to this headline">¶</a></h3>
+</section>
+</section>
+<section id="now-what">
+<h2>Now what?<a class="headerlink" href="#now-what" title="Permalink to this headline">¶</a></h2>
+<p>Once you, as a Data Owner, have deployed your Domain Node representing your theoretical organization’s
+private data server, the next step is to <a class="reference internal" href="01-upload-data.html"><span class="doc">Upload Private Data to a Domain Server</span></a> for research or project use.</p>
+<blockquote>
+<div><p>In our following tutorial, we will see how you as a Data Owners can preprocess the data, mark it with correct
+metadata and upload it to the Domain Node you’ve just deployed.</p>
+</div></blockquote>
+</section>
+</section>
+
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Openmined Community.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>
