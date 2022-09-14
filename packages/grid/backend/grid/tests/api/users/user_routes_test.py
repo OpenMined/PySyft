@@ -39,7 +39,6 @@ class TestUsersRoutes:
         res = await client.post(app.url_path_for("users:create"), json=user)
         assert "Authorization" not in res.request.headers.keys()
         assert res.status_code == status.HTTP_401_UNAUTHORIZED
-    
 
     async def test_successfully_create_user(
         self, app: FastAPI, client: AsyncClient
@@ -66,7 +65,7 @@ class TestUsersRoutes:
 
         headers = await authenticate_owner(app, client)
         res = await client.get(app.url_path_for("users:read_all"), headers=headers)
-        
+
         assert res.status_code == status.HTTP_201_CREATED
         assert res.json() == "User created successfully!"
 
