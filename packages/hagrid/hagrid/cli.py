@@ -2,6 +2,7 @@
 import json
 import os
 from pathlib import Path
+from queue import Queue
 import re
 import shutil
 import socket
@@ -9,6 +10,7 @@ import stat
 import subprocess  # nosec
 import sys
 import tempfile
+from threading import Thread
 import time
 from typing import Any
 from typing import Callable
@@ -40,6 +42,8 @@ from .deps import DEPENDENCIES
 from .deps import allowed_hosts
 from .deps import check_docker_version
 from .deps import gather_debug
+from .deps import gitpod_url
+from .deps import is_gitpod
 from .deps import is_windows
 from .exceptions import MissingDependency
 from .grammar import BadGrammar
@@ -2522,60 +2526,7 @@ def version() -> None:
 cli.add_command(version)
 
 
-@click.command(help="Launch a Syft + Jupyter Session with a Notebook URL / Path")
-@click.argument("url", type=str, required=False)
-@click.option(
-    "--reset",
-    is_flag=True,
-    show_default=True,
-    default=False,
-    help="Force hagrid quickstart to setup a fresh virtualenv",
-)
-@click.option(
-    "--syft",
-    default="latest",
-    help="Choose a syft version or just use latest",
-)
-@click.option(
-    "--quiet",
-    is_flag=True,
-    show_default=True,
-    default=False,
-    help="Silence confirmation prompts",
-)
-@click.option(
-    "--pre",
-    is_flag=True,
-    show_default=True,
-    default=False,
-    help="Install pre-release versions of syft",
-)
-@click.option(
-    "--python",
-    default=None,
-    help="Specify the path to which python to use",
-)
-@click.option(
-    "--test",
-    default=False,
-    is_flag=True,
-    help="CI Test Mode, don't hang on Jupyter",
-)
-@click.option(
-    "--repo",
-    default=DEFAULT_REPO,
-    help="Choose a repo to fetch the notebook from or just use OpenMined/PySyft",
-)
-@click.option(
-    "--branch",
-    default=DEFAULT_BRANCH,
-    help="Choose a branch to fetch from or just use dev",
-)
-@click.option(
-    "--commit",
-    help="Choose a specific commit to fetch the notebook from",
-)
-def quickstart_cli(
+def run_quickstart(
     url: Optional[str] = None,
     syft: str = "latest",
     reset: bool = False,
@@ -2660,6 +2611,8 @@ def quickstart_cli(
             file_path = add_intro_notebook(directory=directory, reset=reset)
             downloaded_files.append(file_path)
 
+        if len(downloaded_files) == 0:
+            raise Exception(f"Unable to find files at: {url}")
         file_path = sorted(downloaded_files)[0]
 
         # add virtualenv path
@@ -2669,15 +2622,13 @@ def quickstart_cli(
         environ["PATH"] = venv_dir + os.sep + os_bin_path + os.pathsep + environ["PATH"]
         jupyter_binary = "jupyter.exe" if is_windows() else "jupyter"
         try:
-            print(
-                f"Running Jupyter Lab in: {directory}\nUse Control-C to stop this server."
-            )
+            print(f"Running Jupyter Lab in: {directory}")
             cmd = (
                 venv_dir
                 + os.sep
                 + os_bin_path
                 + os.sep
-                + f"{jupyter_binary} lab --notebook-dir={directory} {file_path}"
+                + f"{jupyter_binary} lab --ip 0.0.0.0 --notebook-dir={directory} {file_path}"
             )
             if test:
                 jupyter_path = venv_dir + os.sep + os_bin_path + os.sep + jupyter_binary
@@ -2692,20 +2643,165 @@ def quickstart_cli(
             subprocess.run(  # nosec
                 disable_toolbar_extension.split(" "), cwd=directory, env=environ
             )
+
+            ON_POSIX = "posix" in sys.builtin_module_names
+
+            def enqueue_output(out: Any, queue: Queue) -> None:
+                for line in iter(out.readline, b""):
+                    queue.put(line)
+                out.close()
+
             proc = subprocess.Popen(  # nosec
                 cmd.split(" "),
                 cwd=directory,
                 env=environ,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
+                close_fds=ON_POSIX,
             )
-            proc.communicate()
+            queue: Queue = Queue()
+            thread_1 = Thread(target=enqueue_output, args=(proc.stdout, queue))
+            thread_2 = Thread(target=enqueue_output, args=(proc.stderr, queue))
+            thread_1.daemon = True  # thread dies with the program
+            thread_1.start()
+            thread_2.daemon = True  # thread dies with the program
+            thread_2.start()
+
+            display_url = None
+            # keepn reading the queue of stdout + stderr
+            while True:
+                try:
+                    if not display_url:
+                        # try to read the line and extract a jupyter url
+                        line = queue.get()
+                        display_url = extract_jupyter_url(line.decode("utf-8"))
+                        if display_url:
+                            display_jupyter_url(url_parts=display_url)
+                except KeyboardInterrupt:
+                    proc.kill()  # make sure jupyter gets killed
+                    sys.exit(1)
+                except Exception:  # nosec
+                    pass  # nosec
         except KeyboardInterrupt:
             proc.kill()  # make sure jupyter gets killed
             sys.exit(1)
     except Exception as e:
         print(f"Error running quickstart: {e}")
         raise e
+
+
+@click.command(help="Launch a Syft + Jupyter Session with a Notebook URL / Path")
+@click.argument("url", type=str, required=False)
+@click.option(
+    "--reset",
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help="Force hagrid quickstart to setup a fresh virtualenv",
+)
+@click.option(
+    "--syft",
+    default="latest",
+    help="Choose a syft version or just use latest",
+)
+@click.option(
+    "--quiet",
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help="Silence confirmation prompts",
+)
+@click.option(
+    "--pre",
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help="Install pre-release versions of syft",
+)
+@click.option(
+    "--python",
+    default=None,
+    help="Specify the path to which python to use",
+)
+@click.option(
+    "--test",
+    default=False,
+    is_flag=True,
+    help="CI Test Mode, don't hang on Jupyter",
+)
+@click.option(
+    "--repo",
+    default=DEFAULT_REPO,
+    help="Choose a repo to fetch the notebook from or just use OpenMined/PySyft",
+)
+@click.option(
+    "--branch",
+    default=DEFAULT_BRANCH,
+    help="Choose a branch to fetch from or just use dev",
+)
+@click.option(
+    "--commit",
+    help="Choose a specific commit to fetch the notebook from",
+)
+def quickstart_cli(
+    url: Optional[str] = None,
+    syft: str = "latest",
+    reset: bool = False,
+    quiet: bool = False,
+    pre: bool = False,
+    test: bool = False,
+    repo: str = DEFAULT_REPO,
+    branch: str = DEFAULT_BRANCH,
+    commit: Optional[str] = None,
+    python: Optional[str] = None,
+) -> None:
+    return run_quickstart(
+        url=url,
+        syft=syft,
+        reset=reset,
+        quiet=quiet,
+        pre=pre,
+        test=test,
+        repo=repo,
+        branch=branch,
+        commit=commit,
+        python=python,
+    )
+
+
+cli.add_command(quickstart_cli, "quickstart")
+
+
+def display_jupyter_url(url_parts: Tuple[str, str, int]) -> None:
+    url = url_parts[0]
+    if is_gitpod():
+        parts = urlparse(url)
+        query = getattr(parts, "query", "")
+        url = gitpod_url(port=url_parts[2]) + "?" + query
+
+    print(
+        f"Jupyter Server is running at:\n{url}\n"
+        + "Use Control-C to stop this server and shut down all kernels."
+    )
+
+
+def extract_jupyter_url(line: str) -> Optional[Tuple[str, str, int]]:
+    jupyter_regex = r"^.*(http.*127.*)"
+    try:
+        matches = re.match(jupyter_regex, line)
+        if matches is not None:
+            url = matches.group(1).strip()
+            parts = urlparse(url)
+            host_or_ip_parts = parts.netloc.split(":")
+            # netloc is host:port
+            port = 8888
+            if len(host_or_ip_parts) > 1:
+                port = int(host_or_ip_parts[1])
+            host_or_ip = host_or_ip_parts[0]
+            return (url, host_or_ip, port)
+    except Exception as e:
+        print("failed to parse jupyter url", e)
+    return None
 
 
 def quickstart_setup(
@@ -2794,6 +2890,20 @@ def get_urls_from_dir(
                     + file["path"]
                 )
                 notebooks.append(temp_url)
+
+    if len(notebooks) == 0:
+        for file in res["tree"]:
+            if file["path"].startswith("notebooks/" + url):
+                if file["path"].endswith(".ipynb"):
+                    temp_url = (
+                        "https://raw.githubusercontent.com/"
+                        + repo
+                        + "/"
+                        + slug
+                        + "/"
+                        + file["path"]
+                    )
+                    notebooks.append(temp_url)
     return notebooks
 
 
@@ -2828,7 +2938,30 @@ def add_intro_notebook(directory: str, reset: bool = False) -> str:
     return file_path
 
 
-cli.add_command(quickstart_cli, "quickstart")
+@click.command(help="Walk the Path")
+@click.option(
+    "--repo",
+    default=DEFAULT_REPO,
+    help="Choose a repo to fetch the notebook from or just use OpenMined/PySyft",
+)
+@click.option(
+    "--branch",
+    default=DEFAULT_BRANCH,
+    help="Choose a branch to fetch from or just use dev",
+)
+@click.option(
+    "--commit",
+    help="Choose a specific commit to fetch the notebook from",
+)
+def dagobah(
+    repo: str = DEFAULT_REPO,
+    branch: str = DEFAULT_BRANCH,
+    commit: Optional[str] = None,
+) -> None:
+    return run_quickstart(url="padawan", repo=repo, branch=branch, commit=commit)
+
+
+cli.add_command(dagobah)
 
 
 def ssh_into_remote_machine(

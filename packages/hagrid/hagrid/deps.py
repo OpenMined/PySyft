@@ -276,9 +276,9 @@ def get_pip_package(package_name: str) -> Optional[Dict[str, str]]:
 
 def get_pip_packages() -> List[Dict[str, str]]:
     try:
-        cmd = "python -m pip list --format=json"
+        cmd = "python -m pip list --format=json --disable-pip-version-check"
         output = subprocess.check_output(cmd, shell=True)  # nosec
-        return json.loads(str(output.decode("utf-8")))
+        return json.loads(str(output.decode("utf-8")).strip())
     except Exception as e:
         print("failed to pip list", e)
         raise e
@@ -310,6 +310,9 @@ class BinaryInfo:
             if matches is not None:
                 self.version = matches.group(1)
                 try:
+                    if "-gitpod" in self.version:
+                        parts = self.version.split("-gitpod")
+                        self.version = parts[0]
                     self.version = version.parse(self.version)
                 except Exception:  # nosec
                     pass
@@ -395,6 +398,17 @@ def is_apple_silicon() -> bool:
 
 
 ENVIRONMENT["apple_silicon"] = is_apple_silicon()
+
+
+def is_gitpod() -> bool:
+    return bool(os.environ.get("GITPOD_WORKSPACE_URL", None))
+
+
+def gitpod_url(port: Optional[int] = None) -> str:
+    workspace_url = os.environ.get("GITPOD_WORKSPACE_URL", "")
+    if port:
+        workspace_url = workspace_url.replace("https://", f"https://{port}-")
+    return workspace_url
 
 
 def is_windows() -> bool:
