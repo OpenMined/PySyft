@@ -753,9 +753,10 @@ def git_install(output_in_text: bool = False) -> SetupIssue:
 
 
 def syft_install(pre: bool = False) -> SetupIssue:
-    command = "pip install syft"
+    command = "pip install -U syft --pre"
     if pre:
-        command += " --pre"
+        # command += " --pre"
+        pass
     return SetupIssue(
         issue_name="syft_install",
         description="You have not installed Syft.",
