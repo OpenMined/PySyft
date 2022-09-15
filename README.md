@@ -18,7 +18,7 @@ Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 <img src="packages/syft/docs/img/terminalizer.gif" width="50%" align="right" />
 
 1. Install our handy 🛵 cli tool which makes deploying a Domain or Network server a one-liner:  
-   `pip install hagrid`
+   `pip install -U hagrid`
 
 2. Then run our interactive jupyter Install 🧙🏽‍♂️ Wizard<sup>BETA</sup>:  
    `hagrid quickstart`
@@ -35,7 +35,7 @@ Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 
 # Install Notes
 
-- HAGrid Requires: 🐍 `python` 🐙 `git` - Run: `pip install hagrid`
+- HAGrid Requires: 🐍 `python` 🐙 `git` - Run: `pip install -U hagrid`
 - Interactive Install 🧙🏽‍♂️ Wizard<sup>BETA</sup> Requires 🛵 `hagrid`: - Run: `hagrid quickstart`  
   †`Windows` does not support `ansible`, preventing some remote deployment targets
 - PySyft Requires: 🐍 `python 3.7+` - Run: `pip install syft`  
@@ -74,7 +74,7 @@ HAGrid is a cli / deployment tool so the latest version of `hagrid` is usually t
 
 No more cold calls to get `access` to a dataset. No more weeks of `wait times` to get a `result` on your `query`. It also means `1000x more data` in every domain. PySyft opens the doors to a streamlined Data Scientist `workflow`, all with the individual's `privacy` at its heart.
 
-<!-- # Tutorials
+# Tutorials
 
 <table border="5" bordercolor="grey">
 <tr>
@@ -99,32 +99,32 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 </th>
 </tr>
 <tr>
-<td valign="top"> -->
-<!-- REMOVE THE BACKSLASHES -->
+<td valign="top">
 
-<!-- - <a href="#">Deploy a Domain Server</a>
-- <a href="#">Upload Private Data</a>
-- <a href="#">Create Accounts</a>
-- <a href="#">Manage Privacy Budget</a>
-- <a href="#">Join a Network</a>
+
+- <a href="/notebooks/quickstart/data-owner/00-deploy-domain.ipynb">Deploy a Domain Server</a>
+- <a href="/notebooks/quickstart/data-owner/01-upload-data.ipynb">Upload Private Data</a>
+- Create Accounts</a>
+- Manage Privacy Budget</a>
+- Join a Network</a>
 - Learn how PETs streamline Data Policies
 
 </td>
-<td valign="top"> -->
-<!-- REMOVE THE BACKSLASHES -->
+<td valign="top">
 
-<!-- - <a href="#">Install Syft</a>
-- <a href="#">Connect to a Domain</a>
-- <a href="#">Search for Datasets</a>
+
+- Install Syft</a>
+- Connect to a Domain</a>
+- Search for Datasets</a>
 - Train Models
 - Retrieve Secure Results
 - Learn Differential Privacy
 
 </td>
-<td valign="top"> -->
-<!-- REMOVE THE BACKSLASHES -->
+<td valign="top">
 
-<!-- - <a href="#">Setup Dev Mode</a>
+
+- Setup Dev Mode</a>
 - Deploy to Azure
 - Deploy to GCP
 - Deploy to Kubernetes
@@ -132,7 +132,7 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 - Modify PyGrid UI
 </td>
 </tr>
-</table> -->
+</table>
 
 # Terminology
 
