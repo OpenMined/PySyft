@@ -521,11 +521,11 @@ def check_deps(
         if len(issues) > 0:
             output += "🚨 Some issues were found"
             for issue in issues:
-                output += f"Issue: {issue.description}"
+                output += f"Issue: {issue.description}\n"
                 if issue.solution != "":
-                    output += f"Solution:\n{issue.solution}"
+                    output += f"Solution:\n{issue.solution}\n"
                 if issue.command != "":
-                    output += "Command:\n " + f"{issue.command}"
+                    output += "Command:\n " + f"{issue.command} "
                 output += "\n"
 
         print(output)
