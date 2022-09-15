@@ -12,7 +12,7 @@ Uploading Private Data to a Domain Server
 
 :: 
    
-   pip install hagrid
+   pip install -U hagrid
    hagrid quickstart data-owner
 
 
