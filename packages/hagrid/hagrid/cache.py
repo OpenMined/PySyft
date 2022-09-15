@@ -28,6 +28,7 @@ arg_defaults = {
     "gcp_key_path": "~/.ssh/google_compute_engine",
     "gcp_repo": DEFAULT_REPO,
     "gcp_branch": STABLE_BRANCH,
+    "install_wizard_complete": False,
 }
 
 
