@@ -2311,9 +2311,15 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
     is_flag=True,
     help="Optional: prevent lots of land output",
 )
+@click.option(
+    "--force",
+    is_flag=True,
+    help="Optional: bypass the prompt during hagrid land ",
+)
 def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_land_verb()
     silent = bool(kwargs["silent"]) if "silent" in kwargs else False
+    force = bool(kwargs["force"]) if "force" in kwargs else False
     try:
         grammar = parse_grammar(args=args, verb=verb)
         verb.load_grammar(grammar=grammar)
@@ -2333,16 +2339,18 @@ def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
         return
 
     target = verb.get_named_term_grammar("node_name").input
-    _land_domain = ask(
-        Question(
-            var_name="_land_domain",
-            question=f"Are you sure you want to land {target} (y/n)",
-            kind="yesno",
-        ),
-        kwargs={},
-    )
 
-    if _land_domain == "y":
+    if not force:
+        _land_domain = ask(
+            Question(
+                var_name="_land_domain",
+                question=f"Are you sure you want to land {target} (y/n)",
+                kind="yesno",
+            ),
+            kwargs={},
+        )
+
+    if force or _land_domain == "y":
         if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
             if not silent:
                 print("Running: \n", cmd)
