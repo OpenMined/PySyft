@@ -1,12 +1,21 @@
-02 - How to create a Data Scientist account and configure your domain server with a privacy budget (How to create accounts and assign privacy budgets)
-======================================================================================================================================================
+Creating User Accounts on your Domain Server
+===============================================
+
+**Data Owner Tutorials**
+
+☑️ 00-deploy-domain
+
+☑️ 01-upload-data
+
+◻️ 02-create-account👈
 
 .. note:: 
-   To run all the steps in this tutorial interactively, we prefer using the below command.
+   **TIP:** To run this tutorial interactively in Jupyter Lab on your own machine type:
 
-::
-
-   hagrid quickstart https://github.com/OpenMined/PySyft/tree/dev/notebooks/quickstart/data-owner/02-create-account-configure-pb.ipynb
+:: 
+   
+   pip install -U hagrid
+   hagrid quickstart data-owner
 
 
 Data Owners can ``create`` user accounts for Data Scientists to use their domain nodes. 
@@ -29,7 +38,7 @@ Before creating user accounts, you have to:
    Domain Node <00-deploy-domain>` and :doc:`How to upload private data to the Domain
    Node <01-upload-data>`. It is highly recommended to execute these steps before implementing this tutorial.
 
-The steps covered in this tutorial include: 
+📒 Overview of this tutorial:
 
 #. **Defining** account credentials
 #. **Assigning** privacy budget

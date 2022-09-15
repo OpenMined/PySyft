@@ -23,7 +23,7 @@ Once you have the installation completed, the best place to start is by ``identi
 #. How to use PySyft for Data Owner (in-progress)
     #. :doc:`Deploying your own Domain Server <data-owner/00-deploy-domain>`
     #. :doc:`Uploading Private Data to a Domain Server <data-owner/01-upload-data>`
-    #. How to create a Data Scientist account and configure your domain server with a privacy budget
+    #. :doc:`Creating User Accounts on your Domain Server <data-owner/02-create-account-configure-pb>`
 
 #. How to use PySyft for Data Scientist (coming soon)
     #. How to install Syft on your machine
