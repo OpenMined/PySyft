@@ -2331,28 +2331,39 @@ def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     except Exception as e:
         print(f"{e}")
         return
-    if not silent:
-        print("Running: \n", hide_password(cmd=cmd))
 
-    if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
-        if not silent:
-            print("Running: \n", cmd)
-        try:
-            if silent:
-                process = subprocess.Popen(  # nosec
-                    cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    cwd=GRID_SRC_PATH,
-                    shell=True,
-                )
-                process.communicate()
-                target = verb.get_named_term_grammar("node_name").input
-                print(f"HAGrid land {target} complete!")
-            else:
-                subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)  # nosec
-        except Exception as e:
-            print(f"Failed to run cmd: {cmd}. {e}")
+    target = verb.get_named_term_grammar("node_name").input
+    _land_domain = ask(
+        Question(
+            var_name="_land_domain",
+            question=f"Are you sure you want to land {target} (y/n)",
+            kind="yesno",
+        ),
+        kwargs={},
+    )
+
+    if _land_domain == "y":
+        if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
+            if not silent:
+                print("Running: \n", cmd)
+            try:
+                if silent:
+                    process = subprocess.Popen(  # nosec
+                        cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        cwd=GRID_SRC_PATH,
+                        shell=True,
+                    )
+                    process.communicate()
+
+                    print(f"HAGrid land {target} complete!")
+                else:
+                    subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)  # nosec
+            except Exception as e:
+                print(f"Failed to run cmd: {cmd}. {e}")
+    else:
+        print("Hagrid land aborted.")
 
 
 cli.add_command(launch)
