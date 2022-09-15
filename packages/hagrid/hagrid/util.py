@@ -1,6 +1,6 @@
 # stdlib
 import platform
-import subprocess
+import subprocess  # nosec
 
 
 def os_name() -> str:
