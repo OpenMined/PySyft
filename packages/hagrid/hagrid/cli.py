@@ -2423,6 +2423,16 @@ def get_health_checks(ip_address: str) -> TypeTuple[bool, TypeList[TypeList[str]
     health_status = check_host_health(ip_address=ip_address, keys=keys)
     complete_status = all(health_status.values())
 
+    # find port from ip_address
+    try:
+        port = int(ip_address.split(":")[1])
+    except Exception:
+        # default to 8081
+        port = 8081
+
+    # url to display based on running environment
+    display_url = gitpod_url(port).split("//")[1] if is_gitpod() else ip_address
+
     # figure out how to add this back?
     # console.print("[bold magenta]Checking host:[/bold magenta]", ip_address, ":mage:")
     table_contents = []
@@ -2431,7 +2441,7 @@ def get_health_checks(ip_address: str) -> TypeTuple[bool, TypeList[TypeList[str]
             [
                 HEALTH_CHECK_ICONS[key],
                 key,
-                HEALTH_CHECK_URLS[key].replace("{ip_address}", ip_address),
+                HEALTH_CHECK_URLS[key].replace("{ip_address}", display_url),
                 icon_status(value),
             ]
         )
