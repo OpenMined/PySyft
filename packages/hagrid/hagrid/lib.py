@@ -10,7 +10,6 @@ from pathlib import Path
 import shutil
 import socket
 import subprocess  # nosec
-from subprocess import call
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -25,7 +24,6 @@ from rich.table import Table
 from .cache import DEFAULT_BRANCH
 from .mode import EDITABLE_MODE
 from .mode import hagrid_root
-from .util import os_name
 
 
 class ProcessStatus(Enum):
@@ -82,28 +80,7 @@ def check_is_git(path: Path) -> bool:
     return is_repo
 
 
-def verify_git_installation() -> None:
-
-    try:
-        call("git", stdout=subprocess.DEVNULL)
-    except FileNotFoundError:
-        print(
-            "Hagrid requires git for the initial setup, Kindly follow the link below \
-            to install git on your System."
-        )
-        os = os_name()
-
-        git_link = {
-            "Windows": "https://git-scm.com/download/win",
-            "macOS": "https://git-scm.com/download/mac",
-            "Linux": "https://git-scm.com/download/linux",
-        }
-        print(f"{os} : {git_link[os]}")
-        exit(0)
-
-
 def get_git_repo() -> git.Repo:
-    verify_git_installation()
     is_git = check_is_git(path=repo_src_path())
     if not EDITABLE_MODE and not is_git:
         github_repo = "OpenMined/PySyft.git"
