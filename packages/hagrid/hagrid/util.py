@@ -17,7 +17,7 @@ def verify_git_installation() -> None:
         subprocess.call("git", stdout=subprocess.DEVNULL)
     except FileNotFoundError:
         print(
-            "Hagrid requires git for the initial setup, Kindly follow the link below"
+            "Hagrid requires git for the initial setup, Kindly follow the link below\n"
             + " to install git on your System."
         )
         os = os_name()
