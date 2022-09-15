@@ -38,6 +38,7 @@ from .lib import commit_hash
 from .lib import hagrid_root
 from .mode import EDITABLE_MODE
 from .nb_output import NBOutput
+from .util import os_name
 from .version import __version__
 
 LATEST_STABLE_SYFT = "0.6"
@@ -374,14 +375,6 @@ def get_environment() -> Dict[str, Any]:
 
 
 ENVIRONMENT = get_environment()
-
-
-def os_name() -> str:
-    os_name = platform.system()
-    if os_name.lower() == "darwin":
-        return "macOS"
-    else:
-        return os_name
 
 
 ENVIRONMENT["os"] = os_name()
