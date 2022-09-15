@@ -38,7 +38,7 @@ Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 - HAGrid Requires: 🐍 `python` 🐙 `git` - Run: `pip install -U hagrid`
 - Interactive Install 🧙🏽‍♂️ Wizard<sup>BETA</sup> Requires 🛵 `hagrid`: - Run: `hagrid quickstart`  
   †`Windows` does not support `ansible`, preventing some remote deployment targets
-- PySyft Requires: 🐍 `python 3.7+` - Run: `pip install syft`  
+- PySyft Requires: 🐍 `python 3.7+` - Run: `pip install -U syft --pre`  
   \*`macOS` Apple Silicon users need cmake: `brew install cmake`  
   ‡`Windows` users must run this first: `pip install jaxlib==0.3.7 -f https://whls.blob.core.windows.net/unstable/index.html`
 - PyGrid Requires: 🐳 `docker` / `k8s` or 🐧 `ubuntu` VM - Run: `hagrid launch ...`
@@ -53,7 +53,7 @@ Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 `0.2.0` - `0.5.0` Deprecated
 
 PySyft and PyGrid use the same `version` and its best to match them up where possible. We release weekly betas which can be used in each context:
-PySyft: `pip install syft --pre`
+PySyft: `pip install -U syft --pre`
 PyGrid: `hagrid launch ... tag=latest`
 
 <!-- Quickstart: `hagrid quickstart --pre` -->
@@ -101,7 +101,6 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 <tr>
 <td valign="top">
 
-
 - <a href="/notebooks/quickstart/data-owner/00-deploy-domain.ipynb">Deploy a Domain Server</a>
 - <a href="/notebooks/quickstart/data-owner/01-upload-data.ipynb">Upload Private Data</a>
 - Create Accounts</a>
@@ -112,7 +111,6 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 </td>
 <td valign="top">
 
-
 - Install Syft</a>
 - Connect to a Domain</a>
 - Search for Datasets</a>
@@ -122,7 +120,6 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 
 </td>
 <td valign="top">
-
 
 - Setup Dev Mode</a>
 - Deploy to Azure
