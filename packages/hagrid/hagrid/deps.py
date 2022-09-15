@@ -499,7 +499,7 @@ def check_deps(
     issues = []
     for name, dep in deps.items():
         dep.check()
-        output += dep.display + "\n"
+        output += (dep.display + "\n") if display else ""
         issues += dep.issues
 
     if not output_in_text:
