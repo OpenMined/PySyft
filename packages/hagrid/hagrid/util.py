@@ -1,33 +1,14 @@
-# stdlib
-import platform
-import subprocess  # nosec
-
-
-def os_name() -> str:
-    os_name = platform.system()
-    if os_name.lower() == "darwin":
-        return "macOS"
-    else:
-        return os_name
+# relative
+from .deps import DependencyGridGit
+from .deps import check_deps
 
 
 def verify_git_installation() -> None:
-
-    try:
-        subprocess.call("git", stdout=subprocess.DEVNULL)  # nosec
-    except FileNotFoundError:
-        print(
-            "Hagrid requires git for the initial setup, Kindly follow the link below\n"
-            + " to install git on your System."
-        )
-        os = os_name()
-
-        git_link = {
-            "Windows": "https://git-scm.com/download/win",
-            "macOS": "https://git-scm.com/download/mac",
-            "Linux": "https://git-scm.com/download/linux",
-        }
-        print(f"{os} : {git_link[os]}")
+    dep = DependencyGridGit(name="git", output_in_text=True)
+    deps = {}
+    deps["git"] = dep
+    check_deps(of="Git", deps=deps, display=False)  # type: ignore
+    if dep.issues:
         exit(0)
 
 
