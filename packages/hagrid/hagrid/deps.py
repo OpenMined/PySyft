@@ -100,7 +100,7 @@ class DependencySyftOS(Dependency):
         if is_windows():
             self.issues.append(windows_jaxlib())
         elif is_apple_silicon():
-            self.issues.append(macos_arm64_pycapnp())
+            pass
 
 
 @dataclass
@@ -718,9 +718,10 @@ def git_install() -> SetupIssue:
 
 
 def syft_install(pre: bool = False) -> SetupIssue:
-    command = "pip install syft"
+    command = "pip install -U syft --pre"
     if pre:
-        command += " --pre"
+        # command += " --pre"
+        pass
     return SetupIssue(
         issue_name="syft_install",
         description="You have not installed Syft.",
@@ -750,7 +751,7 @@ def hagrid_update_available(
             "A new release of HAGrid is available: "
             + f"{str(current_version)} -> {str(new_version)}."
         ),
-        command=f"pip install hagrid=={new_version}",
+        command=f"pip install -U hagrid=={new_version}",
         solution="You can upgrade HAGrid with pip.",
     )
 
@@ -764,15 +765,6 @@ def python_version_unsupported() -> SetupIssue:
         ),
         command="",
         solution="You must install a compatible version of Python",
-    )
-
-
-def macos_arm64_pycapnp() -> SetupIssue:
-    return SetupIssue(
-        issue_name="macos_arm64_pycapnp",
-        description="Apple Silicon Python Wheels for pycapnp are not available on PyPI yet",
-        command="brew install cmake",
-        solution="You must install cmake so Python can compile pycapnp",
     )
 
 

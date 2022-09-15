@@ -23,9 +23,8 @@ RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) = "x86_64" ]; then \
 COPY grid/backend/wheels /wheels
 # apple m1 build PyNaCl for aarch64
 RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) != "x86_64" ]; then \
-  # precompiled jaxlib, pycapnp and dm-tree
+  # precompiled jaxlib and dm-tree
   pip install --user /wheels/jaxlib-0.3.7-cp310-none-manylinux2014_aarch64.whl; \
-  # tar -xvf /wheels/pycapnp-1.1.0.tar.gz; \
   tar -xvf /wheels/dm-tree-0.1.7.tar.gz; \
   pip install --user pytest-xdist[psutil]; \
   pip install --user torch==1.11.0 -f https://download.pytorch.org/whl/torch_stable.html; \
@@ -34,9 +33,6 @@ RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) != "x86_64" ]; then 
   # fixes apple silicon in dev mode due to dependency from safety
   pip install --user ruamel.yaml==0.17.21; \
   fi
-
-RUN --mount=type=cache,target=/root/.cache \
-  pip install --user pycapnp==1.1.1;
 
 WORKDIR /app
 COPY grid/backend/requirements.txt /app
