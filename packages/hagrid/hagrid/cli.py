@@ -2427,8 +2427,8 @@ def get_health_checks(ip_address: str) -> TypeTuple[bool, TypeList[TypeList[str]
     try:
         port = int(ip_address.split(":")[1])
     except Exception:
-        # default to 8081
-        port = 8081
+        # default to 80
+        port = 80
 
     # url to display based on running environment
     display_url = gitpod_url(port).split("//")[1] if is_gitpod() else ip_address
