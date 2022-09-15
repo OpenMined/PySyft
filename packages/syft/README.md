@@ -42,7 +42,7 @@ The current stable release is `0.5.0` which is available on:
 For many use cases you can simply use:
 
 ```
-$ pip install syft
+$ pip install -U syft --pre
 ```
 
 If you are developing against this version please use the [`syft_0.5.0`](https://github.com/OpenMined/pysyft/tree/syft_0.5.0) branch.
@@ -127,7 +127,7 @@ Older versions may work, however we have stopped testing and supporting them.
 ### Pip
 
 ```bash
-$ pip install syft
+$ pip install -U syft --pre
 ```
 
 This will auto-install PyTorch and other dependencies as required to run the
