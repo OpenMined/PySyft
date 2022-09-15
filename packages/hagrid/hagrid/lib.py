@@ -22,8 +22,6 @@ from rich.table import Table
 
 # relative
 from .cache import DEFAULT_BRANCH
-from .deps import gitpod_url
-from .deps import is_gitpod
 from .mode import EDITABLE_MODE
 from .mode import hagrid_root
 
@@ -80,6 +78,17 @@ def check_is_git(path: Path) -> bool:
     except Exception:  # nosec
         pass
     return is_repo
+
+
+def is_gitpod() -> bool:
+    return bool(os.environ.get("GITPOD_WORKSPACE_URL", None))
+
+
+def gitpod_url(port: Optional[int] = None) -> str:
+    workspace_url = os.environ.get("GITPOD_WORKSPACE_URL", "")
+    if port:
+        workspace_url = workspace_url.replace("https://", f"https://{port}-")
+    return workspace_url
 
 
 def get_git_repo() -> git.Repo:

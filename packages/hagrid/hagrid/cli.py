@@ -42,8 +42,6 @@ from .deps import DEPENDENCIES
 from .deps import allowed_hosts
 from .deps import check_docker_version
 from .deps import gather_debug
-from .deps import gitpod_url
-from .deps import is_gitpod
 from .deps import is_windows
 from .exceptions import MissingDependency
 from .grammar import BadGrammar
@@ -61,7 +59,9 @@ from .lib import check_login_page
 from .lib import docker_desktop_memory
 from .lib import generate_process_status_table
 from .lib import generate_user_table
+from .lib import gitpod_url
 from .lib import hagrid_root
+from .lib import is_gitpod
 from .lib import name_tag
 from .lib import save_vm_details_as_json
 from .lib import update_repo
