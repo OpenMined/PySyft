@@ -34,8 +34,6 @@ import requests
 
 # relative
 from .exceptions import MissingDependency
-from .lib import commit_hash
-from .lib import hagrid_root
 from .mode import EDITABLE_MODE
 from .nb_output import NBOutput
 from .version import __version__
@@ -347,6 +345,10 @@ def get_cli_output(cmd: str) -> Tuple[int, List[str]]:
 
 
 def gather_debug() -> Dict[str, Any]:
+    # relative
+    from .lib import commit_hash
+    from .lib import hagrid_root
+
     now = datetime.now().astimezone()
     dt_string = now.strftime("%d/%m/%Y %H:%M:%S %Z")
     debug_info: Dict[str, Any] = {}
