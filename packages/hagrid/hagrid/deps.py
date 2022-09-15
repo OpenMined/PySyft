@@ -750,7 +750,7 @@ def hagrid_update_available(
             "A new release of HAGrid is available: "
             + f"{str(current_version)} -> {str(new_version)}."
         ),
-        command=f"pip install hagrid=={new_version}",
+        command=f"pip install -U hagrid=={new_version}",
         solution="You can upgrade HAGrid with pip.",
     )
 

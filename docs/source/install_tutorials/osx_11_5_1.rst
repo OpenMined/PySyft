@@ -203,7 +203,7 @@ Step 5: Install Necessary Python Packages
 
   .. code-block:: bash
 
-      pip install hagrid
+      pip install -U hagrid
       
 * Step 5.5: Install Syft
 
