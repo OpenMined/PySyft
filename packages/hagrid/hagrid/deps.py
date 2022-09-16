@@ -475,6 +475,19 @@ def check_docker_version() -> Optional[str]:
     return version
 
 
+def check_docker_service_status():
+    if is_windows():
+        return "N/A"
+
+    # result = os.popen("pidof dockerd").read()
+    result = os.popen("systemctl show --property ActiveState docker").read().strip()
+
+    if "active" in result:
+        return f"Docker service {result}"
+    else:
+        raise MissingDependency(f"Docker service is not running. Service : {result}")
+
+
 def check_deps(
     deps: Dict[str, Dependency],
     of: str = "",
@@ -521,13 +534,13 @@ def check_deps(
         return None  # type: ignore
 
 
-def check_grid_docker(display: bool = True) -> Union[Dict[str, Dependency], NBOutput]:
+def check_grid_docker(display: bool = True, output_in_text = False) -> Union[Dict[str, Dependency], NBOutput]:
     try:
         deps: Dict[str, Dependency] = {}
         deps["git"] = DependencyGridGit(name="git")
         deps["docker"] = DependencyGridDocker(name="docker")
         deps["docker_compose"] = DependencyGridDockerCompose(name="docker compose")
-        return check_deps(of="Grid", deps=deps, display=display)
+        return check_deps(of="Grid", deps=deps, display=display, output_in_text=output_in_text)
     except Exception as e:
         try:
             if display:
