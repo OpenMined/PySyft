@@ -14,7 +14,7 @@ bandit -r src & pids+=($!)
 ./scripts/nb_test.sh && pytest examples/api --cov-fail-under 0 & pids+=($!)
 
 # fix isort and format with black
-./scripts/build_proto.sh && isort . && black src tests && pre-commit run --all-files & pids+=($!)
+isort . && black src tests && pre-commit run --all-files & pids+=($!)
 
 # check for error return codes
 error=0

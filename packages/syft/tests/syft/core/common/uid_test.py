@@ -18,7 +18,6 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.core.common import UID
-from syft.core.common.serde import _deserialize
 from syft.core.common.serde import _serialize
 from syft.core.common.uid import uuid_type
 
@@ -101,17 +100,6 @@ def test_from_string_exception() -> None:
 
 
 # --------------------- SERDE ---------------------
-
-
-def test_uid_default_serialization() -> None:
-    """Tests that default UID serialization works as expected - to Protobuf"""
-
-    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-    blob = _serialize(obj=uid)
-    _ = _deserialize(blob=blob)
-    assert sy.serialize(uid) == blob
-
-
 def test_uid_default_deserialization() -> None:
     """Tests that default UID deserialization works as expected - from Protobuf"""
 
@@ -126,11 +114,11 @@ def test_uid_proto_serialization() -> None:
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
 
-    blob = _serialize(obj=uid)
+    blob = _serialize(obj=uid, to_bytes=True)
 
-    assert sy.serialize(uid, to_proto=True) == blob
-    assert sy.serialize(uid, to_proto=True) == blob
-    assert sy.serialize(uid, to_proto=True) == blob
+    assert sy.serialize(uid, to_bytes=True) == blob
+    assert sy.serialize(uid, to_bytes=True) == blob
+    assert sy.serialize(uid, to_bytes=True) == blob
 
 
 def test_uid_proto_deserialization() -> None:

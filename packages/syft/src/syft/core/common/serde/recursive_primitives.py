@@ -3,71 +3,85 @@ from collections import OrderedDict
 from enum import Enum
 import functools
 import sys
-from typing import Iterable
+from typing import Collection
 from typing import Mapping
 from typing import cast
 
 # relative
-from ....proto.core.common.recursive_serde_pb2 import Iterable as Iterable_PB
-from ....proto.core.common.recursive_serde_pb2 import KVIterable as KVIterable_PB
+from .capnp import get_capnp_schema
+from .capnp import serde_magic_header
 from .recursive import recursive_serde_register
 
+iterable_schema = get_capnp_schema("iterable.capnp").Iterable  # type: ignore
+kv_iterable_schema = get_capnp_schema("kv_iterable.capnp").KVIterable  # type: ignore
 
-def serialize_iterable(iterable: Iterable) -> bytes:
+
+def serialize_iterable(iterable: Collection) -> bytes:
     # relative
-    from .capnp import create_protobuf_magic_header
     from .serialize import _serialize
 
-    message = Iterable_PB()
-    message.magic_header = create_protobuf_magic_header()
+    message = iterable_schema.new_message()
+    message.magicHeader = serde_magic_header(type(iterable))
 
-    for it in iterable:
-        message.values.append(_serialize(it, to_bytes=True))
+    message.init("values", len(iterable))
 
-    return message.SerializeToString()
+    for idx, it in enumerate(iterable):
+        message.values[idx] = _serialize(it, to_bytes=True)
+
+    return message.to_bytes()
 
 
-def deserialize_iterable(iterable_type: type, blob: bytes) -> Iterable:
+def deserialize_iterable(iterable_type: type, blob: bytes) -> Collection:
     # relative
     from .deserialize import _deserialize
 
-    message = Iterable_PB()
-    message.ParseFromString(blob)
-
+    MAX_TRAVERSAL_LIMIT = 2**64 - 1
     values = []
-    for element in message.values:
-        values.append(_deserialize(element, from_bytes=True))
+
+    with iterable_schema.from_bytes(  # type: ignore
+        blob, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
+    ) as msg:
+
+        for element in msg.values:
+            values.append(_deserialize(element, from_bytes=True))
 
     return iterable_type(values)
 
 
 def serialze_kv(map: Mapping) -> bytes:
     # relative
-    from .capnp import create_protobuf_magic_header
     from .serialize import _serialize
 
-    message = KVIterable_PB()
-    message.magic_header = create_protobuf_magic_header()
+    message = kv_iterable_schema.new_message()
+    message.magicHeader = serde_magic_header(type(map))
 
-    for k, v in map.items():
-        message.keys.append(_serialize(k, to_bytes=True))
-        message.values.append(_serialize(v, to_bytes=True))
+    message.init("keys", len(map))
+    message.init("values", len(map))
 
-    return message.SerializeToString()
+    for index, (k, v) in enumerate(map.items()):
+        message.keys[index] = _serialize(k, to_bytes=True)
+        message.values[index] = _serialize(v, to_bytes=True)
+
+    return message.to_bytes()
 
 
 def deserialize_kv(mapping_type: type, blob: bytes) -> Mapping:
     # relative
     from .deserialize import _deserialize
 
-    message = KVIterable_PB()
-    message.ParseFromString(blob)
-
+    MAX_TRAVERSAL_LIMIT = 2**64 - 1
     pairs = []
-    for k, v in zip(message.keys, message.values):
-        pairs.append(
-            (_deserialize(k, from_bytes=True), _deserialize(v, from_bytes=True))
-        )
+
+    with kv_iterable_schema.from_bytes(  # type: ignore
+        blob, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
+    ) as msg:
+        for (key, value) in zip(msg.keys, msg.values):
+            pairs.append(
+                (
+                    _deserialize(key, from_bytes=True),
+                    _deserialize(value, from_bytes=True),
+                )
+            )
 
     return mapping_type(pairs)
 
