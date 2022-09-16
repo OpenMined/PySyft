@@ -1,3 +1,5 @@
+from .util import verify_git_installation  # noqa
+
 # stdlib
 import sys
 from typing import Any

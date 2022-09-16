@@ -34,8 +34,6 @@ import requests
 
 # relative
 from .exceptions import MissingDependency
-from .lib import commit_hash
-from .lib import hagrid_root
 from .mode import EDITABLE_MODE
 from .nb_output import NBOutput
 from .version import __version__
@@ -86,6 +84,7 @@ class Dependency:
     version: Optional[Version] = None
     valid: bool = False
     issues: List[SetupIssue] = field(default_factory=list)
+    output_in_text: bool = False
 
     def check(self) -> None:
         pass
@@ -130,7 +129,7 @@ class DependencyGridGit(Dependency):
         if binary_info.path and binary_info.version:
             self.display = "✅ Git " + str(binary_info.version)
         else:
-            self.issues.append(git_install())
+            self.issues.append(git_install(self.output_in_text))
             self.display = "❌ Git not installed"
 
 
@@ -346,6 +345,10 @@ def get_cli_output(cmd: str) -> Tuple[int, List[str]]:
 
 
 def gather_debug() -> Dict[str, Any]:
+    # relative
+    from .lib import commit_hash
+    from .lib import hagrid_root
+
     now = datetime.now().astimezone()
     dt_string = now.strftime("%d/%m/%Y %H:%M:%S %Z")
     debug_info: Dict[str, Any] = {}
@@ -398,17 +401,6 @@ def is_apple_silicon() -> bool:
 
 
 ENVIRONMENT["apple_silicon"] = is_apple_silicon()
-
-
-def is_gitpod() -> bool:
-    return bool(os.environ.get("GITPOD_WORKSPACE_URL", None))
-
-
-def gitpod_url(port: Optional[int] = None) -> str:
-    workspace_url = os.environ.get("GITPOD_WORKSPACE_URL", "")
-    if port:
-        workspace_url = workspace_url.replace("https://", f"https://{port}-")
-    return workspace_url
 
 
 def is_windows() -> bool:
@@ -484,7 +476,10 @@ def check_docker_version() -> Optional[str]:
 
 
 def check_deps(
-    deps: Dict[str, Dependency], of: str = "", display: bool = True
+    deps: Dict[str, Dependency],
+    of: str = "",
+    display: bool = True,
+    output_in_text: bool = False,
 ) -> Union[Dict[str, Dependency], NBOutput]:
     output = ""
     if len(of) > 0:
@@ -493,22 +488,37 @@ def check_deps(
     issues = []
     for name, dep in deps.items():
         dep.check()
-        output += dep.display + "\n"
+        output += (dep.display + "\n") if display else ""
         issues += dep.issues
-    if len(issues) > 0:
-        output += "<h4>🚨 Some issues were found</h4>"
-        for issue in issues:
-            output += f"<h5><strong>Issue</strong>: {issue.description}</h5>"
-            if issue.solution != "":
-                output += f"<strong>Solution</strong>:\n{issue.solution}"
-            if issue.command != "":
-                output += (
-                    "<blockquote><strong>Command</strong>:\n "
-                    + f"<tt>[ ]</tt><code>!{issue.command}</code></blockquote>"
-                )
-            output += "\n"
 
-    return NBOutput(output).to_html()
+    if not output_in_text:
+        if len(issues) > 0:
+            output += "<h4>🚨 Some issues were found</h4>"
+            for issue in issues:
+                output += f"<h5><strong>Issue</strong>: {issue.description}</h5>"
+                if issue.solution != "":
+                    output += f"<strong>Solution</strong>:\n{issue.solution}"
+                if issue.command != "":
+                    output += (
+                        "<blockquote><strong>Command</strong>:\n "
+                        + f"<tt>[ ]</tt><code>!{issue.command}</code></blockquote>"
+                    )
+                output += "\n"
+
+        return NBOutput(output).to_html()
+    else:
+        if len(issues) > 0:
+            output += "🚨 Some issues were found\n"
+            for issue in issues:
+                output += f"\nIssue: {issue.description}\n"
+                if issue.solution != "":
+                    output += f"\nSolution:\n{issue.solution}\n"
+                if issue.command != "":
+                    output += "\nCommand:\n" + f"{issue.command} "
+                output += "\n"
+
+        print(output)
+        return None  # type: ignore
 
 
 def check_grid_docker(display: bool = True) -> Union[Dict[str, Dependency], NBOutput]:
@@ -650,10 +660,9 @@ PACKAGE_MANAGERS = {
 
 
 def os_package_manager_install_cmd(
-    package_name: str, package_display_name: str
+    package_name: str, package_display_name: str, output_in_text: bool = False
 ) -> Tuple[Optional[str], Optional[str]]:
     os = ENVIRONMENT["os"].lower()
-    os = "linux"
     cmd = None
     url = None
     package_manager = PACKAGE_MANAGERS[os]
@@ -669,14 +678,28 @@ def os_package_manager_install_cmd(
         url = PACKAGE_MANAGER_COMMANDS[package_name]["backup_url"]
 
     solution = ""
-    if cmd:
-        solution += f"- You can install {package_display_name} with <code>{package_manager}</code>\n"
-    if url:
+
+    if not output_in_text:
         if cmd:
-            solution += "- Alternatively, you "
-        else:
-            solution += "- You "
-        solution += f'can download and install {package_display_name} from <a href="{url}" target="_blank">{url}</a>'
+            solution += f"- You can install {package_display_name} with <code>{package_manager}</code>\n"
+        if url:
+            if cmd:
+                solution += "- Alternatively, you "
+            else:
+                solution += "- You "
+            solution += f"can download and install {package_display_name}"
+            solution += f'from <a href="{url}" target="_blank">{url}</a>'
+    else:
+        if cmd:
+            solution += (
+                f"- You can install {package_display_name} with {package_manager}\n"
+            )
+        if url:
+            if cmd:
+                solution += "- Alternatively, you "
+            else:
+                solution += "- You "
+            solution += f"can download and install {package_display_name} from {url}"
 
     return (cmd, solution)
 
@@ -705,9 +728,9 @@ def docker_install() -> SetupIssue:
     )
 
 
-def git_install() -> SetupIssue:
+def git_install(output_in_text: bool = False) -> SetupIssue:
     command, solution = os_package_manager_install_cmd(
-        package_name="git", package_display_name="Git"
+        package_name="git", package_display_name="Git", output_in_text=output_in_text
     )
     return SetupIssue(
         issue_name="git_install",

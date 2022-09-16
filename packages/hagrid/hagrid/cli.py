@@ -41,8 +41,6 @@ from .deps import DEPENDENCIES
 from .deps import allowed_hosts
 from .deps import check_docker_version
 from .deps import gather_debug
-from .deps import gitpod_url
-from .deps import is_gitpod
 from .deps import is_windows
 from .exceptions import MissingDependency
 from .grammar import BadGrammar
@@ -60,7 +58,9 @@ from .lib import check_login_page
 from .lib import docker_desktop_memory
 from .lib import generate_process_status_table
 from .lib import generate_user_table
+from .lib import gitpod_url
 from .lib import hagrid_root
+from .lib import is_gitpod
 from .lib import name_tag
 from .lib import save_vm_details_as_json
 from .lib import update_repo
@@ -2316,9 +2316,15 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
     is_flag=True,
     help="Optional: prevent lots of land output",
 )
+@click.option(
+    "--force",
+    is_flag=True,
+    help="Optional: bypass the prompt during hagrid land ",
+)
 def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_land_verb()
     silent = bool(kwargs["silent"]) if "silent" in kwargs else False
+    force = bool(kwargs["force"]) if "force" in kwargs else False
     try:
         grammar = parse_grammar(args=args, verb=verb)
         verb.load_grammar(grammar=grammar)
@@ -2336,28 +2342,41 @@ def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     except Exception as e:
         print(f"{e}")
         return
-    if not silent:
-        print("Running: \n", hide_password(cmd=cmd))
 
-    if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
-        if not silent:
-            print("Running: \n", cmd)
-        try:
-            if silent:
-                process = subprocess.Popen(  # nosec
-                    cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    cwd=GRID_SRC_PATH,
-                    shell=True,
-                )
-                process.communicate()
-                target = verb.get_named_term_grammar("node_name").input
-                print(f"HAGrid land {target} complete!")
-            else:
-                subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)  # nosec
-        except Exception as e:
-            print(f"Failed to run cmd: {cmd}. {e}")
+    target = verb.get_named_term_grammar("node_name").input
+
+    if not force:
+        _land_domain = ask(
+            Question(
+                var_name="_land_domain",
+                question=f"Are you sure you want to land {target} (y/n)",
+                kind="yesno",
+            ),
+            kwargs={},
+        )
+
+    if force or _land_domain == "y":
+        if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
+            if not silent:
+                print("Running: \n", cmd)
+            try:
+                if silent:
+                    process = subprocess.Popen(  # nosec
+                        cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        cwd=GRID_SRC_PATH,
+                        shell=True,
+                    )
+                    process.communicate()
+
+                    print(f"HAGrid land {target} complete!")
+                else:
+                    subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)  # nosec
+            except Exception as e:
+                print(f"Failed to run cmd: {cmd}. {e}")
+    else:
+        print("Hagrid land aborted.")
 
 
 cli.add_command(launch)
@@ -2376,6 +2395,7 @@ def debug(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 
 
 cli.add_command(debug)
+
 
 DEFAULT_HEALTH_CHECKS = ["host", "UI (βeta)", "api", "ssh", "jupyter"]
 HEALTH_CHECK_FUNCTIONS = {
@@ -2427,6 +2447,16 @@ def get_health_checks(ip_address: str) -> TypeTuple[bool, TypeList[TypeList[str]
     health_status = check_host_health(ip_address=ip_address, keys=keys)
     complete_status = all(health_status.values())
 
+    # find port from ip_address
+    try:
+        port = int(ip_address.split(":")[1])
+    except Exception:
+        # default to 80
+        port = 80
+
+    # url to display based on running environment
+    display_url = gitpod_url(port).split("//")[1] if is_gitpod() else ip_address
+
     # figure out how to add this back?
     # console.print("[bold magenta]Checking host:[/bold magenta]", ip_address, ":mage:")
     table_contents = []
@@ -2435,7 +2465,7 @@ def get_health_checks(ip_address: str) -> TypeTuple[bool, TypeList[TypeList[str]
             [
                 HEALTH_CHECK_ICONS[key],
                 key,
-                HEALTH_CHECK_URLS[key].replace("{ip_address}", ip_address),
+                HEALTH_CHECK_URLS[key].replace("{ip_address}", display_url),
                 icon_status(value),
             ]
         )
@@ -2448,7 +2478,7 @@ def create_check_table(
 ) -> rich.table.Table:
     table = rich.table.Table()
     table.add_column("PyGrid", style="magenta")
-    table.add_column("Info", justify="left")
+    table.add_column("Info", justify="left", overflow="fold")
     time_left_str = "" if time_left == 0 else str(time_left)
     table.add_column(time_left_str, justify="left")
     for row in table_contents:
