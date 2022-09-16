@@ -561,6 +561,14 @@ deployments:
                 value: ${USE_BLOB_STORAGE}
               - name: TEST_MODE
                 value: $!{TEST_MODE}
+              - name: MONGO_USERNAME
+                value: ${MONGO_USERNAME}
+              - name: MONGO_PASSWORD
+                value: ${MONGO_PASSWORD}
+              - name: MONGO_HOST
+                value: ${MONGO_HOST}
+              - name: MONGO_PORT
+                value: ${MONGO_PORT}
         service:
           name: ${SERVICE_NAME_BACKEND_STREAM}
           ports:
@@ -641,6 +649,14 @@ deployments:
                 value: ${USE_BLOB_STORAGE}
               - name: TEST_MODE
                 value: $!{TEST_MODE}
+              - name: MONGO_USERNAME
+                value: ${MONGO_USERNAME}
+              - name: MONGO_PASSWORD
+                value: ${MONGO_PASSWORD}
+              - name: MONGO_HOST
+                value: ${MONGO_HOST}
+              - name: MONGO_PORT
+                value: ${MONGO_PORT}
 
   - name: frontend
     helm:
