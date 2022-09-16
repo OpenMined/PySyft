@@ -164,7 +164,9 @@ class Node(AbstractNode):
             # third party
             from pymongo_inmemory import MongoClient
 
-            self.nosql_db_engine = MongoClient(uuidRepresentation="standard")
+            self.nosql_db_engine = MongoClient(
+                port=27017, uuidRepresentation="standard"
+            )
 
         self.db_name = "app"
         if document_store:
