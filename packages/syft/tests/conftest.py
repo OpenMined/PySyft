@@ -9,6 +9,7 @@ from typing import List as TypeList
 # third party
 import _pytest
 from faker import Faker
+from pymongo_inmemory import MongoClient
 import pytest
 
 # syft absolute
@@ -132,6 +133,9 @@ def pytest_collection_modifyitems(
 @pytest.fixture(scope="session")
 def node() -> sy.VirtualMachine:
     return sy.VirtualMachine(name="Bob")
+
+
+_db = MongoClient(port=27017, uuidRepresentation="standard")
 
 
 @pytest.fixture(scope="session")
