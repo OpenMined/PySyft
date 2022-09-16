@@ -2622,8 +2622,16 @@ def run_quickstart(
         environ["PATH"] = venv_dir + os.sep + os_bin_path + os.pathsep + environ["PATH"]
         jupyter_binary = "jupyter.exe" if is_windows() else "jupyter"
 
-        env_activate_cmd = "source " + venv_dir + os.sep + os_bin_path + "/activate"
-        print(f"To activate your virtualenv: '{env_activate_cmd}'")
+        if is_windows():
+            env_activate_cmd = (
+                "(Powershell): " + venv_dir + os.sep + os_bin_path + "/Activate"
+            )
+        else:
+            env_activate_cmd = (
+                "(Linux): source " + venv_dir + os.sep + os_bin_path + "/activate"
+            )
+
+        print(f"To activate your virtualenv {env_activate_cmd}")
 
         try:
             print(f"Running Jupyter Lab in: {directory}")
