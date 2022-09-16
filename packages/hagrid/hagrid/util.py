@@ -9,7 +9,7 @@ def verify_git_installation() -> None:
     deps["git"] = dep
     check_deps(of="Git", deps=deps, display=False, output_in_text=True)  # type: ignore
     if dep.issues:
-        exit(0)
+        exit(1)
 
 
 verify_git_installation()

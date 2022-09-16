@@ -519,13 +519,13 @@ def check_deps(
         return NBOutput(output).to_html()
     else:
         if len(issues) > 0:
-            output += "🚨 Some issues were found"
+            output += "🚨 Some issues were found\n"
             for issue in issues:
-                output += f"Issue: {issue.description}\n"
+                output += f"\nIssue: {issue.description}\n"
                 if issue.solution != "":
-                    output += f"Solution:\n{issue.solution}\n"
+                    output += f"\nSolution:\n{issue.solution}\n"
                 if issue.command != "":
-                    output += "Command:\n " + f"{issue.command} "
+                    output += "\nCommand:\n" + f"{issue.command} "
                 output += "\n"
 
         print(output)
@@ -674,7 +674,6 @@ def os_package_manager_install_cmd(
     package_name: str, package_display_name: str, output_in_text: bool = False
 ) -> Tuple[Optional[str], Optional[str]]:
     os = ENVIRONMENT["os"].lower()
-    os = "linux"
     cmd = None
     url = None
     package_manager = PACKAGE_MANAGERS[os]
