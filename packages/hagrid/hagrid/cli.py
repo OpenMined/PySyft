@@ -2454,7 +2454,7 @@ def create_check_table(
 ) -> rich.table.Table:
     table = rich.table.Table()
     table.add_column("PyGrid", style="magenta")
-    table.add_column("Info", justify="left")
+    table.add_column("Info", justify="left", overflow="fold")
     time_left_str = "" if time_left == 0 else str(time_left)
     table.add_column(time_left_str, justify="left")
     for row in table_contents:
