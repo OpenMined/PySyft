@@ -41,8 +41,6 @@ from .deps import DEPENDENCIES
 from .deps import allowed_hosts
 from .deps import check_docker_version
 from .deps import gather_debug
-from .deps import gitpod_url
-from .deps import is_gitpod
 from .deps import is_windows
 from .exceptions import MissingDependency
 from .grammar import BadGrammar
@@ -60,7 +58,9 @@ from .lib import check_login_page
 from .lib import docker_desktop_memory
 from .lib import generate_process_status_table
 from .lib import generate_user_table
+from .lib import gitpod_url
 from .lib import hagrid_root
+from .lib import is_gitpod
 from .lib import name_tag
 from .lib import save_vm_details_as_json
 from .lib import update_repo
@@ -2372,6 +2372,7 @@ def debug(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 
 cli.add_command(debug)
 
+
 DEFAULT_HEALTH_CHECKS = ["host", "UI (βeta)", "api", "ssh", "jupyter"]
 HEALTH_CHECK_FUNCTIONS = {
     "host": check_host,
@@ -2422,6 +2423,16 @@ def get_health_checks(ip_address: str) -> TypeTuple[bool, TypeList[TypeList[str]
     health_status = check_host_health(ip_address=ip_address, keys=keys)
     complete_status = all(health_status.values())
 
+    # find port from ip_address
+    try:
+        port = int(ip_address.split(":")[1])
+    except Exception:
+        # default to 80
+        port = 80
+
+    # url to display based on running environment
+    display_url = gitpod_url(port).split("//")[1] if is_gitpod() else ip_address
+
     # figure out how to add this back?
     # console.print("[bold magenta]Checking host:[/bold magenta]", ip_address, ":mage:")
     table_contents = []
@@ -2430,7 +2441,7 @@ def get_health_checks(ip_address: str) -> TypeTuple[bool, TypeList[TypeList[str]
             [
                 HEALTH_CHECK_ICONS[key],
                 key,
-                HEALTH_CHECK_URLS[key].replace("{ip_address}", ip_address),
+                HEALTH_CHECK_URLS[key].replace("{ip_address}", display_url),
                 icon_status(value),
             ]
         )
@@ -2443,7 +2454,7 @@ def create_check_table(
 ) -> rich.table.Table:
     table = rich.table.Table()
     table.add_column("PyGrid", style="magenta")
-    table.add_column("Info", justify="left")
+    table.add_column("Info", justify="left", overflow="fold")
     time_left_str = "" if time_left == 0 else str(time_left)
     table.add_column(time_left_str, justify="left")
     for row in table_contents:

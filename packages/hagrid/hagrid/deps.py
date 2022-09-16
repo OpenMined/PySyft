@@ -403,17 +403,6 @@ def is_apple_silicon() -> bool:
 ENVIRONMENT["apple_silicon"] = is_apple_silicon()
 
 
-def is_gitpod() -> bool:
-    return bool(os.environ.get("GITPOD_WORKSPACE_URL", None))
-
-
-def gitpod_url(port: Optional[int] = None) -> str:
-    workspace_url = os.environ.get("GITPOD_WORKSPACE_URL", "")
-    if port:
-        workspace_url = workspace_url.replace("https://", f"https://{port}-")
-    return workspace_url
-
-
 def is_windows() -> bool:
     if "platform" in ENVIRONMENT and ENVIRONMENT["platform"].lower() == "windows":
         return True
