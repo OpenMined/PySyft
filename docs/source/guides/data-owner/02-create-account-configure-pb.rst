@@ -18,48 +18,65 @@ Creating User Accounts on your Domain Server
    hagrid quickstart data-owner
 
 
-Data Owners can ``create`` user accounts for Data Scientists to use their domain nodes. 
-When the data owner creates a new user account, they can initially ``assign`` them some 
-privacy budget or set it as zero.
+Domain Owners can directly ``create`` user accounts for Data Scientists to use their 
+domain nodes. When the domain owner creates a new user account, by default that user 
+will have the lowest level of permissions and will be assigned ``0`` Privacy Budget.
 
-Today's tutorial will help you understand how to create user accounts, 
-manage access to your domain and uploaded datasets, and why it is crucial. 
+In today's tutorial we will learn how to create a user account, how to check permissions, 
+and how to assign a privacy budget to that user. Then we'll touch on why setting a privacy 
+budget is important later in your workflow.
+ 
 
-Step to Create User Account and Assign Privacy Budget
-------------------------------------------------------
-Before creating user accounts, you have to:
+Pre-Requisites
+------------------
+Before you can create user accounts on your domain, you have to first:
 
 #. Login to your Domain Node
-#. Annotate dataset with appropriate DP metadata
-#. Upload dataset 
+#. Annotate your dataset with the appropriate DP metadata
+#. And Upload your dataset
 
 .. note:: 
    The above prerequisite steps are covered in the previous tutorials :doc:`How to deploy a
    Domain Node <00-deploy-domain>` and :doc:`How to upload private data to the Domain
-   Node <01-upload-data>`. It is highly recommended to execute these steps before implementing this tutorial.
+   Node <01-upload-data>`. Please execute those steps before implementing this tutorial.
 
 📒 Overview of this tutorial:
 
 #. **Defining** account credentials
 #. **Assigning** privacy budget
-#. **Submitting** credentials to your Domain Node
+#. **Viewing** the account you just created via the Domain Management UI
 
 |02-create-account-configure-pb-00|
 
 Step 1: Create a User Account
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-To create a Data Scientists account for someone within your team or organization, you need to specify four things:
+After you have launched and logged into your domain as an ``admin``, you can create user accounts for others to use. 
+
+.. WARNING:: 
+   In this case, we will create an account for a Data Scientist from within our own team or organization.
+
+.. note:: 
+   You should only create direct user accounts on your domain node for those who have been 
+   appropriately vetted and verified by your organization. To expand research done on your 
+   datasets to those not directly within or verified by your organization, you should ``connect`` 
+   your ``domain`` to one or more networks so that proper verification measures have been taken. 
+   You can learn more about this in our "Connect Your Domain to a Network" tutorial.
+
+There are three different ways to create an account for the user. We will discuss them in detail below:
+
+A. Create a Data Scientist Account from the Notebook
+#######################################################
+
+To create a Data Scientists account for someone within your team or organization, you need to tell your Domain 4 things:
 
 #. **Name**: Name of the individual
 #. **Email**: Associated email address of the individual
-#. **Password**: Password they would need to login into your domain
-#. **Budget**: The privacy budget is the limiter that blocks data scientists from knowing too much about any data subject and a collection of quantitative measures through which a data owner can pre-determine the degree of information access they grant to a data scientist. 
+#. **Password**: Password they would need to login into your domain (this can be changed later when they customize their ``account settings``)
+#. **Budget**: When you specify a ``budget``, you assign this account with a ``privacy budget`` of ``0``. This privacy budget, set in units of ``epsilon``, is the limiter that blocks a data scientist from knowing too much about any one data subject in your dataset.
 
-   **Note:** For this exercise, we give our researchers complete ``visibility`` by assigning a high budget of 9999. 
-   We will get into the details around the privacy budget and how to limit it in step 2 ⬇️.
-
-.. WARNING:: 
-   Change the default username and password below to a more secure and private combination of your preference.
+   **Note:** In future exercises, we will explore how privacy budget limits affect data subject visibility. 
+   Still, for now, we will set the ``privacy budget`` to its default of ``0``, the lowest level of permission. 
+   Also, by default, the role assigned to a user is a Data Scientist.
 
 ::
 
@@ -67,16 +84,93 @@ To create a Data Scientists account for someone within your team or organization
 
    # run this cell
    data_scientist_details = domain_client.create_user(
-      name="ABC",
-      email="abc@xyz.net",
-      password="changethis",
-      budget=9999
+      name="Jane Doe",
+      email="jane@email.com",
+      password="supersecurepassword",
+      budget=0
    )
 
    Out: 
 
    User created successfully!
 
+Once you have created an account, you can ``verify`` if the user account was made successfully.
+
+::
+
+   In:
+
+   # list the users that have registered to the domain
+   domain_client.users
+
+B. Users Signup to Domain to Create a Data Scientist Account via Domain URL
+#################################################################################
+
+A user can also ``signup`` or create an account on a Domain node if they have access to the ``URL`` to the Domain. 
+Instead of creating an account individually for each Data Scientist, a Data Owner can ``share`` the URL to their 
+Domain node and ask their team members to ``register`` to the Domain. 
+
+To register to a Domain, you need the following details:
+
+#. **Name**: Name of the individual
+#. **Email**: Email of the individual that will be used to log into the Domain
+#. **Password**: A secured password to log into the Domain
+#. **Url**: Url to the domain node.
+#. **Port**: Port number
+
+::
+
+   In:
+
+   # run this cell
+   import syft as sy
+   domain_client = sy.register(
+      name=”Jane Doe”,
+      email=”jane@email.com”,
+      password=”supersecurepassword”,
+      url=”localhost”,
+      port=8081
+   )
+
+On successful registration, the user is auto-logged into the domain. 
+
+.. note:: 
+   By default the role assigned to the registered user is of a ``Data Scientist`` and the assigned ``privacy budget`` is ``0``. 
+   A Data Owner can further manage the registered users from the UI as indicated in Step 2.
+
+C. Create a Data Scientist Account in PyGrid's UI
+#########################################################
+
+PyGrid's UI is meant to help Domain Owners get a bigger picture view of their domains and manage them. 
+
+When we use the ``hagrid launch`` command to start our private data server, we define the ``port`` where 
+we want to launch the server. By default, the port is launched at ``8081``.
+
+   **Note:** Make sure your docker application is up and running in the background.
+
+We will use this ``port number`` to visit the following UI interface at the URL:
+
+:: 
+   
+   http://localhost:<port_number>
+   
+   e.g.
+   
+   http://localhost:8081
+
+
+Once you are on PyGrid's web page, execute following steps to create an account for Data Scientist:
+
+#. Login using your admin credentials
+#. Create a new user account by clicking on the ``+ Create User`` button
+#. Specify the following fields
+	* **Name**: Name of the individual
+	* **Email**: Email of the individual that will be used to log into the Domain
+	* **Password**: A secured password to log into the Domain
+	* **Role**: Assign them the role of Data Scientist (By default user account will take the role with the lowest amount of permission which in this case is the **Data Scientist** role.)
+#. Set appropriate Privacy Budget (By default, they have ``0e`` privacy budget)
+
+|02-create-account-configure-pb-04|
 
 Step 2: Assign Privacy Budget
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -162,4 +256,7 @@ Now our domain node is available for the data scientists to use 👏
   :width: 95%
 
 .. |02-create-account-configure-pb-03| image:: ../../_static/personas-image/data-owner/02-create-account-configure-pb-03.png
+  :width: 95%
+
+.. |02-create-account-configure-pb-04| image:: ../../_static/personas-image/data-owner/02-create-account-configure-pb-04.gif
   :width: 95%
