@@ -14,7 +14,7 @@ The PySyft guides are written in ``Jupyter Labs`` in a hosted network environmen
 
 :: 
    
-   pip install hagrid
+   pip install -U hagrid
    hagrid quickstart
 
 Once you have the installation completed, the best place to start is by ``identifying`` your role. 
