@@ -80,6 +80,17 @@ def check_is_git(path: Path) -> bool:
     return is_repo
 
 
+def is_gitpod() -> bool:
+    return bool(os.environ.get("GITPOD_WORKSPACE_URL", None))
+
+
+def gitpod_url(port: Optional[int] = None) -> str:
+    workspace_url = os.environ.get("GITPOD_WORKSPACE_URL", "")
+    if port:
+        workspace_url = workspace_url.replace("https://", f"https://{port}-")
+    return workspace_url
+
+
 def get_git_repo() -> git.Repo:
     is_git = check_is_git(path=repo_src_path())
     if not EDITABLE_MODE and not is_git:
