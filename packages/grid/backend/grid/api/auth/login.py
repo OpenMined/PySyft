@@ -40,10 +40,8 @@ def login_access_token(
     access_token = security.create_access_token(
         user.id_int, expires_delta=access_token_expires
     )
-    metadata = (
-        serialize(node.get_metadata_for_client())
-        .SerializeToString()
-        .decode("ISO-8859-1")
+    metadata = serialize(node.get_metadata_for_client(), to_bytes=True).decode(
+        "ISO-8859-1"
     )
 
     return {
