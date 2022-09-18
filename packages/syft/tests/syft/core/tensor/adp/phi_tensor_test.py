@@ -1120,6 +1120,10 @@ def test_any(
 
     result = (reference_tensor == reference_data).any(keepdims=True, axis=0)
     assert result.shape == (1, reference_tensor.shape[0])
+    
+    # condition = list(np.random.choice(a=[False, True], size=(reference_data.shape[0])))
+    # result = (reference_tensor == reference_data).any(where=condition)
+    # assert result
 
 
 def test_all(
