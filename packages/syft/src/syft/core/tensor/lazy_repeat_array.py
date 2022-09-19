@@ -121,7 +121,9 @@ class lazyrepeatarray:
         Don't touch it. It's going to get more complicated.
         """
         if is_acceptable_simple_type(other):
-            return self.__class__(data=self.data + other, shape=self.shape)
+            return self.__class__(
+                data=self.data + other, shape=self.shape, data_type=self.data_type
+            )
 
         if not is_broadcastable(self.shape, other.shape):
             raise Exception(
@@ -129,10 +131,14 @@ class lazyrepeatarray:
             )
 
         if self.data.shape == other.data.shape:
-            return self.__class__(data=self.data + other.data, shape=self.shape)
+            return self.__class__(
+                data=self.data + other.data, shape=self.shape, data_type=self.data_type
+            )
         else:
             print("Lazy Repeat adding with mismatched shapes")
-            return self.__class__(data=self.data + other.data, shape=self.shape)
+            return self.__class__(
+                data=self.data + other.data, shape=self.shape, data_type=self.data_type
+            )
 
     def __sub__(self, other: Any) -> lazyrepeatarray:
         """
@@ -141,7 +147,7 @@ class lazyrepeatarray:
         """
         if is_acceptable_simple_type(other):
             res = self.data - other
-            return self.__class__(data=res, shape=self.shape)
+            return self.__class__(data=res, shape=self.shape, data_type=self.data_type)
 
         if not is_broadcastable(self.shape, other.shape):
             raise Exception(
@@ -149,10 +155,14 @@ class lazyrepeatarray:
             )
 
         if self.data.shape == other.data.shape:
-            return self.__class__(data=self.data - other.data, shape=self.shape)
+            return self.__class__(
+                data=self.data - other.data, shape=self.shape, data_type=self.data_type
+            )
         else:
             print("Lazy Repeat adding with mismatched shapes")
-            return self.__class__(data=self.data - other.data, shape=self.shape)
+            return self.__class__(
+                data=self.data - other.data, shape=self.shape, data_type=self.data_type
+            )
 
     def __mul__(self, other: Any) -> lazyrepeatarray:
         """
@@ -160,7 +170,9 @@ class lazyrepeatarray:
         Don't touch it. It's going to get more complicated.
         """
         if is_acceptable_simple_type(other):
-            return self.__class__(data=self.data * other, shape=self.shape)
+            return self.__class__(
+                data=self.data * other, shape=self.shape, data_type=self.data_type
+            )
 
         if not is_broadcastable(self.shape, other.shape):
             raise Exception(
@@ -168,7 +180,9 @@ class lazyrepeatarray:
                 + f" {self.shape} & {other.shape}"
             )
         else:
-            return self.__class__(data=self.data * other.data, shape=self.shape)
+            return self.__class__(
+                data=self.data * other.data, shape=self.shape, data_type=self.data_type
+            )
 
     def __matmul__(self, other: Any) -> lazyrepeatarray:
         """
@@ -182,8 +196,13 @@ class lazyrepeatarray:
                 return self.__class__(
                     data=np.matmul(np.ones(self.shape), other * self.data),
                     shape=new_shape,
+                    data_type=self.data_type,
                 )
-            return self.__class__(data=self.data.__matmul__(other), shape=new_shape)
+            return self.__class__(
+                data=self.data.__matmul__(other),
+                shape=new_shape,
+                data_type=self.data_type,
+            )
 
         if self.shape[-1] != other.shape[-2]:
             raise Exception(
@@ -191,7 +210,7 @@ class lazyrepeatarray:
             )
 
         result = self.to_numpy() @ other.to_numpy()
-        return self.__class__(data=result, shape=result.shape)
+        return self.__class__(data=result, shape=result.shape, data_type=self.data_type)
 
         # raise Exception("not sure how to do this yet")
 
@@ -201,7 +220,7 @@ class lazyrepeatarray:
 
     def __rtruediv__(self, other: Any) -> lazyrepeatarray:
         res = (1 / self.data) * other
-        return lazyrepeatarray(data=res, shape=self.shape)
+        return lazyrepeatarray(data=res, shape=self.shape, data_type=self.data_type)
 
     def __rmatmul__(self, other: Any) -> lazyrepeatarray:
         """
@@ -215,9 +234,12 @@ class lazyrepeatarray:
                 return self.__class__(
                     data=np.matmul(np.ones(other.shape), other * self.data),
                     shape=new_shape,
+                    data_type=self.data_type,
                 )
             return self.__class__(
-                data=self.to_numpy().__rmatmul__(other), shape=new_shape
+                data=self.to_numpy().__rmatmul__(other),
+                shape=new_shape,
+                data_type=self.data_type,
             )
 
         if other.shape[-1] != self.shape[0]:
@@ -226,7 +248,7 @@ class lazyrepeatarray:
             )
 
         result = self.to_numpy().__rmatmul__(other.to_numpy())
-        return self.__class__(data=result, shape=result.shape)
+        return self.__class__(data=result, shape=result.shape, data_type=self.data_type)
 
     def __pow__(self, exponent: int) -> lazyrepeatarray:
         if exponent == 2:
@@ -240,9 +262,12 @@ class lazyrepeatarray:
                 return lazyrepeatarray(
                     data=np.pad(self.data, pad_width=pad_width, mode="reflect"),
                     shape=new_shape,
+                    data_type=self.data_type,
                 )
             elif self.data.size == 1:
-                return lazyrepeatarray(data=self.data, shape=new_shape)
+                return lazyrepeatarray(
+                    data=self.data, shape=new_shape, data_type=self.data_type
+                )
             else:
                 raise NotImplementedError
         else:
@@ -250,26 +275,40 @@ class lazyrepeatarray:
 
     def horizontal_flip(self) -> lazyrepeatarray:
         if self.data.shape == self.shape:
-            return lazyrepeatarray(data=np.fliplr(self.data), shape=self.shape)
+            return lazyrepeatarray(
+                data=np.fliplr(self.data), shape=self.shape, data_type=self.data_type
+            )
         elif self.data.size == 1:
-            return lazyrepeatarray(data=self.data, shape=self.shape)
+            return lazyrepeatarray(
+                data=self.data, shape=self.shape, data_type=self.data_type
+            )
         else:
             raise NotImplementedError
 
     def vertical_flip(self) -> lazyrepeatarray:
         if self.data.shape == self.shape:
-            return lazyrepeatarray(data=np.flipud(self.data), shape=self.shape)
+            return lazyrepeatarray(
+                data=np.flipud(self.data), shape=self.shape, data_type=self.data_type
+            )
         elif self.data.size == 1:
-            return lazyrepeatarray(data=self.data, shape=self.shape)
+            return lazyrepeatarray(
+                data=self.data, shape=self.shape, data_type=self.data_type
+            )
         else:
             raise NotImplementedError
 
     def rotate(self, angle: int) -> lazyrepeatarray:
         if self.data.shape == self.shape:
-            return lazyrepeatarray(data=rotate(self.data, angle), shape=self.shape)
+            return lazyrepeatarray(
+                data=rotate(self.data, angle),
+                shape=self.shape,
+                data_type=self.data_type,
+            )
         elif self.data.size == 1:
             # TODO: This is almost certainly incorrect
-            return lazyrepeatarray(data=self.data, shape=self.shape)
+            return lazyrepeatarray(
+                data=self.data, shape=self.shape, data_type=self.data_type
+            )
         else:
             raise NotImplementedError
 
@@ -277,20 +316,28 @@ class lazyrepeatarray:
         # TODO: Can we reshape without creating new objects
         if self.data.shape == self.shape:
             return lazyrepeatarray(
-                data=self.data.reshape(target_shape), shape=target_shape
+                data=self.data.reshape(target_shape),
+                shape=target_shape,
+                data_type=self.data_type,
             )
         elif self.data.size == 1:
-            return lazyrepeatarray(data=self.data, shape=target_shape)
+            return lazyrepeatarray(
+                data=self.data, shape=target_shape, data_type=self.data_type
+            )
         else:
             if not np.broadcast_shapes(self.data.shape, target_shape):
                 raise NotImplementedError(
                     f"data= {self.data.shape}, shape: {self.shape}"
                 )
             else:
-                return lazyrepeatarray(data=self.data, shape=target_shape)
+                return lazyrepeatarray(
+                    data=self.data, shape=target_shape, data_type=self.data_type
+                )
 
     def copy(self, order: Optional[str] = "K") -> lazyrepeatarray:
-        return self.__class__(data=self.data.copy(order=order), shape=self.shape)
+        return self.__class__(
+            data=self.data.copy(order=order), shape=self.shape, data_type=self.data_type
+        )
 
     @property
     def size(self) -> int:
@@ -298,7 +345,7 @@ class lazyrepeatarray:
 
     def sum(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
         res = np.array(self.to_numpy().sum(*args, **kwargs))
-        return lazyrepeatarray(data=res, shape=res.shape)
+        return lazyrepeatarray(data=res, shape=res.shape, data_type=self.data_type)
 
     def mean(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
         res = np.array(self.to_numpy().mean(*args, **kwargs))
@@ -320,10 +367,18 @@ class lazyrepeatarray:
     def __eq__(self, other: Any) -> lazyrepeatarray:  # type: ignore
         if isinstance(other, lazyrepeatarray):
             if self.shape == other.shape:
-                return lazyrepeatarray(data=self.data == other.data, shape=self.shape)
+                return lazyrepeatarray(
+                    data=self.data == other.data,
+                    shape=self.shape,
+                    data_type=self.data_type,
+                )
             else:
                 result = (self.to_numpy() == other.to_numpy()).all()
-                return lazyrepeatarray(data=np.array([result]), shape=result.shape)
+                return lazyrepeatarray(
+                    data=np.array([result]),
+                    shape=result.shape,
+                    data_type=self.data_type,
+                )
         if isinstance(other, np.ndarray):
             try:
                 _ = np.broadcast_shapes(self.shape, other.shape)
@@ -341,15 +396,25 @@ class lazyrepeatarray:
     def __le__(self, other: Any) -> lazyrepeatarray:  # type: ignore
         if isinstance(other, lazyrepeatarray):
             if self.shape == other.shape:
-                return lazyrepeatarray(data=self.data <= other.data, shape=self.shape)
+                return lazyrepeatarray(
+                    data=self.data <= other.data,
+                    shape=self.shape,
+                    data_type=self.data_type,
+                )
             else:
                 result = (self.to_numpy() <= other.to_numpy()).all()
-                return lazyrepeatarray(data=np.array([result]), shape=result.shape)
+                return lazyrepeatarray(
+                    data=np.array([result]),
+                    shape=result.shape,
+                    data_type=self.data_type,
+                )
         if isinstance(other, np.ndarray):
             try:
                 _ = np.broadcast_shapes(self.shape, other.shape)
                 result = (self.to_numpy() <= other).all()
-                return lazyrepeatarray(data=np.array([result]), shape=other.shape)
+                return lazyrepeatarray(
+                    data=np.array([result]), shape=other.shape, data_type=self.data_type
+                )
             except Exception as e:
                 print(
                     "Failed to compare lazyrepeatarray with "
@@ -368,14 +433,18 @@ class lazyrepeatarray:
         dummy_res = np.concatenate(
             (np.empty(self.shape), np.empty(other.shape)), *args, **kwargs
         )
-        return lazyrepeatarray(data=self.data, shape=dummy_res.shape)
+        return lazyrepeatarray(
+            data=self.data, shape=dummy_res.shape, data_type=self.data_type
+        )
 
     @property
     def dtype(self) -> np.dtype:
         return self.data.dtype
 
     def astype(self, np_type: np.dtype) -> lazyrepeatarray:
-        return self.__class__(self.data.astype(np_type), self.shape)
+        return self.__class__(
+            self.data.astype(np_type), self.shape, data_type=self.data_type
+        )
 
     def to_numpy(self) -> np.ndarray:
         return np.broadcast_to(self.data, self.shape)
@@ -395,7 +464,9 @@ class lazyrepeatarray:
     def transpose(self, *args: List[Any], **kwargs: Dict[str, Any]) -> lazyrepeatarray:
         dummy_res = self.to_numpy().transpose(*args, **kwargs)
         return lazyrepeatarray(
-            data=self.data.transpose(*args, **kwargs), shape=dummy_res.shape
+            data=self.data.transpose(*args, **kwargs),
+            shape=dummy_res.shape,
+            data_type=self.data_type,
         )
 
 

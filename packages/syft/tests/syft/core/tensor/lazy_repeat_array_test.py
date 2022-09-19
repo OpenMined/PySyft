@@ -9,7 +9,9 @@ from syft.core.tensor.lazy_repeat_array import lazyrepeatarray
 
 def test_create_lazy_repeat_array() -> None:
     array = np.array([1, 1, 1])
-    lazyarray = lazyrepeatarray(data=np.array([1]), shape=array.shape)
+    lazyarray = lazyrepeatarray(
+        data=np.array([1]), shape=array.shape, data_type="min_val"
+    )
     assert (lazyarray.to_numpy() == array).all()
     assert lazyarray.shape == array.shape
     assert lazyarray.size == array.size
@@ -18,27 +20,35 @@ def test_create_lazy_repeat_array() -> None:
 
 def test_create_bad_lazy_repeat_array() -> None:
     with pytest.raises(ValueError):
-        _ = lazyrepeatarray(data=np.array([1]), shape=(-1, 888))
+        _ = lazyrepeatarray(data=np.array([1]), shape=(-1, 888), data_type="min_val")
 
     with pytest.raises(ValueError):
-        _ = lazyrepeatarray(data=np.array([1, 2, 3]), shape=(999, 888))
+        _ = lazyrepeatarray(
+            data=np.array([1, 2, 3]), shape=(999, 888), data_type="min_val"
+        )
 
 
 def test_equality() -> None:
     array = np.array([1, 1, 1])
-    lazyarray = lazyrepeatarray(data=np.array([1]), shape=array.shape)
+    lazyarray = lazyrepeatarray(
+        data=np.array([1]), shape=array.shape, data_type="min_val"
+    )
     assert lazyarray == array
 
 
 def test_inequality() -> None:
     array = np.array([2, 2, 2])
-    lazyarray = lazyrepeatarray(data=np.array([1]), shape=array.shape)
+    lazyarray = lazyrepeatarray(
+        data=np.array([1]), shape=array.shape, data_type="min_val"
+    )
     assert lazyarray != array
 
 
 def test_serde() -> None:
     array = np.array([1, 1, 1])
-    lazyarray = lazyrepeatarray(data=np.array([1]), shape=array.shape)
+    lazyarray = lazyrepeatarray(
+        data=np.array([1]), shape=array.shape, data_type="min_val"
+    )
 
     ser = sy.serialize(lazyarray, to_bytes=True)
     de = sy.deserialize(ser, from_bytes=True)
@@ -49,7 +59,9 @@ def test_serde() -> None:
 
 def test_add() -> None:
     array = np.array([1, 1, 1])
-    lazyarray = lazyrepeatarray(data=np.array([1]), shape=array.shape)
+    lazyarray = lazyrepeatarray(
+        data=np.array([1]), shape=array.shape, data_type="min_val"
+    )
 
     assert lazyarray + 1 == array + 1
     assert lazyarray + array == array + array
@@ -57,7 +69,9 @@ def test_add() -> None:
 
 def test_sub() -> None:
     array = np.array([1, 1, 1])
-    lazyarray = lazyrepeatarray(data=np.array([1]), shape=array.shape)
+    lazyarray = lazyrepeatarray(
+        data=np.array([1]), shape=array.shape, data_type="min_val"
+    )
 
     assert lazyarray - 1 == array - 1
     assert lazyarray - array == array - array
@@ -65,7 +79,9 @@ def test_sub() -> None:
 
 def test_mul() -> None:
     array = np.array([1, 1, 1])
-    lazyarray = lazyrepeatarray(data=np.array([1]), shape=array.shape)
+    lazyarray = lazyrepeatarray(
+        data=np.array([1]), shape=array.shape, data_type="min_val"
+    )
 
     assert lazyarray * 1 == array * 1
     assert lazyarray * array == array * array
@@ -73,14 +89,18 @@ def test_mul() -> None:
 
 def test_pow() -> None:
     array = np.array([1, 1, 1])
-    lazyarray = lazyrepeatarray(data=np.array([1]), shape=array.shape)
+    lazyarray = lazyrepeatarray(
+        data=np.array([1]), shape=array.shape, data_type="min_val"
+    )
 
     assert lazyarray**2 == array**2
 
 
 def test_astype() -> None:
     array = np.array([1, 1, 1], dtype=np.uint8)
-    lazyarray = lazyrepeatarray(data=np.array([1], dtype=np.int32), shape=array.shape)
+    lazyarray = lazyrepeatarray(
+        data=np.array([1], dtype=np.int32), shape=array.shape, data_type="min_val"
+    )
     uint8_lazyarray = lazyarray.astype(np.uint8)
 
     assert lazyarray == array
@@ -91,13 +111,17 @@ def test_astype() -> None:
 
 def test_sum() -> None:
     array = np.array([1, 1, 1])
-    lazyarray = lazyrepeatarray(data=np.array([1]), shape=array.shape)
+    lazyarray = lazyrepeatarray(
+        data=np.array([1]), shape=array.shape, data_type="min_val"
+    )
 
     assert lazyarray.sum(axis=None).data == array.sum(axis=None)
 
 
 def test_mean() -> None:
     array = np.array([1, 1, 1])
-    lazyarray = lazyrepeatarray(data=np.array([1]), shape=array.shape)
+    lazyarray = lazyrepeatarray(
+        data=np.array([1]), shape=array.shape, data_type="min_val"
+    )
 
     assert lazyarray.mean(axis=None).data == array.mean(axis=None)
