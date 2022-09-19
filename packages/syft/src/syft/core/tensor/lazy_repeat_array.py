@@ -53,7 +53,7 @@ class lazyrepeatarray:
 
     """
 
-    __attr_allowlist__ = ["data", "shape"]
+    __attr_allowlist__ = ["data", "shape", "data_type"]
 
     def __init__(
         self, data: np.ndarray, shape: Tuple[int, ...], data_type: str = "none"
