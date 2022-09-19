@@ -2617,7 +2617,7 @@ def run_quickstart(
 
         if is_windows():
             env_activate_cmd = (
-                "(Powershell): " + venv_dir + os.sep + os_bin_path + "/Activate"
+                "(Powershell): " + "cd " + venv_dir + "; " + os_bin_path + os.sep + "activate"
             )
         else:
             env_activate_cmd = (
