@@ -14,6 +14,7 @@ from typing import Union
 
 # third party
 import names
+from . import data_subject_list
 
 # relative
 from ..common import UID
@@ -72,6 +73,8 @@ class DataSubject:
     ) -> Union[DataSubjectGroup, DataSubject]:
         if isinstance(other, DataSubject):
             return DataSubjectGroup([self, other])
+        elif isinstance(other, data_subject_list.DataSubjectArray):
+            return DataSubjectGroup([self, *other.data_subjects])
         elif isinstance(other, DataSubjectGroup):
             other.entity_set.add(self)
             return other
@@ -155,6 +158,8 @@ class DataSubjectGroup:
             return DataSubjectGroup(self.entity_set.union({other}))
         elif isinstance(other, DataSubjectGroup):
             return DataSubjectGroup(self.entity_set.union(other.entity_set))
+        elif isinstance(other, data_subject_list.DataSubjectArray):
+            return DataSubjectGroup(self.entity_set.union(other.data_subjects))
         elif not other:  # type: ignore
             return self
         elif isinstance(other, (int, float)):

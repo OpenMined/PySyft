@@ -1103,8 +1103,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 self.data_subjects,
                 axis=axis,
                 keepdims=keepdims,
-                initial=DataSubject(),
-                where=where,
             )
         else:
             out_child = np.array(
@@ -1128,24 +1126,28 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def all(
         self,
         axis: Optional[Union[int, Tuple[int, ...]]] = None,
-        keepdims: Optional[bool] = None,
+        keepdims: Optional[bool] = False,
         where: Optional[ArrayLike] = None,
     ) -> PhiTensor:
         # TODO: properly define data subjects
         if where is None:
             out_child = np.array(self.child.all(axis=axis, keepdims=keepdims))
+            new_data_subjects = np.add.reduce(
+                self.data_subjects,
+                axis=axis,
+                keepdims=keepdims,
+            )
         else:
             out_child = np.array(
                 self.child.all(axis=axis, keepdims=keepdims, where=where)
             )
-
-        new_data_subjects = np.add.reduce(
-            self.data_subjects,
-            axis=axis,
-            keepdims=keepdims,
-            initial=DataSubject(),
-            where=where,
-        )
+            new_data_subjects = np.add.reduce(
+                self.data_subjects,
+                axis=axis,
+                keepdims=keepdims,
+                initial=DataSubject(),
+                where=where,
+            )
 
         return PhiTensor(
             child=out_child,
@@ -1153,7 +1155,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=lazyrepeatarray(data=1, shape=out_child.shape),
             data_subjects=new_data_subjects,
         )
-
     def __and__(self, value) -> PhiTensor:  # type: ignore
         out_child = self.child & value
         return PhiTensor(

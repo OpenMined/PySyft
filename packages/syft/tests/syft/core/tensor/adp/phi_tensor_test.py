@@ -1111,19 +1111,28 @@ def test_any(
 
     result = (reference_tensor == reference_data).any()
     assert result.child
+    assert result.data_subjects.shape == ()
+    assert (result.data_subjects == ishan).any()
 
     result = (reference_tensor == reference_data).any(axis=0)
     assert result.shape == (reference_data.shape[0],)
+    assert result.data_subjects.shape == (reference_data.shape[0],)
+    assert (result.data_subjects == ishan).any()
 
     result = (reference_tensor == reference_data).any(keepdims=True)
     assert result.shape == (1, 1)
+    assert result.data_subjects.shape == (1,1)
+    assert (result.data_subjects == ishan).any()
 
     result = (reference_tensor == reference_data).any(keepdims=True, axis=0)
     assert result.shape == (1, reference_tensor.shape[0])
+    assert result.data_subjects.shape == (1, reference_tensor.shape[0])
+    assert (result.data_subjects == ishan).any()
     
-    # condition = list(np.random.choice(a=[False, True], size=(reference_data.shape[0])))
-    # result = (reference_tensor == reference_data).any(where=condition)
-    # assert result
+    condition = list(np.random.choice(a=[False, True], size=(reference_data.shape[0])))
+    result = (reference_tensor == reference_data).any(where=condition)
+    assert result.child
+    assert result.data_subjects.shape == ()
 
 
 def test_all(
@@ -1140,17 +1149,31 @@ def test_all(
         min_vals=lower_bound,
     )
 
-    result = (reference_tensor == reference_data).any()
+    result = (reference_tensor == reference_data).all()
     assert result.child
+    assert result.data_subjects.shape == ()
+    assert (result.data_subjects == ishan).all()
 
-    result = (reference_tensor == reference_data).any(axis=0)
+    result = (reference_tensor == reference_data).all(axis=0)
     assert result.shape == (reference_data.shape[0],)
+    assert result.data_subjects.shape == (reference_data.shape[0],)
+    assert (result.data_subjects == ishan).all()
 
-    result = (reference_tensor == reference_data).any(keepdims=True)
+    result = (reference_tensor == reference_data).all(keepdims=True)
     assert result.shape == (1, 1)
+    assert result.data_subjects.shape == (1,1)
+    assert (result.data_subjects == ishan).all()
 
-    result = (reference_tensor == reference_data).any(keepdims=True, axis=0)
+    result = (reference_tensor == reference_data).all(keepdims=True, axis=0)
     assert result.shape == (1, reference_tensor.shape[0])
+    assert result.data_subjects.shape == (1, reference_tensor.shape[0])
+    assert (result.data_subjects == ishan).all()
+    
+    condition = list(np.random.choice(a=[False, True], size=(reference_data.shape[0])))
+    result = (reference_tensor == reference_data).all(where=condition)
+    assert result.child
+    assert result.data_subjects.shape == ()
+
 
 
 def test_and(
