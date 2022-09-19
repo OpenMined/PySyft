@@ -92,6 +92,7 @@ class lazyrepeatarray:
 
         # TODO: use enum for data_type per suggestion from Madhava:
         # https://github.com/OpenMined/PySyft/pull/6634/files#r952129748
+        self.data_type = data_type
         if self.data.size > 1:
             if data_type == "min_val":
                 self.data = data.min()
@@ -196,7 +197,7 @@ class lazyrepeatarray:
 
     def zeros_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
         res = np.array(np.zeros_like(self.to_numpy(), *args, **kwargs))
-        return lazyrepeatarray(data=res, shape=res.shape)
+        return lazyrepeatarray(data=res, shape=res.shape, data_type=self.data_type)
 
     def __rtruediv__(self, other: Any) -> lazyrepeatarray:
         res = (1 / self.data) * other
@@ -314,7 +315,7 @@ class lazyrepeatarray:
 
     def ones_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
         res = np.array(np.ones_like(self.to_numpy(), *args, **kwargs))
-        return lazyrepeatarray(data=res, shape=res.shape)
+        return lazyrepeatarray(data=res, shape=res.shape, data_type=self.data_type)
 
     def __eq__(self, other: Any) -> lazyrepeatarray:  # type: ignore
         if isinstance(other, lazyrepeatarray):

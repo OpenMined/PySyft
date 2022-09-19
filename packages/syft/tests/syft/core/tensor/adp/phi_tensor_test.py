@@ -60,13 +60,13 @@ def reference_data(highest, dims) -> np.ndarray:
 @pytest.fixture
 def upper_bound(reference_data: np.ndarray, highest: int) -> lra:
     """This is used to specify the max_vals that is either binary or randomly generated b/w 0-1"""
-    return lra(data=highest, shape=reference_data.shape)
+    return lra(data=highest, shape=reference_data.shape, data_type="max_val")
 
 
 @pytest.fixture
 def lower_bound(reference_data: np.ndarray, highest: int) -> lra:
     """This is used to specify the min_vals that is either binary or randomly generated b/w 0-1"""
-    return lra(data=-highest, shape=reference_data.shape)
+    return lra(data=-highest, shape=reference_data.shape, data_type="min_val")
 
 
 @pytest.fixture
