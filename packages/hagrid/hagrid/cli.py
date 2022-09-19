@@ -2649,7 +2649,13 @@ def run_quickstart(
                 print(f"Jupyter exists at: {jupyter_path}. CI Test mode exiting.")
                 sys.exit(0)
 
-            disable_toolbar_extension = f"{jupyter_binary} labextension disable @jupyterlab/cell-toolbar-extension"
+            disable_toolbar_extension = (
+                venv_dir
+                + os.sep
+                + os_bin_path
+                + os.sep
+                + f"{jupyter_binary} labextension disable @jupyterlab/cell-toolbar-extension"
+            )
 
             subprocess.run(  # nosec
                 disable_toolbar_extension.split(" "), cwd=directory, env=environ
