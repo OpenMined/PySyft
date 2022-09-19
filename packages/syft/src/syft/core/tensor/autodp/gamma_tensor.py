@@ -1428,8 +1428,12 @@ class GammaTensor:
             max_max = self.max_vals.data - other.max_vals.data
             _min_val = np.minimum.reduce([min_min, min_max, max_min, max_max])
             _max_val = np.maximum.reduce([min_min, min_max, max_min, max_max])
-            min_val = lazyrepeatarray(data=_min_val, shape=self.shape, data_type="min_val")
-            max_val = lazyrepeatarray(data=_max_val, shape=self.shape, data_type="max_val")
+            min_val = lazyrepeatarray(
+                data=_min_val, shape=self.shape, data_type="min_val"
+            )
+            max_val = lazyrepeatarray(
+                data=_max_val, shape=self.shape, data_type="max_val"
+            )
 
             output_ds = self.data_subjects - other.data_subjects
 
@@ -2001,17 +2005,29 @@ class GammaTensor:
 
         if isinstance(self.min_vals, lazyrepeatarray):
             min_val = lazyrepeatarray(
-                data=np.log(self.min_vals.data.min()), shape=self.shape, data_type="min_val"
+                data=np.log(self.min_vals.data.min()),
+                shape=self.shape,
+                data_type="min_val",
             )
             max_val = lazyrepeatarray(
-                data=np.log(self.max_vals.data.max()), shape=self.shape, data_type="max_val"
+                data=np.log(self.max_vals.data.max()),
+                shape=self.shape,
+                data_type="max_val",
             )
         elif isinstance(self.min_vals, np.ndarray):
-            min_val = lazyrepeatarray(data=np.log(self.min_vals), shape=self.shape, data_type="min_val")
-            max_val = lazyrepeatarray(data=np.log(self.max_vals), shape=self.shape, data_type="max_val")
+            min_val = lazyrepeatarray(
+                data=np.log(self.min_vals), shape=self.shape, data_type="min_val"
+            )
+            max_val = lazyrepeatarray(
+                data=np.log(self.max_vals), shape=self.shape, data_type="max_val"
+            )
         elif isinstance(self.min_vals, (int, float)):
-            min_val = lazyrepeatarray(data=np.log(self.min_vals), shape=self.shape, data_type="min_val")
-            max_val = lazyrepeatarray(data=np.log(self.max_vals), shape=self.shape, data_type="max_val")
+            min_val = lazyrepeatarray(
+                data=np.log(self.min_vals), shape=self.shape, data_type="min_val"
+            )
+            max_val = lazyrepeatarray(
+                data=np.log(self.max_vals), shape=self.shape, data_type="max_val"
+            )
         else:
             raise NotImplementedError(
                 f"Undefined behaviour for type: {type(self.min_vals)}"
@@ -2159,8 +2175,12 @@ class GammaTensor:
         return GammaTensor(
             child=result,
             data_subjects=self.data_subjects.flatten(order),
-            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape, data_type="min_val"),
-            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape, data_type="max_val"),
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data, shape=result.shape, data_type="min_val"
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data, shape=result.shape, data_type="max_val"
+            ),
             is_linear=True,
             func_str=func,
             sources=output_sources,
@@ -2186,8 +2206,12 @@ class GammaTensor:
         output_ds = self.data_subjects.transpose(*args)
         output_data = self.child.transpose(*args)
 
-        min_vals = lazyrepeatarray(data=output_data.min(), shape=output_data.shape, data_type="min_val")
-        max_vals = lazyrepeatarray(data=output_data.max(), shape=output_data.shape, data_type="max_val")
+        min_vals = lazyrepeatarray(
+            data=output_data.min(), shape=output_data.shape, data_type="min_val"
+        )
+        max_vals = lazyrepeatarray(
+            data=output_data.max(), shape=output_data.shape, data_type="max_val"
+        )
 
         return GammaTensor(
             child=output_data,
@@ -2228,8 +2252,12 @@ class GammaTensor:
         return GammaTensor(
             child=child,
             data_subjects=np.array(self.data_subjects.sum(axis=axis, **kwargs)),
-            min_vals=lazyrepeatarray(data=min_v, shape=child.shape, data_type="min_val"),
-            max_vals=lazyrepeatarray(data=max_v, shape=child.shape, data_type="max_val"),
+            min_vals=lazyrepeatarray(
+                data=min_v, shape=child.shape, data_type="min_val"
+            ),
+            max_vals=lazyrepeatarray(
+                data=max_v, shape=child.shape, data_type="max_val"
+            ),
             func_str=func,
             sources=output_state,
         )
@@ -2334,8 +2362,12 @@ class GammaTensor:
 
         output_data_subjects = self.data_subjects.ravel()
 
-        min_val = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape, data_type="min_val")
-        max_val = lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape, data_type="max_val")
+        min_val = lazyrepeatarray(
+            data=self.min_vals.data, shape=output_data.shape, data_type="min_val"
+        )
+        max_val = lazyrepeatarray(
+            data=self.max_vals.data, shape=output_data.shape, data_type="max_val"
+        )
 
         return GammaTensor(
             child=output_data,
@@ -2366,8 +2398,12 @@ class GammaTensor:
         output_data = np.resize(data, new_shape)
         output_data_subjects = np.resize(self.data_subjects, new_shape)
 
-        min_val = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape, data_type="min_val")
-        max_val = lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape, data_type="max_val")
+        min_val = lazyrepeatarray(
+            data=self.min_vals.data, shape=output_data.shape, data_type="min_val"
+        )
+        max_val = lazyrepeatarray(
+            data=self.max_vals.data, shape=output_data.shape, data_type="max_val"
+        )
 
         return GammaTensor(
             child=output_data,
@@ -2400,8 +2436,12 @@ class GammaTensor:
         output_data = data.compress(condition, axis)
         output_data_subjects = self.data_subjects.compress(condition, axis)
 
-        min_val = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape, data_type="min_val")
-        max_val = lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape, data_type="max_val")
+        min_val = lazyrepeatarray(
+            data=self.min_vals.data, shape=output_data.shape, data_type="min_val"
+        )
+        max_val = lazyrepeatarray(
+            data=self.max_vals.data, shape=output_data.shape, data_type="max_val"
+        )
 
         return GammaTensor(
             child=output_data,
@@ -2434,8 +2474,12 @@ class GammaTensor:
         output_data = np.squeeze(data, axis)
         output_data_subjects = np.squeeze(self.data_subjects, axis)
 
-        min_val = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape, data_type="min_val")
-        max_val = lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape, data_type="max_val")
+        min_val = lazyrepeatarray(
+            data=self.min_vals.data, shape=output_data.shape, data_type="min_val"
+        )
+        max_val = lazyrepeatarray(
+            data=self.max_vals.data, shape=output_data.shape, data_type="max_val"
+        )
 
         return GammaTensor(
             child=output_data,
@@ -2516,8 +2560,12 @@ class GammaTensor:
         return GammaTensor(
             child=result,
             data_subjects=self.data_subjects.mean(axis, **kwargs),
-            min_vals=lazyrepeatarray(data=minv, shape=result.shape, data_type="min_val"),
-            max_vals=lazyrepeatarray(data=(maxv + minv) / 2, shape=result.shape, data_type="max_val"),
+            min_vals=lazyrepeatarray(
+                data=minv, shape=result.shape, data_type="min_val"
+            ),
+            max_vals=lazyrepeatarray(
+                data=(maxv + minv) / 2, shape=result.shape, data_type="max_val"
+            ),
             sources=output_state,
             func_str=func,
         )
@@ -2533,8 +2581,12 @@ class GammaTensor:
         return GammaTensor(
             child=result,
             data_subjects=np.expand_dims(self.data_subjects, axis),
-            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape, data_type="min_val"),
-            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape, data_type="max_val"),
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data, shape=result.shape, data_type="min_val"
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data, shape=result.shape, data_type="max_val"
+            ),
         )
 
     def std(self, axis: Union[int, Tuple[int, ...]], **kwargs: Any) -> GammaTensor:
@@ -2590,23 +2642,27 @@ class GammaTensor:
                     data=jnp.dot(
                         np.ones_like(self.child) * self.min_vals.data, other
                     ).min(),
-                    shape=result.shape, data_type="min_val"
+                    shape=result.shape,
+                    data_type="min_val",
                 )
                 maxv = lazyrepeatarray(
                     data=jnp.dot(
                         np.ones_like(self.child) * self.max_vals.data, other
                     ).max(),
-                    shape=result.shape, data_type="max_val"
+                    shape=result.shape,
+                    data_type="max_val",
                 )
 
             elif isinstance(self.min_vals, (int, float)):
                 minv = lazyrepeatarray(
                     data=jnp.dot(np.ones_like(self.child) * self.min_vals, other).min(),
-                    shape=result.shape, data_type="min_val"
+                    shape=result.shape,
+                    data_type="min_val",
                 )
                 maxv = lazyrepeatarray(
                     data=jnp.dot(np.ones_like(self.child) * self.max_vals, other).max(),
-                    shape=result.shape, data_type="max_val"
+                    shape=result.shape,
+                    data_type="max_val",
                 )
             else:
                 raise NotImplementedError
@@ -2645,14 +2701,16 @@ class GammaTensor:
                         np.ones_like(self.child) * self.min_vals.data,
                         np.ones_like(other.child) * other.min_vals.data,
                     ).min(),
-                    shape=result.shape, data_type="min_val"
+                    shape=result.shape,
+                    data_type="min_val",
                 )
                 maxv = lazyrepeatarray(
                     data=jnp.dot(
                         np.ones_like(self.child) * self.max_vals.data,
                         np.ones_like(other.child) * other.max_vals.data,
                     ).max(),
-                    shape=result.shape, data_type="max_val"
+                    shape=result.shape,
+                    data_type="max_val",
                 )
             elif isinstance(self.min_vals, (int, float)):
                 minv = lazyrepeatarray(
@@ -2660,14 +2718,16 @@ class GammaTensor:
                         np.ones_like(self.child) * self.min_vals,
                         np.ones_like(other.child) * other.min_vals,
                     ).min(),
-                    shape=result.shape, data_type="min_val"
+                    shape=result.shape,
+                    data_type="min_val",
                 )
                 maxv = lazyrepeatarray(
                     data=jnp.dot(
                         np.ones_like(self.child) * self.max_vals,
                         np.ones_like(other.child) * other.max_vals,
                     ).max(),
-                    shape=result.shape, data_type="max_val"
+                    shape=result.shape,
+                    data_type="max_val",
                 )
             else:
                 raise NotImplementedError
@@ -2769,8 +2829,12 @@ class GammaTensor:
         min_v = np.clip(self.min_vals.data, a_min, a_max)
         max_v = np.clip(self.max_vals.data, a_min, a_max)
 
-        min_vals = lazyrepeatarray(data=min_v, shape=output_data.shape, data_type="min_val")
-        max_vals = lazyrepeatarray(data=max_v, shape=output_data.shape, data_type="max_val")
+        min_vals = lazyrepeatarray(
+            data=min_v, shape=output_data.shape, data_type="min_val"
+        )
+        max_vals = lazyrepeatarray(
+            data=max_v, shape=output_data.shape, data_type="max_val"
+        )
 
         return GammaTensor(
             child=output_data,
@@ -2991,8 +3055,12 @@ class GammaTensor:
 
         result = self.child.repeat(repeats, axis)
         if isinstance(self.min_vals, lazyrepeatarray):
-            minv = lazyrepeatarray(data=self.min_vals.data.min(), shape=result.shape, data_type="min_val")
-            maxv = lazyrepeatarray(data=self.max_vals.data.max(), shape=result.shape, data_type="max_val")
+            minv = lazyrepeatarray(
+                data=self.min_vals.data.min(), shape=result.shape, data_type="min_val"
+            )
+            maxv = lazyrepeatarray(
+                data=self.max_vals.data.max(), shape=result.shape, data_type="max_val"
+            )
         else:
             minv = self.min_vals
             maxv = self.max_vals

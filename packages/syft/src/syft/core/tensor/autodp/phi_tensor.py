@@ -1120,16 +1120,24 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             data = self.child[item.child]
             return PhiTensor(
                 child=data,
-                min_vals=lazyrepeatarray(data=data, shape=data.shape, data_type="min_val"),
-                max_vals=lazyrepeatarray(data=data, shape=data.shape, data_type="max_val"),
+                min_vals=lazyrepeatarray(
+                    data=data, shape=data.shape, data_type="min_val"
+                ),
+                max_vals=lazyrepeatarray(
+                    data=data, shape=data.shape, data_type="max_val"
+                ),
                 data_subjects=self.data_subjects[item.child],
             )
         else:
             data = self.child[item]
             return PhiTensor(
                 child=data,
-                min_vals=lazyrepeatarray(data=data, shape=data.shape, data_type="min_val"),
-                max_vals=lazyrepeatarray(data=data, shape=data.shape, data_type="max_val"),
+                min_vals=lazyrepeatarray(
+                    data=data, shape=data.shape, data_type="min_val"
+                ),
+                max_vals=lazyrepeatarray(
+                    data=data, shape=data.shape, data_type="max_val"
+                ),
                 data_subjects=self.data_subjects[item],
             )
 
@@ -1207,8 +1215,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         return PhiTensor(
             child=output,
             data_subjects=self.data_subjects,
-            min_vals=lazyrepeatarray(data=np.abs(self.min_vals.data), shape=self.shape, data_type="min_val"),
-            max_vals=lazyrepeatarray(data=np.abs(self.min_vals.data), shape=self.shape, data_type="max_val")
+            min_vals=lazyrepeatarray(
+                data=np.abs(self.min_vals.data), shape=self.shape, data_type="min_val"
+            ),
+            max_vals=lazyrepeatarray(
+                data=np.abs(self.min_vals.data), shape=self.shape, data_type="max_val"
+            ),
         )
 
     def reshape(self, *shape: Tuple[int, ...]) -> PhiTensor:
@@ -1219,8 +1231,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         return PhiTensor(
             child=output_data,
             data_subjects=np.reshape(self.data_subjects, *shape),
-            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape, data_type="min_val"),
-            max_vals=lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape, data_type="max_val"),
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data, shape=output_data.shape, data_type="min_val"
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.min_vals.data, shape=output_data.shape, data_type="max_val"
+            ),
         )
 
     def pad(self, width: int, padding_mode: str = "reflect") -> PhiTensor:
@@ -1270,8 +1286,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         output_data_subjects = self.data_subjects.ravel()
 
-        min_vals = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape, data_type="min_val")
-        max_vals = lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape, data_type="max_val")
+        min_vals = lazyrepeatarray(
+            data=self.min_vals.data, shape=output_data.shape, data_type="min_val"
+        )
+        max_vals = lazyrepeatarray(
+            data=self.max_vals.data, shape=output_data.shape, data_type="max_val"
+        )
 
         return PhiTensor(
             child=output_data,
@@ -1325,8 +1345,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         return PhiTensor(
             child=result,
             data_subjects=self.data_subjects[indices],
-            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape, data_type="min_val"),
-            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape, data_type="max_val"),
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data, shape=result.shape, data_type="min_val"
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data, shape=result.shape, data_type="max_val"
+            ),
         )
 
     def min(self, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> PhiTensor:
@@ -1335,8 +1359,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         return PhiTensor(
             child=result,
             data_subjects=self.data_subjects[indices],
-            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape, data_type="min_val"),
-            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape, data_type="max_val"),
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data, shape=result.shape, data_type="min_val"
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data, shape=result.shape, data_type="max_val"
+            ),
         )
 
     def _argmax(self, axis: Optional[int]) -> PhiTensor:
@@ -1364,7 +1392,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 * (self.max_vals.data - self.min_vals.data)
                 ** 2,  # rough approximation, could be off
                 shape=result.shape,
-                data_type="max_val"
+                data_type="max_val",
             ),
         )
 
@@ -1374,10 +1402,14 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=result,
             data_subjects=np.sqrt(self.data_subjects),
             min_vals=lazyrepeatarray(
-                data=np.sqrt(self.min_vals.data), shape=result.shape, data_type="min_val"
+                data=np.sqrt(self.min_vals.data),
+                shape=result.shape,
+                data_type="min_val",
             ),
             max_vals=lazyrepeatarray(
-                data=np.sqrt(self.max_vals.data), shape=result.shape, data_type="max_val"
+                data=np.sqrt(self.max_vals.data),
+                shape=result.shape,
+                data_type="max_val",
             ),
         )
 
@@ -1414,8 +1446,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         return PhiTensor(
             child=data,
             data_subjects=self.data_subjects,
-            min_vals=lazyrepeatarray(data=self.min_vals.data.min(), shape=data.shape, data_type="min_val"),
-            max_vals=lazyrepeatarray(data=self.max_vals.data.max(), shape=data.shape, data_type="max_val"),
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data.min(), shape=data.shape, data_type="min_val"
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data.max(), shape=data.shape, data_type="max_val"
+            ),
         )
 
     def publish(
@@ -1487,8 +1523,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     child=(self.child == other.child)
                     * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
                     data_subjects=self.data_subjects,
-                    min_vals=lazyrepeatarray(data=0, shape=self.shape, data_type="min_val"),
-                    max_vals=lazyrepeatarray(data=1, shape=self.shape, data_type="max_val"),
+                    min_vals=lazyrepeatarray(
+                        data=0, shape=self.shape, data_type="min_val"
+                    ),
+                    max_vals=lazyrepeatarray(
+                        data=1, shape=self.shape, data_type="max_val"
+                    ),
                 )
         else:
             raise NotImplementedError(
@@ -1512,8 +1552,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     child=(self.child != other.child)
                     * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
                     data_subjects=self.data_subjects,
-                    min_vals=lazyrepeatarray(data=0, shape=self.shape, data_type="min_val"),
-                    max_vals=lazyrepeatarray(data=1, shape=self.shape, data_type="max_val"),
+                    min_vals=lazyrepeatarray(
+                        data=0, shape=self.shape, data_type="min_val"
+                    ),
+                    max_vals=lazyrepeatarray(
+                        data=1, shape=self.shape, data_type="max_val"
+                    ),
                 )
         else:
             raise NotImplementedError(
@@ -1619,8 +1663,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 return PhiTensor(
                     child=self.child * other.child,
                     data_subjects=self.data_subjects,
-                    min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape, data_type="min_val"),
-                    max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape, data_type="max_val"),
+                    min_vals=lazyrepeatarray(
+                        data=_min_vals, shape=self.shape, data_type="min_val"
+                    ),
+                    max_vals=lazyrepeatarray(
+                        data=_max_vals, shape=self.shape, data_type="max_val"
+                    ),
                 )
             else:
                 return self.gamma * other.gamma
@@ -1671,8 +1719,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 return PhiTensor(
                     child=self.child / other.child,
                     data_subjects=self.data_subjects,
-                    min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape, data_type="min_val"),
-                    max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape, data_type="max_val"),
+                    min_vals=lazyrepeatarray(
+                        data=_min_vals, shape=self.shape, data_type="min_val"
+                    ),
+                    max_vals=lazyrepeatarray(
+                        data=_max_vals, shape=self.shape, data_type="max_val"
+                    ),
                 )
         elif isinstance(other, GammaTensor):
             return self.gamma / other
@@ -1681,10 +1733,14 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 child=self.child / other,
                 data_subjects=self.data_subjects,
                 min_vals=lazyrepeatarray(
-                    data=self.min_vals.data / other, shape=self.min_vals.shape, data_type="min_val"
+                    data=self.min_vals.data / other,
+                    shape=self.min_vals.shape,
+                    data_type="min_val",
                 ),
                 max_vals=lazyrepeatarray(
-                    data=self.max_vals.data / other, shape=self.max_vals.shape, data_type="max_val"
+                    data=self.max_vals.data / other,
+                    shape=self.max_vals.shape,
+                    data_type="max_val",
                 ),
             )
         else:
@@ -1816,8 +1872,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         min_v = np.clip(self.min_vals.data, a_min, a_max)
         max_v = np.clip(self.max_vals.data, a_min, a_max)
 
-        min_vals = lazyrepeatarray(data=min_v, shape=output_data.shape, data_type="min_val")
-        max_vals = lazyrepeatarray(data=max_v, shape=output_data.shape, data_type="max_val")
+        min_vals = lazyrepeatarray(
+            data=min_v, shape=output_data.shape, data_type="min_val"
+        )
+        max_vals = lazyrepeatarray(
+            data=max_v, shape=output_data.shape, data_type="max_val"
+        )
 
         return PhiTensor(
             child=output_data,
@@ -1896,8 +1956,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         return PhiTensor(
             child=output_data,
             data_subjects=self.data_subjects.reshape(output_data.shape),
-            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape, data_type="min_val"),
-            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape, data_type="max_val"),
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data, shape=output_data.shape, data_type="min_val"
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data, shape=output_data.shape, data_type="max_val"
+            ),
         )
 
     def concatenate(
@@ -1931,8 +1995,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 return PhiTensor(
                     child=(self.child < other.child) * 1,
                     data_subjects=self.data_subjects,
-                    min_vals=lazyrepeatarray(data=0, shape=self.shape, data_type="min_val"),
-                    max_vals=lazyrepeatarray(data=1, shape=self.shape, data_type="max_val"),
+                    min_vals=lazyrepeatarray(
+                        data=0, shape=self.shape, data_type="min_val"
+                    ),
+                    max_vals=lazyrepeatarray(
+                        data=1, shape=self.shape, data_type="max_val"
+                    ),
                 )
             else:
                 return self.gamma.__lt__(other.gamma)
@@ -1965,8 +2033,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 return PhiTensor(
                     child=(self.child <= other.child) * 1,
                     data_subjects=self.data_subjects,
-                    min_vals=lazyrepeatarray(data=0, shape=self.shape, data_type="min_val"),
-                    max_vals=lazyrepeatarray(data=1, shape=self.shape, data_type="max_val"),
+                    min_vals=lazyrepeatarray(
+                        data=0, shape=self.shape, data_type="min_val"
+                    ),
+                    max_vals=lazyrepeatarray(
+                        data=1, shape=self.shape, data_type="max_val"
+                    ),
                 )
             else:
                 return self.gamma.__le__(other.gamma)
@@ -1999,8 +2071,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 return PhiTensor(
                     child=(self.child > other.child) * 1,
                     data_subjects=self.data_subjects,
-                    min_vals=lazyrepeatarray(data=0, shape=self.shape, data_type="min_val"),
-                    max_vals=lazyrepeatarray(data=1, shape=self.shape, data_type="max_val"),
+                    min_vals=lazyrepeatarray(
+                        data=0, shape=self.shape, data_type="min_val"
+                    ),
+                    max_vals=lazyrepeatarray(
+                        data=1, shape=self.shape, data_type="max_val"
+                    ),
                 )
             else:
                 return self.gamma.__gt__(other.gamma)
@@ -2032,8 +2108,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 return PhiTensor(
                     child=(self.child >= other.child) * 1,
                     data_subjects=self.data_subjects,
-                    min_vals=lazyrepeatarray(data=0, shape=self.shape, data_type="min_val"),
-                    max_vals=lazyrepeatarray(data=1, shape=self.shape, data_type="max_val"),
+                    min_vals=lazyrepeatarray(
+                        data=0, shape=self.shape, data_type="min_val"
+                    ),
+                    max_vals=lazyrepeatarray(
+                        data=1, shape=self.shape, data_type="max_val"
+                    ),
                 )
             else:
                 return self.gamma.__ge__(other.gamma)
@@ -2121,8 +2201,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         return PhiTensor(
             child=child,
             data_subjects=data_subjects,
-            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=child.shape, data_type="min_val"),
-            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=child.shape, data_type="max_val"),
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data, shape=child.shape, data_type="min_val"
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data, shape=child.shape, data_type="max_val"
+            ),
         )
 
     def expand_dims(self, axis: int) -> PhiTensor:
@@ -2262,8 +2346,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         out_child = np.resize(self.child.data, new_shape)
         return PhiTensor(
             child=out_child,
-            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape, data_type="min_val"),
-            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape, data_type="max_val"),
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data, shape=out_child.shape, data_type="min_val"
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data, shape=out_child.shape, data_type="max_val"
+            ),
             data_subjects=np.resize(self.data_subjects, new_shape),
         )
 
@@ -2271,8 +2359,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         out_child = self.child.compress(condition, axis)
         return PhiTensor(
             child=out_child,
-            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape, data_type="min_val"),
-            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape, data_type="max_val"),
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data, shape=out_child.shape, data_type="min_val"
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data, shape=out_child.shape, data_type="max_val"
+            ),
             data_subjects=self.data_subjects.compress(condition, axis),
         )
 
@@ -2280,8 +2372,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         out_child = self.child.squeeze(axis)
         return PhiTensor(
             child=out_child,
-            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape, data_type="min_val"),
-            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape, data_type="max_val"),
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data, shape=out_child.shape, data_type="min_val"
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data, shape=out_child.shape, data_type="max_val"
+            ),
             data_subjects=np.squeeze(self.data_subjects, axis),
         )
 
@@ -2310,8 +2406,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         result = self.child.repeat(repeats, axis)
         if isinstance(self.min_vals, lazyrepeatarray):
-            minv = lazyrepeatarray(data=self.min_vals.data, shape=result.shape, data_type="min_val")
-            maxv = lazyrepeatarray(data=self.max_vals.data, shape=result.shape, data_type="max_val")
+            minv = lazyrepeatarray(
+                data=self.min_vals.data, shape=result.shape, data_type="min_val"
+            )
+            maxv = lazyrepeatarray(
+                data=self.max_vals.data, shape=result.shape, data_type="max_val"
+            )
         else:
             minv = self.min_vals
             maxv = self.max_vals
@@ -2389,8 +2489,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         """
         result = self.child.choose(choices, mode=mode)
         if isinstance(self.min_vals, lazyrepeatarray):
-            minv = lazyrepeatarray(data=self.min_vals.data.min(), shape=result.shape, data_type="min_val")
-            maxv = lazyrepeatarray(data=self.max_vals.data.max(), shape=result.shape, data_type="max_val")
+            minv = lazyrepeatarray(
+                data=self.min_vals.data.min(), shape=result.shape, data_type="min_val"
+            )
+            maxv = lazyrepeatarray(
+                data=self.max_vals.data.max(), shape=result.shape, data_type="max_val"
+            )
         else:
             minv, maxv = self.min_vals, self.max_vals
 
