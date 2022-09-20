@@ -486,7 +486,7 @@ def check_docker_service_status() -> None:
 
     with console.status("[bold blue]Checking for Docker Service"):
 
-        result = os.popen("docker info").read().strip()
+        result = os.popen("docker info").read().strip()  # nosec
 
         if "ERROR" in result:
             raise MissingDependency(f"❌ Docker service is not running.\n{result}")
