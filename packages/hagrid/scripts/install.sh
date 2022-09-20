@@ -113,27 +113,27 @@ spin() {
 
 execute() {
     check_macos_ubuntu
-    # spin &
-    # pid=$!
-    # set +e
+    spin &
+    pid=$!
+    set +e
     check_and_install python3 python3
     check_and_install pip python3-pip
     check_and_install git git
-    # . ~/.profile
-    # hagrid_install
-    # hagrid >/dev/null
-    # kill $pid
-    # clear
-    # is_command hagrid
-    # BINARY_EXISTS=$?
-    # set -e
-    # if [ "$BINARY_EXISTS" != "0" ]
-    # then
-    #     echo "HAGrid failed to install. Please try again"
-    #     exit 1
-    # fi
-    # echo "HAGrid is installed! 🧙‍♂️"
-    # exec $SHELL
+    . ~/.profile
+    hagrid_install
+    hagrid >/dev/null
+    kill $pid
+    clear
+    is_command hagrid
+    BINARY_EXISTS=$?
+    set -e
+    if [ "$BINARY_EXISTS" != "0" ]
+    then
+        echo "HAGrid failed to install. Please try again"
+        exit 1
+    fi
+    echo "HAGrid is installed! 🧙‍♂️"
+    exec $SHELL
 }
 
 execute
