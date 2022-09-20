@@ -22,6 +22,7 @@ from typing import Tuple as TypeTuple
 from typing import Union
 from typing import cast
 from urllib.parse import urlparse
+import webbrowser
 
 # third party
 import click
@@ -2791,8 +2792,7 @@ def display_jupyter_url(url_parts: Tuple[str, str, int]) -> None:
 
 
 def open_browser_with_url(url: str) -> None:
-    cmd = f"python -m webbrowser '{url}'"
-    os.popen(cmd)
+    webbrowser.open(url)
 
 
 def extract_jupyter_url(line: str) -> Optional[Tuple[str, str, int]]:
