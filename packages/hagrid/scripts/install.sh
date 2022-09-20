@@ -27,7 +27,29 @@ check_ubuntu() {
             exit 1
         fi
     else
-        echo "Install script currently only supports Ubuntu"
+        echo "Install script currently only supports MacOS & Ubuntu"
+        exit 1
+    fi
+}
+check_macos() {
+    if [ "$(uname)" = "Darwin" ]
+    then
+        echo "MacOS detected"
+    else
+        echo "Install script currently only supports MacOS & Ubuntu"
+        exit 1
+    fi
+}
+
+check_macos_ubuntu() {
+    if is_command brew
+    then
+        check_macos
+    elif is_command apt-get
+    then
+        check_ubuntu
+    else
+        echo "Install script currently only supports MacOS & Ubuntu"
         exit 1
     fi
 }
@@ -77,7 +99,7 @@ spin() {
 }
 
 execute() {
-    check_ubuntu
+    check_macos_ubuntu
     spin &
     pid=$!
     set +e
