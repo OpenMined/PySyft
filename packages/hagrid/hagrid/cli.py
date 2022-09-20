@@ -37,9 +37,11 @@ from .cache import DEFAULT_BRANCH
 from .cache import DEFAULT_REPO
 from .cache import RENDERED_DIR
 from .cache import arg_cache
-from .deps import DEPENDENCIES, check_docker_service_status, check_grid_docker
+from .deps import DEPENDENCIES
 from .deps import allowed_hosts
+from .deps import check_docker_service_status
 from .deps import check_docker_version
+from .deps import check_grid_docker
 from .deps import gather_debug
 from .deps import is_windows
 from .exceptions import MissingDependency
@@ -313,13 +315,12 @@ def clean(location: str) -> None:
 )
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 
+    # Check docker service status
+    check_docker_service_status()
 
-    # TODO: Encapsulate this in a convenient method
+    # Check grid docker versions
+    check_grid_docker(display=True, output_in_text=True)
 
-    print("Checking for docker.... ")
-    print(check_docker_service_status())
-    print(check_docker_version())
-    print(check_grid_docker(output_in_text=True))
     verb = get_launch_verb()
     try:
         grammar = parse_grammar(args=args, verb=verb)
