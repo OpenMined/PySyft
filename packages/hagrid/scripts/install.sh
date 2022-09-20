@@ -59,6 +59,10 @@ apt_install() {
     sudo apt-get -qq -o=Dpkg::Use-Pty=0 install $1 -y > /dev/null
 }
 
+brew_install() {
+    brew install $1 > /dev/null
+}
+
 hagrid_install() {
     pip install --quiet hagrid ansible ansible-core
 }
