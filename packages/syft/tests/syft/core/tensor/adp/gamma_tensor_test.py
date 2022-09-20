@@ -938,16 +938,27 @@ def test_any(
     assert result.func_str == "any"
     assert reference_tensor == result.sources[aux_tensor.id]
     assert result.child
+    assert (result.data_subjects == ishan).any()
 
     result = (reference_tensor == reference_data).any(axis=0)
     assert result.shape == (reference_data.shape[0],)
+    assert result.data_subjects.shape == (reference_data.shape[0],)
+    assert (result.data_subjects == ishan).any()
 
     result = (reference_tensor == reference_data).any(keepdims=True)
     assert result.shape == (1, 1)
+    assert result.data_subjects.shape == (1,1)
+    assert (result.data_subjects == ishan).any()
 
     result = (reference_tensor == reference_data).any(keepdims=True, axis=0)
     assert result.shape == (1, reference_tensor.shape[0])
-
+    assert result.data_subjects.shape == (1, reference_tensor.shape[0])
+    assert (result.data_subjects == ishan).any()
+    
+    condition = list(np.random.choice(a=[False, True], size=(reference_data.shape[0])))
+    result = (reference_tensor == reference_data).any(where=condition)
+    assert result.child
+    # assert result.data_subjects.shape == ()
 
 def test_all(
     reference_data: np.ndarray,
@@ -968,12 +979,24 @@ def test_all(
     assert result.func_str == "all"
     assert reference_tensor == result.sources[aux_tensor.id]
     assert result.child
+    assert (result.data_subjects == ishan).any()
 
-    result = (reference_tensor == reference_data).all(axis=0)
+    result = (reference_tensor == reference_data).any(axis=0)
     assert result.shape == (reference_data.shape[0],)
+    assert result.data_subjects.shape == (reference_data.shape[0],)
+    assert (result.data_subjects == ishan).any()
 
-    result = (reference_tensor == reference_data).all(keepdims=True)
+    result = (reference_tensor == reference_data).any(keepdims=True)
     assert result.shape == (1, 1)
+    assert result.data_subjects.shape == (1,1)
+    assert (result.data_subjects == ishan).any()
 
-    result = (reference_tensor == reference_data).all(keepdims=True, axis=0)
+    result = (reference_tensor == reference_data).any(keepdims=True, axis=0)
     assert result.shape == (1, reference_tensor.shape[0])
+    assert result.data_subjects.shape == (1, reference_tensor.shape[0])
+    assert (result.data_subjects == ishan).any()
+    
+    condition = list(np.random.choice(a=[False, True], size=(reference_data.shape[0])))
+    result = (reference_tensor == reference_data).any(where=condition)
+    assert result.child
+    assert result.data_subjects.shape == ()

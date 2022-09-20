@@ -2404,18 +2404,22 @@ class GammaTensor:
 
         if where is None:
             out_child = np.array(self.child.any(axis=axis, keepdims=keepdims))
+            new_data_subjects = np.add.reduce(
+                self.data_subjects,
+                axis=axis,
+                keepdims=keepdims,
+            )
         else:
             out_child = np.array(
                 self.child.any(axis=axis, keepdims=keepdims, where=where)
             )
-
-        new_data_subjects = np.add.reduce(
-            self.data_subjects,
-            axis=axis,
-            keepdims=keepdims,
-            initial=DataSubject(),
-            where=where,
-        )
+            new_data_subjects = np.add.reduce(
+                self.data_subjects,
+                axis=axis,
+                keepdims=keepdims,
+                initial=DataSubject(),
+                where=where,
+            )
 
         return GammaTensor(
             child=out_child,
@@ -2448,18 +2452,22 @@ class GammaTensor:
 
         if where is None:
             out_child = np.array(self.child.all(axis=axis, keepdims=keepdims))
+            new_data_subjects = np.add.reduce(
+                self.data_subjects,
+                axis=axis,
+                keepdims=keepdims,
+            )
         else:
             out_child = np.array(
                 self.child.all(axis=axis, keepdims=keepdims, where=where)
             )
-
-        new_data_subjects = np.add.reduce(
-            self.data_subjects,
-            axis=axis,
-            keepdims=keepdims,
-            initial=DataSubject(),
-            where=where,
-        )
+            new_data_subjects = np.add.reduce(
+                self.data_subjects,
+                axis=axis,
+                keepdims=keepdims,
+                initial=DataSubject(),
+                where=where,
+            )
 
         return GammaTensor(
             child=out_child,
