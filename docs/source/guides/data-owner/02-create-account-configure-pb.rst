@@ -172,76 +172,44 @@ Once you are on PyGrid's web page, execute following steps to create an account 
 
 |02-create-account-configure-pb-04|
 
-Step 2: Assign Privacy Budget
+Step 2: Check Permissions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-In our specific setup, the privacy budget is measured against data subjects, not datasets. 
-Therefore, the ``epsilon-ε`` value indicates how much can be learned from any data subject.
+
+Now that we have created an account for our Data Scientist, let's check to see if it 
+was made and if we need to change any permissions.
 
 .. note:: 
-   Consider there are 500 patients and 10 data scientists. This means there are 
-   5000 ``epsilons`` measuring the epsilon relationships between each patient and each 
-   data scientist, and our ``privacy budget`` simply says that a data scientist can’t 
-   learn more than ``x`` amount of epsilon about any particular medical patient in the data.
+   Permissions are applied by what "Role" a user has been assigned by the Data Owner. 
+   To simplify the concepts, let us consider the below scenario. 
+   
+Scenario
+""""""""""
+Let's login to our PyGrid's UI as we did earlier when we had to create an account 
+for the user in the prior steps. On the homepage, go to the ``Permissions`` tab, 
+where you will notice the different roles and associated permissions with them. 
 
-When we use the ``hagrid launch`` command to start our private data server, we define the ``port`` where we want to 
-launch the server. By default, the port is launched at ``8081``. 
+.. note:: 
+   All the roles come with some default permissions, but they can be updated according 
+   to the norms of the organizations.
 
 |02-create-account-configure-pb-01|
 
-We will use this port number to visit the following ``UI`` interface at the ``URL``:
+#. **Data Scientist (default)**: This role is for users who will be performing computations on your datasets. They may be known users or those who found your domain through search and discovery. By default, this user can see a list of your datasets and can request to get results. This user will also be required to sign a Data Access Agreement if you have required one in the Domain Settings Configurations.
+#. **Compliance Officer**: This role is for users who will help you manage requests made on your node. They should be users you trust. They cannot change domain settings or edit roles but are, by default, able to accept or deny user requests on behalf of the domain node.
+#. **Administrator**: This role is for users who will help you manage your node. These should be users you trust. The main difference between this user and a Compliance Officer is that this user, by default, not only can manage requests but can also edit Domain Settings. This is the highest level of permission outside of an Owner.
+#. **Owner**: Only one Owner account is assigned to any domain node. The owner account is the highest level permission and is a requirement for deploying a domain node. If you ever want to transfer ownership of your domain node to someone else, you can do so by following these steps.
 
-::
+Suppose you created a user account for a person named ``John Smith``; by default, 
+the role assigned to John will be a ``Data Scientist``. But you want to change the 
+role of John to ``Data Protection Officer`` instead of a Data Scientist. 
 
-   http://localhost:<port_number>
-
-   e.g.
-
-   http://localhost:8081
-
+#. Select the user and click on its name.
+#. Go to ``Change role``, and in the drop-down option, select ``Compliance Officer``.
+#. You can see the permissions given to the Compliance Officer below their role. The default permissions can be changed in the ``Permissions`` tab, as shown in the above image.  
+#. Click ``Change Role``, and the role of John Smith has now successfully changed to the Compliance Officer.
 
 |02-create-account-configure-pb-02|
 
-The default email and password for the domain are:
-
-* **email:** info@openmined.org
-* **password:** changethis
-
-Once we're logged in, we will have the following view:
-
-|02-create-account-configure-pb-03|
-
-From the UI, we can ``view`` and ``control`` the following:
-
-* **Users:** Shows a list of users that are signed to the domain. We can create, edit or delete a user from this interface.
-* **Permissions:** This is a list of the different sets of roles a user can have. Each role has a set of permissions that the DO (Data Owner) can modify as per their norms.
-* **Requests:** This list two types of requests Data Requests and Privacy Budget Upgrade requests.
-   
-   * **Data Requests:** If users want complete access to a data/variable, they can request so from the DO. Such requests will be listed here, and the DO can manually decide which ones to approve or reject.
-   * **Privacy Budget Requests:** These requests pertain to the Privacy budget upgrade requested by a DS. The DO can decide if they want to assign the given privacy budget to the user or deny their requests.
-
-
-Step 3: Submit Credentials
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-Lastly, we will submit the credentials of the newly created user account to our ``domain node``. 
-
-:: 
-
-   In: 
-
-   # run this cell then copy the output
-   submit_credentials(data_scientist_details)
-
-   print("Please give these details to the Data Scientist 👇🏽")
-   print(data_scientist_details)
-
-   Out:
-
-   Data Scientist credentials successfully submitted.
-   Please give these details to the Data Scientist 👇🏽
-   {'name': 'ABC', 'email': 'abc@xyz.net', 'password': 'changethis', 'url': '20.253.155.183'}
-
-You can give these details to Data Scientists so they can ``finish`` setting up their account, 
-which can involve changing email and password if necessary. 
 
 Now our domain node is available for the data scientists to use 👏
 ------------------------------------------------------------------
@@ -249,13 +217,10 @@ Now our domain node is available for the data scientists to use 👏
 .. |02-create-account-configure-pb-00| image:: ../../_static/personas-image/data-owner/02-create-account-configure-pb-00.jpg
   :width: 95%
 
-.. |02-create-account-configure-pb-01| image:: ../../_static/personas-image/data-owner/02-create-account-configure-pb-01.png
+.. |02-create-account-configure-pb-01| image:: ../../_static/personas-image/data-owner/02-create-account-configure-pb-01.gif
   :width: 95%
 
-.. |02-create-account-configure-pb-02| image:: ../../_static/personas-image/data-owner/02-create-account-configure-pb-02.png
-  :width: 95%
-
-.. |02-create-account-configure-pb-03| image:: ../../_static/personas-image/data-owner/02-create-account-configure-pb-03.png
+.. |02-create-account-configure-pb-02| image:: ../../_static/personas-image/data-owner/02-create-account-configure-pb-02.gif
   :width: 95%
 
 .. |02-create-account-configure-pb-04| image:: ../../_static/personas-image/data-owner/02-create-account-configure-pb-04.gif
