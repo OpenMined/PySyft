@@ -2615,13 +2615,13 @@ def run_quickstart(
         environ["PATH"] = venv_dir + os.sep + os_bin_path + os.pathsep + environ["PATH"]
         jupyter_binary = "jupyter.exe" if is_windows() else "jupyter"
         try:
-            print(f"Running Jupyter Lab in: {directory}")
+            allow_browser = " --no-browser" if is_gitpod() else ""
             cmd = (
                 venv_dir
                 + os.sep
                 + os_bin_path
                 + os.sep
-                + f"{jupyter_binary} lab --ip 0.0.0.0 --notebook-dir={directory} {file_path}"
+                + f"{jupyter_binary} lab{allow_browser} --ip 0.0.0.0 --notebook-dir={directory} {file_path}"
             )
             if test:
                 jupyter_path = venv_dir + os.sep + os_bin_path + os.sep + jupyter_binary
@@ -2778,10 +2778,21 @@ def display_jupyter_url(url_parts: Tuple[str, str, int]) -> None:
         query = getattr(parts, "query", "")
         url = gitpod_url(port=url_parts[2]) + "?" + query
 
-    print(
-        f"Jupyter Server is running at:\n{url}\n"
-        + "Use Control-C to stop this server and shut down all kernels."
+    console = rich.get_console()
+
+    console.print(
+        f"[bold white]Jupyter Server is running at:\n:link: [bold blue]{url}\n"
+        + "[bold white]Use Control-C to stop this server and shut down all kernels.",
+        new_line_start=True,
     )
+
+    if is_gitpod():
+        open_browser_with_url(url=url)
+
+
+def open_browser_with_url(url: str) -> None:
+    cmd = f"python -m webbrowser '{url}'"
+    os.popen(cmd)
 
 
 def extract_jupyter_url(line: str) -> Optional[Tuple[str, str, int]]:
