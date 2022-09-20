@@ -20,8 +20,9 @@ try:
     import tensorflow_federated as tff
     from tensorflow_federated.python.program import value_reference
 
-except Exception:
-    print("TFF is not enabled")
+except Exception:  # nosec
+    # no tff
+    pass
 
 # relative
 from ......logger import debug
