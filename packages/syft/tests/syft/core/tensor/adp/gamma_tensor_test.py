@@ -8,8 +8,8 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.adp.data_subject_ledger import DataSubjectLedger
 from syft.core.adp.data_subject import DataSubjectGroup
+from syft.core.adp.data_subject_ledger import DataSubjectLedger
 from syft.core.adp.data_subject_list import DataSubjectArray
 from syft.core.adp.ledger_store import DictLedgerStore
 from syft.core.tensor.autodp.gamma_tensor import GammaTensor
@@ -948,18 +948,19 @@ def test_any(
 
     result = (reference_tensor == reference_data).any(keepdims=True)
     assert result.shape == (1, 1)
-    assert result.data_subjects.shape == (1,1)
+    assert result.data_subjects.shape == (1, 1)
     assert (result.data_subjects == ishan).any()
 
     result = (reference_tensor == reference_data).any(keepdims=True, axis=0)
     assert result.shape == (1, reference_tensor.shape[0])
     assert result.data_subjects.shape == (1, reference_tensor.shape[0])
     assert (result.data_subjects == ishan).any()
-    
+
     condition = list(np.random.choice(a=[False, True], size=(reference_data.shape[0])))
     result = (reference_tensor == reference_data).any(where=condition)
     assert result.child
-    assert isinstance(result.data_subjects, DataSubjectGroup) 
+    assert isinstance(result.data_subjects, DataSubjectGroup)
+
 
 def test_all(
     reference_data: np.ndarray,
@@ -989,15 +990,15 @@ def test_all(
 
     result = (reference_tensor == reference_data).all(keepdims=True)
     assert result.shape == (1, 1)
-    assert result.data_subjects.shape == (1,1)
+    assert result.data_subjects.shape == (1, 1)
     assert (result.data_subjects == ishan).any()
 
     result = (reference_tensor == reference_data).all(keepdims=True, axis=0)
     assert result.shape == (1, reference_tensor.shape[0])
     assert result.data_subjects.shape == (1, reference_tensor.shape[0])
     assert (result.data_subjects == ishan).any()
-    
+
     condition = list(np.random.choice(a=[False, True], size=(reference_data.shape[0])))
     result = (reference_tensor == reference_data).all(where=condition)
     assert result.child
-    assert isinstance(result.data_subjects, DataSubjectGroup) 
+    assert isinstance(result.data_subjects, DataSubjectGroup)

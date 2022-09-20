@@ -1155,6 +1155,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=lazyrepeatarray(data=1, shape=out_child.shape),
             data_subjects=new_data_subjects,
         )
+
     def __and__(self, value) -> PhiTensor:  # type: ignore
         out_child = self.child & value
         return PhiTensor(

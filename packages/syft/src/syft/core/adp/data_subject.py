@@ -14,9 +14,9 @@ from typing import Union
 
 # third party
 import names
-from . import data_subject_list
 
 # relative
+from . import data_subject_list
 from ..common import UID
 from ..common.serde.serializable import serializable
 
@@ -69,7 +69,14 @@ class DataSubject:
         return self.name < other.name
 
     def __add__(
-        self, other: Union[DataSubject, DataSubjectGroup, int, float]
+        self,
+        other: Union[
+            DataSubject,
+            DataSubjectGroup,
+            data_subject_list.DataSubjectArray,
+            int,
+            float,
+        ],
     ) -> Union[DataSubjectGroup, DataSubject]:
         if isinstance(other, DataSubject):
             return DataSubjectGroup([self, other])
@@ -152,7 +159,14 @@ class DataSubjectGroup:
         return DataSubjectGroup(entity_set)  # type: ignore
 
     def __add__(
-        self, other: Union[DataSubjectGroup, DataSubject, int, float]
+        self,
+        other: Union[
+            DataSubjectGroup,
+            DataSubject,
+            data_subject_list.DataSubjectArray,
+            int,
+            float,
+        ],
     ) -> DataSubjectGroup:
         if isinstance(other, DataSubject):
             return DataSubjectGroup(self.entity_set.union({other}))
