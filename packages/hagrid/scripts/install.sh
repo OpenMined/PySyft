@@ -36,7 +36,7 @@ check_macos() {
     then
         echo "🖥  MacOs $(uname -mrs) detected"
     else
-        echo "Install script currently only supports MacOS & Ubuntu"
+        echo "Install script currently only supports MacOS"
         exit 1
     fi
 }
@@ -69,6 +69,7 @@ hagrid_install() {
 }
 
 check_and_install() {
+    echo "Checking $1 ..."
     is_command $1
     BINARY_EXISTS=$?
     if [ "$BINARY_EXISTS" != "0" ]
@@ -81,8 +82,15 @@ check_and_install() {
             echo "Installing missing dependency requires sudo"
             exit 1
         fi
-        apt_install $2
-        . ~/.profile
+        if check_macos
+        then
+            brew_install $2
+            . ~/.profile
+        elif check_ubuntu
+        then
+            apt_install $2
+            . ~/.profile
+        fi        
     fi
 }
 
@@ -108,9 +116,9 @@ execute() {
     # spin &
     # pid=$!
     # set +e
-    # check_and_install python3 python3
-    # check_and_install pip python3-pip
-    # check_and_install git git
+    check_and_install python3 python3
+    check_and_install pip python3-pip
+    check_and_install git git
     # . ~/.profile
     # hagrid_install
     # hagrid >/dev/null
