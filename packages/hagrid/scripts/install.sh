@@ -21,7 +21,7 @@ check_ubuntu() {
         . /etc/os-release
         if [ "$ID" = "ubuntu" ]
         then
-            echo "$PRETTY_NAME detected"
+            echo " 🐧 $PRETTY_NAME detected"
         else
             echo "Install script currently only supports Ubuntu"
             exit 1
@@ -34,7 +34,7 @@ check_ubuntu() {
 check_macos() {
     if [ "$(uname)" = "Darwin" ]
     then
-        echo "MacOS detected"
+        echo "🖥  MacOs $(uname -mrs) detected"
     else
         echo "Install script currently only supports MacOS & Ubuntu"
         exit 1
@@ -42,6 +42,7 @@ check_macos() {
 }
 
 check_macos_ubuntu() {
+    echo "Checking OS ..."
     if is_command brew
     then
         check_macos
@@ -49,7 +50,7 @@ check_macos_ubuntu() {
     then
         check_ubuntu
     else
-        echo "Install script currently only supports MacOS & Ubuntu"
+        echo "Install script currently only supports MacOS & Ubuntu, also check if brew or apt-get is installed"
         exit 1
     fi
 }
@@ -104,27 +105,27 @@ spin() {
 
 execute() {
     check_macos_ubuntu
-    spin &
-    pid=$!
-    set +e
-    check_and_install python3 python3
-    check_and_install pip python3-pip
-    check_and_install git git
-    . ~/.profile
-    hagrid_install
-    hagrid >/dev/null
-    kill $pid
-    clear
-    is_command hagrid
-    BINARY_EXISTS=$?
-    set -e
-    if [ "$BINARY_EXISTS" != "0" ]
-    then
-        echo "HAGrid failed to install. Please try again"
-        exit 1
-    fi
-    echo "HAGrid is installed! 🧙‍♂️"
-    exec $SHELL
+    # spin &
+    # pid=$!
+    # set +e
+    # check_and_install python3 python3
+    # check_and_install pip python3-pip
+    # check_and_install git git
+    # . ~/.profile
+    # hagrid_install
+    # hagrid >/dev/null
+    # kill $pid
+    # clear
+    # is_command hagrid
+    # BINARY_EXISTS=$?
+    # set -e
+    # if [ "$BINARY_EXISTS" != "0" ]
+    # then
+    #     echo "HAGrid failed to install. Please try again"
+    #     exit 1
+    # fi
+    # echo "HAGrid is installed! 🧙‍♂️"
+    # exec $SHELL
 }
 
 execute
