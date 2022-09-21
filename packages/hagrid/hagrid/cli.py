@@ -2789,8 +2789,8 @@ def display_jupyter_url(url_parts: Tuple[str, str, int]) -> None:
         new_line_start=True,
     )
 
-    if is_gitpod():
-        open_browser_with_url(url=url)
+    # if is_gitpod():
+    #     open_browser_with_url(url=url)
 
 
 def open_browser_with_url(url: str) -> None:
