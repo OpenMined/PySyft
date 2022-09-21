@@ -4,6 +4,7 @@ tasks:
 ports:
   - name: Jupyter
     port: 8888
+    onOpen: open-browser
     visibility: public
   - name: Nodes
     port: 8081-8083
