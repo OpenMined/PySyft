@@ -1,9 +1,9 @@
 {
-   "defaultItems": {
-      "0": "Is the applicant from a verified organization?",
-      "1": "Does the 'Aim', 'Org Type', and 'Area of Study' match the 'Dataset Consent Conditions'?",
-      "2": "Does the aim of the study align with the aim of the dataset?",
-      "3": "Has the applicant signed a Data Access Agreement with our organization?",
-      "4": "Has the applicant signed a Data Access Agreement with a partner Network?"
-   }
+  "defaultItems": {
+    "0": "Is the applicant from a verified organization?",
+    "1": "Does the \"Aim\", \"Org Type\", and \"Area of Study\" match the \"Dataset Consent Conditions\"?",
+    "2": "Does the aim of the study align with the aim of the dataset?",
+    "3": "Has the applicant signed a Data Access Agreement with our organization?",
+    "4": "Has the applicant signed a Data Access Agreement with a partner Network?"
+  }
 }
