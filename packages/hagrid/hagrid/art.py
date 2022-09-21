@@ -111,13 +111,16 @@ def hagrid2() -> None:
 
 
 def quickstart_art() -> None:
-    console = rich.get_console()
-    console.print(
-        """
+    text = """
 ▒█░▒█ ░█▀▀█ ▒█▀▀█ █▀▀█ ░▀░ █▀▀▄ 　 ▒█▀▀█ █░░█ ░▀░ █▀▀ █░█ █▀▀ ▀▀█▀▀ █▀▀█ █▀▀█ ▀▀█▀▀
 ▒█▀▀█ ▒█▄▄█ ▒█░▄▄ █▄▄▀ ▀█▀ █░░█ 　 ▒█░▒█ █░░█ ▀█▀ █░░ █▀▄ ▀▀█ ░░█░░ █▄▄█ █▄▄▀ ░░█░░
 ▒█░▒█ ▒█░▒█ ▒█▄▄█ ▀░▀▀ ▀▀▀ ▀▀▀░ 　 ░▀▀█▄ ░▀▀▀ ▀▀▀ ▀▀▀ ▀░▀ ▀▀▀ ░░▀░░ ▀░░▀ ▀░▀▀ ░░▀░░
-    """,
+    """.encode(
+        "utf-8"
+    )
+    console = rich.get_console()
+    console.print(
+        text,
         style="bold",
         justify="center",
         new_line_start=True,
