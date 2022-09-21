@@ -2835,22 +2835,22 @@ def quickstart_setup(
             if reset and os.path.exists(virtual_env_dir):
                 shutil.rmtree(virtual_env_dir)
             env = VirtualEnvironment(virtual_env_dir, python=python)
-            console.print("✅ Created Virtual Environment")
+            console.print("[bold green]OK[/] Created Virtual Environment")
 
             # upgrade pip
             console_status.update("[bold blue]Installing pip")
             env.install("pip", options=["-U"])
-            console.print("✅ pip")
+            console.print("[bold green]OK[/] pip")
 
             # upgrade packaging
             console_status.update("[bold blue] Installing packaging")
             env.install("packaging", options=["-U"])
-            console.print("✅ packaging")
+            console.print("[bold green]OK[/]  packaging")
 
             console_status.update("[bold blue]Installing Jupyter Labs")
             env.install("jupyterlab")
             env.install("ipywidgets")
-            console.print("✅ Jupyter Labs")
+            console.print("[bold green]OK[/] Jupyter Labs")
 
             if EDITABLE_MODE:
                 # local_syft_dir = Path(os.path.abspath(Path(hagrid_root()) / "../syft"))
@@ -2863,7 +2863,9 @@ def quickstart_setup(
                     f"[bold blue]Installing HAGrid in Editable Mode: {str(local_hagrid_dir)}"
                 )
                 env.install("-e " + str(local_hagrid_dir))
-                console.print(f"✅ HAGrid in Editable Mode: {str(local_hagrid_dir)}")
+                console.print(
+                    f"[bold green]OK[/] HAGrid in Editable Mode: {str(local_hagrid_dir)}"
+                )
             else:
                 # options = []
                 # options.append("--force")
@@ -2883,7 +2885,7 @@ def quickstart_setup(
                 # env.install(package, options=options)
                 console_status.update("[bold blue]Installing hagrid")
                 env.install("hagrid", options=["-U"])
-                console.print("✅ HAGrid")
+                console.print("[bold green]OK[/] HAGrid")
     except Exception as e:
         print(e)
         raise e
