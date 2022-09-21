@@ -2835,12 +2835,10 @@ def quickstart_setup(
             if reset and os.path.exists(virtual_env_dir):
                 shutil.rmtree(virtual_env_dir)
             env = VirtualEnvironment(virtual_env_dir, python=python)
-            console.print(
-                ":white_heavy_check_mark: Created Virtual Environment :evergreen_tree:"
-            )
+            console.print(":white_heavy_check_mark: Created Virtual Environment")
 
             # upgrade pip
-            console_status.update("[bold blue]Installing pip :fish:")
+            console_status.update("[bold blue]Installing pip")
             env.install("pip", options=["-U"])
             console.print(":white_heavy_check_mark: pip")
 
@@ -2885,7 +2883,7 @@ def quickstart_setup(
                 # else:
                 #     print(f"Installing {package}")
                 # env.install(package, options=options)
-                console_status.update("[bold blue]Installing hagrid :hagrid:")
+                console_status.update("[bold blue]Installing hagrid")
                 env.install("hagrid", options=["-U"])
                 console.print(":white_heavy_check_mark: HAGrid")
     except Exception as e:
