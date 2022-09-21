@@ -7,6 +7,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import shutil
 import socket
 import subprocess  # nosec
 from typing import List
@@ -50,11 +51,19 @@ def asset_path() -> os.PathLike:
     return Path(hagrid_root()) / "hagrid"
 
 
+def manifest_template_path() -> os.PathLike:
+    return Path(asset_path()) / "manifest_template.yml"
+
+
+def hagrid_cache_dir() -> os.PathLike:
+    return Path("~/.hagrid").expanduser()
+
+
 def repo_src_path() -> Path:
     if EDITABLE_MODE:
         return Path(os.path.abspath(Path(hagrid_root()) / "../../"))
     else:
-        return Path(hagrid_root()) / "hagrid" / "PySyft"
+        return Path(os.path.join(Path(hagrid_cache_dir()) / "PySyft"))
 
 
 def grid_src_path() -> str:
@@ -71,6 +80,17 @@ def check_is_git(path: Path) -> bool:
     return is_repo
 
 
+def is_gitpod() -> bool:
+    return bool(os.environ.get("GITPOD_WORKSPACE_URL", None))
+
+
+def gitpod_url(port: Optional[int] = None) -> str:
+    workspace_url = os.environ.get("GITPOD_WORKSPACE_URL", "")
+    if port:
+        workspace_url = workspace_url.replace("https://", f"https://{port}-")
+    return workspace_url
+
+
 def get_git_repo() -> git.Repo:
     is_git = check_is_git(path=repo_src_path())
     if not EDITABLE_MODE and not is_git:
@@ -79,11 +99,16 @@ def get_git_repo() -> git.Repo:
         print(f"Fetching Syft + Grid Source from {git_url} to {repo_src_path()}")
         try:
             repo_branch = DEFAULT_BRANCH
+            repo_path = repo_src_path()
+
+            if repo_path.exists():
+                shutil.rmtree(str(repo_path))
+
             git.Repo.clone_from(
-                git_url, repo_src_path(), single_branch=False, b=repo_branch
+                git_url, str(repo_path), single_branch=False, b=repo_branch
             )
-        except Exception:  # nosec
-            print(f"Failed to clone {git_url} to {repo_src_path()}")
+        except Exception as e:  # nosec
+            print(f"Failed to clone {git_url} to {repo_src_path()} with error: {e}")
     return git.Repo(repo_src_path())
 
 

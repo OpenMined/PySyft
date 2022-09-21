@@ -16,7 +16,9 @@ from ...core.common.serde.capnp import get_capnp_schema
 from ...core.common.serde.serializable import serializable
 from ...experimental_flags import ApacheArrowCompression
 from ...experimental_flags import flags
+from ...lib.util import full_name_with_name
 from ...proto.lib.numpy.array_pb2 import NumpyProto
+from ...proto.lib.numpy.array_pb2 import NumpyScalar
 from ..torch.tensor_util import tensor_deserializer
 from ..torch.tensor_util import tensor_serializer
 
@@ -191,3 +193,59 @@ serializable(generate_wrapper=True)(
     type_object2proto=serialize_numpy_array,
     type_proto2object=deserialize_numpy_array,
 )
+
+
+numpy_scalar_types = [
+    np.bool_,
+    np.int8,
+    np.int16,
+    np.int32,
+    np.int64,
+    np.uint8,
+    np.uint16,
+    np.uint32,
+    np.uint64,
+    np.half,
+    np.single,
+    np.double,
+]
+
+
+def scalar_protobuf_serialize(obj: np.number) -> NumpyScalar:
+    original_dtype = type(obj)
+    if original_dtype not in numpy_scalar_types:
+        raise NotImplementedError(f"{original_dtype} is not supported")
+
+    scalar = NumpyScalar()
+    if isinstance(obj, np.integer):
+        scalar.int = int(obj)
+    elif isinstance(obj, np.floating):
+        scalar.float = float(obj)
+    elif isinstance(obj, np.bool_):
+        scalar.int = bool(obj)
+    else:
+        raise NotImplementedError(f"{original_dtype} is not supported")
+
+    scalar.dtype = original_dtype.__name__
+    scalar.obj_type = full_name_with_name(klass=obj._sy_serializable_wrapper_type)  # type: ignore
+    return scalar
+
+
+def scalar_protobuf_deserialize(proto: NumpyScalar) -> np.number:
+    dtype = proto.dtype
+    if proto.HasField("int"):
+        raw = proto.int
+    else:
+        raw = proto.float
+
+    return getattr(np, dtype)(raw)
+
+
+for np_scalar_type in numpy_scalar_types:
+    serializable(generate_wrapper=True)(
+        wrapped_type=np_scalar_type,
+        import_path="numpy." + np_scalar_type.__name__,
+        protobuf_scheme=NumpyScalar,
+        type_object2proto=scalar_protobuf_serialize,
+        type_proto2object=scalar_protobuf_deserialize,
+    )

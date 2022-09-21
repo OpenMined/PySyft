@@ -9,7 +9,7 @@ A Hagrid is a HAppy GRID!
 Python
 
 ```
-$ pip install hagrid
+$ pip install -U hagrid
 ```
 
 Docker
@@ -174,7 +174,7 @@ $ pip install "git+https://github.com/OpenMined/PySyft@demo_strike_team_branch_4
 Log into your linux machine and run the following:
 
 ```
-pip install hagrid
+pip install -U hagrid
 ```
 
 Often on a remote linux box hagrid will not by default show up in the path. Re-login via SSH terminal and hagrid should appear.
