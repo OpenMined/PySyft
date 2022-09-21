@@ -4,5 +4,3 @@
 <a href="/login">Login</a>
 <br />
 <a href="/signup">Signup</a>
-<br />
-<a href="/proto/study">Study Prototype</a>
