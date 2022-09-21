@@ -43,8 +43,7 @@ Before you can create user accounts on your domain, you have to first:
 📒 Overview of this tutorial:
 
 #. **Defining** account credentials
-#. **Assigning** privacy budget
-#. **Viewing** the account you just created via the Domain Management UI
+#. **Checking** permissions  
 
 |02-create-account-configure-pb-00|
 
