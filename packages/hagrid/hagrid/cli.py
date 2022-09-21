@@ -2,6 +2,7 @@
 import json
 import os
 from pathlib import Path
+from queue import Queue
 import re
 import shutil
 import socket
@@ -9,11 +10,11 @@ import stat
 import subprocess  # nosec
 import sys
 import tempfile
+from threading import Thread
 import time
 from typing import Any
 from typing import Callable
 from typing import Dict as TypeDict
-from typing import List
 from typing import List as TypeList
 from typing import Optional
 from typing import Tuple
@@ -57,7 +58,9 @@ from .lib import check_login_page
 from .lib import docker_desktop_memory
 from .lib import generate_process_status_table
 from .lib import generate_user_table
+from .lib import gitpod_url
 from .lib import hagrid_root
+from .lib import is_gitpod
 from .lib import name_tag
 from .lib import save_vm_details_as_json
 from .lib import update_repo
@@ -65,6 +68,7 @@ from .lib import use_branch
 from .mode import EDITABLE_MODE
 from .parse_template import render_templates
 from .parse_template import setup_from_manifest_template
+from .quickstart_ui import fetch_notebooks_for_url
 from .quickstart_ui import quickstart_download_notebook
 from .rand_sec import generate_sec_random_password
 from .style import RichGroup
@@ -2307,9 +2311,15 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
     is_flag=True,
     help="Optional: prevent lots of land output",
 )
+@click.option(
+    "--force",
+    is_flag=True,
+    help="Optional: bypass the prompt during hagrid land ",
+)
 def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_land_verb()
     silent = bool(kwargs["silent"]) if "silent" in kwargs else False
+    force = bool(kwargs["force"]) if "force" in kwargs else False
     try:
         grammar = parse_grammar(args=args, verb=verb)
         verb.load_grammar(grammar=grammar)
@@ -2327,28 +2337,41 @@ def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     except Exception as e:
         print(f"{e}")
         return
-    if not silent:
-        print("Running: \n", hide_password(cmd=cmd))
 
-    if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
-        if not silent:
-            print("Running: \n", cmd)
-        try:
-            if silent:
-                process = subprocess.Popen(  # nosec
-                    cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    cwd=GRID_SRC_PATH,
-                    shell=True,
-                )
-                process.communicate()
-                target = verb.get_named_term_grammar("node_name").input
-                print(f"HAGrid land {target} complete!")
-            else:
-                subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)  # nosec
-        except Exception as e:
-            print(f"Failed to run cmd: {cmd}. {e}")
+    target = verb.get_named_term_grammar("node_name").input
+
+    if not force:
+        _land_domain = ask(
+            Question(
+                var_name="_land_domain",
+                question=f"Are you sure you want to land {target} (y/n)",
+                kind="yesno",
+            ),
+            kwargs={},
+        )
+
+    if force or _land_domain == "y":
+        if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
+            if not silent:
+                print("Running: \n", cmd)
+            try:
+                if silent:
+                    process = subprocess.Popen(  # nosec
+                        cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        cwd=GRID_SRC_PATH,
+                        shell=True,
+                    )
+                    process.communicate()
+
+                    print(f"HAGrid land {target} complete!")
+                else:
+                    subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)  # nosec
+            except Exception as e:
+                print(f"Failed to run cmd: {cmd}. {e}")
+    else:
+        print("Hagrid land aborted.")
 
 
 cli.add_command(launch)
@@ -2367,6 +2390,7 @@ def debug(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 
 
 cli.add_command(debug)
+
 
 DEFAULT_HEALTH_CHECKS = ["host", "UI (βeta)", "api", "ssh", "jupyter"]
 HEALTH_CHECK_FUNCTIONS = {
@@ -2418,6 +2442,16 @@ def get_health_checks(ip_address: str) -> TypeTuple[bool, TypeList[TypeList[str]
     health_status = check_host_health(ip_address=ip_address, keys=keys)
     complete_status = all(health_status.values())
 
+    # find port from ip_address
+    try:
+        port = int(ip_address.split(":")[1])
+    except Exception:
+        # default to 80
+        port = 80
+
+    # url to display based on running environment
+    display_url = gitpod_url(port).split("//")[1] if is_gitpod() else ip_address
+
     # figure out how to add this back?
     # console.print("[bold magenta]Checking host:[/bold magenta]", ip_address, ":mage:")
     table_contents = []
@@ -2426,7 +2460,7 @@ def get_health_checks(ip_address: str) -> TypeTuple[bool, TypeList[TypeList[str]
             [
                 HEALTH_CHECK_ICONS[key],
                 key,
-                HEALTH_CHECK_URLS[key].replace("{ip_address}", ip_address),
+                HEALTH_CHECK_URLS[key].replace("{ip_address}", display_url),
                 icon_status(value),
             ]
         )
@@ -2439,7 +2473,7 @@ def create_check_table(
 ) -> rich.table.Table:
     table = rich.table.Table()
     table.add_column("PyGrid", style="magenta")
-    table.add_column("Info", justify="left")
+    table.add_column("Info", justify="left", overflow="fold")
     time_left_str = "" if time_left == 0 else str(time_left)
     table.add_column(time_left_str, justify="left")
     for row in table_contents:
@@ -2522,6 +2556,139 @@ def version() -> None:
 cli.add_command(version)
 
 
+def run_quickstart(
+    url: Optional[str] = None,
+    syft: str = "latest",
+    reset: bool = False,
+    quiet: bool = False,
+    pre: bool = False,
+    test: bool = False,
+    repo: str = DEFAULT_REPO,
+    branch: str = DEFAULT_BRANCH,
+    commit: Optional[str] = None,
+    python: Optional[str] = None,
+) -> None:
+    try:
+        directory = os.path.expanduser("~/.hagrid/quickstart/")
+        confirm_reset = None
+        if reset:
+            if not quiet:
+                confirm_reset = click.confirm(
+                    "This will create a new quickstart virtualenv and reinstall Syft and "
+                    "Jupyter. Are you sure you want to continue?"
+                )
+            else:
+                confirm_reset = True
+        if confirm_reset is False:
+            return
+
+        if reset and confirm_reset or not os.path.isdir(directory):
+            quickstart_setup(
+                directory=directory,
+                syft_version=syft,
+                reset=reset,
+                pre=pre,
+                python=python,
+            )
+        downloaded_files = []
+        if url:
+            downloaded_files = fetch_notebooks_for_url(
+                url=url,
+                directory=directory,
+                reset=reset,
+                repo=repo,
+                branch=branch,
+                commit=commit,
+            )
+        else:
+            file_path = add_intro_notebook(directory=directory, reset=reset)
+            downloaded_files.append(file_path)
+
+        if len(downloaded_files) == 0:
+            raise Exception(f"Unable to find files at: {url}")
+        file_path = sorted(downloaded_files)[0]
+
+        # add virtualenv path
+        environ = os.environ.copy()
+        os_bin_path = "Scripts" if is_windows() else "bin"
+        venv_dir = directory + ".venv"
+        environ["PATH"] = venv_dir + os.sep + os_bin_path + os.pathsep + environ["PATH"]
+        jupyter_binary = "jupyter.exe" if is_windows() else "jupyter"
+        try:
+            print(f"Running Jupyter Lab in: {directory}")
+            cmd = (
+                venv_dir
+                + os.sep
+                + os_bin_path
+                + os.sep
+                + f"{jupyter_binary} lab --ip 0.0.0.0 --notebook-dir={directory} {file_path}"
+            )
+            if test:
+                jupyter_path = venv_dir + os.sep + os_bin_path + os.sep + jupyter_binary
+                if not os.path.exists(jupyter_path):
+                    print(f"Failed to install Jupyter in path: {jupyter_path}")
+                    sys.exit(1)
+                print(f"Jupyter exists at: {jupyter_path}. CI Test mode exiting.")
+                sys.exit(0)
+
+            disable_toolbar_extension = (
+                venv_dir
+                + os.sep
+                + os_bin_path
+                + os.sep
+                + f"{jupyter_binary} labextension disable @jupyterlab/cell-toolbar-extension"
+            )
+
+            subprocess.run(  # nosec
+                disable_toolbar_extension.split(" "), cwd=directory, env=environ
+            )
+
+            ON_POSIX = "posix" in sys.builtin_module_names
+
+            def enqueue_output(out: Any, queue: Queue) -> None:
+                for line in iter(out.readline, b""):
+                    queue.put(line)
+                out.close()
+
+            proc = subprocess.Popen(  # nosec
+                cmd.split(" "),
+                cwd=directory,
+                env=environ,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                close_fds=ON_POSIX,
+            )
+            queue: Queue = Queue()
+            thread_1 = Thread(target=enqueue_output, args=(proc.stdout, queue))
+            thread_2 = Thread(target=enqueue_output, args=(proc.stderr, queue))
+            thread_1.daemon = True  # thread dies with the program
+            thread_1.start()
+            thread_2.daemon = True  # thread dies with the program
+            thread_2.start()
+
+            display_url = None
+            # keepn reading the queue of stdout + stderr
+            while True:
+                try:
+                    if not display_url:
+                        # try to read the line and extract a jupyter url
+                        line = queue.get()
+                        display_url = extract_jupyter_url(line.decode("utf-8"))
+                        if display_url:
+                            display_jupyter_url(url_parts=display_url)
+                except KeyboardInterrupt:
+                    proc.kill()  # make sure jupyter gets killed
+                    sys.exit(1)
+                except Exception:  # nosec
+                    pass  # nosec
+        except KeyboardInterrupt:
+            proc.kill()  # make sure jupyter gets killed
+            sys.exit(1)
+    except Exception as e:
+        print(f"Error running quickstart: {e}")
+        raise e
+
+
 @click.command(help="Launch a Syft + Jupyter Session with a Notebook URL / Path")
 @click.argument("url", type=str, required=False)
 @click.option(
@@ -2587,125 +2754,53 @@ def quickstart_cli(
     commit: Optional[str] = None,
     python: Optional[str] = None,
 ) -> None:
+    return run_quickstart(
+        url=url,
+        syft=syft,
+        reset=reset,
+        quiet=quiet,
+        pre=pre,
+        test=test,
+        repo=repo,
+        branch=branch,
+        commit=commit,
+        python=python,
+    )
+
+
+cli.add_command(quickstart_cli, "quickstart")
+
+
+def display_jupyter_url(url_parts: Tuple[str, str, int]) -> None:
+    url = url_parts[0]
+    if is_gitpod():
+        parts = urlparse(url)
+        query = getattr(parts, "query", "")
+        url = gitpod_url(port=url_parts[2]) + "?" + query
+
+    print(
+        f"Jupyter Server is running at:\n{url}\n"
+        + "Use Control-C to stop this server and shut down all kernels."
+    )
+
+
+def extract_jupyter_url(line: str) -> Optional[Tuple[str, str, int]]:
+    jupyter_regex = r"^.*(http.*127.*)"
     try:
-        directory = os.path.expanduser("~/.hagrid/quickstart/")
-        confirm_reset = None
-        if reset:
-            if not quiet:
-                confirm_reset = click.confirm(
-                    "This will create a new quickstart virtualenv and reinstall Syft and "
-                    "Jupyter. Are you sure you want to continue?"
-                )
-            else:
-                confirm_reset = True
-        if confirm_reset is False:
-            return
-
-        if reset and confirm_reset or not os.path.isdir(directory):
-            quickstart_setup(
-                directory=directory,
-                syft_version=syft,
-                reset=reset,
-                pre=pre,
-                python=python,
-            )
-        downloaded_files = []
-        if url:
-            allowed_schemes_as_url = ["http", "https"]
-            url_scheme = urlparse(url).scheme
-            # relative mode
-            if url_scheme not in allowed_schemes_as_url:
-                notebooks = get_urls_from_dir(
-                    repo=repo, branch=branch, commit=commit, url=url
-                )
-
-                url_dir = os.path.dirname(url) if os.path.dirname(url) else url
-                notebook_files = []
-                existing_count = 0
-                for notebook_url in notebooks:
-                    url_filename = os.path.basename(notebook_url)
-                    url_dirname = os.path.dirname(notebook_url)
-                    if (
-                        url_dirname.endswith(url_dir)
-                        and os.path.isdir(directory + url_dir)
-                        and os.path.isfile(directory + url_dir + os.sep + url_filename)
-                    ):
-                        notebook_files.append(url_dir + os.sep + url_filename)
-                        existing_count += 1
-
-                if existing_count > 0:
-                    plural = "s" if existing_count > 1 else ""
-                    print(
-                        f"You have {existing_count} existing notebook{plural} matching: {url}"
-                    )
-                    for nb in notebook_files:
-                        print(nb)
-
-                overwrite_all = False
-                for notebook_url in notebooks:
-                    file_path, _, overwrite_all = quickstart_download_notebook(
-                        url=notebook_url,
-                        directory=directory + os.sep + url_dir + os.sep,
-                        reset=reset,
-                        overwrite_all=overwrite_all,
-                    )
-                    downloaded_files.append(file_path)
-
-            else:
-                file_path, _, _ = quickstart_download_notebook(
-                    url=url, directory=directory, reset=reset
-                )
-                downloaded_files.append(file_path)
-        else:
-            file_path = add_intro_notebook(directory=directory, reset=reset)
-            downloaded_files.append(file_path)
-
-        file_path = sorted(downloaded_files)[0]
-
-        # add virtualenv path
-        environ = os.environ.copy()
-        os_bin_path = "Scripts" if is_windows() else "bin"
-        venv_dir = directory + ".venv"
-        environ["PATH"] = venv_dir + os.sep + os_bin_path + os.pathsep + environ["PATH"]
-        jupyter_binary = "jupyter.exe" if is_windows() else "jupyter"
-        try:
-            print(
-                f"Running Jupyter Lab in: {directory}\nUse Control-C to stop this server."
-            )
-            cmd = (
-                venv_dir
-                + os.sep
-                + os_bin_path
-                + os.sep
-                + f"{jupyter_binary} lab --notebook-dir={directory} {file_path}"
-            )
-            if test:
-                jupyter_path = venv_dir + os.sep + os_bin_path + os.sep + jupyter_binary
-                if not os.path.exists(jupyter_path):
-                    print(f"Failed to install Jupyter in path: {jupyter_path}")
-                    sys.exit(1)
-                print(f"Jupyter exists at: {jupyter_path}. CI Test mode exiting.")
-                sys.exit(0)
-
-            disable_toolbar_extension = f"{jupyter_binary} labextension disable @jupyterlab/cell-toolbar-extension"
-
-            subprocess.run(  # nosec
-                disable_toolbar_extension.split(" "), cwd=directory, env=environ
-            )
-            proc = subprocess.Popen(  # nosec
-                cmd.split(" "),
-                cwd=directory,
-                env=environ,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-            proc.communicate()
-        except KeyboardInterrupt:
-            proc.kill()  # make sure jupyter gets killed
-            sys.exit(1)
+        matches = re.match(jupyter_regex, line)
+        if matches is not None:
+            url = matches.group(1).strip()
+            parts = urlparse(url)
+            host_or_ip_parts = parts.netloc.split(":")
+            # netloc is host:port
+            port = 8888
+            if len(host_or_ip_parts) > 1:
+                port = int(host_or_ip_parts[1])
+            host_or_ip = host_or_ip_parts[0]
+            return (url, host_or_ip, port)
     except Exception as e:
-        print(f"Error running quickstart: {e}")
-        raise e
+        print("failed to parse jupyter url", e)
+    return None
 
 
 def quickstart_setup(
@@ -2761,42 +2856,6 @@ def quickstart_setup(
         raise e
 
 
-def get_urls_from_dir(
-    url: str,
-    repo: str,
-    branch: str,
-    commit: Optional[str] = None,
-) -> List[str]:
-    notebooks = []
-    slug = commit if commit else branch
-
-    gh_api_call = (
-        "https://api.github.com/repos/" + repo + "/git/trees/" + slug + "?recursive=1"
-    )
-    r = requests.get(gh_api_call)
-    if r.status_code != 200:
-        print(
-            f"Failed to fetch notebook from: {gh_api_call}.\nPlease try again with the correct parameters!"
-        )
-        sys.exit(1)
-
-    res = r.json()
-
-    for file in res["tree"]:
-        if file["path"].startswith("notebooks/quickstart/" + url):
-            if file["path"].endswith(".ipynb"):
-                temp_url = (
-                    "https://raw.githubusercontent.com/"
-                    + repo
-                    + "/"
-                    + slug
-                    + "/"
-                    + file["path"]
-                )
-                notebooks.append(temp_url)
-    return notebooks
-
-
 def add_intro_notebook(directory: str, reset: bool = False) -> str:
     files = os.listdir(directory)
     try:
@@ -2824,11 +2883,37 @@ def add_intro_notebook(directory: str, reset: bool = False) -> str:
                 file_path, _, _ = quickstart_download_notebook(
                     url=url, directory=directory, reset=reset
                 )
-    file_path = os.path.abspath(f"{directory}/{filenames[0]}")
-    return file_path
+    if arg_cache.install_wizard_complete:
+        filename = filenames[0]
+    else:
+        filename = filenames[1]
+    return os.path.abspath(f"{directory}/{filename}")
 
 
-cli.add_command(quickstart_cli, "quickstart")
+@click.command(help="Walk the Path")
+@click.option(
+    "--repo",
+    default=DEFAULT_REPO,
+    help="Choose a repo to fetch the notebook from or just use OpenMined/PySyft",
+)
+@click.option(
+    "--branch",
+    default=DEFAULT_BRANCH,
+    help="Choose a branch to fetch from or just use dev",
+)
+@click.option(
+    "--commit",
+    help="Choose a specific commit to fetch the notebook from",
+)
+def dagobah(
+    repo: str = DEFAULT_REPO,
+    branch: str = DEFAULT_BRANCH,
+    commit: Optional[str] = None,
+) -> None:
+    return run_quickstart(url="padawan", repo=repo, branch=branch, commit=commit)
+
+
+cli.add_command(dagobah)
 
 
 def ssh_into_remote_machine(

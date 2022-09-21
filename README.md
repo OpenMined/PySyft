@@ -1,5 +1,4 @@
-<div align="left"> <a href="https://pypi.org/project/syft/"><img src="https://pepy.tech/badge/syft" /></a> <a href="https://pypi.org/project/syft/"><img src="https://badge.fury.io/py/syft.svg" /></a> <a href="https://hub.docker.com/u/openmined"><img src="https://img.shields.io/badge/docker-images-blue?logo=docker" /></a> <a href="https://github.com/OpenMined/PySyft/actions/workflows/syft-version_tests.yml"><img src="https://github.com/OpenMined/PySyft/actions/workflows/syft-version_tests.yml/badge.svg?branch=dev" /></a>
- <a href="https://github.com/OpenMined/PySyft/actions/workflows/nightlies-run.yml"><img src="https://github.com/OpenMined/PySyft/actions/workflows/nightlies-run.yml/badge.svg?branch=dev" /></a>
+<div align="left"> <a href="https://pypi.org/project/syft/"><img src="https://pepy.tech/badge/syft" /></a> <a href="https://pypi.org/project/syft/"><img src="https://badge.fury.io/py/syft.svg" /></a> <a href="https://hub.docker.com/u/openmined"><img src="https://img.shields.io/badge/docker-images-blue?logo=docker" /></a> <a href="https://github.com/OpenMined/PySyft/actions/workflows/nightlies-run.yml"><img src="https://github.com/OpenMined/PySyft/actions/workflows/nightlies-run.yml/badge.svg?branch=dev" /></a> <a href="https://gitpod.io/#https://github.com/OpenMined/PySyft"><img src="https://img.shields.io/badge/gitpod-908a85?logo=gitpod" /></a>
 <a href="https://slack.openmined.org/"><img src="https://img.shields.io/badge/chat-on%20slack-purple?logo=slack" /></a> <a href="https://openmined.github.io/PySyft/"><img src="https://img.shields.io/badge/read-docs-yellow?logo=mdbook" /></a>
 <br /><br /></div>
 
@@ -19,7 +18,7 @@ Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 <img src="packages/syft/docs/img/terminalizer.gif" width="50%" align="right" />
 
 1. Install our handy 🛵 cli tool which makes deploying a Domain or Network server a one-liner:  
-   `pip install hagrid`
+   `pip install -U hagrid`
 
 2. Then run our interactive jupyter Install 🧙🏽‍♂️ Wizard<sup>BETA</sup>:  
    `hagrid quickstart`
@@ -36,10 +35,10 @@ Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 
 # Install Notes
 
-- HAGrid Requires: 🐍 `python` 🐙 `git` - Run: `pip install hagrid`
+- HAGrid Requires: 🐍 `python` 🐙 `git` - Run: `pip install -U hagrid`
 - Interactive Install 🧙🏽‍♂️ Wizard<sup>BETA</sup> Requires 🛵 `hagrid`: - Run: `hagrid quickstart`  
   †`Windows` does not support `ansible`, preventing some remote deployment targets
-- PySyft Requires: 🐍 `python 3.7+` - Run: `pip install syft`  
+- PySyft Requires: 🐍 `python 3.7+` - Run: `pip install -U syft --pre`  
   \*`macOS` Apple Silicon users need cmake: `brew install cmake`  
   ‡`Windows` users must run this first: `pip install jaxlib==0.3.7 -f https://whls.blob.core.windows.net/unstable/index.html`
 - PyGrid Requires: 🐳 `docker` / `k8s` or 🐧 `ubuntu` VM - Run: `hagrid launch ...`
@@ -54,7 +53,7 @@ Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 `0.2.0` - `0.5.0` Deprecated
 
 PySyft and PyGrid use the same `version` and its best to match them up where possible. We release weekly betas which can be used in each context:
-PySyft: `pip install syft --pre`
+PySyft: `pip install -U syft --pre`
 PyGrid: `hagrid launch ... tag=latest`
 
 <!-- Quickstart: `hagrid quickstart --pre` -->
@@ -75,7 +74,7 @@ HAGrid is a cli / deployment tool so the latest version of `hagrid` is usually t
 
 No more cold calls to get `access` to a dataset. No more weeks of `wait times` to get a `result` on your `query`. It also means `1000x more data` in every domain. PySyft opens the doors to a streamlined Data Scientist `workflow`, all with the individual's `privacy` at its heart.
 
-<!-- # Tutorials
+# Tutorials
 
 <table border="5" bordercolor="grey">
 <tr>
@@ -100,32 +99,29 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 </th>
 </tr>
 <tr>
-<td valign="top"> -->
-<!-- REMOVE THE BACKSLASHES -->
+<td valign="top">
 
-<!-- - <a href="#">Deploy a Domain Server</a>
-- <a href="#">Upload Private Data</a>
-- <a href="#">Create Accounts</a>
-- <a href="#">Manage Privacy Budget</a>
-- <a href="#">Join a Network</a>
+- <a href="/notebooks/quickstart/data-owner/00-deploy-domain.ipynb">Deploy a Domain Server</a>
+- <a href="/notebooks/quickstart/data-owner/01-upload-data.ipynb">Upload Private Data</a>
+- Create Accounts</a>
+- Manage Privacy Budget</a>
+- Join a Network</a>
 - Learn how PETs streamline Data Policies
 
 </td>
-<td valign="top"> -->
-<!-- REMOVE THE BACKSLASHES -->
+<td valign="top">
 
-<!-- - <a href="#">Install Syft</a>
-- <a href="#">Connect to a Domain</a>
-- <a href="#">Search for Datasets</a>
+- Install Syft</a>
+- Connect to a Domain</a>
+- Search for Datasets</a>
 - Train Models
 - Retrieve Secure Results
 - Learn Differential Privacy
 
 </td>
-<td valign="top"> -->
-<!-- REMOVE THE BACKSLASHES -->
+<td valign="top">
 
-<!-- - <a href="#">Setup Dev Mode</a>
+- Setup Dev Mode</a>
 - Deploy to Azure
 - Deploy to GCP
 - Deploy to Kubernetes
@@ -133,7 +129,7 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 - Modify PyGrid UI
 </td>
 </tr>
-</table> -->
+</table>
 
 # Terminology
 
