@@ -2828,7 +2828,7 @@ def quickstart_setup(
 
     try:
         with console.status(
-            "[bold blue]Setting up Quickstart Environment :evergreen_tree:"
+            "[bold blue]Setting up Quickstart Environment"
         ) as console_status:
             os.makedirs(directory, exist_ok=True)
             virtual_env_dir = os.path.abspath(directory + ".venv/")
@@ -2887,7 +2887,7 @@ def quickstart_setup(
                 env.install("hagrid", options=["-U"])
                 console.print(":white_heavy_check_mark: HAGrid")
     except Exception as e:
-        console.print_exception(word_wrap=True)
+        print(e)
         raise e
 
 
