@@ -33,6 +33,7 @@ from virtualenvapi.manage import VirtualEnvironment
 
 # relative
 from .art import hagrid
+from .art import quickstart_art
 from .auth import AuthCredentials
 from .cache import DEFAULT_BRANCH
 from .cache import DEFAULT_REPO
@@ -2570,6 +2571,7 @@ def run_quickstart(
     python: Optional[str] = None,
 ) -> None:
     try:
+        quickstart_art()
         directory = os.path.expanduser("~/.hagrid/quickstart/")
         confirm_reset = None
         if reset:
@@ -2782,7 +2784,7 @@ def display_jupyter_url(url_parts: Tuple[str, str, int]) -> None:
     console = rich.get_console()
 
     console.print(
-        f"[bold white]Jupyter Server is running at:\n:link: [bold blue]{url}\n"
+        f"[bold white]:white_heavy_check_mark: Jupyter Server is running at:\n:link: [bold blue]{url}\n"
         + "[bold white]Use Control-C to stop this server and shut down all kernels.",
         new_line_start=True,
     )
@@ -2821,49 +2823,73 @@ def quickstart_setup(
     pre: bool = False,
     python: Optional[str] = None,
 ) -> None:
+
+    console = rich.get_console()
+
     try:
-        os.makedirs(directory, exist_ok=True)
-        virtual_env_dir = os.path.abspath(directory + ".venv/")
-        if reset and os.path.exists(virtual_env_dir):
-            shutil.rmtree(virtual_env_dir)
-        env = VirtualEnvironment(virtual_env_dir, python=python)
+        with console.status(
+            "[bold blue]Setting up Quickstart Environment :evergreen_tree:"
+        ) as console_status:
+            os.makedirs(directory, exist_ok=True)
+            virtual_env_dir = os.path.abspath(directory + ".venv/")
+            if reset and os.path.exists(virtual_env_dir):
+                shutil.rmtree(virtual_env_dir)
+            env = VirtualEnvironment(virtual_env_dir, python=python)
+            console.print(
+                ":white_heavy_check_mark: Created Virtual Environment :evergreen_tree:"
+            )
 
-        # upgrade pip
-        env.install("pip", options=["-U"])
-        env.install("packaging", options=["-U"])
+            # upgrade pip
+            console_status.update("[bold blue]Installing pip :fish:")
+            env.install("pip", options=["-U"])
+            console.print(":white_heavy_check_mark: pip")
 
-        print("Installing Jupyter Labs")
-        env.install("jupyterlab")
-        env.install("ipywidgets")
+            # upgrade packaging
+            console_status.update("[bold blue] Installing packaging")
+            env.install("packaging", options=["-U"])
+            console.print(":white_heavy_check_mark: packaging")
 
-        if EDITABLE_MODE:
-            # local_syft_dir = Path(os.path.abspath(Path(hagrid_root()) / "../syft"))
-            # print("Installing Syft in Editable Mode")
-            # env.install("-e " + str(local_syft_dir))
-            local_hagrid_dir = Path(os.path.abspath(Path(hagrid_root()) / "../hagrid"))
-            print("Installing HAGrid in Editable Mode", str(local_hagrid_dir))
-            env.install("-e " + str(local_hagrid_dir))
-        else:
-            # options = []
-            # options.append("--force")
-            # if syft_version == "latest":
-            #     syft_version = LATEST_STABLE_SYFT
-            #     package = f"syft>={syft_version}"
-            #     if pre:
-            #         package = f"{package}.dev0"  # force pre release
-            # else:
-            #     package = f"syft=={syft_version}"
+            console_status.update("[bold blue]Installing Jupyter Labs")
+            env.install("jupyterlab")
+            env.install("ipywidgets")
+            console.print(":white_heavy_check_mark: Jupyter Labs")
 
-            # if pre:
-            #     options.append("--pre")
-            #     print(f"Installing {package} --pre")
-            # else:
-            #     print(f"Installing {package}")
-            # env.install(package, options=options)
-            print("Installing hagrid")
-            env.install("hagrid", options=["-U"])
+            if EDITABLE_MODE:
+                # local_syft_dir = Path(os.path.abspath(Path(hagrid_root()) / "../syft"))
+                # print("Installing Syft in Editable Mode")
+                # env.install("-e " + str(local_syft_dir))
+                local_hagrid_dir = Path(
+                    os.path.abspath(Path(hagrid_root()) / "../hagrid")
+                )
+                console_status.update(
+                    f"[bold blue]Installing HAGrid in Editable Mode: {str(local_hagrid_dir)}"
+                )
+                env.install("-e " + str(local_hagrid_dir))
+                console.print(
+                    f":white_heavy_check_mark: HAGrid in Editable Mode: {str(local_hagrid_dir)}"
+                )
+            else:
+                # options = []
+                # options.append("--force")
+                # if syft_version == "latest":
+                #     syft_version = LATEST_STABLE_SYFT
+                #     package = f"syft>={syft_version}"
+                #     if pre:
+                #         package = f"{package}.dev0"  # force pre release
+                # else:
+                #     package = f"syft=={syft_version}"
+
+                # if pre:
+                #     options.append("--pre")
+                #     print(f"Installing {package} --pre")
+                # else:
+                #     print(f"Installing {package}")
+                # env.install(package, options=options)
+                console_status.update("[bold blue]Installing hagrid :hagrid:")
+                env.install("hagrid", options=["-U"])
+                console.print(":white_heavy_check_mark: HAGrid")
     except Exception as e:
-        print("failed", e)
+        console.print_exception(word_wrap=True)
         raise e
 
 

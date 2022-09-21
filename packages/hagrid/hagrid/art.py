@@ -4,6 +4,7 @@ import secrets
 
 # third party
 import ascii_magic
+import rich
 
 # relative
 from .lib import asset_path
@@ -107,6 +108,20 @@ def hagrid2() -> None:
         )
     except Exception:  # nosec
         pass
+
+
+def quickstart_art() -> None:
+    console = rich.get_console()
+    console.print(
+        """
+▒█░▒█ ░█▀▀█ ▒█▀▀█ █▀▀█ ░▀░ █▀▀▄ 　 ▒█▀▀█ █░░█ ░▀░ █▀▀ █░█ █▀▀ ▀▀█▀▀ █▀▀█ █▀▀█ ▀▀█▀▀
+▒█▀▀█ ▒█▄▄█ ▒█░▄▄ █▄▄▀ ▀█▀ █░░█ 　 ▒█░▒█ █░░█ ▀█▀ █░░ █▀▄ ▀▀█ ░░█░░ █▄▄█ █▄▄▀ ░░█░░
+▒█░▒█ ▒█░▒█ ▒█▄▄█ ▀░▀▀ ▀▀▀ ▀▀▀░ 　 ░▀▀█▄ ░▀▀▀ ▀▀▀ ▀▀▀ ▀░▀ ▀▀▀ ░░▀░░ ▀░░▀ ▀░▀▀ ░░▀░░
+    """,
+        style="bold",
+        justify="center",
+        new_line_start=True,
+    )
 
 
 def hagrid() -> None:
