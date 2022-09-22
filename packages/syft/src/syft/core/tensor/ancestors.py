@@ -17,6 +17,8 @@ from numpy.typing import ArrayLike
 # relative
 from ..adp.data_subject_ledger import DataSubjectLedger
 from ..adp.data_subject_list import DataSubjectArray
+from .config import DEFAULT_FLOAT_NUMPY_TYPE
+from .config import DEFAULT_INT_NUMPY_TYPE
 from .lazy_repeat_array import lazyrepeatarray
 from .manager import TensorChainManager
 from .passthrough import PassthroughTensor  # type: ignore
@@ -447,6 +449,10 @@ class PhiTensorAncestor(TensorChainManager):
 
         if isinstance(min_val, (bool, int, float)):
             min_vals = np.array(min_val).ravel()  # make it 1D
+            if isinstance(min_val, int):
+                min_vals = min_vals.astype(DEFAULT_INT_NUMPY_TYPE)  # type: ignore
+            if isinstance(min_val, float):
+                min_vals = min_vals.astype(DEFAULT_FLOAT_NUMPY_TYPE)  # type: ignore
         else:
             raise Exception(
                 "min_vals should be either float,int,bool got "
@@ -456,6 +462,10 @@ class PhiTensorAncestor(TensorChainManager):
 
         if isinstance(max_val, (bool, int, float)):
             max_vals = np.array(max_val).ravel()  # make it 1D
+            if isinstance(max_val, int):
+                max_vals = max_vals.astype(DEFAULT_INT_NUMPY_TYPE)  # type: ignore
+            if isinstance(max_val, float):
+                max_vals = max_vals.astype(DEFAULT_FLOAT_NUMPY_TYPE)  # type: ignore
         else:
             raise Exception(
                 "min_vals should be either float,int,bool got "

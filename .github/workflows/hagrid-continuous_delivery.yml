@@ -44,7 +44,7 @@ jobs:
         if: ${{needs.hagrid-deploy.outputs.current_hash}} != ${{needs.hagrid-deploy.outputs.previous_hash}}
         run: |
           python -m pip install --upgrade pip
-          pip install --upgrade setuptools wheel twine tox bump2version
+          pip install --upgrade setuptools wheel twine tox bump2version PyYAML
 
       - name: Bump the Version
         if: ${{needs.hagrid-deploy.outputs.current_hash}} != ${{needs.hagrid-deploy.outputs.previous_hash}}

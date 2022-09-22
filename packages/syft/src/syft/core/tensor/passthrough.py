@@ -14,6 +14,7 @@ from typing import Type
 from typing import Union
 
 # third party
+import jaxlib
 import numpy as np
 import torch
 
@@ -26,7 +27,17 @@ SupportedChainType = Union["PassthroughTensor", AcceptableSimpleType]
 
 
 def is_acceptable_simple_type(obj):
-    return isinstance(obj, (int, bool, float, np.ndarray, torch.Tensor))
+    return isinstance(
+        obj,
+        (
+            int,
+            bool,
+            float,
+            np.ndarray,
+            torch.Tensor,
+            jaxlib.xla_extension.DeviceArrayBase,
+        ),
+    )
 
 
 class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
@@ -63,8 +74,29 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return tuple(self.child.shape)
 
     @property
+    def size(self) -> int:
+        if (
+            isinstance(self.child, float)
+            or isinstance(self.child, int)
+            or isinstance(self.child, bool)
+        ):
+            return 1
+
+        if hasattr(self.child, "size"):
+            return self.child.size
+        elif hasattr(self.child, "shape"):
+            return np.prod(self.child.shape)
+
+        raise Exception(f"{type(self)} has no attribute size.")
+
+    @property
     def dtype(self) -> np.dtype:
         return self.child.dtype
+
+    def zeros_like(self) -> PassthroughTensor:
+        if is_acceptable_simple_type(self.child):
+            return np.zeros_like(self.child)
+        return self.child.zeros_like()
 
     # @property
     # def shape(self) -> Union[TypeTuple[Any, ...], List[Any]]:
