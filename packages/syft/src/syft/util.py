@@ -180,7 +180,7 @@ def aggressive_set_attr(obj: object, name: str, attr: object) -> None:
     """
     try:
         setattr(obj, name, attr)
-    except Exception:
+    except Exception:  # nosec
         curse(obj, name, attr)
 
 
@@ -355,6 +355,7 @@ right_name = [
     "chomsky",
     "dean",
     "dolgov",
+    "eckersley",
     "fridman",
     "gardner",
     "goertzel",

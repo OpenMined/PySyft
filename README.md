@@ -1,5 +1,4 @@
-<div align="left"> <a href="https://pypi.org/project/syft/"><img src="https://pepy.tech/badge/syft" /></a> <a href="https://pypi.org/project/syft/"><img src="https://badge.fury.io/py/syft.svg" /></a> <a href="https://hub.docker.com/u/openmined"><img src="https://img.shields.io/badge/docker-images-blue?logo=docker" /></a> <a href="https://github.com/OpenMined/PySyft/actions/workflows/syft-version_tests.yml"><img src="https://github.com/OpenMined/PySyft/actions/workflows/syft-version_tests.yml/badge.svg?branch=dev" /></a>
- <a href="https://github.com/OpenMined/PySyft/actions/workflows/nightlies-run.yml"><img src="https://github.com/OpenMined/PySyft/actions/workflows/nightlies-run.yml/badge.svg?branch=dev" /></a>
+<div align="left"> <a href="https://pypi.org/project/syft/"><img src="https://pepy.tech/badge/syft" /></a> <a href="https://pypi.org/project/syft/"><img src="https://badge.fury.io/py/syft.svg" /></a> <a href="https://hub.docker.com/u/openmined"><img src="https://img.shields.io/badge/docker-images-blue?logo=docker" /></a> <a href="https://github.com/OpenMined/PySyft/actions/workflows/nightlies-run.yml"><img src="https://github.com/OpenMined/PySyft/actions/workflows/nightlies-run.yml/badge.svg?branch=dev" /></a> <a href="https://gitpod.io/#https://github.com/OpenMined/PySyft"><img src="https://img.shields.io/badge/gitpod-908a85?logo=gitpod" /></a>
 <a href="https://slack.openmined.org/"><img src="https://img.shields.io/badge/chat-on%20slack-purple?logo=slack" /></a> <a href="https://openmined.github.io/PySyft/"><img src="https://img.shields.io/badge/read-docs-yellow?logo=mdbook" /></a>
 <br /><br /></div>
 
@@ -13,43 +12,35 @@ Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 <img src="packages/syft/docs/img/header.png#gh-dark-mode-only" alt="Syft Overview" width="100%" />
 </div>
 
-<!-- # Quickstart
-
-✅ `Linux` ✅ `macOS`\* ✅ `Windows`†‡
-<img src="packages/syft/docs/img/terminalizer.gif" height="400" align="right" />
-
-1. Install our handy python cli tool:
-   🛵 `pip install hagrid`
-2. Then run our interactive jupyter quickstart tutorial:
-   💻 `hagrid quickstart`
-
-- In the tutorial you will learn how to install and deploy:
-  `PySyft` = our `numpy`-like 🐍 Python Library
-  `PyGrid` = our 🐳 `docker` / `k8s` Data Platform
-
-- During quickstart we will deploy `PyGrid` to localhost with 🐳 `docker`, however 🛵 HAGrid can deploy to `k8s` or a 🐧 `ubuntu` VM on `azure` / `gcp` / `ANY_IP_ADDRESS` by using 🔨 `ansible`†
-
-3. Read our 📚 <a href="https://openmined.github.io/PySyft/">Docs</a>
-4. Ask Questions ❔ in `#support` on <a href="https://slack.openmined.org/">Slack</a> -->
-
 # Quickstart
 
 ✅ `Linux` ✅ `macOS`\* ✅ `Windows`†‡
+<img src="packages/syft/docs/img/terminalizer.gif" width="50%" align="right" />
 
-- `PySyft` = our `numpy`-like 🐍 Python library for computing on `private data` in someone else's `Domain`
-- `PyGrid` = our 🐳 `docker` / `k8s` / 🐧 `vm` `Domain` & `Network` Servers where `private data` lives
-- `HAGrid` = our handy 🛵 cli tool which makes `deploying` a `Domain` or `Network` server a one-liner
+1. Install our handy 🛵 cli tool which makes deploying a Domain or Network server a one-liner:  
+   `pip install -U hagrid`
+
+2. Then run our interactive jupyter Install 🧙🏽‍♂️ Wizard<sup>BETA</sup>:  
+   `hagrid quickstart`
+
+- In the tutorial you will learn how to install and deploy:  
+  `PySyft` = our `numpy`-like 🐍 Python library for computing on `private data` in someone else's `Domain`
+
+  `PyGrid` = our 🐳 `docker` / `k8s` / 🐧 `vm` `Domain` & `Network` Servers where `private data` lives
+
+- During quickstart we will deploy `PyGrid` to localhost with 🐳 `docker`, however 🛵 HAGrid can deploy to `k8s` or a 🐧 `ubuntu` VM on `azure` / `gcp` / `ANY_IP_ADDRESS` by using 🔨 `ansible`†
 
 3. Read our 📚 <a href="https://openmined.github.io/PySyft/">Docs</a>
 4. Ask Questions ❔ in `#support` on <a href="https://slack.openmined.org/">Slack</a>
 
 # Install Notes
 
-- HAGrid Requires: 🐍 `python` 🐙 `git` - Run: `pip install hagrid`  
+- HAGrid Requires: 🐍 `python` 🐙 `git` - Run: `pip install -U hagrid`
+- Interactive Install 🧙🏽‍♂️ Wizard<sup>BETA</sup> Requires 🛵 `hagrid`: - Run: `hagrid quickstart`  
   †`Windows` does not support `ansible`, preventing some remote deployment targets
-- PySyft Requires: 🐍 `python 3.7+` - Run: `pip install syft`  
+- PySyft Requires: 🐍 `python 3.7+` - Run: `pip install -U syft --pre`  
   \*`macOS` Apple Silicon users need cmake: `brew install cmake`  
-  ‡`Windows` users must run this first: `pip install jaxlib===0.3.7 -f https://whls.blob.core.windows.net/unstable/index.html`
+  ‡`Windows` users must run this first: `pip install jaxlib==0.3.7 -f https://whls.blob.core.windows.net/unstable/index.html`
 - PyGrid Requires: 🐳 `docker` / `k8s` or 🐧 `ubuntu` VM - Run: `hagrid launch ...`
 
 # Versions
@@ -62,7 +53,7 @@ Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 `0.2.0` - `0.5.0` Deprecated
 
 PySyft and PyGrid use the same `version` and its best to match them up where possible. We release weekly betas which can be used in each context:
-PySyft: `pip install syft --pre`
+PySyft: `pip install -U syft --pre`
 PyGrid: `hagrid launch ... tag=latest`
 
 <!-- Quickstart: `hagrid quickstart --pre` -->
@@ -83,7 +74,7 @@ HAGrid is a cli / deployment tool so the latest version of `hagrid` is usually t
 
 No more cold calls to get `access` to a dataset. No more weeks of `wait times` to get a `result` on your `query`. It also means `1000x more data` in every domain. PySyft opens the doors to a streamlined Data Scientist `workflow`, all with the individual's `privacy` at its heart.
 
-<!-- # Tutorials
+# Tutorials
 
 <table border="5" bordercolor="grey">
 <tr>
@@ -108,32 +99,29 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 </th>
 </tr>
 <tr>
-<td valign="top"> -->
-<!-- REMOVE THE BACKSLASHES -->
+<td valign="top">
 
-<!-- - <a href="#">Deploy a Domain Server</a>
-- <a href="#">Upload Private Data</a>
-- <a href="#">Create Accounts</a>
-- <a href="#">Manage Privacy Budget</a>
-- <a href="#">Join a Network</a>
+- <a href="/notebooks/quickstart/data-owner/00-deploy-domain.ipynb">Deploy a Domain Server</a>
+- <a href="/notebooks/quickstart/data-owner/01-upload-data.ipynb">Upload Private Data</a>
+- Create Accounts</a>
+- Manage Privacy Budget</a>
+- Join a Network</a>
 - Learn how PETs streamline Data Policies
 
 </td>
-<td valign="top"> -->
-<!-- REMOVE THE BACKSLASHES -->
+<td valign="top">
 
-<!-- - <a href="#">Install Syft</a>
-- <a href="#">Connect to a Domain</a>
-- <a href="#">Search for Datasets</a>
+- Install Syft</a>
+- Connect to a Domain</a>
+- Search for Datasets</a>
 - Train Models
 - Retrieve Secure Results
 - Learn Differential Privacy
 
 </td>
-<td valign="top"> -->
-<!-- REMOVE THE BACKSLASHES -->
+<td valign="top">
 
-<!-- - <a href="#">Setup Dev Mode</a>
+- Setup Dev Mode</a>
 - Deploy to Azure
 - Deploy to GCP
 - Deploy to Kubernetes
@@ -141,7 +129,7 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 - Modify PyGrid UI
 </td>
 </tr>
-</table> -->
+</table>
 
 # Terminology
 
@@ -217,14 +205,14 @@ Provides services to a group of `Data Owners` and `Data Scientists`, such as dat
 <img src="packages/syft/docs/img/panel_title_videos_papers.png#gh-dark-mode-only" alt="" width="100%" align="center" />
 <p align="left"><sub><sup>
 🎥 <a href="https://www.youtube.com/watch?v=qVf0tPBzr2k">PETs: Remote Data Science Unleashed - R gov 2021</a><br />
-🎥 <a href="https://youtu.be/sCoDWKTbh3s?list=PL_lsbAsL_o2BQKXG7mkGFA8LSApCnhljL">Introduction to Remote Data Science - PyTorch Dev 2021</a><br />
-🎥 <a href="https://youtu.be/kzLeTz_vIeQ?list=PL_lsbAsL_o2BtOz6KUfUI_Zla6Rg5dmyc">The Future of AI Tools - PyTorch Dev 2020</a><br />
+🎥 <a href="https://youtu.be/sCoDWKTbh3s?list=PL_lsbAsL_o2BQKXG7mkGFA8LSApCnhljL">Introduction to Remote Data Science - PyTorch 2021</a><br />
+🎥 <a href="https://youtu.be/kzLeTz_vIeQ?list=PL_lsbAsL_o2BtOz6KUfUI_Zla6Rg5dmyc">The Future of AI Tools - PyTorch 2020</a><br />
 🎥 <a href="https://www.youtube.com/watch?v=4zrU54VIK6k&t=1s">Privacy Preserving AI - MIT Deep Learning Series</a><br />
 🎥 <a href="https://www.youtube.com/watch?v=Pr4erdusiW0">Privacy-Preserving Data Science - TWiML Talk #241</a><br />
 🎥 <a href="https://www.youtube.com/watch?v=NJBBE_SN90A">Privacy Preserving AI - PyTorch Devcon 2019</a><br />
-📖 <a href="https://arxiv.org/pdf/2110.01315.pdf">Towards general-purpose infrastructure for protecting ...</a><br />
+📖 <a href="https://arxiv.org/pdf/2110.01315.pdf">Towards general-purpose infrastructure for protect...</a><br />
 📖 <a href="https://arxiv.org/pdf/2104.12385.pdf">Syft 0.5: A platform for universally deployable ...</a><br />
-📖 <a href="https://arxiv.org/pdf/1811.04017.pdf">A generic framework for privacy preserving deep learning</a>
+📖 <a href="https://arxiv.org/pdf/1811.04017.pdf">A generic framework for privacy preserving deep ...</a>
 </sup></sup></p>
 </div>
 </th>

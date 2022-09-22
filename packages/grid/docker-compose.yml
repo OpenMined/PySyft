@@ -190,6 +190,7 @@ services:
       - NETWORK_CHECK_INTERVAL=${NETWORK_CHECK_INTERVAL}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
       - S3_ROOT_PWD=${S3_ROOT_PWD?Variable not set}
+      - DOMAIN_CHECK_INTERVAL=${DOMAIN_CHECK_INTERVAL}
     command: "/worker-start.sh"
     network_mode: service:proxy
 
