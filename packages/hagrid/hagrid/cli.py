@@ -2544,6 +2544,57 @@ def check(
             console.print(table)
 
 
+def check_text(
+    ip_addresses: TypeList[str], wait: bool = False, silent: bool = False
+) -> None:
+    console = rich.get_console()
+    if len(ip_addresses) == 0:
+        headers = {"User-Agent": "curl/7.79.1"}
+        print("Detecting External IP...")
+        ip_res = requests.get("https://ifconfig.co", headers=headers)
+        ip_address = ip_res.text.strip()
+        ip_addresses = [ip_address]
+
+    if len(ip_addresses) == 1:
+        ip_address = ip_addresses[0]
+        status, table_contents = get_health_checks(ip_address=ip_address)
+        table = create_check_table(table_contents=table_contents)
+        max_timeout = 600
+        if wait and not status:
+            table = create_check_table(
+                table_contents=table_contents, time_left=max_timeout
+            )
+            if silent:
+                print("Checking...")
+            while not status:
+                if not silent:
+                    with Live(table, refresh_per_second=4, screen=True) as live:
+                        max_timeout -= 1
+                        if max_timeout % 5 == 0:
+                            status, table_contents = get_health_checks(ip_address)
+                        table = create_check_table(
+                            table_contents=table_contents, time_left=max_timeout
+                        )
+                        live.update(table)
+                        if status:
+                            break
+                        time.sleep(1)
+                else:
+                    max_timeout -= 1
+                    if max_timeout % 5 == 0:
+                        status, table_contents = get_health_checks(ip_address)
+                    table = create_check_table(
+                        table_contents=table_contents, time_left=max_timeout
+                    )
+                    time.sleep(1)
+        console.print(table)
+    else:
+        for ip_address in ip_addresses:
+            _, table_contents = get_health_checks(ip_address)
+            table = create_check_table(table_contents=table_contents)
+            console.print(table)
+
+
 cli.add_command(check)
 
 
