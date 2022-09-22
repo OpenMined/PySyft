@@ -32,6 +32,7 @@ from rich.live import Live
 from virtualenvapi.manage import VirtualEnvironment
 
 # relative
+from .art import RichEmoji
 from .art import hagrid
 from .art import quickstart_art
 from .auth import AuthCredentials
@@ -2783,8 +2784,11 @@ def display_jupyter_url(url_parts: Tuple[str, str, int]) -> None:
 
     console = rich.get_console()
 
+    tick_emoji = RichEmoji("white_heavy_check_mark").to_str()
+    link_emoji = RichEmoji("link").to_str()
+
     console.print(
-        f"[bold white]:white_heavy_check_mark: Jupyter Server is running at:\n:link: [bold blue]{url}\n"
+        f"[bold white]{tick_emoji} Jupyter Server is running at:\n{link_emoji} [bold blue]{url}\n"
         + "[bold white]Use Control-C to stop this server and shut down all kernels.",
         new_line_start=True,
     )
@@ -2825,6 +2829,7 @@ def quickstart_setup(
 ) -> None:
 
     console = rich.get_console()
+    OK_EMOJI = RichEmoji("white_heavy_check_mark").to_str()
 
     try:
         with console.status(
@@ -2835,22 +2840,24 @@ def quickstart_setup(
             if reset and os.path.exists(virtual_env_dir):
                 shutil.rmtree(virtual_env_dir)
             env = VirtualEnvironment(virtual_env_dir, python=python)
-            console.print("[bold green]OK[/] Created Virtual Environment")
+            console.print(
+                f"{OK_EMOJI} Created Virtual Environment {RichEmoji('evergreen_tree').to_str()}"
+            )
 
             # upgrade pip
             console_status.update("[bold blue]Installing pip")
             env.install("pip", options=["-U"])
-            console.print("[bold green]OK[/] pip")
+            console.print(f"{OK_EMOJI} pip")
 
             # upgrade packaging
-            console_status.update("[bold blue] Installing packaging")
+            console_status.update("[bold blue]Installing packaging")
             env.install("packaging", options=["-U"])
-            console.print("[bold green]OK[/]  packaging")
+            console.print(f"{OK_EMOJI} packaging")
 
             console_status.update("[bold blue]Installing Jupyter Labs")
             env.install("jupyterlab")
             env.install("ipywidgets")
-            console.print("[bold green]OK[/] Jupyter Labs")
+            console.print(f"{OK_EMOJI} Jupyter Labs")
 
             if EDITABLE_MODE:
                 # local_syft_dir = Path(os.path.abspath(Path(hagrid_root()) / "../syft"))
@@ -2864,7 +2871,7 @@ def quickstart_setup(
                 )
                 env.install("-e " + str(local_hagrid_dir))
                 console.print(
-                    f"[bold green]OK[/] HAGrid in Editable Mode: {str(local_hagrid_dir)}"
+                    f"{OK_EMOJI} HAGrid in Editable Mode: {str(local_hagrid_dir)}"
                 )
             else:
                 # options = []
@@ -2885,7 +2892,7 @@ def quickstart_setup(
                 # env.install(package, options=options)
                 console_status.update("[bold blue]Installing hagrid")
                 env.install("hagrid", options=["-U"])
-                console.print("[bold green]OK[/] HAGrid")
+                console.print(f"{OK_EMOJI} HAGrid")
     except Exception as e:
         print(e)
         raise e

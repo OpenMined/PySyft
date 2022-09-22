@@ -1,10 +1,12 @@
 # stdlib
+import locale
 import os
 import secrets
 
 # third party
 import ascii_magic
 import rich
+from rich.emoji import Emoji
 
 # relative
 from .lib import asset_path
@@ -147,3 +149,8 @@ def hagrid() -> None:
     i = secrets.randbelow(3)
     options[i]()
     hold_on_tight()
+
+
+class RichEmoji(Emoji):
+    def to_str(self) -> str:
+        return self._char.encode("utf-8").decode(locale.getpreferredencoding())
