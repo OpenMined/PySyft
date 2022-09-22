@@ -2671,15 +2671,21 @@ def run_quickstart(
             thread_2.start()
 
             display_url = None
+            console = rich.get_console()
+
             # keepn reading the queue of stdout + stderr
             while True:
                 try:
                     if not display_url:
-                        # try to read the line and extract a jupyter url
-                        line = queue.get()
-                        display_url = extract_jupyter_url(line.decode("utf-8"))
-                        if display_url:
-                            display_jupyter_url(url_parts=display_url)
+                        # try to read the line and extract a jupyter url:
+                        with console.status(
+                            "Starting Jupyter service"
+                        ) as console_status:
+                            line = queue.get()
+                            display_url = extract_jupyter_url(line.decode("utf-8"))
+                            if display_url:
+                                display_jupyter_url(url_parts=display_url)
+                                console_status.stop()
                 except KeyboardInterrupt:
                     proc.kill()  # make sure jupyter gets killed
                     sys.exit(1)
@@ -2854,15 +2860,14 @@ def quickstart_setup(
             env.install("packaging", options=["-U"])
             console.print(f"{OK_EMOJI} packaging")
 
-            console_status.update("[bold blue]Installing Jupyter Labs")
+            # Install jupyter lab
+            console_status.update("[bold blue]Installing Jupyter Lab")
             env.install("jupyterlab")
             env.install("ipywidgets")
-            console.print(f"{OK_EMOJI} Jupyter Labs")
+            console.print(f"{OK_EMOJI} Jupyter Lab")
 
+            # Install hagrid
             if EDITABLE_MODE:
-                # local_syft_dir = Path(os.path.abspath(Path(hagrid_root()) / "../syft"))
-                # print("Installing Syft in Editable Mode")
-                # env.install("-e " + str(local_syft_dir))
                 local_hagrid_dir = Path(
                     os.path.abspath(Path(hagrid_root()) / "../hagrid")
                 )
@@ -2874,22 +2879,6 @@ def quickstart_setup(
                     f"{OK_EMOJI} HAGrid in Editable Mode: {str(local_hagrid_dir)}"
                 )
             else:
-                # options = []
-                # options.append("--force")
-                # if syft_version == "latest":
-                #     syft_version = LATEST_STABLE_SYFT
-                #     package = f"syft>={syft_version}"
-                #     if pre:
-                #         package = f"{package}.dev0"  # force pre release
-                # else:
-                #     package = f"syft=={syft_version}"
-
-                # if pre:
-                #     options.append("--pre")
-                #     print(f"Installing {package} --pre")
-                # else:
-                #     print(f"Installing {package}")
-                # env.install(package, options=options)
                 console_status.update("[bold blue]Installing hagrid")
                 env.install("hagrid", options=["-U"])
                 console.print(f"{OK_EMOJI} HAGrid")
