@@ -55,6 +55,8 @@ def data_scientist(email: str, pwd: str) -> Dict["str", Any]:
 # privacy budget requirement.
 
 
+# TODO: fix not a valid JAX type
+# File "/app/syft/src/syft/core/adp/vectorized_publish.py", line 271, in publish
 @pytest.mark.skip(reason="Disabling due to JSON Error in github CI")
 @pytest.mark.e2e
 def test_addition(
