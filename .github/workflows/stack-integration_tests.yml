@@ -107,7 +107,7 @@ jobs:
       - name: Install jaxlib
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
         run: |
-          python -c "import platform; import os; os.system('pip install jaxlib==0.3.11 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
+          python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       - name: Install tff python 3.10
         if: steps.changes.outputs.stack == 'true'
@@ -218,7 +218,7 @@ jobs:
       - name: Install jaxlib
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
         run: |
-          python -c "import platform; import os; os.system('pip install jaxlib==0.3.11 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
+          python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       - name: Install tff python 3.10
         if: steps.changes.outputs.stack == 'true'
@@ -344,7 +344,7 @@ jobs:
       - name: Install jaxlib
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
         run: |
-          python -c "import platform; import os; os.system('pip install jaxlib==0.3.11 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
+          python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
       - name: Install tff python 3.10
         if: steps.changes.outputs.stack == 'true'

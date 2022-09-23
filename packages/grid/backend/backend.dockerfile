@@ -24,7 +24,7 @@ COPY grid/backend/wheels /wheels
 # apple m1 build PyNaCl for aarch64
 RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) != "x86_64" ]; then \
   # precompiled jaxlib and dm-tree
-  pip install --user /wheels/jaxlib-0.3.7-cp310-none-manylinux2014_aarch64.whl; \
+  pip install --user /wheels/jaxlib-0.3.14-cp310-none-manylinux2014_aarch64.whl; \
   tar -xvf /wheels/dm-tree-0.1.7.tar.gz; \
   pip install --user pytest-xdist[psutil]; \
   pip install --user torch==1.11.0 -f https://download.pytorch.org/whl/torch_stable.html; \
