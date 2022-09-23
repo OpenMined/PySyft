@@ -94,26 +94,26 @@ check_and_install() {
     fi
 }
 
-spinner="
-🧙🏿‍♀️oo
-o🧙‍♂️o
-oo🧙🏽
-"
+# spinner="
+# 🧙🏿‍♀️oo
+# o🧙‍♂️o
+# oo🧙🏽
+# "
 
-spin() {
-    while [ 1 ]
-    do
-        for i in $spinner do
-        do
-            clear && printf "\rHAGrid is installing:\n$i"
-            sleep 0.2
-        done
-    done
-}
+# spin() {
+#     while [ 1 ]
+#     do
+#         for i in $spinner do
+#         do
+#             clear && printf "\rHAGrid is installing:\n$i"
+#             sleep 0.2
+#         done
+#     done
+# }
 
 execute() {
     check_macos_ubuntu
-    spin &
+    # spin &
     pid=$!
     set +e
     check_and_install python3 python3
