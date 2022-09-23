@@ -853,6 +853,7 @@ def create_launch_cmd(
     parsed_kwargs["tls"] = bool(kwargs["tls"]) if "tls" in kwargs else False
     parsed_kwargs["test"] = bool(kwargs["test"]) if "test" in kwargs else False
     parsed_kwargs["dev"] = bool(kwargs["dev"]) if "dev" in kwargs else False
+
     parsed_kwargs["silent"] = bool(kwargs["silent"]) if "silent" in kwargs else False
     parsed_kwargs["from_template"] = (
         str_to_bool(kwargs["from_template"]) if "from_template" in kwargs else False
