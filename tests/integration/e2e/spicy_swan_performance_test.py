@@ -206,7 +206,7 @@ def test_benchmark_datasets() -> None:
             assert isinstance(sum_proxy, ProxyDataset)
 
         start_time = time.time()
-        publish_ptr = sum_ptr.publish(sigma=0.5)
+        publish_ptr = sum_ptr.publish(sigma=500_000)
         publish_ptr.block_with_timeout(timeout)
         result = publish_ptr.get()
         print("result", result)
