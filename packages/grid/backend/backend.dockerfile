@@ -1,4 +1,6 @@
-FROM python:3.10.4-slim as build
+ARG PYTHON_VERSION='3.10.7'
+
+FROM python:3.10.7-slim as build
 
 # set UTC timezone
 ENV TZ=Etc/UTC
@@ -32,6 +34,9 @@ RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) != "x86_64" ]; then 
   pip install --user ruamel.yaml==0.17.21; \
   fi
 
+# install custom built python 3.10 wheel
+RUN --mount=type=cache,target=/root/.cache pip install --user /wheels/tensorflow_federated-0.36.0-py2.py3-none-any.whl;
+
 WORKDIR /app
 COPY grid/backend/requirements.txt /app
 
@@ -39,7 +44,7 @@ RUN --mount=type=cache,target=/root/.cache \
   pip install --user -r requirements.txt
 
 # Backend
-FROM python:3.10.4-slim as backend
+FROM python:$PYTHON_VERSION-slim as backend
 COPY --from=build /root/.local /root/.local
 
 ENV PYTHONPATH=/app
@@ -74,6 +79,11 @@ COPY grid/backend /app/
 COPY syft/setup.py /app/syft/setup.py
 COPY syft/setup.cfg /app/syft/setup.cfg
 COPY syft/src /app/syft/src
+RUN --mount=type=cache,target=/root/.cache \
+  pip install --user -r requirements.txt
+
+RUN pip install tensorflow-probability==0.18.0
+RUN pip install tensorflow-federated==0.36.0
 
 # install syft
 RUN --mount=type=cache,target=/root/.cache \
