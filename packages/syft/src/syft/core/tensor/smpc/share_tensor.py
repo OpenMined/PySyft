@@ -26,16 +26,7 @@ import syft as sy
 from . import utils
 from .... import logger
 from ....grid import GridURL
-from ...common.serde.capnp import CapnpModule
-from ...common.serde.capnp import capnp_deserialize
-from ...common.serde.capnp import capnp_serialize
-from ...common.serde.capnp import chunk_bytes
-from ...common.serde.capnp import combine_bytes
-from ...common.serde.capnp import get_capnp_schema
-from ...common.serde.capnp import serde_magic_header
-from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
-from ...common.serde.serialize import _serialize as serialize
 from ...smpc.store.crypto_store import CryptoStore
 from ..config import DEFAULT_RING_SIZE
 from ..fixed_precision_tensor import FixedPrecisionTensor
@@ -115,10 +106,11 @@ def populate_store(*args: List[Any], **kwargs: Dict[Any, Any]) -> None:
     return None
 
 
-@serializable(capnp_bytes=True)
+@serializable(recursive_serde=True)
 class ShareTensor(PassthroughTensor):
     crypto_store = CryptoStore()
 
+    __attr_allowlist__ = ["child", "rank", "parties_info", "seed_przs", "ring_size"]
     __slots__ = (
         "rank",
         "ring_size",
@@ -825,56 +817,6 @@ class ShareTensor(PassthroughTensor):
             return ShareTensor.hook_method(self, attr_name)
 
         return object.__getattribute__(self, attr_name)
-
-    def _object2bytes(self) -> bytes:
-        schema = get_capnp_schema(schema_file="share_tensor.capnp")
-
-        st_struct: CapnpModule = schema.ShareTensor  # type: ignore
-        st_msg = st_struct.new_message()  # type: ignore
-        # this is how we dispatch correct deserialization of bytes
-        st_msg.magicHeader = serde_magic_header(type(self))
-
-        # child of Share tensor could either be Python Scalar or np.ndarray
-        if isinstance(self.child, np.ndarray) or np.isscalar(self.child):
-            chunk_bytes(
-                capnp_serialize(np.array(self.child), to_bytes=True), "child", st_msg
-            )
-            st_msg.isNumpy = True
-        else:
-            chunk_bytes(serialize(self.child, to_bytes=True), "child", st_msg)  # type: ignore
-            st_msg.isNumpy = False
-
-        st_msg.rank = self.rank
-        st_msg.partiesInfo = serialize(self.parties_info, to_bytes=True)
-        st_msg.seedPrzs = self.seed_przs
-        st_msg.ringSize = str(self.ring_size)
-
-        return st_msg.to_bytes()
-
-    @staticmethod
-    def _bytes2object(buf: bytes) -> ShareTensor:
-        schema = get_capnp_schema(schema_file="share_tensor.capnp")
-        st_struct: CapnpModule = schema.ShareTensor  # type: ignore
-        # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
-        MAX_TRAVERSAL_LIMIT = 2**64 - 1
-
-        with st_struct.from_bytes(  # type: ignore
-            buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        ) as msg:
-            st_msg = msg
-
-        if st_msg.isNumpy:
-            child = capnp_deserialize(combine_bytes(st_msg.child), from_bytes=True)
-        else:
-            child = deserialize(combine_bytes(st_msg.child), from_bytes=True)
-
-        return ShareTensor(
-            value=child,
-            rank=st_msg.rank,
-            parties_info=deserialize(st_msg.partiesInfo, from_bytes=True),
-            seed_przs=st_msg.seedPrzs,
-            ring_size=int(st_msg.ringSize),
-        )
 
     __add__ = add
     __radd__ = add

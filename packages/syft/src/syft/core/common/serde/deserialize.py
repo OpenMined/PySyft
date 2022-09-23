@@ -26,16 +26,6 @@ def _deserialize(
         raise TypeError("Wrong deserialization format.")
 
     if from_bytes:
-        # try to decode capnp first
-        if isinstance(blob, bytes):
-            # relative
-            from .capnp import deserialize_capnp
-
-            try:
-                return deserialize_capnp(buf=blob)
-            except Exception:  # nosec
-                pass
-
         return rs_bytes2object(blob)
 
     if from_proto:

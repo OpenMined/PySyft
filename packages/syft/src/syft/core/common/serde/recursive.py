@@ -16,7 +16,6 @@ import syft as sy
 from ....util import get_fully_qualified_name
 from ....util import index_syft_by_module_name
 from .capnp import get_capnp_schema
-from .capnp import serde_magic_header
 
 TYPE_BANK = {}
 
@@ -54,8 +53,6 @@ def recursive_serde_register(
 
 
 def rs_object2proto(self: Any) -> _DynamicStructBuilder:
-    # if __attr_allowlist__ then only include attrs from that list
-
     msg = recursive_scheme.new_message()
     fqn = get_fully_qualified_name(self)
 
@@ -98,8 +95,6 @@ def rs_object2proto(self: Any) -> _DynamicStructBuilder:
         msg.fieldsName[idx] = attr_name
         msg.fieldsData[idx] = serialized
 
-    msg.magicHeader = serde_magic_header(type(self))
-
     return msg
 
 
@@ -141,13 +136,21 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
             )
         return deserialize(proto.nonrecursiveBlob)
 
-    obj = class_type.__new__(class_type)  # type: ignore
+    kwargs = {}
+
     for attr_name, attr_bytes in zip(proto.fieldsName, proto.fieldsData):
         attr_value = _deserialize(attr_bytes, from_bytes=True)
         transforms = serde_overrides.get(attr_name, None)
-        if transforms is None:
-            setattr(obj, attr_name, attr_value)
-        else:
-            setattr(obj, attr_name, transforms[1](attr_value))
+
+        if transforms is not None:
+            attr_value = transforms[1](attr_value)
+        kwargs[attr_name] = attr_value
+
+    if hasattr(class_type, "serde_constructor"):
+        return getattr(class_type, "serde_constructor")(kwargs)
+
+    obj = class_type.__new__(class_type)  # type: ignore
+    for attr_name, attr_value in kwargs.items():
+        setattr(obj, attr_name, attr_value)
 
     return obj
