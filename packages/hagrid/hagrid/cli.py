@@ -317,13 +317,6 @@ def clean(location: str) -> None:
     help="Optional: launch node using the manifest template",
 )
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
-
-    # Check docker service status
-    check_docker_service_status()
-
-    # Check grid docker versions
-    check_grid_docker(display=True, output_in_text=True)
-
     verb = get_launch_verb()
     try:
         grammar = parse_grammar(args=args, verb=verb)
@@ -910,6 +903,11 @@ def create_launch_cmd(
         parsed_kwargs.update(kwargs)
 
     if host in ["docker"]:
+        # Check docker service status
+        check_docker_service_status()
+
+        # Check grid docker versions
+        check_grid_docker(display=True, output_in_text=True)
 
         if not ignore_docker_version_check:
             version = check_docker_version()
@@ -1412,7 +1410,7 @@ def create_launch_docker_cmd(
     print("  - NAME: " + str(snake_name))
     # print("  - TAG: " + str(tag))
     print("  - PORT: " + str(host_term.free_port))
-    print("  - DOCKER: " + docker_version)
+    print("  - DOCKER COMPOSE: " + docker_version)
     # print("  - TAIL: " + str(tail))
     print("\n")
 
