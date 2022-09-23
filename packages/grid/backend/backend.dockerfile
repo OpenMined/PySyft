@@ -32,6 +32,7 @@ RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) != "x86_64" ]; then 
   pip install --user dm-tree==0.1.7; \
   # fixes apple silicon in dev mode due to dependency from safety
   pip install --user ruamel.yaml==0.17.21; \
+  pip install --user /wheels/tensorflow_compression-2.10.0-cp310-cp310-linux_aarch64.whl; \
   fi
 
 # install custom built python 3.10 wheel
