@@ -27,28 +27,29 @@ and how to assign a privacy budget to that user. Then we'll touch on why setting
 budget is important later in your workflow.
  
 
-Pre-Requisites
-------------------
+🚨 Pre-Requisites Steps
+---------------------------
+
 Before you can create user accounts on your domain, you have to first:
 
-#. Login to your Domain Node
-#. Annotate your dataset with the appropriate DP metadata
-#. And Upload your dataset
+#. :ref:`Login to your Domain Node <step2>`
+#. :ref:`Annotate your dataset with the appropriate DP metadata <step4>`
+#. :ref:`Upload your dataset to Domain <step5>`
 
 .. note:: 
-   The above prerequisite steps are covered in the previous tutorials :doc:`How to deploy a
-   Domain Node <00-deploy-domain>` and :doc:`How to upload private data to the Domain
+   The above prerequisite steps are covered in the previous tutorial :doc:`How to upload private data to the Domain
    Node <01-upload-data>`. Please execute those steps before implementing this tutorial.
 
-📒 Overview of this tutorial:
+📒 Overview of this tutorial
+---------------------------
 
-#. **Defining** account credentials
-#. **Checking** permissions  
+#. **Define** account credentials
+#. **Check** account permissions  
 
 |02-create-account-configure-pb-00|
 
 Step 1: Create a User Account
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 After you have launched and logged into your domain as an ``admin``, you can create user accounts for others to use. 
 
 .. WARNING:: 
@@ -61,9 +62,13 @@ After you have launched and logged into your domain as an ``admin``, you can cre
    your ``domain`` to one or more networks so that proper verification measures have been taken. 
    You can learn more about this in our "Connect Your Domain to a Network" tutorial.
 
-There are three different ways to create an account for the user. We will discuss them in detail below:
+There are ``three`` different ways to create an account for the user **through the PySyft interface in a notebook using the 
+existing domain client (A) and by signing up using the URL to the domain (B), or alternatively, from the PyGrid UI (C).**
 
-A. Create a Data Scientist Account from the Notebook
+.. note::
+   In all three cases, the user of your domain will be assigned the role of Data Scientist by default.
+
+A. Using PySyft: Create account from Domain Client
 #######################################################
 
 To create a Data Scientists account for someone within your team or organization, you need to tell your Domain 4 things:
@@ -102,8 +107,8 @@ Once you have created an account, you can ``verify`` if the user account was mad
    # list the users that have registered to the domain
    domain_client.users
 
-B. Users Signup to Domain to Create a Data Scientist Account via Domain URL
-#################################################################################
+B. Using PySyft: Create account from Domain URL
+####################################################
 
 A user can also ``signup`` or create an account on a Domain node if they have access to the ``URL`` to the Domain. 
 Instead of creating an account individually for each Data Scientist, a Data Owner can ``share`` the URL to their 
@@ -134,10 +139,9 @@ To register to a Domain, you need the following details:
 On successful registration, the user is auto-logged into the domain. 
 
 .. note:: 
-   By default the role assigned to the registered user is of a ``Data Scientist`` and the assigned ``privacy budget`` is ``0``. 
-   A Data Owner can further manage the registered users from the UI as indicated in Step 2.
+   By default the role assigned to the registered user is of a ``Data Scientist`` and the assigned ``privacy budget`` is ``0``. The future tutorial series will cover a better explanation of `setting the privacy budget`.
 
-C. Create a Data Scientist Account in PyGrid's UI
+C. Using PyGrid UI: Create account as a Domain Admin
 #########################################################
 
 PyGrid's UI is meant to help Domain Owners get a bigger picture view of their domains and manage them. 
@@ -178,7 +182,7 @@ Now that we have created an account for our Data Scientist, let's check to see i
 was made and if we need to change any permissions.
 
 .. note:: 
-   Permissions are applied by what "Role" a user has been assigned by the Data Owner. 
+   Permissions are determined by the ``role`` a user has been assigned by the Data Owner. 
    To simplify the concepts, let us consider the below scenario. 
    
 Scenario
@@ -188,8 +192,7 @@ for the user in the prior steps. On the homepage, go to the ``Permissions`` tab,
 where you will notice the different roles and associated permissions with them. 
 
 .. note:: 
-   All the roles come with some default permissions, but they can be updated according 
-   to the norms of the organizations.
+   Each role has a set of default ``permissions``, but they can be changed according to the norms of each organization.
 
 |02-create-account-configure-pb-01|
 
