@@ -1,5 +1,4 @@
 <script lang="ts">
-  import Button from '$lib/components/Button.svelte';
   import Capital from '$lib/components/Capital.svelte';
   import { defaultItems } from '$lib/checklist.json';
 
@@ -18,44 +17,56 @@
     checklistItems.splice(index, 1);
     checklistItems = checklistItems;
   }
+
+  function saveEntries() {
+    alert('TODO: Save checklist items');
+  }
 </script>
 
 <main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col h-full">
   <!-- Body content -->
-  <section class="md:flex md:gap-x-[62px] lg:gap-x-[124px] mt-14 h-full">
+  <section class="md:flex md:gap-x-[62px] lg:gap-x-[124px] my-5 h-full">
     <div class="w-full">
       <div class="py-4 mt-2">
+        <!-- Study header -->
         <p class="text-xs">No. 001</p>
-        <!-- Study name -->
-        <h1 class="text-2xl leading-[1.1] font-medium text-gray-800 font-rubik mt-1">
+        <h1 class="text-2xl leading-[1.1] font-medium text-gray-800 font-rubik mt-1 mb-2">
           Is Recurrent Depression Mediated By Neuroinflammation?
         </h1>
+        <div class="flex items-center">
+          <div class="avatarImage">
+            <slot />
+          </div>
+          <p class="text-xs pl-2">
+            <strong>University of Oxford</strong>, Department of Psychiatry
+          </p>
+        </div>
       </div>
 
-      <hr class="py-3" />
+      <hr />
 
-      <!-- Checklist info -->
+      <!-- Checklist components -->
       <h1 class="py-5 underline decoration-dotted underline-offset-8">General Checklist</h1>
-      <!-- {#each Object.values(defaultItems) as item}
-          <li>{item}</li>
-          <input bind:checked={item.status} type="checkbox" />
-          <span class:checked={item.status}>{item.text}</span>
-          <span on:click={() => removeFromList(index)}>❌</span>
-          <br />
-        {/each} -->
-      <ul class="space-y-0.25">
-        {#each checklistItems as item, index}
-          <li>
-            <input bind:checked={item.status} type="checkbox" />
-            <span class:checked={item.status}>{item.text}</span>
-            <span on:click={() => removeFromList(index)}>new item</span>
-          </li>
-          <br />
-        {/each}
 
-        <input bind:value={newItem} type="text" placeholder="new todo item.." />
-        <button on:click={addToList}>Add</button>
-      </ul>
+      {#each checklistItems as item, index}
+        <div class="flex items-center py-2">
+          <input class="cursor-pointer large-checkbox" bind:checked={item.status} type="checkbox" />
+          <label class="px-3" class:checked={item.status}>{item.text}</label>
+          <span class="cursor-pointer" on:click={() => removeFromList(index)}>❌</span>
+        </div>
+      {/each}
+
+      <div class="px-5 py-5">
+        <button class="pr-2" on:click={addToList}>+ Add Item</button>
+        <input
+          class="border-solid border-2"
+          bind:value={newItem}
+          type="text"
+          placeholder="new item.."
+        />
+      </div>
+
+      <button class="submit-button" on:click={saveEntries}>Make A Decision</button>
     </div>
 
     <Capital>
@@ -76,6 +87,31 @@
 
 <style>
   .checked {
-    text-decoration: line-through;
+    color: rgb(148 163 184);
+  }
+
+  input[type='checkbox'] {
+    -ms-transform: scale(2);
+    -moz-transform: scale(2);
+    -webkit-transform: scale(2);
+    -o-transform: scale(2);
+    transform: scale(2);
+  }
+
+  .submit-button {
+    color: white;
+    background-color: black; /* Green */
+    border-radius: 20px;
+    font-size: 15px;
+    height: 40px;
+    width: 150px;
+    padding: 10px;
+  }
+
+  .avatarImage {
+    width: 40px;
+    height: 40px;
+    border: 20px solid;
+    border-radius: 50%;
   }
 </style>
