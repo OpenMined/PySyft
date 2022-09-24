@@ -32,12 +32,11 @@ RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) != "x86_64" ]; then 
   pip install --user dm-tree==0.1.7; \
   # fixes apple silicon in dev mode due to dependency from safety
   pip install --user ruamel.yaml==0.17.21; \
-  pip install --user /wheels/tensorstore-0.1.25-cp310-cp310-linux_aarch64.whl; \
-  pip install --user /wheels/tensorflow_compression-2.10.0-cp310-cp310-linux_aarch64.whl; \
+  # pip install --user tensorflow-aarch64==2.10.0; \
+  # pip install --user /wheels/tensorstore-0.1.25-cp310-cp310-linux_aarch64.whl; \
+  # pip install --user /wheels/tensorflow_compression-2.10.0-cp310-cp310-linux_aarch64.whl; \
+  # pip install --user /wheels/tensorflow_federated-0.36.0-py2.py3-none-any.whl; \
   fi
-
-# install custom built python 3.10 wheel
-RUN --mount=type=cache,target=/root/.cache pip install --user /wheels/tensorflow_federated-0.36.0-py2.py3-none-any.whl;
 
 WORKDIR /app
 COPY grid/backend/requirements.txt /app
@@ -84,8 +83,11 @@ COPY syft/src /app/syft/src
 RUN --mount=type=cache,target=/root/.cache \
   pip install --user -r requirements.txt
 
-RUN pip install tensorflow-probability==0.18.0
-RUN pip install tensorflow-federated==0.36.0
+# install tff
+RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) = "x86_64" ]; then \
+  pip install --user tensorflow-probability==0.18.0; \
+  pip install --user tensorflow-federated==0.36.0; \
+  fi
 
 # install syft
 RUN --mount=type=cache,target=/root/.cache \
