@@ -125,7 +125,16 @@ def publish(
     previous_spend = None
 
     # if we dont return below we will terminate if the tensor gets replaced with zeros
+    prev_tensor = None
     while not (tensor.child == zeros_like).all():  # tensor.shape != ():
+
+        if prev_tensor is None:
+            prev_tensor = tensor.child
+        else:
+            if (prev_tensor == tensor.child).all():  # type: ignore
+                raise Exception("Tensor has not changed and is not all zeros")
+            else:
+                prev_tensor = tensor.child
 
         if is_linear:
             lipschitz_bounds = coeffs.copy()
@@ -144,7 +153,7 @@ def publish(
 
         # rdp_constant = all terms in Theorem. 2.7 or 2.8 of https://arxiv.org/abs/2008.11193 EXCEPT alpha
         rdp_constants = compute_rdp_constant(rdp_params, private=True)
-        all_epsilons = ledger.calculate_epsilon_spend(
+        all_epsilons = ledger._get_epsilon_spend(
             rdp_constants
         )  # This is the epsilon spend for ALL data subjects
         if any(all_epsilons < 0):
@@ -280,7 +289,7 @@ def publish(
 
                         # Privacy loss associated with this private data specifically
                         epsilon = max(
-                            ledger.calculate_epsilon_spend(
+                            ledger._get_epsilon_spend(
                                 np.asarray(
                                     compute_rdp_constant(rdp_params, private=True)
                                 )
@@ -288,6 +297,9 @@ def publish(
                         )
 
                         # Filter if > privacy budget
+                        if jnp.isnan(epsilon):
+                            raise Exception("Epsilon is NaN")
+
                         if epsilon > privacy_budget:
                             filtered_tensor = input_tensor.filtered()
 
@@ -297,7 +309,6 @@ def publish(
 
                             # add the new zeroed state id tensor
                             parent_state[filtered_tensor.id] = filtered_tensor
-
                         # If epsilon <= privacy budget, we don't need to do anything -
                         # the user has enough PB to use the data
                     else:
