@@ -2500,6 +2500,12 @@ def create_check_table(
 def check(
     ip_addresses: TypeList[str], wait: bool = False, silent: bool = False
 ) -> None:
+    check_status(ip_addresses=ip_addresses, wait=wait, silent=silent)
+
+
+def check_status(
+    ip_addresses: TypeList[str], wait: bool = False, silent: bool = False
+) -> None:
     console = rich.get_console()
     if len(ip_addresses) == 0:
         headers = {"User-Agent": "curl/7.79.1"}
