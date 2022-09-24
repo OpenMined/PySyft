@@ -33,6 +33,10 @@ RUN apt-get install libavif-dev
 
 # change setup.py to use bazel (not bazelisk python)
 
+# manually patch version string in setup.py
+# version="0.1.25"
+# comment out use_scm_version
+
 # run
 # export TENSORSTORE_SYSTEM_LIBS=org_aomedia_avif
 # python -m pip wheel ./ --wheel-dir=./ --no-deps -v
