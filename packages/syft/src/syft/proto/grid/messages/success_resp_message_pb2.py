@@ -5,8 +5,9 @@
 # third party
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
+from google.protobuf import message as _message
+from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -23,10 +24,31 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b'\n.proto/grid/messages/success_resp_message.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"y\n\x16SuccessResponseMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x10\n\x08resp_msg\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"w\n\x14\x45rrorResponseMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x10\n\x08resp_msg\x18\x02 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3'
 )
 
-_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
-_builder.BuildTopDescriptorsAndMessages(
-    DESCRIPTOR, "proto.grid.messages.success_resp_message_pb2", globals()
+
+_SUCCESSRESPONSEMESSAGE = DESCRIPTOR.message_types_by_name["SuccessResponseMessage"]
+_ERRORRESPONSEMESSAGE = DESCRIPTOR.message_types_by_name["ErrorResponseMessage"]
+SuccessResponseMessage = _reflection.GeneratedProtocolMessageType(
+    "SuccessResponseMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _SUCCESSRESPONSEMESSAGE,
+        "__module__": "proto.grid.messages.success_resp_message_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.SuccessResponseMessage)
+    },
 )
+_sym_db.RegisterMessage(SuccessResponseMessage)
+
+ErrorResponseMessage = _reflection.GeneratedProtocolMessageType(
+    "ErrorResponseMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _ERRORRESPONSEMESSAGE,
+        "__module__": "proto.grid.messages.success_resp_message_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.ErrorResponseMessage)
+    },
+)
+_sym_db.RegisterMessage(ErrorResponseMessage)
+
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None
