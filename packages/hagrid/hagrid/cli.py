@@ -2625,6 +2625,24 @@ def run_quickstart(
         venv_dir = directory + ".venv"
         environ["PATH"] = venv_dir + os.sep + os_bin_path + os.pathsep + environ["PATH"]
         jupyter_binary = "jupyter.exe" if is_windows() else "jupyter"
+
+        if is_windows():
+            env_activate_cmd = (
+                "(Powershell): "
+                + "cd "
+                + venv_dir
+                + "; "
+                + os_bin_path
+                + os.sep
+                + "activate"
+            )
+        else:
+            env_activate_cmd = (
+                "(Linux): source " + venv_dir + os.sep + os_bin_path + "/activate"
+            )
+
+        print(f"To activate your virtualenv {env_activate_cmd}")
+
         try:
             allow_browser = " --no-browser" if is_gitpod() else ""
             cmd = (
