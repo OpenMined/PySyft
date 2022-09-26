@@ -26,7 +26,6 @@ from scipy.optimize import shgo
 # relative
 from .... import lib
 from ....ast.klass import pointerize_args_and_kwargs
-from ....core.adp.data_subject import DataSubject
 from ....core.node.common.action.get_or_set_property_action import (
     GetOrSetPropertyAction,
 )
@@ -36,7 +35,9 @@ from ....lib.numpy.array import capnp_serialize
 from ....lib.python.util import upcast
 from ....util import inherit_tags
 from ...adp.data_subject_ledger import DataSubjectLedger
-from ...adp.data_subject_list import DataSubjectList
+
+# from ...adp.data_subject_list import DataSubjectList
+from ...adp.data_subject_list import DataSubjectArray
 from ...adp.data_subject_list import dslarraytonumpyutf8
 from ...adp.data_subject_list import numpyutf8todslarray
 from ...adp.vectorized_publish import publish
@@ -102,7 +103,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
 
     def __init__(
         self,
-        data_subjects: DataSubjectList,
+        data_subjects: DataSubjectArray,
         min_vals: np.typing.ArrayLike,
         max_vals: np.typing.ArrayLike,
         client: Any,
@@ -2421,7 +2422,7 @@ class GammaTensor:
                 self.data_subjects,
                 axis=axis,
                 keepdims=keepdims,
-                initial=DataSubject(),
+                initial=DataSubjectArray(),
                 where=where,
             )
 
@@ -2469,7 +2470,7 @@ class GammaTensor:
                 self.data_subjects,
                 axis=axis,
                 keepdims=keepdims,
-                initial=DataSubject(),
+                initial=DataSubjectArray(),
                 where=where,
             )
 

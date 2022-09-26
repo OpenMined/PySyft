@@ -8,7 +8,6 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.adp.data_subject import DataSubjectGroup
 from syft.core.adp.data_subject_ledger import DataSubjectLedger
 from syft.core.adp.data_subject_list import DataSubjectArray
 from syft.core.adp.ledger_store import DictLedgerStore
@@ -959,7 +958,7 @@ def test_any(
     condition = list(np.random.choice(a=[False, True], size=(reference_data.shape[0])))
     result = (reference_tensor == reference_data).any(where=condition)
     assert result.child
-    assert isinstance(result.data_subjects, DataSubjectGroup)
+    assert isinstance(result.data_subjects, DataSubjectArray)
 
 
 def test_all(
@@ -1001,4 +1000,4 @@ def test_all(
     condition = list(np.random.choice(a=[False, True], size=(reference_data.shape[0])))
     result = (reference_tensor == reference_data).all(where=condition)
     assert result.child
-    assert isinstance(result.data_subjects, DataSubjectGroup)
+    assert isinstance(result.data_subjects, DataSubjectArray)
