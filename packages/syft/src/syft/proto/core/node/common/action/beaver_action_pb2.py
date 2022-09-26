@@ -5,9 +5,8 @@
 # third party
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
-from google.protobuf import message as _message
-from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -24,19 +23,10 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b'\n1proto/core/node/common/action/beaver_action.proto\x12\x1csyft.core.node.common.action\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"p\n\x0c\x42\x65\x61verAction\x12\x0e\n\x06values\x18\x01 \x03(\x0c\x12(\n\tlocations\x18\x02 \x03(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3'
 )
 
-
-_BEAVERACTION = DESCRIPTOR.message_types_by_name["BeaverAction"]
-BeaverAction = _reflection.GeneratedProtocolMessageType(
-    "BeaverAction",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _BEAVERACTION,
-        "__module__": "proto.core.node.common.action.beaver_action_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.node.common.action.BeaverAction)
-    },
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
+_builder.BuildTopDescriptorsAndMessages(
+    DESCRIPTOR, "proto.core.node.common.action.beaver_action_pb2", globals()
 )
-_sym_db.RegisterMessage(BeaverAction)
-
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None

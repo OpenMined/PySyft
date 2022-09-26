@@ -5,9 +5,8 @@
 # third party
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
-from google.protobuf import message as _message
-from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -18,19 +17,10 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b'\n\x1dproto/util/vendor_bytes.proto\x12\tsyft.util"`\n\x0bVendorBytes\x12\x10\n\x08obj_type\x18\x01 \x01(\t\x12\x12\n\nvendor_lib\x18\x02 \x01(\t\x12\x1a\n\x12vendor_lib_version\x18\x03 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x04 \x01(\x0c\x62\x06proto3'
 )
 
-
-_VENDORBYTES = DESCRIPTOR.message_types_by_name["VendorBytes"]
-VendorBytes = _reflection.GeneratedProtocolMessageType(
-    "VendorBytes",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _VENDORBYTES,
-        "__module__": "proto.util.vendor_bytes_pb2"
-        # @@protoc_insertion_point(class_scope:syft.util.VendorBytes)
-    },
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
+_builder.BuildTopDescriptorsAndMessages(
+    DESCRIPTOR, "proto.util.vendor_bytes_pb2", globals()
 )
-_sym_db.RegisterMessage(VendorBytes)
-
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None
