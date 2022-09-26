@@ -31,6 +31,7 @@ from typing import Union
 from packaging import version
 from packaging.version import Version
 import requests
+from rich.console import Console
 
 # relative
 from .exceptions import MissingDependency
@@ -475,6 +476,24 @@ def check_docker_version() -> Optional[str]:
     return version
 
 
+def check_docker_service_status() -> None:
+    """Check the status of the docker service.
+
+    Raises:
+        MissingDependency: If docker service is not running.
+    """
+    console = Console()
+
+    with console.status("[bold blue]Checking for Docker Service"):
+
+        result = os.popen("docker info").read().strip()  # nosec
+
+        if "ERROR" in result:
+            raise MissingDependency(f"❌ Docker service is not running.\n{result}")
+
+        print("✅ Docker service is running")
+
+
 def check_deps(
     deps: Dict[str, Dependency],
     of: str = "",
@@ -521,16 +540,20 @@ def check_deps(
         return None  # type: ignore
 
 
-def check_grid_docker(display: bool = True) -> Union[Dict[str, Dependency], NBOutput]:
+def check_grid_docker(
+    display: bool = True, output_in_text: bool = False
+) -> Union[Dict[str, Dependency], NBOutput]:
     try:
         deps: Dict[str, Dependency] = {}
         deps["git"] = DependencyGridGit(name="git")
         deps["docker"] = DependencyGridDocker(name="docker")
         deps["docker_compose"] = DependencyGridDockerCompose(name="docker compose")
-        return check_deps(of="Grid", deps=deps, display=display)
+        return check_deps(
+            of="Grid", deps=deps, display=display, output_in_text=output_in_text
+        )
     except Exception as e:
         try:
-            if display:
+            if display and not output_in_text:
                 return NBOutput(debug_exception(e=e)).to_html()
         except Exception:  # nosec
             pass
