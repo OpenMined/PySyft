@@ -5,8 +5,9 @@
 # third party
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
+from google.protobuf import message as _message
+from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -23,12 +24,35 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b'\nAproto/core/node/domain/service/get_remaining_budget_service.proto\x12\x1dsyft.core.node.common.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x93\x01\n\x19GetRemainingBudgetMessage\x12%\n\x06msg_id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x7f\n\x1eGetRemainingBudgetReplyMessage\x12\x0e\n\x06\x62udget\x18\x01 \x01(\x01\x12%\n\x06msg_id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3'
 )
 
-_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
-_builder.BuildTopDescriptorsAndMessages(
-    DESCRIPTOR,
-    "proto.core.node.domain.service.get_remaining_budget_service_pb2",
-    globals(),
+
+_GETREMAININGBUDGETMESSAGE = DESCRIPTOR.message_types_by_name[
+    "GetRemainingBudgetMessage"
+]
+_GETREMAININGBUDGETREPLYMESSAGE = DESCRIPTOR.message_types_by_name[
+    "GetRemainingBudgetReplyMessage"
+]
+GetRemainingBudgetMessage = _reflection.GeneratedProtocolMessageType(
+    "GetRemainingBudgetMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _GETREMAININGBUDGETMESSAGE,
+        "__module__": "proto.core.node.domain.service.get_remaining_budget_service_pb2"
+        # @@protoc_insertion_point(class_scope:syft.core.node.common.service.GetRemainingBudgetMessage)
+    },
 )
+_sym_db.RegisterMessage(GetRemainingBudgetMessage)
+
+GetRemainingBudgetReplyMessage = _reflection.GeneratedProtocolMessageType(
+    "GetRemainingBudgetReplyMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _GETREMAININGBUDGETREPLYMESSAGE,
+        "__module__": "proto.core.node.domain.service.get_remaining_budget_service_pb2"
+        # @@protoc_insertion_point(class_scope:syft.core.node.common.service.GetRemainingBudgetReplyMessage)
+    },
+)
+_sym_db.RegisterMessage(GetRemainingBudgetReplyMessage)
+
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None

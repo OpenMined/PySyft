@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 # third party
 import click
 import requests
+from tqdm import tqdm
 
 # relative
 from .cache import DEFAULT_BRANCH
@@ -25,7 +26,7 @@ def quickstart_download_notebook(
     url: str, directory: str, reset: bool = False, overwrite_all: bool = False
 ) -> Tuple[str, bool, bool]:
     os.makedirs(directory, exist_ok=True)
-    file_name = os.path.basename(url).replace("%20", "_")
+    file_name = os.path.basename(url).replace("%20", "_").replace(" ", "_")
     file_path = os.path.abspath(directory + file_name)
 
     file_exists = os.path.isfile(file_path)
@@ -96,7 +97,7 @@ def fetch_notebooks_for_url(
                 print(nb)
 
         overwrite_all = False
-        for notebook_url in notebooks:
+        for notebook_url in tqdm(notebooks):
             file_path, _, overwrite_all = quickstart_download_notebook(
                 url=notebook_url,
                 directory=directory + os.sep + url_dir + os.sep,

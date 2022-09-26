@@ -22,6 +22,7 @@ from typing import Tuple as TypeTuple
 from typing import Union
 from typing import cast
 from urllib.parse import urlparse
+import webbrowser
 
 # third party
 import click
@@ -31,7 +32,9 @@ from rich.live import Live
 from virtualenvapi.manage import VirtualEnvironment
 
 # relative
+from .art import RichEmoji
 from .art import hagrid
+from .art import quickstart_art
 from .auth import AuthCredentials
 from .cache import DEFAULT_BRANCH
 from .cache import DEFAULT_REPO
@@ -841,6 +844,7 @@ def create_launch_cmd(
     parsed_kwargs["tls"] = bool(kwargs["tls"]) if "tls" in kwargs else False
     parsed_kwargs["test"] = bool(kwargs["test"]) if "test" in kwargs else False
     parsed_kwargs["dev"] = bool(kwargs["dev"]) if "dev" in kwargs else False
+
     parsed_kwargs["silent"] = bool(kwargs["silent"]) if "silent" in kwargs else False
     parsed_kwargs["from_template"] = (
         str_to_bool(kwargs["from_template"]) if "from_template" in kwargs else False
@@ -2496,6 +2500,12 @@ def create_check_table(
 def check(
     ip_addresses: TypeList[str], wait: bool = False, silent: bool = False
 ) -> None:
+    check_status(ip_addresses=ip_addresses, wait=wait, silent=silent)
+
+
+def check_status(
+    ip_addresses: TypeList[str], wait: bool = False, silent: bool = False
+) -> None:
     console = rich.get_console()
     if len(ip_addresses) == 0:
         headers = {"User-Agent": "curl/7.79.1"}
@@ -2569,6 +2579,7 @@ def run_quickstart(
     python: Optional[str] = None,
 ) -> None:
     try:
+        quickstart_art()
         directory = os.path.expanduser("~/.hagrid/quickstart/")
         confirm_reset = None
         if reset:
@@ -2614,14 +2625,32 @@ def run_quickstart(
         venv_dir = directory + ".venv"
         environ["PATH"] = venv_dir + os.sep + os_bin_path + os.pathsep + environ["PATH"]
         jupyter_binary = "jupyter.exe" if is_windows() else "jupyter"
+
+        if is_windows():
+            env_activate_cmd = (
+                "(Powershell): "
+                + "cd "
+                + venv_dir
+                + "; "
+                + os_bin_path
+                + os.sep
+                + "activate"
+            )
+        else:
+            env_activate_cmd = (
+                "(Linux): source " + venv_dir + os.sep + os_bin_path + "/activate"
+            )
+
+        print(f"To activate your virtualenv {env_activate_cmd}")
+
         try:
-            print(f"Running Jupyter Lab in: {directory}")
+            allow_browser = " --no-browser" if is_gitpod() else ""
             cmd = (
                 venv_dir
                 + os.sep
                 + os_bin_path
                 + os.sep
-                + f"{jupyter_binary} lab --ip 0.0.0.0 --notebook-dir={directory} {file_path}"
+                + f"{jupyter_binary} lab{allow_browser} --ip 0.0.0.0 --notebook-dir={directory} {file_path}"
             )
             if test:
                 jupyter_path = venv_dir + os.sep + os_bin_path + os.sep + jupyter_binary
@@ -2667,15 +2696,21 @@ def run_quickstart(
             thread_2.start()
 
             display_url = None
+            console = rich.get_console()
+
             # keepn reading the queue of stdout + stderr
             while True:
                 try:
                     if not display_url:
-                        # try to read the line and extract a jupyter url
-                        line = queue.get()
-                        display_url = extract_jupyter_url(line.decode("utf-8"))
-                        if display_url:
-                            display_jupyter_url(url_parts=display_url)
+                        # try to read the line and extract a jupyter url:
+                        with console.status(
+                            "Starting Jupyter service"
+                        ) as console_status:
+                            line = queue.get()
+                            display_url = extract_jupyter_url(line.decode("utf-8"))
+                            if display_url:
+                                display_jupyter_url(url_parts=display_url)
+                                console_status.stop()
                 except KeyboardInterrupt:
                     proc.kill()  # make sure jupyter gets killed
                     sys.exit(1)
@@ -2778,10 +2813,23 @@ def display_jupyter_url(url_parts: Tuple[str, str, int]) -> None:
         query = getattr(parts, "query", "")
         url = gitpod_url(port=url_parts[2]) + "?" + query
 
-    print(
-        f"Jupyter Server is running at:\n{url}\n"
-        + "Use Control-C to stop this server and shut down all kernels."
+    console = rich.get_console()
+
+    tick_emoji = RichEmoji("white_heavy_check_mark").to_str()
+    link_emoji = RichEmoji("link").to_str()
+
+    console.print(
+        f"[bold white]{tick_emoji} Jupyter Server is running at:\n{link_emoji} [bold blue]{url}\n"
+        + "[bold white]Use Control-C to stop this server and shut down all kernels.",
+        new_line_start=True,
     )
+
+    # if is_gitpod():
+    #     open_browser_with_url(url=url)
+
+
+def open_browser_with_url(url: str) -> None:
+    webbrowser.open(url)
 
 
 def extract_jupyter_url(line: str) -> Optional[Tuple[str, str, int]]:
@@ -2810,49 +2858,57 @@ def quickstart_setup(
     pre: bool = False,
     python: Optional[str] = None,
 ) -> None:
+
+    console = rich.get_console()
+    OK_EMOJI = RichEmoji("white_heavy_check_mark").to_str()
+
     try:
-        os.makedirs(directory, exist_ok=True)
-        virtual_env_dir = os.path.abspath(directory + ".venv/")
-        if reset and os.path.exists(virtual_env_dir):
-            shutil.rmtree(virtual_env_dir)
-        env = VirtualEnvironment(virtual_env_dir, python=python)
+        with console.status(
+            "[bold blue]Setting up Quickstart Environment"
+        ) as console_status:
+            os.makedirs(directory, exist_ok=True)
+            virtual_env_dir = os.path.abspath(directory + ".venv/")
+            if reset and os.path.exists(virtual_env_dir):
+                shutil.rmtree(virtual_env_dir)
+            env = VirtualEnvironment(virtual_env_dir, python=python)
+            console.print(
+                f"{OK_EMOJI} Created Virtual Environment {RichEmoji('evergreen_tree').to_str()}"
+            )
 
-        # upgrade pip
-        env.install("pip", options=["-U"])
-        env.install("packaging", options=["-U"])
+            # upgrade pip
+            console_status.update("[bold blue]Installing pip")
+            env.install("pip", options=["-U"])
+            console.print(f"{OK_EMOJI} pip")
 
-        print("Installing Jupyter Labs")
-        env.install("jupyterlab")
-        env.install("ipywidgets")
+            # upgrade packaging
+            console_status.update("[bold blue]Installing packaging")
+            env.install("packaging", options=["-U"])
+            console.print(f"{OK_EMOJI} packaging")
 
-        if EDITABLE_MODE:
-            # local_syft_dir = Path(os.path.abspath(Path(hagrid_root()) / "../syft"))
-            # print("Installing Syft in Editable Mode")
-            # env.install("-e " + str(local_syft_dir))
-            local_hagrid_dir = Path(os.path.abspath(Path(hagrid_root()) / "../hagrid"))
-            print("Installing HAGrid in Editable Mode", str(local_hagrid_dir))
-            env.install("-e " + str(local_hagrid_dir))
-        else:
-            # options = []
-            # options.append("--force")
-            # if syft_version == "latest":
-            #     syft_version = LATEST_STABLE_SYFT
-            #     package = f"syft>={syft_version}"
-            #     if pre:
-            #         package = f"{package}.dev0"  # force pre release
-            # else:
-            #     package = f"syft=={syft_version}"
+            # Install jupyter lab
+            console_status.update("[bold blue]Installing Jupyter Lab")
+            env.install("jupyterlab")
+            env.install("ipywidgets")
+            console.print(f"{OK_EMOJI} Jupyter Lab")
 
-            # if pre:
-            #     options.append("--pre")
-            #     print(f"Installing {package} --pre")
-            # else:
-            #     print(f"Installing {package}")
-            # env.install(package, options=options)
-            print("Installing hagrid")
-            env.install("hagrid", options=["-U"])
+            # Install hagrid
+            if EDITABLE_MODE:
+                local_hagrid_dir = Path(
+                    os.path.abspath(Path(hagrid_root()) / "../hagrid")
+                )
+                console_status.update(
+                    f"[bold blue]Installing HAGrid in Editable Mode: {str(local_hagrid_dir)}"
+                )
+                env.install("-e " + str(local_hagrid_dir))
+                console.print(
+                    f"{OK_EMOJI} HAGrid in Editable Mode: {str(local_hagrid_dir)}"
+                )
+            else:
+                console_status.update("[bold blue]Installing hagrid")
+                env.install("hagrid", options=["-U"])
+                console.print(f"{OK_EMOJI} HAGrid")
     except Exception as e:
-        print("failed", e)
+        print(e)
         raise e
 
 
