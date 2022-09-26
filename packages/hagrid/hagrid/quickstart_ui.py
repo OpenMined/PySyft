@@ -26,7 +26,7 @@ def quickstart_download_notebook(
     url: str, directory: str, reset: bool = False, overwrite_all: bool = False
 ) -> Tuple[str, bool, bool]:
     os.makedirs(directory, exist_ok=True)
-    file_name = os.path.basename(url).replace("%20", "_")
+    file_name = os.path.basename(url).replace("%20", "_").replace(" ", "_")
     file_path = os.path.abspath(directory + file_name)
 
     file_exists = os.path.isfile(file_path)
