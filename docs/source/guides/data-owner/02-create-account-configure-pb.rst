@@ -20,7 +20,8 @@ Creating User Accounts on your Domain Server
 
 Domain Owners can directly ``create`` user accounts for Data Scientists to use their 
 domain nodes. When the domain owner creates a new user account, by default that user 
-will have the lowest level of permissions and will be assigned ``0`` Privacy Budget.
+will have the lowest level of permissions to access that data (means data is highly private) 
+and will be assigned ``0`` Privacy Budget.
 
 In today's tutorial we will learn how to create a user account, how to check permissions, 
 and how to assign a privacy budget to that user. Then we'll touch on why setting a privacy 
@@ -79,7 +80,8 @@ To create a Data Scientists account for someone within your team or organization
 #. **Budget**: When you specify a ``budget``, you assign this account with a ``privacy budget`` of ``0``. This privacy budget, set in units of ``epsilon``, is the limiter that blocks a data scientist from knowing too much about any one data subject in your dataset.
 
    **Note:** In future exercises, we will explore how privacy budget limits affect data subject visibility. 
-   Still, for now, we will set the ``privacy budget`` to its default of ``0``, the lowest level of permission. 
+   Still, for now, we will set the ``privacy budget`` to its default of ``0`` (means data is highly private), 
+   the lowest level of permission to access the data. 
    Also, by default, the role assigned to a user is a Data Scientist.
 
 ::
