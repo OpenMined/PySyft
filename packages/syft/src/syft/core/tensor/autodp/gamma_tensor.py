@@ -2157,6 +2157,10 @@ class GammaTensor:
         output_state[self.id] = self
 
         child = self.child.sum(axis=axis, **kwargs)
+        if not isinstance(
+            child, np.ndarray
+        ):  # Avoid tensor.child being an int/float instead of array
+            child = np.array(child)
 
         min_v = child.min()
         max_v = child.max()

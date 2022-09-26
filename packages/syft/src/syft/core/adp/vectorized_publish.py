@@ -126,7 +126,13 @@ def publish(
 
     # if we dont return below we will terminate if the tensor gets replaced with zeros
     prev_tensor = None
-    while not (tensor.child == zeros_like).all():  # tensor.shape != ():
+
+    # This is the same check as the one below but works if tensor.child = np.array(False) or np.array(5)
+    empty_singleton_check = (tensor.size == 1) and (tensor.child == 0)
+
+    while (
+        not empty_singleton_check or not (tensor.child == zeros_like).all()
+    ):  # tensor.shape != ():
 
         if prev_tensor is None:
             prev_tensor = tensor.child
@@ -334,6 +340,7 @@ def publish(
             # the .child gets replaced not the .source (state) otherwise it never
             # terminates
             tensor = tensor.swap_state(filtered_sourcetree)
+            print("tensor.child before restart: ", type(tensor.child), tensor.child)
             print("About to publish again with filtered source_tree!")
 
             # TODO: This isn't the most efficient way to do it since we can reuse sigmas, coeffs, etc.

@@ -29,7 +29,7 @@ def traskmaster() -> ArrayLike:
 
 @pytest.fixture
 def highest() -> int:
-    return 50
+    return 5
 
 
 @pytest.fixture
@@ -40,7 +40,7 @@ def lowest(highest) -> int:
 @pytest.fixture
 def dims() -> int:
     """This generates a random integer for the number of dimensions in our testing tensors"""
-    dims = int(max(3, np.random.randint(10) + 3))  # Avoid size 0 and 1
+    dims = int(max(3, np.random.randint(5) + 3))  # Avoid size 0 and 1
     # Failsafe
     if dims < 2:
         dims += 3
@@ -128,7 +128,7 @@ def test_gamma_publish(
     assert tensor1.child.sum() == gamma_tensor1.child
 
     ledger_store = DictLedgerStore()
-    print(ledger_store.kv_store)
+    print("kv_Store: ", ledger_store.kv_store)
     user_key = b"1231"
     ledger = DataSubjectLedger.get_or_create(store=ledger_store, user_key=user_key)
 
@@ -142,7 +142,7 @@ def test_gamma_publish(
         get_budget_for_user=get_budget_for_user,
         deduct_epsilon_for_user=deduct_epsilon_for_user,
         ledger=ledger,
-        sigma=0.1,
+        sigma=0.5,
     )
 
     assert results.dtype == np.float64
