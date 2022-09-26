@@ -5,8 +5,9 @@
 # third party
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
+from google.protobuf import message as _message
+from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -17,10 +18,32 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b'\n\x1cproto/lib/numpy/tensor.proto\x12\x0esyft.lib.numpy";\n\x0cTensorProtos\x12+\n\x06protos\x18\x01 \x03(\x0b\x32\x1b.syft.lib.numpy.TensorProto"\xef\x02\n\x0bTensorProto\x12\x0c\n\x04\x64ims\x18\x01 \x03(\x03\x12\x37\n\tdata_type\x18\x02 \x01(\x0e\x32$.syft.lib.numpy.TensorProto.DataType\x12\x12\n\nfloat_data\x18\x03 \x03(\x01\x12\x12\n\nint32_data\x18\x04 \x03(\x05\x12\x11\n\tbyte_data\x18\x05 \x01(\x0c\x12\x13\n\x0bstring_data\x18\x06 \x03(\x0c\x12\x13\n\x0b\x64ouble_data\x18\x07 \x03(\x01\x12\x12\n\nint64_data\x18\x08 \x03(\x03"\x9f\x01\n\x08\x44\x61taType\x12\r\n\tUNDEFINED\x10\x00\x12\t\n\x05\x46LOAT\x10\x01\x12\t\n\x05INT32\x10\x02\x12\x08\n\x04\x42YTE\x10\x03\x12\n\n\x06STRING\x10\x04\x12\x08\n\x04\x42OOL\x10\x05\x12\t\n\x05UINT8\x10\x06\x12\x08\n\x04INT8\x10\x07\x12\n\n\x06UINT16\x10\x08\x12\t\n\x05INT16\x10\t\x12\t\n\x05INT64\x10\n\x12\x0b\n\x07\x46LOAT16\x10\x0c\x12\n\n\x06\x44OUBLE\x10\rb\x06proto3'
 )
 
-_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
-_builder.BuildTopDescriptorsAndMessages(
-    DESCRIPTOR, "proto.lib.numpy.tensor_pb2", globals()
+
+_TENSORPROTOS = DESCRIPTOR.message_types_by_name["TensorProtos"]
+_TENSORPROTO = DESCRIPTOR.message_types_by_name["TensorProto"]
+_TENSORPROTO_DATATYPE = _TENSORPROTO.enum_types_by_name["DataType"]
+TensorProtos = _reflection.GeneratedProtocolMessageType(
+    "TensorProtos",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _TENSORPROTOS,
+        "__module__": "proto.lib.numpy.tensor_pb2"
+        # @@protoc_insertion_point(class_scope:syft.lib.numpy.TensorProtos)
+    },
 )
+_sym_db.RegisterMessage(TensorProtos)
+
+TensorProto = _reflection.GeneratedProtocolMessageType(
+    "TensorProto",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _TENSORPROTO,
+        "__module__": "proto.lib.numpy.tensor_pb2"
+        # @@protoc_insertion_point(class_scope:syft.lib.numpy.TensorProto)
+    },
+)
+_sym_db.RegisterMessage(TensorProto)
+
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None

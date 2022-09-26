@@ -5,7 +5,7 @@ import platform
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = "0.2.99"
+__version__ = "0.2.102"
 
 DATA_FILES = {"img": ["hagrid/img/*.png"], "hagrid": ["*.yml"]}
 
