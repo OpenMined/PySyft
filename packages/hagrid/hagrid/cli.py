@@ -2922,15 +2922,20 @@ def quickstart_setup(
 
 
 def add_intro_notebook(directory: str, reset: bool = False) -> str:
+    filenames = ["00-quickstart.ipynb", "01-install-wizard.ipynb"]
+
     files = os.listdir(directory)
     try:
         files.remove(".venv")
     except Exception:  # nosec
         pass
 
-    filenames = ["00-quickstart.ipynb", "01-install-wizard.ipynb"]
+    existing = 0
+    for file in files:
+        if file in filenames:
+            existing += 1
 
-    if len(files) == 0 or reset:
+    if existing != len(filenames) or reset:
         if EDITABLE_MODE:
             local_src_dir = Path(os.path.abspath(Path(hagrid_root()) / "../../"))
             for filename in filenames:
