@@ -159,7 +159,6 @@ jobs:
         if: steps.changes.outputs.hagrid == 'true'
         run: |
           pip install packaging wheel --default-timeout=60
-          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
           pip install -e .
           pip install pytest
 
