@@ -904,7 +904,7 @@ def create_launch_cmd(
 
     if host in ["docker"]:
         # Check docker service status
-        check_docker_service_status()
+        check_docker_service_status(animated=False)
 
         # Check grid docker versions
         check_grid_docker(display=True, output_in_text=True)
