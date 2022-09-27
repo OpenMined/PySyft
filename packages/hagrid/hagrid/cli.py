@@ -331,6 +331,30 @@ def clean(location: str) -> None:
     is_flag=True,
     help="Installs Oblivious CLI tool",
 )
+@click.option(
+    "--context",
+    required=False,
+    type=str,
+    help="Optional: the k8s context to use",
+)
+@click.option(
+    "--namespace",
+    required=False,
+    type=str,
+    help="Optional: the k8s namespace to use",
+)
+@click.option(
+    "--registry",
+    required=False,
+    type=str,
+    help="Optional: the url of the container registry for k8s",
+)
+@click.option(
+    "--var",
+    required=False,
+    multiple=True,
+    help="Optional: variables to override during execution (e.g. --var=MYVAR=MYVALUE) when deployed to k8s",
+)
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
     try:
@@ -1136,6 +1160,15 @@ def create_launch_cmd(
 
         parsed_kwargs.update(kwargs)
 
+    for k8s_arg in ("registry", "context", "namespace", "var"):
+        if k8s_arg in kwargs and kwargs[k8s_arg] is not None:
+            if host not in ("k8s", "k3d"):
+                print(
+                    f"\nArgument `{k8s_arg}` is only supported with `k8s` or `k3d`.\n"
+                )
+            else:
+                parsed_kwargs[k8s_arg] = kwargs[k8s_arg]
+
     if host in ["docker"]:
 
         # Check docker service status
@@ -1187,6 +1220,16 @@ def create_launch_cmd(
                 kwargs=parsed_kwargs,
                 silent=parsed_kwargs["silent"],
             )
+
+    elif host in ["k3d"]:
+        return create_launch_k8s_cmd(
+            verb=verb, kwargs=parsed_kwargs, k3d=True, silent=parsed_kwargs["silent"]
+        )
+
+    elif host in ["k8s"]:
+        return create_launch_k8s_cmd(
+            verb=verb, kwargs=parsed_kwargs, k3d=False, silent=parsed_kwargs["silent"]
+        )
 
     elif host in ["azure"]:
         check_azure_cli_installed()
@@ -1627,6 +1670,85 @@ def deploy_command(cmd: str, tail: bool, release_type: str) -> TypeList[str]:
     if not tail:
         up_cmd += " -d"
     return [up_cmd]
+
+
+def create_launch_k8s_cmd(
+    verb: GrammarVerb,
+    kwargs: TypeDict[str, Any],
+    k3d: bool = False,
+    silent: bool = False,
+) -> str:
+    node_name = verb.get_named_term_type(name="node_name")
+    node_type = verb.get_named_term_type(name="node_type")
+
+    node_type_str = str(node_type.input)
+    snake_name = str(node_name.snake_input)
+
+    build = False
+    if "build" in kwargs and kwargs["build"] is True:
+        build = True
+    else:
+        version_string = kwargs["tag"]
+        if version_string is not None and version_string == "local":
+            build = True
+
+    if "context" in kwargs:
+        context = kwargs["context"]
+    elif k3d:
+        context = f"k3d-{snake_name}"
+    else:
+        raise Exception("--context is required for launching to k8s")
+
+    namespace = kwargs["namespace"] if "namespace" in kwargs else snake_name
+
+    var_args = {"DOMAIN_NAME": snake_name}
+
+    if "test" in kwargs and kwargs["test"] is True:
+        var_args["TEST_MODE"] = "1"
+
+        node_check_interval_var = f"{node_type_str.upper()}_CHECK_INTERVAL"
+        var_args[node_check_interval_var] = "5"
+
+    if "registry" in kwargs:
+        var_args["CONTAINER_REGISTRY"] = kwargs["registry"]
+
+    args = ["--no-warn"]
+    if silent:
+        args.append("--silent")
+    if build:
+        args.append("-b")
+
+    options = [
+        ("kube-context", context),
+        ("namespace", namespace),
+        ("profile", node_type_str),
+    ]
+
+    options.extend(("var", f"{k}={v}") for k, v in var_args.items())
+
+    if "var" in kwargs:
+        options.extend(("var", v) for v in kwargs["var"])
+
+    return devspace_cmd("deploy", args, options)
+
+
+def devspace_cmd(
+    cmd: str, args: TypeList[str], options: TypeList[Tuple[str, Any]]
+) -> str:
+    args_str = " ".join(args)
+    options_str = " ".join(f"--{k} {v}" for k, v in options)
+
+    cmd = " ".join(
+        [
+            f"cd {GRID_SRC_PATH};",
+            "devspace",
+            cmd,
+            args_str,
+            options_str,
+        ]
+    )
+
+    return cmd
 
 
 def create_launch_docker_cmd(
@@ -3600,3 +3722,119 @@ long_string = (
 )
 
 cli.add_command(logs)
+@click.command(help="Create a k3d cluster")
+@click.argument("name", nargs=1)
+@click.option(
+    "--port",
+    "-p",
+    default="8081",
+    type=str,
+    help="Port to access the cluster",
+)
+@click.option(
+    "--registry",
+    type=str,
+    required=False,
+    help="Name of the container registry to create",
+)
+@click.option(
+    "--registry_port",
+    type=str,
+    required=False,
+    help="Port of the container registry",
+)
+@click.option(
+    "--registry_volume",
+    required=False,
+    type=click.Path(path_type=Path),
+    help="Location to persist the registry",
+)
+@click.option(
+    "--cmd",
+    is_flag=True,
+    help="Print the cmd without running it",
+)
+@click.option(
+    "--silent",
+    is_flag=True,
+    help="Prevent lots of command output",
+)
+def create(name: str, **kwargs: Any) -> None:
+    registry = kwargs.get("registry", None)
+    node_port = parse_port(kwargs["port"])
+    dry_run = kwargs["cmd"]
+    silent = kwargs["silent"]
+
+    cmds = []
+
+    if registry is not None:
+        k3d_registry = f"k3d-{registry}"
+
+        if k3d_registry not in k3d_list("registry"):
+            if not (dry_run or silent):
+                print(
+                    f"Container registry {k3d_registry} doesn't exist. To be created."
+                )
+
+            registry_cmd = ["k3d", "registry", "create", registry]
+
+            if "registry_port" in kwargs and kwargs["registry_port"] is not None:
+                registry_cmd.extend(
+                    ["--port", str(parse_port(kwargs["registry_port"]))]
+                )
+
+            if "registry_volume" in kwargs and kwargs["registry_volume"] is not None:
+                volume = kwargs["registry_volume"].absolute()
+                registry_cmd.extend(["--volume", f"{volume}:/var/lib/registry"])
+
+            cmds.append(registry_cmd)
+
+    cluster_cmd = [
+        "k3d",
+        "cluster",
+        "create",
+        name,
+        "-p",
+        f"{node_port}:80@loadbalancer",
+    ]
+    if registry is not None:
+        cluster_cmd.extend(["--registry-use", registry])
+    cmds.append(cluster_cmd)
+
+    cmds.append(["k3d", "cluster", "start", name])
+
+    if kwargs["cmd"]:
+        print("; ".join(" ".join(cmd) for cmd in cmds))
+        return
+
+    if kwargs["silent"]:
+        for cmd in cmds:
+            process = subprocess.Popen(  # nosec
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
+            process.communicate()
+    else:
+        for cmd in cmds:
+            subprocess.run(cmd)  # nosec
+
+
+cli.add_command(create)
+
+
+def k3d_list(resource: str) -> TypeList[str]:
+    result = subprocess.run(  # nosec
+        ["k3d", resource, "list", "--no-headers"],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+    output = result.stdout.strip()
+
+    return [] if output == "" else [line.split()[0] for line in output.split("\n")]
+
+
+def parse_port(port: str) -> int:
+    search, port_str = (True, port[:-1]) if port.endswith("+") else (False, port)
+
+    return find_available_port("localhost", int(port_str), search)

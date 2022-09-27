@@ -436,8 +436,8 @@ def is_windows() -> bool:
     return False
 
 
-allowed_hosts = ["docker", "azure", "aws", "gcp"]
-commands = ["docker", "git", "ansible-playbook"]
+allowed_hosts = ["docker", "k8s", "k3d", "azure", "aws", "gcp"]
+commands = ["docker", "git", "ansible-playbook", "devspace", "kubectl", "k3d"]
 
 if is_windows():
     commands.append("wsl")
