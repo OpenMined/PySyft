@@ -484,7 +484,7 @@ def docker_running() -> bool:
             return True
         else:
             return False
-    except Exception:
+    except Exception:  # nosec
         pass
     return False
 
