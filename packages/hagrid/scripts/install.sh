@@ -75,6 +75,7 @@ check_and_install() {
     if [ "$BINARY_EXISTS" != "0" ]
     then
         echo "Installing missing dependency $2"
+        echo "Checking Sudo"
         sudo -n true
         HAS_SUDO=$?
         if [ "$HAS_SUDO" != "0" ]
@@ -122,8 +123,8 @@ execute() {
     . ~/.profile
     hagrid_install
     hagrid >/dev/null
-    kill $pid
-    clear
+    #kill $pid
+    #clear
     is_command hagrid
     BINARY_EXISTS=$?
     set -e
