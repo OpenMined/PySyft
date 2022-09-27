@@ -117,14 +117,14 @@ def publish(
         sigma=sigma,
     )
 
-    # its important that its the same type so that eq comparisons below dont break
+    # its important that it's the same type so that eq comparisons below don't break
     zeros_like = tensor.zeros_like()
 
     # this prevents us from running in an infinite loop
     previous_budget = None
     previous_spend = None
 
-    # if we dont return below we will terminate if the tensor gets replaced with zeros
+    # if we don't return below we will terminate if the tensor gets replaced with zeros
     prev_tensor = None
     while not (tensor.child == zeros_like).all():  # tensor.shape != ():
 
