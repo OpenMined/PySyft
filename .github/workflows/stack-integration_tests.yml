@@ -653,21 +653,20 @@ jobs:
           docker rm `docker ps -aq` --force || true
           tox -e stack.test.course
           docker rm `docker ps -aq` --force || true
-      
+
       - name: Job Report Status
         if: always()
         uses: ravsamhq/notify-slack-action@v1
         with:
           status: ${{ job.status }}
           notify_when: 'failure'
+          notification_title: '{workflow} has {status_message}'
+          message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>'
+          footer: 'Linked to Repo <{workflow_url}|{repo_url}>'
+          notify_when: 'failure'
+          mention_users: 'U01LNCACY03'
+          mention_users_when: 'failure,warnings'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
-        status: ${{ job.status }} 
-        notify_when: 'failure'
-        notification_title: '{workflow} has {status_message}'
-        message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>'
-        footer: 'Linked to Repo <{repo_url}|{repo}>'
-        notify_when: 'failure'
-        mention_users: 'U01LNCACY03'
-        mention_users_when: 'failure,warnings'
-        
+
+
