@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from collections.abc import Iterable
 from copy import deepcopy
 import secrets
 from typing import Callable
@@ -12,6 +13,7 @@ from typing import Tuple
 import jax
 from jax import numpy as jnp
 import numpy as np
+from numpy.typing import ArrayLike
 
 # relative
 from ...core.node.common.node_manager.user_manager import RefreshBudgetException
@@ -127,13 +129,7 @@ def publish(
     # if we dont return below we will terminate if the tensor gets replaced with zeros
     prev_tensor = None
 
-    # This is the same check as the one below but works if tensor.child = np.array(False) or np.array(5)
-    empty_singleton_check = (tensor.size == 1) and (tensor.child == 0)
-
-    while (
-        not empty_singleton_check or not (tensor.child == zeros_like).all()
-    ):  # tensor.shape != ():
-
+    while can_reduce_further(value=tensor.child, zeros_like=zeros_like):
         if prev_tensor is None:
             prev_tensor = tensor.child
         else:
@@ -364,3 +360,34 @@ def publish(
         a=np.array([]), dtype=zeros_like.dtype, shape=zeros_like.shape
     )
     return zeros + noise
+
+
+# each time we attempt to publish and filter values we need to ensure
+# the while loop comparison is valid. We check for three edge cases.
+# 1) the result of comparison is a non scalar because scalars cant be reduced
+# 2) there are differences between the value and a zeros_like of the same shape
+# 3) within the value ArrayLike there are no NaN values as these will never evaluate
+# to True when compared with zeros_like and therefore never exit the loop
+def can_reduce_further(value: ArrayLike, zeros_like: ArrayLike) -> bool:
+    try:
+        result = value != zeros_like
+        # check we can call any or iterate on this value otherwise exit loop
+        if not hasattr(result, "any") and not isinstance(result, Iterable):
+            return False
+
+        # make sure the comparison has some difference and there are also no NaNs
+        # causing that difference in the result
+        return result.any() and not_nans(result)
+    except Exception as e:
+        print(f"Unable to test reducability of {type(value)} and {type(zeros_like)}")
+        raise e
+
+
+# there are some types which numpy will not allow an isnan check such as strings
+# so we should be extra careful to notify the user of why this check failed
+def not_nans(value: ArrayLike) -> bool:
+    try:
+        return not jnp.isnan(value).any()
+    except Exception as e:
+        print(f"Holy Batmanananana. isnan is not supported {type(value)}.")
+        raise e
