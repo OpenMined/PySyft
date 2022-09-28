@@ -57,6 +57,62 @@ Before you can create user accounts on your domain, you have to first:
 #. **Login** to PyGrid UI as a Domain Admin
 #. **Explore** different Privacy Budget
 
+Step 1: Introduction to Differential Privacy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+In this step, lets understand the concept behind differential privacy and privacy budget by considering a simple scenario.
+
+A. Scenario
+##############
+Consider there are ``500`` patients represented in ``2`` different datasets. One dataset is 
+about general ``medical history``; the other has some but not all of the ``500`` patients 
+and is focused on patients who have had ``mammography`` images taken in the past year. Now 
+let's say that ``Jane Doe`` is a patient in both and is open to being studied for 
+``breast cancer research`` as long as she can remain unidentifiable in the study.
+
+B. Quick Definition: Differential Privacy
+############################################
+A core feature of Syft is that Syft allows you to use a ``PET(Privacy Enhancing technology)`` called 
+Differential Privacy to protect the ``Privacy`` of the individuals or data subjects 
+within your datasets. In this case, Differential Privacy is maintained when a 
+query across both datasets ``with`` Jane Doe in it versus that same query on both 
+datasets ``without`` Jane Doe creates the ``same output``. Noise is added to help average 
+out and make up the difference between having Jane there versus not. 
+
+From a top-level view, this means a couple of things:
+
+* Differential Privacy can help a Data Scientist see trends in data ``without`` being able to ``identify`` the participants.
+* The more a specific data subject involved in the query ``stands out`` in a dataset, the more noise has to be added to ``obfuscate`` them.
+* There is a natural ``tradeoff`` between how much ``Privacy`` is preserved versus how much ``Accuracy`` is given.
+
+C. Quick Definition: Epsilon or Privacy Budget
+################################################
+Differential Privacy in practice is an algorithm that obscures an individual data subject's 
+contributions to the given ``results`` of a ``query``. Privacy Budget measured in units of ``Epsilon`` 
+is a way to measure the potential ``privacy loss`` or ``visibility`` you are allowing into any one of those data subjects.
+
+.. note::
+   Syft specifically ``tracks`` privacy budgets against individual data subjects instead 
+   of the ``dataset`` as a whole. This may be different from other tools that use 
+   Differential Privacy. This allows more ``utility`` on the dataset. 
+
+D. Takeaway
+###############
+When you assign a ``privacy budget`` in Syft, you specify a ``risk tolerance`` on what 
+level of ``visibility`` you feel comfortable having that Data Scientist control your 
+data subjects. You are balancing this with keeping the ``accuracy`` they get on a 
+helpful level and maximizing the benefit of your dataset(s). 
+
+Let's say, in the above scenario, you allow your ``Data Scientist`` to have ``0.5e`` to 
+conduct their Breast Cancer Research. You can interpret ``e`` to mean:
+
+* That this Data Scientist will have ``0.5x`` more ``visibility`` into any one data subject like Jane Doe
+* That this Data Scientist is ``0.5x`` more likely to ``learn`` something unique about Jane Doe
+* That this Data Scientist can ``learn no more than 0.5e`` on Jane Doe
+
+.. note::
+   If a query would expose more than ``0.5e`` about ``Jane Doe``, then Jane Doe would get 
+   dropped from the result, and noise would be used to mitigate the difference.
+
 Step 2: Login to PyGrid UI as a Domain Admin
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 When we use the ``hagrid launch`` command to start our private data server, we define 
