@@ -325,7 +325,10 @@ class BinaryInfo:
             if returncode == 0:
                 self.extract_version(lines=lines)
             else:
-                self.error = lines[0]
+                if len(lines) > 0:
+                    self.error = lines[0]
+                else:
+                    self.error = f"Error, no output from {self.binary}"
         return self
 
 
