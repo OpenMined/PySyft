@@ -6,6 +6,7 @@ from typing import Any
 from typing import Dict
 from typing import Iterator
 from typing import List
+from typing import Optional
 from typing import Set
 from typing import Tuple
 from typing import Union
@@ -436,8 +437,11 @@ class DataSubjectArray:
 
     delimiter = ","
 
-    def __init__(self, data_subjects: Union[str, List[str], Set[str]]):
-        self.data_subjects = set(data_subjects)
+    def __init__(self, data_subjects: Optional[Union[str, List[str], Set[str]]] = None):
+        if data_subjects is None:
+            self.data_subjects = set()
+        else:
+            self.data_subjects = set(data_subjects)
 
     def __len__(self) -> int:
         return len(self.data_subjects)

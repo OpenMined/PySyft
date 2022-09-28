@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from collections.abc import Iterable
 from copy import deepcopy
 import secrets
 from typing import Callable
@@ -12,9 +13,11 @@ from typing import Tuple
 import jax
 from jax import numpy as jnp
 import numpy as np
+from numpy.typing import ArrayLike
 
 # relative
 from ...core.node.common.node_manager.user_manager import RefreshBudgetException
+from ...core.tensor.autodp.gamma_tensor_ops import GAMMA_TENSOR_OP
 from ..tensor.fixed_precision_tensor import FixedPrecisionTensor
 from ..tensor.lazy_repeat_array import lazyrepeatarray
 from ..tensor.passthrough import PassthroughTensor  # type: ignore
@@ -126,8 +129,8 @@ def publish(
 
     # if we don't return below we will terminate if the tensor gets replaced with zeros
     prev_tensor = None
-    while not (tensor.child == zeros_like).all():  # tensor.shape != ():
 
+    while can_reduce_further(value=tensor.child, zeros_like=zeros_like):
         if prev_tensor is None:
             prev_tensor = tensor.child
         else:
@@ -274,7 +277,7 @@ def publish(
 
                 if isinstance(input_tensor, GammaTensor):
                     if (
-                        input_tensor.func_str == "no_op"
+                        input_tensor.func_str == GAMMA_TENSOR_OP.NOOP.value
                     ):  # This is raw, unprocessed private data. Filter if eps spend > PB!
                         # Calculate epsilon spend for this tensor
                         l2_norms = jnp.sqrt(jnp.sum(jnp.square(input_tensor.child)))
@@ -305,6 +308,14 @@ def publish(
 
                             # Replace the original tensor with this filtered one
                             # remove the original state id
+
+                            # TODO: This changes insertion order which could impact
+                            # the non commutable operations like div where by the
+                            # values are unpacked in order of insertion before being
+                            # executed as a tuple
+                            # see def _truediv(state: dict) -> jax.numpy.DeviceArray:
+                            # in gamma_functions.py
+
                             del parent_state[input_tensor.id]
 
                             # add the new zeroed state id tensor
@@ -334,6 +345,7 @@ def publish(
             # the .child gets replaced not the .source (state) otherwise it never
             # terminates
             tensor = tensor.swap_state(filtered_sourcetree)
+            print("tensor.child before restart: ", type(tensor.child), tensor.child)
             print("About to publish again with filtered source_tree!")
 
             # TODO: This isn't the most efficient way to do it since we can reuse sigmas, coeffs, etc.
@@ -357,3 +369,43 @@ def publish(
         a=np.array([]), dtype=zeros_like.dtype, shape=zeros_like.shape
     )
     return zeros + noise
+
+
+# each time we attempt to publish and filter values we need to ensure
+# the while loop comparison is valid. We check for three edge cases.
+# 1) the result of comparison is a non scalar because scalars cant be reduced
+# 2) there are differences between the value and a zeros_like of the same shape
+# 3) within the value ArrayLike there are no NaN values as these will never evaluate
+# to True when compared with zeros_like and therefore never exit the loop
+def can_reduce_further(value: ArrayLike, zeros_like: ArrayLike) -> bool:
+    try:
+        result = value != zeros_like
+        # check we can call any or iterate on this value otherwise exit loop
+        # numpy scalar types like np.bool_ are Iterable
+        if not hasattr(result, "any") and not isinstance(result, Iterable):
+            return False
+
+        # make sure the comparison has some difference and there are also no NaNs
+        # causing that difference in the result
+        return result.any() and not_nans(result)
+    except Exception as e:
+        print(f"Unable to test reducability of {type(value)} and {type(zeros_like)}")
+        raise e
+
+
+# there are some types which numpy will not allow an isnan check such as strings
+# so we should be extra careful to notify the user of why this check failed
+def not_nans(value: ArrayLike) -> bool:
+    try:
+        # TODO: support nan ufunc properly?
+        # do we need to add _array attrs to our tensor chain?
+        while hasattr(value, "child"):
+            value = value.child
+
+        if isinstance(value, np.ndarray):
+            return not np.isnan(value).any()
+        else:
+            return not jnp.isnan(value).any()
+    except Exception as e:
+        print(f"Holy Batmanananana. isnan is not supported {type(value)}.")
+        raise e
