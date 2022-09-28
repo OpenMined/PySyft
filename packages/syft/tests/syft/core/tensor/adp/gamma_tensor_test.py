@@ -11,6 +11,7 @@ import syft as sy
 from syft.core.adp.data_subject_ledger import DataSubjectLedger
 from syft.core.adp.data_subject_list import DataSubjectArray
 from syft.core.adp.ledger_store import DictLedgerStore
+from syft.core.tensor.autodp.gamma_functions import GAMMA_TENSOR_OP
 from syft.core.tensor.autodp.gamma_tensor import GammaTensor
 from syft.core.tensor.autodp.phi_tensor import PhiTensor as PT
 from syft.core.tensor.lazy_repeat_array import lazyrepeatarray as lra
@@ -28,7 +29,7 @@ def traskmaster() -> ArrayLike:
 
 @pytest.fixture
 def highest() -> int:
-    return 50
+    return 5
 
 
 @pytest.fixture
@@ -39,7 +40,7 @@ def lowest(highest) -> int:
 @pytest.fixture
 def dims() -> int:
     """This generates a random integer for the number of dimensions in our testing tensors"""
-    dims = int(max(3, np.random.randint(10) + 3))  # Avoid size 0 and 1
+    dims = int(max(3, np.random.randint(5) + 3))  # Avoid size 0 and 1
     # Failsafe
     if dims < 2:
         dims += 3
@@ -127,7 +128,7 @@ def test_gamma_publish(
     assert tensor1.child.sum() == gamma_tensor1.child
 
     ledger_store = DictLedgerStore()
-    print(ledger_store.kv_store)
+    print("kv_Store: ", ledger_store.kv_store)
     user_key = b"1231"
     ledger = DataSubjectLedger.get_or_create(store=ledger_store, user_key=user_key)
 
@@ -141,7 +142,7 @@ def test_gamma_publish(
         get_budget_for_user=get_budget_for_user,
         deduct_epsilon_for_user=deduct_epsilon_for_user,
         ledger=ledger,
-        sigma=0.1,
+        sigma=0.5,
     )
 
     assert results.dtype == np.float64
@@ -719,7 +720,7 @@ def test_resize(
     flatten_ref = reference_tensor.child.flatten()
     flatten_res = resized_tensor.child.flatten()
 
-    assert resized_tensor.func_str == "resize"
+    assert resized_tensor.func_str == GAMMA_TENSOR_OP.RESIZE.value
     assert reference_tensor == resized_tensor.sources[reference_tensor.id]
 
     assert (flatten_ref == flatten_res[0:no_of_elems]).all()
@@ -775,7 +776,7 @@ def test_compress(
         )
     compressed_tensor = reference_tensor.compress(condition, axis=0)
 
-    assert compressed_tensor.func_str == "compress"
+    assert compressed_tensor.func_str == GAMMA_TENSOR_OP.COMPRESS.value
     assert reference_tensor == compressed_tensor.sources[reference_tensor.id]
 
     new_shape = (
@@ -816,8 +817,188 @@ def test_squeeze(
     ).gamma
 
     squeezed_tensor = reference_tensor.squeeze()
-    assert squeezed_tensor.func_str == "squeeze"
+    assert squeezed_tensor.func_str == GAMMA_TENSOR_OP.SQUEEZE.value
     assert reference_tensor == squeezed_tensor.sources[reference_tensor.id]
     assert squeezed_tensor.shape == reference_data.shape
     assert (squeezed_tensor.child == reference_data).all()
     assert (squeezed_tensor.data_subjects == ishan).all()
+
+
+def test_pos(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    ).gamma
+    output = +reference_tensor
+
+    assert output.func_str == GAMMA_TENSOR_OP.POSITIVE.value
+    assert reference_tensor == output.sources[reference_tensor.id]
+    assert (output.child == reference_tensor.child).all()
+    assert (output.min_vals == reference_tensor.min_vals).all()
+    assert (output.max_vals == reference_tensor.max_vals).all()
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+def test_neg(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    """Test neg for PT"""
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    ).gamma
+
+    neg_tensor = reference_tensor.__neg__()
+
+    assert neg_tensor.func_str == GAMMA_TENSOR_OP.NEGATIVE.value
+    assert reference_tensor == neg_tensor.sources[reference_tensor.id]
+    assert (neg_tensor.child == reference_tensor.child * -1).all()
+    assert (neg_tensor.min_vals == reference_tensor.max_vals * -1).all()
+    assert (neg_tensor.max_vals == reference_tensor.min_vals * -1).all()
+    assert neg_tensor.shape == reference_tensor.shape
+
+
+def test_and(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    # TODO
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array([reference_data]),
+        data_subjects=np.array([ishan]),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    ).gamma
+
+    result = reference_tensor & True
+    assert result.func_str == GAMMA_TENSOR_OP.LOGICAL_AND.value
+    assert reference_tensor == result.sources[reference_tensor.id]
+    assert (result.child == (reference_data & True)).all()
+
+    result = reference_tensor & False
+    assert (result.child == (reference_data & False)).all()
+
+
+def test_or(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    # TODO
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array([reference_data]),
+        data_subjects=np.array([ishan]),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    ).gamma
+
+    result = reference_tensor | True
+    assert result.func_str == GAMMA_TENSOR_OP.LOGICAL_OR.value
+    assert reference_tensor == result.sources[reference_tensor.id]
+    assert (result.child == (reference_data | True)).all()
+
+    result = reference_tensor | False
+    assert (result.child == (reference_data | False)).all()
+
+
+def test_any(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array(reference_data),
+        data_subjects=np.array(ishan),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    ).gamma
+
+    aux_tensor = reference_tensor == reference_data
+    result = aux_tensor.any()
+    assert result.func_str == GAMMA_TENSOR_OP.ANY.value
+    assert reference_tensor == result.sources[aux_tensor.id]
+    assert result.child
+    assert (result.data_subjects == ishan).any()
+
+    result = (reference_tensor == reference_data).any(axis=0)
+    assert result.shape == (reference_data.shape[0],)
+    assert result.data_subjects.shape == (reference_data.shape[0],)
+    assert (result.data_subjects == ishan).any()
+
+    result = (reference_tensor == reference_data).any(keepdims=True)
+    assert result.shape == (1, 1)
+    assert result.data_subjects.shape == (1, 1)
+    assert (result.data_subjects == ishan).any()
+
+    result = (reference_tensor == reference_data).any(keepdims=True, axis=0)
+    assert result.shape == (1, reference_tensor.shape[0])
+    assert result.data_subjects.shape == (1, reference_tensor.shape[0])
+    assert (result.data_subjects == ishan).any()
+
+    condition = list(np.random.choice(a=[False, True], size=(reference_data.shape[0])))
+    result = (reference_tensor == reference_data).any(where=condition)
+    assert result.child
+    assert isinstance(result.data_subjects, DataSubjectArray)
+
+
+def test_all(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array(reference_data),
+        data_subjects=np.array(ishan),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    ).gamma
+
+    aux_tensor = reference_tensor == reference_data
+    result = aux_tensor.all()
+    assert result.func_str == GAMMA_TENSOR_OP.ALL.value
+    assert reference_tensor == result.sources[aux_tensor.id]
+    assert result.child
+    assert (result.data_subjects == ishan).any()
+
+    result = (reference_tensor == reference_data).all(axis=0)
+    assert result.shape == (reference_data.shape[0],)
+    assert result.data_subjects.shape == (reference_data.shape[0],)
+    assert (result.data_subjects == ishan).any()
+
+    result = (reference_tensor == reference_data).all(keepdims=True)
+    assert result.shape == (1, 1)
+    assert result.data_subjects.shape == (1, 1)
+    assert (result.data_subjects == ishan).any()
+
+    result = (reference_tensor == reference_data).all(keepdims=True, axis=0)
+    assert result.shape == (1, reference_tensor.shape[0])
+    assert result.data_subjects.shape == (1, reference_tensor.shape[0])
+    assert (result.data_subjects == ishan).any()
+
+    condition = list(np.random.choice(a=[False, True], size=(reference_data.shape[0])))
+    result = (reference_tensor == reference_data).all(where=condition)
+    assert result.child
+    assert isinstance(result.data_subjects, DataSubjectArray)
