@@ -1266,12 +1266,6 @@ class GammaTensor:
         ):
             self.sources[self.id] = self
 
-        if isinstance(self.min_vals, lazyrepeatarray):
-            if self.min_vals.data.size != 1:
-                self.min_vals.data = self.min_vals.data.min()
-            if self.max_vals.data.size != 1:
-                self.max_vals.data = self.max_vals.data.max()
-
     def decode(self) -> np.ndarray:
         if isinstance(self.child, FixedPrecisionTensor):
             return self.child.decode()
@@ -2074,8 +2068,12 @@ class GammaTensor:
             else self.child.zeros_like(*args, **kwargs)
         )
 
-        min_val = self.min_vals.zeros_like(*args, **kwargs)
-        max_val = self.max_vals.zeros_like(*args, **kwargs)
+        min_val = lazyrepeatarray(
+            data=self.min_vals.data, shape=self.shape, data_type="min_val"
+        )
+        max_val = lazyrepeatarray(
+            data=self.max_vals.data, shape=self.shape, data_type="max_val"
+        )
 
         return GammaTensor(
             child=child,
@@ -2228,8 +2226,12 @@ class GammaTensor:
         return GammaTensor(
             child=out_child,
             data_subjects=new_data_subjects,
-            min_vals=lazyrepeatarray(data=0, shape=out_child.shape),
-            max_vals=lazyrepeatarray(data=1, shape=out_child.shape),
+            min_vals=lazyrepeatarray(
+                data=0, shape=out_child.shape, data_type="min_val"
+            ),
+            max_vals=lazyrepeatarray(
+                data=1, shape=out_child.shape, data_type="max_val"
+            ),
             func_str=GAMMA_TENSOR_OP.ANY.value,
             sources=output_state,
         )
@@ -2265,8 +2267,12 @@ class GammaTensor:
         return GammaTensor(
             child=out_child,
             data_subjects=new_data_subjects,
-            min_vals=lazyrepeatarray(data=0, shape=out_child.shape),
-            max_vals=lazyrepeatarray(data=1, shape=out_child.shape),
+            min_vals=lazyrepeatarray(
+                data=0, shape=out_child.shape, data_type="min_val"
+            ),
+            max_vals=lazyrepeatarray(
+                data=1, shape=out_child.shape, data_type="max_val"
+            ),
             func_str=GAMMA_TENSOR_OP.ALL.value,
             sources=output_state,
         )
@@ -2280,8 +2286,12 @@ class GammaTensor:
         return GammaTensor(
             child=output_data,
             data_subjects=self.data_subjects,
-            min_vals=lazyrepeatarray(data=0, shape=output_data.shape),
-            max_vals=lazyrepeatarray(data=1, shape=output_data.shape),
+            min_vals=lazyrepeatarray(
+                data=0, shape=output_data.shape, data_type="min_val"
+            ),
+            max_vals=lazyrepeatarray(
+                data=1, shape=output_data.shape, data_type="max_val"
+            ),
             func_str=GAMMA_TENSOR_OP.LOGICAL_AND.value,
             sources=output_state,
         )
@@ -2295,8 +2305,12 @@ class GammaTensor:
         return GammaTensor(
             child=output_data,
             data_subjects=self.data_subjects,
-            min_vals=lazyrepeatarray(data=0, shape=output_data.shape),
-            max_vals=lazyrepeatarray(data=1, shape=output_data.shape),
+            min_vals=lazyrepeatarray(
+                data=0, shape=output_data.shape, data_type="min_val"
+            ),
+            max_vals=lazyrepeatarray(
+                data=1, shape=output_data.shape, data_type="max_val"
+            ),
             func_str=GAMMA_TENSOR_OP.LOGICAL_OR.value,
             sources=output_state,
         )
