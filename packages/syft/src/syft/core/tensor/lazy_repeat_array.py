@@ -450,6 +450,8 @@ class lazyrepeatarray:
         )
 
     def to_numpy(self) -> np.ndarray:
+        if self.shape == ():  # np.broadcast_to fails if self.shape is this
+            return self.data
         return np.broadcast_to(self.data, self.shape)
 
     def __repr__(self) -> str:

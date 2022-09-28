@@ -130,7 +130,7 @@ def publish(
     # if we dont return below we will terminate if the tensor gets replaced with zeros
     prev_tensor = None
 
-    while can_reduce_further(value=tensor.child, zeros_like=zeros_like):
+    while can_reduce_further(value=tensor.child):
         if prev_tensor is None:
             prev_tensor = tensor.child
         else:
@@ -246,7 +246,6 @@ def publish(
 
         # Step 4: Path 2 - User doesn't have enough privacy budget.
         elif not has_budget:
-            print("Not enough privacy budget, about to start filtering.")
             # If the user doesn't have enough PB, they shouldn't see data of high
             # epsilon data subjects (privacy violation)
             # So we will remove data belonging to these data subjects from the computation.
@@ -377,19 +376,26 @@ def publish(
 # 2) there are differences between the value and a zeros_like of the same shape
 # 3) within the value ArrayLike there are no NaN values as these will never evaluate
 # to True when compared with zeros_like and therefore never exit the loop
-def can_reduce_further(value: ArrayLike, zeros_like: ArrayLike) -> bool:
+def can_reduce_further(value: ArrayLike) -> bool:
     try:
-        result = value != zeros_like
+        result = value != 0
         # check we can call any or iterate on this value otherwise exit loop
         # numpy scalar types like np.bool_ are Iterable
         if not hasattr(result, "any") and not isinstance(result, Iterable):
-            return False
+            if result is True:
+                return True
+            elif result is False:
+                return False
+            else:
+                raise Exception(
+                    f"Unsure what to do with result of: {result} arising from value = {value}"
+                )
 
         # make sure the comparison has some difference and there are also no NaNs
         # causing that difference in the result
         return result.any() and not_nans(result)
     except Exception as e:
-        print(f"Unable to test reducability of {type(value)} and {type(zeros_like)}")
+        print(f"Unable to test reducibility of {type(value)} and 0")
         raise e
 
 

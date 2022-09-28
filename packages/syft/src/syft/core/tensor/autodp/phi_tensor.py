@@ -1542,9 +1542,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         ledger: DataSubjectLedger,
         sigma: float,
     ) -> AcceptableSimpleType:
-        print("PUBLISHING TO GAMMA:")
-        print(self.child)
-
         gamma = self.gamma
         # gamma.func = lambda x: x
         gamma.sources[gamma.id] = gamma
@@ -1555,9 +1552,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             ledger=ledger,
             sigma=sigma,
         )
-
-        print("Final Values", res)
-
         return res
 
     @property
