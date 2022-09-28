@@ -11,6 +11,7 @@ import syft as sy
 from syft.core.adp.data_subject_ledger import DataSubjectLedger
 from syft.core.adp.data_subject_list import DataSubjectArray
 from syft.core.adp.ledger_store import DictLedgerStore
+from syft.core.tensor.autodp.gamma_functions import GAMMA_TENSOR_OP
 from syft.core.tensor.autodp.gamma_tensor import GammaTensor
 from syft.core.tensor.autodp.phi_tensor import PhiTensor as PT
 from syft.core.tensor.lazy_repeat_array import lazyrepeatarray as lra
@@ -719,7 +720,7 @@ def test_resize(
     flatten_ref = reference_tensor.child.flatten()
     flatten_res = resized_tensor.child.flatten()
 
-    assert resized_tensor.func_str == "resize"
+    assert resized_tensor.func_str == GAMMA_TENSOR_OP.RESIZE.value
     assert reference_tensor == resized_tensor.sources[reference_tensor.id]
 
     assert (flatten_ref == flatten_res[0:no_of_elems]).all()
@@ -775,7 +776,7 @@ def test_compress(
         )
     compressed_tensor = reference_tensor.compress(condition, axis=0)
 
-    assert compressed_tensor.func_str == "compress"
+    assert compressed_tensor.func_str == GAMMA_TENSOR_OP.COMPRESS.value
     assert reference_tensor == compressed_tensor.sources[reference_tensor.id]
 
     new_shape = (
@@ -816,7 +817,7 @@ def test_squeeze(
     ).gamma
 
     squeezed_tensor = reference_tensor.squeeze()
-    assert squeezed_tensor.func_str == "squeeze"
+    assert squeezed_tensor.func_str == GAMMA_TENSOR_OP.SQUEEZE.value
     assert reference_tensor == squeezed_tensor.sources[reference_tensor.id]
     assert squeezed_tensor.shape == reference_data.shape
     assert (squeezed_tensor.child == reference_data).all()
@@ -838,7 +839,7 @@ def test_pos(
     ).gamma
     output = +reference_tensor
 
-    assert output.func_str == "pos"
+    assert output.func_str == GAMMA_TENSOR_OP.POSITIVE.value
     assert reference_tensor == output.sources[reference_tensor.id]
     assert (output.child == reference_tensor.child).all()
     assert (output.min_vals == reference_tensor.min_vals).all()
@@ -863,7 +864,7 @@ def test_neg(
 
     neg_tensor = reference_tensor.__neg__()
 
-    assert neg_tensor.func_str == "neg"
+    assert neg_tensor.func_str == GAMMA_TENSOR_OP.NEGATIVE.value
     assert reference_tensor == neg_tensor.sources[reference_tensor.id]
     assert (neg_tensor.child == reference_tensor.child * -1).all()
     assert (neg_tensor.min_vals == reference_tensor.max_vals * -1).all()
@@ -887,7 +888,7 @@ def test_and(
     ).gamma
 
     result = reference_tensor & True
-    assert result.func_str == "and"
+    assert result.func_str == GAMMA_TENSOR_OP.LOGICAL_AND.value
     assert reference_tensor == result.sources[reference_tensor.id]
     assert (result.child == (reference_data & True)).all()
 
@@ -911,7 +912,7 @@ def test_or(
     ).gamma
 
     result = reference_tensor | True
-    assert result.func_str == "or"
+    assert result.func_str == GAMMA_TENSOR_OP.LOGICAL_OR.value
     assert reference_tensor == result.sources[reference_tensor.id]
     assert (result.child == (reference_data | True)).all()
 
@@ -935,7 +936,7 @@ def test_any(
 
     aux_tensor = reference_tensor == reference_data
     result = aux_tensor.any()
-    assert result.func_str == "any"
+    assert result.func_str == GAMMA_TENSOR_OP.ANY.value
     assert reference_tensor == result.sources[aux_tensor.id]
     assert result.child
     assert (result.data_subjects == ishan).any()
@@ -977,7 +978,7 @@ def test_all(
 
     aux_tensor = reference_tensor == reference_data
     result = aux_tensor.all()
-    assert result.func_str == "all"
+    assert result.func_str == GAMMA_TENSOR_OP.ALL.value
     assert reference_tensor == result.sources[aux_tensor.id]
     assert result.child
     assert (result.data_subjects == ishan).any()

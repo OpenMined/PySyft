@@ -17,6 +17,7 @@ from numpy.typing import ArrayLike
 
 # relative
 from ...core.node.common.node_manager.user_manager import RefreshBudgetException
+from ...core.tensor.autodp.gamma_tensor_ops import GAMMA_TENSOR_OP
 from ..tensor.fixed_precision_tensor import FixedPrecisionTensor
 from ..tensor.lazy_repeat_array import lazyrepeatarray
 from ..tensor.passthrough import PassthroughTensor  # type: ignore
@@ -276,7 +277,7 @@ def publish(
 
                 if isinstance(input_tensor, GammaTensor):
                     if (
-                        input_tensor.func_str == "no_op"
+                        input_tensor.func_str == GAMMA_TENSOR_OP.NOOP.value
                     ):  # This is raw, unprocessed private data. Filter if eps spend > PB!
                         # Calculate epsilon spend for this tensor
                         l2_norms = jnp.sqrt(jnp.sum(jnp.square(input_tensor.child)))
@@ -307,6 +308,14 @@ def publish(
 
                             # Replace the original tensor with this filtered one
                             # remove the original state id
+
+                            # TODO: This changes insertion order which could impact
+                            # the non commutable operations like div where by the
+                            # values are unpacked in order of insertion before being
+                            # executed as a tuple
+                            # see def _truediv(state: dict) -> jax.numpy.DeviceArray:
+                            # in gamma_functions.py
+
                             del parent_state[input_tensor.id]
 
                             # add the new zeroed state id tensor
@@ -372,6 +381,7 @@ def can_reduce_further(value: ArrayLike, zeros_like: ArrayLike) -> bool:
     try:
         result = value != zeros_like
         # check we can call any or iterate on this value otherwise exit loop
+        # numpy scalar types like np.bool_ are Iterable
         if not hasattr(result, "any") and not isinstance(result, Iterable):
             return False
 
