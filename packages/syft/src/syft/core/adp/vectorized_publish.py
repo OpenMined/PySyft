@@ -397,7 +397,15 @@ def can_reduce_further(value: ArrayLike, zeros_like: ArrayLike) -> bool:
 # so we should be extra careful to notify the user of why this check failed
 def not_nans(value: ArrayLike) -> bool:
     try:
-        return not jnp.isnan(value).any()
+        # TODO: support nan ufunc properly?
+        # do we need to add _array attrs to our tensor chain?
+        while hasattr(value, "child"):
+            value = value.child
+
+        if isinstance(value, np.ndarray):
+            return not np.isnan(value).any()
+        else:
+            return not jnp.isnan(value).any()
     except Exception as e:
         print(f"Holy Batmanananana. isnan is not supported {type(value)}.")
         raise e

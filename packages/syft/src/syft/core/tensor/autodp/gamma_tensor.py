@@ -2551,7 +2551,10 @@ class GammaTensor:
             if self.child is None:
                 return 0
             return 1
-        return len(self.child)
+        try:
+            return len(self.child)
+        except Exception:  # nosec
+            return self.child.size
 
     def __getitem__(self, item: Union[int, slice, PassthroughTensor]) -> GammaTensor:
         # TODO: Technically we could reduce ds.one_hot_lookup to remove any DS that won't be there
