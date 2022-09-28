@@ -3721,7 +3721,15 @@ long_string = (
     + "               [bold green]HAPPY DEBUGGING! 🐛🐞🦗🦟🦠🦠🦠[/bold green]\n                      "
 )
 
+
 cli.add_command(logs)
+
+
+@click.group(cls=RichGroup)
+def create() -> None:
+    pass
+
+
 @click.command(help="Create a k3d cluster")
 @click.argument("name", nargs=1)
 @click.option(
@@ -3759,7 +3767,7 @@ cli.add_command(logs)
     is_flag=True,
     help="Prevent lots of command output",
 )
-def create(name: str, **kwargs: Any) -> None:
+def k3d(name: str, **kwargs: Any) -> None:
     registry = kwargs.get("registry", None)
     node_port = parse_port(kwargs["port"])
     dry_run = kwargs["cmd"]
@@ -3818,6 +3826,7 @@ def create(name: str, **kwargs: Any) -> None:
             subprocess.run(cmd)  # nosec
 
 
+create.add_command(k3d)
 cli.add_command(create)
 
 
