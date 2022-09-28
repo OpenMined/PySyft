@@ -588,9 +588,6 @@ class DataSubjectArray:
     def sqrt(self, *args: List[Any], **kwargs: Dict[Any, Any]) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)
 
-    def mean(self) -> DataSubjectArray:
-        return DataSubjectArray(self.data_subjects)
-
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs) -> ArrayLike:  # type: ignore
         method_name = ufunc.__name__
         print("method_name", method_name)

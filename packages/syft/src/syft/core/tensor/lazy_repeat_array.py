@@ -348,6 +348,8 @@ class lazyrepeatarray:
         return lazyrepeatarray(data=res, shape=res.shape, data_type=self.data_type)
 
     def mean(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
+        # Note: avoid calling this method directly as it is computationally expensive due to to_numpy()
+        # Instead try initializing lazyrepeatarray() and passing in the output shape directly.
         res = np.array(self.to_numpy().mean(*args, **kwargs))
         data_type = "none"
         if res.size > 0:
@@ -358,6 +360,7 @@ class lazyrepeatarray:
             data_type = "min_val"
         elif all_max_val:
             data_type = "max_val"
+
         return lazyrepeatarray(data=res, shape=res.shape, data_type=data_type)
 
     def ones_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:

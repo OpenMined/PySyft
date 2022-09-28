@@ -2277,7 +2277,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         **kwargs: Any,
     ) -> PhiTensor:
         child = self.child.mean(axis=axis, **kwargs)
-        data_subjects = np.array(self.data_subjects.mean(axis=axis, **kwargs))
+        data_subjects = self.data_subjects.mean(axis=axis, **kwargs)
 
         return PhiTensor(
             child=child,

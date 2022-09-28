@@ -600,7 +600,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         max_vals = self.max_vals.mean(*args, **kwargs)
 
         result = TensorWrappedGammaTensorPointer(
-            data_subjects=self.data_subjects,
+            data_subjects=np.mean(self.data_subjects, *args, **kwargs),
             min_vals=min_vals,
             max_vals=max_vals,
             client=self.client,
@@ -2819,7 +2819,7 @@ class GammaTensor:
         # if isinstance(self.min_vals, lazyrepeatarray):
         #     minv = lazyrepeatarray(
         #         data=self.min_vals.data.min(), shape=result.shape, data_type="min_val"
-            )
+        #     )
         #     maxv = lazyrepeatarray(
         #         data=self.max_vals.data.max(), shape=result.shape, data_type="max_val"
         #     )
