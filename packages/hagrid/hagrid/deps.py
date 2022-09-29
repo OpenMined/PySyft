@@ -325,7 +325,10 @@ class BinaryInfo:
             if returncode == 0:
                 self.extract_version(lines=lines)
             else:
-                self.error = lines[0]
+                if len(lines) > 0:
+                    self.error = lines[0]
+                else:
+                    self.error = f"Error, no output from {self.binary}"
         return self
 
 
@@ -476,22 +479,39 @@ def check_docker_version() -> Optional[str]:
     return version
 
 
-def check_docker_service_status() -> None:
+def docker_running() -> bool:
+    try:
+        cmd = "docker info"
+        returncode, _ = get_cli_output(cmd)
+        if returncode == 0:
+            return True
+        else:
+            return False
+    except Exception:  # nosec
+        pass
+    return False
+
+
+def check_docker_service_status(animated: bool = True) -> None:
     """Check the status of the docker service.
 
     Raises:
         MissingDependency: If docker service is not running.
     """
-    console = Console()
 
-    with console.status("[bold blue]Checking for Docker Service"):
+    if not animated:
+        if not docker_running():
+            raise MissingDependency("❌ Docker service is not running.")
 
-        result = os.popen("docker info").read().strip()  # nosec
+    else:
+        console = Console()
+        # putting \t at the end seems to prevent weird chars getting outputted
+        # during animations in the juypter notebook
+        with console.status("[bold blue]Checking for Docker Service[/bold blue]\t"):
+            if not docker_running():
+                raise MissingDependency("❌ Docker service is not running.")
 
-        if "ERROR" in result:
-            raise MissingDependency(f"❌ Docker service is not running.\n{result}")
-
-        print("✅ Docker service is running")
+    print("✅ Docker service is running")
 
 
 def check_deps(
