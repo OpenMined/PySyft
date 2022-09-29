@@ -111,6 +111,7 @@ class ShareTensor(PassthroughTensor):
     crypto_store = CryptoStore()
 
     __attr_allowlist__ = ["child", "rank", "parties_info", "seed_przs", "ring_size"]
+
     __slots__ = (
         "rank",
         "ring_size",
@@ -123,6 +124,13 @@ class ShareTensor(PassthroughTensor):
         "parties_info",
         "nr_parties",
     )
+
+    @classmethod
+    def serde_constructor(cls, kwargs: Dict[str, Any]) -> ShareTensor:
+        child = kwargs.pop("child")
+        tensor = ShareTensor(**kwargs)
+        tensor.child = child
+        return tensor
 
     def __init__(
         self,
