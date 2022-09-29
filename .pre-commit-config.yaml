@@ -133,7 +133,7 @@ repos:
         exclude: |
           (?x)^(
               packages/syft/examples/.*|
-              packages/syft/tests/.*|
+              packages/syft/tests/syft/.*|
               packages/syft/src/syft/proto.*|
               packages/syft/tests/syft/lib/python.*
           )$
