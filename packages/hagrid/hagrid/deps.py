@@ -26,6 +26,8 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+import subprocess
+import getpass
 
 # third party
 from packaging import version
@@ -66,6 +68,9 @@ SYFT_MINIMUM_PYTHON_VERSION = (3, 7)
 SYFT_MINIMUM_PYTHON_VERSION_STRING = "3.7"
 SYFT_MAXIMUM_PYTHON_VERSION = (3, 10, 999)
 SYFT_MAXIMUM_PYTHON_VERSION_STRING = "3.10"
+WHITE='\033[0;37m'
+NO_COLOR='\033[0;0m'
+WARNING_MSG = f"\033[0;33m WARNING:{NO_COLOR}"
 
 
 @dataclass
@@ -150,6 +155,18 @@ class DependencyGridDocker(Dependency):
         ):
             self.display = "✅ Docker " + str(binary_info.version)
         else:
+            # If it's linux, check user priviledges and send some warnings
+            if platform.system().lower() == "linux":
+                # 1 - Check if current user is root
+                user = os.getuid()
+                if user == 0:
+                    print(f"{WARNING_MSG} {WHITE}Using hagrid in ROOT mode might cause issues if you run it later without being ROOT.{NO_COLOR}")
+
+                # 2 - Check if current user is contained in sudo users list
+                result = subprocess.run(["getent","group","sudo"],  stdout=subprocess.PIPE, text=True)
+                if getpass.getuser() not in result.stdout:
+                    print(f"{WARNING_MSG} {WHITE}You're not a super user, the installation might fail so please, get super user access first!{NO_COLOR}")
+
             self.issues.append(docker_install())
             self.display = "❌ Docker not installed"
 
@@ -677,7 +694,7 @@ PACKAGE_MANAGER_COMMANDS = {
     "docker": {
         "macos": "brew install --cask docker",
         "windows": "choco install docker-desktop -y",
-        "linux": "curl -fsSL https://get.docker.com -o get-docker.sh",
+        "linux": "curl -fsSL https://get.docker.com -o get-docker.sh && chmod +777 get-docker.sh && ./get-docker.sh",
         "backup_url": "https://www.docker.com/products/docker-desktop/",
     },
     "docker_compose": {
