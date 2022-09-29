@@ -1389,8 +1389,8 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         return PhiTensor(
             child=result,
             data_subjects=self.data_subjects[indices],
-            min_vals=lazyrepeatarray(data=result.min(), shape=result.shape),
-            max_vals=lazyrepeatarray(data=result.max(), shape=result.shape),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
         )
 
     def min(self, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> PhiTensor:
@@ -1399,8 +1399,8 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         return PhiTensor(
             child=result,
             data_subjects=self.data_subjects[indices],
-            min_vals=lazyrepeatarray(data=result.min(), shape=result.shape),
-            max_vals=lazyrepeatarray(data=result.max(), shape=result.shape),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
         )
 
     def _argmax(self, axis: Optional[int]) -> PhiTensor:
@@ -2462,6 +2462,34 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             min_vals=minv,
             max_vals=maxv,
         )
+
+    def trace(self, offset: int=0, axis1: int=0, axis2: int=1) -> PhiTensor:
+        """
+
+        Return the sum along diagonals of the array.
+        If a is 2-D, the sum along its diagonal with the given offset is returned,
+        i.e., the sum of elements a[i,i+offset] for all i.
+
+        If a has more than two dimensions, then the axes specified by axis1 and axis2 are used to determine the
+        2-D sub-arrays whose traces are returned. The shape of the resulting array is the same as that of a with
+        axis1 and axis2 removed.
+
+        :param offset: Offset of the diagonal from the main diagonal. Can be both positive and negative. Defaults to 0.
+        :param axis1, axis2: Axes to be used as the first and second axis of the 2-D sub-arrays from which the
+        diagonals should be taken. Defaults are the first two axes of a.
+        :return: PhiTensor: If a is 2-D, the sum along the diagonal is returned.
+        If a has larger dimensions, then an array of sums along diagonals is returned.
+        """
+
+        result = self.child.trace(offset, axis1, axis2)
+        return PhiTensor(
+            child=result,
+            data_subjects=self.data_subjects.trace(offset, axis1, axis2),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape)
+        )
+
+
 
     def _object2bytes(self) -> bytes:
         schema = get_capnp_schema(schema_file="phi_tensor.capnp")
