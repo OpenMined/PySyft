@@ -1,7 +1,4 @@
 #!/bin/sh
-NC='\033[0m' # No Color
-WHITE='\033[1;37m'
-WARNING='\033[0;33m WARNING: \033[0;31m'
 set -e
 
 cat /dev/null <<EOF
@@ -24,10 +21,6 @@ check_ubuntu() {
         if [ "$ID" = "ubuntu" ]
         then
             echo "$PRETTY_NAME detected"
-            if  [ `whoami` = 'root' ];
-            then
-                echo "${WARNING} ${WHITE}Using hagrid in ROOT mode might cause issues if you run it later without being ROOT.${NC}"
-            fi
         else
             echo "Install script currently only supports Ubuntu"
             exit 1
