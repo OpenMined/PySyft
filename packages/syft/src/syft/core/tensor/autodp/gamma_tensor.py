@@ -2706,6 +2706,61 @@ class GammaTensor:
         #     max_vals=maxv,
         # )
 
+    def trace(self, offset: int = 0, axis1: int = 0, axis2: int = 1) -> GammaTensor:
+        sources = dict()
+        sources[self.id] = self
+        result = self.child.trace(offset, axis1, axis2)
+        return GammaTensor(
+            child=result,
+            data_subjects=self.data_subjects.trace(offset, axis1, axis2),
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data * result.size, shape=result.shape
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data * result.size, shape=result.shape
+            ),
+            func_str=GAMMA_TENSOR_OP.TRACE.value,
+            sources=sources,
+        )
+
+    def min(
+        self,
+        axis: Optional[int] = None,
+        keepdims: Optional[bool] = None,
+        initial: Optional[float] = None,
+        where: Optional[Union[List[bool], ArrayLike[bool]]] = None,
+    ) -> GammaTensor:
+        sources = dict()
+        sources[self.id] = self
+        result = self.child.min(axis, keepdims, initial, where)
+        return GammaTensor(
+            child=result,
+            data_subjects=self.data_subjects.min(axis, keepdims, initial, where),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
+            func_str=GAMMA_TENSOR_OP.MIN.value,
+            sources=sources,
+        )
+
+    def max(
+        self,
+        axis: Optional[int] = None,
+        keepdims: Optional[bool] = None,
+        initial: Optional[float] = None,
+        where: Optional[Union[List[bool], ArrayLike[bool]]] = None,
+    ) -> GammaTensor:
+        sources = dict()
+        sources[self.id] = self
+        result = self.child.max(axis, keepdims, initial, where)
+        return GammaTensor(
+            child=result,
+            data_subjects=self.data_subjects.min(axis, keepdims, initial, where),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
+            func_str=GAMMA_TENSOR_OP.MAX.value,
+            sources=sources,
+        )
+
     @property
     def shape(self) -> Tuple[int, ...]:
         return self.child.shape

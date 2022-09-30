@@ -2463,7 +2463,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=maxv,
         )
 
-    def trace(self, offset: int=0, axis1: int=0, axis2: int=1) -> PhiTensor:
+    def trace(self, offset: int = 0, axis1: int = 0, axis2: int = 1) -> PhiTensor:
         """
 
         Return the sum along diagonals of the array.
@@ -2486,10 +2486,8 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=result,
             data_subjects=self.data_subjects.trace(offset, axis1, axis2),
             min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
-            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape)
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
         )
-
-
 
     def _object2bytes(self) -> bytes:
         schema = get_capnp_schema(schema_file="phi_tensor.capnp")
