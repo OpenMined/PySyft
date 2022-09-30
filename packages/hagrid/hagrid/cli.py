@@ -42,7 +42,9 @@ from .cache import RENDERED_DIR
 from .cache import arg_cache
 from .deps import DEPENDENCIES
 from .deps import allowed_hosts
+from .deps import check_docker_service_status
 from .deps import check_docker_version
+from .deps import check_grid_docker
 from .deps import gather_debug
 from .deps import is_windows
 from .exceptions import MissingDependency
@@ -901,6 +903,13 @@ def create_launch_cmd(
         parsed_kwargs.update(kwargs)
 
     if host in ["docker"]:
+        # Check docker service status
+        if not ignore_docker_version_check:
+            check_docker_service_status()
+
+        # Check grid docker versions
+        if not ignore_docker_version_check:
+            check_grid_docker(display=True, output_in_text=True)
 
         if not ignore_docker_version_check:
             version = check_docker_version()
@@ -1403,7 +1412,7 @@ def create_launch_docker_cmd(
     print("  - NAME: " + str(snake_name))
     # print("  - TAG: " + str(tag))
     print("  - PORT: " + str(host_term.free_port))
-    print("  - DOCKER: " + docker_version)
+    print("  - DOCKER COMPOSE: " + docker_version)
     # print("  - TAIL: " + str(tail))
     print("\n")
 
@@ -2625,6 +2634,24 @@ def run_quickstart(
         venv_dir = directory + ".venv"
         environ["PATH"] = venv_dir + os.sep + os_bin_path + os.pathsep + environ["PATH"]
         jupyter_binary = "jupyter.exe" if is_windows() else "jupyter"
+
+        if is_windows():
+            env_activate_cmd = (
+                "(Powershell): "
+                + "cd "
+                + venv_dir
+                + "; "
+                + os_bin_path
+                + os.sep
+                + "activate"
+            )
+        else:
+            env_activate_cmd = (
+                "(Linux): source " + venv_dir + os.sep + os_bin_path + "/activate"
+            )
+
+        print(f"To activate your virtualenv {env_activate_cmd}")
+
         try:
             allow_browser = " --no-browser" if is_gitpod() else ""
             cmd = (
@@ -2895,15 +2922,20 @@ def quickstart_setup(
 
 
 def add_intro_notebook(directory: str, reset: bool = False) -> str:
+    filenames = ["00-quickstart.ipynb", "01-install-wizard.ipynb"]
+
     files = os.listdir(directory)
     try:
         files.remove(".venv")
     except Exception:  # nosec
         pass
 
-    filenames = ["00-quickstart.ipynb", "01-install-wizard.ipynb"]
+    existing = 0
+    for file in files:
+        if file in filenames:
+            existing += 1
 
-    if len(files) == 0 or reset:
+    if existing != len(filenames) or reset:
         if EDITABLE_MODE:
             local_src_dir = Path(os.path.abspath(Path(hagrid_root()) / "../../"))
             for filename in filenames:

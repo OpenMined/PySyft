@@ -31,6 +31,7 @@ from typing import Union
 from packaging import version
 from packaging.version import Version
 import requests
+from rich.console import Console
 
 # relative
 from .exceptions import MissingDependency
@@ -324,7 +325,10 @@ class BinaryInfo:
             if returncode == 0:
                 self.extract_version(lines=lines)
             else:
-                self.error = lines[0]
+                if len(lines) > 0:
+                    self.error = lines[0]
+                else:
+                    self.error = f"Error, no output from {self.binary}"
         return self
 
 
@@ -475,6 +479,41 @@ def check_docker_version() -> Optional[str]:
     return version
 
 
+def docker_running() -> bool:
+    try:
+        cmd = "docker info"
+        returncode, _ = get_cli_output(cmd)
+        if returncode == 0:
+            return True
+        else:
+            return False
+    except Exception:  # nosec
+        pass
+    return False
+
+
+def check_docker_service_status(animated: bool = True) -> None:
+    """Check the status of the docker service.
+
+    Raises:
+        MissingDependency: If docker service is not running.
+    """
+
+    if not animated:
+        if not docker_running():
+            raise MissingDependency("❌ Docker service is not running.")
+
+    else:
+        console = Console()
+        # putting \t at the end seems to prevent weird chars getting outputted
+        # during animations in the juypter notebook
+        with console.status("[bold blue]Checking for Docker Service[/bold blue]\t"):
+            if not docker_running():
+                raise MissingDependency("❌ Docker service is not running.")
+
+    print("✅ Docker service is running")
+
+
 def check_deps(
     deps: Dict[str, Dependency],
     of: str = "",
@@ -521,16 +560,20 @@ def check_deps(
         return None  # type: ignore
 
 
-def check_grid_docker(display: bool = True) -> Union[Dict[str, Dependency], NBOutput]:
+def check_grid_docker(
+    display: bool = True, output_in_text: bool = False
+) -> Union[Dict[str, Dependency], NBOutput]:
     try:
         deps: Dict[str, Dependency] = {}
         deps["git"] = DependencyGridGit(name="git")
         deps["docker"] = DependencyGridDocker(name="docker")
         deps["docker_compose"] = DependencyGridDockerCompose(name="docker compose")
-        return check_deps(of="Grid", deps=deps, display=display)
+        return check_deps(
+            of="Grid", deps=deps, display=display, output_in_text=output_in_text
+        )
     except Exception as e:
         try:
-            if display:
+            if display and not output_in_text:
                 return NBOutput(debug_exception(e=e)).to_html()
         except Exception:  # nosec
             pass
