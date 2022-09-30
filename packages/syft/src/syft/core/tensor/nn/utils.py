@@ -1,6 +1,5 @@
 # stdlib
 from typing import Any
-from typing import Dict
 from typing import Sequence
 from typing import Tuple
 from typing import Union
@@ -100,7 +99,7 @@ def dp_pad(
     input: Union[PhiTensor, GammaTensor],
     width: Union[int, Sequence],
     padding_mode: str = "reflect",
-    **kwargs: Dict[Any, Any],
+    **kwargs: Any,
 ) -> Union[PhiTensor, GammaTensor]:
 
     data = input.child
