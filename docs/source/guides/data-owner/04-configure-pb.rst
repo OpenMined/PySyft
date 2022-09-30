@@ -83,6 +83,10 @@ From a top-level view, this means a couple of things:
 * Differential Privacy can help a Data Scientist see trends in data ``without`` being able to ``identify`` the participants.
 * The more a specific data subject involved in the query ``stands out`` in a dataset, the more noise has to be added to ``obfuscate`` them.
 * There is a natural ``tradeoff`` between how much ``Privacy`` is preserved versus how much ``Accuracy`` is given.
+* Data scientists can ``create answers`` from the list of allowed questions the Data Owner limited them to. This is enabled by the use and combination of different types of ``PETs``. (see the image 👇 for reference)
+* Data scientists can download their allowed answers, creating a streamlined flow where ``answering questions`` using an org's Domain Server will be as easy as going to the organization's public website. (see the image 👇 for reference)
+
+|04-configure-pb-02|
 
 C. Quick Definition: Epsilon or Privacy Budget
 ################################################
@@ -151,3 +155,6 @@ Once we're logged in, you can move to the next section, which explores setting a
 
 .. |04-configure-pb-01| image:: ../../_static/personas-image/data-owner/04-configure-pb-01.png
    :width: 50%
+
+.. |04-configure-pb-02| image:: ../../_static/personas-image/data-owner/04-configure-pb-02.gif
+   :width: 95%
