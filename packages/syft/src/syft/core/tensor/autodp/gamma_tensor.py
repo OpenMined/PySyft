@@ -2726,40 +2726,81 @@ class GammaTensor:
     def min(
         self,
         axis: Optional[int] = None,
-        keepdims: Optional[bool] = None,
+        keepdims: Optional[bool] = False,
         initial: Optional[float] = None,
         where: Optional[Union[List[bool], ArrayLike[bool]]] = None,
     ) -> GammaTensor:
-        sources = dict()
-        sources[self.id] = self
-        result = self.child.min(axis, keepdims, initial, where)
-        return GammaTensor(
-            child=result,
-            data_subjects=self.data_subjects.min(axis, keepdims, initial, where),
-            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
-            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
-            func_str=GAMMA_TENSOR_OP.MIN.value,
-            sources=sources,
-        )
+
+        if where is None:
+            sources = dict()
+            sources[self.id] = self
+            result = np.amin(self.child, axis=axis, keepdims=keepdims, initial=initial)
+            indices = np.unravel_index(self.child.argmin(axis), shape=self.child.shape)
+
+            return GammaTensor(
+                child=result,
+                data_subjects=self.data_subjects[indices],
+                min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
+                max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
+                func_str=GAMMA_TENSOR_OP.MIN.value,
+                sources=sources,
+            )
+        else:
+            if initial is None:
+                raise ValueError("reduction operation 'minimum' does not have an identity, "
+                                 "so to use a where mask one has to specify 'initial'")
+            else:
+                sources = dict()
+                sources[self.id] = self
+                result = np.amin(self.child, axis=axis, keepdims=keepdims, initial=initial, where=where)
+                indices = np.unravel_index(self.child.argmin(axis), shape=self.child.shape)
+
+                return GammaTensor(
+                    child=result,
+                    data_subjects=self.data_subjects[indices],
+                    min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
+                    max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
+                    func_str=GAMMA_TENSOR_OP.MIN.value,
+                    sources=sources,
+                )
 
     def max(
         self,
         axis: Optional[int] = None,
-        keepdims: Optional[bool] = None,
+        keepdims: Optional[bool] = False,
         initial: Optional[float] = None,
         where: Optional[Union[List[bool], ArrayLike[bool]]] = None,
     ) -> GammaTensor:
-        sources = dict()
-        sources[self.id] = self
-        result = self.child.max(axis, keepdims, initial, where)
-        return GammaTensor(
-            child=result,
-            data_subjects=self.data_subjects.min(axis, keepdims, initial, where),
-            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
-            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
-            func_str=GAMMA_TENSOR_OP.MAX.value,
-            sources=sources,
-        )
+        if where is None:
+            sources = dict()
+            sources[self.id] = self
+            result = np.amax(self.child, axis=axis, keepdims=keepdims, initial=initial)
+            indices = np.unravel_index(self.child.argmax(axis), shape=self.child.shape)
+            return GammaTensor(
+                child=result,
+                data_subjects=self.data_subjects[indices],
+                min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
+                max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
+                func_str=GAMMA_TENSOR_OP.MAX.value,
+                sources=sources,
+            )
+        else:
+            if initial is None:
+                raise ValueError("reduction operation 'minimum' does not have an identity, "
+                                 "so to use a where mask one has to specify 'initial'")
+            else:
+                sources = dict()
+                sources[self.id] = self
+                result = np.amax(self.child, axis=axis, keepdims=keepdims, initial=initial, where=where)
+                indices = np.unravel_index(self.child.argmax(axis), shape=self.child.shape)
+                return GammaTensor(
+                    child=result,
+                    data_subjects=self.data_subjects[indices],
+                    min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
+                    max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
+                    func_str=GAMMA_TENSOR_OP.MAX.value,
+                    sources=sources,
+                )
 
     @property
     def shape(self) -> Tuple[int, ...]:

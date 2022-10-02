@@ -1384,7 +1384,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         )
 
     def max(self, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> PhiTensor:
-        indices = self.child.argmax(axis)
+        indices = np.unravel_index(self.child.argmax(axis), shape=self.child.shape)
         result = self.child.max(axis)
         return PhiTensor(
             child=result,
@@ -1394,7 +1394,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         )
 
     def min(self, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> PhiTensor:
-        indices = self.child.argmin(axis)
+        indices = np.unravel_index(self.child.argmin(axis), self.child.shape)
         result = self.child.min(axis)
         return PhiTensor(
             child=result,
