@@ -1432,15 +1432,50 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         axis: Optional[Union[int, Tuple[int, ...]]] = None,
         **kwargs: Any,
     ) -> PhiTensor:
+        """
+        Compute the standard deviation along the specified axis.
+        Returns the standard deviation, a measure of the spread of a distribution, of the array elements.
+        The standard deviation is computed for the flattened array by default, otherwise over the specified axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which the standard deviation is computed.
+                The default is to compute the standard deviation of the flattened array.
+                If this is a tuple of ints, a standard deviation is performed over multiple axes, instead of a single
+                axis or all the axes as before.
+
+            out: ndarray, optional
+                Alternative output array in which to place the result. It must have the same shape as the expected
+                output but the type (of the calculated values) will be cast if necessary.
+
+            ddof: int, optional
+                ddof = Delta Degrees of Freedom. By default ddof is zero.
+                The divisor used in calculations is N - ddof, where N represents the number of elements.
+
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the std method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+
+            where: array_like of bool, optional
+                Elements to include in the standard deviation. See reduce for details.
+
+        Returns
+
+            standard_deviation: PhiTensor
+        """
+
         result = self.child.std(axis, **kwargs)
+        # Std is lowest when all values are the same, 0. (-ve not possible because of squaring)
+        # Std is highest when half the samples are min and other half are max
         return PhiTensor(
             child=result,
             data_subjects=self.data_subjects.std(axis, **kwargs),
-            min_vals=lazyrepeatarray(data=0, shape=result.shape),
+            min_vals=lazyrepeatarray(data=np.array([0]), shape=result.shape),
             max_vals=lazyrepeatarray(
-                data=0.25
-                * (self.max_vals.data - self.min_vals.data)
-                ** 2,  # rough approximation, could be off
+                data=(self.max_vals.data - self.min_vals.data) / 2,
                 shape=result.shape,
             ),
         )
