@@ -3,19 +3,33 @@ Creating User Accounts on your Domain Server
 
 **Data Owner Tutorials**
 
-☑️ 00-deploy-domain
+☑️ :doc:`00-deploy-domain <00-deploy-domain>`
 
-☑️ 01-upload-data
+☑️ :doc:`01-upload-data <01-upload-data>`
 
 ◻️ 02-create-account👈
 
-.. note:: 
-   **TIP:** To run this tutorial interactively in Jupyter Lab on your own machine type:
+HAGrid Quickstart Setup
+---------------------------
+
+To run this tutorial interactively in Jupyter Lab on your own machine type, 
+you need to start a ``HAGrid Quickstart environment`` as follows:
 
 :: 
    
    pip install -U hagrid
    hagrid quickstart data-owner
+
+
+If you already have a HAGrid Quickstart environment operating, run the following to download the tutorials notebooks:
+
+:: 
+
+   from hagrid import quickstart
+   quickstart.download(“data-owner”)
+
+
+-----
 
 
 Domain Owners can directly ``create`` user accounts for Data Scientists to use their 
@@ -33,24 +47,78 @@ budget is important later in your workflow.
 
 Before you can create user accounts on your domain, you have to first:
 
-#. :ref:`Login to your Domain Node <step2>`
 #. :ref:`Annotate your dataset with the appropriate DP metadata <step4>`
-#. :ref:`Upload your dataset to Domain <step5>`
+#. :ref:`Upload your dataset to Domain Server <step5>`
 
 .. note:: 
    The above prerequisite steps are covered in the previous tutorial :doc:`How to upload private data to the Domain
    Node <01-upload-data>`. Please execute those steps before implementing this tutorial.
 
 📒 Overview of this tutorial
----------------------------
+------------------------------
 
+#. **Import** Syft & **Login** to Domain Server
 #. **Define** account credentials
 #. **Check** account permissions  
 
 |02-create-account-configure-pb-00|
 
-Step 1: Create a User Account
+Step 1: Import Syft & Login to Domain Server
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To utilize the privacy-enhancing features offered in PyGrid and to 
+create an account for the user, you must first ``import`` OpenMined's 
+``private`` deep learning library: PySyft.
+
+Lets import Syft by running the below cell:
+
+::
+
+   In:
+
+   # run this cell
+   try:
+      import syft as sy
+      print("Syft is imported")
+   except:
+      print("Syft is not installed. Please use the 🧙🏽‍♂️ Install Wizard above.")
+
+   Out: Syft is imported
+
+To login to your Domain node, you will need to define which Domain you are logging into and who you are. In this case, it will take the form of:
+
+* IP Address of the domain host
+* Your user account Email and Password
+
+.. WARNING::
+   ``info@openmined.org`` and ``changethis`` are the default admin credentials for any domain node that is launched by
+   the user in the documentation. Change the default email and password below to a more secure and 
+   private combination of your preference.
+
+::
+
+   In:
+
+   # run this cell
+   try:
+      domain_client = sy.login(
+         port=8081,
+         email="info@openmined.org",
+         password="changethis"
+      )
+   except Exception as e:
+      print("Unable to login. Please check your domain is up with `!hagrid check localhost:8081 --silent`")
+
+   Out:
+
+   Connecting to 20.253.155.183... done! Logging into openmined... done!
+
+Lovely :) You have just logged in to your Domain.
+
+
+Step 2: Create a User Account
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 After you have launched and logged into your domain as an ``admin``, you can create user accounts for others to use. 
 
 .. WARNING:: 
@@ -70,7 +138,7 @@ existing domain client (A) and by signing up using the URL to the domain (B), or
    In all three cases, the user of your domain will be assigned the role of Data Scientist by default.
 
 A. Using PySyft: Create account from Domain Client
-#######################################################
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To create a Data Scientists account for someone within your team or organization, you need to tell your Domain 4 things:
 
@@ -95,6 +163,7 @@ To create a Data Scientists account for someone within your team or organization
       password="supersecurepassword",
       budget=0
    )
+   domain_client.submit_credentials(data_scientist_details)
 
    Out: 
 
@@ -109,8 +178,24 @@ Once you have created an account, you can ``verify`` if the user account was mad
    # list the users that have registered to the domain
    domain_client.users
 
+Print the details of the account you created and share the ``credentials`` with the Data Scientists.
+
+::
+
+   In:
+
+   # run the cell then copy the output
+   print("Please give these details to the Data Scientists ⬇️")
+   print(data_scientist_details)
+
+   Out:
+
+   Please give these details to the Data Scientists ⬇️
+   {'name': 'Jane Doe', 'email': 'jane@email.com', 'password': 'supersecurepassword', 'url': '20.253.155.183'}
+
+
 B. Using PySyft: Create account from Domain URL
-####################################################
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A user can also ``signup`` or create an account on a Domain node if they have access to the ``URL`` to the Domain. 
 Instead of creating an account individually for each Data Scientist, a Data Owner can ``share`` the URL to their 
@@ -131,10 +216,10 @@ To register to a Domain, you need the following details:
    # run this cell
    import syft as sy
    domain_client = sy.register(
-      name=”Jane Doe”,
-      email=”jane@email.com”,
-      password=”supersecurepassword”,
-      url=”localhost”,
+      name="Jane Doe",
+      email="jane@email.com",
+      password="supersecurepassword",
+      url="localhost",
       port=8081
    )
 
@@ -144,7 +229,7 @@ On successful registration, the user is auto-logged into the domain.
    By default the role assigned to the registered user is of a ``Data Scientist`` and the assigned ``privacy budget`` is ``0``. The future tutorial series will cover a better explanation of `setting the privacy budget`.
 
 C. Using PyGrid UI: Create account as a Domain Admin
-#########################################################
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 PyGrid's UI is meant to help Domain Owners get a bigger picture view of their domains and manage them. 
 
@@ -166,7 +251,12 @@ We will use this ``port number`` to visit the following UI interface at the URL:
 
 Once you are on PyGrid's web page, execute following steps to create an account for Data Scientist:
 
-#. Login using your admin credentials
+.. WARNING::
+   ``info@openmined.org`` and ``changethis`` are the default admin credentials for any domain node that is launched by
+   the user in the documentation. Change the default email and password below to a more secure and 
+   private combination of your preference.
+
+#. Login using your admin credentials (**Email:** info@openmined.org | **Password:** changethis)
 #. Create a new user account by clicking on the ``+ Create User`` button
 #. Specify the following fields
 	* **Name**: Name of the individual
@@ -177,18 +267,20 @@ Once you are on PyGrid's web page, execute following steps to create an account 
 
 |02-create-account-configure-pb-04|
 
-Step 2: Check Permissions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Step 3: Check Permissions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Now that we have created an account for our Data Scientist, let's check to see if it 
 was made and if we need to change any permissions.
 
 .. note:: 
    Permissions are determined by the ``role`` a user has been assigned by the Data Owner. 
+   They can ``view`` or ``update`` ``permissions`` for the role they set using PyGrid's UI.
    To simplify the concepts, let us consider the below scenario. 
    
 Scenario
-""""""""""
+-----------
+
 Let's login to our PyGrid's UI as we did earlier when we had to create an account 
 for the user in the prior steps. On the homepage, go to the ``Permissions`` tab, 
 where you will notice the different roles and associated permissions with them. 
@@ -216,7 +308,7 @@ role of John to ``Data Protection Officer`` instead of a Data Scientist.
 
 
 Now our domain node is available for the data scientists to use 👏
-------------------------------------------------------------------
+---------------------------------------------------------------------
 
 .. |02-create-account-configure-pb-00| image:: ../../_static/personas-image/data-owner/02-create-account-configure-pb-00.jpg
   :width: 95%
