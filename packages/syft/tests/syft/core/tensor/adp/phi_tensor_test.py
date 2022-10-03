@@ -1241,6 +1241,11 @@ def test_trace(
     assert result.child >= result.min_vals.data
     assert result.child <= result.max_vals.data
 
+    result = tensor.trace(offset=1)
+    assert result.child == reference_data.trace(offset=1)
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data
+
 
 def test_max(
     reference_data: np.ndarray,
