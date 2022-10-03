@@ -35,6 +35,7 @@ class GAMMA_TENSOR_OP(Enum):
     NEGATIVE = "negative"
     MEAN = "mean"
     STD = "std"
+    VAR = "var"
     DOT = "dot"
     SQRT = "sqrt"
     ABS = "abs"

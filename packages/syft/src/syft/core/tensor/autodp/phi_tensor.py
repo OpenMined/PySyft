@@ -1438,9 +1438,22 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             data_subjects=self.data_subjects.std(axis, **kwargs),
             min_vals=lazyrepeatarray(data=0, shape=result.shape),
             max_vals=lazyrepeatarray(
-                data=0.25
-                * (self.max_vals.data - self.min_vals.data)
-                ** 2,  # rough approximation, could be off
+                data=(self.max_vals.data - self.min_vals.data) / 2, shape=result.shape
+            ),
+        )
+
+    def var(
+        self,
+        axis: Optional[Union[int, Tuple[int, ...]]] = None,
+        **kwargs: Any,
+    ) -> PhiTensor:
+        result = self.child.std(axis, **kwargs)
+        return PhiTensor(
+            child=result,
+            data_subjects=self.data_subjects.std(axis, **kwargs),
+            min_vals=lazyrepeatarray(data=0, shape=result.shape),
+            max_vals=lazyrepeatarray(
+                data=0.25 * (self.max_vals.data - self.min_vals.data) ** 2,
                 shape=result.shape,
             ),
         )

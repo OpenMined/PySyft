@@ -2298,7 +2298,35 @@ class GammaTensor:
         #     max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
         # )
 
-    def std(self, axis: Union[int, Tuple[int, ...]], **kwargs: Any) -> GammaTensor:
+    def std(
+        self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs: Any
+    ) -> GammaTensor:
+        output_state = dict()
+        output_state[self.id] = self
+
+        result = self.child.std(axis, **kwargs)
+        minv = (
+            self.min_vals.data
+            if isinstance(self.min_vals, lazyrepeatarray)
+            else self.min_vals
+        )
+        maxv = (
+            self.max_vals.data
+            if isinstance(self.max_vals, lazyrepeatarray)
+            else self.max_vals
+        )
+        return GammaTensor(
+            child=result,
+            data_subjects=self.data_subjects.std(axis, **kwargs),
+            min_vals=lazyrepeatarray(data=0, shape=result.shape),
+            max_vals=lazyrepeatarray(data=(maxv - minv) / 2, shape=result.shape),
+            sources=output_state,
+            func_str=GAMMA_TENSOR_OP.STD.value,
+        )
+
+    def var(
+        self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs: Any
+    ) -> GammaTensor:
         output_state = dict()
         output_state[self.id] = self
 
@@ -2318,10 +2346,10 @@ class GammaTensor:
             data_subjects=self.data_subjects.std(axis, **kwargs),
             min_vals=lazyrepeatarray(data=0, shape=result.shape),
             max_vals=lazyrepeatarray(
-                data=0.25 * (maxv + minv) ** 2, shape=result.shape
+                data=0.25 * (maxv - minv) ** 2, shape=result.shape
             ),
             sources=output_state,
-            func_str=GAMMA_TENSOR_OP.STD.value,
+            func_str=GAMMA_TENSOR_OP.VAR.value,
         )
 
     def dot(self, other: Union[np.ndarray, GammaTensor]) -> GammaTensor:
