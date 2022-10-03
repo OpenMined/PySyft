@@ -71,12 +71,14 @@ jobs:
       - name: Scan for security issues python 3.8+
         if: steps.changes.outputs.hagrid == 'true' && matrix.python-version != '3.7'
         run: |
+          pip install importlib-metadata==4.13.0
           bandit -r hagrid
           safety check -i 42923
 
       - name: Scan for security issues python 3.7
         if: steps.changes.outputs.hagrid == 'true' && matrix.python-version == '3.7'
         run: |
+          pip install importlib-metadata==4.13.0
           bandit -r hagrid
           safety check -i 42923
 
