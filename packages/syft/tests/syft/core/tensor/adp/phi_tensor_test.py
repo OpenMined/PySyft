@@ -1261,8 +1261,8 @@ def test_max(
     )
     result = tensor.max()
     assert result.child == reference_data.max()
-    assert result.child >= reference_data.min()
-    assert result.child <= reference_data.max()
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data
 
 
 def test_min(
@@ -1279,5 +1279,5 @@ def test_min(
     )
     result = tensor.min()
     assert result.child == reference_data.min()
-    assert result.child >= reference_data.min()
-    assert result.child <= reference_data.max()
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data
