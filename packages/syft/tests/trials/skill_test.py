@@ -9,3 +9,4 @@ def get_padawans(cohort):
 
 def test_trial_of_skill():
     assert get_padawans("R2Q4")["skywalker"]  == ""
+    assert len(get_padawans("R2Q4")) > 1
