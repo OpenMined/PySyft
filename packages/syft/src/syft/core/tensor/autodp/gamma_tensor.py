@@ -2327,6 +2327,33 @@ class GammaTensor:
     def var(
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs: Any
     ) -> GammaTensor:
+        """
+        Compute the variance along the specified axis of the array elements, a measure of the spread of a distribution.
+        The variance is computed for the flattened array by default, otherwise over the specified axis.
+
+        Parameters
+
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which the variance is computed.
+                The default is to compute the variance of the flattened array.
+                If this is a tuple of ints, a variance is performed over multiple axes, instead of a single axis or all
+                the axes as before.
+
+            ddof: int, optional
+                “Delta Degrees of Freedom”: the divisor used in the calculation is N - ddof, where N represents the
+                number of elements. By default ddof is zero.
+
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the var method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+
+            where: array_like of bool, optional
+                Elements to include in the variance. See reduce for details.
+        """
+
         output_state = dict()
         output_state[self.id] = self
 
