@@ -2330,7 +2330,7 @@ class GammaTensor:
         output_state = dict()
         output_state[self.id] = self
 
-        result = self.child.std(axis, **kwargs)
+        result = self.child.var(axis, **kwargs)
         minv = (
             self.min_vals.data
             if isinstance(self.min_vals, lazyrepeatarray)
@@ -2343,7 +2343,7 @@ class GammaTensor:
         )
         return GammaTensor(
             child=result,
-            data_subjects=self.data_subjects.std(axis, **kwargs),
+            data_subjects=self.data_subjects.var(axis, **kwargs),
             min_vals=lazyrepeatarray(data=0, shape=result.shape),
             max_vals=lazyrepeatarray(
                 data=0.25 * (maxv - minv) ** 2, shape=result.shape
