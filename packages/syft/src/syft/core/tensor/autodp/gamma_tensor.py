@@ -2710,15 +2710,12 @@ class GammaTensor:
         sources = dict()
         sources[self.id] = self
         result = self.child.trace(offset, axis1, axis2)
+        num = np.ones_like(self.child).trace(offset, axis1, axis2)
         return GammaTensor(
             child=result,
             data_subjects=self.data_subjects.trace(offset, axis1, axis2),
-            min_vals=lazyrepeatarray(
-                data=self.min_vals.data * result.size, shape=result.shape
-            ),
-            max_vals=lazyrepeatarray(
-                data=self.max_vals.data * result.size, shape=result.shape
-            ),
+            min_vals=lazyrepeatarray(data=self.min_vals.data * num, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data * num, shape=result.shape),
             func_str=GAMMA_TENSOR_OP.TRACE.value,
             sources=sources,
         )
