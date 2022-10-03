@@ -2747,19 +2747,33 @@ class GammaTensor:
             )
         else:
             if initial is None:
-                raise ValueError("reduction operation 'minimum' does not have an identity, "
-                                 "so to use a where mask one has to specify 'initial'")
+                raise ValueError(
+                    "reduction operation 'minimum' does not have an identity, "
+                    "so to use a where mask one has to specify 'initial'"
+                )
             else:
                 sources = dict()
                 sources[self.id] = self
-                result = np.amin(self.child, axis=axis, keepdims=keepdims, initial=initial, where=where)
-                indices = np.unravel_index(self.child.argmin(axis), shape=self.child.shape)
+                result = np.amin(
+                    self.child,
+                    axis=axis,
+                    keepdims=keepdims,
+                    initial=initial,
+                    where=where,
+                )
+                indices = np.unravel_index(
+                    self.child.argmin(axis), shape=self.child.shape
+                )
 
                 return GammaTensor(
                     child=result,
                     data_subjects=self.data_subjects[indices],
-                    min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
-                    max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
+                    min_vals=lazyrepeatarray(
+                        data=self.min_vals.data, shape=result.shape
+                    ),
+                    max_vals=lazyrepeatarray(
+                        data=self.max_vals.data, shape=result.shape
+                    ),
                     func_str=GAMMA_TENSOR_OP.MIN.value,
                     sources=sources,
                 )
@@ -2786,18 +2800,32 @@ class GammaTensor:
             )
         else:
             if initial is None:
-                raise ValueError("reduction operation 'minimum' does not have an identity, "
-                                 "so to use a where mask one has to specify 'initial'")
+                raise ValueError(
+                    "reduction operation 'minimum' does not have an identity, "
+                    "so to use a where mask one has to specify 'initial'"
+                )
             else:
                 sources = dict()
                 sources[self.id] = self
-                result = np.amax(self.child, axis=axis, keepdims=keepdims, initial=initial, where=where)
-                indices = np.unravel_index(self.child.argmax(axis), shape=self.child.shape)
+                result = np.amax(
+                    self.child,
+                    axis=axis,
+                    keepdims=keepdims,
+                    initial=initial,
+                    where=where,
+                )
+                indices = np.unravel_index(
+                    self.child.argmax(axis), shape=self.child.shape
+                )
                 return GammaTensor(
                     child=result,
                     data_subjects=self.data_subjects[indices],
-                    min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
-                    max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
+                    min_vals=lazyrepeatarray(
+                        data=self.min_vals.data, shape=result.shape
+                    ),
+                    max_vals=lazyrepeatarray(
+                        data=self.max_vals.data, shape=result.shape
+                    ),
                     func_str=GAMMA_TENSOR_OP.MAX.value,
                     sources=sources,
                 )
