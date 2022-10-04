@@ -1,17 +1,39 @@
-syft.core.smpc package
-======================
+syft.core.smpc
+==============
 
 .. automodule:: syft.core.smpc
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
-Subpackages
------------
+   
+   
+   
 
-.. toctree::
-   :maxdepth: 2
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      create_smpc_ast
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
 
    syft.core.smpc.approximations
    syft.core.smpc.protocol
    syft.core.smpc.store
+

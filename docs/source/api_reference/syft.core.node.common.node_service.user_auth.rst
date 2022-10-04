@@ -1,26 +1,32 @@
-syft.core.node.common.node\_service.user\_auth package
-======================================================
+syft.core.node.common.node\_service.user\_auth
+==============================================
 
 .. automodule:: syft.core.node.common.node_service.user_auth
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
-Submodules
-----------
+   
+   
+   
 
-syft.core.node.common.node\_service.user\_auth.user\_auth\_messages module
---------------------------------------------------------------------------
+   
+   
+   
 
-.. automodule:: syft.core.node.common.node_service.user_auth.user_auth_messages
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   
+   
+   
 
-syft.core.node.common.node\_service.user\_auth.user\_auth\_service module
--------------------------------------------------------------------------
+   
+   
+   
 
-.. automodule:: syft.core.node.common.node_service.user_auth.user_auth_service
-   :members:
-   :undoc-members:
-   :show-inheritance:
+
+
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   syft.core.node.common.node_service.user_auth.user_auth_messages
+   syft.core.node.common.node_service.user_auth.user_auth_service
+

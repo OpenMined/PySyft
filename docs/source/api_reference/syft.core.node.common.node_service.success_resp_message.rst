@@ -17,6 +17,7 @@ syft.core.node.common.node\_service.success\_resp\_message
 
    .. autosummary::
    
+      ErrorResponseMessage
       SuccessResponseMessage
    
    

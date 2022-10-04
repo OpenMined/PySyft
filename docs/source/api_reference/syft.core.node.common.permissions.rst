@@ -1,26 +1,32 @@
-syft.core.node.common.permissions package
-=========================================
+syft.core.node.common.permissions
+=================================
 
 .. automodule:: syft.core.node.common.permissions
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
-Submodules
-----------
+   
+   
+   
 
-syft.core.node.common.permissions.permissions module
-----------------------------------------------------
+   
+   
+   
 
-.. automodule:: syft.core.node.common.permissions.permissions
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   
+   
+   
 
-syft.core.node.common.permissions.user\_permissions module
-----------------------------------------------------------
+   
+   
+   
 
-.. automodule:: syft.core.node.common.permissions.user_permissions
-   :members:
-   :undoc-members:
-   :show-inheritance:
+
+
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   syft.core.node.common.permissions.permissions
+   syft.core.node.common.permissions.user_permissions
+

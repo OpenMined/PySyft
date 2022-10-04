@@ -1,26 +1,32 @@
-syft.core.node.common.node\_service.ping package
-================================================
+syft.core.node.common.node\_service.ping
+========================================
 
 .. automodule:: syft.core.node.common.node_service.ping
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
-Submodules
-----------
+   
+   
+   
 
-syft.core.node.common.node\_service.ping.ping\_messages module
---------------------------------------------------------------
+   
+   
+   
 
-.. automodule:: syft.core.node.common.node_service.ping.ping_messages
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   
+   
+   
 
-syft.core.node.common.node\_service.ping.ping\_service module
--------------------------------------------------------------
+   
+   
+   
 
-.. automodule:: syft.core.node.common.node_service.ping.ping_service
-   :members:
-   :undoc-members:
-   :show-inheritance:
+
+
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   syft.core.node.common.node_service.ping.ping_messages
+   syft.core.node.common.node_service.ping.ping_service
+

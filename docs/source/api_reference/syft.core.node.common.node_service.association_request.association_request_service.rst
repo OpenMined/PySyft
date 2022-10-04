@@ -31,6 +31,7 @@ syft.core.node.common.node\_service.association\_request.association\_request\_s
    .. autosummary::
    
       AssociationRequestService
+      AssociationRequestWithoutReplyService
    
    
 

@@ -14,6 +14,7 @@ syft.core.node.common.action.greenlets\_switch
    .. autosummary::
    
       beaver_retrieve_object
+      crypto_store_retrieve_object
       retrieve_object
    
    

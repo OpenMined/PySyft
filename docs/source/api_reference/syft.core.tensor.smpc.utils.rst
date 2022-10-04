@@ -13,6 +13,7 @@ syft.core.tensor.smpc.utils
 
    .. autosummary::
    
+      count_wraps
       get_nr_bits
       get_ring_size
       get_shape

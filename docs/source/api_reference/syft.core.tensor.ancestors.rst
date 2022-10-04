@@ -13,7 +13,7 @@ syft.core.tensor.ancestors
 
    .. autosummary::
    
-      entity_creation_wizard
+      data_subject_creation_wizard
    
    
 
@@ -23,7 +23,6 @@ syft.core.tensor.ancestors
 
    .. autosummary::
    
-      AutogradTensorAncestor
       PhiTensorAncestor
    
    

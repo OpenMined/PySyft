@@ -29,7 +29,5 @@
 
    syft.grid.client
    syft.grid.connections
-   syft.grid.duet
-   syft.grid.messages
-   syft.grid.services
+   syft.grid.grid_url
 

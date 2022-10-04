@@ -1,18 +1,31 @@
-syft.core.node.common.node\_service.object\_delete package
-==========================================================
+syft.core.node.common.node\_service.object\_delete
+==================================================
 
 .. automodule:: syft.core.node.common.node_service.object_delete
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
-Submodules
-----------
+   
+   
+   
 
-syft.core.node.common.node\_service.object\_delete.object\_delete\_message module
----------------------------------------------------------------------------------
+   
+   
+   
 
-.. automodule:: syft.core.node.common.node_service.object_delete.object_delete_message
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   
+   
+   
+
+   
+   
+   
+
+
+
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   syft.core.node.common.node_service.object_delete.object_delete_message
+

@@ -9,6 +9,12 @@ syft.core.node.common.client\_manager.domain\_api
 
    
    
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      check_domain_status
+   
    
 
    

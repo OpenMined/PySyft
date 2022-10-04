@@ -1,42 +1,34 @@
-syft.core.smpc.approximations package
-=====================================
+syft.core.smpc.approximations
+=============================
 
 .. automodule:: syft.core.smpc.approximations
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
-Submodules
-----------
+   
+   
+   
 
-syft.core.smpc.approximations.exp module
-----------------------------------------
+   
+   
+   
 
-.. automodule:: syft.core.smpc.approximations.exp
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   
+   
+   
 
-syft.core.smpc.approximations.log module
-----------------------------------------
+   
+   
+   
 
-.. automodule:: syft.core.smpc.approximations.log
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
-syft.core.smpc.approximations.reciprocal module
------------------------------------------------
 
-.. automodule:: syft.core.smpc.approximations.reciprocal
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. rubric:: Modules
 
-syft.core.smpc.approximations.utils module
-------------------------------------------
+.. autosummary::
+   :toctree:
+   :recursive:
 
-.. automodule:: syft.core.smpc.approximations.utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   syft.core.smpc.approximations.exp
+   syft.core.smpc.approximations.log
+   syft.core.smpc.approximations.reciprocal
+   syft.core.smpc.approximations.utils
+

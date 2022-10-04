@@ -1,18 +1,31 @@
-syft.core.smpc.protocol.beaver package
-======================================
+syft.core.smpc.protocol.beaver
+==============================
 
 .. automodule:: syft.core.smpc.protocol.beaver
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
-Submodules
-----------
+   
+   
+   
 
-syft.core.smpc.protocol.beaver.beaver module
---------------------------------------------
+   
+   
+   
 
-.. automodule:: syft.core.smpc.protocol.beaver.beaver
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   
+   
+   
+
+   
+   
+   
+
+
+
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   syft.core.smpc.protocol.beaver.beaver
+

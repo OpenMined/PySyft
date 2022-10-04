@@ -1,50 +1,35 @@
-syft.core.tensor.smpc package
-=============================
+syft.core.tensor.smpc
+=====================
 
 .. automodule:: syft.core.tensor.smpc
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
-Submodules
-----------
+   
+   
+   
 
-syft.core.tensor.smpc.context module
-------------------------------------
+   
+   
+   
 
-.. automodule:: syft.core.tensor.smpc.context
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   
+   
+   
 
-syft.core.tensor.smpc.mpc\_tensor module
-----------------------------------------
+   
+   
+   
 
-.. automodule:: syft.core.tensor.smpc.mpc_tensor
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
-syft.core.tensor.smpc.mpc\_tensor\_ancestor module
---------------------------------------------------
 
-.. automodule:: syft.core.tensor.smpc.mpc_tensor_ancestor
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. rubric:: Modules
 
-syft.core.tensor.smpc.share\_tensor module
-------------------------------------------
+.. autosummary::
+   :toctree:
+   :recursive:
 
-.. automodule:: syft.core.tensor.smpc.share_tensor
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   syft.core.tensor.smpc.context
+   syft.core.tensor.smpc.mpc_tensor
+   syft.core.tensor.smpc.mpc_tensor_ancestor
+   syft.core.tensor.smpc.share_tensor
+   syft.core.tensor.smpc.utils
 
-syft.core.tensor.smpc.utils module
-----------------------------------
-
-.. automodule:: syft.core.tensor.smpc.utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
