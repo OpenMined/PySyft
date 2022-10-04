@@ -2706,6 +2706,76 @@ class GammaTensor:
         #     max_vals=maxv,
         # )
 
+    def cumsum(
+        self,
+        axis: Optional[int] = None,
+    ) -> GammaTensor:
+        """
+        Return the cumulative sum of the elements along a given axis.
+
+        Parameters
+            axis: int, optional
+                Axis along which the cumulative sum is computed. The default (None) is to compute the cumsum over the
+                flattened array.
+        Returns
+            cumsum_along_axis: GammaTensor
+                A new array holding the result is returned. The result has the same size as input, and the same shape as
+                 a if axis is not None or a is 1-d.
+        """
+        result = self.child.cumsum(axis=axis)
+        num = np.ones_like(self.child).cumsum(axis=axis)
+
+        sources = dict()
+        sources[self.id] = self
+
+        return GammaTensor(
+            child=result,
+            data_subjects=self.data_subjects.cumsum(axis=axis),
+            min_vals=lazyrepeatarray(
+                data=(self.min_vals.data * num).min(), shape=result.shape
+            ),
+            max_vals=lazyrepeatarray(
+                data=(self.max_vals.data * num).max(), shape=result.shape
+            ),
+            func_str=GAMMA_TENSOR_OP.CUMSUM.value,
+            sources=sources,
+        )
+
+    def cumprod(
+        self,
+        axis: Optional[int] = None,
+    ) -> GammaTensor:
+        """
+        Return the cumulative product of the elements along a given axis.
+
+        Parameters
+            axis: int, optional
+                Axis along which the cumulative product is computed. The default (None) is to compute the cumprod over
+                the flattened array.
+        Returns
+            cumprod_along_axis: GammaTensor
+                A new array holding the result is returned. The result has the same size as input, and the same shape as
+                 a if axis is not None or a is 1-d.
+        """
+        result = self.child.cumprod(axis=axis)
+        num = np.ones_like(self.child).cumsum(axis=axis)
+        if abs(self.max_vals.data) >= (self.min_vals.data):
+            highest = abs(self.max_vals.data)
+        else:
+            highest = abs(self.min_vals.data)
+
+        sources = dict()
+        sources[self.id] = self
+
+        return GammaTensor(
+            child=result,
+            data_subjects=self.data_subjects.cumprod(axis=axis),
+            min_vals=lazyrepeatarray(data=-(highest**num).min(), shape=result.shape),
+            max_vals=lazyrepeatarray(data=(highest**num).max(), shape=result.shape),
+            func_str=GAMMA_TENSOR_OP.CUMPROD.value,
+            sources=sources,
+        )
+
     @property
     def shape(self) -> Tuple[int, ...]:
         return self.child.shape

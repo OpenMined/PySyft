@@ -2518,7 +2518,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         return PhiTensor(
             child=result,
             data_subjects=self.data_subjects.cumprod(axis=axis),
-            min_vals=lazyrepeatarray(data=-(highest**num).min(), shape=result.shape),
+            min_vals=lazyrepeatarray(
+                data=-((highest**num).max()), shape=result.shape
+            ),
             max_vals=lazyrepeatarray(data=(highest**num).max(), shape=result.shape),
         )
 

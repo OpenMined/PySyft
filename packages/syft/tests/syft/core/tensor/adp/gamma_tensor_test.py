@@ -49,6 +49,11 @@ def dims() -> int:
 
 
 @pytest.fixture
+def dsa(dims: int) -> DataSubjectArray:
+    return DataSubjectArray.from_objs(np.random.choice([0, 1], (dims, dims)))
+
+
+@pytest.fixture
 def reference_data(highest, dims) -> np.ndarray:
     """This generates random data to test the equality operators"""
     reference_data = np.random.randint(
@@ -1002,3 +1007,58 @@ def test_all(
     result = (reference_tensor == reference_data).all(where=condition)
     assert result.child
     assert isinstance(result.data_subjects, DataSubjectArray)
+
+
+def test_cumsum(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = GammaTensor(
+        child=reference_data,
+        data_subjects=dsa,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+    result = tensor.cumsum()
+    assert (result.child == reference_data.cumsum()).all()
+    assert (result.child >= result.min_vals.data).all()
+    assert (result.child <= result.max_vals.data).all()
+    assert list(result.sources.keys())[0] == tensor.id
+    assert list(result.sources.values())[0] == tensor
+
+    result = tensor.cumsum(axis=1)
+    assert (result.child == reference_data.cumsum(axis=1)).all()
+    assert (result.child >= result.min_vals.data).all()
+    assert (result.child <= result.max_vals.data).all()
+    assert list(result.sources.keys())[0] == tensor.id
+    assert list(result.sources.values())[0] == tensor
+
+
+def test_cumprod(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    # Note: It's difficult to test the min/max values for cumprod because of the extremely high bounds this op gives.
+    tensor = GammaTensor(
+        child=reference_data,
+        data_subjects=dsa,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+    result = tensor.cumprod()
+    assert (result.child == reference_data.cumprod()).all()
+    # assert (result.child >= result.min_vals.data).all()
+    # assert (result.child <= result.max_vals.data).all()
+    assert list(result.sources.keys())[0] == tensor.id
+    assert list(result.sources.values())[0] == tensor
+
+    result = tensor.cumprod(axis=1)
+    assert (result.child == reference_data.cumprod(axis=1)).all()
+    # assert (result.child >= result.min_vals.data).all()
+    # assert (result.child <= result.max_vals.data).all()
+    assert list(result.sources.keys())[0] == tensor.id
+    assert list(result.sources.values())[0] == tensor

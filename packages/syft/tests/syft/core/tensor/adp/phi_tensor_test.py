@@ -1253,6 +1253,7 @@ def test_cumprod(
     lower_bound: np.ndarray,
     dsa: DataSubjectArray,
 ) -> None:
+    # Note: It's difficult to test the min/max values for cumprod because of the extremely high bounds this op gives.
     tensor = PT(
         child=reference_data,
         data_subjects=dsa,

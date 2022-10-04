@@ -96,6 +96,8 @@ def generate_ops() -> Dict[GAMMA_TENSOR_OP, Callable]:
         GAMMA_TENSOR_OP.MEAN: jnp.mean,
         GAMMA_TENSOR_OP.STD: jnp.std,
         GAMMA_TENSOR_OP.DOT: jnp.dot,
+        GAMMA_TENSOR_OP.CUMSUM: jnp.cumsum,
+        GAMMA_TENSOR_OP.CUMPROD: jnp.cumprod,
         GAMMA_TENSOR_OP.SQRT: jnp.sqrt,
         GAMMA_TENSOR_OP.ABS: jnp.abs,
         GAMMA_TENSOR_OP.CLIP: jnp.clip,
