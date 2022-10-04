@@ -37,18 +37,10 @@ budget determines how much can be learned from any data subject.
 🚨 Pre-Requisites Steps
 ---------------------------
 
-Before you can create user accounts on your domain, you have to first:
-
-#. :ref:`Login to your Domain Node <step2>`
-#. :ref:`Annotate your dataset with the appropriate DP metadata <step4>`
-#. :ref:`Upload your dataset to Domain <step5>`
-#. :ref:`Create a user account <step6>`
-
-.. note:: 
-   The above prerequisite steps are covered in the previous tutorial 
-   :doc:`How to upload private data to the Domain Node <01-upload-data>` and
-   :doc:`Creating User Accounts on your Domain Server <02-create-account-configure-pb>`. Please execute those 
-   steps before implementing this tutorial.
+Before you configure the privacy budget, you must create a user account for your 
+team members or Data Scientists. This prerequisite step is covered in the previous 
+tutorial :doc:`Creating User Accounts on your Domain Server <02-create-account-configure-pb>`. 
+Please execute those steps before implementing this tutorial.
 
 📒 Overview of this tutorial
 ---------------------------
@@ -146,6 +138,53 @@ The default email and password for the domain are:
 
 Once we're logged in, you can move to the next section, which explores setting a privacy budget.
 
+Step 3: Explore Different Privacy Budget
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A. Assign Data Scientist Account with 0.5e Privacy Budget
+##############################################################
+When you create a user account on your domain server, the privacy budget assigned to the 
+user is ``0e``, and the role assigned will be a data scientist by default. 
+
+Follow the steps in the image below to change the privacy budget of our data scientist to ``0.5e``. 
+
+.. note::
+   John Smith is a Data Scientist whose account we created for demonstration purposes 
+   in the :doc:`create user accounts tutorial <02-create-account-configure-pb>`. 
+
+|04-configure-pb-03|
+
+
+B. Make a Query With 0.5e Privacy Budget As a Data Scientist
+#################################################################
+
+After you have changed the privacy budget to ``0.5e``, it's time for Domain Owners to 
+wear the hat of a Data Scientist. Let's make a ``query`` using 0.5e and then analyze the ``results`` 
+to compare how close the value of the results is to the actual value.
+
+Firstly, we should ``login`` to the domain as a data scientist using the same credentials through which 
+we created a data scientist account in :doc:`creating user accounts tutorial <02-create-account-configure-pb>`.
+
+The credentials to login as a Data Scientist are:
+
+* **Email:** janedoe@email.com
+* **Password:** supersecretpassword
+
+::
+
+   ds_domain_client = sy.login(
+      email="janedoe@email.com", 
+      password="supersecretpassword", 
+      port=8081, 
+      url="localhost"
+   )
+
+
+
+
+
+
+
 
 
 ------------------------------------------------------------------
@@ -157,4 +196,7 @@ Once we're logged in, you can move to the next section, which explores setting a
    :width: 50%
 
 .. |04-configure-pb-02| image:: ../../_static/personas-image/data-owner/04-configure-pb-02.gif
+   :width: 95%
+
+.. |04-configure-pb-03| image:: ../../_static/personas-image/data-owner/04-configure-pb-03.gif
    :width: 95%
