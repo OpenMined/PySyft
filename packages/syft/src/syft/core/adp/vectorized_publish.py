@@ -5,18 +5,21 @@ from __future__ import annotations
 from collections.abc import Iterable
 from copy import deepcopy
 import secrets
+
+# from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
-from typing import TYPE_CHECKING
 from typing import Tuple
 
 # third party
 import jax
 from jax import numpy as jnp
 import numpy as np
+from numpy import ndarray
 from numpy.typing import ArrayLike
 
 # relative
+from ... import GammaTensor
 from ...core.node.common.node_manager.user_manager import RefreshBudgetException
 from ...core.tensor.autodp.gamma_tensor_ops import GAMMA_TENSOR_OP
 from ..tensor.fixed_precision_tensor import FixedPrecisionTensor
@@ -27,9 +30,9 @@ from .data_subject_ledger import RDPParams
 from .data_subject_ledger import compute_rdp_constant
 from .data_subject_list import DataSubjectList
 
-if TYPE_CHECKING:
-    # relative
-    from ..tensor.autodp.gamma_tensor import GammaTensor
+# if TYPE_CHECKING:
+#     relative
+# from ..tensor.autodp.gamma_tensor import GammaTensor
 
 
 @jax.jit
@@ -50,7 +53,9 @@ def calculate_bounds_for_mechanism(
     return l2_norm, worst_case_l2_norm, one_dim * sigma, one_dim
 
 
-def prepare_inputs(tensor: GammaTensor, sigma: float) -> Tuple[Any]:
+def prepare_inputs(
+    tensor: GammaTensor, sigma: float
+) -> tuple[Any, Any, Any, Any, ndarray | Any]:
     # Step 0: Ensure our Tensor's private data is in a form that is usable.
     if isinstance(tensor.child, FixedPrecisionTensor):
         # Incase SMPC is involved, there will be an FPT in the chain to account for
@@ -95,9 +100,7 @@ def prepare_inputs(tensor: GammaTensor, sigma: float) -> Tuple[Any]:
         sigma=sigma,
     )
 
-    # its important that it's the same type so that eq comparisons below don't break
-    zeros_like = tensor.zeros_like()
-    return (l2_norms, l2_norm_bounds, sigmas, coeffs, zeros_like, input_entities)
+    return l2_norms, l2_norm_bounds, sigmas, coeffs, input_entities
 
 
 def publish(
@@ -132,7 +135,6 @@ def publish(
         l2_norm_bounds,
         sigmas,
         coeffs,
-        zeros_like,
         input_entities,
     ) = prepare_inputs(tensor, sigma)
 
@@ -143,7 +145,7 @@ def publish(
     # if we don't return below we will terminate if the tensor gets replaced with zeros
     prev_tensor = None
 
-    while can_reduce_further(value=tensor.child, zeros_like=zeros_like):
+    while can_reduce_further(value=tensor.child):
         if prev_tensor is None:
             prev_tensor = tensor.child
         else:
@@ -280,7 +282,7 @@ def publish(
             parent_branch = [filtered_sourcetree for _ in input_tensors]
 
             # relative
-            from ..tensor.autodp.gamma_tensor import GammaTensor
+            # from ..tensor.autodp.gamma_tensor import GammaTensor
 
             for parent_state, input_tensor in zip(parent_branch, input_tensors):
 
@@ -363,11 +365,9 @@ def publish(
             raise Exception
 
     noise = np.asarray(
-        [secrets.SystemRandom().gauss(0, sigma) for _ in range(zeros_like.size)]
-    ).reshape(zeros_like.shape)
-    zeros = np.zeros_like(
-        a=np.array([]), dtype=zeros_like.dtype, shape=zeros_like.shape
-    )
+        [secrets.SystemRandom().gauss(0, sigma) for _ in range(tensor.child.size)]
+    ).reshape(tensor.shape)
+    zeros = np.zeros_like(a=np.array([]), dtype=tensor.dtype, shape=tensor.shape)
     return zeros + noise
 
 
@@ -377,9 +377,9 @@ def publish(
 # 2) there are differences between the value and a zeros_like of the same shape
 # 3) within the value ArrayLike there are no NaN values as these will never evaluate
 # to True when compared with zeros_like and therefore never exit the loop
-def can_reduce_further(value: ArrayLike, zeros_like: ArrayLike) -> bool:
+def can_reduce_further(value: ArrayLike) -> bool:
     try:
-        result = value != zeros_like
+        result = value != np.zeros_like(value)
         # check we can call any or iterate on this value otherwise exit loop
         # numpy scalar types like np.bool_ are Iterable
         if not hasattr(result, "any") and not isinstance(result, Iterable):
@@ -389,7 +389,7 @@ def can_reduce_further(value: ArrayLike, zeros_like: ArrayLike) -> bool:
         # causing that difference in the result
         return result.any() and not_nans(result)
     except Exception as e:
-        print(f"Unable to test reducability of {type(value)} and {type(zeros_like)}")
+        print(f"Unable to test reducability of {type(value)} and np.array")
         raise e
 
 
