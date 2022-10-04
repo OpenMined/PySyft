@@ -9,6 +9,7 @@ class GAMMA_TENSOR_OP(Enum):
     SUBTRACT = "subtract"
     MULTIPLY = "multiply"
     TRUE_DIVIDE = "true_divide"
+    FLOOR_DIVIDE = "floor_divide"
     MATMUL = "matmul"
     RMATMUL = "rmatmul"
     GREATER = "greater"
@@ -39,6 +40,7 @@ class GAMMA_TENSOR_OP(Enum):
     SQRT = "sqrt"
     ABS = "abs"
     CLIP = "clip"
+    PROD = "prod"
     # Our Methods
     RECIPROCAL = "reciprocal"
     FLATTEN_C = "flatten_c"
