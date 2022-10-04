@@ -1,7 +1,9 @@
 # "Do or do not. There is no try." — Yoda
+# stdlib
+from typing import Dict
 
 
-def get_padawans(cohort: str) -> dict[str, str]:
+def get_padawans(cohort: str) -> Dict[str, str]:
     # add yourself to the temple trial roster
 
     data = {
