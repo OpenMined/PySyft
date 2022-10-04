@@ -2169,6 +2169,27 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         initial: Optional[float] = None,
         where: Optional[ArrayLike] = None,
     ) -> PhiTensor:
+        """
+        Sum of array elements over a given axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which a sum is performed.
+                The default, axis=None, will sum all of the elements of the input array.
+                If axis is negative it counts from the last to the first axis.
+                If axis is a tuple of ints, a sum is performed on all of the axes specified in the tuple instead of a
+                single axis or all the axes as before.
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the sum method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+            initial: scalar, optional
+                Starting value for the sum. See reduce for details.
+            where: array_like of bool, optional
+                Elements to include in the sum. See reduce for details.
+        """
         if where is None:
             result = np.array(self.child.sum(axis=axis, keepdims=keepdims))
             output_ds = self.data_subjects.sum(axis=axis, keepdims=keepdims)
