@@ -1980,6 +1980,19 @@ class GammaTensor:
             sources=sources,
         )
 
+    def __pow__(self, power, modulo=None) -> GammaTensor:
+        sources = dict()
+        sources[self.id] = self
+        sources["0"] = power
+        return GammaTensor(
+            child=self.child ** power,
+            data_subjects=self.data_subjects,
+            min_vals=lazyrepeatarray(data=self.min_vals.data ** power, shape=self.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data ** power, shape=self.shape),
+            func_str=GAMMA_TENSOR_OP.POWER.value,
+            sources=sources
+        )
+
     def ones_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> GammaTensor:
         output_state = dict()
         output_state[self.id] = self

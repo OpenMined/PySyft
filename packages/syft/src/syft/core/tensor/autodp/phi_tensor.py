@@ -2210,6 +2210,14 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=lazyrepeatarray(data=self.max_vals.data * num, shape=result.shape),
         )
 
+    def __pow__(self, power, modulo=None) -> PhiTensor:
+        return PhiTensor(
+            child=self.child ** power,
+            data_subjects=self.data_subjects,
+            min_vals=lazyrepeatarray(data=self.min_vals.data ** power, shape=self.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data ** power, shape=self.shape),
+        )
+
     def expand_dims(self, axis: int) -> PhiTensor:
         result = np.expand_dims(self.child, axis=axis)
         minv = self.min_vals.copy()
