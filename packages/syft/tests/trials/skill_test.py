@@ -4,7 +4,9 @@
 def get_padawans(cohort: str) -> dict[str, str]:
     # add yourself to the temple trial roster
 
-    data = {"R2Q4": {"skywalker": "PASSED", "yangyuqiao": "PASSED"}}
+    data = {
+        "R2Q4": {"skywalker": "PASSED", "saffron": "PASSED", "yangyuqiao": "PASSED"}
+    }
 
     return data[cohort]
 
