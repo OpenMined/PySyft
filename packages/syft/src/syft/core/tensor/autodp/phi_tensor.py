@@ -2480,11 +2480,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                  a if axis is not None or a is 1-d.
         """
         result = self.child.cumsum(axis=axis)
+        num = np.ones_like(self.child).cumsum(axis=axis)
         return PhiTensor(
             child=result,
             data_subjects=self.data_subjects.cumsum(axis=axis),
-            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
-            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
+            min_vals=lazyrepeatarray(data=self.min_vals.data * num, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data * num, shape=result.shape),
         )
 
     def cumprod(
@@ -2504,11 +2505,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                  a if axis is not None or a is 1-d.
         """
         result = self.child.cumprod(axis=axis)
+        num = np.ones_like(self.child).cumsum(axis=axis)
         return PhiTensor(
             child=result,
             data_subjects=self.data_subjects.cumprod(axis=axis),
-            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
-            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
+            min_vals=lazyrepeatarray(data=self.min_vals.data * num, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data * num, shape=result.shape),
         )
 
     def _object2bytes(self) -> bytes:
