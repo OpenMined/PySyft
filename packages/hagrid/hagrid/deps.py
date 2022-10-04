@@ -68,6 +68,7 @@ SYFT_MINIMUM_PYTHON_VERSION_STRING = "3.7"
 SYFT_MAXIMUM_PYTHON_VERSION = (3, 10, 999)
 SYFT_MAXIMUM_PYTHON_VERSION_STRING = "3.10"
 WHITE = "\033[0;37m"
+GREEN = "\033[0;32m"
 NO_COLOR = "\033[0;0m"
 WARNING_MSG = f"\033[0;33m WARNING:{NO_COLOR}"
 
@@ -164,13 +165,29 @@ class DependencyGridDocker(Dependency):
                     )
 
                 # 2 - Check if current user is contained in sudo users list
-                result = subprocess.run(
-                    ["getent", "group", "sudo"], stdout=subprocess.PIPE, text=True
+                sudo_group_members = subprocess.run(
+                    ["getent", "group", "sudo"],
+                    stdout=subprocess.PIPE,
+                    text=True,
+                    shell=False,
                 )
-                if getpass.getuser() not in result.stdout:
+                if getpass.getuser() not in sudo_group_members.stdout:
                     print(
                         f"""{WARNING_MSG} {WHITE}You're not a super user,
-                        the installation might fail,get super user access first!{NO_COLOR}"""
+                        the installation might fail, get super user access first!{NO_COLOR}"""
+                    )
+
+                docker_group_members = subprocess.run(
+                    ["getent", "group", "docker"],
+                    stdout=subprocess.PIPE,
+                    text=True,
+                    shell=False,
+                )
+                if getpass.getuser() not in docker_group_members.stdout:
+                    print(
+                        f"""{WARNING_MSG} {WHITE}You're currently not allowed to run docker, perform the following steps:\n
+                        1 - Run \'{GREEN}sudo usermod -a -G docker $USER\'{WHITE} to add docker permissions.\n
+                        2 - log out and log back in so that your group membership is re-evaluated {NO_COLOR}."""
                     )
 
             self.issues.append(docker_install())
