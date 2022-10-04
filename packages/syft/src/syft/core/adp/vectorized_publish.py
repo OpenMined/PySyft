@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from copy import deepcopy
 import secrets
+from typing import Any
 from typing import Callable
 from typing import TYPE_CHECKING
 from typing import Tuple
@@ -49,33 +50,7 @@ def calculate_bounds_for_mechanism(
     return l2_norm, worst_case_l2_norm, one_dim * sigma, one_dim
 
 
-def publish(
-    tensor: GammaTensor,
-    ledger: DataSubjectLedger,
-    get_budget_for_user: Callable,
-    deduct_epsilon_for_user: Callable,
-    sigma: float,
-    is_linear: bool = True,
-) -> np.ndarray:
-    """
-    This method applies Individual Differential Privacy (IDP) as defined in
-    https://arxiv.org/abs/2008.11193
-        - Key results: Theorem 2.7 and 2.8 show how much privacy budget is spent by a query.
-
-    Given a tensor, it checks if the user (a data scientist) has enough privacy budget (PB)
-    to see data from every data subject.
-    - If the user has enough privacy budget, then DP noise is directly added to the result,
-      and PB is deducted.
-    - If the user doesn't have enough PB, then every data subject with a higher epsilon
-      than their PB's data is removed.
-        - The epsilons are then recomputed to see if the user now has enough PB to see the
-          remaining data or not.
-
-    Notes:
-        - The privacy budget spent by a query equals the maximum epsilon increase of any
-          data subject in the dataset.
-    """
-
+def prepare_inputs(tensor: GammaTensor, sigma: float) -> Tuple[Any]:
     # Step 0: Ensure our Tensor's private data is in a form that is usable.
     if isinstance(tensor.child, FixedPrecisionTensor):
         # Incase SMPC is involved, there will be an FPT in the chain to account for
@@ -122,6 +97,44 @@ def publish(
 
     # its important that it's the same type so that eq comparisons below don't break
     zeros_like = tensor.zeros_like()
+    return (l2_norms, l2_norm_bounds, sigmas, coeffs, zeros_like, input_entities)
+
+
+def publish(
+    tensor: GammaTensor,
+    ledger: DataSubjectLedger,
+    get_budget_for_user: Callable,
+    deduct_epsilon_for_user: Callable,
+    sigma: float,
+    is_linear: bool = True,
+) -> np.ndarray:
+    """
+    This method applies Individual Differential Privacy (IDP) as defined in
+    https://arxiv.org/abs/2008.11193
+        - Key results: Theorem 2.7 and 2.8 show how much privacy budget is spent by a query.
+
+    Given a tensor, it checks if the user (a data scientist) has enough privacy budget (PB)
+    to see data from every data subject.
+    - If the user has enough privacy budget, then DP noise is directly added to the result,
+      and PB is deducted.
+    - If the user doesn't have enough PB, then every data subject with a higher epsilon
+      than their PB's data is removed.
+        - The epsilons are then recomputed to see if the user now has enough PB to see the
+          remaining data or not.
+
+    Notes:
+        - The privacy budget spent by a query equals the maximum epsilon increase of any
+          data subject in the dataset.
+    """
+
+    (
+        l2_norms,
+        l2_norm_bounds,
+        sigmas,
+        coeffs,
+        zeros_like,
+        input_entities,
+    ) = prepare_inputs(tensor, sigma)
 
     # this prevents us from running in an infinite loop
     previous_budget = None
@@ -257,7 +270,6 @@ def publish(
             #     jnp.ones_like(all_epsilons) * privacy_budget >= all_epsilons
             # )
             # highest_possible_spend = jnp.max(all_epsilons * within_budget_filter)
-            # TODO: Modify to work with private/public operations (when input_tensor is a scalar)
 
             # Step 4.2: Figure out which Tensors in the Source dictionary have those data subjects
 
@@ -265,14 +277,11 @@ def publish(
             filtered_sourcetree = deepcopy(tensor.sources)
             input_tensors = list(filtered_sourcetree.values())
 
-            parent_branch = [
-                filtered_sourcetree for _ in input_tensors
-            ]  # TODO: Ensure this isn't deepcopying!
+            parent_branch = [filtered_sourcetree for _ in input_tensors]
 
             # relative
             from ..tensor.autodp.gamma_tensor import GammaTensor
 
-            # ATTENTION: is this the same as tensor.sources.items() ?
             for parent_state, input_tensor in zip(parent_branch, input_tensors):
 
                 if isinstance(input_tensor, GammaTensor):
@@ -348,15 +357,6 @@ def publish(
             print("tensor.child before restart: ", type(tensor.child), tensor.child)
             print("About to publish again with filtered source_tree!")
 
-            # TODO: This isn't the most efficient way to do it since we can reuse sigmas, coeffs, etc.
-            # TODO: Add a way to prevent infinite publishing?
-            # TODO: Should we implement exponential backoff or something as a means of rate-limiting?
-            # return new_tensor.publish(
-            #     get_budget_for_user=get_budget_for_user,
-            #     deduct_epsilon_for_user=deduct_epsilon_for_user,
-            #     ledger=ledger,
-            #     sigma=sigma,
-            # )
         # Step 5: Revel in happiness.
 
         else:
