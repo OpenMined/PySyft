@@ -49,6 +49,11 @@ def dims() -> int:
 
 
 @pytest.fixture
+def dsa(dims: int) -> DataSubjectArray:
+    return DataSubjectArray.from_objs(np.random.choice([0, 1], (dims, dims)))
+
+
+@pytest.fixture
 def reference_data(highest, dims) -> np.ndarray:
     """This generates random data to test the equality operators"""
     reference_data = np.random.randint(
@@ -149,6 +154,32 @@ def test_gamma_publish(
     assert results < upper_bound.to_numpy().sum() + 10
     assert -10 + lower_bound.to_numpy().sum() < results
     print(ledger_store.kv_store)
+
+
+def test_sum(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = GammaTensor(
+        child=reference_data,
+        data_subjects=dsa,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    result = tensor.sum()
+    assert result.child == reference_data.sum()
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data
+    assert result.data_subjects == dsa.sum()
+
+    result = tensor.sum(axis=1)
+    assert (result.child == reference_data.sum(axis=1)).all()
+    assert (result.child >= result.min_vals.data).all()
+    assert (result.child <= result.max_vals.data).all()
+    assert (result.data_subjects == dsa.sum(axis=1)).all()
 
 
 @pytest.mark.arithmetic
