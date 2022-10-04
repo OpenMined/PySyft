@@ -2165,27 +2165,29 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def sum(
         self,
         axis: Optional[Union[int, Tuple[int, ...]]] = None,
-        **kwargs: Any,
-    ) -> Union[PhiTensor, GammaTensor]:
-        return self.gamma.sum(axis, **kwargs)
-        # # TODO: Add support for axes arguments later
-        # min_val = self.min_vals.sum(axis=axis)
-        # max_val = self.max_vals.sum(axis=axis)
-        # if len(self.data_subjects.one_hot_lookup) == 1:
-        #     result = self.child.sum(axis=axis)
-        #     return PhiTensor(
-        #         child=result,
-        #         min_vals=min_val,
-        #         max_vals=max_val,
-        #         data_subjects=self.data_subjects.sum(target_shape=result.shape),
-        #     )
-        # result = self.child.sum(axis=axis)
-        # return GammaTensor(
-        #     child=result,
-        #     data_subjects=self.data_subjects.sum(target_shape=result.shape),
-        #     min_vals=min_val,
-        #     max_vals=max_val,
-        # )
+        keepdims: Optional[bool] = False,
+        initial: Optional[float] = None,
+        where: Optional[ArrayLike] = None,
+    ) -> PhiTensor:
+        if where is None:
+            result = np.array(self.child.sum(axis=axis, keepdims=keepdims))
+            output_ds = self.data_subjects.sum(axis=axis, keepdims=keepdims)
+            num = np.ones_like(self.child).sum(axis=axis, keepdims=keepdims)
+        else:
+            result = self.child.sum(axis=axis, keepdims=keepdims, where=where)
+            output_ds = self.data_subjects.sum(
+                axis=axis, keepdims=keepdims, initial=initial, where=where
+            )
+            num = np.ones_like(self.child).sum(
+                axis=axis, keepdims=keepdims, initial=initial, where=where
+            )
+
+        return PhiTensor(
+            child=result,
+            data_subjects=output_ds,
+            min_vals=lazyrepeatarray(data=self.min_vals.data * num, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data * num, shape=result.shape),
+        )
 
     def expand_dims(self, axis: int) -> PhiTensor:
         result = np.expand_dims(self.child, axis=axis)
