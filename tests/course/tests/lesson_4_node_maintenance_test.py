@@ -44,7 +44,7 @@ def test_user_details_and_permissions(tb):
 
 def test_budget_requests(tb):
     data_scientist_node = tb.ref("data_scientist_node")
-    assert data_scientist_node.privacy_budget == 100.0
+    assert data_scientist_node.privacy_budget == 1000.0
     # A request has been raised
     assert tb.ref("data_scientist_node.requests[0]") is not None
     ds_request = tb.ref("data_scientist_node.requests[0]")

@@ -5,8 +5,9 @@
 # third party
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
+from google.protobuf import message as _message
+from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -29,10 +30,19 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b'\n\x19proto/core/io/route.proto\x12\x0csyft.core.io\x1a%proto/core/common/common_object.proto\x1a\x1cproto/core/io/location.proto\x1a\x1eproto/core/io/connection.proto\x1a,proto/grid/connections/http_connection.proto"\xfc\x01\n\tSoloRoute\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x33\n\x0b\x64\x65stination\x18\x02 \x01(\x0b\x32\x1e.syft.core.io.SpecificLocation\x12\x43\n\x12virtual_connection\x18\x03 \x01(\x0b\x32%.syft.core.io.VirtualClientConnectionH\x00\x12\x44\n\x0fgrid_connection\x18\x04 \x01(\x0b\x32).syft.grid.connections.GridHTTPConnectionH\x00\x42\x0c\n\nconnectionb\x06proto3'
 )
 
-_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
-_builder.BuildTopDescriptorsAndMessages(
-    DESCRIPTOR, "proto.core.io.route_pb2", globals()
+
+_SOLOROUTE = DESCRIPTOR.message_types_by_name["SoloRoute"]
+SoloRoute = _reflection.GeneratedProtocolMessageType(
+    "SoloRoute",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _SOLOROUTE,
+        "__module__": "proto.core.io.route_pb2"
+        # @@protoc_insertion_point(class_scope:syft.core.io.SoloRoute)
+    },
 )
+_sym_db.RegisterMessage(SoloRoute)
+
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None
