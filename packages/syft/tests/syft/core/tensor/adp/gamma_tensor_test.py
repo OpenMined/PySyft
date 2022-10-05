@@ -182,6 +182,24 @@ def test_sum(
     assert (result.data_subjects == dsa.sum(axis=1)).all()
 
 
+def test_pow(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = GammaTensor(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.__pow__(2)
+    assert (result.child == (reference_data**2)).all()
+    assert result.child.min() >= result.min_vals.data
+    assert result.child.max() <= result.max_vals.data
+
+
 @pytest.mark.arithmetic
 @pytest.mark.public_op
 def test_add_public(

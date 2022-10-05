@@ -1986,18 +1986,41 @@ class GammaTensor:
         sources = dict()
         sources[self.id] = self
         sources["0"] = power  # type: ignore
-        return GammaTensor(
-            child=self.child**power,
-            data_subjects=self.data_subjects,
-            min_vals=lazyrepeatarray(
-                data=self.min_vals.data**power, shape=self.shape
-            ),
-            max_vals=lazyrepeatarray(
-                data=self.max_vals.data**power, shape=self.shape
-            ),
-            func_str=GAMMA_TENSOR_OP.POWER.value,
-            sources=sources,
-        )
+        if modulo is None:
+            if self.min_vals.data <= 0 <= self.max_vals.data:
+                # If data is in range [-5, 5], it's possible the minimum is 0 and not (-5)^2
+                minv = min(0, (self.min_vals.data**power).min())
+            else:
+                minv = self.min_vals.data**power
+
+            return GammaTensor(
+                child=self.child**power,
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(data=minv, shape=self.shape),
+                max_vals=lazyrepeatarray(
+                    data=self.max_vals.data**power, shape=self.shape
+                ),
+                func_str=GAMMA_TENSOR_OP.POWER.value,
+                sources=sources,
+            )
+        else:
+            # This may be unnecessary- modulo is NotImplemented in ndarray.pow
+            if self.min_vals.data <= 0 <= self.max_vals.data:
+                # If data is in range [-5, 5], it's possible the minimum is 0 and not (-5)^2
+                minv = min(0, (self.min_vals.data**power).min() % modulo)
+            else:
+                minv = (self.min_vals.data**power) % modulo
+
+            return GammaTensor(
+                child=(self.child**power) % modulo,
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(data=minv, shape=self.shape),
+                max_vals=lazyrepeatarray(
+                    data=(self.max_vals.data**power) % modulo, shape=self.shape
+                ),
+                func_str=GAMMA_TENSOR_OP.POWER.value,
+                sources=sources,
+            )
 
     def ones_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> GammaTensor:
         output_state = dict()
