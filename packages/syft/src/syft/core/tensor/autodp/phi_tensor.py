@@ -2210,13 +2210,39 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=lazyrepeatarray(data=self.max_vals.data * num, shape=result.shape),
         )
 
-    def __pow__(self, power, modulo=None) -> PhiTensor:
-        return PhiTensor(
-            child=self.child ** power,
-            data_subjects=self.data_subjects,
-            min_vals=lazyrepeatarray(data=self.min_vals.data ** power, shape=self.shape),
-            max_vals=lazyrepeatarray(data=self.max_vals.data ** power, shape=self.shape),
-        )
+    def __pow__(
+        self, power: Union[float, int], modulo: Optional[int] = None
+    ) -> PhiTensor:
+        if modulo is None:
+            if self.min_vals.data <= 0 <= self.max_vals.data:
+                # If data is in range [-5, 5], it's possible the minimum is 0 and not (-5)^2
+                minv = min(0, (self.min_vals.data**power).min())
+            else:
+                minv = self.min_vals.data**power
+
+            return PhiTensor(
+                child=self.child**power,
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(data=minv, shape=self.shape),
+                max_vals=lazyrepeatarray(
+                    data=self.max_vals.data**power, shape=self.shape
+                ),
+            )
+        else:
+            # This may be unnecessary- modulo is NotImplemented in ndarray.pow
+            if self.min_vals.data <= 0 <= self.max_vals.data:
+                # If data is in range [-5, 5], it's possible the minimum is 0 and not (-5)^2
+                minv = min(0, (self.min_vals.data**power).min() % modulo)
+            else:
+                minv = (self.min_vals.data**power) % modulo
+            return PhiTensor(
+                child=self.child**power % modulo,
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(data=minv, shape=self.shape),
+                max_vals=lazyrepeatarray(
+                    data=(self.max_vals.data**power) % modulo, shape=self.shape
+                ),
+            )
 
     def expand_dims(self, axis: int) -> PhiTensor:
         result = np.expand_dims(self.child, axis=axis)
