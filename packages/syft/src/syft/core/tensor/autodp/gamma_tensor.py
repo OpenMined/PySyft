@@ -468,8 +468,8 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
     def concatenate(
         self,
         other: TensorWrappedGammaTensorPointer,
-        *args: List[Any],
-        **kwargs: Dict[str, Any],
+        *args: Any,
+        **kwargs: Any,
     ) -> MPCTensor:
         """Apply the "add" operation between "self" and "other"
 
@@ -519,7 +519,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
 
     def sum(
         self,
-        *args: Tuple[Any, ...],
+        *args: Any,
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
         """Apply the "truediv" operation between "self" and "other"
@@ -647,7 +647,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
 
     def ones_like(
         self,
-        *args: Tuple[Any, ...],
+        *args: Any,
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
         """Apply the "ones like" operation on self"
@@ -1059,8 +1059,8 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
 @implements(TensorWrappedGammaTensorPointer, np.ones_like)
 def ones_like(
     tensor: TensorWrappedGammaTensorPointer,
-    *args: Tuple[Any, ...],
-    **kwargs: Dict[Any, Any],
+    *args: Any,
+    **kwargs: Any,
 ) -> TensorWrappedGammaTensorPointer:
     return tensor.ones_like(*args, **kwargs)
 
@@ -1949,7 +1949,7 @@ class GammaTensor:
             sources=output_state,
         )
 
-    def ones_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> GammaTensor:
+    def ones_like(self, *args: Any, **kwargs: Any) -> GammaTensor:
         output_state = dict()
         output_state[self.id] = self
 
@@ -1971,7 +1971,7 @@ class GammaTensor:
             sources=output_state,
         )
 
-    def zeros_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> GammaTensor:
+    def zeros_like(self, *args: Any, **kwargs: Any) -> GammaTensor:
         output_state = dict()
         output_state[self.id] = self
 

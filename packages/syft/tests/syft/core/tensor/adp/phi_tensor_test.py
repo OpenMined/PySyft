@@ -1108,7 +1108,7 @@ def test_any(
 ) -> None:
     ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
-        child=np.array(reference_data),
+        child=reference_data,
         data_subjects=np.array(ishan),
         max_vals=upper_bound,
         min_vals=lower_bound,
@@ -1134,7 +1134,12 @@ def test_any(
     assert result.data_subjects.shape == (1, reference_tensor.shape[0])
     assert (result.data_subjects == ishan).any()
 
-    condition = list(np.random.choice(a=[False, True], size=(reference_data.shape[0])))
+    condition = list(
+        np.random.choice(a=[False, True], size=(reference_data.shape[0] - 1))
+    )
+    condition.append(
+        True
+    )  # If condition = [False, False, False ... False], this test will fail
     result = (reference_tensor == reference_data).any(where=condition)
     assert result.child
     assert result.data_subjects.shape == ()
@@ -1174,9 +1179,14 @@ def test_all(
     assert result.data_subjects.shape == (1, reference_tensor.shape[0])
     assert (result.data_subjects == ishan).all()
 
-    condition = list(np.random.choice(a=[False, True], size=(reference_data.shape[0])))
+    condition = list(
+        np.random.choice(a=[False, True], size=(reference_data.shape[0] - 1))
+    )
+    condition.append(True)
     result = (reference_tensor == reference_data).all(where=condition)
-    assert result.child
+    assert (
+        result.child
+    )  # If condition = [False, False, False ... False], this test will fail
     assert result.data_subjects.shape == ()
 
 
