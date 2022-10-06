@@ -1,10 +1,17 @@
 <script lang="ts">
   import Capital from '$lib/components/Capital.svelte';
-  import { defaultItems } from '$lib/checklist.json';
+  import { defaultItems } from '$lib/seedData/checklist.json';
+  import { storeChecklistItems } from '$lib/endpoints/airtable';
+  import type { PostReqBody } from '$lib/endpoints/airtable';
+
+  type ChecklistItem = {
+    text: string;
+    status: boolean;
+  };
 
   let newItem = '';
 
-  let checklistItems = defaultItems.map((item) => {
+  let checklistItems: ChecklistItem[] = defaultItems.map((item) => {
     return { text: item, status: false };
   });
 
@@ -18,9 +25,27 @@
     checklistItems = checklistItems;
   }
 
-  function saveEntries() {
-    alert('TODO: Save checklist items');
-  }
+  const handleSubmit = async (items: ChecklistItem[]) => {
+    const reqBody: PostReqBody[] = items.map((item) => {
+      return {
+        fields: {
+          item: item.text
+        }
+      };
+    });
+
+    reqBody.forEach(async (req) => {
+      const res = await storeChecklistItems(req);
+
+      if (res.body.message === 'failed') {
+        alert('There was an issue processing your request, please try again.');
+
+        return;
+      }
+    });
+
+    alert('Checklist items uploaded to Airtable!');
+  };
 </script>
 
 <main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col h-full">
@@ -48,25 +73,36 @@
       <!-- Checklist components -->
       <h1 class="py-5 underline decoration-dotted underline-offset-8">General Checklist</h1>
 
-      {#each checklistItems as item, index}
-        <div class="flex items-center py-2">
-          <input class="cursor-pointer large-checkbox" bind:checked={item.status} type="checkbox" />
-          <label class="px-3" class:checked={item.status}>{item.text}</label>
-          <span class="cursor-pointer" on:click={() => removeFromList(index)}>❌</span>
+      <form on:submit|preventDefault={() => handleSubmit(checklistItems)}>
+        {#each checklistItems as item, index}
+          <div class="flex items-center py-2">
+            <input
+              bind:checked={item.status}
+              class="cursor-pointer large-checkbox"
+              value={item.text}
+              type="checkbox"
+              name="checklist-item"
+              aria-label="checklist-item"
+            />
+            <label for="checklist-item" class="px-3 class:checked={item.status}">
+              {item.text}
+            </label>
+            <span class="cursor-pointer" on:click={() => removeFromList(index)}>❌</span>
+          </div>
+        {/each}
+
+        <div class="px-5 py-5">
+          <input
+            class="border-solid border-2"
+            bind:value={newItem}
+            type="text"
+            placeholder=" new item.."
+          />
+          <button class="pr-2" on:click|preventDefault={addToList}>+ Add Item</button>
         </div>
-      {/each}
 
-      <div class="px-5 py-5">
-        <button class="pr-2" on:click={addToList}>+ Add Item</button>
-        <input
-          class="border-solid border-2"
-          bind:value={newItem}
-          type="text"
-          placeholder="new item.."
-        />
-      </div>
-
-      <button class="submit-button" on:click={saveEntries}>Make A Decision</button>
+        <button type="submit" class="submit-button">Make A Decision</button>
+      </form>
     </div>
 
     <Capital>
