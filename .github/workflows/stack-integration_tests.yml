@@ -242,6 +242,7 @@ jobs:
           PYTEST_MODULES: "${{ matrix.pytest-modules }}"
         run: |
           tox -e stack.test.integration.tls
+          docker ps -q | xargs -L 1 docker logs
 
   stack-integration-tests-smpc:
     strategy:
