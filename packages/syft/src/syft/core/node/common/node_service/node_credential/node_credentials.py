@@ -4,7 +4,6 @@ from __future__ import annotations
 # stdlib
 from typing import Any
 from typing import KeysView
-from typing import Tuple
 from typing import Union
 
 # third party
@@ -31,7 +30,7 @@ class NodeCredentials(BaseModel):
         return self.__dict__.__getitem__(key)
 
     @staticmethod
-    def from_objs(*args: Tuple[Any], **kwargs: Any) -> NodeCredentials:
+    def from_objs(*args: Any, **kwargs: Any) -> NodeCredentials:
         # TODO: we should investigate a way to automatically coerce the right types
         # back and forth with Pydantic and our storage layer
         return NodeCredentials(
