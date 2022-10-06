@@ -461,8 +461,8 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
     def concatenate(
         self,
         other: TensorWrappedPhiTensorPointer,
-        *args: List[Any],
-        **kwargs: Dict[str, Any],
+        *args: Any,
+        **kwargs: Any,
     ) -> MPCTensor:
         """Apply the "add" operation between "self" and "other"
 
@@ -510,7 +510,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
     def sum(
         self,
-        *args: Tuple[Any, ...],
+        *args: Any,
         **kwargs: Any,
     ) -> Union[
         TensorWrappedPhiTensorPointer, MPCTensor, TensorWrappedGammaTensorPointer
@@ -590,7 +590,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
     def ones_like(
         self,
-        *args: Tuple[Any, ...],
+        *args: Any,
         **kwargs: Any,
     ) -> TensorWrappedPhiTensorPointer:
         """Apply the "truediv" operation between "self" and "other"
@@ -1003,8 +1003,8 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 @implements(TensorWrappedPhiTensorPointer, np.ones_like)
 def ones_like(
     tensor: TensorWrappedPhiTensorPointer,
-    *args: Tuple[Any, ...],
-    **kwargs: Dict[Any, Any],
+    *args: Any,
+    **kwargs: Any,
 ) -> TensorWrappedPhiTensorPointer:
     return tensor.ones_like(*args, **kwargs)
 
@@ -1237,7 +1237,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def zeros_like(
         self,
-        *args: Tuple[Any, ...],
+        *args: Any,
         **kwargs: Any,
     ) -> Union[PhiTensor, GammaTensor]:
         # TODO: Add support for axes arguments later
@@ -1522,7 +1522,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         return gamma_tensor
 
-    def view(self, *args: List[Any]) -> PhiTensor:
+    def view(self, *args: Any) -> PhiTensor:
         # TODO: Figure out how to fix lazyrepeatarray reshape
 
         data = self.child.reshape(*args)
@@ -2018,8 +2018,8 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def concatenate(
         self,
         other: Union[np.ndarray, PhiTensor],
-        *args: List[Any],
-        **kwargs: Dict[str, Any],
+        *args: Any,
+        **kwargs: Any,
     ) -> Union[PhiTensor, GammaTensor]:
 
         # if the tensor being added is also private
@@ -2241,7 +2241,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def ones_like(
         self,
-        *args: Tuple[Any, ...],
+        *args: Any,
         **kwargs: Any,
     ) -> Union[PhiTensor, GammaTensor]:
         # TODO: Add support for axes arguments later
