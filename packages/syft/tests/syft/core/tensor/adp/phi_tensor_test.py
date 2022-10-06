@@ -122,7 +122,7 @@ def test_eq(
     )
 
     assert (
-        reference_tensor == same_tensor
+        reference_tensor.child == same_tensor.child
     ).all(), "Equality between identical PTs fails"
 
 
@@ -277,7 +277,9 @@ def test_copy(
     # Copy the tensor and check if it works
     copy_tensor = reference_tensor.copy()
 
-    assert (reference_tensor == copy_tensor).all(), "Copying of the PT fails"
+    assert (
+        reference_tensor.child == copy_tensor.child
+    ).all(), "Copying of the PT fails"
 
 
 def test_copy_with(
@@ -307,11 +309,11 @@ def test_copy_with(
     copy_with_binary_tensor = reference_tensor.copy_with(reference_binary_data)
 
     assert (
-        reference_tensor == copy_with_tensor
+        reference_tensor.child == copy_with_tensor.child
     ).all(), "Copying of the PT with the given child fails"
 
     assert (
-        reference_binary_tensor == copy_with_binary_tensor
+        reference_binary_tensor.child == copy_with_binary_tensor.child
     ).all(), "Copying of the PT with the given child fails"
 
 
@@ -367,7 +369,7 @@ def test_ne_vals(
     )
 
     assert (
-        reference_tensor != comparison_tensor
+        reference_tensor.child != comparison_tensor.child
     ).all(), "Inequality between different PTs fails"
 
 
@@ -1091,3 +1093,137 @@ def test_squeeze(
     assert squeezed_tensor.shape == reference_data.shape
     assert (squeezed_tensor.child == reference_data).all()
     assert (squeezed_tensor.data_subjects == ishan).all()
+
+
+def test_any(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=np.array(ishan),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    result = (reference_tensor == reference_data).any()
+    assert result.child
+    assert result.data_subjects.shape == ()
+    assert (result.data_subjects == ishan).any()
+
+    result = (reference_tensor == reference_data).any(axis=0)
+    assert result.shape == (reference_data.shape[0],)
+    assert result.data_subjects.shape == (reference_data.shape[0],)
+    assert (result.data_subjects == ishan).any()
+
+    result = (reference_tensor == reference_data).any(keepdims=True)
+    assert result.shape == (1, 1)
+    assert result.data_subjects.shape == (1, 1)
+    assert (result.data_subjects == ishan).any()
+
+    result = (reference_tensor == reference_data).any(keepdims=True, axis=0)
+    assert result.shape == (1, reference_tensor.shape[0])
+    assert result.data_subjects.shape == (1, reference_tensor.shape[0])
+    assert (result.data_subjects == ishan).any()
+
+    condition = list(
+        np.random.choice(a=[False, True], size=(reference_data.shape[0] - 1))
+    )
+    condition.append(
+        True
+    )  # If condition = [False, False, False ... False], this test will fail
+    result = (reference_tensor == reference_data).any(where=condition)
+    assert result.child
+    assert result.data_subjects.shape == ()
+
+
+def test_all(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array(reference_data),
+        data_subjects=np.array(ishan),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    result = (reference_tensor == reference_data).all()
+    assert result.child
+    assert result.data_subjects.shape == ()
+    assert (result.data_subjects == ishan).all()
+
+    result = (reference_tensor == reference_data).all(axis=0)
+    assert result.shape == (reference_data.shape[0],)
+    assert result.data_subjects.shape == (reference_data.shape[0],)
+    assert (result.data_subjects == ishan).all()
+
+    result = (reference_tensor == reference_data).all(keepdims=True)
+    assert result.shape == (1, 1)
+    assert result.data_subjects.shape == (1, 1)
+    assert (result.data_subjects == ishan).all()
+
+    result = (reference_tensor == reference_data).all(keepdims=True, axis=0)
+    assert result.shape == (1, reference_tensor.shape[0])
+    assert result.data_subjects.shape == (1, reference_tensor.shape[0])
+    assert (result.data_subjects == ishan).all()
+
+    condition = list(
+        np.random.choice(a=[False, True], size=(reference_data.shape[0] - 1))
+    )
+    condition.append(True)
+    result = (reference_tensor == reference_data).all(where=condition)
+    assert (
+        result.child
+    )  # If condition = [False, False, False ... False], this test will fail
+    assert result.data_subjects.shape == ()
+
+
+def test_and(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    # TODO
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array([reference_data]),
+        data_subjects=np.array([ishan]),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    result = reference_tensor & True
+    assert (result.child == (reference_data & True)).all()
+
+    result = reference_tensor & False
+    assert (result.child == (reference_data & False)).all()
+
+
+def test_or(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    # TODO
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array([reference_data]),
+        data_subjects=np.array([ishan]),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    result = reference_tensor | True
+    assert (result.child == (reference_data | True)).all()
+
+    result = reference_tensor | False
+    assert (result.child == (reference_data | False)).all()

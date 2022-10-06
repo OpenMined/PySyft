@@ -26,7 +26,7 @@ Syft "python" functionality includes the following modules:
 To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
 
-__version__ = "0.7.0-beta.46"
+__version__ = "0.7.0-beta.51"
 
 # stdlib
 from pathlib import Path
@@ -52,6 +52,9 @@ from .core.adp.data_subject_list import DataSubjectList  # noqa: F401
 # Convenience Methods
 from .core.common.serde.deserialize import _deserialize as deserialize  # noqa: F401
 from .core.common.serde.serialize import _serialize as serialize  # noqa: F401
+
+# TFF
+from .core.node.common.node_service import tff  # noqa: F401
 from .core.node.common.node_service.testing_services.repr_service import (  # noqa: F401
     ReprMessage,
 )
