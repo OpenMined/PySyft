@@ -81,7 +81,7 @@ class GrammarTerm:
         default: Optional[Union[str, Callable]] = None,
         options: Optional[TypeList] = None,
         example: Optional[str] = None,
-        **kwargs: TypeDict[str, Any],
+        **kwargs: Any,
     ) -> None:
         self.raw_input: Optional[str] = None
         self.input: Optional[str] = None
