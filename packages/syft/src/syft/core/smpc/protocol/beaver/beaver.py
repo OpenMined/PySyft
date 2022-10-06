@@ -44,7 +44,7 @@ def _get_triples(
     b_shape: Tuple[int],
     nr_instances: int = 1,
     ring_size: int = DEFAULT_RING_SIZE,
-    **kwargs: Dict[Any, Any],
+    **kwargs: Any,
 ) -> Tuple[Tuple[Tuple[ShareTensor, ShareTensor, ShareTensor]]]:
     """Get triples.
 
@@ -159,7 +159,7 @@ def _get_triples(
 
 @register_primitive_generator("beaver_mul")
 def get_triples_mul(
-    *args: List[Any], **kwargs: Dict[Any, Any]
+    *args: Any, **kwargs: Any
 ) -> Tuple[Tuple[Tuple[ShareTensor, ShareTensor, ShareTensor]]]:
     """Get the beaver triples for the multiplication operation.
 
@@ -245,7 +245,7 @@ def mul_store_get(
 
 @register_primitive_generator("beaver_matmul")
 def get_triples_matmul(
-    *args: List[Any], **kwargs: Dict[Any, Any]
+    *args: Any, **kwargs: Any
 ) -> Tuple[List[ShareTensor], List[ShareTensor], List[ShareTensor]]:
     """Get the beaver triples for the matmul  operation.
 

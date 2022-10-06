@@ -4,7 +4,6 @@ from abc import ABC
 from abc import abstractmethod
 from typing import Any
 from typing import Dict
-from typing import List
 from typing import Type
 
 # relative
@@ -16,7 +15,7 @@ class GCStrategy(ABC):
 
     REGISTERED_GC_STRATEGIES: Dict[str, Type["GCStrategy"]] = {}
 
-    def __init__(self, *args: List[Any], **kwargs: Dict[Any, Any]) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize an object for GCStratgy.
         The subclasses that require more logic to be used, should implement
         the __init__ method
