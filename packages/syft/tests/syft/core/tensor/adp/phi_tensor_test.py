@@ -1217,3 +1217,51 @@ def test_or(
 
     result = reference_tensor | False
     assert (result.child == (reference_data | False)).all()
+
+def test_take(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array(reference_data),
+        data_subjects=np.array(ishan),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+    
+    indices = [2]
+    result = reference_tensor.take(indices, axis=0)
+    assert (result.child == reference_tensor.child[indices,:]).all()
+    assert (result.min_vals == reference_tensor.min_vals[indices,:]).all()
+    assert (result.max_vals == reference_tensor.max_vals[indices,:]).all()
+    assert (result.data_subjects == reference_tensor.data_subjects[indices,:]).all()
+    
+
+def test_put(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array(reference_data),
+        data_subjects=np.array(ishan),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    no_values = reference_tensor.shape[0]
+    new_values = np.random.randint(
+        low=-50, high=50, size=(no_values), dtype=np.int32
+    )
+    indices = np.random.randint(
+        low=0, high=no_values*no_values - no_values - 1, size=(1), dtype=np.int32
+    )[0]
+
+    result = reference_tensor.put(range(indices,indices + no_values), new_values)
+    assert (result.child.flat[indices:indices + no_values] == new_values).all()
+    
