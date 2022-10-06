@@ -1,8 +1,6 @@
 """The GC class that would handle what happens when a pointer gets deleted."""
 # stdlib
 from typing import Any
-from typing import Dict
-from typing import List
 
 # third party
 from typing_extensions import final
@@ -18,9 +16,7 @@ class GarbageCollection:
 
     _gc_strategy: GCStrategy
 
-    def __init__(
-        self, gc_strategy_name: str, *args: List[Any], **kwargs: Dict[Any, Any]
-    ) -> None:
+    def __init__(self, gc_strategy_name: str, *args: Any, **kwargs: Any) -> None:
         """Initialize a strategy given the name of it.
 
         Args:
