@@ -663,7 +663,6 @@ jobs:
           notification_title: '{workflow} has {status_message}'
           message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>'
           footer: 'Linked to Repo <{workflow_url}|{repo_url}>'
-          notify_when: 'failure'
           mention_users: 'U01LNCACY03'
           mention_users_when: 'failure,warnings'
         env:
