@@ -36,10 +36,11 @@ budget determines how much can be learned from any data subject.
 
 🚨 Pre-Requisites Steps
 ---------------------------
-
-Before you configure the privacy budget, you must create a user account for your 
-team members or Data Scientists. This prerequisite step is covered in the previous 
-tutorial :doc:`Creating User Accounts on your Domain Server <02-create-account-configure-pb>`. 
+Before you configure the privacy budget,  you must ``prepare`` the dataset, ``upload`` it, and 
+``create`` a user account for your team members or Data Scientists.
+The prerequisite steps are covered in the previous 
+tutorial :doc:`Creating User Accounts on your Domain Server <02-create-account-configure-pb>` and
+:ref:`Uploading Private Data to a Domain Server <step4a>`. 
 Please execute those steps before implementing this tutorial.
 
 📒 Overview of this tutorial
@@ -170,8 +171,15 @@ The credentials to login as a Data Scientist are:
 * **Email:** janedoe@email.com
 * **Password:** supersecretpassword
 
+.. WARNING::
+   We will use the same ``age dataset`` defined in the previous tutorial to keep things simple. 
+   So, before Data Scientists can make a ``query``, Domain Owners have 
+   to :ref:`prepare the dataset and upload it to the Domain Servers<step4a>`. 
 ::
 
+   In:
+
+   # run this cell
    ds_domain_client = sy.login(
       email="janedoe@email.com", 
       password="supersecretpassword", 
@@ -179,8 +187,16 @@ The credentials to login as a Data Scientist are:
       url="localhost"
    )
 
+Now, as a Data Scientist, you can ``verify`` the privacy budget using the below command ⬇️
 
+:: 
 
+   In:
+
+   # run this cell
+   ds_domain_client.privacy_budget
+
+Let's grab the age data from the domain and define a simple query to calculate the ``mean age``.
 
 
 
