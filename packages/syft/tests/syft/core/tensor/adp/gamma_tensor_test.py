@@ -956,7 +956,12 @@ def test_any(
     assert result.data_subjects.shape == (1, reference_tensor.shape[0])
     assert (result.data_subjects == ishan).any()
 
-    condition = list(np.random.choice(a=[False, True], size=(reference_data.shape[0])))
+    condition = list(
+        np.random.choice(a=[False, True], size=(reference_data.shape[0] - 1))
+    )
+    condition.append(
+        True
+    )  # If condition = [False, False, False ... False], this test will fail
     result = (reference_tensor == reference_data).any(where=condition)
     assert result.child
     assert isinstance(result.data_subjects, DataSubjectArray)
@@ -998,7 +1003,12 @@ def test_all(
     assert result.data_subjects.shape == (1, reference_tensor.shape[0])
     assert (result.data_subjects == ishan).any()
 
-    condition = list(np.random.choice(a=[False, True], size=(reference_data.shape[0])))
+    condition = list(
+        np.random.choice(a=[False, True], size=(reference_data.shape[0] - 1))
+    )
+    condition.append(
+        True
+    )  # If condition = [False, False, False ... False], this test will fail
     result = (reference_tensor == reference_data).all(where=condition)
     assert result.child
     assert isinstance(result.data_subjects, DataSubjectArray)
