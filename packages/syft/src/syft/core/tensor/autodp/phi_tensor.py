@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from collections.abc import Sequence
+from optparse import Option
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -1302,15 +1303,66 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         else:
             raise NotImplementedError
 
-    def abs(self) -> PhiTensor:
+    def __abs__(self) -> PhiTensor:
         data = self.child
         output = np.abs(data)
+
+        min_val = self.min_vals.data
+        max_val = self.max_vals.data
+        
+        if min_val < 0 and max_val < 0:
+            new_min_val = abs(max_val)
+            new_max_val = abs(min_val)
+        
+        if min_val > 0 and max_val > 0:
+            new_min_val = abs(min_val)
+            new_max_val = abs(max_val)
+
+        if min_val < 0 and max_val > 0:
+            new_min_val = 0
+            new_max_val = max(abs(min_val), abs(max_val))
 
         return PhiTensor(
             child=output,
             data_subjects=self.data_subjects,
-            min_vals=np.abs(self.min_vals.data),
-            max_vals=np.abs(self.min_vals.data),
+            min_vals=lazyrepeatarray(data=new_min_val, shape=output.shape),
+            max_vals=lazyrepeatarray(data=new_max_val, shape=output.shape)
+        )
+
+    def argmax(
+        self,
+        axis: Optional[int] = None,
+        keepdims: Optional[bool] = None,
+    ) -> PhiTensor:
+        output = np.argmax(self.child, axis=axis, keepdims=keepdims)
+        if axis is None:
+            max_value = self.child.size - 1
+        else:
+            max_value = self.child[axis].size - 1
+        indices = np.unravel_index(output, shape=self.child.shape)
+        return PhiTensor(
+            child=output,
+            data_subjects=self.data_subjects[indices],
+            min_vals=lazyrepeatarray(data=0, shape=output.shape),
+            max_vals=lazyrepeatarray(data=max_value, shape=output.shape),
+        )
+        
+    def argmin(
+        self,
+        axis: Optional[int] = None,
+        keepdims: Optional[bool] = None,
+    ) -> PhiTensor:
+        output = np.argmin(self.child, axis=axis, keepdims=keepdims)
+        if axis is None:
+            max_value = self.child.size - 1
+        else:
+            max_value = self.child[axis].size - 1
+        indices = np.unravel_index(output, shape=self.child.shape)
+        return PhiTensor(
+            child=output,
+            data_subjects=self.data_subjects[indices],
+            min_vals=lazyrepeatarray(data=0, shape=output.shape),
+            max_vals=lazyrepeatarray(data=max_value, shape=output.shape),
         )
 
     def reshape(self, *shape: Tuple[int, ...]) -> PhiTensor:
