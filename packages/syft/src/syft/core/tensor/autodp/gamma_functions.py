@@ -102,6 +102,8 @@ def generate_ops() -> Dict[GAMMA_TENSOR_OP, Callable]:
         GAMMA_TENSOR_OP.COPY: jnp.copy,
         GAMMA_TENSOR_OP.TAKE: jnp.take,
         GAMMA_TENSOR_OP.PUT: jnp.put,
+        GAMMA_TENSOR_OP.ARGMAX: jnp.argmax,
+        GAMMA_TENSOR_OP.ARGMIN: jnp.argmin,
         GAMMA_TENSOR_OP.RECIPROCAL: _reciprocal,
         GAMMA_TENSOR_OP.FLATTEN_C: get_flatten_type(order="C"),
         GAMMA_TENSOR_OP.FLATTEN_F: get_flatten_type(order="F"),

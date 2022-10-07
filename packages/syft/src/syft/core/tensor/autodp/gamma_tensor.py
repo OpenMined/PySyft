@@ -1726,6 +1726,88 @@ class GammaTensor:
             sources=output_state,
         )
 
+    def __abs__(self) -> GammaTensor:
+        
+        output_state = dict()
+        output_state[self.id] = self
+        
+        data = self.child
+        child = np.abs(data)
+
+        min_val = self.min_vals.data
+        max_val = self.max_vals.data
+        
+        if min_val < 0 and max_val < 0:
+            new_min_val = abs(max_val)
+            new_max_val = abs(min_val)
+        
+        if min_val > 0 and max_val > 0:
+            new_min_val = abs(min_val)
+            new_max_val = abs(max_val)
+
+        if min_val < 0 and max_val > 0:
+            new_min_val = 0
+            new_max_val = max(abs(min_val), abs(max_val))
+        
+        return GammaTensor(
+            child=child,
+            data_subjects=self.data_subjects,
+            min_vals=lazyrepeatarray(data=new_min_val, shape=child.shape),
+            max_vals=lazyrepeatarray(data=new_max_val, shape=child.shape),
+            func_str=GAMMA_TENSOR_OP.ABS.value,
+            sources=output_state,
+        )
+        
+    def argmax(
+        self,
+        axis: Optional[int] = None,
+        keepdims: Optional[bool] = None,
+    ) -> GammaTensor:    
+        
+        output_state = dict()
+        output_state[self.id] = self   
+        
+        child = np.argmax(self.child, axis=axis, keepdims=keepdims)
+        if axis is None:
+            max_value = self.child.size - 1
+        else:
+            max_value = self.child[axis].size - 1
+        indices = np.unravel_index(child, shape=self.child.shape) 
+
+        return GammaTensor(
+            child=child,
+            data_subjects=self.data_subjects[indices],
+            min_vals=lazyrepeatarray(data=0, shape=child.shape),
+            max_vals=lazyrepeatarray(data=max_value, shape=child.shape),
+            func_str=GAMMA_TENSOR_OP.ARGMAX.value,
+            sources=output_state,
+        )
+        
+    def argmin(
+        self,
+        axis: Optional[int] = None,
+        keepdims: Optional[bool] = None,
+    ) -> GammaTensor:    
+        
+        output_state = dict()
+        output_state[self.id] = self   
+        
+        child = np.argmin(self.child, axis=axis, keepdims=keepdims)
+        if axis is None:
+            max_value = self.child.size - 1
+        else:
+            max_value = self.child[axis].size - 1
+        indices = np.unravel_index(child, shape=self.child.shape) 
+
+        return GammaTensor(
+            child=child,
+            data_subjects=self.data_subjects[indices],
+            min_vals=lazyrepeatarray(data=0, shape=child.shape),
+            max_vals=lazyrepeatarray(data=max_value, shape=child.shape),
+            func_str=GAMMA_TENSOR_OP.ARGMIN.value,
+            sources=output_state,
+        )    
+
     def exp(self) -> GammaTensor:
         output_state = dict()
         # Add this tensor to the chain
