@@ -1078,3 +1078,95 @@ def test_put(
     assert reference_tensor == result.sources[reference_tensor.id]
     assert (result.child.flat[indices:indices + no_values] == new_values).all()
 
+def test_abs(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array(reference_data),
+        data_subjects=np.array(ishan),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    ).gamma
+    
+    result = abs(reference_tensor)
+    assert result.func_str == GAMMA_TENSOR_OP.ABS.value
+    assert reference_tensor == result.sources[reference_tensor.id]
+    assert (result.child == abs(reference_tensor.child)).all()
+    assert (result.min_vals.data >= 0).all()
+    assert (result.max_vals.data >= 0).all()
+    assert (result.data_subjects == reference_tensor.data_subjects).all()
+    
+def test_argmax(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array(reference_data),
+        data_subjects=np.array(ishan),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    ).gamma
+    
+    result = reference_tensor.argmax()
+    reference_result = reference_tensor.child.argmax()
+    assert result.func_str == GAMMA_TENSOR_OP.ARGMAX.value
+    assert reference_tensor == result.sources[reference_tensor.id]
+    assert (result.child == reference_result).all()
+    assert (result.data_subjects == reference_tensor.data_subjects.item(reference_result))
+    
+    result = reference_tensor.argmax(axis=0)
+    reference_result = reference_tensor.child.argmax(axis=0)
+    assert result.func_str == GAMMA_TENSOR_OP.ARGMAX.value
+    assert reference_tensor == result.sources[reference_tensor.id]
+    assert (result.child == reference_result).all()
+    assert (result.data_subjects == reference_tensor.data_subjects[reference_result]).all()
+    
+    result = reference_tensor.argmax(axis=0, keepdims=True)
+    reference_result = reference_tensor.child.argmax(axis=0, keepdims=True)
+    assert result.func_str == GAMMA_TENSOR_OP.ARGMAX.value
+    assert reference_tensor == result.sources[reference_tensor.id]
+    assert (result.child == reference_result).all()
+    assert (result.data_subjects == reference_tensor.data_subjects[reference_result]).all()
+    
+def test_argmin(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array(reference_data),
+        data_subjects=np.array(ishan),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    ).gamma
+    
+    result = reference_tensor.argmin()
+    reference_result = reference_tensor.child.argmin()
+    assert result.func_str == GAMMA_TENSOR_OP.ARGMIN.value
+    assert reference_tensor == result.sources[reference_tensor.id]
+    assert (result.child == reference_result).all()
+    assert (result.data_subjects == reference_tensor.data_subjects.item(reference_result))
+    
+    result = reference_tensor.argmin(axis=0)
+    reference_result = reference_tensor.child.argmin(axis=0)
+    assert result.func_str == GAMMA_TENSOR_OP.ARGMIN.value
+    assert reference_tensor == result.sources[reference_tensor.id]
+    assert (result.child == reference_result).all()
+    assert (result.data_subjects == reference_tensor.data_subjects[reference_result]).all()
+    
+    result = reference_tensor.argmin(axis=0, keepdims=True)
+    assert result.func_str == GAMMA_TENSOR_OP.ARGMIN.value
+    assert reference_tensor == result.sources[reference_tensor.id]
+    reference_result = reference_tensor.child.argmin(axis=0, keepdims=True)
+    assert (result.child == reference_result).all()
+    assert (result.data_subjects == reference_tensor.data_subjects[reference_result]).all()
+    
