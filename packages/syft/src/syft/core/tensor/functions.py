@@ -1,9 +1,6 @@
 # stdlib
 from typing import Any
-from typing import Dict
-from typing import List
 from typing import Optional
-from typing import Tuple
 
 # third party
 import numpy as np
@@ -27,13 +24,13 @@ def mean(
 
 
 @implements(Tensor, np.max)
-def npmax(*args: Tuple[Any, ...], **kwargs: Dict[Any, Any]) -> Tensor:
+def npmax(*args: Any, **kwargs: Any) -> Tensor:
     args, kwargs = inputs2child(*args, **kwargs)  # type: ignore
     return np.max(*args, **kwargs)
 
 
 @implements(Tensor, np.min)
-def npmin(*args: List[Any], **kwargs: Dict[Any, Any]) -> Tensor:
+def npmin(*args: Any, **kwargs: Any) -> Tensor:
     args, kwargs = inputs2child(*args, **kwargs)  # type: ignore
     return np.min(*args, **kwargs)
 
@@ -44,7 +41,7 @@ def square(x: Tensor) -> Tensor:
 
 
 @implements(Tensor, np.expand_dims)
-def expand_dims(*args: List[Any], **kwargs: Dict[Any, Any]) -> Tensor:
+def expand_dims(*args: Any, **kwargs: Any) -> Tensor:
     args, kwargs = inputs2child(*args, **kwargs)  # type: ignore
     return Tensor(np.expand_dims(*args, **kwargs))
 

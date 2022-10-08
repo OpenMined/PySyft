@@ -316,7 +316,7 @@ def clean(location: str) -> None:
     type=str,
     help="Optional: launch node using the manifest template",
 )
-def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
+def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
     try:
         grammar = parse_grammar(args=args, verb=verb)
@@ -2329,7 +2329,7 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
     is_flag=True,
     help="Optional: bypass the prompt during hagrid land ",
 )
-def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
+def land(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_land_verb()
     silent = bool(kwargs["silent"]) if "silent" in kwargs else False
     force = bool(kwargs["force"]) if "force" in kwargs else False
