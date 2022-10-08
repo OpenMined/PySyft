@@ -5,6 +5,7 @@ from pydantic import BaseSettings
 from .abstract.node_service_interface import NodeServiceInterface
 from .common.node_manager.association_request_manager import AssociationRequestManager
 from .common.node_manager.dataset_manager import DatasetManager
+from .common.node_manager.oblv_key_manager import OblvKeyManager
 from .common.node_manager.role_manager import RoleManager
 from .common.node_manager.setup_manager import SetupManager
 from .common.node_manager.user_manager import UserManager
@@ -17,3 +18,4 @@ class DomainInterface(NodeServiceInterface):
     datasets: DatasetManager
     setup: SetupManager
     settings: BaseSettings
+    oblv_keys: OblvKeyManager

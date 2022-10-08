@@ -227,3 +227,7 @@ class OblvEnclaveError(Exception):
         if not message:
             message = "Failed to connect to the enclave"
         super().__init__(message)
+
+class OblvError(Exception):
+    def __init__(self, message: str = "") -> None:
+        super().__init__(message)

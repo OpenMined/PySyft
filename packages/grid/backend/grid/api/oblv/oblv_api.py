@@ -19,7 +19,7 @@ from grid.utils import send_message_with_reply
 
 # syft absolute
 from syft.core.node.common.node_service.oblv.oblv_service import (
-    CreateKeyPairMessage, GetPublicKeyMessage
+    CreateKeyPairMessage, GetPublicKeyMessage, PublishDatasetMessage
 )
 
 from syft.core.node.common.action.exception_action import ExceptionMessage
@@ -66,3 +66,12 @@ def get_public_key(
         return {"error": reply.exception_msg}
     else:
         return reply.response
+    
+@router.post("/publish", name="publish:post", status_code=status.HTTP_200_OK)
+def publish_dataset(
+    deployment_id: str,
+    dataset_id: str,
+    current_user: Any = Depends(get_current_user),
+):
+    user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
+    return "Success"
