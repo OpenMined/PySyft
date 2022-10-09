@@ -70,7 +70,7 @@ SYFT_MAXIMUM_PYTHON_VERSION_STRING = "3.10"
 WHITE = "\033[0;37m"
 GREEN = "\033[0;32m"
 NO_COLOR = "\033[0;0m"
-WARNING_MSG = f"\033[0;33m WARNING:{NO_COLOR}"
+WARNING_MSG = f"\033[0;33mWARNING:{NO_COLOR}"
 
 
 @dataclass
@@ -161,11 +161,11 @@ class DependencyGridDocker(Dependency):
                 user = os.getuid()
                 if user == 0:
                     print(
-                        f"{WARNING_MSG} {WHITE}Running Hagrid in ROOT mode might cause issues in the future.{NO_COLOR}"
+                        f"{WARNING_MSG}{WHITE}Running Hagrid in ROOT mode might cause issues in the future.{NO_COLOR}"
                     )
 
                 # 2 - Check if current user is contained in sudo users list
-                sudo_group_members = subprocess.run( # nosec
+                sudo_group_members = subprocess.run(  # nosec
                     ["getent", "group", "sudo"],
                     stdout=subprocess.PIPE,
                     text=True,
@@ -173,11 +173,11 @@ class DependencyGridDocker(Dependency):
                 )
                 if getpass.getuser() not in sudo_group_members.stdout:
                     print(
-                        f"""{WARNING_MSG} {WHITE}You're not a super user,
+                        f"""{WARNING_MSG}{WHITE}You're not a super user,
                         the installation might fail, get super user access first!{NO_COLOR}"""
                     )
 
-                docker_group_members = subprocess.run( # nosec
+                docker_group_members = subprocess.run(  # nosec
                     ["getent", "group", "docker"],
                     stdout=subprocess.PIPE,
                     text=True,
@@ -185,7 +185,7 @@ class DependencyGridDocker(Dependency):
                 )
                 if getpass.getuser() not in docker_group_members.stdout:
                     print(
-                        f"""{WARNING_MSG} {WHITE}You're currently not allowed to run docker, perform the following steps:\n
+                        f"""{WARNING_MSG}{WHITE}You're currently not allowed to run docker, perform the following steps:\n
                         1 - Run \'{GREEN}sudo usermod -a -G docker $USER\'{WHITE} to add docker permissions.\n
                         2 - log out and log back in so that your group membership is re-evaluated {NO_COLOR}."""
                     )
@@ -519,17 +519,40 @@ def check_docker_version() -> Optional[str]:
     return version
 
 
-def docker_running() -> bool:
+def docker_running() -> Tuple[bool, str]:
     try:
-        cmd = "docker info"
+        cmd = "docker"
         returncode, _ = get_cli_output(cmd)
         if returncode == 0:
-            return True
+            return True, "✅ Docker service is running"
         else:
-            return False
+            error_msg = f"""❌ Docker service was not found and might not be installed.\n\n
+To use docker, execute the following steps:\n
+1 - Install docker on your machine by using the proper steps according to your OS.\n
+{WHITE}MacOS: {GREEN}brew install --cask docker
+{WHITE}Linux: {GREEN}curl -fsSL https://get.docker.com -o get-docker.sh && chmod +777 get-docker.sh && ./get-docker.sh
+{WHITE}Windows: {GREEN}choco install docker-desktop -y{NO_COLOR} \n
+2 - Run \'{GREEN}sudo usermod -a -G docker $USER\'{WHITE} to enable this user to execute docker.
+3 - log out and log back in so that your group membership is re-evaluated {NO_COLOR}."""
+            return False, error_msg
     except Exception:  # nosec
         pass
-    return False
+    return False, error_msg
+
+
+def allowed_to_run_docker() -> Tuple[bool, str]:
+    bool_result, msg = True, ""
+    if platform.system().lower() == "linux":
+        _, line = get_cli_output("getent group docker")
+
+        # Check if current user is member of docker group.
+        if getpass.getuser() not in "".join(line):
+            msg = f"""⚠️  User is not a member of docker group.
+{WHITE}You're currently not allowed to run docker, perform the following steps:\n
+    1 - Run \'{GREEN}sudo usermod -a -G docker $USER\'{WHITE} to add docker permissions.
+    2 - log out and log back in so that your group membership is re-evaluated {NO_COLOR}."""
+            bool_result = False
+    return bool_result, msg
 
 
 def check_docker_service_status(animated: bool = True) -> None:
@@ -539,17 +562,29 @@ def check_docker_service_status(animated: bool = True) -> None:
         MissingDependency: If docker service is not running.
     """
 
-    if not animated:
-        if not docker_running():
-            raise MissingDependency("❌ Docker service is not running.")
+    docker_installed, msg = docker_running()
+    user_allowed, permission_msg = allowed_to_run_docker()
 
+    if not animated:
+        # If docker bin was not found.
+        if not docker_installed:
+            raise MissingDependency(msg)
+
+        # Check if user is allowed to execute docker
+        if not user_allowed:
+            raise MissingDependency(permission_msg)
     else:
         console = Console()
         # putting \t at the end seems to prevent weird chars getting outputted
         # during animations in the juypter notebook
         with console.status("[bold blue]Checking for Docker Service[/bold blue]\t"):
-            if not docker_running():
-                raise MissingDependency("❌ Docker service is not running.")
+            # if Docker bin was not found.
+            if not docker_installed:
+                raise MissingDependency(msg)
+
+            # Check if user is allowed to execute docker
+            if not user_allowed:
+                raise MissingDependency(permission_msg)
 
     print("✅ Docker service is running")
 
