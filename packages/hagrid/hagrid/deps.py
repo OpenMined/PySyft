@@ -165,7 +165,7 @@ class DependencyGridDocker(Dependency):
                     )
 
                 # 2 - Check if current user is contained in sudo users list
-                sudo_group_members = subprocess.run(
+                sudo_group_members = subprocess.run( # nosec
                     ["getent", "group", "sudo"],
                     stdout=subprocess.PIPE,
                     text=True,
@@ -177,7 +177,7 @@ class DependencyGridDocker(Dependency):
                         the installation might fail, get super user access first!{NO_COLOR}"""
                     )
 
-                docker_group_members = subprocess.run(
+                docker_group_members = subprocess.run( # nosec
                     ["getent", "group", "docker"],
                     stdout=subprocess.PIPE,
                     text=True,
