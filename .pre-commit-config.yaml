@@ -15,7 +15,7 @@ repos:
         always_run: true
       - id: check-added-large-files
         always_run: true
-        exclude: ^(notebooks/trade_demo/datasets|packages/syft/src/syft/cache/constant2epsilon_1200k.npy|packages/grid/backend/wheels/.*|packages/syft/docs/img/header.png|packages/syft/docs/img/terminalizer.gif)
+        exclude: ^(notebooks/trade_demo/datasets|packages/syft/src/syft/cache/constant2epsilon_1200k.npy|packages/grid/backend/wheels/.*|packages/syft/docs/img/header.png|packages/syft/docs/img/terminalizer.gif|notebooks/padawan)
       - id: check-yaml
         always_run: true
         exclude: ^(packages/grid/k8s/rendered/)
