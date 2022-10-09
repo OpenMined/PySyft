@@ -661,7 +661,7 @@ jobs:
           status: ${{ job.status }}
           notify_when: 'success,failure'
           notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{workflow}* {status_message} in {workflow_url}'
+          message_format: '{emoji} *{workflow}* {status_message} in {workflow|workflow_url}'
           footer: 'Link to Job {job}'
           mention_users: 'U01LNCACY03'
           mention_users_when: 'success,failure,warnings'
