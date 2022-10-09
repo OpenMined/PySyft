@@ -659,12 +659,12 @@ jobs:
         uses: ravsamhq/notify-slack-action@v1
         with:
           status: ${{ job.status }}
-          notify_when: 'failure'
+          notify_when: 'success,failure'
           notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>'
-          footer: 'Linked to Repo <{workflow_url}|{repo_url}>'
+          message_format: '{emoji} *{workflow}* {status_message} in {workflow_url}'
+          footer: 'Link to Job {job}'
           mention_users: 'U01LNCACY03'
-          mention_users_when: 'failure,warnings'
+          mention_users_when: 'success,failure,warnings'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
 
