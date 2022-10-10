@@ -1835,6 +1835,106 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 data_subjects=output_ds,
             )
 
+    def argsort(self, axis: Optional[int] = -1) -> PhiTensor:
+        """
+        Returns the indices that would sort an array.
+
+        Perform an indirect sort along the given axis using the algorithm specified by the kind keyword.
+        It returns an array of indices of the same shape as a that index data along the given axis in sorted order.
+
+        Parameters
+            axis: int or None, optional
+                Axis along which to sort. The default is -1 (the last axis). If None, the flattened array is used.
+            kind: {‘quicksort’, ‘mergesort’, ‘heapsort’, ‘stable’}, optional
+                Sorting algorithm. The default is ‘quicksort’. Note that both ‘stable’ and ‘mergesort’ use timsort
+                under the covers and, in general, the actual implementation will vary with data type. The ‘mergesort’
+                option is retained for backwards compatibility.
+            order: str or list of str, optional
+                When a is an array with fields defined, this argument specifies which fields to compare 1st, 2nd, etc.
+                A single field can be specified as a string, and not all fields need be specified, but unspecified
+                fields will still be used, in the order in which they come up in the dtype, to break ties.
+
+        Returns
+            index_array: ndarray, int
+                Array of indices that sort a along the specified axis. If a is one-dimensional, a[index_array] yields a
+                sorted a. More generally, np.take_along_axis(a, index_array, axis=axis) always yields the sorted a,
+                irrespective of dimensionality.
+        """
+        result = self.child.argsort(axis)
+        return PhiTensor(
+            child=result,
+            data_subjects=self.data_subjects.take(np.unravel_index(result, self.shape)),
+            min_vals=lazyrepeatarray(data=0, shape=self.shape),
+            max_vals=lazyrepeatarray(data=self.child.size, shape=self.shape),
+        )
+
+    def sort(self, axis: int = -1, kind: Optional[str] = None) -> PhiTensor:
+        """
+        Please see docs here: https://numpy.org/doc/stable/reference/generated/numpy.sort.html
+        """
+        result = self.child.sort(axis, kind)
+        return PhiTensor(
+            child=result,
+            data_subjects=self.data_subjects.take(np.unravel_index(result, self.shape)),
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+        )
+
+    def __lshift__(self, other: Any) -> PhiTensor:
+        raise NotImplementedError
+
+    def __rshift__(self, other: Any) -> PhiTensor:
+        raise NotImplementedError
+
+    def __xor__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
+        raise NotImplementedError
+
+    def searchsorted(self, v: Any) -> Union[PhiTensor, GammaTensor]:
+        """
+        https://numpy.org/doc/stable/reference/generated/numpy.searchsorted.html
+        """
+        if isinstance(v, np.ndarray):
+            result = self.child.searchsorted(v)
+            ds = np.broadcast_to(self.data_subjects.sum(), result.shape)
+            return PhiTensor(
+                child=result,
+                data_subjects=ds,
+                min_vals=lazyrepeatarray(data=0, shape=result.shape),
+                max_vals=lazyrepeatarray(data=self.child.size, shape=result.shape),
+            )
+        elif isinstance(v, PhiTensor):
+            if (self.data_subjects != v.data_subjects).all():
+                return self.gamma.searchsorted(v.gamma)
+            else:
+                result = self.child.searchsorted(v.child)
+                ds = np.broadcast_to(
+                    self.data_subjects.sum() + v.data_subjects.sum(), result.shape
+                )
+                return PhiTensor(
+                    child=result,
+                    data_subjects=ds,
+                    min_vals=lazyrepeatarray(data=0, shape=result.shape),
+                    max_vals=lazyrepeatarray(data=self.child.size, shape=result.shape),
+                )
+        elif isinstance(v, GammaTensor):
+            return self.gamma.searchsorted(v)
+        else:
+            raise NotImplementedError
+
+    def __divmod__(self, other: Any) -> Tuple[Union[PhiTensor, GammaTensor]]:
+        if isinstance(other, (np.ndarray, PhiTensor, GammaTensor)):
+            return self // other, self % other  # type: ignore
+        else:
+            raise NotImplementedError
+
+    def __round__(self, n: Optional[int] = None) -> PhiTensor:
+        return PhiTensor(
+            child=self.child.round(n),
+            data_subjects=self.data_subjects,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+        )
+
     def __rmatmul__(
         self, other: Union[np.ndarray, PhiTensor]
     ) -> Union[PhiTensor, GammaTensor]:

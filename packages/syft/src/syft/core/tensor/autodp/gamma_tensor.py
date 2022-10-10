@@ -1498,6 +1498,9 @@ class GammaTensor:
             sources=output_state,
         )
 
+    def searchsorted(self, v: Any) -> GammaTensor:
+        raise NotImplementedError
+
     def __rmatmul__(self, other: Any) -> GammaTensor:
         # relative
         from .phi_tensor import PhiTensor
