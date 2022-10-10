@@ -1793,49 +1793,47 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 f"Matrix multiplication not yet implemented for type {type(other)}"
             )
         else:
-            # Modify before merge, to know is broadcast is actually necessary
-            if False:  # and not is_broadcastable(self.shape, other.shape):
-                raise Exception(
-                    f"Shapes not broadcastable: {self.shape} and {other.shape}"
-                )
-            else:
-                if isinstance(other, np.ndarray):
-                    data = self.child.__matmul__(other)
-                    min_vals = self.min_vals.__matmul__(other)
-                    max_vals = self.max_vals.__matmul__(other)
-                    output_ds = self.data_subjects @ other
-                elif isinstance(other, PhiTensor):
+            if isinstance(other, np.ndarray):
+                data = self.child.__matmul__(other)
+                min_min = (self.min_vals @ other).data
+                min_max = (self.min_vals @ other).data
+                max_max = (self.max_vals @ other).data
+                max_min = (self.max_vals @ other).data
+                minv = np.min([min_min, min_max, max_max, max_min], axis=0)  # type: ignore
+                min_vals = lazyrepeatarray(data=minv, shape=data.shape)
+                max_vals = self.max_vals.__matmul__(other)
+                output_ds = self.data_subjects @ other
+            elif isinstance(other, PhiTensor):
+                if self.data_subjects.sum() != other.data_subjects.sum():
                     return self.gamma @ other.gamma
-                    # if self.data_subjects != other.data_subjects:
-                    #     return self.gamma @ other.gamma
-                    # else:
-                    #     data = self.child.__matmul__(other.child)
-                    #     min_vals = self.min_vals.__matmul__(other.min_vals)
-                    #     max_vals = self.max_vals.__matmul__(other.max_vals)
-                    #     output_ds = DataSubjectList(
-                    #         one_hot_lookup=np.concatenate(
-                    #             (
-                    #                 self.data_subjects.one_hot_lookup,
-                    #                 other.data_subjects.one_hot_lookup,
-                    #             )
-                    #         ),
-                    #         data_subjects_indexed=np.concatenate(
-                    #             (np.zeros_like(data), np.ones_like(data))
-                    #         ),  # replace with (1, *data.shape) if inc shape
-                    #     )
-
-                elif isinstance(other, GammaTensor):
-                    return self.gamma @ other
                 else:
-                    print("Type is unsupported:" + str(type(other)))
-                    raise NotImplementedError
+                    min_min = (self.min_vals @ other.min_vals).data.min()
+                    min_max = (self.min_vals @ other.max_vals).data.min()
+                    max_max = (self.max_vals @ other.max_vals).data.min()
+                    max_min = (self.max_vals @ other.min_vals).data.min()
 
-                return PhiTensor(
-                    child=data,
-                    max_vals=max_vals,
-                    min_vals=min_vals,
-                    data_subjects=output_ds,
-                )
+                    if self.min_vals.data <= 0 and self.max_vals.data >= 0:
+                        minv = np.min([0, min_min, min_max, max_max, max_min], axis=0)  # type: ignore
+                    else:
+                        minv = np.min([min_min, min_max, max_max, max_min], axis=0)  # type: ignore
+
+                    data = self.child.__matmul__(other.child)
+                    max_vals = self.max_vals.__matmul__(other.max_vals)
+                    min_vals = lazyrepeatarray(data=minv, shape=data.shape)
+                    output_ds = self.data_subjects @ other.data_subjects
+
+            elif isinstance(other, GammaTensor):
+                return self.gamma @ other
+            else:
+                print("Type is unsupported:" + str(type(other)))
+                raise NotImplementedError
+
+            return PhiTensor(
+                child=data,
+                max_vals=max_vals,
+                min_vals=min_vals,
+                data_subjects=output_ds,
+            )
 
     def __rmatmul__(
         self, other: Union[np.ndarray, PhiTensor]

@@ -1227,3 +1227,24 @@ def test_or(
 
     result = reference_tensor | False
     assert (result.child == (reference_data | False)).all()
+
+
+def test_matmul(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    # TODO
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array([reference_data]),
+        data_subjects=np.array([ishan]),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    result = reference_tensor @ reference_tensor
+    assert (result.child == (reference_data @ reference_data)).all()
+    assert (result.child.min() >= result.min_vals.data).all()
+    assert (result.child.max() <= result.max_vals.data).all()

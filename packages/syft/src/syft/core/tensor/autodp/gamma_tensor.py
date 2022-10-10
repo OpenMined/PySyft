@@ -1472,7 +1472,12 @@ class GammaTensor:
         if isinstance(other, GammaTensor):
             output_state[other.id] = other
             child = self.child @ other.child
-            min_val = self.min_vals.__matmul__(other.min_vals)
+            min_min = (self.min_vals @ other.min_vals).data
+            min_max = (self.min_vals @ other.max_vals).data
+            max_max = (self.max_vals @ other.max_vals).data
+            max_min = (self.max_vals @ other.min_vals).data
+            minv = np.min([min_min, min_max, max_max, max_min], axis=0)  # type: ignore
+            min_val = lazyrepeatarray(data=minv, shape=child.shape)
             max_val = self.max_vals.__matmul__(other.max_vals)
             output_ds = self.data_subjects @ other.data_subjects
 

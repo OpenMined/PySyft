@@ -1012,3 +1012,24 @@ def test_all(
     result = (reference_tensor == reference_data).all(where=condition)
     assert result.child
     assert isinstance(result.data_subjects, DataSubjectArray)
+
+
+def test_matmul(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    # TODO
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = GammaTensor(
+        child=np.array([reference_data]),
+        data_subjects=np.array([ishan]),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    result = reference_tensor @ reference_tensor
+    assert (result.child == (reference_data @ reference_data)).all()
+    assert (result.child.min() >= result.min_vals.data).all()
+    assert (result.child.max() <= result.max_vals.data).all()
