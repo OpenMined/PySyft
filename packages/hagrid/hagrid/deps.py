@@ -548,7 +548,6 @@ def allowed_to_run_docker() -> Tuple[bool, str]:
         # get user
         user = getpass.getuser()
 
-        print("My OS EUID: ",  os.geteuid())
         # Check if current user is root.
         if os.geteuid() == 0:
             bool_result = True
@@ -559,7 +558,14 @@ def allowed_to_run_docker() -> Tuple[bool, str]:
 {WHITE}You're currently not allowed to run docker, perform the following steps:\n
     1 - Run \'{GREEN}sudo usermod -a -G docker $USER\'{WHITE} to add docker permissions.
     2 - log out and log back in so that your group membership is re-evaluated {NO_COLOR}."""
-            bool_result = False
+            # NOTE: For some reason, inside of CI pipeline the user (runner) isn't a member of
+            # docker group and doesn't have sudo priviledges, but can execute docker without
+            # permission issues. This is just a workaround to avoid raising an exeception
+            # in this scenario without reason.
+            if user == "runner":
+                bool_result = True
+            else:
+                bool_result = False
 
     return bool_result, msg
 
