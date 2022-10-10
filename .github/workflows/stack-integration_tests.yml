@@ -113,7 +113,6 @@ jobs:
         if: steps.changes.outputs.stack == 'true' && runner.os == 'Linux'
         shell: bash
         run: |
-          groupadd docker
           usermod -a -G docker $USER
           mkdir -p ~/.docker/cli-plugins
           DOCKER_COMPOSE_VERSION=v2.7.0
@@ -221,7 +220,6 @@ jobs:
         if: steps.changes.outputs.stack == 'true' && runner.os == 'Linux'
         shell: bash
         run: |
-          groupadd docker
           usermod -a -G docker $USER
           mkdir -p ~/.docker/cli-plugins
           DOCKER_COMPOSE_VERSION=v2.7.0
@@ -344,7 +342,6 @@ jobs:
         if: steps.changes.outputs.stack == 'true' && runner.os == 'Linux'
         shell: bash
         run: |
-          groupadd docker
           usermod -a -G docker $USER
           mkdir -p ~/.docker/cli-plugins
           DOCKER_COMPOSE_VERSION=v2.7.0
@@ -457,7 +454,6 @@ jobs:
         if: steps.changes.outputs.stack == 'true' && runner.os == 'Linux'
         shell: bash
         run: |
-          groupadd docker
           usermod -a -G docker $USER
           mkdir -p ~/.docker/cli-plugins
           DOCKER_COMPOSE_VERSION=v2.7.0
@@ -649,7 +645,6 @@ jobs:
         if: steps.changes.outputs.stack == 'true' && runner.os == 'Linux'
         shell: bash
         run: |
-          groupadd docker
           usermod -a -G docker $USER
           mkdir -p ~/.docker/cli-plugins
           DOCKER_COMPOSE_VERSION=v2.7.0
