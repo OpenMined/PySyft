@@ -562,29 +562,24 @@ def check_docker_service_status(animated: bool = True) -> None:
         MissingDependency: If docker service is not running.
     """
 
-    docker_installed, msg = docker_running()
-    user_allowed, permission_msg = allowed_to_run_docker()
-
     if not animated:
-        # If docker bin was not found.
-        if not docker_installed:
-            raise MissingDependency(msg)
-
-        # Check if user is allowed to execute docker
-        if not user_allowed:
-            raise MissingDependency(permission_msg)
+        docker_installed, msg = docker_running()
+        user_allowed, permission_msg = allowed_to_run_docker()
     else:
         console = Console()
         # putting \t at the end seems to prevent weird chars getting outputted
         # during animations in the juypter notebook
         with console.status("[bold blue]Checking for Docker Service[/bold blue]\t"):
-            # if Docker bin was not found.
-            if not docker_installed:
-                raise MissingDependency(msg)
+            docker_installed, msg = docker_running()
+            user_allowed, permission_msg = allowed_to_run_docker()
 
-            # Check if user is allowed to execute docker
-            if not user_allowed:
-                raise MissingDependency(permission_msg)
+    # If docker bin was not found.
+    if not docker_installed:
+        raise MissingDependency(msg)
+
+    # Check if user is allowed to execute docker
+    if not user_allowed:
+        raise MissingDependency(permission_msg)
 
     print("✅ Docker service is running")
 
