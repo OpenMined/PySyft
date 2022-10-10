@@ -548,12 +548,11 @@ def allowed_to_run_docker() -> Tuple[bool, str]:
         # get user
         user = getpass.getuser()
 
-        print("Current User: ", user)
-        print("Docker group: ", "".join(line))
-
+        print("My OS EUID: ",  os.geteuid())
         # Check if current user is root.
-        if user == "root":
+        if os.geteuid() == 0:
             bool_result = True
+
         # Check if current user is member of docker group.
         elif user not in "".join(line):
             msg = f"""⚠️  User is not a member of docker group.
@@ -561,6 +560,7 @@ def allowed_to_run_docker() -> Tuple[bool, str]:
     1 - Run \'{GREEN}sudo usermod -a -G docker $USER\'{WHITE} to add docker permissions.
     2 - log out and log back in so that your group membership is re-evaluated {NO_COLOR}."""
             bool_result = False
+
     return bool_result, msg
 
 
