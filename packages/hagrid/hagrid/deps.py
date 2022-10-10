@@ -545,8 +545,14 @@ def allowed_to_run_docker() -> Tuple[bool, str]:
     if platform.system().lower() == "linux":
         _, line = get_cli_output("getent group docker")
 
+        # get user
+        user = getpass.getuser()
+
+        # Check if current user is root.
+        if user == "root":
+            bool_result = True
         # Check if current user is member of docker group.
-        if getpass.getuser() not in "".join(line):
+        elif user not in "".join(line):
             msg = f"""⚠️  User is not a member of docker group.
 {WHITE}You're currently not allowed to run docker, perform the following steps:\n
     1 - Run \'{GREEN}sudo usermod -a -G docker $USER\'{WHITE} to add docker permissions.
