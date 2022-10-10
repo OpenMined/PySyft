@@ -8,11 +8,11 @@ from typing import Callable
 from typing import Deque
 from typing import Dict
 from typing import List
+from typing import Literal
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Union
-from typing import Literal
 
 # third party
 import flax
@@ -2658,7 +2658,7 @@ class GammaTensor:
         """
         output_state = dict()
         output_state[self.id] = self
-        
+
         return GammaTensor(
             child=self.child.copy(order),
             data_subjects=self.data_subjects.copy(order),
@@ -2667,12 +2667,12 @@ class GammaTensor:
             func_str=GAMMA_TENSOR_OP.COPY.value,
             sources=output_state,
         )
-        
+
     def take(
         self,
         indices: ArrayLike,
         axis: Optional[int] = None,
-        mode: Literal["raise", "wrap", "clip"] = 'raise'
+        mode: Literal["raise", "wrap", "clip"] = "raise",
     ) -> GammaTensor:
         """Take elements from an array along an axis."""
         output_state = dict()
@@ -2692,7 +2692,7 @@ class GammaTensor:
         self,
         ind: ArrayLike,
         v: ArrayLike,
-        mode: Literal["raise", "wrap", "clip"] = 'raise'
+        mode: Literal["raise", "wrap", "clip"] = "raise",
     ) -> GammaTensor:
         """Replaces specified elements of an array with given values.
         The indexing works on the flattened target array. put is roughly equivalent to:
@@ -2702,7 +2702,7 @@ class GammaTensor:
         output_state[self.id] = self
         if self.min_vals.data > min(v) or self.max_vals.data < max(v):
             raise Exception("The v values must be within the data bounds")
-        
+
         out_child = self.child
         out_child.put(ind, v, mode=mode)
 

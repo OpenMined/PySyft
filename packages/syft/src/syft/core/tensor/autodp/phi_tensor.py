@@ -7,10 +7,10 @@ from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import List
+from typing import Literal
 from typing import Optional
 from typing import Tuple
 from typing import Union
-from typing import Literal
 
 # third party
 import numpy as np
@@ -1091,10 +1091,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         )
 
     def take(
-        self, 
-        indices: ArrayLike, 
-        axis: Optional[int] = None, 
-        mode: Literal["raise", "wrap", "clip"] = 'raise'
+        self,
+        indices: ArrayLike,
+        axis: Optional[int] = None,
+        mode: Literal["raise", "wrap", "clip"] = "raise",
     ) -> PhiTensor:
         """Take elements from an array along an axis."""
         out_child = self.child.take(indices, axis=axis, mode=mode)
@@ -1102,14 +1102,14 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=out_child,
             min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
             max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
-            data_subjects=self.data_subjects.take(indices, axis=axis, mode=mode)
+            data_subjects=self.data_subjects.take(indices, axis=axis, mode=mode),
         )
 
     def put(
         self,
         ind: ArrayLike,
         v: ArrayLike,
-        mode: Literal["raise", "wrap", "clip"] = 'raise'
+        mode: Literal["raise", "wrap", "clip"] = "raise",
     ) -> PhiTensor:
         """Replaces specified elements of an array with given values.
         The indexing works on the flattened target array. put is roughly equivalent to:
@@ -1117,14 +1117,14 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         """
         if self.min_vals.data > min(v) or self.max_vals.data < max(v):
             raise Exception("The v values must be within the data bounds")
-        
+
         out_child = self.child
         out_child.put(ind, v, mode=mode)
         return PhiTensor(
             child=out_child,
             min_vals=self.min_vals,
             max_vals=self.max_vals,
-            data_subjects=self.data_subjects
+            data_subjects=self.data_subjects,
         )
 
     def any(
