@@ -3,15 +3,14 @@ from __future__ import annotations
 
 # stdlib
 from collections.abc import Sequence
-from optparse import Option
 from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import List
+from typing import Literal
 from typing import Optional
 from typing import Tuple
 from typing import Union
-from typing import Literal
 
 # third party
 import numpy as np
@@ -1092,10 +1091,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         )
 
     def take(
-        self, 
-        indices: ArrayLike, 
-        axis: Optional[int] = None, 
-        mode: Literal["raise", "wrap", "clip"] = 'raise'
+        self,
+        indices: ArrayLike,
+        axis: Optional[int] = None,
+        mode: Literal["raise", "wrap", "clip"] = "raise",
     ) -> PhiTensor:
         """Take elements from an array along an axis."""
         out_child = self.child.take(indices, axis=axis, mode=mode)
@@ -1103,14 +1102,14 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=out_child,
             min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
             max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
-            data_subjects=self.data_subjects.take(indices, axis=axis, mode=mode)
+            data_subjects=self.data_subjects.take(indices, axis=axis, mode=mode),
         )
 
     def put(
         self,
         ind: ArrayLike,
         v: ArrayLike,
-        mode: Literal["raise", "wrap", "clip"] = 'raise'
+        mode: Literal["raise", "wrap", "clip"] = "raise",
     ) -> PhiTensor:
         """Replaces specified elements of an array with given values.
         The indexing works on the flattened target array. put is roughly equivalent to:
@@ -1118,14 +1117,14 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         """
         if self.min_vals.data > min(v) or self.max_vals.data < max(v):
             raise Exception("The v values must be within the data bounds")
-        
+
         out_child = self.child
         out_child.put(ind, v, mode=mode)
         return PhiTensor(
             child=out_child,
             min_vals=self.min_vals,
             max_vals=self.max_vals,
-            data_subjects=self.data_subjects
+            data_subjects=self.data_subjects,
         )
 
     def any(
@@ -1309,11 +1308,11 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         min_val = self.min_vals.data
         max_val = self.max_vals.data
-        
+
         if min_val < 0 and max_val < 0:
             new_min_val = abs(max_val)
             new_max_val = abs(min_val)
-        
+
         if min_val > 0 and max_val > 0:
             new_min_val = abs(min_val)
             new_max_val = abs(max_val)
@@ -1326,7 +1325,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=output,
             data_subjects=self.data_subjects,
             min_vals=lazyrepeatarray(data=new_min_val, shape=output.shape),
-            max_vals=lazyrepeatarray(data=new_max_val, shape=output.shape)
+            max_vals=lazyrepeatarray(data=new_max_val, shape=output.shape),
         )
 
     def argmax(
@@ -1346,7 +1345,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             min_vals=lazyrepeatarray(data=0, shape=output.shape),
             max_vals=lazyrepeatarray(data=max_value, shape=output.shape),
         )
-        
+
     def argmin(
         self,
         axis: Optional[int] = None,

@@ -8,11 +8,11 @@ from typing import Callable
 from typing import Deque
 from typing import Dict
 from typing import List
+from typing import Literal
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Union
-from typing import Literal
 
 # third party
 import flax
@@ -1727,20 +1727,20 @@ class GammaTensor:
         )
 
     def __abs__(self) -> GammaTensor:
-        
+
         output_state = dict()
         output_state[self.id] = self
-        
+
         data = self.child
         child = np.abs(data)
 
         min_val = self.min_vals.data
         max_val = self.max_vals.data
-        
+
         if min_val < 0 and max_val < 0:
             new_min_val = abs(max_val)
             new_max_val = abs(min_val)
-        
+
         if min_val > 0 and max_val > 0:
             new_min_val = abs(min_val)
             new_max_val = abs(max_val)
@@ -1748,7 +1748,7 @@ class GammaTensor:
         if min_val < 0 and max_val > 0:
             new_min_val = 0
             new_max_val = max(abs(min_val), abs(max_val))
-        
+
         return GammaTensor(
             child=child,
             data_subjects=self.data_subjects,
@@ -1757,22 +1757,22 @@ class GammaTensor:
             func_str=GAMMA_TENSOR_OP.ABS.value,
             sources=output_state,
         )
-        
+
     def argmax(
         self,
         axis: Optional[int] = None,
         keepdims: Optional[bool] = None,
-    ) -> GammaTensor:    
-        
+    ) -> GammaTensor:
+
         output_state = dict()
-        output_state[self.id] = self   
-        
+        output_state[self.id] = self
+
         child = np.argmax(self.child, axis=axis, keepdims=keepdims)
         if axis is None:
             max_value = self.child.size - 1
         else:
             max_value = self.child[axis].size - 1
-        indices = np.unravel_index(child, shape=self.child.shape) 
+        indices = np.unravel_index(child, shape=self.child.shape)
 
         return GammaTensor(
             child=child,
@@ -1782,22 +1782,22 @@ class GammaTensor:
             func_str=GAMMA_TENSOR_OP.ARGMAX.value,
             sources=output_state,
         )
-        
+
     def argmin(
         self,
         axis: Optional[int] = None,
         keepdims: Optional[bool] = None,
-    ) -> GammaTensor:    
-        
+    ) -> GammaTensor:
+
         output_state = dict()
-        output_state[self.id] = self   
-        
+        output_state[self.id] = self
+
         child = np.argmin(self.child, axis=axis, keepdims=keepdims)
         if axis is None:
             max_value = self.child.size - 1
         else:
             max_value = self.child[axis].size - 1
-        indices = np.unravel_index(child, shape=self.child.shape) 
+        indices = np.unravel_index(child, shape=self.child.shape)
 
         return GammaTensor(
             child=child,
@@ -1806,7 +1806,7 @@ class GammaTensor:
             max_vals=lazyrepeatarray(data=max_value, shape=child.shape),
             func_str=GAMMA_TENSOR_OP.ARGMIN.value,
             sources=output_state,
-        )    
+        )
 
     def exp(self) -> GammaTensor:
         output_state = dict()
@@ -2740,7 +2740,7 @@ class GammaTensor:
         """
         output_state = dict()
         output_state[self.id] = self
-        
+
         return GammaTensor(
             child=self.child.copy(order),
             data_subjects=self.data_subjects.copy(order),
@@ -2749,12 +2749,12 @@ class GammaTensor:
             func_str=GAMMA_TENSOR_OP.COPY.value,
             sources=output_state,
         )
-        
+
     def take(
         self,
         indices: ArrayLike,
         axis: Optional[int] = None,
-        mode: Literal["raise", "wrap", "clip"] = 'raise'
+        mode: Literal["raise", "wrap", "clip"] = "raise",
     ) -> GammaTensor:
         """Take elements from an array along an axis."""
         output_state = dict()
@@ -2774,7 +2774,7 @@ class GammaTensor:
         self,
         ind: ArrayLike,
         v: ArrayLike,
-        mode: Literal["raise", "wrap", "clip"] = 'raise'
+        mode: Literal["raise", "wrap", "clip"] = "raise",
     ) -> GammaTensor:
         """Replaces specified elements of an array with given values.
         The indexing works on the flattened target array. put is roughly equivalent to:
@@ -2784,7 +2784,7 @@ class GammaTensor:
         output_state[self.id] = self
         if self.min_vals.data > min(v) or self.max_vals.data < max(v):
             raise Exception("The v values must be within the data bounds")
-        
+
         out_child = self.child
         out_child.put(ind, v, mode=mode)
 

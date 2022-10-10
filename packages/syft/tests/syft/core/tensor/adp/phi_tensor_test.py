@@ -1228,6 +1228,7 @@ def test_or(
     result = reference_tensor | False
     assert (result.child == (reference_data | False)).all()
 
+
 def test_take(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1241,14 +1242,14 @@ def test_take(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    
+
     indices = [2]
     result = reference_tensor.take(indices, axis=0)
-    assert (result.child == reference_tensor.child[indices,:]).all()
-    assert (result.min_vals == reference_tensor.min_vals[indices,:]).all()
-    assert (result.max_vals == reference_tensor.max_vals[indices,:]).all()
-    assert (result.data_subjects == reference_tensor.data_subjects[indices,:]).all()
-    
+    assert (result.child == reference_tensor.child[indices, :]).all()
+    assert (result.min_vals == reference_tensor.min_vals[indices, :]).all()
+    assert (result.max_vals == reference_tensor.max_vals[indices, :]).all()
+    assert (result.data_subjects == reference_tensor.data_subjects[indices, :]).all()
+
 
 def test_put(
     reference_data: np.ndarray,
@@ -1265,15 +1266,15 @@ def test_put(
     )
 
     no_values = reference_tensor.shape[0]
-    new_values = np.random.randint(
-        low=-50, high=50, size=(no_values), dtype=np.int32
-    )
+    new_values = np.random.randint(low=-50, high=50, size=(no_values), dtype=np.int32)
     indices = np.random.randint(
-        low=0, high=no_values*no_values - no_values - 1, size=(1), dtype=np.int32
+        low=0, high=no_values * no_values - no_values - 1, size=(1), dtype=np.int32
     )[0]
 
-    result = reference_tensor.put(range(indices,indices + no_values), new_values)
-    assert (result.child.flat[indices:indices + no_values] == new_values).all()
+    result = reference_tensor.put(range(indices, indices + no_values), new_values)
+    flatten_results = result.child.flat[indices:]
+    assert (flatten_results[: indices + no_values] == new_values).all()
+
 
 def test_abs(
     reference_data: np.ndarray,
@@ -1288,13 +1289,14 @@ def test_abs(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    
+
     result = abs(reference_tensor)
     assert (result.child == abs(reference_tensor.child)).all()
     assert (result.min_vals.data >= 0).all()
     assert (result.max_vals.data >= 0).all()
     assert (result.data_subjects == reference_tensor.data_subjects).all()
-    
+
+
 def test_argmax(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1308,22 +1310,29 @@ def test_argmax(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    
+
     result = reference_tensor.argmax()
     reference_result = reference_tensor.child.argmax()
     assert (result.child == reference_result).all()
-    assert (result.data_subjects == reference_tensor.data_subjects.item(reference_result)).all()
-    
+    assert (
+        result.data_subjects == reference_tensor.data_subjects.item(reference_result)
+    ).all()
+
     result = reference_tensor.argmax(axis=0)
     reference_result = reference_tensor.child.argmax(axis=0)
     assert (result.child == reference_result).all()
-    assert (result.data_subjects == reference_tensor.data_subjects[reference_result]).all()
-    
+    assert (
+        result.data_subjects == reference_tensor.data_subjects[reference_result]
+    ).all()
+
     result = reference_tensor.argmax(axis=0, keepdims=True)
     reference_result = reference_tensor.child.argmax(axis=0, keepdims=True)
     assert (result.child == reference_result).all()
-    assert (result.data_subjects == reference_tensor.data_subjects[reference_result]).all()
-    
+    assert (
+        result.data_subjects == reference_tensor.data_subjects[reference_result]
+    ).all()
+
+
 def test_argmin(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1337,19 +1346,24 @@ def test_argmin(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    
+
     result = reference_tensor.argmin()
     reference_result = reference_tensor.child.argmin()
     assert (result.child == reference_result).all()
-    assert (result.data_subjects == reference_tensor.data_subjects.item(reference_result)).all()
-    
+    assert (
+        result.data_subjects == reference_tensor.data_subjects.item(reference_result)
+    ).all()
+
     result = reference_tensor.argmin(axis=0)
     reference_result = reference_tensor.child.argmin(axis=0)
     assert (result.child == reference_result).all()
-    assert (result.data_subjects == reference_tensor.data_subjects[reference_result]).all()
-    
+    assert (
+        result.data_subjects == reference_tensor.data_subjects[reference_result]
+    ).all()
+
     result = reference_tensor.argmin(axis=0, keepdims=True)
     reference_result = reference_tensor.child.argmin(axis=0, keepdims=True)
     assert (result.child == reference_result).all()
-    assert (result.data_subjects == reference_tensor.data_subjects[reference_result]).all()
-    
+    assert (
+        result.data_subjects == reference_tensor.data_subjects[reference_result]
+    ).all()
