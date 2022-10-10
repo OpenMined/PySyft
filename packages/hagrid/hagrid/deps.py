@@ -548,6 +548,9 @@ def allowed_to_run_docker() -> Tuple[bool, str]:
         # get user
         user = getpass.getuser()
 
+        print("Current User: ", user)
+        print("Docker group: ", "".join(line))
+
         # Check if current user is root.
         if user == "root":
             bool_result = True
