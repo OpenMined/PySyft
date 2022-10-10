@@ -545,8 +545,17 @@ def allowed_to_run_docker() -> Tuple[bool, str]:
     if platform.system().lower() == "linux":
         _, line = get_cli_output("getent group docker")
 
+        # get user
+        user = getpass.getuser()
+
+        print("Current User: ", user)
+        print("Docker group: ", "".join(line))
+
+        # Check if current user is root.
+        if user == "root":
+            bool_result = True
         # Check if current user is member of docker group.
-        if getpass.getuser() not in "".join(line):
+        elif user not in "".join(line):
             msg = f"""⚠️  User is not a member of docker group.
 {WHITE}You're currently not allowed to run docker, perform the following steps:\n
     1 - Run \'{GREEN}sudo usermod -a -G docker $USER\'{WHITE} to add docker permissions.
@@ -562,29 +571,24 @@ def check_docker_service_status(animated: bool = True) -> None:
         MissingDependency: If docker service is not running.
     """
 
-    docker_installed, msg = docker_running()
-    user_allowed, permission_msg = allowed_to_run_docker()
-
     if not animated:
-        # If docker bin was not found.
-        if not docker_installed:
-            raise MissingDependency(msg)
-
-        # Check if user is allowed to execute docker
-        if not user_allowed:
-            raise MissingDependency(permission_msg)
+        docker_installed, msg = docker_running()
+        user_allowed, permission_msg = allowed_to_run_docker()
     else:
         console = Console()
         # putting \t at the end seems to prevent weird chars getting outputted
         # during animations in the juypter notebook
         with console.status("[bold blue]Checking for Docker Service[/bold blue]\t"):
-            # if Docker bin was not found.
-            if not docker_installed:
-                raise MissingDependency(msg)
+            docker_installed, msg = docker_running()
+            user_allowed, permission_msg = allowed_to_run_docker()
 
-            # Check if user is allowed to execute docker
-            if not user_allowed:
-                raise MissingDependency(permission_msg)
+    # If docker bin was not found.
+    if not docker_installed:
+        raise MissingDependency(msg)
+
+    # Check if user is allowed to execute docker
+    if not user_allowed:
+        raise MissingDependency(permission_msg)
 
     print("✅ Docker service is running")
 
