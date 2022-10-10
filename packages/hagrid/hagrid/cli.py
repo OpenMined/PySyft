@@ -382,6 +382,12 @@ def execute_commands(
         else GRID_SRC_PATH
     )
 
+    def enqueue_output(out: Any, queue: Queue) -> None:
+        for line in iter(out.readline, b""):
+            queue.put(line)
+        out.close()
+
+
     print("Current Working Directory: ", cwd)
 
     for cmd in cmds:
@@ -406,15 +412,43 @@ def execute_commands(
                 process_list.append((ip_address, process, jupyter_token))
             else:
                 display_jupyter_token(cmd)
-                if silent:
+                if silent:            
+                    ON_POSIX = "posix" in sys.builtin_module_names
+
                     process = subprocess.Popen(  # nosec
                         cmd_to_exec,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
                         cwd=cwd,
-                        shell=True,
+                        close_fds=ON_POSIX,
+                        shell=True
                     )
-                    process.communicate()
+
+                    print(process.pid, process.poll())
+
+                    queue: Queue = Queue()
+                    thread_1 = Thread(target=enqueue_output, args=(process.stdout, queue))
+                    thread_2 = Thread(target=enqueue_output, args=(process.stderr, queue))
+                    # thread_3 = Thread(target=enqueue_output, args=(process.stdin, queue))
+                    thread_1.daemon = True  # thread dies with the program
+                    thread_1.start()
+                    thread_2.daemon = True  # thread dies with the program
+                    thread_2.start()
+                    # thread_3.daemon = True  # thread dies with the program
+                    # thread_3.start()
+
+                    print("Queue started")
+                    while process.poll() != 0:
+                        while True:
+                            if queue.empty():
+                                break
+                            line = queue.get()
+                            line = str(line, encoding="utf-8").strip()
+                            print(f"Logs: {line}", end='\r', flush=True)
+
+                            if "Building[" in line:
+                                print("...............Building............", line, flush=True)
+
                 else:
                     subprocess.run(  # nosec
                         cmd_to_exec,
@@ -1505,9 +1539,9 @@ def create_launch_docker_cmd(
     else:
         cmd += " ".join(args)
 
-    if not build:
-        pull_cmd = str(cmd)
-        pull_cmd += " docker compose pull"
+    build_cmd = ""
+    pull_cmd = ""
+    up_cmd = ""
 
     cmd += " docker compose -p " + snake_name
 
@@ -1575,20 +1609,34 @@ def create_launch_docker_cmd(
         cmd += " --file docker-compose.tls.yml"
     if "test" in kwargs and kwargs["test"] is True:
         cmd += " --file docker-compose.test.yml"
-    cmd += " up"
+
+    up_cmd = str(cmd)
+    up_cmd += " up"
+    
+
+    if not build:
+        pull_cmd = str(cmd)
+        pull_cmd += " pull --ignore-pull-failures"    
+
 
     if not tail:
-        cmd += " -d"
+        up_cmd += " -d"
 
     if build:
-        cmd += " --build"  # force rebuild
+        build_cmd = str(cmd)
+        build_cmd += " build"  # force rebuild
+    
+    if is_windows():
+        final_cmd = " ,".join([build_cmd, pull_cmd, up_cmd])
     else:
-        if is_windows():
-            cmd = pull_cmd + "; " + cmd
-        else:
-            cmd = pull_cmd + " && " + cmd
+        final_cmd = " && ".join([build_cmd, pull_cmd, up_cmd])
 
-    return cmd
+
+    print("Command: ")
+    print(final_cmd)
+    return ""
+
+    return final_cmd
 
 
 def create_launch_vagrant_cmd(verb: GrammarVerb) -> str:
