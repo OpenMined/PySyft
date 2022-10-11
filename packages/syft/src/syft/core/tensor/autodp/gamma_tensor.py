@@ -8,7 +8,6 @@ from typing import Callable
 from typing import Deque
 from typing import Dict
 from typing import List
-from typing import Literal
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Tuple
@@ -2672,7 +2671,7 @@ class GammaTensor:
         self,
         indices: ArrayLike,
         axis: Optional[int] = None,
-        mode: Literal["raise", "wrap", "clip"] = "raise",
+        mode: str = "raise",
     ) -> GammaTensor:
         """Take elements from an array along an axis."""
         output_state = dict()
@@ -2692,7 +2691,7 @@ class GammaTensor:
         self,
         ind: ArrayLike,
         v: ArrayLike,
-        mode: Literal["raise", "wrap", "clip"] = "raise",
+        mode: str = "raise",
     ) -> GammaTensor:
         """Replaces specified elements of an array with given values.
         The indexing works on the flattened target array. put is roughly equivalent to:
