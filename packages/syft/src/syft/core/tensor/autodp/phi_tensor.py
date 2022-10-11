@@ -1887,7 +1887,30 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         raise NotImplementedError
 
     def __xor__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
-        raise NotImplementedError
+        if is_acceptable_simple_type(other):
+            return PhiTensor(
+                child=(self.child ^ other) * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(data=0, shape=self.shape),
+                max_vals=lazyrepeatarray(data=1, shape=self.shape),
+            )
+        elif isinstance(other, GammaTensor):
+            return self.gamma ^ other
+        elif isinstance(other, PhiTensor):
+            if self.data_subjects.sum() != other.data_subjects.sum():
+                return self.gamma ^ other.gamma
+            else:
+                return PhiTensor(
+                    child=(self.child ^ other.child)
+                          * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
+                    data_subjects=self.data_subjects + other.data_subjects,
+                    min_vals=lazyrepeatarray(data=0, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=1, shape=self.shape),
+                )
+        else:
+            raise NotImplementedError(
+                f"__eq__ not implemented between PhiTensor and {type(other)}."
+            )
 
     def searchsorted(self, v: Any) -> Union[PhiTensor, GammaTensor]:
         """
