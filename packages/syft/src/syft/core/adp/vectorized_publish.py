@@ -5,10 +5,11 @@ from __future__ import annotations
 from collections.abc import Iterable
 from copy import deepcopy
 import secrets
-
-# from typing import TYPE_CHECKING
 from typing import Any
 from typing import Callable
+
+# from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING
 from typing import Tuple
 
 # third party
@@ -19,7 +20,6 @@ from numpy import ndarray
 from numpy.typing import ArrayLike
 
 # relative
-from ... import GammaTensor
 from ...core.node.common.node_manager.user_manager import RefreshBudgetException
 from ...core.tensor.autodp.gamma_tensor_ops import GAMMA_TENSOR_OP
 from ..tensor.fixed_precision_tensor import FixedPrecisionTensor
@@ -30,9 +30,10 @@ from .data_subject_ledger import RDPParams
 from .data_subject_ledger import compute_rdp_constant
 from .data_subject_list import DataSubjectList
 
-# if TYPE_CHECKING:
-#     relative
-# from ..tensor.autodp.gamma_tensor import GammaTensor
+if TYPE_CHECKING:
+    # relative
+    # relative
+    from ..tensor.autodp.gamma_tensor import GammaTensor
 
 
 @jax.jit
