@@ -99,6 +99,8 @@ def generate_ops() -> Dict[GAMMA_TENSOR_OP, Callable]:
         GAMMA_TENSOR_OP.SQRT: jnp.sqrt,
         GAMMA_TENSOR_OP.ABS: jnp.abs,
         GAMMA_TENSOR_OP.CLIP: jnp.clip,
+        GAMMA_TENSOR_OP.SWAPAXES: jnp.swapaxes,
+        GAMMA_TENSOR_OP.NONZERO: jnp.nonzero,
         GAMMA_TENSOR_OP.RECIPROCAL: _reciprocal,
         GAMMA_TENSOR_OP.FLATTEN_C: get_flatten_type(order="C"),
         GAMMA_TENSOR_OP.FLATTEN_F: get_flatten_type(order="F"),

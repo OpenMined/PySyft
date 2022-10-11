@@ -2481,6 +2481,46 @@ class GammaTensor:
             sources=state,
         )
 
+    def nonzero(self) -> GammaTensor:
+        output_state = dict()
+        output_state[self.id] = self
+
+        out_child = np.array(np.nonzero(self.child))
+        no_axis = len(out_child.shape)
+        selected_data_subjects = np.repeat(self.data_subjects[self.child != 0], no_axis)
+        out_data_subjects = selected_data_subjects.reshape(-1, no_axis).transpose()
+
+        min_vals = lazyrepeatarray(data=0, shape=out_child.shape)
+        max_vals = lazyrepeatarray(data=max(self.child.shape), shape=out_child.shape)
+
+        return GammaTensor(
+            child=out_child,
+            data_subjects=out_data_subjects,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            func_str=GAMMA_TENSOR_OP.NONZERO.value,
+            sources=output_state,
+        )
+
+    def swapaxes(self, axis1: int, axis2: int) -> GammaTensor:
+        output_state = dict()
+        output_state[self.id] = self
+
+        out_child = np.swapaxes(self.child, axis1, axis2)
+        data_subjects = np.swapaxes(self.data_subjects, axis1, axis2)
+
+        min_vals = lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape)
+        max_vals = lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape)
+
+        return GammaTensor(
+            child=out_child,
+            data_subjects=data_subjects,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            func_str=GAMMA_TENSOR_OP.SWAPAXES.value,
+            sources=output_state,
+        )
+
     @staticmethod
     def convert_dsl(state: dict, new_state: Optional[dict] = None) -> Dict:
         if new_state is None:

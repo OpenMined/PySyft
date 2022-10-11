@@ -39,6 +39,8 @@ class GAMMA_TENSOR_OP(Enum):
     SQRT = "sqrt"
     ABS = "abs"
     CLIP = "clip"
+    SWAPAXES = "swapaxes"
+    NONZERO = "nonzero"
     # Our Methods
     RECIPROCAL = "reciprocal"
     FLATTEN_C = "flatten_c"
