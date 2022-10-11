@@ -486,7 +486,7 @@ def check_docker_version() -> Optional[str]:
 
 def docker_running() -> Tuple[bool, str]:
     try:
-        cmd = "docker"
+        cmd = "docker info"
         returncode, _ = get_cli_output(cmd)
         if returncode == 0:
             return True, "✅ Docker service is running"
