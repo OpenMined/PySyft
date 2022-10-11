@@ -1,4 +1,5 @@
 #!/bin/sh
+
 set -e
 
 cat /dev/null <<EOF

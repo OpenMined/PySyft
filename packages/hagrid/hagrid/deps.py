@@ -155,41 +155,6 @@ class DependencyGridDocker(Dependency):
         ):
             self.display = "✅ Docker " + str(binary_info.version)
         else:
-            # If it's linux, check user priviledges and send some warnings
-            if platform.system().lower() == "linux":
-                # 1 - Check if current user is root
-                user = os.getuid()
-                if user == 0:
-                    print(
-                        f"{WARNING_MSG}{WHITE}Running Hagrid in ROOT mode might cause issues in the future.{NO_COLOR}"
-                    )
-
-                # 2 - Check if current user is contained in sudo users list
-                sudo_group_members = subprocess.run(  # nosec
-                    ["getent", "group", "sudo"],
-                    stdout=subprocess.PIPE,
-                    text=True,
-                    shell=False,
-                )
-                if getpass.getuser() not in sudo_group_members.stdout:
-                    print(
-                        f"""{WARNING_MSG}{WHITE}You're not a super user,
-                        the installation might fail, get super user access first!{NO_COLOR}"""
-                    )
-
-                docker_group_members = subprocess.run(  # nosec
-                    ["getent", "group", "docker"],
-                    stdout=subprocess.PIPE,
-                    text=True,
-                    shell=False,
-                )
-                if getpass.getuser() not in docker_group_members.stdout:
-                    print(
-                        f"""{WARNING_MSG}{WHITE}You're currently not allowed to run docker, perform the following steps:\n
-                        1 - Run \'{GREEN}sudo usermod -a -G docker $USER\'{WHITE} to add docker permissions.\n
-                        2 - log out and log back in so that your group membership is re-evaluated {NO_COLOR}."""
-                    )
-
             self.issues.append(docker_install())
             self.display = "❌ Docker not installed"
 
