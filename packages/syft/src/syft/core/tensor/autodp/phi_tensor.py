@@ -7,7 +7,6 @@ from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import List
-from typing import Literal
 from typing import Optional
 from typing import Tuple
 from typing import Union
@@ -1094,7 +1093,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         self,
         indices: ArrayLike,
         axis: Optional[int] = None,
-        mode: Literal["raise", "wrap", "clip"] = "raise",
+        mode: str = "raise",
     ) -> PhiTensor:
         """Take elements from an array along an axis."""
         out_child = self.child.take(indices, axis=axis, mode=mode)
@@ -1109,7 +1108,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         self,
         ind: ArrayLike,
         v: ArrayLike,
-        mode: Literal["raise", "wrap", "clip"] = "raise",
+        mode: str = "raise",
     ) -> PhiTensor:
         """Replaces specified elements of an array with given values.
         The indexing works on the flattened target array. put is roughly equivalent to:
