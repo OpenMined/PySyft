@@ -1880,11 +1880,71 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=self.max_vals,
         )
 
-    def __lshift__(self, other: Any) -> PhiTensor:
-        raise NotImplementedError
+    def __lshift__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
+        if is_acceptable_simple_type(other):
+            if isinstance(other, np.ndarray):
+                return PhiTensor(
+                    child=(self.child << other),
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(data=self.min_vals.data << other.min(), shape=self.shape),
+                    max_vals=lazyrepeatarray(data=self.max_vals.data << other.max(), shape=self.shape),
+                )
+            else:
+                return PhiTensor(
+                    child=(self.child << other),
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(data=self.min_vals.data << other, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=self.max_vals.data << other, shape=self.shape),
+                )
+        elif isinstance(other, GammaTensor):
+            return self.gamma << other
+        elif isinstance(other, PhiTensor):
+            if self.data_subjects.sum() != other.data_subjects.sum():
+                return self.gamma << other.gamma
+            else:
+                return PhiTensor(
+                    child=self.child << other.child,
+                    data_subjects=self.data_subjects + other.data_subjects,
+                    min_vals=lazyrepeatarray(data=self.min_vals.data << other.min_vals.data, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=self.max_vals.data << other.max_vals.data, shape=self.shape),
+                )
+        else:
+            raise NotImplementedError(
+                f"__lshift__ not implemented between PhiTensor and {type(other)}."
+            )
 
-    def __rshift__(self, other: Any) -> PhiTensor:
-        raise NotImplementedError
+    def __rshift__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
+        if is_acceptable_simple_type(other):
+            if isinstance(other, np.ndarray):
+                return PhiTensor(
+                    child=(self.child >> other),
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(data=self.min_vals.data >> other.min(), shape=self.shape),
+                    max_vals=lazyrepeatarray(data=self.max_vals.data >> other.max(), shape=self.shape),
+                )
+            else:
+                return PhiTensor(
+                    child=(self.child >> other),
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(data=self.min_vals.data >> other, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=self.max_vals.data >> other, shape=self.shape),
+                )
+        elif isinstance(other, GammaTensor):
+            return self.gamma >> other
+        elif isinstance(other, PhiTensor):
+            if self.data_subjects.sum() != other.data_subjects.sum():
+                return self.gamma >> other.gamma
+            else:
+                return PhiTensor(
+                    child=self.child >> other.child,
+                    data_subjects=self.data_subjects + other.data_subjects,
+                    min_vals=lazyrepeatarray(data=self.min_vals.data >> other.min_vals.data, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=self.max_vals.data >> other.max_vals.data, shape=self.shape),
+                )
+        else:
+            raise NotImplementedError(
+                f"__rshift__ not implemented between PhiTensor and {type(other)}."
+            )
 
     def __xor__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
         if is_acceptable_simple_type(other):
@@ -1909,7 +1969,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 )
         else:
             raise NotImplementedError(
-                f"__eq__ not implemented between PhiTensor and {type(other)}."
+                f"__xor__ not implemented between PhiTensor and {type(other)}."
             )
 
     def searchsorted(self, v: Any) -> Union[PhiTensor, GammaTensor]:
