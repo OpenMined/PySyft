@@ -127,6 +127,20 @@ jobs:
         run: |
           tox -e stack.test.integration
 
+      - name: Job Report Status
+        if: always()
+        uses: ravsamhq/notify-slack-action@v1
+        with:
+          status: ${{ job.status }}
+          notify_when: 'success,failure'
+          notification_title: '{workflow} has {status_message}'
+          message_format: '{emoji} *{workflow}* {status_message} in <{workflow|workflow_url}>'
+          footer: 'Link to Job {job}'
+          mention_users: 'U01LNCACY03'
+          mention_users_when: 'success,failure,warnings'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
+
   stack-integration-tests-tls:
     strategy:
       max-parallel: 99
@@ -243,6 +257,20 @@ jobs:
         run: |
           tox -e stack.test.integration.tls
 
+      - name: Job Report Status
+        if: always()
+        uses: ravsamhq/notify-slack-action@v1
+        with:
+          status: ${{ job.status }}
+          notify_when: 'success,failure'
+          notification_title: '{workflow} has {status_message}'
+          message_format: '{emoji} *{workflow}* {status_message} in <{workflow|workflow_url}>'
+          footer: 'Link to Job {job}'
+          mention_users: 'U01LNCACY03'
+          mention_users_when: 'success,failure,warnings'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
+
   stack-integration-tests-tff:
     strategy:
       max-parallel: 99
@@ -353,6 +381,19 @@ jobs:
           PYTEST_MODULES: "${{ matrix.pytest-modules }}"
         run: |
           tox -e stack.test.integration.tff
+      - name: Job Report Status
+        if: always()
+        uses: ravsamhq/notify-slack-action@v1
+        with:
+          status: ${{ job.status }}
+          notify_when: 'success,failure'
+          notification_title: '{workflow} has {status_message}'
+          message_format: '{emoji} *{workflow}* {status_message} in <{workflow|workflow_url}>'
+          footer: 'Link to Job {job}'
+          mention_users: 'U01LNCACY03'
+          mention_users_when: 'success,failure,warnings'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
 
   stack-integration-tests-smpc:
     strategy:
@@ -465,6 +506,20 @@ jobs:
         run: |
           tox -e stack.test.integration.smpc
 
+      - name: Job Report Status
+        if: always()
+        uses: ravsamhq/notify-slack-action@v1
+        with:
+          status: ${{ job.status }}
+          notify_when: 'success,failure'
+          notification_title: '{workflow} has {status_message}'
+          message_format: '{emoji} *{workflow}* {status_message} in <{workflow|workflow_url}>'
+          footer: 'Link to Job {job}'
+          mention_users: 'U01LNCACY03'
+          mention_users_when: 'success,failure,warnings'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
+
   stack-integration-tests-k8s:
     strategy:
       max-parallel: 3
@@ -573,6 +628,20 @@ jobs:
           docker rm $(docker ps -aq) --force || true
           docker volume prune -f || true
 
+      - name: Job Report Status
+        if: always()
+        uses: ravsamhq/notify-slack-action@v1
+        with:
+          status: ${{ job.status }}
+          notify_when: 'success,failure'
+          notification_title: '{workflow} has {status_message}'
+          message_format: '{emoji} *{workflow}* {status_message} in <{workflow|workflow_url}>'
+          footer: 'Link to Job {job}'
+          mention_users: 'U01LNCACY03'
+          mention_users_when: 'failure,warnings'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
+
   stack-tests-course:
     strategy:
       max-parallel: 3
@@ -661,7 +730,7 @@ jobs:
           status: ${{ job.status }}
           notify_when: 'success,failure'
           notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{workflow}* {status_message} in {workflow|workflow_url}'
+          message_format: '{emoji} *{workflow}* {status_message} in <{workflow|workflow_url}>'
           footer: 'Link to Job {job}'
           mention_users: 'U01LNCACY03'
           mention_users_when: 'success,failure,warnings'
