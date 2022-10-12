@@ -44,6 +44,11 @@ class GAMMA_TENSOR_OP(Enum):
     PUT = "put"
     ARGMAX = "argmax"
     ARGMIN = "argmin"
+    PTP = "ptp"
+    PARTITION = "partition"
+    ARGPARTITION = "argpartition"
+    MOD = "mod"
+    CONJ = "conj"
     # Our Methods
     RECIPROCAL = "reciprocal"
     FLATTEN_C = "flatten_c"

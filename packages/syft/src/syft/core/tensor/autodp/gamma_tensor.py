@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from collections import deque
+from collections.abc import Sequence
 from typing import Any
 from typing import Callable
 from typing import Deque
@@ -1306,6 +1307,46 @@ class GammaTensor:
             min_vals=min_val,
             max_vals=max_val,
             func_str=GAMMA_TENSOR_OP.ADD.value,
+            sources=output_state,
+        )
+
+    def __mod__(self, other: Any) -> GammaTensor:
+        # relative
+        from .phi_tensor import PhiTensor
+
+        output_state = dict()
+        # Add this tensor to the chain
+        output_state[self.id] = self
+
+        if isinstance(other, PhiTensor):
+            other = other.gamma
+
+        if isinstance(other, GammaTensor):
+            output_state[other.id] = other
+
+            child = self.child % other.child
+            max_val = lazyrepeatarray(
+                data=max(0, other.child.max()), shape=self.child.shape
+            )
+            min_val = lazyrepeatarray(
+                data=min(0, other.child.min()), shape=self.child.shape
+            )
+            output_ds = self.data_subjects + other.data_subjects
+
+        else:
+            output_state[np.random.randint(low=0, high=2**31 - 1)] = other
+
+            child = self.child % other
+            max_val = lazyrepeatarray(data=max(0, other), shape=self.child.shape)
+            min_val = lazyrepeatarray(data=min(0, other), shape=self.child.shape)
+            output_ds = self.data_subjects
+
+        return GammaTensor(
+            child=child,
+            data_subjects=output_ds,
+            min_vals=min_val,
+            max_vals=max_val,
+            func_str=GAMMA_TENSOR_OP.MOD.value,
             sources=output_state,
         )
 
@@ -2749,6 +2790,95 @@ class GammaTensor:
             sources=output_state,
         )
 
+    def partition(
+        self,
+        kth: Union[int, Sequence],
+        axis: Optional[int] = -1,
+        kind: Optional[str] = "introselect",
+        order: Optional[str] = None,
+    ) -> GammaTensor:
+        output_state = dict()
+        output_state[self.id] = self
+
+        out_child = np.partition(self.child, kth, axis=axis, kind=kind, order=order)
+        arg_out_child = np.argpartition(
+            self.child, kth, axis=axis, kind=kind, order=order
+        )
+        out_data_subjects = np.take_along_axis(self.data_subjects, arg_out_child, axis)
+        return GammaTensor(
+            child=out_child,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+            data_subjects=out_data_subjects,
+            func_str=GAMMA_TENSOR_OP.PARTITION.value,
+            sources=output_state,
+        )
+
+    def argpartition(
+        self,
+        kth: Union[int, Sequence],
+        axis: Optional[int] = -1,
+        kind: Optional[str] = "introselect",
+        order: Optional[str] = None,
+    ) -> GammaTensor:
+        output_state = dict()
+        output_state[self.id] = self
+
+        out_child = np.argpartition(self.child, kth, axis=axis, kind=kind, order=order)
+        out_data_subjects = np.take_along_axis(self.data_subjects, out_child, axis)
+
+        return GammaTensor(
+            child=out_child,
+            min_vals=lazyrepeatarray(data=0, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=max(out_child.shape), shape=out_child.shape),
+            data_subjects=out_data_subjects,
+            func_str=GAMMA_TENSOR_OP.ARGPARTITION.value,
+            sources=output_state,
+        )
+
+    def ptp(
+        self,
+        axis: Optional[Union[int, Tuple[int, ...]]] = None,
+        keepdims: Optional[bool] = False,
+    ) -> GammaTensor:
+        output_state = dict()
+        output_state[self.id] = self
+
+        out_child = np.ptp(self.child, axis=axis, keepdims=keepdims)
+        new_data_subjects = np.add.reduce(
+            self.data_subjects,
+            axis=axis,
+            keepdims=keepdims,
+        )
+        return GammaTensor(
+            child=out_child,
+            min_vals=lazyrepeatarray(data=0, shape=out_child.shape),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data - self.min_vals.data, shape=out_child.shape
+            ),
+            data_subjects=new_data_subjects,
+            func_str=GAMMA_TENSOR_OP.PTP.value,
+            sources=output_state,
+        )
+
+    def conj(
+        self,
+        where: Optional[ArrayLike] = None,
+        casting: Optional[str] = "same_kind",
+        order: Optional[str] = "K",
+    ) -> GammaTensor:
+        output_state = dict()
+        output_state[self.id] = self
+        out_child = np.conj(self.child, where=where, casting=casting, order=order)
+        return GammaTensor(
+            child=out_child,
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
+            data_subjects=self.data_subjects.reshape(out_child.shape),
+            func_str=GAMMA_TENSOR_OP.CONJ.value,
+            sources=output_state,
+        )
+
     def take(
         self,
         indices: ArrayLike,
@@ -2989,3 +3119,5 @@ class GammaTensor:
                 id=id_str,
                 func_str=func_str,
             )
+
+    conjugate = conj
