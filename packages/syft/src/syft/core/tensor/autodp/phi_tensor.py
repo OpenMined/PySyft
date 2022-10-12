@@ -146,13 +146,6 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         )
         return self_mpc
 
-    @property
-    def shape(self) -> Optional[Tuple[int, ...]]:
-        if hasattr(self, "public_shape"):
-            return self.public_shape
-        else:
-            return None
-
     def _apply_tensor_op(self, other: Any, op_str: str) -> Any:
         # we want to get the return type which matches the attr_path_and_name
         # so we ask lib_ast for the return type name that matches out
@@ -1124,6 +1117,111 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             min_vals=self.min_vals,
             max_vals=self.max_vals,
             data_subjects=self.data_subjects,
+        )
+
+    def partition(
+        self,
+        kth: Union[int, Sequence],
+        axis: Optional[int] = -1,
+        kind: Optional[str] = "introselect",
+        order: Optional[str] = None,
+    ) -> PhiTensor:
+        out_child = np.partition(self.child, kth, axis=axis, kind=kind, order=order)
+        arg_out_child = np.argpartition(
+            self.child, kth, axis=axis, kind=kind, order=order
+        )
+        out_data_subjects = np.take_along_axis(self.data_subjects, arg_out_child, axis)
+        return PhiTensor(
+            child=out_child,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+            data_subjects=out_data_subjects,
+        )
+
+    def argpartition(
+        self,
+        kth: Union[int, Sequence],
+        axis: Optional[int] = -1,
+        kind: Optional[str] = "introselect",
+        order: Optional[str] = None,
+    ) -> PhiTensor:
+        out_child = np.argpartition(self.child, kth, axis=axis, kind=kind, order=order)
+        out_data_subjects = np.take_along_axis(self.data_subjects, out_child, axis)
+
+        return PhiTensor(
+            child=out_child,
+            min_vals=lazyrepeatarray(data=0, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=max(out_child.shape), shape=out_child.shape),
+            data_subjects=out_data_subjects,
+        )
+
+    def ptp(
+        self,
+        axis: Optional[Union[int, Tuple[int, ...]]] = None,
+        keepdims: Optional[bool] = False,
+    ) -> PhiTensor:
+        out_child = np.ptp(self.child, axis=axis, keepdims=keepdims)
+        new_data_subjects = np.add.reduce(
+            self.data_subjects,
+            axis=axis,
+            keepdims=keepdims,
+        )
+        return PhiTensor(
+            child=out_child,
+            min_vals=lazyrepeatarray(data=0, shape=out_child.shape),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data - self.min_vals.data, shape=out_child.shape
+            ),
+            data_subjects=new_data_subjects,
+        )
+
+    def __mod__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
+
+        # if the tensor being added is also private
+        if isinstance(other, PhiTensor):
+            return self.gamma % other.gamma
+
+        # if the tensor being added is a public tensor / int / float / etc.
+        elif is_acceptable_simple_type(other):
+
+            if isinstance(other, np.ndarray):
+                max_vals = lazyrepeatarray(
+                    data=max(0, other.max()), shape=self.child.shape
+                )
+                min_vals = lazyrepeatarray(
+                    data=min(0, other.min()), shape=self.child.shape
+                )
+            else:
+                max_vals = lazyrepeatarray(data=max(0, other), shape=self.child.shape)
+                min_vals = lazyrepeatarray(data=min(0, other), shape=self.child.shape)
+
+            return PhiTensor(
+                child=self.child % other,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                data_subjects=self.data_subjects,
+            )
+
+        elif isinstance(other, GammaTensor):
+            return self.gamma % other
+        else:
+            print("Type is unsupported:" + str(type(other)))
+            raise NotImplementedError
+
+    def conj(
+        self,
+        where: Optional[ArrayLike] = None,
+        casting: Optional[str] = "same_kind",
+        order: Optional[str] = "K",
+    ) -> PhiTensor:
+        print(self.child)
+        out_child = np.conj(self.child, where=where, casting=casting, order=order)
+        print(out_child)
+        return PhiTensor(
+            child=out_child,
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
+            data_subjects=self.data_subjects.reshape(out_child.shape),
         )
 
     def any(
@@ -2607,3 +2705,5 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=max_vals,
             data_subjects=data_subjects,
         )
+
+    conjugate = conj
