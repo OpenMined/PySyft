@@ -40,10 +40,11 @@ from ..node_service import ImmediateNodeServiceWithoutReply
 from ..success_resp_message import SuccessResponseMessage
 from .oblv_messages import CheckEnclaveConnectionMessage
 from .oblv_messages import CreateKeyPairMessage
-from .oblv_messages import CreateKeyPairResponse
 from .oblv_messages import GetPublicKeyMessage
 from .oblv_messages import GetPublicKeyResponse
 from .oblv_messages import PublishDatasetMessage
+from .oblv_messages import PublishDatasetResponse
+from .oblv_messages import SyftOblvClient
 
 INPUT_TYPE = Union[
     Type[CreateKeyPairMessage],
@@ -81,9 +82,10 @@ def create_key_pair_msg(
     
     # Check if user has permissions to create new roles
     _allowed = node.users.can_manage_infrastructure(verify_key=verify_key)
-
+    file_path = os.getenv("OBLV_KEY_PATH", "/app/content")
+    file_name = os.getenv("OBLV_KEY_NAME", "oblv_key")
     if _allowed:
-        result = subprocess.run(["/usr/local/bin/oblv", "keygen", "--key-name", os.getenv("OBLV_KEY_NAME", "oblv_key"), "--output", os.getenv("OBLV_KEY_PATH", "/app/content")],capture_output=True)
+        result = subprocess.run(["/usr/local/bin/oblv", "keygen", "--key-name", file_name, "--output", file_path],capture_output=True)
         if result.stderr:
             debug(result.stderr.decode('utf-8'))
             raise subprocess.CalledProcessError(
@@ -92,6 +94,16 @@ def create_key_pair_msg(
                     stderr = result.stderr
                     )
         debug(result.stdout.decode('utf-8'))
+        f_private = open(file_path+"/"+file_name+"_private.der","rb")
+        private = f_private.read()
+        f_private.close()
+        f_public = open(file_path+"/"+file_name+"_public.der","rb")
+        public = f_public.read()
+        f_public.close()
+        debug(type(node))
+        node.oblv_keys.remove()
+        node.oblv_keys.add(public,private)
+        debug(node.oblv_keys.get())
         # return result.stdout.decode('utf-8')
     else:
         raise AuthorizationError("You're not allowed to create a new key pair!")
@@ -121,12 +133,29 @@ def get_public_key_msg(msg: GetPublicKeyMessage,
         SuccessResponseMessage: Success message on key pair generation.
     """
     file_name = os.getenv("OBLV_KEY_PATH", "/app/content") + "/" + os.getenv("OBLV_KEY_NAME", "oblv_key") + "_public.der"
+    debug("File name : "+file_name)
     try:
         with open(file_name, "rb") as f:
             data = f.read()
         data = encodebytes(data).decode("UTF-8").replace("\n","")
     except FileNotFoundError:
-        raise OblvKeyNotFoundError()
+        file_path = os.getenv("OBLV_KEY_PATH", "/app/content")
+        file_name = os.getenv("OBLV_KEY_NAME", "oblv_key")
+        keys = node.oblv_keys.get()
+        if keys == None:
+            raise OblvKeyNotFoundError()
+        #Creating directory if not exist
+        os.makedirs(os.path.dirname(file_path+"/"+file_name+"_private.der"), exist_ok=True)
+        f_private = open(file_path+"/"+file_name+"_private.der","w+b")
+        f_private.write(keys.private_key)
+        f_private.close()
+        f_public = open(file_path+"/"+file_name+"_public.der","w+b")
+        f_public.write(keys.public_key)
+        f_public.close()
+        data = encodebytes(keys.public_key).decode("UTF-8").replace("\n","")
+    except Exception as e:
+        print(e)
+        raise Exception(e)
     return GetPublicKeyResponse(
         address=msg.reply_to,
         response=data
@@ -182,18 +211,49 @@ def publish_dataset(msg: PublishDatasetMessage,
         
     obj = node.store.get(UID.from_string(msg.dataset_id))
     obj_bytes = obj.data._object2bytes()
-    req = requests.post("http://127.0.0.1:3030/tensor/dataset/add", headers={'Content-Type': 'application/octet-stream'}, data=obj_bytes, params={"dataset_name": msg.dataset_id})
+    req = requests.post("http://127.0.0.1:3030/tensor/dataset/add", files={'input': obj_bytes}, data={
+        "dataset_id": msg.dataset_id,
+        "owner_url": msg.host_or_ip,
+        "owner_port": msg.port,
+        "owner_protocol": msg.protocol
+        })
     process.kill()
     process.wait(1)
+    
+    #For Testing
+    # print("Node Details\n\n\n\n\n\n")
+    # print(msg)
+    # obj = node.store.get(UID.from_string(msg.dataset_id))
+    # obj_bytes = obj.data._object2bytes()
+    # print(obj_bytes)
+    # req = requests.post("http://192.168.1.33:8010/tensor/dataset/add", headers={"x-oblv-user-name":node.name, "x-oblv-user-role": "domain"}, files={'input': obj_bytes}, data={
+    #     "dataset_id": msg.dataset_id,
+    #     "owner_url": msg.host_or_ip,
+    #     "owner_port": msg.port,
+    #     "owner_protocol": msg.protocol
+    #     # "owner_url": "192.168.1.33",
+    #     # "owner_port": 8010,
+    #     # "owner_protocol": "http"
+    #     })
+    #################
+    
+    
+    debug(req.text)
     if req.status_code==401:
         raise OblvEnclaveUnAuthorizedError()
+    elif req.status_code == 400:
+        raise OblvEnclaveError(req.json()["detail"])
+    elif req.status_code==422:
+        debug(req.text)
     elif req.status_code!=200:
         raise OblvEnclaveError("Request to publish dataset failed with status {}".format(req.status_code))
     debug("API Called. Now closing")
 
-    return SuccessResponseMessage(
+    return PublishDatasetResponse(
         address=msg.reply_to,
-        resp_msg="Success",
+        dataset_id=msg.dataset_id,
+        dataset_name=msg.dataset_id,
+        client=msg.client
     )
 
 def check_connection(msg: CheckEnclaveConnectionMessage,

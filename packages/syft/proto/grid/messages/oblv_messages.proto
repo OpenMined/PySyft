@@ -52,8 +52,11 @@ message PublishDatasetMessage {
   syft.core.io.Address address = 2;
   string dataset_id = 3;
   string deployment_id = 4;
-  syft.grid.messages.SyftOblvClient client = 5;
-  syft.core.io.Address reply_to = 6;
+  string host_or_ip = 5;
+  uint32 port = 6;
+  string protocol = 7;
+  syft.grid.messages.SyftOblvClient client = 8;
+  syft.core.io.Address reply_to = 9;
 }
 
 //Create CheckEnclaveConnectionMessage
@@ -63,4 +66,13 @@ message CheckEnclaveConnectionMessage {
   string deployment_id = 3;
   syft.grid.messages.SyftOblvClient client = 4;
   syft.core.io.Address reply_to = 5;
+}
+
+//Create PublishDatasetResponse
+message PublishDatasetResponse {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string dataset_name = 3;
+  string dataset_id = 4;
+  syft.grid.messages.SyftOblvClient client = 5;
 }
