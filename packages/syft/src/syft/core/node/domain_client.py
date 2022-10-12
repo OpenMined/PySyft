@@ -30,7 +30,8 @@ from ..node.common.node_service.network_search.network_search_messages import (
 )
 from ..pointer.pointer import Pointer
 from ..store.proxy_dataset import ProxyDataset
-from ..tensor.autodp.adp_tensor import ADPTensor
+from ..tensor.autodp.gamma_tensor import GammaTensor
+from ..tensor.autodp.phi_tensor import PhiTensor
 from ..tensor.tensor import Tensor
 from .abstract.node import AbstractNodeClient
 from .common.action.exception_action import ExceptionMessage
@@ -652,7 +653,7 @@ class DomainClient(Client):
             for _, asset in assets.items():
 
                 if not isinstance(asset, Tensor) or not isinstance(
-                    getattr(asset, "child", None), ADPTensor
+                    getattr(asset, "child", None), (PhiTensor, GammaTensor)
                 ):
                     raise Exception(
                         "ERROR: all private assets must be NumPy ndarray.int32 assets "
