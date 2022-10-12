@@ -683,8 +683,6 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         """
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.trace"
         result: TensorWrappedPhiTensorPointer
-        print("args: ", args)
-        print("kwargs: ", kwargs)
         data_subjects = np.array(self.data_subjects.trace(*args, **kwargs))
 
         result = TensorWrappedPhiTensorPointer(
@@ -693,7 +691,79 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
                 data=self.min_vals.data, shape=data_subjects.shape
             ),
             max_vals=lazyrepeatarray(
+                data=self.max_vals.data, shape=data_subjects.shape
+            ),
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[],
+            kwargs={},
+        )
+        dummy_res = np.ones(self.public_shape)
+        result.public_shape = dummy_res.shape
+        result.public_dtype = self.public_dtype
+
+        return result
+
+    def min(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Return the minimum of an array or minimum along an axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which to operate. By default, flattened input is used.
+                If this is a tuple of ints, the minimum is selected over multiple axes,
+                instead of a single axis or all the axes as before.
+
+        Returns
+            a_min: PhiTensor
+                Minimum of a.
+                If axis is None, the result is a scalar value.
+                If axis is given, the result is an array of dimension a.ndim - 1.
+        """
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.min"
+        result: TensorWrappedPhiTensorPointer
+        data_subjects = np.array(self.data_subjects.min(*args, **kwargs))
+
+        result = TensorWrappedPhiTensorPointer(
+            data_subjects=self.data_subjects,
+            min_vals=lazyrepeatarray(
                 data=self.min_vals.data, shape=data_subjects.shape
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data, shape=data_subjects.shape
             ),
             client=self.client,
         )
@@ -1516,19 +1586,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 Axis or axes along which to operate. By default, flattened input is used.
                 If this is a tuple of ints, the minimum is selected over multiple axes,
                 instead of a single axis or all the axes as before.
-
-            keepdims: bool, optional
-                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
-                With this option, the result will broadcast correctly against the input array.
-                If the default value is passed, then keepdims will not be passed through to the amin method of
-                sub-classes of ndarray, however any non-default value will be.
-                If the sub-class’ method does not implement keepdims any exceptions will be raised.
-            initial: scalar, optional
-                The maximum value of an output element. Must be present to allow computation on empty slice.
-                See reduce for details.
-
-            where: array_like of bool, optional
-                Elements to compare for the minimum. See reduce for details.
 
         Returns
             a_min: PhiTensor
