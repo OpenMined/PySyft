@@ -731,8 +731,8 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             args=[],
             kwargs={},
         )
-        dummy_res = np.ones(self.public_shape)
-        result.public_shape = dummy_res.shape
+
+        result.public_shape = data_subjects.shape
         result.public_dtype = self.public_dtype
 
         return result
@@ -755,7 +755,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         """
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.min"
         result: TensorWrappedPhiTensorPointer
-        data_subjects = np.array(self.data_subjects.min(*args, **kwargs))
+        data_subjects = np.empty(self.data_subjects.shape).min(*args, **kwargs)
 
         result = TensorWrappedPhiTensorPointer(
             data_subjects=self.data_subjects,
@@ -818,19 +818,6 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
                 Axis or axes along which to operate. By default, flattened input is used.
                 If this is a tuple of ints, the minimum is selected over multiple axes,
                 instead of a single axis or all the axes as before.
-
-            keepdims: bool, optional
-                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
-                With this option, the result will broadcast correctly against the input array.
-                If the default value is passed, then keepdims will not be passed through to the amax method of
-                sub-classes of ndarray, however any non-default value will be.
-                If the sub-class’ method does not implement keepdims any exceptions will be raised.
-            initial: scalar, optional
-                The minimum value of an output element. Must be present to allow computation on empty slice.
-                See reduce for details.
-
-            where: array_like of bool, optional
-                Elements to compare for the maximum. See reduce for details.
 
         Returns
             a_max: PhiTensor

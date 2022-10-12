@@ -582,6 +582,241 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
 
         return result
 
+    def trace(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """
+        Return the sum along diagonals of the array.
+
+        If a is 2-D, the sum along its diagonal with the given offset is returned, i.e., the sum of elements
+        a[i,i+offset] for all i.
+
+        If a has more than two dimensions, then the axes specified by axis1 and axis2 are used to determine the 2-D
+        sub-arrays whose traces are returned. The shape of the resulting array is the same as that of a with axis1 and
+        axis2 removed.
+
+        Parameters
+
+            offset: int, optional
+                Offset of the diagonal from the main diagonal. Can be both positive and negative. Defaults to 0.
+
+            axis1, axis2: int, optional
+                Axes to be used as the first and second axis of the 2-D sub-arrays from which the diagonals should be
+                taken. Defaults are the first two axes of a.
+
+        Returns
+
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+                If a is 2-D, the sum along the diagonal is returned.
+                If a has larger dimensions, then an array of sums along diagonals is returned.
+
+        """
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.trace"
+        min_vals = self.min_vals.trace(*args, **kwargs)
+        max_vals = self.max_vals.trace(*args, **kwargs)
+        data_subjects = self.data_subjects.trace(*args, **kwargs)  # type: ignore
+
+        result = TensorWrappedGammaTensorPointer(
+            data_subjects=data_subjects,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[],
+            kwargs={},
+        )
+        result.public_shape = data_subjects.shape
+        result.public_dtype = self.public_dtype
+
+        return result
+
+    def min(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """
+        Return the minimum of an array or minimum along an axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which to operate. By default, flattened input is used.
+                If this is a tuple of ints, the minimum is selected over multiple axes,
+                instead of a single axis or all the axes as before.
+
+        Returns
+            a_min: PhiTensor
+                Minimum of a.
+                If axis is None, the result is a scalar value.
+                If axis is given, the result is an array of dimension a.ndim - 1.
+        """
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.min"
+        data_subjects = np.empty(np.array(self.data_subjects).shape).min(
+            *args, **kwargs
+        )
+
+        result = TensorWrappedGammaTensorPointer(
+            data_subjects=data_subjects,
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data, shape=data_subjects.shape
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data, shape=data_subjects.shape
+            ),
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+            # then we convert anything which isn't a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[],
+            kwargs={},
+        )
+        result.public_shape = data_subjects.shape
+        result.public_dtype = self.public_dtype
+
+        return result
+
+    def max(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """
+        Return the maximum of an array or along an axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which to operate. By default, flattened input is used.
+                If this is a tuple of ints, the minimum is selected over multiple axes,
+                instead of a single axis or all the axes as before.
+
+        Returns
+            a_max: PhiTensor
+                Maximum of a.
+                If axis is None, the result is a scalar value.
+                If axis is given, the result is an array of dimension a.ndim - 1.
+        """
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.max"
+        data_subjects = np.empty(np.array(self.data_subjects).shape).max(
+            *args, **kwargs
+        )
+
+        result = TensorWrappedGammaTensorPointer(
+            data_subjects=data_subjects,
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data, shape=data_subjects.shape
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data, shape=data_subjects.shape
+            ),
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+            # then we convert anything which isn't a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[],
+            kwargs={},
+        )
+        result.public_shape = data_subjects.shape
+        result.public_dtype = self.public_dtype
+
+        return result
+
     def __getitem__(
         self, key: Union[int, bool, slice]
     ) -> TensorWrappedGammaTensorPointer:
