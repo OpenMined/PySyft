@@ -123,10 +123,11 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         public_dtype_func = getattr(
             self.public_dtype, "upcast", lambda: self.public_dtype
         )
+
         return (
             np.random.rand(*list(self.public_shape))  # type: ignore
-            * (self.max_vals.to_numpy() - self.min_vals.to_numpy())
-            + self.min_vals.to_numpy()
+            * (self.max_vals.data - self.min_vals.data)
+            + self.min_vals.data
         ).astype(public_dtype_func())
 
     def __repr__(self) -> str:
@@ -648,6 +649,91 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             kwargs={},
         )
         dummy_res = np.ones_like(np.empty(self.public_shape), *args, **kwargs)
+        result.public_shape = dummy_res.shape
+        result.public_dtype = self.public_dtype
+
+        return result
+
+    def trace(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Return the sum along diagonals of the array.
+
+        If a is 2-D, the sum along its diagonal with the given offset is returned, i.e., the sum of elements
+        a[i,i+offset] for all i.
+
+        If a has more than two dimensions, then the axes specified by axis1 and axis2 are used to determine the 2-D
+        sub-arrays whose traces are returned. The shape of the resulting array is the same as that of a with axis1 and
+        axis2 removed.
+
+        Parameters
+
+            offset: int, optional
+                Offset of the diagonal from the main diagonal. Can be both positive and negative. Defaults to 0.
+
+            axis1, axis2: int, optional
+                Axes to be used as the first and second axis of the 2-D sub-arrays from which the diagonals should be
+                taken. Defaults are the first two axes of a.
+
+        Returns
+
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+                If a is 2-D, the sum along the diagonal is returned.
+                If a has larger dimensions, then an array of sums along diagonals is returned.
+
+        """
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.trace"
+        result: TensorWrappedPhiTensorPointer
+        print("args: ", args)
+        print("kwargs: ", kwargs)
+        data_subjects = np.array(self.data_subjects.trace(*args, **kwargs))
+
+        result = TensorWrappedPhiTensorPointer(
+            data_subjects=self.data_subjects,
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data, shape=data_subjects.shape
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.min_vals.data, shape=data_subjects.shape
+            ),
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[],
+            kwargs={},
+        )
+        dummy_res = np.ones(self.public_shape)
         result.public_shape = dummy_res.shape
         result.public_dtype = self.public_dtype
 
@@ -2546,7 +2632,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 If a is 2-D, the sum along the diagonal is returned.
                 If a has larger dimensions, then an array of sums along diagonals is returned.
         """
-
+        print("WE ARE INSIDE PHI TENSOR")
         result = self.child.trace(offset, axis1, axis2)
 
         # This is potentially expensive
