@@ -661,5 +661,5 @@ jobs:
       - name: Upload logs to GitHub
         uses: actions/upload-artifact@master
         with:
-          name: course-logs.$(date +"%Y-%m-%d %T")
+          name: course-logs.$(date +'%Y-%m-%d %T')
           path: ./logs/test/course/
