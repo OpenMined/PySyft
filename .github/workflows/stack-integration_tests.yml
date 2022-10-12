@@ -127,23 +127,6 @@ jobs:
         run: |
           tox -e stack.test.integration
 
-      - name: Collect docker logs on failure
-        if: failure()
-        uses: jwalton/gh-docker-logs@v1
-        with:
-          dest: './logs'
-
-      - name: Tar logs
-        if: failure()
-        run: tar cvzf ./logs.tgz ./logs
-
-      - name: Upload logs to GitHub
-        if: failure()
-        uses: actions/upload-artifact@master
-        with:
-          name: logs.tgz
-          path: ./logs.tgz
-
   stack-integration-tests-tls:
     strategy:
       max-parallel: 99
@@ -670,3 +653,13 @@ jobs:
           docker rm `docker ps -aq` --force || true
           tox -e stack.test.course
           docker rm `docker ps -aq` --force || true
+
+      # - name: Tar logs
+      #   if: failure()
+      #   run: tar cvzf ./logs.tgz ./logs
+
+      - name: Upload logs to GitHub
+        uses: actions/upload-artifact@master
+        with:
+          name: course-logs.$(date +"%Y-%m-%d %T")
+          path: ./logs/test/course/
