@@ -4,8 +4,6 @@
 # stdlib
 from typing import Any
 from typing import Callable as CallableT
-from typing import Dict
-from typing import List
 from typing import Optional
 from typing import Union
 
@@ -177,7 +175,7 @@ class StaticAttribute(ast.attribute.Attribute):
         """
         raise ValueError("MAKE PROPER SCHEMA, THIS SHOULD NEVER BE CALLED")
 
-    def add_path(self, *args: List[Any], **kwargs: Dict[Any, Any]) -> None:  # type: ignore
+    def add_path(self, *args: Any, **kwargs: Any) -> None:  # type: ignore
         """An `StaticAttribute` can no longer have children nodes.
 
         Args:
