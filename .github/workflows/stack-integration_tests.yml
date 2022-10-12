@@ -132,12 +132,12 @@ jobs:
         uses: ravsamhq/notify-slack-action@v1
         with:
           status: ${{ job.status }}
-          notify_when: 'success,failure'
+          notify_when: 'failure'
           notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{workflow}* {status_message} in <{workflow|workflow_url}>'
+          message_format: '{emoji} *{workflow}* {status_message} in <{workflow_url|workflow}>'
           footer: 'Link to Job {job}'
           mention_users: 'U01LNCACY03'
-          mention_users_when: 'success,failure,warnings'
+          mention_users_when: 'failure,warnings'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
 
@@ -262,12 +262,12 @@ jobs:
         uses: ravsamhq/notify-slack-action@v1
         with:
           status: ${{ job.status }}
-          notify_when: 'success,failure'
+          notify_when: 'failure'
           notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{workflow}* {status_message} in <{workflow|workflow_url}>'
+          message_format: '{emoji} *{workflow}* {status_message} in <{workflow_url|workflow}>'
           footer: 'Link to Job {job}'
           mention_users: 'U01LNCACY03'
-          mention_users_when: 'success,failure,warnings'
+          mention_users_when: 'failure,warnings'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
 
@@ -386,12 +386,12 @@ jobs:
         uses: ravsamhq/notify-slack-action@v1
         with:
           status: ${{ job.status }}
-          notify_when: 'success,failure'
+          notify_when: 'failure'
           notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{workflow}* {status_message} in <{workflow|workflow_url}>'
+          message_format: '{emoji} *{workflow}* {status_message} in <{workflow_url|workflow}>'
           footer: 'Link to Job {job}'
           mention_users: 'U01LNCACY03'
-          mention_users_when: 'success,failure,warnings'
+          mention_users_when: 'failure,warnings'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
 
@@ -511,12 +511,12 @@ jobs:
         uses: ravsamhq/notify-slack-action@v1
         with:
           status: ${{ job.status }}
-          notify_when: 'success,failure'
+          notify_when: 'failure'
           notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{workflow}* {status_message} in <{workflow|workflow_url}>'
+          message_format: '{emoji} *{workflow}* {status_message} in <{workflow_url|workflow}>'
           footer: 'Link to Job {job}'
           mention_users: 'U01LNCACY03'
-          mention_users_when: 'success,failure,warnings'
+          mention_users_when: 'failure,warnings'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
 
@@ -633,9 +633,9 @@ jobs:
         uses: ravsamhq/notify-slack-action@v1
         with:
           status: ${{ job.status }}
-          notify_when: 'success,failure'
+          notify_when: 'failure'
           notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{workflow}* {status_message} in <{workflow|workflow_url}>'
+          message_format: '{emoji} *{workflow}* {status_message} in <{workflow_url|workflow}>'
           footer: 'Link to Job {job}'
           mention_users: 'U01LNCACY03'
           mention_users_when: 'failure,warnings'
@@ -728,12 +728,12 @@ jobs:
         uses: ravsamhq/notify-slack-action@v1
         with:
           status: ${{ job.status }}
-          notify_when: 'success,failure'
+          notify_when: 'failure'
           notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{workflow}* {status_message} in <{workflow|workflow_url}>'
+          message_format: '{emoji} *{workflow}* {status_message} in <{workflow_url|workflow}>'
           footer: 'Link to Job {job}'
           mention_users: 'U01LNCACY03'
-          mention_users_when: 'success,failure,warnings'
+          mention_users_when: 'failure,warnings'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
 
