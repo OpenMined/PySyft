@@ -443,9 +443,24 @@ class PhiTensorAncestor(TensorChainManager):
         #             f"Expected DataSubject to be either string or DataSubject object, but type is {type(entity)}"
         #         )
         if data_subjects.shape != self.shape:
-            raise ValueError(
-                f"DataSubjects shape: {data_subjects.shape} should match data shape: {self.shape}"
-            )
+            if data_subjects.size == 1:
+                # 1 data subject for the entire tensor.
+                data_subjects = np.broadcast_to(data_subjects, self.shape)
+            if (
+                data_subjects.shape[0] == self.shape[0]
+                and len(data_subjects.shape) == 1
+            ):
+                # e.g. 1 data subject per image for 10 imgs: child = (10, 25, 25) and data_subjects = (10,)
+                data_subjects = np.broadcast_to(data_subjects, self.shape)
+            else:
+                raise Exception(
+                    "Data Subject shape doesn't match the shape of your data. Please provide either 1 data subject per "
+                    "data point, or 1 data subject per "
+                )
+                raise ValueError(
+                    f"DataSubjects shape: {data_subjects.shape} should match data shape: {self.shape} "
+                    f"or first dim of data shape: {self.shape[0]}"
+                )
 
         if isinstance(min_val, (bool, int, float)):
             min_vals = np.array(min_val).ravel()  # make it 1D
