@@ -486,7 +486,7 @@ def check_docker_version() -> Optional[str]:
 
 def docker_running() -> Tuple[bool, str]:
     try:
-        cmd = "docker --version"
+        cmd = "docker info"
         returncode, _ = get_cli_output(cmd)
         if returncode == 0:
             return True, "✅ Docker service is running"
@@ -553,13 +553,13 @@ def check_docker_service_status(animated: bool = True) -> None:
             docker_installed, msg = docker_running()
             user_allowed, permission_msg = allowed_to_run_docker()
 
-    # If docker bin was not found.
-    if not docker_installed:
-        raise MissingDependency(msg)
-
     # Check if user is allowed to execute docker
     if not user_allowed:
         raise MissingDependency(permission_msg)
+
+    # If docker bin was not found.
+    if not docker_installed:
+        raise MissingDependency(msg)
 
     print("✅ Docker service is running")
 
