@@ -40,6 +40,9 @@ class GAMMA_TENSOR_OP(Enum):
     ABS = "abs"
     CLIP = "clip"
     POWER = "power"
+    TRACE = "trace"
+    MIN = "min"
+    MAX = "max"
     # Our Methods
     RECIPROCAL = "reciprocal"
     FLATTEN_C = "flatten_c"
