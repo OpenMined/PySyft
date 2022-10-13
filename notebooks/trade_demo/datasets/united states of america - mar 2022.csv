@@ -1,0 +1,172 @@
+Classification,Year,Period,Period Desc.,Aggregate Level,Is Leaf Code,Trade Flow Code,Trade Flow,Reporter Code,Reporter,Reporter ISO,Partner Code,Partner,Partner ISO,Commodity Code,Commodity,Qty Unit Code,Qty Unit,Qty,Netweight (kg),Trade Value (US$),Flag
+HS,2022,202203,Mar-22,0,0,1,Imports,31,Azerbaijan,,842,United States of America,,TOTAL,All Commodities,,,,0.0,26231855,0
+HS,2022,202203,Mar-22,0,0,2,Exports,31,Azerbaijan,,842,United States of America,,TOTAL,All Commodities,,,,0.0,17684283,0
+HS,2022,202203,Mar-22,0,0,1,Imports,32,Argentina,,842,United States of America,,TOTAL,All Commodities,,,,0.0,659172702,0
+HS,2022,202203,Mar-22,0,0,2,Exports,32,Argentina,,842,United States of America,,TOTAL,All Commodities,,,,0.0,626419270,0
+HS,2022,202203,Mar-22,0,0,1,Imports,36,Australia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,3022713125,0
+HS,2022,202203,Mar-22,0,0,2,Exports,36,Australia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,1290773505,0
+HS,2022,202203,Mar-22,0,0,1,Imports,51,Armenia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,15958057,0
+HS,2022,202203,Mar-22,0,0,2,Exports,51,Armenia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,10038407,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,51,Armenia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,91853,0
+HS,2022,202203,Mar-22,0,0,1,Imports,52,Barbados,,842,United States of America,,TOTAL,All Commodities,,,,0.0,72011619,0
+HS,2022,202203,Mar-22,0,0,2,Exports,52,Barbados,,842,United States of America,,TOTAL,All Commodities,,,,0.0,6893027,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,52,Barbados,,842,United States of America,,TOTAL,All Commodities,,,,0.0,1527802,0
+HS,2022,202203,Mar-22,0,0,1,Imports,56,Belgium,,842,United States of America,,TOTAL,All Commodities,,,,0.0,2204589240,0
+HS,2022,202203,Mar-22,0,0,2,Exports,56,Belgium,,842,United States of America,,TOTAL,All Commodities,,,,0.0,3036037523,0
+HS,2022,202203,Mar-22,0,0,1,Imports,68,Bolivia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,48035399,0
+HS,2022,202203,Mar-22,0,0,2,Exports,68,Bolivia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,64280099,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,68,Bolivia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,422088,0
+HS,2022,202203,Mar-22,0,0,1,Imports,70,Bosnia Herzegovina,,842,United States of America,,TOTAL,All Commodities,,,,0.0,40395227,0
+HS,2022,202203,Mar-22,0,0,2,Exports,70,Bosnia Herzegovina,,842,United States of America,,TOTAL,All Commodities,,,,0.0,11484432,0
+HS,2022,202203,Mar-22,0,0,1,Imports,72,Botswana,,842,United States of America,,TOTAL,All Commodities,,,,0.0,5148162,0
+HS,2022,202203,Mar-22,0,0,2,Exports,72,Botswana,,842,United States of America,,TOTAL,All Commodities,,,,0.0,11852489,0
+HS,2022,202203,Mar-22,0,0,1,Imports,76,Brazil,,842,United States of America,,TOTAL,All Commodities,,,,0.0,4054738265,0
+HS,2022,202203,Mar-22,0,0,2,Exports,76,Brazil,,842,United States of America,,TOTAL,All Commodities,,,,0.0,2946219402,0
+HS,2022,202203,Mar-22,0,0,1,Imports,84,Belize,,842,United States of America,,TOTAL,All Commodities,,,,0.0,44726966,0
+HS,2022,202203,Mar-22,0,0,2,Exports,84,Belize,,842,United States of America,,TOTAL,All Commodities,,,,0.0,6588474,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,84,Belize,,842,United States of America,,TOTAL,All Commodities,,,,0.0,2464518,0
+HS,2022,202203,Mar-22,0,0,1,Imports,97,EU,,842,United States of America,,TOTAL,All Commodities,,,,0.0,30393583465,0
+HS,2022,202203,Mar-22,0,0,2,Exports,97,EU,,842,United States of America,,TOTAL,All Commodities,,,,0.0,49138028621,0
+HS,2022,202203,Mar-22,0,0,1,Imports,112,Belarus,,842,United States of America,,TOTAL,All Commodities,,,,0.0,19384500,0
+HS,2022,202203,Mar-22,0,0,2,Exports,112,Belarus,,842,United States of America,,TOTAL,All Commodities,,,,0.0,16330900,0
+HS,2022,202203,Mar-22,0,0,1,Imports,124,Canada,,842,United States of America,,TOTAL,All Commodities,,,,,25059877397,0
+HS,2022,202203,Mar-22,0,0,2,Exports,124,Canada,,842,United States of America,,TOTAL,All Commodities,,,,0.0,41947865176,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,124,Canada,,842,United States of America,,TOTAL,All Commodities,,,,0.0,2977010698,0
+HS,2022,202203,Mar-22,0,0,1,Imports,152,Chile,,842,United States of America,,TOTAL,All Commodities,,,,0.0,1645221836,0
+HS,2022,202203,Mar-22,0,0,2,Exports,152,Chile,,842,United States of America,,TOTAL,All Commodities,,,,0.0,1510575042,0
+HS,2022,202203,Mar-22,0,0,1,Imports,156,China,,842,United States of America,,TOTAL,All Commodities,,,,0.0,15342607413,0
+HS,2022,202203,Mar-22,0,0,2,Exports,156,China,,842,United States of America,,TOTAL,All Commodities,,,,0.0,47378662144,0
+HS,2022,202203,Mar-22,0,0,1,Imports,191,Croatia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,168875011,0
+HS,2022,202203,Mar-22,0,0,2,Exports,191,Croatia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,57483242,0
+HS,2022,202203,Mar-22,0,0,1,Imports,203,Czech Rep.,,842,United States of America,,TOTAL,All Commodities,,,,,467453019,0
+HS,2022,202203,Mar-22,0,0,2,Exports,203,Czech Rep.,,842,United States of America,,TOTAL,All Commodities,,,,0.0,555358612,0
+HS,2022,202203,Mar-22,0,0,1,Imports,208,Denmark,,842,United States of America,,TOTAL,All Commodities,,,,0.0,297068402,0
+HS,2022,202203,Mar-22,0,0,2,Exports,208,Denmark,,842,United States of America,,TOTAL,All Commodities,,,,0.0,603610481,0
+HS,2022,202203,Mar-22,0,0,1,Imports,222,El Salvador,,842,United States of America,,TOTAL,All Commodities,,,,0.0,448374194,0
+HS,2022,202203,Mar-22,0,0,2,Exports,222,El Salvador,,842,United States of America,,TOTAL,All Commodities,,,,0.0,278120908,0
+HS,2022,202203,Mar-22,0,0,1,Imports,233,Estonia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,52976707,0
+HS,2022,202203,Mar-22,0,0,2,Exports,233,Estonia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,183687637,0
+HS,2022,202203,Mar-22,0,0,1,Imports,242,Fiji,,842,United States of America,,TOTAL,All Commodities,,,,0.0,13033029,0
+HS,2022,202203,Mar-22,0,0,2,Exports,242,Fiji,,842,United States of America,,TOTAL,All Commodities,,,,0.0,4208899,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,242,Fiji,,842,United States of America,,TOTAL,All Commodities,,,,0.0,1355135,0
+HS,2022,202203,Mar-22,0,0,1,Imports,246,Finland,,842,United States of America,,TOTAL,All Commodities,,,,0.0,268347304,0
+HS,2022,202203,Mar-22,0,0,2,Exports,246,Finland,,842,United States of America,,TOTAL,All Commodities,,,,0.0,578731948,0
+HS,2022,202203,Mar-22,0,0,1,Imports,268,Georgia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,68490026,0
+HS,2022,202203,Mar-22,0,0,2,Exports,268,Georgia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,41926459,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,268,Georgia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,1460482,0
+HS,2022,202203,Mar-22,0,0,1,Imports,276,Germany,,842,United States of America,,TOTAL,All Commodities,,,,0.0,8532670622,0
+HS,2022,202203,Mar-22,0,0,2,Exports,276,Germany,,842,United States of America,,TOTAL,All Commodities,,,,0.0,15228510161,0
+HS,2022,202203,Mar-22,0,0,1,Imports,300,Greece,,842,United States of America,,TOTAL,All Commodities,,,,0.0,251380618,0
+HS,2022,202203,Mar-22,0,0,2,Exports,300,Greece,,842,United States of America,,TOTAL,All Commodities,,,,0.0,219286715,0
+HS,2022,202203,Mar-22,0,0,1,Imports,308,Grenada,,842,United States of America,,TOTAL,All Commodities,,,,0.0,20615430,0
+HS,2022,202203,Mar-22,0,0,2,Exports,308,Grenada,,842,United States of America,,TOTAL,All Commodities,,,,0.0,1244592,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,308,Grenada,,842,United States of America,,TOTAL,All Commodities,,,,0.0,9017,0
+HS,2022,202203,Mar-22,0,0,1,Imports,320,Guatemala,,842,United States of America,,TOTAL,All Commodities,,,,0.0,974799193,0
+HS,2022,202203,Mar-22,0,0,2,Exports,320,Guatemala,,842,United States of America,,TOTAL,All Commodities,,,,0.0,519158999,0
+HS,2022,202203,Mar-22,0,0,1,Imports,328,Guyana,,842,United States of America,,TOTAL,All Commodities,,,,0.0,85192855,0
+HS,2022,202203,Mar-22,0,0,2,Exports,328,Guyana,,842,United States of America,,TOTAL,All Commodities,,,,0.0,128208846,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,328,Guyana,,842,United States of America,,TOTAL,All Commodities,,,,0.0,2665774,0
+HS,2022,202203,Mar-22,0,0,1,Imports,344,"China, Hong Kong SAR",,842,United States of America,,TOTAL,All Commodities,,,,0.0,2732668372,0
+HS,2022,202203,Mar-22,0,0,2,Exports,344,"China, Hong Kong SAR",,842,United States of America,,TOTAL,All Commodities,,,,0.0,3272713911,0
+HS,2022,202203,Mar-22,0,0,1,Imports,348,Hungary,,842,United States of America,,TOTAL,All Commodities,,,,0.0,251672544,0
+HS,2022,202203,Mar-22,0,0,2,Exports,348,Hungary,,842,United States of America,,TOTAL,All Commodities,,,,0.0,413223825,0
+HS,2022,202203,Mar-22,0,0,1,Imports,352,Iceland,,842,United States of America,,TOTAL,All Commodities,,,,0.0,83292095,0
+HS,2022,202203,Mar-22,0,0,2,Exports,352,Iceland,,842,United States of America,,TOTAL,All Commodities,,,,0.0,48357202,0
+HS,2022,202203,Mar-22,0,0,1,Imports,360,Indonesia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,850390870,0
+HS,2022,202203,Mar-22,0,0,2,Exports,360,Indonesia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,2833061888,0
+HS,2022,202203,Mar-22,0,0,1,Imports,376,Israel,,842,United States of America,,TOTAL,All Commodities,,,,0.0,895830000,0
+HS,2022,202203,Mar-22,0,0,2,Exports,376,Israel,,842,United States of America,,TOTAL,All Commodities,,,,0.0,1598481000,0
+HS,2022,202203,Mar-22,0,0,1,Imports,381,Italy,,842,United States of America,,TOTAL,All Commodities,,,,0.0,2227983698,0
+HS,2022,202203,Mar-22,0,0,2,Exports,381,Italy,,842,United States of America,,TOTAL,All Commodities,,,,0.0,5956200659,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,381,Italy,,842,United States of America,,TOTAL,All Commodities,,,,0.0,203392043,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,381,Italy,,842,United States of America,,TOTAL,All Commodities,,,,0.0,8371584,0
+HS,2022,202203,Mar-22,0,0,1,Imports,392,Japan,,842,United States of America,,TOTAL,All Commodities,,,,0.0,8100668162,0
+HS,2022,202203,Mar-22,0,0,2,Exports,392,Japan,,842,United States of America,,TOTAL,All Commodities,,,,0.0,13051222821,0
+HS,2022,202203,Mar-22,0,0,1,Imports,417,Kyrgyzstan,,842,United States of America,,TOTAL,All Commodities,,,,0.0,20677289,0
+HS,2022,202203,Mar-22,0,0,2,Exports,417,Kyrgyzstan,,842,United States of America,,TOTAL,All Commodities,,,,0.0,151500,0
+HS,2022,202203,Mar-22,0,0,1,Imports,428,Latvia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,22804129,0
+HS,2022,202203,Mar-22,0,0,2,Exports,428,Latvia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,70111359,0
+HS,2022,202203,Mar-22,0,0,1,Imports,440,Lithuania,,842,United States of America,,TOTAL,All Commodities,,,,0.0,289271655,0
+HS,2022,202203,Mar-22,0,0,2,Exports,440,Lithuania,,842,United States of America,,TOTAL,All Commodities,,,,0.0,250657472,0
+HS,2022,202203,Mar-22,0,0,1,Imports,442,Luxembourg,,842,United States of America,,TOTAL,All Commodities,,,,0.0,54538030,0
+HS,2022,202203,Mar-22,0,0,2,Exports,442,Luxembourg,,842,United States of America,,TOTAL,All Commodities,,,,0.0,38575421,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,442,Luxembourg,,842,United States of America,,TOTAL,All Commodities,,,,0.0,92704,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,442,Luxembourg,,842,United States of America,,TOTAL,All Commodities,,,,0.0,39246,0
+HS,2022,202203,Mar-22,0,0,1,Imports,446,"China, Macao SAR",,842,United States of America,,TOTAL,All Commodities,,,,0.0,126294400,0
+HS,2022,202203,Mar-22,0,0,2,Exports,446,"China, Macao SAR",,842,United States of America,,TOTAL,All Commodities,,,,0.0,5620049,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,446,"China, Macao SAR",,842,United States of America,,TOTAL,All Commodities,,,,0.0,131126,0
+HS,2022,202203,Mar-22,0,0,1,Imports,480,Mauritius,,842,United States of America,,TOTAL,All Commodities,,,,0.0,16158051,0
+HS,2022,202203,Mar-22,0,0,2,Exports,480,Mauritius,,842,United States of America,,TOTAL,All Commodities,,,,0.0,14107819,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,480,Mauritius,,842,United States of America,,TOTAL,All Commodities,,,,0.0,1031487,0
+HS,2022,202203,Mar-22,0,0,1,Imports,484,Mexico,,842,United States of America,,TOTAL,All Commodities,,,,0.0,23082594934,0
+HS,2022,202203,Mar-22,0,0,2,Exports,484,Mexico,,842,United States of America,,TOTAL,All Commodities,,,,0.0,40849837772,0
+HS,2022,202203,Mar-22,0,0,1,Imports,498,Rep. of Moldova,,842,United States of America,,TOTAL,All Commodities,,,,,12711685,0
+HS,2022,202203,Mar-22,0,0,2,Exports,498,Rep. of Moldova,,842,United States of America,,TOTAL,All Commodities,,,,0.0,5027762,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,498,Rep. of Moldova,,842,United States of America,,TOTAL,All Commodities,,,,0.0,477118,0
+HS,2022,202203,Mar-22,0,0,1,Imports,516,Namibia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,31115483,0
+HS,2022,202203,Mar-22,0,0,2,Exports,516,Namibia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,1587795,0
+HS,2022,202203,Mar-22,0,0,1,Imports,528,Netherlands,,842,United States of America,,TOTAL,All Commodities,,,,0.0,4336643772,0
+HS,2022,202203,Mar-22,0,0,2,Exports,528,Netherlands,,842,United States of America,,TOTAL,All Commodities,,,,0.0,2842413922,0
+HS,2022,202203,Mar-22,0,0,1,Imports,554,New Zealand,,842,United States of America,,TOTAL,All Commodities,,,,0.0,451103566,0
+HS,2022,202203,Mar-22,0,0,2,Exports,554,New Zealand,,842,United States of America,,TOTAL,All Commodities,,,,0.0,545517994,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,554,New Zealand,,842,United States of America,,TOTAL,All Commodities,,,,0.0,13996083,0
+HS,2022,202203,Mar-22,0,0,1,Imports,566,Nigeria,,842,United States of America,,TOTAL,All Commodities,,,,0.0,323353583,0
+HS,2022,202203,Mar-22,0,0,2,Exports,566,Nigeria,,842,United States of America,,TOTAL,All Commodities,,,,0.0,415094040,0
+HS,2022,202203,Mar-22,0,0,1,Imports,579,Norway,,842,United States of America,,TOTAL,All Commodities,,,,0.0,588144967,0
+HS,2022,202203,Mar-22,0,0,2,Exports,579,Norway,,842,United States of America,,TOTAL,All Commodities,,,,0.0,504234029,0
+HS,2022,202203,Mar-22,0,0,1,Imports,586,Pakistan,,842,United States of America,,TOTAL,All Commodities,,,,0.0,226655853,0
+HS,2022,202203,Mar-22,0,0,2,Exports,586,Pakistan,,842,United States of America,,TOTAL,All Commodities,,,,0.0,614058692,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,586,Pakistan,,842,United States of America,,TOTAL,All Commodities,,,,0.0,323385,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,586,Pakistan,,842,United States of America,,TOTAL,All Commodities,,,,0.0,565252,0
+HS,2022,202203,Mar-22,0,0,1,Imports,591,Panama,,842,United States of America,,TOTAL,All Commodities,,,,0.0,437712094,0
+HS,2022,202203,Mar-22,0,0,2,Exports,591,Panama,,842,United States of America,,TOTAL,All Commodities,,,,0.0,11903695,0
+HS,2022,202203,Mar-22,0,0,1,Imports,600,Paraguay,,842,United States of America,,TOTAL,All Commodities,,,,0.0,75811355,0
+HS,2022,202203,Mar-22,0,0,2,Exports,600,Paraguay,,842,United States of America,,TOTAL,All Commodities,,,,0.0,47189871,0
+HS,2022,202203,Mar-22,0,0,1,Imports,608,Philippines,,842,United States of America,,TOTAL,All Commodities,,,,0.0,941323244,0
+HS,2022,202203,Mar-22,0,0,2,Exports,608,Philippines,,842,United States of America,,TOTAL,All Commodities,,,,0.0,1091661625,0
+HS,2022,202203,Mar-22,0,0,1,Imports,616,Poland,,842,United States of America,,TOTAL,All Commodities,,,,0.0,1220769310,0
+HS,2022,202203,Mar-22,0,0,2,Exports,616,Poland,,842,United States of America,,TOTAL,All Commodities,,,,0.0,945436374,0
+HS,2022,202203,Mar-22,0,0,1,Imports,620,Portugal,,842,United States of America,,TOTAL,All Commodities,,,,0.0,351526501,0
+HS,2022,202203,Mar-22,0,0,2,Exports,620,Portugal,,842,United States of America,,TOTAL,All Commodities,,,,0.0,456478732,0
+HS,2022,202203,Mar-22,0,0,1,Imports,642,Romania,,842,United States of America,,TOTAL,All Commodities,,,,0.0,71555809,0
+HS,2022,202203,Mar-22,0,0,2,Exports,642,Romania,,842,United States of America,,TOTAL,All Commodities,,,,0.0,221774021,0
+HS,2022,202203,Mar-22,0,0,1,Imports,646,Rwanda,,842,United States of America,,TOTAL,All Commodities,,,,0.0,7273438,0
+HS,2022,202203,Mar-22,0,0,2,Exports,646,Rwanda,,842,United States of America,,TOTAL,All Commodities,,,,0.0,750423,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,646,Rwanda,,842,United States of America,,TOTAL,All Commodities,,,,0.0,45876,0
+HS,2022,202203,Mar-22,0,0,1,Imports,686,Senegal,,842,United States of America,,TOTAL,All Commodities,,,,0.0,17373573,0
+HS,2022,202203,Mar-22,0,0,2,Exports,686,Senegal,,842,United States of America,,TOTAL,All Commodities,,,,0.0,22328405,0
+HS,2022,202203,Mar-22,0,0,1,Imports,688,Serbia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,46936013,0
+HS,2022,202203,Mar-22,0,0,2,Exports,688,Serbia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,56563357,0
+HS,2022,202203,Mar-22,0,0,1,Imports,699,India,,842,United States of America,,TOTAL,All Commodities,,,,0.0,4797111137,0
+HS,2022,202203,Mar-22,0,0,2,Exports,699,India,,842,United States of America,,TOTAL,All Commodities,,,,0.0,7716069565,0
+HS,2022,202203,Mar-22,0,0,1,Imports,703,Slovakia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,101110945,0
+HS,2022,202203,Mar-22,0,0,2,Exports,703,Slovakia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,252198217,0
+HS,2022,202203,Mar-22,0,0,1,Imports,705,Slovenia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,78769701,0
+HS,2022,202203,Mar-22,0,0,2,Exports,705,Slovenia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,80137862,0
+HS,2022,202203,Mar-22,0,0,1,Imports,724,Spain,,842,United States of America,,TOTAL,All Commodities,,,,0.0,3263441330,0
+HS,2022,202203,Mar-22,0,0,2,Exports,724,Spain,,842,United States of America,,TOTAL,All Commodities,,,,0.0,1597233649,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,724,Spain,,842,United States of America,,TOTAL,All Commodities,,,,0.0,217232404,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,724,Spain,,842,United States of America,,TOTAL,All Commodities,,,,0.0,3048480,0
+HS,2022,202203,Mar-22,0,0,1,Imports,752,Sweden,,842,United States of America,,TOTAL,All Commodities,,,,,503653603,0
+HS,2022,202203,Mar-22,0,0,2,Exports,752,Sweden,,842,United States of America,,TOTAL,All Commodities,,,,0.0,1870269289,0
+HS,2022,202203,Mar-22,0,0,1,Imports,757,Switzerland,,842,United States of America,,TOTAL,All Commodities,,,,0.0,2111247480,0
+HS,2022,202203,Mar-22,0,0,2,Exports,757,Switzerland,,842,United States of America,,TOTAL,All Commodities,,,,0.0,10557438925,0
+HS,2022,202203,Mar-22,0,0,1,Imports,768,Togo,,842,United States of America,,TOTAL,All Commodities,,,,0.0,11571661,0
+HS,2022,202203,Mar-22,0,0,2,Exports,768,Togo,,842,United States of America,,TOTAL,All Commodities,,,,0.0,1518474,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,768,Togo,,842,United States of America,,TOTAL,All Commodities,,,,0.0,9833,0
+HS,2022,202203,Mar-22,0,0,1,Imports,792,Turkey,,842,United States of America,,TOTAL,All Commodities,,,,0.0,1324276730,0
+HS,2022,202203,Mar-22,0,0,2,Exports,792,Turkey,,842,United States of America,,TOTAL,All Commodities,,,,0.0,1555476492,0
+HS,2022,202203,Mar-22,0,0,1,Imports,804,Ukraine,,842,United States of America,,TOTAL,All Commodities,,,,0.0,67095604,0
+HS,2022,202203,Mar-22,0,0,2,Exports,804,Ukraine,,842,United States of America,,TOTAL,All Commodities,,,,0.0,25041827,0
+HS,2022,202203,Mar-22,0,0,1,Imports,807,TFYR of Macedonia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,12896012,0
+HS,2022,202203,Mar-22,0,0,2,Exports,807,TFYR of Macedonia,,842,United States of America,,TOTAL,All Commodities,,,,0.0,27346528,0
+HS,2022,202203,Mar-22,0,0,1,Imports,818,Egypt,,842,United States of America,,TOTAL,All Commodities,,,,0.0,612466324,0
+HS,2022,202203,Mar-22,0,0,2,Exports,818,Egypt,,842,United States of America,,TOTAL,All Commodities,,,,0.0,251608378,0
+HS,2022,202203,Mar-22,0,0,1,Imports,826,United Kingdom,,842,United States of America,,TOTAL,All Commodities,,,,0.0,7672403711,0
+HS,2022,202203,Mar-22,0,0,2,Exports,826,United Kingdom,,842,United States of America,,TOTAL,All Commodities,,,,0.0,5599922454,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,826,United Kingdom,,842,United States of America,,TOTAL,All Commodities,,,,0.0,522965723,0
+HS,2022,202203,Mar-22,0,0,1,Imports,854,Burkina Faso,,842,United States of America,,TOTAL,All Commodities,,,,0.0,38520217,0
+HS,2022,202203,Mar-22,0,0,2,Exports,854,Burkina Faso,,842,United States of America,,TOTAL,All Commodities,,,,0.0,15857557,0
+HS,2022,202203,Mar-22,0,0,1,Imports,860,Uzbekistan,,842,United States of America,,TOTAL,All Commodities,,,,0.0,71376450,0
+HS,2022,202203,Mar-22,0,0,2,Exports,860,Uzbekistan,,842,United States of America,,TOTAL,All Commodities,,,,0.0,6411796,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,860,Uzbekistan,,842,United States of America,,TOTAL,All Commodities,,,,0.0,5425493,0
