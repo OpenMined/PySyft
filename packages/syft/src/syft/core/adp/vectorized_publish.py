@@ -139,6 +139,10 @@ def publish(
         input_entities,
     ) = prepare_inputs(tensor, sigma)
 
+    # its important that its the same type so that eq comparisons below dont break
+    zeros_like = jnp.zeros_like(tensor.child)
+
+
     # this prevents us from running in an infinite loop
     previous_budget = None
     previous_spend = None

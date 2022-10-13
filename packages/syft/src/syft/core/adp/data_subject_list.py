@@ -400,8 +400,8 @@ def dslarraytonumpyutf8(string_list: np.ndarray) -> ArrayLike:
         Tuple[np.ndarray, np.ndarray]: utf-8 encoded int Numpy array
     """
     # print("dsl list before", string_list)
-    array_shape = string_list.shape
-    string_list = string_list.flatten()
+    array_shape = np.array(string_list).shape
+    string_list = np.array(string_list).flatten()
     bytes_list = []
     indexes = []
     offset = 0
