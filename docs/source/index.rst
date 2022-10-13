@@ -57,6 +57,11 @@ use and development of PySyft!
 
   resources/index
 
+.. toctree::
+  :maxdepth: 1
+  :hidden:
+
+  guides/index
 
 .. toctree:
    :caption: API Docs
@@ -99,7 +104,7 @@ use and development of PySyft!
     User guide
     ^^^^^^^^^^
 
-    The user guide provides in-depth explanation ok the key concepts used by PySyft
+    The user guide provides in-depth explanation on the key concepts used by PySyft
     and a glossary of terms you may encounter.
 
     +++

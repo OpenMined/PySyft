@@ -31,11 +31,7 @@ class CryptoStore:
         self.store: Dict[Any, Any] = {}
 
     def populate_store(
-        self,
-        op_str: str,
-        primitives: Iterable[Any],
-        *args: List[Any],
-        **kwargs: Dict[Any, Any]
+        self, op_str: str, primitives: Iterable[Any], *args: Any, **kwargs: Any
     ) -> None:
         """Populate items.
 
@@ -49,7 +45,7 @@ class CryptoStore:
         populate_func(self.store, primitives, *args, **kwargs)
 
     def get_primitives_from_store(
-        self, op_str: str, ring_size: int, *args: List[Any], **kwargs: Dict[Any, Any]
+        self, op_str: str, ring_size: int, *args: Any, **kwargs: Any
     ) -> List[Any]:
         """Get primitives from store.
 

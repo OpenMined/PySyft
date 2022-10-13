@@ -15,7 +15,7 @@ repos:
         always_run: true
       - id: check-added-large-files
         always_run: true
-        exclude: ^(notebooks/trade_demo/datasets|packages/syft/src/syft/cache/constant2epsilon_1200k.npy|packages/grid/backend/wheels/.*|packages/syft/docs/img/header.png|packages/syft/docs/img/terminalizer.gif)
+        exclude: ^(notebooks/trade_demo/datasets|packages/syft/src/syft/cache/constant2epsilon_1200k.npy|packages/grid/backend/wheels/.*|packages/syft/docs/img/header.png|packages/syft/docs/img/terminalizer.gif|notebooks/padawan)
       - id: check-yaml
         always_run: true
         exclude: ^(packages/grid/k8s/rendered/)
@@ -60,7 +60,7 @@ repos:
         args: [".", "--settings-path .isort.cfg"]
         always_run: true
   - repo: https://github.com/psf/black
-    rev: 22.3.0
+    rev: 22.8.0
     hooks:
       - id: black
         args: ["."]
@@ -76,7 +76,7 @@ repos:
           - flake8-bugbear
         exclude: ^(packages/syft/src/syft/proto|packages/grid/ansible/)
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.961
+    rev: v0.971
     hooks:
       - id: mypy
         name: mypy-hagrid
@@ -100,7 +100,7 @@ repos:
             "--non-interactive",
           ]
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.961
+    rev: v0.971
     hooks:
       - id: mypy
         name: mypy-grid
@@ -124,7 +124,7 @@ repos:
             "--non-interactive",
           ]
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.961
+    rev: v0.971
     hooks:
       - id: mypy
         name: mypy-syft
@@ -133,7 +133,7 @@ repos:
         exclude: |
           (?x)^(
               packages/syft/examples/.*|
-              packages/syft/tests/.*|
+              packages/syft/tests/syft/.*|
               packages/syft/src/syft/proto.*|
               packages/syft/tests/syft/lib/python.*
           )$

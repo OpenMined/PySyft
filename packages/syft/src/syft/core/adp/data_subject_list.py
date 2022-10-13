@@ -3,9 +3,9 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
-from typing import Dict
 from typing import Iterator
 from typing import List
+from typing import Optional
 from typing import Set
 from typing import Tuple
 from typing import Union
@@ -436,8 +436,11 @@ class DataSubjectArray:
 
     delimiter = ","
 
-    def __init__(self, data_subjects: Union[str, List[str], Set[str]]):
-        self.data_subjects = set(data_subjects)
+    def __init__(self, data_subjects: Optional[Union[str, List[str], Set[str]]] = None):
+        if data_subjects is None:
+            self.data_subjects = set()
+        else:
+            self.data_subjects = set(data_subjects)
 
     def __len__(self) -> int:
         return len(self.data_subjects)
@@ -525,15 +528,15 @@ class DataSubjectArray:
         else:
             return self.data_subjects.isdisjoint(set(item))
 
-    def conjugate(self, *args: List[Any], **kwargs: Dict[Any, Any]) -> DataSubjectArray:
+    def conjugate(self, *args: Any, **kwargs: Any) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)
 
     def subtract(
         self,
         x: Union[DataSubjectArray, Any],
         y: Union[DataSubjectArray, Any],
-        *args: List[Any],
-        **kwargs: Dict[Any, Any],
+        *args: Any,
+        **kwargs: Any,
     ) -> DataSubjectArray:
         if isinstance(y, DataSubjectArray) and isinstance(x, DataSubjectArray):
             return DataSubjectArray(x.data_subjects.union(y.data_subjects))
@@ -550,8 +553,8 @@ class DataSubjectArray:
         self,
         x: Union[DataSubjectArray, Any],
         y: Union[DataSubjectArray, Any],
-        *args: List[Any],
-        **kwargs: Dict[Any, Any],
+        *args: Any,
+        **kwargs: Any,
     ) -> DataSubjectArray:
         if isinstance(y, DataSubjectArray) and isinstance(x, DataSubjectArray):
             return DataSubjectArray(x.data_subjects.union(y.data_subjects))
@@ -578,10 +581,10 @@ class DataSubjectArray:
     def real(self) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)
 
-    def var(self, *args: List[Any], **kwargs: Dict[Any, Any]) -> DataSubjectArray:
+    def var(self, *args: Any, **kwargs: Any) -> DataSubjectArray:
         return (self - np.mean(self)) * (self - np.mean(self))
 
-    def sqrt(self, *args: List[Any], **kwargs: Dict[Any, Any]) -> DataSubjectArray:
+    def sqrt(self, *args: Any, **kwargs: Any) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs) -> ArrayLike:  # type: ignore
