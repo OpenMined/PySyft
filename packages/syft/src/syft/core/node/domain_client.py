@@ -656,11 +656,9 @@ class DomainClient(Client):
                     getattr(asset, "child", None), (PhiTensor, GammaTensor)
                 ):
                     raise Exception(
-                        "ERROR: all private assets must be NumPy ndarray.int32 assets "
-                        + "with proper Differential Privacy metadata applied.\n"
+                        "ERROR: All private assets must have "
+                        + "proper Differential Privacy metadata applied.\n"
                         + "\n"
-                        + "Example: syft.Tensor(np.ndarray([1,2,3,4]).astype(np.int32)).private()\n\n"
-                        + "or\n\n"
                         + "Example: syft.Tensor([1,2,3,4]).private()\n\n"
                         + "and then follow the wizard. 🧙"
                     )
