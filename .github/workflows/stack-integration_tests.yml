@@ -658,8 +658,12 @@ jobs:
       #   if: failure()
       #   run: tar cvzf ./logs.tgz ./logs
 
+      - name: Get current date
+        id: date
+        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+
       - name: Upload logs to GitHub
         uses: actions/upload-artifact@master
         with:
-          name: course-logs.$(date +'%Y-%m-%d %T')
+          name: course-logs-${{ steps.date.outputs.date }}
           path: ./logs/test/course/
