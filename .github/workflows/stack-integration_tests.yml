@@ -654,16 +654,13 @@ jobs:
           tox -e stack.test.course
           docker rm `docker ps -aq` --force || true
 
-      # - name: Tar logs
-      #   if: failure()
-      #   run: tar cvzf ./logs.tgz ./logs
-
       - name: Get current date
         id: date
         run: echo "::set-output name=date::$(date +'%Y-%m-%d-%T')"
 
       - name: Upload logs to GitHub
         uses: actions/upload-artifact@master
+        if: failure()
         with:
           name: course-logs-${{ steps.date.outputs.date }}
           path: ./logs/test/course/
