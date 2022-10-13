@@ -803,8 +803,8 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             args=[],
             kwargs={},
         )
-        dummy_res = np.ones(self.public_shape)
-        result.public_shape = dummy_res.shape
+
+        result.public_shape = data_subjects.shape
         result.public_dtype = self.public_dtype
 
         return result
@@ -875,8 +875,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             args=[],
             kwargs={},
         )
-        dummy_res = np.ones(self.public_shape)
-        result.public_shape = dummy_res.shape
+        result.public_shape = data_subjects.shape
         result.public_dtype = self.public_dtype
 
         return result
@@ -2761,7 +2760,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 If a is 2-D, the sum along the diagonal is returned.
                 If a has larger dimensions, then an array of sums along diagonals is returned.
         """
-        print("WE ARE INSIDE PHI TENSOR")
         result = self.child.trace(offset, axis1, axis2)
 
         # This is potentially expensive

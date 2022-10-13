@@ -615,14 +615,15 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         """
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.trace"
         data_subjects = np.array(self.data_subjects).trace(*args, **kwargs)  # type: ignore
+        num = np.ones(np.array(self.data_subjects).shape).trace(*args, **kwargs)
 
         result = TensorWrappedGammaTensorPointer(
             data_subjects=data_subjects,
             min_vals=lazyrepeatarray(
-                data=self.min_vals.data, shape=data_subjects.shape
+                data=self.min_vals.data * num, shape=data_subjects.shape
             ),
             max_vals=lazyrepeatarray(
-                data=self.max_vals.data, shape=data_subjects.shape
+                data=self.max_vals.data * num, shape=data_subjects.shape
             ),
             client=self.client,
         )
