@@ -10,6 +10,7 @@ def get_padawans(cohort: str) -> Dict[str, str]:
             "skywalker": "PASSED",
             "saffron": "PASSED",
             "yash": "PASSED",
+            "omar": "PASSED",
             "vinal": "PASSED",
             "yangyuqiao": "PASSED",
             "callis": "PASSED",
@@ -29,6 +30,7 @@ def test_trial_of_skill() -> None:
     assert get_padawans("R2Q4")["saffron"] == "PASSED"
     assert get_padawans("R2Q4")["vinal"] == "PASSED"
     assert get_padawans("R2Q4")["yash"] == "PASSED"
+    assert get_padawans("R2Q4")["omar"] == "PASSED"
     assert get_padawans("R2Q4")["yangyuqiao"] == "PASSED"
     assert get_padawans("R2Q4")["callis"] == "PASSED"
     assert get_padawans("R2Q4")["rodrigo"] == "PASSED"
