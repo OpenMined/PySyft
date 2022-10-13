@@ -15,7 +15,7 @@ def get_padawans(cohort: str) -> Dict[str, str]:
             "callis": "PASSED",
             "rodrigo": "PASSED",
             "kanak": "PASSED",
-            "Simran": "PASSED"
+            "Simran": "PASSED",
             "theresa": "PASSED",
             "amdjed": "PASSED",
             "Osam": "PASSED",
