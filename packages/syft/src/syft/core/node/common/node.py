@@ -510,9 +510,7 @@ class Node(AbstractNode):
                 public_exception = e
             else:
                 private_log_msg = f"An {type(e)} has been triggered"  # dont send
-                public_exception = UnknownPrivateException(
-                    "UnknownPrivateException has been triggered."
-                )
+                public_exception = UnknownPrivateException(str(e))
             try:
                 # try printing a useful message
                 private_log_msg += f" by {type(contents)} "

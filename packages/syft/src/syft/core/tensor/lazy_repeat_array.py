@@ -3,9 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
-from typing import Dict
 from typing import Iterable
-from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Tuple
@@ -18,6 +16,8 @@ from scipy.ndimage.interpolation import rotate
 # relative
 from ..common.serde.serializable import serializable
 from .broadcastable import is_broadcastable
+from .config import DEFAULT_FLOAT_NUMPY_TYPE
+from .config import DEFAULT_INT_NUMPY_TYPE
 from .passthrough import is_acceptable_simple_type  # type: ignore
 from .smpc.utils import get_shape
 
@@ -29,10 +29,26 @@ if TYPE_CHECKING:
 @serializable(recursive_serde=True)
 class lazyrepeatarray:
     """
-    When data is repeated along one or more dimensions, store it using lazyrepeatarray
-    so that you can save on RAM and CPU when computing with it. Think like the opposite
-    of np.broadcast, repeated values along an axis are collapsed but the .shape
+    A class representing Differential Privacy metadata (minimum and maximum values) in a way that saves RAM/CPU.
+
+    We store large arrays of a single repeating value as a single tuple (shape) and a single value (int/float/etc)
+    e.g. np.array([8,8,8,8,8,8]) = lazyrepeatarray(data=8, shape=(6,))
+
+    Think like the opposite of np.broadcast, repeated values along an axis are collapsed but the .shape
     attribute of the higher dimensional projection is retained for operations.
+
+    ...
+
+    Attributes:
+        data: int/float
+            the actual value that is repeating.
+        shape: tuple
+            the shape that the fully expanded array would be.
+
+    Methods:
+        to_numpy():
+            expands the lazyrepeatarray into the full sized numpy array it was representing.
+
     """
 
     __attr_allowlist__ = ["data", "shape"]
@@ -54,6 +70,10 @@ class lazyrepeatarray:
 
         if isinstance(data, (bool, int, float)):
             data = np.array(data)
+            if isinstance(data, int):
+                data = data.astype(DEFAULT_INT_NUMPY_TYPE)  # type: ignore
+            if isinstance(data, float):
+                data = data.astype(DEFAULT_FLOAT_NUMPY_TYPE)  # type: ignore
 
         # verify broadcasting works on shapes
         if -1 not in shape:
@@ -104,7 +124,7 @@ class lazyrepeatarray:
         """
         if is_acceptable_simple_type(other):
             res = self.data - other
-            return self.__class__(data=res, shape=res.shape)
+            return self.__class__(data=res, shape=self.shape)
 
         if not is_broadcastable(self.shape, other.shape):
             raise Exception(
@@ -158,7 +178,7 @@ class lazyrepeatarray:
 
         # raise Exception("not sure how to do this yet")
 
-    def zeros_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
+    def zeros_like(self, *args: Any, **kwargs: Any) -> lazyrepeatarray:
         res = np.array(np.zeros_like(self.to_numpy(), *args, **kwargs))
         return lazyrepeatarray(data=res, shape=res.shape)
 
@@ -237,6 +257,7 @@ class lazyrepeatarray:
             raise NotImplementedError
 
     def reshape(self, target_shape: Tuple) -> lazyrepeatarray:
+        # TODO: Can we reshape without creating new objects
         if self.data.shape == self.shape:
             return lazyrepeatarray(
                 data=self.data.reshape(target_shape), shape=target_shape
@@ -258,11 +279,11 @@ class lazyrepeatarray:
     def size(self) -> int:
         return np.prod(self.shape)
 
-    def sum(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
+    def sum(self, *args: Any, **kwargs: Any) -> lazyrepeatarray:
         res = np.array(self.to_numpy().sum(*args, **kwargs))
         return lazyrepeatarray(data=res, shape=res.shape)
 
-    def ones_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
+    def ones_like(self, *args: Any, **kwargs: Any) -> lazyrepeatarray:
         res = np.array(np.ones_like(self.to_numpy(), *args, **kwargs))
         return lazyrepeatarray(data=res, shape=res.shape)
 
@@ -309,7 +330,7 @@ class lazyrepeatarray:
         return self <= other
 
     def concatenate(
-        self, other: lazyrepeatarray, *args: List[Any], **kwargs: Dict[str, Any]
+        self, other: lazyrepeatarray, *args: Any, **kwargs: Any
     ) -> lazyrepeatarray:
         if not isinstance(other, lazyrepeatarray):
             raise NotImplementedError
@@ -341,7 +362,7 @@ class lazyrepeatarray:
     def any(self) -> bool:
         return self.data.any()
 
-    def transpose(self, *args: List[Any], **kwargs: Dict[str, Any]) -> lazyrepeatarray:
+    def transpose(self, *args: Any, **kwargs: Any) -> lazyrepeatarray:
         dummy_res = self.to_numpy().transpose(*args, **kwargs)
         return lazyrepeatarray(
             data=self.data.transpose(*args, **kwargs), shape=dummy_res.shape

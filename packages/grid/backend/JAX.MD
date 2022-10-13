@@ -41,7 +41,7 @@ Linux a875c1c357a3 5.13.0-1017-azure #19~20.04.1-Ubuntu SMP Mon Mar 7 11:34:26 U
 ## Confirm your GLIBC version
 
 If this doesn't match the environment you will be running the jaxlib wheel it might fail.
-In this case we are using the same `FROM python:3.10.4-slim as build` to build as jaxlib we do in our production container to run it.
+In this case we are using the same `FROM python:3.10.7-slim as build` to build as jaxlib we do in our production container to run it.
 
 ```
 $ ldd --version

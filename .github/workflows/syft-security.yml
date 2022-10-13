@@ -9,7 +9,7 @@ on:
       - main
       - "0.6.0"
       - "0.7.0"
-
+      - "0.8"
 defaults:
   run:
     working-directory: ./packages/syft
@@ -66,12 +66,12 @@ jobs:
         run: |
           pip install packaging wheel --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
-          pip install pycapnp
           pip install -e .[dev] -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: Scan for security issues
         if: steps.changes.outputs.syft == 'true'
         run: |
+          pip install importlib-metadata==4.13.0
           bandit -r src
           safety check
 

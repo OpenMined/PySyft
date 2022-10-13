@@ -19,6 +19,7 @@ import jax
 from jax import numpy as jnp
 import numpy as np
 from numpy.random import randint
+from numpy.typing import ArrayLike
 from numpy.typing import NDArray
 from scipy.optimize import shgo
 
@@ -34,10 +35,12 @@ from ....lib.numpy.array import capnp_serialize
 from ....lib.python.util import upcast
 from ....util import inherit_tags
 from ...adp.data_subject_ledger import DataSubjectLedger
-from ...adp.data_subject_list import DataSubjectList
+
+# from ...adp.data_subject_list import DataSubjectList
+from ...adp.data_subject_list import DataSubjectArray
 from ...adp.data_subject_list import dslarraytonumpyutf8
 from ...adp.data_subject_list import numpyutf8todslarray
-from ...adp.vectorized_publish import vectorized_publish
+from ...adp.vectorized_publish import publish
 from ...common.serde.capnp import CapnpModule
 from ...common.serde.capnp import chunk_bytes
 from ...common.serde.capnp import combine_bytes
@@ -61,6 +64,7 @@ from ..smpc import utils
 from ..smpc.mpc_tensor import MPCTensor
 from ..smpc.utils import TYPE_TO_RING_SIZE
 from ..util import implements
+from .gamma_tensor_ops import GAMMA_TENSOR_OP
 
 if TYPE_CHECKING:
     # stdlib
@@ -99,7 +103,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
 
     def __init__(
         self,
-        data_subjects: DataSubjectList,
+        data_subjects: DataSubjectArray,
         min_vals: np.typing.ArrayLike,
         max_vals: np.typing.ArrayLike,
         client: Any,
@@ -464,8 +468,8 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
     def concatenate(
         self,
         other: TensorWrappedGammaTensorPointer,
-        *args: List[Any],
-        **kwargs: Dict[str, Any],
+        *args: Any,
+        **kwargs: Any,
     ) -> MPCTensor:
         """Apply the "add" operation between "self" and "other"
 
@@ -515,7 +519,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
 
     def sum(
         self,
-        *args: Tuple[Any, ...],
+        *args: Any,
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
         """Apply the "truediv" operation between "self" and "other"
@@ -643,7 +647,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
 
     def ones_like(
         self,
-        *args: Tuple[Any, ...],
+        *args: Any,
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
         """Apply the "ones like" operation on self"
@@ -1044,8 +1048,8 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             child=GammaTensor(
                 child=FixedPrecisionTensor(value=None),
                 data_subjects=self.data_subjects,
-                min_val=self.min_vals,  # type: ignore
-                max_val=self.max_vals,  # type: ignore
+                min_vals=self.min_vals,  # type: ignore
+                max_vals=self.max_vals,  # type: ignore
             ),
             public_shape=public_shape,
             public_dtype=public_dtype,
@@ -1055,8 +1059,8 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
 @implements(TensorWrappedGammaTensorPointer, np.ones_like)
 def ones_like(
     tensor: TensorWrappedGammaTensorPointer,
-    *args: Tuple[Any, ...],
-    **kwargs: Dict[Any, Any],
+    *args: Any,
+    **kwargs: Any,
 ) -> TensorWrappedGammaTensorPointer:
     return tensor.ones_like(*args, **kwargs)
 
@@ -1089,22 +1093,22 @@ def create_new_lookup_tables(
     return index2key, key2index, index2values, index2size
 
 
-def no_op(x: GammaTensor) -> GammaTensor:
-    """A Private input will be initialized with this function.
-    Whenever you manipulate a private input (i.e. add it to another private tensor),
-    the result will have a different function. Thus we can check to see if the f
-    """
-    res = x
-    if isinstance(x, GammaTensor) and isinstance(x.data_subjects, np.ndarray):
-        res = GammaTensor(
-            child=x.child,
-            data_subjects=np.zeros_like(x.data_subjects, np.int64),
-            min_vals=x.min_vals,
-            max_vals=x.max_vals,
-            func=x.func,
-            state=GammaTensor.convert_dsl(x.state),
-        )
-    return res
+# def no_op(x: GammaTensor) -> GammaTensor:
+#     """A Private input will be initialized with this function.
+#     Whenever you manipulate a private input (i.e. add it to another private tensor),
+#     the result will have a different function. Thus we can check to see if the f
+#     """
+#     res = x
+#     if isinstance(x, GammaTensor) and isinstance(x.data_subjects, np.ndarray):
+#         res = GammaTensor(
+#             child=x.child,
+#             data_subjects=np.zeros_like(x.data_subjects, np.int64),
+#             min_vals=x.min_vals,
+#             max_vals=x.max_vals,
+#             func_str=x.func_str,
+#             sources=GammaTensor.convert_dsl(x.sources),
+#         )
+#     return res
 
 
 def jax2numpy(value: jnp.array, dtype: np.dtype) -> np.array:
@@ -1116,9 +1120,62 @@ def numpy2jax(value: np.array, dtype: np.dtype) -> jnp.array:
     return jnp.asarray(value, dtype=dtype)
 
 
+# ATTENTION: Shouldn't this be a subclass of some kind of base tensor so all the numpy
+# methods and properties don't need to be re-implemented on it?
 @dataclass
 @serializable(capnp_bytes=True)
 class GammaTensor:
+    """
+    A differential privacy tensor that contains data belonging to atleast 2 or more unique data subjects.
+
+    Attributes:
+        child: jnp.array
+            The private data itself.
+        data_subjects: DataSubjectArray
+            (DP Metadata) A custom NumPy class that keeps track of which data subjects contribute which datapoints in
+            this tensor.
+        min_vals: lazyrepeatarray
+            (DP Metadata) A custom class that keeps track of (data-independent) minimum values for this tensor.
+        max_vals: lazyrepeatarray
+            (DP Metadata) A custom class that keeps track of (data-independent) maximum values for this tensor.
+        func_str: str
+            A string that will determine which function was used to build the current tensor.
+        is_linear: bool
+            Whether the "func_str" for this tensor is a linear query or not. This impacts the epsilon calculations
+            when publishing.
+        sources: dict
+            A dictionary containing all the Tensors, integers, etc that were used to create this tensor.
+            It maps an integer to each input object.
+        id: int
+            A 32-bit integer that is used when this GammaTensor needs to be added to the "sources" dictionary.
+
+    Methods:
+        All efforts were made to make this tensor's API as similar to the NumPy API as possible.
+        Special, unique methods are listed below:
+
+        reconstruct(sources: Optional[dict]):
+            rebuilds the tensor from the sources dictionary provided, or from the current self.sources.
+            This is exclusively used when adding DP Noise, if the data scientist doesn't have enough privacy budget to
+            use one of the input tensors, thus requiring that tensor's data to be removed from the computation.
+
+        swap_state(sources: Optional[Dict]):
+            calls reconstruct() and populates the rest of the GammaTensor's attributes based on the current tensor.
+            Used exclusively when adding DP Noise.
+
+
+
+        decode():
+            occasionally the use of a FixedPrecisionTensor (FPT) is needed during SMPC[1]. This helps convert back from
+            FPT to regular numpy/jax arrays.
+
+            (https://en.wikipedia.org/wiki/Secure_multi-party_computation)
+
+
+
+
+
+    """
+
     PointerClassOverride = TensorWrappedGammaTensorPointer
 
     child: jnp.array
@@ -1126,25 +1183,28 @@ class GammaTensor:
     min_vals: Union[lazyrepeatarray, np.ndarray] = flax.struct.field(pytree_node=False)
     max_vals: Union[lazyrepeatarray, np.ndarray] = flax.struct.field(pytree_node=False)
     is_linear: bool = True
-    func: Callable = flax.struct.field(pytree_node=False, default_factory=lambda: no_op)
+    func_str: str = flax.struct.field(
+        pytree_node=False, default_factory=lambda: GAMMA_TENSOR_OP.NOOP.value
+    )
     id: str = flax.struct.field(
         pytree_node=False, default_factory=lambda: str(randint(0, 2**31 - 1))
     )  # TODO: Need to check if there are any scenarios where this is not secure
-    state: dict = flax.struct.field(pytree_node=False, default_factory=dict)
+    sources: dict = flax.struct.field(pytree_node=False, default_factory=dict)
 
     def __post_init__(
         self,
     ) -> None:  # Might not serve any purpose anymore, since state trees are updated during ops
-        if self.state and len(self.state) == 0 and self.func is not no_op:
-            self.state[self.id] = self
-
-        # if not isinstance(self.min_vals, lazyrepeatarray):
-        #     self.min_vals = lazyrepeatarray(data=self.min_vals, shape=self.shape)
-        #     self.max_vals = lazyrepeatarray(data=self.max_vals, shape=self.shape)
+        if (
+            self.sources
+            and len(self.sources) == 0
+            and self.func_str != GAMMA_TENSOR_OP.NOOP.value
+        ):
+            self.sources[self.id] = self
 
         if isinstance(self.min_vals, lazyrepeatarray):
             if self.min_vals.data.size != 1:
                 self.min_vals.data = self.min_vals.data.min()
+            if self.max_vals.data.size != 1:
                 self.max_vals.data = self.max_vals.data.max()
 
     def decode(self) -> np.ndarray:
@@ -1153,13 +1213,65 @@ class GammaTensor:
         else:
             return self.child
 
-    def run(self, state: dict) -> Union[Callable, GammaTensor]:
-        """This method traverses the computational tree and returns all the private inputs"""
-        # TODO: Can we eliminate "state" and use self.state below?
-        # we hit a private input
-        if self.func is no_op:
-            return self  # .decode()
-        return self.func(state)
+    def reconstruct(self, state: Optional[Dict] = None) -> GammaTensor:
+        if self.func_str == GAMMA_TENSOR_OP.NOOP.value:
+            # ATTENTION:
+            # during publish we attempt to remove nodes if the we exceed budget
+            # if we call swap_state on a terminal Tensor we need to replace the
+            # child with zeros not the current level tensors child which is
+            # not zeroed yet
+            if state is not None and len(state.keys()) == 1:
+                # return the swapped state child to replace
+                try:
+                    return list(state.values())[0].child
+                except Exception as e:
+                    print("Something bad has happened in reconstruct", state)
+                    raise e
+            else:
+                # ATTENTION:
+                # can we have a terminal no_op tensor with multiple state keys?
+                pass
+            return self.child
+        else:
+            # relative
+            from .gamma_functions import GAMMA_FUNC_MAPPER
+
+            jax_op = GAMMA_FUNC_MAPPER[GAMMA_TENSOR_OP(self.func_str)]
+            return jax_op(state if state is not None else self.sources)
+
+    def swap_state(self, state: dict) -> GammaTensor:
+        return GammaTensor(
+            child=self.reconstruct(state),
+            data_subjects=self.data_subjects,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+            sources=state,
+            func_str=self.func_str,
+            is_linear=self.is_linear,
+        )
+
+    @property
+    def size(self) -> int:
+        if (
+            isinstance(self.child, float)
+            or isinstance(self.child, int)
+            or isinstance(self.child, bool)
+        ):
+            return 1
+
+        if hasattr(self.child, "size"):
+            return self.child.size
+        elif hasattr(self.child, "shape"):
+            return np.prod(self.child.shape)
+
+        raise Exception(f"{type(self)} has no attribute size.")
+
+    # def all(self) -> bool:
+    #     if hasattr(self.child, "all"):
+    #         return self.child.all()
+    #     elif isinstance(self.child, Iterable):
+    #         return all(self.child)
+    #     return bool(self.child)
 
     def __add__(self, other: Any) -> GammaTensor:
         # relative
@@ -1173,12 +1285,7 @@ class GammaTensor:
             other = other.gamma
 
         if isinstance(other, GammaTensor):
-
-            def _add(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.add(self.run(state), other.run(state))
-
             output_state[other.id] = other
-            # state.update(other.state)
 
             child = self.child + other.child
             min_val = self.min_vals + other.min_vals
@@ -1186,22 +1293,20 @@ class GammaTensor:
             output_ds = self.data_subjects + other.data_subjects
 
         else:
-
-            def _add(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.add(self.run(state), other)
+            output_state[np.random.randint(low=0, high=2**31 - 1)] = other
 
             child = self.child + other
             min_val = self.min_vals + other
             max_val = self.max_vals + other
-            output_ds = self.data_subjects + other
+            output_ds = self.data_subjects
 
         return GammaTensor(
             child=child,
             data_subjects=output_ds,
             min_vals=min_val,
             max_vals=max_val,
-            func=_add,
-            state=output_state,
+            func_str=GAMMA_TENSOR_OP.ADD.value,
+            sources=output_state,
         )
 
     def __rtruediv__(self, other: SupportedChainType) -> GammaTensor:
@@ -1212,7 +1317,6 @@ class GammaTensor:
                 min_vals=(1 / self.min_vals) * other,
                 max_vals=(1 / self.max_vals) * other,
                 data_subjects=(1 / self.data_subjects) * other,
-                # scalar_manager=self.scalar_manager,
             )
         else:
             print("Type is unsupported:" + str(type(other)))
@@ -1230,10 +1334,6 @@ class GammaTensor:
             other = other.gamma
 
         if isinstance(other, GammaTensor):
-
-            def _sub(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.subtract(self.run(state), other.run(state))
-
             output_state[other.id] = other
 
             child = self.child - other.child
@@ -1243,30 +1343,25 @@ class GammaTensor:
             max_max = self.max_vals.data - other.max_vals.data
             _min_val = np.minimum.reduce([min_min, min_max, max_min, max_max])
             _max_val = np.maximum.reduce([min_min, min_max, max_min, max_max])
-            min_val = self.min_vals.copy()
-            min_val.data = _min_val
-            max_val = self.max_vals.copy()
-            max_val.data = _max_val
+            min_val = lazyrepeatarray(data=_min_val, shape=self.shape)
+            max_val = lazyrepeatarray(data=_max_val, shape=self.shape)
 
             output_ds = self.data_subjects - other.data_subjects
 
         else:
-
-            def _sub(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.subtract(self.run(state), other)
-
             child = self.child - other
             min_val = self.min_vals - other
             max_val = self.max_vals - other
-            output_ds = self.data_subjects - other
+            output_ds = self.data_subjects
+            output_state[np.random.randint(low=0, high=2**31 - 1)] = other
 
         return GammaTensor(
             child=child,
             data_subjects=output_ds,
             min_vals=min_val,
             max_vals=max_val,
-            func=_sub,
-            state=output_state,
+            func_str=GAMMA_TENSOR_OP.SUBTRACT.value,
+            sources=output_state,
         )
 
     def __mul__(self, other: Any) -> GammaTensor:
@@ -1281,10 +1376,6 @@ class GammaTensor:
             other = other.gamma
 
         if isinstance(other, GammaTensor):
-
-            def _mul(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.multiply(self.run(state), other.run(state))
-
             output_state[other.id] = other
             child = self.child * other.child
             min_min = self.min_vals.data * other.min_vals.data
@@ -1296,10 +1387,6 @@ class GammaTensor:
             output_ds = self.data_subjects * other.data_subjects
 
         else:
-
-            def _mul(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.multiply(self.run(state), other)
-
             child = self.child * other
             min_min = self.min_vals.data * other
             min_max = self.min_vals.data * other
@@ -1308,6 +1395,7 @@ class GammaTensor:
             _min_val = np.array(np.min([min_min, min_max, max_min, max_max], axis=0))  # type: ignore
             _max_val = np.array(np.max([min_min, min_max, max_min, max_max], axis=0))  # type: ignore
             output_ds = self.data_subjects * other
+            output_state[np.random.randint(low=0, high=2**31 - 1)] = other
 
         min_val = self.min_vals.copy()
         min_val.data = _min_val
@@ -1319,8 +1407,55 @@ class GammaTensor:
             data_subjects=output_ds,
             min_vals=min_val,
             max_vals=max_val,
-            func=_mul,
-            state=output_state,
+            func_str=GAMMA_TENSOR_OP.MULTIPLY.value,
+            sources=output_state,
+        )
+
+    def __truediv__(self, other: Any) -> GammaTensor:
+        # relative
+        from .phi_tensor import PhiTensor
+
+        output_state = dict()
+        # Add this tensor to the chain
+        output_state[self.id] = self
+
+        if isinstance(other, PhiTensor):
+            other = other.gamma
+
+        if isinstance(other, GammaTensor):
+            output_state[other.id] = other
+            child = self.child / other.child
+            min_min = self.min_vals.data / other.min_vals.data
+            min_max = self.min_vals.data / other.max_vals.data
+            max_min = self.max_vals.data / other.min_vals.data
+            max_max = self.max_vals.data / other.max_vals.data
+            _min_val = np.array(np.min([min_min, min_max, max_min, max_max], axis=0))  # type: ignore
+            _max_val = np.array(np.max([min_min, min_max, max_min, max_max], axis=0))  # type: ignore
+            output_ds = self.data_subjects * other.data_subjects
+
+        else:
+            child = self.child / other
+            min_min = self.min_vals.data / other
+            min_max = self.min_vals.data / other
+            max_min = self.max_vals.data / other
+            max_max = self.max_vals.data / other
+            _min_val = np.array(np.min([min_min, min_max, max_min, max_max], axis=0))  # type: ignore
+            _max_val = np.array(np.max([min_min, min_max, max_min, max_max], axis=0))  # type: ignore
+            output_ds = self.data_subjects
+            output_state[np.random.randint(low=0, high=2**31 - 1)] = other
+
+        min_val = self.min_vals.copy()
+        min_val.data = _min_val
+        max_val = self.max_vals.copy()
+        max_val.data = _max_val
+
+        return GammaTensor(
+            child=child,
+            data_subjects=output_ds,
+            min_vals=min_val,
+            max_vals=max_val,
+            func_str=GAMMA_TENSOR_OP.TRUE_DIVIDE.value,
+            sources=output_state,
         )
 
     def __matmul__(self, other: Any) -> GammaTensor:
@@ -1335,10 +1470,6 @@ class GammaTensor:
             other = other.gamma
 
         if isinstance(other, GammaTensor):
-
-            def _matmul(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.matmul(self.run(state), other.run(state))
-
             output_state[other.id] = other
             child = self.child @ other.child
             min_val = self.min_vals.__matmul__(other.min_vals)
@@ -1346,23 +1477,20 @@ class GammaTensor:
             output_ds = self.data_subjects @ other.data_subjects
 
         else:
-
-            def _matmul(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.matmul(self.run(state), other)
-
             child = self.child @ other
             min_val = self.min_vals.__matmul__(other)
             max_val = self.max_vals.__matmul__(other)
 
             output_ds = self.data_subjects @ other
+            output_state[np.random.randint(low=0, high=2**31 - 1)] = other
 
         return GammaTensor(
             child=child,
             data_subjects=output_ds,
             min_vals=min_val,
             max_vals=max_val,
-            func=_matmul,
-            state=output_state,
+            func_str=GAMMA_TENSOR_OP.MATMUL.value,
+            sources=output_state,
         )
 
     def __rmatmul__(self, other: Any) -> GammaTensor:
@@ -1377,13 +1505,6 @@ class GammaTensor:
             other = other.gamma
 
         if isinstance(other, GammaTensor):
-
-            def _rmatmul(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.matmul(
-                    other.run(state),
-                    self.run(state),
-                )
-
             output_state[other.id] = other
             child = self.child.__rmatmul__(other.child)
             min_val = self.min_vals.__rmatmul__(other.min_vals)
@@ -1391,22 +1512,19 @@ class GammaTensor:
             output_ds = self.data_subjects.__rmatmul__(other.data_subjects)
 
         else:
-
-            def _rmatmul(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.matmul(other, self.run(state))
-
             child = self.child.__rmatmul__(other)
             min_val = self.min_vals.__rmatmul__(other)
             max_val = self.max_vals.__rmatmul__(other)
             output_ds = self.data_subjects.__rmatmul__(other)
+            output_state[np.random.randint(low=0, high=2**31 - 1)] = other
 
         return GammaTensor(
             child=child,
             data_subjects=output_ds,
             min_vals=min_val,
             max_vals=max_val,
-            func=_rmatmul,
-            state=output_state,
+            func_str=GAMMA_TENSOR_OP.RMATMUL.value,
+            sources=output_state,
         )
 
     def __gt__(self, other: Any) -> GammaTensor:
@@ -1421,21 +1539,14 @@ class GammaTensor:
             other = other.gamma
 
         if isinstance(other, GammaTensor):
-
-            def _gt(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.greater(self.run(state), other.run(state))
-
             output_state[other.id] = other
             child = self.child.__gt__(other.child)
-            output_ds = self.data_subjects > other.data_subjects
+            output_ds = self.data_subjects + other.data_subjects
 
         else:
-
-            def _gt(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.greater(self.run(state), other)
-
+            output_state[np.random.randint(low=0, high=2**31 - 1)] = other
             child = self.child.__gt__(other)
-            output_ds = self.data_subjects.__gt__(other)
+            output_ds = self.data_subjects
 
         min_val = self.min_vals * 0
         max_val = (self.max_vals * 0) + 1
@@ -1445,17 +1556,108 @@ class GammaTensor:
             data_subjects=output_ds,
             min_vals=min_val,
             max_vals=max_val,
-            func=_gt,
-            state=output_state,
+            func_str=GAMMA_TENSOR_OP.GREATER.value,
+            sources=output_state,
         )
 
-    def __eq__(self, other: Any) -> bool:
-        if isinstance(other, GammaTensor):
-            return (self.child == other.child).all() and (
-                self.data_subjects == other.data_subjects
-            ).all()
+    def __ge__(self, other: Any) -> GammaTensor:
+        # relative
+        from .phi_tensor import PhiTensor
 
-        return False
+        output_state = dict()
+        # Add this tensor to the chain
+        output_state[self.id] = self
+
+        if isinstance(other, PhiTensor):
+            other = other.gamma
+
+        if isinstance(other, GammaTensor):
+            output_state[other.id] = other
+            child = self.child.__ge__(other.child)
+            output_ds = self.data_subjects + other.data_subjects
+
+        else:
+            output_state[np.random.randint(low=0, high=2**31 - 1)] = other
+            child = self.child.__ge__(other)
+            output_ds = self.data_subjects
+
+        min_val = self.min_vals * 0
+        max_val = (self.max_vals * 0) + 1
+
+        return GammaTensor(
+            child=child,
+            data_subjects=output_ds,
+            min_vals=min_val,
+            max_vals=max_val,
+            func_str=GAMMA_TENSOR_OP.GREATER_EQUAL.value,
+            sources=output_state,
+        )
+
+    def __eq__(self, other: Any) -> GammaTensor:  # type: ignore
+        # relative
+        from .phi_tensor import PhiTensor
+
+        output_state = dict()
+        # Add this tensor to the chain
+        output_state[self.id] = self
+
+        if isinstance(other, PhiTensor):
+            other = other.gamma
+
+        if isinstance(other, GammaTensor):
+            output_state[other.id] = other
+            child = self.child.__eq__(other.child)
+            output_ds = self.data_subjects + other.data_subjects
+
+        else:
+            output_state[np.random.randint(low=0, high=2**31 - 1)] = other
+            child = self.child.__eq__(other)
+            output_ds = self.data_subjects
+
+        min_val = self.min_vals * 0
+        max_val = (self.max_vals * 0) + 1
+
+        return GammaTensor(
+            child=child,
+            data_subjects=output_ds,
+            min_vals=min_val,
+            max_vals=max_val,
+            func_str=GAMMA_TENSOR_OP.EQUAL.value,
+            sources=output_state,
+        )
+
+    def __ne__(self, other: Any) -> GammaTensor:  # type: ignore
+        # relative
+        from .phi_tensor import PhiTensor
+
+        output_state = dict()
+        # Add this tensor to the chain
+        output_state[self.id] = self
+
+        if isinstance(other, PhiTensor):
+            other = other.gamma
+
+        if isinstance(other, GammaTensor):
+            output_state[other.id] = other
+            child = self.child.__ne__(other.child)
+            output_ds = self.data_subjects + other.data_subjects
+
+        else:
+            output_state[np.random.randint(low=0, high=2**31 - 1)] = other
+            child = self.child.__ne__(other)
+            output_ds = self.data_subjects
+
+        min_val = self.min_vals * 0
+        max_val = (self.max_vals * 0) + 1
+
+        return GammaTensor(
+            child=child,
+            data_subjects=output_ds,
+            min_vals=min_val,
+            max_vals=max_val,
+            func_str=GAMMA_TENSOR_OP.NOT_EQUAL.value,
+            sources=output_state,
+        )
 
     def __lt__(self, other: Any) -> GammaTensor:
         # relative
@@ -1469,21 +1671,14 @@ class GammaTensor:
             other = other.gamma
 
         if isinstance(other, GammaTensor):
-
-            def _lt(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.less(self.run(state), other.run(state))
-
             output_state[other.id] = other
             child = self.child.__lt__(other.child)
-            output_ds = self.data_subjects > other.data_subjects
+            output_ds = self.data_subjects + other.data_subjects
 
         else:
-
-            def _lt(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.greater(self.run(state), other)
-
+            output_state[np.random.randint(low=0, high=2**31 - 1)] = other
             child = self.child.__lt__(other)
-            output_ds = self.data_subjects.__lt__(other)
+            output_ds = self.data_subjects
 
         min_val = self.min_vals * 0
         max_val = (self.max_vals * 0) + 1
@@ -1493,8 +1688,8 @@ class GammaTensor:
             data_subjects=output_ds,
             min_vals=min_val,
             max_vals=max_val,
-            func=_lt,
-            state=output_state,
+            func_str=GAMMA_TENSOR_OP.LESS.value,
+            sources=output_state,
         )
 
     def __le__(self, other: Any) -> GammaTensor:
@@ -1509,19 +1704,12 @@ class GammaTensor:
             other = other.gamma
 
         if isinstance(other, GammaTensor):
-
-            def _le(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.less_equal(self.run(state), other.run(state))
-
             output_state[other.id] = other
             child = self.child.__le__(other.child)
-            output_ds = self.data_subjects <= other.data_subjects
+            output_ds = self.data_subjects + other.data_subjects
 
         else:
-
-            def _le(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.less_equal(self.run(state), other)
-
+            output_state[np.random.randint(low=0, high=2**31 - 1)] = other
             child = self.child.__le__(other)
             output_ds = self.data_subjects
 
@@ -1533,8 +1721,8 @@ class GammaTensor:
             data_subjects=output_ds,
             min_vals=min_val,
             max_vals=max_val,
-            func=_le,
-            state=output_state,
+            func_str=GAMMA_TENSOR_OP.LESS_EQUAL.value,
+            sources=output_state,
         )
 
     def exp(self) -> GammaTensor:
@@ -1558,16 +1746,13 @@ class GammaTensor:
         max_val = self.max_vals.copy()
         max_val.data = np.array(exp_reduction(max_val.data))
 
-        def _exp(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.log(self.run(state))
-
         return GammaTensor(
             child=exp(self.child),
             min_vals=min_val,
             max_vals=max_val,
-            data_subjects=np.exp(self.data_subjects),
-            func=_exp,
-            state=output_state,
+            data_subjects=self.data_subjects,
+            func_str=GAMMA_TENSOR_OP.EXP.value,
+            sources=output_state,
         )
 
     def log(self) -> GammaTensor:
@@ -1587,23 +1772,18 @@ class GammaTensor:
         elif isinstance(self.min_vals, (int, float)):
             min_val = lazyrepeatarray(data=np.log(self.min_vals), shape=self.shape)
             max_val = lazyrepeatarray(data=np.log(self.max_vals), shape=self.shape)
-            # min_vals = np.log(self.min_vals),
-            # max_vals = np.log(self.max_vals)
         else:
             raise NotImplementedError(
                 f"Undefined behaviour for type: {type(self.min_vals)}"
             )
 
-        def _log(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.log(self.run(state))
-
         return GammaTensor(
             child=np.log(self.child),
             min_vals=min_val,
             max_vals=max_val,
-            data_subjects=np.log(self.data_subjects),
-            func=_log,
-            state=output_state,
+            data_subjects=self.data_subjects,
+            func_str=GAMMA_TENSOR_OP.LOG.value,
+            sources=output_state,
         )
 
     def reciprocal(self) -> GammaTensor:
@@ -1618,9 +1798,6 @@ class GammaTensor:
         min_val.data = np.array(1 / (min_val.data))
         max_val = self.max_vals.copy()
         max_val.data = np.array(1 / (max_val.data))
-
-        def _reciprocal(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.divide(1, self.run(state))
 
         # TODO: Explore why overflow does not occur for arrays
         fpt = self.child.copy()
@@ -1637,56 +1814,97 @@ class GammaTensor:
             min_vals=min_val,
             max_vals=max_val,
             data_subjects=self.data_subjects,
-            func=_reciprocal,
-            state=output_state,
+            func_str=GAMMA_TENSOR_OP.RECIPROCAL.value,
+            sources=output_state,
         )
 
     def softmax(self) -> GammaTensor:
-        output_state = dict()
-        # Add this tensor to the chain
-        output_state[self.id] = self
+        # TODO: Need to figure out how to modify _softmax to make this work with new publish
+        # output_state = dict()
+        # # Add this tensor to the chain
+        # output_state[self.id] = self
+        #
+        # # relative
+        # from ...smpc.approximations import exp
+        # from ...smpc.approximations import reciprocal
+        #
+        # def softmax(val: np.ndarray) -> np.ndarray:
+        #     logits = val - val.max()
+        #     numerator = np.exp(logits)
+        #     inv = 1 / numerator.sum()
+        #     return numerator * inv
+        #
+        # min_val = self.min_vals.copy()
+        # min_val.data = np.array(softmax(min_val.data))
+        # max_val = self.max_vals.copy()
+        # max_val.data = np.array(softmax(max_val.data))
+        # fpt = self.child.copy()
+        # if not isinstance(fpt.child, np.ndarray):
+        #     raise ValueError("Softmax currently works only for numpy child")
+        #
+        # fpt.child = fpt.child - fpt.child.max()
+        # numerator = exp(fpt)
+        # inv = reciprocal(numerator.sum())  # type: ignore
+        #
+        # def _softmax(state: dict) -> jax.numpy.DeviceArray:
+        #     return jnp.exp(self.run(state)) / jnp.exp(self.run(state)).sum()
+        #
+        # return GammaTensor(
+        #     child=numerator * inv,
+        #     min_vals=min_val,
+        #     max_vals=max_val,
+        #     data_subjects=self.data_subjects,
+        #     func_str=_softmax,
+        #     sources=output_state,
+        # )
+        raise NotImplementedError
 
-        # relative
-        from ...smpc.approximations import exp
-        from ...smpc.approximations import reciprocal
+    def flatten(self, order: str = "C") -> GammaTensor:
+        """
+        Return a copy of the array collapsed into one dimension.
 
-        def softmax(val: np.ndarray) -> np.ndarray:
-            logits = val - val.max()
-            numerator = np.exp(logits)
-            inv = 1 / numerator.sum()
-            return numerator * inv
+        Parameters
+            order{‘C’, ‘F’, ‘A’, ‘K’}, optional
+                ‘C’ means to flatten in row-major (C-style) order.
+                ‘F’ means to flatten in column-major (Fortran- style) order.
+                ‘A’ means to flatten in column-major order if a is Fortran contiguous in memory,
+                        row-major order otherwise.
+                ‘K’ means to flatten a in the order the elements occur in memory. The default is ‘C’.
+        Returns
+            GammaTensor
+        A copy of the input array, flattened to one dimension.
 
-        min_val = self.min_vals.copy()
-        min_val.data = np.array(softmax(min_val.data))
-        max_val = self.max_vals.copy()
-        max_val.data = np.array(softmax(max_val.data))
-        fpt = self.child.copy()
-        if not isinstance(fpt.child, np.ndarray):
-            raise ValueError("Softmax currently works only for numpy child")
+        """
 
-        fpt.child = fpt.child - fpt.child.max()
-        numerator = exp(fpt)
-        inv = reciprocal(numerator.sum())  # type: ignore
+        if order == "C":
+            func = GAMMA_TENSOR_OP.FLATTEN_C.value
+        elif order == "F":
+            func = GAMMA_TENSOR_OP.FLATTEN_F.value
+        elif order == "A":
+            func = GAMMA_TENSOR_OP.FLATTEN_A.value
+        elif order == "K":
+            func = GAMMA_TENSOR_OP.FLATTEN_K.value
+        else:
+            raise NotImplementedError(f"Flatten not implemented for order={order}")
 
-        def _softmax(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.exp(self.run(state)) / jnp.exp(self.run(state)).sum()
+        output_sources = dict()
+        output_sources[self.id] = self
 
+        result = self.child.flatten(order)
         return GammaTensor(
-            child=numerator * inv,
-            min_vals=min_val,
-            max_vals=max_val,
-            data_subjects=self.data_subjects,
-            func=_softmax,
-            state=output_state,
+            child=result,
+            data_subjects=self.data_subjects.flatten(order),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
+            is_linear=True,
+            func_str=func,
+            sources=output_sources,
         )
 
     def transpose(self, *args: Any, **kwargs: Any) -> GammaTensor:
         output_state = dict()
         # Add this tensor to the chain
         output_state[self.id] = self
-
-        def _transpose(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.transpose(self.run(state))
 
         output_ds = self.data_subjects.transpose(*args)
         output_data = self.child.transpose(*args)
@@ -1699,8 +1917,8 @@ class GammaTensor:
             data_subjects=output_ds,
             min_vals=min_vals,
             max_vals=max_vals,
-            func=_transpose,
-            state=output_state,
+            func_str=GAMMA_TENSOR_OP.TRANSPOSE.value,
+            sources=output_state,
         )
 
     @property
@@ -1710,13 +1928,14 @@ class GammaTensor:
     def sum(
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs: Any
     ) -> GammaTensor:
-        def _sum(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.sum(self.run(state).child)  # type: ignore
-
         output_state = dict()
         output_state[self.id] = self
 
         child = self.child.sum(axis=axis, **kwargs)
+        if not isinstance(
+            child, np.ndarray
+        ):  # Avoid tensor.child being an int/float instead of array
+            child = np.array(child)
 
         min_v = child.min()
         max_v = child.max()
@@ -1726,17 +1945,13 @@ class GammaTensor:
             data_subjects=np.array(self.data_subjects.sum(axis=axis, **kwargs)),
             min_vals=lazyrepeatarray(data=min_v, shape=child.shape),
             max_vals=lazyrepeatarray(data=max_v, shape=child.shape),
-            func=_sum,
-            state=output_state,
+            func_str=GAMMA_TENSOR_OP.SUM.value,
+            sources=output_state,
         )
 
-    def ones_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> GammaTensor:
-        def _ones_like(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.ones_like(self.run(state))
-
+    def ones_like(self, *args: Any, **kwargs: Any) -> GammaTensor:
         output_state = dict()
         output_state[self.id] = self
-        # output_state.update(self.state)
 
         child = (
             np.ones_like(self.child, *args, **kwargs)
@@ -1752,21 +1967,17 @@ class GammaTensor:
             data_subjects=self.data_subjects,
             min_vals=min_val,
             max_vals=max_val,
-            func=_ones_like,
-            state=output_state,
+            func_str=GAMMA_TENSOR_OP.ONES_LIKE.value,
+            sources=output_state,
         )
 
-    def zeros_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> GammaTensor:
-        def _zeros_like(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.zeros_like(self.run(state))
-
+    def zeros_like(self, *args: Any, **kwargs: Any) -> GammaTensor:
         output_state = dict()
         output_state[self.id] = self
-        # output_state.update(self.state)
 
         child = (
             np.zeros_like(self.child, *args, **kwargs)
-            if isinstance(self.child, np.ndarray)
+            if not hasattr(self.child, "zeros_like")
             else self.child.zeros_like(*args, **kwargs)
         )
 
@@ -1778,17 +1989,23 @@ class GammaTensor:
             data_subjects=self.data_subjects,
             min_vals=min_val,
             max_vals=max_val,
-            func=_zeros_like,
-            state=output_state,
+            func_str=GAMMA_TENSOR_OP.ZEROS_LIKE.value,
+            sources=output_state,
+        )
+
+    def filtered(self) -> GammaTensor:
+        # This is only used during publish to filter out data in GammaTensors with no_op. It serves no other purpose.
+        return GammaTensor(
+            child=jnp.zeros_like(self.child),
+            data_subjects=self.data_subjects,
+            min_vals=self.min_vals * 0,
+            max_vals=self.max_vals * 1,
+            func_str=GAMMA_TENSOR_OP.NOOP.value,
         )
 
     def ravel(self) -> GammaTensor:
-        def _ravel(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.ravel(self.run(state))
-
         output_state = dict()
         output_state[self.id] = self
-        # output_state.update(self.state)
 
         data = self.child
         output_data = data.ravel()
@@ -1803,56 +2020,248 @@ class GammaTensor:
             data_subjects=output_data_subjects,
             min_vals=min_val,
             max_vals=max_val,
-            func=_ravel,
-            state=output_state,
+            func_str=GAMMA_TENSOR_OP.RAVEL.value,
+            sources=output_state,
+        )
+
+    def resize(self, new_shape: Union[int, Tuple[int, ...]]) -> GammaTensor:
+        output_state = dict()
+        output_state[self.id] = self
+
+        data = self.child
+        output_data = np.resize(data, new_shape)
+        output_data_subjects = np.resize(self.data_subjects, new_shape)
+
+        min_val = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape)
+        max_val = lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape)
+
+        return GammaTensor(
+            child=output_data,
+            data_subjects=output_data_subjects,
+            min_vals=min_val,
+            max_vals=max_val,
+            func_str=GAMMA_TENSOR_OP.RESIZE.value,
+            sources=output_state,
+        )
+
+    def compress(
+        self, condition: List[bool], axis: Optional[int] = None
+    ) -> GammaTensor:
+        output_state = dict()
+        output_state[self.id] = self
+
+        data = self.child
+        output_data = data.compress(condition, axis)
+        output_data_subjects = self.data_subjects.compress(condition, axis)
+
+        min_val = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape)
+        max_val = lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape)
+
+        return GammaTensor(
+            child=output_data,
+            data_subjects=output_data_subjects,
+            min_vals=min_val,
+            max_vals=max_val,
+            func_str=GAMMA_TENSOR_OP.COMPRESS.value,
+            sources=output_state,
+        )
+
+    def squeeze(
+        self, axis: Optional[Union[int, Tuple[int, ...]]] = None
+    ) -> GammaTensor:
+        output_state = dict()
+        output_state[self.id] = self
+
+        data = self.child
+        output_data = np.squeeze(data, axis)
+        output_data_subjects = np.squeeze(self.data_subjects, axis)
+
+        min_val = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape)
+        max_val = lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape)
+
+        return GammaTensor(
+            child=output_data,
+            data_subjects=output_data_subjects,
+            min_vals=min_val,
+            max_vals=max_val,
+            func_str=GAMMA_TENSOR_OP.SQUEEZE.value,
+            sources=output_state,
+        )
+
+    def any(
+        self,
+        axis: Optional[Union[int, Tuple[int, ...]]] = None,
+        keepdims: Optional[bool] = False,
+        where: Optional[ArrayLike] = None,
+    ) -> GammaTensor:
+        output_state = dict()
+        output_state[self.id] = self
+
+        if where is None:
+            out_child = np.array(self.child.any(axis=axis, keepdims=keepdims))
+            new_data_subjects = np.add.reduce(
+                self.data_subjects,
+                axis=axis,
+                keepdims=keepdims,
+            )
+        else:
+            out_child = np.array(
+                self.child.any(axis=axis, keepdims=keepdims, where=where)
+            )
+            new_data_subjects = np.add.reduce(
+                self.data_subjects,
+                axis=axis,
+                keepdims=keepdims,
+                initial=DataSubjectArray(),
+                where=where,
+            )
+
+        return GammaTensor(
+            child=out_child,
+            data_subjects=new_data_subjects,
+            min_vals=lazyrepeatarray(data=0, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=1, shape=out_child.shape),
+            func_str=GAMMA_TENSOR_OP.ANY.value,
+            sources=output_state,
+        )
+
+    def all(
+        self,
+        axis: Optional[Union[int, Tuple[int, ...]]] = None,
+        keepdims: Optional[bool] = False,
+        where: Optional[ArrayLike] = None,
+    ) -> GammaTensor:
+        output_state = dict()
+        output_state[self.id] = self
+
+        if where is None:
+            out_child = np.array(self.child.all(axis=axis, keepdims=keepdims))
+            new_data_subjects = np.add.reduce(
+                self.data_subjects,
+                axis=axis,
+                keepdims=keepdims,
+            )
+        else:
+            out_child = np.array(
+                self.child.all(axis=axis, keepdims=keepdims, where=where)
+            )
+            new_data_subjects = np.add.reduce(
+                self.data_subjects,
+                axis=axis,
+                keepdims=keepdims,
+                initial=DataSubjectArray(),
+                where=where,
+            )
+
+        return GammaTensor(
+            child=out_child,
+            data_subjects=new_data_subjects,
+            min_vals=lazyrepeatarray(data=0, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=1, shape=out_child.shape),
+            func_str=GAMMA_TENSOR_OP.ALL.value,
+            sources=output_state,
+        )
+
+    def __and__(self, value) -> GammaTensor:  # type: ignore
+        output_state = dict()
+        output_state[self.id] = self
+
+        output_data = self.child & value
+
+        return GammaTensor(
+            child=output_data,
+            data_subjects=self.data_subjects,
+            min_vals=lazyrepeatarray(data=0, shape=output_data.shape),
+            max_vals=lazyrepeatarray(data=1, shape=output_data.shape),
+            func_str=GAMMA_TENSOR_OP.LOGICAL_AND.value,
+            sources=output_state,
+        )
+
+    def __or__(self, value) -> GammaTensor:  # type: ignore
+        output_state = dict()
+        output_state[self.id] = self
+
+        output_data = self.child | value
+
+        return GammaTensor(
+            child=output_data,
+            data_subjects=self.data_subjects,
+            min_vals=lazyrepeatarray(data=0, shape=output_data.shape),
+            max_vals=lazyrepeatarray(data=1, shape=output_data.shape),
+            func_str=GAMMA_TENSOR_OP.LOGICAL_OR.value,
+            sources=output_state,
+        )
+
+    def __pos__(self) -> GammaTensor:
+        output_state = dict()
+        output_state[self.id] = self
+
+        return GammaTensor(
+            child=self.child,
+            data_subjects=self.data_subjects,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+            func_str=GAMMA_TENSOR_OP.POSITIVE.value,
+            sources=output_state,
+        )
+
+    def __neg__(self) -> GammaTensor:
+        output_state = dict()
+        output_state[self.id] = self
+
+        return GammaTensor(
+            child=self.child * -1,
+            data_subjects=self.data_subjects,
+            min_vals=self.max_vals * -1,
+            max_vals=self.min_vals * -1,
+            func_str=GAMMA_TENSOR_OP.NEGATIVE.value,
+            sources=output_state,
         )
 
     def reshape(self, shape: Tuple[int, ...]) -> GammaTensor:
-        child = self.child.reshape(shape)
-        output_shape = child.shape
+        raise NotImplementedError
+        # # TODO: Check if this can publish properly since source changes aren't made
+        # child = self.child.reshape(shape)
+        # output_shape = child.shape
 
-        if isinstance(self.min_vals, lazyrepeatarray):
-            if self.min_vals.data.shape == 1:
-                minv = self.min_vals.reshape(output_shape)
-                maxv = self.max_vals.reshape(output_shape)
-            elif self.min_vals.data.shape == self.min_vals.shape:
-                minv = self.min_vals.reshape(output_shape)
-                minv.data = minv.data.min()
+        # if isinstance(self.min_vals, lazyrepeatarray):
+        #     if self.min_vals.data.shape == 1:
+        #         minv = self.min_vals.reshape(output_shape)
+        #         maxv = self.max_vals.reshape(output_shape)
+        #     elif self.min_vals.data.shape == self.min_vals.shape:
+        #         minv = self.min_vals.reshape(output_shape)
+        #         minv.data = minv.data.min()
 
-                maxv = self.max_vals.reshape(output_shape)
-                maxv.data = maxv.data.max()
-            else:
-                minv = self.min_vals.reshape(output_shape)
-                minv.data = minv.data.min()
+        #         maxv = self.max_vals.reshape(output_shape)
+        #         maxv.data = maxv.data.max()
+        #     else:
+        #         minv = self.min_vals.reshape(output_shape)
+        #         minv.data = minv.data.min()
 
-                maxv = self.max_vals.reshape(output_shape)
-                maxv.data = maxv.data.max()
+        #         maxv = self.max_vals.reshape(output_shape)
+        #         maxv.data = maxv.data.max()
 
-        elif isinstance(self.min_vals, (int, float)):
-            minv = self.min_vals  # type: ignore
-            maxv = self.max_vals
-        else:
-            minv = self.min_vals
-            maxv = self.max_vals
+        # elif isinstance(self.min_vals, (int, float)):
+        #     minv = self.min_vals  # type: ignore
+        #     maxv = self.max_vals
+        # else:
+        #     minv = self.min_vals
+        #     maxv = self.max_vals
 
-        return GammaTensor(
-            child=child,
-            data_subjects=self.data_subjects.reshape(shape),
-            min_vals=minv,
-            max_vals=maxv,
-        )
+        # return GammaTensor(
+        #     child=child,
+        #     data_subjects=self.data_subjects.reshape(shape),
+        #     min_vals=minv,
+        #     max_vals=maxv,
+        # )
 
     def _argmax(self, axis: Optional[int]) -> np.ndarray:
-        return self.child.argmax(axis)
+        raise NotImplementedError
+        # return self.child.argmax(axis)
 
     def mean(self, axis: Union[int, Tuple[int, ...]], **kwargs: Any) -> GammaTensor:
         output_state = dict()
         output_state[self.id] = self
-
-        def _mean(
-            state: dict, axis: Union[int, Tuple[int, ...]] = axis
-        ) -> jax.numpy.DeviceArray:
-            return jnp.mean(self.run(state), axis)
 
         result = self.child.mean(axis, **kwargs)
         minv = (
@@ -1870,33 +2279,28 @@ class GammaTensor:
             data_subjects=self.data_subjects.mean(axis, **kwargs),
             min_vals=lazyrepeatarray(data=minv, shape=result.shape),
             max_vals=lazyrepeatarray(data=(maxv + minv) / 2, shape=result.shape),
-            state=output_state,
-            func=_mean,
+            sources=output_state,
+            func_str=GAMMA_TENSOR_OP.MEAN.value,
         )
 
     def expand_dims(self, axis: Optional[int] = None) -> GammaTensor:
+        raise NotImplementedError
+        # result = np.expand_dims(self.child, axis)
 
-        result = np.expand_dims(self.child, axis)
+        # target_shape_dsl = list(self.data_subjects.shape)
+        # if axis:
+        #     target_shape_dsl.insert(axis + 1, 1)
 
-        target_shape_dsl = list(self.data_subjects.shape)
-        if axis:
-            target_shape_dsl.insert(axis + 1, 1)
-
-        return GammaTensor(
-            child=result,
-            data_subjects=np.expand_dims(self.data_subjects, axis),
-            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
-            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
-        )
+        # return GammaTensor(
+        #     child=result,
+        #     data_subjects=np.expand_dims(self.data_subjects, axis),
+        #     min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
+        #     max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
+        # )
 
     def std(self, axis: Union[int, Tuple[int, ...]], **kwargs: Any) -> GammaTensor:
         output_state = dict()
         output_state[self.id] = self
-
-        def _std(
-            state: dict, axis: Union[int, Tuple[int, ...]] = axis
-        ) -> jax.numpy.DeviceArray:
-            return jnp.std(self.run(state), axis)
 
         result = self.child.std(axis, **kwargs)
         minv = (
@@ -1916,59 +2320,57 @@ class GammaTensor:
             max_vals=lazyrepeatarray(
                 data=0.25 * (maxv + minv) ** 2, shape=result.shape
             ),
-            state=output_state,
-            func=_std,
+            sources=output_state,
+            func_str=GAMMA_TENSOR_OP.STD.value,
         )
 
     def dot(self, other: Union[np.ndarray, GammaTensor]) -> GammaTensor:
         # TODO: These bounds might not be super tight- if min,max = [-1, 1], there might be a dot product
         # such that the minimum value should be 0
         if isinstance(other, np.ndarray):
-            result = jnp.dot(self.child, other)
+            raise NotImplementedError
+            # result = jnp.dot(self.child, other)
 
-            output_ds = self.data_subjects.dot(other)
+            # output_ds = self.data_subjects.dot(other)
 
-            if isinstance(self.min_vals, lazyrepeatarray):
-                minv = lazyrepeatarray(
-                    data=jnp.dot(
-                        np.ones_like(self.child) * self.min_vals.data, other
-                    ).min(),
-                    shape=result.shape,
-                )
-                maxv = lazyrepeatarray(
-                    data=jnp.dot(
-                        np.ones_like(self.child) * self.max_vals.data, other
-                    ).max(),
-                    shape=result.shape,
-                )
+            # if isinstance(self.min_vals, lazyrepeatarray):
+            #     minv = lazyrepeatarray(
+            #         data=jnp.dot(
+            #             np.ones_like(self.child) * self.min_vals.data, other
+            #         ).min(),
+            #         shape=result.shape,
+            #     )
+            #     maxv = lazyrepeatarray(
+            #         data=jnp.dot(
+            #             np.ones_like(self.child) * self.max_vals.data, other
+            #         ).max(),
+            #         shape=result.shape,
+            #     )
 
-            elif isinstance(self.min_vals, (int, float)):
-                minv = lazyrepeatarray(
-                    data=jnp.dot(np.ones_like(self.child) * self.min_vals, other).min(),
-                    shape=result.shape,
-                )
-                maxv = lazyrepeatarray(
-                    data=jnp.dot(np.ones_like(self.child) * self.max_vals, other).max(),
-                    shape=result.shape,
-                )
-            else:
-                raise NotImplementedError
+            # elif isinstance(self.min_vals, (int, float)):
+            #     minv = lazyrepeatarray(
+            #         data=jnp.dot(np.ones_like(self.child) * self.min_vals, other).min(),
+            #         shape=result.shape,
+            #     )
+            #     maxv = lazyrepeatarray(
+            #         data=jnp.dot(np.ones_like(self.child) * self.max_vals, other).max(),
+            #         shape=result.shape,
+            #     )
+            # else:
+            #     raise NotImplementedError
 
-            return GammaTensor(
-                child=result,
-                data_subjects=output_ds,
-                min_vals=minv,
-                max_vals=maxv,
-            )
+            # return GammaTensor(
+            #     child=result,
+            #     data_subjects=output_ds,
+            #     min_vals=minv,
+            #     max_vals=maxv,
+            # )
         elif isinstance(other, GammaTensor):
             output_state = dict()
             output_state[self.id] = self
             output_state[other.id] = other
 
             output_ds = self.data_subjects.dot(other.data_subjects)
-
-            def _dot(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.dot(self.run(state))
 
             result = jnp.dot(self.child, other.child)
 
@@ -2011,8 +2413,8 @@ class GammaTensor:
                 data_subjects=output_ds,
                 min_vals=minv,
                 max_vals=maxv,
-                func=_dot,
-                state=output_state,
+                func_str=GAMMA_TENSOR_OP.DOT.value,
+                sources=output_state,
             )
         else:
             raise NotImplementedError(
@@ -2020,11 +2422,8 @@ class GammaTensor:
             )
 
     def sqrt(self) -> GammaTensor:
-        def _sqrt(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.sqrt(self.run(state))
-
         state = dict()
-        state.update(self.state)
+        state.update(self.sources)
 
         min_v = jnp.sqrt(self.min_vals.data)
         max_v = jnp.sqrt(self.min_vals.data)
@@ -2038,16 +2437,13 @@ class GammaTensor:
             data_subjects=self.data_subjects,
             min_vals=min_val,
             max_vals=max_val,
-            func=_sqrt,
-            state=state,
+            func_str=GAMMA_TENSOR_OP.SQRT.value,
+            sources=state,
         )
 
     def abs(self) -> GammaTensor:
-        def _abs(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.abs(self.run(state))
-
         state = dict()
-        state.update(self.state)
+        state.update(self.sources)
 
         data = self.child
         output = np.abs(data)
@@ -2060,16 +2456,13 @@ class GammaTensor:
             data_subjects=self.data_subjects,
             min_vals=lazyrepeatarray(min_v, shape=output.shape),
             max_vals=lazyrepeatarray(max_v, shape=output.shape),
-            func=_abs,
-            state=state,
+            func_str=GAMMA_TENSOR_OP.ABS.value,
+            sources=state,
         )
 
     def clip(self, a_min: float, a_max: float) -> GammaTensor:
-        def _clip(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.clip(self.run(state))
-
         state = dict()
-        state.update(self.state)
+        state.update(self.sources)
 
         output_data = self.child.clip(a_min, a_max)
 
@@ -2084,8 +2477,8 @@ class GammaTensor:
             data_subjects=self.data_subjects,
             min_vals=min_vals,
             max_vals=max_vals,
-            func=_clip,
-            state=state,
+            func_str=GAMMA_TENSOR_OP.CLIP.value,
+            sources=state,
         )
 
     @staticmethod
@@ -2102,8 +2495,8 @@ class GammaTensor:
                         ),
                         min_vals=tensor.min_vals,
                         max_vals=tensor.max_vals,
-                        func=tensor.func,
-                        state=GammaTensor.convert_dsl(tensor.state, {}),
+                        func_str=tensor.func_str,
+                        sources=GammaTensor.convert_dsl(tensor.sources, {}),
                     )
                     # for idx, row in enumerate(tensor.data_subjects):
                     #     tensor.data_subjects[idx] = jnp.zeros_like(np.zeros_like(row), jnp.int64)
@@ -2120,50 +2513,22 @@ class GammaTensor:
         get_budget_for_user: Callable,
         deduct_epsilon_for_user: Callable,
         ledger: DataSubjectLedger,
-        sigma: Optional[float] = None,
-        dsl_hack: bool = False,
-    ) -> jax.numpy.DeviceArray:
+        sigma: float,
+    ) -> np.ndarray:
 
-        if dsl_hack is False:
-            if sigma is None:
-                sigma = (
-                    self.child.mean() / 4
-                )  # TODO @Ishan: replace this with calibration
+        if (
+            not self.sources
+        ):  # if state tree is empty (e.g. publishing a PhiTensor w/ public vals directly)
+            self.sources[self.id] = self
 
-            # if self.child.dtype != np.int64:
-            #     raise Exception(
-            #         "Data type of private values is not np.int64: ", self.child.dtype
-            #     )
-
-            if (
-                not self.state
-            ):  # if state tree is empty (e.g. publishing a PhiTensor w/ public vals directly)
-                self.state[self.id] = self
-
-            return vectorized_publish(
-                min_vals=self.min_vals,
-                max_vals=self.max_vals,
-                state_tree=self.state,
-                data_subjects=self.data_subjects,
-                is_linear=self.is_linear,
-                sigma=sigma,
-                output_func=self.func,
-                ledger=ledger,
-                get_budget_for_user=get_budget_for_user,
-                deduct_epsilon_for_user=deduct_epsilon_for_user,
-            )
-        else:
-            tensor = GammaTensor(
-                child=self.child,
-                data_subjects=np.zeros_like(self.data_subjects),
-                min_vals=self.min_vals,
-                max_vals=self.max_vals,
-                state=GammaTensor.convert_dsl(self.state),
-            )
-
-            return tensor.publish(
-                get_budget_for_user, deduct_epsilon_for_user, ledger, sigma
-            )
+        return publish(
+            tensor=self,
+            ledger=ledger,
+            get_budget_for_user=get_budget_for_user,
+            deduct_epsilon_for_user=deduct_epsilon_for_user,
+            sigma=sigma,
+            is_linear=self.is_linear,
+        )
 
     # def expand_dims(self, axis: int) -> GammaTensor:
     #     def _expand_dims(state: dict) -> jax.numpy.DeviceArray:
@@ -2178,26 +2543,18 @@ class GammaTensor:
     #         min_vals=self.min_vals,
     #         max_vals=self.max_vals,
     #         func=_expand_dims,
-    #         state=state,
+    #         sources=state,
     #     )
 
-    def squeeze(self, axis: Optional[int] = None) -> GammaTensor:
-        def _squeeze(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.squeeze(self.run(state), axis)
-
-        state = dict()
-        state.update(self.state)
-        return GammaTensor(
-            child=jnp.squeeze(self.child, axis),
-            data_subjects=jnp.squeeze(self.data_subjects, None),
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
-            func=_squeeze,
-            state=state,
-        )
-
     def __len__(self) -> int:
-        return len(self.child)
+        if not hasattr(self.child, "__len__"):
+            if self.child is None:
+                return 0
+            return 1
+        try:
+            return len(self.child)
+        except Exception:  # nosec
+            return self.child.size
 
     def __getitem__(self, item: Union[int, slice, PassthroughTensor]) -> GammaTensor:
         # TODO: Technically we could reduce ds.one_hot_lookup to remove any DS that won't be there
@@ -2283,6 +2640,72 @@ class GammaTensor:
         else:
             raise NotImplementedError
 
+    def copy(self, order: str = "C") -> GammaTensor:
+        """
+        Return a copy of the array.
+
+        Parameters
+            order:  {‘C’, ‘F’, ‘A’, ‘K’}, optional
+
+        Controls the memory layout of the copy.
+        ‘C’ means C-order, ‘F’ means F-order,
+        ‘A’ means ‘F’ if a is Fortran contiguous,
+        ‘C’ otherwise.
+        ‘K’ means match the layout of a as closely as possible.
+        (Note that this function and numpy.copy are very similar but have different default values
+        for their order= arguments, and this function always passes sub-classes through.)
+
+
+        """
+        return GammaTensor(
+            child=self.child.copy(order),
+            data_subjects=self.data_subjects.copy(order),
+            min_vals=self.min_vals.copy(order),
+            max_vals=self.max_vals.copy(order),
+            func_str=self.func_str,
+            sources=self.sources,
+        )
+
+    def repeat(
+        self, repeats: Union[int, Tuple[int, ...]], axis: Optional[int] = None
+    ) -> GammaTensor:
+        raise NotImplementedError
+        # """
+        # Repeat elements of an array.
+
+        # Parameters
+        #     repeats: int or array of ints
+
+        #         The number of repetitions for each element. repeats is broadcasted to fit the shape of the given axis.
+
+        #     axis: int, optional
+
+        #         The axis along which to repeat values. By default, use the flattened input array, and return a flat
+        #         output array.
+
+        # Returns
+
+        #     repeated_array: PhiTensor
+
+        #         Output array which has the same shape as a, except along the given axis.
+
+        # """
+
+        # result = self.child.repeat(repeats, axis)
+        # if isinstance(self.min_vals, lazyrepeatarray):
+        #     minv = lazyrepeatarray(data=self.min_vals.data.min(), shape=result.shape)
+        #     maxv = lazyrepeatarray(data=self.max_vals.data.max(), shape=result.shape)
+        # else:
+        #     minv = self.min_vals
+        #     maxv = self.max_vals
+
+        # return GammaTensor(
+        #     child=result,
+        #     data_subjects=self.data_subjects.repeat(repeats, axis),
+        #     min_vals=minv,
+        #     max_vals=maxv,
+        # )
+
     @property
     def shape(self) -> Tuple[int, ...]:
         return self.child.shape
@@ -2294,11 +2717,14 @@ class GammaTensor:
         #     raise Exception
 
         print("Starting JAX JIT")
-        fn = jax.jit(self.func)
+        # relative
+        from .gamma_functions import GAMMA_FUNC_MAPPER
+
+        fn = jax.jit(GAMMA_FUNC_MAPPER[GAMMA_TENSOR_OP(self.func_str)])
         print("Traced self.func with jax's jit, now calculating gradient")
         grad_fn = jax.grad(fn)
         print("Obtained gradient, creating lookup tables")
-        i2k, k2i, i2v, i2s = create_new_lookup_tables(self.state)
+        i2k, k2i, i2v, i2s = create_new_lookup_tables(self.sources)
 
         print("created lookup tables, now getting bounds")
         i2minval = jnp.concatenate([x for x in i2v]).reshape(-1, 1)
@@ -2340,10 +2766,10 @@ class GammaTensor:
         # TODO: See if we can call np.stack on the output and create a vectorized tensor instead of a list of tensors
         input_tensors = []
         for tensor in state_tree.values():
-            if tensor.func is no_op:
+            if tensor.func_str == GAMMA_TENSOR_OP.NOOP.value:
                 input_tensors.append(tensor)
             else:
-                input_tensors += GammaTensor.get_input_tensors(tensor.state)
+                input_tensors += GammaTensor.get_input_tensors(tensor.sources)
         return input_tensors
 
     def _object2bytes(self) -> bytes:
@@ -2354,7 +2780,6 @@ class GammaTensor:
         # this is how we dispatch correct deserialization of bytes
         gamma_msg.magicHeader = serde_magic_header(type(self))
 
-        # what is the difference between inputs and value which do we serde
         # do we need to serde func? if so how?
         # what about the state dict?
 
@@ -2372,7 +2797,7 @@ class GammaTensor:
             chunk_bytes(serialize(self.child, to_bytes=True), "child", gamma_msg)  # type: ignore
             gamma_msg.isNumpy = False
 
-        gamma_msg.state = serialize(self.state, to_bytes=True)
+        gamma_msg.sources = serialize(self.sources, to_bytes=True)
         chunk_bytes(
             capnp_serialize(dslarraytonumpyutf8(self.data_subjects), to_bytes=True),
             "dataSubjects",
@@ -2387,6 +2812,7 @@ class GammaTensor:
         gamma_msg.maxVal = serialize(self.max_vals, to_bytes=True)
         gamma_msg.isLinear = self.is_linear
         gamma_msg.id = self.id
+        gamma_msg.funcStr = self.func_str
 
         # return gamma_msg.to_bytes_packed()
         return gamma_msg.to_bytes()
@@ -2409,7 +2835,7 @@ class GammaTensor:
             else:
                 child = deserialize(combine_bytes(gamma_msg.child), from_bytes=True)
 
-            state = deserialize(gamma_msg.state, from_bytes=True)
+            state = deserialize(gamma_msg.sources, from_bytes=True)
 
             data_subjects = numpyutf8todslarray(
                 capnp_deserialize(
@@ -2421,6 +2847,7 @@ class GammaTensor:
             max_val = deserialize(gamma_msg.maxVal, from_bytes=True)
             is_linear = gamma_msg.isLinear
             id_str = gamma_msg.id
+            func_str = gamma_msg.funcStr
 
             return GammaTensor(
                 child=child,
@@ -2428,6 +2855,7 @@ class GammaTensor:
                 min_vals=min_val,
                 max_vals=max_val,
                 is_linear=is_linear,
-                state=state,
+                sources=state,
                 id=id_str,
+                func_str=func_str,
             )

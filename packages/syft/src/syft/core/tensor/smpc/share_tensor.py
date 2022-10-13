@@ -111,7 +111,7 @@ RING_SIZE_TO_OP = {
 CACHE_CLIENTS: Dict[str, Any] = {}
 
 
-def populate_store(*args: List[Any], **kwargs: Dict[Any, Any]) -> None:
+def populate_store(*args: Any, **kwargs: Any) -> None:
     ShareTensor.crypto_store.populate_store(*args, **kwargs)  # type: ignore
     return None
 
@@ -735,6 +735,10 @@ class ShareTensor(PassthroughTensor):
 
         # return True
 
+        # ATTENTION: Why are we getting here now when we never did before?
+        if not hasattr(other, "child"):
+            return self.child == other
+
         return self.child == other.child
 
     # TRASK: commenting out because ShareTEnsor doesn't appear to have .session_uuid or .config
@@ -787,9 +791,7 @@ class ShareTensor(PassthroughTensor):
         share.child = value
         return share
 
-    def concatenate(
-        self, other: ShareTensor, *args: List[Any], **kwargs: Dict[str, Any]
-    ) -> ShareTensor:
+    def concatenate(self, other: ShareTensor, *args: Any, **kwargs: Any) -> ShareTensor:
         res = self.copy()
         res.child = np.concatenate((self.child, other.child), *args, **kwargs)
         return res
@@ -805,9 +807,7 @@ class ShareTensor(PassthroughTensor):
             A hooked method
         """
 
-        def method_all_shares(
-            _self: ShareTensor, *args: List[Any], **kwargs: Dict[Any, Any]
-        ) -> Any:
+        def method_all_shares(_self: ShareTensor, *args: Any, **kwargs: Any) -> Any:
 
             share = _self.child
 
