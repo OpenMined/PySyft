@@ -482,9 +482,7 @@ class MPCTensor(PassthroughTensor):
             A hooked method
         """
 
-        def method_all_shares(
-            _self: MPCTensor, *args: List[Any], **kwargs: Dict[Any, Any]
-        ) -> Any:
+        def method_all_shares(_self: MPCTensor, *args: Any, **kwargs: Any) -> Any:
 
             shares = []
 
@@ -619,7 +617,7 @@ class MPCTensor(PassthroughTensor):
         return mpc_tensor, other
 
     def __apply_private_op(
-        self, other: MPCTensor, op_str: str, **kwargs: Dict[Any, Any]
+        self, other: MPCTensor, op_str: str, **kwargs: Any
     ) -> List[ShareTensor]:
 
         op_method = f"__{op_str}__"
@@ -639,7 +637,7 @@ class MPCTensor(PassthroughTensor):
         return res_shares
 
     def __apply_public_op(
-        self, y: Any, op_str: str, **kwargs: Dict[Any, Any]
+        self, y: Any, op_str: str, **kwargs: Any
     ) -> List[ShareTensor]:
         op_method = f"__{op_str}__"
         if op_str in {"mul", "matmul", "add", "sub"}:
@@ -895,8 +893,8 @@ class MPCTensor(PassthroughTensor):
     def concatenate(
         self,
         other: Union[MPCTensor, TensorPointer],
-        *args: List[Any],
-        **kwargs: Dict[str, Any],
+        *args: Any,
+        **kwargs: Any,
     ) -> MPCTensor:
         self, other = MPCTensor.sanity_checks(self, other)
 
