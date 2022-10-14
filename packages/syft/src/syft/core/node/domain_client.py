@@ -30,7 +30,8 @@ from ..node.common.node_service.network_search.network_search_messages import (
 )
 from ..pointer.pointer import Pointer
 from ..store.proxy_dataset import ProxyDataset
-from ..tensor.autodp.adp_tensor import ADPTensor
+from ..tensor.autodp.gamma_tensor import GammaTensor
+from ..tensor.autodp.phi_tensor import PhiTensor
 from ..tensor.tensor import Tensor
 from .abstract.node import AbstractNodeClient
 from .common.action.exception_action import ExceptionMessage
@@ -655,14 +656,12 @@ class DomainClient(Client):
             for _, asset in assets.items():
 
                 if not isinstance(asset, Tensor) or not isinstance(
-                    getattr(asset, "child", None), ADPTensor
+                    getattr(asset, "child", None), (PhiTensor, GammaTensor)
                 ):
                     raise Exception(
-                        "ERROR: all private assets must be NumPy ndarray.int32 assets "
-                        + "with proper Differential Privacy metadata applied.\n"
+                        "ERROR: All private assets must have "
+                        + "proper Differential Privacy metadata applied.\n"
                         + "\n"
-                        + "Example: syft.Tensor(np.ndarray([1,2,3,4]).astype(np.int32)).private()\n\n"
-                        + "or\n\n"
                         + "Example: syft.Tensor([1,2,3,4]).private()\n\n"
                         + "and then follow the wizard. 🧙"
                     )
