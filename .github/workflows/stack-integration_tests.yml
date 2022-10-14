@@ -657,7 +657,6 @@ jobs:
       #Move docker logs out of tox
       - name: Create logs folder and write logs
         if: steps.changes.outputs.stack == 'true'
-        continue-on-error: true
         shell: bash
         run: |
           mkdir -p logs/test/course
@@ -674,11 +673,12 @@ jobs:
 
       - name: Get current date
         id: date
+        if: ${{ always() }}
         run: echo "::set-output name=date::$(date +'%Y-%m-%d-%T')"
 
       - name: Upload logs to GitHub
         uses: actions/upload-artifact@master
-        if: failure()
+        if: ${{always()}}
         with:
           name: course-logs-${{ steps.date.outputs.date }}
           path: ./logs/test/course/
