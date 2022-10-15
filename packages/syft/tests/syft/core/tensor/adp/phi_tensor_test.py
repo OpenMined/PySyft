@@ -51,6 +51,7 @@ def dims() -> int:
 def dsa(dims: int) -> DataSubjectArray:
     return DataSubjectArray.from_objs(np.ones((dims, dims)))
 
+
 @pytest.fixture
 def reference_data(highest, dims) -> np.ndarray:
     """This generates random data to test the equality operators"""
@@ -1255,6 +1256,7 @@ def test_std(
     assert (result.child >= result.min_vals.data).all()
     assert (result.child <= result.max_vals.data).all()
 
+
 def test_trace(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1312,4 +1314,3 @@ def test_min(
     assert result.child == reference_data.min()
     assert result.child >= result.min_vals.data
     assert result.child <= result.max_vals.data
-
