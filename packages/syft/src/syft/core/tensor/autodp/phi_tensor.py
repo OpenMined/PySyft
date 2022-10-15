@@ -669,8 +669,8 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         """
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.cumsum"
         result: TensorWrappedPhiTensorPointer
-        data_subjects = np.array(self.data_subjects.trace(*args, **kwargs))
-        num = np.ones(np.array(self.data_subjects).shape).trace(*args, **kwargs)
+        data_subjects = np.array(self.data_subjects.cumsum(*args, **kwargs))
+        num = np.ones(np.array(self.data_subjects).shape).cumsum(*args, **kwargs)
 
         result = TensorWrappedPhiTensorPointer(
             data_subjects=self.data_subjects,
@@ -739,7 +739,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         """
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.cumprod"
         result: TensorWrappedPhiTensorPointer
-        data_subjects = np.array(self.data_subjects.trace(*args, **kwargs))
+        data_subjects = np.array(self.data_subjects.cumprod(*args, **kwargs))
         num = np.ones(np.array(self.data_subjects).shape).cumsum(*args, **kwargs)
         if abs(self.max_vals.data) >= abs(self.min_vals.data):
             highest = abs(self.max_vals.data)
@@ -752,7 +752,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
                 data=-((highest**num).max()), shape=data_subjects.shape
             ),
             max_vals=lazyrepeatarray(
-                data=-((highest**num).max()), shape=data_subjects.shape
+                data=(highest**num).max(), shape=data_subjects.shape
             ),
             client=self.client,
         )
