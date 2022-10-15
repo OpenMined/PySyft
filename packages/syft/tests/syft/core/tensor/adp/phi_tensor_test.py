@@ -1314,4 +1314,3 @@ def test_min(
     assert result.child == reference_data.min()
     assert result.child >= result.min_vals.data
     assert result.child <= result.max_vals.data
-
