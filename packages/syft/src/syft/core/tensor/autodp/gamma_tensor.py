@@ -517,6 +517,22 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         """
         return TensorWrappedGammaTensorPointer._apply_op(self, other, "__truediv__")
 
+    def __floordiv__(
+        self,
+        other: Union[
+            TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the "floodiv" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__floordiv__")
+
     def sum(
         self,
         *args: Any,
@@ -578,6 +594,92 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         )
         dummy_res = np.empty(self.public_shape).sum(*args, **kwargs)
         result.public_shape = dummy_res.shape
+        result.public_dtype = self.public_dtype
+
+        return result
+
+    def prod(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """
+        Return the product of array elements over a given axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which a product is performed.
+                The default, axis=None, will calculate the product of all the elements in the input array.
+                If axis is negative it counts from the last to the first axis.
+
+                If axis is a tuple of ints, a product is performed on all of the axes specified in the tuple instead of
+                a single axis or all the axes as before.
+
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the prod method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+
+            initial: scalar, optional
+                The starting value for this product. See reduce for details.
+
+            where: array_like of bool, optional
+                Elements to include in the product. See reduce for details.
+        """
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.prod"
+        data_subjects = np.array(self.data_subjects).prod(*args, **kwargs)  # type: ignore
+
+        result = TensorWrappedGammaTensorPointer(
+            data_subjects=data_subjects,
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data ** (self.child.size / data_subjects.size),
+                shape=data_subjects.shape,
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data ** (self.child.size / data_subjects.size),
+                shape=data_subjects.shape,
+            ),
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[],
+            kwargs={},
+        )
+        result.public_shape = data_subjects.shape
         result.public_dtype = self.public_dtype
 
         return result
