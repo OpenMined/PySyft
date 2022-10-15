@@ -508,10 +508,9 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         """
         return TensorWrappedPhiTensorPointer._apply_op(self, other, "__truediv__")
 
-
     def __floordiv__(
-            self,
-            other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
+        self,
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
     ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
         """Apply the "truediv" operation between "self" and "other"
 
@@ -669,7 +668,6 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
         return result
 
-
     def prod(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
         """
         Return the product of array elements over a given axis.
@@ -703,10 +701,12 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         result = TensorWrappedPhiTensorPointer(
             data_subjects=self.data_subjects,
             min_vals=lazyrepeatarray(
-                data=self.min_vals.data ** (self.child.size / data_subjects.size), shape=data_subjects.shape
+                data=self.min_vals.data ** (self.child.size / data_subjects.size),
+                shape=data_subjects.shape,
             ),
             max_vals=lazyrepeatarray(
-                data=self.min_vals.data ** (self.child.size / data_subjects.size), shape=data_subjects.shape
+                data=self.min_vals.data ** (self.child.size / data_subjects.size),
+                shape=data_subjects.shape,
             ),
             client=self.client,
         )
