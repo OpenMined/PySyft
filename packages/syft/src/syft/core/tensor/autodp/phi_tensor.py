@@ -654,6 +654,150 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
         return result
 
+    def cumsum(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Return the cumulative sum of the elements along a given axis.
+
+        Parameters
+            axis: int, optional
+                Axis along which the cumulative sum is computed. The default (None) is to compute the cumsum over the
+                flattened array.
+        Returns
+            cumsum_along_axis: PhiTensor
+                A new array holding the result is returned. The result has the same size as input, and the same shape as
+                 a if axis is not None or a is 1-d.
+        """
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.cumsum"
+        result: TensorWrappedPhiTensorPointer
+        data_subjects = np.array(self.data_subjects.trace(*args, **kwargs))
+        num = np.ones(np.array(self.data_subjects).shape).trace(*args, **kwargs)
+
+        result = TensorWrappedPhiTensorPointer(
+            data_subjects=self.data_subjects,
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data * num, shape=data_subjects.shape
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data * num, shape=data_subjects.shape
+            ),
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[],
+            kwargs={},
+        )
+
+        result.public_shape = data_subjects.shape
+        result.public_dtype = self.public_dtype
+
+        return result
+
+    def cumprod(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Return the cumulative product of the elements along a given axis.
+
+        Parameters
+            axis: int, optional
+                Axis along which the cumulative product is computed. The default (None) is to compute the cumprod over
+                the flattened array.
+        Returns
+            cumprod_along_axis: PhiTensor
+                A new array holding the result is returned. The result has the same size as input, and the same shape as
+                 a if axis is not None or a is 1-d.
+        """
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.cumprod"
+        result: TensorWrappedPhiTensorPointer
+        data_subjects = np.array(self.data_subjects.trace(*args, **kwargs))
+        num = np.ones(np.array(self.data_subjects).shape).cumsum(*args, **kwargs)
+        if abs(self.max_vals.data) >= abs(self.min_vals.data):
+            highest = abs(self.max_vals.data)
+        else:
+            highest = abs(self.min_vals.data)
+
+        result = TensorWrappedPhiTensorPointer(
+            data_subjects=self.data_subjects,
+            min_vals=lazyrepeatarray(
+                data=-((highest**num).max()), shape=data_subjects.shape
+            ),
+            max_vals=lazyrepeatarray(
+                data=-((highest**num).max()), shape=data_subjects.shape
+            ),
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[],
+            kwargs={},
+        )
+
+        result.public_shape = data_subjects.shape
+        result.public_dtype = self.public_dtype
+
+        return result
+
     def trace(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
         """
         Return the sum along diagonals of the array.
@@ -684,14 +828,15 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.trace"
         result: TensorWrappedPhiTensorPointer
         data_subjects = np.array(self.data_subjects.trace(*args, **kwargs))
+        num = np.ones(np.array(self.data_subjects).shape).trace(*args, **kwargs)
 
         result = TensorWrappedPhiTensorPointer(
             data_subjects=self.data_subjects,
             min_vals=lazyrepeatarray(
-                data=self.min_vals.data, shape=data_subjects.shape
+                data=self.min_vals.data * num, shape=data_subjects.shape
             ),
             max_vals=lazyrepeatarray(
-                data=self.max_vals.data, shape=data_subjects.shape
+                data=self.max_vals.data * num, shape=data_subjects.shape
             ),
             client=self.client,
         )
