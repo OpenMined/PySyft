@@ -2879,7 +2879,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=maxv,
         )
 
-
     def cumsum(
         self,
         axis: Optional[int] = None,
@@ -2939,7 +2938,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 data=-((highest**num).max()), shape=result.shape
             ),
             max_vals=lazyrepeatarray(data=(highest**num).max(), shape=result.shape),
-            )
+        )
 
     def trace(self, offset: int = 0, axis1: int = 0, axis2: int = 1) -> PhiTensor:
         """

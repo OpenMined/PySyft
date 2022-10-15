@@ -49,11 +49,6 @@ def dims() -> int:
 
 
 @pytest.fixture
-def dsa(dims: int) -> DataSubjectArray:
-    return DataSubjectArray.from_objs(np.random.choice([0, 1], (dims, dims)))
-
-
-@pytest.fixture
 def reference_data(highest, dims) -> np.ndarray:
     """This generates random data to test the equality operators"""
     reference_data = np.random.randint(
@@ -1024,10 +1019,6 @@ def test_all(
     assert isinstance(result.data_subjects, DataSubjectArray)
 
 
-
-
-
-
 def test_cumsum(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1054,6 +1045,7 @@ def test_cumsum(
     assert list(result.sources.keys())[0] == tensor.id
     assert list(result.sources.values())[0] == tensor
 
+
 def test_trace(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1075,6 +1067,7 @@ def test_trace(
     assert result.child == reference_data.trace(offset=1)
     assert result.child >= result.min_vals.data
     assert result.child <= result.max_vals.data
+
 
 def test_cumprod(
     reference_data: np.ndarray,
@@ -1103,6 +1096,7 @@ def test_cumprod(
     assert list(result.sources.keys())[0] == tensor.id
     assert list(result.sources.values())[0] == tensor
 
+
 def test_max(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1119,6 +1113,7 @@ def test_max(
     assert result.child == reference_data.max()
     assert result.child >= result.min_vals.data
     assert result.child <= result.max_vals.data
+
 
 def test_min(
     reference_data: np.ndarray,
