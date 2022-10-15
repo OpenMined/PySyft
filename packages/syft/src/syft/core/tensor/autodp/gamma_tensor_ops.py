@@ -42,6 +42,9 @@ class GAMMA_TENSOR_OP(Enum):
     COPY = "copy"
     TAKE = "take"
     PUT = "put"
+    TRACE = "trace"
+    MIN = "min"
+    MAX = "max"
     # Our Methods
     RECIPROCAL = "reciprocal"
     FLATTEN_C = "flatten_c"
