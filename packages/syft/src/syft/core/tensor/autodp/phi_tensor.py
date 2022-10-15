@@ -654,6 +654,94 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
         return result
 
+    def __pow__(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        First array elements raised to powers from second array, element-wise.
+
+        Raise each base in x1 to the positionally-corresponding power in x2.
+        x1 and x2 must be broadcastable to the same shape.
+        An integer type raised to a negative integer power will raise a ValueError.
+        Negative values raised to a non-integral value will return nan.
+
+        Parameters
+            x2: array_like
+
+                The exponents. If self.shape != x2.shape, they must be broadcastable to a common shape.
+
+            where: array_like, optional
+
+                This condition is broadcast over the input. At locations where the condition is True, the out array will
+                 be set to the ufunc result.
+                 Elsewhere, the out array will retain its original value.
+
+            **kwargs
+                For other keyword-only arguments, see the ufunc docs.
+
+        Returns
+            y: PhiTensorPointer
+                The bases in the tensor raised to the exponents in x2. This is a scalar if both self and x2 are scalars.
+        """
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.__pow__"
+        result: TensorWrappedPhiTensorPointer
+        data_subjects = np.array(self.data_subjects.__pow__(*args, **kwargs))
+
+        if self.min_vals.data <= 0 <= self.max_vals.data:
+            # If data is in range [-5, 5], it's possible the minimum is 0 and not (-5)^2
+            minv = min(0, (self.min_vals.data.__pow__(*args, **kwargs)).min())
+        else:
+            minv = self.min_vals.data.__pow__(*args, **kwargs)
+
+        result = TensorWrappedPhiTensorPointer(
+            data_subjects=self.data_subjects,
+            min_vals=lazyrepeatarray(data=minv, shape=data_subjects.shape),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data.__pow__(*args, **kwargs),
+                shape=data_subjects.shape,
+            ),
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[],
+            kwargs={},
+        )
+
+        result.public_shape = data_subjects.shape
+        result.public_dtype = self.public_dtype
+
+        return result
+
     def trace(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
         """
         Return the sum along diagonals of the array.

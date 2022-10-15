@@ -49,11 +49,6 @@ def dims() -> int:
 
 
 @pytest.fixture
-def dsa(dims: int) -> DataSubjectArray:
-    return DataSubjectArray.from_objs(np.random.choice([0, 1], (dims, dims)))
-
-
-@pytest.fixture
 def reference_data(highest, dims) -> np.ndarray:
     """This generates random data to test the equality operators"""
     reference_data = np.random.randint(

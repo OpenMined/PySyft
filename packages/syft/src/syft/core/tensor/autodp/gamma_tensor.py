@@ -522,13 +522,26 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         *args: Any,
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-        """Apply the "truediv" operation between "self" and "other"
+        """
+        Sum of array elements over a given axis.
 
-        Args:
-            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
-
-        Returns:
-            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which a sum is performed.
+                The default, axis=None, will sum all of the elements of the input array.
+                If axis is negative it counts from the last to the first axis.
+                If axis is a tuple of ints, a sum is performed on all of the axes specified in the tuple instead of a
+                single axis or all the axes as before.
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the sum method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+            initial: scalar, optional
+                Starting value for the sum. See reduce for details.
+            where: array_like of bool, optional
+                Elements to include in the sum. See reduce for details.
         """
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.sum"
         min_vals = self.min_vals.sum(*args, **kwargs)
@@ -578,6 +591,96 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         )
         dummy_res = np.empty(self.public_shape).sum(*args, **kwargs)
         result.public_shape = dummy_res.shape
+        result.public_dtype = self.public_dtype
+
+        return result
+
+    def __pow__(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """
+        First array elements raised to powers from second array, element-wise.
+
+        Raise each base in x1 to the positionally-corresponding power in x2.
+        x1 and x2 must be broadcastable to the same shape.
+        An integer type raised to a negative integer power will raise a ValueError.
+        Negative values raised to a non-integral value will return nan.
+
+        Parameters
+            x2: array_like
+
+                The exponents. If self.shape != x2.shape, they must be broadcastable to a common shape.
+
+            where: array_like, optional
+
+                This condition is broadcast over the input. At locations where the condition is True, the out array will
+                 be set to the ufunc result.
+                 Elsewhere, the out array will retain its original value.
+
+            **kwargs
+                For other keyword-only arguments, see the ufunc docs.
+
+        Returns
+            y: PhiTensorPointer
+                The bases in the tensor raised to the exponents in x2. This is a scalar if both self and x2 are scalars.
+        """
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.__pow__"
+        data_subjects = np.array(self.data_subjects.__pow__(*args, **kwargs))  # type: ignore
+
+        if self.min_vals.data <= 0 <= self.max_vals.data:
+            # If data is in range [-5, 5], it's possible the minimum is 0 and not (-5)^2
+            minv = min(0, (self.min_vals.data.__pow__(*args, **kwargs)).min())
+        else:
+            minv = self.min_vals.data.__pow__(*args, **kwargs)
+
+        result = TensorWrappedGammaTensorPointer(
+            data_subjects=data_subjects,
+            min_vals=lazyrepeatarray(data=minv, shape=data_subjects.shape),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data.__pow__(*args, **kwargs),
+                shape=data_subjects.shape,
+            ),
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[],
+            kwargs={},
+        )
+        result.public_shape = data_subjects.shape
         result.public_dtype = self.public_dtype
 
         return result
@@ -2217,7 +2320,6 @@ class GammaTensor:
             func_str=GAMMA_TENSOR_OP.SUM.value,
             sources=sources,
         )
-
 
     def __pow__(
         self, power: Union[float, int], modulo: Optional[int] = None
