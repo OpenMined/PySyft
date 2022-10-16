@@ -648,7 +648,6 @@ jobs:
 
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
-        continue-on-error: true
         shell: bash
         run: |
           docker rm `docker ps -aq` --force || true
@@ -656,7 +655,7 @@ jobs:
 
       #Move docker logs out of tox
       - name: Create logs folder and write logs
-        if: steps.changes.outputs.stack == 'true'
+        if:  ${{ always() }}
         shell: bash
         run: |
           mkdir -p logs/test/course
@@ -674,7 +673,7 @@ jobs:
       - name: Get current date
         id: date
         if: ${{ always() }}
-        run: echo "::set-output name=date::$(date +'%Y-%m-%d-%T')"
+        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
 
       - name: Upload logs to GitHub
         uses: actions/upload-artifact@master
