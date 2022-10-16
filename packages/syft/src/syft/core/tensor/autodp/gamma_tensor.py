@@ -583,9 +583,9 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         return result
 
     def cumsum(
-            self,
-            *args: Any,
-            **kwargs: Any,
+        self,
+        *args: Any,
+        **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
         """
         Return the cumulative sum of the elements along a given axis.
@@ -655,9 +655,9 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         return result
 
     def cumprod(
-            self,
-            *args: Any,
-            **kwargs: Any,
+        self,
+        *args: Any,
+        **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
         """
         Return the cumulative product of the elements along a given axis.
@@ -729,7 +729,6 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         result.public_dtype = self.public_dtype
 
         return result
-
 
     def trace(
         self,
