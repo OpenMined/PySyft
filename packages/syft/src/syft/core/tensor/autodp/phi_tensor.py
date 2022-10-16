@@ -701,11 +701,13 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         result = TensorWrappedPhiTensorPointer(
             data_subjects=self.data_subjects,
             min_vals=lazyrepeatarray(
-                data=self.min_vals.data ** (self.child.size / data_subjects.size),
+                data=self.min_vals.data
+                ** (np.array(self.data_subjects).size / data_subjects.size),
                 shape=data_subjects.shape,
             ),
             max_vals=lazyrepeatarray(
-                data=self.max_vals.data ** (self.child.size / data_subjects.size),
+                data=self.max_vals.data
+                ** (np.array(self.data_subjects).size / data_subjects.size),
                 shape=data_subjects.shape,
             ),
             client=self.client,
