@@ -569,6 +569,12 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     ) -> PassthroughTensor:
         return self.__class__(self.child.std(axis=axis))
 
+    # numpy.var(a, axis=None, dtype=None, out=None, ddof=0, keepdims=<no value>, *, where=<no value>)
+    def var(
+        self, axis: Optional[Union[int, TypeTuple[int, ...]]] = None
+    ) -> PassthroughTensor:
+        return self.__class__(self.child.var(axis=axis))
+
     def sum(self, *args, **kwargs) -> PassthroughTensor:
         result = self.child.sum(*args, **kwargs)
         if hasattr(self, "copy_tensor"):

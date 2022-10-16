@@ -157,6 +157,7 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.core.tensor.tensor.Tensor.sort", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.squeeze", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.std", "syft.core.tensor.tensor.Tensor"),
+        ("syft.core.tensor.tensor.Tensor.var", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.sum", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.take", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.tag", "syft.core.tensor.tensor.Tensor"),
