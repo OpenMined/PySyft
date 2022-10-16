@@ -947,6 +947,93 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
         return result
 
+    def take(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Take elements from an array along an axis.
+
+        When axis is not None, this function does the same thing as “fancy” indexing (indexing arrays using arrays); 
+        however, it can be easier to use if you need elements along a given axis. 
+        A call such as np.take(arr, indices, axis=3) is equivalent to arr[:,:,:,indices,...].
+
+        Explained without fancy indexing, this is equivalent to the following use of ndindex, which sets each of ii, jj, and kk to a tuple of indices:
+
+        Ni, Nk = a.shape[:axis], a.shape[axis+1:]
+        Nj = indices.shape
+        for ii in ndindex(Ni):
+            for jj in ndindex(Nj):
+                for kk in ndindex(Nk):
+                    out[ii + jj + kk] = a[ii + (indices[jj],) + kk]
+
+        Parameters
+            indices: array_like (Ni…, J, Nk…)
+                The indices of the values to extract.
+                Also allow scalars for indices.
+
+            axis: int, optional
+                The axis over which to select values. By default, the flattened input array is used.
+
+            mode: {‘raise’, ‘wrap’, ‘clip’}, optional
+                Specifies how out-of-bounds indices will behave.
+                ‘raise’ – raise an error (default)
+                ‘wrap’ – wrap around
+                ‘clip’ – clip to the range
+                ‘clip’ mode means that all indices that are too large are replaced by the index that addresses the last element along that axis. Note that this disables indexing with negative numbers.
+                
+        Returns
+            a_copy: PhiTensor
+                Array interpretation of a.
+        """
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.take"
+        result: TensorWrappedPhiTensorPointer
+        
+        data_subjects = self.data_subjects.take(*args, **kwargs)
+        result = TensorWrappedPhiTensorPointer(
+            data_subjects=data_subjects,
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=data_subjects.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=data_subjects.shape),
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[],
+            kwargs={},
+        )
+        result.public_shape = data_subjects.shape
+        result.public_dtype = self.public_dtype
+
+        return result
+
 
     def exp(
         self,
@@ -1388,6 +1475,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         self,
         indices: ArrayLike,
         axis: Optional[int] = None,
+        out: Optional[np.ndarray] = None,
         mode: str = "raise",
     ) -> PhiTensor:
         """Take elements from an array along an axis."""
