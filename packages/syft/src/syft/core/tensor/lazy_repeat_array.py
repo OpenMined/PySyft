@@ -3,9 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
-from typing import Dict
 from typing import Iterable
-from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Tuple
@@ -180,7 +178,7 @@ class lazyrepeatarray:
 
         # raise Exception("not sure how to do this yet")
 
-    def zeros_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
+    def zeros_like(self, *args: Any, **kwargs: Any) -> lazyrepeatarray:
         res = np.array(np.zeros_like(self.to_numpy(), *args, **kwargs))
         return lazyrepeatarray(data=res, shape=res.shape)
 
@@ -281,11 +279,11 @@ class lazyrepeatarray:
     def size(self) -> int:
         return np.prod(self.shape)
 
-    def sum(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
+    def sum(self, *args: Any, **kwargs: Any) -> lazyrepeatarray:
         res = np.array(self.to_numpy().sum(*args, **kwargs))
         return lazyrepeatarray(data=res, shape=res.shape)
 
-    def ones_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
+    def ones_like(self, *args: Any, **kwargs: Any) -> lazyrepeatarray:
         res = np.array(np.ones_like(self.to_numpy(), *args, **kwargs))
         return lazyrepeatarray(data=res, shape=res.shape)
 
@@ -332,7 +330,7 @@ class lazyrepeatarray:
         return self <= other
 
     def concatenate(
-        self, other: lazyrepeatarray, *args: List[Any], **kwargs: Dict[str, Any]
+        self, other: lazyrepeatarray, *args: Any, **kwargs: Any
     ) -> lazyrepeatarray:
         if not isinstance(other, lazyrepeatarray):
             raise NotImplementedError
@@ -364,7 +362,7 @@ class lazyrepeatarray:
     def any(self) -> bool:
         return self.data.any()
 
-    def transpose(self, *args: List[Any], **kwargs: Dict[str, Any]) -> lazyrepeatarray:
+    def transpose(self, *args: Any, **kwargs: Any) -> lazyrepeatarray:
         dummy_res = self.to_numpy().transpose(*args, **kwargs)
         return lazyrepeatarray(
             data=self.data.transpose(*args, **kwargs), shape=dummy_res.shape
