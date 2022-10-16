@@ -627,7 +627,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
                 The bases in the tensor raised to the exponents in x2. This is a scalar if both self and x2 are scalars.
         """
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.__pow__"
-        data_subjects = np.array(self.data_subjects.__pow__(*args, **kwargs))  # type: ignore
+        data_subjects = np.array(self.data_subjects)
 
         if self.min_vals.data <= 0 <= self.max_vals.data:
             # If data is in range [-5, 5], it's possible the minimum is 0 and not (-5)^2
