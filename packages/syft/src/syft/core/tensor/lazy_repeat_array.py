@@ -186,6 +186,12 @@ class lazyrepeatarray:
         res = (1 / self.data) * other
         return lazyrepeatarray(data=res, shape=self.shape)
 
+    def __truediv__(self, other: Any) -> lazyrepeatarray:
+        return lazyrepeatarray(data=self.data / other, shape=self.shape)
+
+    def __floordiv__(self, other: Any) -> lazyrepeatarray:
+        return lazyrepeatarray(data=self.data // other, shape=self.shape)
+
     def __rmatmul__(self, other: Any) -> lazyrepeatarray:
         """
         THIS MIGHT LOOK LIKE COPY-PASTED CODE!
@@ -380,7 +386,13 @@ def compute_min_max(
     min_vals: lazyrepeatarray
     max_vals: lazyrepeatarray
 
-    if op_str in ["__add__", "__matmul__", "__rmatmul__"]:
+    if op_str in [
+        "__add__",
+        "__matmul__",
+        "__rmatmul__",
+        "__truediv__",
+        "__floordiv__",
+    ]:
         if is_acceptable_simple_type(other):
             min_vals = getattr(x_min_vals, op_str)(other)
             max_vals = getattr(x_max_vals, op_str)(other)
