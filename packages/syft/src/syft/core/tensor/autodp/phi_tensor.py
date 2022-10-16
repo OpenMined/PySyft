@@ -259,6 +259,20 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             public_dtype=getattr(self, "public_dtype", None),
         )
 
+    def copy(self, order: Optional[str] = "K") -> TensorWrappedPhiTensorPointer:
+        return TensorWrappedPhiTensorPointer(
+            data_subjects=self.data_subjects,
+            client=self.client,
+            id_at_location=self.id_at_location,
+            object_type=self.object_type,
+            tags=self.tags,
+            description=self.description,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+            public_shape=getattr(self, "public_shape", None),
+            public_dtype=getattr(self, "public_dtype", None),
+        )
+
     @staticmethod
     def _apply_op(
         self: TensorWrappedPhiTensorPointer,
@@ -493,6 +507,14 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             raise ValueError(
                 "Concatenate method currently works only between two different clients."
             )
+
+    def __pos__(self) -> TensorWrappedPhiTensorPointer:
+        """Apply the __pos__ (+) operator  on self.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer] : Result of the operation.
+        """
+        return self
 
     def __truediv__(
         self,

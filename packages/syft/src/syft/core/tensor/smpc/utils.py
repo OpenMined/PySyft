@@ -65,6 +65,9 @@ OPERATOR_OPS = {
     "lt",
     "ge",
     "le",
+    "matmul",
+    "pos",
+    "pow",
 }
 
 
