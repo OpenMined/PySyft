@@ -676,11 +676,11 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
         return result
 
-        def repeat(
-                self,
-                *args: Any,
-                **kwargs: Any,
-        ) -> TensorWrappedPhiTensorPointer:
+    def repeat(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> TensorWrappedPhiTensorPointer:
             """Apply the repeat" operation
 
             Args:
@@ -739,7 +739,6 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         )
         result.public_shape = data_subjects.shape
         result.public_dtype = self.public_dtype
-
         return result
 
     def trace(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
