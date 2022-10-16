@@ -53,7 +53,19 @@ def get_nr_bits(ring_size: int) -> int:
 
 
 NUMPY_OPS = {"concatenate"}
-OPERATOR_OPS = {"add", "sub", "div", "truediv", "mul"}
+OPERATOR_OPS = {
+    "add",
+    "sub",
+    "div",
+    "truediv",
+    "mul",
+    "eq",
+    "ne",
+    "gt",
+    "lt",
+    "ge",
+    "le",
+}
 
 
 @lru_cache(maxsize=128)
