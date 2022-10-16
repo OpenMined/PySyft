@@ -583,9 +583,9 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         return result
 
     def std(
-            self,
-            *args: Any,
-            **kwargs: Any,
+        self,
+        *args: Any,
+        **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
         """
         Compute the standard deviation along the specified axis.
@@ -626,11 +626,10 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
 
         result = TensorWrappedGammaTensorPointer(
             data_subjects=data_subjects,
-            min_vals=lazyrepeatarray(
-                data=0, shape=data_subjects.shape
-            ),
+            min_vals=lazyrepeatarray(data=0, shape=data_subjects.shape),
             max_vals=lazyrepeatarray(
-                data=(self.max_vals.data - self.min_vals.data) / 2, shape=data_subjects.shape
+                data=(self.max_vals.data - self.min_vals.data) / 2,
+                shape=data_subjects.shape,
             ),
             client=self.client,
         )
