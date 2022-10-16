@@ -654,6 +654,72 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
         return result
 
+        def repeat(
+                self,
+                *args: Any,
+                **kwargs: Any,
+        ) -> TensorWrappedPhiTensorPointer:
+            """Apply the repeat" operation
+
+            Args:
+                y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+            Returns:
+                Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+            """
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.repeat"
+        result: TensorWrappedPhiTensorPointer
+        data_subjects = self.data_subjects.repeat(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=self.min_vals.data, shape=data_subjects.shape)
+        max_vals = lazyrepeatarray(data=self.max_vals.data, shape=data_subjects.shape)
+
+        result = TensorWrappedPhiTensorPointer(
+            data_subjects=self.data_subjects,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[],
+            kwargs={},
+        )
+        result.public_shape = data_subjects.shape
+        result.public_dtype = self.public_dtype
+
+        return result
+
     def trace(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
         """
         Return the sum along diagonals of the array.

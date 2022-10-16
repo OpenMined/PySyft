@@ -2907,42 +2907,45 @@ class GammaTensor:
     def repeat(
         self, repeats: Union[int, Tuple[int, ...]], axis: Optional[int] = None
     ) -> GammaTensor:
-        raise NotImplementedError
-        # """
-        # Repeat elements of an array.
+        """
+        Repeat elements of an array.
 
-        # Parameters
-        #     repeats: int or array of ints
+        Parameters
+            repeats: int or array of ints
 
-        #         The number of repetitions for each element. repeats is broadcasted to fit the shape of the given axis.
+                The number of repetitions for each element. repeats is broadcasted to fit the shape of the given axis.
 
-        #     axis: int, optional
+            axis: int, optional
 
-        #         The axis along which to repeat values. By default, use the flattened input array, and return a flat
-        #         output array.
+                The axis along which to repeat values. By default, use the flattened input array, and return a flat
+                output array.
 
-        # Returns
+        Returns
 
-        #     repeated_array: PhiTensor
+            repeated_array: PhiTensor
 
-        #         Output array which has the same shape as a, except along the given axis.
+                Output array which has the same shape as a, except along the given axis.
 
-        # """
+        """
+        source = dict()
+        source[self.id] = self
 
-        # result = self.child.repeat(repeats, axis)
-        # if isinstance(self.min_vals, lazyrepeatarray):
-        #     minv = lazyrepeatarray(data=self.min_vals.data.min(), shape=result.shape)
-        #     maxv = lazyrepeatarray(data=self.max_vals.data.max(), shape=result.shape)
-        # else:
-        #     minv = self.min_vals
-        #     maxv = self.max_vals
+        result = self.child.repeat(repeats, axis)
+        if isinstance(self.min_vals, lazyrepeatarray):
+            minv = lazyrepeatarray(data=self.min_vals.data.min(), shape=result.shape)
+            maxv = lazyrepeatarray(data=self.max_vals.data.max(), shape=result.shape)
+        else:
+            minv = self.min_vals
+            maxv = self.max_vals
 
-        # return GammaTensor(
-        #     child=result,
-        #     data_subjects=self.data_subjects.repeat(repeats, axis),
-        #     min_vals=minv,
-        #     max_vals=maxv,
-        # )
+        return GammaTensor(
+            child=result,
+            data_subjects=self.data_subjects.repeat(repeats, axis),
+            min_vals=minv,
+            max_vals=maxv,
+            func_str=GAMMA_TENSOR_OP.REPEAT.value,
+            source=source
+        )
 
     def trace(self, offset: int = 0, axis1: int = 0, axis2: int = 1) -> GammaTensor:
         """
