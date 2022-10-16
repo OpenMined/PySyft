@@ -289,6 +289,20 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
 
         return self._apply_tensor_op(other=other, op_str=op_str)
 
+    def copy(self, order: Optional[str] = "K") -> TensorWrappedGammaTensorPointer:
+        return TensorWrappedGammaTensorPointer(
+            data_subjects=self.data_subjects,
+            client=self.client,
+            id_at_location=self.id_at_location,
+            object_type=self.object_type,
+            tags=self.tags,
+            description=self.description,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+            public_shape=getattr(self, "public_shape", None),
+            public_dtype=getattr(self, "public_dtype", None),
+        )
+
     def __add__(
         self,
         other: Union[
@@ -581,6 +595,14 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         result.public_dtype = self.public_dtype
 
         return result
+
+    def __pos__(self) -> TensorWrappedGammaTensorPointer:
+        """Apply the __pos__ (+) operator  on self.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer] : Result of the operation.
+        """
+        return self
 
     def trace(
         self,
