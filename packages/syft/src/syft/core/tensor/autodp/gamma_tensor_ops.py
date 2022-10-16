@@ -44,6 +44,9 @@ class GAMMA_TENSOR_OP(Enum):
     PUT = "put"
     ARGMAX = "argmax"
     ARGMIN = "argmin"
+    TRACE = "trace"
+    MIN = "min"
+    MAX = "max"
     # Our Methods
     RECIPROCAL = "reciprocal"
     FLATTEN_C = "flatten_c"
