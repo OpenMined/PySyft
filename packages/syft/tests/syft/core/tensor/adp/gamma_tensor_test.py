@@ -59,6 +59,11 @@ def reference_data(highest, dims) -> np.ndarray:
 
 
 @pytest.fixture
+def dsa(dims: int) -> DataSubjectArray:
+    return DataSubjectArray.from_objs(np.random.choice([0, 1], (dims, dims)))
+
+
+@pytest.fixture
 def upper_bound(reference_data: np.ndarray, highest: int) -> np.ndarray:
     """This is used to specify the max_vals that is either binary or randomly generated b/w 0-1"""
     return lra(data=highest, shape=reference_data.shape)
@@ -1063,3 +1068,60 @@ def test_nonzero(
     ).all()
     assert result.min_vals.shape == reference_result.shape
     assert result.max_vals.shape == reference_result.shape
+def test_trace(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = GammaTensor(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.trace()
+    assert result.child == reference_data.trace()
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data
+
+    result = tensor.trace(offset=1)
+    assert result.child == reference_data.trace(offset=1)
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data
+
+
+def test_max(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = GammaTensor(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.max()
+    assert result.child == reference_data.max()
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data
+
+
+def test_min(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = GammaTensor(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.min()
+    assert result.child == reference_data.min()
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data

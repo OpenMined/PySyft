@@ -1,0 +1,164 @@
+Classification,Year,Period,Period Desc.,Aggregate Level,Is Leaf Code,Trade Flow Code,Trade Flow,Reporter Code,Reporter,Reporter ISO,Partner Code,Partner,Partner ISO,Commodity Code,Commodity,Qty Unit Code,Qty Unit,Qty,Netweight (kg),Trade Value (US$),Flag
+HS,2022,202203,Mar-22,0,0,1,Imports,31,Azerbaijan,,381,Italy,,TOTAL,All Commodities,,,,0.0,23260210,0
+HS,2022,202203,Mar-22,0,0,2,Exports,31,Azerbaijan,,381,Italy,,TOTAL,All Commodities,,,,0.0,821255103,0
+HS,2022,202203,Mar-22,0,0,1,Imports,32,Argentina,,381,Italy,,TOTAL,All Commodities,,,,0.0,132887083,0
+HS,2022,202203,Mar-22,0,0,2,Exports,32,Argentina,,381,Italy,,TOTAL,All Commodities,,,,0.0,46078723,0
+HS,2022,202203,Mar-22,0,0,1,Imports,36,Australia,,381,Italy,,TOTAL,All Commodities,,,,0.0,635494419,0
+HS,2022,202203,Mar-22,0,0,2,Exports,36,Australia,,381,Italy,,TOTAL,All Commodities,,,,0.0,97281480,0
+HS,2022,202203,Mar-22,0,0,1,Imports,51,Armenia,,381,Italy,,TOTAL,All Commodities,,,,0.0,16591201,0
+HS,2022,202203,Mar-22,0,0,2,Exports,51,Armenia,,381,Italy,,TOTAL,All Commodities,,,,0.0,4956265,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,51,Armenia,,381,Italy,,TOTAL,All Commodities,,,,0.0,3249921,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,51,Armenia,,381,Italy,,TOTAL,All Commodities,,,,0.0,319,0
+HS,2022,202203,Mar-22,0,0,1,Imports,52,Barbados,,381,Italy,,TOTAL,All Commodities,,,,0.0,1296010,0
+HS,2022,202203,Mar-22,0,0,2,Exports,52,Barbados,,381,Italy,,TOTAL,All Commodities,,,,0.0,5612,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,52,Barbados,,381,Italy,,TOTAL,All Commodities,,,,0.0,5612,0
+HS,2022,202203,Mar-22,0,0,1,Imports,56,Belgium,,381,Italy,,TOTAL,All Commodities,,,,0.0,1607345510,0
+HS,2022,202203,Mar-22,0,0,2,Exports,56,Belgium,,381,Italy,,TOTAL,All Commodities,,,,0.0,1494443314,0
+HS,2022,202203,Mar-22,0,0,1,Imports,68,Bolivia,,381,Italy,,TOTAL,All Commodities,,,,0.0,8462094,0
+HS,2022,202203,Mar-22,0,0,2,Exports,68,Bolivia,,381,Italy,,TOTAL,All Commodities,,,,0.0,31722517,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,68,Bolivia,,381,Italy,,TOTAL,All Commodities,,,,0.0,1943,0
+HS,2022,202203,Mar-22,0,0,1,Imports,70,Bosnia Herzegovina,,381,Italy,,TOTAL,All Commodities,,,,0.0,163500152,0
+HS,2022,202203,Mar-22,0,0,2,Exports,70,Bosnia Herzegovina,,381,Italy,,TOTAL,All Commodities,,,,0.0,100227430,0
+HS,2022,202203,Mar-22,0,0,1,Imports,72,Botswana,,381,Italy,,TOTAL,All Commodities,,,,0.0,390971,0
+HS,2022,202203,Mar-22,0,0,2,Exports,72,Botswana,,381,Italy,,TOTAL,All Commodities,,,,0.0,100,0
+HS,2022,202203,Mar-22,0,0,1,Imports,76,Brazil,,381,Italy,,TOTAL,All Commodities,,,,0.0,555812965,0
+HS,2022,202203,Mar-22,0,0,2,Exports,76,Brazil,,381,Italy,,TOTAL,All Commodities,,,,0.0,362148127,0
+HS,2022,202203,Mar-22,0,0,1,Imports,84,Belize,,381,Italy,,TOTAL,All Commodities,,,,0.0,280876,0
+HS,2022,202203,Mar-22,0,0,2,Exports,84,Belize,,381,Italy,,TOTAL,All Commodities,,,,0.0,69090,0
+HS,2022,202203,Mar-22,0,0,1,Imports,112,Belarus,,381,Italy,,TOTAL,All Commodities,,,,0.0,38306800,0
+HS,2022,202203,Mar-22,0,0,2,Exports,112,Belarus,,381,Italy,,TOTAL,All Commodities,,,,0.0,11663700,0
+HS,2022,202203,Mar-22,0,0,1,Imports,124,Canada,,381,Italy,,TOTAL,All Commodities,,,,,796110496,0
+HS,2022,202203,Mar-22,0,0,2,Exports,124,Canada,,381,Italy,,TOTAL,All Commodities,,,,0.0,125544110,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,124,Canada,,381,Italy,,TOTAL,All Commodities,,,,0.0,3740339,0
+HS,2022,202203,Mar-22,0,0,1,Imports,152,Chile,,381,Italy,,TOTAL,All Commodities,,,,0.0,127795457,0
+HS,2022,202203,Mar-22,0,0,2,Exports,152,Chile,,381,Italy,,TOTAL,All Commodities,,,,0.0,57083129,0
+HS,2022,202203,Mar-22,0,0,1,Imports,156,China,,381,Italy,,TOTAL,All Commodities,,,,0.0,2315832144,0
+HS,2022,202203,Mar-22,0,0,2,Exports,156,China,,381,Italy,,TOTAL,All Commodities,,,,0.0,3984322397,0
+HS,2022,202203,Mar-22,0,0,1,Imports,191,Croatia,,381,Italy,,TOTAL,All Commodities,,,,0.0,646019541,0
+HS,2022,202203,Mar-22,0,0,2,Exports,191,Croatia,,381,Italy,,TOTAL,All Commodities,,,,0.0,306061655,0
+HS,2022,202203,Mar-22,0,0,1,Imports,203,Czech Rep.,,381,Italy,,TOTAL,All Commodities,,,,0.0,870775833,0
+HS,2022,202203,Mar-22,0,0,2,Exports,203,Czech Rep.,,381,Italy,,TOTAL,All Commodities,,,,0.0,890090921,0
+HS,2022,202203,Mar-22,0,0,1,Imports,208,Denmark,,381,Italy,,TOTAL,All Commodities,,,,0.0,380004245,0
+HS,2022,202203,Mar-22,0,0,2,Exports,208,Denmark,,381,Italy,,TOTAL,All Commodities,,,,0.0,258491530,0
+HS,2022,202203,Mar-22,0,0,1,Imports,222,El Salvador,,381,Italy,,TOTAL,All Commodities,,,,0.0,10157538,0
+HS,2022,202203,Mar-22,0,0,2,Exports,222,El Salvador,,381,Italy,,TOTAL,All Commodities,,,,0.0,6022248,0
+HS,2022,202203,Mar-22,0,0,1,Imports,233,Estonia,,381,Italy,,TOTAL,All Commodities,,,,0.0,70920837,0
+HS,2022,202203,Mar-22,0,0,2,Exports,233,Estonia,,381,Italy,,TOTAL,All Commodities,,,,0.0,24458956,0
+HS,2022,202203,Mar-22,0,0,1,Imports,242,Fiji,,381,Italy,,TOTAL,All Commodities,,,,0.0,547888,0
+HS,2022,202203,Mar-22,0,0,1,Imports,246,Finland,,381,Italy,,TOTAL,All Commodities,,,,0.0,262427120,0
+HS,2022,202203,Mar-22,0,0,2,Exports,246,Finland,,381,Italy,,TOTAL,All Commodities,,,,0.0,284728201,0
+HS,2022,202203,Mar-22,0,0,1,Imports,268,Georgia,,381,Italy,,TOTAL,All Commodities,,,,0.0,22347811,0
+HS,2022,202203,Mar-22,0,0,2,Exports,268,Georgia,,381,Italy,,TOTAL,All Commodities,,,,0.0,6977826,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,268,Georgia,,381,Italy,,TOTAL,All Commodities,,,,0.0,26411,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,268,Georgia,,381,Italy,,TOTAL,All Commodities,,,,0.0,66080,0
+HS,2022,202203,Mar-22,0,0,1,Imports,276,Germany,,381,Italy,,TOTAL,All Commodities,,,,0.0,7126252769,0
+HS,2022,202203,Mar-22,0,0,2,Exports,276,Germany,,381,Italy,,TOTAL,All Commodities,,,,0.0,8390256849,0
+HS,2022,202203,Mar-22,0,0,1,Imports,300,Greece,,381,Italy,,TOTAL,All Commodities,,,,0.0,560982703,0
+HS,2022,202203,Mar-22,0,0,2,Exports,300,Greece,,381,Italy,,TOTAL,All Commodities,,,,0.0,552319978,0
+HS,2022,202203,Mar-22,0,0,1,Imports,308,Grenada,,381,Italy,,TOTAL,All Commodities,,,,0.0,50677,0
+HS,2022,202203,Mar-22,0,0,2,Exports,308,Grenada,,381,Italy,,TOTAL,All Commodities,,,,0.0,101,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,308,Grenada,,381,Italy,,TOTAL,All Commodities,,,,0.0,101,0
+HS,2022,202203,Mar-22,0,0,1,Imports,320,Guatemala,,381,Italy,,TOTAL,All Commodities,,,,0.0,23014523,0
+HS,2022,202203,Mar-22,0,0,2,Exports,320,Guatemala,,381,Italy,,TOTAL,All Commodities,,,,0.0,22720446,0
+HS,2022,202203,Mar-22,0,0,1,Imports,328,Guyana,,381,Italy,,TOTAL,All Commodities,,,,0.0,4492008,0
+HS,2022,202203,Mar-22,0,0,2,Exports,328,Guyana,,381,Italy,,TOTAL,All Commodities,,,,0.0,15623,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,328,Guyana,,381,Italy,,TOTAL,All Commodities,,,,0.0,15623,0
+HS,2022,202203,Mar-22,0,0,1,Imports,344,"China, Hong Kong SAR",,381,Italy,,TOTAL,All Commodities,,,,0.0,416355771,0
+HS,2022,202203,Mar-22,0,0,2,Exports,344,"China, Hong Kong SAR",,381,Italy,,TOTAL,All Commodities,,,,0.0,257429719,0
+HS,2022,202203,Mar-22,0,0,1,Imports,348,Hungary,,381,Italy,,TOTAL,All Commodities,,,,0.0,643697206,0
+HS,2022,202203,Mar-22,0,0,2,Exports,348,Hungary,,381,Italy,,TOTAL,All Commodities,,,,0.0,777050597,0
+HS,2022,202203,Mar-22,0,0,1,Imports,352,Iceland,,381,Italy,,TOTAL,All Commodities,,,,0.0,24639759,0
+HS,2022,202203,Mar-22,0,0,2,Exports,352,Iceland,,381,Italy,,TOTAL,All Commodities,,,,0.0,5301206,0
+HS,2022,202203,Mar-22,0,0,1,Imports,360,Indonesia,,381,Italy,,TOTAL,All Commodities,,,,0.0,131555118,0
+HS,2022,202203,Mar-22,0,0,2,Exports,360,Indonesia,,381,Italy,,TOTAL,All Commodities,,,,0.0,277781363,0
+HS,2022,202203,Mar-22,0,0,1,Imports,376,Israel,,381,Italy,,TOTAL,All Commodities,,,,0.0,355511000,0
+HS,2022,202203,Mar-22,0,0,2,Exports,376,Israel,,381,Italy,,TOTAL,All Commodities,,,,0.0,215260000,0
+HS,2022,202203,Mar-22,0,0,1,Imports,392,Japan,,381,Italy,,TOTAL,All Commodities,,,,0.0,944640207,0
+HS,2022,202203,Mar-22,0,0,2,Exports,392,Japan,,381,Italy,,TOTAL,All Commodities,,,,0.0,490450215,0
+HS,2022,202203,Mar-22,0,0,1,Imports,417,Kyrgyzstan,,381,Italy,,TOTAL,All Commodities,,,,0.0,4738679,0
+HS,2022,202203,Mar-22,0,0,2,Exports,417,Kyrgyzstan,,381,Italy,,TOTAL,All Commodities,,,,0.0,10763,0
+HS,2022,202203,Mar-22,0,0,1,Imports,428,Latvia,,381,Italy,,TOTAL,All Commodities,,,,0.0,66513676,0
+HS,2022,202203,Mar-22,0,0,2,Exports,428,Latvia,,381,Italy,,TOTAL,All Commodities,,,,0.0,29261106,0
+HS,2022,202203,Mar-22,0,0,1,Imports,440,Lithuania,,381,Italy,,TOTAL,All Commodities,,,,0.0,151307503,0
+HS,2022,202203,Mar-22,0,0,2,Exports,440,Lithuania,,381,Italy,,TOTAL,All Commodities,,,,0.0,89685417,0
+HS,2022,202203,Mar-22,0,0,1,Imports,442,Luxembourg,,381,Italy,,TOTAL,All Commodities,,,,0.0,76963870,0
+HS,2022,202203,Mar-22,0,0,2,Exports,442,Luxembourg,,381,Italy,,TOTAL,All Commodities,,,,0.0,73122518,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,442,Luxembourg,,381,Italy,,TOTAL,All Commodities,,,,0.0,206356,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,442,Luxembourg,,381,Italy,,TOTAL,All Commodities,,,,0.0,95690,0
+HS,2022,202203,Mar-22,0,0,1,Imports,446,"China, Macao SAR",,381,Italy,,TOTAL,All Commodities,,,,0.0,209308986,0
+HS,2022,202203,Mar-22,0,0,2,Exports,446,"China, Macao SAR",,381,Italy,,TOTAL,All Commodities,,,,0.0,43615,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,446,"China, Macao SAR",,381,Italy,,TOTAL,All Commodities,,,,0.0,43615,0
+HS,2022,202203,Mar-22,0,0,1,Imports,480,Mauritius,,381,Italy,,TOTAL,All Commodities,,,,0.0,11940579,0
+HS,2022,202203,Mar-22,0,0,2,Exports,480,Mauritius,,381,Italy,,TOTAL,All Commodities,,,,0.0,6054699,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,480,Mauritius,,381,Italy,,TOTAL,All Commodities,,,,0.0,5154,0
+HS,2022,202203,Mar-22,0,0,1,Imports,484,Mexico,,381,Italy,,TOTAL,All Commodities,,,,0.0,628125034,0
+HS,2022,202203,Mar-22,0,0,2,Exports,484,Mexico,,381,Italy,,TOTAL,All Commodities,,,,0.0,69709602,0
+HS,2022,202203,Mar-22,0,0,1,Imports,498,Rep. of Moldova,,381,Italy,,TOTAL,All Commodities,,,,0.0,46027555,0
+HS,2022,202203,Mar-22,0,0,2,Exports,498,Rep. of Moldova,,381,Italy,,TOTAL,All Commodities,,,,0.0,54132028,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,498,Rep. of Moldova,,381,Italy,,TOTAL,All Commodities,,,,0.0,10693731,0
+HS,2022,202203,Mar-22,0,0,1,Imports,516,Namibia,,381,Italy,,TOTAL,All Commodities,,,,0.0,10176586,0
+HS,2022,202203,Mar-22,0,0,2,Exports,516,Namibia,,381,Italy,,TOTAL,All Commodities,,,,0.0,4577768,0
+HS,2022,202203,Mar-22,0,0,1,Imports,528,Netherlands,,381,Italy,,TOTAL,All Commodities,,,,0.0,1555104041,0
+HS,2022,202203,Mar-22,0,0,2,Exports,528,Netherlands,,381,Italy,,TOTAL,All Commodities,,,,0.0,2990504805,0
+HS,2022,202203,Mar-22,0,0,1,Imports,554,New Zealand,,381,Italy,,TOTAL,All Commodities,,,,0.0,135014486,0
+HS,2022,202203,Mar-22,0,0,2,Exports,554,New Zealand,,381,Italy,,TOTAL,All Commodities,,,,0.0,20191182,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,554,New Zealand,,381,Italy,,TOTAL,All Commodities,,,,0.0,4845406,0
+HS,2022,202203,Mar-22,0,0,1,Imports,566,Nigeria,,381,Italy,,TOTAL,All Commodities,,,,0.0,57431255,0
+HS,2022,202203,Mar-22,0,0,2,Exports,566,Nigeria,,381,Italy,,TOTAL,All Commodities,,,,0.0,403382118,0
+HS,2022,202203,Mar-22,0,0,1,Imports,579,Norway,,381,Italy,,TOTAL,All Commodities,,,,0.0,292996623,0
+HS,2022,202203,Mar-22,0,0,2,Exports,579,Norway,,381,Italy,,TOTAL,All Commodities,,,,0.0,236508245,0
+HS,2022,202203,Mar-22,0,0,1,Imports,586,Pakistan,,381,Italy,,TOTAL,All Commodities,,,,0.0,48137249,0
+HS,2022,202203,Mar-22,0,0,2,Exports,586,Pakistan,,381,Italy,,TOTAL,All Commodities,,,,0.0,99416753,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,586,Pakistan,,381,Italy,,TOTAL,All Commodities,,,,0.0,657290,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,586,Pakistan,,381,Italy,,TOTAL,All Commodities,,,,0.0,24876,0
+HS,2022,202203,Mar-22,0,0,1,Imports,591,Panama,,381,Italy,,TOTAL,All Commodities,,,,0.0,11529555,0
+HS,2022,202203,Mar-22,0,0,2,Exports,591,Panama,,381,Italy,,TOTAL,All Commodities,,,,0.0,1522778,0
+HS,2022,202203,Mar-22,0,0,1,Imports,600,Paraguay,,381,Italy,,TOTAL,All Commodities,,,,0.0,10806869,0
+HS,2022,202203,Mar-22,0,0,2,Exports,600,Paraguay,,381,Italy,,TOTAL,All Commodities,,,,0.0,4478463,0
+HS,2022,202203,Mar-22,0,0,1,Imports,608,Philippines,,381,Italy,,TOTAL,All Commodities,,,,0.0,115317502,0
+HS,2022,202203,Mar-22,0,0,2,Exports,608,Philippines,,381,Italy,,TOTAL,All Commodities,,,,0.0,30524647,0
+HS,2022,202203,Mar-22,0,0,1,Imports,616,Poland,,381,Italy,,TOTAL,All Commodities,,,,0.0,1811388320,0
+HS,2022,202203,Mar-22,0,0,2,Exports,616,Poland,,381,Italy,,TOTAL,All Commodities,,,,0.0,1555609996,0
+HS,2022,202203,Mar-22,0,0,1,Imports,620,Portugal,,381,Italy,,TOTAL,All Commodities,,,,0.0,484918405,0
+HS,2022,202203,Mar-22,0,0,2,Exports,620,Portugal,,381,Italy,,TOTAL,All Commodities,,,,0.0,355421778,0
+HS,2022,202203,Mar-22,0,0,1,Imports,642,Romania,,381,Italy,,TOTAL,All Commodities,,,,0.0,1096918099,0
+HS,2022,202203,Mar-22,0,0,2,Exports,642,Romania,,381,Italy,,TOTAL,All Commodities,,,,0.0,967245087,0
+HS,2022,202203,Mar-22,0,0,1,Imports,646,Rwanda,,381,Italy,,TOTAL,All Commodities,,,,0.0,1968178,0
+HS,2022,202203,Mar-22,0,0,2,Exports,646,Rwanda,,381,Italy,,TOTAL,All Commodities,,,,0.0,2867052,0
+HS,2022,202203,Mar-22,0,0,1,Imports,686,Senegal,,381,Italy,,TOTAL,All Commodities,,,,0.0,15970060,0
+HS,2022,202203,Mar-22,0,0,2,Exports,686,Senegal,,381,Italy,,TOTAL,All Commodities,,,,0.0,9386627,0
+HS,2022,202203,Mar-22,0,0,1,Imports,688,Serbia,,381,Italy,,TOTAL,All Commodities,,,,0.0,279407433,0
+HS,2022,202203,Mar-22,0,0,2,Exports,688,Serbia,,381,Italy,,TOTAL,All Commodities,,,,0.0,199984642,0
+HS,2022,202203,Mar-22,0,0,1,Imports,699,India,,381,Italy,,TOTAL,All Commodities,,,,0.0,514357139,0
+HS,2022,202203,Mar-22,0,0,2,Exports,699,India,,381,Italy,,TOTAL,All Commodities,,,,0.0,857261143,0
+HS,2022,202203,Mar-22,0,0,1,Imports,703,Slovakia,,381,Italy,,TOTAL,All Commodities,,,,0.0,354749240,0
+HS,2022,202203,Mar-22,0,0,2,Exports,703,Slovakia,,381,Italy,,TOTAL,All Commodities,,,,0.0,504984520,0
+HS,2022,202203,Mar-22,0,0,1,Imports,705,Slovenia,,381,Italy,,TOTAL,All Commodities,,,,,632175319,0
+HS,2022,202203,Mar-22,0,0,2,Exports,705,Slovenia,,381,Italy,,TOTAL,All Commodities,,,,,557909815,0
+HS,2022,202203,Mar-22,0,0,1,Imports,724,Spain,,381,Italy,,TOTAL,All Commodities,,,,0.0,2733896814,0
+HS,2022,202203,Mar-22,0,0,2,Exports,724,Spain,,381,Italy,,TOTAL,All Commodities,,,,0.0,2883055829,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,724,Spain,,381,Italy,,TOTAL,All Commodities,,,,0.0,2421,0
+HS,2022,202203,Mar-22,0,0,1,Imports,752,Sweden,,381,Italy,,TOTAL,All Commodities,,,,,620394408,0
+HS,2022,202203,Mar-22,0,0,2,Exports,752,Sweden,,381,Italy,,TOTAL,All Commodities,,,,0.0,612408777,0
+HS,2022,202203,Mar-22,0,0,1,Imports,757,Switzerland,,381,Italy,,TOTAL,All Commodities,,,,,2588859325,0
+HS,2022,202203,Mar-22,0,0,2,Exports,757,Switzerland,,381,Italy,,TOTAL,All Commodities,,,,,2111501572,0
+HS,2022,202203,Mar-22,0,0,1,Imports,768,Togo,,381,Italy,,TOTAL,All Commodities,,,,0.0,3990469,0
+HS,2022,202203,Mar-22,0,0,2,Exports,768,Togo,,381,Italy,,TOTAL,All Commodities,,,,0.0,41660,0
+HS,2022,202203,Mar-22,0,0,1,Imports,792,Turkey,,381,Italy,,TOTAL,All Commodities,,,,0.0,1182927605,0
+HS,2022,202203,Mar-22,0,0,2,Exports,792,Turkey,,381,Italy,,TOTAL,All Commodities,,,,0.0,1281422605,0
+HS,2022,202203,Mar-22,0,0,1,Imports,804,Ukraine,,381,Italy,,TOTAL,All Commodities,,,,0.0,46479644,0
+HS,2022,202203,Mar-22,0,0,2,Exports,804,Ukraine,,381,Italy,,TOTAL,All Commodities,,,,0.0,62143443,0
+HS,2022,202203,Mar-22,0,0,1,Imports,807,TFYR of Macedonia,,381,Italy,,TOTAL,All Commodities,,,,0.0,45562447,0
+HS,2022,202203,Mar-22,0,0,2,Exports,807,TFYR of Macedonia,,381,Italy,,TOTAL,All Commodities,,,,0.0,27633362,0
+HS,2022,202203,Mar-22,0,0,1,Imports,818,Egypt,,381,Italy,,TOTAL,All Commodities,,,,0.0,166602675,0
+HS,2022,202203,Mar-22,0,0,2,Exports,818,Egypt,,381,Italy,,TOTAL,All Commodities,,,,0.0,369353579,0
+HS,2022,202203,Mar-22,0,0,1,Imports,826,United Kingdom,,381,Italy,,TOTAL,All Commodities,,,,0.0,3299010298,0
+HS,2022,202203,Mar-22,0,0,2,Exports,826,United Kingdom,,381,Italy,,TOTAL,All Commodities,,,,0.0,1218612297,0
+HS,2022,202203,Mar-22,0,0,1,Imports,842,United States of America,,381,Italy,,TOTAL,All Commodities,,,,0.0,5999308601,0
+HS,2022,202203,Mar-22,0,0,2,Exports,842,United States of America,,381,Italy,,TOTAL,All Commodities,,,,0.0,2382740924,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,842,United States of America,,381,Italy,,TOTAL,All Commodities,,,,0.0,281665124,0
+HS,2022,202203,Mar-22,0,0,1,Imports,854,Burkina Faso,,381,Italy,,TOTAL,All Commodities,,,,0.0,4045351,0
+HS,2022,202203,Mar-22,0,0,2,Exports,854,Burkina Faso,,381,Italy,,TOTAL,All Commodities,,,,0.0,192780,0
+HS,2022,202203,Mar-22,0,0,1,Imports,860,Uzbekistan,,381,Italy,,TOTAL,All Commodities,,,,0.0,31262284,0
+HS,2022,202203,Mar-22,0,0,2,Exports,860,Uzbekistan,,381,Italy,,TOTAL,All Commodities,,,,0.0,5098562,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,860,Uzbekistan,,381,Italy,,TOTAL,All Commodities,,,,0.0,15250,0

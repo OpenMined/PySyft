@@ -48,6 +48,11 @@ def dims() -> int:
 
 
 @pytest.fixture
+def pt_dsa(dims) -> DataSubjectArray:
+    return np.broadcast_to(DataSubjectArray(["DS1"]), (dims, dims))
+
+
+@pytest.fixture
 def reference_data(highest, dims) -> np.ndarray:
     """This generates random data to test the equality operators"""
     reference_data = np.random.randint(
@@ -1274,3 +1279,60 @@ def test_nonzero(
     ).all()
     assert result.min_vals.shape == reference_result.shape
     assert result.max_vals.shape == reference_result.shape
+def test_trace(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    pt_dsa: DataSubjectArray,
+) -> None:
+    tensor = PT(
+        child=reference_data,
+        data_subjects=pt_dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.trace()
+    assert result.child == reference_data.trace()
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data
+
+    result = tensor.trace(offset=1)
+    assert result.child == reference_data.trace(offset=1)
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data
+
+
+def test_max(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    pt_dsa: DataSubjectArray,
+) -> None:
+    tensor = PT(
+        child=reference_data,
+        data_subjects=pt_dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.max()
+    assert result.child == reference_data.max()
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data
+
+
+def test_min(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    pt_dsa: DataSubjectArray,
+) -> None:
+    tensor = PT(
+        child=reference_data,
+        data_subjects=pt_dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.min()
+    assert result.child == reference_data.min()
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data
