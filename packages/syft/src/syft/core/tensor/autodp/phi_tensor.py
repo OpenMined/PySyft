@@ -1208,21 +1208,21 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
 
-    def conj(
-        self,
-        where: Optional[ArrayLike] = None,
-        casting: Optional[str] = "same_kind",
-        order: Optional[str] = "K",
-    ) -> PhiTensor:
-        print(self.child)
-        out_child = np.conj(self.child, where=where, casting=casting, order=order)
-        print(out_child)
-        return PhiTensor(
-            child=out_child,
-            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
-            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
-            data_subjects=self.data_subjects.reshape(out_child.shape),
-        )
+    # def conj(
+    #     self,
+    #     where: Optional[ArrayLike] = None,
+    #     casting: Optional[str] = "same_kind",
+    #     order: Optional[str] = "K",
+    # ) -> PhiTensor:
+    #     print(self.child)
+    #     out_child = np.conj(self.child, where=where, casting=casting, order=order)
+    #     print(out_child)
+    #     return PhiTensor(
+    #         child=out_child,
+    #         min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
+    #         max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
+    #         data_subjects=self.data_subjects.reshape(out_child.shape),
+    #     )
 
     def any(
         self,

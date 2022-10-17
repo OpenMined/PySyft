@@ -1346,27 +1346,27 @@ def test_ptp(
     assert result.max_vals.data == upper_bound - lower_bound
 
 
-def test_conj(
-    reference_data: np.ndarray,
-    upper_bound: np.ndarray,
-    lower_bound: np.ndarray,
-    ishan: DataSubjectArray,
-) -> None:
-    ishan = np.broadcast_to(ishan, reference_data.shape)
-    complex_reference_data = reference_data + 1j * np.eye(reference_data.shape[0])
-    # print(complex_reference_data)
-    reference_tensor = PT(
-        child=complex_reference_data,
-        data_subjects=np.array(ishan),
-        max_vals=upper_bound,
-        min_vals=lower_bound,
-    ).gamma
+# def test_conj(
+#     reference_data: np.ndarray,
+#     upper_bound: np.ndarray,
+#     lower_bound: np.ndarray,
+#     ishan: DataSubjectArray,
+# ) -> None:
+#     ishan = np.broadcast_to(ishan, reference_data.shape)
+#     complex_reference_data = reference_data + 1j * np.eye(reference_data.shape[0])
+#     # print(complex_reference_data)
+#     reference_tensor = PT(
+#         child=complex_reference_data,
+#         data_subjects=np.array(ishan),
+#         max_vals=upper_bound,
+#         min_vals=lower_bound,
+#     ).gamma
 
-    assert reference_tensor.conj == reference_tensor.conjugate
-    result = reference_tensor.conj()
-    assert result.func_str == GAMMA_TENSOR_OP.CONJ.value
-    assert reference_tensor == result.sources[reference_tensor.id]
-    assert (result.child == np.conj(complex_reference_data)).all()
-    assert (result.data_subjects == reference_tensor.data_subjects).all()
-    assert (result.max_vals == reference_tensor.max_vals).all()
-    assert (result.min_vals == reference_tensor.min_vals).all()
+#     assert reference_tensor.conj == reference_tensor.conjugate
+#     result = reference_tensor.conj()
+#     assert result.func_str == GAMMA_TENSOR_OP.CONJ.value
+#     assert reference_tensor == result.sources[reference_tensor.id]
+#     assert (result.child == np.conj(complex_reference_data)).all()
+#     assert (result.data_subjects == reference_tensor.data_subjects).all()
+#     assert (result.max_vals == reference_tensor.max_vals).all()
+#     assert (result.min_vals == reference_tensor.min_vals).all()

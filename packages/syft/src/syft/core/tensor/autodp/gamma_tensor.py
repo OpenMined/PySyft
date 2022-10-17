@@ -2861,23 +2861,23 @@ class GammaTensor:
             sources=output_state,
         )
 
-    def conj(
-        self,
-        where: Optional[ArrayLike] = None,
-        casting: Optional[str] = "same_kind",
-        order: Optional[str] = "K",
-    ) -> GammaTensor:
-        output_state = dict()
-        output_state[self.id] = self
-        out_child = np.conj(self.child, where=where, casting=casting, order=order)
-        return GammaTensor(
-            child=out_child,
-            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
-            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
-            data_subjects=self.data_subjects.reshape(out_child.shape),
-            func_str=GAMMA_TENSOR_OP.CONJ.value,
-            sources=output_state,
-        )
+    # def conj(
+    #     self,
+    #     where: Optional[ArrayLike] = None,
+    #     casting: Optional[str] = "same_kind",
+    #     order: Optional[str] = "K",
+    # ) -> GammaTensor:
+    #     output_state = dict()
+    #     output_state[self.id] = self
+    #     out_child = np.conj(self.child, where=where, casting=casting, order=order)
+    #     return GammaTensor(
+    #         child=out_child,
+    #         min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
+    #         max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
+    #         data_subjects=self.data_subjects.reshape(out_child.shape),
+    #         func_str=GAMMA_TENSOR_OP.CONJ.value,
+    #         sources=output_state,
+    #     )
 
     def take(
         self,
