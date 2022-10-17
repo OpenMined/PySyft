@@ -2706,4 +2706,4 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             data_subjects=data_subjects,
         )
 
-    conjugate = conj
+    # conjugate = conj

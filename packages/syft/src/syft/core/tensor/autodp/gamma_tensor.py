@@ -3120,4 +3120,4 @@ class GammaTensor:
                 func_str=func_str,
             )
 
-    conjugate = conj
+    # conjugate = conj
