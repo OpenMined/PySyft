@@ -887,12 +887,12 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         Parameters
             order: {‘C’, ‘F’, ‘A’, ‘K’}, optional
                 Controls the memory layout of the copy.
-                ‘C’ means C-order, ‘F’ means F-order, 
-                ‘A’ means ‘F’ if a is Fortran contiguous, ‘C’ otherwise. 
-                ‘K’ means match the layout of a as closely as possible. 
-                (Note that this function and ndarray.copy are very similar, 
+                ‘C’ means C-order, ‘F’ means F-order,
+                ‘A’ means ‘F’ if a is Fortran contiguous, ‘C’ otherwise.
+                ‘K’ means match the layout of a as closely as possible.
+                (Note that this function and ndarray.copy are very similar,
                 but have different default values for their order= arguments.)
-                
+
         Returns
             a_copy: PhiTensor
                 Array interpretation of a.
@@ -951,11 +951,12 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         """
         Take elements from an array along an axis.
 
-        When axis is not None, this function does the same thing as “fancy” indexing (indexing arrays using arrays); 
-        however, it can be easier to use if you need elements along a given axis. 
+        When axis is not None, this function does the same thing as “fancy” indexing (indexing arrays using arrays);
+        however, it can be easier to use if you need elements along a given axis.
         A call such as np.take(arr, indices, axis=3) is equivalent to arr[:,:,:,indices,...].
 
-        Explained without fancy indexing, this is equivalent to the following use of ndindex, which sets each of ii, jj, and kk to a tuple of indices:
+        Explained without fancy indexing, this is equivalent to the following use of ndindex,
+        which sets each of ii, jj, and kk to a tuple of indices:
 
         Ni, Nk = a.shape[:axis], a.shape[axis+1:]
         Nj = indices.shape
@@ -977,20 +978,25 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
                 ‘raise’ – raise an error (default)
                 ‘wrap’ – wrap around
                 ‘clip’ – clip to the range
-                ‘clip’ mode means that all indices that are too large are replaced by the index that addresses the last element along that axis. Note that this disables indexing with negative numbers.
-                
+                ‘clip’ mode means that all indices that are too large are replaced by the index
+                that addresses the last element along that axis. Note that this disables indexing with negative numbers.
+
         Returns
             a_take: PhiTensor
                 The returned array has the same type as a.
         """
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.take"
         result: TensorWrappedPhiTensorPointer
-        
+
         data_subjects = self.data_subjects.take(*args, **kwargs)
         result = TensorWrappedPhiTensorPointer(
             data_subjects=data_subjects,
-            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=data_subjects.shape),
-            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=data_subjects.shape),
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data, shape=data_subjects.shape
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data, shape=data_subjects.shape
+            ),
             client=self.client,
         )
 
@@ -1034,89 +1040,93 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
         return result
 
-    def put(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
-        """
-        Replaces specified elements of an array with given values.
+    # def put(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+    #     """
+    #     Replaces specified elements of an array with given values.
 
-        The indexing works on the flattened target array. put is roughly equivalent to:
+    #     The indexing works on the flattened target array. put is roughly equivalent to:
 
-        a.flat[ind] = v
+    #     a.flat[ind] = v
 
-        Parameters
-            ind:array_like
-                Target indices, interpreted as integers.
+    #     Parameters
+    #         ind:array_like
+    #             Target indices, interpreted as integers.
 
-            v: array_like
-                Values to place in a at target indices. 
-                If v is shorter than ind it will be repeated as necessary.
+    #         v: array_like
+    #             Values to place in a at target indices.
+    #             If v is shorter than ind it will be repeated as necessary.
 
-            mode: {‘raise’, ‘wrap’, ‘clip’}, optional
-                Specifies how out-of-bounds indices will behave.
+    #         mode: {‘raise’, ‘wrap’, ‘clip’}, optional
+    #             Specifies how out-of-bounds indices will behave.
 
-                ‘raise’ – raise an error (default)
+    #             ‘raise’ – raise an error (default)
 
-                ‘wrap’ – wrap around
+    #             ‘wrap’ – wrap around
 
-                ‘clip’ – clip to the range
+    #             ‘clip’ – clip to the range
 
-                ‘clip’ mode means that all indices that are too large are replaced 
-                by the index that addresses the last element along that axis. 
-                Note that this disables indexing with negative numbers. 
-                In ‘raise’ mode, if an exception occurs the target array may still be modified.
-        Returns
-            a_put: PhiTensor
-                The returned array has the same type as a with the new values.
-        """
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.put"
-        result: TensorWrappedPhiTensorPointer
-        
-        data_subjects = self.data_subjects.take(*args, **kwargs)
-        result = TensorWrappedPhiTensorPointer(
-            data_subjects=self.argmindata_subjects,
-            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=data_subjects.shape),
-            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=data_subjects.shape),
-            client=self.client,
-        )
+    #             ‘clip’ mode means that all indices that are too large are replaced
+    #             by the index that addresses the last element along that axis.
+    #             Note that this disables indexing with negative numbers.
+    #             In ‘raise’ mode, if an exception occurs the target array may still be modified.
+    #     Returns
+    #         a_put: PhiTensor
+    #             The returned array has the same type as a with the new values.
+    #     """
+    #     attr_path_and_name = "syft.core.tensor.tensor.Tensor.put"
+    #     result: TensorWrappedPhiTensorPointer
 
-        # QUESTION can the id_at_location be None?
-        result_id_at_location = getattr(result, "id_at_location", None)
+    #     data_subjects = self.data_subjects.take(*args, **kwargs)
+    #     result = TensorWrappedPhiTensorPointer(
+    #         data_subjects=self.argmindata_subjects,
+    #         min_vals=lazyrepeatarray(
+    #             data=self.min_vals.data, shape=data_subjects.shape
+    #         ),
+    #         max_vals=lazyrepeatarray(
+    #             data=self.max_vals.data, shape=data_subjects.shape
+    #         ),
+    #         client=self.client,
+    #     )
 
-        if result_id_at_location is not None:
-            # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+    #     # QUESTION can the id_at_location be None?
+    #     result_id_at_location = getattr(result, "id_at_location", None)
 
-            # then we convert anything which isnt a pointer into a pointer
-            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args,
-                kwargs=downcast_kwargs,
-                client=self.client,
-                gc_enabled=False,
-            )
+    #     if result_id_at_location is not None:
+    #         # first downcast anything primitive which is not already PyPrimitive
+    #         (
+    #             downcast_args,
+    #             downcast_kwargs,
+    #         ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
 
-            cmd = RunClassMethodAction(
-                path=attr_path_and_name,
-                _self=self,
-                args=pointer_args,
-                kwargs=pointer_kwargs,
-                id_at_location=result_id_at_location,
-                address=self.client.address,
-            )
-            self.client.send_immediate_msg_without_reply(msg=cmd)
+    #         # then we convert anything which isnt a pointer into a pointer
+    #         pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+    #             args=downcast_args,
+    #             kwargs=downcast_kwargs,
+    #             client=self.client,
+    #             gc_enabled=False,
+    #         )
 
-        inherit_tags(
-            attr_path_and_name=attr_path_and_name,
-            result=result,
-            self_obj=self,
-            args=[],
-            kwargs={},
-        )
-        result.public_shape = self.public_shape
-        result.public_dtype = self.public_dtype
+    #         cmd = RunClassMethodAction(
+    #             path=attr_path_and_name,
+    #             _self=self,
+    #             args=pointer_args,
+    #             kwargs=pointer_kwargs,
+    #             id_at_location=result_id_at_location,
+    #             address=self.client.address,
+    #         )
+    #         self.client.send_immediate_msg_without_reply(msg=cmd)
 
-        return result
+    #     inherit_tags(
+    #         attr_path_and_name=attr_path_and_name,
+    #         result=result,
+    #         self_obj=self,
+    #         args=[],
+    #         kwargs={},
+    #     )
+    #     result.public_shape = self.public_shape
+    #     result.public_dtype = self.public_dtype
+
+    #     return result
 
     def exp(
         self,

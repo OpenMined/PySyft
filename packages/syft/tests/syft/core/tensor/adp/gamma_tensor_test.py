@@ -1094,6 +1094,8 @@ def test_put(
     assert (
         result.child.flat[indices : indices + no_values] == new_values  # noqa: E203
     ).all()
+
+
 def test_trace(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
