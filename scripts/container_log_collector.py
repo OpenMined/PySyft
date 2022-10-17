@@ -20,7 +20,6 @@ containers = (
 )
 
 # Loop through the container ids and create a log file for each in the job directory
-print("============Log export started for job: ", job_name)
 for container in containers:
     # Get the container name
     container_name = (
@@ -41,3 +40,8 @@ for container in containers:
         f.write(container_logs)
         f.close()
 print("============Log export completed for job: ", job_name)
+
+
+# Remove all the containers
+subprocess.check_output("HAGRID", shell=True)
+subprocess.check_output("docker rm -f $(docker ps -a -q)", shell=True)
