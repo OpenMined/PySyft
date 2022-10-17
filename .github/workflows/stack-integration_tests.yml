@@ -695,14 +695,6 @@ jobs:
         uses: actions/upload-artifact@master
         if: ${{always()}}
         with:
-          name: ${{ steps.job_name.outputs.job_name }}-${{ steps.date.outputs.date }}
+          name: ${{ steps.job_name.outputs.job_name }}-logs-${{ steps.date.outputs.date }}
           path: ./logs/test/course/
-
-      # Get workflow run number
-      - name: Get workflow run step
-        id: step
-        if: ${{ always() }}
-        run: |
-          echo "::set-output name=step::$(echo ${{ github.run_number }})"
-          echo "::set-output name=step::$(echo ${{ github.run_number }})"
 
