@@ -54,13 +54,25 @@ class NetworkRegistry:
             # networks without frontend have a /ping route in 0.7.0
             if not online:
                 try:
-                    url += "ping"
-                    res = requests.get(url, timeout=0.5)
+                    ping_url = url + "ping"
+                    res = requests.get(ping_url, timeout=0.5)
                     online = res.status_code == 200
                 except Exception:
                     online = False
 
             if online:
+                # Check if syft version was described in NetworkRegistry
+                if not network.get("version", None):
+                    # If not defined, try to ask in /syft/version endpoint (supported by 0.7.0)
+                    try:
+                        version_url = url + "api/v1/syft/version"
+                        res = requests.get(version_url, timeout=0.5)
+                        if res.status_code == 200:
+                            network["version"] = res.json()["version"]
+                        else:
+                            network["version"] = "unknown"
+                    except Exception:
+                        network["version"] = "unknown"
                 return network
             return None
 
