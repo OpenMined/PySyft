@@ -1,0 +1,151 @@
+Classification,Year,Period,Period Desc.,Aggregate Level,Is Leaf Code,Trade Flow Code,Trade Flow,Reporter Code,Reporter,Reporter ISO,Partner Code,Partner,Partner ISO,Commodity Code,Commodity,Qty Unit Code,Qty Unit,Qty,Netweight (kg),Trade Value (US$),Flag
+HS,2022,202203,Mar-22,0,0,1,Imports,31,Azerbaijan,,76,Brazil,,TOTAL,All Commodities,,,,0.0,10219315,0
+HS,2022,202203,Mar-22,0,0,2,Exports,31,Azerbaijan,,76,Brazil,,TOTAL,All Commodities,,,,0.0,15667155,0
+HS,2022,202203,Mar-22,0,0,1,Imports,32,Argentina,,76,Brazil,,TOTAL,All Commodities,,,,0.0,1378527055,0
+HS,2022,202203,Mar-22,0,0,2,Exports,32,Argentina,,76,Brazil,,TOTAL,All Commodities,,,,0.0,986129605,0
+HS,2022,202203,Mar-22,0,0,1,Imports,36,Australia,,76,Brazil,,TOTAL,All Commodities,,,,0.0,77936714,0
+HS,2022,202203,Mar-22,0,0,2,Exports,36,Australia,,76,Brazil,,TOTAL,All Commodities,,,,0.0,112331217,0
+HS,2022,202203,Mar-22,0,0,1,Imports,51,Armenia,,76,Brazil,,TOTAL,All Commodities,,,,0.0,4243701,0
+HS,2022,202203,Mar-22,0,0,1,Imports,52,Barbados,,76,Brazil,,TOTAL,All Commodities,,,,0.0,758450,0
+HS,2022,202203,Mar-22,0,0,2,Exports,52,Barbados,,76,Brazil,,TOTAL,All Commodities,,,,0.0,5000,0
+HS,2022,202203,Mar-22,0,0,1,Imports,56,Belgium,,76,Brazil,,TOTAL,All Commodities,,,,0.0,280046889,0
+HS,2022,202203,Mar-22,0,0,2,Exports,56,Belgium,,76,Brazil,,TOTAL,All Commodities,,,,0.0,253506334,0
+HS,2022,202203,Mar-22,0,0,1,Imports,68,Bolivia,,76,Brazil,,TOTAL,All Commodities,,,,0.0,169665750,0
+HS,2022,202203,Mar-22,0,0,2,Exports,68,Bolivia,,76,Brazil,,TOTAL,All Commodities,,,,0.0,191053430,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,68,Bolivia,,76,Brazil,,TOTAL,All Commodities,,,,0.0,177514,0
+HS,2022,202203,Mar-22,0,0,1,Imports,70,Bosnia Herzegovina,,76,Brazil,,TOTAL,All Commodities,,,,0.0,14558769,0
+HS,2022,202203,Mar-22,0,0,2,Exports,70,Bosnia Herzegovina,,76,Brazil,,TOTAL,All Commodities,,,,0.0,33360,0
+HS,2022,202203,Mar-22,0,0,1,Imports,72,Botswana,,76,Brazil,,TOTAL,All Commodities,,,,0.0,2014853,0
+HS,2022,202203,Mar-22,0,0,1,Imports,76,Brazil,,76,Brazil,,TOTAL,All Commodities,,,,0.0,25243547,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,76,Brazil,,76,Brazil,,TOTAL,All Commodities,,,,0.0,25243547,0
+HS,2022,202203,Mar-22,0,0,1,Imports,84,Belize,,76,Brazil,,TOTAL,All Commodities,,,,0.0,730223,0
+HS,2022,202203,Mar-22,0,0,1,Imports,97,EU,,76,Brazil,,TOTAL,All Commodities,,,,0.0,4349956560,0
+HS,2022,202203,Mar-22,0,0,2,Exports,97,EU,,76,Brazil,,TOTAL,All Commodities,,,,0.0,3536918207,0
+HS,2022,202203,Mar-22,0,0,1,Imports,112,Belarus,,76,Brazil,,TOTAL,All Commodities,,,,0.0,3666200,0
+HS,2022,202203,Mar-22,0,0,2,Exports,112,Belarus,,76,Brazil,,TOTAL,All Commodities,,,,0.0,311100,0
+HS,2022,202203,Mar-22,0,0,1,Imports,124,Canada,,76,Brazil,,TOTAL,All Commodities,,,,,577701902,0
+HS,2022,202203,Mar-22,0,0,2,Exports,124,Canada,,76,Brazil,,TOTAL,All Commodities,,,,0.0,335345075,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,124,Canada,,76,Brazil,,TOTAL,All Commodities,,,,0.0,13231370,0
+HS,2022,202203,Mar-22,0,0,1,Imports,152,Chile,,76,Brazil,,TOTAL,All Commodities,,,,0.0,783019489,0
+HS,2022,202203,Mar-22,0,0,2,Exports,152,Chile,,76,Brazil,,TOTAL,All Commodities,,,,0.0,399650090,0
+HS,2022,202203,Mar-22,0,0,1,Imports,156,China,,76,Brazil,,TOTAL,All Commodities,,,,0.0,7075538719,0
+HS,2022,202203,Mar-22,0,0,2,Exports,156,China,,76,Brazil,,TOTAL,All Commodities,,,,0.0,4283048863,0
+HS,2022,202203,Mar-22,0,0,1,Imports,191,Croatia,,76,Brazil,,TOTAL,All Commodities,,,,0.0,2364013,0
+HS,2022,202203,Mar-22,0,0,2,Exports,191,Croatia,,76,Brazil,,TOTAL,All Commodities,,,,0.0,2529024,0
+HS,2022,202203,Mar-22,0,0,1,Imports,203,Czech Rep.,,76,Brazil,,TOTAL,All Commodities,,,,0.0,20584394,0
+HS,2022,202203,Mar-22,0,0,2,Exports,203,Czech Rep.,,76,Brazil,,TOTAL,All Commodities,,,,0.0,35360198,0
+HS,2022,202203,Mar-22,0,0,1,Imports,208,Denmark,,76,Brazil,,TOTAL,All Commodities,,,,0.0,38278111,0
+HS,2022,202203,Mar-22,0,0,2,Exports,208,Denmark,,76,Brazil,,TOTAL,All Commodities,,,,0.0,42192037,0
+HS,2022,202203,Mar-22,0,0,1,Imports,222,El Salvador,,76,Brazil,,TOTAL,All Commodities,,,,0.0,16158384,0
+HS,2022,202203,Mar-22,0,0,2,Exports,222,El Salvador,,76,Brazil,,TOTAL,All Commodities,,,,0.0,259223,0
+HS,2022,202203,Mar-22,0,0,1,Imports,233,Estonia,,76,Brazil,,TOTAL,All Commodities,,,,0.0,3619396,0
+HS,2022,202203,Mar-22,0,0,2,Exports,233,Estonia,,76,Brazil,,TOTAL,All Commodities,,,,0.0,2305439,0
+HS,2022,202203,Mar-22,0,0,1,Imports,242,Fiji,,76,Brazil,,TOTAL,All Commodities,,,,0.0,72170,0
+HS,2022,202203,Mar-22,0,0,1,Imports,246,Finland,,76,Brazil,,TOTAL,All Commodities,,,,0.0,77773289,0
+HS,2022,202203,Mar-22,0,0,2,Exports,246,Finland,,76,Brazil,,TOTAL,All Commodities,,,,0.0,64324379,0
+HS,2022,202203,Mar-22,0,0,1,Imports,268,Georgia,,76,Brazil,,TOTAL,All Commodities,,,,0.0,4094811,0
+HS,2022,202203,Mar-22,0,0,2,Exports,268,Georgia,,76,Brazil,,TOTAL,All Commodities,,,,0.0,18013,0
+HS,2022,202203,Mar-22,0,0,1,Imports,276,Germany,,76,Brazil,,TOTAL,All Commodities,,,,0.0,908615966,0
+HS,2022,202203,Mar-22,0,0,2,Exports,276,Germany,,76,Brazil,,TOTAL,All Commodities,,,,0.0,1128267781,0
+HS,2022,202203,Mar-22,0,0,1,Imports,300,Greece,,76,Brazil,,TOTAL,All Commodities,,,,0.0,32029264,0
+HS,2022,202203,Mar-22,0,0,2,Exports,300,Greece,,76,Brazil,,TOTAL,All Commodities,,,,0.0,7470471,0
+HS,2022,202203,Mar-22,0,0,1,Imports,308,Grenada,,76,Brazil,,TOTAL,All Commodities,,,,0.0,261974,0
+HS,2022,202203,Mar-22,0,0,1,Imports,320,Guatemala,,76,Brazil,,TOTAL,All Commodities,,,,0.0,54903282,0
+HS,2022,202203,Mar-22,0,0,2,Exports,320,Guatemala,,76,Brazil,,TOTAL,All Commodities,,,,0.0,4517817,0
+HS,2022,202203,Mar-22,0,0,1,Imports,328,Guyana,,76,Brazil,,TOTAL,All Commodities,,,,0.0,4557634,0
+HS,2022,202203,Mar-22,0,0,2,Exports,328,Guyana,,76,Brazil,,TOTAL,All Commodities,,,,0.0,484146,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,328,Guyana,,76,Brazil,,TOTAL,All Commodities,,,,0.0,481146,0
+HS,2022,202203,Mar-22,0,0,1,Imports,344,"China, Hong Kong SAR",,76,Brazil,,TOTAL,All Commodities,,,,0.0,97247814,0
+HS,2022,202203,Mar-22,0,0,2,Exports,344,"China, Hong Kong SAR",,76,Brazil,,TOTAL,All Commodities,,,,0.0,189841229,0
+HS,2022,202203,Mar-22,0,0,1,Imports,348,Hungary,,76,Brazil,,TOTAL,All Commodities,,,,0.0,7442066,0
+HS,2022,202203,Mar-22,0,0,2,Exports,348,Hungary,,76,Brazil,,TOTAL,All Commodities,,,,0.0,23741114,0
+HS,2022,202203,Mar-22,0,0,1,Imports,352,Iceland,,76,Brazil,,TOTAL,All Commodities,,,,0.0,35437059,0
+HS,2022,202203,Mar-22,0,0,2,Exports,352,Iceland,,76,Brazil,,TOTAL,All Commodities,,,,0.0,830224,0
+HS,2022,202203,Mar-22,0,0,1,Imports,360,Indonesia,,76,Brazil,,TOTAL,All Commodities,,,,0.0,388741492,0
+HS,2022,202203,Mar-22,0,0,2,Exports,360,Indonesia,,76,Brazil,,TOTAL,All Commodities,,,,0.0,132826601,0
+HS,2022,202203,Mar-22,0,0,1,Imports,376,Israel,,76,Brazil,,TOTAL,All Commodities,,,,0.0,86939000,0
+HS,2022,202203,Mar-22,0,0,2,Exports,376,Israel,,76,Brazil,,TOTAL,All Commodities,,,,0.0,196310000,0
+HS,2022,202203,Mar-22,0,0,1,Imports,381,Italy,,76,Brazil,,TOTAL,All Commodities,,,,0.0,472740618,0
+HS,2022,202203,Mar-22,0,0,2,Exports,381,Italy,,76,Brazil,,TOTAL,All Commodities,,,,0.0,468017305,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,381,Italy,,76,Brazil,,TOTAL,All Commodities,,,,0.0,1891139,0
+HS,2022,202203,Mar-22,0,0,1,Imports,392,Japan,,76,Brazil,,TOTAL,All Commodities,,,,0.0,954907850,0
+HS,2022,202203,Mar-22,0,0,2,Exports,392,Japan,,76,Brazil,,TOTAL,All Commodities,,,,0.0,421716203,0
+HS,2022,202203,Mar-22,0,0,1,Imports,417,Kyrgyzstan,,76,Brazil,,TOTAL,All Commodities,,,,0.0,20739,0
+HS,2022,202203,Mar-22,0,0,1,Imports,428,Latvia,,76,Brazil,,TOTAL,All Commodities,,,,0.0,671735,0
+HS,2022,202203,Mar-22,0,0,2,Exports,428,Latvia,,76,Brazil,,TOTAL,All Commodities,,,,0.0,1502077,0
+HS,2022,202203,Mar-22,0,0,1,Imports,440,Lithuania,,76,Brazil,,TOTAL,All Commodities,,,,0.0,2897141,0
+HS,2022,202203,Mar-22,0,0,2,Exports,440,Lithuania,,76,Brazil,,TOTAL,All Commodities,,,,0.0,3430310,0
+HS,2022,202203,Mar-22,0,0,1,Imports,442,Luxembourg,,76,Brazil,,TOTAL,All Commodities,,,,0.0,1367558,0
+HS,2022,202203,Mar-22,0,0,2,Exports,442,Luxembourg,,76,Brazil,,TOTAL,All Commodities,,,,0.0,4402537,0
+HS,2022,202203,Mar-22,0,0,1,Imports,446,"China, Macao SAR",,76,Brazil,,TOTAL,All Commodities,,,,0.0,5865836,0
+HS,2022,202203,Mar-22,0,0,2,Exports,446,"China, Macao SAR",,76,Brazil,,TOTAL,All Commodities,,,,0.0,4817,0
+HS,2022,202203,Mar-22,0,0,1,Imports,480,Mauritius,,76,Brazil,,TOTAL,All Commodities,,,,0.0,20136264,0
+HS,2022,202203,Mar-22,0,0,2,Exports,480,Mauritius,,76,Brazil,,TOTAL,All Commodities,,,,0.0,3238,0
+HS,2022,202203,Mar-22,0,0,1,Imports,484,Mexico,,76,Brazil,,TOTAL,All Commodities,,,,0.0,948554664,0
+HS,2022,202203,Mar-22,0,0,2,Exports,484,Mexico,,76,Brazil,,TOTAL,All Commodities,,,,0.0,358849860,0
+HS,2022,202203,Mar-22,0,0,1,Imports,498,Rep. of Moldova,,76,Brazil,,TOTAL,All Commodities,,,,0.0,1135705,0
+HS,2022,202203,Mar-22,0,0,2,Exports,498,Rep. of Moldova,,76,Brazil,,TOTAL,All Commodities,,,,0.0,90468,0
+HS,2022,202203,Mar-22,0,0,1,Imports,516,Namibia,,76,Brazil,,TOTAL,All Commodities,,,,0.0,15800628,0
+HS,2022,202203,Mar-22,0,0,2,Exports,516,Namibia,,76,Brazil,,TOTAL,All Commodities,,,,0.0,195070,0
+HS,2022,202203,Mar-22,0,0,1,Imports,528,Netherlands,,76,Brazil,,TOTAL,All Commodities,,,,0.0,714273410,0
+HS,2022,202203,Mar-22,0,0,2,Exports,528,Netherlands,,76,Brazil,,TOTAL,All Commodities,,,,0.0,247891847,0
+HS,2022,202203,Mar-22,0,0,1,Imports,554,New Zealand,,76,Brazil,,TOTAL,All Commodities,,,,0.0,26888769,0
+HS,2022,202203,Mar-22,0,0,2,Exports,554,New Zealand,,76,Brazil,,TOTAL,All Commodities,,,,0.0,3995766,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,554,New Zealand,,76,Brazil,,TOTAL,All Commodities,,,,0.0,107389,0
+HS,2022,202203,Mar-22,0,0,1,Imports,566,Nigeria,,76,Brazil,,TOTAL,All Commodities,,,,0.0,116497174,0
+HS,2022,202203,Mar-22,0,0,2,Exports,566,Nigeria,,76,Brazil,,TOTAL,All Commodities,,,,0.0,212363511,0
+HS,2022,202203,Mar-22,0,0,1,Imports,579,Norway,,76,Brazil,,TOTAL,All Commodities,,,,0.0,191183779,0
+HS,2022,202203,Mar-22,0,0,2,Exports,579,Norway,,76,Brazil,,TOTAL,All Commodities,,,,0.0,63953993,0
+HS,2022,202203,Mar-22,0,0,1,Imports,586,Pakistan,,76,Brazil,,TOTAL,All Commodities,,,,0.0,107309780,0
+HS,2022,202203,Mar-22,0,0,2,Exports,586,Pakistan,,76,Brazil,,TOTAL,All Commodities,,,,0.0,7282529,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,586,Pakistan,,76,Brazil,,TOTAL,All Commodities,,,,0.0,59422,0
+HS,2022,202203,Mar-22,0,0,1,Imports,591,Panama,,76,Brazil,,TOTAL,All Commodities,,,,0.0,17548453,0
+HS,2022,202203,Mar-22,0,0,2,Exports,591,Panama,,76,Brazil,,TOTAL,All Commodities,,,,0.0,435419,0
+HS,2022,202203,Mar-22,0,0,1,Imports,600,Paraguay,,76,Brazil,,TOTAL,All Commodities,,,,0.0,292088630,0
+HS,2022,202203,Mar-22,0,0,2,Exports,600,Paraguay,,76,Brazil,,TOTAL,All Commodities,,,,0.0,307852957,0
+HS,2022,202203,Mar-22,0,0,1,Imports,608,Philippines,,76,Brazil,,TOTAL,All Commodities,,,,0.0,117229006,0
+HS,2022,202203,Mar-22,0,0,2,Exports,608,Philippines,,76,Brazil,,TOTAL,All Commodities,,,,0.0,17742836,0
+HS,2022,202203,Mar-22,0,0,1,Imports,616,Poland,,76,Brazil,,TOTAL,All Commodities,,,,0.0,217720866,0
+HS,2022,202203,Mar-22,0,0,2,Exports,616,Poland,,76,Brazil,,TOTAL,All Commodities,,,,0.0,56392071,0
+HS,2022,202203,Mar-22,0,0,1,Imports,620,Portugal,,76,Brazil,,TOTAL,All Commodities,,,,0.0,382240633,0
+HS,2022,202203,Mar-22,0,0,2,Exports,620,Portugal,,76,Brazil,,TOTAL,All Commodities,,,,0.0,73908594,0
+HS,2022,202203,Mar-22,0,0,1,Imports,642,Romania,,76,Brazil,,TOTAL,All Commodities,,,,0.0,61881864,0
+HS,2022,202203,Mar-22,0,0,2,Exports,642,Romania,,76,Brazil,,TOTAL,All Commodities,,,,0.0,18054655,0
+HS,2022,202203,Mar-22,0,0,1,Imports,646,Rwanda,,76,Brazil,,TOTAL,All Commodities,,,,0.0,174210,0
+HS,2022,202203,Mar-22,0,0,1,Imports,686,Senegal,,76,Brazil,,TOTAL,All Commodities,,,,0.0,30154921,0
+HS,2022,202203,Mar-22,0,0,2,Exports,686,Senegal,,76,Brazil,,TOTAL,All Commodities,,,,0.0,103657,0
+HS,2022,202203,Mar-22,0,0,1,Imports,688,Serbia,,76,Brazil,,TOTAL,All Commodities,,,,0.0,9208052,0
+HS,2022,202203,Mar-22,0,0,2,Exports,688,Serbia,,76,Brazil,,TOTAL,All Commodities,,,,0.0,2276699,0
+HS,2022,202203,Mar-22,0,0,1,Imports,699,India,,76,Brazil,,TOTAL,All Commodities,,,,0.0,551132482,0
+HS,2022,202203,Mar-22,0,0,2,Exports,699,India,,76,Brazil,,TOTAL,All Commodities,,,,0.0,606929627,0
+HS,2022,202203,Mar-22,0,0,1,Imports,703,Slovakia,,76,Brazil,,TOTAL,All Commodities,,,,0.0,12661109,0
+HS,2022,202203,Mar-22,0,0,2,Exports,703,Slovakia,,76,Brazil,,TOTAL,All Commodities,,,,0.0,12756950,0
+HS,2022,202203,Mar-22,0,0,1,Imports,705,Slovenia,,76,Brazil,,TOTAL,All Commodities,,,,0.0,24034949,0
+HS,2022,202203,Mar-22,0,0,2,Exports,705,Slovenia,,76,Brazil,,TOTAL,All Commodities,,,,0.0,7084083,0
+HS,2022,202203,Mar-22,0,0,1,Imports,724,Spain,,76,Brazil,,TOTAL,All Commodities,,,,0.0,774980628,0
+HS,2022,202203,Mar-22,0,0,2,Exports,724,Spain,,76,Brazil,,TOTAL,All Commodities,,,,0.0,299583144,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,724,Spain,,76,Brazil,,TOTAL,All Commodities,,,,0.0,13146687,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,724,Spain,,76,Brazil,,TOTAL,All Commodities,,,,0.0,6638,0
+HS,2022,202203,Mar-22,0,0,1,Imports,752,Sweden,,76,Brazil,,TOTAL,All Commodities,,,,0.0,78050048,0
+HS,2022,202203,Mar-22,0,0,2,Exports,752,Sweden,,76,Brazil,,TOTAL,All Commodities,,,,0.0,120863379,0
+HS,2022,202203,Mar-22,0,0,1,Imports,757,Switzerland,,76,Brazil,,TOTAL,All Commodities,,,,0.0,119976352,0
+HS,2022,202203,Mar-22,0,0,2,Exports,757,Switzerland,,76,Brazil,,TOTAL,All Commodities,,,,0.0,245539297,0
+HS,2022,202203,Mar-22,0,0,1,Imports,768,Togo,,76,Brazil,,TOTAL,All Commodities,,,,0.0,2951975,0
+HS,2022,202203,Mar-22,0,0,2,Exports,768,Togo,,76,Brazil,,TOTAL,All Commodities,,,,0.0,14211,0
+HS,2022,202203,Mar-22,0,0,1,Imports,792,Turkey,,76,Brazil,,TOTAL,All Commodities,,,,0.0,384677365,0
+HS,2022,202203,Mar-22,0,0,2,Exports,792,Turkey,,76,Brazil,,TOTAL,All Commodities,,,,0.0,93084887,0
+HS,2022,202203,Mar-22,0,0,1,Imports,804,Ukraine,,76,Brazil,,TOTAL,All Commodities,,,,0.0,4948650,0
+HS,2022,202203,Mar-22,0,0,2,Exports,804,Ukraine,,76,Brazil,,TOTAL,All Commodities,,,,0.0,901689,0
+HS,2022,202203,Mar-22,0,0,1,Imports,807,TFYR of Macedonia,,76,Brazil,,TOTAL,All Commodities,,,,0.0,3904552,0
+HS,2022,202203,Mar-22,0,0,2,Exports,807,TFYR of Macedonia,,76,Brazil,,TOTAL,All Commodities,,,,0.0,328019,0
+HS,2022,202203,Mar-22,0,0,1,Imports,818,Egypt,,76,Brazil,,TOTAL,All Commodities,,,,0.0,318758756,0
+HS,2022,202203,Mar-22,0,0,2,Exports,818,Egypt,,76,Brazil,,TOTAL,All Commodities,,,,0.0,42774456,0
+HS,2022,202203,Mar-22,0,0,1,Imports,826,United Kingdom,,76,Brazil,,TOTAL,All Commodities,,,,0.0,336867700,0
+HS,2022,202203,Mar-22,0,0,2,Exports,826,United Kingdom,,76,Brazil,,TOTAL,All Commodities,,,,0.0,313862388,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,826,United Kingdom,,76,Brazil,,TOTAL,All Commodities,,,,0.0,36698357,0
+HS,2022,202203,Mar-22,0,0,1,Imports,842,United States of America,,76,Brazil,,TOTAL,All Commodities,,,,0.0,3282869036,0
+HS,2022,202203,Mar-22,0,0,2,Exports,842,United States of America,,76,Brazil,,TOTAL,All Commodities,,,,0.0,4326023296,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,842,United States of America,,76,Brazil,,TOTAL,All Commodities,,,,0.0,517281517,0
+HS,2022,202203,Mar-22,0,0,1,Imports,854,Burkina Faso,,76,Brazil,,TOTAL,All Commodities,,,,0.0,2651983,0
+HS,2022,202203,Mar-22,0,0,1,Imports,860,Uzbekistan,,76,Brazil,,TOTAL,All Commodities,,,,0.0,38931129,0
+HS,2022,202203,Mar-22,0,0,2,Exports,860,Uzbekistan,,76,Brazil,,TOTAL,All Commodities,,,,0.0,47998,0
