@@ -9,7 +9,7 @@ if not os.path.exists(log_path):
     os.makedirs(log_path)
 
 # Get the github job name and create a directory for it
-job_name = "test"  # os.getenv("GITHUB_JOB")
+job_name = os.getenv("GITHUB_JOB")
 job_path = os.path.join(log_path, job_name)
 if not os.path.exists(job_path):
     os.makedirs(job_path)
