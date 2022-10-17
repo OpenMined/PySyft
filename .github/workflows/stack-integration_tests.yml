@@ -670,14 +670,39 @@ jobs:
           docker logs test_domain_1-celeryworker-1 > logs/test/course/celeryworker.log
           docker logs test_domain_1-docker-host-1 > logs/test/course/docker-host.log
 
+      # Get Job name and url
+      - name: Get job name and url
+        id: job
+        if: ${{ always() }}
+        run: |
+          echo "::set-output name=job::$(echo ${{ github.job }})"
+          echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
       - name: Get current date
         id: date
         if: ${{ always() }}
         run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
 
+       # Get Job name and url
+      - name: Get job name and url
+        id: job
+        if: ${{ always() }}
+        run: |
+          echo "::set-output name=job::$(echo ${{ github.job }})"
+          echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
       - name: Upload logs to GitHub
         uses: actions/upload-artifact@master
         if: ${{always()}}
         with:
-          name: course-logs-${{ steps.date.outputs.date }}
+          name: ${{ steps.date.outputs.job }}-${{ steps.date.outputs.date }}
           path: ./logs/test/course/
+
+      # Get workflow run number
+      - name: Get workflow run step
+        id: step
+        if: ${{ always() }}
+        run: |
+          echo "::set-output name=step::$(echo ${{ github.run_number }})"
+          echo "::set-output name=step::$(echo ${{ github.run_number }})"
+
