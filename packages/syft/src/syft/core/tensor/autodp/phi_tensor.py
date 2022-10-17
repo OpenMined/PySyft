@@ -123,10 +123,11 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         public_dtype_func = getattr(
             self.public_dtype, "upcast", lambda: self.public_dtype
         )
+
         return (
             np.random.rand(*list(self.public_shape))  # type: ignore
-            * (self.max_vals.to_numpy() - self.min_vals.to_numpy())
-            + self.min_vals.to_numpy()
+            * (self.max_vals.data - self.min_vals.data)
+            + self.min_vals.data
         ).astype(public_dtype_func())
 
     def __repr__(self) -> str:
@@ -649,6 +650,232 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         )
         dummy_res = np.ones_like(np.empty(self.public_shape), *args, **kwargs)
         result.public_shape = dummy_res.shape
+        result.public_dtype = self.public_dtype
+
+        return result
+
+    def trace(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Return the sum along diagonals of the array.
+
+        If a is 2-D, the sum along its diagonal with the given offset is returned, i.e., the sum of elements
+        a[i,i+offset] for all i.
+
+        If a has more than two dimensions, then the axes specified by axis1 and axis2 are used to determine the 2-D
+        sub-arrays whose traces are returned. The shape of the resulting array is the same as that of a with axis1 and
+        axis2 removed.
+
+        Parameters
+
+            offset: int, optional
+                Offset of the diagonal from the main diagonal. Can be both positive and negative. Defaults to 0.
+
+            axis1, axis2: int, optional
+                Axes to be used as the first and second axis of the 2-D sub-arrays from which the diagonals should be
+                taken. Defaults are the first two axes of a.
+
+        Returns
+
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+                If a is 2-D, the sum along the diagonal is returned.
+                If a has larger dimensions, then an array of sums along diagonals is returned.
+
+        """
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.trace"
+        result: TensorWrappedPhiTensorPointer
+        data_subjects = np.array(self.data_subjects.trace(*args, **kwargs))
+
+        result = TensorWrappedPhiTensorPointer(
+            data_subjects=self.data_subjects,
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data, shape=data_subjects.shape
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data, shape=data_subjects.shape
+            ),
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[],
+            kwargs={},
+        )
+
+        result.public_shape = data_subjects.shape
+        result.public_dtype = self.public_dtype
+
+        return result
+
+    def min(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Return the minimum of an array or minimum along an axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which to operate. By default, flattened input is used.
+                If this is a tuple of ints, the minimum is selected over multiple axes,
+                instead of a single axis or all the axes as before.
+
+        Returns
+            a_min: PhiTensor
+                Minimum of a.
+                If axis is None, the result is a scalar value.
+                If axis is given, the result is an array of dimension a.ndim - 1.
+        """
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.min"
+        result: TensorWrappedPhiTensorPointer
+        data_subjects = np.empty(self.data_subjects.shape).min(*args, **kwargs)
+
+        result = TensorWrappedPhiTensorPointer(
+            data_subjects=self.data_subjects,
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data, shape=data_subjects.shape
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data, shape=data_subjects.shape
+            ),
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[],
+            kwargs={},
+        )
+
+        result.public_shape = data_subjects.shape
+        result.public_dtype = self.public_dtype
+
+        return result
+
+    def max(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Return the maximum of an array or along an axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which to operate. By default, flattened input is used.
+                If this is a tuple of ints, the minimum is selected over multiple axes,
+                instead of a single axis or all the axes as before.
+
+        Returns
+            a_max: PhiTensor
+                Maximum of a.
+                If axis is None, the result is a scalar value.
+                If axis is given, the result is an array of dimension a.ndim - 1.
+        """
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.max"
+        result: TensorWrappedPhiTensorPointer
+        data_subjects = np.array(self.data_subjects.max(*args, **kwargs))
+
+        result = TensorWrappedPhiTensorPointer(
+            data_subjects=self.data_subjects,
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data, shape=data_subjects.shape
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data, shape=data_subjects.shape
+            ),
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[],
+            kwargs={},
+        )
+        result.public_shape = data_subjects.shape
         result.public_dtype = self.public_dtype
 
         return result
@@ -1384,23 +1611,67 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         )
 
     def max(self, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> PhiTensor:
-        indices = self.child.argmax(axis)
+        """
+        Return the maximum of an array or along an axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which to operate. By default, flattened input is used.
+                If this is a tuple of ints, the minimum is selected over multiple axes,
+                instead of a single axis or all the axes as before.
+
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the amax method of
+                sub-classes of ndarray, however any non-default value will be.
+                If the sub-class’ method does not implement keepdims any exceptions will be raised.
+            initial: scalar, optional
+                The minimum value of an output element. Must be present to allow computation on empty slice.
+                See reduce for details.
+
+            where: array_like of bool, optional
+                Elements to compare for the maximum. See reduce for details.
+
+        Returns
+            a_max: PhiTensor
+                Maximum of a.
+                If axis is None, the result is a scalar value.
+                If axis is given, the result is an array of dimension a.ndim - 1.
+        """
+        indices = np.unravel_index(self.child.argmax(axis), shape=self.child.shape)
         result = self.child.max(axis)
         return PhiTensor(
             child=result,
             data_subjects=self.data_subjects[indices],
-            min_vals=lazyrepeatarray(data=result.min(), shape=result.shape),
-            max_vals=lazyrepeatarray(data=result.max(), shape=result.shape),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
         )
 
     def min(self, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> PhiTensor:
-        indices = self.child.argmin(axis)
+        """
+        Return the minimum of an array or minimum along an axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which to operate. By default, flattened input is used.
+                If this is a tuple of ints, the minimum is selected over multiple axes,
+                instead of a single axis or all the axes as before.
+
+        Returns
+            a_min: PhiTensor
+                Minimum of a.
+                If axis is None, the result is a scalar value.
+                If axis is given, the result is an array of dimension a.ndim - 1.
+        """
+
+        indices = np.unravel_index(self.child.argmin(axis), self.child.shape)
         result = self.child.min(axis)
         return PhiTensor(
             child=result,
             data_subjects=self.data_subjects[indices],
-            min_vals=lazyrepeatarray(data=result.min(), shape=result.shape),
-            max_vals=lazyrepeatarray(data=result.max(), shape=result.shape),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
         )
 
     def _argmax(self, axis: Optional[int]) -> PhiTensor:
@@ -2461,6 +2732,43 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             data_subjects=self.data_subjects.take(choices),
             min_vals=minv,
             max_vals=maxv,
+        )
+
+    def trace(self, offset: int = 0, axis1: int = 0, axis2: int = 1) -> PhiTensor:
+        """
+        Return the sum along diagonals of the array.
+
+        If a is 2-D, the sum along its diagonal with the given offset is returned, i.e., the sum of elements
+        a[i,i+offset] for all i.
+
+        If a has more than two dimensions, then the axes specified by axis1 and axis2 are used to determine the 2-D
+        sub-arrays whose traces are returned. The shape of the resulting array is the same as that of a with axis1 and
+        axis2 removed.
+
+        Parameters
+
+            offset: int, optional
+                Offset of the diagonal from the main diagonal. Can be both positive and negative. Defaults to 0.
+
+            axis1, axis2: int, optional
+                Axes to be used as the first and second axis of the 2-D sub-arrays from which the diagonals should be
+                taken. Defaults are the first two axes of a.
+
+        Returns
+
+            sum_along_diagonals: PhiTensor
+                If a is 2-D, the sum along the diagonal is returned.
+                If a has larger dimensions, then an array of sums along diagonals is returned.
+        """
+        result = self.child.trace(offset, axis1, axis2)
+
+        # This is potentially expensive
+        num = np.ones_like(self.child).trace(offset, axis1, axis2)
+        return PhiTensor(
+            child=result,
+            data_subjects=self.data_subjects.trace(offset, axis1, axis2),
+            min_vals=lazyrepeatarray(data=self.min_vals.data * num, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data * num, shape=result.shape),
         )
 
     def _object2bytes(self) -> bytes:
