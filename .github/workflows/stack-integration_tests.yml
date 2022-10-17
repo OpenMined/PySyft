@@ -844,10 +844,8 @@ jobs:
         id: job_name
         if: failure()
         run: |
-          echo "::set-output name=job_name::$(echo ${{ github.job_id }})"
           echo "::set-output name=job_name::$(echo ${{ github.job }})"
           echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
-          echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs/${{ github.job_id }})"
 
       - name: Get current date
         id: date
