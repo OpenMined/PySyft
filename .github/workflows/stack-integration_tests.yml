@@ -652,23 +652,31 @@ jobs:
         run: |
           docker rm `docker ps -aq` --force || true
           tox -e stack.test.course
+      
 
-      #Move docker logs out of tox
-      - name: Create logs folder and write logs
-        if:  ${{ always() }}
+      #Run log collector python script
+      - name: Run log collector
+        if: always()
         shell: bash
         run: |
-          mkdir -p logs/test/course
-          docker logs test_domain_1-backend_stream-1 > logs/test/course/backend_stream.log
-          docker logs test_domain_1-backend-1 > logs/test/course/backend.log
-          docker logs test_domain_1-queue-1 > logs/test/course/queue.log
-          docker logs test_domain_1-proxy-1 > logs/test/course/proxy.log
-          docker logs test_domain_1-redis-1 > logs/test/course/redis.log
-          docker logs test_domain_1-db-1 > logs/test/course/db.log
-          docker logs test_domain_1-seaweedfs-1 > logs/test/course/seaweedfs.log
-          docker logs test_domain_1-tailscale-1 > logs/test/course/tailscale.log
-          docker logs test_domain_1-celeryworker-1 > logs/test/course/celeryworker.log
-          docker logs test_domain_1-docker-host-1 > logs/test/course/docker-host.log
+          python ./scripts/container_log_collector.py
+
+      #Move docker logs out of tox
+      # - name: Create logs folder and write logs
+      #   if:  ${{ always() }}
+      #   shell: bash
+      #   run: |
+      #     mkdir -p logs/test/course
+      #     docker logs test_domain_1-backend_stream-1 > logs/test/course/backend_stream.log
+      #     docker logs test_domain_1-backend-1 > logs/test/course/backend.log
+      #     docker logs test_domain_1-queue-1 > logs/test/course/queue.log
+      #     docker logs test_domain_1-proxy-1 > logs/test/course/proxy.log
+      #     docker logs test_domain_1-redis-1 > logs/test/course/redis.log
+      #     docker logs test_domain_1-db-1 > logs/test/course/db.log
+      #     docker logs test_domain_1-seaweedfs-1 > logs/test/course/seaweedfs.log
+      #     docker logs test_domain_1-tailscale-1 > logs/test/course/tailscale.log
+      #     docker logs test_domain_1-celeryworker-1 > logs/test/course/celeryworker.log
+      #     docker logs test_domain_1-docker-host-1 > logs/test/course/docker-host.log
 
       # Get Job name and url
       - name: Get job name and url
@@ -696,5 +704,5 @@ jobs:
         if: ${{always()}}
         with:
           name: ${{ steps.job_name.outputs.job_name }}-logs-${{ steps.date.outputs.date }}
-          path: ./logs/test/course/
+          path: ./logs/{{ steps.job_name.outputs.job_name}}/
 
