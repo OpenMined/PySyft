@@ -1,11 +1,15 @@
 # stdlib
 import logging
+import multiprocessing
+from multiprocessing import Event
+from multiprocessing.synchronize import Lock as LockBase
 import sys
 import time
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Type
 from typing import Union
 
@@ -16,6 +20,7 @@ import names
 import pandas as pd
 
 # relative
+from ... import __version__
 from ...logger import traceback_and_raise
 from ...util import validate_field
 from ..common.message import SyftMessage
@@ -61,6 +66,47 @@ from .enums import PyGridClientEnums
 from .enums import RequestAPIFields
 
 SAVE_DATASET_TIMEOUT = 300  # seconds
+
+
+def print_process(  # type: ignore
+    message: str,
+    finish: Type[Event],
+    success: Type[Event],
+    lock: LockBase,
+    refresh_rate=0.1,
+) -> None:
+    OK = "\033[92m"
+    FAIL = "\033[91m"
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
+    with lock:
+        while not finish.is_set():
+            print(f"{BOLD}{message} .", end="\r")
+            time.sleep(refresh_rate)
+            sys.stdout.flush()
+            print(f"{BOLD}{message} ..", end="\r")
+            time.sleep(refresh_rate)
+            sys.stdout.flush()
+            print(f"{BOLD}{message} ...", end="\r")
+            time.sleep(refresh_rate)
+            sys.stdout.flush()
+        if success.is_set():
+            print(f"{OK}{message}{ENDC}" + (" " * len(message)), end="\n")
+        else:
+            print(f"{FAIL}{message}{ENDC}" + (" " * len(message)), end="\n")
+        sys.stdout.flush()
+
+
+def print_log_process(
+    message: str,
+) -> Tuple[Event, Event]:
+    finish = Event()
+    success = Event()
+    lock = multiprocessing.Lock()
+    multiprocessing.Process(
+        target=print_process, args=(message, finish, success, lock)
+    ).start()
+    return (finish, success)
 
 
 class RequestQueueClient(AbstractNodeClient):
@@ -439,40 +485,52 @@ class DomainClient(Client):
         **metadata: str,
     ) -> None:
         try:
-            print("1/3 Joining Network")
-            # joining the network might take some time and won't block
+            finish, success = print_log_process("[1/4] Checking Syft Versions")
+            if self.version == client.version and client.version == __version__:  # type: ignore
+                success.set()
+            else:
+                print("\033[1m\033[93mWARNING\033[0m: Syft versions mismatch!")
+                print(f"\033[1mDomain\033[0m : \x1B[3m{self.version} \033[0m")  # type: ignore
+                print(f"\033[1mNetwork\033[0m: \x1B[3m{client.version}\033[0m")  # type: ignore
+                print(f"\033[1mEnvironment\033[0m: \x1B[3m{__version__}\033[0m")
 
-            # Check if the version of the network client is same as the domain client
-            if client and hasattr(client, "version"):
-                if self.version != client.version:  # type: ignore
-                    print(
-                        "\n**Warning**: The syft version on your domain and the network are different."
-                    )
-                    print(
-                        f"Domain version: {self.version}\nNetwork Version: {client.version}"  # type: ignore
-                    )
+                response = input(
+                    "\033[1mThis may cause unexpected errors, are you willing to continue? (y/N)\033[0m"
+                )
+                if response.lower() == "y":
+                    success.set()
+                else:
+                    finish.set()
+                    return
+            finish.set()
 
+            finish, success = print_log_process("[2/4] Joining Network")
             self.join_network(client=client)
+            success.set()
+            finish.set()
 
             timeout = 30
             connected = False
             network_vpn_ip = ""
             domain_vpn_ip = ""
 
+            finish, success = print_log_process("[3/4] Connecting to Secure VPN")
             # get the vpn ips
             while timeout > 0 and connected is False:
                 timeout -= 1
                 try:
                     vpn_status = self.vpn_status()
                     if vpn_status["connected"]:
-                        print("2/3 Secure VPN Connected")
+                        finish.set()
+                        success.set()
                         connected = True
                         continue
                 except Exception as e:
+                    finish.set()
                     print(f"Failed to get vpn status. {e}")
-                print(".", end="")
                 time.sleep(1)
 
+            finish, success = print_log_process("[4/4] Registering on the Secure VPN")
             if vpn_status.get("status") == "error":
                 raise Exception("Failed to get vpn status.")
 
@@ -501,8 +559,10 @@ class DomainClient(Client):
                 retry=retry,
             )
 
-            print("3/3 Network Registration Complete")
+            success.set()
+            finish.set()
         except Exception as e:
+            finish.set()
             print(f"Failed to apply to network with {client}. {e}")
 
     @property
