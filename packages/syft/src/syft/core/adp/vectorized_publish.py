@@ -121,7 +121,7 @@ def publish(
     )
 
     # its important that its the same type so that eq comparisons below dont break
-    zeros_like = tensor.zeros_like()
+    zeros_like = jnp.zeros_like(tensor.child)
 
     # this prevents us from running in an infinite loop
     previous_budget = None
