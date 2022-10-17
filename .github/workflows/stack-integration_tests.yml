@@ -652,7 +652,7 @@ jobs:
         run: |
           docker rm `docker ps -aq` --force || true
           tox -e stack.test.course
-      
+
 
       #Run log collector python script
       - name: Run log collector
