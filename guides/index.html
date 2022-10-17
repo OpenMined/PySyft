@@ -168,9 +168,38 @@
               
               <div class="toc-item">
                 
+<div class="tocsection onthispage pt-5 pb-3">
+    <i class="fas fa-list"></i> On this page
+</div>
 
 <nav id="bd-toc-nav">
-    
+    <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#a-getting-started-with-data-owner">
+   A. Getting Started with Data Owner 👨🏻‍💼
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#you-will-learn">
+     You Will Learn ⬇️
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#b-getting-started-with-data-scientist">
+   B. Getting Started with Data Scientist 👩🏽‍🔬
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#id1">
+     You Will Learn ⬇️
+    </a>
+   </li>
+  </ul>
+ </li>
+</ul>
+
 </nav>
               </div>
               
@@ -194,47 +223,70 @@
 </div>
 <section id="how-to-guides">
 <h1>How-to Guides<a class="headerlink" href="#how-to-guides" title="Permalink to this headline">¶</a></h1>
-<p>The PySyft guides are written in <code class="docutils literal notranslate"><span class="pre">Jupyter</span> <span class="pre">Labs</span></code> in a hosted network environment. Follow the instructions to get started.</p>
-<blockquote>
-<div><p><strong>Note:</strong> This section is incomplete and currently in progress.</p>
-</div></blockquote>
-<p><strong>Important:</strong> To run all the tutorials interactively in Jupyter Lab on your own machine type:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">hagrid</span>
+<p><code class="docutils literal notranslate"><span class="pre">Syft</span></code> is OpenMined’s <code class="docutils literal notranslate"><span class="pre">open</span> <span class="pre">source</span></code> stack that provides <code class="docutils literal notranslate"><span class="pre">secure</span></code> and <code class="docutils literal notranslate"><span class="pre">private</span></code> Data Science
+in Python. Syft decouples <code class="docutils literal notranslate"><span class="pre">private</span> <span class="pre">data</span></code> from model training, using techniques
+like <a class="reference external" href="https://ai.googleblog.com/2017/04/federated-learning-collaborative.html">Federated Learning</a>,
+<a class="reference external" href="https://en.wikipedia.org/wiki/Differential_privacy">Differential Privacy</a>, and
+<a class="reference external" href="https://en.wikipedia.org/wiki/Homomorphic_encryption">Encrypted Computation</a>.
+This is done with a <code class="docutils literal notranslate"><span class="pre">numpy</span></code>-like interface and integration with <code class="docutils literal notranslate"><span class="pre">Deep</span> <span class="pre">Learning</span></code>
+frameworks, so that you as a <code class="docutils literal notranslate"><span class="pre">Data</span> <span class="pre">Scientist</span></code> can maintain your current workflow
+while using these new <code class="docutils literal notranslate"><span class="pre">privacy-enhancing</span> <span class="pre">techniques</span></code>.</p>
+<p><a class="reference internal" href="../_images/index-00.png"><img alt="index-00" src="../_images/index-00.png" style="width: 95%;" /></a></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><strong>TIP:</strong> To run all the tutorials interactively in Jupyter Lab on your own machine, type:</p>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">U</span> <span class="n">hagrid</span>
 <span class="n">hagrid</span> <span class="n">quickstart</span>
 </pre></div>
 </div>
 <p>Once you have the installation completed, the best place to start is by <code class="docutils literal notranslate"><span class="pre">identifying</span></code> your role.</p>
-<ol class="arabic simple">
-<li><dl class="simple">
-<dt>How to use PySyft for Data Owner (in-progress)</dt><dd><ol class="arabic simple">
-<li><p><a class="reference internal" href="data-owner/00-deploy-domain.html"><span class="doc">Deploying your own Domain Server</span></a></p></li>
-<li><p><a class="reference internal" href="data-owner/01-upload-data.html"><span class="doc">Uploading Private Data to a Domain Server</span></a></p></li>
-<li><p>How to create a Data Scientist account and configure your domain server with a privacy budget</p></li>
-</ol>
-</dd>
-</dl>
-</li>
-<li><dl class="simple">
-<dt>How to use PySyft for Data Scientist (coming soon)</dt><dd><ol class="arabic simple">
-<li><p>How to install Syft on your machine</p></li>
-<li><p>How can data scientists connect to a Domain server</p></li>
-<li><p>How to search for datasets on the Network server</p></li>
-<li><p>How data scientists can train models on private data</p></li>
-</ol>
-</dd>
-</dl>
-</li>
-<li><dl class="simple">
-<dt>How to use PySyft for Data Engineers (coming soon)</dt><dd><ol class="arabic simple">
-<li><p>How to setup development mode locally</p></li>
-<li><p>How to deploy Syft to Microsoft Azure Platform</p></li>
-<li><p>How to deploy Syft to Google Cloud Platform (GCP)</p></li>
-<li><p>How to deploy Syft to Kubernetes Cluster</p></li>
-</ol>
-</dd>
-</dl>
-</li>
-</ol>
+<section id="a-getting-started-with-data-owner">
+<h2>A. Getting Started with Data Owner 👨🏻‍💼<a class="headerlink" href="#a-getting-started-with-data-owner" title="Permalink to this headline">¶</a></h2>
+<p>Data Owners provide <code class="docutils literal notranslate"><span class="pre">datasets</span></code> which they would like to make available for <code class="docutils literal notranslate"><span class="pre">study</span></code> by
+an <code class="docutils literal notranslate"><span class="pre">outside</span> <span class="pre">party</span></code> they may or may not <code class="docutils literal notranslate"><span class="pre">fully</span> <span class="pre">trust</span></code> has good intentions.</p>
+<section id="you-will-learn">
+<h3>You Will Learn ⬇️<a class="headerlink" href="#you-will-learn" title="Permalink to this headline">¶</a></h3>
+<div class="line-block">
+<div class="line"><a class="reference internal" href="data-owner/00-deploy-domain.html"><span class="doc">Part 1: Deploying your own Domain Server</span></a></div>
+<div class="line"><a class="reference internal" href="data-owner/01-upload-data.html"><span class="doc">Part 2: Uploading Private Data to a Domain Server</span></a></div>
+<div class="line"><span class="xref std std-doc">Part 3: Creating User Accounts on your Domain Server</span></div>
+<div class="line"><span class="xref std std-doc">Part 4: Joining a Network</span></div>
+<div class="line"><span class="xref std std-doc">Part 5: Creating a Network</span></div>
+<div class="line"><span class="xref std std-doc">Part 6: Configuring Privacy Budget on your Domain Server</span></div>
+</div>
+</section>
+</section>
+<section id="b-getting-started-with-data-scientist">
+<h2>B. Getting Started with Data Scientist 👩🏽‍🔬<a class="headerlink" href="#b-getting-started-with-data-scientist" title="Permalink to this headline">¶</a></h2>
+<p>Data Scientist’s are end <code class="docutils literal notranslate"><span class="pre">users</span></code> who desire to perform <code class="docutils literal notranslate"><span class="pre">computations</span></code> or <code class="docutils literal notranslate"><span class="pre">answer</span></code> a
+specific <code class="docutils literal notranslate"><span class="pre">question</span></code> using one or more data owners’ <code class="docutils literal notranslate"><span class="pre">datasets</span></code>.</p>
+<section id="id1">
+<h3>You Will Learn ⬇️<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<div class="line-block">
+<div class="line"><span class="xref std std-doc">Part 7: Connect to a Domain</span></div>
+<div class="line"><span class="xref std std-doc">Part 8: Searching for Datasets on the Domain</span></div>
+<div class="line"><span class="xref std std-doc">Part 9: Exploring a Dataset in the Domain</span></div>
+<div class="line"><span class="xref std std-doc">Part 10: Training a Model</span></div>
+<div class="line"><span class="xref std std-doc">Part 11: Retrieving Secure Results</span></div>
+</div>
+<details class="sphinx-bs dropdown card mb-3 fade-in">
+<summary class="summary-title card-header">
+More Tutorials 📝<div class="summary-down docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.72a.75.75 0 000 1.06l6.25 6.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06L12 14.44 6.28 8.72a.75.75 0 00-1.06 0z"></path></svg></div>
+<div class="summary-up docutils">
+<svg version="1.1" width="24" height="24" class="octicon octicon-chevron-up" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M18.78 15.28a.75.75 0 000-1.06l-6.25-6.25a.75.75 0 00-1.06 0l-6.25 6.25a.75.75 0 101.06 1.06L12 9.56l5.72 5.72a.75.75 0 001.06 0z"></path></svg></div>
+</summary><div class="summary-content card-body docutils">
+<p class="card-text">This set of tutorials is for <code class="docutils literal notranslate"><span class="pre">Data</span> <span class="pre">Engineers</span></code> 👩‍💻 who want to learn to <code class="docutils literal notranslate"><span class="pre">deploy</span></code> Syft for <code class="docutils literal notranslate"><span class="pre">production</span></code>.</p>
+<div class="line-block">
+<div class="line"><span class="xref std std-doc">Part 12: How to setup development mode locally</span></div>
+<div class="line"><span class="xref std std-doc">Part 13: How to deploy Syft to the Microsoft Azure Platform</span></div>
+<div class="line"><span class="xref std std-doc">Part 14: How to deploy Syft to Google Cloud Platform (GCP)</span></div>
+<div class="line"><span class="xref std std-doc">Part 15: How to deploy Syft to Kubernetes Cluster</span></div>
+</div>
+</div>
+</details></section>
+</section>
 </section>
 
 
