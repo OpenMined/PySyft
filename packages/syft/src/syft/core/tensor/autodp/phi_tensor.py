@@ -676,19 +676,15 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
         return result
 
-    def repeat(
-        self,
-        *args: Any,
-        **kwargs: Any,
-    ) -> TensorWrappedPhiTensorPointer:
-            """Apply the repeat" operation
+    def repeat(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """Apply the repeat" operation
 
-            Args:
-                y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
 
-            Returns:
-                Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
-            """
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.repeat"
         result: TensorWrappedPhiTensorPointer
         data_subjects = self.data_subjects.repeat(*args, **kwargs)

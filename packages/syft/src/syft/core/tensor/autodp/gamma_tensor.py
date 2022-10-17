@@ -2949,8 +2949,8 @@ class GammaTensor:
                 Output array which has the same shape as a, except along the given axis.
 
         """
-        source = dict()
-        source[self.id] = self
+        sources = dict()
+        sources[self.id] = self
 
         result = self.child.repeat(repeats, axis)
         if isinstance(self.min_vals, lazyrepeatarray):
@@ -2966,7 +2966,7 @@ class GammaTensor:
             min_vals=minv,
             max_vals=maxv,
             func_str=GAMMA_TENSOR_OP.REPEAT.value,
-            source=source
+            sources=sources,
         )
 
     def trace(self, offset: int = 0, axis1: int = 0, axis2: int = 1) -> GammaTensor:
