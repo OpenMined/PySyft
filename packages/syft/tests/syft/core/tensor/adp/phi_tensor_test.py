@@ -1340,11 +1340,11 @@ def test_min(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
-    pt_dsa: DataSubjectArray,
+    dsa: DataSubjectArray,
 ) -> None:
     tensor = PT(
         child=reference_data,
-        data_subjects=pt_dsa,
+        data_subjects=dsa,
         min_vals=lower_bound,
         max_vals=upper_bound,
     )
