@@ -48,7 +48,7 @@ def dims() -> int:
 
 
 @pytest.fixture
-def pt_dsa(dims) -> DataSubjectArray:
+def dsa(dims) -> DataSubjectArray:
     return np.broadcast_to(DataSubjectArray(["DS1"]), (dims, dims))
 
 
@@ -1256,11 +1256,11 @@ def test_trace(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
-    pt_dsa: DataSubjectArray,
+    dsa: DataSubjectArray,
 ) -> None:
     tensor = PT(
         child=reference_data,
-        data_subjects=pt_dsa,
+        data_subjects=dsa,
         min_vals=lower_bound,
         max_vals=upper_bound,
     )
@@ -1279,11 +1279,11 @@ def test_max(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
-    pt_dsa: DataSubjectArray,
+    dsa: DataSubjectArray,
 ) -> None:
     tensor = PT(
         child=reference_data,
-        data_subjects=pt_dsa,
+        data_subjects=dsa,
         min_vals=lower_bound,
         max_vals=upper_bound,
     )
@@ -1297,11 +1297,11 @@ def test_min(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
-    pt_dsa: DataSubjectArray,
+    dsa: DataSubjectArray,
 ) -> None:
     tensor = PT(
         child=reference_data,
-        data_subjects=pt_dsa,
+        data_subjects=dsa,
         min_vals=lower_bound,
         max_vals=upper_bound,
     )
