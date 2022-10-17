@@ -40,8 +40,3 @@ for container in containers:
         f.write(container_logs)
         f.close()
 print("============Log export completed for job: ", job_name)
-
-
-# Remove all the containers
-subprocess.check_output("HAGRID", shell=True)
-subprocess.check_output("docker rm -f $(docker ps -a -q)", shell=True)
