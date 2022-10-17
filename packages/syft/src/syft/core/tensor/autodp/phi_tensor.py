@@ -954,26 +954,26 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
     #     result.public_dtype = self.public_dtype
 
     #     return result
-    
+
     # def argmax(self, *args, **kwargs) -> TensorWrappedPhiTensorPointer:
     #     """
     #     Returns the indices of the maximum values along an axis.
-        
+
     #     Parameters
     #         axis: int, optional
     #             By default, the index is into the flattened array,
     #             otherwise along the specified axis.
 
     #         keepdims: bool, optional
-    #             If this is set to True, the axes which are reduced are left 
-    #             in the result as dimensions with size one. 
+    #             If this is set to True, the axes which are reduced are left
+    #             in the result as dimensions with size one.
     #             With this option, the result will broadcast correctly against the array.
-        
-    #     Returns        
+
+    #     Returns
     #         index_array: PhiTensor
-    #             Array of indices into the array. 
-    #             It has the same shape as a.shape with the dimension along axis removed. 
-    #             If keepdims is set to True, then the size of axis will be 1 
+    #             Array of indices into the array.
+    #             It has the same shape as a.shape with the dimension along axis removed.
+    #             If keepdims is set to True, then the size of axis will be 1
     #             with the resulting array having same shape as a.shape.
     #     """
     #     attr_path_and_name = "syft.core.tensor.tensor.Tensor.__abs__"
@@ -1044,8 +1044,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
     #     result.public_dtype = self.public_dtype
 
     #     return result
-   
-    
+
     def exp(
         self,
     ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:

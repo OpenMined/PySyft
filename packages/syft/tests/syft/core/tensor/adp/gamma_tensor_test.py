@@ -1196,6 +1196,8 @@ def test_argmin(
     assert (
         result.data_subjects == reference_tensor.data_subjects[reference_result]
     ).all()
+
+
 def test_trace(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
