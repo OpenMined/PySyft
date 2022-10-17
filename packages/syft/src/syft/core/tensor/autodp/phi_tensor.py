@@ -880,170 +880,170 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
         return result
 
-    def __abs__(self, *args, **kwargs) -> TensorWrappedPhiTensorPointer:
-        """
-        Returns
-            a_abs: PhiTensor
-                Abs of a.
-        """
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.__abs__"
-        result: TensorWrappedPhiTensorPointer
+    # def __abs__(self, *args, **kwargs) -> TensorWrappedPhiTensorPointer:
+    #     """
+    #     Returns
+    #         a_abs: PhiTensor
+    #             Abs of a.
+    #     """
+    #     attr_path_and_name = "syft.core.tensor.tensor.Tensor.__abs__"
+    #     result: TensorWrappedPhiTensorPointer
 
-        min_val = self.min_vals.data
-        max_val = self.max_vals.data
+    #     min_val = self.min_vals.data
+    #     max_val = self.max_vals.data
 
-        if min_val < 0 and max_val < 0:
-            new_min_val = abs(max_val)
-            new_max_val = abs(min_val)
+    #     if min_val < 0 and max_val < 0:
+    #         new_min_val = abs(max_val)
+    #         new_max_val = abs(min_val)
 
-        if min_val >= 0 and max_val >= 0:
-            new_min_val = min_val
-            new_max_val = max_val
+    #     if min_val >= 0 and max_val >= 0:
+    #         new_min_val = min_val
+    #         new_max_val = max_val
 
-        if min_val < 0 and max_val >= 0:
-            new_min_val = 0
-            new_max_val = max(abs(min_val), abs(max_val))
+    #     if min_val < 0 and max_val >= 0:
+    #         new_min_val = 0
+    #         new_max_val = max(abs(min_val), abs(max_val))
 
-        result = TensorWrappedPhiTensorPointer(
-            data_subjects=self.data_subjects,
-            min_vals=lazyrepeatarray(
-                data=new_min_val, shape=self.data_subjects.shape
-            ),
-            max_vals=lazyrepeatarray(
-                data=new_max_val, shape=self.data_subjects.shape
-            ),
-            client=self.client,
-        )
+    #     result = TensorWrappedPhiTensorPointer(
+    #         data_subjects=self.data_subjects,
+    #         min_vals=lazyrepeatarray(
+    #             data=new_min_val, shape=self.data_subjects.shape
+    #         ),
+    #         max_vals=lazyrepeatarray(
+    #             data=new_max_val, shape=self.data_subjects.shape
+    #         ),
+    #         client=self.client,
+    #     )
 
-        # QUESTION can the id_at_location be None?
-        result_id_at_location = getattr(result, "id_at_location", None)
+    #     # QUESTION can the id_at_location be None?
+    #     result_id_at_location = getattr(result, "id_at_location", None)
 
-        if result_id_at_location is not None:
-            # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+    #     if result_id_at_location is not None:
+    #         # first downcast anything primitive which is not already PyPrimitive
+    #         (
+    #             downcast_args,
+    #             downcast_kwargs,
+    #         ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
 
-            # then we convert anything which isnt a pointer into a pointer
-            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args,
-                kwargs=downcast_kwargs,
-                client=self.client,
-                gc_enabled=False,
-            )
+    #         # then we convert anything which isnt a pointer into a pointer
+    #         pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+    #             args=downcast_args,
+    #             kwargs=downcast_kwargs,
+    #             client=self.client,
+    #             gc_enabled=False,
+    #         )
 
-            cmd = RunClassMethodAction(
-                path=attr_path_and_name,
-                _self=self,
-                args=pointer_args,
-                kwargs=pointer_kwargs,
-                id_at_location=result_id_at_location,
-                address=self.client.address,
-            )
-            self.client.send_immediate_msg_without_reply(msg=cmd)
+    #         cmd = RunClassMethodAction(
+    #             path=attr_path_and_name,
+    #             _self=self,
+    #             args=pointer_args,
+    #             kwargs=pointer_kwargs,
+    #             id_at_location=result_id_at_location,
+    #             address=self.client.address,
+    #         )
+    #         self.client.send_immediate_msg_without_reply(msg=cmd)
 
-        inherit_tags(
-            attr_path_and_name=attr_path_and_name,
-            result=result,
-            self_obj=self,
-            args=[],
-            kwargs={},
-        )
-        result.public_shape = self.public_shape
-        result.public_dtype = self.public_dtype
+    #     inherit_tags(
+    #         attr_path_and_name=attr_path_and_name,
+    #         result=result,
+    #         self_obj=self,
+    #         args=[],
+    #         kwargs={},
+    #     )
+    #     result.public_shape = self.public_shape
+    #     result.public_dtype = self.public_dtype
 
-        return result
+    #     return result
     
-    def argmax(self, *args, **kwargs) -> TensorWrappedPhiTensorPointer:
-        """
-        Returns the indices of the maximum values along an axis.
+    # def argmax(self, *args, **kwargs) -> TensorWrappedPhiTensorPointer:
+    #     """
+    #     Returns the indices of the maximum values along an axis.
         
-        Parameters
-            axis: int, optional
-                By default, the index is into the flattened array,
-                otherwise along the specified axis.
+    #     Parameters
+    #         axis: int, optional
+    #             By default, the index is into the flattened array,
+    #             otherwise along the specified axis.
 
-            keepdims: bool, optional
-                If this is set to True, the axes which are reduced are left 
-                in the result as dimensions with size one. 
-                With this option, the result will broadcast correctly against the array.
+    #         keepdims: bool, optional
+    #             If this is set to True, the axes which are reduced are left 
+    #             in the result as dimensions with size one. 
+    #             With this option, the result will broadcast correctly against the array.
         
-        Returns        
-            index_array: PhiTensor
-                Array of indices into the array. 
-                It has the same shape as a.shape with the dimension along axis removed. 
-                If keepdims is set to True, then the size of axis will be 1 
-                with the resulting array having same shape as a.shape.
-        """
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.__abs__"
-        result: TensorWrappedPhiTensorPointer
+    #     Returns        
+    #         index_array: PhiTensor
+    #             Array of indices into the array. 
+    #             It has the same shape as a.shape with the dimension along axis removed. 
+    #             If keepdims is set to True, then the size of axis will be 1 
+    #             with the resulting array having same shape as a.shape.
+    #     """
+    #     attr_path_and_name = "syft.core.tensor.tensor.Tensor.__abs__"
+    #     result: TensorWrappedPhiTensorPointer
 
-        min_val = self.min_vals.data
-        max_val = self.max_vals.data
+    #     min_val = self.min_vals.data
+    #     max_val = self.max_vals.data
 
-        if min_val < 0 and max_val < 0:
-            new_min_val = abs(max_val)
-            new_max_val = abs(min_val)
+    #     if min_val < 0 and max_val < 0:
+    #         new_min_val = abs(max_val)
+    #         new_max_val = abs(min_val)
 
-        if min_val >= 0 and max_val >= 0:
-            new_min_val = min_val
-            new_max_val = max_val
+    #     if min_val >= 0 and max_val >= 0:
+    #         new_min_val = min_val
+    #         new_max_val = max_val
 
-        if min_val < 0 and max_val >= 0:
-            new_min_val = 0
-            new_max_val = max(abs(min_val), abs(max_val))
+    #     if min_val < 0 and max_val >= 0:
+    #         new_min_val = 0
+    #         new_max_val = max(abs(min_val), abs(max_val))
 
-        result = TensorWrappedPhiTensorPointer(
-            data_subjects=self.data_subjects,
-            min_vals=lazyrepeatarray(
-                data=new_min_val, shape=self.data_subjects.shape
-            ),
-            max_vals=lazyrepeatarray(
-                data=new_max_val, shape=self.data_subjects.shape
-            ),
-            client=self.client,
-        )
+    #     result = TensorWrappedPhiTensorPointer(
+    #         data_subjects=self.data_subjects,
+    #         min_vals=lazyrepeatarray(
+    #             data=new_min_val, shape=self.data_subjects.shape
+    #         ),
+    #         max_vals=lazyrepeatarray(
+    #             data=new_max_val, shape=self.data_subjects.shape
+    #         ),
+    #         client=self.client,
+    #     )
 
-        # QUESTION can the id_at_location be None?
-        result_id_at_location = getattr(result, "id_at_location", None)
+    #     # QUESTION can the id_at_location be None?
+    #     result_id_at_location = getattr(result, "id_at_location", None)
 
-        if result_id_at_location is not None:
-            # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+    #     if result_id_at_location is not None:
+    #         # first downcast anything primitive which is not already PyPrimitive
+    #         (
+    #             downcast_args,
+    #             downcast_kwargs,
+    #         ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
 
-            # then we convert anything which isnt a pointer into a pointer
-            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args,
-                kwargs=downcast_kwargs,
-                client=self.client,
-                gc_enabled=False,
-            )
+    #         # then we convert anything which isnt a pointer into a pointer
+    #         pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+    #             args=downcast_args,
+    #             kwargs=downcast_kwargs,
+    #             client=self.client,
+    #             gc_enabled=False,
+    #         )
 
-            cmd = RunClassMethodAction(
-                path=attr_path_and_name,
-                _self=self,
-                args=pointer_args,
-                kwargs=pointer_kwargs,
-                id_at_location=result_id_at_location,
-                address=self.client.address,
-            )
-            self.client.send_immediate_msg_without_reply(msg=cmd)
+    #         cmd = RunClassMethodAction(
+    #             path=attr_path_and_name,
+    #             _self=self,
+    #             args=pointer_args,
+    #             kwargs=pointer_kwargs,
+    #             id_at_location=result_id_at_location,
+    #             address=self.client.address,
+    #         )
+    #         self.client.send_immediate_msg_without_reply(msg=cmd)
 
-        inherit_tags(
-            attr_path_and_name=attr_path_and_name,
-            result=result,
-            self_obj=self,
-            args=[],
-            kwargs={},
-        )
-        result.public_shape = self.public_shape
-        result.public_dtype = self.public_dtype
+    #     inherit_tags(
+    #         attr_path_and_name=attr_path_and_name,
+    #         result=result,
+    #         self_obj=self,
+    #         args=[],
+    #         kwargs={},
+    #     )
+    #     result.public_shape = self.public_shape
+    #     result.public_dtype = self.public_dtype
 
-        return result
+    #     return result
    
     
     def exp(
