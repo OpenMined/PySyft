@@ -49,6 +49,9 @@ class GAMMA_TENSOR_OP(Enum):
     ARGPARTITION = "argpartition"
     MOD = "mod"
     # CONJ = "conj"
+    TRACE = "trace"
+    MIN = "min"
+    MAX = "max"
     # Our Methods
     RECIPROCAL = "reciprocal"
     FLATTEN_C = "flatten_c"

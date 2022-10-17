@@ -22,7 +22,7 @@ from syft.core.node.common.node_service.user_manager.user_messages import (
 )
 from syft.core.node.common.util import MIN_BLOB_UPLOAD_SIZE_MB
 from syft.core.store.proxy_dataset import ProxyDataset
-from syft.core.tensor.autodp.phi_tensor import PhiTensor as PT
+from syft.core.tensor.autodp.gamma_tensor import GammaTensor
 from syft.util import download_file
 from syft.util import get_root_data_path
 from syft.util import size_mb
@@ -69,7 +69,7 @@ def upload_subset(
         min_val=0, max_val=30, data_subjects=entities
     )
 
-    assert isinstance(tweets_data.child, PT)
+    assert isinstance(tweets_data.child, GammaTensor)
 
     tweets_data_size_mb = size_mb(tweets_data)
 
