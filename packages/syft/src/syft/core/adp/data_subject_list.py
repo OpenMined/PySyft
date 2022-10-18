@@ -595,7 +595,6 @@ class DataSubjectArray:
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs) -> ArrayLike:  # type: ignore
         method_name = ufunc.__name__
-        print("method_name", method_name)
         method = getattr(self, method_name, None)
         if method is not None:
             return method(*inputs, **kwargs)
