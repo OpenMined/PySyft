@@ -659,64 +659,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             y: PhiTensorPointer
                 The bases in the tensor raised to the exponents in x2. This is a scalar if both self and x2 are scalars.
         """
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.__pow__"
-        data_subjects = np.array(self.data_subjects)
-
-        if self.min_vals.data <= 0 <= self.max_vals.data:
-            # If data is in range [-5, 5], it's possible the minimum is 0 and not (-5)^2
-            minv = min(0, (self.min_vals.data.__pow__(*args, **kwargs)).min())
-        else:
-            minv = self.min_vals.data.__pow__(*args, **kwargs)
-
-        result = TensorWrappedGammaTensorPointer(
-            data_subjects=data_subjects,
-            min_vals=lazyrepeatarray(data=minv, shape=data_subjects.shape),
-            max_vals=lazyrepeatarray(
-                data=self.max_vals.data.__pow__(*args, **kwargs),
-                shape=data_subjects.shape,
-            ),
-            client=self.client,
-        )
-
-        # QUESTION can the id_at_location be None?
-        result_id_at_location = getattr(result, "id_at_location", None)
-
-        if result_id_at_location is not None:
-            # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
-
-            # then we convert anything which isnt a pointer into a pointer
-            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args,
-                kwargs=downcast_kwargs,
-                client=self.client,
-                gc_enabled=False,
-            )
-
-            cmd = RunClassMethodAction(
-                path=attr_path_and_name,
-                _self=self,
-                args=pointer_args,
-                kwargs=pointer_kwargs,
-                id_at_location=result_id_at_location,
-                address=self.client.address,
-            )
-            self.client.send_immediate_msg_without_reply(msg=cmd)
-
-        inherit_tags(
-            attr_path_and_name=attr_path_and_name,
-            result=result,
-            self_obj=self,
-            args=[],
-            kwargs={},
-        )
-        result.public_shape = data_subjects.shape
-        result.public_dtype = self.public_dtype
-
-        return result
+        return self._apply_self_tensor_op("__pow__", *args, **kwargs)
 
     def trace(
         self,
@@ -1324,6 +1267,14 @@ class GammaTensor:
             return self.child.decode()
         else:
             return self.child
+
+    @property
+    def proxy_public_kwargs(self) -> Dict[str, Any]:
+        return {
+            "min_vals": self.min_vals,
+            "max_vals": self.max_vals,
+            "data_subjects": self.data_subjects,
+        }
 
     def reconstruct(self, state: Optional[Dict] = None) -> GammaTensor:
         if self.func_str == GAMMA_TENSOR_OP.NOOP.value:
