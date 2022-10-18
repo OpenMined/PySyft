@@ -214,18 +214,19 @@ class UserManager(DatabaseManager):
         Returns:
             SyftUser: the registered user object.
         """
-        salt, hashed = self.__salt_and_hash_password(password, 12)
-        return self.register(
-            name=name,
-            email=email,
-            role=role,
-            budget=budget,
-            private_key=private_key,
-            verify_key=verify_key,
-            hashed_password=hashed,
-            salt=salt,
-            created_at=datetime.now(),
-        )
+        if not super().contain(email=email):
+            salt, hashed = self.__salt_and_hash_password(password, 12)
+            return self.register(
+                name=name,
+                email=email,
+                role=role,
+                budget=budget,
+                private_key=private_key,
+                verify_key=verify_key,
+                hashed_password=hashed,
+                salt=salt,
+                created_at=datetime.now(),
+            )
 
     def query(self, **kwargs: Any) -> Query:
         results = super().query(**kwargs)
