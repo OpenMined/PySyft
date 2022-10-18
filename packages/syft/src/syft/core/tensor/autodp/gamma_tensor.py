@@ -2523,6 +2523,7 @@ class GammaTensor:
         deduct_epsilon_for_user: Callable,
         ledger: DataSubjectLedger,
         sigma: float,
+        private: bool,
     ) -> np.ndarray:
 
         if (
@@ -2537,6 +2538,7 @@ class GammaTensor:
             deduct_epsilon_for_user=deduct_epsilon_for_user,
             sigma=sigma,
             is_linear=self.is_linear,
+            private=private,
         )
 
     # def expand_dims(self, axis: int) -> GammaTensor:

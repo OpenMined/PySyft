@@ -332,7 +332,7 @@ class Pointer(AbstractPointer):
 
         return self
 
-    def publish(self, sigma: float = 1.5) -> Any:
+    def publish(self, sigma: float = 1.5, private: bool = True) -> Any:
 
         # relative
         from ..node.common.node_service.publish.publish_service import (
@@ -346,6 +346,7 @@ class Pointer(AbstractPointer):
             address=self.client.address,
             publish_ids_at_location=[self.id_at_location],
             sigma=sigma,
+            private=private,
         )
 
         self.client.send_immediate_msg_without_reply(msg=obj_msg)
