@@ -14,7 +14,7 @@ class UserApplication(Base):
     __tablename__ = "syft_application"
 
     id = Column(Integer(), primary_key=True, autoincrement=True)
-    email = Column(String(255))
+    email = Column(String(255),unique=True)
     name = Column(String(255), default="")
     hashed_password = Column(String(512))
     salt = Column(String(255))
