@@ -123,10 +123,11 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         public_dtype_func = getattr(
             self.public_dtype, "upcast", lambda: self.public_dtype
         )
+
         return (
             np.random.rand(*list(self.public_shape))  # type: ignore
-            * (self.max_vals.to_numpy() - self.min_vals.to_numpy())
-            + self.min_vals.to_numpy()
+            * (self.max_vals.data - self.min_vals.data)
+            + self.min_vals.data
         ).astype(public_dtype_func())
 
     def __repr__(self) -> str:
@@ -243,6 +244,78 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
         return result
 
+    def _apply_self_tensor_op(self, op_str: str, *args: Any, **kwargs: Any) -> Any:
+        # we want to get the return type which matches the attr_path_and_name
+        # so we ask lib_ast for the return type name that matches out
+        # attr_path_and_name and then use that to get the actual pointer klass
+        # then set the result to that pointer klass
+
+        # We always maintain a Tensor hierarchy Tensor ---> PT--> Actual Data
+        attr_path_and_name = f"syft.core.tensor.tensor.Tensor.{op_str}"
+        min_vals, max_vals = compute_min_max(
+            self.min_vals, self.max_vals, None, op_str, *args, **kwargs
+        )
+        if hasattr(self.data_subjects, op_str):
+            data_subjects = getattr(self.data_subjects, op_str)(*args, **kwargs)
+        else:
+            raise ValueError(f"Invalid Numpy Operation: {op_str} for DSA")
+
+        result = TensorWrappedPhiTensorPointer(
+            data_subjects=data_subjects,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=args,
+            kwargs=kwargs,
+        )
+
+        dummy_res = np.empty(self.public_shape)
+        if hasattr(dummy_res, op_str):
+            dummy_res = getattr(dummy_res, op_str)(*args, **kwargs)
+        elif hasattr(np, op_str):
+            dummy_res = getattr(np, op_str)(dummy_res, *args, *kwargs)
+        else:
+            raise ValueError(f"Invalid Numpy Operation: {op_str} for Pointer")
+
+        result.public_shape = dummy_res.shape
+        result.public_dtype = dummy_res.dtype
+
+        return result
+
     @property
     def gamma(self) -> TensorWrappedGammaTensorPointer:
         return TensorWrappedGammaTensorPointer(
@@ -257,6 +330,9 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             public_shape=getattr(self, "public_shape", None),
             public_dtype=getattr(self, "public_dtype", None),
         )
+
+    def copy(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        return self._apply_self_tensor_op("copy", *args, **kwargs)
 
     @staticmethod
     def _apply_op(
@@ -493,6 +569,14 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
                 "Concatenate method currently works only between two different clients."
             )
 
+    def __pos__(self) -> TensorWrappedPhiTensorPointer:
+        """Apply the __pos__ (+) operator  on self.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer] : Result of the operation.
+        """
+        return self._apply_self_tensor_op(op_str="__pos__")
+
     def __truediv__(
         self,
         other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
@@ -522,7 +606,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         Returns:
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        return self.gamma.sum(*args, **kwargs)
+        return self._apply_self_tensor_op("sum", *args, **kwargs)
 
     def __getitem__(
         self, key: Union[int, bool, slice]
@@ -534,65 +618,14 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         Returns:
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.__getitem__"
-        result: TensorWrappedPhiTensorPointer
-        min_vals = self.min_vals.__getitem__(key)
-        max_vals = self.max_vals.__getitem__(key)
-
-        result = TensorWrappedPhiTensorPointer(
-            data_subjects=self.data_subjects,
-            min_vals=min_vals,
-            max_vals=max_vals,
-            client=self.client,
-        )
-
-        # QUESTION can the id_at_location be None?
-        result_id_at_location = getattr(result, "id_at_location", None)
-
-        if result_id_at_location is not None:
-            # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=[key], kwargs={})
-
-            # then we convert anything which isnt a pointer into a pointer
-            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args,
-                kwargs=downcast_kwargs,
-                client=self.client,
-                gc_enabled=False,
-            )
-
-            cmd = RunClassMethodAction(
-                path=attr_path_and_name,
-                _self=self,
-                args=pointer_args,
-                kwargs=pointer_kwargs,
-                id_at_location=result_id_at_location,
-                address=self.client.address,
-            )
-            self.client.send_immediate_msg_without_reply(msg=cmd)
-
-        inherit_tags(
-            attr_path_and_name=attr_path_and_name,
-            result=result,
-            self_obj=self,
-            args=[key],
-            kwargs={},
-        )
-        dummy_res = np.empty(self.public_shape).__getitem__(key)
-        result.public_shape = dummy_res.shape
-        result.public_dtype = self.public_dtype
-
-        return result
+        return self._apply_self_tensor_op("__getitem__", key)
 
     def ones_like(
         self,
         *args: Any,
         **kwargs: Any,
     ) -> TensorWrappedPhiTensorPointer:
-        """Apply the "truediv" operation between "self" and "other"
+        """Apply the "ones_like" operation between "self" and "other"
 
         Args:
             y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -600,58 +633,83 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         Returns:
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.ones_like"
-        result: TensorWrappedPhiTensorPointer
-        min_vals = self.min_vals.ones_like(*args, **kwargs)
-        max_vals = self.max_vals.ones_like(*args, **kwargs)
+        return self._apply_self_tensor_op("ones_like", *args, **kwargs)
 
-        result = TensorWrappedPhiTensorPointer(
-            data_subjects=self.data_subjects,
-            min_vals=min_vals,
-            max_vals=max_vals,
-            client=self.client,
-        )
+    def repeat(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """Apply the repeat" operation
 
-        # QUESTION can the id_at_location be None?
-        result_id_at_location = getattr(result, "id_at_location", None)
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
 
-        if result_id_at_location is not None:
-            # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return self._apply_self_tensor_op("repeat", *args, **kwargs)
 
-            # then we convert anything which isnt a pointer into a pointer
-            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args,
-                kwargs=downcast_kwargs,
-                client=self.client,
-                gc_enabled=False,
-            )
+    def trace(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Return the sum along diagonals of the array.
 
-            cmd = RunClassMethodAction(
-                path=attr_path_and_name,
-                _self=self,
-                args=pointer_args,
-                kwargs=pointer_kwargs,
-                id_at_location=result_id_at_location,
-                address=self.client.address,
-            )
-            self.client.send_immediate_msg_without_reply(msg=cmd)
+        If a is 2-D, the sum along its diagonal with the given offset is returned, i.e., the sum of elements
+        a[i,i+offset] for all i.
 
-        inherit_tags(
-            attr_path_and_name=attr_path_and_name,
-            result=result,
-            self_obj=self,
-            args=[],
-            kwargs={},
-        )
-        dummy_res = np.ones_like(np.empty(self.public_shape), *args, **kwargs)
-        result.public_shape = dummy_res.shape
-        result.public_dtype = self.public_dtype
+        If a has more than two dimensions, then the axes specified by axis1 and axis2 are used to determine the 2-D
+        sub-arrays whose traces are returned. The shape of the resulting array is the same as that of a with axis1 and
+        axis2 removed.
 
-        return result
+        Parameters
+
+            offset: int, optional
+                Offset of the diagonal from the main diagonal. Can be both positive and negative. Defaults to 0.
+
+            axis1, axis2: int, optional
+                Axes to be used as the first and second axis of the 2-D sub-arrays from which the diagonals should be
+                taken. Defaults are the first two axes of a.
+
+        Returns
+
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+                If a is 2-D, the sum along the diagonal is returned.
+                If a has larger dimensions, then an array of sums along diagonals is returned.
+
+        """
+        return self._apply_self_tensor_op("trace", *args, **kwargs)
+
+    def min(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Return the minimum of an array or minimum along an axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which to operate. By default, flattened input is used.
+                If this is a tuple of ints, the minimum is selected over multiple axes,
+                instead of a single axis or all the axes as before.
+
+        Returns
+            a_min: PhiTensor
+                Minimum of a.
+                If axis is None, the result is a scalar value.
+                If axis is given, the result is an array of dimension a.ndim - 1.
+        """
+        return self._apply_self_tensor_op("min", *args, **kwargs)
+
+    def max(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Return the maximum of an array or along an axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which to operate. By default, flattened input is used.
+                If this is a tuple of ints, the minimum is selected over multiple axes,
+                instead of a single axis or all the axes as before.
+
+        Returns
+            a_max: PhiTensor
+                Maximum of a.
+                If axis is None, the result is a scalar value.
+                If axis is given, the result is an array of dimension a.ndim - 1.
+        """
+        return self._apply_self_tensor_op("max", *args, **kwargs)
 
     def exp(
         self,
@@ -1384,23 +1442,67 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         )
 
     def max(self, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> PhiTensor:
-        indices = self.child.argmax(axis)
+        """
+        Return the maximum of an array or along an axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which to operate. By default, flattened input is used.
+                If this is a tuple of ints, the minimum is selected over multiple axes,
+                instead of a single axis or all the axes as before.
+
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the amax method of
+                sub-classes of ndarray, however any non-default value will be.
+                If the sub-class’ method does not implement keepdims any exceptions will be raised.
+            initial: scalar, optional
+                The minimum value of an output element. Must be present to allow computation on empty slice.
+                See reduce for details.
+
+            where: array_like of bool, optional
+                Elements to compare for the maximum. See reduce for details.
+
+        Returns
+            a_max: PhiTensor
+                Maximum of a.
+                If axis is None, the result is a scalar value.
+                If axis is given, the result is an array of dimension a.ndim - 1.
+        """
+        indices = np.unravel_index(self.child.argmax(axis), shape=self.child.shape)
         result = self.child.max(axis)
         return PhiTensor(
             child=result,
             data_subjects=self.data_subjects[indices],
-            min_vals=lazyrepeatarray(data=result.min(), shape=result.shape),
-            max_vals=lazyrepeatarray(data=result.max(), shape=result.shape),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
         )
 
     def min(self, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> PhiTensor:
-        indices = self.child.argmin(axis)
+        """
+        Return the minimum of an array or minimum along an axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which to operate. By default, flattened input is used.
+                If this is a tuple of ints, the minimum is selected over multiple axes,
+                instead of a single axis or all the axes as before.
+
+        Returns
+            a_min: PhiTensor
+                Minimum of a.
+                If axis is None, the result is a scalar value.
+                If axis is given, the result is an array of dimension a.ndim - 1.
+        """
+
+        indices = np.unravel_index(self.child.argmin(axis), self.child.shape)
         result = self.child.min(axis)
         return PhiTensor(
             child=result,
             data_subjects=self.data_subjects[indices],
-            min_vals=lazyrepeatarray(data=result.min(), shape=result.shape),
-            max_vals=lazyrepeatarray(data=result.max(), shape=result.shape),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
         )
 
     def _argmax(self, axis: Optional[int]) -> PhiTensor:
@@ -1886,15 +1988,23 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 return PhiTensor(
                     child=(self.child << other),
                     data_subjects=self.data_subjects,
-                    min_vals=lazyrepeatarray(data=self.min_vals.data << other.min(), shape=self.shape),
-                    max_vals=lazyrepeatarray(data=self.max_vals.data << other.max(), shape=self.shape),
+                    min_vals=lazyrepeatarray(
+                        data=self.min_vals.data << other.min(), shape=self.shape
+                    ),
+                    max_vals=lazyrepeatarray(
+                        data=self.max_vals.data << other.max(), shape=self.shape
+                    ),
                 )
             else:
                 return PhiTensor(
                     child=(self.child << other),
                     data_subjects=self.data_subjects,
-                    min_vals=lazyrepeatarray(data=self.min_vals.data << other, shape=self.shape),
-                    max_vals=lazyrepeatarray(data=self.max_vals.data << other, shape=self.shape),
+                    min_vals=lazyrepeatarray(
+                        data=self.min_vals.data << other, shape=self.shape
+                    ),
+                    max_vals=lazyrepeatarray(
+                        data=self.max_vals.data << other, shape=self.shape
+                    ),
                 )
         elif isinstance(other, GammaTensor):
             return self.gamma << other
@@ -1905,8 +2015,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 return PhiTensor(
                     child=self.child << other.child,
                     data_subjects=self.data_subjects + other.data_subjects,
-                    min_vals=lazyrepeatarray(data=self.min_vals.data << other.min_vals.data, shape=self.shape),
-                    max_vals=lazyrepeatarray(data=self.max_vals.data << other.max_vals.data, shape=self.shape),
+                    min_vals=lazyrepeatarray(
+                        data=self.min_vals.data << other.min_vals.data, shape=self.shape
+                    ),
+                    max_vals=lazyrepeatarray(
+                        data=self.max_vals.data << other.max_vals.data, shape=self.shape
+                    ),
                 )
         else:
             raise NotImplementedError(
@@ -1919,15 +2033,23 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 return PhiTensor(
                     child=(self.child >> other),
                     data_subjects=self.data_subjects,
-                    min_vals=lazyrepeatarray(data=self.min_vals.data >> other.min(), shape=self.shape),
-                    max_vals=lazyrepeatarray(data=self.max_vals.data >> other.max(), shape=self.shape),
+                    min_vals=lazyrepeatarray(
+                        data=self.min_vals.data >> other.min(), shape=self.shape
+                    ),
+                    max_vals=lazyrepeatarray(
+                        data=self.max_vals.data >> other.max(), shape=self.shape
+                    ),
                 )
             else:
                 return PhiTensor(
                     child=(self.child >> other),
                     data_subjects=self.data_subjects,
-                    min_vals=lazyrepeatarray(data=self.min_vals.data >> other, shape=self.shape),
-                    max_vals=lazyrepeatarray(data=self.max_vals.data >> other, shape=self.shape),
+                    min_vals=lazyrepeatarray(
+                        data=self.min_vals.data >> other, shape=self.shape
+                    ),
+                    max_vals=lazyrepeatarray(
+                        data=self.max_vals.data >> other, shape=self.shape
+                    ),
                 )
         elif isinstance(other, GammaTensor):
             return self.gamma >> other
@@ -1938,8 +2060,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 return PhiTensor(
                     child=self.child >> other.child,
                     data_subjects=self.data_subjects + other.data_subjects,
-                    min_vals=lazyrepeatarray(data=self.min_vals.data >> other.min_vals.data, shape=self.shape),
-                    max_vals=lazyrepeatarray(data=self.max_vals.data >> other.max_vals.data, shape=self.shape),
+                    min_vals=lazyrepeatarray(
+                        data=self.min_vals.data >> other.min_vals.data, shape=self.shape
+                    ),
+                    max_vals=lazyrepeatarray(
+                        data=self.max_vals.data >> other.max_vals.data, shape=self.shape
+                    ),
                 )
         else:
             raise NotImplementedError(
@@ -1949,7 +2075,8 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def __xor__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
         if is_acceptable_simple_type(other):
             return PhiTensor(
-                child=(self.child ^ other) * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
+                child=(self.child ^ other)
+                * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
                 data_subjects=self.data_subjects,
                 min_vals=lazyrepeatarray(data=0, shape=self.shape),
                 max_vals=lazyrepeatarray(data=1, shape=self.shape),
@@ -1962,7 +2089,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             else:
                 return PhiTensor(
                     child=(self.child ^ other.child)
-                          * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
+                    * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
                     data_subjects=self.data_subjects + other.data_subjects,
                     min_vals=lazyrepeatarray(data=0, shape=self.shape),
                     max_vals=lazyrepeatarray(data=1, shape=self.shape),
@@ -2642,6 +2769,43 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             data_subjects=self.data_subjects.take(choices),
             min_vals=minv,
             max_vals=maxv,
+        )
+
+    def trace(self, offset: int = 0, axis1: int = 0, axis2: int = 1) -> PhiTensor:
+        """
+        Return the sum along diagonals of the array.
+
+        If a is 2-D, the sum along its diagonal with the given offset is returned, i.e., the sum of elements
+        a[i,i+offset] for all i.
+
+        If a has more than two dimensions, then the axes specified by axis1 and axis2 are used to determine the 2-D
+        sub-arrays whose traces are returned. The shape of the resulting array is the same as that of a with axis1 and
+        axis2 removed.
+
+        Parameters
+
+            offset: int, optional
+                Offset of the diagonal from the main diagonal. Can be both positive and negative. Defaults to 0.
+
+            axis1, axis2: int, optional
+                Axes to be used as the first and second axis of the 2-D sub-arrays from which the diagonals should be
+                taken. Defaults are the first two axes of a.
+
+        Returns
+
+            sum_along_diagonals: PhiTensor
+                If a is 2-D, the sum along the diagonal is returned.
+                If a has larger dimensions, then an array of sums along diagonals is returned.
+        """
+        result = self.child.trace(offset, axis1, axis2)
+
+        # This is potentially expensive
+        num = np.ones_like(self.child).trace(offset, axis1, axis2)
+        return PhiTensor(
+            child=result,
+            data_subjects=self.data_subjects.trace(offset, axis1, axis2),
+            min_vals=lazyrepeatarray(data=self.min_vals.data * num, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data * num, shape=result.shape),
         )
 
     def _object2bytes(self) -> bytes:

@@ -48,6 +48,11 @@ def dims() -> int:
 
 
 @pytest.fixture
+def dsa(dims) -> DataSubjectArray:
+    return np.broadcast_to(DataSubjectArray(["DS1"]), (dims, dims))
+
+
+@pytest.fixture
 def reference_data(highest, dims) -> np.ndarray:
     """This generates random data to test the equality operators"""
     reference_data = np.random.randint(
@@ -1251,10 +1256,10 @@ def test_matmul(
 
 
 def test_xor(
-        reference_binary_data: np.ndarray,
-        upper_bound: np.ndarray,
-        lower_bound: np.ndarray,
-        ishan: DataSubjectArray,
+    reference_binary_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
 ) -> None:
     ishan = np.broadcast_to(ishan, reference_binary_data.shape)
     reference_tensor = PT(
@@ -1284,10 +1289,69 @@ def test_xor(
         child=reference_binary_data,
         data_subjects=DataSubjectArray.from_objs(np.ones_like(reference_binary_data)),
         min_vals=lower_bound,
-        max_vals=upper_bound
+        max_vals=upper_bound,
     )
 
     result = reference_tensor ^ other
     assert (result.child == (reference_binary_data ^ other)).all()
     assert (result.child.max() <= 1).all()
     assert (result.child.max() >= 0).all()
+
+
+def test_trace(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa,
+) -> None:
+    tensor = PT(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.trace()
+    assert result.child == reference_data.trace()
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data
+
+    result = tensor.trace(offset=1)
+    assert result.child == reference_data.trace(offset=1)
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data
+
+
+def test_max(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa,
+) -> None:
+    tensor = PT(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.max()
+    assert result.child == reference_data.max()
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data
+
+
+def test_min(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa,
+) -> None:
+    tensor = PT(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.min()
+    assert result.child == reference_data.min()
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data
