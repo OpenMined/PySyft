@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from dataclasses import field
 from datetime import datetime
+import getpass
 import json
 import os
 import platform
@@ -66,6 +67,10 @@ SYFT_MINIMUM_PYTHON_VERSION = (3, 7)
 SYFT_MINIMUM_PYTHON_VERSION_STRING = "3.7"
 SYFT_MAXIMUM_PYTHON_VERSION = (3, 10, 999)
 SYFT_MAXIMUM_PYTHON_VERSION_STRING = "3.10"
+WHITE = "\033[0;37m"
+GREEN = "\033[0;32m"
+NO_COLOR = "\033[0;0m"
+WARNING_MSG = f"\033[0;33mWARNING:{NO_COLOR}"
 
 
 @dataclass
@@ -98,7 +103,8 @@ class DependencySyftOS(Dependency):
     def check(self) -> None:
         self.display = "✅ " + ENVIRONMENT["os"]
         if is_windows():
-            self.issues.append(windows_jaxlib())
+            if not get_pip_package("jaxlib"):
+                self.issues.append(windows_jaxlib())
         elif is_apple_silicon():
             pass
 
@@ -479,17 +485,55 @@ def check_docker_version() -> Optional[str]:
     return version
 
 
-def docker_running() -> bool:
+def docker_running() -> Tuple[bool, str]:
     try:
         cmd = "docker info"
         returncode, _ = get_cli_output(cmd)
         if returncode == 0:
-            return True
+            return True, "✅ Docker service is running"
         else:
-            return False
+            error_msg = f"""❌ Docker service was not found and might not be installed.\n\n
+To use docker, execute the following steps:\n
+1 - Install docker on your machine by using the proper steps according to your OS.\n
+{WHITE}MacOS: {GREEN}brew install --cask docker
+{WHITE}Linux: {GREEN}curl -fsSL https://get.docker.com -o get-docker.sh && chmod +777 get-docker.sh && ./get-docker.sh
+{WHITE}Windows: {GREEN}choco install docker-desktop -y{NO_COLOR} \n
+2 - Run \'{GREEN}sudo usermod -a -G docker $USER\'{WHITE} to enable this user to execute docker.
+3 - log out and log back in so that your group membership is re-evaluated {NO_COLOR}."""
+            return False, error_msg
     except Exception:  # nosec
         pass
-    return False
+    return False, error_msg
+
+
+def allowed_to_run_docker() -> Tuple[bool, str]:
+    bool_result, msg = True, ""
+    if platform.system().lower() == "linux":
+        _, line = get_cli_output("getent group docker")
+
+        # get user
+        user = getpass.getuser()
+
+        # Check if current user is root.
+        if os.geteuid() == 0:
+            bool_result = True
+
+        # Check if current user is member of docker group.
+        elif user not in "".join(line):
+            msg = f"""⚠️  User is not a member of docker group.
+{WHITE}You're currently not allowed to run docker, perform the following steps:\n
+    1 - Run \'{GREEN}sudo usermod -a -G docker $USER\'{WHITE} to add docker permissions.
+    2 - log out and log back in so that your group membership is re-evaluated {NO_COLOR}."""
+            # NOTE: For some reason, inside of CI pipeline the user (runner) isn't a member of
+            # docker group and doesn't have sudo priviledges, but can execute docker without
+            # permission issues. This is just a workaround to avoid raising an exeception
+            # in this scenario without reason.
+            if user == "runner":
+                bool_result = True
+            else:
+                bool_result = False
+
+    return bool_result, msg
 
 
 def check_docker_service_status(animated: bool = True) -> None:
@@ -500,16 +544,23 @@ def check_docker_service_status(animated: bool = True) -> None:
     """
 
     if not animated:
-        if not docker_running():
-            raise MissingDependency("❌ Docker service is not running.")
-
+        docker_installed, msg = docker_running()
+        user_allowed, permission_msg = allowed_to_run_docker()
     else:
         console = Console()
         # putting \t at the end seems to prevent weird chars getting outputted
         # during animations in the juypter notebook
         with console.status("[bold blue]Checking for Docker Service[/bold blue]\t"):
-            if not docker_running():
-                raise MissingDependency("❌ Docker service is not running.")
+            docker_installed, msg = docker_running()
+            user_allowed, permission_msg = allowed_to_run_docker()
+
+    # Check if user is allowed to execute docker
+    if not user_allowed:
+        raise MissingDependency(permission_msg)
+
+    # If docker bin was not found.
+    if not docker_installed:
+        raise MissingDependency(msg)
 
     print("✅ Docker service is running")
 
@@ -677,7 +728,7 @@ PACKAGE_MANAGER_COMMANDS = {
     "docker": {
         "macos": "brew install --cask docker",
         "windows": "choco install docker-desktop -y",
-        "linux": "curl -fsSL https://get.docker.com -o get-docker.sh",
+        "linux": "curl -fsSL https://get.docker.com -o get-docker.sh && chmod +777 get-docker.sh && ./get-docker.sh",
         "backup_url": "https://www.docker.com/products/docker-desktop/",
     },
     "docker_compose": {
