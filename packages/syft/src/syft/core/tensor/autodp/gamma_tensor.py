@@ -289,19 +289,80 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
 
         return self._apply_tensor_op(other=other, op_str=op_str)
 
-    def copy(self, order: Optional[str] = "K") -> TensorWrappedGammaTensorPointer:
-        return TensorWrappedGammaTensorPointer(
-            data_subjects=self.data_subjects,
-            client=self.client,
-            id_at_location=self.id_at_location,
-            object_type=self.object_type,
-            tags=self.tags,
-            description=self.description,
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
-            public_shape=getattr(self, "public_shape", None),
-            public_dtype=getattr(self, "public_dtype", None),
+    def _apply_self_tensor_op(self, op_str: str, *args: Any, **kwargs: Any) -> Any:
+        # we want to get the return type which matches the attr_path_and_name
+        # so we ask lib_ast for the return type name that matches out
+        # attr_path_and_name and then use that to get the actual pointer klass
+        # then set the result to that pointer klass
+
+        # We always maintain a Tensor hierarchy Tensor ---> PT--> Actual Data
+        attr_path_and_name = f"syft.core.tensor.tensor.Tensor.{op_str}"
+        min_vals, max_vals = compute_min_max(
+            self.min_vals, self.max_vals, None, op_str, *args, **kwargs
         )
+        if hasattr(self.data_subjects, op_str):
+            data_subjects = getattr(self.data_subjects, op_str)(*args, **kwargs)
+        else:
+            raise ValueError(f"Invalid Numpy Operation: {op_str} for DSA")
+
+        result = TensorWrappedGammaTensorPointer(
+            data_subjects=data_subjects,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=args,
+            kwargs=kwargs,
+        )
+
+        dummy_res = np.empty(self.public_shape)
+        if hasattr(dummy_res, op_str):
+            dummy_res = getattr(dummy_res, op_str)(*args, **kwargs)
+        elif hasattr(np, op_str):
+            dummy_res = getattr(np, op_str)(dummy_res, *args, *kwargs)
+        else:
+            raise ValueError(f"Invalid Numpy Operation: {op_str} for Pointer")
+
+        result.public_shape = dummy_res.shape
+        result.public_dtype = dummy_res.dtype
+
+        return result
+
+    def copy(self, *args: Any, **kwargs: Any) -> TensorWrappedGammaTensorPointer:
+        return self._apply_self_tensor_op("copy", *args, **kwargs)
 
     def __add__(
         self,
@@ -544,57 +605,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.sum"
-        min_vals = self.min_vals.sum(*args, **kwargs)
-        max_vals = self.max_vals.sum(*args, **kwargs)
-
-        result = TensorWrappedGammaTensorPointer(
-            data_subjects=self.data_subjects,
-            min_vals=min_vals,
-            max_vals=max_vals,
-            client=self.client,
-        )
-
-        # QUESTION can the id_at_location be None?
-        result_id_at_location = getattr(result, "id_at_location", None)
-
-        if result_id_at_location is not None:
-            # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
-
-            # then we convert anything which isnt a pointer into a pointer
-            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args,
-                kwargs=downcast_kwargs,
-                client=self.client,
-                gc_enabled=False,
-            )
-
-            cmd = RunClassMethodAction(
-                path=attr_path_and_name,
-                _self=self,
-                args=pointer_args,
-                kwargs=pointer_kwargs,
-                id_at_location=result_id_at_location,
-                address=self.client.address,
-            )
-            self.client.send_immediate_msg_without_reply(msg=cmd)
-
-        inherit_tags(
-            attr_path_and_name=attr_path_and_name,
-            result=result,
-            self_obj=self,
-            args=[],
-            kwargs={},
-        )
-        dummy_res = np.empty(self.public_shape).sum(*args, **kwargs)
-        result.public_shape = dummy_res.shape
-        result.public_dtype = self.public_dtype
-
-        return result
+        return self._apply_self_tensor_op("sum", *args, **kwargs)
 
     def __pos__(self) -> TensorWrappedGammaTensorPointer:
         """Apply the __pos__ (+) operator  on self.
@@ -602,7 +613,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         Returns:
             Union[TensorWrappedGammaTensorPointer] : Result of the operation.
         """
-        return self
+        return self._apply_self_tensor_op(op_str="__pos__")
 
     def trace(
         self,
@@ -635,60 +646,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
                 If a has larger dimensions, then an array of sums along diagonals is returned.
 
         """
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.trace"
-        data_subjects = np.array(self.data_subjects).trace(*args, **kwargs)  # type: ignore
-        num = np.ones(np.array(self.data_subjects).shape).trace(*args, **kwargs)
-
-        result = TensorWrappedGammaTensorPointer(
-            data_subjects=data_subjects,
-            min_vals=lazyrepeatarray(
-                data=self.min_vals.data * num, shape=data_subjects.shape
-            ),
-            max_vals=lazyrepeatarray(
-                data=self.max_vals.data * num, shape=data_subjects.shape
-            ),
-            client=self.client,
-        )
-
-        # QUESTION can the id_at_location be None?
-        result_id_at_location = getattr(result, "id_at_location", None)
-
-        if result_id_at_location is not None:
-            # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
-
-            # then we convert anything which isnt a pointer into a pointer
-            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args,
-                kwargs=downcast_kwargs,
-                client=self.client,
-                gc_enabled=False,
-            )
-
-            cmd = RunClassMethodAction(
-                path=attr_path_and_name,
-                _self=self,
-                args=pointer_args,
-                kwargs=pointer_kwargs,
-                id_at_location=result_id_at_location,
-                address=self.client.address,
-            )
-            self.client.send_immediate_msg_without_reply(msg=cmd)
-
-        inherit_tags(
-            attr_path_and_name=attr_path_and_name,
-            result=result,
-            self_obj=self,
-            args=[],
-            kwargs={},
-        )
-        result.public_shape = data_subjects.shape
-        result.public_dtype = self.public_dtype
-
-        return result
+        return self._apply_self_tensor_op("trace", *args, **kwargs)
 
     def min(
         self,
@@ -710,61 +668,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
                 If axis is None, the result is a scalar value.
                 If axis is given, the result is an array of dimension a.ndim - 1.
         """
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.min"
-        data_subjects = np.empty(np.array(self.data_subjects).shape).min(
-            *args, **kwargs
-        )
-
-        result = TensorWrappedGammaTensorPointer(
-            data_subjects=data_subjects,
-            min_vals=lazyrepeatarray(
-                data=self.min_vals.data, shape=data_subjects.shape
-            ),
-            max_vals=lazyrepeatarray(
-                data=self.max_vals.data, shape=data_subjects.shape
-            ),
-            client=self.client,
-        )
-
-        # QUESTION can the id_at_location be None?
-        result_id_at_location = getattr(result, "id_at_location", None)
-
-        if result_id_at_location is not None:
-            # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
-
-            # then we convert anything which isn't a pointer into a pointer
-            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args,
-                kwargs=downcast_kwargs,
-                client=self.client,
-                gc_enabled=False,
-            )
-
-            cmd = RunClassMethodAction(
-                path=attr_path_and_name,
-                _self=self,
-                args=pointer_args,
-                kwargs=pointer_kwargs,
-                id_at_location=result_id_at_location,
-                address=self.client.address,
-            )
-            self.client.send_immediate_msg_without_reply(msg=cmd)
-
-        inherit_tags(
-            attr_path_and_name=attr_path_and_name,
-            result=result,
-            self_obj=self,
-            args=[],
-            kwargs={},
-        )
-        result.public_shape = data_subjects.shape
-        result.public_dtype = self.public_dtype
-
-        return result
+        return self._apply_self_tensor_op("min", *args, **kwargs)
 
     def max(
         self,
@@ -786,61 +690,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
                 If axis is None, the result is a scalar value.
                 If axis is given, the result is an array of dimension a.ndim - 1.
         """
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.max"
-        data_subjects = np.empty(np.array(self.data_subjects).shape).max(
-            *args, **kwargs
-        )
-
-        result = TensorWrappedGammaTensorPointer(
-            data_subjects=data_subjects,
-            min_vals=lazyrepeatarray(
-                data=self.min_vals.data, shape=data_subjects.shape
-            ),
-            max_vals=lazyrepeatarray(
-                data=self.max_vals.data, shape=data_subjects.shape
-            ),
-            client=self.client,
-        )
-
-        # QUESTION can the id_at_location be None?
-        result_id_at_location = getattr(result, "id_at_location", None)
-
-        if result_id_at_location is not None:
-            # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
-
-            # then we convert anything which isn't a pointer into a pointer
-            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args,
-                kwargs=downcast_kwargs,
-                client=self.client,
-                gc_enabled=False,
-            )
-
-            cmd = RunClassMethodAction(
-                path=attr_path_and_name,
-                _self=self,
-                args=pointer_args,
-                kwargs=pointer_kwargs,
-                id_at_location=result_id_at_location,
-                address=self.client.address,
-            )
-            self.client.send_immediate_msg_without_reply(msg=cmd)
-
-        inherit_tags(
-            attr_path_and_name=attr_path_and_name,
-            result=result,
-            self_obj=self,
-            args=[],
-            kwargs={},
-        )
-        result.public_shape = data_subjects.shape
-        result.public_dtype = self.public_dtype
-
-        return result
+        return self._apply_self_tensor_op("max", *args, **kwargs)
 
     def __getitem__(
         self, key: Union[int, bool, slice]
@@ -852,58 +702,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         Returns:
             Union[TensorWrappedGammaTensorPointer] : Result of the operation.
         """
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.__getitem__"
-        result: TensorWrappedGammaTensorPointer
-        min_vals = self.min_vals.__getitem__(key)
-        max_vals = self.max_vals.__getitem__(key)
-
-        result = TensorWrappedGammaTensorPointer(
-            data_subjects=self.data_subjects,
-            min_vals=min_vals,
-            max_vals=max_vals,
-            client=self.client,
-        )
-
-        # QUESTION can the id_at_location be None?
-        result_id_at_location = getattr(result, "id_at_location", None)
-
-        if result_id_at_location is not None:
-            # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=[key], kwargs={})
-
-            # then we convert anything which isnt a pointer into a pointer
-            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args,
-                kwargs=downcast_kwargs,
-                client=self.client,
-                gc_enabled=False,
-            )
-
-            cmd = RunClassMethodAction(
-                path=attr_path_and_name,
-                _self=self,
-                args=pointer_args,
-                kwargs=pointer_kwargs,
-                id_at_location=result_id_at_location,
-                address=self.client.address,
-            )
-            self.client.send_immediate_msg_without_reply(msg=cmd)
-
-        inherit_tags(
-            attr_path_and_name=attr_path_and_name,
-            result=result,
-            self_obj=self,
-            args=[key],
-            kwargs={},
-        )
-        dummy_res = np.empty(self.public_shape).__getitem__(key)
-        result.public_shape = dummy_res.shape
-        result.public_dtype = self.public_dtype
-
-        return result
+        return self._apply_self_tensor_op("__getitem__", key)
 
     def ones_like(
         self,
@@ -918,57 +717,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.ones_like"
-        min_vals = self.min_vals.ones_like(*args, **kwargs)
-        max_vals = self.max_vals.ones_like(*args, **kwargs)
-
-        result = TensorWrappedGammaTensorPointer(
-            data_subjects=self.data_subjects,
-            min_vals=min_vals,
-            max_vals=max_vals,
-            client=self.client,
-        )
-
-        # QUESTION can the id_at_location be None?
-        result_id_at_location = getattr(result, "id_at_location", None)
-
-        if result_id_at_location is not None:
-            # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
-
-            # then we convert anything which isnt a pointer into a pointer
-            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args,
-                kwargs=downcast_kwargs,
-                client=self.client,
-                gc_enabled=False,
-            )
-
-            cmd = RunClassMethodAction(
-                path=attr_path_and_name,
-                _self=self,
-                args=pointer_args,
-                kwargs=pointer_kwargs,
-                id_at_location=result_id_at_location,
-                address=self.client.address,
-            )
-            self.client.send_immediate_msg_without_reply(msg=cmd)
-
-        inherit_tags(
-            attr_path_and_name=attr_path_and_name,
-            result=result,
-            self_obj=self,
-            args=[],
-            kwargs={},
-        )
-        dummy_res = np.ones_like(np.empty(self.public_shape), *args, **kwargs)
-        result.public_shape = dummy_res.shape
-        result.public_dtype = self.public_dtype
-
-        return result
+        return self._apply_self_tensor_op("ones_like", *args, **kwargs)
 
     def exp(
         self,
