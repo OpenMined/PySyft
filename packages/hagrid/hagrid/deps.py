@@ -103,7 +103,8 @@ class DependencySyftOS(Dependency):
     def check(self) -> None:
         self.display = "✅ " + ENVIRONMENT["os"]
         if is_windows():
-            self.issues.append(windows_jaxlib())
+            if not get_pip_package("jaxlib"):
+                self.issues.append(windows_jaxlib())
         elif is_apple_silicon():
             pass
 
