@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
+from typing import Dict
 from typing import Iterable
 from typing import Optional
 from typing import TYPE_CHECKING
@@ -376,6 +377,8 @@ def compute_min_max(
     x_max_vals: lazyrepeatarray,
     other: Union[PhiTensor, int, float, np.ndarray],
     op_str: str,
+    *args: Any,
+    **kwargs: Dict[Any, Any],
 ) -> Tuple[lazyrepeatarray, lazyrepeatarray]:
     min_vals: lazyrepeatarray
     max_vals: lazyrepeatarray
@@ -418,6 +421,33 @@ def compute_min_max(
     elif op_str == "sum":
         min_vals = lazyrepeatarray(data=np.array(x_min_vals.sum(axis=None)), shape=())
         max_vals = lazyrepeatarray(data=np.array(x_max_vals.sum(axis=None)), shape=())
+    elif op_str == "__pos__":
+        min_vals = x_min_vals
+        max_vals = x_max_vals
+    elif op_str == "trace":
+        # NOTE: This is potentially expensive
+        min_val_data = x_min_vals.to_numpy().trace(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=min_val_data, shape=min_val_data.shape)
+        max_val_data = x_max_vals.to_numpy().trace(*args, **kwargs)
+        max_vals = lazyrepeatarray(data=max_val_data, shape=max_val_data.shape)
+    elif op_str == "repeat":
+        dummy_res = np.empty(x_min_vals.shape).repeat(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=x_min_vals.data.min(), shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(data=x_max_vals.data.max(), shape=dummy_res.shape)
+    elif op_str == "min":
+        dummy_res = np.empty(x_min_vals.shape).min(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
+    elif op_str == "max":
+        dummy_res = np.empty(x_min_vals.shape).max(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
+    elif op_str == "ones_like":
+        min_vals = x_min_vals.ones_like(*args, **kwargs)
+        max_vals = x_max_vals.ones_like(*args, **kwargs)
+    elif op_str == "copy":
+        min_vals = x_min_vals.copy(*args, **kwargs)  # type: ignore
+        max_vals = x_max_vals.copy(*args, **kwargs)  # type: ignore
     else:
         raise ValueError(f"Invaid Operation for LazyRepeatArray: {op_str}")
 
