@@ -84,6 +84,7 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.core.tensor.tensor.Tensor.__le__", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.__len__", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.__lshift__", "syft.core.tensor.tensor.Tensor"),
+        ("syft.core.tensor.tensor.Tensor.__xor__", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.__lt__", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.__matmul__", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.__mul__", "syft.core.tensor.tensor.Tensor"),

@@ -68,6 +68,9 @@ OPERATOR_OPS = {
     "matmul",
     "pos",
     "pow",
+    "lshift",
+    "rshift",
+    "xor",
 }
 
 
@@ -87,8 +90,8 @@ def get_shape(
     Returns:
         The shape of the result
     """
-    dummy_x = np.empty(x_shape)
-    dummy_y = np.empty(y_shape)
+    dummy_x = np.empty(x_shape, dtype=np.int64)
+    dummy_y = np.empty(y_shape, dtype=np.int64)
     if op_str in OPERATOR_OPS:
         op = getattr(operator, op_str)
         res = op(dummy_x, dummy_y).shape

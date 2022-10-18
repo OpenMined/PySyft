@@ -43,6 +43,9 @@ class GAMMA_TENSOR_OP(Enum):
     MIN = "min"
     MAX = "max"
     REPEAT = "repeat"
+    LSHIFT = "left_shift"
+    RSHIFT = "right_shift"
+    XOR = "bitwise_xor"
     # Our Methods
     RECIPROCAL = "reciprocal"
     FLATTEN_C = "flatten_c"

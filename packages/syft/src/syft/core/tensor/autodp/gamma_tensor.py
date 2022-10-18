@@ -2930,6 +2930,124 @@ class GammaTensor:
                     sources=sources,
                 )
 
+    def __lshift__(self, other: Any) -> GammaTensor:
+        # relative
+        from .phi_tensor import PhiTensor
+
+        sources = dict()
+        sources[self.id] = self
+
+        if isinstance(other, (int, np.ndarray)):
+            sources["0"] = other
+            return GammaTensor(
+                child=self.child << other,
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(
+                    data=self.min_vals.data << other, shape=self.shape
+                ),
+                max_vals=lazyrepeatarray(
+                    data=self.max_vals.data << other, shape=self.shape
+                ),
+                func_str=GAMMA_TENSOR_OP.LSHIFT.value,
+                sources=sources,
+            )
+
+        if isinstance(other, PhiTensor):  # type: ignore
+            return self << other.gamma
+        elif isinstance(other, GammaTensor):
+            sources[other.id] = other
+            return GammaTensor(
+                child=self.child << other.child,
+                data_subjects=self.data_subjects + other.data_subjects,
+                min_vals=lazyrepeatarray(
+                    data=self.min_vals.data << other.min_vals.data, shape=self.shape
+                ),
+                max_vals=lazyrepeatarray(
+                    data=self.max_vals.data << other.max_vals.data, shape=self.shape
+                ),
+                func_str=GAMMA_TENSOR_OP.LSHIFT.value,
+                sources=sources,
+            )
+        else:
+            raise NotImplementedError(
+                f"lshift is not implemented for type: {type(other)}"
+            )
+
+    def __rshift__(self, other: Any) -> GammaTensor:
+        # relative
+        from .phi_tensor import PhiTensor
+
+        sources = dict()
+        sources[self.id] = self
+
+        if isinstance(other, (int, np.ndarray)):
+            sources["0"] = other
+            return GammaTensor(
+                child=self.child >> other,
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(
+                    data=self.min_vals.data >> other, shape=self.shape
+                ),
+                max_vals=lazyrepeatarray(
+                    data=self.max_vals.data >> other, shape=self.shape
+                ),
+                func_str=GAMMA_TENSOR_OP.RSHIFT.value,
+                sources=sources,
+            )
+
+        if isinstance(other, PhiTensor):  # type: ignore
+            return self >> other.gamma
+        elif isinstance(other, GammaTensor):
+            sources[other.id] = other
+            return GammaTensor(
+                child=self.child >> other.child,
+                data_subjects=self.data_subjects + other.data_subjects,
+                min_vals=lazyrepeatarray(
+                    data=self.min_vals.data >> other.min_vals.data, shape=self.shape
+                ),
+                max_vals=lazyrepeatarray(
+                    data=self.max_vals.data >> other.max_vals.data, shape=self.shape
+                ),
+                func_str=GAMMA_TENSOR_OP.RSHIFT.value,
+                sources=sources,
+            )
+        else:
+            raise NotImplementedError(
+                f"rshift is not implemented for type: {type(other)}"
+            )
+
+    def __xor__(self, other: Any) -> GammaTensor:
+        # relative
+        from .phi_tensor import PhiTensor
+
+        sources = dict()
+        sources[self.id] = self
+
+        if is_acceptable_simple_type(other):
+            sources["0"] = other
+            return GammaTensor(
+                child=(self.child ^ other) * 1,
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(data=0, shape=self.shape),
+                max_vals=lazyrepeatarray(data=1, shape=self.shape),
+                func_str=GAMMA_TENSOR_OP.XOR.value,
+                sources=sources,
+            )
+        elif isinstance(other, PhiTensor):
+            return self ^ other.gamma
+        elif isinstance(other, GammaTensor):
+            sources[other.id] = other
+            return GammaTensor(
+                child=self.child ^ other.child,
+                data_subjects=self.data_subjects + other.data_subjects,
+                min_vals=lazyrepeatarray(data=0, shape=self.shape),
+                max_vals=lazyrepeatarray(data=1, shape=self.shape),
+                func_str=GAMMA_TENSOR_OP.XOR.value,
+                sources=sources,
+            )
+        else:
+            raise NotImplementedError(f"xor is not implemented for type: {type(other)}")
+
     @property
     def shape(self) -> Tuple[int, ...]:
         return self.child.shape

@@ -177,7 +177,25 @@ class lazyrepeatarray:
         result = self.to_numpy() @ other.to_numpy()
         return self.__class__(data=result, shape=result.shape)
 
-        # raise Exception("not sure how to do this yet")
+    def __lshift__(self, other: Any) -> lazyrepeatarray:
+        if is_acceptable_simple_type(other):
+            return self.__class__(data=self.data << other, shape=self.shape)
+
+        if not is_broadcastable(self.shape, other.shape):
+            raise Exception(
+                f"Cannot broadcast arrays with shapes: {self.shape} & {other.shape}"
+            )
+        return self.__class__(data=self.data << other.data, shape=self.shape)
+
+    def __rshift__(self, other: Any) -> lazyrepeatarray:
+        if is_acceptable_simple_type(other):
+            return self.__class__(data=self.data >> other, shape=self.shape)
+
+        if not is_broadcastable(self.shape, other.shape):
+            raise Exception(
+                f"Cannot broadcast arrays with shapes: {self.shape} & {other.shape}"
+            )
+        return self.__class__(data=self.data >> other.data, shape=self.shape)
 
     def zeros_like(self, *args: Any, **kwargs: Any) -> lazyrepeatarray:
         res = np.array(np.zeros_like(self.to_numpy(), *args, **kwargs))
@@ -383,7 +401,7 @@ def compute_min_max(
     min_vals: lazyrepeatarray
     max_vals: lazyrepeatarray
 
-    if op_str in ["__add__", "__matmul__", "__rmatmul__"]:
+    if op_str in ["__add__", "__matmul__", "__rmatmul__", "__lshift__", "__rshift__"]:
         if is_acceptable_simple_type(other):
             min_vals = getattr(x_min_vals, op_str)(other)
             max_vals = getattr(x_max_vals, op_str)(other)
@@ -415,7 +433,15 @@ def compute_min_max(
                 f"Not supported type for lazy repeat array computation: {type(other)}"
             )
 
-    elif op_str in ["__gt__", "__lt__", "__le__", "__ge__", "__eq__", "__ne__"]:
+    elif op_str in [
+        "__gt__",
+        "__lt__",
+        "__le__",
+        "__ge__",
+        "__eq__",
+        "__ne__",
+        "__xor__",
+    ]:
         min_vals = x_min_vals * 0
         max_vals = (x_max_vals * 0) + 1
     elif op_str == "sum":
