@@ -148,6 +148,7 @@ def test_gamma_publish(
         deduct_epsilon_for_user=deduct_epsilon_for_user,
         ledger=ledger,
         sigma=0.5,
+        private=True,
     )
 
     assert results.dtype == np.float64
