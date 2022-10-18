@@ -6,11 +6,16 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 import functools
 from itertools import repeat
+import multiprocessing
 import multiprocessing as mp
+from multiprocessing.synchronize import Event as EventClass
+from multiprocessing.synchronize import Lock as LockBase
 import operator
 import os
 from pathlib import Path
 from secrets import randbelow
+import sys
+import time
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -18,6 +23,7 @@ from typing import Iterator
 from typing import List
 from typing import Optional
 from typing import Sequence
+from typing import Tuple
 from typing import Type
 from typing import Union
 
@@ -653,3 +659,96 @@ def concurrency_override(count: int = 1) -> Iterator:
 
 def size_mb(obj: Any) -> int:
     return asizeof(obj) / (1024 * 1024)  # MBs
+
+
+class bcolors:
+    HEADER = "\033[95m"
+    BLUE = "\033[94m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    RED = "\033[91m"
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
+
+    @staticmethod
+    def green(message: str) -> str:
+        return bcolors.GREEN + message + bcolors.ENDC
+
+    @staticmethod
+    def red(message: str) -> str:
+        return bcolors.RED + message + bcolors.ENDC
+
+    @staticmethod
+    def yellow(message: str) -> str:
+        return bcolors.YELLOW + message + bcolors.ENDC
+
+    @staticmethod
+    def bold(message: str, end_color: bool = False) -> str:
+        msg = bcolors.BOLD + message
+        if end_color:
+            msg += bcolors.ENDC
+        return msg
+
+    @staticmethod
+    def underline(message: str, end_color: bool = False) -> str:
+        msg = bcolors.UNDERLINE + message
+        if end_color:
+            msg += bcolors.ENDC
+        return msg
+
+    @staticmethod
+    def warning(message: str) -> str:
+        return bcolors.bold(bcolors.yellow(message))
+
+    @staticmethod
+    def success(message: str) -> str:
+        return bcolors.green(message)
+
+    @staticmethod
+    def failure(message: str) -> str:
+        return bcolors.red(message)
+
+
+def print_process(  # type: ignore
+    message: str,
+    finish: EventClass,
+    success: EventClass,
+    lock: LockBase,
+    refresh_rate=0.1,
+) -> None:
+    with lock:
+        while not finish.is_set():  # type: ignore
+            print(f"{bcolors.bold(message)} .", end="\r")
+            time.sleep(refresh_rate)
+            sys.stdout.flush()
+            print(f"{bcolors.bold(message)} ..", end="\r")
+            time.sleep(refresh_rate)
+            sys.stdout.flush()
+            print(f"{bcolors.bold(message)} ...", end="\r")
+            time.sleep(refresh_rate)
+            sys.stdout.flush()
+        if success.is_set():  # type: ignore
+            print(f"{bcolors.success(message)}" + (" " * len(message)), end="\n")
+        else:
+            print(f"{bcolors.failure(message)}" + (" " * len(message)), end="\n")
+        sys.stdout.flush()
+
+
+def print_dynamic_log(
+    message: str,
+) -> Tuple[EventClass, EventClass]:
+    """
+    Prints a dynamic log message that will change its color (to green or red) when some process is done.
+
+    message: str = Message to be printed.
+
+    return: tuple of events that can control the log print from the outside of this method.
+    """
+    finish = multiprocessing.Event()
+    success = multiprocessing.Event()
+    lock = multiprocessing.Lock()
+    multiprocessing.Process(
+        target=print_process, args=(message, finish, success, lock)
+    ).start()
+    return (finish, success)
