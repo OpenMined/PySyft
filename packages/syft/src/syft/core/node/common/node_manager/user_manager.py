@@ -199,7 +199,7 @@ class UserManager(DatabaseManager):
         role: int,
         private_key: str,
         verify_key: str,
-    ) -> SyftUser:
+    ) -> Union[SyftUser, None]:
         """Registers a user in the database, when they signup on a domain.
 
         Args:
@@ -227,6 +227,7 @@ class UserManager(DatabaseManager):
                 salt=salt,
                 created_at=datetime.now(),
             )
+        return None
 
     def query(self, **kwargs: Any) -> Query:
         results = super().query(**kwargs)
