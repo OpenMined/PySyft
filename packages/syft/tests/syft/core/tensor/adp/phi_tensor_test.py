@@ -48,8 +48,8 @@ def dims() -> int:
 
 
 @pytest.fixture
-def pt_dsa(dims) -> DataSubjectArray:
-    return np.broadcast_to(DataSubjectArray(["DS1"]), (dims, dims))
+def dsa(dims: int) -> DataSubjectArray:
+    return DataSubjectArray.from_objs(np.ones((dims, dims)))
 
 
 @pytest.fixture
@@ -1234,15 +1234,38 @@ def test_or(
     assert (result.child == (reference_data | False)).all()
 
 
+def test_std(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = PT(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.std()
+    assert result.child == reference_data.std()
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data
+
+    result = tensor.std(axis=1)
+    assert (result.child == reference_data.std(axis=1)).all()
+    assert (result.child >= result.min_vals.data).all()
+    assert (result.child <= result.max_vals.data).all()
+
+
 def test_trace(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
-    pt_dsa: DataSubjectArray,
+    dsa: DataSubjectArray,
 ) -> None:
     tensor = PT(
         child=reference_data,
-        data_subjects=pt_dsa,
+        data_subjects=dsa,
         min_vals=lower_bound,
         max_vals=upper_bound,
     )
@@ -1261,11 +1284,11 @@ def test_max(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
-    pt_dsa: DataSubjectArray,
+    dsa: DataSubjectArray,
 ) -> None:
     tensor = PT(
         child=reference_data,
-        data_subjects=pt_dsa,
+        data_subjects=dsa,
         min_vals=lower_bound,
         max_vals=upper_bound,
     )
@@ -1279,11 +1302,11 @@ def test_min(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
-    pt_dsa: DataSubjectArray,
+    dsa: DataSubjectArray,
 ) -> None:
     tensor = PT(
         child=reference_data,
-        data_subjects=pt_dsa,
+        data_subjects=dsa,
         min_vals=lower_bound,
         max_vals=upper_bound,
     )
