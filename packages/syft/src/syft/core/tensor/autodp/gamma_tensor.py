@@ -2454,9 +2454,7 @@ class GammaTensor:
             child=result,
             data_subjects=self.data_subjects.std(axis, **kwargs),
             min_vals=lazyrepeatarray(data=0, shape=result.shape),
-            max_vals=lazyrepeatarray(
-                data=0.25 * (maxv - minv) ** 2, shape=result.shape
-            ),
+            max_vals=lazyrepeatarray(data=(maxv - minv) / 2, shape=result.shape),
             sources=output_state,
             func_str=GAMMA_TENSOR_OP.STD.value,
         )
