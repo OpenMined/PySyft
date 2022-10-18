@@ -113,6 +113,8 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.core.tensor.tensor.Tensor",
         ),
         ("syft.core.tensor.tensor.Tensor.__rmul__", "syft.core.tensor.tensor.Tensor"),
+        ("syft.core.tensor.tensor.Tensor.__round__", "syft.core.tensor.tensor.Tensor"),
+        ("syft.core.tensor.tensor.Tensor.round", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.__rpow__", "syft.core.tensor.tensor.Tensor"),
         (
             "syft.core.tensor.tensor.Tensor.__rrshift__",

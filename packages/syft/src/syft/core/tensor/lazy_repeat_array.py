@@ -474,6 +474,13 @@ def compute_min_max(
     elif op_str == "copy":
         min_vals = x_min_vals.copy(*args, **kwargs)  # type: ignore
         max_vals = x_max_vals.copy(*args, **kwargs)  # type: ignore
+    elif op_str == "__round__":
+        min_vals = lazyrepeatarray(
+            data=x_min_vals.data.round(*args, **kwargs), shape=x_min_vals.shape
+        )
+        max_vals = lazyrepeatarray(
+            data=x_max_vals.data.round(*args, **kwargs), shape=x_max_vals.shape
+        )
     else:
         raise ValueError(f"Invaid Operation for LazyRepeatArray: {op_str}")
 

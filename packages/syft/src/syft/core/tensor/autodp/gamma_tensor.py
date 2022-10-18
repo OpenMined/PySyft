@@ -3048,6 +3048,23 @@ class GammaTensor:
         else:
             raise NotImplementedError(f"xor is not implemented for type: {type(other)}")
 
+    def __round__(self, n: Optional[int] = None) -> GammaTensor:
+        sources = dict()
+        sources[self.id] = self
+        if n is not None:
+            sources["0"] = n  # type: ignore
+            result = self.child.round(n)
+        else:
+            result = self.child.round()
+        return GammaTensor(
+            child=result,
+            data_subjects=self.data_subjects,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+            func_str=GAMMA_TENSOR_OP.ROUND.value,
+            sources=sources,
+        )
+
     @property
     def shape(self) -> Tuple[int, ...]:
         return self.child.shape

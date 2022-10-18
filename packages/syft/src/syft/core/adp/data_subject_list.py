@@ -578,6 +578,12 @@ class DataSubjectArray:
     def log(self) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)
 
+    def __round__(self, n: Optional[int] = None) -> DataSubjectArray:
+        return self
+
+    def round(self, n: Optional[int] = None) -> DataSubjectArray:
+        return self
+
     def real(self) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)
 

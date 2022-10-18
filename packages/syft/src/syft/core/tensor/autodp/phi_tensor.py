@@ -257,6 +257,8 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         )
         if hasattr(self.data_subjects, op_str):
             data_subjects = getattr(self.data_subjects, op_str)(*args, **kwargs)
+        elif op_str == "__round__":
+            data_subjects = self.data_subjects
         else:
             raise ValueError(f"Invalid Numpy Operation: {op_str} for DSA")
 
@@ -308,6 +310,8 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             dummy_res = getattr(dummy_res, op_str)(*args, **kwargs)
         elif hasattr(np, op_str):
             dummy_res = getattr(np, op_str)(dummy_res, *args, *kwargs)
+        elif op_str in ["__round__"]:
+            pass
         else:
             raise ValueError(f"Invalid Numpy Operation: {op_str} for Pointer")
 
@@ -333,6 +337,12 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
     def copy(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
         return self._apply_self_tensor_op("copy", *args, **kwargs)
+
+    def __round__(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        return self._apply_self_tensor_op("__round__", *args, **kwargs)
+
+    def round(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        return self.__round__(*args, **kwargs)
 
     @staticmethod
     def _apply_op(
@@ -2180,12 +2190,20 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             raise NotImplementedError
 
     def __round__(self, n: Optional[int] = None) -> PhiTensor:
-        return PhiTensor(
-            child=self.child.round(n),
-            data_subjects=self.data_subjects,
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
-        )
+        if n is None:
+            return PhiTensor(
+                child=self.child.round(),
+                data_subjects=self.data_subjects,
+                min_vals=self.min_vals,
+                max_vals=self.max_vals,
+            )
+        else:
+            return PhiTensor(
+                child=self.child.round(n),
+                data_subjects=self.data_subjects,
+                min_vals=self.min_vals,
+                max_vals=self.max_vals,
+            )
 
     def __rmatmul__(
         self, other: Union[np.ndarray, PhiTensor]

@@ -294,6 +294,14 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
         return self.__class__(other.child.__rshift__(self.child))
 
+    def __round__(self, n: Optional[int] = None) -> PassthroughTensor:
+        if n is None:
+            return self.__class__(self.child.__round__())
+        return self.__class__(self.child.__round__(n))
+
+    def round(self, n: Optional[int] = None) -> PassthroughTensor:
+        return self.__round__(n)
+
     def __pow__(
         self,
         other: Union[Type[PassthroughTensor], AcceptableSimpleType],

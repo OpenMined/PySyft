@@ -105,6 +105,7 @@ def generate_ops() -> Dict[GAMMA_TENSOR_OP, Callable]:
         GAMMA_TENSOR_OP.LSHIFT: jnp.left_shift,
         GAMMA_TENSOR_OP.RSHIFT: jnp.right_shift,
         GAMMA_TENSOR_OP.XOR: jnp.bitwise_xor,
+        GAMMA_TENSOR_OP.ROUND: jnp.round,
         GAMMA_TENSOR_OP.REPEAT: jnp.repeat,
         GAMMA_TENSOR_OP.RECIPROCAL: _reciprocal,
         GAMMA_TENSOR_OP.FLATTEN_C: get_flatten_type(order="C"),

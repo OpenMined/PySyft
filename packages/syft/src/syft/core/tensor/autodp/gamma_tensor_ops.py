@@ -46,6 +46,7 @@ class GAMMA_TENSOR_OP(Enum):
     LSHIFT = "left_shift"
     RSHIFT = "right_shift"
     XOR = "bitwise_xor"
+    ROUND = "round"
     # Our Methods
     RECIPROCAL = "reciprocal"
     FLATTEN_C = "flatten_c"
