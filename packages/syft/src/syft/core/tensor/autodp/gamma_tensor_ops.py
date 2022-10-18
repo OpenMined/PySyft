@@ -44,6 +44,7 @@ class GAMMA_TENSOR_OP(Enum):
     TRACE = "trace"
     MIN = "min"
     MAX = "max"
+    REPEAT = "repeat"
     # Our Methods
     RECIPROCAL = "reciprocal"
     FLATTEN_C = "flatten_c"
