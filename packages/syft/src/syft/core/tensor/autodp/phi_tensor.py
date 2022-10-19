@@ -159,22 +159,28 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         # so we ask lib_ast for the return type name that matches out
         # attr_path_and_name and then use that to get the actual pointer klass
         # then set the result to that pointer klass
-
+    
         # We always maintain a Tensor hierarchy Tensor ---> PT--> Actual Data
         attr_path_and_name = f"syft.core.tensor.tensor.Tensor.{op_str}"
+        
         min_vals, max_vals = compute_min_max(
             self.min_vals, self.max_vals, other, op_str
         )
+        
         result = TensorWrappedPhiTensorPointer(
             data_subjects=self.data_subjects,
             min_vals=min_vals,
             max_vals=max_vals,
             client=self.client,
         )
-
+        print("GETS HERE")
+        print(f"MIN: {min_vals}, \nMAX: {max_vals}\n")
+        print(type(result))
+        # print(result)
+        
         # QUESTION can the id_at_location be None?
         result_id_at_location = getattr(result, "id_at_location", None)
-
+        
         if result_id_at_location is not None:
             # first downcast anything primitive which is not already PyPrimitive
             (
@@ -199,7 +205,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
                 address=self.client.address,
             )
             self.client.send_immediate_msg_without_reply(msg=cmd)
-
+        
         inherit_tags(
             attr_path_and_name=attr_path_and_name,
             result=result,
@@ -226,12 +232,13 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             raise ValueError(
                 f"Invalid Type for TensorWrappedPhiTensorPointer:{type(other)}"
             )
-
+       
         if self.public_shape is not None and other_shape is not None:
-            result_public_shape = utils.get_shape(
+            print("GETS HERE2")
+            result_public_shape =utils.get_shape(
                 op_str, self.public_shape, other_shape
             )
-
+        print("GETS HERE3")
         if self.public_dtype is None or other_dtype is None:
             if self.public_dtype != other_dtype:
                 raise ValueError(
@@ -239,8 +246,12 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
                 )
         result_public_dtype = self.public_dtype
 
+        print("GETS HERE4")
+
         result.public_shape = result_public_shape
         result.public_dtype = result_public_dtype
+
+        
 
         return result
 
@@ -349,6 +360,9 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
     def round(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
         return self.__round__(*args, **kwargs)
+
+    def transpose(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        return self._apply_self_tensor_op("transpose", *args, **kwargs)
 
     @staticmethod
     def _apply_op(
@@ -1289,6 +1303,22 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             public_shape=public_shape,
             public_dtype=public_dtype,
         )
+
+    def __lshift__(
+    #def __lt__(
+        self,
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
+        """Apply the "lt" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__lshift__")
+
 
 
 @implements(TensorWrappedPhiTensorPointer, np.ones_like)

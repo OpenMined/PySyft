@@ -98,6 +98,7 @@ def get_shape(
     elif op_str in NUMPY_OPS:
         res = getattr(np, op_str)([dummy_x, dummy_y]).shape
     else:
+        print("HIGHER")
         res = getattr(dummy_x, op_str)(dummy_y).shape
 
     res = cast(Tuple[int], res)

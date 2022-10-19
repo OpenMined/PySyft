@@ -857,6 +857,15 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         """
         return self._apply_self_tensor_op("ones_like", *args, **kwargs)
 
+    def transpose(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+    
+        return self._apply_self_tensor_op("transpose", *args, **kwargs)
+
+
     def exp(
         self,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
