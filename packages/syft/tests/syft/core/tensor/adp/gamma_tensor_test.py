@@ -59,6 +59,11 @@ def reference_data(highest, dims) -> np.ndarray:
 
 
 @pytest.fixture
+def dsa(dims: int) -> DataSubjectArray:
+    return DataSubjectArray.from_objs(np.random.choice([0, 1], (dims, dims)))
+
+
+@pytest.fixture
 def upper_bound(reference_data: np.ndarray, highest: int) -> np.ndarray:
     """This is used to specify the max_vals that is either binary or randomly generated b/w 0-1"""
     return lra(data=highest, shape=reference_data.shape)
@@ -149,6 +154,50 @@ def test_gamma_publish(
     assert results < upper_bound.to_numpy().sum() + 10
     assert -10 + lower_bound.to_numpy().sum() < results
     print(ledger_store.kv_store)
+
+
+def test_sum(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = GammaTensor(
+        child=reference_data,
+        data_subjects=dsa,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    result = tensor.sum()
+    assert result.child == reference_data.sum()
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data
+    assert result.data_subjects == dsa.sum()
+
+    result = tensor.sum(axis=1)
+    assert (result.child == reference_data.sum(axis=1)).all()
+    assert (result.child >= result.min_vals.data).all()
+    assert (result.child <= result.max_vals.data).all()
+    assert (result.data_subjects == dsa.sum(axis=1)).all()
+
+
+def test_pow(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = GammaTensor(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.__pow__(2)
+    assert (result.child == (reference_data**2)).all()
+    assert result.child.min() >= result.min_vals.data
+    assert result.child.max() <= result.max_vals.data
 
 
 @pytest.mark.arithmetic
@@ -956,7 +1005,12 @@ def test_any(
     assert result.data_subjects.shape == (1, reference_tensor.shape[0])
     assert (result.data_subjects == ishan).any()
 
-    condition = list(np.random.choice(a=[False, True], size=(reference_data.shape[0])))
+    condition = list(
+        np.random.choice(a=[False, True], size=(reference_data.shape[0] - 1))
+    )
+    condition.append(
+        True
+    )  # If condition = [False, False, False ... False], this test will fail
     result = (reference_tensor == reference_data).any(where=condition)
     assert result.child
     assert isinstance(result.data_subjects, DataSubjectArray)
@@ -998,7 +1052,94 @@ def test_all(
     assert result.data_subjects.shape == (1, reference_tensor.shape[0])
     assert (result.data_subjects == ishan).any()
 
-    condition = list(np.random.choice(a=[False, True], size=(reference_data.shape[0])))
+    condition = list(
+        np.random.choice(a=[False, True], size=(reference_data.shape[0] - 1))
+    )
+    condition.append(
+        True
+    )  # If condition = [False, False, False ... False], this test will fail
     result = (reference_tensor == reference_data).all(where=condition)
     assert result.child
     assert isinstance(result.data_subjects, DataSubjectArray)
+
+
+def test_std(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = GammaTensor(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.std()
+    assert result.child == reference_data.std()
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data
+
+    result = tensor.std(axis=1)
+    assert (result.child == reference_data.std(axis=1)).all()
+    assert (result.child >= result.min_vals.data).all()
+    assert (result.child <= result.max_vals.data).all()
+
+
+def test_trace(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = GammaTensor(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.trace()
+    assert result.child == reference_data.trace()
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data
+
+    result = tensor.trace(offset=1)
+    assert result.child == reference_data.trace(offset=1)
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data
+
+
+def test_max(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = GammaTensor(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.max()
+    assert result.child == reference_data.max()
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data
+
+
+def test_min(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = GammaTensor(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.min()
+    assert result.child == reference_data.min()
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data

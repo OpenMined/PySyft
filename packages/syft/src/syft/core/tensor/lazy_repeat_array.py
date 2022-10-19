@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any
 from typing import Dict
 from typing import Iterable
-from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Tuple
@@ -180,7 +179,7 @@ class lazyrepeatarray:
 
         # raise Exception("not sure how to do this yet")
 
-    def zeros_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
+    def zeros_like(self, *args: Any, **kwargs: Any) -> lazyrepeatarray:
         res = np.array(np.zeros_like(self.to_numpy(), *args, **kwargs))
         return lazyrepeatarray(data=res, shape=res.shape)
 
@@ -281,11 +280,11 @@ class lazyrepeatarray:
     def size(self) -> int:
         return np.prod(self.shape)
 
-    def sum(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
+    def sum(self, *args: Any, **kwargs: Any) -> lazyrepeatarray:
         res = np.array(self.to_numpy().sum(*args, **kwargs))
         return lazyrepeatarray(data=res, shape=res.shape)
 
-    def ones_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
+    def ones_like(self, *args: Any, **kwargs: Any) -> lazyrepeatarray:
         res = np.array(np.ones_like(self.to_numpy(), *args, **kwargs))
         return lazyrepeatarray(data=res, shape=res.shape)
 
@@ -332,7 +331,7 @@ class lazyrepeatarray:
         return self <= other
 
     def concatenate(
-        self, other: lazyrepeatarray, *args: List[Any], **kwargs: Dict[str, Any]
+        self, other: lazyrepeatarray, *args: Any, **kwargs: Any
     ) -> lazyrepeatarray:
         if not isinstance(other, lazyrepeatarray):
             raise NotImplementedError
@@ -364,7 +363,7 @@ class lazyrepeatarray:
     def any(self) -> bool:
         return self.data.any()
 
-    def transpose(self, *args: List[Any], **kwargs: Dict[str, Any]) -> lazyrepeatarray:
+    def transpose(self, *args: Any, **kwargs: Any) -> lazyrepeatarray:
         dummy_res = self.to_numpy().transpose(*args, **kwargs)
         return lazyrepeatarray(
             data=self.data.transpose(*args, **kwargs), shape=dummy_res.shape
@@ -378,6 +377,8 @@ def compute_min_max(
     x_max_vals: lazyrepeatarray,
     other: Union[PhiTensor, int, float, np.ndarray],
     op_str: str,
+    *args: Any,
+    **kwargs: Dict[Any, Any],
 ) -> Tuple[lazyrepeatarray, lazyrepeatarray]:
     min_vals: lazyrepeatarray
     max_vals: lazyrepeatarray
@@ -420,6 +421,43 @@ def compute_min_max(
     elif op_str == "sum":
         min_vals = lazyrepeatarray(data=np.array(x_min_vals.sum(axis=None)), shape=())
         max_vals = lazyrepeatarray(data=np.array(x_max_vals.sum(axis=None)), shape=())
+    elif op_str == "__pos__":
+        min_vals = x_min_vals
+        max_vals = x_max_vals
+    elif op_str == "trace":
+        # NOTE: This is potentially expensive
+        min_val_data = x_min_vals.to_numpy().trace(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=min_val_data, shape=min_val_data.shape)
+        max_val_data = x_max_vals.to_numpy().trace(*args, **kwargs)
+        max_vals = lazyrepeatarray(data=max_val_data, shape=max_val_data.shape)
+    elif op_str == "repeat":
+        dummy_res = np.empty(x_min_vals.shape).repeat(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=x_min_vals.data.min(), shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(data=x_max_vals.data.max(), shape=dummy_res.shape)
+    elif op_str == "min":
+        dummy_res = np.empty(x_min_vals.shape).min(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
+    elif op_str == "max":
+        dummy_res = np.empty(x_min_vals.shape).max(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
+    elif op_str == "ones_like":
+        min_vals = x_min_vals.ones_like(*args, **kwargs)
+        max_vals = x_max_vals.ones_like(*args, **kwargs)
+    elif op_str == "copy":
+        min_vals = x_min_vals.copy(*args, **kwargs)  # type: ignore
+        max_vals = x_max_vals.copy(*args, **kwargs)  # type: ignore
+    elif op_str == "__pow__":
+        if x_min_vals.data <= 0 <= x_max_vals.data:
+            # If data is in range [-5, 5], it's possible the minimum is 0 and not (-5)^2
+            min_data = min(0, (x_min_vals.data.__pow__(*args, **kwargs)).min())
+        else:
+            min_data = x_min_vals.data.__pow__(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=min_data, shape=x_min_vals.shape)
+        max_vals = lazyrepeatarray(
+            data=x_max_vals.data.__pow__(*args, **kwargs), shape=x_max_vals.shape
+        )
     else:
         raise ValueError(f"Invaid Operation for LazyRepeatArray: {op_str}")
 
