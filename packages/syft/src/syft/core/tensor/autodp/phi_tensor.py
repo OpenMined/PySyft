@@ -1365,7 +1365,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=self.child.copy(order=order),
             min_vals=self.min_vals.copy(order=order),
             max_vals=self.max_vals.copy(order=order),
-            data_subjects=self.data_subjects.copy(),
+            data_subjects=self.data_subjects.copy(order=order),
         )
 
     def take(
@@ -1376,12 +1376,14 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         mode: str = "raise",
     ) -> PhiTensor:
         """Take elements from an array along an axis."""
-        out_child = self.child.take(indices, axis=axis, mode=mode)
+        out_child = self.child.take(indices, axis=axis, mode=mode, out=out)
         return PhiTensor(
             child=out_child,
             min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
             max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
-            data_subjects=self.data_subjects.take(indices, axis=axis, mode=mode),
+            data_subjects=self.data_subjects.take(
+                indices, axis=axis, mode=mode, out=out
+            ),
         )
 
     def put(

@@ -3105,15 +3105,18 @@ class GammaTensor:
         indices: ArrayLike,
         axis: Optional[int] = None,
         mode: str = "raise",
+        out: Optional[np.ndarray] = None,
     ) -> GammaTensor:
         """Take elements from an array along an axis."""
         output_state = dict()
         output_state[self.id] = self
-        out_child = self.child.take(indices, axis=axis, mode=mode)
+        out_child = self.child.take(indices, axis=axis, mode=mode, out=out)
 
         return GammaTensor(
             child=out_child,
-            data_subjects=self.data_subjects.take(indices, axis=axis, mode=mode),
+            data_subjects=self.data_subjects.take(
+                indices, axis=axis, mode=mode, out=out
+            ),
             min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
             max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
             func_str=GAMMA_TENSOR_OP.TAKE.value,
