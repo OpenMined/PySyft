@@ -1252,7 +1252,6 @@ def test_or(
     assert (result.child == (reference_data | False)).all()
 
 
-<<<<<<< HEAD
 def test_take(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1391,7 +1390,6 @@ def test_argmin(
     assert (
         result.data_subjects == reference_tensor.data_subjects[reference_result]
     ).all()
-=======
 def test_cumsum(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1544,7 +1542,6 @@ def test_floordiv(
     assert (result.child == (reference_data // array)).all()
     assert (result.child >= result.min_vals.data).all()
     assert (result.child <= result.max_vals.data).all()
->>>>>>> dev
 
 
 def test_trace(
