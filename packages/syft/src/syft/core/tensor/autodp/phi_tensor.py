@@ -1757,6 +1757,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         deduct_epsilon_for_user: Callable,
         ledger: DataSubjectLedger,
         sigma: float,
+        private: bool,
     ) -> AcceptableSimpleType:
         print("PUBLISHING TO GAMMA:")
         print(self.child)
@@ -1770,6 +1771,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             deduct_epsilon_for_user=deduct_epsilon_for_user,
             ledger=ledger,
             sigma=sigma,
+            private=private,
         )
 
         print("Final Values", res)
