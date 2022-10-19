@@ -672,6 +672,20 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
                 The default is to compute the variance of the flattened array.
                 If this is a tuple of ints, a variance is performed over multiple axes, instead of a single axis or all
                 the axes as before.
+
+            ddof: int, optional
+                “Delta Degrees of Freedom”: the divisor used in the calculation is N - ddof, where N represents the
+                number of elements. By default ddof is zero.
+
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the var method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+
+            where: array_like of bool, optional
+                Elements to include in the variance. See reduce for details.
         """
         return self._apply_self_tensor_op("var", *args, **kwargs)
 
@@ -1804,6 +1818,20 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 The default is to compute the variance of the flattened array.
                 If this is a tuple of ints, a variance is performed over multiple axes, instead of a single axis or all
                 the axes as before.
+
+            ddof: int, optional
+                “Delta Degrees of Freedom”: the divisor used in the calculation is N - ddof, where N represents the
+                number of elements. By default ddof is zero.
+
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the var method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+
+            where: array_like of bool, optional
+                Elements to include in the variance. See reduce for details.
         """
 
         result = self.child.var(axis, **kwargs)
