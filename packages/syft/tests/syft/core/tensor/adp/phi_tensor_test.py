@@ -48,7 +48,7 @@ def dims() -> int:
 
 
 @pytest.fixture
-def dsa(dims) -> DataSubjectArray:
+def dsa(dims: int) -> DataSubjectArray:
     return DataSubjectArray.from_objs(np.ones((dims, dims)))
 
 
@@ -1253,6 +1253,29 @@ def test_cumsum(
 
     result = tensor.cumsum(axis=1)
     assert (result.child == reference_data.cumsum(axis=1)).all()
+    assert (result.child >= result.min_vals.data).all()
+    assert (result.child <= result.max_vals.data).all()
+
+
+def test_std(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = PT(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.std()
+    assert result.child == reference_data.std()
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data
+
+    result = tensor.std(axis=1)
+    assert (result.child == reference_data.std(axis=1)).all()
     assert (result.child >= result.min_vals.data).all()
     assert (result.child <= result.max_vals.data).all()
 
