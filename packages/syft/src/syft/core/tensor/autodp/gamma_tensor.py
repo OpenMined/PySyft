@@ -3112,7 +3112,7 @@ class GammaTensor:
             )
         else:
             raise NotImplementedError(
-                f"floordiv not supported between PhiTensor & {type(other)}"
+                f"floordiv not supported between GammaTensor & {type(other)}"
             )
 
     def trace(self, offset: int = 0, axis1: int = 0, axis2: int = 1) -> GammaTensor:

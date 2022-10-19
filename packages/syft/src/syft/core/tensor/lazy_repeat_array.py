@@ -188,10 +188,28 @@ class lazyrepeatarray:
         return lazyrepeatarray(data=res, shape=self.shape)
 
     def __truediv__(self, other: Any) -> lazyrepeatarray:
-        return lazyrepeatarray(data=self.data / other, shape=self.shape)
+        if is_acceptable_simple_type(other):
+            return self.__class__(data=self.data / other, shape=self.shape)
+
+        if not is_broadcastable(self.shape, other.shape):
+            raise Exception(
+                "Cannot broadcast arrays with shapes for LazyRepeatArray FloorDiv:"
+                + f" {self.shape} & {other.shape}"
+            )
+        else:
+            return self.__class__(data=self.data / other.data, shape=self.shape)
 
     def __floordiv__(self, other: Any) -> lazyrepeatarray:
-        return lazyrepeatarray(data=self.data // other, shape=self.shape)
+        if is_acceptable_simple_type(other):
+            return self.__class__(data=self.data // other, shape=self.shape)
+
+        if not is_broadcastable(self.shape, other.shape):
+            raise Exception(
+                "Cannot broadcast arrays with shapes for LazyRepeatArray FloorDiv:"
+                + f" {self.shape} & {other.shape}"
+            )
+        else:
+            return self.__class__(data=self.data // other.data, shape=self.shape)
 
     def __rmatmul__(self, other: Any) -> lazyrepeatarray:
         """
