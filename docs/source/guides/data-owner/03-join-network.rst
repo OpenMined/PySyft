@@ -87,20 +87,20 @@ Now we come to the main part, let's fetch all the publicly visible and available
    # run this cell
    sy.networks
 
-You can now choose the network that suits best your needs. We chose '**UN PET Lab Network**', but you can change it with any other available.
+You can now choose the network that suits best your needs. We chose **OpenMined Testnet**, but you can change it with any other available network.
 
 Step 4: Connect to the Network
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 We will now connect to a network. You can connect to it with authorized credentials or as a Guest user. If you connect as a Guest user, you get limited privileges.
 
-Connecting to a network can be done via it's name or it's URL.
+Connecting to a network can be done via it's name/URL/index in the above list.
 
 ::
 
    In:
 
    # run this cell
-   network_client = sy.networks["UN PET Lab Network"]
+   network_client = sy.networks[0]
 
 On successful login, the `network_client` will contain an authenticated client to the network.
 
@@ -121,11 +121,10 @@ Since we have not applied our domain yet, it should not be visible on the output
 
 Step 6: Apply our Domain to the Network
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-In this step, we will be joining the OpenMined network. Applying to a network will allow us to be listed as part of the Network.
-When we apply to join a network, the Domain client connects to the Network node through a secured VPN protocol (if a protocol is not established, then it will try to establish one) and then sends a request to join the Network.
+In this step, we will be joining the OpenMined network. If our application to join gets accepted, our domain will then be listed among the available domains on this network which will help Data Scientists find and work from our datasets.
 
 .. note::
-   This step might have multiple retries before actually getting connected, so please do not worry!
+   This step might have multiple retries before actually getting connected, so please don’t worry!
 
 The below command will apply our domain node to the network we just authenticated with
 
