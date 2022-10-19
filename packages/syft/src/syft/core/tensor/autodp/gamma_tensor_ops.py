@@ -53,6 +53,8 @@ class GAMMA_TENSOR_OP(Enum):
     ARGPARTITION = "argpartition"
     MOD = "mod"
     # CONJ = "conj"
+    SWAPAXES = "swapaxes"
+    NONZERO = "nonzero"
     PROD = "prod"
     POWER = "power"
     TRACE = "trace"
