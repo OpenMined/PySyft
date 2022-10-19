@@ -187,6 +187,30 @@ class lazyrepeatarray:
         res = (1 / self.data) * other
         return lazyrepeatarray(data=res, shape=self.shape)
 
+    def __truediv__(self, other: Any) -> lazyrepeatarray:
+        if is_acceptable_simple_type(other):
+            return self.__class__(data=self.data / other, shape=self.shape)
+
+        if not is_broadcastable(self.shape, other.shape):
+            raise Exception(
+                "Cannot broadcast arrays with shapes for LazyRepeatArray FloorDiv:"
+                + f" {self.shape} & {other.shape}"
+            )
+        else:
+            return self.__class__(data=self.data / other.data, shape=self.shape)
+
+    def __floordiv__(self, other: Any) -> lazyrepeatarray:
+        if is_acceptable_simple_type(other):
+            return self.__class__(data=self.data // other, shape=self.shape)
+
+        if not is_broadcastable(self.shape, other.shape):
+            raise Exception(
+                "Cannot broadcast arrays with shapes for LazyRepeatArray FloorDiv:"
+                + f" {self.shape} & {other.shape}"
+            )
+        else:
+            return self.__class__(data=self.data // other.data, shape=self.shape)
+
     def __rmatmul__(self, other: Any) -> lazyrepeatarray:
         """
         THIS MIGHT LOOK LIKE COPY-PASTED CODE!
@@ -383,7 +407,13 @@ def compute_min_max(
     min_vals: lazyrepeatarray
     max_vals: lazyrepeatarray
 
-    if op_str in ["__add__", "__matmul__", "__rmatmul__"]:
+    if op_str in [
+        "__add__",
+        "__matmul__",
+        "__rmatmul__",
+        "__truediv__",
+        "__floordiv__",
+    ]:
         if is_acceptable_simple_type(other):
             min_vals = getattr(x_min_vals, op_str)(other)
             max_vals = getattr(x_max_vals, op_str)(other)
@@ -475,6 +505,17 @@ def compute_min_max(
             data=-((highest**num).max()), shape=dummy_res.shape
         )
         max_vals = lazyrepeatarray(data=(highest**num).max(), shape=dummy_res.shape)
+    elif op_str == "prod":
+        dummy_res = np.empty(x_min_vals.shape).prod(*args, **kwargs)
+        min_vals = lazyrepeatarray(
+            data=x_min_vals.data ** (np.prod(x_min_vals.shape) / dummy_res.size),
+            shape=dummy_res.shape,
+        )
+        max_vals = lazyrepeatarray(
+            data=x_max_vals.data ** (np.prod(x_max_vals.shape) / dummy_res.size),
+            shape=dummy_res.shape,
+        )
+
     else:
         raise ValueError(f"Invaid Operation for LazyRepeatArray: {op_str}")
 
