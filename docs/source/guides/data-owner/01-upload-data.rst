@@ -137,6 +137,11 @@ our data subjects. ``Data Subjects`` are the entities whose privacy
 we want to protect. So, in this case, they are the individual 
 family members.
 
+.. note:: 
+   In order to protect the ``privacy`` of the people within our dataset we 
+   first need to specify who those people are. In this example we have 
+   created a column with unique ``ID’s`` for each person in this dataset.
+
 Important steps:
 ^^^^^^^^^^^^^^^^
 
@@ -146,8 +151,10 @@ Important steps:
 -  when defining min and max values, we are actually defining the
    ``theoretical`` amount of values that could be learned about that
    aspect.
--  in our case, the minimum age can be ``0``; theoretically, the maximum
-   age can be ``100`` or the oldest living person to date.
+-  To help obscure the variables someone may learn about these datasets 
+   we then need to set an appropriate ``min_val`` to the ``lowest`` possible persons age ``(0)``, 
+   and the ``max_val`` to the ``highest`` possible (mostly) persons age ``(100)``.
+
 
 ::
 
