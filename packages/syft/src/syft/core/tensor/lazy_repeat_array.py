@@ -445,7 +445,7 @@ def compute_min_max(
     elif op_str == "sum":
         min_vals = lazyrepeatarray(data=np.array(x_min_vals.sum(axis=None)), shape=())
         max_vals = lazyrepeatarray(data=np.array(x_max_vals.sum(axis=None)), shape=())
-    elif op_str in ["__pos__", "sort", "transpose"]:
+    elif op_str in ["__pos__", "sort"]:
         min_vals = x_min_vals
         max_vals = x_max_vals
     elif op_str == "trace":
@@ -471,7 +471,7 @@ def compute_min_max(
         max_vals = x_max_vals.ones_like(*args, **kwargs)
     elif op_str == "copy":
         min_vals = x_min_vals.copy(*args, **kwargs)  # type: ignore
-        max_vals = x_max_vals.copy(*args, **kwargs)  # type: ignore 
+        max_vals = x_max_vals.copy(*args, **kwargs)  # type: ignore
     elif op_str == "__round__":
         min_vals = lazyrepeatarray(
             data=x_min_vals.data.round(*args, **kwargs), shape=x_min_vals.shape

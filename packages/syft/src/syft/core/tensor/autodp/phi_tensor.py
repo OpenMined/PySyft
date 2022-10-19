@@ -1290,24 +1290,6 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             public_dtype=public_dtype,
         )
 
-    def transpose(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
-        """
-        Return the transpose of an array or minimum along an axis.
-
-        Parameters
-            axis: None or int or tuple of ints, optional
-                Axis or axes along which to operate. By default, flattened input is used.
-                If this is a tuple of ints, the minimum is selected over multiple axes,
-                instead of a single axis or all the axes as before.
-
-        Returns
-            a_min: PhiTensor
-                Minimum of a.
-                If axis is None, the result is a scalar value.
-                If axis is given, the result is an array of dimension a.ndim - 1.
-        """
-        return self._apply_self_tensor_op("transpose", *args, **kwargs)
-
 
 @implements(TensorWrappedPhiTensorPointer, np.ones_like)
 def ones_like(
