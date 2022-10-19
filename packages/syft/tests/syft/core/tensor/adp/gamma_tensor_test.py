@@ -1194,7 +1194,7 @@ def test_put(
     assert result.func_str == GAMMA_TENSOR_OP.PUT.value
     assert reference_tensor == result.sources[reference_tensor.id]
     flatten_results = result.child.flat[indices:]
-    assert (flatten_results[: indices + no_values] == new_values).all()
+    assert (flatten_results[:no_values] == new_values).all()
 
 
 def test_abs(
