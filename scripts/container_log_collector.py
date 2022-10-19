@@ -1,6 +1,7 @@
 # stdlib
 import os
 import subprocess
+import platform
 
 # Make a log directory
 cwd = os.getcwd()
@@ -35,8 +36,21 @@ for container in containers:
         "docker logs " + container, shell=True
     ).decode("utf-8")
 
-    # Store container logs in a file
+    # Store container logs in a file if windows
     with open(f"{job_path}{container_name}.log", "w") as f:
         f.write(container_logs)
         f.close()
+
+    # Store logs based on the OS
+    if platform.system() == "Linux":
+        # Store container logs in a file if linux
+        with open(f"{job_path}{container_name}.log", "w") as f:
+            f.write(container_logs)
+            f.close()
+    elif platform.system() == "Windows":
+        # Store container logs in a file if windows
+        container_name = container_name.replace("/","\\")
+        with open(f"{job_path}{container_name}.log", "w") as f:
+            f.write(container_logs)
+            f.close()
 print("============Log export completed for job: ", job_name)
