@@ -1698,9 +1698,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def nonzero(self) -> PhiTensor:
         """Return the indices of the elements that are non-zero."""
         out_child = np.array(np.nonzero(self.child))
-        no_axis = len(out_child.shape)
-        selected_data_subjects = np.repeat(self.data_subjects[self.child != 0], no_axis)
-        out_data_subjects = selected_data_subjects.reshape(-1, no_axis).transpose()
+        no_axis = len(self.child.shape)
+        out_data_subjects = np.repeat(
+            np.array([self.data_subjects[self.child != 0]]), no_axis, axis=0
+        )
         return PhiTensor(
             child=out_child,
             data_subjects=out_data_subjects,

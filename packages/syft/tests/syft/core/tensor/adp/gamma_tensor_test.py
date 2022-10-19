@@ -1068,6 +1068,8 @@ def test_nonzero(
     ).all()
     assert result.min_vals.shape == reference_result.shape
     assert result.max_vals.shape == reference_result.shape
+
+
 def test_trace(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,

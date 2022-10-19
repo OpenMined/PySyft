@@ -2724,9 +2724,10 @@ class GammaTensor:
         output_state[self.id] = self
 
         out_child = np.array(np.nonzero(self.child))
-        no_axis = len(out_child.shape)
-        selected_data_subjects = np.repeat(self.data_subjects[self.child != 0], no_axis)
-        out_data_subjects = selected_data_subjects.reshape(-1, no_axis).transpose()
+        no_axis = len(self.child.shape)
+        out_data_subjects = np.repeat(
+            np.array([self.data_subjects[self.child != 0]]), no_axis, axis=0
+        )
 
         min_vals = lazyrepeatarray(data=0, shape=out_child.shape)
         max_vals = lazyrepeatarray(data=max(self.child.shape), shape=out_child.shape)
