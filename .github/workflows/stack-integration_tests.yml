@@ -730,6 +730,11 @@ jobs:
         run: |
           docker rm `docker ps -aq` --force || true
           docker volume prune -f || true
+      - name: Get job url
+        if: always()
+        id: workflow_url
+        run: |
+          echo "::set-output name=workflow_url::$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
 
       - name: Job Report Status
         if: always()
@@ -738,9 +743,9 @@ jobs:
           status: ${{ job.status }}
           notify_when: 'failure'
           notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{workflow}* {status_message} in <{workflow_url|workflow}>'
-          footer: 'Link to Job {job}'
-          mention_users: 'U01LNCACY03'
+          message_format: '{emoji} *{job}* {status_message} in  ${{steps.workflow_url.outputs.workflow_url}}'
+          footer: 'Job is in {workflow}'
+          mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
           mention_users_when: 'failure,warnings'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
@@ -862,21 +867,20 @@ jobs:
       
       - name: Get job url
         if: always()
-        id: job_url
+        id: workflow_url
         run: |
-          echo "::set-output name=job_id::${{ job.job_id }}"
-          echo "::set-output name=job_url::$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs/${{ job.job_id }})"
+          echo "::set-output name=workflow_url::$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
 
       - name: Job Report Status
         if: always()
         uses: ravsamhq/notify-slack-action@v1
         with:
           status: ${{ job.status }}
-          notify_when: 'success,failure'
+          notify_when: 'failure'
           notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{workflow}* {status_message} in  ${{steps.job_url.outputs.job_url}}'
-          footer: 'Job is {job}'
-          mention_users: 'U01LNCACY03'
-          mention_users_when: 'success,failure,warnings'
+          message_format: '{emoji} *{job}* {status_message} in  ${{steps.workflow_url.outputs.workflow_url}}'
+          footer: 'Job is in {workflow}'
+          mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
+          mention_users_when: 'failure,warnings'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
