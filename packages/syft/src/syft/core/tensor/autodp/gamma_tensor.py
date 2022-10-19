@@ -865,6 +865,21 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
     
         return self._apply_self_tensor_op("transpose", *args, **kwargs)
 
+    def resize(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+    
+        return self._apply_self_tensor_op("resize", *args, **kwargs)
+
+    def reshape(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+    
+        return self._apply_self_tensor_op("reshape", *args, **kwargs)
 
     def exp(
         self,

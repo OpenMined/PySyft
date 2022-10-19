@@ -173,11 +173,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             max_vals=max_vals,
             client=self.client,
         )
-        print("GETS HERE")
-        print(f"MIN: {min_vals}, \nMAX: {max_vals}\n")
-        print(type(result))
-        # print(result)
-        
+
         # QUESTION can the id_at_location be None?
         result_id_at_location = getattr(result, "id_at_location", None)
         
@@ -234,11 +230,9 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             )
        
         if self.public_shape is not None and other_shape is not None:
-            print("GETS HERE2")
             result_public_shape =utils.get_shape(
                 op_str, self.public_shape, other_shape
             )
-        print("GETS HERE3")
         if self.public_dtype is None or other_dtype is None:
             if self.public_dtype != other_dtype:
                 raise ValueError(
@@ -246,12 +240,8 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
                 )
         result_public_dtype = self.public_dtype
 
-        print("GETS HERE4")
-
         result.public_shape = result_public_shape
         result.public_dtype = result_public_dtype
-
-        
 
         return result
 
@@ -364,6 +354,13 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
     def transpose(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
         return self._apply_self_tensor_op("transpose", *args, **kwargs)
 
+    def resize(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        return self._apply_self_tensor_op("resize", *args, **kwargs)
+
+    def reshape(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+       return self._apply_self_tensor_op("reshape", *args, **kwargs)
+
+   
     @staticmethod
     def _apply_op(
         self: TensorWrappedPhiTensorPointer,

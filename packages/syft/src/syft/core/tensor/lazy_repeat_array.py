@@ -492,6 +492,14 @@ def compute_min_max(
     elif op_str == "argsort":
         min_vals = x_min_vals * 0
         max_vals = x_max_vals * 0 + np.prod(x_max_vals.shape)
+    elif op_str == "resize":
+        dummy_res = np.empty(x_min_vals.shape).resize(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
+    elif op_str == "reshape":
+        dummy_res = np.empty(x_min_vals.shape).reshape(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
     else:
         raise ValueError(f"Invaid Operation for LazyRepeatArray: {op_str}")
 
