@@ -1076,6 +1076,29 @@ def test_all(
     assert isinstance(result.data_subjects, DataSubjectArray)
 
 
+def test_std(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = GammaTensor(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.std()
+    assert result.child == reference_data.std()
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data
+
+    result = tensor.std(axis=1)
+    assert (result.child == reference_data.std(axis=1)).all()
+    assert (result.child >= result.min_vals.data).all()
+    assert (result.child <= result.max_vals.data).all()
+
+
 def test_trace(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
