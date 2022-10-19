@@ -48,6 +48,8 @@ class GAMMA_TENSOR_OP(Enum):
     PUT = "put"
     ARGMAX = "argmax"
     ARGMIN = "argmin"
+    SWAPAXES = "swapaxes"
+    NONZERO = "nonzero"
     PROD = "prod"
     POWER = "power"
     TRACE = "trace"

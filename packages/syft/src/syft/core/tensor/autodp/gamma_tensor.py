@@ -2029,7 +2029,7 @@ class GammaTensor:
     def argmax(
         self,
         axis: Optional[int] = None,
-        keepdims: Optional[bool] = None,
+        keepdims: Optional[bool] = False,
     ) -> GammaTensor:
 
         output_state = dict()
@@ -2054,7 +2054,7 @@ class GammaTensor:
     def argmin(
         self,
         axis: Optional[int] = None,
-        keepdims: Optional[bool] = None,
+        keepdims: Optional[bool] = False,
     ) -> GammaTensor:
 
         output_state = dict()
@@ -2992,6 +2992,47 @@ class GammaTensor:
             max_vals=max_vals,
             func_str=GAMMA_TENSOR_OP.CLIP.value,
             sources=state,
+        )
+
+    def nonzero(self) -> GammaTensor:
+        output_state = dict()
+        output_state[self.id] = self
+
+        out_child = np.array(np.nonzero(self.child))
+        no_axis = len(self.child.shape)
+        out_data_subjects = np.repeat(
+            np.array([self.data_subjects[self.child != 0]]), no_axis, axis=0
+        )
+
+        min_vals = lazyrepeatarray(data=0, shape=out_child.shape)
+        max_vals = lazyrepeatarray(data=max(self.child.shape), shape=out_child.shape)
+
+        return GammaTensor(
+            child=out_child,
+            data_subjects=out_data_subjects,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            func_str=GAMMA_TENSOR_OP.NONZERO.value,
+            sources=output_state,
+        )
+
+    def swapaxes(self, axis1: int, axis2: int) -> GammaTensor:
+        output_state = dict()
+        output_state[self.id] = self
+
+        out_child = np.swapaxes(self.child, axis1, axis2)
+        data_subjects = np.swapaxes(self.data_subjects, axis1, axis2)
+
+        min_vals = lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape)
+        max_vals = lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape)
+
+        return GammaTensor(
+            child=out_child,
+            data_subjects=data_subjects,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            func_str=GAMMA_TENSOR_OP.SWAPAXES.value,
+            sources=output_state,
         )
 
     @staticmethod

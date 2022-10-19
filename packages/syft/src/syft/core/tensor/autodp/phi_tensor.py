@@ -1609,7 +1609,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def argmax(
         self,
         axis: Optional[int] = None,
-        keepdims: Optional[bool] = None,
+        keepdims: Optional[bool] = False,
     ) -> PhiTensor:
         output = np.argmax(self.child, axis=axis, keepdims=keepdims)
         if axis is None:
@@ -1627,7 +1627,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def argmin(
         self,
         axis: Optional[int] = None,
-        keepdims: Optional[bool] = None,
+        keepdims: Optional[bool] = False,
     ) -> PhiTensor:
         output = np.argmin(self.child, axis=axis, keepdims=keepdims)
         if axis is None:
@@ -1823,6 +1823,31 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         arg_result = self._argmax(axis=axis)
         shape = self.shape
         return np.unravel_index(arg_result, shape)
+
+    def swapaxes(self, axis1: int, axis2: int) -> PhiTensor:
+        """Interchange two axes of an array."""
+        out_child = np.swapaxes(self.child, axis1, axis2)
+        data_subjects = np.swapaxes(self.data_subjects, axis1, axis2)
+        return PhiTensor(
+            child=out_child,
+            data_subjects=data_subjects,
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
+        )
+
+    def nonzero(self) -> PhiTensor:
+        """Return the indices of the elements that are non-zero."""
+        out_child = np.array(np.nonzero(self.child))
+        no_axis = len(self.child.shape)
+        out_data_subjects = np.repeat(
+            np.array([self.data_subjects[self.child != 0]]), no_axis, axis=0
+        )
+        return PhiTensor(
+            child=out_child,
+            data_subjects=out_data_subjects,
+            min_vals=lazyrepeatarray(data=0, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=max(self.child.shape), shape=out_child.shape),
+        )
 
     def mean(
         self,
