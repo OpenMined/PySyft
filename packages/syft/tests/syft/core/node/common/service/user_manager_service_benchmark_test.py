@@ -1,5 +1,6 @@
 # stdlib
 import timeit
+from typing import Tuple
 
 # third party
 from faker import Faker
@@ -53,18 +54,27 @@ from syft.core.node.domain_interface import DomainInterface
 from syft.core.node.domain_service import DomainServiceClass
 
 
-def _create_dummy_user(faker: Faker, is_admin=False):
+def _create_dummy_user(
+    faker: Faker, domain: DomainInterface, is_admin: bool = False
+) -> Tuple[dict, VerifyKey]:
 
     # Create dummy user
+    private_key = SigningKey.generate()
+    verify_key = private_key.verify_key
+
+    # Check if generated email is already been used for another account previously registered.
+    email = faker.free_email()
+    while domain.users.contain(email=email):
+        email = faker.free_email()
+
     user = {
         "name": faker.name(),
-        "email": faker.free_email(),
+        "email": email,
         "password": faker.password(),
         "budget": faker.random.random() * 100,
         "role": 4 if is_admin else 1,
-        "private_key": "",
+        "private_key": private_key.encode(HexEncoder).decode("utf-8"),
     }
-    verify_key = SigningKey.generate().verify_key
 
     return user, verify_key
 
@@ -92,7 +102,7 @@ class TestCreateUserMessageBenchmarking:
         self.do_users = []
 
         # Create a Data Owner
-        user, verify_key = _create_dummy_user(faker, is_admin=True)
+        user, verify_key = _create_dummy_user(faker, domain, is_admin=True)
         user, verify_key = _signup_user(domain, user, verify_key)
         self.do_users.append((user, verify_key))
 
@@ -196,7 +206,7 @@ class TestGetUserMessageBenchmarking:
         self.do_users = []
 
         # Create a Data Owner
-        user, verify_key = _create_dummy_user(faker, is_admin=True)
+        user, verify_key = _create_dummy_user(faker, domain, is_admin=True)
         user, verify_key = _signup_user(domain, user, verify_key)
         self.do_users.append((user, verify_key))
 
@@ -280,14 +290,14 @@ class TestGetUsersMessageBenchmarking:
         self.do_users = []
 
         # Create a Data Owner
-        user, verify_key = _create_dummy_user(faker, is_admin=True)
+        user, verify_key = _create_dummy_user(faker, domain, is_admin=True)
         user, verify_key = _signup_user(domain, user, verify_key)
         self.do_users.append((user, verify_key))
 
         self.ds_users = []
         # Create two data scientist users
         for _ in range(2):
-            user, verify_key = _create_dummy_user(faker)
+            user, verify_key = _create_dummy_user(faker, domain)
             user, verify_key = _signup_user(domain, user, verify_key)
             self.ds_users.append((user, verify_key))
 
@@ -367,14 +377,14 @@ class TestUpdateUserMessageBenchmarking:
         self.do_users = []
 
         # Create a Data Owner
-        user, verify_key = _create_dummy_user(faker, is_admin=True)
+        user, verify_key = _create_dummy_user(faker, domain, is_admin=True)
         user, verify_key = _signup_user(domain, user, verify_key)
         self.do_users.append((user, verify_key))
 
         self.ds_users = []
         # Create two data scientist users
         for _ in range(2):
-            user, verify_key = _create_dummy_user(faker)
+            user, verify_key = _create_dummy_user(faker, domain)
             user, verify_key = _signup_user(domain, user, verify_key)
             self.ds_users.append((user, verify_key))
 
@@ -480,14 +490,14 @@ class TestDeleteUserMessageBenchmarking:
         self.do_users = []
 
         # Create a Data Owner
-        user, verify_key = _create_dummy_user(faker, is_admin=True)
+        user, verify_key = _create_dummy_user(faker, domain, is_admin=True)
         user, verify_key = _signup_user(domain, user, verify_key)
         self.do_users.append((user, verify_key))
 
         self.ds_users = []
         # Create two data scientist users
         for _ in range(2):
-            user, verify_key = _create_dummy_user(faker)
+            user, verify_key = _create_dummy_user(faker, domain)
             user, verify_key = _signup_user(domain, user, verify_key)
             self.ds_users.append((user, verify_key))
 
