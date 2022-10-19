@@ -660,6 +660,35 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         """
         return self._apply_self_tensor_op("repeat", *args, **kwargs)
 
+    def var(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Compute the variance along the specified axis of the array elements, a measure of the spread of a distribution.
+        The variance is computed for the flattened array by default, otherwise over the specified axis.
+
+        Parameters
+
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which the variance is computed.
+                The default is to compute the variance of the flattened array.
+                If this is a tuple of ints, a variance is performed over multiple axes, instead of a single axis or all
+                the axes as before.
+
+            ddof: int, optional
+                “Delta Degrees of Freedom”: the divisor used in the calculation is N - ddof, where N represents the
+                number of elements. By default ddof is zero.
+
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the var method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+
+            where: array_like of bool, optional
+                Elements to include in the variance. See reduce for details.
+        """
+        return self._apply_self_tensor_op("var", *args, **kwargs)
+
     def cumsum(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
         """
         Return the cumulative sum of the elements along a given axis.
@@ -773,7 +802,6 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.std"
         result: TensorWrappedPhiTensorPointer
         data_subjects = np.array(self.data_subjects.std(*args, **kwargs))
-
         result = TensorWrappedPhiTensorPointer(
             data_subjects=self.data_subjects,
             min_vals=lazyrepeatarray(data=0, shape=data_subjects.shape),
@@ -1770,7 +1798,49 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             data_subjects=self.data_subjects.std(axis, **kwargs),
             min_vals=lazyrepeatarray(data=np.array([0]), shape=result.shape),
             max_vals=lazyrepeatarray(
-                data=(self.max_vals.data - self.min_vals.data) / 2,
+                data=(self.max_vals.data - self.min_vals.data) / 2, shape=result.shape
+            ),
+        )
+
+    def var(
+        self,
+        axis: Optional[Union[int, Tuple[int, ...]]] = None,
+        **kwargs: Any,
+    ) -> PhiTensor:
+        """
+        Compute the variance along the specified axis of the array elements, a measure of the spread of a distribution.
+        The variance is computed for the flattened array by default, otherwise over the specified axis.
+
+        Parameters
+
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which the variance is computed.
+                The default is to compute the variance of the flattened array.
+                If this is a tuple of ints, a variance is performed over multiple axes, instead of a single axis or all
+                the axes as before.
+
+            ddof: int, optional
+                “Delta Degrees of Freedom”: the divisor used in the calculation is N - ddof, where N represents the
+                number of elements. By default ddof is zero.
+
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the var method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+
+            where: array_like of bool, optional
+                Elements to include in the variance. See reduce for details.
+        """
+
+        result = self.child.var(axis, **kwargs)
+        return PhiTensor(
+            child=result,
+            data_subjects=self.data_subjects.var(axis, **kwargs),
+            min_vals=lazyrepeatarray(data=0, shape=result.shape),
+            max_vals=lazyrepeatarray(
+                data=0.25 * (self.max_vals.data - self.min_vals.data) ** 2,
                 shape=result.shape,
             ),
         )
