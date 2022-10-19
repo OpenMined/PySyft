@@ -675,63 +675,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             where: array_like of bool, optional
                 Elements to include in the product. See reduce for details.
         """
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.prod"
-        data_subjects = np.array(self.data_subjects).prod(*args, **kwargs)  # type: ignore
-
-        result = TensorWrappedGammaTensorPointer(
-            data_subjects=data_subjects,
-            min_vals=lazyrepeatarray(
-                data=self.min_vals.data
-                ** (np.array(self.data_subjects).size / data_subjects.size),
-                shape=data_subjects.shape,
-            ),
-            max_vals=lazyrepeatarray(
-                data=self.max_vals.data
-                ** (np.array(self.data_subjects).size / data_subjects.size),
-                shape=data_subjects.shape,
-            ),
-            client=self.client,
-        )
-
-        # QUESTION can the id_at_location be None?
-        result_id_at_location = getattr(result, "id_at_location", None)
-
-        if result_id_at_location is not None:
-            # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
-
-            # then we convert anything which isnt a pointer into a pointer
-            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args,
-                kwargs=downcast_kwargs,
-                client=self.client,
-                gc_enabled=False,
-            )
-
-            cmd = RunClassMethodAction(
-                path=attr_path_and_name,
-                _self=self,
-                args=pointer_args,
-                kwargs=pointer_kwargs,
-                id_at_location=result_id_at_location,
-                address=self.client.address,
-            )
-            self.client.send_immediate_msg_without_reply(msg=cmd)
-
-        inherit_tags(
-            attr_path_and_name=attr_path_and_name,
-            result=result,
-            self_obj=self,
-            args=[],
-            kwargs={},
-        )
-        result.public_shape = data_subjects.shape
-        result.public_dtype = self.public_dtype
-
-        return result
+        return self._apply_self_tensor_op("prod", *args, **kwargs)
 
     def __pow__(
         self,
