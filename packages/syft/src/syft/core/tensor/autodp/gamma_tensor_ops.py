@@ -49,6 +49,7 @@ class GAMMA_TENSOR_OP(Enum):
     XOR = "bitwise_xor"
     ROUND = "round"
     SORT = "sort"
+    ARGSORT = "argsort"
     # Our Methods
     RECIPROCAL = "reciprocal"
     FLATTEN_C = "flatten_c"

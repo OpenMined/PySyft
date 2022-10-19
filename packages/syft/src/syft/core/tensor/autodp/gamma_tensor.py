@@ -3363,6 +3363,43 @@ class GammaTensor:
             sources=sources,
         )
 
+    def argsort(self, axis: Optional[int] = -1) -> GammaTensor:
+        """
+        Returns the indices that would sort an array.
+
+        Perform an indirect sort along the given axis using the algorithm specified by the kind keyword.
+        It returns an array of indices of the same shape as a that index data along the given axis in sorted order.
+
+        Parameters
+            axis: int or None, optional
+                Axis along which to sort. The default is -1 (the last axis). If None, the flattened array is used.
+            kind: {‘quicksort’, ‘mergesort’, ‘heapsort’, ‘stable’}, optional
+                Sorting algorithm. The default is ‘quicksort’. Note that both ‘stable’ and ‘mergesort’ use timsort
+                under the covers and, in general, the actual implementation will vary with data type. The ‘mergesort’
+                option is retained for backwards compatibility.
+            order: str or list of str, optional
+                When a is an array with fields defined, this argument specifies which fields to compare 1st, 2nd, etc.
+                A single field can be specified as a string, and not all fields need be specified, but unspecified
+                fields will still be used, in the order in which they come up in the dtype, to break ties.
+
+        Returns
+            index_array: ndarray, int
+                Array of indices that sort a along the specified axis. If a is one-dimensional, a[index_array] yields a
+                sorted a. More generally, np.take_along_axis(a, index_array, axis=axis) always yields the sorted a,
+                irrespective of dimensionality.
+        """
+        sources = dict()
+        sources[self.id] = self
+        result = self.child.argsort(axis)
+        return GammaTensor(
+            child=result,
+            data_subjects=self.data_subjects.take(result),
+            min_vals=lazyrepeatarray(data=0, shape=self.shape),
+            max_vals=lazyrepeatarray(data=self.child.size, shape=self.shape),
+            func_str=GAMMA_TENSOR_OP.ARGSORT.value,
+            sources=sources,
+        )
+
     @property
     def shape(self) -> Tuple[int, ...]:
         return self.child.shape

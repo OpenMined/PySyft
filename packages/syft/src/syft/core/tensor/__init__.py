@@ -133,7 +133,7 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ),
         ("syft.core.tensor.tensor.Tensor.argmax", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.argmin", "syft.core.tensor.tensor.Tensor"),
-        # ("syft.core.tensor.tensor.Tensor.argsort", "syft.core.tensor.tensor.Tensor"),
+        ("syft.core.tensor.tensor.Tensor.argsort", "syft.core.tensor.tensor.Tensor"),
         # # ("syft.core.tensor.tensor.Tensor.backward", "syft.lib.python.Bool"),
         # # ("syft.core.tensor.tensor.Tensor.child", "syft.core.tensor.tensor.Tensor"),  # obj level
         ("syft.core.tensor.tensor.Tensor.clip", "syft.core.tensor.tensor.Tensor"),

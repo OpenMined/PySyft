@@ -313,16 +313,13 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
                 return result
             dummy_res = getattr(dummy_res, op_str)(*args, **kwargs)
         elif hasattr(np, op_str):
-            print(2)
             dummy_res = getattr(np, op_str)(dummy_res, *args, *kwargs)
         elif op_str in ["__round__"]:
-            print("We made it")
             result.public_shape = self.public_shape
             result.public_dtype = self.public_dtype
             return result
         else:
             raise ValueError(f"Invalid Numpy Operation: {op_str} for Pointer")
-        print(op_str)
 
         result.public_shape = dummy_res.shape
         result.public_dtype = dummy_res.dtype
@@ -892,6 +889,33 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         return self._apply_self_tensor_op("max", *args, **kwargs)
 
     def sort(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Return a sorted copy of an array.
+
+        Parameters
+
+            a: array_like
+                Array to be sorted.
+
+            axis: int or None, optional
+                Axis along which to sort. If None, the array is flattened before sorting.
+                The default is -1, which sorts along the last axis.
+
+            kind{‘quicksort’, ‘mergesort’, ‘heapsort’, ‘stable’}, optional
+                Sorting algorithm. The default is ‘quicksort’.
+                Note that both ‘stable’ and ‘mergesort’ use timsort or radix sort under the covers and, in general,
+                the actual implementation will vary with data type. The ‘mergesort’ option is retained for backwards
+                compatibility.
+
+                Changed in version 1.15.0.: The ‘stable’ option was added.
+
+            order: str or list of str, optional
+                When a is an array with fields defined, this argument specifies which fields to compare first, second,
+                etc. A single field can be specified as a string, and not all fields need be specified, but unspecified
+                 fields will still be used, in the order in which they come up in the dtype, to break ties.
+
+        Please see docs here: https://numpy.org/doc/stable/reference/generated/numpy.sort.html
+        """
         return self._apply_self_tensor_op("sort", *args, **kwargs)
 
     def argsort(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
@@ -2210,7 +2234,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         result = self.child.argsort(axis)
         return PhiTensor(
             child=result,
-            data_subjects=self.data_subjects.take(np.unravel_index(result, self.shape)),
+            data_subjects=self.data_subjects.take(result),
             min_vals=lazyrepeatarray(data=0, shape=self.shape),
             max_vals=lazyrepeatarray(data=self.child.size, shape=self.shape),
         )

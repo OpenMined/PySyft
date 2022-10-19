@@ -115,7 +115,6 @@ class lazyrepeatarray:
         if self.data.shape == other.data.shape:
             return self.__class__(data=self.data + other.data, shape=self.shape)
         else:
-            print("Lazy Repeat adding with mismatched shapes")
             return self.__class__(data=self.data + other.data, shape=self.shape)
 
     def __sub__(self, other: Any) -> lazyrepeatarray:
@@ -135,7 +134,6 @@ class lazyrepeatarray:
         if self.data.shape == other.data.shape:
             return self.__class__(data=self.data - other.data, shape=self.shape)
         else:
-            print("Lazy Repeat adding with mismatched shapes")
             return self.__class__(data=self.data - other.data, shape=self.shape)
 
     def __mul__(self, other: Any) -> lazyrepeatarray:
@@ -490,6 +488,9 @@ def compute_min_max(
         max_vals = lazyrepeatarray(
             data=x_max_vals.data.__pow__(*args, **kwargs), shape=x_max_vals.shape
         )
+    elif op_str == "argsort":
+        min_vals = x_min_vals * 0
+        max_vals = x_max_vals * 0 + np.prod(x_max_vals.shape)
     else:
         raise ValueError(f"Invaid Operation for LazyRepeatArray: {op_str}")
 
