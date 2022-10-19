@@ -38,6 +38,7 @@ class GAMMA_TENSOR_OP(Enum):
     CUMSUM = "cumsum"
     CUMPROD = "cumprod"
     STD = "std"
+    VAR = "var"
     DOT = "dot"
     SQRT = "sqrt"
     ABS = "abs"

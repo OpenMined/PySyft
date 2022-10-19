@@ -1121,6 +1121,29 @@ def test_all(
     assert isinstance(result.data_subjects, DataSubjectArray)
 
 
+def test_var(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = GammaTensor(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.var()
+    assert result.child == reference_data.var()
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data
+
+    result = tensor.var(axis=1)
+    assert (result.child == reference_data.var(axis=1)).all()
+    assert (result.child >= result.min_vals.data).all()
+    assert (result.child <= result.max_vals.data).all()
+
+
 def test_cumsum(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1130,9 +1153,10 @@ def test_cumsum(
     tensor = GammaTensor(
         child=reference_data,
         data_subjects=dsa,
-        max_vals=upper_bound,
         min_vals=lower_bound,
+        max_vals=upper_bound,
     )
+
     result = tensor.cumsum()
     assert (result.child == reference_data.cumsum()).all()
     assert (result.child >= result.min_vals.data).all()

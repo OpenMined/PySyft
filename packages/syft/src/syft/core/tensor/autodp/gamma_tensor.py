@@ -644,12 +644,45 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         """
         return self._apply_self_tensor_op(op_str="__pos__")
 
-    def cumsum(
+    def var(
         self,
         *args: Any,
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
         """
+        Compute the variance along the specified axis of the array elements, a measure of the spread of a distribution.
+        The variance is computed for the flattened array by default, otherwise over the specified axis.
+
+        Parameters
+
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which the variance is computed.
+                The default is to compute the variance of the flattened array.
+                If this is a tuple of ints, a variance is performed over multiple axes, instead of a single axis or all
+                the axes as before.
+
+            ddof: int, optional
+                “Delta Degrees of Freedom”: the divisor used in the calculation is N - ddof, where N represents the
+                number of elements. By default ddof is zero.
+
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the var method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+
+            where: array_like of bool, optional
+                Elements to include in the variance. See reduce for details.
+        """
+        return self._apply_self_tensor_op("var", *args, **kwargs)
+
+    def cumsum(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """ "
         Return the cumulative sum of the elements along a given axis.
 
         Parameters
@@ -689,27 +722,21 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
         """
         Return the product of array elements over a given axis.
-
         Parameters
             axis: None or int or tuple of ints, optional
                 Axis or axes along which a product is performed.
                 The default, axis=None, will calculate the product of all the elements in the input array.
                 If axis is negative it counts from the last to the first axis.
-
                 If axis is a tuple of ints, a product is performed on all of the axes specified in the tuple instead of
                 a single axis or all the axes as before.
-
             keepdims: bool, optional
                 If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
                 With this option, the result will broadcast correctly against the input array.
-
                 If the default value is passed, then keepdims will not be passed through to the prod method of
                 sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
                 implement keepdims any exceptions will be raised.
-
             initial: scalar, optional
                 The starting value for this product. See reduce for details.
-
             where: array_like of bool, optional
                 Elements to include in the product. See reduce for details.
         """
@@ -790,7 +817,6 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         """
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.std"
         data_subjects = np.array(self.data_subjects).std(*args, **kwargs)  # type: ignore
-
         result = TensorWrappedGammaTensorPointer(
             data_subjects=data_subjects,
             min_vals=lazyrepeatarray(data=0, shape=data_subjects.shape),
@@ -2672,6 +2698,61 @@ class GammaTensor:
             max_vals=lazyrepeatarray(data=(maxv - minv) / 2, shape=result.shape),
             sources=output_state,
             func_str=GAMMA_TENSOR_OP.STD.value,
+        )
+
+    def var(
+        self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs: Any
+    ) -> GammaTensor:
+        """
+        Compute the variance along the specified axis of the array elements, a measure of the spread of a distribution.
+        The variance is computed for the flattened array by default, otherwise over the specified axis.
+
+        Parameters
+
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which the variance is computed.
+                The default is to compute the variance of the flattened array.
+                If this is a tuple of ints, a variance is performed over multiple axes, instead of a single axis or all
+                the axes as before.
+
+            ddof: int, optional
+                “Delta Degrees of Freedom”: the divisor used in the calculation is N - ddof, where N represents the
+                number of elements. By default ddof is zero.
+
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the var method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+
+            where: array_like of bool, optional
+                Elements to include in the variance. See reduce for details.
+        """
+
+        output_state = dict()
+        output_state[self.id] = self
+
+        result = self.child.var(axis, **kwargs)
+        minv = (
+            self.min_vals.data
+            if isinstance(self.min_vals, lazyrepeatarray)
+            else self.min_vals
+        )
+        maxv = (
+            self.max_vals.data
+            if isinstance(self.max_vals, lazyrepeatarray)
+            else self.max_vals
+        )
+        return GammaTensor(
+            child=result,
+            data_subjects=self.data_subjects.var(axis, **kwargs),
+            min_vals=lazyrepeatarray(data=0, shape=result.shape),
+            max_vals=lazyrepeatarray(
+                data=0.25 * (maxv - minv) ** 2, shape=result.shape
+            ),
+            sources=output_state,
+            func_str=GAMMA_TENSOR_OP.VAR.value,
         )
 
     def dot(self, other: Union[np.ndarray, GammaTensor]) -> GammaTensor:
