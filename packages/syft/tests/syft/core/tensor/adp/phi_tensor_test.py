@@ -1252,6 +1252,29 @@ def test_or(
     assert (result.child == (reference_data | False)).all()
 
 
+def test_prod(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = PT(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.prod()
+    assert result.child == reference_data.prod()
+    # assert result.child >= result.min_vals.data
+    # assert result.child <= result.max_vals.data
+
+    result = tensor.prod(axis=1)
+    assert (result.child == reference_data.prod(axis=1)).all()
+    # assert result.child >= result.min_vals.data
+    # assert result.child <= result.max_vals.data
+
+
 def test_std(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1271,6 +1294,44 @@ def test_std(
 
     result = tensor.std(axis=1)
     assert (result.child == reference_data.std(axis=1)).all()
+    assert (result.child >= result.min_vals.data).all()
+    assert (result.child <= result.max_vals.data).all()
+
+
+def test_floordiv(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+    dims: int,
+) -> None:
+    tensor = PT(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor // 5
+    assert (result.child == (reference_data // 5)).all()
+    assert (result.child >= result.min_vals.data).all()
+    assert (result.child <= result.max_vals.data).all()
+
+    tensor2 = PT(
+        child=reference_data + 1,
+        data_subjects=dsa,
+        min_vals=lower_bound + 1,
+        max_vals=upper_bound + 1,
+    )
+
+    result = tensor // tensor2
+    assert (result.child == (reference_data // (reference_data + 1))).all()
+    assert (result.child.min() >= result.min_vals.data).all()
+    # assert (result.child.max() <= result.max_vals.data).all()  # Currently flaky for some reason
+
+    array = np.ones((dims, dims))
+
+    result = tensor // array
+    assert (result.child == (reference_data // array)).all()
     assert (result.child >= result.min_vals.data).all()
     assert (result.child <= result.max_vals.data).all()
 

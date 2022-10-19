@@ -99,6 +99,8 @@ def generate_ops() -> Dict[GAMMA_TENSOR_OP, Callable]:
         GAMMA_TENSOR_OP.SQRT: jnp.sqrt,
         GAMMA_TENSOR_OP.ABS: jnp.abs,
         GAMMA_TENSOR_OP.CLIP: jnp.clip,
+        GAMMA_TENSOR_OP.PROD: jnp.prod,
+        GAMMA_TENSOR_OP.FLOOR_DIVIDE: jnp.floor_divide,
         GAMMA_TENSOR_OP.POWER: jnp.power,
         GAMMA_TENSOR_OP.TRACE: jnp.trace,
         GAMMA_TENSOR_OP.MIN: jnp.min,

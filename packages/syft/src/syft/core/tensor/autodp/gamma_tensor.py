@@ -592,6 +592,22 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         """
         return TensorWrappedGammaTensorPointer._apply_op(self, other, "__truediv__")
 
+    def __floordiv__(
+        self,
+        other: Union[
+            TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the "floodiv" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__floordiv__")
+
     def sum(
         self,
         *args: Any,
@@ -627,6 +643,39 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             Union[TensorWrappedGammaTensorPointer] : Result of the operation.
         """
         return self._apply_self_tensor_op(op_str="__pos__")
+
+    def prod(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """
+        Return the product of array elements over a given axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which a product is performed.
+                The default, axis=None, will calculate the product of all the elements in the input array.
+                If axis is negative it counts from the last to the first axis.
+
+                If axis is a tuple of ints, a product is performed on all of the axes specified in the tuple instead of
+                a single axis or all the axes as before.
+
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+
+                If the default value is passed, then keepdims will not be passed through to the prod method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+
+            initial: scalar, optional
+                The starting value for this product. See reduce for details.
+
+            where: array_like of bool, optional
+                Elements to include in the product. See reduce for details.
+        """
+        return self._apply_self_tensor_op("prod", *args, **kwargs)
 
     def __pow__(
         self,
@@ -689,6 +738,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             keepdims: bool, optional
                 If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
                 With this option, the result will broadcast correctly against the input array.
+
                 If the default value is passed, then keepdims will not be passed through to the std method of
                 sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
                 implement keepdims any exceptions will be raised.
@@ -2972,6 +3022,100 @@ class GammaTensor:
             func_str=GAMMA_TENSOR_OP.REPEAT.value,
             sources=sources,
         )
+
+    def prod(self, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> GammaTensor:
+        """
+        Return the product of array elements over a given axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which a product is performed.
+                The default, axis=None, will calculate the product of all the elements in the input array.
+                If axis is negative it counts from the last to the first axis.
+
+                If axis is a tuple of ints, a product is performed on all of the axes specified in the tuple instead of
+                a single axis or all the axes as before.
+
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the prod method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+
+            initial: scalar, optional
+                The starting value for this product. See reduce for details.
+
+            where: array_like of bool, optional
+                Elements to include in the product. See reduce for details.
+        """
+        result = self.child.prod(axis=axis)
+        sources = dict()
+        sources[self.id] = self
+        return GammaTensor(
+            child=result,
+            data_subjects=self.data_subjects.prod(axis),
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data ** (self.child.size / result.size),
+                shape=result.shape,
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data ** (self.child.size / result.size),
+                shape=result.shape,
+            ),
+            func_str=GAMMA_TENSOR_OP.PROD.value,
+            sources=sources,
+        )
+
+    def __floordiv__(self, other: Any) -> GammaTensor:
+        """
+        return self // value.
+        """
+        # relative
+        from .phi_tensor import PhiTensor
+
+        sources = dict()
+        sources[self.id] = self
+
+        if isinstance(other, PhiTensor):
+            return self // other.gamma
+        elif isinstance(other, GammaTensor):
+            sources[other.id] = other
+
+            min_min = self.min_vals.data // other.min_vals.data
+            min_max = self.min_vals.data // other.max_vals.data
+            max_min = self.max_vals.data // other.min_vals.data
+            max_max = self.max_vals.data // other.max_vals.data
+
+            _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+
+            return GammaTensor(
+                child=self.child // other.child,
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
+                max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
+                func_str=GAMMA_TENSOR_OP.FLOOR_DIVIDE.value,
+                sources=sources,
+            )
+        elif is_acceptable_simple_type(other):
+            sources["0"] = other
+            return GammaTensor(
+                child=self.child // other,
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(
+                    data=self.min_vals.data // other, shape=self.min_vals.shape
+                ),
+                max_vals=lazyrepeatarray(
+                    data=self.max_vals.data // other, shape=self.max_vals.shape
+                ),
+                func_str=GAMMA_TENSOR_OP.FLOOR_DIVIDE.value,
+                sources=sources,
+            )
+        else:
+            raise NotImplementedError(
+                f"floordiv not supported between GammaTensor & {type(other)}"
+            )
 
     def trace(self, offset: int = 0, axis1: int = 0, axis2: int = 1) -> GammaTensor:
         """
