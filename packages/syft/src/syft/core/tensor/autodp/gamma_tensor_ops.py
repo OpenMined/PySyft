@@ -43,6 +43,8 @@ class GAMMA_TENSOR_OP(Enum):
     SQRT = "sqrt"
     ABS = "abs"
     CLIP = "clip"
+    SWAPAXES = "swapaxes"
+    NONZERO = "nonzero"
     PROD = "prod"
     POWER = "power"
     TRACE = "trace"
