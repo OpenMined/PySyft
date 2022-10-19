@@ -20,13 +20,12 @@ Joining a Network
    hagrid quickstart data-owner
 
 
-A Network Node is a node that connects different domains to a broader base of data scientists (also known as a network's members). It is a server which exists outside of any data owner's institution, providing services to the network of data owners and data scientists.
+A Network Node is a node that connects different domains to a broader base of data scientists (also known as a network's members). It is a server which exists outside of any data owner's institution, providing search & discovery, VPN, and authentication services to the network of data owners and data scientists.
 
-In short, a Network node provides a secure interface between its cohorts or Domains and its members or Data Scientists.
+.. note::
+   Data is only stored on the separate Domain Servers. Network Nodes do not contain data, they simply provide an extra layer of services to Domain Nodes and Data Science users.
 
-Let us give an example: assume you are in a hospital and the hospital has different cancer related datasets hosted on their domain. The hospital's data owners now want to increase the visibility and searchability of these datasets, so that more and more researches and doctors can utilise these datasets and advance our understanding and diagnosis of cancer.
-
-However, due to privacy concerns, they do not want to provide access to random actiors, such as sharing the URL of the domain with everyone. In order to tackle this privacy issue and make the dataset still accessible, the domain owner can join a Network Node (for example the one hosted by WHO) hence opening the accessibility of their datasets to a much larger audience in a private and secure manner.
+Let us give an example: assume you are in a hospital and the hospital has different cancer-related datasets hosted on their domain. The hospital now wants to increase the research impact their datasets can have but does not want to do so at the cost of risking a privacy leak nor at the risk of moving their data. By joining a network (for example one hosted by WHO) a Domain Owner can increase the searchability of their datasets to appropriate audiences without those datasets needing to leave the Domain servers.
 
 In today's tutorial we will learn how to join a network and apply our domain to it.
  
@@ -39,7 +38,7 @@ Before you can create user accounts on your domain, you have to first:
 * `Login to your Domain Node`
 
 .. note:: 
-   The above prerequisite step is covered in an existing tutorial `How to deploy a Domain Node`. Please execute those steps before implementing this tutorial.
+   The above prerequisite step is covered in an existing tutorial `How to deploy a Domain Node <https://openmined.github.io/PySyft/guides/data-owner/00-deploy-domain.html>`_. Please execute those steps before implementing this tutorial.
 
 📒 Overview of this tutorial
 --------------------------------
@@ -51,7 +50,7 @@ Before you can create user accounts on your domain, you have to first:
 
 Step 1: Import Syft
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-We import syft to use our methods and functions in the further steps.
+Syft is the main library our Domain servers run off of, so to start we will need to import Syft so that our methods in later steps will work.
 ::
 
    In:
@@ -78,7 +77,8 @@ Once you have imported syft, and have your domain node up along with it's creden
 
 Step 3: Fetch all Available Networks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Now we come to the main part, let's fetch all the publicly visible and available networks. This is how one can discover and interact with existing Network nodes. The below command will fetch all the networks as at the time of running.
+Now we’ve come to the main part, let’s take a look at what networks are available for us to join.
+The command below will fetch all of the currently available networks, this list may change as more networks get created or as they go on and offline.
 
 ::
 
@@ -87,11 +87,11 @@ Now we come to the main part, let's fetch all the publicly visible and available
    # run this cell
    sy.networks
 
-You can now choose the network that suits best your needs. We chose **OpenMined Testnet**, but you can change it with any other available network.
+You can now choose the network that suits best your needs. After looking at the available networks, let’s choose a network that best fits our domain. For this tutorial we are going to choose the **OpenMined** network.
 
 Step 4: Connect to the Network
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-We will now connect to a network. You can connect to it with authorized credentials or as a Guest user. If you connect as a Guest user, you get limited privileges.
+In future iterations of PyGrid Network nodes will be able to have domains join as Members or as Guests, but in today’s current iteration of PyGrid all domains start out by joining as Guests. To apply to a network as a guest we first need to connect to the network server.
 
 Connecting to a network can be done via it's name/URL/index in the above list.
 
@@ -138,7 +138,7 @@ The below command will apply our domain node to the network we just authenticate
 
 Step 7: Verify our Domain on the same Network
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-In this step, we will verify that we have succesfully joined the network node or not. We will simply do this by listing the domains on this network and we should be able to see our domain too now!
+In this step, we will verify whether we have successfully joined the network node or not. We will do this by listing the domains available on this network and seeing whether our domain appears.
 
 ::
 
@@ -149,7 +149,7 @@ In this step, we will verify that we have succesfully joined the network node or
 
 If you can see your domain's name here, then hoorah!
 
-If you havn't, do not worry, go through the above steps and see if you did not miss any and are following exactly the way you are supposed to!
+If you haven't, don’t worry, go through the above steps and see if you missed anything.
 
 Step 8: Verify the VPN status
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
