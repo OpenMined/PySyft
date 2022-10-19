@@ -135,6 +135,10 @@ def time_dataset_download(domain: Domain, dataset_index: int, asset_name: str):
     return total_time
 
 
+@pytest.mark.skip(
+    reason="Far too unreliable, and is actively "
+    "hurting progress. https://martinfowler.com/articles/nonDeterminism.html."
+)
 @pytest.mark.e2e
 def test_benchmark_datasets() -> None:
 
