@@ -62,6 +62,7 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
                     get_budget_for_user=node.users.get_budget_for_user,
                     ledger=ledger,
                     sigma=msg.sigma,
+                    private=msg.private,
                 )
 
                 # print("PublishScalarsService:44: SUCCESS: publish_object.publish()")
