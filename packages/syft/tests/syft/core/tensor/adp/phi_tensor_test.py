@@ -1296,7 +1296,7 @@ def test_put(
 
     result = reference_tensor.put(range(indices, indices + no_values), new_values)
     flatten_results = result.child.flat[indices:]
-    assert (flatten_results[: indices + no_values] == new_values).all()
+    assert (flatten_results[:no_values] == new_values).all()
 
 
 def test_abs(
