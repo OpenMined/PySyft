@@ -46,6 +46,8 @@ class GAMMA_TENSOR_OP(Enum):
     COPY = "copy"
     TAKE = "take"
     PUT = "put"
+    SWAPAXES = "swapaxes"
+    NONZERO = "nonzero"
     PROD = "prod"
     POWER = "power"
     TRACE = "trace"

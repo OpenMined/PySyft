@@ -105,6 +105,8 @@ def generate_ops() -> Dict[GAMMA_TENSOR_OP, Callable]:
         GAMMA_TENSOR_OP.COPY: jnp.copy,
         GAMMA_TENSOR_OP.TAKE: jnp.take,
         GAMMA_TENSOR_OP.PUT: jnp.put,
+        GAMMA_TENSOR_OP.SWAPAXES: jnp.swapaxes,
+        GAMMA_TENSOR_OP.NONZERO: jnp.nonzero,
         GAMMA_TENSOR_OP.PROD: jnp.prod,
         GAMMA_TENSOR_OP.FLOOR_DIVIDE: jnp.floor_divide,
         GAMMA_TENSOR_OP.POWER: jnp.power,

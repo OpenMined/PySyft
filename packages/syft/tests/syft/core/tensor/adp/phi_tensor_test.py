@@ -1274,6 +1274,53 @@ def test_take(
     assert (result.data_subjects == reference_tensor.data_subjects[indices, :]).all()
 
 
+def test_swapaxes(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array(reference_data),
+        data_subjects=np.array(ishan),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    result = reference_tensor.swapaxes(0, 1)
+    reference_result = reference_tensor.child.swapaxes(0, 1)
+    assert (result.child == reference_result).all()
+    assert (result.data_subjects == reference_tensor.data_subjects.swapaxes(0, 1)).all()
+    assert result.min_vals.shape == reference_result.shape
+    assert result.max_vals.shape == reference_result.shape
+
+
+def test_nonzero(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array(reference_data),
+        data_subjects=np.array(ishan),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    result = reference_tensor.nonzero()
+    reference_result = np.array(reference_tensor.child.nonzero())
+    assert (result.child == reference_result).all()
+    assert (
+        result.data_subjects
+        == reference_tensor.data_subjects[reference_tensor.child != 0]
+    ).all()
+    assert result.min_vals.shape == reference_result.shape
+    assert result.max_vals.shape == reference_result.shape
+
+
 def test_put(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
