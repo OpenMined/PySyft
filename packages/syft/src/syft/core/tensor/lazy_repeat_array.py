@@ -203,6 +203,30 @@ class lazyrepeatarray:
         res = (1 / self.data) * other
         return lazyrepeatarray(data=res, shape=self.shape)
 
+    def __truediv__(self, other: Any) -> lazyrepeatarray:
+        if is_acceptable_simple_type(other):
+            return self.__class__(data=self.data / other, shape=self.shape)
+
+        if not is_broadcastable(self.shape, other.shape):
+            raise Exception(
+                "Cannot broadcast arrays with shapes for LazyRepeatArray FloorDiv:"
+                + f" {self.shape} & {other.shape}"
+            )
+        else:
+            return self.__class__(data=self.data / other.data, shape=self.shape)
+
+    def __floordiv__(self, other: Any) -> lazyrepeatarray:
+        if is_acceptable_simple_type(other):
+            return self.__class__(data=self.data // other, shape=self.shape)
+
+        if not is_broadcastable(self.shape, other.shape):
+            raise Exception(
+                "Cannot broadcast arrays with shapes for LazyRepeatArray FloorDiv:"
+                + f" {self.shape} & {other.shape}"
+            )
+        else:
+            return self.__class__(data=self.data // other.data, shape=self.shape)
+
     def __rmatmul__(self, other: Any) -> lazyrepeatarray:
         """
         THIS MIGHT LOOK LIKE COPY-PASTED CODE!
@@ -399,7 +423,13 @@ def compute_min_max(
     min_vals: lazyrepeatarray
     max_vals: lazyrepeatarray
 
-    if op_str in ["__add__", "__matmul__", "__rmatmul__", "__lshift__", "__rshift__"]:
+    if op_str in [
+        "__add__",
+        "__matmul__",
+        "__rmatmul__",
+        "__truediv__",
+        "__floordiv__",
+    ]:
         if is_acceptable_simple_type(other):
             min_vals = getattr(x_min_vals, op_str)(other)
             max_vals = getattr(x_max_vals, op_str)(other)
@@ -492,6 +522,40 @@ def compute_min_max(
     elif op_str == "argsort":
         min_vals = x_min_vals * 0
         max_vals = x_max_vals * 0 + np.prod(x_max_vals.shape)
+    elif op_str == "cumsum":
+        dummy_res = np.empty(x_min_vals.shape).cumsum(*args, **kwargs)
+        num = np.ones(x_min_vals.shape).cumsum(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=x_min_vals.data * num, shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(data=x_max_vals.data * num, shape=dummy_res.shape)
+    elif op_str == "cumprod":
+        dummy_res = np.empty(x_min_vals.shape).cumprod(*args, **kwargs)
+        num = np.ones(x_min_vals.shape).cumsum(*args, **kwargs)
+        if abs(x_max_vals.data) >= abs(x_min_vals.data):
+            highest = abs(x_max_vals.data)
+        else:
+            highest = abs(x_min_vals.data)
+
+        min_vals = lazyrepeatarray(
+            data=-((highest**num).max()), shape=dummy_res.shape
+        )
+        max_vals = lazyrepeatarray(data=(highest**num).max(), shape=dummy_res.shape)
+    elif op_str == "prod":
+        dummy_res = np.empty(x_min_vals.shape).prod(*args, **kwargs)
+        min_vals = lazyrepeatarray(
+            data=x_min_vals.data ** (np.prod(x_min_vals.shape) / dummy_res.size),
+            shape=dummy_res.shape,
+        )
+        max_vals = lazyrepeatarray(
+            data=x_max_vals.data ** (np.prod(x_max_vals.shape) / dummy_res.size),
+            shape=dummy_res.shape,
+        )
+    elif op_str == "var":
+        dummy_res = np.empty(x_min_vals.shape).var(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=0, shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(
+            data=0.25 * (x_max_vals.data - x_min_vals.data) ** 2,
+            shape=dummy_res.shape,
+        )
     elif op_str == "resize":
         dummy_res = np.empty(x_min_vals.shape).resize(*args, **kwargs)
         min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
@@ -500,7 +564,5 @@ def compute_min_max(
         dummy_res = np.empty(x_min_vals.shape).reshape(*args, **kwargs)
         min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
         max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
-    else:
-        raise ValueError(f"Invaid Operation for LazyRepeatArray: {op_str}")
 
-    return (min_vals, max_vals)
+    return min_vals, max_vals

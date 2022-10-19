@@ -592,6 +592,22 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         """
         return TensorWrappedGammaTensorPointer._apply_op(self, other, "__truediv__")
 
+    def __floordiv__(
+        self,
+        other: Union[
+            TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the "floodiv" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__floordiv__")
+
     def sum(
         self,
         *args: Any,
@@ -627,6 +643,104 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             Union[TensorWrappedGammaTensorPointer] : Result of the operation.
         """
         return self._apply_self_tensor_op(op_str="__pos__")
+
+    def var(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """
+        Compute the variance along the specified axis of the array elements, a measure of the spread of a distribution.
+        The variance is computed for the flattened array by default, otherwise over the specified axis.
+
+        Parameters
+
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which the variance is computed.
+                The default is to compute the variance of the flattened array.
+                If this is a tuple of ints, a variance is performed over multiple axes, instead of a single axis or all
+                the axes as before.
+
+            ddof: int, optional
+                “Delta Degrees of Freedom”: the divisor used in the calculation is N - ddof, where N represents the
+                number of elements. By default ddof is zero.
+
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the var method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+
+            where: array_like of bool, optional
+                Elements to include in the variance. See reduce for details.
+        """
+        return self._apply_self_tensor_op("var", *args, **kwargs)
+
+    def cumsum(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """ "
+        Return the cumulative sum of the elements along a given axis.
+
+        Parameters
+            axis: int, optional
+                Axis along which the cumulative sum is computed. The default (None) is to compute the cumsum over the
+                flattened array.
+        Returns
+            cumsum_along_axis: PhiTensor
+                A new array holding the result is returned. The result has the same size as input, and the same shape as
+                 a if axis is not None or a is 1-d.
+        """
+        return self._apply_self_tensor_op("cumsum", *args, **kwargs)
+
+    def cumprod(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """
+        Return the cumulative product of the elements along a given axis.
+
+        Parameters
+            axis: int, optional
+                Axis along which the cumulative product is computed. The default (None) is to compute the cumprod over
+                the flattened array.
+        Returns
+            cumprod_along_axis: PhiTensor
+                A new array holding the result is returned. The result has the same size as input, and the same shape as
+                 a if axis is not None or a is 1-d.
+        """
+        return self._apply_self_tensor_op("cumprod", *args, **kwargs)
+
+    def prod(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """
+        Return the product of array elements over a given axis.
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which a product is performed.
+                The default, axis=None, will calculate the product of all the elements in the input array.
+                If axis is negative it counts from the last to the first axis.
+                If axis is a tuple of ints, a product is performed on all of the axes specified in the tuple instead of
+                a single axis or all the axes as before.
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the prod method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+            initial: scalar, optional
+                The starting value for this product. See reduce for details.
+            where: array_like of bool, optional
+                Elements to include in the product. See reduce for details.
+        """
+        return self._apply_self_tensor_op("prod", *args, **kwargs)
 
     def __pow__(
         self,
@@ -689,6 +803,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             keepdims: bool, optional
                 If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
                 With this option, the result will broadcast correctly against the input array.
+
                 If the default value is passed, then keepdims will not be passed through to the std method of
                 sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
                 implement keepdims any exceptions will be raised.
@@ -702,7 +817,6 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         """
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.std"
         data_subjects = np.array(self.data_subjects).std(*args, **kwargs)  # type: ignore
-
         result = TensorWrappedGammaTensorPointer(
             data_subjects=data_subjects,
             min_vals=lazyrepeatarray(data=0, shape=data_subjects.shape),
@@ -2618,6 +2732,61 @@ class GammaTensor:
             func_str=GAMMA_TENSOR_OP.STD.value,
         )
 
+    def var(
+        self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs: Any
+    ) -> GammaTensor:
+        """
+        Compute the variance along the specified axis of the array elements, a measure of the spread of a distribution.
+        The variance is computed for the flattened array by default, otherwise over the specified axis.
+
+        Parameters
+
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which the variance is computed.
+                The default is to compute the variance of the flattened array.
+                If this is a tuple of ints, a variance is performed over multiple axes, instead of a single axis or all
+                the axes as before.
+
+            ddof: int, optional
+                “Delta Degrees of Freedom”: the divisor used in the calculation is N - ddof, where N represents the
+                number of elements. By default ddof is zero.
+
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the var method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+
+            where: array_like of bool, optional
+                Elements to include in the variance. See reduce for details.
+        """
+
+        output_state = dict()
+        output_state[self.id] = self
+
+        result = self.child.var(axis, **kwargs)
+        minv = (
+            self.min_vals.data
+            if isinstance(self.min_vals, lazyrepeatarray)
+            else self.min_vals
+        )
+        maxv = (
+            self.max_vals.data
+            if isinstance(self.max_vals, lazyrepeatarray)
+            else self.max_vals
+        )
+        return GammaTensor(
+            child=result,
+            data_subjects=self.data_subjects.var(axis, **kwargs),
+            min_vals=lazyrepeatarray(data=0, shape=result.shape),
+            max_vals=lazyrepeatarray(
+                data=0.25 * (maxv - minv) ** 2, shape=result.shape
+            ),
+            sources=output_state,
+            func_str=GAMMA_TENSOR_OP.VAR.value,
+        )
+
     def dot(self, other: Union[np.ndarray, GammaTensor]) -> GammaTensor:
         # TODO: These bounds might not be super tight- if min,max = [-1, 1], there might be a dot product
         # such that the minimum value should be 0
@@ -2775,6 +2944,47 @@ class GammaTensor:
             sources=state,
         )
 
+    def nonzero(self) -> GammaTensor:
+        output_state = dict()
+        output_state[self.id] = self
+
+        out_child = np.array(np.nonzero(self.child))
+        no_axis = len(self.child.shape)
+        out_data_subjects = np.repeat(
+            np.array([self.data_subjects[self.child != 0]]), no_axis, axis=0
+        )
+
+        min_vals = lazyrepeatarray(data=0, shape=out_child.shape)
+        max_vals = lazyrepeatarray(data=max(self.child.shape), shape=out_child.shape)
+
+        return GammaTensor(
+            child=out_child,
+            data_subjects=out_data_subjects,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            func_str=GAMMA_TENSOR_OP.NONZERO.value,
+            sources=output_state,
+        )
+
+    def swapaxes(self, axis1: int, axis2: int) -> GammaTensor:
+        output_state = dict()
+        output_state[self.id] = self
+
+        out_child = np.swapaxes(self.child, axis1, axis2)
+        data_subjects = np.swapaxes(self.data_subjects, axis1, axis2)
+
+        min_vals = lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape)
+        max_vals = lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape)
+
+        return GammaTensor(
+            child=out_child,
+            data_subjects=data_subjects,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            func_str=GAMMA_TENSOR_OP.SWAPAXES.value,
+            sources=output_state,
+        )
+
     @staticmethod
     def convert_dsl(state: dict, new_state: Optional[dict] = None) -> Dict:
         if new_state is None:
@@ -2808,6 +3018,7 @@ class GammaTensor:
         deduct_epsilon_for_user: Callable,
         ledger: DataSubjectLedger,
         sigma: float,
+        private: bool,
     ) -> np.ndarray:
 
         if (
@@ -2822,6 +3033,7 @@ class GammaTensor:
             deduct_epsilon_for_user=deduct_epsilon_for_user,
             sigma=sigma,
             is_linear=self.is_linear,
+            private=private,
         )
 
     # def expand_dims(self, axis: int) -> GammaTensor:
@@ -3002,6 +3214,170 @@ class GammaTensor:
             func_str=GAMMA_TENSOR_OP.REPEAT.value,
             sources=sources,
         )
+
+    def cumsum(
+        self,
+        axis: Optional[int] = None,
+    ) -> GammaTensor:
+        """
+        Return the cumulative sum of the elements along a given axis.
+
+        Parameters
+            axis: int, optional
+                Axis along which the cumulative sum is computed. The default (None) is to compute the cumsum over the
+                flattened array.
+        Returns
+            cumsum_along_axis: GammaTensor
+                A new array holding the result is returned. The result has the same size as input, and the same shape as
+                 a if axis is not None or a is 1-d.
+        """
+        result = self.child.cumsum(axis=axis)
+        num = np.ones_like(self.child).cumsum(axis=axis)
+
+        sources = dict()
+        sources[self.id] = self
+
+        return GammaTensor(
+            child=result,
+            data_subjects=self.data_subjects.cumsum(axis=axis),
+            min_vals=lazyrepeatarray(
+                data=(self.min_vals.data * num).min(), shape=result.shape
+            ),
+            max_vals=lazyrepeatarray(
+                data=(self.max_vals.data * num).max(), shape=result.shape
+            ),
+            func_str=GAMMA_TENSOR_OP.CUMSUM.value,
+            sources=sources,
+        )
+
+    def cumprod(
+        self,
+        axis: Optional[int] = None,
+    ) -> GammaTensor:
+        """
+        Return the cumulative product of the elements along a given axis.
+
+        Parameters
+            axis: int, optional
+                Axis along which the cumulative product is computed. The default (None) is to compute the cumprod over
+                the flattened array.
+        Returns
+            cumprod_along_axis: GammaTensor
+                A new array holding the result is returned. The result has the same size as input, and the same shape as
+                 a if axis is not None or a is 1-d.
+        """
+        result = self.child.cumprod(axis=axis)
+        num = np.ones_like(self.child).cumsum(axis=axis)
+        if abs(self.max_vals.data) >= (self.min_vals.data):
+            highest = abs(self.max_vals.data)
+        else:
+            highest = abs(self.min_vals.data)
+
+        sources = dict()
+        sources[self.id] = self
+
+        return GammaTensor(
+            child=result,
+            data_subjects=self.data_subjects.cumprod(axis=axis),
+            min_vals=lazyrepeatarray(data=-(highest**num).min(), shape=result.shape),
+            max_vals=lazyrepeatarray(data=(highest**num).max(), shape=result.shape),
+            func_str=GAMMA_TENSOR_OP.CUMPROD.value,
+            sources=sources,
+        )
+
+    def prod(self, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> GammaTensor:
+        """
+        Return the product of array elements over a given axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which a product is performed.
+                The default, axis=None, will calculate the product of all the elements in the input array.
+                If axis is negative it counts from the last to the first axis.
+
+                If axis is a tuple of ints, a product is performed on all of the axes specified in the tuple instead of
+                a single axis or all the axes as before.
+
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the prod method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+
+            initial: scalar, optional
+                The starting value for this product. See reduce for details.
+
+            where: array_like of bool, optional
+                Elements to include in the product. See reduce for details.
+        """
+        result = self.child.prod(axis=axis)
+        sources = dict()
+        sources[self.id] = self
+        return GammaTensor(
+            child=result,
+            data_subjects=self.data_subjects.prod(axis),
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data ** (self.child.size / result.size),
+                shape=result.shape,
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data ** (self.child.size / result.size),
+                shape=result.shape,
+            ),
+            func_str=GAMMA_TENSOR_OP.PROD.value,
+            sources=sources,
+        )
+
+    def __floordiv__(self, other: Any) -> GammaTensor:
+        """
+        return self // value.
+        """
+        # relative
+        from .phi_tensor import PhiTensor
+
+        sources = dict()
+        sources[self.id] = self
+
+        if isinstance(other, PhiTensor):
+            return self // other.gamma
+        elif isinstance(other, GammaTensor):
+            sources[other.id] = other
+
+            min_min = self.min_vals.data // other.min_vals.data
+            min_max = self.min_vals.data // other.max_vals.data
+            max_min = self.max_vals.data // other.min_vals.data
+            max_max = self.max_vals.data // other.max_vals.data
+
+            _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+
+            return GammaTensor(
+                child=self.child // other.child,
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
+                max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
+                func_str=GAMMA_TENSOR_OP.FLOOR_DIVIDE.value,
+                sources=sources,
+            )
+        elif is_acceptable_simple_type(other):
+            sources["0"] = other
+            return GammaTensor(
+                child=self.child // other,
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(
+                    data=self.min_vals.data // other, shape=self.min_vals.shape
+                ),
+                max_vals=lazyrepeatarray(
+                    data=self.max_vals.data // other, shape=self.max_vals.shape
+                ),
+                func_str=GAMMA_TENSOR_OP.FLOOR_DIVIDE.value,
+                sources=sources,
+            )
+        else:
+            raise NotImplementedError(
+                f"floordiv not supported between GammaTensor & {type(other)}"
+            )
 
     def trace(self, offset: int = 0, axis1: int = 0, axis2: int = 1) -> GammaTensor:
         """

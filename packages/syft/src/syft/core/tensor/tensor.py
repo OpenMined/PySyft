@@ -609,9 +609,14 @@ class Tensor(
         deduct_epsilon_for_user: Callable,
         ledger: DataSubjectLedger,
         sigma: float,
+        private: bool,
     ) -> Any:
         return self.child.publish(
-            get_budget_for_user, deduct_epsilon_for_user, ledger, sigma
+            get_budget_for_user,
+            deduct_epsilon_for_user,
+            ledger,
+            sigma,
+            private=private,
         )
 
     # TODO: remove after moving private compare to sharetensor level
