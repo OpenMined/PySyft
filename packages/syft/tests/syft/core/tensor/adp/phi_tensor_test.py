@@ -48,8 +48,8 @@ def dims() -> int:
 
 
 @pytest.fixture
-def pt_dsa(dims) -> DataSubjectArray:
-    return np.broadcast_to(DataSubjectArray(["DS1"]), (dims, dims))
+def dsa(dims: int) -> DataSubjectArray:
+    return DataSubjectArray.from_objs(np.ones((dims, dims)))
 
 
 @pytest.fixture
@@ -348,6 +348,24 @@ def test_sum(
 
     assert (tensor_sum.child == reference_data.sum(**kwargs)).all()
     assert zeros_tensor.sum().child == 0
+
+
+def test_pow(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    tensor = PT(
+        child=reference_data,
+        data_subjects=np.broadcast_to(ishan, reference_data.shape),
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.__pow__(2)
+    assert (result.child == (reference_data**2)).all()
+    assert result.child.min() >= result.min_vals.data
+    assert result.child.max() <= result.max_vals.data
 
 
 def test_ne_vals(
@@ -1234,15 +1252,38 @@ def test_or(
     assert (result.child == (reference_data | False)).all()
 
 
+def test_std(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = PT(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.std()
+    assert result.child == reference_data.std()
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data
+
+    result = tensor.std(axis=1)
+    assert (result.child == reference_data.std(axis=1)).all()
+    assert (result.child >= result.min_vals.data).all()
+    assert (result.child <= result.max_vals.data).all()
+
+
 def test_trace(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
-    pt_dsa: DataSubjectArray,
+    dsa: DataSubjectArray,
 ) -> None:
     tensor = PT(
         child=reference_data,
-        data_subjects=pt_dsa,
+        data_subjects=dsa,
         min_vals=lower_bound,
         max_vals=upper_bound,
     )
@@ -1261,11 +1302,11 @@ def test_max(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
-    pt_dsa: DataSubjectArray,
+    dsa: DataSubjectArray,
 ) -> None:
     tensor = PT(
         child=reference_data,
-        data_subjects=pt_dsa,
+        data_subjects=dsa,
         min_vals=lower_bound,
         max_vals=upper_bound,
     )
@@ -1279,11 +1320,11 @@ def test_min(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
-    pt_dsa: DataSubjectArray,
+    dsa: DataSubjectArray,
 ) -> None:
     tensor = PT(
         child=reference_data,
-        data_subjects=pt_dsa,
+        data_subjects=dsa,
         min_vals=lower_bound,
         max_vals=upper_bound,
     )

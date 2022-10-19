@@ -156,6 +156,50 @@ def test_gamma_publish(
     print(ledger_store.kv_store)
 
 
+def test_sum(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = GammaTensor(
+        child=reference_data,
+        data_subjects=dsa,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    result = tensor.sum()
+    assert result.child == reference_data.sum()
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data
+    assert result.data_subjects == dsa.sum()
+
+    result = tensor.sum(axis=1)
+    assert (result.child == reference_data.sum(axis=1)).all()
+    assert (result.child >= result.min_vals.data).all()
+    assert (result.child <= result.max_vals.data).all()
+    assert (result.data_subjects == dsa.sum(axis=1)).all()
+
+
+def test_pow(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = GammaTensor(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.__pow__(2)
+    assert (result.child == (reference_data**2)).all()
+    assert result.child.min() >= result.min_vals.data
+    assert result.child.max() <= result.max_vals.data
+
+
 @pytest.mark.arithmetic
 @pytest.mark.public_op
 def test_add_public(
@@ -1017,6 +1061,29 @@ def test_all(
     result = (reference_tensor == reference_data).all(where=condition)
     assert result.child
     assert isinstance(result.data_subjects, DataSubjectArray)
+
+
+def test_std(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = GammaTensor(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.std()
+    assert result.child == reference_data.std()
+    assert result.child >= result.min_vals.data
+    assert result.child <= result.max_vals.data
+
+    result = tensor.std(axis=1)
+    assert (result.child == reference_data.std(axis=1)).all()
+    assert (result.child >= result.min_vals.data).all()
+    assert (result.child <= result.max_vals.data).all()
 
 
 def test_trace(

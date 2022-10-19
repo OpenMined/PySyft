@@ -597,13 +597,26 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         *args: Any,
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-        """Apply the "truediv" operation between "self" and "other"
+        """
+        Sum of array elements over a given axis.
 
-        Args:
-            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
-
-        Returns:
-            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which a sum is performed.
+                The default, axis=None, will sum all of the elements of the input array.
+                If axis is negative it counts from the last to the first axis.
+                If axis is a tuple of ints, a sum is performed on all of the axes specified in the tuple instead of a
+                single axis or all the axes as before.
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the sum method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+            initial: scalar, optional
+                Starting value for the sum. See reduce for details.
+            where: array_like of bool, optional
+                Elements to include in the sum. See reduce for details.
         """
         return self._apply_self_tensor_op("sum", *args, **kwargs)
 
@@ -614,6 +627,131 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             Union[TensorWrappedGammaTensorPointer] : Result of the operation.
         """
         return self._apply_self_tensor_op(op_str="__pos__")
+
+    def __pow__(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """
+        First array elements raised to powers from second array, element-wise.
+
+        Raise each base in x1 to the positionally-corresponding power in x2.
+        x1 and x2 must be broadcastable to the same shape.
+        An integer type raised to a negative integer power will raise a ValueError.
+        Negative values raised to a non-integral value will return nan.
+
+        Parameters
+            x2: array_like
+
+                The exponents. If self.shape != x2.shape, they must be broadcastable to a common shape.
+
+            where: array_like, optional
+
+                This condition is broadcast over the input. At locations where the condition is True, the out array will
+                 be set to the ufunc result.
+                 Elsewhere, the out array will retain its original value.
+
+            **kwargs
+                For other keyword-only arguments, see the ufunc docs.
+
+        Returns
+            y: PhiTensorPointer
+                The bases in the tensor raised to the exponents in x2. This is a scalar if both self and x2 are scalars.
+        """
+        return self._apply_self_tensor_op("__pow__", *args, **kwargs)
+
+    def std(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """
+        Compute the standard deviation along the specified axis.
+        Returns the standard deviation, a measure of the spread of a distribution, of the array elements.
+        The standard deviation is computed for the flattened array by default, otherwise over the specified axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which the standard deviation is computed.
+                The default is to compute the standard deviation of the flattened array.
+                If this is a tuple of ints, a standard deviation is performed over multiple axes, instead of a single
+                axis or all the axes as before.
+
+            out: ndarray, optional
+                Alternative output array in which to place the result. It must have the same shape as the expected
+                output but the type (of the calculated values) will be cast if necessary.
+
+            ddof: int, optional
+                ddof = Delta Degrees of Freedom. By default ddof is zero.
+                The divisor used in calculations is N - ddof, where N represents the number of elements.
+
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the std method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+
+            where: array_like of bool, optional
+                Elements to include in the standard deviation. See reduce for details.
+
+        Returns
+
+            standard_deviation: PhiTensor
+        """
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.std"
+        data_subjects = np.array(self.data_subjects).std(*args, **kwargs)  # type: ignore
+
+        result = TensorWrappedGammaTensorPointer(
+            data_subjects=data_subjects,
+            min_vals=lazyrepeatarray(data=0, shape=data_subjects.shape),
+            max_vals=lazyrepeatarray(
+                data=(self.max_vals.data - self.min_vals.data) / 2,
+                shape=data_subjects.shape,
+            ),
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[],
+            kwargs={},
+        )
+        result.public_shape = data_subjects.shape
+        result.public_dtype = self.public_dtype
+
+        return result
 
     def trace(
         self,
@@ -1221,6 +1359,14 @@ class GammaTensor:
             return self.child.decode()
         else:
             return self.child
+
+    @property
+    def proxy_public_kwargs(self) -> Dict[str, Any]:
+        return {
+            "min_vals": self.min_vals,
+            "max_vals": self.max_vals,
+            "data_subjects": self.data_subjects,
+        }
 
     def reconstruct(self, state: Optional[Dict] = None) -> GammaTensor:
         if self.func_str == GAMMA_TENSOR_OP.NOOP.value:
@@ -1935,28 +2081,101 @@ class GammaTensor:
         return self.transpose()
 
     def sum(
-        self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs: Any
+        self,
+        axis: Optional[Union[int, Tuple[int, ...]]] = None,
+        keepdims: Optional[bool] = False,
+        initial: Optional[float] = None,
+        where: Optional[ArrayLike] = None,
     ) -> GammaTensor:
-        output_state = dict()
-        output_state[self.id] = self
+        """
+        Sum of array elements over a given axis.
 
-        child = self.child.sum(axis=axis, **kwargs)
-        if not isinstance(
-            child, np.ndarray
-        ):  # Avoid tensor.child being an int/float instead of array
-            child = np.array(child)
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which a sum is performed.
+                The default, axis=None, will sum all of the elements of the input array.
+                If axis is negative it counts from the last to the first axis.
+                If axis is a tuple of ints, a sum is performed on all of the axes specified in the tuple instead of a
+                single axis or all the axes as before.
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the sum method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+            initial: scalar, optional
+                Starting value for the sum. See reduce for details.
+            where: array_like of bool, optional
+                Elements to include in the sum. See reduce for details.
+        """
+        sources = dict()
+        sources[self.id] = self
+        if where is None:
+            result = np.array(self.child.sum(axis=axis, keepdims=keepdims))
+            output_ds = self.data_subjects.sum(axis=axis, keepdims=keepdims)
+            num = np.ones_like(self.child).sum(axis=axis, keepdims=keepdims)
+        else:
+            result = self.child.sum(axis=axis, keepdims=keepdims, where=where)
+            output_ds = self.data_subjects.sum(
+                axis=axis, keepdims=keepdims, initial=initial, where=where
+            )
+            num = np.ones_like(self.child).sum(
+                axis=axis, keepdims=keepdims, initial=initial, where=where
+            )
 
-        min_v = child.min()
-        max_v = child.max()
+        if not isinstance(result, np.ndarray):
+            result = np.array(result)
 
         return GammaTensor(
-            child=child,
-            data_subjects=np.array(self.data_subjects.sum(axis=axis, **kwargs)),
-            min_vals=lazyrepeatarray(data=min_v, shape=child.shape),
-            max_vals=lazyrepeatarray(data=max_v, shape=child.shape),
+            child=result,
+            data_subjects=np.array(output_ds),
+            min_vals=lazyrepeatarray(data=self.min_vals.data * num, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data * num, shape=result.shape),
             func_str=GAMMA_TENSOR_OP.SUM.value,
-            sources=output_state,
+            sources=sources,
         )
+
+    def __pow__(
+        self, power: Union[float, int], modulo: Optional[int] = None
+    ) -> GammaTensor:
+        sources = dict()
+        sources[self.id] = self
+        sources["0"] = power  # type: ignore
+        if modulo is None:
+            if self.min_vals.data <= 0 <= self.max_vals.data:
+                # If data is in range [-5, 5], it's possible the minimum is 0 and not (-5)^2
+                minv = min(0, (self.min_vals.data**power).min())
+            else:
+                minv = self.min_vals.data**power
+
+            return GammaTensor(
+                child=self.child**power,
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(data=minv, shape=self.shape),
+                max_vals=lazyrepeatarray(
+                    data=self.max_vals.data**power, shape=self.shape
+                ),
+                func_str=GAMMA_TENSOR_OP.POWER.value,
+                sources=sources,
+            )
+        else:
+            # This may be unnecessary- modulo is NotImplemented in ndarray.pow
+            if self.min_vals.data <= 0 <= self.max_vals.data:
+                # If data is in range [-5, 5], it's possible the minimum is 0 and not (-5)^2
+                minv = min(0, (self.min_vals.data**power).min() % modulo)
+            else:
+                minv = (self.min_vals.data**power) % modulo
+
+            return GammaTensor(
+                child=(self.child**power) % modulo,
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(data=minv, shape=self.shape),
+                max_vals=lazyrepeatarray(
+                    data=(self.max_vals.data**power) % modulo, shape=self.shape
+                ),
+                func_str=GAMMA_TENSOR_OP.POWER.value,
+                sources=sources,
+            )
 
     def ones_like(self, *args: Any, **kwargs: Any) -> GammaTensor:
         output_state = dict()
@@ -2307,7 +2526,43 @@ class GammaTensor:
         #     max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
         # )
 
-    def std(self, axis: Union[int, Tuple[int, ...]], **kwargs: Any) -> GammaTensor:
+    def std(
+        self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs: Any
+    ) -> GammaTensor:
+        """
+        Compute the standard deviation along the specified axis.
+        Returns the standard deviation, a measure of the spread of a distribution, of the array elements.
+        The standard deviation is computed for the flattened array by default, otherwise over the specified axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which the standard deviation is computed.
+                The default is to compute the standard deviation of the flattened array.
+                If this is a tuple of ints, a standard deviation is performed over multiple axes, instead of a single
+                axis or all the axes as before.
+
+            out: ndarray, optional
+                Alternative output array in which to place the result. It must have the same shape as the expected
+                output but the type (of the calculated values) will be cast if necessary.
+
+            ddof: int, optional
+                ddof = Delta Degrees of Freedom. By default ddof is zero.
+                The divisor used in calculations is N - ddof, where N represents the number of elements.
+
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the std method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+
+            where: array_like of bool, optional
+                Elements to include in the standard deviation. See reduce for details.
+
+        Returns
+
+            standard_deviation: GammaTensor
+        """
         output_state = dict()
         output_state[self.id] = self
 
@@ -2326,9 +2581,7 @@ class GammaTensor:
             child=result,
             data_subjects=self.data_subjects.std(axis, **kwargs),
             min_vals=lazyrepeatarray(data=0, shape=result.shape),
-            max_vals=lazyrepeatarray(
-                data=0.25 * (maxv + minv) ** 2, shape=result.shape
-            ),
+            max_vals=lazyrepeatarray(data=(maxv - minv) / 2, shape=result.shape),
             sources=output_state,
             func_str=GAMMA_TENSOR_OP.STD.value,
         )
