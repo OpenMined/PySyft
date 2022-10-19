@@ -7,6 +7,7 @@ from typing import Any
 from typing import Callable
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Type
 
@@ -23,7 +24,12 @@ from .lazy_repeat_array import lazyrepeatarray
 from .manager import TensorChainManager
 from .passthrough import PassthroughTensor  # type: ignore
 
+if TYPE_CHECKING:
+    # relative
+    from .autodp.gamma_tensor import GammaTensor
+
 _PhiTensorRef = None
+_GammaTensorRef = None
 
 
 def _PhiTensor() -> Type[PassthroughTensor]:
@@ -34,6 +40,16 @@ def _PhiTensor() -> Type[PassthroughTensor]:
 
         _PhiTensorRef = PhiTensor
     return _PhiTensorRef
+
+
+def _GammaTensor() -> Type[GammaTensor]:
+    global _GammaTensorRef
+    if _GammaTensorRef is None:
+        # relative
+        from .autodp.gamma_tensor import GammaTensor
+
+        _GammaTensorRef = GammaTensor
+    return _GammaTensorRef
 
 
 def data_subject_creation_wizard(data: Any) -> List[Any]:
@@ -338,9 +354,10 @@ class PhiTensorAncestor(TensorChainManager):
         deduct_epsilon_for_user: Callable,
         ledger: DataSubjectLedger,
         sigma: float,
+        private: bool,
     ) -> Any:
         return self.child.publish(
-            get_budget_for_user, deduct_epsilon_for_user, ledger, sigma
+            get_budget_for_user, deduct_epsilon_for_user, ledger, sigma, private=private
         )
 
     def copy(self) -> PhiTensorAncestor:
@@ -479,12 +496,22 @@ class PhiTensorAncestor(TensorChainManager):
         if max_vals.shape != self.child.shape:
             max_vals = lazyrepeatarray(max_vals, self.child.shape)
 
-        self.replace_abstraction_top(
-            tensor_type=_PhiTensor(),
-            child=self.child,
-            min_vals=min_vals,
-            max_vals=max_vals,
-            data_subjects=data_subjects,  # type: ignore
-        )  # type: ignore
+        unique_data_subjects = len(data_subjects.sum())
+        if unique_data_subjects == 1:
+            self.replace_abstraction_top(
+                tensor_type=_PhiTensor(),
+                child=self.child,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                data_subjects=data_subjects,  # type: ignore
+            )  # type: ignore
+        else:
+            self.replace_abstraction_top(
+                tensor_type=_GammaTensor(),
+                child=self.child,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                data_subjects=data_subjects,  # type: ignore
+            )  # type: ignore
 
         return self

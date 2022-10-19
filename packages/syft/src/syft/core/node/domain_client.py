@@ -16,7 +16,10 @@ import names
 import pandas as pd
 
 # relative
+from ... import __version__
 from ...logger import traceback_and_raise
+from ...util import bcolors
+from ...util import print_dynamic_log
 from ...util import validate_field
 from ..common.message import SyftMessage
 from ..common.serde.serialize import _serialize as serialize  # noqa: F401
@@ -30,7 +33,8 @@ from ..node.common.node_service.network_search.network_search_messages import (
 )
 from ..pointer.pointer import Pointer
 from ..store.proxy_dataset import ProxyDataset
-from ..tensor.autodp.adp_tensor import ADPTensor
+from ..tensor.autodp.gamma_tensor import GammaTensor
+from ..tensor.autodp.phi_tensor import PhiTensor
 from ..tensor.tensor import Tensor
 from .abstract.node import AbstractNodeClient
 from .common.action.exception_action import ExceptionMessage
@@ -438,40 +442,54 @@ class DomainClient(Client):
         **metadata: str,
     ) -> None:
         try:
-            print("1/3 Joining Network")
-            # joining the network might take some time and won't block
+            finish, success = print_dynamic_log("[1/4] Checking Syft Versions")
+            if self.version == client.version and client.version == __version__:  # type: ignore
+                success.set()
+            else:
+                print(f"{bcolors.warning('WARNING')}: Syft versions mismatch!")
+                print(f"{bcolors.bold('Domain',True)}: {bcolors.underline(self.version,True)}")  # type: ignore
+                print(f"{bcolors.bold('Network',True)}: {bcolors.underline(client.version,True)}")  # type: ignore
+                print(
+                    f"{bcolors.bold('Environment',True)}: {bcolors.underline(__version__,True)}"
+                )
 
-            # Check if the version of the network client is same as the domain client
-            if client and hasattr(client, "version"):
-                if self.version != client.version:  # type: ignore
-                    print(
-                        "\n**Warning**: The syft version on your domain and the network are different."
-                    )
-                    print(
-                        f"Domain version: {self.version}\nNetwork Version: {client.version}"  # type: ignore
-                    )
+                response = input(
+                    "\033[1mThis may cause unexpected errors, are you willing to continue? (y/N)\033[0m"
+                )
+                if response.lower() == "y":
+                    success.set()
+                else:
+                    finish.set()
+                    return
+            finish.set()
 
+            finish, success = print_dynamic_log("[2/4] Joining Network")
             self.join_network(client=client)
+            success.set()
+            finish.set()
 
             timeout = 30
             connected = False
             network_vpn_ip = ""
             domain_vpn_ip = ""
 
+            finish, success = print_dynamic_log("[3/4] Connecting to Secure VPN")
             # get the vpn ips
             while timeout > 0 and connected is False:
                 timeout -= 1
                 try:
                     vpn_status = self.vpn_status()
                     if vpn_status["connected"]:
-                        print("2/3 Secure VPN Connected")
+                        finish.set()
+                        success.set()
                         connected = True
                         continue
                 except Exception as e:
+                    finish.set()
                     print(f"Failed to get vpn status. {e}")
-                print(".", end="")
                 time.sleep(1)
 
+            finish, success = print_dynamic_log("[4/4] Registering on the Secure VPN")
             if vpn_status.get("status") == "error":
                 raise Exception("Failed to get vpn status.")
 
@@ -500,8 +518,10 @@ class DomainClient(Client):
                 retry=retry,
             )
 
-            print("3/3 Network Registration Complete")
+            success.set()
+            finish.set()
         except Exception as e:
+            finish.set()
             print(f"Failed to apply to network with {client}. {e}")
 
     @property
@@ -652,14 +672,12 @@ class DomainClient(Client):
             for _, asset in assets.items():
 
                 if not isinstance(asset, Tensor) or not isinstance(
-                    getattr(asset, "child", None), ADPTensor
+                    getattr(asset, "child", None), (PhiTensor, GammaTensor)
                 ):
                     raise Exception(
-                        "ERROR: all private assets must be NumPy ndarray.int32 assets "
-                        + "with proper Differential Privacy metadata applied.\n"
+                        "ERROR: All private assets must have "
+                        + "proper Differential Privacy metadata applied.\n"
                         + "\n"
-                        + "Example: syft.Tensor(np.ndarray([1,2,3,4]).astype(np.int32)).private()\n\n"
-                        + "or\n\n"
                         + "Example: syft.Tensor([1,2,3,4]).private()\n\n"
                         + "and then follow the wizard. 🧙"
                     )

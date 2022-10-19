@@ -3,7 +3,6 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
-from typing import Dict
 from typing import Iterator
 from typing import List
 from typing import Optional
@@ -401,8 +400,8 @@ def dslarraytonumpyutf8(string_list: np.ndarray) -> ArrayLike:
         Tuple[np.ndarray, np.ndarray]: utf-8 encoded int Numpy array
     """
     # print("dsl list before", string_list)
-    array_shape = string_list.shape
-    string_list = string_list.flatten()
+    array_shape = np.array(string_list).shape
+    string_list = np.array(string_list).flatten()
     bytes_list = []
     indexes = []
     offset = 0
@@ -529,15 +528,22 @@ class DataSubjectArray:
         else:
             return self.data_subjects.isdisjoint(set(item))
 
-    def conjugate(self, *args: List[Any], **kwargs: Dict[Any, Any]) -> DataSubjectArray:
+    def __pow__(self, power: int) -> DataSubjectArray:
+        if not isinstance(power, int):
+            raise ValueError(
+                f"Expected type: int for DataSubjectArray pow function, received: {type(power)} "
+            )
+        return DataSubjectArray(self.data_subjects)
+
+    def conjugate(self, *args: Any, **kwargs: Any) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)
 
     def subtract(
         self,
         x: Union[DataSubjectArray, Any],
         y: Union[DataSubjectArray, Any],
-        *args: List[Any],
-        **kwargs: Dict[Any, Any],
+        *args: Any,
+        **kwargs: Any,
     ) -> DataSubjectArray:
         if isinstance(y, DataSubjectArray) and isinstance(x, DataSubjectArray):
             return DataSubjectArray(x.data_subjects.union(y.data_subjects))
@@ -554,8 +560,8 @@ class DataSubjectArray:
         self,
         x: Union[DataSubjectArray, Any],
         y: Union[DataSubjectArray, Any],
-        *args: List[Any],
-        **kwargs: Dict[Any, Any],
+        *args: Any,
+        **kwargs: Any,
     ) -> DataSubjectArray:
         if isinstance(y, DataSubjectArray) and isinstance(x, DataSubjectArray):
             return DataSubjectArray(x.data_subjects.union(y.data_subjects))
@@ -582,15 +588,14 @@ class DataSubjectArray:
     def real(self) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)
 
-    def var(self, *args: List[Any], **kwargs: Dict[Any, Any]) -> DataSubjectArray:
+    def var(self, *args: Any, **kwargs: Any) -> DataSubjectArray:
         return (self - np.mean(self)) * (self - np.mean(self))
 
-    def sqrt(self, *args: List[Any], **kwargs: Dict[Any, Any]) -> DataSubjectArray:
+    def sqrt(self, *args: Any, **kwargs: Any) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs) -> ArrayLike:  # type: ignore
         method_name = ufunc.__name__
-        print("method_name", method_name)
         method = getattr(self, method_name, None)
         if method is not None:
             return method(*inputs, **kwargs)
