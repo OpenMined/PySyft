@@ -488,6 +488,23 @@ def compute_min_max(
         max_vals = lazyrepeatarray(
             data=x_max_vals.data.__pow__(*args, **kwargs), shape=x_max_vals.shape
         )
+    elif op_str == "cumsum":
+        dummy_res = np.empty(x_min_vals.shape).cumsum(*args, **kwargs)
+        num = np.ones(x_min_vals.shape).cumsum(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=x_min_vals.data * num, shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(data=x_max_vals.data * num, shape=dummy_res.shape)
+    elif op_str == "cumprod":
+        dummy_res = np.empty(x_min_vals.shape).cumprod(*args, **kwargs)
+        num = np.ones(x_min_vals.shape).cumsum(*args, **kwargs)
+        if abs(x_max_vals.data) >= abs(x_min_vals.data):
+            highest = abs(x_max_vals.data)
+        else:
+            highest = abs(x_min_vals.data)
+
+        min_vals = lazyrepeatarray(
+            data=-((highest**num).max()), shape=dummy_res.shape
+        )
+        max_vals = lazyrepeatarray(data=(highest**num).max(), shape=dummy_res.shape)
     elif op_str == "prod":
         dummy_res = np.empty(x_min_vals.shape).prod(*args, **kwargs)
         min_vals = lazyrepeatarray(

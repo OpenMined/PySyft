@@ -1252,6 +1252,29 @@ def test_or(
     assert (result.child == (reference_data | False)).all()
 
 
+def test_cumsum(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = PT(
+        child=reference_data,
+        data_subjects=dsa,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+    result = tensor.cumsum()
+    assert (result.child == reference_data.cumsum()).all()
+    assert (result.child >= result.min_vals.data).all()
+    assert (result.child <= result.max_vals.data).all()
+
+    result = tensor.cumsum(axis=1)
+    assert (result.child == reference_data.cumsum(axis=1)).all()
+    assert (result.child >= result.min_vals.data).all()
+    assert (result.child <= result.max_vals.data).all()
+
+
 def test_prod(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1296,6 +1319,30 @@ def test_std(
     assert (result.child == reference_data.std(axis=1)).all()
     assert (result.child >= result.min_vals.data).all()
     assert (result.child <= result.max_vals.data).all()
+
+
+def test_cumprod(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    # Note: It's difficult to test the min/max values for cumprod because of the extremely high bounds this op gives.
+    tensor = PT(
+        child=reference_data,
+        data_subjects=dsa,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+    result = tensor.cumprod()
+    assert (result.child == reference_data.cumprod()).all()
+    # assert (result.child >= result.min_vals.data).all()
+    # assert (result.child <= result.max_vals.data).all()
+
+    result = tensor.cumprod(axis=1)
+    assert (result.child == reference_data.cumprod(axis=1)).all()
+    # assert (result.child >= result.min_vals.data).all()
+    # assert (result.child <= result.max_vals.data).all()
 
 
 def test_floordiv(

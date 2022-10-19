@@ -660,6 +660,21 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         """
         return self._apply_self_tensor_op("repeat", *args, **kwargs)
 
+    def cumsum(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Return the cumulative sum of the elements along a given axis.
+
+        Parameters
+            axis: int, optional
+                Axis along which the cumulative sum is computed. The default (None) is to compute the cumsum over the
+                flattened array.
+        Returns
+            cumsum_along_axis: PhiTensor
+                A new array holding the result is returned. The result has the same size as input, and the same shape as
+                 a if axis is not None or a is 1-d.
+        """
+        return self._apply_self_tensor_op("cumsum", *args, **kwargs)
+
     def prod(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
         """
         Return the product of array elements over a given axis.
@@ -808,6 +823,21 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         result.public_shape = data_subjects.shape
         result.public_dtype = self.public_dtype
         return result
+
+    def cumprod(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Return the cumulative product of the elements along a given axis.
+
+        Parameters
+            axis: int, optional
+                Axis along which the cumulative product is computed. The default (None) is to compute the cumprod over
+                the flattened array.
+        Returns
+            cumprod_along_axis: PhiTensor
+                A new array holding the result is returned. The result has the same size as input, and the same shape as
+                 a if axis is not None or a is 1-d.
+        """
+        return self._apply_self_tensor_op("cumprod", *args, **kwargs)
 
     def trace(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
         """
@@ -2820,6 +2850,67 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             data_subjects=self.data_subjects.take(choices),
             min_vals=minv,
             max_vals=maxv,
+        )
+
+    def cumsum(
+        self,
+        axis: Optional[int] = None,
+    ) -> PhiTensor:
+        """
+        Return the cumulative sum of the elements along a given axis.
+
+        Parameters
+            axis: int, optional
+                Axis along which the cumulative sum is computed. The default (None) is to compute the cumsum over the
+                flattened array.
+        Returns
+            cumsum_along_axis: PhiTensor
+                A new array holding the result is returned. The result has the same size as input, and the same shape as
+                 a if axis is not None or a is 1-d.
+        """
+        result = self.child.cumsum(axis=axis)
+        num = np.ones_like(self.child).cumsum(axis=axis)
+        return PhiTensor(
+            child=result,
+            data_subjects=self.data_subjects.cumsum(axis=axis),
+            min_vals=lazyrepeatarray(
+                data=(self.min_vals.data * num).min(), shape=result.shape
+            ),
+            max_vals=lazyrepeatarray(
+                data=(self.max_vals.data * num).max(), shape=result.shape
+            ),
+        )
+
+    def cumprod(
+        self,
+        axis: Optional[int] = None,
+    ) -> PhiTensor:
+        """
+        Return the cumulative product of the elements along a given axis.
+
+        Parameters
+            axis: int, optional
+                Axis along which the cumulative product is computed. The default (None) is to compute the cumprod over
+                the flattened array.
+        Returns
+            cumprod_along_axis: PhiTensor
+                A new array holding the result is returned. The result has the same size as input, and the same shape as
+                 a if axis is not None or a is 1-d.
+        """
+        result = self.child.cumprod(axis=axis)
+        num = np.ones_like(self.child).cumsum(axis=axis)
+        if abs(self.max_vals.data) >= (self.min_vals.data):
+            highest = abs(self.max_vals.data)
+        else:
+            highest = abs(self.min_vals.data)
+
+        return PhiTensor(
+            child=result,
+            data_subjects=self.data_subjects.cumprod(axis=axis),
+            min_vals=lazyrepeatarray(
+                data=-((highest**num).max()), shape=result.shape
+            ),
+            max_vals=lazyrepeatarray(data=(highest**num).max(), shape=result.shape),
         )
 
     def prod(self, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> PhiTensor:
