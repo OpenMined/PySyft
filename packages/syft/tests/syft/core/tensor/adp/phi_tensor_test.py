@@ -350,6 +350,24 @@ def test_sum(
     assert zeros_tensor.sum().child == 0
 
 
+def test_pow(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    tensor = PT(
+        child=reference_data,
+        data_subjects=np.broadcast_to(ishan, reference_data.shape),
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.__pow__(2)
+    assert (result.child == (reference_data**2)).all()
+    assert result.child.min() >= result.min_vals.data
+    assert result.child.max() <= result.max_vals.data
+
+
 def test_ne_vals(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,

@@ -480,6 +480,15 @@ def compute_min_max(
         )
         max_vals = lazyrepeatarray(
             data=x_max_vals.data.round(*args, **kwargs), shape=x_max_vals.shape
+    elif op_str == "__pow__":
+        if x_min_vals.data <= 0 <= x_max_vals.data:
+            # If data is in range [-5, 5], it's possible the minimum is 0 and not (-5)^2
+            min_data = min(0, (x_min_vals.data.__pow__(*args, **kwargs)).min())
+        else:
+            min_data = x_min_vals.data.__pow__(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=min_data, shape=x_min_vals.shape)
+        max_vals = lazyrepeatarray(
+            data=x_max_vals.data.__pow__(*args, **kwargs), shape=x_max_vals.shape
         )
     else:
         raise ValueError(f"Invaid Operation for LazyRepeatArray: {op_str}")
