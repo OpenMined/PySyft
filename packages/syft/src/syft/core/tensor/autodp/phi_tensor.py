@@ -746,6 +746,35 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         result.public_dtype = self.public_dtype
         return result
 
+    def __pow__(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        First array elements raised to powers from second array, element-wise.
+
+        Raise each base in x1 to the positionally-corresponding power in x2.
+        x1 and x2 must be broadcastable to the same shape.
+        An integer type raised to a negative integer power will raise a ValueError.
+        Negative values raised to a non-integral value will return nan.
+
+        Parameters
+            x2: array_like
+
+                The exponents. If self.shape != x2.shape, they must be broadcastable to a common shape.
+
+            where: array_like, optional
+
+                This condition is broadcast over the input. At locations where the condition is True, the out array will
+                 be set to the ufunc result.
+                 Elsewhere, the out array will retain its original value.
+
+            **kwargs
+                For other keyword-only arguments, see the ufunc docs.
+
+        Returns
+            y: PhiTensorPointer
+                The bases in the tensor raised to the exponents in x2. This is a scalar if both self and x2 are scalars.
+        """
+        return self._apply_self_tensor_op("__pow__", *args, **kwargs)
+
     def std(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
         """
         Compute the standard deviation along the specified axis.
@@ -2493,27 +2522,84 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def sum(
         self,
         axis: Optional[Union[int, Tuple[int, ...]]] = None,
-        **kwargs: Any,
-    ) -> Union[PhiTensor, GammaTensor]:
-        return self.gamma.sum(axis, **kwargs)
-        # # TODO: Add support for axes arguments later
-        # min_val = self.min_vals.sum(axis=axis)
-        # max_val = self.max_vals.sum(axis=axis)
-        # if len(self.data_subjects.one_hot_lookup) == 1:
-        #     result = self.child.sum(axis=axis)
-        #     return PhiTensor(
-        #         child=result,
-        #         min_vals=min_val,
-        #         max_vals=max_val,
-        #         data_subjects=self.data_subjects.sum(target_shape=result.shape),
-        #     )
-        # result = self.child.sum(axis=axis)
-        # return GammaTensor(
-        #     child=result,
-        #     data_subjects=self.data_subjects.sum(target_shape=result.shape),
-        #     min_vals=min_val,
-        #     max_vals=max_val,
-        # )
+        keepdims: Optional[bool] = False,
+        initial: Optional[float] = None,
+        where: Optional[ArrayLike] = None,
+    ) -> PhiTensor:
+        """
+        Sum of array elements over a given axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which a sum is performed.
+                The default, axis=None, will sum all of the elements of the input array.
+                If axis is negative it counts from the last to the first axis.
+                If axis is a tuple of ints, a sum is performed on all of the axes specified in the tuple instead of a
+                single axis or all the axes as before.
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the sum method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+            initial: scalar, optional
+                Starting value for the sum. See reduce for details.
+            where: array_like of bool, optional
+                Elements to include in the sum. See reduce for details.
+        """
+        if where is None:
+            result = np.array(self.child.sum(axis=axis, keepdims=keepdims))
+            output_ds = self.data_subjects.sum(axis=axis, keepdims=keepdims)
+            num = np.ones_like(self.child).sum(axis=axis, keepdims=keepdims)
+        else:
+            result = self.child.sum(axis=axis, keepdims=keepdims, where=where)
+            output_ds = self.data_subjects.sum(
+                axis=axis, keepdims=keepdims, initial=initial, where=where
+            )
+            num = np.ones_like(self.child).sum(
+                axis=axis, keepdims=keepdims, initial=initial, where=where
+            )
+
+        return PhiTensor(
+            child=result,
+            data_subjects=np.array(output_ds),
+            min_vals=lazyrepeatarray(data=self.min_vals.data * num, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data * num, shape=result.shape),
+        )
+
+    def __pow__(
+        self, power: Union[float, int], modulo: Optional[int] = None
+    ) -> PhiTensor:
+        if modulo is None:
+            if self.min_vals.data <= 0 <= self.max_vals.data:
+                # If data is in range [-5, 5], it's possible the minimum is 0 and not (-5)^2
+                minv = min(0, (self.min_vals.data**power).min())
+            else:
+                minv = self.min_vals.data**power
+
+            return PhiTensor(
+                child=self.child**power,
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(data=minv, shape=self.shape),
+                max_vals=lazyrepeatarray(
+                    data=self.max_vals.data**power, shape=self.shape
+                ),
+            )
+        else:
+            # This may be unnecessary- modulo is NotImplemented in ndarray.pow
+            if self.min_vals.data <= 0 <= self.max_vals.data:
+                # If data is in range [-5, 5], it's possible the minimum is 0 and not (-5)^2
+                minv = min(0, (self.min_vals.data**power).min() % modulo)
+            else:
+                minv = (self.min_vals.data**power) % modulo
+            return PhiTensor(
+                child=self.child**power % modulo,
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(data=minv, shape=self.shape),
+                max_vals=lazyrepeatarray(
+                    data=(self.max_vals.data**power) % modulo, shape=self.shape
+                ),
+            )
 
     def expand_dims(self, axis: int) -> PhiTensor:
         result = np.expand_dims(self.child, axis=axis)

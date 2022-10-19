@@ -41,6 +41,7 @@ class GAMMA_TENSOR_OP(Enum):
     ABS = "abs"
     CLIP = "clip"
     PROD = "prod"
+    POWER = "power"
     TRACE = "trace"
     MIN = "min"
     MAX = "max"
