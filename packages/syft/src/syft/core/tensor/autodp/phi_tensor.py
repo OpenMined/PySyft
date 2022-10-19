@@ -307,13 +307,22 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
         dummy_res = np.empty(self.public_shape)
         if hasattr(dummy_res, op_str):
+            if op_str == "sort":
+                result.public_shape = self.public_shape
+                result.public_dtype = self.public_dtype
+                return result
             dummy_res = getattr(dummy_res, op_str)(*args, **kwargs)
         elif hasattr(np, op_str):
+            print(2)
             dummy_res = getattr(np, op_str)(dummy_res, *args, *kwargs)
         elif op_str in ["__round__"]:
-            pass
+            print("We made it")
+            result.public_shape = self.public_shape
+            result.public_dtype = self.public_dtype
+            return result
         else:
             raise ValueError(f"Invalid Numpy Operation: {op_str} for Pointer")
+        print(op_str)
 
         result.public_shape = dummy_res.shape
         result.public_dtype = dummy_res.dtype
@@ -852,6 +861,36 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
                 If axis is given, the result is an array of dimension a.ndim - 1.
         """
         return self._apply_self_tensor_op("max", *args, **kwargs)
+
+    def sort(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        return self._apply_self_tensor_op("sort", *args, **kwargs)
+
+    def argsort(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Returns the indices that would sort an array.
+
+        Perform an indirect sort along the given axis using the algorithm specified by the kind keyword.
+        It returns an array of indices of the same shape as a that index data along the given axis in sorted order.
+
+        Parameters
+            axis: int or None, optional
+                Axis along which to sort. The default is -1 (the last axis). If None, the flattened array is used.
+            kind: {‘quicksort’, ‘mergesort’, ‘heapsort’, ‘stable’}, optional
+                Sorting algorithm. The default is ‘quicksort’. Note that both ‘stable’ and ‘mergesort’ use timsort
+                under the covers and, in general, the actual implementation will vary with data type. The ‘mergesort’
+                option is retained for backwards compatibility.
+            order: str or list of str, optional
+                When a is an array with fields defined, this argument specifies which fields to compare 1st, 2nd, etc.
+                A single field can be specified as a string, and not all fields need be specified, but unspecified
+                fields will still be used, in the order in which they come up in the dtype, to break ties.
+
+        Returns
+            index_array: ndarray, int
+                Array of indices that sort a along the specified axis. If a is one-dimensional, a[index_array] yields a
+                sorted a. More generally, np.take_along_axis(a, index_array, axis=axis) always yields the sorted a,
+                irrespective of dimensionality.
+        """
+        return self._apply_self_tensor_op("argsort", *args, **kwargs)
 
     def exp(
         self,
@@ -2149,12 +2188,41 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def sort(self, axis: int = -1, kind: Optional[str] = None) -> PhiTensor:
         """
+        Return a sorted copy of an array.
+
+        Parameters
+
+            a: array_like
+                Array to be sorted.
+
+            axis: int or None, optional
+                Axis along which to sort. If None, the array is flattened before sorting.
+                The default is -1, which sorts along the last axis.
+
+            kind{‘quicksort’, ‘mergesort’, ‘heapsort’, ‘stable’}, optional
+                Sorting algorithm. The default is ‘quicksort’.
+                Note that both ‘stable’ and ‘mergesort’ use timsort or radix sort under the covers and, in general,
+                the actual implementation will vary with data type. The ‘mergesort’ option is retained for backwards
+                compatibility.
+
+                Changed in version 1.15.0.: The ‘stable’ option was added.
+
+            order: str or list of str, optional
+                When a is an array with fields defined, this argument specifies which fields to compare first, second,
+                etc. A single field can be specified as a string, and not all fields need be specified, but unspecified
+                 fields will still be used, in the order in which they come up in the dtype, to break ties.
+
         Please see docs here: https://numpy.org/doc/stable/reference/generated/numpy.sort.html
         """
-        result = self.child.sort(axis, kind)
+
+        # Must do argsort before we change self.child by calling sort
+        indices = self.child.argsort(axis, kind)
+        self.child.sort(axis, kind)
+
+        out_ds = self.data_subjects.take(indices)
         return PhiTensor(
-            child=result,
-            data_subjects=self.data_subjects.take(np.unravel_index(result, self.shape)),
+            child=self.child,
+            data_subjects=out_ds,
             min_vals=self.min_vals,
             max_vals=self.max_vals,
         )

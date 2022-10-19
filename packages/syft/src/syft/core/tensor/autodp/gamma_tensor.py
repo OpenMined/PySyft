@@ -3191,6 +3191,51 @@ class GammaTensor:
             sources=sources,
         )
 
+    def sort(self, axis: int = -1, kind: Optional[str] = None) -> GammaTensor:
+        """
+        Return a sorted copy of an array.
+
+        Parameters
+
+            a: array_like
+                Array to be sorted.
+
+            axis: int or None, optional
+                Axis along which to sort. If None, the array is flattened before sorting.
+                The default is -1, which sorts along the last axis.
+
+            kind{‘quicksort’, ‘mergesort’, ‘heapsort’, ‘stable’}, optional
+                Sorting algorithm. The default is ‘quicksort’.
+                Note that both ‘stable’ and ‘mergesort’ use timsort or radix sort under the covers and, in general,
+                the actual implementation will vary with data type. The ‘mergesort’ option is retained for backwards
+                compatibility.
+
+                Changed in version 1.15.0.: The ‘stable’ option was added.
+
+            order: str or list of str, optional
+                When a is an array with fields defined, this argument specifies which fields to compare first, second,
+                etc. A single field can be specified as a string, and not all fields need be specified, but unspecified
+                 fields will still be used, in the order in which they come up in the dtype, to break ties.
+
+        Please see docs here: https://numpy.org/doc/stable/reference/generated/numpy.sort.html
+        """
+
+        # Must do argsort before we change self.child by calling sort
+        indices = self.child.argsort(axis, kind)
+        self.child.sort(axis, kind)
+        sources = dict()
+        sources[self.id] = self
+
+        out_ds = self.data_subjects.take(indices)
+        return GammaTensor(
+            child=self.child,
+            data_subjects=out_ds,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+            func_str=GAMMA_TENSOR_OP.SORT.value,
+            sources=sources,
+        )
+
     @property
     def shape(self) -> Tuple[int, ...]:
         return self.child.shape
