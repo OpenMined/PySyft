@@ -319,8 +319,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             if op_str == "resize":
                 dummy_res = np.resize(dummy_res, *args)
                 result.public_shape = dummy_res.shape
-                result.public_dtype = self.public_dtype
-                
+                result.public_dtype = self.public_dtype  
                 return result
     
             dummy_res = getattr(dummy_res, op_str)(*args, **kwargs)
@@ -362,16 +361,6 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
     def round(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
         return self.__round__(*args, **kwargs)
 
-    def transpose(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
-        return self._apply_self_tensor_op("transpose", *args, **kwargs)
-
-    def resize(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
-        return self._apply_self_tensor_op("resize", *args, **kwargs)
-
-    def reshape(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
-       return self._apply_self_tensor_op("reshape", *args, **kwargs)
-
-   
     @staticmethod
     def _apply_op(
         self: TensorWrappedPhiTensorPointer,
@@ -1414,20 +1403,48 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             public_dtype=public_dtype,
         )
 
-    def __lshift__(
-    #def __lt__(
-        self,
-        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
-    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
-        """Apply the "lt" operation between "self" and "other"
-
-        Args:
-            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
-
-        Returns:
-            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+    def transpose(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
         """
-        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__lshift__")
+        Reverse or permute the axes of an array; returns the modified array.
+
+        Returns
+            p: ndarray
+                array with its axes permuted. A view is returned whenever possible.
+        """
+        return self._apply_self_tensor_op("transpose", *args, **kwargs)
+
+    def resize(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Return a new array with the specified shape.
+
+        Parameters
+            new_shape: int or tuple of int
+                Shape of resized array.
+
+        Returns
+            reshaped_array: ndarray
+                The new array is formed from the data in the old array, 
+                repeated if necessary to fill out the required number of elements. The data are repeated iterating over the array in C-order.
+
+        """
+        return self._apply_self_tensor_op("resize", *args, **kwargs)
+
+    def reshape(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Gives a new shape to an array without changing its data.
+
+        Parameters
+            new_shape: int or tuple of int
+                The new shape should be compatible with the original shape. If an integer, then the result will 
+                be a 1-D array of that length. One shape dimension can be -1. In this case, 
+                the value is inferred from the length of the array and remaining dimensions.
+
+        Returns
+            reshaped_array: ndarray
+                This will be a new view object if possible; otherwise, it will be a copy. 
+                Note there is no guarantee of the memory layout (C- or Fortran- contiguous) of the returned array.
+        """
+        return self._apply_self_tensor_op("reshape", *args, **kwargs)
 
 
 

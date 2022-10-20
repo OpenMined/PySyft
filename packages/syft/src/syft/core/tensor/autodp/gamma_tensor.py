@@ -983,6 +983,14 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         *args: Any,
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+
+        """
+        Reverse or permute the axes of an array; returns the modified array.
+
+        Returns
+            p: ndarray
+                array with its axes permuted. A view is returned whenever possible.
+        """
     
         return self._apply_self_tensor_op("transpose", *args, **kwargs)
 
@@ -991,6 +999,20 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         *args: Any,
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+
+        """
+        Return a new array with the specified shape.
+
+        Parameters
+            new_shape: int or tuple of int
+                Shape of resized array.
+
+        Returns
+            reshaped_array: ndarray
+                The new array is formed from the data in the old array, 
+                repeated if necessary to fill out the required number of elements. The data are repeated iterating over the array in C-order.
+
+        """
     
         return self._apply_self_tensor_op("resize", *args, **kwargs)
 
@@ -999,6 +1021,21 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         *args: Any,
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+
+        """
+        Gives a new shape to an array without changing its data.
+
+        Parameters
+            new_shape: int or tuple of int
+                The new shape should be compatible with the original shape. If an integer, then the result will 
+                be a 1-D array of that length. One shape dimension can be -1. In this case, 
+                the value is inferred from the length of the array and remaining dimensions.
+
+        Returns
+            reshaped_array: ndarray
+                This will be a new view object if possible; otherwise, it will be a copy. 
+                Note there is no guarantee of the memory layout (C- or Fortran- contiguous) of the returned array.
+        """
     
         return self._apply_self_tensor_op("reshape", *args, **kwargs)
 
