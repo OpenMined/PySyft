@@ -300,11 +300,13 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         min_vals, max_vals = compute_min_max(
             self.min_vals, self.max_vals, None, op_str, *args, **kwargs
         )
-        if hasattr(self.data_subjects, op_str):
+
+        if op_str == "resize":
+            data_subjects = dummy_res = np.resize(self.data_subjects, *args) 
+        elif hasattr(self.data_subjects, op_str):
             data_subjects = getattr(self.data_subjects, op_str)(*args, **kwargs)
         else:
             raise ValueError(f"Invalid Numpy Operation: {op_str} for DSA")
-
         result = TensorWrappedGammaTensorPointer(
             data_subjects=data_subjects,
             min_vals=min_vals,
@@ -351,6 +353,11 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         dummy_res = np.empty(self.public_shape)
         if hasattr(dummy_res, op_str):
             dummy_res = getattr(dummy_res, op_str)(*args, **kwargs)
+            if op_str == "resize":
+                dummy_res = np.resize(dummy_res, *args)
+                result.public_shape = dummy_res.shape
+                result.public_dtype = self.public_dtype
+                return result
         elif hasattr(np, op_str):
             dummy_res = getattr(np, op_str)(dummy_res, *args, *kwargs)
         else:

@@ -253,13 +253,17 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
         # We always maintain a Tensor hierarchy Tensor ---> PT--> Actual Data
         attr_path_and_name = f"syft.core.tensor.tensor.Tensor.{op_str}"
+
         min_vals, max_vals = compute_min_max(
             self.min_vals, self.max_vals, None, op_str, *args, **kwargs
         )
-        if hasattr(self.data_subjects, op_str):
-            data_subjects = getattr(self.data_subjects, op_str)(*args, **kwargs)
-        elif op_str == "__round__":
+
+        if op_str == "__round__":
             data_subjects = self.data_subjects
+        elif op_str == "resize":
+            data_subjects = dummy_res = np.resize(self.data_subjects, *args) 
+        elif hasattr(self.data_subjects, op_str):
+            data_subjects = getattr(self.data_subjects, op_str)(*args, **kwargs)
         else:
             raise ValueError(f"Invalid Numpy Operation: {op_str} for DSA")
 
@@ -312,6 +316,13 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
                 result.public_shape = self.public_shape
                 result.public_dtype = self.public_dtype
                 return result
+            if op_str == "resize":
+                dummy_res = np.resize(dummy_res, *args)
+                result.public_shape = dummy_res.shape
+                result.public_dtype = self.public_dtype
+                
+                return result
+    
             dummy_res = getattr(dummy_res, op_str)(*args, **kwargs)
         elif hasattr(np, op_str):
             dummy_res = getattr(np, op_str)(dummy_res, *args, *kwargs)

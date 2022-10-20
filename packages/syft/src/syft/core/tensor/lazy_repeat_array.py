@@ -557,7 +557,7 @@ def compute_min_max(
             shape=dummy_res.shape,
         )
     elif op_str == "resize":
-        dummy_res = np.empty(x_min_vals.shape).resize(*args, **kwargs)
+        dummy_res = np.resize(np.empty((x_min_vals.shape)), *args)
         min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
         max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
     elif op_str == "reshape":
