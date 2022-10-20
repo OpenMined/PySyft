@@ -1365,7 +1365,47 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=self.child.copy(order=order),
             min_vals=self.min_vals.copy(order=order),
             max_vals=self.max_vals.copy(order=order),
-            data_subjects=self.data_subjects.copy(),
+            data_subjects=self.data_subjects.copy(order=order),
+        )
+
+    def take(
+        self,
+        indices: ArrayLike,
+        axis: Optional[int] = None,
+        out: Optional[np.ndarray] = None,
+        mode: str = "raise",
+    ) -> PhiTensor:
+        """Take elements from an array along an axis."""
+        out_child = self.child.take(indices, axis=axis, mode=mode, out=out)
+        return PhiTensor(
+            child=out_child,
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
+            data_subjects=self.data_subjects.take(
+                indices, axis=axis, mode=mode, out=out
+            ),
+        )
+
+    def put(
+        self,
+        ind: ArrayLike,
+        v: ArrayLike,
+        mode: str = "raise",
+    ) -> PhiTensor:
+        """Replaces specified elements of an array with given values.
+        The indexing works on the flattened target array. put is roughly equivalent to:
+            a.flat[ind] = v
+        """
+        if self.min_vals.data > min(v) or self.max_vals.data < max(v):
+            raise Exception("The v values must be within the data bounds")
+
+        out_child = self.child
+        out_child.put(ind, v, mode=mode)
+        return PhiTensor(
+            child=out_child,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+            data_subjects=self.data_subjects,
         )
 
     def any(
