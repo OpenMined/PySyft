@@ -1252,6 +1252,102 @@ def test_or(
     assert (result.child == (reference_data | False)).all()
 
 
+def test_take(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array(reference_data),
+        data_subjects=np.array(ishan),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    indices = [2]
+    result = reference_tensor.take(indices, axis=0)
+    assert (result.child == reference_tensor.child[indices, :]).all()
+    assert (result.min_vals == reference_tensor.min_vals[indices, :]).all()
+    assert (result.max_vals == reference_tensor.max_vals[indices, :]).all()
+    assert (result.data_subjects == reference_tensor.data_subjects[indices, :]).all()
+
+
+def test_put(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array(reference_data),
+        data_subjects=np.array(ishan),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+    no_values = reference_tensor.shape[0]
+    new_values = np.random.randint(low=-50, high=50, size=(no_values), dtype=np.int32)
+    indices = np.random.randint(
+        low=0, high=no_values * no_values - no_values - 1, size=(1), dtype=np.int32
+    )[0]
+
+    result = reference_tensor.put(range(indices, indices + no_values), new_values)
+    flatten_results = result.child.flat[indices:]
+    assert (flatten_results[:no_values] == new_values).all()
+
+
+def test_abs(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array(reference_data),
+        data_subjects=np.array(ishan),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    result = abs(reference_tensor)
+    assert (result.child == abs(reference_tensor.child)).all()
+    assert (result.min_vals.data >= 0).all()
+    assert (result.max_vals.data >= 0).all()
+    assert (result.data_subjects == reference_tensor.data_subjects).all()
+
+
+def test_argmax(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array(reference_data),
+        data_subjects=np.array(ishan),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    result = reference_tensor.argmax()
+    reference_result = reference_tensor.child.argmax()
+    assert (result.child == reference_result).all()
+    assert (
+        result.data_subjects == reference_tensor.data_subjects.item(reference_result)
+    ).all()
+
+    result = reference_tensor.argmax(axis=0)
+    reference_result = reference_tensor.child.argmax(axis=0)
+    assert (result.child == reference_result).all()
+    assert (
+        result.data_subjects == reference_tensor.data_subjects[reference_result]
+    ).all()
+
+
 def test_swapaxes(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1287,7 +1383,6 @@ def test_nonzero(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-
     result = reference_tensor.nonzero()
     reference_result = np.array(reference_tensor.child.nonzero())
     assert (result.child == reference_result).all()
@@ -1297,6 +1392,35 @@ def test_nonzero(
     ).all()
     assert result.min_vals.shape == reference_result.shape
     assert result.max_vals.shape == reference_result.shape
+
+
+def test_argmin(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array(reference_data),
+        data_subjects=np.array(ishan),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    result = reference_tensor.argmin()
+    reference_result = reference_tensor.child.argmin()
+    assert (result.child == reference_result).all()
+    assert (
+        result.data_subjects == reference_tensor.data_subjects.item(reference_result)
+    ).all()
+
+    result = reference_tensor.argmin(axis=0)
+    reference_result = reference_tensor.child.argmin(axis=0)
+    assert (result.child == reference_result).all()
+    assert (
+        result.data_subjects == reference_tensor.data_subjects[reference_result]
+    ).all()
 
 
 def test_cumsum(
