@@ -2019,26 +2019,21 @@ class GammaTensor:
     def argmax(
         self,
         axis: Optional[int] = None,
-        keepdims: Optional[bool] = False,
     ) -> GammaTensor:
 
         output_state = dict()
         output_state[self.id] = self
 
-        child = self.child.argmax(axis=axis, keepdims=keepdims)
+        child = self.child.argmax(axis=axis)
         if axis is None:
             max_value = self.child.size - 1
             indices = np.unravel_index(child, shape=self.child.shape)
             data_subjects = self.data_subjects[indices]
         else:
-            index = child if keepdims else np.array([child])
+            index = np.array([child])
             max_value = np.size(self.child, axis=axis) - 1
-            data_subjects = (
+            data_subjects = np.squeeze(
                 np.take_along_axis(self.data_subjects, index, axis=axis)
-                if keepdims
-                else np.squeeze(
-                    np.take_along_axis(self.data_subjects, index, axis=axis)
-                )
             )
 
         return GammaTensor(
@@ -2053,26 +2048,21 @@ class GammaTensor:
     def argmin(
         self,
         axis: Optional[int] = None,
-        keepdims: Optional[bool] = False,
     ) -> GammaTensor:
 
         output_state = dict()
         output_state[self.id] = self
 
-        child = self.child.argmin(axis=axis, keepdims=keepdims)
+        child = self.child.argmin(axis=axis)
         if axis is None:
             max_value = self.child.size - 1
             indices = np.unravel_index(child, shape=self.child.shape)
             data_subjects = self.data_subjects[indices]
         else:
-            index = child if keepdims else np.array([child])
+            index = np.array([child])
             max_value = np.size(self.child, axis=axis) - 1
-            data_subjects = (
+            data_subjects = np.squeeze(
                 np.take_along_axis(self.data_subjects, index, axis=axis)
-                if keepdims
-                else np.squeeze(
-                    np.take_along_axis(self.data_subjects, index, axis=axis)
-                )
             )
 
         return GammaTensor(

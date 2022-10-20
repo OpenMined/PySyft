@@ -1251,15 +1251,6 @@ def test_argmax(
         result.data_subjects == reference_tensor.data_subjects[reference_result]
     ).all()
 
-    result = reference_tensor.argmax(axis=0, keepdims=True)
-    reference_result = reference_tensor.child.argmax(axis=0, keepdims=True)
-    assert result.func_str == GAMMA_TENSOR_OP.ARGMAX.value
-    assert reference_tensor == result.sources[reference_tensor.id]
-    assert (result.child == reference_result).all()
-    assert (
-        result.data_subjects == reference_tensor.data_subjects[reference_result]
-    ).all()
-
 
 def test_argmin(
     reference_data: np.ndarray,
@@ -1286,15 +1277,6 @@ def test_argmin(
     reference_result = reference_tensor.child.argmin(axis=0)
     assert result.func_str == GAMMA_TENSOR_OP.ARGMIN.value
     assert reference_tensor == result.sources[reference_tensor.id]
-    assert (result.child == reference_result).all()
-    assert (
-        result.data_subjects == reference_tensor.data_subjects[reference_result]
-    ).all()
-
-    result = reference_tensor.argmin(axis=0, keepdims=True)
-    assert result.func_str == GAMMA_TENSOR_OP.ARGMIN.value
-    assert reference_tensor == result.sources[reference_tensor.id]
-    reference_result = reference_tensor.child.argmin(axis=0, keepdims=True)
     assert (result.child == reference_result).all()
     assert (
         result.data_subjects == reference_tensor.data_subjects[reference_result]
