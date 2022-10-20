@@ -2701,7 +2701,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         elif isinstance(other, PhiTensor):
             if self.data_subjects.sum() == other.data_subjects.sum():
                 return PhiTensor(
-                    child=self.child % other,
+                    child=self.child % other.child,
                     data_subjects=self.data_subjects,
                     min_vals=self.min_vals * 0,
                     max_vals=lazyrepeatarray(
