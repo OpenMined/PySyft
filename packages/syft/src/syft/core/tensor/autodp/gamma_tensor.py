@@ -97,6 +97,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         "client": [lambda x: x.address, lambda y: y],
         "public_shape": [lambda x: x, lambda y: upcast(y)],
         "data_subjects": [dslarraytonumpyutf8, numpyutf8todslarray],
+        "public_dtype": [lambda x: str(x), lambda y: np.dtype(y)],
     }
     _exhausted = False
     is_enum = False
