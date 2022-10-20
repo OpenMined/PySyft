@@ -3128,16 +3128,67 @@ class GammaTensor:
         ‘K’ means match the layout of a as closely as possible.
         (Note that this function and numpy.copy are very similar but have different default values
         for their order= arguments, and this function always passes sub-classes through.)
-
-
         """
+        output_state = dict()
+        output_state[self.id] = self
+
         return GammaTensor(
             child=self.child.copy(order),
             data_subjects=self.data_subjects.copy(order),
             min_vals=self.min_vals.copy(order),
             max_vals=self.max_vals.copy(order),
-            func_str=self.func_str,
-            sources=self.sources,
+            func_str=GAMMA_TENSOR_OP.COPY.value,
+            sources=output_state,
+        )
+
+    def take(
+        self,
+        indices: ArrayLike,
+        axis: Optional[int] = None,
+        mode: str = "raise",
+        out: Optional[np.ndarray] = None,
+    ) -> GammaTensor:
+        """Take elements from an array along an axis."""
+        output_state = dict()
+        output_state[self.id] = self
+        out_child = self.child.take(indices, axis=axis, mode=mode, out=out)
+
+        return GammaTensor(
+            child=out_child,
+            data_subjects=self.data_subjects.take(
+                indices, axis=axis, mode=mode, out=out
+            ),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
+            func_str=GAMMA_TENSOR_OP.TAKE.value,
+            sources=output_state,
+        )
+
+    def put(
+        self,
+        ind: ArrayLike,
+        v: ArrayLike,
+        mode: str = "raise",
+    ) -> GammaTensor:
+        """Replaces specified elements of an array with given values.
+        The indexing works on the flattened target array. put is roughly equivalent to:
+            a.flat[ind] = v
+        """
+        output_state = dict()
+        output_state[self.id] = self
+        if self.min_vals.data > min(v) or self.max_vals.data < max(v):
+            raise Exception("The v values must be within the data bounds")
+
+        out_child = self.child
+        out_child.put(ind, v, mode=mode)
+
+        return GammaTensor(
+            child=out_child,
+            data_subjects=self.data_subjects,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+            func_str=GAMMA_TENSOR_OP.PUT.value,
+            sources=output_state,
         )
 
     def repeat(

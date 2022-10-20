@@ -1121,7 +1121,32 @@ def test_all(
     assert isinstance(result.data_subjects, DataSubjectArray)
 
 
-def test_swapaxes(
+def test_copy(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    """Test copy for PT"""
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    ).gamma
+
+    # Copy the tensor and check if it works
+    copy_tensor = reference_tensor.copy()
+
+    assert copy_tensor.func_str == GAMMA_TENSOR_OP.COPY.value
+    assert reference_tensor == copy_tensor.sources[reference_tensor.id]
+    assert (
+        reference_tensor.child == copy_tensor.child
+    ).all(), "Copying of the PT fails"
+
+
+def test_take(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
@@ -1135,6 +1160,29 @@ def test_swapaxes(
         min_vals=lower_bound,
     ).gamma
 
+    indices = [2]
+    result = reference_tensor.take(indices, axis=0)
+    assert result.func_str == GAMMA_TENSOR_OP.TAKE.value
+    assert reference_tensor == result.sources[reference_tensor.id]
+    assert (result.child == reference_tensor.child[indices, :]).all()
+    assert (result.min_vals == reference_tensor.min_vals[indices, :]).all()
+    assert (result.max_vals == reference_tensor.max_vals[indices, :]).all()
+    assert (result.data_subjects == reference_tensor.data_subjects[indices, :]).all()
+
+
+def test_swapaxes(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array(reference_data),
+        data_subjects=np.array(ishan),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    ).gamma
     result = reference_tensor.swapaxes(0, 1)
     reference_result = reference_data.swapaxes(0, 1)
     assert result.func_str == GAMMA_TENSOR_OP.SWAPAXES.value
@@ -1143,6 +1191,34 @@ def test_swapaxes(
     assert (result.data_subjects == reference_tensor.data_subjects.swapaxes(0, 1)).all()
     assert result.min_vals.shape == reference_result.shape
     assert result.max_vals.shape == reference_result.shape
+
+
+def test_put(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array(reference_data),
+        data_subjects=np.array(ishan),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    ).gamma
+
+    no_values = reference_tensor.shape[0]
+    new_values = np.random.randint(low=-5, high=5, size=(no_values), dtype=np.int32)
+    indices = np.random.randint(
+        low=0, high=no_values * no_values - no_values - 1, size=(1), dtype=np.int32
+    )[0]
+
+    result = reference_tensor.put(range(indices, indices + no_values), new_values)
+    assert result.func_str == GAMMA_TENSOR_OP.PUT.value
+    assert reference_tensor == result.sources[reference_tensor.id]
+    assert (
+        result.child.flat[indices : indices + no_values] == new_values  # noqa: E203
+    ).all()
 
 
 def test_nonzero(
