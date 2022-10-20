@@ -26,6 +26,7 @@ class GAMMA_TENSOR_OP(Enum):
     ZEROS_LIKE = "zeros_like"
     RAVEL = "ravel"
     RESIZE = "resize"
+    RESHAPE = "reshape"
     COMPRESS = "compress"
     SQUEEZE = "squeeze"
     ANY = "any"

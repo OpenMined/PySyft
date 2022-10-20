@@ -2696,41 +2696,18 @@ class GammaTensor:
         )
 
     def reshape(self, shape: Tuple[int, ...]) -> GammaTensor:
-        raise NotImplementedError
-        # # TODO: Check if this can publish properly since source changes aren't made
-        # child = self.child.reshape(shape)
-        # output_shape = child.shape
+        sources = dict()
+        sources[self.id] = self
+        sources["0"] = shape  # type: ignore
 
-        # if isinstance(self.min_vals, lazyrepeatarray):
-        #     if self.min_vals.data.shape == 1:
-        #         minv = self.min_vals.reshape(output_shape)
-        #         maxv = self.max_vals.reshape(output_shape)
-        #     elif self.min_vals.data.shape == self.min_vals.shape:
-        #         minv = self.min_vals.reshape(output_shape)
-        #         minv.data = minv.data.min()
-
-        #         maxv = self.max_vals.reshape(output_shape)
-        #         maxv.data = maxv.data.max()
-        #     else:
-        #         minv = self.min_vals.reshape(output_shape)
-        #         minv.data = minv.data.min()
-
-        #         maxv = self.max_vals.reshape(output_shape)
-        #         maxv.data = maxv.data.max()
-
-        # elif isinstance(self.min_vals, (int, float)):
-        #     minv = self.min_vals  # type: ignore
-        #     maxv = self.max_vals
-        # else:
-        #     minv = self.min_vals
-        #     maxv = self.max_vals
-
-        # return GammaTensor(
-        #     child=child,
-        #     data_subjects=self.data_subjects.reshape(shape),
-        #     min_vals=minv,
-        #     max_vals=maxv,
-        # )
+        return GammaTensor(
+            child=self.child.reshape(shape),
+            data_subjects=self.data_subjects.reshape(shape),
+            min_vals=self.min_vals.reshape(shape),
+            max_vals=self.max_vals.reshape(shape),
+            func_str=GAMMA_TENSOR_OP.RESHAPE.value,
+            sources=sources,
+        )
 
     def _argmax(self, axis: Optional[int]) -> np.ndarray:
         raise NotImplementedError

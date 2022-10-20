@@ -85,6 +85,7 @@ def generate_ops() -> Dict[GAMMA_TENSOR_OP, Callable]:
         GAMMA_TENSOR_OP.ZEROS_LIKE: jnp.zeros_like,
         GAMMA_TENSOR_OP.RAVEL: jnp.ravel,
         GAMMA_TENSOR_OP.RESIZE: jnp.resize,
+        GAMMA_TENSOR_OP.RESHAPE: jnp.reshape,
         GAMMA_TENSOR_OP.COMPRESS: jnp.compress,
         GAMMA_TENSOR_OP.SQUEEZE: jnp.squeeze,
         GAMMA_TENSOR_OP.ANY: jnp.any,
