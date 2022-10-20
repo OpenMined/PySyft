@@ -383,9 +383,26 @@ class ShareTensor(PassthroughTensor):
         share_wrapper: Any,
         ring_size: Union[int, str] = DEFAULT_RING_SIZE,
     ) -> PassthroughTensor:
+        # relative
+        from ..autodp.gamma_tensor import GammaTensor
+
         ring_size = int(ring_size)
-        if hasattr(value, "child"):
-            value.child.child = FixedPrecisionTensor(value.child.child)  # type: ignore
+        if value and hasattr(value, "child"):
+            if isinstance(value.child, GammaTensor):
+                # We do this, since GammaTensor is a FrozenInstance, which prevents us from modifying child values.
+                gt: GammaTensor = value.child
+                new_gamma = GammaTensor(
+                    child=FixedPrecisionTensor(value.child.child),
+                    data_subjects=gt.data_subjects,
+                    min_vals=gt.min_vals,
+                    max_vals=gt.max_vals,
+                    func_str=gt.func_str,
+                    sources=gt.sources,
+                )
+                value.child = new_gamma
+
+            else:
+                value.child.child = FixedPrecisionTensor(value.child.child)  # type: ignore
 
         if value is not None:
             share = ShareTensor.generate_przs(

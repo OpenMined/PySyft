@@ -373,6 +373,11 @@ class lazyrepeatarray:
         return self.__class__(self.data.astype(np_type), self.shape)
 
     def to_numpy(self) -> np.ndarray:
+
+        # FIX: shape is not set sometimes
+        if not self.shape:
+            self.shape = self.data.shape
+
         return np.broadcast_to(self.data, self.shape)
 
     def __repr__(self) -> str:
@@ -449,8 +454,8 @@ def compute_min_max(
         min_vals = x_min_vals * 0
         max_vals = (x_max_vals * 0) + 1
     elif op_str == "sum":
-        min_vals = lazyrepeatarray(data=np.array(x_min_vals.sum(axis=None)), shape=())
-        max_vals = lazyrepeatarray(data=np.array(x_max_vals.sum(axis=None)), shape=())
+        min_vals = x_min_vals.sum(*args, **kwargs)
+        max_vals = x_max_vals.sum(*args, **kwargs)
     elif op_str == "__pos__":
         min_vals = x_min_vals
         max_vals = x_max_vals
