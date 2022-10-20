@@ -373,6 +373,11 @@ class lazyrepeatarray:
         return self.__class__(self.data.astype(np_type), self.shape)
 
     def to_numpy(self) -> np.ndarray:
+
+        # FIX: shape is not set sometimes
+        if not self.shape:
+            self.shape = self.data.shape
+
         return np.broadcast_to(self.data, self.shape)
 
     def __repr__(self) -> str:
