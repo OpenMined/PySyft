@@ -354,9 +354,10 @@ class PhiTensorAncestor(TensorChainManager):
         deduct_epsilon_for_user: Callable,
         ledger: DataSubjectLedger,
         sigma: float,
+        private: bool,
     ) -> Any:
         return self.child.publish(
-            get_budget_for_user, deduct_epsilon_for_user, ledger, sigma
+            get_budget_for_user, deduct_epsilon_for_user, ledger, sigma, private=private
         )
 
     def copy(self) -> PhiTensorAncestor:
