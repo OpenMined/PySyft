@@ -159,14 +159,14 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         # so we ask lib_ast for the return type name that matches out
         # attr_path_and_name and then use that to get the actual pointer klass
         # then set the result to that pointer klass
-    
+
         # We always maintain a Tensor hierarchy Tensor ---> PT--> Actual Data
         attr_path_and_name = f"syft.core.tensor.tensor.Tensor.{op_str}"
-        
+
         min_vals, max_vals = compute_min_max(
             self.min_vals, self.max_vals, other, op_str
         )
-        
+
         result = TensorWrappedPhiTensorPointer(
             data_subjects=self.data_subjects,
             min_vals=min_vals,
@@ -176,7 +176,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
         # QUESTION can the id_at_location be None?
         result_id_at_location = getattr(result, "id_at_location", None)
-        
+
         if result_id_at_location is not None:
             # first downcast anything primitive which is not already PyPrimitive
             (
@@ -201,7 +201,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
                 address=self.client.address,
             )
             self.client.send_immediate_msg_without_reply(msg=cmd)
-        
+
         inherit_tags(
             attr_path_and_name=attr_path_and_name,
             result=result,
@@ -228,9 +228,9 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             raise ValueError(
                 f"Invalid Type for TensorWrappedPhiTensorPointer:{type(other)}"
             )
-       
+
         if self.public_shape is not None and other_shape is not None:
-            result_public_shape =utils.get_shape(
+            result_public_shape = utils.get_shape(
                 op_str, self.public_shape, other_shape
             )
         if self.public_dtype is None or other_dtype is None:
@@ -358,9 +358,8 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         return self._apply_self_tensor_op("resize", *args, **kwargs)
 
     def reshape(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
-       return self._apply_self_tensor_op("reshape", *args, **kwargs)
+        return self._apply_self_tensor_op("reshape", *args, **kwargs)
 
-   
     @staticmethod
     def _apply_op(
         self: TensorWrappedPhiTensorPointer,
@@ -673,6 +672,37 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
         return TensorWrappedPhiTensorPointer._apply_op(self, other, "__floordiv__")
+
+    def __mod__(
+        self,
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
+    ) -> Union[
+        TensorWrappedPhiTensorPointer, TensorWrappedGammaTensorPointer, MPCTensor
+    ]:
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__mod__")
+
+    def __divmod__(
+        self,
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
+    ) -> Tuple[
+        Union[
+            TensorWrappedPhiTensorPointer, TensorWrappedGammaTensorPointer, MPCTensor
+        ],
+        Union[
+            TensorWrappedPhiTensorPointer, TensorWrappedGammaTensorPointer, MPCTensor
+        ],
+    ]:
+        """Apply the "truediv" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedPhiTensorPointer._apply_op(
+            self, other, "__floordiv__"
+        ), TensorWrappedPhiTensorPointer._apply_op(self, other, "__mod__")
 
     def sum(
         self,
@@ -1402,22 +1432,6 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             public_shape=public_shape,
             public_dtype=public_dtype,
         )
-
-    def __lshift__(
-    #def __lt__(
-        self,
-        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
-    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
-        """Apply the "lt" operation between "self" and "other"
-
-        Args:
-            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
-
-        Returns:
-            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
-        """
-        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__lshift__")
-
 
 
 @implements(TensorWrappedPhiTensorPointer, np.ones_like)
@@ -2627,7 +2641,38 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         else:
             raise NotImplementedError
 
-    def __divmod__(self, other: Any) -> Tuple[Union[PhiTensor, GammaTensor]]:
+    def __mod__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
+        if is_acceptable_simple_type(other):
+            if isinstance(other, np.ndarray):
+                maxv = other.max()
+            else:
+                maxv = other
+            return PhiTensor(
+                child=self.child % other,
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(data=0, shape=self.shape),
+                max_vals=lazyrepeatarray(data=maxv, shape=self.shape),
+            )
+        elif isinstance(other, PhiTensor):
+            if self.data_subjects.sum() == other.data_subjects.sum():
+                return PhiTensor(
+                    child=self.child % other,
+                    data_subjects=self.data_subjects,
+                    min_vals=self.min_vals * 0,
+                    max_vals=lazyrepeatarray(
+                        data=other.max_vals.data, shape=self.shape
+                    ),
+                )
+            else:
+                return self.gamma % other.gamma
+        elif isinstance(other, GammaTensor):
+            return self.gamma % other
+        else:
+            raise NotImplementedError
+
+    def __divmod__(
+        self, other: Any
+    ) -> Tuple[Union[PhiTensor, GammaTensor], Union[PhiTensor, GammaTensor]]:
         if isinstance(other, (np.ndarray, PhiTensor, GammaTensor)):
             return self // other, self % other  # type: ignore
         else:

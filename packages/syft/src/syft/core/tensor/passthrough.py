@@ -318,6 +318,15 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
             return self.__class__(self.child.__rpow__(other))
         return self.__class__(self.child.__rpow__(other.child))
 
+    def __mod__(
+        self,
+        other: Union[Type[PassthroughTensor], AcceptableSimpleType],
+    ) -> PassthroughTensor:
+        if is_acceptable_simple_type(other):
+            return self.__class__(self.child.__mod__(other))
+
+        return self.__class__(self.child.__mod__(other.child))
+
     def __divmod__(
         self,
         other: Union[Type[PassthroughTensor], AcceptableSimpleType],

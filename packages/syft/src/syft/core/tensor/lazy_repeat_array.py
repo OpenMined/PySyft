@@ -564,5 +564,20 @@ def compute_min_max(
         dummy_res = np.empty(x_min_vals.shape).reshape(*args, **kwargs)
         min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
         max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
+    elif op_str == "__mod__":
+        if is_acceptable_simple_type(other):
+            if isinstance(other, np.ndarray):
+                maxv = other.max()
+            else:
+                maxv = other
+        else:
+            if hasattr(other, "min_vals") and hasattr(other, "max_vals"):
+                maxv = other.max_vals.data  # type: ignore
+            else:
+                raise ValueError(
+                    f"Not supported type for lazy repeat array computation: {type(other)}"
+                )
+        min_vals = lazyrepeatarray(data=0, shape=x_min_vals.shape)
+        max_vals = lazyrepeatarray(data=maxv, shape=x_max_vals.shape)
 
     return min_vals, max_vals
