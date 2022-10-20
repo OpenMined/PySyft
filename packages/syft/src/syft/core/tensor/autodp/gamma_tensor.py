@@ -599,6 +599,14 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         """
         return TensorWrappedGammaTensorPointer._apply_op(self, other, "__truediv__")
 
+    def __mod__(
+        self,
+        other: Union[
+            TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__mod__")
+
     def __floordiv__(
         self,
         other: Union[
@@ -614,6 +622,19 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
         return TensorWrappedGammaTensorPointer._apply_op(self, other, "__floordiv__")
+
+    def __divmod__(
+        self,
+        other: Union[
+            TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Tuple[
+        Union[TensorWrappedGammaTensorPointer, MPCTensor],
+        Union[TensorWrappedGammaTensorPointer, MPCTensor],
+    ]:
+        return TensorWrappedGammaTensorPointer._apply_op(
+            self, other, "__floordiv__"
+        ), TensorWrappedGammaTensorPointer._apply_op(self, other, "__mod__")
 
     def sum(
         self,
@@ -984,6 +1005,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
 
+<<<<<<< HEAD
         """
         Reverse or permute the axes of an array; returns the modified array.
 
@@ -992,6 +1014,8 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
                 array with its axes permuted. A view is returned whenever possible.
         """
     
+=======
+>>>>>>> 0cdbf8aa9e75d763ed192f3eba70ccfbcafd1e63
         return self._apply_self_tensor_op("transpose", *args, **kwargs)
 
     def resize(
@@ -1000,6 +1024,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
 
+<<<<<<< HEAD
         """
         Return a new array with the specified shape.
 
@@ -1014,6 +1039,8 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
 
         """
     
+=======
+>>>>>>> 0cdbf8aa9e75d763ed192f3eba70ccfbcafd1e63
         return self._apply_self_tensor_op("resize", *args, **kwargs)
 
     def reshape(
@@ -1022,6 +1049,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
 
+<<<<<<< HEAD
         """
         Gives a new shape to an array without changing its data.
 
@@ -1037,6 +1065,8 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
                 Note there is no guarantee of the memory layout (C- or Fortran- contiguous) of the returned array.
         """
     
+=======
+>>>>>>> 0cdbf8aa9e75d763ed192f3eba70ccfbcafd1e63
         return self._apply_self_tensor_op("reshape", *args, **kwargs)
 
     def exp(
@@ -1794,6 +1824,46 @@ class GammaTensor:
             func_str=GAMMA_TENSOR_OP.TRUE_DIVIDE.value,
             sources=output_state,
         )
+
+    def __mod__(self, other: Any) -> GammaTensor:
+        # relative
+        from .phi_tensor import PhiTensor
+
+        output_state = dict()
+        # Add this tensor to the chain
+        output_state[self.id] = self
+
+        if isinstance(other, PhiTensor):
+            other = other.gamma
+
+        if isinstance(other, GammaTensor):
+            output_state[other.id] = other
+            child = self.child % other.child
+            min_val = self.min_vals * 0
+            max_val = lazyrepeatarray(data=other.max_vals.data, shape=self.shape)
+            output_ds = self.data_subjects * other.data_subjects
+
+        else:
+            child = self.child / other
+            min_val = self.min_vals * 0
+            if isinstance(other, np.ndarray):
+                max_val = lazyrepeatarray(data=other.max(), shape=self.shape)
+            else:
+                max_val = lazyrepeatarray(data=other, shape=self.shape)
+            output_ds = self.data_subjects
+            output_state["0"] = other
+
+        return GammaTensor(
+            child=child,
+            data_subjects=output_ds,
+            min_vals=min_val,
+            max_vals=max_val,
+            func_str=GAMMA_TENSOR_OP.TRUE_DIVIDE.value,
+            sources=output_state,
+        )
+
+    def __divmod__(self, other: Any) -> Tuple[GammaTensor, GammaTensor]:
+        return self // other, self % other
 
     def __matmul__(self, other: Any) -> GammaTensor:
         # relative
