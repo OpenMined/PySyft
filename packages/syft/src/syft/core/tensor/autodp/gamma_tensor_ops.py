@@ -49,8 +49,6 @@ class GAMMA_TENSOR_OP(Enum):
     ARGMAX = "argmax"
     ARGMIN = "argmin"
     PTP = "ptp"
-    PARTITION = "partition"
-    ARGPARTITION = "argpartition"
     MOD = "mod"
     SWAPAXES = "swapaxes"
     NONZERO = "nonzero"

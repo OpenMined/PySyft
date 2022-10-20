@@ -1397,58 +1397,6 @@ def test_argmin(
     ).all()
 
 
-def test_partition(
-    reference_data: np.ndarray,
-    upper_bound: np.ndarray,
-    lower_bound: np.ndarray,
-    ishan: DataSubjectArray,
-) -> None:
-    ishan = np.broadcast_to(ishan, reference_data.shape)
-    reference_tensor = PT(
-        child=np.array(reference_data),
-        data_subjects=np.array(ishan),
-        max_vals=upper_bound,
-        min_vals=lower_bound,
-    )
-
-    kth = np.random.randint(0, reference_data.shape[-1])
-    result = reference_tensor.partition(kth, axis=0)
-    reference_arg = np.argpartition(reference_data, kth, axis=0)
-    ref_data_subjects = np.take_along_axis(
-        reference_tensor.data_subjects, reference_arg, 0
-    )
-
-    assert (result.child == np.partition(reference_data, kth, axis=0)).all()
-    assert (result.data_subjects == ref_data_subjects).all()
-
-
-def test_argpartition(
-    reference_data: np.ndarray,
-    upper_bound: np.ndarray,
-    lower_bound: np.ndarray,
-    ishan: DataSubjectArray,
-) -> None:
-    ishan = np.broadcast_to(ishan, reference_data.shape)
-    reference_tensor = PT(
-        child=np.array(reference_data),
-        data_subjects=np.array(ishan),
-        max_vals=upper_bound,
-        min_vals=lower_bound,
-    )
-
-    kth = np.random.randint(0, reference_data.shape[-1])
-    result = reference_tensor.argpartition(kth, axis=0)
-    reference_arg = np.argpartition(reference_data, kth, axis=0)
-    ref_data_subjects = np.take_along_axis(
-        reference_tensor.data_subjects, reference_arg, 0
-    )
-
-    assert (result.child == reference_arg).all()
-    assert (result.data_subjects == ref_data_subjects).all()
-    assert result.min_vals.data == 0
-    assert result.max_vals.data == max(reference_data.shape)
-
-
 def test_ptp(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,

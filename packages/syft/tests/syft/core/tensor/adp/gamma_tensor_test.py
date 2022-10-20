@@ -1375,62 +1375,6 @@ def test_swapaxes(
     assert result.max_vals.shape == reference_result.shape
 
 
-def test_partition(
-    reference_data: np.ndarray,
-    upper_bound: np.ndarray,
-    lower_bound: np.ndarray,
-    ishan: DataSubjectArray,
-) -> None:
-    ishan = np.broadcast_to(ishan, reference_data.shape)
-    reference_tensor = PT(
-        child=np.array(reference_data),
-        data_subjects=np.array(ishan),
-        max_vals=upper_bound,
-        min_vals=lower_bound,
-    ).gamma
-
-    kth = np.random.randint(0, reference_data.shape[-1])
-    result = reference_tensor.partition(kth, axis=0)
-    reference_arg = np.argpartition(reference_data, kth, axis=0)
-    ref_data_subjects = np.take_along_axis(
-        reference_tensor.data_subjects, reference_arg, 0
-    )
-
-    assert result.func_str == GAMMA_TENSOR_OP.PARTITION.value
-    assert reference_tensor == result.sources[reference_tensor.id]
-    assert (result.child == np.partition(reference_data, kth, axis=0)).all()
-    assert (result.data_subjects == ref_data_subjects).all()
-
-
-def test_argpartition(
-    reference_data: np.ndarray,
-    upper_bound: np.ndarray,
-    lower_bound: np.ndarray,
-    ishan: DataSubjectArray,
-) -> None:
-    ishan = np.broadcast_to(ishan, reference_data.shape)
-    reference_tensor = PT(
-        child=np.array(reference_data),
-        data_subjects=np.array(ishan),
-        max_vals=upper_bound,
-        min_vals=lower_bound,
-    ).gamma
-
-    kth = np.random.randint(0, reference_data.shape[-1])
-    result = reference_tensor.argpartition(kth, axis=0)
-    reference_arg = np.argpartition(reference_data, kth, axis=0)
-    ref_data_subjects = np.take_along_axis(
-        reference_tensor.data_subjects, reference_arg, 0
-    )
-
-    assert result.func_str == GAMMA_TENSOR_OP.ARGPARTITION.value
-    assert reference_tensor == result.sources[reference_tensor.id]
-    assert (result.child == reference_arg).all()
-    assert (result.data_subjects == ref_data_subjects).all()
-    assert result.min_vals.data == 0
-    assert result.max_vals.data == max(reference_data.shape)
-
-
 def test_ptp(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1460,30 +1404,6 @@ def test_ptp(
     assert result.max_vals.data == upper_bound - lower_bound
 
 
-# def test_conj(
-#     reference_data: np.ndarray,
-#     upper_bound: np.ndarray,
-#     lower_bound: np.ndarray,
-#     ishan: DataSubjectArray,
-# ) -> None:
-#     ishan = np.broadcast_to(ishan, reference_data.shape)
-#     complex_reference_data = reference_data + 1j * np.eye(reference_data.shape[0])
-#     # print(complex_reference_data)
-#     reference_tensor = PT(
-#         child=complex_reference_data,
-#         data_subjects=np.array(ishan),
-#         max_vals=upper_bound,
-#         min_vals=lower_bound,
-#     ).gamma
-
-#     assert reference_tensor.conj == reference_tensor.conjugate
-#     result = reference_tensor.conj()
-#     assert result.func_str == GAMMA_TENSOR_OP.CONJ.value
-#     assert reference_tensor == result.sources[reference_tensor.id]
-#     assert (result.child == np.conj(complex_reference_data)).all()
-#     assert (result.data_subjects == reference_tensor.data_subjects).all()
-#     assert (result.max_vals == reference_tensor.max_vals).all()
-#     assert (result.min_vals == reference_tensor.min_vals).all()
 def test_nonzero(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
