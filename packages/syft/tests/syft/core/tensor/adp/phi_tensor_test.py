@@ -1287,7 +1287,6 @@ def test_put(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-
     no_values = reference_tensor.shape[0]
     new_values = np.random.randint(low=-50, high=50, size=(no_values), dtype=np.int32)
     indices = np.random.randint(
@@ -1348,13 +1347,6 @@ def test_argmax(
         result.data_subjects == reference_tensor.data_subjects[reference_result]
     ).all()
 
-    result = reference_tensor.argmax(axis=0, keepdims=True)
-    reference_result = reference_tensor.child.argmax(axis=0, keepdims=True)
-    assert (result.child == reference_result).all()
-    assert (
-        result.data_subjects == reference_tensor.data_subjects[reference_result]
-    ).all()
-
 
 def test_swapaxes(
     reference_data: np.ndarray,
@@ -1399,13 +1391,6 @@ def test_argmin(
 
     result = reference_tensor.argmin(axis=0)
     reference_result = reference_tensor.child.argmin(axis=0)
-    assert (result.child == reference_result).all()
-    assert (
-        result.data_subjects == reference_tensor.data_subjects[reference_result]
-    ).all()
-
-    result = reference_tensor.argmin(axis=0, keepdims=True)
-    reference_result = reference_tensor.child.argmin(axis=0, keepdims=True)
     assert (result.child == reference_result).all()
     assert (
         result.data_subjects == reference_tensor.data_subjects[reference_result]

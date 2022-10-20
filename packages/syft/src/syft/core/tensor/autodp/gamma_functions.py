@@ -111,7 +111,6 @@ def generate_ops() -> Dict[GAMMA_TENSOR_OP, Callable]:
         GAMMA_TENSOR_OP.PARTITION: jnp.partition,
         GAMMA_TENSOR_OP.ARGPARTITION: jnp.partition,
         GAMMA_TENSOR_OP.MOD: jnp.mod,
-        # GAMMA_TENSOR_OP.CONJ: jnp.conj,
         GAMMA_TENSOR_OP.SWAPAXES: jnp.swapaxes,
         GAMMA_TENSOR_OP.NONZERO: jnp.nonzero,
         GAMMA_TENSOR_OP.PROD: jnp.prod,
