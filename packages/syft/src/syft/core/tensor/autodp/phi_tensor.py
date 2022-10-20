@@ -261,7 +261,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         if op_str == "__round__":
             data_subjects = self.data_subjects
         elif op_str == "resize":
-            data_subjects = dummy_res = np.resize(self.data_subjects, *args) 
+            data_subjects = dummy_res = np.resize(self.data_subjects, *args)
         elif hasattr(self.data_subjects, op_str):
             data_subjects = getattr(self.data_subjects, op_str)(*args, **kwargs)
         else:
@@ -319,9 +319,9 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             if op_str == "resize":
                 dummy_res = np.resize(dummy_res, *args)
                 result.public_shape = dummy_res.shape
-                result.public_dtype = self.public_dtype  
+                result.public_dtype = self.public_dtype
                 return result
-    
+
             dummy_res = getattr(dummy_res, op_str)(*args, **kwargs)
         elif hasattr(np, op_str):
             dummy_res = getattr(np, op_str)(dummy_res, *args, *kwargs)
@@ -1454,8 +1454,9 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
         Returns
             reshaped_array: ndarray
-                The new array is formed from the data in the old array, 
-                repeated if necessary to fill out the required number of elements. The data are repeated iterating over the array in C-order.
+                The new array is formed from the data in the old array,
+                repeated if necessary to fill out the required number of elements.
+                The data are repeated iterating over the array in C-order.
 
         """
         return self._apply_self_tensor_op("resize", *args, **kwargs)
@@ -1466,17 +1467,16 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
         Parameters
             new_shape: int or tuple of int
-                The new shape should be compatible with the original shape. If an integer, then the result will 
-                be a 1-D array of that length. One shape dimension can be -1. In this case, 
+                The new shape should be compatible with the original shape. If an integer, then the result will
+                be a 1-D array of that length. One shape dimension can be -1. In this case,
                 the value is inferred from the length of the array and remaining dimensions.
 
         Returns
             reshaped_array: ndarray
-                This will be a new view object if possible; otherwise, it will be a copy. 
+                This will be a new view object if possible; otherwise, it will be a copy.
                 Note there is no guarantee of the memory layout (C- or Fortran- contiguous) of the returned array.
         """
         return self._apply_self_tensor_op("reshape", *args, **kwargs)
-
 
 
 @implements(TensorWrappedPhiTensorPointer, np.ones_like)

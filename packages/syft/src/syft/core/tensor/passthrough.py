@@ -430,12 +430,11 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def resize(
         self,
         new_shape: Union[int, TypeTuple[int, ...]],
-        refcheck: Optional[bool] = True,
     ) -> PassthroughTensor:
         # Should be modified to  remove copy
         # https://stackoverflow.com/questions/23253144/numpy-the-array-doesnt-have-its-own-data
         res = self.child.copy()
-        res.resize(new_shape, refcheck=refcheck)
+        res.resize(new_shape)
         return self.__class__(res)
 
     @property

@@ -302,7 +302,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         )
 
         if op_str == "resize":
-            data_subjects = dummy_res = np.resize(self.data_subjects, *args) 
+            data_subjects = dummy_res = np.resize(self.data_subjects, *args)
         elif hasattr(self.data_subjects, op_str):
             data_subjects = getattr(self.data_subjects, op_str)(*args, **kwargs)
         else:
@@ -1004,8 +1004,6 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         *args: Any,
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-
-<<<<<<< HEAD
         """
         Reverse or permute the axes of an array; returns the modified array.
 
@@ -1013,9 +1011,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             p: ndarray
                 array with its axes permuted. A view is returned whenever possible.
         """
-    
-=======
->>>>>>> 0cdbf8aa9e75d763ed192f3eba70ccfbcafd1e63
+
         return self._apply_self_tensor_op("transpose", *args, **kwargs)
 
     def resize(
@@ -1024,7 +1020,6 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
 
-<<<<<<< HEAD
         """
         Return a new array with the specified shape.
 
@@ -1034,13 +1029,11 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
 
         Returns
             reshaped_array: ndarray
-                The new array is formed from the data in the old array, 
-                repeated if necessary to fill out the required number of elements. The data are repeated iterating over the array in C-order.
+                The new array is formed from the data in the old array,
+                repeated if necessary to fill out the required number of elements.
+                The data are repeated iterating over the array in C-order.
 
         """
-    
-=======
->>>>>>> 0cdbf8aa9e75d763ed192f3eba70ccfbcafd1e63
         return self._apply_self_tensor_op("resize", *args, **kwargs)
 
     def reshape(
@@ -1049,24 +1042,20 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
 
-<<<<<<< HEAD
         """
         Gives a new shape to an array without changing its data.
 
         Parameters
             new_shape: int or tuple of int
-                The new shape should be compatible with the original shape. If an integer, then the result will 
-                be a 1-D array of that length. One shape dimension can be -1. In this case, 
+                The new shape should be compatible with the original shape. If an integer, then the result will
+                be a 1-D array of that length. One shape dimension can be -1. In this case,
                 the value is inferred from the length of the array and remaining dimensions.
 
         Returns
             reshaped_array: ndarray
-                This will be a new view object if possible; otherwise, it will be a copy. 
+                This will be a new view object if possible; otherwise, it will be a copy.
                 Note there is no guarantee of the memory layout (C- or Fortran- contiguous) of the returned array.
         """
-    
-=======
->>>>>>> 0cdbf8aa9e75d763ed192f3eba70ccfbcafd1e63
         return self._apply_self_tensor_op("reshape", *args, **kwargs)
 
     def exp(
