@@ -1193,8 +1193,9 @@ def test_put(
     result = reference_tensor.put(range(indices, indices + no_values), new_values)
     assert result.func_str == GAMMA_TENSOR_OP.PUT.value
     assert reference_tensor == result.sources[reference_tensor.id]
-    flatten_results = result.child.flat[indices:]
-    assert (flatten_results[:no_values] == new_values).all()
+    assert (
+        result.child.flat[indices : indices + no_values] == new_values  # noqa: E203
+    ).all()
 
 
 def test_abs(

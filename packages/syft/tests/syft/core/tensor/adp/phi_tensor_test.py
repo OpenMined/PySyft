@@ -1287,7 +1287,6 @@ def test_put(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-
     no_values = reference_tensor.shape[0]
     new_values = np.random.randint(low=-50, high=50, size=(no_values), dtype=np.int32)
     indices = np.random.randint(
