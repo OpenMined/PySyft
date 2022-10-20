@@ -131,8 +131,14 @@ After you have launched and logged into your domain as an ``admin``, you can cre
    your ``domain`` to one or more networks so that proper verification measures have been taken. 
    You can learn more about this in our "Connect Your Domain to a Network" tutorial.
 
-There are ``three`` different ways to create an account for the user **through the PySyft interface in a notebook using the 
-existing domain client (A) and by signing up using the URL to the domain (B), or alternatively, from the PyGrid UI (C).**
+There are ``three`` different ways for a new user account to be created on your domain.
+
+* **Option A**, by a Domain Owner creating a new user account and specifying their 
+  credentials directly through the notebook API.
+* **Option B**, by a Domain Owner creating a new user account and specifying their credentials 
+  through PyGrid’s default UI interface.
+* **Option C**, by a potential user finding or being given the Domain node’s profile URL and 
+  submitting an application that a Domain Owner can triage. (This functionality is currently in Beta).
 
 .. note::
    In all three cases, the user of your domain will be assigned the role of Data Scientist by default.
@@ -275,7 +281,7 @@ was made and if we need to change any permissions.
 
 .. note:: 
    Permissions are determined by the ``role`` a user has been assigned by the Data Owner. 
-   They can ``view`` or ``update`` ``permissions`` for the role they set using PyGrid's UI.
+   By default a user will be created with the role with the ``lowest`` set of ``permissions``. 
    To simplify the concepts, let us consider the below scenario. 
    
 Scenario
