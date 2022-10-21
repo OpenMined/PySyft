@@ -56,6 +56,7 @@ class GAMMA_TENSOR_OP(Enum):
     MIN = "min"
     MAX = "max"
     REPEAT = "repeat"
+    DIAGONAL = "diagonal"
     # Our Methods
     RECIPROCAL = "reciprocal"
     FLATTEN_C = "flatten_c"

@@ -1147,6 +1147,39 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
         return result
 
+    def diagonal(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Return the sum along diagonals of the array.
+
+        Return specified diagonals.
+        If a is 2-D, returns the diagonal of a with the given offset, i.e., the collection of
+        elements of the form a[i, i+offset].
+
+        If a has more than two dimensions, then the axes specified by axis1 and axis are used
+        to determine the 2-D sub-array whose diagonal is returned.  The shape of the resulting
+        array can be determined by removing axis1 and axis2 and appending an index to the right
+        equal to the size of the resulting diagonals.
+
+        Parameters
+
+            offset: int, optional
+                Offset of the diagonal from the main diagonal.  Can be positive or negative.
+                Defaults to main diagonal (0).
+            axis1, axis2: int, optional
+                Axis to be used as the first axis of the 2-D sub-arrays from which the diagonals
+                should be taken. Defaults are the first two axes of a.
+
+        Returns
+            array_of_diagonals : Union[TensorWrappedPhiTensorPointer,MPCTensor]
+                If a is 2-D, then a 1-D array containing the diagonal and of the same type as a
+                is returned unless a is a matrix, in which casea 1-D array rather than a (2-D)
+                matrix is returned in order to maintain backward compatibility.
+
+                If a.ndim > 2, then the dimensions specified by axis1 and axis2 are removed,
+                and a new axis inserted at the end corresponding to the diagonal.
+        """
+        return self._apply_self_tensor_op("diagonal", *args, **kwargs)
+
     @property
     def T(self) -> TensorWrappedPhiTensorPointer:
         # We always maintain a Tensor hierarchy Tensor ---> PT--> Actual Data
@@ -3214,6 +3247,18 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         return PhiTensor(
             child=result,
             data_subjects=self.data_subjects.trace(offset, axis1, axis2),
+            min_vals=lazyrepeatarray(data=self.min_vals.data * num, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data * num, shape=result.shape),
+        )
+
+    def diagonal(self, offset: int = 0, axis1: int = 0, axis2: int = 1) -> PhiTensor:
+
+        result = self.child.diagonal(offset, axis1, axis2)
+
+        num = np.ones_like(self.child).diagonal(offset, axis1, axis2)
+        return PhiTensor(
+            child=result,
+            data_subjects=self.data_subjects.diagonal(offset, axis1, axis2),
             min_vals=lazyrepeatarray(data=self.min_vals.data * num, shape=result.shape),
             max_vals=lazyrepeatarray(data=self.max_vals.data * num, shape=result.shape),
         )

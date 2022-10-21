@@ -469,6 +469,10 @@ def compute_min_max(
         dummy_res = np.empty(x_min_vals.shape).repeat(*args, **kwargs)
         min_vals = lazyrepeatarray(data=x_min_vals.data.min(), shape=dummy_res.shape)
         max_vals = lazyrepeatarray(data=x_max_vals.data.max(), shape=dummy_res.shape)
+    elif op_str == "diagonal":
+        dummy_res = np.empty(x_min_vals.shape).diagonal(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=x_min_vals.data.min(), shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(data=x_max_vals.data.max(), shape=dummy_res.shape)
     elif op_str == "min":
         dummy_res = np.empty(x_min_vals.shape).min(*args, **kwargs)
         min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
