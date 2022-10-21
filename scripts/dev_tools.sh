@@ -1,4 +1,11 @@
 #!/bin/bash
+unameOut="$(uname -s)"
+case "${unameOut}" in
+    Linux*)     command="xdg-open";;
+    Darwin*)    command="open";;
+    *)          machine="UNKNOWN:${unameOut}"
+esac
+echo ${command}
 
 if [[ -z "$1" ]]; then
     # list db, redis, rabbitmq, and seaweedfs ports
@@ -6,10 +13,10 @@ if [[ -z "$1" ]]; then
 else
     PORT=$1
     if docker ps | grep ":${PORT}" | grep -q 'redis'; then
-        open redis://127.0.0.1:${PORT}
+        ${command} redis://127.0.0.1:${PORT}
     elif docker ps | grep ":${PORT}" | grep -q 'postgres'; then
-        open postgresql://postgres:changethis@127.0.0.1:${PORT}/app
+        ${command} postgresql://postgres:changethis@127.0.0.1:${PORT}/app
     else
-        open http://localhost:${PORT}
+        ${command} http://localhost:${PORT}
     fi
 fi
