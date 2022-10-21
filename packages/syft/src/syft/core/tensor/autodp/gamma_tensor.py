@@ -3900,5 +3900,3 @@ class GammaTensor:
                 id=id_str,
                 func_str=func_str,
             )
-
-    # conjugate = conj
