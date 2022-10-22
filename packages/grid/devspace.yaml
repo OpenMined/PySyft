@@ -418,6 +418,8 @@ deployments:
                 value: ${REDIS_HOST}
               - name: REDIS_PORT
                 value: ${REDIS_PORT}
+              - name: SERVICE_NAME
+                value: ${SERVICE_NAME_BACKEND}
               - name: S3_ENDPOINT
                 value: ${S3_ENDPOINT}
               - name: S3_PORT
@@ -476,6 +478,8 @@ deployments:
                 value: ${SERVICE_NAME_DB}
               - name: POSTGRES_DB
                 value: ${POSTGRES_DB}
+              - name: SERVICE_NAME
+                value: ${SERVICE_NAME_BACKEND_STREAM}
               - name: POSTGRES_USER
                 value: ${POSTGRES_USER}
               - name: POSTGRES_PASSWORD
