@@ -13,12 +13,14 @@ from typing import Union
 
 # third party
 import numpy as np
+from numpy.typing import ArrayLike
 from numpy.typing import NDArray
 from scipy.ndimage.interpolation import rotate
 
 # relative
 from .... import lib
 from ....ast.klass import pointerize_args_and_kwargs
+from ....core.adp.data_subject import DataSubject
 from ....core.adp.data_subject_ledger import DataSubjectLedger
 from ....core.adp.data_subject_list import DataSubjectArray
 from ....core.adp.data_subject_list import dslarraytonumpyutf8
@@ -84,6 +86,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         "client": [lambda x: x.address, lambda y: y],
         "public_shape": [lambda x: x, lambda y: upcast(y)],
         "data_subjects": [dslarraytonumpyutf8, numpyutf8todslarray],
+        "public_dtype": [lambda x: str(x), lambda y: np.dtype(y)],
     }
     _exhausted = False
     is_enum = False
@@ -121,10 +124,11 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         public_dtype_func = getattr(
             self.public_dtype, "upcast", lambda: self.public_dtype
         )
+
         return (
             np.random.rand(*list(self.public_shape))  # type: ignore
-            * (self.max_vals.to_numpy() - self.min_vals.to_numpy())
-            + self.min_vals.to_numpy()
+            * (self.max_vals.data - self.min_vals.data)
+            + self.min_vals.data
         ).astype(public_dtype_func())
 
     def __repr__(self) -> str:
@@ -241,6 +245,78 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
         return result
 
+    def _apply_self_tensor_op(self, op_str: str, *args: Any, **kwargs: Any) -> Any:
+        # we want to get the return type which matches the attr_path_and_name
+        # so we ask lib_ast for the return type name that matches out
+        # attr_path_and_name and then use that to get the actual pointer klass
+        # then set the result to that pointer klass
+
+        # We always maintain a Tensor hierarchy Tensor ---> PT--> Actual Data
+        attr_path_and_name = f"syft.core.tensor.tensor.Tensor.{op_str}"
+        min_vals, max_vals = compute_min_max(
+            self.min_vals, self.max_vals, None, op_str, *args, **kwargs
+        )
+        if hasattr(self.data_subjects, op_str):
+            data_subjects = getattr(self.data_subjects, op_str)(*args, **kwargs)
+        else:
+            raise ValueError(f"Invalid Numpy Operation: {op_str} for DSA")
+
+        result = TensorWrappedPhiTensorPointer(
+            data_subjects=data_subjects,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=args,
+            kwargs=kwargs,
+        )
+
+        dummy_res = np.empty(self.public_shape)
+        if hasattr(dummy_res, op_str):
+            dummy_res = getattr(dummy_res, op_str)(*args, **kwargs)
+        elif hasattr(np, op_str):
+            dummy_res = getattr(np, op_str)(dummy_res, *args, *kwargs)
+        else:
+            raise ValueError(f"Invalid Numpy Operation: {op_str} for Pointer")
+
+        result.public_shape = dummy_res.shape
+        result.public_dtype = dummy_res.dtype
+
+        return result
+
     @property
     def gamma(self) -> TensorWrappedGammaTensorPointer:
         return TensorWrappedGammaTensorPointer(
@@ -255,6 +331,9 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             public_shape=getattr(self, "public_shape", None),
             public_dtype=getattr(self, "public_dtype", None),
         )
+
+    def copy(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        return self._apply_self_tensor_op("copy", *args, **kwargs)
 
     @staticmethod
     def _apply_op(
@@ -458,8 +537,8 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
     def concatenate(
         self,
         other: TensorWrappedPhiTensorPointer,
-        *args: List[Any],
-        **kwargs: Dict[str, Any],
+        *args: Any,
+        **kwargs: Any,
     ) -> MPCTensor:
         """Apply the "add" operation between "self" and "other"
 
@@ -491,6 +570,14 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
                 "Concatenate method currently works only between two different clients."
             )
 
+    def __pos__(self) -> TensorWrappedPhiTensorPointer:
+        """Apply the __pos__ (+) operator  on self.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer] : Result of the operation.
+        """
+        return self._apply_self_tensor_op(op_str="__pos__")
+
     def __truediv__(
         self,
         other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
@@ -505,9 +592,23 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         """
         return TensorWrappedPhiTensorPointer._apply_op(self, other, "__truediv__")
 
+    def __floordiv__(
+        self,
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
+        """Apply the "truediv" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__floordiv__")
+
     def sum(
         self,
-        *args: Tuple[Any, ...],
+        *args: Any,
         **kwargs: Any,
     ) -> Union[
         TensorWrappedPhiTensorPointer, MPCTensor, TensorWrappedGammaTensorPointer
@@ -520,7 +621,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         Returns:
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        return self.gamma.sum(*args, **kwargs)
+        return self._apply_self_tensor_op("sum", *args, **kwargs)
 
     def __getitem__(
         self, key: Union[int, bool, slice]
@@ -532,65 +633,14 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         Returns:
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.__getitem__"
-        result: TensorWrappedPhiTensorPointer
-        min_vals = self.min_vals.__getitem__(key)
-        max_vals = self.max_vals.__getitem__(key)
-
-        result = TensorWrappedPhiTensorPointer(
-            data_subjects=self.data_subjects,
-            min_vals=min_vals,
-            max_vals=max_vals,
-            client=self.client,
-        )
-
-        # QUESTION can the id_at_location be None?
-        result_id_at_location = getattr(result, "id_at_location", None)
-
-        if result_id_at_location is not None:
-            # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=[key], kwargs={})
-
-            # then we convert anything which isnt a pointer into a pointer
-            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args,
-                kwargs=downcast_kwargs,
-                client=self.client,
-                gc_enabled=False,
-            )
-
-            cmd = RunClassMethodAction(
-                path=attr_path_and_name,
-                _self=self,
-                args=pointer_args,
-                kwargs=pointer_kwargs,
-                id_at_location=result_id_at_location,
-                address=self.client.address,
-            )
-            self.client.send_immediate_msg_without_reply(msg=cmd)
-
-        inherit_tags(
-            attr_path_and_name=attr_path_and_name,
-            result=result,
-            self_obj=self,
-            args=[key],
-            kwargs={},
-        )
-        dummy_res = np.empty(self.public_shape).__getitem__(key)
-        result.public_shape = dummy_res.shape
-        result.public_dtype = self.public_dtype
-
-        return result
+        return self._apply_self_tensor_op("__getitem__", key)
 
     def ones_like(
         self,
-        *args: Tuple[Any, ...],
+        *args: Any,
         **kwargs: Any,
     ) -> TensorWrappedPhiTensorPointer:
-        """Apply the "truediv" operation between "self" and "other"
+        """Apply the "ones_like" operation between "self" and "other"
 
         Args:
             y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -598,15 +648,168 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         Returns:
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.ones_like"
-        result: TensorWrappedPhiTensorPointer
-        min_vals = self.min_vals.ones_like(*args, **kwargs)
-        max_vals = self.max_vals.ones_like(*args, **kwargs)
+        return self._apply_self_tensor_op("ones_like", *args, **kwargs)
 
+    def repeat(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """Apply the repeat" operation
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return self._apply_self_tensor_op("repeat", *args, **kwargs)
+
+    def var(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Compute the variance along the specified axis of the array elements, a measure of the spread of a distribution.
+        The variance is computed for the flattened array by default, otherwise over the specified axis.
+
+        Parameters
+
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which the variance is computed.
+                The default is to compute the variance of the flattened array.
+                If this is a tuple of ints, a variance is performed over multiple axes, instead of a single axis or all
+                the axes as before.
+
+            ddof: int, optional
+                “Delta Degrees of Freedom”: the divisor used in the calculation is N - ddof, where N represents the
+                number of elements. By default ddof is zero.
+
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the var method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+
+            where: array_like of bool, optional
+                Elements to include in the variance. See reduce for details.
+        """
+        return self._apply_self_tensor_op("var", *args, **kwargs)
+
+    def cumsum(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Return the cumulative sum of the elements along a given axis.
+
+        Parameters
+            axis: int, optional
+                Axis along which the cumulative sum is computed. The default (None) is to compute the cumsum over the
+                flattened array.
+        Returns
+            cumsum_along_axis: PhiTensor
+                A new array holding the result is returned. The result has the same size as input, and the same shape as
+                 a if axis is not None or a is 1-d.
+        """
+        return self._apply_self_tensor_op("cumsum", *args, **kwargs)
+
+    def prod(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Return the product of array elements over a given axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which a product is performed.
+                The default, axis=None, will calculate the product of all the elements in the input array.
+                If axis is negative it counts from the last to the first axis.
+
+                If axis is a tuple of ints, a product is performed on all of the axes specified in the tuple instead of
+                a single axis or all the axes as before.
+
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+
+                If the default value is passed, then keepdims will not be passed through to the prod method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+
+            initial: scalar, optional
+                The starting value for this product. See reduce for details.
+
+            where: array_like of bool, optional
+                Elements to include in the product. See reduce for details.
+        """
+        return self._apply_self_tensor_op("prod", *args, **kwargs)
+
+    def __pow__(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        First array elements raised to powers from second array, element-wise.
+
+        Raise each base in x1 to the positionally-corresponding power in x2.
+        x1 and x2 must be broadcastable to the same shape.
+        An integer type raised to a negative integer power will raise a ValueError.
+        Negative values raised to a non-integral value will return nan.
+
+        Parameters
+            x2: array_like
+
+                The exponents. If self.shape != x2.shape, they must be broadcastable to a common shape.
+
+            where: array_like, optional
+
+                This condition is broadcast over the input. At locations where the condition is True, the out array will
+                 be set to the ufunc result.
+                 Elsewhere, the out array will retain its original value.
+
+            **kwargs
+                For other keyword-only arguments, see the ufunc docs.
+
+        Returns
+            y: PhiTensorPointer
+                The bases in the tensor raised to the exponents in x2. This is a scalar if both self and x2 are scalars.
+        """
+        return self._apply_self_tensor_op("__pow__", *args, **kwargs)
+
+    def std(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Compute the standard deviation along the specified axis.
+        Returns the standard deviation, a measure of the spread of a distribution, of the array elements.
+        The standard deviation is computed for the flattened array by default, otherwise over the specified axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which the standard deviation is computed.
+                The default is to compute the standard deviation of the flattened array.
+                If this is a tuple of ints, a standard deviation is performed over multiple axes, instead of a single
+                axis or all the axes as before.
+
+            out: ndarray, optional
+                Alternative output array in which to place the result. It must have the same shape as the expected
+                output but the type (of the calculated values) will be cast if necessary.
+
+            ddof: int, optional
+                ddof = Delta Degrees of Freedom. By default ddof is zero.
+                The divisor used in calculations is N - ddof, where N represents the number of elements.
+
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+
+                If the default value is passed, then keepdims will not be passed through to the std method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+
+            where: array_like of bool, optional
+                Elements to include in the standard deviation. See reduce for details.
+
+        Returns
+
+            standard_deviation: PhiTensor
+        """
+
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.std"
+        result: TensorWrappedPhiTensorPointer
+        data_subjects = np.array(self.data_subjects.std(*args, **kwargs))
         result = TensorWrappedPhiTensorPointer(
             data_subjects=self.data_subjects,
-            min_vals=min_vals,
-            max_vals=max_vals,
+            min_vals=lazyrepeatarray(data=0, shape=data_subjects.shape),
+            max_vals=lazyrepeatarray(
+                data=(self.max_vals.data - self.min_vals.data) / 2,
+                shape=data_subjects.shape,
+            ),
             client=self.client,
         )
 
@@ -645,11 +848,90 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             args=[],
             kwargs={},
         )
-        dummy_res = np.ones_like(np.empty(self.public_shape), *args, **kwargs)
-        result.public_shape = dummy_res.shape
-        result.public_dtype = self.public_dtype
 
+        result.public_shape = data_subjects.shape
+        result.public_dtype = self.public_dtype
         return result
+
+    def cumprod(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Return the cumulative product of the elements along a given axis.
+
+        Parameters
+            axis: int, optional
+                Axis along which the cumulative product is computed. The default (None) is to compute the cumprod over
+                the flattened array.
+        Returns
+            cumprod_along_axis: PhiTensor
+                A new array holding the result is returned. The result has the same size as input, and the same shape as
+                 a if axis is not None or a is 1-d.
+        """
+        return self._apply_self_tensor_op("cumprod", *args, **kwargs)
+
+    def trace(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Return the sum along diagonals of the array.
+
+        If a is 2-D, the sum along its diagonal with the given offset is returned, i.e., the sum of elements
+        a[i,i+offset] for all i.
+
+        If a has more than two dimensions, then the axes specified by axis1 and axis2 are used to determine the 2-D
+        sub-arrays whose traces are returned. The shape of the resulting array is the same as that of a with axis1 and
+        axis2 removed.
+
+        Parameters
+
+            offset: int, optional
+                Offset of the diagonal from the main diagonal. Can be both positive and negative. Defaults to 0.
+
+            axis1, axis2: int, optional
+                Axes to be used as the first and second axis of the 2-D sub-arrays from which the diagonals should be
+                taken. Defaults are the first two axes of a.
+
+        Returns
+
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+                If a is 2-D, the sum along the diagonal is returned.
+                If a has larger dimensions, then an array of sums along diagonals is returned.
+
+        """
+        return self._apply_self_tensor_op("trace", *args, **kwargs)
+
+    def min(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Return the minimum of an array or minimum along an axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which to operate. By default, flattened input is used.
+                If this is a tuple of ints, the minimum is selected over multiple axes,
+                instead of a single axis or all the axes as before.
+
+        Returns
+            a_min: PhiTensor
+                Minimum of a.
+                If axis is None, the result is a scalar value.
+                If axis is given, the result is an array of dimension a.ndim - 1.
+        """
+        return self._apply_self_tensor_op("min", *args, **kwargs)
+
+    def max(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Return the maximum of an array or along an axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which to operate. By default, flattened input is used.
+                If this is a tuple of ints, the minimum is selected over multiple axes,
+                instead of a single axis or all the axes as before.
+
+        Returns
+            a_max: PhiTensor
+                Maximum of a.
+                If axis is None, the result is a scalar value.
+                If axis is given, the result is an array of dimension a.ndim - 1.
+        """
+        return self._apply_self_tensor_op("max", *args, **kwargs)
 
     def exp(
         self,
@@ -1000,8 +1282,8 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 @implements(TensorWrappedPhiTensorPointer, np.ones_like)
 def ones_like(
     tensor: TensorWrappedPhiTensorPointer,
-    *args: Tuple[Any, ...],
-    **kwargs: Dict[Any, Any],
+    *args: Any,
+    **kwargs: Any,
 ) -> TensorWrappedPhiTensorPointer:
     return tensor.ones_like(*args, **kwargs)
 
@@ -1084,14 +1366,133 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=self.child.copy(order=order),
             min_vals=self.min_vals.copy(order=order),
             max_vals=self.max_vals.copy(order=order),
-            data_subjects=self.data_subjects.copy(),
+            data_subjects=self.data_subjects.copy(order=order),
         )
 
-    def all(self) -> bool:
-        return self.child.all()
+    def take(
+        self,
+        indices: ArrayLike,
+        axis: Optional[int] = None,
+        out: Optional[np.ndarray] = None,
+        mode: str = "raise",
+    ) -> PhiTensor:
+        """Take elements from an array along an axis."""
+        out_child = self.child.take(indices, axis=axis, mode=mode, out=out)
+        return PhiTensor(
+            child=out_child,
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
+            data_subjects=self.data_subjects.take(
+                indices, axis=axis, mode=mode, out=out
+            ),
+        )
 
-    def any(self) -> bool:
-        return self.child.any()
+    def put(
+        self,
+        ind: ArrayLike,
+        v: ArrayLike,
+        mode: str = "raise",
+    ) -> PhiTensor:
+        """Replaces specified elements of an array with given values.
+        The indexing works on the flattened target array. put is roughly equivalent to:
+            a.flat[ind] = v
+        """
+        if self.min_vals.data > min(v) or self.max_vals.data < max(v):
+            raise Exception("The v values must be within the data bounds")
+
+        out_child = self.child
+        out_child.put(ind, v, mode=mode)
+        return PhiTensor(
+            child=out_child,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+            data_subjects=self.data_subjects,
+        )
+
+    def any(
+        self,
+        axis: Optional[Union[int, Tuple[int, ...]]] = None,
+        keepdims: Optional[bool] = False,
+        where: Optional[ArrayLike] = None,
+    ) -> PhiTensor:
+        # TODO: properly define data subjects and
+        # figure out if it is not a privacy violation to return bool
+        if where is None:
+            out_child = np.array(self.child.any(axis=axis, keepdims=keepdims))
+            new_data_subjects = np.add.reduce(
+                self.data_subjects,
+                axis=axis,
+                keepdims=keepdims,
+            )
+        else:
+            out_child = np.array(
+                self.child.any(axis=axis, keepdims=keepdims, where=where)
+            )
+            new_data_subjects = np.add.reduce(
+                self.data_subjects,
+                axis=axis,
+                keepdims=keepdims,
+                initial=DataSubject(),
+                where=where,
+            )
+
+        return PhiTensor(
+            child=out_child,
+            min_vals=lazyrepeatarray(data=0, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=1, shape=out_child.shape),
+            data_subjects=new_data_subjects,
+        )
+
+    def all(
+        self,
+        axis: Optional[Union[int, Tuple[int, ...]]] = None,
+        keepdims: Optional[bool] = False,
+        where: Optional[ArrayLike] = None,
+    ) -> PhiTensor:
+        # TODO: properly define data subjects
+        if where is None:
+            out_child = np.array(self.child.all(axis=axis, keepdims=keepdims))
+            new_data_subjects = np.add.reduce(
+                self.data_subjects,
+                axis=axis,
+                keepdims=keepdims,
+            )
+        else:
+            out_child = np.array(
+                self.child.all(axis=axis, keepdims=keepdims, where=where)
+            )
+            new_data_subjects = np.add.reduce(
+                self.data_subjects,
+                axis=axis,
+                keepdims=keepdims,
+                initial=DataSubject(),
+                where=where,
+            )
+
+        return PhiTensor(
+            child=out_child,
+            min_vals=lazyrepeatarray(data=0, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=1, shape=out_child.shape),
+            data_subjects=new_data_subjects,
+        )
+
+    def __and__(self, value) -> PhiTensor:  # type: ignore
+        out_child = self.child & value
+        return PhiTensor(
+            child=out_child,
+            min_vals=lazyrepeatarray(data=0, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=1, shape=out_child.shape),
+            data_subjects=self.data_subjects,
+        )
+
+    def __or__(self, value) -> PhiTensor:  # type: ignore
+        out_child = self.child | value
+        return PhiTensor(
+            child=out_child,
+            min_vals=lazyrepeatarray(data=0, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=1, shape=out_child.shape),
+            data_subjects=self.data_subjects,
+        )
 
     def copy_with(self, child: np.ndarray) -> PhiTensor:
         new_tensor = self.copy()
@@ -1118,7 +1519,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def zeros_like(
         self,
-        *args: Tuple[Any, ...],
+        *args: Any,
         **kwargs: Any,
     ) -> Union[PhiTensor, GammaTensor]:
         # TODO: Add support for axes arguments later
@@ -1183,15 +1584,67 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         else:
             raise NotImplementedError
 
-    def abs(self) -> PhiTensor:
+    def __abs__(self) -> PhiTensor:
         data = self.child
         output = np.abs(data)
+
+        min_val = abs(self.min_vals.data)
+        max_val = abs(self.max_vals.data)
+
+        new_min_val = min(min_val, max_val)
+        new_max_val = max(min_val, max_val)
 
         return PhiTensor(
             child=output,
             data_subjects=self.data_subjects,
-            min_vals=np.abs(self.min_vals.data),
-            max_vals=np.abs(self.min_vals.data),
+            min_vals=lazyrepeatarray(data=new_min_val, shape=output.shape),
+            max_vals=lazyrepeatarray(data=new_max_val, shape=output.shape),
+        )
+
+    def argmax(
+        self,
+        axis: Optional[int] = None,
+    ) -> PhiTensor:
+        child = self.child.argmax(axis=axis)
+        if axis is None:
+            max_value = self.child.size - 1
+            indices = np.unravel_index(child, shape=self.child.shape)
+            data_subjects = self.data_subjects[indices]
+        else:
+            index = np.array([child])
+            max_value = np.size(self.child, axis=axis) - 1
+            data_subjects = np.squeeze(
+                np.take_along_axis(self.data_subjects, index, axis=axis)
+            )
+
+        return PhiTensor(
+            child=child,
+            data_subjects=data_subjects,
+            min_vals=lazyrepeatarray(data=0, shape=child.shape),
+            max_vals=lazyrepeatarray(data=max_value, shape=child.shape),
+        )
+
+    def argmin(
+        self,
+        axis: Optional[int] = None,
+    ) -> PhiTensor:
+        child = self.child.argmin(axis=axis)
+        if axis is None:
+            max_value = self.child.size - 1
+            indices = np.unravel_index(child, shape=self.child.shape)
+            data_subjects = self.data_subjects[indices]
+        else:
+            index = np.array([child])
+            max_value = np.size(self.child, axis=axis) - 1
+            data_subjects = np.squeeze(
+                np.take_along_axis(self.data_subjects, index, axis=axis)
+            )
+
+        return PhiTensor(
+            child=child,
+            data_subjects=data_subjects,
+            min_vals=lazyrepeatarray(data=0, shape=child.shape),
+            max_vals=lazyrepeatarray(data=max_value, shape=child.shape),
         )
 
     def reshape(self, *shape: Tuple[int, ...]) -> PhiTensor:
@@ -1303,13 +1756,67 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         )
 
     def max(self, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> PhiTensor:
-        indices = self.child.argmax(axis)
+        """
+        Return the maximum of an array or along an axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which to operate. By default, flattened input is used.
+                If this is a tuple of ints, the minimum is selected over multiple axes,
+                instead of a single axis or all the axes as before.
+
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the amax method of
+                sub-classes of ndarray, however any non-default value will be.
+                If the sub-class’ method does not implement keepdims any exceptions will be raised.
+            initial: scalar, optional
+                The minimum value of an output element. Must be present to allow computation on empty slice.
+                See reduce for details.
+
+            where: array_like of bool, optional
+                Elements to compare for the maximum. See reduce for details.
+
+        Returns
+            a_max: PhiTensor
+                Maximum of a.
+                If axis is None, the result is a scalar value.
+                If axis is given, the result is an array of dimension a.ndim - 1.
+        """
+        indices = np.unravel_index(self.child.argmax(axis), shape=self.child.shape)
         result = self.child.max(axis)
         return PhiTensor(
             child=result,
             data_subjects=self.data_subjects[indices],
-            min_vals=lazyrepeatarray(data=result.min(), shape=result.shape),
-            max_vals=lazyrepeatarray(data=result.max(), shape=result.shape),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
+        )
+
+    def min(self, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> PhiTensor:
+        """
+        Return the minimum of an array or minimum along an axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which to operate. By default, flattened input is used.
+                If this is a tuple of ints, the minimum is selected over multiple axes,
+                instead of a single axis or all the axes as before.
+
+        Returns
+            a_min: PhiTensor
+                Minimum of a.
+                If axis is None, the result is a scalar value.
+                If axis is given, the result is an array of dimension a.ndim - 1.
+        """
+
+        indices = np.unravel_index(self.child.argmin(axis), self.child.shape)
+        result = self.child.min(axis)
+        return PhiTensor(
+            child=result,
+            data_subjects=self.data_subjects[indices],
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
         )
 
     def _argmax(self, axis: Optional[int]) -> PhiTensor:
@@ -1321,6 +1828,31 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         arg_result = self._argmax(axis=axis)
         shape = self.shape
         return np.unravel_index(arg_result, shape)
+
+    def swapaxes(self, axis1: int, axis2: int) -> PhiTensor:
+        """Interchange two axes of an array."""
+        out_child = np.swapaxes(self.child, axis1, axis2)
+        data_subjects = np.swapaxes(self.data_subjects, axis1, axis2)
+        return PhiTensor(
+            child=out_child,
+            data_subjects=data_subjects,
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
+        )
+
+    def nonzero(self) -> PhiTensor:
+        """Return the indices of the elements that are non-zero."""
+        out_child = np.array(np.nonzero(self.child))
+        no_axis = len(self.child.shape)
+        out_data_subjects = np.repeat(
+            np.array([self.data_subjects[self.child != 0]]), no_axis, axis=0
+        )
+        return PhiTensor(
+            child=out_child,
+            data_subjects=out_data_subjects,
+            min_vals=lazyrepeatarray(data=0, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=max(self.child.shape), shape=out_child.shape),
+        )
 
     def mean(
         self,
@@ -1341,15 +1873,92 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         axis: Optional[Union[int, Tuple[int, ...]]] = None,
         **kwargs: Any,
     ) -> PhiTensor:
+        """
+        Compute the standard deviation along the specified axis.
+        Returns the standard deviation, a measure of the spread of a distribution, of the array elements.
+        The standard deviation is computed for the flattened array by default, otherwise over the specified axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which the standard deviation is computed.
+                The default is to compute the standard deviation of the flattened array.
+                If this is a tuple of ints, a standard deviation is performed over multiple axes, instead of a single
+                axis or all the axes as before.
+
+            out: ndarray, optional
+                Alternative output array in which to place the result. It must have the same shape as the expected
+                output but the type (of the calculated values) will be cast if necessary.
+
+            ddof: int, optional
+                ddof = Delta Degrees of Freedom. By default ddof is zero.
+                The divisor used in calculations is N - ddof, where N represents the number of elements.
+
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the std method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+
+            where: array_like of bool, optional
+                Elements to include in the standard deviation. See reduce for details.
+
+        Returns
+
+            standard_deviation: PhiTensor
+        """
+
         result = self.child.std(axis, **kwargs)
+        # Std is lowest when all values are the same, 0. (-ve not possible because of squaring)
+        # Std is highest when half the samples are min and other half are max
         return PhiTensor(
             child=result,
             data_subjects=self.data_subjects.std(axis, **kwargs),
+            min_vals=lazyrepeatarray(data=np.array([0]), shape=result.shape),
+            max_vals=lazyrepeatarray(
+                data=(self.max_vals.data - self.min_vals.data) / 2, shape=result.shape
+            ),
+        )
+
+    def var(
+        self,
+        axis: Optional[Union[int, Tuple[int, ...]]] = None,
+        **kwargs: Any,
+    ) -> PhiTensor:
+        """
+        Compute the variance along the specified axis of the array elements, a measure of the spread of a distribution.
+        The variance is computed for the flattened array by default, otherwise over the specified axis.
+
+        Parameters
+
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which the variance is computed.
+                The default is to compute the variance of the flattened array.
+                If this is a tuple of ints, a variance is performed over multiple axes, instead of a single axis or all
+                the axes as before.
+
+            ddof: int, optional
+                “Delta Degrees of Freedom”: the divisor used in the calculation is N - ddof, where N represents the
+                number of elements. By default ddof is zero.
+
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the var method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+
+            where: array_like of bool, optional
+                Elements to include in the variance. See reduce for details.
+        """
+
+        result = self.child.var(axis, **kwargs)
+        return PhiTensor(
+            child=result,
+            data_subjects=self.data_subjects.var(axis, **kwargs),
             min_vals=lazyrepeatarray(data=0, shape=result.shape),
             max_vals=lazyrepeatarray(
-                data=0.25
-                * (self.max_vals.data - self.min_vals.data)
-                ** 2,  # rough approximation, could be off
+                data=0.25 * (self.max_vals.data - self.min_vals.data) ** 2,
                 shape=result.shape,
             ),
         )
@@ -1393,7 +2002,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         return gamma_tensor
 
-    def view(self, *args: List[Any]) -> PhiTensor:
+    def view(self, *args: Any) -> PhiTensor:
         # TODO: Figure out how to fix lazyrepeatarray reshape
 
         data = self.child.reshape(*args)
@@ -1410,19 +2019,21 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         deduct_epsilon_for_user: Callable,
         ledger: DataSubjectLedger,
         sigma: float,
+        private: bool,
     ) -> AcceptableSimpleType:
         print("PUBLISHING TO GAMMA:")
         print(self.child)
 
         gamma = self.gamma
         # gamma.func = lambda x: x
-        gamma.state[gamma.id] = gamma
+        gamma.sources[gamma.id] = gamma
 
         res = gamma.publish(
             get_budget_for_user=get_budget_for_user,
             deduct_epsilon_for_user=deduct_epsilon_for_user,
             ledger=ledger,
             sigma=sigma,
+            private=private,
         )
 
         print("Final Values", res)
@@ -1457,26 +2068,53 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         )
 
     def __eq__(self, other: Any) -> Union[PhiTensor, GammaTensor]:  # type: ignore
-        # TODO: what about data_subjects and min / max values?
-        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
-            gamma_output = False
-            if is_acceptable_simple_type(other):
-                result = self.child == other
+        if is_acceptable_simple_type(other):
+            return PhiTensor(
+                child=(self.child == other)
+                * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(data=0, shape=self.shape),
+                max_vals=lazyrepeatarray(data=1, shape=self.shape),
+            )
+        elif isinstance(other, PhiTensor):
+            if (self.data_subjects != other.data_subjects).any():
+                return self.gamma == other.gamma
             else:
-                # check data_subjects match, if they dont gamma_output = True
-                result = self.child == other.child
-                if isinstance(result, GammaTensor):  # TODO: Check this
-                    gamma_output = True
-            if not gamma_output:
-                # min_vals=self.min_vals * 0.0,
-                # max_vals=self.max_vals * 0.0 + 1.0,
-                return self.copy_with(child=result)
-            else:
-                return self.copy_with(child=result).gamma
+                return PhiTensor(
+                    child=(self.child == other.child)
+                    * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(data=0, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=1, shape=self.shape),
+                )
         else:
-            raise Exception(
-                "Tensor dims do not match for __eq__: "
-                + f"{len(self.child)} != {len(other.child)}"
+            raise NotImplementedError(
+                f"__eq__ not implemented between PhiTensor and {type(other)}."
+            )
+
+    def __ne__(self, other: Any) -> Union[PhiTensor, GammaTensor]:  # type: ignore
+        if is_acceptable_simple_type(other):
+            return PhiTensor(
+                child=(self.child != other)
+                * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(data=0, shape=self.shape),
+                max_vals=lazyrepeatarray(data=1, shape=self.shape),
+            )
+        elif isinstance(other, PhiTensor):
+            if (self.data_subjects != other.data_subjects).any():
+                return self.gamma != other.gamma
+            else:
+                return PhiTensor(
+                    child=(self.child != other.child)
+                    * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(data=0, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=1, shape=self.shape),
+                )
+        else:
+            raise NotImplementedError(
+                f"__ne__ not implemented between PhiTensor and {type(other)}."
             )
 
     def __add__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
@@ -1566,32 +2204,24 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def __mul__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         if isinstance(other, PhiTensor):
-            return self.gamma + other.gamma
-            # if self.data_subjects != other.data_subjects:
-            #     return self.gamma * other.gamma
+            if (self.data_subjects == other.data_subjects).all():
+                min_min = self.min_vals.data * other.min_vals.data
+                min_max = self.min_vals.data * other.max_vals.data
+                max_min = self.max_vals.data * other.min_vals.data
+                max_max = self.max_vals.data * other.max_vals.data
 
-            # data = self.child * other.child
+                _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+                _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
 
-            # min_min = self.min_vals.data * other.min_vals.data
-            # min_max = self.min_vals.data * other.max_vals.data
-            # max_min = self.max_vals.data * other.min_vals.data
-            # max_max = self.max_vals.data * other.max_vals.data
+                return PhiTensor(
+                    child=self.child * other.child,
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
+                )
+            else:
+                return self.gamma * other.gamma
 
-            # _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            # _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            # min_vals = self.min_vals.copy()
-            # min_vals.data = _min_vals
-            # max_vals = self.max_vals.copy()
-            # max_vals.data = _max_vals
-
-            # data_subjects = self.data_subjects
-
-            # return PhiTensor(
-            #     child=data,
-            #     data_subjects=data_subjects,
-            #     min_vals=min_vals,
-            #     max_vals=max_vals,
-            # )
         elif is_acceptable_simple_type(other):
 
             data = self.child * other
@@ -1622,6 +2252,43 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
 
+    def __truediv__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
+        if isinstance(other, PhiTensor):
+            if (self.data_subjects != other.data_subjects).all():
+                return self.gamma / other.gamma
+            else:
+                min_min = self.min_vals.data / other.min_vals.data
+                min_max = self.min_vals.data / other.max_vals.data
+                max_min = self.max_vals.data / other.min_vals.data
+                max_max = self.max_vals.data / other.max_vals.data
+
+                _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+                _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+
+                return PhiTensor(
+                    child=self.child / other.child,
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
+                )
+        elif isinstance(other, GammaTensor):
+            return self.gamma / other
+        elif is_acceptable_simple_type(other):
+            return PhiTensor(
+                child=self.child / other,
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(
+                    data=self.min_vals.data / other, shape=self.min_vals.shape
+                ),
+                max_vals=lazyrepeatarray(
+                    data=self.max_vals.data / other, shape=self.max_vals.shape
+                ),
+            )
+        else:
+            raise NotImplementedError(
+                f"truediv not supported between PhiTensor & {type(other)}"
+            )
+
     def __rtruediv__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         if is_acceptable_simple_type(other):
@@ -1630,7 +2297,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 min_vals=(1 / self.min_vals) * other,
                 max_vals=(1 / self.max_vals) * other,
                 data_subjects=self.data_subjects,
-                # scalar_manager=self.scalar_manager,
             )
 
         elif isinstance(other, GammaTensor):
@@ -1805,11 +2471,37 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=max_vals,
         )
 
+    def flatten(self, order: Optional[str] = "C") -> PhiTensor:
+        """
+        Return a copy of the array collapsed into one dimension.
+
+        Parameters
+            order{‘C’, ‘F’, ‘A’, ‘K’}, optional
+                ‘C’ means to flatten in row-major (C-style) order.
+                ‘F’ means to flatten in column-major (Fortran- style) order.
+                ‘A’ means to flatten in column-major order if a is Fortran contiguous in memory,
+                        row-major order otherwise.
+                ‘K’ means to flatten a in the order the elements occur in memory. The default is ‘C’.
+        Returns
+            PhiTensor
+                A copy of the input array, flattened to one dimension.
+        """
+        if order not in ["C", "F", "A", "K"]:
+            raise NotImplementedError(f"Flatten is not implemented for order={order}")
+
+        output_data = self.child.flatten(order=order)
+        return PhiTensor(
+            child=output_data,
+            data_subjects=self.data_subjects.reshape(output_data.shape),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape),
+        )
+
     def concatenate(
         self,
         other: Union[np.ndarray, PhiTensor],
-        *args: List[Any],
-        **kwargs: Dict[str, Any],
+        *args: Any,
+        **kwargs: Any,
     ) -> Union[PhiTensor, GammaTensor]:
 
         # if the tensor being added is also private
@@ -1831,33 +2523,18 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             raise NotImplementedError
 
     def __lt__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
-
-        # if the tensor being compared is also private
         if isinstance(other, PhiTensor):
-            return self.gamma.__lt__(other.gamma)
-
-            # if self.data_subjects != other.data_subjects:
-            #     # return self.gamma < other.gamma
-            #     raise NotImplementedError
-
-            # if len(self.child) != len(other.child):
-            #     raise Exception(
-            #         f"Tensor dims do not match for __lt__: {len(self.child)} != {len(other.child)}"  # type: ignore
-            #     )
-
-            # data = (
-            #     self.child < other.child
-            # )  # the * 1 just makes sure it returns integers instead of True/False
-            # min_vals = self.min_vals * 0
-            # max_vals = (self.max_vals * 0) + 1
-            # data_subjects = self.data_subjects
-
-            # return PhiTensor(
-            #     child=data,
-            #     data_subjects=data_subjects,
-            #     min_vals=min_vals,
-            #     max_vals=max_vals,
-            # )
+            if (self.data_subjects == other.data_subjects).all():
+                return PhiTensor(
+                    child=(self.child < other.child) * 1,
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(data=0, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=1, shape=self.shape),
+                )
+            else:
+                return self.gamma.__lt__(other.gamma)
+        elif isinstance(other, GammaTensor):
+            return self.gamma.__lt__(other)
 
         # if the tensor being compared is a public tensor / int / float / etc.
         elif is_acceptable_simple_type(other):
@@ -1875,36 +2552,23 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             )
 
         else:
-            return NotImplementedError  # type: ignore
+            raise NotImplementedError
 
     def __le__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         # if the tensor being compared is also private
         if isinstance(other, PhiTensor):
-            return self.gamma.__le__(other.gamma)
-
-            # if self.data_subjects != other.data_subjects:
-            #     # return self.gamma < other.gamma
-            #     raise NotImplementedError
-
-            # if len(self.child) != len(other.child):
-            #     raise Exception(
-            #         f"Tensor dims do not match for __le__: {len(self.child)} != {len(other.child)}"  # type: ignore
-            #     )
-
-            # data = (
-            #     self.child <= other.child
-            # )  # the * 1 just makes sure it returns integers instead of True/False
-            # min_vals = self.min_vals * 0
-            # max_vals = (self.max_vals * 0) + 1
-            # data_subjects = self.data_subjects
-
-            # return PhiTensor(
-            #     child=data,
-            #     data_subjects=data_subjects,
-            #     min_vals=min_vals,
-            #     max_vals=max_vals,
-            # )
+            if (self.data_subjects == other.data_subjects).all():
+                return PhiTensor(
+                    child=(self.child <= other.child) * 1,
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(data=0, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=1, shape=self.shape),
+                )
+            else:
+                return self.gamma.__le__(other.gamma)
+        elif isinstance(other, GammaTensor):
+            return self.gamma.__le__(other)
 
         # if the tensor being compared is a public tensor / int / float / etc.
         elif is_acceptable_simple_type(other):
@@ -1922,36 +2586,23 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             )
 
         else:
-            return NotImplementedError  # type: ignore
+            raise NotImplementedError
 
     def __gt__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         # if the tensor being compared is also private
         if isinstance(other, PhiTensor):
-            return self.gamma.__gt__(other.gamma)
-
-            # if self.data_subjects != other.data_subjects:
-            #     # return self.gamma < other.gamma
-            #     raise NotImplementedError
-
-            # if len(self.child) != len(other.child):
-            #     raise Exception(
-            #         f"Tensor dims do not match for __gt__: {len(self.child)} != {len(other.child)}"  # type: ignore
-            #     )
-
-            # data = (
-            #     self.child > other.child
-            # )  # the * 1 just makes sure it returns integers instead of True/False
-            # min_vals = self.min_vals * 0
-            # max_vals = (self.max_vals * 0) + 1
-            # data_subjects = self.data_subjects
-
-            # return PhiTensor(
-            #     child=data,
-            #     data_subjects=data_subjects,
-            #     min_vals=min_vals,
-            #     max_vals=max_vals,
-            # )
+            if (self.data_subjects == other.data_subjects).all():
+                return PhiTensor(
+                    child=(self.child > other.child) * 1,
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(data=0, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=1, shape=self.shape),
+                )
+            else:
+                return self.gamma.__gt__(other.gamma)
+        elif isinstance(other, GammaTensor):
+            return self.gamma.__gt__(other)
 
         # if the tensor being compared is a public tensor / int / float / etc.
         elif is_acceptable_simple_type(other):
@@ -1969,6 +2620,40 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             )
         else:
             raise NotImplementedError  # type: ignore
+
+    def __ge__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
+
+        # if the tensor being compared is also private
+        if isinstance(other, PhiTensor):
+            if (self.data_subjects == other.data_subjects).all():
+                return PhiTensor(
+                    child=(self.child >= other.child) * 1,
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(data=0, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=1, shape=self.shape),
+                )
+            else:
+                return self.gamma.__ge__(other.gamma)
+        elif isinstance(other, GammaTensor):
+            return self.gamma.__ge__(other)
+
+        # if the tensor being compared is a public tensor / int / float / etc.
+        elif is_acceptable_simple_type(other):
+
+            data = self.child >= other
+            min_vals = self.min_vals * 0
+            max_vals = (self.max_vals * 0) + 1
+            data_subjects = self.data_subjects
+
+            return PhiTensor(
+                child=data,
+                data_subjects=data_subjects,
+                min_vals=min_vals,
+                max_vals=max_vals,
+            )
+
+        else:
+            return NotImplementedError  # type: ignore
 
     # Re enable after testing
     def dot(
@@ -2000,27 +2685,84 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def sum(
         self,
         axis: Optional[Union[int, Tuple[int, ...]]] = None,
-        **kwargs: Any,
-    ) -> Union[PhiTensor, GammaTensor]:
-        return self.gamma.sum(axis, **kwargs)
-        # # TODO: Add support for axes arguments later
-        # min_val = self.min_vals.sum(axis=axis)
-        # max_val = self.max_vals.sum(axis=axis)
-        # if len(self.data_subjects.one_hot_lookup) == 1:
-        #     result = self.child.sum(axis=axis)
-        #     return PhiTensor(
-        #         child=result,
-        #         min_vals=min_val,
-        #         max_vals=max_val,
-        #         data_subjects=self.data_subjects.sum(target_shape=result.shape),
-        #     )
-        # result = self.child.sum(axis=axis)
-        # return GammaTensor(
-        #     child=result,
-        #     data_subjects=self.data_subjects.sum(target_shape=result.shape),
-        #     min_vals=min_val,
-        #     max_vals=max_val,
-        # )
+        keepdims: Optional[bool] = False,
+        initial: Optional[float] = None,
+        where: Optional[ArrayLike] = None,
+    ) -> PhiTensor:
+        """
+        Sum of array elements over a given axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which a sum is performed.
+                The default, axis=None, will sum all of the elements of the input array.
+                If axis is negative it counts from the last to the first axis.
+                If axis is a tuple of ints, a sum is performed on all of the axes specified in the tuple instead of a
+                single axis or all the axes as before.
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the sum method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+            initial: scalar, optional
+                Starting value for the sum. See reduce for details.
+            where: array_like of bool, optional
+                Elements to include in the sum. See reduce for details.
+        """
+        if where is None:
+            result = np.array(self.child.sum(axis=axis, keepdims=keepdims))
+            output_ds = self.data_subjects.sum(axis=axis, keepdims=keepdims)
+            num = np.ones_like(self.child).sum(axis=axis, keepdims=keepdims)
+        else:
+            result = self.child.sum(axis=axis, keepdims=keepdims, where=where)
+            output_ds = self.data_subjects.sum(
+                axis=axis, keepdims=keepdims, initial=initial, where=where
+            )
+            num = np.ones_like(self.child).sum(
+                axis=axis, keepdims=keepdims, initial=initial, where=where
+            )
+
+        return PhiTensor(
+            child=result,
+            data_subjects=np.array(output_ds),
+            min_vals=lazyrepeatarray(data=self.min_vals.data * num, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data * num, shape=result.shape),
+        )
+
+    def __pow__(
+        self, power: Union[float, int], modulo: Optional[int] = None
+    ) -> PhiTensor:
+        if modulo is None:
+            if self.min_vals.data <= 0 <= self.max_vals.data:
+                # If data is in range [-5, 5], it's possible the minimum is 0 and not (-5)^2
+                minv = min(0, (self.min_vals.data**power).min())
+            else:
+                minv = self.min_vals.data**power
+
+            return PhiTensor(
+                child=self.child**power,
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(data=minv, shape=self.shape),
+                max_vals=lazyrepeatarray(
+                    data=self.max_vals.data**power, shape=self.shape
+                ),
+            )
+        else:
+            # This may be unnecessary- modulo is NotImplemented in ndarray.pow
+            if self.min_vals.data <= 0 <= self.max_vals.data:
+                # If data is in range [-5, 5], it's possible the minimum is 0 and not (-5)^2
+                minv = min(0, (self.min_vals.data**power).min() % modulo)
+            else:
+                minv = (self.min_vals.data**power) % modulo
+            return PhiTensor(
+                child=self.child**power % modulo,
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(data=minv, shape=self.shape),
+                max_vals=lazyrepeatarray(
+                    data=(self.max_vals.data**power) % modulo, shape=self.shape
+                ),
+            )
 
     def expand_dims(self, axis: int) -> PhiTensor:
         result = np.expand_dims(self.child, axis=axis)
@@ -2038,7 +2780,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def ones_like(
         self,
-        *args: Tuple[Any, ...],
+        *args: Any,
         **kwargs: Any,
     ) -> Union[PhiTensor, GammaTensor]:
         # TODO: Add support for axes arguments later
@@ -2057,28 +2799,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=max_vals,
             data_subjects=self.data_subjects,
         )
-
-    def __ne__(self, other: Any) -> Union[PhiTensor, GammaTensor]:  # type: ignore
-        # TODO: what about data_subjects and min / max values?
-        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
-            gamma_output = False
-            if is_acceptable_simple_type(other):
-                result = self.child != other
-            else:
-                # check data_subjects match, if they dont gamma_output = True
-                #
-                result = self.child != other.child
-                if isinstance(result, GammaTensor):
-                    gamma_output = True
-            if not gamma_output:
-                return self.copy_with(child=result)
-            else:
-                return self.copy_with(child=result).gamma
-        else:
-            raise Exception(
-                "Tensor dims do not match for __eq__: "
-                + f"{len(self.child)} != {len(other.child)}"
-            )
 
     def __neg__(self) -> PhiTensor:
 
@@ -2175,6 +2895,327 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             min_vals=self.min_vals,
             max_vals=self.max_vals,
             data_subjects=self.data_subjects,
+        )
+
+    def resize(self, new_shape: Union[int, Tuple[int, ...]]) -> PhiTensor:
+        out_child = np.resize(self.child.data, new_shape)
+        return PhiTensor(
+            child=out_child,
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
+            data_subjects=np.resize(self.data_subjects, new_shape),
+        )
+
+    def compress(self, condition: List[bool], axis: Optional[int] = None) -> PhiTensor:
+        out_child = self.child.compress(condition, axis)
+        return PhiTensor(
+            child=out_child,
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
+            data_subjects=self.data_subjects.compress(condition, axis),
+        )
+
+    def squeeze(self, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> PhiTensor:
+        out_child = self.child.squeeze(axis)
+        return PhiTensor(
+            child=out_child,
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
+            data_subjects=np.squeeze(self.data_subjects, axis),
+        )
+
+    def repeat(
+        self, repeats: Union[int, Tuple[int, ...]], axis: Optional[int] = None
+    ) -> PhiTensor:
+        """
+        Repeat elements of an array.
+
+        Parameters
+            repeats: int or array of ints
+
+                The number of repetitions for each element. repeats is broadcasted to fit the shape of the given axis.
+            axis: int, optional
+
+                The axis along which to repeat values.
+                By default, use the flattened input array, and return a flat output array.
+
+        Returns
+
+            repeated_array: PhiTensor
+
+                Output array which has the same shape as a, except along the given axis.
+
+        """
+
+        result = self.child.repeat(repeats, axis)
+        if isinstance(self.min_vals, lazyrepeatarray):
+            minv = lazyrepeatarray(data=self.min_vals.data.min(), shape=result.shape)
+            maxv = lazyrepeatarray(data=self.max_vals.data.max(), shape=result.shape)
+        else:
+            minv = self.min_vals
+            maxv = self.max_vals
+
+        return PhiTensor(
+            child=result,
+            data_subjects=self.data_subjects.repeat(repeats, axis),
+            min_vals=minv,
+            max_vals=maxv,
+        )
+
+    def choose(
+        self,
+        choices: Sequence[Union[PassthroughTensor, np.ndarray]],
+        out: Optional[np.ndarray] = None,
+        mode: Optional[str] = "raise",
+    ) -> PhiTensor:
+        """
+        Construct an array from an index array and a list of arrays to choose from.
+
+        First of all, if confused or uncertain, definitely look at the Examples - in its full generality,
+        this function is less simple than it might seem from the following code description
+        (below ndi = numpy.lib.index_tricks):
+
+        np.choose(a,c) == np.array([c[a[I]][I] for I in ndi.ndindex(a.shape)]).
+
+        But this omits some subtleties. Here is a fully general summary:
+
+        Given an “index” array (a) of integers and a sequence of n arrays (choices), a and each choice array are first
+        broadcast, as necessary, to arrays of a common shape; calling these Ba and Bchoices[i], i = 0,…,n-1 we have that
+         necessarily, Ba.shape == Bchoices[i].shape for each i. Then, a new array with shape Ba.shape is created
+         as follows:
+
+            if mode='raise' (the default), then, first of all, each element of a (and thus Ba) must be in the range
+            [0, n-1]; now, suppose that i (in that range) is the value at the (j0, j1, ..., jm) position in Ba -
+            then the value at the same position in the new array is the value in Bchoices[i] at that same position;
+
+            if mode='wrap', values in a (and thus Ba) may be any (signed) integer; modular arithmetic is used to map
+            integers outside the range [0, n-1] back into that range; and then the new array is constructed as above;
+
+            if mode='clip', values in a (and thus Ba) may be any (signed) integer; negative integers are mapped to 0;
+            values greater than n-1 are mapped to n-1; and then the new array is constructed as above.
+
+        Parameters
+
+            choices: sequence of arrays
+
+                Choice arrays. a and all of the choices must be broadcastable to the same shape. If choices is itself an
+                 array (not recommended), then its outermost dimension (i.e., the one corresponding to choices.shape[0])
+                  is taken as defining the “sequence”.
+
+            out: array, optional
+
+                If provided, the result will be inserted into this array. It should be of the appropriate shape and
+                dtype. Note that out is always buffered if mode='raise'; use other modes for better performance.
+
+            mode{‘raise’ (default), ‘wrap’, ‘clip’}, optional
+
+                Specifies how indices outside [0, n-1] will be treated:
+
+                        ‘raise’ : an exception is raised
+
+                        ‘wrap’ : value becomes value mod n
+
+                        ‘clip’ : values < 0 are mapped to 0, values > n-1 are mapped to n-1
+
+        Returns
+            merged_array: PhiTensor
+                The merged result.
+
+        Raises
+            ValueError: shape mismatch
+                If a and each choice array are not all broadcastable to the same shape.
+
+        """
+        result = self.child.choose(choices, mode=mode)
+        if isinstance(self.min_vals, lazyrepeatarray):
+            minv = lazyrepeatarray(data=self.min_vals.data.min(), shape=result.shape)
+            maxv = lazyrepeatarray(data=self.max_vals.data.max(), shape=result.shape)
+        else:
+            minv, maxv = self.min_vals, self.max_vals
+
+        return PhiTensor(
+            child=result,
+            data_subjects=self.data_subjects.take(choices),
+            min_vals=minv,
+            max_vals=maxv,
+        )
+
+    def cumsum(
+        self,
+        axis: Optional[int] = None,
+    ) -> PhiTensor:
+        """
+        Return the cumulative sum of the elements along a given axis.
+
+        Parameters
+            axis: int, optional
+                Axis along which the cumulative sum is computed. The default (None) is to compute the cumsum over the
+                flattened array.
+        Returns
+            cumsum_along_axis: PhiTensor
+                A new array holding the result is returned. The result has the same size as input, and the same shape as
+                 a if axis is not None or a is 1-d.
+        """
+        result = self.child.cumsum(axis=axis)
+        num = np.ones_like(self.child).cumsum(axis=axis)
+        return PhiTensor(
+            child=result,
+            data_subjects=self.data_subjects.cumsum(axis=axis),
+            min_vals=lazyrepeatarray(
+                data=(self.min_vals.data * num).min(), shape=result.shape
+            ),
+            max_vals=lazyrepeatarray(
+                data=(self.max_vals.data * num).max(), shape=result.shape
+            ),
+        )
+
+    def cumprod(
+        self,
+        axis: Optional[int] = None,
+    ) -> PhiTensor:
+        """
+        Return the cumulative product of the elements along a given axis.
+
+        Parameters
+            axis: int, optional
+                Axis along which the cumulative product is computed. The default (None) is to compute the cumprod over
+                the flattened array.
+        Returns
+            cumprod_along_axis: PhiTensor
+                A new array holding the result is returned. The result has the same size as input, and the same shape as
+                 a if axis is not None or a is 1-d.
+        """
+        result = self.child.cumprod(axis=axis)
+        num = np.ones_like(self.child).cumsum(axis=axis)
+        if abs(self.max_vals.data) >= (self.min_vals.data):
+            highest = abs(self.max_vals.data)
+        else:
+            highest = abs(self.min_vals.data)
+
+        return PhiTensor(
+            child=result,
+            data_subjects=self.data_subjects.cumprod(axis=axis),
+            min_vals=lazyrepeatarray(
+                data=-((highest**num).max()), shape=result.shape
+            ),
+            max_vals=lazyrepeatarray(data=(highest**num).max(), shape=result.shape),
+        )
+
+    def prod(self, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> PhiTensor:
+        """
+        Return the product of array elements over a given axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which a product is performed.
+                The default, axis=None, will calculate the product of all the elements in the input array.
+                If axis is negative it counts from the last to the first axis.
+
+                If axis is a tuple of ints, a product is performed on all of the axes specified in the tuple instead of
+                a single axis or all the axes as before.
+
+            keepdims: bool, optional
+                If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
+                With this option, the result will broadcast correctly against the input array.
+                If the default value is passed, then keepdims will not be passed through to the prod method of
+                sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
+                implement keepdims any exceptions will be raised.
+
+            initial: scalar, optional
+                The starting value for this product. See reduce for details.
+
+            where: array_like of bool, optional
+                Elements to include in the product. See reduce for details.
+        """
+        result = self.child.prod(axis=axis)
+        return PhiTensor(
+            child=result,
+            data_subjects=self.data_subjects.prod(axis),
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data ** (self.child.size / result.size),
+                shape=result.shape,
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data ** (self.child.size / result.size),
+                shape=result.shape,
+            ),
+        )
+
+    def __floordiv__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
+        """
+        return self // value.
+        """
+        if isinstance(other, PhiTensor):
+            if (self.data_subjects != other.data_subjects).all():
+                return self.gamma // other.gamma
+            else:
+                min_min = self.min_vals.data // other.min_vals.data
+                min_max = self.min_vals.data // other.max_vals.data
+                max_min = self.max_vals.data // other.min_vals.data
+                max_max = self.max_vals.data // other.max_vals.data
+
+                _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+                _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+
+                return PhiTensor(
+                    child=self.child // other.child,
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
+                )
+        elif isinstance(other, GammaTensor):
+            return self.gamma // other
+        elif is_acceptable_simple_type(other):
+            return PhiTensor(
+                child=self.child // other,
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(
+                    data=self.min_vals.data // other, shape=self.min_vals.shape
+                ),
+                max_vals=lazyrepeatarray(
+                    data=self.max_vals.data // other, shape=self.max_vals.shape
+                ),
+            )
+        else:
+            raise NotImplementedError(
+                f"floordiv not supported between PhiTensor & {type(other)}"
+            )
+
+    def trace(self, offset: int = 0, axis1: int = 0, axis2: int = 1) -> PhiTensor:
+        """
+        Return the sum along diagonals of the array.
+
+        If a is 2-D, the sum along its diagonal with the given offset is returned, i.e., the sum of elements
+        a[i,i+offset] for all i.
+
+        If a has more than two dimensions, then the axes specified by axis1 and axis2 are used to determine the 2-D
+        sub-arrays whose traces are returned. The shape of the resulting array is the same as that of a with axis1 and
+        axis2 removed.
+
+        Parameters
+
+            offset: int, optional
+                Offset of the diagonal from the main diagonal. Can be both positive and negative. Defaults to 0.
+
+            axis1, axis2: int, optional
+                Axes to be used as the first and second axis of the 2-D sub-arrays from which the diagonals should be
+                taken. Defaults are the first two axes of a.
+
+        Returns
+
+            sum_along_diagonals: PhiTensor
+                If a is 2-D, the sum along the diagonal is returned.
+                If a has larger dimensions, then an array of sums along diagonals is returned.
+        """
+        result = self.child.trace(offset, axis1, axis2)
+
+        # This is potentially expensive
+        num = np.ones_like(self.child).trace(offset, axis1, axis2)
+        return PhiTensor(
+            child=result,
+            data_subjects=self.data_subjects.trace(offset, axis1, axis2),
+            min_vals=lazyrepeatarray(data=self.min_vals.data * num, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data * num, shape=result.shape),
         )
 
     def _object2bytes(self) -> bytes:

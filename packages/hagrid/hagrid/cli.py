@@ -2,6 +2,7 @@
 import json
 import os
 from pathlib import Path
+from queue import Queue
 import re
 import shutil
 import socket
@@ -9,6 +10,7 @@ import stat
 import subprocess  # nosec
 import sys
 import tempfile
+from threading import Thread
 import time
 from typing import Any
 from typing import Callable
@@ -19,6 +21,8 @@ from typing import Tuple
 from typing import Tuple as TypeTuple
 from typing import Union
 from typing import cast
+from urllib.parse import urlparse
+import webbrowser
 
 # third party
 import click
@@ -28,13 +32,19 @@ from rich.live import Live
 from virtualenvapi.manage import VirtualEnvironment
 
 # relative
+from .art import RichEmoji
 from .art import hagrid
+from .art import quickstart_art
 from .auth import AuthCredentials
 from .cache import DEFAULT_BRANCH
+from .cache import DEFAULT_REPO
+from .cache import RENDERED_DIR
 from .cache import arg_cache
 from .deps import DEPENDENCIES
 from .deps import allowed_hosts
+from .deps import check_docker_service_status
 from .deps import check_docker_version
+from .deps import check_grid_docker
 from .deps import gather_debug
 from .deps import is_windows
 from .exceptions import MissingDependency
@@ -53,12 +63,17 @@ from .lib import check_login_page
 from .lib import docker_desktop_memory
 from .lib import generate_process_status_table
 from .lib import generate_user_table
+from .lib import gitpod_url
 from .lib import hagrid_root
+from .lib import is_gitpod
 from .lib import name_tag
 from .lib import save_vm_details_as_json
 from .lib import update_repo
 from .lib import use_branch
 from .mode import EDITABLE_MODE
+from .parse_template import render_templates
+from .parse_template import setup_from_manifest_template
+from .quickstart_ui import fetch_notebooks_for_url
 from .quickstart_ui import quickstart_download_notebook
 from .rand_sec import generate_sec_random_password
 from .style import RichGroup
@@ -294,7 +309,14 @@ def clean(location: str) -> None:
     is_flag=True,
     help="Optional: prevent lots of launch output",
 )
-def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
+@click.option(
+    "--from_template",
+    default="false",
+    required=False,
+    type=str,
+    help="Optional: launch node using the manifest template",
+)
+def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
     try:
         grammar = parse_grammar(args=args, verb=verb)
@@ -320,7 +342,13 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 
     try:
         silent = bool(kwargs["silent"]) if "silent" in kwargs else False
-        execute_commands(cmds, dry_run=dry_run, silent=silent)
+        from_rendered_dir = (
+            str_to_bool(cast(str, kwargs["from_template"])) and EDITABLE_MODE
+        )
+
+        execute_commands(
+            cmds, dry_run=dry_run, silent=silent, from_rendered_dir=from_rendered_dir
+        )
         print("Success!\n\n")
     except Exception as e:
         print(f"Error: {e}\n\n")
@@ -328,7 +356,10 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 
 
 def execute_commands(
-    cmds: TypeList, dry_run: bool = False, silent: bool = False
+    cmds: TypeList,
+    dry_run: bool = False,
+    silent: bool = False,
+    from_rendered_dir: bool = False,
 ) -> None:
     """Execute the launch commands and display their status in realtime.
 
@@ -345,6 +376,14 @@ def execute_commands(
     # display VM credentials
     console.print(generate_user_table(username=username, password=password))
 
+    cwd = (
+        os.path.join(GRID_SRC_PATH, RENDERED_DIR)
+        if from_rendered_dir
+        else GRID_SRC_PATH
+    )
+
+    print("Current Working Directory: ", cwd)
+
     for cmd in cmds:
         if dry_run:
             print("Running: \n", hide_password(cmd=cmd))
@@ -359,7 +398,7 @@ def execute_commands(
                     cmd_to_exec,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
-                    cwd=GRID_SRC_PATH,
+                    cwd=cwd,
                     shell=True,
                 )
                 ip_address = extract_host_ip_from_cmd(cmd)
@@ -372,7 +411,7 @@ def execute_commands(
                         cmd_to_exec,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
-                        cwd=GRID_SRC_PATH,
+                        cwd=cwd,
                         shell=True,
                     )
                     process.communicate()
@@ -380,7 +419,7 @@ def execute_commands(
                     subprocess.run(  # nosec
                         cmd_to_exec,
                         shell=True,
-                        cwd=GRID_SRC_PATH,
+                        cwd=cwd,
                     )
         except Exception as e:
             print(f"Failed to run cmd: {cmd}. {e}")
@@ -807,7 +846,11 @@ def create_launch_cmd(
     parsed_kwargs["tls"] = bool(kwargs["tls"]) if "tls" in kwargs else False
     parsed_kwargs["test"] = bool(kwargs["test"]) if "test" in kwargs else False
     parsed_kwargs["dev"] = bool(kwargs["dev"]) if "dev" in kwargs else False
+
     parsed_kwargs["silent"] = bool(kwargs["silent"]) if "silent" in kwargs else False
+    parsed_kwargs["from_template"] = (
+        str_to_bool(kwargs["from_template"]) if "from_template" in kwargs else False
+    )
 
     parsed_kwargs["release"] = "production"
     if "release" in kwargs and kwargs["release"] != "production":
@@ -849,7 +892,24 @@ def create_launch_cmd(
     # allows changing docker platform to other cpu architectures like arm64
     parsed_kwargs["platform"] = kwargs["platform"] if "platform" in kwargs else None
 
+    if parsed_kwargs["from_template"] and host is not None:
+        # Setup the files from the manifest_template.yml
+        kwargs = setup_from_manifest_template(host_type=host)
+
+        # Override template tag with user input tag
+        if parsed_kwargs["tag"] is not None:
+            kwargs.pop("tag")
+
+        parsed_kwargs.update(kwargs)
+
     if host in ["docker"]:
+        # Check docker service status
+        if not ignore_docker_version_check:
+            check_docker_service_status()
+
+        # Check grid docker versions
+        if not ignore_docker_version_check:
+            check_grid_docker(display=True, output_in_text=True)
 
         if not ignore_docker_version_check:
             version = check_docker_version()
@@ -872,7 +932,10 @@ def create_launch_cmd(
                     f"\tWindows Help: https://docs.docker.com/desktop/windows/\n\n"
                     f"Then re-run your hagrid command.\n\n"
                     f"If you see this warning on Linux then something isn't right. "
-                    f"Please file a Github Issue on PySyft's Github"
+                    f"Please file a Github Issue on PySyft's Github.\n\n"
+                    f"Alternatively in case no more memory could be allocated, "
+                    f"you can run hagrid on the cloud with GitPod by visiting "
+                    f"https://gitpod.io/#https://github.com/OpenMined/PySyft."
                 )
 
             if is_windows() and not DEPENDENCIES["wsl"]:
@@ -1352,13 +1415,15 @@ def create_launch_docker_cmd(
     print("  - NAME: " + str(snake_name))
     # print("  - TAG: " + str(tag))
     print("  - PORT: " + str(host_term.free_port))
-    print("  - DOCKER: " + docker_version)
+    print("  - DOCKER COMPOSE: " + docker_version)
     # print("  - TAIL: " + str(tail))
     print("\n")
 
     version_string = kwargs["tag"]
     version_hash = "dockerhub"
     build = kwargs["build"]
+    from_template = kwargs["from_template"]
+
     if "release" in kwargs and kwargs["release"] == "development":
         # force version to have -dev at the end in dev mode
         # during development we can use the latest beta version
@@ -1459,6 +1524,7 @@ def create_launch_docker_cmd(
         cmd += " --profile frontend"
 
     # new docker compose regression work around
+    # default_env = os.path.expanduser("~/.hagrid/app/.env")
     default_env = f"{GRID_SRC_PATH}/.env"
     default_envs = {}
     with open(default_env, "r") as f:
@@ -1471,12 +1537,28 @@ def create_launch_docker_cmd(
                     value = parts[1]
                 default_envs[key] = value
     default_envs.update(envs)
+
+    # env file path
+    env_file_path = os.path.join(GRID_SRC_PATH, ".envfile")
+
+    # Render templates if creating stack from the manifest_template.yml
+    if from_template and host_term.host is not None:
+        # If release is development, update relative path
+        if EDITABLE_MODE:
+            default_envs["RELATIVE_PATH"] = "../"
+
+        render_templates(
+            env_vars=default_envs,
+            host_type=host_term.host,
+        )
+
+        env_file_path = os.path.join(GRID_SRC_PATH, RENDERED_DIR, ".envfile")
+
     try:
         env_file = ""
         for k, v in default_envs.items():
             env_file += f"{k}={v}\n"
 
-        env_file_path = os.path.abspath("./.envfile")
         with open(env_file_path, "w") as f:
             f.write(env_file)
 
@@ -2245,9 +2327,15 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
     is_flag=True,
     help="Optional: prevent lots of land output",
 )
-def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
+@click.option(
+    "--force",
+    is_flag=True,
+    help="Optional: bypass the prompt during hagrid land ",
+)
+def land(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_land_verb()
     silent = bool(kwargs["silent"]) if "silent" in kwargs else False
+    force = bool(kwargs["force"]) if "force" in kwargs else False
     try:
         grammar = parse_grammar(args=args, verb=verb)
         verb.load_grammar(grammar=grammar)
@@ -2265,28 +2353,41 @@ def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     except Exception as e:
         print(f"{e}")
         return
-    if not silent:
-        print("Running: \n", hide_password(cmd=cmd))
 
-    if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
-        if not silent:
-            print("Running: \n", cmd)
-        try:
-            if silent:
-                process = subprocess.Popen(  # nosec
-                    cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    cwd=GRID_SRC_PATH,
-                    shell=True,
-                )
-                process.communicate()
-                target = verb.get_named_term_grammar("node_name").input
-                print(f"HAGrid land {target} complete!")
-            else:
-                subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)  # nosec
-        except Exception as e:
-            print(f"Failed to run cmd: {cmd}. {e}")
+    target = verb.get_named_term_grammar("node_name").input
+
+    if not force:
+        _land_domain = ask(
+            Question(
+                var_name="_land_domain",
+                question=f"Are you sure you want to land {target} (y/n)",
+                kind="yesno",
+            ),
+            kwargs={},
+        )
+
+    if force or _land_domain == "y":
+        if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
+            if not silent:
+                print("Running: \n", cmd)
+            try:
+                if silent:
+                    process = subprocess.Popen(  # nosec
+                        cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        cwd=GRID_SRC_PATH,
+                        shell=True,
+                    )
+                    process.communicate()
+
+                    print(f"HAGrid land {target} complete!")
+                else:
+                    subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)  # nosec
+            except Exception as e:
+                print(f"Failed to run cmd: {cmd}. {e}")
+    else:
+        print("Hagrid land aborted.")
 
 
 cli.add_command(launch)
@@ -2305,6 +2406,7 @@ def debug(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 
 
 cli.add_command(debug)
+
 
 DEFAULT_HEALTH_CHECKS = ["host", "UI (βeta)", "api", "ssh", "jupyter"]
 HEALTH_CHECK_FUNCTIONS = {
@@ -2356,6 +2458,16 @@ def get_health_checks(ip_address: str) -> TypeTuple[bool, TypeList[TypeList[str]
     health_status = check_host_health(ip_address=ip_address, keys=keys)
     complete_status = all(health_status.values())
 
+    # find port from ip_address
+    try:
+        port = int(ip_address.split(":")[1])
+    except Exception:
+        # default to 80
+        port = 80
+
+    # url to display based on running environment
+    display_url = gitpod_url(port).split("//")[1] if is_gitpod() else ip_address
+
     # figure out how to add this back?
     # console.print("[bold magenta]Checking host:[/bold magenta]", ip_address, ":mage:")
     table_contents = []
@@ -2364,7 +2476,7 @@ def get_health_checks(ip_address: str) -> TypeTuple[bool, TypeList[TypeList[str]
             [
                 HEALTH_CHECK_ICONS[key],
                 key,
-                HEALTH_CHECK_URLS[key].replace("{ip_address}", ip_address),
+                HEALTH_CHECK_URLS[key].replace("{ip_address}", display_url),
                 icon_status(value),
             ]
         )
@@ -2377,7 +2489,7 @@ def create_check_table(
 ) -> rich.table.Table:
     table = rich.table.Table()
     table.add_column("PyGrid", style="magenta")
-    table.add_column("Info", justify="left")
+    table.add_column("Info", justify="left", overflow="fold")
     time_left_str = "" if time_left == 0 else str(time_left)
     table.add_column(time_left_str, justify="left")
     for row in table_contents:
@@ -2398,6 +2510,12 @@ def create_check_table(
     help="Optional: don't refresh output during wait",
 )
 def check(
+    ip_addresses: TypeList[str], wait: bool = False, silent: bool = False
+) -> None:
+    check_status(ip_addresses=ip_addresses, wait=wait, silent=silent)
+
+
+def check_status(
     ip_addresses: TypeList[str], wait: bool = False, silent: bool = False
 ) -> None:
     console = rich.get_console()
@@ -2460,6 +2578,164 @@ def version() -> None:
 cli.add_command(version)
 
 
+def run_quickstart(
+    url: Optional[str] = None,
+    syft: str = "latest",
+    reset: bool = False,
+    quiet: bool = False,
+    pre: bool = False,
+    test: bool = False,
+    repo: str = DEFAULT_REPO,
+    branch: str = DEFAULT_BRANCH,
+    commit: Optional[str] = None,
+    python: Optional[str] = None,
+) -> None:
+    try:
+        quickstart_art()
+        directory = os.path.expanduser("~/.hagrid/quickstart/")
+        confirm_reset = None
+        if reset:
+            if not quiet:
+                confirm_reset = click.confirm(
+                    "This will create a new quickstart virtualenv and reinstall Syft and "
+                    "Jupyter. Are you sure you want to continue?"
+                )
+            else:
+                confirm_reset = True
+        if confirm_reset is False:
+            return
+
+        if reset and confirm_reset or not os.path.isdir(directory):
+            quickstart_setup(
+                directory=directory,
+                syft_version=syft,
+                reset=reset,
+                pre=pre,
+                python=python,
+            )
+        downloaded_files = []
+        if url:
+            downloaded_files = fetch_notebooks_for_url(
+                url=url,
+                directory=directory,
+                reset=reset,
+                repo=repo,
+                branch=branch,
+                commit=commit,
+            )
+        else:
+            file_path = add_intro_notebook(directory=directory, reset=reset)
+            downloaded_files.append(file_path)
+
+        if len(downloaded_files) == 0:
+            raise Exception(f"Unable to find files at: {url}")
+        file_path = sorted(downloaded_files)[0]
+
+        # add virtualenv path
+        environ = os.environ.copy()
+        os_bin_path = "Scripts" if is_windows() else "bin"
+        venv_dir = directory + ".venv"
+        environ["PATH"] = venv_dir + os.sep + os_bin_path + os.pathsep + environ["PATH"]
+        jupyter_binary = "jupyter.exe" if is_windows() else "jupyter"
+
+        if is_windows():
+            env_activate_cmd = (
+                "(Powershell): "
+                + "cd "
+                + venv_dir
+                + "; "
+                + os_bin_path
+                + os.sep
+                + "activate"
+            )
+        else:
+            env_activate_cmd = (
+                "(Linux): source " + venv_dir + os.sep + os_bin_path + "/activate"
+            )
+
+        print(f"To activate your virtualenv {env_activate_cmd}")
+
+        try:
+            allow_browser = " --no-browser" if is_gitpod() else ""
+            cmd = (
+                venv_dir
+                + os.sep
+                + os_bin_path
+                + os.sep
+                + f"{jupyter_binary} lab{allow_browser} --ip 0.0.0.0 --notebook-dir={directory} {file_path}"
+            )
+            if test:
+                jupyter_path = venv_dir + os.sep + os_bin_path + os.sep + jupyter_binary
+                if not os.path.exists(jupyter_path):
+                    print(f"Failed to install Jupyter in path: {jupyter_path}")
+                    sys.exit(1)
+                print(f"Jupyter exists at: {jupyter_path}. CI Test mode exiting.")
+                sys.exit(0)
+
+            disable_toolbar_extension = (
+                venv_dir
+                + os.sep
+                + os_bin_path
+                + os.sep
+                + f"{jupyter_binary} labextension disable @jupyterlab/cell-toolbar-extension"
+            )
+
+            subprocess.run(  # nosec
+                disable_toolbar_extension.split(" "), cwd=directory, env=environ
+            )
+
+            ON_POSIX = "posix" in sys.builtin_module_names
+
+            def enqueue_output(out: Any, queue: Queue) -> None:
+                for line in iter(out.readline, b""):
+                    queue.put(line)
+                out.close()
+
+            proc = subprocess.Popen(  # nosec
+                cmd.split(" "),
+                cwd=directory,
+                env=environ,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                close_fds=ON_POSIX,
+            )
+            queue: Queue = Queue()
+            thread_1 = Thread(target=enqueue_output, args=(proc.stdout, queue))
+            thread_2 = Thread(target=enqueue_output, args=(proc.stderr, queue))
+            thread_1.daemon = True  # thread dies with the program
+            thread_1.start()
+            thread_2.daemon = True  # thread dies with the program
+            thread_2.start()
+
+            display_url = None
+            console = rich.get_console()
+
+            # keepn reading the queue of stdout + stderr
+            while True:
+                try:
+                    if not display_url:
+                        # try to read the line and extract a jupyter url:
+                        with console.status(
+                            "Starting Jupyter service"
+                        ) as console_status:
+                            line = queue.get()
+                            display_url = extract_jupyter_url(line.decode("utf-8"))
+                            if display_url:
+                                display_jupyter_url(url_parts=display_url)
+                                console_status.stop()
+                except KeyboardInterrupt:
+                    proc.kill()  # make sure jupyter gets killed
+                    sys.exit(1)
+                except Exception:  # nosec
+                    pass  # nosec
+        except KeyboardInterrupt:
+            proc.kill()  # make sure jupyter gets killed
+            sys.exit(1)
+    except Exception as e:
+        print(f"Error running quickstart: {e}")
+        raise e
+
+
 @click.command(help="Launch a Syft + Jupyter Session with a Notebook URL / Path")
 @click.argument("url", type=str, required=False)
 @click.option(
@@ -2499,6 +2775,20 @@ cli.add_command(version)
     is_flag=True,
     help="CI Test Mode, don't hang on Jupyter",
 )
+@click.option(
+    "--repo",
+    default=DEFAULT_REPO,
+    help="Choose a repo to fetch the notebook from or just use OpenMined/PySyft",
+)
+@click.option(
+    "--branch",
+    default=DEFAULT_BRANCH,
+    help="Choose a branch to fetch from or just use dev",
+)
+@click.option(
+    "--commit",
+    help="Choose a specific commit to fetch the notebook from",
+)
 def quickstart_cli(
     url: Optional[str] = None,
     syft: str = "latest",
@@ -2506,76 +2796,71 @@ def quickstart_cli(
     quiet: bool = False,
     pre: bool = False,
     test: bool = False,
+    repo: str = DEFAULT_REPO,
+    branch: str = DEFAULT_BRANCH,
+    commit: Optional[str] = None,
     python: Optional[str] = None,
 ) -> None:
+    return run_quickstart(
+        url=url,
+        syft=syft,
+        reset=reset,
+        quiet=quiet,
+        pre=pre,
+        test=test,
+        repo=repo,
+        branch=branch,
+        commit=commit,
+        python=python,
+    )
+
+
+cli.add_command(quickstart_cli, "quickstart")
+
+
+def display_jupyter_url(url_parts: Tuple[str, str, int]) -> None:
+    url = url_parts[0]
+    if is_gitpod():
+        parts = urlparse(url)
+        query = getattr(parts, "query", "")
+        url = gitpod_url(port=url_parts[2]) + "?" + query
+
+    console = rich.get_console()
+
+    tick_emoji = RichEmoji("white_heavy_check_mark").to_str()
+    link_emoji = RichEmoji("link").to_str()
+
+    console.print(
+        f"[bold white]{tick_emoji} Jupyter Server is running at:\n{link_emoji} [bold blue]{url}\n"
+        + "[bold white]Use Control-C to stop this server and shut down all kernels.",
+        new_line_start=True,
+    )
+
+    # if is_gitpod():
+    #     open_browser_with_url(url=url)
+
+
+def open_browser_with_url(url: str) -> None:
+    webbrowser.open(url)
+
+
+def extract_jupyter_url(line: str) -> Optional[Tuple[str, str, int]]:
+    jupyter_regex = r"^.*(http.*127.*)"
     try:
-        directory = os.path.expanduser("~/.hagrid/quickstart/")
-        confirm_reset = None
-        if reset:
-            if not quiet:
-                confirm_reset = click.confirm(
-                    "This will create a new quickstart virtualenv and reinstall Syft and "
-                    "Jupyter. Are you sure you want to continue?"
-                )
-            else:
-                confirm_reset = True
-        if confirm_reset is False:
-            return
-
-        if reset and confirm_reset or not os.path.isdir(directory):
-            quickstart_setup(
-                directory=directory,
-                syft_version=syft,
-                reset=reset,
-                pre=pre,
-                python=python,
-            )
-
-        if url:
-            file_path, _ = quickstart_download_notebook(
-                url=url, directory=directory, reset=reset
-            )
-        else:
-            file_path = add_intro_notebook(directory=directory, reset=reset)
-
-        # add virtualenv path
-        environ = os.environ.copy()
-        os_bin_path = "Scripts" if is_windows() else "bin"
-        venv_dir = directory + ".venv"
-        environ["PATH"] = venv_dir + os.sep + os_bin_path + os.pathsep + environ["PATH"]
-        jupyter_binary = "jupyter.exe" if is_windows() else "jupyter"
-        try:
-            print(
-                f"Running Jupyter Lab in: {directory}\nUse Control-C to stop this server."
-            )
-            cmd = (
-                venv_dir
-                + os.sep
-                + os_bin_path
-                + os.sep
-                + f"{jupyter_binary} lab --notebook-dir={directory} {file_path}"
-            )
-            if test:
-                jupyter_path = venv_dir + os.sep + os_bin_path + os.sep + jupyter_binary
-                if not os.path.exists(jupyter_path):
-                    print(f"Failed to install Jupyter in path: {jupyter_path}")
-                    sys.exit(1)
-                print(f"Jupyter exists at: {jupyter_path}. CI Test mode exiting.")
-                sys.exit(0)
-            proc = subprocess.Popen(  # nosec
-                cmd.split(" "),
-                cwd=directory,
-                env=environ,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-            proc.communicate()
-        except KeyboardInterrupt:
-            proc.kill()  # make sure jupyter gets killed
-            sys.exit(1)
+        matches = re.match(jupyter_regex, line)
+        if matches is not None:
+            url = matches.group(1).strip()
+            parts = urlparse(url)
+            host_or_ip_parts = parts.netloc.split(":")
+            # netloc is host:port
+            port = 8888
+            if len(host_or_ip_parts) > 1:
+                port = int(host_or_ip_parts[1])
+            host_or_ip = host_or_ip_parts[0]
+            return (url, host_or_ip, port)
     except Exception as e:
-        print(f"Error running quickstart: {e}")
-        raise e
+        print("failed to parse jupyter url", e)
+    return None
 
 
 def quickstart_setup(
@@ -2585,62 +2870,75 @@ def quickstart_setup(
     pre: bool = False,
     python: Optional[str] = None,
 ) -> None:
+
+    console = rich.get_console()
+    OK_EMOJI = RichEmoji("white_heavy_check_mark").to_str()
+
     try:
-        os.makedirs(directory, exist_ok=True)
-        virtual_env_dir = os.path.abspath(directory + ".venv/")
-        if reset and os.path.exists(virtual_env_dir):
-            shutil.rmtree(virtual_env_dir)
-        env = VirtualEnvironment(virtual_env_dir, python=python)
+        with console.status(
+            "[bold blue]Setting up Quickstart Environment"
+        ) as console_status:
+            os.makedirs(directory, exist_ok=True)
+            virtual_env_dir = os.path.abspath(directory + ".venv/")
+            if reset and os.path.exists(virtual_env_dir):
+                shutil.rmtree(virtual_env_dir)
+            env = VirtualEnvironment(virtual_env_dir, python=python)
+            console.print(
+                f"{OK_EMOJI} Created Virtual Environment {RichEmoji('evergreen_tree').to_str()}"
+            )
 
-        # upgrade pip
-        env.install("pip", options=["-U"])
-        env.install("packaging", options=["-U"])
+            # upgrade pip
+            console_status.update("[bold blue]Installing pip")
+            env.install("pip", options=["-U"])
+            console.print(f"{OK_EMOJI} pip")
 
-        print("Installing Jupyter Labs")
-        env.install("jupyterlab")
-        env.install("ipywidgets")
+            # upgrade packaging
+            console_status.update("[bold blue]Installing packaging")
+            env.install("packaging", options=["-U"])
+            console.print(f"{OK_EMOJI} packaging")
 
-        if EDITABLE_MODE:
-            # local_syft_dir = Path(os.path.abspath(Path(hagrid_root()) / "../syft"))
-            # print("Installing Syft in Editable Mode")
-            # env.install("-e " + str(local_syft_dir))
-            local_hagrid_dir = Path(os.path.abspath(Path(hagrid_root()) / "../hagrid"))
-            print("Installing HAGrid in Editable Mode", str(local_hagrid_dir))
-            env.install("-e " + str(local_hagrid_dir))
-        else:
-            # options = []
-            # options.append("--force")
-            # if syft_version == "latest":
-            #     syft_version = LATEST_STABLE_SYFT
-            #     package = f"syft>={syft_version}"
-            #     if pre:
-            #         package = f"{package}.dev0"  # force pre release
-            # else:
-            #     package = f"syft=={syft_version}"
+            # Install jupyter lab
+            console_status.update("[bold blue]Installing Jupyter Lab")
+            env.install("jupyterlab")
+            env.install("ipywidgets")
+            console.print(f"{OK_EMOJI} Jupyter Lab")
 
-            # if pre:
-            #     options.append("--pre")
-            #     print(f"Installing {package} --pre")
-            # else:
-            #     print(f"Installing {package}")
-            # env.install(package, options=options)
-            print("Installing hagrid")
-            env.install("hagrid", options=["-U"])
+            # Install hagrid
+            if EDITABLE_MODE:
+                local_hagrid_dir = Path(
+                    os.path.abspath(Path(hagrid_root()) / "../hagrid")
+                )
+                console_status.update(
+                    f"[bold blue]Installing HAGrid in Editable Mode: {str(local_hagrid_dir)}"
+                )
+                env.install("-e " + str(local_hagrid_dir))
+                console.print(
+                    f"{OK_EMOJI} HAGrid in Editable Mode: {str(local_hagrid_dir)}"
+                )
+            else:
+                console_status.update("[bold blue]Installing hagrid")
+                env.install("hagrid", options=["-U"])
+                console.print(f"{OK_EMOJI} HAGrid")
     except Exception as e:
-        print("failed", e)
+        print(e)
         raise e
 
 
 def add_intro_notebook(directory: str, reset: bool = False) -> str:
+    filenames = ["00-quickstart.ipynb", "01-install-wizard.ipynb"]
+
     files = os.listdir(directory)
     try:
         files.remove(".venv")
     except Exception:  # nosec
         pass
 
-    filenames = ["00-quickstart.ipynb", "01-install-wizard.ipynb"]
+    existing = 0
+    for file in files:
+        if file in filenames:
+            existing += 1
 
-    if len(files) == 0 or reset:
+    if existing != len(filenames) or reset:
         if EDITABLE_MODE:
             local_src_dir = Path(os.path.abspath(Path(hagrid_root()) / "../../"))
             for filename in filenames:
@@ -2655,14 +2953,40 @@ def add_intro_notebook(directory: str, reset: bool = False) -> str:
                     "https://raw.githubusercontent.com/OpenMined/PySyft/dev/"
                     + f"notebooks/quickstart/{filename}"
                 )
-                file_path, _ = quickstart_download_notebook(
+                file_path, _, _ = quickstart_download_notebook(
                     url=url, directory=directory, reset=reset
                 )
-    file_path = os.path.abspath(f"{directory}/{filenames[0]}")
-    return file_path
+    if arg_cache.install_wizard_complete:
+        filename = filenames[0]
+    else:
+        filename = filenames[1]
+    return os.path.abspath(f"{directory}/{filename}")
 
 
-cli.add_command(quickstart_cli, "quickstart")
+@click.command(help="Walk the Path")
+@click.option(
+    "--repo",
+    default=DEFAULT_REPO,
+    help="Choose a repo to fetch the notebook from or just use OpenMined/PySyft",
+)
+@click.option(
+    "--branch",
+    default=DEFAULT_BRANCH,
+    help="Choose a branch to fetch from or just use dev",
+)
+@click.option(
+    "--commit",
+    help="Choose a specific commit to fetch the notebook from",
+)
+def dagobah(
+    repo: str = DEFAULT_REPO,
+    branch: str = DEFAULT_BRANCH,
+    commit: Optional[str] = None,
+) -> None:
+    return run_quickstart(url="padawan", repo=repo, branch=branch, commit=commit)
+
+
+cli.add_command(dagobah)
 
 
 def ssh_into_remote_machine(

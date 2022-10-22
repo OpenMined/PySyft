@@ -2,6 +2,7 @@
 from copy import deepcopy
 from typing import Any
 from typing import Collection
+from typing import Dict
 from typing import Iterable
 from typing import List
 from typing import Optional
@@ -29,7 +30,7 @@ class DictStore(ObjectStore):
     def __init__(self, db: Session, settings: BaseSettings) -> None:
         self.db = db
         self.settings = settings
-        self.kv_store: dict[UID, Any] = {}
+        self.kv_store: Dict[UID, Any] = {}
 
     def get_or_none(
         self, key: UID, proxy_only: bool = False

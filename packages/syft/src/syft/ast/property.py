@@ -5,7 +5,6 @@ implements getter and setter objects."""
 from typing import Any
 from typing import Callable as CallableT
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
 # relative
@@ -48,7 +47,7 @@ class Property(ast.attribute.Attribute):
 
     def __call__(
         self,
-        *args: Tuple[Any, ...],
+        *args: Any,
         **kwargs: Any,
     ) -> Optional[Union[Any, CallableT]]:
         """`Property` attribute is not callable.

@@ -7,7 +7,7 @@ from typing import Tuple as TypeTuple
 HANDLED_FUNCTIONS: Dict[Any, Any] = {}
 
 
-def inputs2child(*args: Tuple[Any, ...], **kwargs: Any) -> TypeTuple[Tuple[Any], Any]:
+def inputs2child(*args: Any, **kwargs: Any) -> TypeTuple[Tuple[Any], Any]:
 
     # relative
     from .passthrough import PassthroughTensor  # type: ignore
