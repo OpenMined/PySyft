@@ -1448,7 +1448,20 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         # if the tensor being added is also private
         if isinstance(other, PhiTensor):
-            return self.gamma % other.gamma
+            if (self.data_subjects != other.data_subjects).any():
+                return self.gamma % other.gamma
+            else:
+                out_child = self.child % other.child
+                return PhiTensor(
+                    child=self.child % other.child,
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(
+                        data=min(0, other.min_vals.data), shape=out_child.shape
+                    ),
+                    max_vals=lazyrepeatarray(
+                        data=max(0, other.max_vals.data), shape=out_child.shape
+                    ),
+                )
 
         # if the tensor being added is a public tensor / int / float / etc.
         elif is_acceptable_simple_type(other):

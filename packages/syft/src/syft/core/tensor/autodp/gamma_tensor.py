@@ -1594,27 +1594,38 @@ class GammaTensor:
             output_state[other.id] = other
 
             child = self.child % other.child
-            max_val = lazyrepeatarray(
-                data=max(0, other.child.max()), shape=self.child.shape
+            max_vals = lazyrepeatarray(
+                data=max(0, other.max_vals.data), shape=self.child.shape
             )
-            min_val = lazyrepeatarray(
-                data=min(0, other.child.min()), shape=self.child.shape
+            min_vals = lazyrepeatarray(
+                data=min(0, other.min_vals.data), shape=self.child.shape
             )
             output_ds = self.data_subjects + other.data_subjects
 
-        else:
+        elif is_acceptable_simple_type(other):
             output_state[np.random.randint(low=0, high=2**31 - 1)] = other
+            if isinstance(other, np.ndarray):
+                max_vals = lazyrepeatarray(
+                    data=max(0, other.max()), shape=self.child.shape
+                )
+                min_vals = lazyrepeatarray(
+                    data=min(0, other.min()), shape=self.child.shape
+                )
+            else:
+                max_vals = lazyrepeatarray(data=max(0, other), shape=self.child.shape)
+                min_vals = lazyrepeatarray(data=min(0, other), shape=self.child.shape)
 
             child = self.child % other
-            max_val = lazyrepeatarray(data=max(0, other), shape=self.child.shape)
-            min_val = lazyrepeatarray(data=min(0, other), shape=self.child.shape)
             output_ds = self.data_subjects
+        else:
+            print("Type is unsupported:" + str(type(other)))
+            raise NotImplementedError
 
         return GammaTensor(
             child=child,
             data_subjects=output_ds,
-            min_vals=min_val,
-            max_vals=max_val,
+            min_vals=min_vals,
+            max_vals=max_vals,
             func_str=GAMMA_TENSOR_OP.MOD.value,
             sources=output_state,
         )

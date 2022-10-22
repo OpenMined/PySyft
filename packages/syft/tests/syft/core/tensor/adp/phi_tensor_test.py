@@ -1417,7 +1417,7 @@ def test_ptp(
     assert result.min_vals.data == 0
     assert result.max_vals.data == upper_bound - lower_bound
 
-    result = reference_tensor.ptp(axis=0, keepdims=True)
+    result = reference_tensor.ptp(axis=0)
     assert (result.child == reference_data.ptp(axis=0, keepdims=True)).all()
     assert (result.data_subjects == ishan).any()
     assert result.min_vals.data == 0
@@ -1502,10 +1502,10 @@ def test_mod_single_data_subjects(
     # TODO: As we currently convert all operations to gamma tensor,
     # so we include gammatensor for the assert, it should be reverted back to PhiTensor
     assert isinstance(result, (PT, GammaTensor)), "Addition of two PTs is wrong type"
-    assert result.max_vals.data == max(
+    assert result.max_vals.data >= max(
         0, tensor1.child.max()
     ), "Mod of two PTs results in incorrect max_vals"
-    assert result.min_vals.data == min(
+    assert result.min_vals.data <= min(
         0, tensor1.child.min()
     ), "Mod of two PTs results in incorrect min_vals"
 
@@ -1519,10 +1519,10 @@ def test_mod_single_data_subjects(
 
     result = tensor3 % tensor1
     assert isinstance(result, (PT, GammaTensor)), "Addition of two PTs is wrong type"
-    assert result.max_vals.data == max(
+    assert result.max_vals.data >= max(
         0, tensor1.child.max()
     ), "PT % PT results in incorrect max_vals"
-    assert result.min_vals.data == min(
+    assert result.min_vals.data <= min(
         0, tensor1.child.min()
     ), "PT % PT results in incorrect min_vals"
 
@@ -1578,8 +1578,12 @@ def test_mod_private(
         min_vals=lower_bound,
     )
 
+    dims = reference_data.shape[0]
+    new_reference_data = np.random.randint(
+        low=lower_bound.data, high=upper_bound.data, size=(dims, dims), dtype=np.int32
+    )
     tensor2 = PT(
-        child=reference_data,
+        child=new_reference_data,
         data_subjects=ishan,
         max_vals=upper_bound,
         min_vals=lower_bound,
@@ -1587,10 +1591,10 @@ def test_mod_private(
 
     output = reference_tensor % tensor2
     assert output.shape == reference_tensor.shape
-    assert (output.child == reference_data % reference_data).all()
-    assert output.min_vals.data == min(0, reference_data.min())
+    assert (output.child == reference_data % new_reference_data).all()
+    assert output.min_vals.data <= min(0, reference_data.min())
     assert output.min_vals.shape == reference_tensor.shape
-    assert output.max_vals.data == max(0, reference_data.max())
+    assert output.max_vals.data >= max(0, reference_data.max())
     assert output.max_vals.shape == reference_tensor.shape
     assert (output.data_subjects == reference_tensor.data_subjects).all()
 

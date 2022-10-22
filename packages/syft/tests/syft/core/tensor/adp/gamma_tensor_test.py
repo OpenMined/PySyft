@@ -495,9 +495,9 @@ def test_mod_private(
     output = reference_tensor % tensor2
     assert output.shape == reference_tensor.shape
     assert (output.child == reference_data % reference_data).all()
-    assert output.min_vals.data == min(0, reference_data.min())
+    assert output.min_vals.data <= min(0, reference_data.min())
     assert output.min_vals.shape == reference_tensor.shape
-    assert output.max_vals.data == max(0, reference_data.max())
+    assert output.max_vals.data >= max(0, reference_data.max())
     assert output.max_vals.shape == reference_tensor.shape
     assert (output.data_subjects == reference_tensor.data_subjects).all()
 
@@ -1397,7 +1397,7 @@ def test_ptp(
     assert result.min_vals.data == 0
     assert result.max_vals.data == upper_bound - lower_bound
 
-    result = reference_tensor.ptp(axis=0, keepdims=True)
+    result = reference_tensor.ptp(axis=0)
     assert (result.child == reference_data.ptp(axis=0, keepdims=True)).all()
     assert (result.data_subjects == ishan).any()
     assert result.min_vals.data == 0
