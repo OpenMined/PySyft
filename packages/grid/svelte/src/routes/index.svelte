@@ -1,5 +1,4 @@
-<h1 class="text-3xl font-semibold">PyGrid UI</h1>
-<p>Svelte app, 0.8.0</p>
-<a href="/login">Login</a>
-<a href="/signup">Signup</a>
-<a href="/account">Account</a>
+<div class="flex flex-col p-2">
+  <h1 class="text-3xl font-semibold">PyGrid UI</h1>
+  <p>Svelte app, 0.8.0</p>
+</div>
