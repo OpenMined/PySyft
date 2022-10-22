@@ -432,9 +432,9 @@ class PhiTensorAncestor(TensorChainManager):
 
         # Check 3: If data_subjects is a string, make it a list with one entity in it
         if isinstance(data_subjects, str):
-            data_subjects = [DataSubjectArray(data_subjects)]
+            data_subjects = DataSubjectArray.from_objs([data_subjects])
         elif isinstance(data_subjects, DataSubjectArray):
-            data_subjects = [data_subjects]
+            data_subjects = np.array(data_subjects)
         # Check 4: If data_subjects are a list, are the items strings or DataSubjectArray objects.
         # If they're strings lets create DataSubjectArray objects.
 

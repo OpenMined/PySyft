@@ -649,7 +649,7 @@ class Tensor(
         public_dtype_func = getattr(
             self.public_dtype, "upcast", lambda: self.public_dtype
         )
-        tensor_msg.publicDtype = public_dtype_func()
+        tensor_msg.publicDtype = str(public_dtype_func())
         tensor_msg.tagName = self.tag_name
 
         return tensor_msg.to_bytes_packed()
@@ -667,7 +667,7 @@ class Tensor(
         tensor = Tensor(
             child=sy.deserialize(combine_bytes(tensor_msg.child), from_bytes=True),
             public_shape=sy.deserialize(tensor_msg.publicShape, from_bytes=True),
-            public_dtype=tensor_msg.publicDtype,
+            public_dtype=np.dtype(tensor_msg.publicDtype),
         )
         tensor.tag_name = tensor_msg.tagName
 

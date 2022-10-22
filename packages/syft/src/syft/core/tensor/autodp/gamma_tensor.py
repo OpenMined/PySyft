@@ -97,6 +97,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         "client": [lambda x: x.address, lambda y: y],
         "public_shape": [lambda x: x, lambda y: upcast(y)],
         "data_subjects": [dslarraytonumpyutf8, numpyutf8todslarray],
+        "public_dtype": [lambda x: str(x), lambda y: np.dtype(y)],
     }
     _exhausted = False
     is_enum = False
@@ -1665,6 +1666,57 @@ class GammaTensor:
             sources=output_state,
         )
 
+    def __mod__(self, other: Any) -> GammaTensor:
+        # relative
+        from .phi_tensor import PhiTensor
+
+        output_state = dict()
+        # Add this tensor to the chain
+        output_state[self.id] = self
+
+        if isinstance(other, PhiTensor):
+            other = other.gamma
+
+        if isinstance(other, GammaTensor):
+            output_state[other.id] = other
+
+            child = self.child % other.child
+            max_vals = lazyrepeatarray(
+                data=max(0, other.max_vals.data), shape=self.child.shape
+            )
+            min_vals = lazyrepeatarray(
+                data=min(0, other.min_vals.data), shape=self.child.shape
+            )
+            output_ds = self.data_subjects + other.data_subjects
+
+        elif is_acceptable_simple_type(other):
+            output_state[np.random.randint(low=0, high=2**31 - 1)] = other
+            if isinstance(other, np.ndarray):
+                max_vals = lazyrepeatarray(
+                    data=max(0, other.max()), shape=self.child.shape
+                )
+                min_vals = lazyrepeatarray(
+                    data=min(0, other.min()), shape=self.child.shape
+                )
+            else:
+                max_vals = lazyrepeatarray(data=max(0, other), shape=self.child.shape)
+                min_vals = lazyrepeatarray(data=min(0, other), shape=self.child.shape)
+
+            child = self.child % other
+            output_ds = self.data_subjects
+        else:
+            print("Type is unsupported:" + str(type(other)))
+            raise NotImplementedError
+
+        return GammaTensor(
+            child=child,
+            data_subjects=output_ds,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            func_str=GAMMA_TENSOR_OP.MOD.value,
+            sources=output_state,
+        )
+
     def __rtruediv__(self, other: SupportedChainType) -> GammaTensor:
 
         if is_acceptable_simple_type(other):
@@ -1804,43 +1856,6 @@ class GammaTensor:
         min_val.data = _min_val
         max_val = self.max_vals.copy()
         max_val.data = _max_val
-
-        return GammaTensor(
-            child=child,
-            data_subjects=output_ds,
-            min_vals=min_val,
-            max_vals=max_val,
-            func_str=GAMMA_TENSOR_OP.TRUE_DIVIDE.value,
-            sources=output_state,
-        )
-
-    def __mod__(self, other: Any) -> GammaTensor:
-        # relative
-        from .phi_tensor import PhiTensor
-
-        output_state = dict()
-        # Add this tensor to the chain
-        output_state[self.id] = self
-
-        if isinstance(other, PhiTensor):
-            other = other.gamma
-
-        if isinstance(other, GammaTensor):
-            output_state[other.id] = other
-            child = self.child % other.child
-            min_val = self.min_vals * 0
-            max_val = lazyrepeatarray(data=other.max_vals.data, shape=self.shape)
-            output_ds = self.data_subjects * other.data_subjects
-
-        else:
-            child = self.child / other
-            min_val = self.min_vals * 0
-            if isinstance(other, np.ndarray):
-                max_val = lazyrepeatarray(data=other.max(), shape=self.shape)
-            else:
-                max_val = lazyrepeatarray(data=other, shape=self.shape)
-            output_ds = self.data_subjects
-            output_state["0"] = other
 
         return GammaTensor(
             child=child,
@@ -2126,6 +2141,86 @@ class GammaTensor:
             min_vals=min_val,
             max_vals=max_val,
             func_str=GAMMA_TENSOR_OP.LESS_EQUAL.value,
+            sources=output_state,
+        )
+
+    def __abs__(self) -> GammaTensor:
+
+        output_state = dict()
+        output_state[self.id] = self
+
+        child = self.child.__abs__()
+
+        min_val = abs(self.min_vals.data)
+        max_val = abs(self.max_vals.data)
+
+        new_min_val = min(min_val, max_val)
+        new_max_val = max(min_val, max_val)
+
+        return GammaTensor(
+            child=child,
+            data_subjects=self.data_subjects,
+            min_vals=lazyrepeatarray(data=new_min_val, shape=child.shape),
+            max_vals=lazyrepeatarray(data=new_max_val, shape=child.shape),
+            func_str=GAMMA_TENSOR_OP.ABS.value,
+            sources=output_state,
+        )
+
+    def argmax(
+        self,
+        axis: Optional[int] = None,
+    ) -> GammaTensor:
+
+        output_state = dict()
+        output_state[self.id] = self
+
+        child = self.child.argmax(axis=axis)
+        if axis is None:
+            max_value = self.child.size - 1
+            indices = np.unravel_index(child, shape=self.child.shape)
+            data_subjects = self.data_subjects[indices]
+        else:
+            index = np.array([child])
+            max_value = np.size(self.child, axis=axis) - 1
+            data_subjects = np.squeeze(
+                np.take_along_axis(self.data_subjects, index, axis=axis)
+            )
+
+        return GammaTensor(
+            child=child,
+            data_subjects=data_subjects,
+            min_vals=lazyrepeatarray(data=0, shape=child.shape),
+            max_vals=lazyrepeatarray(data=max_value, shape=child.shape),
+            func_str=GAMMA_TENSOR_OP.ARGMAX.value,
+            sources=output_state,
+        )
+
+    def argmin(
+        self,
+        axis: Optional[int] = None,
+    ) -> GammaTensor:
+
+        output_state = dict()
+        output_state[self.id] = self
+
+        child = self.child.argmin(axis=axis)
+        if axis is None:
+            max_value = self.child.size - 1
+            indices = np.unravel_index(child, shape=self.child.shape)
+            data_subjects = self.data_subjects[indices]
+        else:
+            index = np.array([child])
+            max_value = np.size(self.child, axis=axis) - 1
+            data_subjects = np.squeeze(
+                np.take_along_axis(self.data_subjects, index, axis=axis)
+            )
+
+        return GammaTensor(
+            child=child,
+            data_subjects=data_subjects,
+            min_vals=lazyrepeatarray(data=0, shape=child.shape),
+            max_vals=lazyrepeatarray(data=max_value, shape=child.shape),
+            func_str=GAMMA_TENSOR_OP.ARGMIN.value,
             sources=output_state,
         )
 
@@ -3240,16 +3335,107 @@ class GammaTensor:
         ‘K’ means match the layout of a as closely as possible.
         (Note that this function and numpy.copy are very similar but have different default values
         for their order= arguments, and this function always passes sub-classes through.)
-
-
         """
+        output_state = dict()
+        output_state[self.id] = self
+
         return GammaTensor(
             child=self.child.copy(order),
             data_subjects=self.data_subjects.copy(order),
             min_vals=self.min_vals.copy(order),
             max_vals=self.max_vals.copy(order),
-            func_str=self.func_str,
-            sources=self.sources,
+            func_str=GAMMA_TENSOR_OP.COPY.value,
+            sources=output_state,
+        )
+
+    def ptp(
+        self,
+        axis: Optional[Union[int, Tuple[int, ...]]] = None,
+    ) -> GammaTensor:
+        output_state = dict()
+        output_state[self.id] = self
+
+        out_child = self.child.ptp(axis=axis)
+
+        argmin = self.child.argmin(axis=axis)
+        argmax = self.child.argmax(axis=axis)
+
+        if axis is None:
+            max_indices = np.unravel_index(argmax, shape=self.child.shape)
+            min_indices = np.unravel_index(argmin, shape=self.child.shape)
+            data_subjects = (
+                self.data_subjects[max_indices] - self.data_subjects[min_indices]
+            )
+        else:
+            max_indices = np.array([argmax])
+            min_indices = np.array([argmin])
+            data_subjects_max = np.squeeze(
+                np.take_along_axis(self.data_subjects, max_indices, axis=axis)
+            )
+            data_subjects_min = np.squeeze(
+                np.take_along_axis(self.data_subjects, min_indices, axis=axis)
+            )
+            data_subjects = data_subjects_max - data_subjects_min
+
+        return GammaTensor(
+            child=out_child,
+            min_vals=lazyrepeatarray(data=0, shape=out_child.shape),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data - self.min_vals.data, shape=out_child.shape
+            ),
+            data_subjects=data_subjects,
+            func_str=GAMMA_TENSOR_OP.PTP.value,
+            sources=output_state,
+        )
+
+    def take(
+        self,
+        indices: ArrayLike,
+        axis: Optional[int] = None,
+        mode: str = "raise",
+        out: Optional[np.ndarray] = None,
+    ) -> GammaTensor:
+        """Take elements from an array along an axis."""
+        output_state = dict()
+        output_state[self.id] = self
+        out_child = self.child.take(indices, axis=axis, mode=mode, out=out)
+
+        return GammaTensor(
+            child=out_child,
+            data_subjects=self.data_subjects.take(
+                indices, axis=axis, mode=mode, out=out
+            ),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
+            func_str=GAMMA_TENSOR_OP.TAKE.value,
+            sources=output_state,
+        )
+
+    def put(
+        self,
+        ind: ArrayLike,
+        v: ArrayLike,
+        mode: str = "raise",
+    ) -> GammaTensor:
+        """Replaces specified elements of an array with given values.
+        The indexing works on the flattened target array. put is roughly equivalent to:
+            a.flat[ind] = v
+        """
+        output_state = dict()
+        output_state[self.id] = self
+        if self.min_vals.data > min(v) or self.max_vals.data < max(v):
+            raise Exception("The v values must be within the data bounds")
+
+        out_child = self.child
+        out_child.put(ind, v, mode=mode)
+
+        return GammaTensor(
+            child=out_child,
+            data_subjects=self.data_subjects,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+            func_str=GAMMA_TENSOR_OP.PUT.value,
+            sources=output_state,
         )
 
     def repeat(
