@@ -1412,21 +1412,36 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def ptp(
         self,
         axis: Optional[Union[int, Tuple[int, ...]]] = None,
-        keepdims: Optional[bool] = False,
     ) -> PhiTensor:
-        out_child = np.ptp(self.child, axis=axis, keepdims=keepdims)
-        new_data_subjects = np.add.reduce(
-            self.data_subjects,
-            axis=axis,
-            keepdims=keepdims,
-        )
+        out_child = self.child.ptp(axis=axis)
+
+        argmin = self.child.argmin(axis=axis)
+        argmax = self.child.argmax(axis=axis)
+
+        if axis is None:
+            max_indices = np.unravel_index(argmax, shape=self.child.shape)
+            min_indices = np.unravel_index(argmin, shape=self.child.shape)
+            data_subjects = (
+                self.data_subjects[max_indices] - self.data_subjects[min_indices]
+            )
+        else:
+            max_indices = np.array([argmax])
+            min_indices = np.array([argmin])
+            data_subjects_max = np.squeeze(
+                np.take_along_axis(self.data_subjects, max_indices, axis=axis)
+            )
+            data_subjects_min = np.squeeze(
+                np.take_along_axis(self.data_subjects, min_indices, axis=axis)
+            )
+            data_subjects = data_subjects_max - data_subjects_min
+
         return PhiTensor(
             child=out_child,
             min_vals=lazyrepeatarray(data=0, shape=out_child.shape),
             max_vals=lazyrepeatarray(
                 data=self.max_vals.data - self.min_vals.data, shape=out_child.shape
             ),
-            data_subjects=new_data_subjects,
+            data_subjects=data_subjects,
         )
 
     def __mod__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
