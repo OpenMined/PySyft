@@ -1361,35 +1361,10 @@ def test_swapaxes(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-
     result = reference_tensor.swapaxes(0, 1)
     reference_result = reference_tensor.child.swapaxes(0, 1)
     assert (result.child == reference_result).all()
     assert (result.data_subjects == reference_tensor.data_subjects.swapaxes(0, 1)).all()
-    assert result.min_vals.shape == reference_result.shape
-    assert result.max_vals.shape == reference_result.shape
-
-
-def test_nonzero(
-    reference_data: np.ndarray,
-    upper_bound: np.ndarray,
-    lower_bound: np.ndarray,
-    ishan: DataSubjectArray,
-) -> None:
-    ishan = np.broadcast_to(ishan, reference_data.shape)
-    reference_tensor = PT(
-        child=np.array(reference_data),
-        data_subjects=np.array(ishan),
-        max_vals=upper_bound,
-        min_vals=lower_bound,
-    )
-    result = reference_tensor.nonzero()
-    reference_result = np.array(reference_tensor.child.nonzero())
-    assert (result.child == reference_result).all()
-    assert (
-        result.data_subjects
-        == reference_tensor.data_subjects[reference_tensor.child != 0]
-    ).all()
     assert result.min_vals.shape == reference_result.shape
     assert result.max_vals.shape == reference_result.shape
 
@@ -1407,7 +1382,6 @@ def test_argmin(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-
     result = reference_tensor.argmin()
     reference_result = reference_tensor.child.argmin()
     assert (result.child == reference_result).all()
@@ -1421,6 +1395,233 @@ def test_argmin(
     assert (
         result.data_subjects == reference_tensor.data_subjects[reference_result]
     ).all()
+
+
+def test_ptp(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array(reference_data),
+        data_subjects=np.array(ishan),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    result = reference_tensor.ptp()
+    assert result.child == reference_data.ptp()
+    assert (result.data_subjects == ishan).any()
+    assert result.min_vals.data == 0
+    assert result.max_vals.data == upper_bound - lower_bound
+
+    result = reference_tensor.ptp(axis=0)
+    assert (result.child == reference_data.ptp(axis=0, keepdims=True)).all()
+    assert (result.data_subjects == ishan).any()
+    assert result.min_vals.data == 0
+    assert result.max_vals.data == upper_bound - lower_bound
+
+
+def test_mod_wrong_types(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    """Ensure that mod with incorrect types aren't supported"""
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+    with pytest.raises(NotImplementedError):
+        reference_tensor % "some string"
+        reference_tensor % dict()
+        # TODO: Double check how tuples behave during addition/subtraction with np.ndarrays
+
+
+def test_mod_tensor_types(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+    highest: int,
+    dims: int,
+) -> None:
+    """Test mod of a PT with various other kinds of Tensors"""
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    # TODO: Add tests for GammaTensor, etc when those are built out.
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    simple_tensor = Tensor(
+        child=np.random.randint(
+            low=-highest, high=highest, size=(dims + 10, dims + 10), dtype=np.int64
+        )
+    )
+
+    with pytest.raises(NotImplementedError):
+        result = reference_tensor % simple_tensor
+        assert isinstance(result, PT), "PT % Tensor != PT"
+        assert (
+            result.max_vals == simple_tensor.child.max()
+        ), "PT % Tensor: incorrect max_vals"
+        assert result.min_vals == 0, "PT % Tensor: incorrect min_vals"
+
+
+def test_mod_single_data_subjects(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    """Test the mod of PhiTensors"""
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    tensor1 = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+    tensor2 = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    result = tensor2 % tensor1
+    # TODO: As we currently convert all operations to gamma tensor,
+    # so we include gammatensor for the assert, it should be reverted back to PhiTensor
+    assert isinstance(result, (PT, GammaTensor)), "Addition of two PTs is wrong type"
+    assert result.max_vals.data >= max(
+        0, tensor1.child.max()
+    ), "Mod of two PTs results in incorrect max_vals"
+    assert result.min_vals.data <= min(
+        0, tensor1.child.min()
+    ), "Mod of two PTs results in incorrect min_vals"
+
+    # Try with negative values
+    tensor3 = PT(
+        child=reference_data * -1.5,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    result = tensor3 % tensor1
+    assert isinstance(result, (PT, GammaTensor)), "Addition of two PTs is wrong type"
+    assert result.max_vals.data >= max(
+        0, tensor1.child.max()
+    ), "PT % PT results in incorrect max_vals"
+    assert result.min_vals.data <= min(
+        0, tensor1.child.min()
+    ), "PT % PT results in incorrect min_vals"
+
+
+@pytest.mark.arithmetic
+@pytest.mark.public_op
+def test_mod_public(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    output = reference_tensor % 5
+    assert output.shape == reference_tensor.shape
+    assert (output.child == reference_data % 5).all()
+    assert output.min_vals.data == 0
+    assert output.min_vals.shape == reference_tensor.shape
+    assert output.max_vals.data == 5
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+    output = reference_tensor % -5
+    assert output.shape == reference_tensor.shape
+    assert (output.child == reference_data % -5).all()
+    assert output.min_vals.data == -5
+    assert output.min_vals.shape == reference_tensor.shape
+    assert output.max_vals.data == 0
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.arithmetic
+@pytest.mark.private_op
+def test_mod_private(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    dims = reference_data.shape[0]
+    new_reference_data = np.random.randint(
+        low=lower_bound.data, high=upper_bound.data, size=(dims, dims), dtype=np.int32
+    )
+    tensor2 = PT(
+        child=new_reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    output = reference_tensor % tensor2
+    assert output.shape == reference_tensor.shape
+    assert (output.child == reference_data % new_reference_data).all()
+    assert output.min_vals.data <= min(0, reference_data.min())
+    assert output.min_vals.shape == reference_tensor.shape
+    assert output.max_vals.data >= max(0, reference_data.max())
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+def test_nonzero(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array(reference_data),
+        data_subjects=np.array(ishan),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    result = reference_tensor.nonzero()
+    reference_result = np.array(reference_tensor.child.nonzero())
+    assert (result.child == reference_result).all()
+    assert (
+        result.data_subjects
+        == reference_tensor.data_subjects[reference_tensor.child != 0]
+    ).all()
+    assert result.min_vals.shape == reference_result.shape
+    assert result.max_vals.shape == reference_result.shape
 
 
 def test_cumsum(

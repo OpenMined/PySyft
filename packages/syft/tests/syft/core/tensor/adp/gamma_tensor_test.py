@@ -306,6 +306,41 @@ def test_truediv_public(
 
 
 @pytest.mark.arithmetic
+@pytest.mark.public_op
+def test_mod_public(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    ).gamma
+
+    output = reference_tensor % 5
+    assert output.shape == reference_tensor.shape
+    assert (output.child == reference_data % 5).all()
+    assert output.min_vals.data == 0
+    assert output.min_vals.shape == reference_tensor.shape
+    assert output.max_vals.data == 5
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+    output = reference_tensor % -5
+    assert output.shape == reference_tensor.shape
+    assert (output.child == reference_data % -5).all()
+    assert output.min_vals.data == -5
+    assert output.min_vals.shape == reference_tensor.shape
+    assert output.max_vals.data == 0
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.arithmetic
 @pytest.mark.private_op
 def test_add_private(
     reference_data: np.ndarray,
@@ -430,6 +465,39 @@ def test_truediv_private(
     assert (output.child == 1).all()
     assert output.min_vals.data <= output.max_vals.data
     assert output.min_vals.shape == reference_tensor.shape
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.arithmetic
+@pytest.mark.private_op
+def test_mod_private(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    ).gamma
+
+    tensor2 = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    ).gamma
+
+    output = reference_tensor % tensor2
+    assert output.shape == reference_tensor.shape
+    assert (output.child == reference_data % reference_data).all()
+    assert output.min_vals.data <= min(0, reference_data.min())
+    assert output.min_vals.shape == reference_tensor.shape
+    assert output.max_vals.data >= max(0, reference_data.max())
     assert output.max_vals.shape == reference_tensor.shape
     assert (output.data_subjects == reference_tensor.data_subjects).all()
 
@@ -1305,6 +1373,35 @@ def test_swapaxes(
     assert (result.data_subjects == reference_tensor.data_subjects.swapaxes(0, 1)).all()
     assert result.min_vals.shape == reference_result.shape
     assert result.max_vals.shape == reference_result.shape
+
+
+def test_ptp(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array(reference_data),
+        data_subjects=np.array(ishan),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    ).gamma
+
+    result = reference_tensor.ptp()
+    assert result.func_str == GAMMA_TENSOR_OP.PTP.value
+    assert reference_tensor == result.sources[reference_tensor.id]
+    assert result.child == reference_data.ptp()
+    assert (result.data_subjects == ishan).any()
+    assert result.min_vals.data == 0
+    assert result.max_vals.data == upper_bound - lower_bound
+
+    result = reference_tensor.ptp(axis=0)
+    assert (result.child == reference_data.ptp(axis=0, keepdims=True)).all()
+    assert (result.data_subjects == ishan).any()
+    assert result.min_vals.data == 0
+    assert result.max_vals.data == upper_bound - lower_bound
 
 
 def test_nonzero(
