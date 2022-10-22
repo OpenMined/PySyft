@@ -3,7 +3,7 @@
   import FormControl from '$lib/components/FormControl.svelte';
 </script>
 
-<main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col h-full">
+<main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col">
   <!-- Header Logo -->
 
   <!-- Body content -->
@@ -24,11 +24,15 @@
         <p class="text-left text-gray-500 text-xs">
           Which company, organization or institution are you affiliated with?
         </p>
-        <!-- <div class="flex w-full gap-x-6">
-          <span class="w-full">
-            <FormControl label="Password" id="password" type="password" required />
-          </span>
-        </div> -->
+        <FormControl label="Website/Profile" id="website" type="text" optional />
+        <p class="text-left text-gray-500 text-xs">
+          Provide a link to your personal or university webpage or a social media profile to help
+          others get to know you.
+        </p>
+      </div>
+      <div class="inline-flex py-6">
+        <Button>Save Changes</Button>
+        <a class="flex items-center no-underline pl-8 font-bold" href="/">Cancel</a>
       </div>
 
       <hr class="my-10" />
@@ -42,6 +46,10 @@
         <div class="flex flex-col gap-y-4 gap-x-6">
           <FormControl label="Current Password" id="currentPassword" type="password" required />
           <FormControl label="New Password" id="newPassword" type="password" required />
+        </div>
+        <div class="inline-flex py-6">
+          <Button>Change Password</Button>
+          <a class="flex items-center no-underline pl-8 font-bold" href="/">Cancel</a>
         </div>
       </div>
 
@@ -59,7 +67,9 @@
           deleted as well and will be closed to all users. To transfer ownership of a domain node
           before deleting your account you can follow the instructions <a href="/">here</a>
         </p>
-        <Button>Login</Button>
+        <div class="inline-flex py-6">
+          <Button>Delete Account</Button>
+        </div>
       </div>
     </form>
   </section>
