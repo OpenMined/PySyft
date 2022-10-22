@@ -56,6 +56,7 @@ def publish(
     deduct_epsilon_for_user: Callable,
     sigma: float,
     is_linear: bool = True,
+    private: bool = True,
 ) -> np.ndarray:
     """
     This method applies Individual Differential Privacy (IDP) as defined in
@@ -75,7 +76,6 @@ def publish(
         - The privacy budget spent by a query equals the maximum epsilon increase of any
           data subject in the dataset.
     """
-
     # Step 0: Ensure our Tensor's private data is in a form that is usable.
     if isinstance(tensor.child, FixedPrecisionTensor):
         # Incase SMPC is involved, there will be an FPT in the chain to account for
@@ -121,7 +121,7 @@ def publish(
     )
 
     # its important that its the same type so that eq comparisons below dont break
-    zeros_like = jnp.zeros_like(tensor.child)
+    zeros_like = jnp.zeros_like(value)
 
     # this prevents us from running in an infinite loop
     previous_budget = None
@@ -130,14 +130,14 @@ def publish(
     # if we dont return below we will terminate if the tensor gets replaced with zeros
     prev_tensor = None
 
-    while can_reduce_further(value=tensor.child, zeros_like=zeros_like):
+    while can_reduce_further(value=value, zeros_like=zeros_like):
         if prev_tensor is None:
-            prev_tensor = tensor.child
+            prev_tensor = value
         else:
-            if (prev_tensor == tensor.child).all():  # type: ignore
+            if (prev_tensor == value).all():  # type: ignore
                 raise Exception("Tensor has not changed and is not all zeros")
             else:
-                prev_tensor = tensor.child
+                prev_tensor = value
 
         if is_linear:
             lipschitz_bounds = coeffs.copy()
@@ -155,7 +155,8 @@ def publish(
         # Step 2: Calculate the epsilon spend for this query
 
         # rdp_constant = all terms in Theorem. 2.7 or 2.8 of https://arxiv.org/abs/2008.11193 EXCEPT alpha
-        rdp_constants = compute_rdp_constant(rdp_params, private=True)
+        rdp_constants = compute_rdp_constant(rdp_params, private=private)
+        print("Rdp constants", rdp_constants)
         all_epsilons = ledger._get_epsilon_spend(
             rdp_constants
         )  # This is the epsilon spend for ALL data subjects
@@ -202,7 +203,7 @@ def publish(
         # Step 4: Path 1 - If the User has enough Privacy Budget, we just add noise,
         # deduct budget, and return the result.
         if has_budget:
-            original_output = tensor.child
+            original_output = value
 
             # We sample noise from a cryptographically secure distribution
             # TODO: Replace with discrete gaussian distribution instead of regular
@@ -294,7 +295,7 @@ def publish(
                         epsilon = max(
                             ledger._get_epsilon_spend(
                                 np.asarray(
-                                    compute_rdp_constant(rdp_params, private=True)
+                                    compute_rdp_constant(rdp_params, private=private)
                                 )
                             )
                         )

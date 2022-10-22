@@ -1,4 +1,3 @@
-
 # "Do or do not. There is no try." — Yoda
 # stdlib
 from typing import Dict
@@ -23,9 +22,14 @@ def get_padawans(cohort: str) -> Dict[str, str]:
             "Osam": "PASSED",
             "Mikaela": "PASSED",
             "Jauhar": "PASSED",
+            "Nilansh": "PASSED",
+            "Anna": "PASSED",
+            "Akshay": "PASSED",
+            "Zarreen": "PASSED",
         }
     }
     return data[cohort]
+
 
 def test_trial_of_skill() -> None:
     assert get_padawans("R2Q4")["skywalker"] == "PASSED"
@@ -43,6 +47,9 @@ def test_trial_of_skill() -> None:
     assert get_padawans("R2Q4")["Osam"] == "PASSED"
     assert get_padawans("R2Q4")["Mikaela"] == "PASSED"
     assert get_padawans("R2Q4")["jauhar"]  == "PASSED"
-
+    assert get_padawans("R2Q4")["Nilansh"] == "PASSED"
+    assert get_padawans("R2Q4")["Anna"] == "PASSED"
+    assert get_padawans("R2Q4")["Akshay"] == "PASSED"
+    assert get_padawans("R2Q4")["Zarreen"] == "PASSED"
+    
     assert len(get_padawans("R2Q4")) > 1
-
