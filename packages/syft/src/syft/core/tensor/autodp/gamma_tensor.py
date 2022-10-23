@@ -3856,41 +3856,42 @@ class GammaTensor:
         sources = dict()
         sources[self.id] = self
 
-        if isinstance(other, (int, np.ndarray)):
+        if is_acceptable_simple_type(other):
             sources["0"] = other
-            return GammaTensor(
-                child=self.child << other,
-                data_subjects=self.data_subjects,
-                min_vals=lazyrepeatarray(
-                    data=self.min_vals.data << other, shape=self.shape
-                ),
-                max_vals=lazyrepeatarray(
-                    data=self.max_vals.data << other, shape=self.shape
-                ),
-                func_str=GAMMA_TENSOR_OP.LSHIFT.value,
-                sources=sources,
-            )
+            child = self.child << other
+            if isinstance(other, np.ndarray):
+                other_max, other_min = other.max(), other.min()
+            else:
+                other_max, other_min = other, other
+            data_subjects = self.data_subjects
 
-        if isinstance(other, PhiTensor):  # type: ignore
+        elif isinstance(other, PhiTensor):  # type: ignore
             return self << other.gamma
         elif isinstance(other, GammaTensor):
             sources[other.id] = other
-            return GammaTensor(
-                child=self.child << other.child,
-                data_subjects=self.data_subjects + other.data_subjects,
-                min_vals=lazyrepeatarray(
-                    data=self.min_vals.data << other.min_vals.data, shape=self.shape
-                ),
-                max_vals=lazyrepeatarray(
-                    data=self.max_vals.data << other.max_vals.data, shape=self.shape
-                ),
-                func_str=GAMMA_TENSOR_OP.LSHIFT.value,
-                sources=sources,
-            )
+            child = self.child << other.child
+            other_max, other_min = other.max_vals.data, other.min_vals.data
+            data_subjects = self.data_subjects + other.data_subjects
         else:
             raise NotImplementedError(
                 f"lshift is not implemented for type: {type(other)}"
             )
+
+        min_min = self.min_vals.data << other_min
+        min_max = self.min_vals.data << other_max
+        max_min = self.max_vals.data << other_min
+        max_max = self.max_vals.data << other_max
+
+        _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+        _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+        return GammaTensor(
+            child=child,
+            data_subjects=data_subjects,
+            min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
+            max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
+            func_str=GAMMA_TENSOR_OP.LSHIFT.value,
+            sources=sources,
+        )
 
     def __rshift__(self, other: Any) -> GammaTensor:
         # relative
@@ -3899,41 +3900,43 @@ class GammaTensor:
         sources = dict()
         sources[self.id] = self
 
-        if isinstance(other, (int, np.ndarray)):
+        if is_acceptable_simple_type(other):
             sources["0"] = other
-            return GammaTensor(
-                child=self.child >> other,
-                data_subjects=self.data_subjects,
-                min_vals=lazyrepeatarray(
-                    data=self.min_vals.data >> other, shape=self.shape
-                ),
-                max_vals=lazyrepeatarray(
-                    data=self.max_vals.data >> other, shape=self.shape
-                ),
-                func_str=GAMMA_TENSOR_OP.RSHIFT.value,
-                sources=sources,
-            )
+            child = self.child >> other
+            if isinstance(other, np.ndarray):
+                other_max, other_min = other.max(), other.min()
+            else:
+                other_max, other_min = other, other
+            data_subjects = self.data_subjects
 
-        if isinstance(other, PhiTensor):  # type: ignore
+        elif isinstance(other, PhiTensor):  # type: ignore
             return self >> other.gamma
         elif isinstance(other, GammaTensor):
             sources[other.id] = other
-            return GammaTensor(
-                child=self.child >> other.child,
-                data_subjects=self.data_subjects + other.data_subjects,
-                min_vals=lazyrepeatarray(
-                    data=self.min_vals.data >> other.min_vals.data, shape=self.shape
-                ),
-                max_vals=lazyrepeatarray(
-                    data=self.max_vals.data >> other.max_vals.data, shape=self.shape
-                ),
-                func_str=GAMMA_TENSOR_OP.RSHIFT.value,
-                sources=sources,
-            )
+            child = self.child >> other.child
+            other_max, other_min = other.max_vals.data, other.min_vals.data
+            data_subjects = self.data_subjects + other.data_subjects
         else:
             raise NotImplementedError(
                 f"rshift is not implemented for type: {type(other)}"
             )
+
+        min_min = self.min_vals.data >> other_min
+        min_max = self.min_vals.data >> other_max
+        max_min = self.max_vals.data >> other_min
+        max_max = self.max_vals.data >> other_max
+
+        _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+        _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+
+        return GammaTensor(
+            child=child,
+            data_subjects=data_subjects,
+            min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
+            max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
+            func_str=GAMMA_TENSOR_OP.RSHIFT.value,
+            sources=sources,
+        )
 
     def __xor__(self, other: Any) -> GammaTensor:
         # relative

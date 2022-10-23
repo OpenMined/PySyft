@@ -2714,92 +2714,75 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def __lshift__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
         if is_acceptable_simple_type(other):
             if isinstance(other, np.ndarray):
-                return PhiTensor(
-                    child=(self.child << other),
-                    data_subjects=self.data_subjects,
-                    min_vals=lazyrepeatarray(
-                        data=self.min_vals.data << other.min(), shape=self.shape
-                    ),
-                    max_vals=lazyrepeatarray(
-                        data=self.max_vals.data << other.max(), shape=self.shape
-                    ),
-                )
+                other_max, other_min = other.max(), other.min()
             else:
-                return PhiTensor(
-                    child=(self.child << other),
-                    data_subjects=self.data_subjects,
-                    min_vals=lazyrepeatarray(
-                        data=self.min_vals.data << other, shape=self.shape
-                    ),
-                    max_vals=lazyrepeatarray(
-                        data=self.max_vals.data << other, shape=self.shape
-                    ),
-                )
+                other_max, other_min = other, other
+
+            child = self.child << other
+
         elif isinstance(other, GammaTensor):
             return self.gamma << other
         elif isinstance(other, PhiTensor):
             if (self.data_subjects != other.data_subjects).any():
                 return self.gamma << other.gamma
             else:
-                return PhiTensor(
-                    child=self.child << other.child,
-                    data_subjects=self.data_subjects + other.data_subjects,
-                    min_vals=lazyrepeatarray(
-                        data=self.min_vals.data << other.min_vals.data, shape=self.shape
-                    ),
-                    max_vals=lazyrepeatarray(
-                        data=self.max_vals.data << other.max_vals.data, shape=self.shape
-                    ),
-                )
+                child = self.child << other.child
+                other_max = other.max_vals.data
+                other_min = other.min_vals.data
         else:
             raise NotImplementedError(
                 f"__lshift__ not implemented between PhiTensor and {type(other)}."
             )
 
+        min_min = self.min_vals.data << other_min
+        min_max = self.min_vals.data << other_max
+        max_min = self.max_vals.data << other_min
+        max_max = self.max_vals.data << other_max
+
+        _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+        _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+        return PhiTensor(
+            child=child,
+            data_subjects=self.data_subjects,
+            min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
+            max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
+        )
+
     def __rshift__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
         if is_acceptable_simple_type(other):
             if isinstance(other, np.ndarray):
-                return PhiTensor(
-                    child=(self.child >> other),
-                    data_subjects=self.data_subjects,
-                    min_vals=lazyrepeatarray(
-                        data=self.min_vals.data >> other.min(), shape=self.shape
-                    ),
-                    max_vals=lazyrepeatarray(
-                        data=self.max_vals.data >> other.max(), shape=self.shape
-                    ),
-                )
+                other_max, other_min = other.max(), other.min()
             else:
-                return PhiTensor(
-                    child=(self.child >> other),
-                    data_subjects=self.data_subjects,
-                    min_vals=lazyrepeatarray(
-                        data=self.min_vals.data >> other, shape=self.shape
-                    ),
-                    max_vals=lazyrepeatarray(
-                        data=self.max_vals.data >> other, shape=self.shape
-                    ),
-                )
+                other_max, other_min = other, other
+            child = self.child >> other
+
         elif isinstance(other, GammaTensor):
             return self.gamma >> other
         elif isinstance(other, PhiTensor):
-            if self.data_subjects.sum() != other.data_subjects.sum():
+            if (self.data_subjects != other.data_subjects).any():
                 return self.gamma >> other.gamma
             else:
-                return PhiTensor(
-                    child=self.child >> other.child,
-                    data_subjects=self.data_subjects + other.data_subjects,
-                    min_vals=lazyrepeatarray(
-                        data=self.min_vals.data >> other.min_vals.data, shape=self.shape
-                    ),
-                    max_vals=lazyrepeatarray(
-                        data=self.max_vals.data >> other.max_vals.data, shape=self.shape
-                    ),
-                )
+                child = self.child >> other.child
+                other_max = other.max_vals.data
+                other_min = other.min_vals.data
         else:
             raise NotImplementedError(
                 f"__rshift__ not implemented between PhiTensor and {type(other)}."
             )
+
+        min_min = self.min_vals.data >> other_min
+        min_max = self.min_vals.data >> other_max
+        max_min = self.max_vals.data >> other_min
+        max_max = self.max_vals.data >> other_max
+
+        _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+        _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+        return PhiTensor(
+            child=child,
+            data_subjects=self.data_subjects,
+            min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
+            max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
+        )
 
     def __xor__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
         if is_acceptable_simple_type(other):
