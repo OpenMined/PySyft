@@ -65,6 +65,7 @@ class GAMMA_TENSOR_OP(Enum):
     ROUND = "round"
     SORT = "sort"
     ARGSORT = "argsort"
+    DIVMOD = "divmod"
     # Our Methods
     RECIPROCAL = "reciprocal"
     FLATTEN_C = "flatten_c"

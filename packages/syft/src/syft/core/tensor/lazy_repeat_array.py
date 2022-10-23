@@ -480,7 +480,7 @@ def compute_min_max(
     elif op_str == "sum":
         min_vals = x_min_vals.sum(*args, **kwargs)
         max_vals = x_max_vals.sum(*args, **kwargs)
-    elif op_str in ["__pos__", "sort", "transpose"]:
+    elif op_str in ["__pos__", "sort"]:
         min_vals = x_min_vals
         max_vals = x_max_vals
     elif op_str == "trace":
@@ -562,7 +562,11 @@ def compute_min_max(
             shape=dummy_res.shape,
         )
     elif op_str == "resize":
-        dummy_res = np.resize(np.empty((x_min_vals.shape)), *args)
+        dummy_res = np.empty(x_min_vals.shape).resize(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
+    elif op_str == "transpose":
+        dummy_res = np.empty(x_min_vals.shape).transpose(*args, **kwargs)
         min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
         max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
     elif op_str == "reshape":
@@ -584,5 +588,7 @@ def compute_min_max(
                 )
         min_vals = lazyrepeatarray(data=0, shape=x_min_vals.shape)
         max_vals = lazyrepeatarray(data=maxv, shape=x_max_vals.shape)
+    else:
+        raise ValueError(f"Invaid Operation for LazyRepeatArray: {op_str}")
 
-    return min_vals, max_vals
+    return (min_vals, max_vals)

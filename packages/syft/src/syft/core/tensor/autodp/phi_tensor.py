@@ -2738,7 +2738,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         elif isinstance(other, GammaTensor):
             return self.gamma << other
         elif isinstance(other, PhiTensor):
-            if self.data_subjects.sum() != other.data_subjects.sum():
+            if (self.data_subjects != other.data_subjects).any():
                 return self.gamma << other.gamma
             else:
                 return PhiTensor(
