@@ -41,7 +41,6 @@ def get_user_details(unique_email: str) -> Dict[str, Any]:
 # Priavacy budget , Dramatically increased due to high budget spent with 64bit Values.
 
 
-@pytest.mark.skip(reason="SMPC Issues")
 @pytest.mark.e2e
 def test_end_to_end_smpc_adp_trade_demo() -> None:
     # make a unique email so we can run the test isolated

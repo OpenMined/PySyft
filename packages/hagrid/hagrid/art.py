@@ -8,9 +8,6 @@ import ascii_magic
 import rich
 from rich.emoji import Emoji
 
-# relative
-from .lib import asset_path
-
 
 def motorcycle() -> None:
     print(
@@ -91,6 +88,9 @@ def hold_on_tight() -> None:
 
 
 def hagrid1() -> None:
+    # relative
+    from .lib import asset_path
+
     try:
         ascii_magic.to_terminal(
             ascii_magic.from_image_file(
@@ -102,6 +102,9 @@ def hagrid1() -> None:
 
 
 def hagrid2() -> None:
+    # relative
+    from .lib import asset_path
+
     try:
         ascii_magic.to_terminal(
             ascii_magic.from_image_file(

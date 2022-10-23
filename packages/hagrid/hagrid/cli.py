@@ -932,7 +932,10 @@ def create_launch_cmd(
                     f"\tWindows Help: https://docs.docker.com/desktop/windows/\n\n"
                     f"Then re-run your hagrid command.\n\n"
                     f"If you see this warning on Linux then something isn't right. "
-                    f"Please file a Github Issue on PySyft's Github"
+                    f"Please file a Github Issue on PySyft's Github.\n\n"
+                    f"Alternatively in case no more memory could be allocated, "
+                    f"you can run hagrid on the cloud with GitPod by visiting "
+                    f"https://gitpod.io/#https://github.com/OpenMined/PySyft."
                 )
 
             if is_windows() and not DEPENDENCIES["wsl"]:
