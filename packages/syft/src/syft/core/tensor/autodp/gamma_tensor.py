@@ -2599,20 +2599,21 @@ class GammaTensor:
             sources=output_state,
         )
 
-    def resize(self, new_shape: Union[int, Tuple[int, ...]]) -> GammaTensor:
+    def resize(
+        self, new_shape: Union[int, Tuple[int, ...]], refcheck: bool = True
+    ) -> GammaTensor:
         output_state = dict()
         output_state[self.id] = self
 
-        data = self.child
-        output_data = np.resize(data, new_shape)
-        output_data_subjects = np.resize(self.data_subjects, new_shape)
+        self.child.resize(new_shape, refcheck=refcheck)
+        self.data_subjects.resize(new_shape, refcheck=refcheck)
 
-        min_val = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape)
-        max_val = lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape)
+        min_val = lazyrepeatarray(data=self.min_vals.data, shape=self.child.shape)
+        max_val = lazyrepeatarray(data=self.max_vals.data, shape=self.child.shape)
 
         return GammaTensor(
-            child=output_data,
-            data_subjects=output_data_subjects,
+            child=self.child,
+            data_subjects=self.data_subjects,
             min_vals=min_val,
             max_vals=max_val,
             func_str=GAMMA_TENSOR_OP.RESIZE.value,
