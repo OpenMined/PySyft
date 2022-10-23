@@ -1933,12 +1933,11 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         data = self.child
         output_data = np.reshape(data, *shape)
-
         return PhiTensor(
             child=output_data,
             data_subjects=np.reshape(self.data_subjects, *shape),
-            min_vals=output_data.min(),
-            max_vals=output_data.max(),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape),
         )
 
     def pad(self, width: int, padding_mode: str = "reflect") -> PhiTensor:

@@ -2797,12 +2797,12 @@ class GammaTensor:
         sources = dict()
         sources[self.id] = self
         sources["0"] = shape  # type: ignore
-
+        output_data = self.child.reshape(shape)
         return GammaTensor(
-            child=self.child.reshape(shape),
+            child=output_data,
             data_subjects=self.data_subjects.reshape(shape),
-            min_vals=self.min_vals.reshape(shape),
-            max_vals=self.max_vals.reshape(shape),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape),
             func_str=GAMMA_TENSOR_OP.RESHAPE.value,
             sources=sources,
         )
