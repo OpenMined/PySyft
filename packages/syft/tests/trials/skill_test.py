@@ -51,5 +51,4 @@ def test_trial_of_skill() -> None:
     assert get_padawans("R2Q4")["Akshay"] == "PASSED"
     assert get_padawans("R2Q4")["Zarreen"] == "PASSED"
     assert get_padawans("R2Q4")["Mihir"] == "PASSED"
-
     assert len(get_padawans("R2Q4")) > 1
