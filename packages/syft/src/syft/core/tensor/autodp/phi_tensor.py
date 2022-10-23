@@ -2663,9 +2663,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 irrespective of dimensionality.
         """
         result = self.child.argsort(axis)
+        out_ds = np.take_along_axis(self.data_subjects, result, axis=axis)
         return PhiTensor(
             child=result,
-            data_subjects=self.data_subjects.take(result),
+            data_subjects=out_ds,
             min_vals=lazyrepeatarray(data=0, shape=self.shape),
             max_vals=lazyrepeatarray(data=self.child.size, shape=self.shape),
         )
@@ -2703,7 +2704,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         indices = self.child.argsort(axis, kind)
         self.child.sort(axis, kind)
 
-        out_ds = self.data_subjects.take(indices)
+        out_ds = np.take_along_axis(self.data_subjects, indices, axis=axis)
         return PhiTensor(
             child=self.child,
             data_subjects=out_ds,
