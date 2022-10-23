@@ -3970,22 +3970,28 @@ class GammaTensor:
         else:
             raise NotImplementedError(f"xor is not implemented for type: {type(other)}")
 
-    def __round__(self, n: Optional[int] = None) -> GammaTensor:
+    def __round__(self, n: int = 0) -> GammaTensor:
         sources = dict()
         sources[self.id] = self
-        if n is not None:
-            sources["0"] = n  # type: ignore
-            result = self.child.round(n)
-        else:
-            result = self.child.round()
+
+        sources["0"] = n  # type: ignore
+        child = self.child.round(n)
+
         return GammaTensor(
-            child=result,
+            child=child,
             data_subjects=self.data_subjects,
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data.round(n), shape=self.min_vals.shape
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data.round(n), shape=self.max_vals.shape
+            ),
             func_str=GAMMA_TENSOR_OP.ROUND.value,
             sources=sources,
         )
+
+    def round(self, n: int = 0) -> GammaTensor:
+        return self.__round__(n)
 
     def sort(self, axis: int = -1, kind: Optional[str] = None) -> GammaTensor:
         """

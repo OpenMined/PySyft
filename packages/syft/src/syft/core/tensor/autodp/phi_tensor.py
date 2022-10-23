@@ -2787,8 +2787,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def __xor__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
         if is_acceptable_simple_type(other):
             return PhiTensor(
-                child=(self.child ^ other)
-                * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
+                child=(self.child ^ other),
                 data_subjects=self.data_subjects,
                 min_vals=lazyrepeatarray(data=0, shape=self.shape),
                 max_vals=lazyrepeatarray(data=1, shape=self.shape),
@@ -2800,8 +2799,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 return self.gamma ^ other.gamma
             else:
                 return PhiTensor(
-                    child=(self.child ^ other.child)
-                    * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
+                    child=(self.child ^ other.child),
                     data_subjects=self.data_subjects + other.data_subjects,
                     min_vals=lazyrepeatarray(data=0, shape=self.shape),
                     max_vals=lazyrepeatarray(data=1, shape=self.shape),
@@ -2851,21 +2849,20 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         else:
             raise NotImplementedError
 
-    def __round__(self, n: Optional[int] = None) -> PhiTensor:
-        if n is None:
-            return PhiTensor(
-                child=self.child.round(),
-                data_subjects=self.data_subjects,
-                min_vals=self.min_vals,
-                max_vals=self.max_vals,
-            )
-        else:
-            return PhiTensor(
-                child=self.child.round(n),
-                data_subjects=self.data_subjects,
-                min_vals=self.min_vals,
-                max_vals=self.max_vals,
-            )
+    def __round__(self, n: int = 0) -> PhiTensor:
+        return PhiTensor(
+            child=self.child.round(n),
+            data_subjects=self.data_subjects,
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data.round(n), shape=self.min_vals.shape
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data.round(n), shape=self.max_vals.shape
+            ),
+        )
+
+    def round(self, n: int = 0) -> PhiTensor:
+        return self.__round__(n)
 
     def __rmatmul__(
         self, other: Union[np.ndarray, PhiTensor]
