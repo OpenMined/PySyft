@@ -2845,10 +2845,19 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def __divmod__(
         self, other: Any
     ) -> Tuple[Union[PhiTensor, GammaTensor], Union[PhiTensor, GammaTensor]]:
-        if isinstance(other, (np.ndarray, PhiTensor, GammaTensor)):
+        if is_acceptable_simple_type(other) or isinstance(
+            other, (PhiTensor, GammaTensor)
+        ):
             return self // other, self % other  # type: ignore
         else:
-            raise NotImplementedError
+            raise NotImplementedError(
+                f"PhiTensor divmod not supported for type: {other}"
+            )
+
+    def divmod(
+        self, other: Any
+    ) -> Tuple[Union[PhiTensor, GammaTensor], Union[PhiTensor, GammaTensor]]:
+        return self.__divmod__(other)
 
     def __round__(self, n: int = 0) -> PhiTensor:
         return PhiTensor(
@@ -2933,47 +2942,14 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def transpose(self, *args: Any, **kwargs: Any) -> PhiTensor:
         """Transposes self.child, min_vals, and max_vals if these can be transposed, otherwise doesn't change them."""
-        data: np.ndarray
-        if (
-            isinstance(self.child, int)
-            or isinstance(self.child, float)
-            or isinstance(self.child, bool)
-        ):
-            # For these data types, the transpose operation is meaningless, so don't change them.
-            data = self.child  # type: ignore
-            print(
-                f"Warning: Tensor data was of type {type(data)}, transpose operation had no effect."
-            )
-        else:
-            data = self.child.transpose(*args)
+        output_data = self.child.transpose(*args, **kwargs)
 
-        # TODO: Should we give warnings for min_vals and max_vals being single floats/integers/booleans too?
-        if (
-            isinstance(self.min_vals, int)
-            or isinstance(self.min_vals, float)
-            or isinstance(self.min_vals, bool)
-        ):
-            # For these data types, the transpose operation is meaningless, so don't change them.
-            min_vals = self.min_vals
-            # print(f'Warning: Tensor data was of type {type(data)}, transpose operation had no effect.')
-        else:
-            min_vals = data.min()
-
-        if (
-            isinstance(self.max_vals, int)
-            or isinstance(self.max_vals, float)
-            or isinstance(self.max_vals, bool)
-        ):
-            # For these data types, the transpose operation is meaningless, so don't change them.
-            max_vals = self.max_vals
-            # print(f'Warning: Tensor data was of type {type(data)}, transpose operation had no effect.')
-        else:
-            max_vals = data.max()
-
-        output_ds = self.data_subjects.transpose(*args)
+        min_vals = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape)
+        max_vals = lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape)
+        output_ds = self.data_subjects.transpose(*args, **kwargs)
 
         return PhiTensor(
-            child=data,
+            child=output_data,
             data_subjects=output_ds,
             min_vals=min_vals,
             max_vals=max_vals,

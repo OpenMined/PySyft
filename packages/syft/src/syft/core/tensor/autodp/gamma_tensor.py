@@ -1869,6 +1869,9 @@ class GammaTensor:
     def __divmod__(self, other: Any) -> Tuple[GammaTensor, GammaTensor]:
         return self // other, self % other
 
+    def divmod(self, other: Any) -> Tuple[GammaTensor, GammaTensor]:
+        return self.__divmod__(other)
+
     def __matmul__(self, other: Any) -> GammaTensor:
         # relative
         from .phi_tensor import PhiTensor
@@ -2405,11 +2408,11 @@ class GammaTensor:
         # Add this tensor to the chain
         output_state[self.id] = self
 
-        output_ds = self.data_subjects.transpose(*args)
-        output_data = self.child.transpose(*args)
+        output_ds = self.data_subjects.transpose(*args, **kwargs)
+        output_data = self.child.transpose(*args, **kwargs)
 
-        min_vals = lazyrepeatarray(data=output_data.min(), shape=output_data.shape)
-        max_vals = lazyrepeatarray(data=output_data.max(), shape=output_data.shape)
+        min_vals = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape)
+        max_vals = lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape)
 
         return GammaTensor(
             child=output_data,
