@@ -588,6 +588,31 @@ def compute_min_max(
                 )
         min_vals = lazyrepeatarray(data=0, shape=x_min_vals.shape)
         max_vals = lazyrepeatarray(data=maxv, shape=x_max_vals.shape)
+    elif op_str in ["__lshift__", "__rshift__"]:
+        if is_acceptable_simple_type(other):
+            if isinstance(other, np.ndarray):
+                other_max, other_min = other.max(), other.min()
+            else:
+                other_max, other_min = other, other
+        elif hasattr(other, "min_vals") and hasattr(other, "max_vals"):
+            other_max = other.max_vals.data  # type: ignore
+            other_min = other.min_vals.data  # type: ignore
+        else:
+            raise NotImplementedError(
+                f"__lshift__ not implemented between PhiTensor and {type(other)}."
+            )
+
+        min_min = x_min_vals.data << other_min
+        min_max = x_min_vals.data << other_max
+        max_min = x_max_vals.data << other_min
+        max_max = x_max_vals.data << other_max
+
+        _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+        _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+
+        min_vals = lazyrepeatarray(data=_min_vals, shape=x_min_vals.shape)
+        max_vals = lazyrepeatarray(data=_max_vals, shape=x_max_vals.shape)
+
     else:
         raise ValueError(f"Invaid Operation for LazyRepeatArray: {op_str}")
 

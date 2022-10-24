@@ -62,6 +62,8 @@ from .adp_tensor import ADPTensor
 from .gamma_tensor import GammaTensor
 from .gamma_tensor import TensorWrappedGammaTensorPointer
 
+INPLACE_OPS = {"resize", "sort"}
+
 
 @serializable(recursive_serde=True)
 class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
@@ -259,12 +261,10 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             self.min_vals, self.max_vals, None, op_str, *args, **kwargs
         )
 
-        if op_str == "__round__":
-            data_subjects = self.data_subjects
-        elif op_str == "resize":
-            data_subjects = dummy_res = np.resize(self.data_subjects, *args)
-        elif hasattr(self.data_subjects, op_str):
+        if hasattr(self.data_subjects, op_str):
             data_subjects = getattr(self.data_subjects, op_str)(*args, **kwargs)
+            if op_str in INPLACE_OPS:
+                data_subjects = self.data_subjects
         else:
             raise ValueError(f"Invalid Numpy Operation: {op_str} for DSA")
 
@@ -313,23 +313,12 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
         dummy_res = np.empty(self.public_shape)
         if hasattr(dummy_res, op_str):
-            if op_str == "sort":
-                result.public_shape = self.public_shape
-                result.public_dtype = self.public_dtype
-                return result
-            if op_str == "resize":
-                dummy_res = np.resize(dummy_res, *args)
-                result.public_shape = dummy_res.shape
-                result.public_dtype = self.public_dtype
-                return result
-
-            dummy_res = getattr(dummy_res, op_str)(*args, **kwargs)
+            if op_str in INPLACE_OPS:
+                getattr(dummy_res, op_str)(*args, **kwargs)
+            else:
+                dummy_res = getattr(dummy_res, op_str)(*args, **kwargs)
         elif hasattr(np, op_str):
             dummy_res = getattr(np, op_str)(dummy_res, *args, *kwargs)
-        elif op_str in ["__round__"]:
-            result.public_shape = self.public_shape
-            result.public_dtype = self.public_dtype
-            return result
         else:
             raise ValueError(f"Invalid Numpy Operation: {op_str} for Pointer")
 
@@ -356,11 +345,11 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
     def copy(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
         return self._apply_self_tensor_op("copy", *args, **kwargs)
 
-    def __round__(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
-        return self._apply_self_tensor_op("__round__", *args, **kwargs)
-
     def round(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
-        return self.__round__(*args, **kwargs)
+        return self._apply_self_tensor_op("round", *args, **kwargs)
+
+    def __round__(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        return self.round(*args, **kwargs)
 
     @staticmethod
     def _apply_op(
@@ -665,7 +654,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         self,
         other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
     ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
-        """Apply the "truediv" operation between "self" and "other"
+        """Apply the "floordiv" operation between "self" and "other"
 
         Args:
             y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -681,6 +670,14 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
     ) -> Union[
         TensorWrappedPhiTensorPointer, TensorWrappedGammaTensorPointer, MPCTensor
     ]:
+        """Apply the "mod" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
         return TensorWrappedPhiTensorPointer._apply_op(self, other, "__mod__")
 
     def __divmod__(
@@ -694,7 +691,28 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             TensorWrappedPhiTensorPointer, TensorWrappedGammaTensorPointer, MPCTensor
         ],
     ]:
-        """Apply the "truediv" operation between "self" and "other"
+        """Apply the "divmod" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return self.divmod(other)
+
+    def divmod(
+        self,
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
+    ) -> Tuple[
+        Union[
+            TensorWrappedPhiTensorPointer, TensorWrappedGammaTensorPointer, MPCTensor
+        ],
+        Union[
+            TensorWrappedPhiTensorPointer, TensorWrappedGammaTensorPointer, MPCTensor
+        ],
+    ]:
+        """Apply the "divmod" operation between "self" and "other"
 
         Args:
             y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
