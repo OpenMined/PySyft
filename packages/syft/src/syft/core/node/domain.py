@@ -75,6 +75,7 @@ from .common.node_service.request_receiver.request_receiver_messages import (
 from .common.node_service.role_manager.role_manager_service import RoleManagerService
 from .common.node_service.simple.simple_service import SimpleService
 from .common.node_service.sleep.sleep_service import SleepService
+from .common.node_service.tff.tff_service import TFFService
 from .common.node_service.user_auth.user_auth_service import UserLoginService
 from .common.node_service.user_manager.user_manager_service import UserManagerService
 from .common.node_service.vpn.vpn_service import VPNConnectService
@@ -157,6 +158,7 @@ class Domain(Node):
         # self.immediate_services_with_reply.append(DomainInfrastructureService)
         self.immediate_services_with_reply.append(GetRemainingBudgetService)
         self.immediate_services_with_reply.append(SimpleService)
+        self.immediate_services_with_reply.append(TFFService)
         self.immediate_services_with_reply.append(PingService)
         self.immediate_services_with_reply.append(VPNConnectService)
         self.immediate_services_with_reply.append(VPNJoinService)
@@ -237,7 +239,7 @@ class Domain(Node):
     def loud_print(self) -> None:
         try:
             install_path = os.path.abspath(
-                os.path.join(os.path.realpath(__file__), "../../../../img/")
+                os.path.join(os.path.realpath(__file__), "../../../img/")
             )
             ascii_magic.to_terminal(
                 ascii_magic.from_image_file(

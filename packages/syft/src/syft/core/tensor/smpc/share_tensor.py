@@ -111,7 +111,7 @@ RING_SIZE_TO_OP = {
 CACHE_CLIENTS: Dict[str, Any] = {}
 
 
-def populate_store(*args: List[Any], **kwargs: Dict[Any, Any]) -> None:
+def populate_store(*args: Any, **kwargs: Any) -> None:
     ShareTensor.crypto_store.populate_store(*args, **kwargs)  # type: ignore
     return None
 
@@ -383,9 +383,26 @@ class ShareTensor(PassthroughTensor):
         share_wrapper: Any,
         ring_size: Union[int, str] = DEFAULT_RING_SIZE,
     ) -> PassthroughTensor:
+        # relative
+        from ..autodp.gamma_tensor import GammaTensor
+
         ring_size = int(ring_size)
-        if hasattr(value, "child"):
-            value.child.child = FixedPrecisionTensor(value.child.child)  # type: ignore
+        if value and hasattr(value, "child"):
+            if isinstance(value.child, GammaTensor):
+                # We do this, since GammaTensor is a FrozenInstance, which prevents us from modifying child values.
+                gt: GammaTensor = value.child
+                new_gamma = GammaTensor(
+                    child=FixedPrecisionTensor(value.child.child),
+                    data_subjects=gt.data_subjects,
+                    min_vals=gt.min_vals,
+                    max_vals=gt.max_vals,
+                    func_str=gt.func_str,
+                    sources=gt.sources,
+                )
+                value.child = new_gamma
+
+            else:
+                value.child.child = FixedPrecisionTensor(value.child.child)  # type: ignore
 
         if value is not None:
             share = ShareTensor.generate_przs(
@@ -735,6 +752,10 @@ class ShareTensor(PassthroughTensor):
 
         # return True
 
+        # ATTENTION: Why are we getting here now when we never did before?
+        if not hasattr(other, "child"):
+            return self.child == other
+
         return self.child == other.child
 
     # TRASK: commenting out because ShareTEnsor doesn't appear to have .session_uuid or .config
@@ -787,9 +808,7 @@ class ShareTensor(PassthroughTensor):
         share.child = value
         return share
 
-    def concatenate(
-        self, other: ShareTensor, *args: List[Any], **kwargs: Dict[str, Any]
-    ) -> ShareTensor:
+    def concatenate(self, other: ShareTensor, *args: Any, **kwargs: Any) -> ShareTensor:
         res = self.copy()
         res.child = np.concatenate((self.child, other.child), *args, **kwargs)
         return res
@@ -805,9 +824,7 @@ class ShareTensor(PassthroughTensor):
             A hooked method
         """
 
-        def method_all_shares(
-            _self: ShareTensor, *args: List[Any], **kwargs: Dict[Any, Any]
-        ) -> Any:
+        def method_all_shares(_self: ShareTensor, *args: Any, **kwargs: Any) -> Any:
 
             share = _self.child
 

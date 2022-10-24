@@ -126,7 +126,7 @@ def run_network_tests(port: int, hostname: str, vpn_ip: str) -> None:
     assert response["status"] == "ok"
 
 
-def check_network_is_connected(email: str, password: str, port: int) -> None:
+def check_node_is_connected(email: str, password: str, port: int) -> None:
     root_client = sy.login(email=email, password=password, port=port)
     response = root_client.vpn_status()
     return response
@@ -159,6 +159,33 @@ def disconnect_network() -> None:
             print(f"Exception running: {cmd}. {e}")
 
 
+def exec_node_command(command: str, node_name: str) -> None:
+    if CONTAINER_HOST == "docker":
+        container = node_name + "-tailscale-1"
+
+        try:
+            cmd = f"docker exec -i {container} {command}"
+            output = subprocess.check_output(cmd, shell=True)
+            output = output.decode("utf-8")
+        except Exception as e:
+            print(f"Exception running: {cmd}. {e}")
+    else:
+        pod = "proxy-0"
+        container = "container-1"
+        context = "k3d-" + node_name.replace("_", "-")
+        namespace = node_name.replace("_", "-")
+
+        try:
+            cmd = (
+                f"kubectl exec -it {pod} -c {container}  --context {context} "
+                + f"--namespace {namespace} -- {command}"
+            )
+            output = subprocess.check_output(cmd, shell=True)
+            output = output.decode("utf-8")
+        except Exception as e:
+            print(f"Exception running: {cmd}. {e}")
+
+
 @pytest.mark.network
 def test_auto_connect_network_to_self() -> None:
     # wait for NETWORK_CHECK_INTERVAL to trigger auto reconnect
@@ -166,7 +193,7 @@ def test_auto_connect_network_to_self() -> None:
     while retry_time > 0:
         retry_time -= 1
         # check network has auto connected
-        res = check_network_is_connected(
+        res = check_node_is_connected(
             email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=NETWORK_PORT
         )
         if res["connected"] is True:
@@ -182,7 +209,7 @@ def test_auto_connect_network_to_self() -> None:
         disconnect_network()
 
         # check network has auto connected
-        res = check_network_is_connected(
+        res = check_node_is_connected(
             email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=NETWORK_PORT
         )
         if res["connected"] is False:
@@ -195,7 +222,7 @@ def test_auto_connect_network_to_self() -> None:
     while retry_time > 0:
         retry_time -= 1
         # check network has auto connected
-        res = check_network_is_connected(
+        res = check_node_is_connected(
             email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=NETWORK_PORT
         )
         if res["connected"] is True:
@@ -296,6 +323,37 @@ def test_1_exchange_credentials_domain1_to_network() -> None:
 
     assert isinstance(routes, list)
     assert len(routes) >= 0  # can run this test multiple times
+
+
+@pytest.mark.network
+def test_reconnect_domain_node() -> None:
+    domain = sy.login(email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=DOMAIN1_PORT)
+    network = sy.login(
+        email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=NETWORK_PORT
+    )
+    domain.apply_to_network(network)
+
+    # Verify if it's really connected
+    assert domain.vpn_status()["connected"]
+
+    # Disconnect Domain Node
+    exec_node_command(command="tailscale down", node_name="test_domain_1")
+
+    # Verify if it's really disconnected
+    assert not domain.vpn_status()["connected"]
+
+    # wait for DOMAIN_CHECK_INTERVAL to trigger auto reconnect
+    retry_time = 20
+    while retry_time > 0:
+        retry_time -= 1
+        # check network has auto connected
+        res = check_node_is_connected(
+            email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=DOMAIN1_PORT
+        )
+        if res["connected"] is True:
+            break
+        time.sleep(1)
+    assert res["connected"] is True
 
 
 @pytest.mark.network

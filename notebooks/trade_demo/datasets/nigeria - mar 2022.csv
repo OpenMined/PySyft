@@ -1,0 +1,133 @@
+Classification,Year,Period,Period Desc.,Aggregate Level,Is Leaf Code,Trade Flow Code,Trade Flow,Reporter Code,Reporter,Reporter ISO,Partner Code,Partner,Partner ISO,Commodity Code,Commodity,Qty Unit Code,Qty Unit,Qty,Netweight (kg),Trade Value (US$),Flag
+HS,2022,202203,Mar-22,0,0,1,Imports,31,Azerbaijan,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,109,0
+HS,2022,202203,Mar-22,0,0,1,Imports,32,Argentina,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,37912,0
+HS,2022,202203,Mar-22,0,0,2,Exports,32,Argentina,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,72493487,0
+HS,2022,202203,Mar-22,0,0,1,Imports,36,Australia,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,197733,0
+HS,2022,202203,Mar-22,0,0,2,Exports,36,Australia,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,2191898,0
+HS,2022,202203,Mar-22,0,0,1,Imports,51,Armenia,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,128294,0
+HS,2022,202203,Mar-22,0,0,1,Imports,52,Barbados,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,638,0
+HS,2022,202203,Mar-22,0,0,1,Imports,56,Belgium,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,53569341,0
+HS,2022,202203,Mar-22,0,0,2,Exports,56,Belgium,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,703694409,0
+HS,2022,202203,Mar-22,0,0,1,Imports,68,Bolivia,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,310346,0
+HS,2022,202203,Mar-22,0,0,1,Imports,70,Bosnia Herzegovina,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,27956,0
+HS,2022,202203,Mar-22,0,0,2,Exports,70,Bosnia Herzegovina,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,42593,0
+HS,2022,202203,Mar-22,0,0,1,Imports,72,Botswana,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,4704,0
+HS,2022,202203,Mar-22,0,0,2,Exports,72,Botswana,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,20536,0
+HS,2022,202203,Mar-22,0,0,1,Imports,76,Brazil,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,196367981,0
+HS,2022,202203,Mar-22,0,0,2,Exports,76,Brazil,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,93777347,0
+HS,2022,202203,Mar-22,0,0,1,Imports,97,EU,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,2848092946,0
+HS,2022,202203,Mar-22,0,0,2,Exports,97,EU,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,1937857538,0
+HS,2022,202203,Mar-22,0,0,2,Exports,112,Belarus,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,97200,0
+HS,2022,202203,Mar-22,0,0,1,Imports,124,Canada,,566,Nigeria,,TOTAL,All Commodities,,,,,334312242,0
+HS,2022,202203,Mar-22,0,0,2,Exports,124,Canada,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,19922534,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,124,Canada,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,574730,0
+HS,2022,202203,Mar-22,0,0,1,Imports,152,Chile,,566,Nigeria,,TOTAL,All Commodities,,,,,79130,0
+HS,2022,202203,Mar-22,0,0,2,Exports,152,Chile,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,18054791,0
+HS,2022,202203,Mar-22,0,0,1,Imports,156,China,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,86516103,0
+HS,2022,202203,Mar-22,0,0,2,Exports,156,China,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,1789499967,0
+HS,2022,202203,Mar-22,0,0,1,Imports,191,Croatia,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,145664,0
+HS,2022,202203,Mar-22,0,0,2,Exports,191,Croatia,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,45108,0
+HS,2022,202203,Mar-22,0,0,1,Imports,203,Czech Rep.,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,3179086,0
+HS,2022,202203,Mar-22,0,0,2,Exports,203,Czech Rep.,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,4811259,0
+HS,2022,202203,Mar-22,0,0,1,Imports,208,Denmark,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,35207,0
+HS,2022,202203,Mar-22,0,0,2,Exports,208,Denmark,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,3919570,0
+HS,2022,202203,Mar-22,0,0,1,Imports,222,El Salvador,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,314120,0
+HS,2022,202203,Mar-22,0,0,1,Imports,233,Estonia,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,4535,0
+HS,2022,202203,Mar-22,0,0,2,Exports,233,Estonia,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,101701,0
+HS,2022,202203,Mar-22,0,0,1,Imports,246,Finland,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,104759,0
+HS,2022,202203,Mar-22,0,0,2,Exports,246,Finland,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,2059931,0
+HS,2022,202203,Mar-22,0,0,1,Imports,268,Georgia,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,11831,0
+HS,2022,202203,Mar-22,0,0,2,Exports,268,Georgia,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,362,0
+HS,2022,202203,Mar-22,0,0,1,Imports,276,Germany,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,258282868,0
+HS,2022,202203,Mar-22,0,0,2,Exports,276,Germany,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,94479485,0
+HS,2022,202203,Mar-22,0,0,1,Imports,300,Greece,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,3519469,0
+HS,2022,202203,Mar-22,0,0,2,Exports,300,Greece,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,4980095,0
+HS,2022,202203,Mar-22,0,0,1,Imports,320,Guatemala,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,430658,0
+HS,2022,202203,Mar-22,0,0,1,Imports,328,Guyana,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,16948,0
+HS,2022,202203,Mar-22,0,0,2,Exports,328,Guyana,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,1531,0
+HS,2022,202203,Mar-22,0,0,1,Imports,344,"China, Hong Kong SAR",,566,Nigeria,,TOTAL,All Commodities,,,,0.0,1317799,0
+HS,2022,202203,Mar-22,0,0,2,Exports,344,"China, Hong Kong SAR",,566,Nigeria,,TOTAL,All Commodities,,,,0.0,63161968,0
+HS,2022,202203,Mar-22,0,0,1,Imports,348,Hungary,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,150442,0
+HS,2022,202203,Mar-22,0,0,2,Exports,348,Hungary,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,2234912,0
+HS,2022,202203,Mar-22,0,0,1,Imports,352,Iceland,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,3346,0
+HS,2022,202203,Mar-22,0,0,2,Exports,352,Iceland,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,6117970,0
+HS,2022,202203,Mar-22,0,0,1,Imports,360,Indonesia,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,389189439,0
+HS,2022,202203,Mar-22,0,0,2,Exports,360,Indonesia,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,35456515,0
+HS,2022,202203,Mar-22,0,0,1,Imports,376,Israel,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,931000,0
+HS,2022,202203,Mar-22,0,0,2,Exports,376,Israel,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,3167000,0
+HS,2022,202203,Mar-22,0,0,1,Imports,381,Italy,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,138816778,0
+HS,2022,202203,Mar-22,0,0,2,Exports,381,Italy,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,61016445,0
+HS,2022,202203,Mar-22,0,0,1,Imports,392,Japan,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,26492741,0
+HS,2022,202203,Mar-22,0,0,2,Exports,392,Japan,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,19519479,0
+HS,2022,202203,Mar-22,0,0,1,Imports,417,Kyrgyzstan,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,563,0
+HS,2022,202203,Mar-22,0,0,1,Imports,428,Latvia,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,6945,0
+HS,2022,202203,Mar-22,0,0,2,Exports,428,Latvia,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,20249513,0
+HS,2022,202203,Mar-22,0,0,1,Imports,440,Lithuania,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,235350,0
+HS,2022,202203,Mar-22,0,0,2,Exports,440,Lithuania,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,17678180,0
+HS,2022,202203,Mar-22,0,0,1,Imports,442,Luxembourg,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,1165,0
+HS,2022,202203,Mar-22,0,0,2,Exports,442,Luxembourg,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,9994415,0
+HS,2022,202203,Mar-22,0,0,1,Imports,446,"China, Macao SAR",,566,Nigeria,,TOTAL,All Commodities,,,,0.0,19259,0
+HS,2022,202203,Mar-22,0,0,2,Exports,480,Mauritius,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,1933,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,480,Mauritius,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,1933,0
+HS,2022,202203,Mar-22,0,0,1,Imports,484,Mexico,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,1348792,0
+HS,2022,202203,Mar-22,0,0,2,Exports,484,Mexico,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,748623,0
+HS,2022,202203,Mar-22,0,0,1,Imports,498,Rep. of Moldova,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,13852,0
+HS,2022,202203,Mar-22,0,0,2,Exports,498,Rep. of Moldova,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,25023,0
+HS,2022,202203,Mar-22,0,0,1,Imports,516,Namibia,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,8579,0
+HS,2022,202203,Mar-22,0,0,2,Exports,516,Namibia,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,816881,0
+HS,2022,202203,Mar-22,0,0,1,Imports,528,Netherlands,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,376478576,0
+HS,2022,202203,Mar-22,0,0,2,Exports,528,Netherlands,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,786202616,0
+HS,2022,202203,Mar-22,0,0,1,Imports,554,New Zealand,,566,Nigeria,,TOTAL,All Commodities,,,,,1858,0
+HS,2022,202203,Mar-22,0,0,2,Exports,554,New Zealand,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,4368811,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,554,New Zealand,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,156946,0
+HS,2022,202203,Mar-22,0,0,1,Imports,579,Norway,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,118288,0
+HS,2022,202203,Mar-22,0,0,2,Exports,579,Norway,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,337464305,0
+HS,2022,202203,Mar-22,0,0,1,Imports,586,Pakistan,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,339886,0
+HS,2022,202203,Mar-22,0,0,2,Exports,586,Pakistan,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,2907374,0
+HS,2022,202203,Mar-22,0,0,1,Imports,600,Paraguay,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,110183,0
+HS,2022,202203,Mar-22,0,0,1,Imports,608,Philippines,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,175958,0
+HS,2022,202203,Mar-22,0,0,2,Exports,608,Philippines,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,604746,0
+HS,2022,202203,Mar-22,0,0,1,Imports,616,Poland,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,278495710,0
+HS,2022,202203,Mar-22,0,0,2,Exports,616,Poland,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,6888029,0
+HS,2022,202203,Mar-22,0,0,1,Imports,620,Portugal,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,192224354,0
+HS,2022,202203,Mar-22,0,0,2,Exports,620,Portugal,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,2785229,0
+HS,2022,202203,Mar-22,0,0,1,Imports,642,Romania,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,431112,0
+HS,2022,202203,Mar-22,0,0,2,Exports,642,Romania,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,2268612,0
+HS,2022,202203,Mar-22,0,0,1,Imports,646,Rwanda,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,261791,0
+HS,2022,202203,Mar-22,0,0,2,Exports,646,Rwanda,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,14426,0
+HS,2022,202203,Mar-22,0,0,1,Imports,686,Senegal,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,10063567,0
+HS,2022,202203,Mar-22,0,0,2,Exports,686,Senegal,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,3480407,0
+HS,2022,202203,Mar-22,0,0,1,Imports,688,Serbia,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,9524,0
+HS,2022,202203,Mar-22,0,0,2,Exports,688,Serbia,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,539528,0
+HS,2022,202203,Mar-22,0,0,1,Imports,699,India,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,1416563835,0
+HS,2022,202203,Mar-22,0,0,2,Exports,699,India,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,357910417,0
+HS,2022,202203,Mar-22,0,0,1,Imports,703,Slovakia,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,99620,0
+HS,2022,202203,Mar-22,0,0,2,Exports,703,Slovakia,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,468413,0
+HS,2022,202203,Mar-22,0,0,1,Imports,705,Slovenia,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,9478,0
+HS,2022,202203,Mar-22,0,0,2,Exports,705,Slovenia,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,1697236,0
+HS,2022,202203,Mar-22,0,0,1,Imports,724,Spain,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,925292269,0
+HS,2022,202203,Mar-22,0,0,2,Exports,724,Spain,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,26625324,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,724,Spain,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,383109,0
+HS,2022,202203,Mar-22,0,0,1,Imports,752,Sweden,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,99777451,0
+HS,2022,202203,Mar-22,0,0,2,Exports,752,Sweden,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,3000932,0
+HS,2022,202203,Mar-22,0,0,1,Imports,757,Switzerland,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,66724546,0
+HS,2022,202203,Mar-22,0,0,2,Exports,757,Switzerland,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,30274542,0
+HS,2022,202203,Mar-22,0,0,1,Imports,768,Togo,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,3739660,0
+HS,2022,202203,Mar-22,0,0,2,Exports,768,Togo,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,5769340,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,768,Togo,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,5313143,0
+HS,2022,202203,Mar-22,0,0,1,Imports,792,Turkey,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,10335414,0
+HS,2022,202203,Mar-22,0,0,2,Exports,792,Turkey,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,83503587,0
+HS,2022,202203,Mar-22,0,0,1,Imports,804,Ukraine,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,553,0
+HS,2022,202203,Mar-22,0,0,2,Exports,804,Ukraine,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,78000,0
+HS,2022,202203,Mar-22,0,0,1,Imports,807,TFYR of Macedonia,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,71020,0
+HS,2022,202203,Mar-22,0,0,2,Exports,807,TFYR of Macedonia,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,13826,0
+HS,2022,202203,Mar-22,0,0,1,Imports,818,Egypt,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,537293,0
+HS,2022,202203,Mar-22,0,0,2,Exports,818,Egypt,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,17499517,0
+HS,2022,202203,Mar-22,0,0,1,Imports,826,United Kingdom,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,304906999,0
+HS,2022,202203,Mar-22,0,0,2,Exports,826,United Kingdom,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,360163189,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,826,United Kingdom,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,2500432,0
+HS,2022,202203,Mar-22,0,0,1,Imports,842,United States of America,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,262864062,0
+HS,2022,202203,Mar-22,0,0,2,Exports,842,United States of America,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,282040171,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,842,United States of America,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,8496758,0
+HS,2022,202203,Mar-22,0,0,1,Imports,854,Burkina Faso,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,2765467,0
+HS,2022,202203,Mar-22,0,0,1,Imports,860,Uzbekistan,,566,Nigeria,,TOTAL,All Commodities,,,,0.0,155,0

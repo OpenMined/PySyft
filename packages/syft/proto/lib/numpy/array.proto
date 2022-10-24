@@ -11,3 +11,12 @@ message NumpyProto {
   string dtype = 3;
   int64 decompressed_size = 4;
 }
+
+message NumpyScalar {
+  string obj_type = 1;
+  oneof data {
+    int64 int = 2;
+    double float = 3;
+  }
+  string dtype = 4;
+}

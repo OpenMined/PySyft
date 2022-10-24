@@ -11,6 +11,9 @@ from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 
 # syft absolute
+from syft.core.node.common.node_service.association_request.association_request_service import (
+    get_vpn_status_metadata,
+)
 from syft.core.node.common.node_service.vpn.vpn_messages import (
     VPNConnectMessageWithReply,
 )
@@ -128,10 +131,18 @@ if settings.NODE_TYPE.lower() == "network":
 
         result = {"status": "error"}
         try:
+            # get the host_or_ip from tailscale
+            try:
+                vpn_metadata = get_vpn_status_metadata(node=node)
+                result["host_or_ip"] = vpn_metadata["host_or_ip"]
+            except Exception as e:
+                print(f"failed to get get_vpn_status_metadata. {e}")
+                result["host_or_ip"] = "100.64.0.1"
+            result["node_id"] = str(node.target_id.id.no_dash)
+            result["node_name"] = str(node.name)
             result["status"] = str(reply.payload.kwargs.get("status"))
             result["vpn_auth_key"] = str(reply.payload.kwargs.get("vpn_auth_key"))
         except Exception as e:
             print("failed", e, type(reply), type(reply.payload))
-            pass
 
         return result

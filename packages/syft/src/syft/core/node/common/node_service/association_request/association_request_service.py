@@ -1,5 +1,4 @@
 # stdlib
-from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import List
@@ -44,18 +43,31 @@ from .association_request_messages import RespondAssociationRequestMessage
 from .association_request_messages import SendAssociationRequestMessage
 
 
-def get_vpn_status_metadata(node: DomainInterface) -> Dict[str, Any]:
-    vpn_status_msg = (
-        VPNStatusMessageWithReply()
-        .to(address=node.address, reply_to=node.address)
-        .sign(signing_key=node.signing_key)
-    )
-    vpn_status = node.recv_immediate_msg_with_reply(msg=vpn_status_msg)
-    vpn_status_message_contents = vpn_status.message
-    status = vpn_status_message_contents.payload.kwargs  # type: ignore
-    network_vpn_ip = status["host"]["ip"]
-    node_name = status["host"]["hostname"]
+def get_vpn_status_metadata(node: DomainInterface) -> Dict[str, str]:
+    connected = False
+    network_vpn_ip = ""
+    node_name = node.name
+
+    try:
+        vpn_status_msg = (
+            VPNStatusMessageWithReply()
+            .to(address=node.address, reply_to=node.address)
+            .sign(signing_key=node.signing_key)
+        )
+
+        vpn_status = node.recv_immediate_msg_with_reply(msg=vpn_status_msg)
+        vpn_status_message_contents = vpn_status.message
+        status = vpn_status_message_contents.payload.kwargs  # type: ignore
+        connected = status["connected"]
+        if connected:
+            network_vpn_ip = status["host"]["ip"]
+            node_name = status["host"]["hostname"]
+    except Exception as e:
+        print(f"Failed to get_vpn_status_metadata. {e}")
+
+    # metadata protobuf is Dict[str, str]
     metadata = {
+        "connected": str(bool(connected)).lower(),
         "host_or_ip": str(network_vpn_ip),
         "node_id": str(node.target_id.id.no_dash),
         "node_name": str(node_name),
@@ -185,7 +197,6 @@ def recv_association_request_msg(
     info(
         f"Node {node} - recv_association_request_msg: prev request exists {not _previous_request}."
     )
-
     # Create a new Association Request if the handshake value doesn't exist in the database
     if not _previous_request:
         # this side happens on the network

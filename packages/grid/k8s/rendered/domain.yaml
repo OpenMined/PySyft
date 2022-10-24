@@ -3070,6 +3070,8 @@ spec:
               value: production
             - name: USE_BLOB_STORAGE
               value: "True"
+            - name: SERVICE_NAME
+              value: backend
           envFrom:
             null
           securityContext:
@@ -3397,6 +3399,8 @@ spec:
             - name: RELEASE
               value: production
             - name: NETWORK_CHECK_INTERVAL
+              value: "60"
+            - name: DOMAIN_CHECK_INTERVAL
               value: "60"
             - name: USE_BLOB_STORAGE
               value: "True"

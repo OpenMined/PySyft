@@ -7,7 +7,6 @@ from typing import Any
 from typing import Callable as CallableT
 from typing import List
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
 # relative
@@ -56,7 +55,7 @@ class Callable(ast.attribute.Attribute):
 
     def __call__(
         self,
-        *args: Tuple[Any, ...],
+        *args: Any,
         **kwargs: Any,
     ) -> Optional[Union["Callable", CallableT]]:
         """The `__call__` method on a `Callable` has two possible roles, e.g.

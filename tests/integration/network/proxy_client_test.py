@@ -31,7 +31,7 @@ def test_domain1_via_network_proxy_client() -> None:
     x = torch.Tensor([1, 2, 3])
     x_ptr = x.send(domain_client, tags=[unique_tag])
 
-    time.sleep(1)
+    time.sleep(5)
 
     _ = domain_client.store[x_ptr.id_at_location.no_dash]
 
@@ -143,7 +143,7 @@ def test_proxy_login_logout_network() -> None:
 
     x = torch.Tensor([1, 2, 3])
     x.send(domain_client, tags=[unique_tag])
-
+    time.sleep(5)
     network_client = sy.login(port=NETWORK_PORT)
     domain_list = network_client.domains.all(pandas=False)
     assert len(domain_list) > 0

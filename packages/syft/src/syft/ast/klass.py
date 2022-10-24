@@ -113,7 +113,7 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
 
     def run_class_smpc_method(
         __self: Any,
-        *args: Tuple[Any, ...],
+        *args: Any,
         **kwargs: Any,
     ) -> object:
         """Run remote class method on a SharePointer and get pointer to returned object.
@@ -184,7 +184,7 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
 
     def run_class_method(
         __self: Any,
-        *args: Tuple[Any, ...],
+        *args: Any,
         **kwargs: Any,
     ) -> object:
         """Run remote class method and get pointer to returned object.
@@ -661,7 +661,7 @@ class Class(Callable):
         Stores args and kwargs of outer_self init by wrapping the init method.
         """
 
-        def init_wrapper(self: Any, *args: List[Any], **kwargs: Dict[Any, Any]) -> None:
+        def init_wrapper(self: Any, *args: Any, **kwargs: Any) -> None:
             outer_self.object_ref._wrapped_init(self, *args, **kwargs)
             self._init_args = args
             self._init_kwargs = kwargs
@@ -685,7 +685,7 @@ class Class(Callable):
             id_at_location_override: Optional[UID] = None,
             chunk_size: Optional[int] = None,
             send_to_blob_storage: bool = True,
-            **kwargs: Dict[str, Any],
+            **kwargs: Any,
         ) -> Union[Pointer, Tuple[Pointer, SaveObjectAction]]:
 
             """Send obj to client and return pointer to the object.

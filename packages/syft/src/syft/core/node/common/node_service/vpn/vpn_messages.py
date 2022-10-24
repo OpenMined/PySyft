@@ -195,12 +195,10 @@ class VPNJoinMessageWithReply(GenericPayloadMessageWithReply):
             grid_url = grid_url_from_kwargs(self.kwargs).as_container_host(
                 container_host=node.settings.CONTAINER_HOST
             )
-
             res = requests.post(
                 str(grid_url.with_path("/api/v1/vpn/register")), verify=verify_tls()
             )
             res_json = res.json()
-
             if "vpn_auth_key" not in res_json:
                 print("Registration failed", res)
                 return {"status": "error"}
@@ -216,6 +214,16 @@ class VPNJoinMessageWithReply(GenericPayloadMessageWithReply):
             )
 
             if status:
+                node_id = node.node.create_or_get_node(  # type: ignore
+                    node_uid=res_json["node_id"],
+                    node_name=res_json["node_name"],
+                )
+                node.node_route.update_route_for_node(  # type: ignore
+                    node_id=node_id,
+                    host_or_ip=res_json["host_or_ip"],
+                    vpn_endpoint=str(grid_url.with_path("/vpn")),
+                    vpn_key=res_json["vpn_auth_key"],
+                )
                 return {"status": "ok"}
             else:
                 print("connect with key failed", error)
@@ -458,6 +466,22 @@ def get_status(
     except Exception as e:
         print("failed to make request", e)
     return connected, host, peers
+
+
+def get_network_url(tailscale_host: str = TAILSCALE_URL) -> Union[None, GridURL]:
+    data = {"timeout": 5, "force_unique_key": True}
+    command_url = f"{tailscale_host}/commands/debug"
+    try:
+        headers = {"X-STACK-API-KEY": os.environ.get("STACK_API_KEY", "")}
+        resp = requests.post(command_url, json=data, headers=headers)
+        report = get_result(json=resp.json())
+        network_url = GridURL.from_url(
+            json.loads(json.loads(report)["report"])["ControlURL"][:-4]
+        )
+        return network_url
+    except Exception as e:
+        print("failed to make request", e)
+    return None
 
 
 def get_result(json: Dict) -> str:
