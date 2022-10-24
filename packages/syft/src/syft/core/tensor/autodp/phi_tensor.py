@@ -2831,33 +2831,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         """
         https://numpy.org/doc/stable/reference/generated/numpy.searchsorted.html
         """
-        if isinstance(v, np.ndarray):
-            result = self.child.searchsorted(v)
-            ds = np.broadcast_to(self.data_subjects.sum(), result.shape)
-            return PhiTensor(
-                child=result,
-                data_subjects=ds,
-                min_vals=lazyrepeatarray(data=0, shape=result.shape),
-                max_vals=lazyrepeatarray(data=self.child.size, shape=result.shape),
-            )
-        elif isinstance(v, PhiTensor):
-            if (self.data_subjects != v.data_subjects).all():
-                return self.gamma.searchsorted(v.gamma)
-            else:
-                result = self.child.searchsorted(v.child)
-                ds = np.broadcast_to(
-                    self.data_subjects.sum() + v.data_subjects.sum(), result.shape
-                )
-                return PhiTensor(
-                    child=result,
-                    data_subjects=ds,
-                    min_vals=lazyrepeatarray(data=0, shape=result.shape),
-                    max_vals=lazyrepeatarray(data=self.child.size, shape=result.shape),
-                )
-        elif isinstance(v, GammaTensor):
-            return self.gamma.searchsorted(v)
-        else:
-            raise NotImplementedError
+        raise NotImplementedError
 
     def __divmod__(
         self, other: Any
