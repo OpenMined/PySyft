@@ -1961,21 +1961,34 @@ def test_round(
     assert result.child.max() <= result.max_vals.data
 
 
-#
-#
-# def test_sort(
-#     reference_data: np.ndarray,
-#     upper_bound: np.ndarray,
-#     lower_bound: np.ndarray,
-#     dsa: DataSubjectArray,
-# ) -> None:
-#     tensor = PT(
-#         child=reference_data,
-#         data_subjects=dsa,
-#         min_vals=lower_bound,
-#         max_vals=upper_bound,
-#     )
-#     pass
+def test_sort(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = PT(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+
+    result = tensor.sort()
+    data = reference_data.copy()  # make a copy incase this changes the fixture
+    data.sort()
+    assert (result.child == data).all()
+    assert result.child.min() >= result.min_vals.data
+    assert result.child.max() <= result.max_vals.data
+
+    result = tensor.sort(axis=1)
+    data = reference_data.copy()  # make a copy incase this changes the fixture
+    data.sort(axis=1)
+    assert (result.child == data).all()
+    assert result.child.min() >= result.min_vals.data
+    assert result.child.max() <= result.max_vals.data
+
+
 #
 #
 # def test_argsort(
