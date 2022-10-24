@@ -1989,23 +1989,29 @@ def test_sort(
     assert result.child.max() <= result.max_vals.data
 
 
-#
-#
-# def test_argsort(
-#     reference_data: np.ndarray,
-#     upper_bound: np.ndarray,
-#     lower_bound: np.ndarray,
-#     dsa: DataSubjectArray,
-# ) -> None:
-#     tensor = PT(
-#         child=reference_data,
-#         data_subjects=dsa,
-#         min_vals=lower_bound,
-#         max_vals=upper_bound,
-#     )
-#     pass
-#
-#
+def test_argsort(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = PT(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.argsort()
+    assert (result.child == reference_data.argsort()).all()
+    assert result.child.min() >= result.min_vals.data
+    assert result.child.max() <= result.max_vals.data
+
+    result = tensor.argsort(axis=1)
+    assert (result.child == reference_data.argsort(axis=1)).all()
+    assert result.child.min() >= result.min_vals.data
+    assert result.child.max() <= result.max_vals.data
+
+
 # def test_transpose(
 #     reference_data: np.ndarray,
 #     upper_bound: np.ndarray,
