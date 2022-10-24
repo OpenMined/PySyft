@@ -1442,6 +1442,87 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             data_subjects=self.data_subjects,
         )
 
+    def ptp(
+        self,
+        axis: Optional[Union[int, Tuple[int, ...]]] = None,
+    ) -> PhiTensor:
+        out_child = self.child.ptp(axis=axis)
+
+        argmin = self.child.argmin(axis=axis)
+        argmax = self.child.argmax(axis=axis)
+
+        if axis is None:
+            max_indices = np.unravel_index(argmax, shape=self.child.shape)
+            min_indices = np.unravel_index(argmin, shape=self.child.shape)
+            data_subjects = (
+                self.data_subjects[max_indices] - self.data_subjects[min_indices]
+            )
+        else:
+            max_indices = np.array([argmax])
+            min_indices = np.array([argmin])
+            data_subjects_max = np.squeeze(
+                np.take_along_axis(self.data_subjects, max_indices, axis=axis)
+            )
+            data_subjects_min = np.squeeze(
+                np.take_along_axis(self.data_subjects, min_indices, axis=axis)
+            )
+            data_subjects = data_subjects_max - data_subjects_min
+
+        return PhiTensor(
+            child=out_child,
+            min_vals=lazyrepeatarray(data=0, shape=out_child.shape),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data - self.min_vals.data, shape=out_child.shape
+            ),
+            data_subjects=data_subjects,
+        )
+
+    def __mod__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
+
+        # if the tensor being added is also private
+        if isinstance(other, PhiTensor):
+            if (self.data_subjects != other.data_subjects).any():
+                return self.gamma % other.gamma
+            else:
+                out_child = self.child % other.child
+                return PhiTensor(
+                    child=self.child % other.child,
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(
+                        data=min(0, other.min_vals.data), shape=out_child.shape
+                    ),
+                    max_vals=lazyrepeatarray(
+                        data=max(0, other.max_vals.data), shape=out_child.shape
+                    ),
+                )
+
+        # if the tensor being added is a public tensor / int / float / etc.
+        elif is_acceptable_simple_type(other):
+
+            if isinstance(other, np.ndarray):
+                max_vals = lazyrepeatarray(
+                    data=max(0, other.max()), shape=self.child.shape
+                )
+                min_vals = lazyrepeatarray(
+                    data=min(0, other.min()), shape=self.child.shape
+                )
+            else:
+                max_vals = lazyrepeatarray(data=max(0, other), shape=self.child.shape)
+                min_vals = lazyrepeatarray(data=min(0, other), shape=self.child.shape)
+
+            return PhiTensor(
+                child=self.child % other,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                data_subjects=self.data_subjects,
+            )
+
+        elif isinstance(other, GammaTensor):
+            return self.gamma % other
+        else:
+            print("Type is unsupported:" + str(type(other)))
+            raise NotImplementedError
+
     def any(
         self,
         axis: Optional[Union[int, Tuple[int, ...]]] = None,
