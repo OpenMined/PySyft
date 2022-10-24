@@ -2035,16 +2035,20 @@ def test_transpose(
     assert result.child.max() <= result.max_vals.data
 
 
-# def test_reshape(
-#     reference_data: np.ndarray,
-#     upper_bound: np.ndarray,
-#     lower_bound: np.ndarray,
-#     dsa: DataSubjectArray,
-# ) -> None:
-#     tensor = PT(
-#         child=reference_data,
-#         data_subjects=dsa,
-#         min_vals=lower_bound,
-#         max_vals=upper_bound,
-#     )
-#     pass
+def test_reshape(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+    dims: int,
+) -> None:
+    tensor = PT(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.reshape((1, dims * dims))
+    assert (result.child == reference_data.reshape((1, dims * dims))).all()
+    assert result.child.min() >= result.min_vals.data
+    assert result.child.max() <= result.max_vals.data
