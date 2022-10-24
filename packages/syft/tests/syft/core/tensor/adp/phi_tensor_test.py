@@ -1898,3 +1898,114 @@ def test_xor(
     assert (result.child == (reference_binary_data ^ other)).all()
     assert (result.child.max() <= 1).all()
     assert (result.child.max() >= 0).all()
+
+
+def test_lshift(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = PT(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor << 10
+    assert (result.child == reference_data << 10).all()
+    assert result.child.max() <= result.max_vals.data
+    assert result.child.min() >= result.min_vals.data
+
+
+def test_rshift(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = PT(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor >> 10
+    assert (result.child == reference_data >> 10).all()
+    assert result.child.max() <= result.max_vals.data
+    assert result.child.min() >= result.min_vals.data
+
+
+# def test_round(
+#     reference_data: np.ndarray,
+#     upper_bound: np.ndarray,
+#     lower_bound: np.ndarray,
+#     dsa: DataSubjectArray,
+# ) -> None:
+#     tensor = PT(
+#         child=reference_data,
+#         data_subjects=dsa,
+#         min_vals=lower_bound,
+#         max_vals=upper_bound,
+#     )
+#     pass
+#
+#
+# def test_sort(
+#     reference_data: np.ndarray,
+#     upper_bound: np.ndarray,
+#     lower_bound: np.ndarray,
+#     dsa: DataSubjectArray,
+# ) -> None:
+#     tensor = PT(
+#         child=reference_data,
+#         data_subjects=dsa,
+#         min_vals=lower_bound,
+#         max_vals=upper_bound,
+#     )
+#     pass
+#
+#
+# def test_argsort(
+#     reference_data: np.ndarray,
+#     upper_bound: np.ndarray,
+#     lower_bound: np.ndarray,
+#     dsa: DataSubjectArray,
+# ) -> None:
+#     tensor = PT(
+#         child=reference_data,
+#         data_subjects=dsa,
+#         min_vals=lower_bound,
+#         max_vals=upper_bound,
+#     )
+#     pass
+#
+#
+# def test_transpose(
+#     reference_data: np.ndarray,
+#     upper_bound: np.ndarray,
+#     lower_bound: np.ndarray,
+#     dsa: DataSubjectArray,
+# ) -> None:
+#     tensor = PT(
+#         child=reference_data,
+#         data_subjects=dsa,
+#         min_vals=lower_bound,
+#         max_vals=upper_bound,
+#     )
+#     pass
+#
+#
+# def test_reshape(
+#     reference_data: np.ndarray,
+#     upper_bound: np.ndarray,
+#     lower_bound: np.ndarray,
+#     dsa: DataSubjectArray,
+# ) -> None:
+#     tensor = PT(
+#         child=reference_data,
+#         data_subjects=dsa,
+#         min_vals=lower_bound,
+#         max_vals=upper_bound,
+#     )
+#     pass
