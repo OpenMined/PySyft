@@ -1936,19 +1936,31 @@ def test_rshift(
     assert result.child.min() >= result.min_vals.data
 
 
-# def test_round(
-#     reference_data: np.ndarray,
-#     upper_bound: np.ndarray,
-#     lower_bound: np.ndarray,
-#     dsa: DataSubjectArray,
-# ) -> None:
-#     tensor = PT(
-#         child=reference_data,
-#         data_subjects=dsa,
-#         min_vals=lower_bound,
-#         max_vals=upper_bound,
-#     )
-#     pass
+def test_round(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    data = reference_data / 100
+    tensor = PT(
+        child=data,
+        data_subjects=dsa,
+        min_vals=lower_bound / 100,
+        max_vals=upper_bound / 100,
+    )
+
+    result = tensor.round()
+    assert (result.child == data.round()).all()
+    assert result.child.min() >= result.min_vals.data
+    assert result.child.max() <= result.max_vals.data
+
+    result = tensor.round(2)
+    assert (result.child == data.round(2)).all()
+    assert result.child.min() >= result.min_vals.data
+    assert result.child.max() <= result.max_vals.data
+
+
 #
 #
 # def test_sort(
