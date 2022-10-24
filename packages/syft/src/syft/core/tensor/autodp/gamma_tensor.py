@@ -74,6 +74,9 @@ else:
     from flax.struct import dataclass
 
 
+INPLACE_OPS = {"resize", "sort"}
+
+
 @serializable(recursive_serde=True)
 class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
     __name__ = "TensorWrappedGammaTensorPointer"
@@ -298,16 +301,18 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
 
         # We always maintain a Tensor hierarchy Tensor ---> PT--> Actual Data
         attr_path_and_name = f"syft.core.tensor.tensor.Tensor.{op_str}"
+
         min_vals, max_vals = compute_min_max(
             self.min_vals, self.max_vals, None, op_str, *args, **kwargs
         )
 
-        if op_str == "resize":
-            data_subjects = dummy_res = np.resize(self.data_subjects, *args)
-        elif hasattr(self.data_subjects, op_str):
+        if hasattr(self.data_subjects, op_str):
             data_subjects = getattr(self.data_subjects, op_str)(*args, **kwargs)
+            if op_str in INPLACE_OPS:
+                data_subjects = self.data_subjects
         else:
             raise ValueError(f"Invalid Numpy Operation: {op_str} for DSA")
+
         result = TensorWrappedGammaTensorPointer(
             data_subjects=data_subjects,
             min_vals=min_vals,
@@ -353,12 +358,10 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
 
         dummy_res = np.empty(self.public_shape)
         if hasattr(dummy_res, op_str):
-            dummy_res = getattr(dummy_res, op_str)(*args, **kwargs)
-            if op_str == "resize":
-                dummy_res = np.resize(dummy_res, *args)
-                result.public_shape = dummy_res.shape
-                result.public_dtype = self.public_dtype
-                return result
+            if op_str in INPLACE_OPS:
+                getattr(dummy_res, op_str)(*args, **kwargs)
+            else:
+                dummy_res = getattr(dummy_res, op_str)(*args, **kwargs)
         elif hasattr(np, op_str):
             dummy_res = getattr(np, op_str)(dummy_res, *args, *kwargs)
         else:
@@ -633,6 +636,33 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         Union[TensorWrappedGammaTensorPointer, MPCTensor],
         Union[TensorWrappedGammaTensorPointer, MPCTensor],
     ]:
+        """Apply the "divmod" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return self.divmod(other)
+
+    def divmod(
+        self,
+        other: Union[
+            TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Tuple[
+        Union[TensorWrappedGammaTensorPointer, MPCTensor],
+        Union[TensorWrappedGammaTensorPointer, MPCTensor],
+    ]:
+        """Apply the "divmod" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
         return TensorWrappedGammaTensorPointer._apply_op(
             self, other, "__floordiv__"
         ), TensorWrappedGammaTensorPointer._apply_op(self, other, "__mod__")
@@ -664,6 +694,44 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
                 Elements to include in the sum. See reduce for details.
         """
         return self._apply_self_tensor_op("sum", *args, **kwargs)
+
+    def __lshift__(
+        self,
+        other: Union[
+            TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the "lshift" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__lshift__")
+
+    def __rshift__(
+        self,
+        other: Union[
+            TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the "rshift" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__rshift__")
+
+    def round(self, *args: Any, **kwargs: Any) -> TensorWrappedGammaTensorPointer:
+        return self._apply_self_tensor_op("round", *args, **kwargs)
+
+    def __round__(self, *args: Any, **kwargs: Any) -> TensorWrappedGammaTensorPointer:
+        return self.round(*args, **kwargs)
 
     def __pos__(self) -> TensorWrappedGammaTensorPointer:
         """Apply the __pos__ (+) operator  on self.
@@ -928,6 +996,63 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
 
         """
         return self._apply_self_tensor_op("trace", *args, **kwargs)
+
+    def sort(self, *args: Any, **kwargs: Any) -> TensorWrappedGammaTensorPointer:
+        """
+        Return a sorted copy of an array.
+
+        Parameters
+
+            a: array_like
+                Array to be sorted.
+
+            axis: int or None, optional
+                Axis along which to sort. If None, the array is flattened before sorting.
+                The default is -1, which sorts along the last axis.
+
+            kind{‘quicksort’, ‘mergesort’, ‘heapsort’, ‘stable’}, optional
+                Sorting algorithm. The default is ‘quicksort’.
+                Note that both ‘stable’ and ‘mergesort’ use timsort or radix sort under the covers and, in general,
+                the actual implementation will vary with data type. The ‘mergesort’ option is retained for backwards
+                compatibility.
+
+                Changed in version 1.15.0.: The ‘stable’ option was added.
+
+            order: str or list of str, optional
+                When a is an array with fields defined, this argument specifies which fields to compare first, second,
+                etc. A single field can be specified as a string, and not all fields need be specified, but unspecified
+                 fields will still be used, in the order in which they come up in the dtype, to break ties.
+
+        Please see docs here: https://numpy.org/doc/stable/reference/generated/numpy.sort.html
+        """
+        return self._apply_self_tensor_op("sort", *args, **kwargs)
+
+    def argsort(self, *args: Any, **kwargs: Any) -> TensorWrappedGammaTensorPointer:
+        """
+        Returns the indices that would sort an array.
+
+        Perform an indirect sort along the given axis using the algorithm specified by the kind keyword.
+        It returns an array of indices of the same shape as a that index data along the given axis in sorted order.
+
+        Parameters
+            axis: int or None, optional
+                Axis along which to sort. The default is -1 (the last axis). If None, the flattened array is used.
+            kind: {‘quicksort’, ‘mergesort’, ‘heapsort’, ‘stable’}, optional
+                Sorting algorithm. The default is ‘quicksort’. Note that both ‘stable’ and ‘mergesort’ use timsort
+                under the covers and, in general, the actual implementation will vary with data type. The ‘mergesort’
+                option is retained for backwards compatibility.
+            order: str or list of str, optional
+                When a is an array with fields defined, this argument specifies which fields to compare 1st, 2nd, etc.
+                A single field can be specified as a string, and not all fields need be specified, but unspecified
+                fields will still be used, in the order in which they come up in the dtype, to break ties.
+
+        Returns
+            index_array: ndarray, int
+                Array of indices that sort a along the specified axis. If a is one-dimensional, a[index_array] yields a
+                sorted a. More generally, np.take_along_axis(a, index_array, axis=axis) always yields the sorted a,
+                irrespective of dimensionality.
+        """
+        return self._apply_self_tensor_op("argsort", *args, **kwargs)
 
     def min(
         self,

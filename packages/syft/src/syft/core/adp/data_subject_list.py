@@ -600,6 +600,9 @@ class DataSubjectArray:
     def sqrt(self, *args: Any, **kwargs: Any) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)
 
+    def rint(self, *args: Any, **kwargs: Any) -> DataSubjectArray:
+        return DataSubjectArray(self.data_subjects)
+
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs) -> ArrayLike:  # type: ignore
         method_name = ufunc.__name__
         method = getattr(self, method_name, None)

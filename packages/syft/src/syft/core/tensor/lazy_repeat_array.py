@@ -507,7 +507,7 @@ def compute_min_max(
     elif op_str == "copy":
         min_vals = x_min_vals.copy(*args, **kwargs)  # type: ignore
         max_vals = x_max_vals.copy(*args, **kwargs)  # type: ignore
-    elif op_str == "__round__":
+    elif op_str == "round":
         min_vals = lazyrepeatarray(
             data=x_min_vals.data.round(*args, **kwargs), shape=x_min_vals.shape
         )
@@ -562,7 +562,8 @@ def compute_min_max(
             shape=dummy_res.shape,
         )
     elif op_str == "resize":
-        dummy_res = np.empty(x_min_vals.shape).resize(*args, **kwargs)
+        dummy_res = np.empty(x_min_vals.shape)
+        dummy_res.resize(*args, **kwargs)
         min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
         max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
     elif op_str == "transpose":
