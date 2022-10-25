@@ -1359,26 +1359,156 @@ def test_and_private(
     assert (output.data_subjects == reference_tensor.data_subjects).all()
 
 
-def test_or(
+
+def test_or_wrong_types(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
     ishan: DataSubjectArray,
 ) -> None:
-    # TODO
+    """Ensure that or with incorrect types aren't supported"""
     ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
-        child=np.array([reference_data]),
-        data_subjects=np.array([ishan]),
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+    with pytest.raises(NotImplementedError):
+        reference_tensor | "some string"
+        reference_tensor | dict()
+
+def test_or_tensor_types(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+    highest: int,
+    dims: int,
+) -> None:
+    """Test or of a PT with various other kinds of Tensors"""
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    # TODO: Add tests for GammaTensor, etc when those are built out.
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
 
-    result = reference_tensor | True
-    assert (result.child == (reference_data | True)).all()
+    simple_tensor = Tensor(
+        child=np.random.randint(
+            low=-highest, high=highest, size=(dims + 10, dims + 10), dtype=np.int64
+        )
+    )
 
-    result = reference_tensor | False
-    assert (result.child == (reference_data | False)).all()
+    with pytest.raises(NotImplementedError):
+        result = reference_tensor | simple_tensor
+        assert isinstance(result, PT), "PT | Tensor != PT"
+        assert (
+            result.max_vals == 1
+        ), "PT | Tensor: incorrect max_vals"
+        assert result.min_vals == 0, "PT | Tensor: incorrect min_vals"
+
+
+def test_or_single_data_subjects(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    """Test the or of PhiTensors"""
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    tensor1 = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+    tensor2 = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    result = tensor2 | tensor1
+    # TODO: As we currently convert all operations to gamma tensor,
+    # so we include gammatensor for the assert, it should be reverted back to PhiTensor
+    assert isinstance(result, (PT, GammaTensor)), "Or of two PTs is wrong type"
+    assert result.max_vals.data == 1, "Or of two PTs results in incorrect max_vals"
+    assert result.min_vals.data == 0, "Or of two PTs results in incorrect min_vals"
+
+@pytest.mark.arithmetic
+@pytest.mark.public_op
+def test_or_public(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    output = reference_tensor | 5
+    assert output.shape == reference_tensor.shape
+    assert (output.child == reference_data | 5).all()
+    assert output.min_vals.data == 0
+    assert output.min_vals.shape == reference_tensor.shape
+    assert output.max_vals.data == 1
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+    
+    output = reference_tensor | -5
+    assert output.shape == reference_tensor.shape
+    assert (output.child == reference_data | -5).all()
+    assert output.min_vals.data == 0
+    assert output.min_vals.shape == reference_tensor.shape
+    assert output.max_vals.data == 1
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.arithmetic
+@pytest.mark.private_op
+def test_or_private(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    dims = reference_data.shape[0]
+    new_reference_data = np.random.randint(
+        low=lower_bound.data, high=upper_bound.data, size=(dims, dims), dtype=np.int32
+    )
+    tensor2 = PT(
+        child=new_reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    output = reference_tensor | tensor2
+    assert output.shape == reference_tensor.shape
+    assert (output.child == reference_data | new_reference_data).all()
+    assert output.min_vals.data == 0 
+    assert output.min_vals.shape == reference_tensor.shape
+    assert output.max_vals.data == 1
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
 
 
 def test_take(
