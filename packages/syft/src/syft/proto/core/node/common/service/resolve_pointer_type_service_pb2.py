@@ -5,8 +5,9 @@
 # third party
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
+from google.protobuf import message as _message
+from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -23,12 +24,35 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b'\nAproto/core/node/common/service/resolve_pointer_type_service.proto\x12\x1csyft.core.node.common.action\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\xc2\x01\n\x19ResolvePointerTypeMessage\x12-\n\x0eid_at_location\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12%\n\x06msg_id\x18\x04 \x01(\x0b\x32\x15.syft.core.common.UID"\x83\x01\n\x1fResolvePointerTypeAnswerMessage\x12\x11\n\ttype_path\x18\x01 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12%\n\x06msg_id\x18\x03 \x01(\x0b\x32\x15.syft.core.common.UIDb\x06proto3'
 )
 
-_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
-_builder.BuildTopDescriptorsAndMessages(
-    DESCRIPTOR,
-    "proto.core.node.common.service.resolve_pointer_type_service_pb2",
-    globals(),
+
+_RESOLVEPOINTERTYPEMESSAGE = DESCRIPTOR.message_types_by_name[
+    "ResolvePointerTypeMessage"
+]
+_RESOLVEPOINTERTYPEANSWERMESSAGE = DESCRIPTOR.message_types_by_name[
+    "ResolvePointerTypeAnswerMessage"
+]
+ResolvePointerTypeMessage = _reflection.GeneratedProtocolMessageType(
+    "ResolvePointerTypeMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _RESOLVEPOINTERTYPEMESSAGE,
+        "__module__": "proto.core.node.common.service.resolve_pointer_type_service_pb2"
+        # @@protoc_insertion_point(class_scope:syft.core.node.common.action.ResolvePointerTypeMessage)
+    },
 )
+_sym_db.RegisterMessage(ResolvePointerTypeMessage)
+
+ResolvePointerTypeAnswerMessage = _reflection.GeneratedProtocolMessageType(
+    "ResolvePointerTypeAnswerMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _RESOLVEPOINTERTYPEANSWERMESSAGE,
+        "__module__": "proto.core.node.common.service.resolve_pointer_type_service_pb2"
+        # @@protoc_insertion_point(class_scope:syft.core.node.common.action.ResolvePointerTypeAnswerMessage)
+    },
+)
+_sym_db.RegisterMessage(ResolvePointerTypeAnswerMessage)
+
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None

@@ -5,8 +5,9 @@
 # third party
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
+from google.protobuf import message as _message
+from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -22,10 +23,19 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b"\n$proto/core/tensor/share_tensor.proto\x12\x10syft.core.tensor\x1a'proto/core/common/recursive_serde.proto\"\x88\x01\n\x0bShareTensor\x12\r\n\x05\x63hild\x18\x01 \x01(\x0c\x12\x0c\n\x04rank\x18\x02 \x01(\r\x12\x11\n\tseed_przs\x18\x03 \x01(\r\x12\x11\n\tring_size\x18\x04 \x01(\x0c\x12\x36\n\x0cparties_info\x18\x05 \x03(\x0b\x32 .syft.core.common.RecursiveSerdeb\x06proto3"
 )
 
-_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
-_builder.BuildTopDescriptorsAndMessages(
-    DESCRIPTOR, "proto.core.tensor.share_tensor_pb2", globals()
+
+_SHARETENSOR = DESCRIPTOR.message_types_by_name["ShareTensor"]
+ShareTensor = _reflection.GeneratedProtocolMessageType(
+    "ShareTensor",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _SHARETENSOR,
+        "__module__": "proto.core.tensor.share_tensor_pb2"
+        # @@protoc_insertion_point(class_scope:syft.core.tensor.ShareTensor)
+    },
 )
+_sym_db.RegisterMessage(ShareTensor)
+
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None

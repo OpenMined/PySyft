@@ -40,7 +40,7 @@ Perform `numpy`-like analysis on `data` that remains in `someone else's` server
   †`Windows` does not support `ansible`, preventing some remote deployment targets
 - PySyft Requires: 🐍 `python 3.7+` - Run: `pip install -U syft --pre`  
   \*`macOS` Apple Silicon users need cmake: `brew install cmake`  
-  ‡`Windows` users must run this first: `pip install jaxlib==0.3.7 -f https://whls.blob.core.windows.net/unstable/index.html`
+  ‡`Windows` users must run this first: `pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html`
 - PyGrid Requires: 🐳 `docker` / `k8s` or 🐧 `ubuntu` VM - Run: `hagrid launch ...`
 
 # Versions

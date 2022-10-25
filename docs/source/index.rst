@@ -104,7 +104,7 @@ use and development of PySyft!
     User guide
     ^^^^^^^^^^
 
-    The user guide provides in-depth explanation ok the key concepts used by PySyft
+    The user guide provides in-depth explanation on the key concepts used by PySyft
     and a glossary of terms you may encounter.
 
     +++

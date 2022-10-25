@@ -99,7 +99,7 @@ class TensorPointer(Pointer):
         self,
         other: Any,
         op_str: str,
-        *args: Tuple[Any, ...],
+        *args: Any,
         **kwargs: Any,
     ) -> Any:
         # we want to get the return type which matches the attr_path_and_name
@@ -201,7 +201,7 @@ class TensorPointer(Pointer):
         self: TensorPointer,
         other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
         op_str: str,
-        **kwargs: Dict[str, Any],
+        **kwargs: Any,
     ) -> Union[MPCTensor, TensorPointer]:
         """Performs the operation based on op_str
 
@@ -230,7 +230,7 @@ class TensorPointer(Pointer):
     def __add__(
         self,
         other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
-        **kwargs: Dict[str, Any],
+        **kwargs: Any,
     ) -> Union[TensorPointer, MPCTensor]:
         """Apply the "add" operation between "self" and "other"
 
@@ -245,7 +245,7 @@ class TensorPointer(Pointer):
     def __sub__(
         self,
         other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
-        **kwargs: Dict[str, Any],
+        **kwargs: Any,
     ) -> Union[TensorPointer, MPCTensor]:
         """Apply the "sub" operation between "self" and "other"
 
@@ -260,7 +260,7 @@ class TensorPointer(Pointer):
     def __mul__(
         self,
         other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
-        **kwargs: Dict[str, Any],
+        **kwargs: Any,
     ) -> Union[TensorPointer, MPCTensor]:
         """Apply the "mul" operation between "self" and "other"
 
@@ -275,7 +275,7 @@ class TensorPointer(Pointer):
     def __matmul__(
         self,
         other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
-        **kwargs: Dict[str, Any],
+        **kwargs: Any,
     ) -> Union[TensorPointer, MPCTensor]:
         """Apply the "matmul" operation between "self" and "other"
 
@@ -290,7 +290,7 @@ class TensorPointer(Pointer):
     def __truediv__(
         self,
         other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
-        **kwargs: Dict[str, Any],
+        **kwargs: Any,
     ) -> Union[TensorPointer, MPCTensor]:
         """Apply the "mul" operation between "self" and "other"
 
@@ -305,7 +305,7 @@ class TensorPointer(Pointer):
     def __rtruediv__(
         self,
         other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
-        **kwargs: Dict[str, Any],
+        **kwargs: Any,
     ) -> Union[TensorPointer, MPCTensor]:
         """Apply the "mul" operation between "self" and "other"
 
@@ -404,8 +404,8 @@ class TensorPointer(Pointer):
     def concatenate(
         self,
         other: TensorPointer,
-        *args: List[Any],
-        **kwargs: Dict[str, Any],
+        *args: Any,
+        **kwargs: Any,
     ) -> Union[TensorPointer, MPCTensor]:
         """Apply the "add" operation between "self" and "other"
 
@@ -554,7 +554,10 @@ class Tensor(
 
     @property
     def proxy_public_kwargs(self) -> Dict[str, Any]:
-        return {"public_shape": self.public_shape, "public_dtype": self.public_dtype}
+        return {
+            "public_shape": self.public_shape,
+            "public_dtype": str(self.public_dtype),
+        }
 
     def init_pointer(
         self,
@@ -609,9 +612,14 @@ class Tensor(
         deduct_epsilon_for_user: Callable,
         ledger: DataSubjectLedger,
         sigma: float,
+        private: bool,
     ) -> Any:
         return self.child.publish(
-            get_budget_for_user, deduct_epsilon_for_user, ledger, sigma
+            get_budget_for_user,
+            deduct_epsilon_for_user,
+            ledger,
+            sigma,
+            private=private,
         )
 
     # TODO: remove after moving private compare to sharetensor level
@@ -644,7 +652,7 @@ class Tensor(
         public_dtype_func = getattr(
             self.public_dtype, "upcast", lambda: self.public_dtype
         )
-        tensor_msg.publicDtype = public_dtype_func()
+        tensor_msg.publicDtype = str(public_dtype_func())
         tensor_msg.tagName = self.tag_name
 
         return tensor_msg.to_bytes_packed()
@@ -662,7 +670,7 @@ class Tensor(
         tensor = Tensor(
             child=sy.deserialize(combine_bytes(tensor_msg.child), from_bytes=True),
             public_shape=sy.deserialize(tensor_msg.publicShape, from_bytes=True),
-            public_dtype=tensor_msg.publicDtype,
+            public_dtype=np.dtype(tensor_msg.publicDtype),
         )
         tensor.tag_name = tensor_msg.tagName
 

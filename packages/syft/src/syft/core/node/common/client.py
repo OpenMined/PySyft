@@ -226,9 +226,12 @@ class Client(AbstractNodeClient):
 
         # relative
         from .node_service.simple.simple_messages import NodeRunnableMessageWithReply
+        from .node_service.tff.tff_messages import TFFMessageWithReply
 
         # TEMPORARY: if message is instance of NodeRunnableMessageWithReply then we need to wrap it in a SimpleMessage
-        if isinstance(msg, NodeRunnableMessageWithReply):
+        if isinstance(msg, NodeRunnableMessageWithReply) or isinstance(
+            msg, TFFMessageWithReply
+        ):
             msg = msg.prepare(address=self.address, reply_to=self.address)
 
         route_index = route_index or self.default_route_index

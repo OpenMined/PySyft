@@ -5,8 +5,9 @@
 # third party
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
+from google.protobuf import message as _message
+from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -17,10 +18,31 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b'\n\x1bproto/lib/numpy/array.proto\x12\x0esyft.lib.numpy"j\n\nNumpyProto\x12\x14\n\narrow_data\x18\x01 \x01(\x0cH\x00\x12\x14\n\nproto_data\x18\x02 \x01(\x0cH\x00\x12\r\n\x05\x64type\x18\x03 \x01(\t\x12\x19\n\x11\x64\x65\x63ompressed_size\x18\x04 \x01(\x03\x42\x06\n\x04\x64\x61ta"V\n\x0bNumpyScalar\x12\x10\n\x08obj_type\x18\x01 \x01(\t\x12\r\n\x03int\x18\x02 \x01(\x03H\x00\x12\x0f\n\x05\x66loat\x18\x03 \x01(\x01H\x00\x12\r\n\x05\x64type\x18\x04 \x01(\tB\x06\n\x04\x64\x61tab\x06proto3'
 )
 
-_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
-_builder.BuildTopDescriptorsAndMessages(
-    DESCRIPTOR, "proto.lib.numpy.array_pb2", globals()
+
+_NUMPYPROTO = DESCRIPTOR.message_types_by_name["NumpyProto"]
+_NUMPYSCALAR = DESCRIPTOR.message_types_by_name["NumpyScalar"]
+NumpyProto = _reflection.GeneratedProtocolMessageType(
+    "NumpyProto",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _NUMPYPROTO,
+        "__module__": "proto.lib.numpy.array_pb2"
+        # @@protoc_insertion_point(class_scope:syft.lib.numpy.NumpyProto)
+    },
 )
+_sym_db.RegisterMessage(NumpyProto)
+
+NumpyScalar = _reflection.GeneratedProtocolMessageType(
+    "NumpyScalar",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _NUMPYSCALAR,
+        "__module__": "proto.lib.numpy.array_pb2"
+        # @@protoc_insertion_point(class_scope:syft.lib.numpy.NumpyScalar)
+    },
+)
+_sym_db.RegisterMessage(NumpyScalar)
+
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None

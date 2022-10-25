@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from dataclasses import field
 from datetime import datetime
+import getpass
 import json
 import os
 import platform
@@ -31,6 +32,7 @@ from typing import Union
 from packaging import version
 from packaging.version import Version
 import requests
+from rich.console import Console
 
 # relative
 from .exceptions import MissingDependency
@@ -65,6 +67,10 @@ SYFT_MINIMUM_PYTHON_VERSION = (3, 7)
 SYFT_MINIMUM_PYTHON_VERSION_STRING = "3.7"
 SYFT_MAXIMUM_PYTHON_VERSION = (3, 10, 999)
 SYFT_MAXIMUM_PYTHON_VERSION_STRING = "3.10"
+WHITE = "\033[0;37m"
+GREEN = "\033[0;32m"
+NO_COLOR = "\033[0;0m"
+WARNING_MSG = f"\033[0;33mWARNING:{NO_COLOR}"
 
 
 @dataclass
@@ -81,7 +87,7 @@ class Dependency:
     name: str = ""
     display: str = ""
     only_os: str = ""
-    version: Optional[Version] = None
+    version: Optional[Version] = version.parse("None")
     valid: bool = False
     issues: List[SetupIssue] = field(default_factory=list)
     output_in_text: bool = False
@@ -97,7 +103,8 @@ class DependencySyftOS(Dependency):
     def check(self) -> None:
         self.display = "✅ " + ENVIRONMENT["os"]
         if is_windows():
-            self.issues.append(windows_jaxlib())
+            if not get_pip_package("jaxlib"):
+                self.issues.append(windows_jaxlib())
         elif is_apple_silicon():
             pass
 
@@ -164,6 +171,7 @@ class DependencyGridDockerCompose(Dependency):
         binary_info = BinaryInfo(
             binary="docker", version_cmd="docker compose version"
         ).get_binary_info()
+
         if binary_info.path and binary_info.version > version.parse(
             MINIMUM_DOCKER_COMPOSE_VERSION
         ):
@@ -293,7 +301,7 @@ class BinaryInfo:
     version_cmd: str
     error: Optional[str] = None
     path: Optional[str] = None
-    version: Optional[Union[str, Version]] = None
+    version: Optional[Union[str, Version]] = version.parse("None")
     version_regex = (
         r"[^\d]*("
         + r"(0|[1-9][0-9]*)\.*(0|[1-9][0-9]*)\.*(0|[1-9][0-9]*)"
@@ -324,7 +332,10 @@ class BinaryInfo:
             if returncode == 0:
                 self.extract_version(lines=lines)
             else:
-                self.error = lines[0]
+                if len(lines) > 0:
+                    self.error = lines[0]
+                else:
+                    self.error = f"Error, no output from {self.binary}"
         return self
 
 
@@ -475,6 +486,86 @@ def check_docker_version() -> Optional[str]:
     return version
 
 
+def docker_running() -> Tuple[bool, str]:
+    try:
+        cmd = "docker info"
+        returncode, _ = get_cli_output(cmd)
+        if returncode == 0:
+            return True, "✅ Docker service is running"
+        else:
+            error_msg = f"""❌ Docker service was not found and might not be installed.\n\n
+To use docker, execute the following steps:\n
+1 - Install docker on your machine by using the proper steps according to your OS.\n
+{WHITE}MacOS: {GREEN}brew install --cask docker
+{WHITE}Linux: {GREEN}curl -fsSL https://get.docker.com -o get-docker.sh && chmod +777 get-docker.sh && ./get-docker.sh
+{WHITE}Windows: {GREEN}choco install docker-desktop -y{NO_COLOR} \n
+2 - Run \'{GREEN}sudo usermod -a -G docker $USER\'{WHITE} to enable this user to execute docker.
+3 - log out and log back in so that your group membership is re-evaluated {NO_COLOR}."""
+            return False, error_msg
+    except Exception:  # nosec
+        pass
+    return False, error_msg
+
+
+def allowed_to_run_docker() -> Tuple[bool, str]:
+    bool_result, msg = True, ""
+    if platform.system().lower() == "linux":
+        _, line = get_cli_output("getent group docker")
+
+        # get user
+        user = getpass.getuser()
+
+        # Check if current user is root.
+        if os.geteuid() == 0:
+            bool_result = True
+
+        # Check if current user is member of docker group.
+        elif user not in "".join(line):
+            msg = f"""⚠️  User is not a member of docker group.
+{WHITE}You're currently not allowed to run docker, perform the following steps:\n
+    1 - Run \'{GREEN}sudo usermod -a -G docker $USER\'{WHITE} to add docker permissions.
+    2 - log out and log back in so that your group membership is re-evaluated {NO_COLOR}."""
+            # NOTE: For some reason, inside of CI pipeline the user (runner) isn't a member of
+            # docker group and doesn't have sudo priviledges, but can execute docker without
+            # permission issues. This is just a workaround to avoid raising an exeception
+            # in this scenario without reason.
+            if user == "runner":
+                bool_result = True
+            else:
+                bool_result = False
+
+    return bool_result, msg
+
+
+def check_docker_service_status(animated: bool = True) -> None:
+    """Check the status of the docker service.
+
+    Raises:
+        MissingDependency: If docker service is not running.
+    """
+
+    if not animated:
+        docker_installed, msg = docker_running()
+        user_allowed, permission_msg = allowed_to_run_docker()
+    else:
+        console = Console()
+        # putting \t at the end seems to prevent weird chars getting outputted
+        # during animations in the juypter notebook
+        with console.status("[bold blue]Checking for Docker Service[/bold blue]\t"):
+            docker_installed, msg = docker_running()
+            user_allowed, permission_msg = allowed_to_run_docker()
+
+    # Check if user is allowed to execute docker
+    if not user_allowed:
+        raise MissingDependency(permission_msg)
+
+    # If docker bin was not found.
+    if not docker_installed:
+        raise MissingDependency(msg)
+
+    print("✅ Docker service is running")
+
+
 def check_deps(
     deps: Dict[str, Dependency],
     of: str = "",
@@ -521,16 +612,20 @@ def check_deps(
         return None  # type: ignore
 
 
-def check_grid_docker(display: bool = True) -> Union[Dict[str, Dependency], NBOutput]:
+def check_grid_docker(
+    display: bool = True, output_in_text: bool = False
+) -> Union[Dict[str, Dependency], NBOutput]:
     try:
         deps: Dict[str, Dependency] = {}
         deps["git"] = DependencyGridGit(name="git")
         deps["docker"] = DependencyGridDocker(name="docker")
         deps["docker_compose"] = DependencyGridDockerCompose(name="docker compose")
-        return check_deps(of="Grid", deps=deps, display=display)
+        return check_deps(
+            of="Grid", deps=deps, display=display, output_in_text=output_in_text
+        )
     except Exception as e:
         try:
-            if display:
+            if display and not output_in_text:
                 return NBOutput(debug_exception(e=e)).to_html()
         except Exception:  # nosec
             pass
@@ -634,7 +729,7 @@ PACKAGE_MANAGER_COMMANDS = {
     "docker": {
         "macos": "brew install --cask docker",
         "windows": "choco install docker-desktop -y",
-        "linux": "curl -fsSL https://get.docker.com -o get-docker.sh",
+        "linux": "curl -fsSL https://get.docker.com -o get-docker.sh && chmod +777 get-docker.sh && ./get-docker.sh",
         "backup_url": "https://www.docker.com/products/docker-desktop/",
     },
     "docker_compose": {
@@ -798,6 +893,6 @@ def windows_jaxlib() -> SetupIssue:
     return SetupIssue(
         issue_name="windows_jaxlib",
         description="Windows Python Wheels for Jax are not available on PyPI yet",
-        command=f"pip install jaxlib==0.3.7 -f {WINDOWS_JAXLIB_REPO}",
+        command=f"pip install jaxlib==0.3.14 -f {WINDOWS_JAXLIB_REPO}",
         solution="Windows users must install jaxlib before syft",
     )

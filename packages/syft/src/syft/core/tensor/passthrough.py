@@ -268,6 +268,14 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
         return self.__class__(other.child.__lshift__(self.child))
 
+    def __xor__(
+        self, other: Union[Type[PassthroughTensor], AcceptableSimpleType]
+    ) -> PassthroughTensor:
+        if is_acceptable_simple_type(other):
+            return self.__class__(self.child.__xor__(other))
+
+        return self.__class__(other.child.__xor__(self.child))
+
     def __rshift__(
         self,
         other: Union[Type[PassthroughTensor], AcceptableSimpleType],
@@ -286,6 +294,14 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
         return self.__class__(other.child.__rshift__(self.child))
 
+    def __round__(self, n: Optional[int] = None) -> PassthroughTensor:
+        if n is None:
+            return self.__class__(self.child.__round__())
+        return self.__class__(self.child.__round__(n))
+
+    def round(self, n: Optional[int] = None) -> PassthroughTensor:
+        return self.__round__(n)
+
     def __pow__(
         self,
         other: Union[Type[PassthroughTensor], AcceptableSimpleType],
@@ -301,6 +317,15 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         if is_acceptable_simple_type(other):
             return self.__class__(self.child.__rpow__(other))
         return self.__class__(self.child.__rpow__(other.child))
+
+    def __mod__(
+        self,
+        other: Union[Type[PassthroughTensor], AcceptableSimpleType],
+    ) -> PassthroughTensor:
+        if is_acceptable_simple_type(other):
+            return self.__class__(self.child.__mod__(other))
+
+        return self.__class__(self.child.__mod__(other.child))
 
     def __divmod__(
         self,
@@ -459,10 +484,8 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def cumsum(
         self,
         axis: Optional[int] = None,
-        dtype: Optional[np.dtype] = None,
-        out: Optional[np.ndarray] = None,
     ) -> PassthroughTensor:
-        return self.__class__(self.child.cumsum(axis=axis, dtype=dtype, out=out))
+        return self.__class__(self.child.cumsum(axis=axis))
 
     # numpy.trace(a, offset=0, axis1=0, axis2=1, dtype=None, out=None)
     def trace(
@@ -470,14 +493,8 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         offset: Optional[int] = 0,
         axis1: Optional[int] = 0,
         axis2: Optional[int] = 1,
-        dtype: Optional[np.dtype] = None,
-        out: Optional[np.ndarray] = None,
     ) -> PassthroughTensor:
-        return self.__class__(
-            self.child.trace(
-                offset=offset, axis1=axis1, axis2=axis2, dtype=dtype, out=out
-            )
-        )
+        return self.__class__(self.child.trace(offset=offset, axis1=axis1, axis2=axis2))
 
     # numpy.diagonal(a, offset=0, axis1=0, axis2=1)
     def diagonal(
@@ -574,6 +591,12 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         self, axis: Optional[Union[int, TypeTuple[int, ...]]] = None
     ) -> PassthroughTensor:
         return self.__class__(self.child.std(axis=axis))
+
+    # numpy.var(a, axis=None, dtype=None, out=None, ddof=0, keepdims=<no value>, *, where=<no value>)
+    def var(
+        self, axis: Optional[Union[int, TypeTuple[int, ...]]] = None
+    ) -> PassthroughTensor:
+        return self.__class__(self.child.var(axis=axis))
 
     def sum(self, *args, **kwargs) -> PassthroughTensor:
         result = self.child.sum(*args, **kwargs)

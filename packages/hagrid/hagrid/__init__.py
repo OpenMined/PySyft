@@ -5,6 +5,7 @@ import sys
 from typing import Any
 
 # relative
+from .cli import check_status as check  # noqa: F401
 from .quickstart_ui import QuickstartUI
 from .wizard_ui import WizardUI
 

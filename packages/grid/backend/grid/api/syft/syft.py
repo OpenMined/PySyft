@@ -7,8 +7,10 @@ from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import Request
 from fastapi import Response
+from fastapi.responses import JSONResponse
 
 # syft absolute
+from syft import __version__
 from syft import deserialize
 from syft import serialize
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
@@ -31,6 +33,11 @@ tracer = get_tracer("API")
 
 async def get_body(request: Request) -> bytes:
     return await request.body()
+
+
+@router.get("/version")
+def syft_version() -> Response:
+    return JSONResponse(content={"version": __version__})
 
 
 @router.get("/metadata", response_model=str)
