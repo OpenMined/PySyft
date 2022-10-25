@@ -1035,6 +1035,20 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         """
         return self._apply_self_tensor_op("__pow__", *args, **kwargs)
 
+    def mean(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Compute the arithmetic mean along the specified axis.
+
+        Returns the average of the array elements. The average is taken over the flattened array by default, otherwise
+        over the specified axis.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Axis or axes along which the means are computed. The default is to compute the mean of the flattened
+                array.
+        """
+        return self._apply_self_tensor_op("mean", *args, **kwargs)
+
     def std(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
         """
         Compute the standard deviation along the specified axis.
