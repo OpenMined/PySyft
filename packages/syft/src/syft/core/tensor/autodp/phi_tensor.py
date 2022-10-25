@@ -640,6 +640,23 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         """
         return self._apply_self_tensor_op("argmax", *args, **kwargs)
 
+    def argmin(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[
+        TensorWrappedPhiTensorPointer, MPCTensor, TensorWrappedGammaTensorPointer
+    ]:
+        """Apply the "argmin" operation on self
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return self._apply_self_tensor_op("argmin", *args, **kwargs)
+
     def ptp(
         self,
         *args: Any,

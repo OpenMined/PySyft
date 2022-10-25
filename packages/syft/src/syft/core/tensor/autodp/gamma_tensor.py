@@ -667,6 +667,21 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         """
         return self._apply_self_tensor_op("argmax", *args, **kwargs)
 
+    def argmin(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the "argmin" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return self._apply_self_tensor_op("argmin", *args, **kwargs)
+
     def __pos__(self) -> TensorWrappedGammaTensorPointer:
         """Apply the __pos__ (+) operator  on self.
 
