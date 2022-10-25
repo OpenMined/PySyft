@@ -1205,6 +1205,7 @@ def test_and_wrong_types(
         reference_tensor & "some string"
         reference_tensor & dict()
 
+
 def test_and_tensor_types(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1232,9 +1233,7 @@ def test_and_tensor_types(
     with pytest.raises(NotImplementedError):
         result = reference_tensor & simple_tensor
         assert isinstance(result, PT), "PT & Tensor != PT"
-        assert (
-            result.max_vals == 1
-        ), "PT & Tensor: incorrect max_vals"
+        assert result.max_vals == 1, "PT & Tensor: incorrect max_vals"
         assert result.min_vals == 0, "PT & Tensor: incorrect min_vals"
 
 
@@ -1266,6 +1265,7 @@ def test_and_single_data_subjects(
     assert result.max_vals.data == 1, "And of two PTs results in incorrect max_vals"
     assert result.min_vals.data == 0, "And of two PTs results in incorrect min_vals"
 
+
 @pytest.mark.arithmetic
 @pytest.mark.public_op
 def test_and_public(
@@ -1290,7 +1290,7 @@ def test_and_public(
     assert output.max_vals.data == 1
     assert output.max_vals.shape == reference_tensor.shape
     assert (output.data_subjects == reference_tensor.data_subjects).all()
-    
+
     output = reference_tensor & -5
     assert output.shape == reference_tensor.shape
     assert (output.child == reference_data & -5).all()
@@ -1331,12 +1331,11 @@ def test_and_private(
     output = reference_tensor & tensor2
     assert output.shape == reference_tensor.shape
     assert (output.child == reference_data & new_reference_data).all()
-    assert output.min_vals.data == 0 
+    assert output.min_vals.data == 0
     assert output.min_vals.shape == reference_tensor.shape
     assert output.max_vals.data == 1
     assert output.max_vals.shape == reference_tensor.shape
     assert (output.data_subjects == reference_tensor.data_subjects).all()
-
 
 
 def test_or_wrong_types(
@@ -1356,6 +1355,7 @@ def test_or_wrong_types(
     with pytest.raises(NotImplementedError):
         reference_tensor | "some string"
         reference_tensor | dict()
+
 
 def test_or_tensor_types(
     reference_data: np.ndarray,
@@ -1384,9 +1384,7 @@ def test_or_tensor_types(
     with pytest.raises(NotImplementedError):
         result = reference_tensor | simple_tensor
         assert isinstance(result, PT), "PT | Tensor != PT"
-        assert (
-            result.max_vals == 1
-        ), "PT | Tensor: incorrect max_vals"
+        assert result.max_vals == 1, "PT | Tensor: incorrect max_vals"
         assert result.min_vals == 0, "PT | Tensor: incorrect min_vals"
 
 
@@ -1418,6 +1416,7 @@ def test_or_single_data_subjects(
     assert result.max_vals.data == 1, "Or of two PTs results in incorrect max_vals"
     assert result.min_vals.data == 0, "Or of two PTs results in incorrect min_vals"
 
+
 @pytest.mark.arithmetic
 @pytest.mark.public_op
 def test_or_public(
@@ -1442,7 +1441,7 @@ def test_or_public(
     assert output.max_vals.data == 1
     assert output.max_vals.shape == reference_tensor.shape
     assert (output.data_subjects == reference_tensor.data_subjects).all()
-    
+
     output = reference_tensor | -5
     assert output.shape == reference_tensor.shape
     assert (output.child == reference_data | -5).all()
@@ -1483,7 +1482,7 @@ def test_or_private(
     output = reference_tensor | tensor2
     assert output.shape == reference_tensor.shape
     assert (output.child == reference_data | new_reference_data).all()
-    assert output.min_vals.data == 0 
+    assert output.min_vals.data == 0
     assert output.min_vals.shape == reference_tensor.shape
     assert output.max_vals.data == 1
     assert output.max_vals.shape == reference_tensor.shape

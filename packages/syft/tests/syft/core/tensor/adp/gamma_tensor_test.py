@@ -339,6 +339,7 @@ def test_mod_public(
     assert output.max_vals.shape == reference_tensor.shape
     assert (output.data_subjects == reference_tensor.data_subjects).all()
 
+
 @pytest.mark.arithmetic
 @pytest.mark.public_op
 def test_and_public(
@@ -552,6 +553,7 @@ def test_mod_private(
     assert output.max_vals.shape == reference_tensor.shape
     assert (output.data_subjects == reference_tensor.data_subjects).all()
 
+
 @pytest.mark.arithmetic
 @pytest.mark.private_op
 def test_and_private(
@@ -583,7 +585,8 @@ def test_and_private(
     assert output.max_vals.data == 1
     assert output.max_vals.shape == reference_tensor.shape
     assert (output.data_subjects == reference_tensor.data_subjects).all()
-    
+
+
 @pytest.mark.arithmetic
 @pytest.mark.private_op
 def test_or_private(
@@ -615,6 +618,7 @@ def test_or_private(
     assert output.max_vals.data == 1
     assert output.max_vals.shape == reference_tensor.shape
     assert (output.data_subjects == reference_tensor.data_subjects).all()
+
 
 @pytest.mark.equality
 @pytest.mark.public_op
@@ -1135,6 +1139,7 @@ def test_neg(
     assert (neg_tensor.min_vals == reference_tensor.max_vals * -1).all()
     assert (neg_tensor.max_vals == reference_tensor.min_vals * -1).all()
     assert neg_tensor.shape == reference_tensor.shape
+
 
 def test_any(
     reference_data: np.ndarray,

@@ -414,6 +414,10 @@ class lazyrepeatarray:
             data=self.data.transpose(*args, **kwargs), shape=dummy_res.shape
         )
 
+    def clip(self, *args: Any, **kwargs: Any) -> lazyrepeatarray:
+        res = np.array(self.to_numpy().clip(*args, **kwargs))
+        return lazyrepeatarray(data=res, shape=res.shape)
+
 
 # As the min and max values calculation is the same regardless of the tensor type,
 # We centralize this method as baseline for calculation for min/max values
@@ -474,7 +478,7 @@ def compute_min_max(
         "__eq__",
         "__ne__",
         "__and__",
-        "__or__"
+        "__or__",
     ]:
         min_vals = x_min_vals * 0
         max_vals = (x_max_vals * 0) + 1
@@ -496,6 +500,14 @@ def compute_min_max(
         max_vals = lazyrepeatarray(data=x_max_vals.data.max(), shape=dummy_res.shape)
     elif op_str == "diagonal":
         dummy_res = np.empty(x_min_vals.shape).diagonal(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=x_min_vals.data.min(), shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(data=x_max_vals.data.max(), shape=dummy_res.shape)
+    elif op_str == "clip":
+        dummy_res = np.empty(x_min_vals.shape).clip(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=dummy_res.min(), shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(data=dummy_res.max(), shape=dummy_res.shape)
+    elif op_str == "choose":
+        dummy_res = np.empty(x_min_vals.shape).choose(*args, **kwargs)
         min_vals = lazyrepeatarray(data=x_min_vals.data.min(), shape=dummy_res.shape)
         max_vals = lazyrepeatarray(data=x_max_vals.data.max(), shape=dummy_res.shape)
     elif op_str == "min":
@@ -566,19 +578,19 @@ def compute_min_max(
             data=0.25 * (x_max_vals.data - x_min_vals.data) ** 2,
             shape=dummy_res.shape,
         )
-    elif op_str  == "take":
+    elif op_str == "take":
         dummy_res = np.empty(x_min_vals.shape).take(*args, **kwargs)
         min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
         max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
-    elif op_str  == "flatten":
+    elif op_str == "flatten":
         dummy_res = np.empty(x_min_vals.shape).flatten(*args, **kwargs)
         min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
         max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
-    elif op_str  == "ravel":
+    elif op_str == "ravel":
         dummy_res = np.empty(x_min_vals.shape).ravel(*args, **kwargs)
         min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
         max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
-    elif op_str  == "compress":
+    elif op_str == "compress":
         dummy_res = np.empty(x_min_vals.shape).compress(*args, **kwargs)
         min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
         max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
