@@ -1857,47 +1857,47 @@ def test_matmul(
 
 
 def test_xor(
-    reference_binary_data: np.ndarray,
+    reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
     ishan: DataSubjectArray,
 ) -> None:
-    ishan = np.broadcast_to(ishan, reference_binary_data.shape)
+    ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
-        child=np.array([reference_binary_data]),
+        child=np.array([reference_data]),
         data_subjects=np.array([ishan]),
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    other = np.ones_like(reference_binary_data)
+    other = np.ones_like(reference_data)
     result = reference_tensor ^ other
 
-    assert (result.child == (reference_binary_data ^ other)).all()
-    assert (result.child.max() <= 1).all()
-    assert (result.child.max() >= 0).all()
+    assert (result.child == (reference_data ^ other)).all()
+    assert (result.child.max() <= result.max_vals.data).all()
+    assert (result.child.max() >= result.min_vals.data).all()
 
-    other = np.zeros_like(reference_binary_data)
+    other = np.zeros_like(reference_data)
     result = reference_tensor ^ other
-    assert (result.child == (reference_binary_data ^ other)).all()
-    assert (result.child.max() <= 1).all()
-    assert (result.child.max() >= 0).all()
+    assert (result.child == (reference_data ^ other)).all()
+    assert (result.child.max() <= result.max_vals.data).all()
+    assert (result.child.max() >= result.min_vals.data).all()
 
     result = reference_tensor ^ reference_tensor
-    assert (result.child == (reference_binary_data ^ reference_binary_data)).all()
-    assert (result.child.max() <= 1).all()
-    assert (result.child.max() >= 0).all()
+    assert (result.child == (reference_data ^ reference_data)).all()
+    assert (result.child.max() <= result.max_vals.data).all()
+    assert (result.child.max() >= result.min_vals.data).all()
 
     other = PT(
-        child=reference_binary_data,
-        data_subjects=DataSubjectArray.from_objs(np.ones_like(reference_binary_data)),
+        child=reference_data,
+        data_subjects=DataSubjectArray.from_objs(np.ones_like(reference_data)),
         min_vals=lower_bound,
         max_vals=upper_bound,
     )
 
     result = reference_tensor ^ other
-    assert (result.child == (reference_binary_data ^ other)).all()
-    assert (result.child.max() <= 1).all()
-    assert (result.child.max() >= 0).all()
+    assert (result.child == (reference_data ^ other.child)).all()
+    assert (result.child.max() <= result.max_vals.data).all()
+    assert (result.child.max() >= result.min_vals.data).all()
 
 
 def test_lshift(

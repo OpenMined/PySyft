@@ -2804,28 +2804,38 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def __xor__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
         if is_acceptable_simple_type(other):
-            return PhiTensor(
-                child=(self.child ^ other),
-                data_subjects=self.data_subjects,
-                min_vals=lazyrepeatarray(data=0, shape=self.shape),
-                max_vals=lazyrepeatarray(data=1, shape=self.shape),
-            )
+            if isinstance(other, np.ndarray):
+                other_min, other_max = other.min(), other.max()
+            else:
+                other_min, other_max = other, other
+            child = self.child ^ other
         elif isinstance(other, GammaTensor):
             return self.gamma ^ other
         elif isinstance(other, PhiTensor):
-            if self.data_subjects.sum() != other.data_subjects.sum():
+            if (self.data_subjects != other.data_subjects).any():
                 return self.gamma ^ other.gamma
             else:
-                return PhiTensor(
-                    child=(self.child ^ other.child),
-                    data_subjects=self.data_subjects + other.data_subjects,
-                    min_vals=lazyrepeatarray(data=0, shape=self.shape),
-                    max_vals=lazyrepeatarray(data=1, shape=self.shape),
-                )
+                child = self.child ^ other.child
+                other_min, other_max = other.min_vals.data, other.max_vals.data
         else:
             raise NotImplementedError(
                 f"__xor__ not implemented between PhiTensor and {type(other)}."
             )
+
+        # TODO: should modify for a tighter found for xor
+        _max = int(max(self.max_vals.data, other_max))
+        _min = int(min(self.min_vals.data, other_min))
+        _max_vals = max(
+            (2 ** (_min ^ _max).bit_length()) - 1, (2 ** (_max).bit_length()) - 1
+        )
+        _min_vals = min(0, _min)
+
+        return PhiTensor(
+            child=child,
+            data_subjects=self.data_subjects,
+            min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
+            max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
+        )
 
     def searchsorted(self, v: Any) -> Union[PhiTensor, GammaTensor]:
         """

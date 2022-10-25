@@ -839,6 +839,22 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         """
         return self._apply_self_tensor_op("prod", *args, **kwargs)
 
+    def __xor__(
+        self,
+        other: Union[
+            TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the "xor" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__xor__")
+
     def __pow__(
         self,
         *args: Any,
@@ -4076,28 +4092,38 @@ class GammaTensor:
 
         if is_acceptable_simple_type(other):
             sources["0"] = other
-            return GammaTensor(
-                child=(self.child ^ other) * 1,
-                data_subjects=self.data_subjects,
-                min_vals=lazyrepeatarray(data=0, shape=self.shape),
-                max_vals=lazyrepeatarray(data=1, shape=self.shape),
-                func_str=GAMMA_TENSOR_OP.XOR.value,
-                sources=sources,
-            )
+            child = self.child ^ other
+            data_subjects = self.data_subjects
+            if isinstance(other, np.ndarray):
+                other_min, other_max = other.min(), other.max()
+            else:
+                other_min, other_max = other, other
         elif isinstance(other, PhiTensor):
             return self ^ other.gamma
         elif isinstance(other, GammaTensor):
             sources[other.id] = other
-            return GammaTensor(
-                child=self.child ^ other.child,
-                data_subjects=self.data_subjects + other.data_subjects,
-                min_vals=lazyrepeatarray(data=0, shape=self.shape),
-                max_vals=lazyrepeatarray(data=1, shape=self.shape),
-                func_str=GAMMA_TENSOR_OP.XOR.value,
-                sources=sources,
-            )
+            child = self.child ^ other.child
+            data_subjects = self.data_subjects + other.data_subjects
+            other_min, other_max = other.min_vals.data, other.max_vals.data
         else:
             raise NotImplementedError(f"xor is not implemented for type: {type(other)}")
+
+        # TODO: should modify for a tighter found for xor
+        _max = int(max(self.max_vals.data, other_max))
+        _min = int(min(self.min_vals.data, other_min))
+        _max_vals = max(
+            (2 ** (_min ^ _max).bit_length()) - 1, (2 ** (_max).bit_length()) - 1
+        )
+        _min_vals = min(0, _min)
+
+        return GammaTensor(
+            child=child,
+            data_subjects=data_subjects,
+            min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
+            max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
+            func_str=GAMMA_TENSOR_OP.XOR.value,
+            sources=sources,
+        )
 
     def __round__(self, n: int = 0) -> GammaTensor:
         sources = dict()

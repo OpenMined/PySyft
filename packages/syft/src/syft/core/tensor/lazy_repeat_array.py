@@ -473,7 +473,6 @@ def compute_min_max(
         "__ge__",
         "__eq__",
         "__ne__",
-        "__xor__",
     ]:
         min_vals = x_min_vals * 0
         max_vals = (x_max_vals * 0) + 1
@@ -600,7 +599,7 @@ def compute_min_max(
             other_min = other.min_vals.data  # type: ignore
         else:
             raise NotImplementedError(
-                f"__lshift__ not implemented between PhiTensor and {type(other)}."
+                f"{op_str} not implemented in LazyRepeatArray for {type(other)}."
             )
 
         min_min = x_min_vals.data << other_min
@@ -610,6 +609,29 @@ def compute_min_max(
 
         _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
         _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+
+        min_vals = lazyrepeatarray(data=_min_vals, shape=x_min_vals.shape)
+        max_vals = lazyrepeatarray(data=_max_vals, shape=x_max_vals.shape)
+
+    elif op_str == "__xor__":
+        if is_acceptable_simple_type(other):
+            if isinstance(other, np.ndarray):
+                other_max, other_min = other.max(), other.min()
+            else:
+                other_max, other_min = other, other
+        elif hasattr(other, "min_vals") and hasattr(other, "max_vals"):
+            other_max = other.max_vals.data  # type: ignore
+            other_min = other.min_vals.data  # type: ignore
+        else:
+            raise NotImplementedError(
+                f"{op_str} not implemented in LazyRepeatArray for {type(other)}."
+            )
+
+        # TODO: should modify for a tighter found for xor
+        _max = int(max(x_max_vals.data, other_max))
+        _min = int(min(x_min_vals.data, other_min))
+        _max_vals = (2 ** (_min ^ _max).bit_length()) - 1
+        _min_vals = min(0, _min)
 
         min_vals = lazyrepeatarray(data=_min_vals, shape=x_min_vals.shape)
         max_vals = lazyrepeatarray(data=_max_vals, shape=x_max_vals.shape)

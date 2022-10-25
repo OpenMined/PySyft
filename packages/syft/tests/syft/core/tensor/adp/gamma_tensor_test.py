@@ -1763,3 +1763,47 @@ def test_reshape(
     assert (result.child == reference_data.reshape((1, dims * dims))).all()
     assert result.child.min() >= result.min_vals.data
     assert result.child.max() <= result.max_vals.data
+
+
+def test_xor(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array([reference_data]),
+        data_subjects=np.array([ishan]),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    ).gamma
+    other = np.ones_like(reference_data)
+    result = reference_tensor ^ other
+
+    assert (result.child == (reference_data ^ other)).all()
+    assert (result.child.max() <= result.max_vals.data).all()
+    assert (result.child.max() >= result.min_vals.data).all()
+
+    other = np.zeros_like(reference_data)
+    result = reference_tensor ^ other
+    assert (result.child == (reference_data ^ other)).all()
+    assert (result.child.max() <= result.max_vals.data).all()
+    assert (result.child.max() >= result.min_vals.data).all()
+
+    result = reference_tensor ^ reference_tensor
+    assert (result.child == (reference_data ^ reference_data)).all()
+    assert (result.child.max() <= result.max_vals.data).all()
+    assert (result.child.max() >= result.min_vals.data).all()
+
+    other = PT(
+        child=reference_data,
+        data_subjects=DataSubjectArray.from_objs(np.ones_like(reference_data)),
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    ).gamma
+
+    result = reference_tensor ^ other
+    assert (result.child == (reference_data ^ other.child)).all()
+    assert (result.child.max() <= result.max_vals.data).all()
+    assert (result.child.max() >= result.min_vals.data).all()
