@@ -3070,6 +3070,8 @@ spec:
               value: production
             - name: USE_BLOB_STORAGE
               value: "True"
+            - name: SERVICE_NAME
+              value: backend
           envFrom:
             null
           securityContext:
