@@ -16,6 +16,7 @@ from typing import Union
 # third party
 import jaxlib
 import numpy as np
+from numpy.typing import ArrayLike
 import torch
 
 # relative
@@ -567,6 +568,15 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         self, axis: Optional[Union[int, TypeTuple[int, ...]]] = None
     ) -> PassthroughTensor:
         return self.__class__(self.child.max(axis=axis))
+
+    #  ndarray.all(axis=None, out=None, keepdims=False, *, where=True)
+    def all(
+        self,
+        axis: Optional[Union[int, TypeTuple[int, ...]]] = None,
+        keepdims: bool = False,
+        where: Optional[ArrayLike] = None,
+    ) -> PassthroughTensor:
+        return self.__class__(self.child.all(axis=axis, keepdims=keepdims, where=where))
 
     # ndarray.min(axis=None, out=None, keepdims=False, initial=<no value>, where=True)
     def min(

@@ -787,6 +787,21 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         """
         return self._apply_self_tensor_op("__abs__", *args, **kwargs)
 
+    def all(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the "all" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return self._apply_self_tensor_op("all", *args, **kwargs)
+
     def round(self, *args: Any, **kwargs: Any) -> TensorWrappedGammaTensorPointer:
         return self._apply_self_tensor_op("round", *args, **kwargs)
 

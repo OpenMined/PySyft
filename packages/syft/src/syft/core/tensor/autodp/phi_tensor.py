@@ -775,6 +775,23 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         """
         return self._apply_self_tensor_op("__abs__", *args, **kwargs)
 
+    def all(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[
+        TensorWrappedPhiTensorPointer, MPCTensor, TensorWrappedGammaTensorPointer
+    ]:
+        """Apply the "all" operation on self
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return self._apply_self_tensor_op("all", *args, **kwargs)
+
     def argmin(
         self,
         *args: Any,
