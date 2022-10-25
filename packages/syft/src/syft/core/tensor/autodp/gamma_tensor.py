@@ -1163,7 +1163,24 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
                 inserted at the end corresponding to the diagonal.
         """
         return self._apply_self_tensor_op("diagonal", *args, **kwargs)
+    
+    def flatten(self, *args: Any, **kwargs: Any) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """
+        Return a copy of the array collapsed into one dimension.
 
+        Parameters
+            order: {‘C’, ‘F’, ‘A’, ‘K’}, optional
+            ‘C’ means to flatten in row-major (C-style) order. 
+            ‘F’ means to flatten in column-major (Fortran- style) order. 
+            ‘A’ means to flatten in column-major order if a is Fortran contiguous in memory, row-major order otherwise. 
+            ‘K’ means to flatten a in the order the elements occur in memory. The default is ‘C’.
+                
+        Returns
+            y: PhiTensor
+                A copy of the input array, flattened to one dimension.
+        """
+        return self._apply_self_tensor_op("flatten", *args, **kwargs)
+    
     def take(self, *args: Any, **kwargs: Any) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
         """
         Take elements from an array along an axis.
