@@ -1172,7 +1172,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             order: {‘C’, ‘F’, ‘A’, ‘K’}, optional
                 ‘C’ means to flatten in row-major (C-style) order.
                 ‘F’ means to flatten in column-major (Fortran- style) order.
-                ‘A’ means to flatten in column-major order if a is Fortran contiguous in memory, 
+                ‘A’ means to flatten in column-major order if a is Fortran contiguous in memory,
                    row-major order otherwise.
                 ‘K’ means to flatten a in the order the elements occur in memory.
                 The default is ‘C’.
@@ -1195,9 +1195,9 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             order: {‘C’,’F’, ‘A’, ‘K’}, optional
                 The elements of a are read using this index order.
                 ‘C’ means to index the elements in row-major,
-                C-style order, with the last axis index changing fastest, back to the first axis index 
+                C-style order, with the last axis index changing fastest, back to the first axis index
                 changing slowest.
-                ‘F’ means to index the elements in column-major, Fortran-style order, with 
+                ‘F’ means to index the elements in column-major, Fortran-style order, with
                 the first index changing fastest,
                 and the last index changing slowest.
                 Note that the ‘C’ and ‘F’ options take no account of the memory layout of the underlying array,
@@ -1220,8 +1220,8 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         """
         Return selected slices of an array along given axis.
 
-        When working along a given axis, a slice along that axis is returned in output 
-        for each index where condition evaluates to True. When working on a 1-D array, 
+        When working along a given axis, a slice along that axis is returned in output
+        for each index where condition evaluates to True. When working on a 1-D array,
         compress is equivalent to extract.
 
         Parameters
@@ -1260,7 +1260,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         """
         Return the sum along diagonals of the array.
 
-        If a is 2-D, the sum along its diagonal with the given offset is returned, 
+        If a is 2-D, the sum along its diagonal with the given offset is returned,
         i.e., the sum of elements a[i,i+offset] for all i.
 
         If a has more than two dimensions, then the axes specified by axis1 and axis2 are used to determine the 2-D
@@ -3836,6 +3836,8 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def compress(self, condition: List[bool], axis: Optional[int] = None) -> PhiTensor:
         out_child = self.child.compress(condition, axis)
+        if 0 in out_child.shape:
+            raise NotImplementedError
         return PhiTensor(
             child=out_child,
             min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),

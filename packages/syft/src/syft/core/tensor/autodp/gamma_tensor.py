@@ -1247,7 +1247,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
 
         Parameters
             condition: 1-D array of bools
-            Array that selects which entries to return. If len(condition) is less than the size of 
+            Array that selects which entries to return. If len(condition) is less than the size of
             a along the given axis,then output is truncated to the length of the condition array.
 
             axis: int, optional
@@ -1603,7 +1603,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         Returns:
             y: PhiTensor
                 y is an array of the same subtype as a, with shape (a.size,).
-                Note that matrices are special cased for backward compatibility, 
+                Note that matrices are special cased for backward compatibility,
                 if a is a matrix, then y is a 1-D ndarray.
         """
         return self._apply_self_tensor_op("ravel", *args, **kwargs)
@@ -3167,6 +3167,8 @@ class GammaTensor:
 
         data = self.child
         output_data = data.compress(condition, axis)
+        if 0 in output_data.shape:
+            raise NotImplementedError
         output_data_subjects = self.data_subjects.compress(condition, axis)
 
         min_val = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape)
