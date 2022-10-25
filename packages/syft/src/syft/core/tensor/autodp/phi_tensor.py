@@ -262,7 +262,33 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         )
 
         if hasattr(self.data_subjects, op_str):
-            data_subjects = getattr(self.data_subjects, op_str)(*args, **kwargs)
+            if op_str == "choose":
+                print(args)
+                print(kwargs)
+                if kwargs == {}:
+                    print("kwargs is None")
+                    print(args[0])
+                    print(args[1:])
+                    mode = None
+                    for arg in args[1:]:
+                        if isinstance(arg, str):
+                            mode = arg
+                            break
+                    if mode is None:
+                        data_subjects = np.array(np.choose(args[0], self.data_subjects))
+                    else:
+                        data_subjects = np.array(
+                            np.choose(args[0], self.data_subjects, mode=mode)
+                        )
+                    print(type(data_subjects))
+                    print(data_subjects)
+                else:
+                    print("kwargs exists!")
+                    data_subjects = np.choose(
+                        kwargs["choices"], self.data_subjects, kwargs["mode"]
+                    )
+            else:
+                data_subjects = getattr(self.data_subjects, op_str)(*args, **kwargs)
             if op_str in INPLACE_OPS:
                 data_subjects = self.data_subjects
         else:
@@ -310,8 +336,10 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             args=args,
             kwargs=kwargs,
         )
-
-        dummy_res = np.empty(self.public_shape)
+        if op_str == "choose":
+            dummy_res = np.ones(self.public_shape, dtype=np.int64)
+        else:
+            dummy_res = np.empty(self.public_shape)
         if hasattr(dummy_res, op_str):
             if op_str in INPLACE_OPS:
                 getattr(dummy_res, op_str)(*args, **kwargs)
@@ -1679,24 +1707,18 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         Parameters
 
             choices: sequence of arrays
-
                 Choice arrays. a and all of the choices must be broadcastable to the same shape. If choices is itself an
                  array (not recommended), then its outermost dimension (i.e., the one corresponding to choices.shape[0])
                   is taken as defining the “sequence”.
 
             out: array, optional
-
                 If provided, the result will be inserted into this array. It should be of the appropriate shape and
                 dtype. Note that out is always buffered if mode='raise'; use other modes for better performance.
 
             mode{‘raise’ (default), ‘wrap’, ‘clip’}, optional
-
                 Specifies how indices outside [0, n-1] will be treated:
-
                         ‘raise’ : an exception is raised
-
                         ‘wrap’ : value becomes value mod n
-
                         ‘clip’ : values < 0 are mapped to 0, values > n-1 are mapped to n-1
 
         Returns
@@ -3895,7 +3917,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def choose(
         self,
         choices: Sequence[Union[PassthroughTensor, np.ndarray]],
-        out: Optional[np.ndarray] = None,
         mode: Optional[str] = "raise",
     ) -> PhiTensor:
         """
@@ -3956,7 +3977,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 If a and each choice array are not all broadcastable to the same shape.
 
         """
-        result = self.child.choose(choices, mode=mode)
+        result = np.choose(choices, self.child, mode=mode)
         if isinstance(self.min_vals, lazyrepeatarray):
             minv = lazyrepeatarray(data=self.min_vals.data.min(), shape=result.shape)
             maxv = lazyrepeatarray(data=self.max_vals.data.max(), shape=result.shape)

@@ -658,13 +658,11 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def choose(
         self,
         choices: Sequence[Union[PassthroughTensor, np.ndarray]],
-        out: Optional[np.ndarray] = None,
         mode: Optional[str] = "raise",
     ) -> PassthroughTensor:
         return self.__class__(
             self.child.choose(
                 choices,
-                out=out,
                 mode=mode,
             )
         )
