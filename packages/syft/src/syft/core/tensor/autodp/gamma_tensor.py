@@ -3072,6 +3072,8 @@ class GammaTensor:
 
         data = self.child
         output_data = data.compress(condition, axis)
+        if 0 in output_data.shape:
+            raise NotImplementedError
         output_data_subjects = self.data_subjects.compress(condition, axis)
 
         min_val = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape)

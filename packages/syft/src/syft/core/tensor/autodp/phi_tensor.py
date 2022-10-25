@@ -3754,6 +3754,8 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def compress(self, condition: List[bool], axis: Optional[int] = None) -> PhiTensor:
         out_child = self.child.compress(condition, axis)
+        if 0 in out_child.shape:
+            raise NotImplementedError
         return PhiTensor(
             child=out_child,
             min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
