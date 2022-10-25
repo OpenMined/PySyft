@@ -7,8 +7,6 @@ from copy import deepcopy
 import secrets
 from typing import Any
 from typing import Callable
-
-# from typing import TYPE_CHECKING
 from typing import TYPE_CHECKING
 from typing import Tuple
 
@@ -16,7 +14,6 @@ from typing import Tuple
 import jax
 from jax import numpy as jnp
 import numpy as np
-from numpy import ndarray
 from numpy.typing import ArrayLike
 
 # relative
@@ -31,7 +28,6 @@ from .data_subject_ledger import compute_rdp_constant
 from .data_subject_list import DataSubjectList
 
 if TYPE_CHECKING:
-    # relative
     # relative
     from ..tensor.autodp.gamma_tensor import GammaTensor
 
@@ -56,7 +52,7 @@ def calculate_bounds_for_mechanism(
 
 def prepare_inputs(
     tensor: GammaTensor, sigma: float
-) -> tuple[Any, Any, Any, Any, ndarray | Any]:
+) -> tuple[Any, Any, Any, Any, Any, np.ndarray | Any]:
     # Step 0: Ensure our Tensor's private data is in a form that is usable.
     if isinstance(tensor.child, FixedPrecisionTensor):
         # Incase SMPC is involved, there will be an FPT in the chain to account for
@@ -100,8 +96,7 @@ def prepare_inputs(
         max_val_array=max_val_array,
         sigma=sigma,
     )
-
-    return l2_norms, l2_norm_bounds, sigmas, coeffs, input_entities
+    return value, l2_norms, l2_norm_bounds, sigmas, coeffs, input_entities
 
 
 def publish(
@@ -111,6 +106,7 @@ def publish(
     deduct_epsilon_for_user: Callable,
     sigma: float,
     is_linear: bool = True,
+    private: bool = True,
 ) -> np.ndarray:
     """
     This method applies Individual Differential Privacy (IDP) as defined in
@@ -130,8 +126,8 @@ def publish(
         - The privacy budget spent by a query equals the maximum epsilon increase of any
           data subject in the dataset.
     """
-
     (
+        value,
         l2_norms,
         l2_norm_bounds,
         sigmas,
@@ -140,8 +136,7 @@ def publish(
     ) = prepare_inputs(tensor, sigma)
 
     # its important that its the same type so that eq comparisons below dont break
-    zeros_like = jnp.zeros_like(tensor.child)
-
+    zeros_like = jnp.zeros_like(value)
 
     # this prevents us from running in an infinite loop
     previous_budget = None
@@ -150,14 +145,14 @@ def publish(
     # if we don't return below we will terminate if the tensor gets replaced with zeros
     prev_tensor = None
 
-    while can_reduce_further(value=tensor.child):
+    while can_reduce_further(value=value, zeros_like=zeros_like):
         if prev_tensor is None:
-            prev_tensor = tensor.child
+            prev_tensor = value
         else:
-            if (prev_tensor == tensor.child).all():  # type: ignore
+            if (prev_tensor == value).all():  # type: ignore
                 raise Exception("Tensor has not changed and is not all zeros")
             else:
-                prev_tensor = tensor.child
+                prev_tensor = value
 
         if is_linear:
             lipschitz_bounds = coeffs.copy()
@@ -222,7 +217,7 @@ def publish(
         # Step 4: Path 1 - If the User has enough Privacy Budget, we just add noise,
         # deduct budget, and return the result.
         if has_budget:
-            original_output = tensor.child
+            original_output = value
 
             # We sample noise from a cryptographically secure distribution
             # TODO: Replace with discrete gaussian distribution instead of regular
@@ -284,10 +279,12 @@ def publish(
             filtered_sourcetree = deepcopy(tensor.sources)
             input_tensors = list(filtered_sourcetree.values())
 
-            parent_branch = [filtered_sourcetree for _ in input_tensors]
+            parent_branch = [
+                filtered_sourcetree for _ in input_tensors
+            ]  # TODO: Ensure this isn't deepcopying!
 
             # relative
-            # from ..tensor.autodp.gamma_tensor import GammaTensor
+            from ..tensor.autodp.gamma_tensor import GammaTensor
 
             for parent_state, input_tensor in zip(parent_branch, input_tensors):
 
@@ -310,7 +307,7 @@ def publish(
                         epsilon = max(
                             ledger._get_epsilon_spend(
                                 np.asarray(
-                                    compute_rdp_constant(rdp_params, private=True)
+                                    compute_rdp_constant(rdp_params, private=private)
                                 )
                             )
                         )
@@ -370,9 +367,11 @@ def publish(
             raise Exception
 
     noise = np.asarray(
-        [secrets.SystemRandom().gauss(0, sigma) for _ in range(tensor.child.size)]
-    ).reshape(tensor.shape)
-    zeros = np.zeros_like(a=np.array([]), dtype=tensor.dtype, shape=tensor.shape)
+        [secrets.SystemRandom().gauss(0, sigma) for _ in range(zeros_like.size)]
+    ).reshape(zeros_like.shape)
+    zeros = np.zeros_like(
+        a=np.array([]), dtype=zeros_like.dtype, shape=zeros_like.shape
+    )
     return zeros + noise
 
 
@@ -382,9 +381,9 @@ def publish(
 # 2) there are differences between the value and a zeros_like of the same shape
 # 3) within the value ArrayLike there are no NaN values as these will never evaluate
 # to True when compared with zeros_like and therefore never exit the loop
-def can_reduce_further(value: ArrayLike) -> bool:
+def can_reduce_further(value: ArrayLike, zeros_like: ArrayLike) -> bool:
     try:
-        result = value != np.zeros_like(value)
+        result = value != zeros_like
         # check we can call any or iterate on this value otherwise exit loop
         # numpy scalar types like np.bool_ are Iterable
         if not hasattr(result, "any") and not isinstance(result, Iterable):
@@ -394,7 +393,7 @@ def can_reduce_further(value: ArrayLike) -> bool:
         # causing that difference in the result
         return result.any() and not_nans(result)
     except Exception as e:
-        print(f"Unable to test reducability of {type(value)} and np.array")
+        print(f"Unable to test reducability of {type(value)} and {type(zeros_like)}")
         raise e
 
 
