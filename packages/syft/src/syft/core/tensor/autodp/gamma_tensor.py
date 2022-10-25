@@ -1247,9 +1247,8 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
 
         Parameters
             condition: 1-D array of bools
-            Array that selects which entries to return. If len(condition) is less than the size of a along the given
-            axis,
-            then output is truncated to the length of the condition array.
+            Array that selects which entries to return. If len(condition) is less than the size of
+            a along the given axis,then output is truncated to the length of the condition array.
 
             axis: int, optional
             Axis along which to take slices. If None (default), work on the flattened array.
@@ -1604,8 +1603,8 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         Returns:
             y: PhiTensor
                 y is an array of the same subtype as a, with shape (a.size,).
-                Note that matrices are special cased for backward compatibility, if a is a matrix, then y is a 1-D
-                ndarray.
+                Note that matrices are special cased for backward compatibility,
+                if a is a matrix, then y is a 1-D ndarray.
         """
         return self._apply_self_tensor_op("ravel", *args, **kwargs)
 
@@ -1654,6 +1653,91 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
                 The returned array has the same type as a.
         """
         return self._apply_self_tensor_op("take", *args, **kwargs)
+
+    def clip(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """
+        Clip (limit) the values in an array.
+
+        Parameters
+            a : array_like
+                Array containing elements to clip.
+            a_min, a_max : array_like or None
+                Minimum and maximum value. If None, clipping is not performed on
+                the corresponding edge. Only one of a_min and a_max may be
+                None. Both are broadcast against a.
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return self._apply_self_tensor_op("clip", *args, **kwargs)
+
+    def choose(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """
+        Construct an array from an index array and a list of arrays to choose from.
+
+        First of all, if confused or uncertain, definitely look at the Examples - in its full generality,
+        this function is less simple than it might seem from the following code description
+        (below ndi = numpy.lib.index_tricks):
+
+        np.choose(a,c) == np.array([c[a[I]][I] for I in ndi.ndindex(a.shape)]).
+
+        But this omits some subtleties. Here is a fully general summary:
+
+        Given an “index” array (a) of integers and a sequence of n arrays (choices), a and each choice array are first
+        broadcast, as necessary, to arrays of a common shape; calling these Ba and Bchoices[i], i = 0,…,n-1 we have that
+         necessarily, Ba.shape == Bchoices[i].shape for each i. Then, a new array with shape Ba.shape is created
+         as follows:
+
+            if mode='raise' (the default), then, first of all, each element of a (and thus Ba) must be in the range
+            [0, n-1]; now, suppose that i (in that range) is the value at the (j0, j1, ..., jm) position in Ba -
+            then the value at the same position in the new array is the value in Bchoices[i] at that same position;
+
+            if mode='wrap', values in a (and thus Ba) may be any (signed) integer; modular arithmetic is used to map
+            integers outside the range [0, n-1] back into that range; and then the new array is constructed as above;
+
+            if mode='clip', values in a (and thus Ba) may be any (signed) integer; negative integers are mapped to 0;
+            values greater than n-1 are mapped to n-1; and then the new array is constructed as above.
+
+        Parameters
+
+            choices: sequence of arrays
+
+                Choice arrays. a and all of the choices must be broadcastable to the same shape. If choices is itself an
+                 array (not recommended), then its outermost dimension (i.e., the one corresponding to choices.shape[0])
+                  is taken as defining the “sequence”.
+
+            out: array, optional
+
+                If provided, the result will be inserted into this array. It should be of the appropriate shape and
+                dtype. Note that out is always buffered if mode='raise'; use other modes for better performance.
+
+            mode{‘raise’ (default), ‘wrap’, ‘clip’}, optional
+
+                Specifies how indices outside [0, n-1] will be treated:
+
+                        ‘raise’ : an exception is raised
+
+                        ‘wrap’ : value becomes value mod n
+
+                        ‘clip’ : values < 0 are mapped to 0, values > n-1 are mapped to n-1
+
+        Returns
+            merged_array: PhiTensor
+                The merged result.
+
+        Raises
+            ValueError: shape mismatch
+                If a and each choice array are not all broadcastable to the same shape.
+
+        """
+        return self._apply_self_tensor_op("choose", *args, **kwargs)
 
     def softmax(
         self,
