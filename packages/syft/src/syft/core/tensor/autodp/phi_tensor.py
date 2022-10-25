@@ -921,13 +921,44 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             ‘C’ means to flatten in row-major (C-style) order. 
             ‘F’ means to flatten in column-major (Fortran- style) order. 
             ‘A’ means to flatten in column-major order if a is Fortran contiguous in memory, row-major order otherwise. 
-            ‘K’ means to flatten a in the order the elements occur in memory. The default is ‘C’.
+            ‘K’ means to flatten a in the order the elements occur in memory. 
+            The default is ‘C’.
                 
         Returns
             y: PhiTensor
                 A copy of the input array, flattened to one dimension.
         """
         return self._apply_self_tensor_op("flatten", *args, **kwargs)
+    
+    def ravel(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Return a contiguous flattened array.
+
+        A 1-D array, containing the elements of the input, is returned. A copy is made only if needed.
+
+        As of NumPy 1.10, the returned array will have the same type as the input array. 
+        (for example, a masked array will be returned for a masked array input)
+        Parameters
+            order: {‘C’,’F’, ‘A’, ‘K’}, optional
+            The elements of a are read using this index order. 
+            ‘C’ means to index the elements in row-major, 
+            C-style order, with the last axis index changing fastest, back to the first axis index changing slowest. 
+            ‘F’ means to index the elements in column-major, Fortran-style order, with the first index changing fastest, 
+             and the last index changing slowest. 
+            Note that the ‘C’ and ‘F’ options take no account of the memory layout of the underlying array, 
+             and only refer to the order of axis indexing. 
+            ‘A’ means to read the elements in Fortran-like index order if a is Fortran contiguous in memory, 
+             C-like order otherwise. 
+            ‘K’ means to read the elements in the order they occur in memory, except for reversing the data 
+             when strides are negative. 
+            By default, ‘C’ index order is used.
+        
+        Returns:
+            y: PhiTensor
+                y is an array of the same subtype as a, with shape (a.size,). 
+                Note that matrices are special cased for backward compatibility, if a is a matrix, then y is a 1-D ndarray.
+        """
+        return self._apply_self_tensor_op("ravel", *args, **kwargs)
     
     def trace(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
         """
@@ -1875,11 +1906,11 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=output_max_val,
         )
 
-    def ravel(self) -> PhiTensor:
+    def ravel(self, order: Optional[str] = 'C') -> PhiTensor:
         data = self.child
-        output_data = data.ravel()
+        output_data = data.ravel(order=order)
 
-        output_data_subjects = self.data_subjects.ravel()
+        output_data_subjects = self.data_subjects.ravel(order=order)
 
         min_vals = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape)
         max_vals = lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape)
