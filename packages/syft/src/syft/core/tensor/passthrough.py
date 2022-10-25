@@ -457,7 +457,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def argmax(self, axis: Optional[int] = None) -> PassthroughTensor:
         return self.__class__(self.child.argmax(axis))
 
-    def argmin(self, axis: Optional[int]) -> PassthroughTensor:
+    def argmin(self, axis: Optional[int] = None) -> PassthroughTensor:
         return self.__class__(self.child.argmin(axis))
 
     # numpy.argsort(a, axis=-1, kind=None, order=None)
