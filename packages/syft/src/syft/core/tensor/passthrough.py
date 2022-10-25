@@ -591,14 +591,12 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         self,
         indices: Union[int, TypeTuple[int, ...], np.ndarray],
         axis: Optional[int] = None,
-        out: Optional[np.ndarray] = None,
         mode: Optional[str] = "raise",
     ) -> PassthroughTensor:
         return self.__class__(
             self.child.take(
                 indices,
                 axis=axis,
-                out=out,
                 mode=mode,
             )
         )

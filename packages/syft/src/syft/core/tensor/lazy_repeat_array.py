@@ -531,7 +531,11 @@ def compute_min_max(
             data=0.25 * (x_max_vals.data - x_min_vals.data) ** 2,
             shape=dummy_res.shape,
         )
-
+    elif op_str  == "take":
+        dummy_res = np.empty(x_min_vals.shape).take(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
+        
     else:
         raise ValueError(f"Invaid Operation for LazyRepeatArray: {op_str}")
 
