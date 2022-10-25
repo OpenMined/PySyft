@@ -3387,6 +3387,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     ) -> PhiTensor:
         self.child.resize(new_shape, refcheck=refcheck)
         self.data_subjects.resize(new_shape, refcheck=refcheck)
+        self.data_subjects = DataSubjectArray.from_objs(self.data_subjects)
         out_shape = self.child.shape
         return PhiTensor(
             child=self.child,

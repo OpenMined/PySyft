@@ -818,10 +818,11 @@ def test_ge_private(
 
 def test_resize(
     reference_data: np.ndarray,
-    upper_bound: lra,
-    lower_bound: lra,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
     ishan: DataSubjectArray,
 ) -> None:
+
     ishan = np.broadcast_to(ishan, reference_data.shape)
     reference_tensor = PT(
         child=reference_data,
@@ -831,45 +832,20 @@ def test_resize(
     ).gamma
 
     new_shape = tuple(map(lambda x: x * 2, reference_data.shape))
-    resized_tensor = reference_tensor.resize(new_shape)
-
-    no_of_elems = new_shape[0] * new_shape[1] // 4
+    resized_tensor = reference_tensor.resize(new_shape, refcheck=False)
 
     flatten_ref = reference_tensor.child.flatten()
     flatten_res = resized_tensor.child.flatten()
 
-    assert resized_tensor.func_str == GAMMA_TENSOR_OP.RESIZE.value
-    assert reference_tensor == resized_tensor.sources[reference_tensor.id]
-
-    assert (flatten_ref == flatten_res[0:no_of_elems]).all()
-    assert (
-        flatten_ref == flatten_res[no_of_elems : no_of_elems * 2]  # noqa: E203
-    ).all()
-    assert (
-        flatten_ref == flatten_res[no_of_elems * 2 : no_of_elems * 3]  # noqa: E203
-    ).all()
-    assert (
-        flatten_ref == flatten_res[no_of_elems * 3 : no_of_elems * 4]  # noqa: E203
-    ).all()
+    assert (flatten_ref == flatten_res).all()
 
     assert resized_tensor.min_vals.shape == new_shape
     assert resized_tensor.max_vals.shape == new_shape
 
     data_subjects_ref = reference_tensor.data_subjects.flatten()
     data_subjects_res = resized_tensor.data_subjects.flatten()
-    assert (data_subjects_ref == data_subjects_res[0:no_of_elems]).all()
-    assert (
-        data_subjects_ref
-        == data_subjects_res[no_of_elems : no_of_elems * 2]  # noqa: E203
-    ).all()
-    assert (
-        data_subjects_ref
-        == data_subjects_res[no_of_elems * 2 : no_of_elems * 3]  # noqa: E203
-    ).all()
-    assert (
-        data_subjects_ref
-        == data_subjects_res[no_of_elems * 3 : no_of_elems * 4]  # noqa: E203
-    ).all()
+
+    assert (data_subjects_ref == data_subjects_res).all()
 
 
 def test_floordiv(
