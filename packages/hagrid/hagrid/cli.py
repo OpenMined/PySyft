@@ -2516,9 +2516,15 @@ def check(
 
 
 def check_status(
-    ip_addresses: TypeList[str], wait: bool = False, silent: bool = False
+    ip_addresses: Union[str, TypeList[str]], wait: bool = False, silent: bool = False
 ) -> None:
+
+    # Check if ip_addresses is str, then convert to list
+    if ip_addresses and isinstance(ip_addresses, str):
+        ip_addresses = [ip_addresses]
+
     console = rich.get_console()
+
     if len(ip_addresses) == 0:
         headers = {"User-Agent": "curl/7.79.1"}
         print("Detecting External IP...")
