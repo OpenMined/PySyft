@@ -148,7 +148,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         if is_acceptable_simple_type(other):
             return self.__class__(self.child.__and__(other))
         return self.__class__(self.child.__and__(other.child))
-    
+
     def __or__(
         self, other: Union[Type[PassthroughTensor], AcceptableSimpleType]
     ) -> PassthroughTensor:
@@ -539,12 +539,8 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return self.__class__(self.child.ravel(order=order))
 
     # ndarray.compress(condition, axis=None)
-    def compress(
-        self, condition: List[bool], axis: int = None
-    ) -> PassthroughTensor:
-        return self.__class__(
-            self.child.compress(condition=condition, axis=axis)
-        )
+    def compress(self, condition: List[bool], axis: int = None) -> PassthroughTensor:
+        return self.__class__(self.child.compress(condition=condition, axis=axis))
 
     # ndarray.swapaxes(axis1, axis2)
     def swapaxes(self, axis1: int, axis2: int) -> PassthroughTensor:
