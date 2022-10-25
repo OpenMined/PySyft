@@ -1017,41 +1017,20 @@ def test_resize(
     )
 
     new_shape = tuple(map(lambda x: x * 2, reference_data.shape))
-    resized_tensor = reference_tensor.resize(new_shape)
-
-    no_of_elems = new_shape[0] * new_shape[1] // 4
+    resized_tensor = reference_tensor.resize(new_shape, refcheck=False)
 
     flatten_ref = reference_tensor.child.flatten()
     flatten_res = resized_tensor.child.flatten()
-    assert (flatten_ref == flatten_res[0:no_of_elems]).all()
-    assert (
-        flatten_ref == flatten_res[no_of_elems : no_of_elems * 2]  # noqa: E203
-    ).all()
-    assert (
-        flatten_ref == flatten_res[no_of_elems * 2 : no_of_elems * 3]  # noqa: E203
-    ).all()
-    assert (
-        flatten_ref == flatten_res[no_of_elems * 3 : no_of_elems * 4]  # noqa: E203
-    ).all()
+
+    assert (flatten_ref == flatten_res).all()
 
     assert resized_tensor.min_vals.shape == new_shape
     assert resized_tensor.max_vals.shape == new_shape
 
     data_subjects_ref = reference_tensor.data_subjects.flatten()
     data_subjects_res = resized_tensor.data_subjects.flatten()
-    assert (data_subjects_ref == data_subjects_res[0:no_of_elems]).all()
-    assert (
-        data_subjects_ref
-        == data_subjects_res[no_of_elems : no_of_elems * 2]  # noqa: E203
-    ).all()
-    assert (
-        data_subjects_ref
-        == data_subjects_res[no_of_elems * 2 : no_of_elems * 3]  # noqa: E203
-    ).all()
-    assert (
-        data_subjects_ref
-        == data_subjects_res[no_of_elems * 3 : no_of_elems * 4]  # noqa: E203
-    ).all()
+
+    assert (data_subjects_ref == data_subjects_res).all()
 
 
 def test_compress(
@@ -2094,3 +2073,220 @@ def test_min(
     assert result.child == reference_data.min()
     assert result.child >= result.min_vals.data
     assert result.child <= result.max_vals.data
+
+
+def test_matmul(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array([reference_data]),
+        data_subjects=np.array([ishan]),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+    result = reference_tensor @ reference_tensor
+    assert (result.child == (reference_data @ reference_data)).all()
+    assert (result.child.min() >= result.min_vals.data).all()
+    assert (result.child.max() <= result.max_vals.data).all()
+
+
+def test_xor(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=np.array([reference_data]),
+        data_subjects=np.array([ishan]),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+    other = np.ones_like(reference_data)
+    result = reference_tensor ^ other
+
+    assert (result.child == (reference_data ^ other)).all()
+    assert (result.child.max() <= result.max_vals.data).all()
+    assert (result.child.max() >= result.min_vals.data).all()
+
+    other = np.zeros_like(reference_data)
+    result = reference_tensor ^ other
+    assert (result.child == (reference_data ^ other)).all()
+    assert (result.child.max() <= result.max_vals.data).all()
+    assert (result.child.max() >= result.min_vals.data).all()
+
+    result = reference_tensor ^ reference_tensor
+    assert (result.child == (reference_data ^ reference_data)).all()
+    assert (result.child.max() <= result.max_vals.data).all()
+    assert (result.child.max() >= result.min_vals.data).all()
+
+    other = PT(
+        child=reference_data,
+        data_subjects=DataSubjectArray.from_objs(np.ones_like(reference_data)),
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+
+    result = reference_tensor ^ other
+    assert (result.child == (reference_data ^ other.child)).all()
+    assert (result.child.max() <= result.max_vals.data).all()
+    assert (result.child.max() >= result.min_vals.data).all()
+
+
+def test_lshift(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = PT(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor << 10
+    assert (result.child == reference_data << 10).all()
+    assert result.child.max() <= result.max_vals.data
+    assert result.child.min() >= result.min_vals.data
+
+
+def test_rshift(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = PT(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor >> 10
+    assert (result.child == reference_data >> 10).all()
+    assert result.child.max() <= result.max_vals.data
+    assert result.child.min() >= result.min_vals.data
+
+
+def test_round(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    data = reference_data / 100
+    tensor = PT(
+        child=data,
+        data_subjects=dsa,
+        min_vals=lower_bound / 100,
+        max_vals=upper_bound / 100,
+    )
+
+    result = tensor.round()
+    assert (result.child == data.round()).all()
+    assert result.child.min() >= result.min_vals.data
+    assert result.child.max() <= result.max_vals.data
+
+    result = tensor.round(2)
+    assert (result.child == data.round(2)).all()
+    assert result.child.min() >= result.min_vals.data
+    assert result.child.max() <= result.max_vals.data
+
+
+def test_sort(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = PT(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+
+    result = tensor.sort()
+    data = reference_data.copy()  # make a copy incase this changes the fixture
+    data.sort()
+    assert (result.child == data).all()
+    assert result.child.min() >= result.min_vals.data
+    assert result.child.max() <= result.max_vals.data
+
+    result = tensor.sort(axis=1)
+    data = reference_data.copy()  # make a copy incase this changes the fixture
+    data.sort(axis=1)
+    assert (result.child == data).all()
+    assert result.child.min() >= result.min_vals.data
+    assert result.child.max() <= result.max_vals.data
+
+
+def test_argsort(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = PT(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.argsort()
+    assert (result.child == reference_data.argsort()).all()
+    assert result.child.min() >= result.min_vals.data
+    assert result.child.max() <= result.max_vals.data
+
+    result = tensor.argsort(axis=1)
+    assert (result.child == reference_data.argsort(axis=1)).all()
+    assert result.child.min() >= result.min_vals.data
+    assert result.child.max() <= result.max_vals.data
+
+
+def test_transpose(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+) -> None:
+    tensor = PT(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.transpose()
+    assert (result.child == reference_data.transpose()).all()
+    assert result.child.min() >= result.min_vals.data
+    assert result.child.max() <= result.max_vals.data
+
+    result = tensor.transpose((1, 0))
+    assert (result.child == reference_data.transpose((1, 0))).all()
+    assert result.child.min() >= result.min_vals.data
+    assert result.child.max() <= result.max_vals.data
+
+
+def test_reshape(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    dsa: DataSubjectArray,
+    dims: int,
+) -> None:
+    tensor = PT(
+        child=reference_data,
+        data_subjects=dsa,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
+    )
+    result = tensor.reshape((1, dims * dims))
+    assert (result.child == reference_data.reshape((1, dims * dims))).all()
+    assert result.child.min() >= result.min_vals.data
+    assert result.child.max() <= result.max_vals.data

@@ -47,11 +47,11 @@ def test_trial_of_skill() -> None:
     assert get_padawans("R2Q4")["amdjed"] == "PASSED"
     assert get_padawans("R2Q4")["Osam"] == "PASSED"
     assert get_padawans("R2Q4")["Mikaela"] == "PASSED"
-    assert get_padawans("R2Q4")["Jauhar"]  == "PASSED"
+    assert get_padawans("R2Q4")["Jauhar"] == "PASSED"
     assert get_padawans("R2Q4")["Nilansh"] == "PASSED"
     assert get_padawans("R2Q4")["Anna"] == "PASSED"
     assert get_padawans("R2Q4")["Akshay"] == "PASSED"
     assert get_padawans("R2Q4")["Zarreen"] == "PASSED"
     assert get_padawans("R2Q4")["Mihir"] == "PASSED"
-    
+
     assert len(get_padawans("R2Q4")) > 1

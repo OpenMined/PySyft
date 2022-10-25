@@ -84,6 +84,7 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.core.tensor.tensor.Tensor.__le__", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.__len__", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.__lshift__", "syft.core.tensor.tensor.Tensor"),
+        ("syft.core.tensor.tensor.Tensor.__xor__", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.__lt__", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.__matmul__", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.__mul__", "syft.core.tensor.tensor.Tensor"),
@@ -112,6 +113,8 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.core.tensor.tensor.Tensor",
         ),
         ("syft.core.tensor.tensor.Tensor.__rmul__", "syft.core.tensor.tensor.Tensor"),
+        ("syft.core.tensor.tensor.Tensor.__round__", "syft.core.tensor.tensor.Tensor"),
+        ("syft.core.tensor.tensor.Tensor.round", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.__rpow__", "syft.core.tensor.tensor.Tensor"),
         (
             "syft.core.tensor.tensor.Tensor.__rrshift__",
@@ -130,7 +133,7 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ),
         ("syft.core.tensor.tensor.Tensor.argmax", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.argmin", "syft.core.tensor.tensor.Tensor"),
-        # ("syft.core.tensor.tensor.Tensor.argsort", "syft.core.tensor.tensor.Tensor"),
+        ("syft.core.tensor.tensor.Tensor.argsort", "syft.core.tensor.tensor.Tensor"),
         # # ("syft.core.tensor.tensor.Tensor.backward", "syft.lib.python.Bool"),
         # # ("syft.core.tensor.tensor.Tensor.child", "syft.core.tensor.tensor.Tensor"),  # obj level
         ("syft.core.tensor.tensor.Tensor.clip", "syft.core.tensor.tensor.Tensor"),
@@ -153,6 +156,7 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.core.tensor.tensor.Tensor.repeat", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.reshape", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.resize", "syft.core.tensor.tensor.Tensor"),
+        ("syft.core.tensor.tensor.Tensor.__mod__", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.shape", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.sort", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.squeeze", "syft.core.tensor.tensor.Tensor"),
@@ -165,6 +169,9 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.core.tensor.tensor.Tensor.__pos__", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.put", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.trace", "syft.core.tensor.tensor.Tensor"),
+        ("syft.core.tensor.tensor.Tensor.ptp", "syft.core.tensor.tensor.Tensor"),
+        ("syft.core.tensor.tensor.Tensor.all", "syft.core.tensor.tensor.Tensor"),
+        ("syft.core.tensor.tensor.Tensor.any", "syft.core.tensor.tensor.Tensor"),
         (
             "syft.core.tensor.tensor.Tensor.bit_decomposition",
             "syft.lib.python._SyNone",

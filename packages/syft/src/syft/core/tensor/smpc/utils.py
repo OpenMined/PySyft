@@ -68,6 +68,9 @@ OPERATOR_OPS = {
     "matmul",
     "pos",
     "pow",
+    "lshift",
+    "rshift",
+    "xor",
 }
 
 

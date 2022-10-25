@@ -16,6 +16,7 @@ from typing import Union
 # third party
 import jaxlib
 import numpy as np
+from numpy.typing import ArrayLike
 import torch
 
 # relative
@@ -268,6 +269,14 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
         return self.__class__(other.child.__lshift__(self.child))
 
+    def __xor__(
+        self, other: Union[Type[PassthroughTensor], AcceptableSimpleType]
+    ) -> PassthroughTensor:
+        if is_acceptable_simple_type(other):
+            return self.__class__(self.child.__xor__(other))
+
+        return self.__class__(other.child.__xor__(self.child))
+
     def __rshift__(
         self,
         other: Union[Type[PassthroughTensor], AcceptableSimpleType],
@@ -286,6 +295,14 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
         return self.__class__(other.child.__rshift__(self.child))
 
+    def __round__(self, n: Optional[int] = None) -> PassthroughTensor:
+        if n is None:
+            return self.__class__(self.child.__round__())
+        return self.__class__(self.child.__round__(n))
+
+    def round(self, n: Optional[int] = None) -> PassthroughTensor:
+        return self.__round__(n)
+
     def __pow__(
         self,
         other: Union[Type[PassthroughTensor], AcceptableSimpleType],
@@ -301,6 +318,15 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         if is_acceptable_simple_type(other):
             return self.__class__(self.child.__rpow__(other))
         return self.__class__(self.child.__rpow__(other.child))
+
+    def __mod__(
+        self,
+        other: Union[Type[PassthroughTensor], AcceptableSimpleType],
+    ) -> PassthroughTensor:
+        if is_acceptable_simple_type(other):
+            return self.__class__(self.child.__mod__(other))
+
+        return self.__class__(self.child.__mod__(other.child))
 
     def __divmod__(
         self,
@@ -429,10 +455,10 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return self.__class__(self.child.__getitem__(key))
 
     # numpy.argmax(a, axis=None, out=None)
-    def argmax(self, axis: Optional[int]) -> PassthroughTensor:
+    def argmax(self, axis: Optional[int] = None) -> PassthroughTensor:
         return self.__class__(self.child.argmax(axis))
 
-    def argmin(self, axis: Optional[int]) -> PassthroughTensor:
+    def argmin(self, axis: Optional[int] = None) -> PassthroughTensor:
         return self.__class__(self.child.argmin(axis))
 
     # numpy.argsort(a, axis=-1, kind=None, order=None)
@@ -483,6 +509,10 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     # ndarray.flatten(order='C')
     def flatten(self, order: Optional[str] = "C") -> PassthroughTensor:
         return self.__class__(self.child.flatten(order))
+
+    # ndarray.ptp(axis=None, out=None, keepdims=False)
+    def ptp(self, axis=None) -> PassthroughTensor:
+        return self.__class__(self.child.ptp(axis=axis))
 
     # ndarray.partition(kth, axis=- 1, kind='introselect', order=None)
     def partition(
@@ -538,6 +568,24 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         self, axis: Optional[Union[int, TypeTuple[int, ...]]] = None
     ) -> PassthroughTensor:
         return self.__class__(self.child.max(axis=axis))
+
+    #  ndarray.all(axis=None, out=None, keepdims=False, *, where=True)
+    def all(
+        self,
+        axis: Optional[Union[int, TypeTuple[int, ...]]] = None,
+        keepdims: bool = False,
+        where: Optional[ArrayLike] = None,
+    ) -> PassthroughTensor:
+        return self.__class__(self.child.all(axis=axis, keepdims=keepdims, where=where))
+
+    #  ndarray.any(axis=None, out=None, keepdims=False, *, where=True)
+    def any(
+        self,
+        axis: Optional[Union[int, TypeTuple[int, ...]]] = None,
+        keepdims: bool = False,
+        where: Optional[ArrayLike] = None,
+    ) -> PassthroughTensor:
+        return self.__class__(self.child.any(axis=axis, keepdims=keepdims, where=where))
 
     # ndarray.min(axis=None, out=None, keepdims=False, initial=<no value>, where=True)
     def min(

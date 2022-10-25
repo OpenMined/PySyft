@@ -337,6 +337,10 @@ class PhiTensorAncestor(TensorChainManager):
         return self.child.shape
 
     @property
+    def size(self) -> int:
+        return self.child.size
+
+    @property
     def min_vals(self):  # type: ignore
         return self.__class__(self.child.min_vals)
 
@@ -366,7 +370,7 @@ class PhiTensorAncestor(TensorChainManager):
 
         return NotImplemented
 
-    def annotated_with_dp_metadata(
+    def annotate_with_dp_metadata(
         self,
         min_val: ArrayLike,
         max_val: ArrayLike,
@@ -430,9 +434,9 @@ class PhiTensorAncestor(TensorChainManager):
             )
             data_subjects = data_subject_creation_wizard(self.child)
 
-        # Check 3: If data_subjects is a string, make it a list with one entity in it
+        # Check 3: If data_subjects is a string, make it an array of the correct shape
         if isinstance(data_subjects, str):
-            data_subjects = DataSubjectArray.from_objs([data_subjects])
+            data_subjects = DataSubjectArray.from_objs([data_subjects]*self.size)
         elif isinstance(data_subjects, DataSubjectArray):
             data_subjects = np.array(data_subjects)
         # Check 4: If data_subjects are a list, are the items strings or DataSubjectArray objects.
