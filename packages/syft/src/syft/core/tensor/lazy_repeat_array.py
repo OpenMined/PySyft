@@ -539,6 +539,11 @@ def compute_min_max(
             data=x_max_vals.data - x_min_vals.data, shape=dummy_res.shape
         )
 
+    elif op_str == "argmax":
+        min_vals = lazyrepeatarray(data=0, shape=x_min_vals.shape)
+        max_vals = lazyrepeatarray(
+            data=np.prod(x_min_vals.shape) - 1, shape=x_min_vals.shape
+        )
     else:
         raise ValueError(f"Invaid Operation for LazyRepeatArray: {op_str}")
 
