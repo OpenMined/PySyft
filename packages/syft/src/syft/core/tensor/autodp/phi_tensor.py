@@ -918,11 +918,11 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
         Parameters
             order: {‘C’, ‘F’, ‘A’, ‘K’}, optional
-            ‘C’ means to flatten in row-major (C-style) order. 
-            ‘F’ means to flatten in column-major (Fortran- style) order. 
-            ‘A’ means to flatten in column-major order if a is Fortran contiguous in memory, row-major order otherwise. 
-            ‘K’ means to flatten a in the order the elements occur in memory. 
-            The default is ‘C’.
+                ‘C’ means to flatten in row-major (C-style) order. 
+                ‘F’ means to flatten in column-major (Fortran- style) order. 
+                ‘A’ means to flatten in column-major order if a is Fortran contiguous in memory, row-major order otherwise. 
+                ‘K’ means to flatten a in the order the elements occur in memory. 
+                The default is ‘C’.
                 
         Returns
             y: PhiTensor
@@ -940,18 +940,18 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         (for example, a masked array will be returned for a masked array input)
         Parameters
             order: {‘C’,’F’, ‘A’, ‘K’}, optional
-            The elements of a are read using this index order. 
-            ‘C’ means to index the elements in row-major, 
-            C-style order, with the last axis index changing fastest, back to the first axis index changing slowest. 
-            ‘F’ means to index the elements in column-major, Fortran-style order, with the first index changing fastest, 
-             and the last index changing slowest. 
-            Note that the ‘C’ and ‘F’ options take no account of the memory layout of the underlying array, 
-             and only refer to the order of axis indexing. 
-            ‘A’ means to read the elements in Fortran-like index order if a is Fortran contiguous in memory, 
-             C-like order otherwise. 
-            ‘K’ means to read the elements in the order they occur in memory, except for reversing the data 
-             when strides are negative. 
-            By default, ‘C’ index order is used.
+                The elements of a are read using this index order. 
+                ‘C’ means to index the elements in row-major, 
+                C-style order, with the last axis index changing fastest, back to the first axis index changing slowest. 
+                ‘F’ means to index the elements in column-major, Fortran-style order, with the first index changing fastest, 
+                and the last index changing slowest. 
+                Note that the ‘C’ and ‘F’ options take no account of the memory layout of the underlying array, 
+                and only refer to the order of axis indexing. 
+                ‘A’ means to read the elements in Fortran-like index order if a is Fortran contiguous in memory, 
+                C-like order otherwise. 
+                ‘K’ means to read the elements in the order they occur in memory, except for reversing the data 
+                when strides are negative. 
+                By default, ‘C’ index order is used.
         
         Returns:
             y: PhiTensor
@@ -959,6 +959,44 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
                 Note that matrices are special cased for backward compatibility, if a is a matrix, then y is a 1-D ndarray.
         """
         return self._apply_self_tensor_op("ravel", *args, **kwargs)
+    
+    def compress(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Return selected slices of an array along given axis.
+
+        When working along a given axis, a slice along that axis is returned in output for each index 
+        where condition evaluates to True. When working on a 1-D array, compress is equivalent to extract.
+        
+        Parameters
+            condition: 1-D array of bools
+                Array that selects which entries to return. If len(condition) is less than the size of a along the given axis, 
+                then output is truncated to the length of the condition array.
+            
+            axis: int, optional
+                Axis along which to take slices. If None (default), work on the flattened array.
+
+        Returns:
+            compressed_array: PhiTensor
+                A copy of a without the slices along axis for which condition is false.
+        """
+        return self._apply_self_tensor_op("compress", *args, **kwargs)
+    
+    def squeeze(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Remove axes of length one from a.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Selects a subset of the entries of length one in the shape. 
+                If an axis is selected with shape entry greater than one, an error is raised.
+
+        Returns:
+            squeezed: PhiTensor
+                The input array, but with all or a subset of the dimensions of length 1 removed. 
+                This is always a itself or a view into a. 
+                Note that if all axes are squeezed, the result is a 0d array and not a scalar.
+        """
+        return self._apply_self_tensor_op("squeeze", *args, **kwargs)
     
     def trace(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
         """

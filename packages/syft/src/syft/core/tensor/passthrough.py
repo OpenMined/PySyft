@@ -499,12 +499,12 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def ravel(self, order: Optional[str] = "C") -> PassthroughTensor:
         return self.__class__(self.child.ravel(order=order))
 
-    # ndarray.compress(condition, axis=None, out=None)
+    # ndarray.compress(condition, axis=None)
     def compress(
-        self, condition: List[bool], axis: int = None, out: Optional[np.ndarray] = None
+        self, condition: List[bool], axis: int = None
     ) -> PassthroughTensor:
         return self.__class__(
-            self.child.compress(condition=condition, axis=axis, out=out)
+            self.child.compress(condition=condition, axis=axis)
         )
 
     # ndarray.swapaxes(axis1, axis2)

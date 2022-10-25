@@ -944,7 +944,45 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
                 If axis is given, the result is an array of dimension a.ndim - 1.
         """
         return self._apply_self_tensor_op("max", *args, **kwargs)
+    
+    def compress(self, *args: Any, **kwargs: Any) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """
+        Return selected slices of an array along given axis.
 
+        When working along a given axis, a slice along that axis is returned in output for each index 
+        where condition evaluates to True. When working on a 1-D array, compress is equivalent to extract.
+        
+        Parameters
+            condition: 1-D array of bools
+            Array that selects which entries to return. If len(condition) is less than the size of a along the given axis, 
+            then output is truncated to the length of the condition array.
+
+            axis: int, optional
+            Axis along which to take slices. If None (default), work on the flattened array.
+
+        Returns:
+            compressed_array: PhiTensor
+            A copy of a without the slices along axis for which condition is false.
+        """
+        return self._apply_self_tensor_op("compress", *args, **kwargs)
+    
+    def squeeze(self, *args: Any, **kwargs: Any) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """
+        Remove axes of length one from a.
+
+        Parameters
+            axis: None or int or tuple of ints, optional
+                Selects a subset of the entries of length one in the shape. 
+                If an axis is selected with shape entry greater than one, an error is raised.
+
+        Returns:
+            squeezed: PhiTensor
+                The input array, but with all or a subset of the dimensions of length 1 removed. 
+                This is always a itself or a view into a. 
+                Note that if all axes are squeezed, the result is a 0d array and not a scalar.
+        """
+        return self._apply_self_tensor_op("squeeze", *args, **kwargs)
+    
     def __getitem__(
         self, key: Union[int, bool, slice]
     ) -> TensorWrappedGammaTensorPointer:
