@@ -829,7 +829,11 @@ class ShareTensor(PassthroughTensor):
             share = _self.child
 
             method = getattr(share, method_name)
-            new_share = method(*args, **kwargs)
+            if method_name not in INPLACE_OPS:
+                new_share = method(*args, **kwargs)
+            else:
+                method(*args, **kwargs)
+                new_share = share
 
             res = _self.copy_tensor()
             res.child = np.array(new_share)
