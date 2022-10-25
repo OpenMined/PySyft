@@ -663,8 +663,8 @@ def compute_min_max(
         new_max_val = max(min_val, max_val)
         min_vals = lazyrepeatarray(data=new_min_val, shape=x_min_vals.shape)
         max_vals = lazyrepeatarray(data=new_max_val, shape=x_max_vals.shape)
-    elif op_str in ["all"]:
-        dummy_res = np.empty(x_min_vals.shape).all(*args, **kwargs)
+    elif op_str in ["all", "any"]:
+        dummy_res = getattr(np.empty(x_min_vals.shape), op_str)(*args, **kwargs)
         min_vals = lazyrepeatarray(data=0, shape=dummy_res.shape)
         max_vals = lazyrepeatarray(data=1, shape=dummy_res.shape)
     else:

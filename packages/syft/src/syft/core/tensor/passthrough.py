@@ -578,6 +578,15 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     ) -> PassthroughTensor:
         return self.__class__(self.child.all(axis=axis, keepdims=keepdims, where=where))
 
+    #  ndarray.any(axis=None, out=None, keepdims=False, *, where=True)
+    def any(
+        self,
+        axis: Optional[Union[int, TypeTuple[int, ...]]] = None,
+        keepdims: bool = False,
+        where: Optional[ArrayLike] = None,
+    ) -> PassthroughTensor:
+        return self.__class__(self.child.any(axis=axis, keepdims=keepdims, where=where))
+
     # ndarray.min(axis=None, out=None, keepdims=False, initial=<no value>, where=True)
     def min(
         self, axis: Optional[Union[int, TypeTuple[int, ...]]] = None
