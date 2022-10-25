@@ -43,6 +43,7 @@ class GAMMA_TENSOR_OP(Enum):
     DOT = "dot"
     SQRT = "sqrt"
     ABS = "abs"
+    CHOOSE = "choose"
     CLIP = "clip"
     COPY = "copy"
     TAKE = "take"

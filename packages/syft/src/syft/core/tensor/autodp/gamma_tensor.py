@@ -308,7 +308,25 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         )
 
         if hasattr(self.data_subjects, op_str):
-            data_subjects = getattr(self.data_subjects, op_str)(*args, **kwargs)
+            if op_str == "choose":
+                if kwargs == {}:
+                    mode = None
+                    for arg in args[1:]:
+                        if isinstance(arg, str):
+                            mode = arg
+                            break
+                    if mode is None:
+                        data_subjects = np.array(np.choose(args[0], self.data_subjects))
+                    else:
+                        data_subjects = np.array(
+                            np.choose(args[0], self.data_subjects, mode=mode)
+                        )
+                else:
+                    data_subjects = np.choose(
+                        kwargs["choices"], self.data_subjects, kwargs["mode"]
+                    )
+            else:
+                data_subjects = getattr(self.data_subjects, op_str)(*args, **kwargs)
             if op_str in INPLACE_OPS:
                 data_subjects = self.data_subjects
         else:
@@ -357,7 +375,10 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             kwargs=kwargs,
         )
 
-        dummy_res = np.empty(self.public_shape)
+        if op_str == "choose":
+            dummy_res = np.ones(self.public_shape, dtype=np.int64)
+        else:
+            dummy_res = np.empty(self.public_shape)
         if hasattr(dummy_res, op_str):
             if op_str in INPLACE_OPS:
                 getattr(dummy_res, op_str)(*args, **kwargs)
@@ -4786,7 +4807,17 @@ class GammaTensor:
                 If a and each choice array are not all broadcastable to the same shape.
 
         """
-        pass
+        sources = dict()
+        sources[self.id] = self
+        result = np.choose(choices, self.child, mode=mode)
+        return GammaTensor(
+            child=result,
+            data_subjects=self.data_subjects.take(choices),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
+            sources=sources,
+            func_str=GAMMA_TENSOR_OP.CHOOSE.value,
+        )
 
     @property
     def shape(self) -> Tuple[int, ...]:

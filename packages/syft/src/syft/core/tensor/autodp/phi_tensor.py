@@ -263,12 +263,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
         if hasattr(self.data_subjects, op_str):
             if op_str == "choose":
-                print(args)
-                print(kwargs)
                 if kwargs == {}:
-                    print("kwargs is None")
-                    print(args[0])
-                    print(args[1:])
                     mode = None
                     for arg in args[1:]:
                         if isinstance(arg, str):
@@ -280,10 +275,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
                         data_subjects = np.array(
                             np.choose(args[0], self.data_subjects, mode=mode)
                         )
-                    print(type(data_subjects))
-                    print(data_subjects)
                 else:
-                    print("kwargs exists!")
                     data_subjects = np.choose(
                         kwargs["choices"], self.data_subjects, kwargs["mode"]
                     )
