@@ -354,9 +354,10 @@ class PhiTensorAncestor(TensorChainManager):
         deduct_epsilon_for_user: Callable,
         ledger: DataSubjectLedger,
         sigma: float,
+        private: bool,
     ) -> Any:
         return self.child.publish(
-            get_budget_for_user, deduct_epsilon_for_user, ledger, sigma
+            get_budget_for_user, deduct_epsilon_for_user, ledger, sigma, private=private
         )
 
     def copy(self) -> PhiTensorAncestor:
@@ -365,7 +366,7 @@ class PhiTensorAncestor(TensorChainManager):
 
         return NotImplemented
 
-    def annotated_with_dp_metadata(
+    def annotate_with_dp_metadata(
         self,
         min_val: ArrayLike,
         max_val: ArrayLike,
@@ -431,9 +432,9 @@ class PhiTensorAncestor(TensorChainManager):
 
         # Check 3: If data_subjects is a string, make it a list with one entity in it
         if isinstance(data_subjects, str):
-            data_subjects = [DataSubjectArray(data_subjects)]
+            data_subjects = DataSubjectArray.from_objs([data_subjects])
         elif isinstance(data_subjects, DataSubjectArray):
-            data_subjects = [data_subjects]
+            data_subjects = np.array(data_subjects)
         # Check 4: If data_subjects are a list, are the items strings or DataSubjectArray objects.
         # If they're strings lets create DataSubjectArray objects.
 

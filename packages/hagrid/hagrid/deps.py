@@ -87,7 +87,7 @@ class Dependency:
     name: str = ""
     display: str = ""
     only_os: str = ""
-    version: Optional[Version] = None
+    version: Optional[Version] = version.parse("None")
     valid: bool = False
     issues: List[SetupIssue] = field(default_factory=list)
     output_in_text: bool = False
@@ -103,7 +103,8 @@ class DependencySyftOS(Dependency):
     def check(self) -> None:
         self.display = "✅ " + ENVIRONMENT["os"]
         if is_windows():
-            self.issues.append(windows_jaxlib())
+            if not get_pip_package("jaxlib"):
+                self.issues.append(windows_jaxlib())
         elif is_apple_silicon():
             pass
 
@@ -170,6 +171,7 @@ class DependencyGridDockerCompose(Dependency):
         binary_info = BinaryInfo(
             binary="docker", version_cmd="docker compose version"
         ).get_binary_info()
+
         if binary_info.path and binary_info.version > version.parse(
             MINIMUM_DOCKER_COMPOSE_VERSION
         ):
@@ -299,7 +301,7 @@ class BinaryInfo:
     version_cmd: str
     error: Optional[str] = None
     path: Optional[str] = None
-    version: Optional[Union[str, Version]] = None
+    version: Optional[Union[str, Version]] = version.parse("None")
     version_regex = (
         r"[^\d]*("
         + r"(0|[1-9][0-9]*)\.*(0|[1-9][0-9]*)\.*(0|[1-9][0-9]*)"

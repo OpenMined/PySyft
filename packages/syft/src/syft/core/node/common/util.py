@@ -101,9 +101,12 @@ def upload_result_to_s3(
 
     # relative
     from ...tensor import Tensor
+    from ...tensor.autodp.gamma_tensor import GammaTensor as GT
     from ...tensor.autodp.phi_tensor import PhiTensor as PT
 
-    if isinstance(data, Tensor) and isinstance(data.child, PT):
+    if isinstance(data, Tensor) and (
+        isinstance(data.child, PT) or isinstance(data.child, GT)
+    ):
         data_fqn = str(get_fully_qualified_name(data.child))
         child_kwargs = getattr(data.child, "proxy_public_kwargs", {})
         obj_public_kwargs.update(child_kwargs)
@@ -245,9 +248,12 @@ def upload_to_s3_using_presigned(
 
         # relative
         from ...tensor import Tensor
+        from ...tensor.autodp.gamma_tensor import GammaTensor as GT
         from ...tensor.autodp.phi_tensor import PhiTensor as PT
 
-        if isinstance(data, Tensor) and isinstance(data.child, PT):
+        if isinstance(data, Tensor) and (
+            isinstance(data.child, PT) or isinstance(data.child, GT)
+        ):
             data_fqn = str(get_fully_qualified_name(data.child))
             child_kwargs = getattr(data.child, "proxy_public_kwargs", {})
             obj_public_kwargs.update(child_kwargs)

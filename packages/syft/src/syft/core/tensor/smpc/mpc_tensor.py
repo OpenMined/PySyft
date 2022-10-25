@@ -209,14 +209,15 @@ class MPCTensor(PassthroughTensor):
 
         return parties_info
 
-    def publish(self, sigma: float) -> MPCTensor:
+    # Always publish on worst case bounds with SMPC
+    def publish(self, sigma: float, private: bool = False) -> MPCTensor:
         new_shares = []
 
         for share in self.child:
             share.block
 
         for share in self.child:
-            new_share = share.publish(sigma=sigma)
+            new_share = share.publish(sigma=sigma, private=private)
             new_shares.append(new_share)
 
         return MPCTensor(
