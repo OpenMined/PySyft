@@ -67,6 +67,8 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.core.tensor.tensor.Tensor.T", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.__abs__", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.__add__", "syft.core.tensor.tensor.Tensor"),
+        ("syft.core.tensor.tensor.Tensor.__and__", "syft.core.tensor.tensor.Tensor"),
+        ("syft.core.tensor.tensor.Tensor.__or__", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.__divmod__", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.__eq__", "syft.core.tensor.tensor.Tensor"),
         (
@@ -218,6 +220,14 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         # Share Tensor Operations
         (
             "syft.core.tensor.smpc.share_tensor.ShareTensor.__add__",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.__and__",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.__or__",
             "syft.core.tensor.smpc.share_tensor.ShareTensor",
         ),
         (

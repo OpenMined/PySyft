@@ -142,10 +142,19 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
     #     return tuple(self.child.shape)
 
-    def __and__(self, other):
+    def __and__(
+        self, other: Union[Type[PassthroughTensor], AcceptableSimpleType]
+    ) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
-            return self.__class__(self.child & other)
-        return self.__class__(self.child & other.child)
+            return self.__class__(self.child.__and__(other))
+        return self.__class__(self.child.__and__(other.child))
+    
+    def __or__(
+        self, other: Union[Type[PassthroughTensor], AcceptableSimpleType]
+    ) -> PassthroughTensor:
+        if is_acceptable_simple_type(other):
+            return self.__class__(self.child.__or__(other))
+        return self.__class__(self.child.__or__(other.child))
 
     def __rand__(self, other):
         if is_acceptable_simple_type(other):

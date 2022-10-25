@@ -473,6 +473,8 @@ def compute_min_max(
         "__ge__",
         "__eq__",
         "__ne__",
+        "__and__",
+        "__or__"
     ]:
         min_vals = x_min_vals * 0
         max_vals = (x_max_vals * 0) + 1
