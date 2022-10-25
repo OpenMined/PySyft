@@ -74,6 +74,9 @@ else:
     from flax.struct import dataclass
 
 
+INPLACE_OPS = {"resize", "sort"}
+
+
 @serializable(recursive_serde=True)
 class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
     __name__ = "TensorWrappedGammaTensorPointer"
@@ -298,11 +301,15 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
 
         # We always maintain a Tensor hierarchy Tensor ---> PT--> Actual Data
         attr_path_and_name = f"syft.core.tensor.tensor.Tensor.{op_str}"
+
         min_vals, max_vals = compute_min_max(
             self.min_vals, self.max_vals, None, op_str, *args, **kwargs
         )
+
         if hasattr(self.data_subjects, op_str):
             data_subjects = getattr(self.data_subjects, op_str)(*args, **kwargs)
+            if op_str in INPLACE_OPS:
+                data_subjects = self.data_subjects
         else:
             raise ValueError(f"Invalid Numpy Operation: {op_str} for DSA")
 
@@ -351,7 +358,10 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
 
         dummy_res = np.empty(self.public_shape)
         if hasattr(dummy_res, op_str):
-            dummy_res = getattr(dummy_res, op_str)(*args, **kwargs)
+            if op_str in INPLACE_OPS:
+                getattr(dummy_res, op_str)(*args, **kwargs)
+            else:
+                dummy_res = getattr(dummy_res, op_str)(*args, **kwargs)
         elif hasattr(np, op_str):
             dummy_res = getattr(np, op_str)(dummy_res, *args, *kwargs)
         else:
@@ -593,6 +603,14 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         """
         return TensorWrappedGammaTensorPointer._apply_op(self, other, "__truediv__")
 
+    def __mod__(
+        self,
+        other: Union[
+            TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__mod__")
+
     def __floordiv__(
         self,
         other: Union[
@@ -608,6 +626,46 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
         return TensorWrappedGammaTensorPointer._apply_op(self, other, "__floordiv__")
+
+    def __divmod__(
+        self,
+        other: Union[
+            TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Tuple[
+        Union[TensorWrappedGammaTensorPointer, MPCTensor],
+        Union[TensorWrappedGammaTensorPointer, MPCTensor],
+    ]:
+        """Apply the "divmod" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return self.divmod(other)
+
+    def divmod(
+        self,
+        other: Union[
+            TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Tuple[
+        Union[TensorWrappedGammaTensorPointer, MPCTensor],
+        Union[TensorWrappedGammaTensorPointer, MPCTensor],
+    ]:
+        """Apply the "divmod" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedGammaTensorPointer._apply_op(
+            self, other, "__floordiv__"
+        ), TensorWrappedGammaTensorPointer._apply_op(self, other, "__mod__")
 
     def sum(
         self,
@@ -642,7 +700,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         *args: Any,
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-        """Apply the "ptp" operation between "self" and "other"
+        """Apply the "argmin" operation between "self" and "other"
 
         Args:
             y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -652,12 +710,28 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         """
         return self._apply_self_tensor_op("ptp", *args, **kwargs)
 
+    def __lshift__(
+        self,
+        other: Union[
+            TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the "lshift" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__lshift__")
+
     def argmax(
         self,
         *args: Any,
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-        """Apply the "argmax" operation between "self" and "other"
+        """Apply the "argmin" operation between "self" and "other"
 
         Args:
             y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -666,6 +740,22 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
         return self._apply_self_tensor_op("argmax", *args, **kwargs)
+
+    def __rshift__(
+        self,
+        other: Union[
+            TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the "rshift" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__rshift__")
 
     def argmin(
         self,
@@ -681,6 +771,12 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
         return self._apply_self_tensor_op("argmin", *args, **kwargs)
+
+    def round(self, *args: Any, **kwargs: Any) -> TensorWrappedGammaTensorPointer:
+        return self._apply_self_tensor_op("round", *args, **kwargs)
+
+    def __round__(self, *args: Any, **kwargs: Any) -> TensorWrappedGammaTensorPointer:
+        return self.round(*args, **kwargs)
 
     def __pos__(self) -> TensorWrappedGammaTensorPointer:
         """Apply the __pos__ (+) operator  on self.
@@ -787,6 +883,22 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
                 Elements to include in the product. See reduce for details.
         """
         return self._apply_self_tensor_op("prod", *args, **kwargs)
+
+    def __xor__(
+        self,
+        other: Union[
+            TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the "xor" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__xor__")
 
     def __pow__(
         self,
@@ -946,6 +1058,63 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         """
         return self._apply_self_tensor_op("trace", *args, **kwargs)
 
+    def sort(self, *args: Any, **kwargs: Any) -> TensorWrappedGammaTensorPointer:
+        """
+        Return a sorted copy of an array.
+
+        Parameters
+
+            a: array_like
+                Array to be sorted.
+
+            axis: int or None, optional
+                Axis along which to sort. If None, the array is flattened before sorting.
+                The default is -1, which sorts along the last axis.
+
+            kind{‘quicksort’, ‘mergesort’, ‘heapsort’, ‘stable’}, optional
+                Sorting algorithm. The default is ‘quicksort’.
+                Note that both ‘stable’ and ‘mergesort’ use timsort or radix sort under the covers and, in general,
+                the actual implementation will vary with data type. The ‘mergesort’ option is retained for backwards
+                compatibility.
+
+                Changed in version 1.15.0.: The ‘stable’ option was added.
+
+            order: str or list of str, optional
+                When a is an array with fields defined, this argument specifies which fields to compare first, second,
+                etc. A single field can be specified as a string, and not all fields need be specified, but unspecified
+                 fields will still be used, in the order in which they come up in the dtype, to break ties.
+
+        Please see docs here: https://numpy.org/doc/stable/reference/generated/numpy.sort.html
+        """
+        return self._apply_self_tensor_op("sort", *args, **kwargs)
+
+    def argsort(self, *args: Any, **kwargs: Any) -> TensorWrappedGammaTensorPointer:
+        """
+        Returns the indices that would sort an array.
+
+        Perform an indirect sort along the given axis using the algorithm specified by the kind keyword.
+        It returns an array of indices of the same shape as a that index data along the given axis in sorted order.
+
+        Parameters
+            axis: int or None, optional
+                Axis along which to sort. The default is -1 (the last axis). If None, the flattened array is used.
+            kind: {‘quicksort’, ‘mergesort’, ‘heapsort’, ‘stable’}, optional
+                Sorting algorithm. The default is ‘quicksort’. Note that both ‘stable’ and ‘mergesort’ use timsort
+                under the covers and, in general, the actual implementation will vary with data type. The ‘mergesort’
+                option is retained for backwards compatibility.
+            order: str or list of str, optional
+                When a is an array with fields defined, this argument specifies which fields to compare 1st, 2nd, etc.
+                A single field can be specified as a string, and not all fields need be specified, but unspecified
+                fields will still be used, in the order in which they come up in the dtype, to break ties.
+
+        Returns
+            index_array: ndarray, int
+                Array of indices that sort a along the specified axis. If a is one-dimensional, a[index_array] yields a
+                sorted a. More generally, np.take_along_axis(a, index_array, axis=axis) always yields the sorted a,
+                irrespective of dimensionality.
+        """
+        return self._apply_self_tensor_op("argsort", *args, **kwargs)
+
     def min(
         self,
         *args: Any,
@@ -1016,6 +1185,65 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
         return self._apply_self_tensor_op("ones_like", *args, **kwargs)
+
+    def transpose(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """
+        Reverse or permute the axes of an array; returns the modified array.
+
+        Returns
+            p: ndarray
+                array with its axes permuted. A view is returned whenever possible.
+        """
+
+        return self._apply_self_tensor_op("transpose", *args, **kwargs)
+
+    def resize(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+
+        """
+        Return a new array with the specified shape.
+
+        Parameters
+            new_shape: int or tuple of int
+                Shape of resized array.
+
+        Returns
+            reshaped_array: ndarray
+                The new array is formed from the data in the old array,
+                repeated if necessary to fill out the required number of elements.
+                The data are repeated iterating over the array in C-order.
+
+        """
+        return self._apply_self_tensor_op("resize", *args, **kwargs)
+
+    def reshape(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+
+        """
+        Gives a new shape to an array without changing its data.
+
+        Parameters
+            new_shape: int or tuple of int
+                The new shape should be compatible with the original shape. If an integer, then the result will
+                be a 1-D array of that length. One shape dimension can be -1. In this case,
+                the value is inferred from the length of the array and remaining dimensions.
+
+        Returns
+            reshaped_array: ndarray
+                This will be a new view object if possible; otherwise, it will be a copy.
+                Note there is no guarantee of the memory layout (C- or Fortran- contiguous) of the returned array.
+        """
+        return self._apply_self_tensor_op("reshape", *args, **kwargs)
 
     def exp(
         self,
@@ -1875,6 +2103,12 @@ class GammaTensor:
             sources=output_state,
         )
 
+    def __divmod__(self, other: Any) -> Tuple[GammaTensor, GammaTensor]:
+        return self // other, self % other
+
+    def divmod(self, other: Any) -> Tuple[GammaTensor, GammaTensor]:
+        return self.__divmod__(other)
+
     def __matmul__(self, other: Any) -> GammaTensor:
         # relative
         from .phi_tensor import PhiTensor
@@ -1889,7 +2123,12 @@ class GammaTensor:
         if isinstance(other, GammaTensor):
             output_state[other.id] = other
             child = self.child @ other.child
-            min_val = self.min_vals.__matmul__(other.min_vals)
+            min_min = (self.min_vals @ other.min_vals).data
+            min_max = (self.min_vals @ other.max_vals).data
+            max_max = (self.max_vals @ other.max_vals).data
+            max_min = (self.max_vals @ other.min_vals).data
+            minv = np.min([min_min, min_max, max_max, max_min], axis=0)  # type: ignore
+            min_val = lazyrepeatarray(data=minv, shape=child.shape)
             max_val = self.max_vals.__matmul__(other.max_vals)
             output_ds = self.data_subjects @ other.data_subjects
 
@@ -1909,6 +2148,9 @@ class GammaTensor:
             func_str=GAMMA_TENSOR_OP.MATMUL.value,
             sources=output_state,
         )
+
+    def searchsorted(self, v: Any) -> GammaTensor:
+        raise NotImplementedError
 
     def __rmatmul__(self, other: Any) -> GammaTensor:
         # relative
@@ -2403,11 +2645,11 @@ class GammaTensor:
         # Add this tensor to the chain
         output_state[self.id] = self
 
-        output_ds = self.data_subjects.transpose(*args)
-        output_data = self.child.transpose(*args)
+        output_ds = self.data_subjects.transpose(*args, **kwargs)
+        output_data = self.child.transpose(*args, **kwargs)
 
-        min_vals = lazyrepeatarray(data=output_data.min(), shape=output_data.shape)
-        max_vals = lazyrepeatarray(data=output_data.max(), shape=output_data.shape)
+        min_vals = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape)
+        max_vals = lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape)
 
         return GammaTensor(
             child=output_data,
@@ -2594,20 +2836,21 @@ class GammaTensor:
             sources=output_state,
         )
 
-    def resize(self, new_shape: Union[int, Tuple[int, ...]]) -> GammaTensor:
+    def resize(
+        self, new_shape: Union[int, Tuple[int, ...]], refcheck: bool = True
+    ) -> GammaTensor:
         output_state = dict()
         output_state[self.id] = self
 
-        data = self.child
-        output_data = np.resize(data, new_shape)
-        output_data_subjects = np.resize(self.data_subjects, new_shape)
+        self.child.resize(new_shape, refcheck=refcheck)
+        self.data_subjects.resize(new_shape, refcheck=refcheck)
 
-        min_val = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape)
-        max_val = lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape)
+        min_val = lazyrepeatarray(data=self.min_vals.data, shape=self.child.shape)
+        max_val = lazyrepeatarray(data=self.max_vals.data, shape=self.child.shape)
 
         return GammaTensor(
-            child=output_data,
-            data_subjects=output_data_subjects,
+            child=self.child,
+            data_subjects=self.data_subjects,
             min_vals=min_val,
             max_vals=max_val,
             func_str=GAMMA_TENSOR_OP.RESIZE.value,
@@ -2789,41 +3032,18 @@ class GammaTensor:
         )
 
     def reshape(self, shape: Tuple[int, ...]) -> GammaTensor:
-        raise NotImplementedError
-        # # TODO: Check if this can publish properly since source changes aren't made
-        # child = self.child.reshape(shape)
-        # output_shape = child.shape
-
-        # if isinstance(self.min_vals, lazyrepeatarray):
-        #     if self.min_vals.data.shape == 1:
-        #         minv = self.min_vals.reshape(output_shape)
-        #         maxv = self.max_vals.reshape(output_shape)
-        #     elif self.min_vals.data.shape == self.min_vals.shape:
-        #         minv = self.min_vals.reshape(output_shape)
-        #         minv.data = minv.data.min()
-
-        #         maxv = self.max_vals.reshape(output_shape)
-        #         maxv.data = maxv.data.max()
-        #     else:
-        #         minv = self.min_vals.reshape(output_shape)
-        #         minv.data = minv.data.min()
-
-        #         maxv = self.max_vals.reshape(output_shape)
-        #         maxv.data = maxv.data.max()
-
-        # elif isinstance(self.min_vals, (int, float)):
-        #     minv = self.min_vals  # type: ignore
-        #     maxv = self.max_vals
-        # else:
-        #     minv = self.min_vals
-        #     maxv = self.max_vals
-
-        # return GammaTensor(
-        #     child=child,
-        #     data_subjects=self.data_subjects.reshape(shape),
-        #     min_vals=minv,
-        #     max_vals=maxv,
-        # )
+        sources = dict()
+        sources[self.id] = self
+        sources["0"] = shape  # type: ignore
+        output_data = self.child.reshape(shape)
+        return GammaTensor(
+            child=output_data,
+            data_subjects=self.data_subjects.reshape(shape),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape),
+            func_str=GAMMA_TENSOR_OP.RESHAPE.value,
+            sources=sources,
+        )
 
     def _argmax(self, axis: Optional[int]) -> np.ndarray:
         raise NotImplementedError
@@ -3912,6 +4132,243 @@ class GammaTensor:
                     func_str=GAMMA_TENSOR_OP.MAX.value,
                     sources=sources,
                 )
+
+    def __lshift__(self, other: Any) -> GammaTensor:
+        # relative
+        from .phi_tensor import PhiTensor
+
+        sources = dict()
+        sources[self.id] = self
+
+        if is_acceptable_simple_type(other):
+            sources["0"] = other
+            child = self.child << other
+            if isinstance(other, np.ndarray):
+                other_max, other_min = other.max(), other.min()
+            else:
+                other_max, other_min = other, other
+            data_subjects = self.data_subjects
+
+        elif isinstance(other, PhiTensor):  # type: ignore
+            return self << other.gamma
+        elif isinstance(other, GammaTensor):
+            sources[other.id] = other
+            child = self.child << other.child
+            other_max, other_min = other.max_vals.data, other.min_vals.data
+            data_subjects = self.data_subjects + other.data_subjects
+        else:
+            raise NotImplementedError(
+                f"lshift is not implemented for type: {type(other)}"
+            )
+
+        min_min = self.min_vals.data << other_min
+        min_max = self.min_vals.data << other_max
+        max_min = self.max_vals.data << other_min
+        max_max = self.max_vals.data << other_max
+
+        _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+        _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+        return GammaTensor(
+            child=child,
+            data_subjects=data_subjects,
+            min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
+            max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
+            func_str=GAMMA_TENSOR_OP.LSHIFT.value,
+            sources=sources,
+        )
+
+    def __rshift__(self, other: Any) -> GammaTensor:
+        # relative
+        from .phi_tensor import PhiTensor
+
+        sources = dict()
+        sources[self.id] = self
+
+        if is_acceptable_simple_type(other):
+            sources["0"] = other
+            child = self.child >> other
+            if isinstance(other, np.ndarray):
+                other_max, other_min = other.max(), other.min()
+            else:
+                other_max, other_min = other, other
+            data_subjects = self.data_subjects
+
+        elif isinstance(other, PhiTensor):  # type: ignore
+            return self >> other.gamma
+        elif isinstance(other, GammaTensor):
+            sources[other.id] = other
+            child = self.child >> other.child
+            other_max, other_min = other.max_vals.data, other.min_vals.data
+            data_subjects = self.data_subjects + other.data_subjects
+        else:
+            raise NotImplementedError(
+                f"rshift is not implemented for type: {type(other)}"
+            )
+
+        min_min = self.min_vals.data >> other_min
+        min_max = self.min_vals.data >> other_max
+        max_min = self.max_vals.data >> other_min
+        max_max = self.max_vals.data >> other_max
+
+        _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+        _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+
+        return GammaTensor(
+            child=child,
+            data_subjects=data_subjects,
+            min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
+            max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
+            func_str=GAMMA_TENSOR_OP.RSHIFT.value,
+            sources=sources,
+        )
+
+    def __xor__(self, other: Any) -> GammaTensor:
+        # relative
+        from .phi_tensor import PhiTensor
+
+        sources = dict()
+        sources[self.id] = self
+
+        if is_acceptable_simple_type(other):
+            sources["0"] = other
+            child = self.child ^ other
+            data_subjects = self.data_subjects
+            if isinstance(other, np.ndarray):
+                other_min, other_max = other.min(), other.max()
+            else:
+                other_min, other_max = other, other
+        elif isinstance(other, PhiTensor):
+            return self ^ other.gamma
+        elif isinstance(other, GammaTensor):
+            sources[other.id] = other
+            child = self.child ^ other.child
+            data_subjects = self.data_subjects + other.data_subjects
+            other_min, other_max = other.min_vals.data, other.max_vals.data
+        else:
+            raise NotImplementedError(f"xor is not implemented for type: {type(other)}")
+
+        # TODO: should modify for a tighter found for xor
+        _max = int(max(self.max_vals.data, other_max))
+        _min = int(min(self.min_vals.data, other_min))
+        _max_vals = max(
+            (2 ** (_min ^ _max).bit_length()) - 1, (2 ** (_max).bit_length()) - 1
+        )
+        _min_vals = min(0, _min)
+
+        return GammaTensor(
+            child=child,
+            data_subjects=data_subjects,
+            min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
+            max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
+            func_str=GAMMA_TENSOR_OP.XOR.value,
+            sources=sources,
+        )
+
+    def __round__(self, n: int = 0) -> GammaTensor:
+        sources = dict()
+        sources[self.id] = self
+
+        sources["0"] = n  # type: ignore
+        child = self.child.round(n)
+
+        return GammaTensor(
+            child=child,
+            data_subjects=self.data_subjects,
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data.round(n), shape=self.min_vals.shape
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data.round(n), shape=self.max_vals.shape
+            ),
+            func_str=GAMMA_TENSOR_OP.ROUND.value,
+            sources=sources,
+        )
+
+    def round(self, n: int = 0) -> GammaTensor:
+        return self.__round__(n)
+
+    def sort(self, axis: int = -1, kind: Optional[str] = None) -> GammaTensor:
+        """
+        Return a sorted copy of an array.
+
+        Parameters
+
+            a: array_like
+                Array to be sorted.
+
+            axis: int or None, optional
+                Axis along which to sort. If None, the array is flattened before sorting.
+                The default is -1, which sorts along the last axis.
+
+            kind{‘quicksort’, ‘mergesort’, ‘heapsort’, ‘stable’}, optional
+                Sorting algorithm. The default is ‘quicksort’.
+                Note that both ‘stable’ and ‘mergesort’ use timsort or radix sort under the covers and, in general,
+                the actual implementation will vary with data type. The ‘mergesort’ option is retained for backwards
+                compatibility.
+
+                Changed in version 1.15.0.: The ‘stable’ option was added.
+
+            order: str or list of str, optional
+                When a is an array with fields defined, this argument specifies which fields to compare first, second,
+                etc. A single field can be specified as a string, and not all fields need be specified, but unspecified
+                 fields will still be used, in the order in which they come up in the dtype, to break ties.
+
+        Please see docs here: https://numpy.org/doc/stable/reference/generated/numpy.sort.html
+        """
+
+        # Must do argsort before we change self.child by calling sort
+        indices = self.child.argsort(axis, kind)
+        self.child.sort(axis, kind)
+        sources = dict()
+        sources[self.id] = self
+
+        out_ds = np.take_along_axis(self.data_subjects, indices, axis=axis)
+        return GammaTensor(
+            child=self.child,
+            data_subjects=out_ds,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+            func_str=GAMMA_TENSOR_OP.SORT.value,
+            sources=sources,
+        )
+
+    def argsort(self, axis: Optional[int] = -1) -> GammaTensor:
+        """
+        Returns the indices that would sort an array.
+
+        Perform an indirect sort along the given axis using the algorithm specified by the kind keyword.
+        It returns an array of indices of the same shape as a that index data along the given axis in sorted order.
+
+        Parameters
+            axis: int or None, optional
+                Axis along which to sort. The default is -1 (the last axis). If None, the flattened array is used.
+            kind: {‘quicksort’, ‘mergesort’, ‘heapsort’, ‘stable’}, optional
+                Sorting algorithm. The default is ‘quicksort’. Note that both ‘stable’ and ‘mergesort’ use timsort
+                under the covers and, in general, the actual implementation will vary with data type. The ‘mergesort’
+                option is retained for backwards compatibility.
+            order: str or list of str, optional
+                When a is an array with fields defined, this argument specifies which fields to compare 1st, 2nd, etc.
+                A single field can be specified as a string, and not all fields need be specified, but unspecified
+                fields will still be used, in the order in which they come up in the dtype, to break ties.
+
+        Returns
+            index_array: ndarray, int
+                Array of indices that sort a along the specified axis. If a is one-dimensional, a[index_array] yields a
+                sorted a. More generally, np.take_along_axis(a, index_array, axis=axis) always yields the sorted a,
+                irrespective of dimensionality.
+        """
+        sources = dict()
+        sources[self.id] = self
+        result = self.child.argsort(axis)
+        out_ds = np.take_along_axis(self.data_subjects, result, axis=axis)
+        return GammaTensor(
+            child=result,
+            data_subjects=out_ds,
+            min_vals=lazyrepeatarray(data=0, shape=self.shape),
+            max_vals=lazyrepeatarray(data=self.child.size, shape=self.shape),
+            func_str=GAMMA_TENSOR_OP.ARGSORT.value,
+            sources=sources,
+        )
 
     @property
     def shape(self) -> Tuple[int, ...]:

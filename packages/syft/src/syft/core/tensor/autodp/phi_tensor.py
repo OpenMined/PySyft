@@ -62,6 +62,8 @@ from .adp_tensor import ADPTensor
 from .gamma_tensor import GammaTensor
 from .gamma_tensor import TensorWrappedGammaTensorPointer
 
+INPLACE_OPS = {"resize", "sort"}
+
 
 @serializable(recursive_serde=True)
 class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
@@ -163,9 +165,11 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
         # We always maintain a Tensor hierarchy Tensor ---> PT--> Actual Data
         attr_path_and_name = f"syft.core.tensor.tensor.Tensor.{op_str}"
+
         min_vals, max_vals = compute_min_max(
             self.min_vals, self.max_vals, other, op_str
         )
+
         result = TensorWrappedPhiTensorPointer(
             data_subjects=self.data_subjects,
             min_vals=min_vals,
@@ -232,7 +236,6 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             result_public_shape = utils.get_shape(
                 op_str, self.public_shape, other_shape
             )
-
         if self.public_dtype is None or other_dtype is None:
             if self.public_dtype != other_dtype:
                 raise ValueError(
@@ -253,11 +256,15 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
         # We always maintain a Tensor hierarchy Tensor ---> PT--> Actual Data
         attr_path_and_name = f"syft.core.tensor.tensor.Tensor.{op_str}"
+
         min_vals, max_vals = compute_min_max(
             self.min_vals, self.max_vals, None, op_str, *args, **kwargs
         )
+
         if hasattr(self.data_subjects, op_str):
             data_subjects = getattr(self.data_subjects, op_str)(*args, **kwargs)
+            if op_str in INPLACE_OPS:
+                data_subjects = self.data_subjects
         else:
             raise ValueError(f"Invalid Numpy Operation: {op_str} for DSA")
 
@@ -306,7 +313,10 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
         dummy_res = np.empty(self.public_shape)
         if hasattr(dummy_res, op_str):
-            dummy_res = getattr(dummy_res, op_str)(*args, **kwargs)
+            if op_str in INPLACE_OPS:
+                getattr(dummy_res, op_str)(*args, **kwargs)
+            else:
+                dummy_res = getattr(dummy_res, op_str)(*args, **kwargs)
         elif hasattr(np, op_str):
             dummy_res = getattr(np, op_str)(dummy_res, *args, *kwargs)
         else:
@@ -334,6 +344,12 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
     def copy(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
         return self._apply_self_tensor_op("copy", *args, **kwargs)
+
+    def round(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        return self._apply_self_tensor_op("round", *args, **kwargs)
+
+    def __round__(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        return self.round(*args, **kwargs)
 
     @staticmethod
     def _apply_op(
@@ -534,6 +550,48 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         """
         return TensorWrappedPhiTensorPointer._apply_op(self, other, "__ne__")
 
+    def __lshift__(
+        self,
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
+        """Apply the "lshift" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__lshift__")
+
+    def __rshift__(
+        self,
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
+        """Apply the "rshift" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__rshift__")
+
+    def __xor__(
+        self,
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
+        """Apply the "xor" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__xor__")
+
     def concatenate(
         self,
         other: TensorWrappedPhiTensorPointer,
@@ -596,7 +654,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         self,
         other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
     ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
-        """Apply the "truediv" operation between "self" and "other"
+        """Apply the "floordiv" operation between "self" and "other"
 
         Args:
             y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -605,6 +663,66 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
         return TensorWrappedPhiTensorPointer._apply_op(self, other, "__floordiv__")
+
+    def __mod__(
+        self,
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
+    ) -> Union[
+        TensorWrappedPhiTensorPointer, TensorWrappedGammaTensorPointer, MPCTensor
+    ]:
+        """Apply the "mod" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__mod__")
+
+    def __divmod__(
+        self,
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
+    ) -> Tuple[
+        Union[
+            TensorWrappedPhiTensorPointer, TensorWrappedGammaTensorPointer, MPCTensor
+        ],
+        Union[
+            TensorWrappedPhiTensorPointer, TensorWrappedGammaTensorPointer, MPCTensor
+        ],
+    ]:
+        """Apply the "divmod" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return self.divmod(other)
+
+    def divmod(
+        self,
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
+    ) -> Tuple[
+        Union[
+            TensorWrappedPhiTensorPointer, TensorWrappedGammaTensorPointer, MPCTensor
+        ],
+        Union[
+            TensorWrappedPhiTensorPointer, TensorWrappedGammaTensorPointer, MPCTensor
+        ],
+    ]:
+        """Apply the "divmod" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedPhiTensorPointer._apply_op(
+            self, other, "__floordiv__"
+        ), TensorWrappedPhiTensorPointer._apply_op(self, other, "__mod__")
 
     def sum(
         self,
@@ -984,6 +1102,63 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         """
         return self._apply_self_tensor_op("max", *args, **kwargs)
 
+    def sort(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Return a sorted copy of an array.
+
+        Parameters
+
+            a: array_like
+                Array to be sorted.
+
+            axis: int or None, optional
+                Axis along which to sort. If None, the array is flattened before sorting.
+                The default is -1, which sorts along the last axis.
+
+            kind{‘quicksort’, ‘mergesort’, ‘heapsort’, ‘stable’}, optional
+                Sorting algorithm. The default is ‘quicksort’.
+                Note that both ‘stable’ and ‘mergesort’ use timsort or radix sort under the covers and, in general,
+                the actual implementation will vary with data type. The ‘mergesort’ option is retained for backwards
+                compatibility.
+
+                Changed in version 1.15.0.: The ‘stable’ option was added.
+
+            order: str or list of str, optional
+                When a is an array with fields defined, this argument specifies which fields to compare first, second,
+                etc. A single field can be specified as a string, and not all fields need be specified, but unspecified
+                 fields will still be used, in the order in which they come up in the dtype, to break ties.
+
+        Please see docs here: https://numpy.org/doc/stable/reference/generated/numpy.sort.html
+        """
+        return self._apply_self_tensor_op("sort", *args, **kwargs)
+
+    def argsort(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Returns the indices that would sort an array.
+
+        Perform an indirect sort along the given axis using the algorithm specified by the kind keyword.
+        It returns an array of indices of the same shape as a that index data along the given axis in sorted order.
+
+        Parameters
+            axis: int or None, optional
+                Axis along which to sort. The default is -1 (the last axis). If None, the flattened array is used.
+            kind: {‘quicksort’, ‘mergesort’, ‘heapsort’, ‘stable’}, optional
+                Sorting algorithm. The default is ‘quicksort’. Note that both ‘stable’ and ‘mergesort’ use timsort
+                under the covers and, in general, the actual implementation will vary with data type. The ‘mergesort’
+                option is retained for backwards compatibility.
+            order: str or list of str, optional
+                When a is an array with fields defined, this argument specifies which fields to compare 1st, 2nd, etc.
+                A single field can be specified as a string, and not all fields need be specified, but unspecified
+                fields will still be used, in the order in which they come up in the dtype, to break ties.
+
+        Returns
+            index_array: ndarray, int
+                Array of indices that sort a along the specified axis. If a is one-dimensional, a[index_array] yields a
+                sorted a. More generally, np.take_along_axis(a, index_array, axis=axis) always yields the sorted a,
+                irrespective of dimensionality.
+        """
+        return self._apply_self_tensor_op("argsort", *args, **kwargs)
+
     def exp(
         self,
     ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
@@ -1361,6 +1536,50 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             public_shape=public_shape,
             public_dtype=public_dtype,
         )
+
+    def transpose(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Reverse or permute the axes of an array; returns the modified array.
+
+        Returns
+            p: ndarray
+                array with its axes permuted. A view is returned whenever possible.
+        """
+        return self._apply_self_tensor_op("transpose", *args, **kwargs)
+
+    def resize(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Return a new array with the specified shape.
+
+        Parameters
+            new_shape: int or tuple of int
+                Shape of resized array.
+
+        Returns
+            reshaped_array: ndarray
+                The new array is formed from the data in the old array,
+                repeated if necessary to fill out the required number of elements.
+                The data are repeated iterating over the array in C-order.
+
+        """
+        return self._apply_self_tensor_op("resize", *args, **kwargs)
+
+    def reshape(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
+        """
+        Gives a new shape to an array without changing its data.
+
+        Parameters
+            new_shape: int or tuple of int
+                The new shape should be compatible with the original shape. If an integer, then the result will
+                be a 1-D array of that length. One shape dimension can be -1. In this case,
+                the value is inferred from the length of the array and remaining dimensions.
+
+        Returns
+            reshaped_array: ndarray
+                This will be a new view object if possible; otherwise, it will be a copy.
+                Note there is no guarantee of the memory layout (C- or Fortran- contiguous) of the returned array.
+        """
+        return self._apply_self_tensor_op("reshape", *args, **kwargs)
 
 
 @implements(TensorWrappedPhiTensorPointer, np.ones_like)
@@ -1816,12 +2035,11 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         data = self.child
         output_data = np.reshape(data, *shape)
-
         return PhiTensor(
             child=output_data,
             data_subjects=np.reshape(self.data_subjects, *shape),
-            min_vals=output_data.min(),
-            max_vals=output_data.max(),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape),
         )
 
     def pad(self, width: int, padding_mode: str = "reflect") -> PhiTensor:
@@ -2478,49 +2696,268 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 f"Matrix multiplication not yet implemented for type {type(other)}"
             )
         else:
-            # Modify before merge, to know is broadcast is actually necessary
-            if False:  # and not is_broadcastable(self.shape, other.shape):
-                raise Exception(
-                    f"Shapes not broadcastable: {self.shape} and {other.shape}"
-                )
-            else:
-                if isinstance(other, np.ndarray):
-                    data = self.child.__matmul__(other)
-                    min_vals = self.min_vals.__matmul__(other)
-                    max_vals = self.max_vals.__matmul__(other)
-                    output_ds = self.data_subjects @ other
-                elif isinstance(other, PhiTensor):
+            if isinstance(other, np.ndarray):
+                data = self.child.__matmul__(other)
+                min_min = (self.min_vals @ other).data
+                min_max = (self.min_vals @ other).data
+                max_max = (self.max_vals @ other).data
+                max_min = (self.max_vals @ other).data
+                minv = np.min([min_min, min_max, max_max, max_min], axis=0)  # type: ignore
+                min_vals = lazyrepeatarray(data=minv, shape=data.shape)
+                max_vals = self.max_vals.__matmul__(other)
+                output_ds = self.data_subjects @ other
+            elif isinstance(other, PhiTensor):
+                if self.data_subjects.sum() != other.data_subjects.sum():
                     return self.gamma @ other.gamma
-                    # if self.data_subjects != other.data_subjects:
-                    #     return self.gamma @ other.gamma
-                    # else:
-                    #     data = self.child.__matmul__(other.child)
-                    #     min_vals = self.min_vals.__matmul__(other.min_vals)
-                    #     max_vals = self.max_vals.__matmul__(other.max_vals)
-                    #     output_ds = DataSubjectList(
-                    #         one_hot_lookup=np.concatenate(
-                    #             (
-                    #                 self.data_subjects.one_hot_lookup,
-                    #                 other.data_subjects.one_hot_lookup,
-                    #             )
-                    #         ),
-                    #         data_subjects_indexed=np.concatenate(
-                    #             (np.zeros_like(data), np.ones_like(data))
-                    #         ),  # replace with (1, *data.shape) if inc shape
-                    #     )
-
-                elif isinstance(other, GammaTensor):
-                    return self.gamma @ other
                 else:
-                    print("Type is unsupported:" + str(type(other)))
-                    raise NotImplementedError
+                    min_min = (self.min_vals @ other.min_vals).data.min()
+                    min_max = (self.min_vals @ other.max_vals).data.min()
+                    max_max = (self.max_vals @ other.max_vals).data.min()
+                    max_min = (self.max_vals @ other.min_vals).data.min()
 
-                return PhiTensor(
-                    child=data,
-                    max_vals=max_vals,
-                    min_vals=min_vals,
-                    data_subjects=output_ds,
-                )
+                    if self.min_vals.data <= 0 and self.max_vals.data >= 0:
+                        minv = np.min([0, min_min, min_max, max_max, max_min], axis=0)  # type: ignore
+                    else:
+                        minv = np.min([min_min, min_max, max_max, max_min], axis=0)  # type: ignore
+
+                    data = self.child.__matmul__(other.child)
+                    max_vals = self.max_vals.__matmul__(other.max_vals)
+                    min_vals = lazyrepeatarray(data=minv, shape=data.shape)
+                    output_ds = self.data_subjects @ other.data_subjects
+
+            elif isinstance(other, GammaTensor):
+                return self.gamma @ other
+            else:
+                print("Type is unsupported:" + str(type(other)))
+                raise NotImplementedError
+
+            return PhiTensor(
+                child=data,
+                max_vals=max_vals,
+                min_vals=min_vals,
+                data_subjects=output_ds,
+            )
+
+    def argsort(self, axis: Optional[int] = -1) -> PhiTensor:
+        """
+        Returns the indices that would sort an array.
+
+        Perform an indirect sort along the given axis using the algorithm specified by the kind keyword.
+        It returns an array of indices of the same shape as a that index data along the given axis in sorted order.
+
+        Parameters
+            axis: int or None, optional
+                Axis along which to sort. The default is -1 (the last axis). If None, the flattened array is used.
+            kind: {‘quicksort’, ‘mergesort’, ‘heapsort’, ‘stable’}, optional
+                Sorting algorithm. The default is ‘quicksort’. Note that both ‘stable’ and ‘mergesort’ use timsort
+                under the covers and, in general, the actual implementation will vary with data type. The ‘mergesort’
+                option is retained for backwards compatibility.
+            order: str or list of str, optional
+                When a is an array with fields defined, this argument specifies which fields to compare 1st, 2nd, etc.
+                A single field can be specified as a string, and not all fields need be specified, but unspecified
+                fields will still be used, in the order in which they come up in the dtype, to break ties.
+
+        Returns
+            index_array: ndarray, int
+                Array of indices that sort a along the specified axis. If a is one-dimensional, a[index_array] yields a
+                sorted a. More generally, np.take_along_axis(a, index_array, axis=axis) always yields the sorted a,
+                irrespective of dimensionality.
+        """
+        result = self.child.argsort(axis)
+        out_ds = np.take_along_axis(self.data_subjects, result, axis=axis)
+        return PhiTensor(
+            child=result,
+            data_subjects=out_ds,
+            min_vals=lazyrepeatarray(data=0, shape=self.shape),
+            max_vals=lazyrepeatarray(data=self.child.size, shape=self.shape),
+        )
+
+    def sort(self, axis: int = -1, kind: Optional[str] = None) -> PhiTensor:
+        """
+        Return a sorted copy of an array.
+
+        Parameters
+
+            a: array_like
+                Array to be sorted.
+
+            axis: int or None, optional
+                Axis along which to sort. If None, the array is flattened before sorting.
+                The default is -1, which sorts along the last axis.
+
+            kind{‘quicksort’, ‘mergesort’, ‘heapsort’, ‘stable’}, optional
+                Sorting algorithm. The default is ‘quicksort’.
+                Note that both ‘stable’ and ‘mergesort’ use timsort or radix sort under the covers and, in general,
+                the actual implementation will vary with data type. The ‘mergesort’ option is retained for backwards
+                compatibility.
+
+                Changed in version 1.15.0.: The ‘stable’ option was added.
+
+            order: str or list of str, optional
+                When a is an array with fields defined, this argument specifies which fields to compare first, second,
+                etc. A single field can be specified as a string, and not all fields need be specified, but unspecified
+                 fields will still be used, in the order in which they come up in the dtype, to break ties.
+
+        Please see docs here: https://numpy.org/doc/stable/reference/generated/numpy.sort.html
+        """
+
+        # Must do argsort before we change self.child by calling sort
+        indices = self.child.argsort(axis, kind)
+        self.child.sort(axis, kind)
+
+        out_ds = np.take_along_axis(self.data_subjects, indices, axis=axis)
+        return PhiTensor(
+            child=self.child,
+            data_subjects=out_ds,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+        )
+
+    def __lshift__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
+        if is_acceptable_simple_type(other):
+            if isinstance(other, np.ndarray):
+                other_max, other_min = other.max(), other.min()
+            else:
+                other_max, other_min = other, other
+
+            child = self.child << other
+
+        elif isinstance(other, GammaTensor):
+            return self.gamma << other
+        elif isinstance(other, PhiTensor):
+            if (self.data_subjects != other.data_subjects).any():
+                return self.gamma << other.gamma
+            else:
+                child = self.child << other.child
+                other_max = other.max_vals.data
+                other_min = other.min_vals.data
+        else:
+            raise NotImplementedError(
+                f"__lshift__ not implemented between PhiTensor and {type(other)}."
+            )
+
+        min_min = self.min_vals.data << other_min
+        min_max = self.min_vals.data << other_max
+        max_min = self.max_vals.data << other_min
+        max_max = self.max_vals.data << other_max
+
+        _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+        _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+        return PhiTensor(
+            child=child,
+            data_subjects=self.data_subjects,
+            min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
+            max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
+        )
+
+    def __rshift__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
+        if is_acceptable_simple_type(other):
+            if isinstance(other, np.ndarray):
+                other_max, other_min = other.max(), other.min()
+            else:
+                other_max, other_min = other, other
+            child = self.child >> other
+
+        elif isinstance(other, GammaTensor):
+            return self.gamma >> other
+        elif isinstance(other, PhiTensor):
+            if (self.data_subjects != other.data_subjects).any():
+                return self.gamma >> other.gamma
+            else:
+                child = self.child >> other.child
+                other_max = other.max_vals.data
+                other_min = other.min_vals.data
+        else:
+            raise NotImplementedError(
+                f"__rshift__ not implemented between PhiTensor and {type(other)}."
+            )
+
+        min_min = self.min_vals.data >> other_min
+        min_max = self.min_vals.data >> other_max
+        max_min = self.max_vals.data >> other_min
+        max_max = self.max_vals.data >> other_max
+
+        _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+        _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+        return PhiTensor(
+            child=child,
+            data_subjects=self.data_subjects,
+            min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
+            max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
+        )
+
+    def __xor__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
+        if is_acceptable_simple_type(other):
+            if isinstance(other, np.ndarray):
+                other_min, other_max = other.min(), other.max()
+            else:
+                other_min, other_max = other, other
+            child = self.child ^ other
+        elif isinstance(other, GammaTensor):
+            return self.gamma ^ other
+        elif isinstance(other, PhiTensor):
+            if (self.data_subjects != other.data_subjects).any():
+                return self.gamma ^ other.gamma
+            else:
+                child = self.child ^ other.child
+                other_min, other_max = other.min_vals.data, other.max_vals.data
+        else:
+            raise NotImplementedError(
+                f"__xor__ not implemented between PhiTensor and {type(other)}."
+            )
+
+        # TODO: should modify for a tighter found for xor
+        _max = int(max(self.max_vals.data, other_max))
+        _min = int(min(self.min_vals.data, other_min))
+        _max_vals = max(
+            (2 ** (_min ^ _max).bit_length()) - 1, (2 ** (_max).bit_length()) - 1
+        )
+        _min_vals = min(0, _min)
+
+        return PhiTensor(
+            child=child,
+            data_subjects=self.data_subjects,
+            min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
+            max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
+        )
+
+    def searchsorted(self, v: Any) -> Union[PhiTensor, GammaTensor]:
+        """
+        https://numpy.org/doc/stable/reference/generated/numpy.searchsorted.html
+        """
+        raise NotImplementedError
+
+    def __divmod__(
+        self, other: Any
+    ) -> Tuple[Union[PhiTensor, GammaTensor], Union[PhiTensor, GammaTensor]]:
+        if is_acceptable_simple_type(other) or isinstance(
+            other, (PhiTensor, GammaTensor)
+        ):
+            return self // other, self % other  # type: ignore
+        else:
+            raise NotImplementedError(
+                f"PhiTensor divmod not supported for type: {other}"
+            )
+
+    def divmod(
+        self, other: Any
+    ) -> Tuple[Union[PhiTensor, GammaTensor], Union[PhiTensor, GammaTensor]]:
+        return self.__divmod__(other)
+
+    def __round__(self, n: int = 0) -> PhiTensor:
+        return PhiTensor(
+            child=self.child.round(n),
+            data_subjects=self.data_subjects,
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data.round(n), shape=self.min_vals.shape
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data.round(n), shape=self.max_vals.shape
+            ),
+        )
+
+    def round(self, n: int = 0) -> PhiTensor:
+        return self.__round__(n)
 
     def __rmatmul__(
         self, other: Union[np.ndarray, PhiTensor]
@@ -2590,47 +3027,14 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def transpose(self, *args: Any, **kwargs: Any) -> PhiTensor:
         """Transposes self.child, min_vals, and max_vals if these can be transposed, otherwise doesn't change them."""
-        data: np.ndarray
-        if (
-            isinstance(self.child, int)
-            or isinstance(self.child, float)
-            or isinstance(self.child, bool)
-        ):
-            # For these data types, the transpose operation is meaningless, so don't change them.
-            data = self.child  # type: ignore
-            print(
-                f"Warning: Tensor data was of type {type(data)}, transpose operation had no effect."
-            )
-        else:
-            data = self.child.transpose(*args)
+        output_data = self.child.transpose(*args, **kwargs)
 
-        # TODO: Should we give warnings for min_vals and max_vals being single floats/integers/booleans too?
-        if (
-            isinstance(self.min_vals, int)
-            or isinstance(self.min_vals, float)
-            or isinstance(self.min_vals, bool)
-        ):
-            # For these data types, the transpose operation is meaningless, so don't change them.
-            min_vals = self.min_vals
-            # print(f'Warning: Tensor data was of type {type(data)}, transpose operation had no effect.')
-        else:
-            min_vals = data.min()
-
-        if (
-            isinstance(self.max_vals, int)
-            or isinstance(self.max_vals, float)
-            or isinstance(self.max_vals, bool)
-        ):
-            # For these data types, the transpose operation is meaningless, so don't change them.
-            max_vals = self.max_vals
-            # print(f'Warning: Tensor data was of type {type(data)}, transpose operation had no effect.')
-        else:
-            max_vals = data.max()
-
-        output_ds = self.data_subjects.transpose(*args)
+        min_vals = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape)
+        max_vals = lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape)
+        output_ds = self.data_subjects.transpose(*args, **kwargs)
 
         return PhiTensor(
-            child=data,
+            child=output_data,
             data_subjects=output_ds,
             min_vals=min_vals,
             max_vals=max_vals,
@@ -3062,13 +3466,18 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             data_subjects=self.data_subjects,
         )
 
-    def resize(self, new_shape: Union[int, Tuple[int, ...]]) -> PhiTensor:
-        out_child = np.resize(self.child.data, new_shape)
+    def resize(
+        self, new_shape: Union[int, Tuple[int, ...]], refcheck: bool = True
+    ) -> PhiTensor:
+        self.child.resize(new_shape, refcheck=refcheck)
+        self.data_subjects.resize(new_shape, refcheck=refcheck)
+        self.data_subjects = DataSubjectArray.from_objs(self.data_subjects)
+        out_shape = self.child.shape
         return PhiTensor(
-            child=out_child,
-            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
-            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
-            data_subjects=np.resize(self.data_subjects, new_shape),
+            child=self.child,
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_shape),
+            data_subjects=self.data_subjects,
         )
 
     def compress(self, condition: List[bool], axis: Optional[int] = None) -> PhiTensor:
