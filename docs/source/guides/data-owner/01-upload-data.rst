@@ -156,7 +156,7 @@ Important steps:
    # run this cell
    data_subjects = sy.DataSubjectArray.from_objs(dataset["ID"])
 
-   age_data = sy.Tensor(dataset["Age"]).annotated_with_dp_metadata(
+   age_data = sy.Tensor(dataset["Age"]).annotate_with_dp_metadata(
       min_val=0, max_val=100, data_subjects=data_subjects
    )
 

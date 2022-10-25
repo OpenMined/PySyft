@@ -366,7 +366,7 @@ class PhiTensorAncestor(TensorChainManager):
 
         return NotImplemented
 
-    def annotated_with_dp_metadata(
+    def annotate_with_dp_metadata(
         self,
         min_val: ArrayLike,
         max_val: ArrayLike,
