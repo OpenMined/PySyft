@@ -623,6 +623,23 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         """
         return self._apply_self_tensor_op("sum", *args, **kwargs)
 
+    def ptp(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[
+        TensorWrappedPhiTensorPointer, MPCTensor, TensorWrappedGammaTensorPointer
+    ]:
+        """Apply the "ptp" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return self._apply_self_tensor_op("ptp", *args, **kwargs)
+
     def __getitem__(
         self, key: Union[int, bool, slice]
     ) -> TensorWrappedPhiTensorPointer:

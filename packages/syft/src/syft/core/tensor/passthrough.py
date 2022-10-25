@@ -484,6 +484,10 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def flatten(self, order: Optional[str] = "C") -> PassthroughTensor:
         return self.__class__(self.child.flatten(order))
 
+    # ndarray.ptp(axis=None, out=None, keepdims=False)
+    def ptp(self, axis=None) -> PassthroughTensor:
+        return self.__class__(self.child.ptp(axis=axis))
+
     # ndarray.partition(kth, axis=- 1, kind='introselect', order=None)
     def partition(
         self,
