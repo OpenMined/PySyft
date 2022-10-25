@@ -610,7 +610,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         ],
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
         return TensorWrappedGammaTensorPointer._apply_op(self, other, "__mod__")
-    
+
     def __and__(
         self,
         other: Union[
@@ -626,7 +626,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
         return TensorWrappedGammaTensorPointer._apply_op(self, other, "__and__")
-    
+
     def __or__(
         self,
         other: Union[
@@ -1235,17 +1235,20 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
                 If axis is given, the result is an array of dimension a.ndim - 1.
         """
         return self._apply_self_tensor_op("max", *args, **kwargs)
-    
-    def compress(self, *args: Any, **kwargs: Any) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+
+    def compress(
+        self, *args: Any, **kwargs: Any
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
         """
         Return selected slices of an array along given axis.
 
-        When working along a given axis, a slice along that axis is returned in output for each index 
+        When working along a given axis, a slice along that axis is returned in output for each index
         where condition evaluates to True. When working on a 1-D array, compress is equivalent to extract.
-        
+
         Parameters
             condition: 1-D array of bools
-            Array that selects which entries to return. If len(condition) is less than the size of a along the given axis, 
+            Array that selects which entries to return. If len(condition) is less than the size of a along the given
+            axis,
             then output is truncated to the length of the condition array.
 
             axis: int, optional
@@ -1256,24 +1259,26 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             A copy of a without the slices along axis for which condition is false.
         """
         return self._apply_self_tensor_op("compress", *args, **kwargs)
-    
-    def squeeze(self, *args: Any, **kwargs: Any) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+
+    def squeeze(
+        self, *args: Any, **kwargs: Any
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
         """
         Remove axes of length one from a.
 
         Parameters
             axis: None or int or tuple of ints, optional
-                Selects a subset of the entries of length one in the shape. 
+                Selects a subset of the entries of length one in the shape.
                 If an axis is selected with shape entry greater than one, an error is raised.
 
         Returns:
             squeezed: PhiTensor
-                The input array, but with all or a subset of the dimensions of length 1 removed. 
-                This is always a itself or a view into a. 
+                The input array, but with all or a subset of the dimensions of length 1 removed.
+                This is always a itself or a view into a.
                 Note that if all axes are squeezed, the result is a 0d array and not a scalar.
         """
         return self._apply_self_tensor_op("squeeze", *args, **kwargs)
-    
+
     def __getitem__(
         self, key: Union[int, bool, slice]
     ) -> TensorWrappedGammaTensorPointer:
@@ -1551,60 +1556,67 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
                 inserted at the end corresponding to the diagonal.
         """
         return self._apply_self_tensor_op("diagonal", *args, **kwargs)
-    
-    def flatten(self, *args: Any, **kwargs: Any) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+
+    def flatten(
+        self, *args: Any, **kwargs: Any
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
         """
         Return a copy of the array collapsed into one dimension.
 
         Parameters
             order: {‘C’, ‘F’, ‘A’, ‘K’}, optional
-            ‘C’ means to flatten in row-major (C-style) order. 
-            ‘F’ means to flatten in column-major (Fortran- style) order. 
-            ‘A’ means to flatten in column-major order if a is Fortran contiguous in memory, row-major order otherwise. 
+            ‘C’ means to flatten in row-major (C-style) order.
+            ‘F’ means to flatten in column-major (Fortran- style) order.
+            ‘A’ means to flatten in column-major order if a is Fortran contiguous in memory, row-major order otherwise.
             ‘K’ means to flatten a in the order the elements occur in memory. The default is ‘C’.
-                
+
         Returns
             y: PhiTensor
                 A copy of the input array, flattened to one dimension.
         """
         return self._apply_self_tensor_op("flatten", *args, **kwargs)
-    
-    def ravel(self, *args: Any, **kwargs: Any) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+
+    def ravel(
+        self, *args: Any, **kwargs: Any
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
         """
         Return a contiguous flattened array.
 
         A 1-D array, containing the elements of the input, is returned. A copy is made only if needed.
 
-        As of NumPy 1.10, the returned array will have the same type as the input array. 
+        As of NumPy 1.10, the returned array will have the same type as the input array.
         (for example, a masked array will be returned for a masked array input)
         Parameters
             order: {‘C’,’F’, ‘A’, ‘K’}, optional
-            The elements of a are read using this index order. 
-            ‘C’ means to index the elements in row-major, 
-            C-style order, with the last axis index changing fastest, back to the first axis index changing slowest. 
-            ‘F’ means to index the elements in column-major, Fortran-style order, with the first index changing fastest, 
-             and the last index changing slowest. 
-            Note that the ‘C’ and ‘F’ options take no account of the memory layout of the underlying array, 
-             and only refer to the order of axis indexing. 
-            ‘A’ means to read the elements in Fortran-like index order if a is Fortran contiguous in memory, 
-             C-like order otherwise. 
-            ‘K’ means to read the elements in the order they occur in memory, except for reversing the data 
-             when strides are negative. 
+            The elements of a are read using this index order.
+            ‘C’ means to index the elements in row-major,
+            C-style order, with the last axis index changing fastest, back to the first axis index changing slowest.
+            ‘F’ means to index the elements in column-major, Fortran-style order, with the first index changing fastest,
+             and the last index changing slowest.
+            Note that the ‘C’ and ‘F’ options take no account of the memory layout of the underlying array,
+             and only refer to the order of axis indexing.
+            ‘A’ means to read the elements in Fortran-like index order if a is Fortran contiguous in memory,
+             C-like order otherwise.
+            ‘K’ means to read the elements in the order they occur in memory, except for reversing the data
+             when strides are negative.
             By default, ‘C’ index order is used.
-        
+
         Returns:
             y: PhiTensor
-                y is an array of the same subtype as a, with shape (a.size,). 
-                Note that matrices are special cased for backward compatibility, if a is a matrix, then y is a 1-D ndarray.
+                y is an array of the same subtype as a, with shape (a.size,).
+                Note that matrices are special cased for backward compatibility, if a is a matrix, then y is a 1-D
+                ndarray.
         """
         return self._apply_self_tensor_op("ravel", *args, **kwargs)
-    
-    def take(self, *args: Any, **kwargs: Any) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+
+    def take(
+        self, *args: Any, **kwargs: Any
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
         """
         Take elements from an array along an axis.
 
-        When axis is not None, this function does the same thing as “fancy” indexing (indexing arrays using arrays); 
-        however, it can be easier to use if you need elements along a given axis. 
+        When axis is not None, this function does the same thing as “fancy” indexing (indexing arrays using arrays);
+        however, it can be easier to use if you need elements along a given axis.
         A call such as np.take(arr, indices, axis=3) is equivalent to arr[:,:,:,indices,...].
 
         Explained without fancy indexing, this is equivalent to the following use of ndindex, \
@@ -1633,16 +1645,15 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
 
                 * ‘clip’ – clip to the range
 
-                ‘clip’ mode means that all indices that are too large are replaced by the index 
-                that addresses the last element along that axis. 
+                ‘clip’ mode means that all indices that are too large are replaced by the index
+                that addresses the last element along that axis.
                 Note that this disables indexing with negative numbers.
-                
+
         Returns
             out: PhiTensor
                 The returned array has the same type as a.
         """
         return self._apply_self_tensor_op("take", *args, **kwargs)
-    
 
     def softmax(
         self,
@@ -3199,12 +3210,8 @@ class GammaTensor:
             output_state[other.id] = other
 
             child = self.child & other.child
-            max_vals = lazyrepeatarray(
-                data=1, shape=self.child.shape
-            )
-            min_vals = lazyrepeatarray(
-                data=0, shape=self.child.shape
-            )
+            max_vals = lazyrepeatarray(data=1, shape=self.child.shape)
+            min_vals = lazyrepeatarray(data=0, shape=self.child.shape)
             output_ds = self.data_subjects + other.data_subjects
 
         elif is_acceptable_simple_type(other):
@@ -3242,12 +3249,8 @@ class GammaTensor:
             output_state[other.id] = other
 
             child = self.child | other.child
-            max_vals = lazyrepeatarray(
-                data=1, shape=self.child.shape
-            )
-            min_vals = lazyrepeatarray(
-                data=0, shape=self.child.shape
-            )
+            max_vals = lazyrepeatarray(data=1, shape=self.child.shape)
+            min_vals = lazyrepeatarray(data=0, shape=self.child.shape)
             output_ds = self.data_subjects + other.data_subjects
 
         elif is_acceptable_simple_type(other):
