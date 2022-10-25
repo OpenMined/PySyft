@@ -337,6 +337,10 @@ class PhiTensorAncestor(TensorChainManager):
         return self.child.shape
 
     @property
+    def size(self) -> int:
+        return self.child.size
+
+    @property
     def min_vals(self):  # type: ignore
         return self.__class__(self.child.min_vals)
 
