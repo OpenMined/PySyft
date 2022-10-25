@@ -2817,17 +2817,45 @@ class GammaTensor:
             sources=output_state,
         )
 
-    def __and__(self, value) -> GammaTensor:  # type: ignore
+    def __and__(self, other: Any) -> GammaTensor:
+        # relative
+        from .phi_tensor import PhiTensor
+
         output_state = dict()
+        # Add this tensor to the chain
         output_state[self.id] = self
 
-        output_data = self.child & value
+        if isinstance(other, PhiTensor):
+            other = other.gamma
+
+        if isinstance(other, GammaTensor):
+            output_state[other.id] = other
+
+            child = self.child & other.child
+            max_vals = lazyrepeatarray(
+                data=1, shape=self.child.shape
+            )
+            min_vals = lazyrepeatarray(
+                data=0, shape=self.child.shape
+            )
+            output_ds = self.data_subjects + other.data_subjects
+
+        elif is_acceptable_simple_type(other):
+            output_state[np.random.randint(low=0, high=2**31 - 1)] = other
+            max_vals = lazyrepeatarray(data=1, shape=self.child.shape)
+            min_vals = lazyrepeatarray(data=0, shape=self.child.shape)
+
+            child = self.child & other
+            output_ds = self.data_subjects
+        else:
+            print("Type is unsupported:" + str(type(other)))
+            raise NotImplementedError
 
         return GammaTensor(
-            child=output_data,
-            data_subjects=self.data_subjects,
-            min_vals=lazyrepeatarray(data=0, shape=output_data.shape),
-            max_vals=lazyrepeatarray(data=1, shape=output_data.shape),
+            child=child,
+            data_subjects=output_ds,
+            min_vals=min_vals,
+            max_vals=max_vals,
             func_str=GAMMA_TENSOR_OP.LOGICAL_AND.value,
             sources=output_state,
         )

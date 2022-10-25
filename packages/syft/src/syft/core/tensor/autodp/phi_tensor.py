@@ -1720,14 +1720,43 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             data_subjects=new_data_subjects,
         )
 
-    def __and__(self, value) -> PhiTensor:  # type: ignore
-        out_child = self.child & value
-        return PhiTensor(
-            child=out_child,
-            min_vals=lazyrepeatarray(data=0, shape=out_child.shape),
-            max_vals=lazyrepeatarray(data=1, shape=out_child.shape),
-            data_subjects=self.data_subjects,
-        )
+    def __and__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
+        # if the tensor being added is also private
+        if isinstance(other, PhiTensor):
+            if (self.data_subjects != other.data_subjects).any():
+                return self.gamma & other.gamma
+            else:
+                print(self.child)
+                print(other.child)
+                out_child = self.child & other.child
+                return PhiTensor(
+                    child=self.child & other.child,
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(
+                        data=0, shape=out_child.shape
+                    ),
+                    max_vals=lazyrepeatarray(
+                        data=1, shape=out_child.shape
+                    ),
+                )
+
+        # if the tensor being added is a public tensor / int / float / etc.
+        elif is_acceptable_simple_type(other):
+            max_vals = lazyrepeatarray(data=1, shape=self.child.shape)
+            min_vals = lazyrepeatarray(data=0, shape=self.child.shape)
+
+            return PhiTensor(
+                child=self.child & other,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                data_subjects=self.data_subjects,
+            )
+
+        elif isinstance(other, GammaTensor):
+            return self.gamma & other
+        else:
+            print("Type is unsupported:" + str(type(other)))
+            raise NotImplementedError
 
     def __or__(self, value) -> PhiTensor:  # type: ignore
         out_child = self.child | value
