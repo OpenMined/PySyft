@@ -435,8 +435,8 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         # Should be modified to  remove copy
         # https://stackoverflow.com/questions/23253144/numpy-the-array-doesnt-have-its-own-data
         res = self.child.copy()
-        out = res.resize(new_shape, refcheck=refcheck)
-        return self.__class__(out)
+        res.resize(new_shape, refcheck=refcheck)
+        return self.__class__(res)
 
     @property
     def T(self) -> PassthroughTensor:
