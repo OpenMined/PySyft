@@ -69,6 +69,7 @@ SYFT_MAXIMUM_PYTHON_VERSION = (3, 10, 999)
 SYFT_MAXIMUM_PYTHON_VERSION_STRING = "3.10"
 WHITE = "\033[0;37m"
 GREEN = "\033[0;32m"
+YELLOW = "\033[0;33m"
 NO_COLOR = "\033[0;0m"
 WARNING_MSG = f"\033[0;33mWARNING:{NO_COLOR}"
 
@@ -514,7 +515,7 @@ To start your docker service:
 2 - {WHITE}Ubuntu: {GREEN}sudo service docker start {NO_COLOR}
 -------------------------------------------------------------------------------------------------------\n
 """
-        error_msg += f"{WARNING_MSG}Std Output Logs{NO_COLOR} \n" + "\n".join(msg)
+        error_msg += f"{YELLOW}Std Output Logs{NO_COLOR} \n" + "\n".join(msg)
     except Exception as e:  # nosec
         error_msg = str(e)
 
