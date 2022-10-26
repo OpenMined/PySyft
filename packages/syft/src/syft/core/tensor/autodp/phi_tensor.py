@@ -4027,29 +4027,29 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 If a and each choice array are not all broadcastable to the same shape.
 
         """
-        # relative
-        from ..tensor import Tensor
 
         if isinstance(choices, PhiTensor):
-            result = np.choose(choices.child, self.child, mode=mode)
-            output_ds = self.data_subjects.take(choices) + choices.data_subjects
+            if (self.data_subjects != choices.data_subjects).any():
+                return self.gamma.choose(choices.gamma, mode=mode)
+            else:
+                result = self.child.choose(choices.child, mode=mode)
+                output_ds = np.choose(self.child, choices.data_subjects)
         elif isinstance(choices, GammaTensor):
             return self.gamma.choose(choices, mode=mode)
-        elif isinstance(choices, np.ndarray):
-            result = np.choose(choices, self.child, mode=mode)
-            output_ds = self.data_subjects.take(choices)
-        elif isinstance(choices, Tensor):
-            result = np.choose(choices.child.child, self.child, mode=mode)
-            output_ds = self.data_subjects.take(choices) + choices.child.data_subjects
         else:
-            result = np.choose(choices, self.child, mode=mode)
-            output_ds = self.data_subjects.take(choices)
+            raise NotImplementedError(
+                f"Object type: {type(choices)} This leads to a data leak or side channel attack"
+            )
 
         return PhiTensor(
             child=result,
             data_subjects=output_ds,
-            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
-            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
+            min_vals=lazyrepeatarray(
+                data=choices.min_vals.data.min(), shape=result.shape
+            ),
+            max_vals=lazyrepeatarray(
+                data=choices.max_vals.data.max(), shape=result.shape
+            ),
         )
 
     def cumsum(

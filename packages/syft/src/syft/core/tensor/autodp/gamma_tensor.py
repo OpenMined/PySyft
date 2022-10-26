@@ -162,6 +162,13 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         )
         return self_mpc
 
+    @property
+    def shape(self) -> Optional[Tuple[int, ...]]:
+        if hasattr(self, "public_shape"):
+            return self.public_shape
+        else:
+            return None
+
     def _apply_tensor_op(self, other: Any, op_str: str) -> Any:
         # we want to get the return type which matches the attr_path_and_name
         # so we ask lib_ast for the return type name that matches out
@@ -4869,7 +4876,6 @@ class GammaTensor:
 
         """
         # relative
-        from ..tensor import Tensor
         from .phi_tensor import PhiTensor
 
         sources = dict()
@@ -4879,20 +4885,22 @@ class GammaTensor:
 
         if isinstance(choices, GammaTensor):
             sources[choices.id] = choices
-            result = np.choose(choices.child, self.child, mode=mode)
-            output_ds = self.data_subjects.take(choices.child) + choices.data_subjects
-        elif isinstance(choices, Tensor):
-            result = np.choose(choices.child.child, self.child, mode=mode)
-            output_ds = self.data_subjects.take(choices) + choices.child.data_subjects
+            result = np.choose(self.child, choices.child, mode=mode)
+            output_ds = np.choose(self.child, choices.data_subjects)
         else:
-            result = np.choose(choices, self.child, mode=mode)
-            output_ds = self.data_subjects.take(choices)
+            raise NotImplementedError(
+                f"Object type: {type(choices)} This leads to a data leak or side channel attack"
+            )
 
         return GammaTensor(
             child=result,
             data_subjects=output_ds,
-            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
-            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
+            min_vals=lazyrepeatarray(
+                data=choices.min_vals.data.min(), shape=result.shape
+            ),
+            max_vals=lazyrepeatarray(
+                data=choices.max_vals.data.max(), shape=result.shape
+            ),
             sources=sources,
             func_str=GAMMA_TENSOR_OP.CHOOSE.value,
         )

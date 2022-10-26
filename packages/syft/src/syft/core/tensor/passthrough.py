@@ -660,12 +660,20 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         choices: Sequence[Union[PassthroughTensor, np.ndarray]],
         mode: Optional[str] = "raise",
     ) -> PassthroughTensor:
-        return self.__class__(
-            self.child.choose(
-                choices,
-                mode=mode,
+        if is_acceptable_simple_type(choices):
+            return self.__class__(
+                self.child.choose(
+                    choices,
+                    mode=mode,
+                )
             )
-        )
+        else:
+            return self.__class__(
+                self.child.choose(
+                    choices.child,
+                    mode=mode,
+                )
+            )
 
     def decode(self) -> AcceptableSimpleType:
         return self.child.decode()
