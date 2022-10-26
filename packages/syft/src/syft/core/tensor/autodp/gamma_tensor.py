@@ -764,21 +764,6 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         """
         return self._apply_self_tensor_op("ptp", *args, **kwargs)
 
-    def squeeze(
-        self,
-        *args: Any,
-        **kwargs: Any,
-    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-        """Apply the "squeeze" operation on self.
-
-        Args:
-            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
-
-        Returns:
-            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
-        """
-        return self._apply_self_tensor_op("squeeze", *args, **kwargs)
-
     def __lshift__(
         self,
         other: Union[
