@@ -2516,9 +2516,15 @@ def check(
 
 
 def check_status(
-    ip_addresses: TypeList[str], wait: bool = False, silent: bool = False
+    ip_addresses: Union[str, TypeList[str]], wait: bool = False, silent: bool = False
 ) -> None:
+
+    # Check if ip_addresses is str, then convert to list
+    if ip_addresses and isinstance(ip_addresses, str):
+        ip_addresses = [ip_addresses]
+
     console = rich.get_console()
+
     if len(ip_addresses) == 0:
         headers = {"User-Agent": "curl/7.79.1"}
         print("Detecting External IP...")
@@ -2539,7 +2545,9 @@ def check_status(
                 print("Checking...")
             while not status:
                 if not silent:
-                    with Live(table, refresh_per_second=4, screen=True) as live:
+                    with Live(
+                        table, refresh_per_second=2, screen=True, auto_refresh=False
+                    ) as live:
                         max_timeout -= 1
                         if max_timeout % 5 == 0:
                             status, table_contents = get_health_checks(ip_address)
