@@ -2545,7 +2545,9 @@ def check_status(
                 print("Checking...")
             while not status:
                 if not silent:
-                    with Live(table, refresh_per_second=4, screen=True) as live:
+                    with Live(
+                        table, refresh_per_second=2, screen=True, auto_refresh=False
+                    ) as live:
                         max_timeout -= 1
                         if max_timeout % 5 == 0:
                             status, table_contents = get_health_checks(ip_address)
