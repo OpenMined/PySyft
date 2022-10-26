@@ -511,10 +511,10 @@ To install docker, execute the following steps:\n
 -------------------------------------------------------------------------------------------------------\n
 To start your docker service:
 1 - {WHITE}MacOS/Windows: One can start docker by clicking on the "Docker" icon in your Applications folder.{NO_COLOR}
-2 - {WHITE}Ubuntu: {GREEN}sudo service docker start {NO_COLOR}\n
+2 - {WHITE}Ubuntu: {GREEN}sudo service docker start {NO_COLOR}
 -------------------------------------------------------------------------------------------------------\n
 """
-        error_msg += "Debug Output: \n" + "\n".join(msg)
+        error_msg += f"{WARNING_MSG}Std Output Logs{NO_COLOR} \n" + "\n".join(msg)
     except Exception as e:  # nosec
         error_msg = str(e)
 
