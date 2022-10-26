@@ -585,6 +585,12 @@ class DataSubjectArray:
     def log(self) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)
 
+    def __round__(self, n: Optional[int] = None) -> DataSubjectArray:
+        return DataSubjectArray(self.data_subjects)
+
+    def round(self, n: Optional[int] = None) -> DataSubjectArray:
+        return DataSubjectArray(self.data_subjects)
+
     def real(self) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)
 
@@ -592,6 +598,9 @@ class DataSubjectArray:
         return (self - np.mean(self)) * (self - np.mean(self))
 
     def sqrt(self, *args: Any, **kwargs: Any) -> DataSubjectArray:
+        return DataSubjectArray(self.data_subjects)
+
+    def rint(self, *args: Any, **kwargs: Any) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs) -> ArrayLike:  # type: ignore
