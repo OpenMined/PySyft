@@ -173,7 +173,7 @@ class QuickstartUI:
                 + "install Syft and optionally start a Grid server."
             )
             html += (
-                '<br />📖 <a href="/files/01-install-wizard.ipynb">Click to start'
+                '<br />📖 <a href="./01-install-wizard.ipynb">Click to start '
                 + "Install 🧙🏽‍♂️ Wizard</a></div></blockquote>"
             )
             html += "<br />"
