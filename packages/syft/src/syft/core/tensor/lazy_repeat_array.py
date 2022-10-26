@@ -507,10 +507,27 @@ def compute_min_max(
         min_vals = lazyrepeatarray(data=min_v, shape=dummy_res.shape)
         max_vals = lazyrepeatarray(data=max_v, shape=dummy_res.shape)
     elif op_str == "choose":
+        # relative
+        from .tensor import Pointer
+
         dummy_res = np.ones(x_min_vals.shape, dtype=np.int64)
-        dummy_res = dummy_res.choose(*args, **kwargs)
-        min_vals = lazyrepeatarray(data=x_min_vals.data.min(), shape=dummy_res.shape)
-        max_vals = lazyrepeatarray(data=x_max_vals.data.max(), shape=dummy_res.shape)
+        if isinstance(args[0], Pointer):
+            temp_args = (np.ones(args[0].shape), *args[1:])  # type: ignore
+            dummy_res = dummy_res.choose(*temp_args, **kwargs)
+            min_vals = lazyrepeatarray(
+                data=x_min_vals.data.min(), shape=dummy_res.shape
+            )
+            max_vals = lazyrepeatarray(
+                data=x_max_vals.data.max(), shape=dummy_res.shape
+            )
+        else:
+            dummy_res = dummy_res.choose(*args, **kwargs)
+            min_vals = lazyrepeatarray(
+                data=x_min_vals.data.min(), shape=dummy_res.shape
+            )
+            max_vals = lazyrepeatarray(
+                data=x_max_vals.data.max(), shape=dummy_res.shape
+            )
     elif op_str == "min":
         dummy_res = np.empty(x_min_vals.shape).min(*args, **kwargs)
         min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
