@@ -62,7 +62,6 @@ from .lib import check_jupyter_server
 from .lib import check_login_page
 from .lib import docker_desktop_memory
 from .lib import generate_process_status_table
-from .lib import generate_user_table
 from .lib import gitpod_url
 from .lib import hagrid_root
 from .lib import is_gitpod
@@ -354,16 +353,24 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
         print(f"Error: {e}\n\n")
         return
 
-def process_cmd(cmds, dry_run,silent, from_rendered_dir):
+
+def process_cmd(
+    cmds: TypeList[str], dry_run: bool, silent: bool, from_rendered_dir: bool
+) -> None:
+    # console = rich.get_console()
     process_list: TypeList = []
-    #username, password = (
-    #    extract_username_and_pass(cmds[0]) if len(cmds) > 0 else ("-", "-")
-    #)
     cwd = (
         os.path.join(GRID_SRC_PATH, RENDERED_DIR)
         if from_rendered_dir
         else GRID_SRC_PATH
     )
+
+    username, password = (
+        extract_username_and_pass(cmds[0]) if len(cmds) > 0 else ("-", "-")
+    )
+    # display VM credentials
+    # console.print(generate_user_table(username=username, password=password))
+
     def enqueue_output(out: Any, queue: Queue) -> None:
         for line in iter(out.readline, b""):
             queue.put(line)
@@ -373,7 +380,7 @@ def process_cmd(cmds, dry_run,silent, from_rendered_dir):
         if dry_run:
             print("Running: \n", hide_password(cmd=cmd))
             continue
-        
+
         # use powershell if environment is Windows
         cmd_to_exec = ["powershell.exe", "-Command", cmd] if is_windows() else cmd
 
@@ -391,7 +398,7 @@ def process_cmd(cmds, dry_run,silent, from_rendered_dir):
                 process_list.append((ip_address, process, jupyter_token))
             else:
                 display_jupyter_token(cmd)
-                if silent:            
+                if silent:
                     ON_POSIX = "posix" in sys.builtin_module_names
 
                     process = subprocess.Popen(  # nosec
@@ -400,33 +407,40 @@ def process_cmd(cmds, dry_run,silent, from_rendered_dir):
                         stderr=subprocess.PIPE,
                         cwd=cwd,
                         close_fds=ON_POSIX,
-                        shell=True  
+                        shell=True,
                     )
 
-                    print(process.pid, process.poll())
+                    # print(process.pid, process.poll())
 
                     queue: Queue = Queue()
-                    #thread_1 = Thread(target=enqueue_output, args=(process.stdout, queue))
-                    thread_2 = Thread(target=enqueue_output, args=(process.stderr, queue))
+                    # thread_1 = Thread(target=enqueue_output, args=(process.stdout, queue))
+                    thread_2 = Thread(
+                        target=enqueue_output, args=(process.stderr, queue)
+                    )
                     # thread_3 = Thread(target=enqueue_output, args=(process.stdin, queue))
-                    #thread_1.daemon = True  # thread dies with the program
-                    #thread_1.start()
+                    # thread_1.daemon = True  # thread dies with the program
+                    # thread_1.start()
                     thread_2.daemon = True  # thread dies with the program
                     thread_2.start()
                     # thread_3.daemon = True  # thread dies with the program
                     # thread_3.start()
 
-                    print("Queue started")
                     while process.poll() != 0:
                         while True:
                             if queue.empty():
                                 break
                             line = queue.get()
                             line = str(line, encoding="utf-8").strip()
-                            print(f"Logs: {line}", end='\r', flush=True)
 
-                            if "Building[" in line:
-                                print("...............Building............", line, flush=True)
+                            if not silent:
+                                print(f"Logs: {line}", end="\r", flush=True)
+
+                            # if "Building[" in line:
+                            #    print(
+                            #        "...............Building............",
+                            #        line,
+                            #        flush=True,
+                            #    )
 
                 else:
                     subprocess.run(  # nosec
@@ -444,8 +458,9 @@ def process_cmd(cmds, dry_run,silent, from_rendered_dir):
         # save vm details as json
         save_vm_details_as_json(username, password, process_list)
 
+
 def execute_commands(
-    cmds: TypeList,
+    cmds: Union[TypeList[str], TypeDict[str, TypeList[str]]],
     dry_run: bool = False,
     silent: bool = False,
     from_rendered_dir: bool = False,
@@ -458,10 +473,6 @@ def execute_commands(
     """
 
     console = rich.get_console()
-    # display VM credentials
-    #console.print(generate_user_table(username=username, password=password))
-
-    time.sleep(10)
     if isinstance(cmds, dict):
         for cmd_name, cmd in cmds.items():
             with console.status(cmd_name) as console_status:
@@ -469,16 +480,18 @@ def execute_commands(
                     cmds=cmd,
                     dry_run=dry_run,
                     silent=silent,
-                    from_rendered_dir=from_rendered_dir
+                    from_rendered_dir=from_rendered_dir,
                 )
+                print("✅ ", cmd_name)
                 console_status.stop()
     else:
         process_cmd(
             cmds=cmds,
             dry_run=dry_run,
             silent=silent,
-            from_rendered_dir=from_rendered_dir
+            from_rendered_dir=from_rendered_dir,
         )
+
 
 def display_vm_status(process_list: TypeList) -> None:
     """Display the status of the processes being executed on the VM.
@@ -855,7 +868,7 @@ def create_launch_cmd(
     verb: GrammarVerb,
     kwargs: TypeDict[str, Any],
     ignore_docker_version_check: Optional[bool] = False,
-) -> Union[str, TypeList[str]]:
+) -> Union[str, TypeList[str], TypeDict[str, TypeList[str]]]:
     parsed_kwargs: TypeDict[str, Any] = {}
     host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host
@@ -1440,7 +1453,7 @@ def create_launch_docker_cmd(
     kwargs: TypeDict[str, Any],
     tail: bool = True,
     silent: bool = False,
-) -> str:
+) -> TypeDict[str, TypeList[str]]:
     host_term = verb.get_named_term_hostgrammar(name="host")
     node_name = verb.get_named_term_type(name="node_name")
     node_type = verb.get_named_term_type(name="node_type")
@@ -1535,9 +1548,9 @@ def create_launch_docker_cmd(
     if "test" in kwargs and kwargs["test"] is True:
         envs["S3_VOLUME_SIZE_MB"] = "100"  # GitHub CI is small
 
-    if kwargs.get('release',"") == "development":
-        envs['RABBITMQ_MANAGEMENT'] = "-management"
-    
+    if kwargs.get("release", "") == "development":
+        envs["RABBITMQ_MANAGEMENT"] = "-management"
+
     if "release" in kwargs:
         envs["RELEASE"] = kwargs["release"]
 
@@ -1555,10 +1568,6 @@ def create_launch_docker_cmd(
         cmd += "; "
     else:
         cmd += " ".join(args)
-
-    build_cmd = ""
-    pull_cmd = ""
-    up_cmd = ""
 
     cmd += " docker compose -p " + snake_name
 
@@ -1617,44 +1626,44 @@ def create_launch_docker_cmd(
     except Exception:  # nosec
         pass
 
-    def pull_command(cmd,kwargs):
+    def pull_command(cmd: str, kwargs: TypeDict[str, Any]) -> TypeList[str]:
         pull_cmd = str(cmd)
-        if kwargs['release'] == "production":
+        if kwargs["release"] == "production":
             pull_cmd += " --file docker-compose.yml"
         else:
             pull_cmd += " --file docker-compose.pull.yml"
         pull_cmd += " pull"
-        return pull_cmd
+        return [pull_cmd]
 
-    def build_command(cmd, kwargs):
+    def build_command(cmd: str) -> TypeList[str]:
         build_cmd = str(cmd)
         build_cmd += " --file docker-compose.build.yml"
         build_cmd += " --file docker-compose.dev.yml"
         build_cmd += " build"
-        return build_cmd
-    
-    
-    def up_command(cmd, tail):
+        return [build_cmd]
+
+    def deploy_command(cmd: str, tail: bool) -> TypeList[str]:
         up_cmd = str(cmd)
         up_cmd += " up"
         if not tail:
             up_cmd += " -d"
-        return up_cmd
-    
+        return [up_cmd]
 
-    my_pull_command = pull_command(cmd, kwargs)
+    final_commands = {}
+    final_commands["Pulling"] = pull_command(cmd, kwargs)
+
     cmd += " --file docker-compose.yml"
-
     if "tls" in kwargs and kwargs["tls"] is True:
         cmd += " --file docker-compose.tls.yml"
     if "test" in kwargs and kwargs["test"] is True:
         cmd += " --file docker-compose.test.yml"
 
-    my_build_command = build_command(cmd, kwargs)
-    my_up_command = up_command(cmd, kwargs)
-    return {"Pulling Images": [my_pull_command],
-            "Building Images": [my_build_command],
-            "Deploying Images": [my_up_command]}
+    if build:
+        my_build_command = build_command(cmd)
+        final_commands["Building"] = my_build_command
+
+    final_commands["Deploying"] = deploy_command(cmd, tail)
+    return final_commands
 
 
 def create_launch_vagrant_cmd(verb: GrammarVerb) -> str:
