@@ -1262,8 +1262,12 @@ def test_and_single_data_subjects(
     # TODO: As we currently convert all operations to gamma tensor,
     # so we include gammatensor for the assert, it should be reverted back to PhiTensor
     assert isinstance(result, (PT, GammaTensor)), "And of two PTs is wrong type"
-    assert result.max_vals.data == 1, "And of two PTs results in incorrect max_vals"
-    assert result.min_vals.data == 0, "And of two PTs results in incorrect min_vals"
+    assert (
+        result.child.min() >= result.min_vals.data
+    ), "And of two PTs results in incorrect max_vals"
+    assert (
+        result.child.max() <= result.max_vals.data
+    ), "And of two PTs results in incorrect min_vals"
 
 
 @pytest.mark.arithmetic
@@ -1285,18 +1289,18 @@ def test_and_public(
     output = reference_tensor & 5
     assert output.shape == reference_tensor.shape
     assert (output.child == reference_data & 5).all()
-    assert output.min_vals.data == 0
+    assert output.child.min() >= output.min_vals.data
     assert output.min_vals.shape == reference_tensor.shape
-    assert output.max_vals.data == 1
+    assert output.child.max() <= output.max_vals.data
     assert output.max_vals.shape == reference_tensor.shape
     assert (output.data_subjects == reference_tensor.data_subjects).all()
 
     output = reference_tensor & -5
     assert output.shape == reference_tensor.shape
     assert (output.child == reference_data & -5).all()
-    assert output.min_vals.data == 0
+    assert output.child.min() >= output.min_vals.data
     assert output.min_vals.shape == reference_tensor.shape
-    assert output.max_vals.data == 1
+    assert output.child.max() <= output.max_vals.data
     assert output.max_vals.shape == reference_tensor.shape
     assert (output.data_subjects == reference_tensor.data_subjects).all()
 
@@ -1331,9 +1335,9 @@ def test_and_private(
     output = reference_tensor & tensor2
     assert output.shape == reference_tensor.shape
     assert (output.child == reference_data & new_reference_data).all()
-    assert output.min_vals.data == 0
+    assert output.child.min() >= output.min_vals.data
     assert output.min_vals.shape == reference_tensor.shape
-    assert output.max_vals.data == 1
+    assert output.child.max() <= output.max_vals.data
     assert output.max_vals.shape == reference_tensor.shape
     assert (output.data_subjects == reference_tensor.data_subjects).all()
 
