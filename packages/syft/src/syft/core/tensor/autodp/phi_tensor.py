@@ -3990,22 +3990,13 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             return self.gamma.choose(choices, mode=mode)
         else:
             result = np.choose(choices, self.child, mode=mode)
-            if isinstance(self.min_vals, lazyrepeatarray):
-                minv = lazyrepeatarray(
-                    data=self.min_vals.data.min(), shape=result.shape
-                )
-                maxv = lazyrepeatarray(
-                    data=self.max_vals.data.max(), shape=result.shape
-                )
-            else:
-                minv, maxv = self.min_vals, self.max_vals
             output_ds = self.data_subjects.take(choices)
 
         return PhiTensor(
             child=result,
             data_subjects=output_ds,
-            min_vals=minv,
-            max_vals=maxv,
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
         )
 
     def cumsum(

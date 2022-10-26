@@ -4823,7 +4823,7 @@ class GammaTensor:
         if isinstance(choices, GammaTensor):
             sources[choices.id] = choices
             result = np.choose(choices.child, self.child, mode=mode)
-            output_ds = self.data_subjects.take(choices) + choices.data_subjects
+            output_ds = self.data_subjects.take(choices.child) + choices.data_subjects
 
         else:
             result = np.choose(choices, self.child, mode=mode)
