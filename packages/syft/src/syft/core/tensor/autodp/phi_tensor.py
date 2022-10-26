@@ -3443,7 +3443,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         output_data = self.child.flatten(order=order)
         return PhiTensor(
             child=output_data,
-            data_subjects=self.data_subjects.reshape(output_data.shape),
+            data_subjects=self.data_subjects.flatten(order=order),
             min_vals=lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape),
             max_vals=lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape),
         )
