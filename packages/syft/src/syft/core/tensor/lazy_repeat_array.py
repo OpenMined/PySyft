@@ -504,8 +504,10 @@ def compute_min_max(
         max_vals = lazyrepeatarray(data=x_max_vals.data.max(), shape=dummy_res.shape)
     elif op_str == "clip":
         dummy_res = np.empty(x_min_vals.shape).clip(*args, **kwargs)
-        min_vals = lazyrepeatarray(data=dummy_res.min(), shape=dummy_res.shape)
-        max_vals = lazyrepeatarray(data=dummy_res.max(), shape=dummy_res.shape)
+        min_v = np.clip(x_min_vals.data, *args, **kwargs)
+        max_v = np.clip(x_max_vals.data, *args, **kwargs)
+        min_vals = lazyrepeatarray(data=min_v, shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(data=max_v, shape=dummy_res.shape)
     elif op_str == "choose":
         dummy_res = np.ones(x_min_vals.shape, dtype=np.int64)
         dummy_res = dummy_res.choose(*args, **kwargs)

@@ -3442,21 +3442,12 @@ class GammaTensor:
         output_state[self.id] = self
 
         result = self.child.mean(axis, **kwargs)
-        minv = (
-            self.min_vals.data
-            if isinstance(self.min_vals, lazyrepeatarray)
-            else self.min_vals
-        )
-        maxv = (
-            self.max_vals.data
-            if isinstance(self.max_vals, lazyrepeatarray)
-            else self.max_vals
-        )
+
         return GammaTensor(
             child=result,
             data_subjects=self.data_subjects.mean(axis, **kwargs),
-            min_vals=lazyrepeatarray(data=minv, shape=result.shape),
-            max_vals=lazyrepeatarray(data=(maxv + minv) / 2, shape=result.shape),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
             sources=output_state,
             func_str=GAMMA_TENSOR_OP.MEAN.value,
         )
