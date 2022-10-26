@@ -102,6 +102,7 @@ def generate_ops() -> Dict[GAMMA_TENSOR_OP, Callable]:
         GAMMA_TENSOR_OP.CUMPROD: jnp.cumprod,
         GAMMA_TENSOR_OP.SQRT: jnp.sqrt,
         GAMMA_TENSOR_OP.ABS: jnp.abs,
+        GAMMA_TENSOR_OP.CHOOSE: jnp.choose,
         GAMMA_TENSOR_OP.CLIP: jnp.clip,
         GAMMA_TENSOR_OP.COPY: jnp.copy,
         GAMMA_TENSOR_OP.TAKE: jnp.take,

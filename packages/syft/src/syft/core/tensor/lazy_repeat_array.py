@@ -414,6 +414,10 @@ class lazyrepeatarray:
             data=self.data.transpose(*args, **kwargs), shape=dummy_res.shape
         )
 
+    def clip(self, *args: Any, **kwargs: Any) -> lazyrepeatarray:
+        res = np.array(self.to_numpy().clip(*args, **kwargs))
+        return lazyrepeatarray(data=res, shape=res.shape)
+
 
 # As the min and max values calculation is the same regardless of the tensor type,
 # We centralize this method as baseline for calculation for min/max values
@@ -492,6 +496,38 @@ def compute_min_max(
         dummy_res = np.empty(x_min_vals.shape).repeat(*args, **kwargs)
         min_vals = lazyrepeatarray(data=x_min_vals.data.min(), shape=dummy_res.shape)
         max_vals = lazyrepeatarray(data=x_max_vals.data.max(), shape=dummy_res.shape)
+    elif op_str == "diagonal":
+        dummy_res = np.empty(x_min_vals.shape).diagonal(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=x_min_vals.data.min(), shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(data=x_max_vals.data.max(), shape=dummy_res.shape)
+    elif op_str == "clip":
+        dummy_res = np.empty(x_min_vals.shape).clip(*args, **kwargs)
+        min_v = np.clip(x_min_vals.data, *args, **kwargs)
+        max_v = np.clip(x_max_vals.data, *args, **kwargs)
+        min_vals = lazyrepeatarray(data=min_v, shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(data=max_v, shape=dummy_res.shape)
+    elif op_str == "choose":
+        # relative
+        from .tensor import Pointer
+
+        dummy_res = np.ones(x_min_vals.shape, dtype=np.int64)
+        if isinstance(args[0], Pointer):
+            temp_args = (np.ones(args[0].shape), *args[1:])  # type: ignore
+            dummy_res = dummy_res.choose(*temp_args, **kwargs)
+            min_vals = lazyrepeatarray(
+                data=x_min_vals.data.min(), shape=dummy_res.shape
+            )
+            max_vals = lazyrepeatarray(
+                data=x_max_vals.data.max(), shape=dummy_res.shape
+            )
+        else:
+            dummy_res = dummy_res.choose(*args, **kwargs)
+            min_vals = lazyrepeatarray(
+                data=x_min_vals.data.min(), shape=dummy_res.shape
+            )
+            max_vals = lazyrepeatarray(
+                data=x_max_vals.data.max(), shape=dummy_res.shape
+            )
     elif op_str == "min":
         dummy_res = np.empty(x_min_vals.shape).min(*args, **kwargs)
         min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
@@ -506,6 +542,10 @@ def compute_min_max(
     elif op_str == "copy":
         min_vals = x_min_vals.copy(*args, **kwargs)  # type: ignore
         max_vals = x_max_vals.copy(*args, **kwargs)  # type: ignore
+    elif op_str == "mean":
+        dummy_res = np.empty(x_min_vals.shape).mean(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
     elif op_str == "round":
         min_vals = lazyrepeatarray(
             data=x_min_vals.data.round(*args, **kwargs), shape=x_min_vals.shape
@@ -560,6 +600,26 @@ def compute_min_max(
             data=0.25 * (x_max_vals.data - x_min_vals.data) ** 2,
             shape=dummy_res.shape,
         )
+    elif op_str == "take":
+        dummy_res = np.empty(x_min_vals.shape).take(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
+    elif op_str == "flatten":
+        dummy_res = np.empty(x_min_vals.shape).flatten(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
+    elif op_str == "ravel":
+        dummy_res = np.empty(x_min_vals.shape).ravel(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
+    elif op_str == "compress":
+        dummy_res = np.empty(x_min_vals.shape).compress(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
+    elif op_str == "squeeze":
+        dummy_res = np.empty(x_min_vals.shape).squeeze(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
     elif op_str == "resize":
         dummy_res = np.empty(x_min_vals.shape)
         dummy_res.resize(*args, **kwargs)
@@ -571,6 +631,10 @@ def compute_min_max(
         max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
     elif op_str == "reshape":
         dummy_res = np.empty(x_min_vals.shape).reshape(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
+    elif op_str == "__getitem__":
+        dummy_res = np.empty(x_min_vals.shape).__getitem__(*args, **kwargs)
         min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
         max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
     elif op_str == "__mod__":
@@ -630,8 +694,83 @@ def compute_min_max(
         # TODO: should modify for a tighter found for xor
         _max = int(max(x_max_vals.data, other_max))
         _min = int(min(x_min_vals.data, other_min))
-        _max_vals = (2 ** (_min ^ _max).bit_length()) - 1
+        _max_vals = max(
+            (2 ** (_min ^ _max).bit_length()) - 1, (2 ** (_max).bit_length()) - 1
+        )
         _min_vals = min(0, _min)
+
+        min_vals = lazyrepeatarray(data=_min_vals, shape=x_min_vals.shape)
+        max_vals = lazyrepeatarray(data=_max_vals, shape=x_max_vals.shape)
+
+    elif op_str == "ptp":
+        dummy_res = np.empty(x_min_vals.shape).ptp(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=0, shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(
+            data=x_max_vals.data - x_min_vals.data, shape=dummy_res.shape
+        )
+
+    elif op_str in ["argmax", "argmin"]:
+        dummy_res = np.empty(x_min_vals.shape)
+        if len(args) or "axis" in kwargs:
+            max_value = np.size(dummy_res, *args, **kwargs) - 1
+        else:
+            max_value = dummy_res.size - 1
+        min_vals = lazyrepeatarray(data=0, shape=x_min_vals.shape)
+        max_vals = lazyrepeatarray(data=max_value, shape=x_min_vals.shape)
+    elif op_str == "__abs__":
+        min_val = abs(x_min_vals.data)
+        max_val = abs(x_max_vals.data)
+
+        new_min_val = min(min_val, max_val)
+        new_max_val = max(min_val, max_val)
+        min_vals = lazyrepeatarray(data=new_min_val, shape=x_min_vals.shape)
+        max_vals = lazyrepeatarray(data=new_max_val, shape=x_max_vals.shape)
+    elif op_str in ["all", "any"]:
+        dummy_res = getattr(np.empty(x_min_vals.shape), op_str)(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=0, shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(data=1, shape=dummy_res.shape)
+    elif op_str == "__or__":
+        if is_acceptable_simple_type(other):
+            if isinstance(other, np.ndarray):
+                other_max, other_min = other.max(), other.min()
+            else:
+                other_max, other_min = other, other
+        elif hasattr(other, "min_vals") and hasattr(other, "max_vals"):
+            other_max = other.max_vals.data  # type: ignore
+            other_min = other.min_vals.data  # type: ignore
+        else:
+            raise NotImplementedError(
+                f"{op_str} not implemented in LazyRepeatArray for {type(other)}."
+            )
+
+        # TODO: should modify for a tighter found for xor
+        _max = int(max(x_max_vals.data, other_max))
+        _min_vals = int(min(x_min_vals.data, other_min))
+        _max_vals = (2 ** (_max).bit_length()) - 1
+
+        min_vals = lazyrepeatarray(data=_min_vals, shape=x_min_vals.shape)
+        max_vals = lazyrepeatarray(data=_max_vals, shape=x_max_vals.shape)
+    elif op_str == "__and__":
+        if is_acceptable_simple_type(other):
+            if isinstance(other, np.ndarray):
+                other_max, other_min = other.max(), other.min()
+            else:
+                other_max, other_min = other, other
+        elif hasattr(other, "min_vals") and hasattr(other, "max_vals"):
+            other_max = other.max_vals.data  # type: ignore
+            other_min = other.min_vals.data  # type: ignore
+        else:
+            raise NotImplementedError(
+                f"{op_str} not implemented in LazyRepeatArray for {type(other)}."
+            )
+
+        # TODO: should modify for a tighter found for and
+        _max_vals = max(x_max_vals.data, other_max)
+        _min = min(x_min_vals.data, other_min)
+        if x_min_vals.data < 0 and other_min < 0:
+            _min_vals = -(2 ** _min.bit_length())
+        else:
+            _min_vals = min(0, _min)
 
         min_vals = lazyrepeatarray(data=_min_vals, shape=x_min_vals.shape)
         max_vals = lazyrepeatarray(data=_max_vals, shape=x_max_vals.shape)
