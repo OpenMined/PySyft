@@ -423,97 +423,17 @@ class PhiTensorAncestor(TensorChainManager):
 
             raise TypeError(msg)
 
-        # Check 2: If data_subjects == None, then run the entity creation tutorial
-        if data_subjects is None:
-            if skip_blocking_checks:
-                raise Exception(
-                    "Error: 'data_subjects' argument to .private() must not be None!"
-                )
-            print(
-                "ALERT: You didn't pass in any data_subjects. Launching data subject wizard...\n"
-            )
-            data_subjects = data_subject_creation_wizard(self.child)
+        # Check 2: Have Data Subjects been allotted properly?
+        data_subjects = check_data_subjects(
+            data=self.child,
+            data_subjects=data_subjects,
+            skip_blocking_checks=skip_blocking_checks,
+        )
 
-        # Check 3: If data_subjects is a string, make it an array of the correct shape
-        if isinstance(data_subjects, str):
-            data_subjects = DataSubjectArray.from_objs([data_subjects] * self.size)
-        elif isinstance(data_subjects, DataSubjectArray):
-            data_subjects = np.array(data_subjects)
-        # Check 4: If data_subjects are a list, are the items strings or DataSubjectArray objects.
-        # If they're strings lets create DataSubjectArray objects.
-
-        # if isinstance(data_subjects, (list, tuple)):
-        #     data_subjects = np.array(data_subjects)
-
-        # if len(data_subjects) != 1 and data_subjects.shape != self.shape:
-        #     raise Exception(
-        #         "Entities shape doesn't match data shape. If you're"
-        #         " going to pass in something other than 1 entity for the"
-        #         " entire tensor or one entity per row, you're going to need"
-        #         " to make the np.ndarray of data_subjects have the same shape as"
-        #         " the tensor you're calling .private() on. Try again."
-        #     )
-
-        if not isinstance(data_subjects, DataSubjectArray):
-            data_subjects = DataSubjectArray.from_objs(data_subjects)
-
-        # SKIP check temporarily
-        # for entity in one_hot_lookup:
-        #     if not isinstance(entity, (np.integer, str, DataSubject)):
-        #         raise ValueError(
-        #             f"Expected DataSubject to be either string or DataSubject object, but type is {type(entity)}"
-        #         )
-        if data_subjects.shape != self.shape:
-            if data_subjects.size == 1:
-                # 1 data subject for the entire tensor.
-                data_subjects = np.broadcast_to(data_subjects, self.shape)
-            if (
-                data_subjects.shape[0] == self.shape[0]
-                and len(data_subjects.shape) == 1
-            ):
-                # e.g. 1 data subject per image for 10 imgs: child = (10, 25, 25) and data_subjects = (10,)
-                data_subjects = np.broadcast_to(data_subjects, self.shape)
-            else:
-                raise Exception(
-                    "Data Subject shape doesn't match the shape of your data. Please provide either 1 data subject per "
-                    "data point, or 1 data subject per "
-                )
-                raise ValueError(
-                    f"DataSubjects shape: {data_subjects.shape} should match data shape: {self.shape} "
-                    f"or first dim of data shape: {self.shape[0]}"
-                )
-
-        if isinstance(min_val, (bool, int, float)):
-            min_vals = np.array(min_val).ravel()  # make it 1D
-            if isinstance(min_val, int):
-                min_vals = min_vals.astype(DEFAULT_INT_NUMPY_TYPE)  # type: ignore
-            if isinstance(min_val, float):
-                min_vals = min_vals.astype(DEFAULT_FLOAT_NUMPY_TYPE)  # type: ignore
-        else:
-            raise Exception(
-                "min_vals should be either float,int,bool got "
-                + str(type(min_val))
-                + " instead."
-            )
-
-        if isinstance(max_val, (bool, int, float)):
-            max_vals = np.array(max_val).ravel()  # make it 1D
-            if isinstance(max_val, int):
-                max_vals = max_vals.astype(DEFAULT_INT_NUMPY_TYPE)  # type: ignore
-            if isinstance(max_val, float):
-                max_vals = max_vals.astype(DEFAULT_FLOAT_NUMPY_TYPE)  # type: ignore
-        else:
-            raise Exception(
-                "min_vals should be either float,int,bool got "
-                + str(type(max_val))
-                + " instead."
-            )
-
-        if min_vals.shape != self.child.shape:
-            min_vals = lazyrepeatarray(min_vals, self.child.shape)
-
-        if max_vals.shape != self.child.shape:
-            max_vals = lazyrepeatarray(max_vals, self.child.shape)
+        # Check 3: Min/Max val metadata
+        min_vals, max_vals = check_min_max_vals(
+            min_val, max_val, target_shape=self.child.shape
+        )
 
         unique_data_subjects = len(data_subjects.sum())
         if unique_data_subjects == 1:
@@ -534,3 +454,85 @@ class PhiTensorAncestor(TensorChainManager):
             )  # type: ignore
 
         return self
+
+
+def check_data_subjects(
+    data: np.ndarray, data_subjects: Optional[Any], skip_blocking_checks: bool
+) -> np.ndarray:
+    # Check 2: If data_subjects == None, then run the entity creation tutorial
+    if data_subjects is None:
+        if skip_blocking_checks:
+            raise Exception(
+                "Error: 'data_subjects' argument to .private() must not be None!"
+            )
+        print(
+            "ALERT: You didn't pass in any data_subjects. Launching data subject wizard...\n"
+        )
+        data_subjects = data_subject_creation_wizard(data)
+
+    # Check 3: If data_subjects is a string, make it an array of the correct shape
+    if isinstance(data_subjects, str):
+        data_subjects = DataSubjectArray.from_objs([data_subjects] * data.size)
+
+    if isinstance(data_subjects, DataSubjectArray):
+        # if data.size == 1, data_subjects will be a DSA instead of a np array
+        data_subjects = np.array(data_subjects)
+
+    if not isinstance(data_subjects, DataSubjectArray):
+        data_subjects = DataSubjectArray.from_objs(data_subjects)
+
+    if data_subjects.shape != data.shape:
+        if data_subjects.size == 1:
+            # 1 data subject for the entire tensor.
+            data_subjects = np.broadcast_to(data_subjects, data.shape)
+        elif data_subjects.shape[0] == data.shape[0] and len(data_subjects.shape) == 1:
+            # e.g. 1 data subject per image for 10 imgs: child = (10, 25, 25) and data_subjects = (10,)
+
+            axis_count = len(data.shape)
+            axes_to_expand = list(range(axis_count))[1:]
+            data_subjects = np.expand_dims(data_subjects, axis=axes_to_expand)
+
+            data_subjects = np.broadcast_to(data_subjects, data.shape)
+        else:
+            raise Exception(
+                "Data Subject shape doesn't match the shape of your data. Please provide either 1 data subject per "
+                "data point, or 1 data subject per row of data. Please try again."
+            )
+    return data_subjects
+
+
+def check_min_max_vals(
+    min_val: ArrayLike, max_val: ArrayLike, target_shape: Tuple
+) -> Tuple[lazyrepeatarray, lazyrepeatarray]:
+    if isinstance(min_val, (bool, int, float)):
+        min_vals = np.array(min_val).ravel()  # make it 1D
+        if isinstance(min_val, int):
+            min_vals = min_vals.astype(DEFAULT_INT_NUMPY_TYPE)  # type: ignore
+        if isinstance(min_val, float):
+            min_vals = min_vals.astype(DEFAULT_FLOAT_NUMPY_TYPE)  # type: ignore
+    else:
+        raise Exception(
+            "min_vals should be either float,int,bool got "
+            + str(type(min_val))
+            + " instead."
+        )
+
+    if isinstance(max_val, (bool, int, float)):
+        max_vals = np.array(max_val).ravel()  # make it 1D
+        if isinstance(max_val, int):
+            max_vals = max_vals.astype(DEFAULT_INT_NUMPY_TYPE)  # type: ignore
+        if isinstance(max_val, float):
+            max_vals = max_vals.astype(DEFAULT_FLOAT_NUMPY_TYPE)  # type: ignore
+    else:
+        raise Exception(
+            "min_vals should be either float,int,bool got "
+            + str(type(max_val))
+            + " instead."
+        )
+
+    if min_vals.shape != target_shape:
+        min_vals = lazyrepeatarray(min_vals, target_shape)
+
+    if max_vals.shape != target_shape:
+        max_vals = lazyrepeatarray(max_vals, target_shape)
+    return min_vals, max_vals
