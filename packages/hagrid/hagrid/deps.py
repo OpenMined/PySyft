@@ -511,12 +511,15 @@ To install docker, execute the following steps:\n
 2 - Run \'{GREEN}sudo usermod -a -G docker $USER\'{WHITE} to enable this user to execute docker.
 3 - log out and log back in so that your group membership is re-evaluated {NO_COLOR}.
 -------------------------------------------------------------------------------------------------------\n
-To start your docker service:
+To start your docker service:\n
 1 - {WHITE}MacOS/Windows: One can start docker by clicking on the "Docker" icon in your Applications folder.{NO_COLOR}
 2 - {WHITE}Ubuntu: {GREEN}sudo service docker start {NO_COLOR}
 -------------------------------------------------------------------------------------------------------\n
 """
-        error_msg += f"{BOLD}{YELLOW}Std Output Logs{NO_COLOR}\n\n" + "\n".join(msg)
+        error_msg += f"""{BOLD}{YELLOW}Std Output Logs{NO_COLOR}\n\n
+            ==================================""" + "\n".join(
+            msg
+        )
     except Exception as e:  # nosec
         error_msg = str(e)
 
