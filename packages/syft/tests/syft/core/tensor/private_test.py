@@ -4,7 +4,6 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.adp.data_subject_list import DataSubjectArray
 
 # from syft.core.tensor.autodp.gamma_tensor import GammaTensor
 from syft.core.tensor.autodp.phi_tensor import PhiTensor as PT
@@ -40,7 +39,7 @@ def test_string(tensor: Tensor, low: int, high: int) -> None:
     assert isinstance(private.child.max_vals, lra)
     assert private.child.min_vals.shape == private.child.shape
     assert private.child.max_vals.shape == private.child.shape
-    assert isinstance(private.child.data_subjects, DataSubjectArray)
+    assert isinstance(private.child.data_subjects, np.ndarray)
     assert private.child.data_subjects.shape == private.child.shape
     assert len(private.child.data_subjects.sum()) == 1
 
@@ -53,7 +52,7 @@ def test_list(tensor: Tensor, low: int, high: int) -> None:
     assert isinstance(private.child.max_vals, lra)
     assert private.child.min_vals.shape == private.child.shape
     assert private.child.max_vals.shape == private.child.shape
-    assert isinstance(private.child.data_subjects, DataSubjectArray)
+    assert isinstance(private.child.data_subjects, np.ndarray)
     assert private.child.data_subjects.shape == private.child.shape
     assert len(private.child.data_subjects.sum()) == 1
 
@@ -66,7 +65,7 @@ def test_tuple(tensor: Tensor, low: int, high: int) -> None:
     assert isinstance(private.child.max_vals, lra)
     assert private.child.min_vals.shape == private.child.shape
     assert private.child.max_vals.shape == private.child.shape
-    assert isinstance(private.child.data_subjects, DataSubjectArray)
+    assert isinstance(private.child.data_subjects, np.ndarray)
     assert private.child.data_subjects.shape == private.child.shape
     assert len(private.child.data_subjects.sum()) == 1
 
@@ -81,6 +80,6 @@ def test_array(tensor: Tensor, low: int, high: int) -> None:
     assert isinstance(private.child.max_vals, lra)
     assert private.child.min_vals.shape == private.child.shape
     assert private.child.max_vals.shape == private.child.shape
-    assert isinstance(private.child.data_subjects, DataSubjectArray)
+    assert isinstance(private.child.data_subjects, np.ndarray)
     assert private.child.data_subjects.shape == private.child.shape
     assert len(private.child.data_subjects.sum()) == 1
