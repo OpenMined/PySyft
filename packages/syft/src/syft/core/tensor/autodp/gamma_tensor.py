@@ -4751,7 +4751,7 @@ class GammaTensor:
 
     def choose(
         self,
-        choices: Sequence[Union[PassthroughTensor, np.ndarray]],
+        choices: Union[Sequence, np.ndarray, PassthroughTensor],
         mode: Optional[str] = "raise",
     ) -> GammaTensor:
         """
@@ -4812,12 +4812,26 @@ class GammaTensor:
                 If a and each choice array are not all broadcastable to the same shape.
 
         """
+        # relative
+        from .phi_tensor import PhiTensor
+
         sources = dict()
         sources[self.id] = self
-        result = np.choose(choices, self.child, mode=mode)
+        if isinstance(choices, PhiTensor):
+            choices = choices.gamma
+
+        if isinstance(choices, GammaTensor):
+            sources[choices.id] = choices
+            result = np.choose(choices.child, self.child, mode=mode)
+            output_ds = self.data_subjects.take(choices) + choices.data_subjects
+
+        else:
+            result = np.choose(choices, self.child, mode=mode)
+            output_ds = self.data_subjects.take(choices)
+
         return GammaTensor(
             child=result,
-            data_subjects=self.data_subjects.take(choices),
+            data_subjects=output_ds,
             min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
             max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
             sources=sources,

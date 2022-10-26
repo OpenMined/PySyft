@@ -3922,9 +3922,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def choose(
         self,
-        choices: Sequence[Union[PassthroughTensor, np.ndarray]],
+        choices: Union[Sequence, np.ndarray, PassthroughTensor],
         mode: Optional[str] = "raise",
-    ) -> PhiTensor:
+    ) -> Union[PhiTensor, GammaTensor]:
         """
         Construct an array from an index array and a list of arrays to choose from.
 
@@ -3983,16 +3983,27 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 If a and each choice array are not all broadcastable to the same shape.
 
         """
-        result = np.choose(choices, self.child, mode=mode)
-        if isinstance(self.min_vals, lazyrepeatarray):
-            minv = lazyrepeatarray(data=self.min_vals.data.min(), shape=result.shape)
-            maxv = lazyrepeatarray(data=self.max_vals.data.max(), shape=result.shape)
+        if isinstance(choices, PhiTensor):
+            result = np.choose(choices.child, self.child, mode=mode)
+            output_ds = self.data_subjects.take(choices) + choices.data_subjects
+        elif isinstance(choices, GammaTensor):
+            return self.gamma.choose(choices, mode=mode)
         else:
-            minv, maxv = self.min_vals, self.max_vals
+            result = np.choose(choices, self.child, mode=mode)
+            if isinstance(self.min_vals, lazyrepeatarray):
+                minv = lazyrepeatarray(
+                    data=self.min_vals.data.min(), shape=result.shape
+                )
+                maxv = lazyrepeatarray(
+                    data=self.max_vals.data.max(), shape=result.shape
+                )
+            else:
+                minv, maxv = self.min_vals, self.max_vals
+            output_ds = self.data_subjects.take(choices)
 
         return PhiTensor(
             child=result,
-            data_subjects=self.data_subjects.take(choices),
+            data_subjects=output_ds,
             min_vals=minv,
             max_vals=maxv,
         )
