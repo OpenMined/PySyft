@@ -4023,6 +4023,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 If a and each choice array are not all broadcastable to the same shape.
 
         """
+        # relative
+        from ..tensor import Tensor
+
         if isinstance(choices, PhiTensor):
             result = np.choose(choices.child, self.child, mode=mode)
             output_ds = self.data_subjects.take(choices) + choices.data_subjects
@@ -4031,9 +4034,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         elif isinstance(choices, np.ndarray):
             result = np.choose(choices, self.child, mode=mode)
             output_ds = self.data_subjects.take(choices)
+        elif isinstance(choices, Tensor):
+            result = np.choose(choices.child.child, self.child, mode=mode)
+            output_ds = self.data_subjects.take(choices) + choices.child.data_subjects
         else:
-            result = np.choose(choices.child.child, self.child, mode=mode)  # type: ignore
-            output_ds = self.data_subjects.take(choices) + choices.child.data_subjects  # type: ignore
+            result = np.choose(choices, self.child, mode=mode)
+            output_ds = self.data_subjects.take(choices)
 
         return PhiTensor(
             child=result,

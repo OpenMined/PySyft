@@ -309,6 +309,9 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
 
         if hasattr(self.data_subjects, op_str):
             if op_str == "choose":
+                # relative
+                from .phi_tensor import TensorWrappedPhiTensorPointer
+
                 if kwargs == {}:
                     mode = None
                     for arg in args[1:]:
@@ -316,11 +319,41 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
                             mode = arg
                             break
                     if mode is None:
-                        data_subjects = np.array(np.choose(args[0], self.data_subjects))
+                        if isinstance(
+                            args[0],
+                            (
+                                TensorWrappedGammaTensorPointer,
+                                TensorWrappedPhiTensorPointer,
+                            ),
+                        ):
+                            data_subjects = np.array(
+                                np.choose(
+                                    np.ones(args[0].shape, dtype=np.int64),
+                                    self.data_subjects,
+                                )
+                            )
+                        else:
+                            data_subjects = np.array(
+                                np.choose(args[0], self.data_subjects)
+                            )
                     else:
-                        data_subjects = np.array(
-                            np.choose(args[0], self.data_subjects, mode=mode)
-                        )
+                        if isinstance(
+                            args[0],
+                            (
+                                TensorWrappedGammaTensorPointer,
+                                TensorWrappedPhiTensorPointer,
+                            ),
+                        ):
+                            data_subjects = np.array(
+                                np.choose(
+                                    np.ones(args[0].shape, dtype=np.int64),
+                                    self.data_subjects,
+                                )
+                            )
+                        else:
+                            data_subjects = np.array(
+                                np.choose(args[0], self.data_subjects, mode=mode)
+                            )
                 else:
                     data_subjects = np.choose(
                         kwargs["choices"], self.data_subjects, kwargs["mode"]
@@ -377,17 +410,25 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
 
         if op_str == "choose":
             dummy_res = np.ones(self.public_shape, dtype=np.int64)
-        else:
-            dummy_res = np.empty(self.public_shape)
-        if hasattr(dummy_res, op_str):
-            if op_str in INPLACE_OPS:
-                getattr(dummy_res, op_str)(*args, **kwargs)
+            if isinstance(
+                args[0],
+                (TensorWrappedPhiTensorPointer, TensorWrappedGammaTensorPointer),
+            ):
+                temp_args = (np.ones(args[0].shape, dtype=np.int64), *args[1:])
+                dummy_res = getattr(dummy_res, op_str)(*temp_args, **kwargs)
             else:
                 dummy_res = getattr(dummy_res, op_str)(*args, **kwargs)
-        elif hasattr(np, op_str):
-            dummy_res = getattr(np, op_str)(dummy_res, *args, *kwargs)
         else:
-            raise ValueError(f"Invalid Numpy Operation: {op_str} for Pointer")
+            dummy_res = np.empty(self.public_shape)
+            if hasattr(dummy_res, op_str):
+                if op_str in INPLACE_OPS:
+                    getattr(dummy_res, op_str)(*args, **kwargs)
+                else:
+                    dummy_res = getattr(dummy_res, op_str)(*args, **kwargs)
+            elif hasattr(np, op_str):
+                dummy_res = getattr(np, op_str)(dummy_res, *args, *kwargs)
+            else:
+                raise ValueError(f"Invalid Numpy Operation: {op_str} for Pointer")
 
         result.public_shape = dummy_res.shape
         result.public_dtype = dummy_res.dtype
@@ -4819,6 +4860,7 @@ class GammaTensor:
 
         """
         # relative
+        from ..tensor import Tensor
         from .phi_tensor import PhiTensor
 
         sources = dict()
@@ -4830,7 +4872,9 @@ class GammaTensor:
             sources[choices.id] = choices
             result = np.choose(choices.child, self.child, mode=mode)
             output_ds = self.data_subjects.take(choices.child) + choices.data_subjects
-
+        elif isinstance(choices, Tensor):
+            result = np.choose(choices.child.child, self.child, mode=mode)
+            output_ds = self.data_subjects.take(choices) + choices.child.data_subjects
         else:
             result = np.choose(choices, self.child, mode=mode)
             output_ds = self.data_subjects.take(choices)
