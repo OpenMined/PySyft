@@ -750,6 +750,30 @@ def compute_min_max(
 
         min_vals = lazyrepeatarray(data=_min_vals, shape=x_min_vals.shape)
         max_vals = lazyrepeatarray(data=_max_vals, shape=x_max_vals.shape)
+    elif op_str == "__and__":
+        if is_acceptable_simple_type(other):
+            if isinstance(other, np.ndarray):
+                other_max, other_min = other.max(), other.min()
+            else:
+                other_max, other_min = other, other
+        elif hasattr(other, "min_vals") and hasattr(other, "max_vals"):
+            other_max = other.max_vals.data  # type: ignore
+            other_min = other.min_vals.data  # type: ignore
+        else:
+            raise NotImplementedError(
+                f"{op_str} not implemented in LazyRepeatArray for {type(other)}."
+            )
+
+        # TODO: should modify for a tighter found for and
+        _max_vals = max(x_max_vals.data, other_max)
+        _min = min(x_min_vals.data, other_min)
+        if x_min_vals.data < 0 and other_min < 0:
+            _min_vals = -(2 ** _min.bit_length())
+        else:
+            _min_vals = min(0, _min)
+
+        min_vals = lazyrepeatarray(data=_min_vals, shape=x_min_vals.shape)
+        max_vals = lazyrepeatarray(data=_max_vals, shape=x_max_vals.shape)
 
     else:
         raise ValueError(f"Invaid Operation for LazyRepeatArray: {op_str}")

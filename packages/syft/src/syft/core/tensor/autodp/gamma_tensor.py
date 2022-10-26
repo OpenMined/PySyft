@@ -3371,26 +3371,35 @@ class GammaTensor:
             output_state[other.id] = other
 
             child = self.child & other.child
-            max_vals = lazyrepeatarray(data=1, shape=self.child.shape)
-            min_vals = lazyrepeatarray(data=0, shape=self.child.shape)
             output_ds = self.data_subjects + other.data_subjects
+            other_min, other_max = other.min_vals.data, other.max_vals.data
 
         elif is_acceptable_simple_type(other):
             output_state[np.random.randint(low=0, high=2**31 - 1)] = other
-            max_vals = lazyrepeatarray(data=1, shape=self.child.shape)
-            min_vals = lazyrepeatarray(data=0, shape=self.child.shape)
 
             child = self.child & other
             output_ds = self.data_subjects
+            if isinstance(other, np.ndarray):
+                other_min, other_max = other.min(), other.max()
+            else:
+                other_min, other_max = other, other
         else:
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
 
+        # TODO: should modify for a tighter found for and
+        _max_vals = max(self.max_vals.data, other_max)
+        _min = min(self.min_vals.data, other_min)
+        if self.min_vals.data < 0 and other_min < 0:
+            _min_vals = -(2 ** _min.bit_length())
+        else:
+            _min_vals = min(0, _min)
+
         return GammaTensor(
             child=child,
             data_subjects=output_ds,
-            min_vals=min_vals,
-            max_vals=max_vals,
+            min_vals=lazyrepeatarray(data=_min_vals, shape=child.shape),
+            max_vals=lazyrepeatarray(data=_max_vals, shape=child.shape),
             func_str=GAMMA_TENSOR_OP.LOGICAL_AND.value,
             sources=output_state,
         )
