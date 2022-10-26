@@ -4179,12 +4179,11 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         result = self.child.diagonal(offset, axis1, axis2)
 
-        num = np.ones_like(self.child).diagonal(offset, axis1, axis2)
         return PhiTensor(
             child=result,
             data_subjects=self.data_subjects.diagonal(offset, axis1, axis2),
-            min_vals=lazyrepeatarray(data=self.min_vals.data * num, shape=result.shape),
-            max_vals=lazyrepeatarray(data=self.max_vals.data * num, shape=result.shape),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
         )
 
     def _object2bytes(self) -> bytes:
