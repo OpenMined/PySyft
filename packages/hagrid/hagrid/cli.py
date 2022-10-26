@@ -432,8 +432,7 @@ def process_cmd(
                             line = queue.get()
                             line = str(line, encoding="utf-8").strip()
 
-                            if not silent:
-                                print(f"Logs: {line}", end="\r", flush=True)
+                            # print(f"Logs: {line}", end="\r", flush=True)
 
                             # if "Building[" in line:
                             #    print(
