@@ -22,7 +22,7 @@ def highest() -> int:
     return ii64.max
 
 
-@pytest.mark.skip("Breaking serialization error")
+@pytest.mark.e2e
 def test_large_blob_upload() -> None:
 
     # use to enable mitm proxy
