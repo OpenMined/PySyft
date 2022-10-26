@@ -3395,8 +3395,8 @@ class GammaTensor:
             raise NotImplementedError
 
         # TODO: should modify for a tighter found for and
-        _max_vals = max(self.max_vals.data, other_max)
-        _min = min(self.min_vals.data, other_min)
+        _max_vals = int(max(self.max_vals.data.max(), other_max))
+        _min = int(min(self.min_vals.data.min(), other_min))
         if self.min_vals.data < 0 and other_min < 0:
             _min_vals = -(2 ** _min.bit_length())
         else:
