@@ -616,6 +616,10 @@ def compute_min_max(
         dummy_res = np.empty(x_min_vals.shape).reshape(*args, **kwargs)
         min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
         max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
+    elif op_str == "__getitem__":
+        dummy_res = np.empty(x_min_vals.shape).__getitem__(*args, **kwargs)
+        min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
+        max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
     elif op_str == "__mod__":
         if is_acceptable_simple_type(other):
             if isinstance(other, np.ndarray):
