@@ -515,7 +515,7 @@ To start your docker service:
 2 - {WHITE}Ubuntu: {GREEN}sudo service docker start {NO_COLOR}
 -------------------------------------------------------------------------------------------------------\n
 """
-        error_msg += f"{YELLOW}Std Output Logs{NO_COLOR} \n" + "\n".join(msg)
+        error_msg += f"{YELLOW}Std Output Logs{NO_COLOR}\n\n" + "\n".join(msg)
     except Exception as e:  # nosec
         error_msg = str(e)
 
