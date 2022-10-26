@@ -477,8 +477,6 @@ def compute_min_max(
         "__ge__",
         "__eq__",
         "__ne__",
-        "__and__",
-        "__or__",
     ]:
         min_vals = x_min_vals * 0
         max_vals = (x_max_vals * 0) + 1
@@ -675,7 +673,9 @@ def compute_min_max(
         # TODO: should modify for a tighter found for xor
         _max = int(max(x_max_vals.data, other_max))
         _min = int(min(x_min_vals.data, other_min))
-        _max_vals = (2 ** (_min ^ _max).bit_length()) - 1
+        _max_vals = max(
+            (2 ** (_min ^ _max).bit_length()) - 1, (2 ** (_max).bit_length()) - 1
+        )
         _min_vals = min(0, _min)
 
         min_vals = lazyrepeatarray(data=_min_vals, shape=x_min_vals.shape)
@@ -708,6 +708,28 @@ def compute_min_max(
         dummy_res = getattr(np.empty(x_min_vals.shape), op_str)(*args, **kwargs)
         min_vals = lazyrepeatarray(data=0, shape=dummy_res.shape)
         max_vals = lazyrepeatarray(data=1, shape=dummy_res.shape)
+    elif op_str == "__or__":
+        if is_acceptable_simple_type(other):
+            if isinstance(other, np.ndarray):
+                other_max, other_min = other.max(), other.min()
+            else:
+                other_max, other_min = other, other
+        elif hasattr(other, "min_vals") and hasattr(other, "max_vals"):
+            other_max = other.max_vals.data  # type: ignore
+            other_min = other.min_vals.data  # type: ignore
+        else:
+            raise NotImplementedError(
+                f"{op_str} not implemented in LazyRepeatArray for {type(other)}."
+            )
+
+        # TODO: should modify for a tighter found for xor
+        _max = int(max(x_max_vals.data, other_max))
+        _min_vals = int(min(x_min_vals.data, other_min))
+        _max_vals = (2 ** (_max).bit_length()) - 1
+
+        min_vals = lazyrepeatarray(data=_min_vals, shape=x_min_vals.shape)
+        max_vals = lazyrepeatarray(data=_max_vals, shape=x_max_vals.shape)
+
     else:
         raise ValueError(f"Invaid Operation for LazyRepeatArray: {op_str}")
 

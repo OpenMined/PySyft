@@ -2232,33 +2232,34 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             if (self.data_subjects != other.data_subjects).any():
                 return self.gamma | other.gamma
             else:
-                print(self.child)
-                print(other.child)
-                out_child = self.child | other.child
-                return PhiTensor(
-                    child=self.child | other.child,
-                    data_subjects=self.data_subjects,
-                    min_vals=lazyrepeatarray(data=0, shape=out_child.shape),
-                    max_vals=lazyrepeatarray(data=1, shape=out_child.shape),
-                )
+                child = self.child | other.child
+                other_min, other_max = other.min_vals.data, other.max_vals.data
 
         # if the tensor being added is a public tensor / int / float / etc.
         elif is_acceptable_simple_type(other):
-            max_vals = lazyrepeatarray(data=1, shape=self.child.shape)
-            min_vals = lazyrepeatarray(data=0, shape=self.child.shape)
-
-            return PhiTensor(
-                child=self.child | other,
-                min_vals=min_vals,
-                max_vals=max_vals,
-                data_subjects=self.data_subjects,
-            )
+            if isinstance(other, np.ndarray):
+                other_min, other_max = other.min(), other.max()
+            else:
+                other_min, other_max = other, other
+            child = self.child | other
 
         elif isinstance(other, GammaTensor):
             return self.gamma | other
         else:
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
+
+        # TODO: should modify for a tighter found for or
+        _max = int(max(self.max_vals.data, other_max))
+        _min_vals = min(self.min_vals.data, other_min)
+        _max_vals = (2 ** (_max).bit_length()) - 1
+
+        return PhiTensor(
+            child=child,
+            min_vals=lazyrepeatarray(data=_min_vals, shape=child.shape),
+            max_vals=lazyrepeatarray(data=_max_vals, shape=child.shape),
+            data_subjects=self.data_subjects,
+        )
 
     def copy_with(self, child: np.ndarray) -> PhiTensor:
         new_tensor = self.copy()
