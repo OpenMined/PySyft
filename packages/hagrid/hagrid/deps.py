@@ -174,8 +174,10 @@ class DependencyGridDockerCompose(Dependency):
             binary="docker", version_cmd="docker compose version"
         ).get_binary_info()
 
-        if binary_info.path and binary_info.version > version.parse(
-            MINIMUM_DOCKER_COMPOSE_VERSION
+        if (
+            binary_info.path
+            and binary_info.version
+            and binary_info.version > version.parse(MINIMUM_DOCKER_COMPOSE_VERSION)
         ):
             self.display = "✅ Docker Compose " + str(binary_info.version)
         else:
