@@ -2710,6 +2710,8 @@ def check_status(
     timeout: Union[int, str] = 300,
 ) -> None:
     timeout = int(timeout)
+    # third party
+    from rich import print
 
     t = Thread(
         target=_check_status, kwargs={"ip_addresses": ip_addresses, "silent": silent}
@@ -2723,6 +2725,9 @@ def check_status(
         print(
             "You could try increasing the timeout or kindly check the docker containers for error logs."
         )
+        print("Viewing Docker Container Logs:")
+        print("Tool: [link=https://ctop.sh]Ctop[/link]")
+        print("Video Explanation: [link=https://youtu.be/BJhlCxerQP4]Video[/link]")
 
 
 cli.add_command(check)
