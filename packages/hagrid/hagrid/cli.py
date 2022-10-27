@@ -5,7 +5,7 @@ from pathlib import Path
 from queue import Queue
 import re
 import shutil
-import signal
+import signal as sys_signal
 import socket
 import stat
 import subprocess  # nosec
@@ -368,7 +368,7 @@ def check_errors(
         console.print(f"[red] ERROR [/red]: [bold white]{line}[/bold white]\n")
         if progress_bar:
             progress_bar.stop()
-        os.killpg(os.getpgid(pid), signal.SIGTERM)
+        os.killpg(os.getpgid(pid), sys_signal.SIGTERM)
 
 
 def check_pulling(line: str, cmd_name: str, progress_bar: Progress) -> None:
