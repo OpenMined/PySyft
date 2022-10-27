@@ -36,7 +36,7 @@ The Syft ecosystem seeks to change this system, allowing you to write software w
 
 ## 0.6.0 Release
 
-The current stable release is `0.6.0` which is available on:
+The current stable release is `0.6.0`
 
 
 ## Installation
