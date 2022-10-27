@@ -73,14 +73,45 @@ It covers all that you need to know to start contributing code to PySyft today.
 
 # Supporters
 
-
+<table border="0">
+<tr>
+<th align="center">
+<a href="https://sloan.org/"><img src="docs/img/logo_sloan.png" /></a>
+</th>
+<th align="center">
+<a href="https://opensource.fb.com/"><img src="docs/img/logo_meta.png" /></a>
+</th>
+<th align="center">
+<a href="https://pytorch.org/"><img src="docs/img/logo_torch.png" /></a>
+</th>
+<th align="center">
+<a href="https://www.udacity.com/"><img src="docs/img/logo_udacity.png" /></a>
+</th>
+<th align="center">
+<a href="https://summerofcode.withgoogle.com/"><img src="docs/img/logo_gsoc.png" /></a>
+</th>
+<th align="center">
+<a href="https://developers.google.com/season-of-docs"><img src="docs/img/logo_gsod.png" /></a>
+</th>
+<th align="center">
+<img src="docs/img/logo_arkhn_light.png#gh-light-mode-only" />
+<img src="docs/img/logo_arkhn.png#gh-dark-mode-only" />
+</th>
+<th align="center">
+<img src="docs/img/logo_cape_light.png#gh-light-mode-only" />
+<img src="docs/img/logo_cape.png#gh-dark-mode-only" />
+</th>
+<th align="center">
+<a href="https://begin.ai/"><img src="docs/img/logo_begin.png" /></a>
+</th>
+</tr>
+</table>
 
 # Open Collective
 
 `OpenMined` is a registered `501(c)(3)` in the USA. We are funded by our gracious supporters on <a href="https://opencollective.com/openmined">Open Collective</a>. <br /><br />
-<img src="packages/syft/docs/img/opencollective_light.png#gh-light-mode-only" alt="Contributors" width="100%" />
-<img src="packages/syft/docs/img/opencollective_dark.png#gh-dark-mode-only" alt="Contributors" width="100%" />
-
+<img src="docs/img/opencollective_light.png#gh-light-mode-only" alt="Contributors" width="100%" />
+<img src="docs/img/opencollective_dark.png#gh-dark-mode-only" alt="Contributors" width="100%" />
 
 # Disclaimer
 
