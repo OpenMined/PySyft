@@ -34,69 +34,46 @@ Most software libraries let you compute over the information you own and see ins
 
 The Syft ecosystem seeks to change this system, allowing you to write software which can compute over information you do not own on machines you do not have (total) control over. This not only includes servers in the cloud, but also personal desktops, laptops, mobile phones, websites, and edge devices. Wherever your data wants to live in your ownership, the Syft ecosystem exists to help keep it there while allowing it to be used privately for computation.
 
-## 0.7.0 Release
 
-The current stable release is `0.7.0`
+# Quickstart
 
+✅ `Linux` ✅ `macOS`\* ✅ `Windows`†‡
+<img src="packages/syft/docs/img/terminalizer.gif" width="50%" align="right" />
 
-## Installation
+1. Install our handy 🛵 cli tool which makes deploying a Domain or Network server a one-liner:  
+   `pip install -U hagrid`
 
-```
-$ pip install -U syft --pre
-```
+2. Then run our interactive jupyter Install 🧙🏽‍♂️ Wizard<sup>BETA</sup>:  
+   `hagrid quickstart`
 
+- In the tutorial you will learn how to install and deploy:  
+  `PySyft` = our `numpy`-like 🐍 Python library for computing on `private data` in someone else's `Domain`
 
-## Documentation
-For full documentation, including installation and tutorials, please see https://openmined.github.io/PySyft/
+  `PyGrid` = our 🐳 `docker` / `k8s` / 🐧 `vm` `Domain` & `Network` Servers where `private data` lives
 
+- During quickstart we will deploy `PyGrid` to localhost with 🐳 `docker`, however 🛵 HAGrid can deploy to `k8s` or a 🐧 `ubuntu` VM on `azure` / `gcp` / `ANY_IP_ADDRESS` by using 🔨 `ansible`†
 
+3. Read our 📚 <a href="https://openmined.github.io/PySyft/">Docs</a>
+4. Ask Questions ❔ in `#support` on <a href="https://slack.openmined.org/">Slack</a>
+
+# Install Notes
+
+- HAGrid Requires: 🐍 `python` 🐙 `git` - Run: `pip install -U hagrid`
+- Interactive Install 🧙🏽‍♂️ Wizard<sup>BETA</sup> Requires 🛵 `hagrid`: - Run: `hagrid quickstart`  
+  †`Windows` does not support `ansible`, preventing some remote deployment targets
+- PySyft Requires: 🐍 `python 3.7+` - Run: `pip install -U syft --pre`  
+  \*`macOS` Apple Silicon users need cmake: `brew install cmake`  
+  ‡`Windows` users must run this first: `pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html`
+- PyGrid Requires: 🐳 `docker` / `k8s` or 🐧 `ubuntu` VM - Run: `hagrid launch ...`
 
 ## Contributing
 
 The guide for contributors can be found [here](https://github.com/OpenMined/PySyft/blob/main/packages/syft/CONTRIBUTING.md).
 It covers all that you need to know to start contributing code to PySyft today.
 
-Also, join the rapidly growing community of 12,000+ on [Slack](http://slack.openmined.org).
-The Slack community is very friendly and great about quickly answering questions about the use and development of PySyft!
-
-
-
-
 # Supporters
 
-<table border="0">
-<tr>
-<th align="center">
-<a href="https://sloan.org/"><img src="packages/syft/docs/img/logo_sloan.png" /></a>
-</th>
-<th align="center">
-<a href="https://opensource.fb.com/"><img src="packages/syft/docs/img/logo_meta.png" /></a>
-</th>
-<th align="center">
-<a href="https://pytorch.org/"><img src="packages/syft/docs/img/logo_torch.png" /></a>
-</th>
-<th align="center">
-<a href="https://www.udacity.com/"><img src="packages/syft/docs/img/logo_udacity.png" /></a>
-</th>
-<th align="center">
-<a href="https://summerofcode.withgoogle.com/"><img src="packages/syft/docs/img/logo_gsoc.png" /></a>
-</th>
-<th align="center">
-<a href="https://developers.google.com/season-of-docs"><img src="packages/syft/docs/img/logo_gsod.png" /></a>
-</th>
-<th align="center">
-<img src="packages/syft/docs/img/logo_arkhn_light.png#gh-light-mode-only" />
-<img src="packages/syft/docs/img/logo_arkhn.png#gh-dark-mode-only" />
-</th>
-<th align="center">
-<img src="packages/syft/docs/img/logo_cape_light.png#gh-light-mode-only" />
-<img src="packages/syft/docs/img/logo_cape.png#gh-dark-mode-only" />
-</th>
-<th align="center">
-<a href="https://begin.ai/"><img src="packages/syft/docs/img/logo_begin.png" /></a>
-</th>
-</tr>
-</table>
+
 
 # Open Collective
 

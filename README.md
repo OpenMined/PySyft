@@ -309,3 +309,38 @@ Syft is under active development and is not yet ready for pilots on private data
 
 [Apache License 2.0](LICENSE)<br />
 <a href="https://www.flaticon.com/free-icons/person" title="person icons">Person icons created by Freepik - Flaticon</a>
+
+
+<table border="0">
+<tr>
+<th align="center">
+<a href="https://sloan.org/"><img src="packages/syft/docs/img/logo_sloan.png" /></a>
+</th>
+<th align="center">
+<a href="https://opensource.fb.com/"><img src="packages/syft/docs/img/logo_meta.png" /></a>
+</th>
+<th align="center">
+<a href="https://pytorch.org/"><img src="packages/syft/docs/img/logo_torch.png" /></a>
+</th>
+<th align="center">
+<a href="https://www.udacity.com/"><img src="packages/syft/docs/img/logo_udacity.png" /></a>
+</th>
+<th align="center">
+<a href="https://summerofcode.withgoogle.com/"><img src="packages/syft/docs/img/logo_gsoc.png" /></a>
+</th>
+<th align="center">
+<a href="https://developers.google.com/season-of-docs"><img src="packages/syft/docs/img/logo_gsod.png" /></a>
+</th>
+<th align="center">
+<img src="packages/syft/docs/img/logo_arkhn_light.png#gh-light-mode-only" />
+<img src="packages/syft/docs/img/logo_arkhn.png#gh-dark-mode-only" />
+</th>
+<th align="center">
+<img src="packages/syft/docs/img/logo_cape_light.png#gh-light-mode-only" />
+<img src="packages/syft/docs/img/logo_cape.png#gh-dark-mode-only" />
+</th>
+<th align="center">
+<a href="https://begin.ai/"><img src="packages/syft/docs/img/logo_begin.png" /></a>
+</th>
+</tr>
+</table>
