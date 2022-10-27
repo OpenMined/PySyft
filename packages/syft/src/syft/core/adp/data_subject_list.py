@@ -588,6 +588,9 @@ class DataSubjectArray:
     def __round__(self, n: Optional[int] = None) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)
 
+    def __abs__(self) -> DataSubjectArray:
+        return DataSubjectArray(self.data_subjects)
+
     def round(self, n: Optional[int] = None) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)
 
