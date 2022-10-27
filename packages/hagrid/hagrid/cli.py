@@ -10,6 +10,7 @@ import stat
 import subprocess  # nosec
 import sys
 import tempfile
+from threading import Event
 from threading import Thread
 import time
 from typing import Any
@@ -28,6 +29,7 @@ import webbrowser
 import click
 import requests
 import rich
+from rich.console import Console
 from rich.live import Live
 from virtualenvapi.manage import VirtualEnvironment
 
@@ -2497,33 +2499,140 @@ def create_check_table(
     return table
 
 
+def shell(command: str) -> str:
+    try:
+        output = subprocess.check_output(  # nosec
+            command, shell=True, stderr=subprocess.STDOUT
+        )
+    except Exception:
+        output = b""
+    return output.decode("utf-8")
+
+
+def get_host_name(container_name: str) -> str:
+    # Assumption we always get proxy containers first.
+    # if users have old docker compose versios.
+    # the container names are _ instead of -
+    # canada_proxy_1 instead of canada-proxy-1
+    try:
+        host_name = container_name[0 : container_name.find("proxy") - 1]  # noqa: E203
+    except Exception:
+        host_name = ""
+    return host_name
+
+
+def from_url(url: str) -> Tuple[str, str, int, str, Union[Any, str]]:
+
+    try:
+        # urlparse doesnt handle no protocol properly
+        if "://" not in url:
+            url = "http://" + url
+        parts = urlparse(url)
+        host_or_ip_parts = parts.netloc.split(":")
+        # netloc is host:port
+        port = 80
+        if len(host_or_ip_parts) > 1:
+            port = int(host_or_ip_parts[1])
+        host_or_ip = host_or_ip_parts[0]
+        return (
+            host_or_ip,
+            parts.path,
+            port,
+            parts.scheme,
+            getattr(parts, "query", ""),
+        )
+    except Exception as e:
+        print(f"Failed to convert url: {url} to GridURL. {e}")
+        raise e
+
+
+def get_docker_status(ip_address: str) -> Tuple[bool, Tuple[str, str]]:
+    proxy_containers = shell("docker ps --format '{{.Names}}' | grep 'proxy' ").split()
+    backend_containers = shell(
+        "docker ps --format '{{.Names}}' | grep 'backend' "
+    ).split()
+
+    # to prevent importing syft, have duplicated the from_url code from GridURL
+    url = from_url(ip_address)
+    container_name = None
+    for container in proxy_containers:
+        ports = shell(f"docker port {container}")
+        if ports.count(str(url[2])):
+            container_name = container
+            break
+
+    if not container_name:
+        return False, ("", "")
+    host_name = get_host_name(container_name)
+
+    _backend_exists = False
+    for container in backend_containers:
+        if host_name in container and "stream" not in container:
+            _backend_exists = True
+            break
+    if not _backend_exists:
+        return False, ("", "")
+
+    # Identifying Type of Node.
+    headscale_containers = shell(
+        "docker ps --format '{{.Names}}' | grep 'headscale' "
+    ).split()
+
+    node_type = "Domain"
+    for container in headscale_containers:
+        if host_name in container:
+            node_type = "Network"
+            break
+
+    return True, (host_name, node_type)
+
+
+def get_syft_install_status(host_name: str) -> bool:
+    backend_containers = shell(
+        "docker ps --format '{{.Names}}' | grep 'backend' "
+    ).split()
+    backend_container = None
+    for container in backend_containers:
+        if host_name in container and "stream" not in container:
+            backend_container = container
+            break
+    if not backend_container:
+        print(f"❌ Backend Docker Stack for: {host_name} not found")
+        exit(0)
+    else:
+        backend_log = shell(f"docker logs {backend_container}")
+        if "Application startup complete" not in backend_log:
+            return False
+        return True
+
+
 @click.command(help="Check health of an IP address/addresses or a resource group")
 @click.argument("ip_addresses", type=str, nargs=-1)
 @click.option(
-    "--wait",
-    is_flag=True,
-    help="Optional: wait until checks pass",
+    "--timeout",
+    default=300,
+    help="Timeout for hagrid check command,Default: 300 seconds",
 )
 @click.option(
     "--silent",
-    is_flag=True,
-    help="Optional: don't refresh output during wait",
+    default=True,
+    help="Optional: don't refresh output,Defaults True",
 )
 def check(
-    ip_addresses: TypeList[str], wait: bool = False, silent: bool = False
+    ip_addresses: TypeList[str], silent: bool = True, timeout: Union[int, str] = 300
 ) -> None:
-    check_status(ip_addresses=ip_addresses, wait=wait, silent=silent)
+    check_status(ip_addresses=ip_addresses, silent=silent, timeout=timeout)
 
 
-def check_status(
-    ip_addresses: Union[str, TypeList[str]], wait: bool = False, silent: bool = False
-) -> None:
+signal = Event()
 
+
+def _check_status(ip_addresses: Union[str, TypeList[str]], silent: bool = True) -> None:
+    OK_EMOJI = RichEmoji("white_heavy_check_mark").to_str()
     # Check if ip_addresses is str, then convert to list
     if ip_addresses and isinstance(ip_addresses, str):
         ip_addresses = [ip_addresses]
-
-    console = rich.get_console()
+    console = Console()
 
     if len(ip_addresses) == 0:
         headers = {"User-Agent": "curl/7.79.1"}
@@ -2537,14 +2646,42 @@ def check_status(
         status, table_contents = get_health_checks(ip_address=ip_address)
         table = create_check_table(table_contents=table_contents)
         max_timeout = 600
-        if wait and not status:
+        if not status:
             table = create_check_table(
                 table_contents=table_contents, time_left=max_timeout
             )
             if silent:
-                print("Checking...")
-            while not status:
-                if not silent:
+                with console.status("Gathering Node information") as console_status:
+                    console_status.update(
+                        "[bold orange_red1]Waiting for Docker Container Creation"
+                    )
+                    docker_status, domain_info = get_docker_status(ip_address)
+                    while not docker_status:
+                        docker_status, domain_info = get_docker_status(ip_address)
+                        time.sleep(1)
+                        if signal.is_set():
+                            return
+                    console.print(
+                        f"{OK_EMOJI} {domain_info[0]} {domain_info[1]} Docker Containers Created."
+                    )
+                    console_status.update("[bold orange_red1]Installing Syft")
+                    syft_install_status = get_syft_install_status(domain_info[0])
+                    while not syft_install_status:
+                        syft_install_status = get_syft_install_status(domain_info[0])
+                        time.sleep(1)
+                        if signal.is_set():
+                            return
+                    console.print(f"{OK_EMOJI} Syft")
+                    console.print(f"{OK_EMOJI} Containers Startup Complete.")
+
+                status, table_contents = get_health_checks(ip_address)
+                table = create_check_table(
+                    table_contents=table_contents, time_left=max_timeout
+                )
+            else:
+                while not status:
+                    if signal.is_set():
+                        return
                     with Live(
                         table, refresh_per_second=2, screen=True, auto_refresh=False
                     ) as live:
@@ -2558,20 +2695,39 @@ def check_status(
                         if status:
                             break
                         time.sleep(1)
-                else:
-                    max_timeout -= 1
-                    if max_timeout % 5 == 0:
-                        status, table_contents = get_health_checks(ip_address)
-                    table = create_check_table(
-                        table_contents=table_contents, time_left=max_timeout
-                    )
-                    time.sleep(1)
+
         console.print(table)
     else:
         for ip_address in ip_addresses:
             _, table_contents = get_health_checks(ip_address)
             table = create_check_table(table_contents=table_contents)
             console.print(table)
+
+
+def check_status(
+    ip_addresses: Union[str, TypeList[str]],
+    silent: bool = True,
+    timeout: Union[int, str] = 300,
+) -> None:
+    timeout = int(timeout)
+    # third party
+    from rich import print
+
+    t = Thread(
+        target=_check_status, kwargs={"ip_addresses": ip_addresses, "silent": silent}
+    )
+    t.start()
+    t.join(timeout=timeout)
+
+    if t.is_alive():
+        signal.set()
+        print(f"Hagrid Check command timed out after: {timeout} seconds 🕛 ")
+        print(
+            "You could try increasing the timeout or kindly check the docker containers for error logs."
+        )
+        print("Viewing Docker Container Logs:")
+        print("Tool: [link=https://ctop.sh]Ctop[/link]")
+        print("Video Explanation: [link=https://youtu.be/BJhlCxerQP4]Video[/link]")
 
 
 cli.add_command(check)
