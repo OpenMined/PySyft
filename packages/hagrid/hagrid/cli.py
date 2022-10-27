@@ -2501,7 +2501,9 @@ def create_check_table(
 
 def shell(command: str) -> str:
     try:
-        output = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT)
+        output = subprocess.check_output(  # nosec
+            command, shell=True, stderr=subprocess.STDOUT
+        )
     except Exception:
         output = b""
     return output.decode("utf-8")
