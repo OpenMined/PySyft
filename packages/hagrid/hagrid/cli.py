@@ -33,9 +33,6 @@ from rich.console import Console
 from rich.live import Live
 from virtualenvapi.manage import VirtualEnvironment
 
-# syft absolute
-from syft.grid.grid_url import GridURL
-
 # relative
 from .art import RichEmoji
 from .art import hagrid
@@ -2522,17 +2519,43 @@ def get_host_name(container_name: str) -> str:
     return host_name
 
 
+def from_url(url: str) -> Tuple[str, str, int, str, Union[Any, str]]:
+
+    try:
+        # urlparse doesnt handle no protocol properly
+        if "://" not in url:
+            url = "http://" + url
+        parts = urlparse(url)
+        host_or_ip_parts = parts.netloc.split(":")
+        # netloc is host:port
+        port = 80
+        if len(host_or_ip_parts) > 1:
+            port = int(host_or_ip_parts[1])
+        host_or_ip = host_or_ip_parts[0]
+        return (
+            host_or_ip,
+            parts.path,
+            port,
+            parts.scheme,
+            getattr(parts, "query", ""),
+        )
+    except Exception as e:
+        print(f"Failed to convert url: {url} to GridURL. {e}")
+        raise e
+
+
 def get_docker_status(ip_address: str) -> Tuple[bool, Tuple[str, str]]:
     proxy_containers = shell("docker ps --format '{{.Names}}' | grep 'proxy' ").split()
     backend_containers = shell(
         "docker ps --format '{{.Names}}' | grep 'backend' "
     ).split()
 
-    url = GridURL.from_url(ip_address)
+    # to prevent importing syft, have duplicated the from_url code from GridURL
+    url = from_url(ip_address)
     container_name = None
     for container in proxy_containers:
         ports = shell(f"docker port {container}")
-        if ports.count(str(url.port)):
+        if ports.count(str(url[2])):
             container_name = container
             break
 
