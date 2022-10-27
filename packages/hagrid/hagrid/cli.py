@@ -1,5 +1,6 @@
 # stdlib
 import json
+import multiprocessing
 import os
 from pathlib import Path
 from queue import Queue
@@ -2497,28 +2498,29 @@ def create_check_table(
     return table
 
 
+def get_docker_status(ip_address: str) -> bool:
+    pass
+
+
 @click.command(help="Check health of an IP address/addresses or a resource group")
 @click.argument("ip_addresses", type=str, nargs=-1)
-@click.option(
-    "--wait",
-    is_flag=True,
-    help="Optional: wait until checks pass",
-)
+@click.argument("timeout", type=int, nargs=1)
 @click.option(
     "--silent",
     is_flag=True,
-    help="Optional: don't refresh output during wait",
+    help="Optional: don't refresh output",
 )
 def check(
-    ip_addresses: TypeList[str], wait: bool = False, silent: bool = False
+    ip_addresses: TypeList[str], silent: bool = False, timeout: int = 300
 ) -> None:
-    check_status(ip_addresses=ip_addresses, wait=wait, silent=silent)
+    check_status(ip_addresses=ip_addresses, silent=silent, timeout=timeout)
 
 
-def check_status(
-    ip_addresses: Union[str, TypeList[str]], wait: bool = False, silent: bool = False
+def _check_status(
+    ip_addresses: Union[str, TypeList[str]], silent: bool = False
 ) -> None:
 
+    OK_EMOJI = RichEmoji("white_heavy_check_mark").to_str()
     # Check if ip_addresses is str, then convert to list
     if ip_addresses and isinstance(ip_addresses, str):
         ip_addresses = [ip_addresses]
@@ -2537,14 +2539,27 @@ def check_status(
         status, table_contents = get_health_checks(ip_address=ip_address)
         table = create_check_table(table_contents=table_contents)
         max_timeout = 600
-        if wait and not status:
+        if not status:
             table = create_check_table(
                 table_contents=table_contents, time_left=max_timeout
             )
             if silent:
-                print("Checking...")
-            while not status:
-                if not silent:
+                with console.status("Gathering Node information") as console_status:
+                    console_status.update(
+                        "[bold blue]Waiting for Docker Container Deployment"
+                    )
+                    docker_status = get_docker_status(ip_address)
+                    while not docker_status:
+                        docker_status = get_docker_status(ip_address)
+                        time.sleep(1)
+                    console.print(f"{OK_EMOJI} Docker Containers Deployed.")
+
+                status, table_contents = get_health_checks(ip_address)
+                table = create_check_table(
+                    table_contents=table_contents, time_left=max_timeout
+                )
+            else:
+                while not status:
                     with Live(
                         table, refresh_per_second=2, screen=True, auto_refresh=False
                     ) as live:
@@ -2558,20 +2573,31 @@ def check_status(
                         if status:
                             break
                         time.sleep(1)
-                else:
-                    max_timeout -= 1
-                    if max_timeout % 5 == 0:
-                        status, table_contents = get_health_checks(ip_address)
-                    table = create_check_table(
-                        table_contents=table_contents, time_left=max_timeout
-                    )
-                    time.sleep(1)
+
         console.print(table)
     else:
         for ip_address in ip_addresses:
             _, table_contents = get_health_checks(ip_address)
             table = create_check_table(table_contents=table_contents)
             console.print(table)
+
+
+def check_status(
+    ip_addresses: Union[str, TypeList[str]],
+    silent: bool = False,
+    timeout: Optional[int] = 300,
+) -> None:
+    p = multiprocessing.Process(
+        target=_check_status, kwargs={"ip_addresses": ip_addresses, "silent": silent}
+    )
+    p.start()
+    p.join(timeout)
+
+    # If thread is still active
+    if p.is_alive():
+        print(f"Timed out after {timeout} seconds.")
+        p.terminate()
+        p.join()
 
 
 cli.add_command(check)
