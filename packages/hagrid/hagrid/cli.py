@@ -2685,6 +2685,7 @@ def check_status(
     timeout: Union[int, str] = 300,
 ) -> None:
     timeout = int(timeout)
+
     t = Thread(
         target=_check_status, kwargs={"ip_addresses": ip_addresses, "silent": silent}
     )
