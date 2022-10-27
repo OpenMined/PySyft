@@ -5,6 +5,7 @@ from pathlib import Path
 from queue import Queue
 import re
 import shutil
+import signal
 import socket
 import stat
 import subprocess  # nosec
@@ -29,6 +30,7 @@ import click
 import requests
 import rich
 from rich.live import Live
+from rich.progress import Progress
 from virtualenvapi.manage import VirtualEnvironment
 
 # relative
@@ -62,6 +64,7 @@ from .lib import check_jupyter_server
 from .lib import check_login_page
 from .lib import docker_desktop_memory
 from .lib import generate_process_status_table
+from .lib import generate_user_table
 from .lib import gitpod_url
 from .lib import hagrid_root
 from .lib import is_gitpod
@@ -354,10 +357,111 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
         return
 
 
-def process_cmd(
-    cmds: TypeList[str], dry_run: bool, silent: bool, from_rendered_dir: bool
+def check_errors(
+    line: str, pid: int, cmd_name: str, progress_bar: Union[Progress, None] = None
 ) -> None:
-    # console = rich.get_console()
+    console = rich.get_console()
+    if "Error response from daemon: " in line:
+        console.print(f"❌ [bold red]{cmd_name}[/bold red]\n")
+        console.print(f"[red] ERROR [/red]: [bold white]{line}[/bold white]\n")
+        if progress_bar:
+            progress_bar.stop()
+        os.killpg(os.getpgid(pid), signal.SIGTERM)
+
+
+def check_pulling(line: str, cmd_name: str, progress_bar: Progress) -> None:
+    task = progress_bar.tasks[0]
+    if "Pulling" in line and "fs layer" not in line:
+        progress_bar.update(
+            0,
+            description=f"[bold white]{cmd_name} [{task.completed} / {task.total+1}]",
+            total=task.total + 1,
+        )
+        if task.total == 1:
+            progress_bar.start_task(0)
+    if "Pulled" in line:
+        progress_bar.update(
+            0,
+            description=f"[bold white]{cmd_name} [{task.completed + 1} / {task.total}]",
+            completed=task.completed + 1,
+        )
+
+
+def check_building(line: str, cmd_name: str, progress_bar: Progress) -> None:
+    current_build_steps = 55
+    pattern = re.search("^#[0-9]{1,3}", line)
+    if pattern:
+        current_step = int(pattern.group()[1:])
+        task = progress_bar.tasks[0]
+        if task.total == 0:
+            progress_bar.update(
+                0,
+                description=f"[bold white]{cmd_name} [{task.completed} / {current_build_steps}]",
+                total=current_build_steps,
+            )
+            progress_bar.start_task(0)
+        progress_bar.update(
+            0,
+            description=f"[bold white]{cmd_name} [{current_step} / {current_build_steps}]",
+            completed=current_step,
+        )
+
+
+def check_launching(line: str, cmd_name: str, progress_bar: Progress) -> None:
+    task = progress_bar.tasks[0]
+    if "Starting" in line:
+        progress_bar.update(
+            0,
+            description=f"[bold white]{cmd_name} [{task.completed} / {task.total+1}]",
+            total=task.total + 1,
+        )
+        if task.total == 1:
+            progress_bar.start_task(0)
+    if "Started" in line:
+        progress_bar.update(
+            0,
+            description=f"[bold white]{cmd_name} [{task.completed + 1} / {task.total}]",
+            completed=task.completed + 1,
+        )
+
+
+def read_thread_logs(
+    progress_bar: Progress, pid: int, queue: Queue, cmd_name: str
+) -> None:
+    line = queue.get()
+    line = str(line, encoding="utf-8").strip()
+    if progress_bar:
+        check_errors(line, pid, cmd_name, progress_bar=progress_bar)
+        check_pulling(line, cmd_name, progress_bar=progress_bar)
+        check_launching(line, cmd_name, progress_bar=progress_bar)
+        check_building(line, cmd_name, progress_bar=progress_bar)
+
+
+def create_thread_logs(process: subprocess.Popen) -> Queue:
+    def enqueue_output(out: Any, queue: Queue) -> None:
+        for line in iter(out.readline, b""):
+            queue.put(line)
+        out.close()
+
+    queue: Queue = Queue()
+    thread_1 = Thread(target=enqueue_output, args=(process.stdout, queue))
+    thread_2 = Thread(target=enqueue_output, args=(process.stderr, queue))
+
+    thread_1.daemon = True  # thread dies with the program
+    thread_1.start()
+    thread_2.daemon = True  # thread dies with the program
+    thread_2.start()
+    return queue
+
+
+def process_cmd(
+    cmds: TypeList[str],
+    dry_run: bool,
+    silent: bool,
+    from_rendered_dir: bool,
+    progress_bar: Union[Progress, None] = None,
+    cmd_name: str = "",
+) -> None:
     process_list: TypeList = []
     cwd = (
         os.path.join(GRID_SRC_PATH, RENDERED_DIR)
@@ -368,13 +472,12 @@ def process_cmd(
     username, password = (
         extract_username_and_pass(cmds[0]) if len(cmds) > 0 else ("-", "-")
     )
-    # display VM credentials
-    # console.print(generate_user_table(username=username, password=password))
 
-    def enqueue_output(out: Any, queue: Queue) -> None:
-        for line in iter(out.readline, b""):
-            queue.put(line)
-        out.close()
+    # display VM credentials
+    console = rich.get_console()
+    credentials = generate_user_table(username=username, password=password)
+    if credentials:
+        console.print(credentials)
 
     for cmd in cmds:
         if dry_run:
@@ -410,38 +513,25 @@ def process_cmd(
                         shell=True,
                     )
 
-                    # print(process.pid, process.poll())
-
-                    queue: Queue = Queue()
-                    # thread_1 = Thread(target=enqueue_output, args=(process.stdout, queue))
-                    thread_2 = Thread(
-                        target=enqueue_output, args=(process.stderr, queue)
-                    )
-                    # thread_3 = Thread(target=enqueue_output, args=(process.stdin, queue))
-                    # thread_1.daemon = True  # thread dies with the program
-                    # thread_1.start()
-                    thread_2.daemon = True  # thread dies with the program
-                    thread_2.start()
-                    # thread_3.daemon = True  # thread dies with the program
-                    # thread_3.start()
+                    # Creates two threads to get docker stdout and sterr
+                    logs_queue = create_thread_logs(process=process)
 
                     while process.poll() != 0:
                         while True:
-                            if queue.empty():
+                            if logs_queue.empty():
                                 break
-                            line = queue.get()
-                            line = str(line, encoding="utf-8").strip()
-
-                            # print(f"Logs: {line}", end="\r", flush=True)
-
-                            # if "Building[" in line:
-                            #    print(
-                            #        "...............Building............",
-                            #        line,
-                            #        flush=True,
-                            #    )
-
+                            # Read stdout and sterr to check errors or update progress bar.
+                            read_thread_logs(
+                                progress_bar, process.pid, logs_queue, cmd_name
+                            )
+                    console.print(
+                        "✅ ",
+                        f"[green]{cmd_name} Images",
+                    )
                 else:
+                    if progress_bar:
+                        progress_bar.stop()
+
                     subprocess.run(  # nosec
                         cmd_to_exec,
                         shell=True,
@@ -470,19 +560,20 @@ def execute_commands(
         cmds (list): list of commands to be executed
         dry_run (bool, optional): If `True` only displays cmds to be executed. Defaults to False.
     """
-
-    console = rich.get_console()
     if isinstance(cmds, dict):
         for cmd_name, cmd in cmds.items():
-            with console.status(cmd_name) as console_status:
+            with Progress(transient=True) as progress:
+                progress.add_task(
+                    f"[bold green]{cmd_name} Images", total=0, start=False
+                )
                 process_cmd(
                     cmds=cmd,
                     dry_run=dry_run,
                     silent=silent,
                     from_rendered_dir=from_rendered_dir,
+                    progress_bar=progress,
+                    cmd_name=cmd_name,
                 )
-                print("✅ ", cmd_name)
-                console_status.stop()
     else:
         process_cmd(
             cmds=cmds,
@@ -963,6 +1054,7 @@ def create_launch_cmd(
         parsed_kwargs.update(kwargs)
 
     if host in ["docker"]:
+
         # Check docker service status
         if not ignore_docker_version_check:
             check_docker_service_status()
@@ -1446,6 +1538,32 @@ def create_launch_cmd(
     )
 
 
+def pull_command(cmd: str, kwargs: TypeDict[str, Any]) -> TypeList[str]:
+    pull_cmd = str(cmd)
+    if kwargs["release"] == "production":
+        pull_cmd += " --file docker-compose.yml"
+    else:
+        pull_cmd += " --file docker-compose.pull.yml"
+    pull_cmd += " pull"
+    return [pull_cmd]
+
+
+def build_command(cmd: str) -> TypeList[str]:
+    build_cmd = str(cmd)
+    build_cmd += " --file docker-compose.build.yml"
+    build_cmd += " --file docker-compose.dev.yml"
+    build_cmd += " build"
+    return [build_cmd]
+
+
+def deploy_command(cmd: str, tail: bool) -> TypeList[str]:
+    up_cmd = str(cmd)
+    up_cmd += " up"
+    if not tail:
+        up_cmd += " -d"
+    return [up_cmd]
+
+
 def create_launch_docker_cmd(
     verb: GrammarVerb,
     docker_version: str,
@@ -1473,10 +1591,10 @@ def create_launch_docker_cmd(
 
     print("  - TYPE: " + str(node_type.input))
     print("  - NAME: " + str(snake_name))
-    # print("  - TAG: " + str(tag))
+    print("  - TAG: " + str(tag))
     print("  - PORT: " + str(host_term.free_port))
     print("  - DOCKER COMPOSE: " + docker_version)
-    # print("  - TAIL: " + str(tail))
+    print("  - TAIL: " + str(tail))
     print("\n")
 
     version_string = kwargs["tag"]
@@ -1624,29 +1742,6 @@ def create_launch_docker_cmd(
         cmd += f" --env-file {env_file_path}"
     except Exception:  # nosec
         pass
-
-    def pull_command(cmd: str, kwargs: TypeDict[str, Any]) -> TypeList[str]:
-        pull_cmd = str(cmd)
-        if kwargs["release"] == "production":
-            pull_cmd += " --file docker-compose.yml"
-        else:
-            pull_cmd += " --file docker-compose.pull.yml"
-        pull_cmd += " pull"
-        return [pull_cmd]
-
-    def build_command(cmd: str) -> TypeList[str]:
-        build_cmd = str(cmd)
-        build_cmd += " --file docker-compose.build.yml"
-        build_cmd += " --file docker-compose.dev.yml"
-        build_cmd += " build"
-        return [build_cmd]
-
-    def deploy_command(cmd: str, tail: bool) -> TypeList[str]:
-        up_cmd = str(cmd)
-        up_cmd += " up"
-        if not tail:
-            up_cmd += " -d"
-        return [up_cmd]
 
     final_commands = {}
     final_commands["Pulling"] = pull_command(cmd, kwargs)
