@@ -46,6 +46,9 @@ $ pip install -U syft --pre
 ```
 
 
+## Documentation
+For full documentation, including installation and tutorials, please see https://openmined.github.io/PySyft/
+
 
 
 ## Contributing
@@ -55,6 +58,7 @@ It covers all that you need to know to start contributing code to PySyft today.
 
 Also, join the rapidly growing community of 12,000+ on [Slack](http://slack.openmined.org).
 The Slack community is very friendly and great about quickly answering questions about the use and development of PySyft!
+
 
 
 
