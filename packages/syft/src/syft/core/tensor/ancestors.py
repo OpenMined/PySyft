@@ -472,7 +472,10 @@ def check_data_subjects(
 
     # Check 3: If data_subjects is a string, make it an array of the correct shape
     if isinstance(data_subjects, str):
-        data_subjects = DataSubjectArray.from_objs([data_subjects] * data.size)
+        data_subjects = np.array(
+            DataSubjectArray.from_objs([data_subjects] * data.size)
+        )
+        data_subjects = data_subjects.reshape(data.shape)
 
     if isinstance(data_subjects, DataSubjectArray):
         # if data.size == 1, data_subjects will be a DSA instead of a np array
