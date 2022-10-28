@@ -143,7 +143,7 @@ Let's do a quick health check to ensure the Domain is up and running.
    In:
 
    # run this cell
-   !hagrid check localhost:8081 --silent
+   !hagrid check localhost:8081
 
    Out: 
 

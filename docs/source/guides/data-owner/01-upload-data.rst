@@ -89,7 +89,7 @@ To login to your Domain node, you will need to define which Domain you are loggi
          password="changethis"
       )
    except Exception as e:
-      print("Unable to login. Please check your domain is up with `!hagrid check localhost:8081 --silent`")
+      print("Unable to login. Please check your domain is up with `!hagrid check localhost:8081`")
 
    Out:
 
