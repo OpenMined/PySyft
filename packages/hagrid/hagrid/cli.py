@@ -353,22 +353,39 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
         execute_commands(
             cmds, dry_run=dry_run, silent=silent, from_rendered_dir=from_rendered_dir
         )
-        print("Success!\n\n")
+        host_term = verb.get_named_term_hostgrammar(name="host")
+        command = cmds[list(cmds.keys())[0]][0]  # type: ignore
+        match_port = re.search("HTTP_PORT=[0-9]{1,5}", command)
+
+        if host_term.host == "docker" and match_port:
+            rich.get_console().print(
+                "\n[bold green]⠋[bold blue] Checking  Node API [/bold blue]\t"
+            )
+            port = match_port.group().replace("HTTP_PORT=", "")
+            check_status("localhost" + ":" + port)
     except Exception as e:
         print(f"Error: {e}\n\n")
         return
 
 
-def check_errors(
-    line: str, pid: int, cmd_name: str, progress_bar: Union[Progress, None] = None
-) -> None:
-    console = rich.get_console()
+def check_errors(line: str, pid: int, cmd_name: str, progress_bar: Progress) -> None:
+    task = progress_bar.tasks[0]
     if "Error response from daemon: " in line:
-        console.print(f"❌ [bold red]{cmd_name}[/bold red]\n")
-        console.print(f"[red] ERROR [/red]: [bold white]{line}[/bold white]\n")
         if progress_bar:
+            progress_bar.update(
+                0,
+                description=f"❌ [bold red]{cmd_name}[/bold red] [{task.completed} / {task.total}]",
+                refresh=True,
+            )
+            progress_bar.update(0, visible=False)
+            progress_bar.console.clear_live()
+            progress_bar.console.quiet = True
             progress_bar.stop()
+            console = rich.get_console()
+            progress_bar.console.quiet = False
+            console.print(f"\n\n [red] ERROR [/red]: [bold]{line}[/bold]\n")
         os.killpg(os.getpgid(pid), sys_signal.SIGTERM)
+        raise Exception
 
 
 def check_pulling(line: str, cmd_name: str, progress_bar: Progress) -> None:
@@ -376,17 +393,23 @@ def check_pulling(line: str, cmd_name: str, progress_bar: Progress) -> None:
     if "Pulling" in line and "fs layer" not in line:
         progress_bar.update(
             0,
-            description=f"[bold white]{cmd_name} [{task.completed} / {task.total+1}]",
+            description=f"⌛ [bold]{cmd_name} [{task.completed} / {task.total+1}]",
             total=task.total + 1,
+            refresh=True,
         )
-        if task.total == 1:
-            progress_bar.start_task(0)
     if "Pulled" in line:
         progress_bar.update(
             0,
-            description=f"[bold white]{cmd_name} [{task.completed + 1} / {task.total}]",
+            description=f"⌛ [bold]{cmd_name} [{task.completed + 1} / {task.total}]",
             completed=task.completed + 1,
+            refresh=True,
         )
+        if progress_bar.finished:
+            progress_bar.update(
+                0,
+                description=f"✅ [bold green]{cmd_name} [{task.completed} / {task.total}]",
+                refresh=True,
+            )
 
 
 def check_building(line: str, cmd_name: str, progress_bar: Progress) -> None:
@@ -395,18 +418,20 @@ def check_building(line: str, cmd_name: str, progress_bar: Progress) -> None:
     if pattern:
         current_step = int(pattern.group()[1:])
         task = progress_bar.tasks[0]
-        if task.total == 0:
+        if current_step > task.completed:
             progress_bar.update(
                 0,
-                description=f"[bold white]{cmd_name} [{task.completed} / {current_build_steps}]",
+                description=f"⌛ [bold]{cmd_name} [{current_step} / {current_build_steps}]",
+                completed=current_step,
                 total=current_build_steps,
+                refresh=True,
             )
-            progress_bar.start_task(0)
-        progress_bar.update(
-            0,
-            description=f"[bold white]{cmd_name} [{current_step} / {current_build_steps}]",
-            completed=current_step,
-        )
+            if progress_bar.finished:
+                progress_bar.update(
+                    0,
+                    description=f"✅ [bold green]{cmd_name} [{task.completed} / {task.total}]",
+                    refresh=True,
+                )
 
 
 def check_launching(line: str, cmd_name: str, progress_bar: Progress) -> None:
@@ -414,17 +439,23 @@ def check_launching(line: str, cmd_name: str, progress_bar: Progress) -> None:
     if "Starting" in line:
         progress_bar.update(
             0,
-            description=f"[bold white]{cmd_name} [{task.completed} / {task.total+1}]",
+            description=f"⌛ [bold]{cmd_name} [{task.completed} / {task.total+1}]",
             total=task.total + 1,
+            refresh=True,
         )
-        if task.total == 1:
-            progress_bar.start_task(0)
     if "Started" in line:
         progress_bar.update(
             0,
-            description=f"[bold white]{cmd_name} [{task.completed + 1} / {task.total}]",
+            description=f"⌛ [bold]{cmd_name} [{task.completed + 1} / {task.total}]",
             completed=task.completed + 1,
+            refresh=True,
         )
+        if progress_bar.finished:
+            progress_bar.update(
+                0,
+                description=f"✅ [bold green]{cmd_name} [{task.completed} / {task.total}]",
+                refresh=True,
+            )
 
 
 def read_thread_logs(
@@ -526,10 +557,6 @@ def process_cmd(
                             read_thread_logs(
                                 progress_bar, process.pid, logs_queue, cmd_name
                             )
-                    console.print(
-                        "✅ ",
-                        f"[green]{cmd_name} Images",
-                    )
                 else:
                     if progress_bar:
                         progress_bar.stop()
@@ -562,11 +589,14 @@ def execute_commands(
         cmds (list): list of commands to be executed
         dry_run (bool, optional): If `True` only displays cmds to be executed. Defaults to False.
     """
+    console = rich.get_console()
     if isinstance(cmds, dict):
+        console.print("[bold green]⠋[bold blue] Launching Docker Images [/bold blue]\t")
         for cmd_name, cmd in cmds.items():
-            with Progress(transient=True) as progress:
+            with Progress(console=console, auto_refresh=False) as progress:
                 progress.add_task(
-                    f"[bold green]{cmd_name} Images", total=0, start=False
+                    f"[bold green]{cmd_name} Images",
+                    total=0,
                 )
                 process_cmd(
                     cmds=cmd,
@@ -1758,7 +1788,7 @@ def create_launch_docker_cmd(
         my_build_command = build_command(cmd)
         final_commands["Building"] = my_build_command
 
-    final_commands["Deploying"] = deploy_command(cmd, tail)
+    final_commands["Launching"] = deploy_command(cmd, tail)
     return final_commands
 
 
