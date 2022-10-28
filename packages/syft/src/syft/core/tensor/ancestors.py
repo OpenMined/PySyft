@@ -379,22 +379,66 @@ class PhiTensorAncestor(TensorChainManager):
     ) -> PhiTensorAncestor:
         print("Tensor annotated with DP Metadata")
         return self.private(
-            min_val=min_val,
-            max_val=max_val,
+            lower_bound=min_val,
+            upper_bound=max_val,
             data_subjects=data_subjects,
             skip_blocking_checks=skip_blocking_checks,
         )
 
     def private(
         self,
-        min_val: ArrayLike,
-        max_val: ArrayLike,
+        lower_bound: ArrayLike,
+        upper_bound: ArrayLike,
         data_subjects: Optional[Any] = None,
         skip_blocking_checks: bool = False,
     ) -> PhiTensorAncestor:
+        """
+        This method will annotate your Tensor with metadata (an upper bound and lower bound on the data,
+        as well as the people whose data is in the dataset), and thus enable Differential Privacy
+        protection.
+
+        Params:
+            lower_bound: float
+                The lowest possible value allowed by your dataset's schema.
+
+                e.g.
+                - if this is data about age, lower_bound would ideally be 0.
+                - if this is data about teenagers' ages, lower_bound would ideally be 13.
+                - if these are RGB images, lower_bound would ideally be 0.
+
+            upper_bound: float
+                The highest possible value allowed by your dataset's schema.
+
+                e.g.
+                - if this is data about age, upper_bound would ideally be 120.
+                (the age of the oldest known human)
+                - if this is data about teenagers' ages, upper_bound would ideally be 19.
+                (the oldest possible teenager)
+                - if these are RGB images, upper_bound would ideally be 255.
+
+
+            data_subjects: str, tuple, list, np.ndarray, DataSubjectArray
+                The individuals whose data is in this dataset, and whose privacy you wish to protect.
+
+                Please provide either:
+                    - 1 data subject for the whole dataset
+                    (i.e. this is one individual's finances)
+
+                    - 1 data subjects per row
+                    (i.e. this is a series of images, and each image belongs to a person)
+
+                    - 1 data subject per each data point
+
+        Returns:
+            Syft Tensor
+                This tensor can be protected by PySyft's differential Privacy System.
+
+        If this documentation is not clear- please feel free to post in the #support channel on Slack.
+        You may join here: https://slack.openmined.org/
+        """
         return self.copy()._private(
-            min_val=min_val,
-            max_val=max_val,
+            min_val=lower_bound,
+            max_val=upper_bound,
             data_subjects=data_subjects,
             skip_blocking_checks=skip_blocking_checks,
         )
@@ -434,6 +478,13 @@ class PhiTensorAncestor(TensorChainManager):
         min_vals, max_vals = check_min_max_vals(
             min_val, max_val, target_shape=self.child.shape
         )
+
+        if self.child.min() == min_vals.data:
+            print(
+                "It seems like you set your upper_bound to the literal highest value in the dataset. If this is "
+            )
+        if self.child.max() == max_vals.data:
+            print("It seems like ")
 
         unique_data_subjects = len(data_subjects.sum())
         if unique_data_subjects == 1:

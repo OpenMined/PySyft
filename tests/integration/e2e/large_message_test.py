@@ -67,7 +67,7 @@ def test_large_blob_upload() -> None:
         )
 
         tweets_data = sy.Tensor(reference_data).private(
-            min_val=0, max_val=30, data_subjects=data_subjects
+            lower_bound=0, upper_bound=30, data_subjects=data_subjects
         )
 
         report[size_name]["tensor_type"] = type(tweets_data.child).__name__

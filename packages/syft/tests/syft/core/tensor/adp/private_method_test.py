@@ -12,14 +12,14 @@ def test_incompatible_input_tensor_type() -> None:
     with pytest.raises(Exception):
         x = sy.Tensor(np.float32([1, 2, 3, 4.0]))
         bob = DataSubjectArray.from_objs(np.array(["bob", "billy"]))
-        x.private(min_val=0, max_val=5, data_subjects=bob)
+        x.private(lower_bound=0, upper_bound=5, data_subjects=bob)
 
 
 def test_string_data_subject() -> None:
     x = sy.Tensor(np.array([1], dtype=DEFAULT_INT_NUMPY_TYPE))
     bob = DataSubjectArray(["bob"])
     data_subjects = np.broadcast_to(np.array(bob), x.child.shape)
-    out = x.private(min_val=0, max_val=5, data_subjects=data_subjects)
+    out = x.private(lower_bound=0, upper_bound=5, data_subjects=data_subjects)
     assert bob in out.child.data_subjects
 
 
@@ -28,6 +28,6 @@ def test_list_of_strings_data_subject() -> None:
     bob = DataSubjectArray(["bob"])
     alice = DataSubjectArray(["alice"])
     data_subjects = np.array([alice, alice, alice, bob])
-    out = x.private(min_val=0, max_val=5, data_subjects=data_subjects)
+    out = x.private(lower_bound=0, upper_bound=5, data_subjects=data_subjects)
     assert bob in out.child.data_subjects
     assert alice in out.child.data_subjects

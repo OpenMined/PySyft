@@ -66,7 +66,7 @@ def upload_subset(
     entities = DataSubjectArray.from_objs(user_id)
 
     tweets_data = sy.Tensor(impressions).private(
-        min_val=0, max_val=30, data_subjects=entities
+        lower_bound=0, upper_bound=30, data_subjects=entities
     )
 
     assert isinstance(tweets_data.child, GammaTensor)

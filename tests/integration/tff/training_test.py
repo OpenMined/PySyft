@@ -33,10 +33,10 @@ def load_dataset(domain):
     train_data_subjects = np.broadcast_to(np.array(data_subjects), train_data.shape)
 
     train_image_data = sy.Tensor(train_data).private(
-        min_val=0, max_val=255, data_subjects=train_data_subjects
+        lower_bound=0, upper_bound=255, data_subjects=train_data_subjects
     )
     train_label_data = sy.Tensor(label_data).private(
-        min_val=0, max_val=5, data_subjects=data_subjects
+        lower_bound=0, upper_bound=5, data_subjects=data_subjects
     )
 
     domain.load_dataset(

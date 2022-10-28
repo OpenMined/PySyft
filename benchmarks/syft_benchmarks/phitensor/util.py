@@ -17,7 +17,7 @@ def make_phitensor(data_file) -> PT:
     data_subjects = DataSubjectList.from_objs(["Tom"] * len(publication_title))
 
     phitensor_data = sy.Tensor(impressions).private(
-        min_val=0, max_val=30, data_subjects=data_subjects
+        lower_bound=0, upper_bound=30, data_subjects=data_subjects
     )
 
     return phitensor_data
