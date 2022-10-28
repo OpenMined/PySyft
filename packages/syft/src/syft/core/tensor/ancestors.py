@@ -420,14 +420,24 @@ class PhiTensorAncestor(TensorChainManager):
             data_subjects: str, tuple, list, np.ndarray, DataSubjectArray
                 The individuals whose data is in this dataset, and whose privacy you wish to protect.
 
+                Can be either:
+                 - string: data_subjects="Bob"
+                 - list: data_subjects=["Bob", "Alice", "Joe"]
+                 - tuple: data_subjects=("Bob", "Alice")
+                 - array: data_subjects=np.array(["Bob", "Alice", "Joe"])
+
                 Please provide either:
                     - 1 data subject for the whole dataset
-                    (i.e. this is one individual's finances)
+                        i.e. This is one person's finances. The dataset has shape=(10, 10), and we provide
+                        data_subject="Bob"
 
                     - 1 data subjects per row
-                    (i.e. this is a series of images, and each image belongs to a person)
+                        i.e. This dataset is 5 images of size (28, 28) and thus has a shape of (5, 28, 28), we provide
+                        data_subjects=["Bob", "Alice", "Julian", "Billy", "Chris"]
 
                     - 1 data subject per each data point
+                        i.e. This dataset has people's ages and has shape (1000,) and we provide
+                        data_subjects=np.arange(1000)
 
         Returns:
             Syft Tensor
