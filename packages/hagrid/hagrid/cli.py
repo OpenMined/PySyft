@@ -2624,10 +2624,11 @@ def check(
     check_status(ip_addresses=ip_addresses, silent=silent, timeout=timeout)
 
 
-signal = Event()
-
-
-def _check_status(ip_addresses: Union[str, TypeList[str]], silent: bool = True) -> None:
+def _check_status(
+    ip_addresses: Union[str, TypeList[str]],
+    silent: bool = True,
+    signal: Optional[Event] = None,
+) -> None:
     OK_EMOJI = RichEmoji("white_heavy_check_mark").to_str()
     # Check if ip_addresses is str, then convert to list
     if ip_addresses and isinstance(ip_addresses, str):
@@ -2659,17 +2660,21 @@ def _check_status(ip_addresses: Union[str, TypeList[str]], silent: bool = True) 
                     while not docker_status:
                         docker_status, domain_info = get_docker_status(ip_address)
                         time.sleep(1)
-                        if signal.is_set():
+                        if (
+                            signal and signal.is_set()
+                        ):  # Stop execution if timeout is triggered
                             return
                     console.print(
                         f"{OK_EMOJI} {domain_info[0]} {domain_info[1]} Docker Containers Created."
                     )
+
                     console_status.update("[bold orange_red1]Installing Syft")
                     syft_install_status = get_syft_install_status(domain_info[0])
                     while not syft_install_status:
                         syft_install_status = get_syft_install_status(domain_info[0])
                         time.sleep(1)
-                        if signal.is_set():
+                        # Stop execution if timeout is triggered
+                        if signal and signal.is_set():
                             return
                     console.print(f"{OK_EMOJI} Syft")
                     console.print(f"{OK_EMOJI} Containers Startup Complete.")
@@ -2680,7 +2685,8 @@ def _check_status(ip_addresses: Union[str, TypeList[str]], silent: bool = True) 
                 )
             else:
                 while not status:
-                    if signal.is_set():
+                    # Stop execution if timeout is triggered
+                    if signal is not None and signal.is_set():
                         return
                     with Live(
                         table, refresh_per_second=2, screen=True, auto_refresh=False
@@ -2713,21 +2719,28 @@ def check_status(
     # third party
     from rich import print
 
+    signal = Event()
+
     t = Thread(
-        target=_check_status, kwargs={"ip_addresses": ip_addresses, "silent": silent}
+        target=_check_status,
+        kwargs={"ip_addresses": ip_addresses, "silent": silent, "signal": signal},
     )
     t.start()
     t.join(timeout=timeout)
 
     if t.is_alive():
         signal.set()
-        print(f"Hagrid Check command timed out after: {timeout} seconds 🕛 ")
+        t.join()
+
+        print(f"Hagrid check command timed out after: {timeout} seconds 🕛")
         print(
-            "You could try increasing the timeout or kindly check the docker containers for error logs."
+            "Please try increasing the timeout or kindly check the docker containers for error logs."
         )
-        print("Viewing Docker Container Logs:")
+        print("You can view your container logs using the following tool:")
         print("Tool: [link=https://ctop.sh]Ctop[/link]")
-        print("Video Explanation: [link=https://youtu.be/BJhlCxerQP4]Video[/link]")
+        print(
+            "Video Explanation: [link=https://youtu.be/BJhlCxerQP4]How to use Ctop[/link]\n"
+        )
 
 
 cli.add_command(check)
