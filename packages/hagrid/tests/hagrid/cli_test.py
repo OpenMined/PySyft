@@ -20,7 +20,7 @@ def test_hagrid_launch() -> None:
     verb.load_grammar(grammar=grammar)
     cmd = cli.create_launch_cmd(verb=verb, kwargs={}, ignore_docker_version_check=True)
 
-    cmd = cmd["Deploying"][0]  # type: ignore
+    cmd = cmd["Launching"][0]  # type: ignore
 
     # check that it's a domain by default
     assert "NODE_TYPE=domain" in cmd or "NODE_TYPE='domain'" in cmd
@@ -58,7 +58,7 @@ def test_hagrid_launch_without_name_with_preposition() -> None:
     verb.load_grammar(grammar=grammar)
     cmd = cli.create_launch_cmd(verb=verb, kwargs={}, ignore_docker_version_check=True)
 
-    cmd = cmd["Deploying"][0]  # type: ignore
+    cmd = cmd["Launching"][0]  # type: ignore
     # check that it's a domain by default
     assert "NODE_TYPE=domain" in cmd or "NODE_TYPE='domain'" in cmd
 
@@ -95,7 +95,7 @@ def test_launch_with_multiword_domain_name() -> None:
     verb.load_grammar(grammar=grammar)
     cmd = cli.create_launch_cmd(verb=verb, kwargs={}, ignore_docker_version_check=True)
 
-    cmd = cmd["Deploying"][0]  # type: ignore
+    cmd = cmd["Launching"][0]  # type: ignore
 
     # check that it's a domain by default
     assert "NODE_TYPE=domain" in cmd or "NODE_TYPE='domain'" in cmd
@@ -119,7 +119,7 @@ def test_launch_with_longer_multiword_domain_name() -> None:
     verb.load_grammar(grammar=grammar)
     cmd = cli.create_launch_cmd(verb=verb, kwargs={}, ignore_docker_version_check=True)
 
-    cmd = cmd["Deploying"][0]  # type: ignore
+    cmd = cmd["Launching"][0]  # type: ignore
 
     # check that it's a domain by default
     assert "NODE_TYPE=domain" in cmd or "NODE_TYPE='domain'" in cmd
@@ -146,7 +146,7 @@ def test_launch_with_longer_multiword_domain_name_with_preposition() -> None:
     verb.load_grammar(grammar=grammar)
     cmd = cli.create_launch_cmd(verb=verb, kwargs={}, ignore_docker_version_check=True)
 
-    cmd = cmd["Deploying"][0]  # type: ignore
+    cmd = cmd["Launching"][0]  # type: ignore
 
     # check that it's a domain by default
     assert "NODE_TYPE=domain" in cmd or "NODE_TYPE='domain'" in cmd
