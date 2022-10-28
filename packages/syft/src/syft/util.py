@@ -8,6 +8,7 @@ import functools
 from itertools import repeat
 import multiprocessing
 import multiprocessing as mp
+from multiprocessing import set_start_method
 from multiprocessing.synchronize import Event as EventClass
 from multiprocessing.synchronize import Lock as LockBase
 import operator
@@ -748,6 +749,9 @@ def print_dynamic_log(
     finish = multiprocessing.Event()
     success = multiprocessing.Event()
     lock = multiprocessing.Lock()
+
+    set_start_method("fork", force=True)
+
     multiprocessing.Process(
         target=print_process, args=(message, finish, success, lock)
     ).start()
