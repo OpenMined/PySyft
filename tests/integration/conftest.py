@@ -89,7 +89,7 @@ def load_dataset() -> None:
 
     data = np.array([[1.2, 2.7], [3.4, 4.8]])
     data_subjects = np.broadcast_to(np.array(DataSubjectArray(["Mars"])), data.shape)
-    data = sy.Tensor(data).private(0, 5, data_subjects)
+    data = sy.Tensor(data).annotate_with_dp_metadata(0, 5, data_subjects)
 
     for i in range(PARTIES):
         try:

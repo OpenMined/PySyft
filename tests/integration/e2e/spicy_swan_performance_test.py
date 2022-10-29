@@ -65,7 +65,7 @@ def upload_subset(
 
     entities = DataSubjectArray.from_objs(user_id)
 
-    tweets_data = sy.Tensor(impressions).private(
+    tweets_data = sy.Tensor(impressions).annotate_with_dp_metadata(
         lower_bound=0, upper_bound=30, data_subjects=entities
     )
 

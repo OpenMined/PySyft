@@ -66,7 +66,7 @@ def test_large_blob_upload() -> None:
             np.array(DataSubjectArray([data_subject_name])), reference_data.shape
         )
 
-        tweets_data = sy.Tensor(reference_data).private(
+        tweets_data = sy.Tensor(reference_data).annotate_with_dp_metadata(
             lower_bound=0, upper_bound=30, data_subjects=data_subjects
         )
 

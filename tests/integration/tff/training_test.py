@@ -32,10 +32,10 @@ def load_dataset(domain):
 
     train_data_subjects = np.broadcast_to(np.array(data_subjects), train_data.shape)
 
-    train_image_data = sy.Tensor(train_data).private(
+    train_image_data = sy.Tensor(train_data).annotate_with_dp_metadata(
         lower_bound=0, upper_bound=255, data_subjects=train_data_subjects
     )
-    train_label_data = sy.Tensor(label_data).private(
+    train_label_data = sy.Tensor(label_data).annotate_with_dp_metadata(
         lower_bound=0, upper_bound=5, data_subjects=data_subjects
     )
 

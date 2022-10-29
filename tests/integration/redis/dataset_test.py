@@ -14,13 +14,13 @@ def create_test_dataset(client, name: str = "TSTDataset"):
         np.array(DataSubjectArray([data_subject_name])), data.shape
     )
 
-    train_data = sy.Tensor(data).private(
+    train_data = sy.Tensor(data).annotate_with_dp_metadata(
         lower_bound=0, upper_bound=255, data_subjects=entities
     )
-    test_data = sy.Tensor(data).private(
+    test_data = sy.Tensor(data).annotate_with_dp_metadata(
         lower_bound=0, upper_bound=255, data_subjects=entities
     )
-    val_data = sy.Tensor(data).private(
+    val_data = sy.Tensor(data).annotate_with_dp_metadata(
         lower_bound=0, upper_bound=255, data_subjects=entities
     )
     client.load_dataset(
