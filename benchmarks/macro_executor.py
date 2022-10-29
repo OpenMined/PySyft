@@ -89,7 +89,7 @@ print(f"Time taken to create inputs for Syft Tensor: {round(tf,2)} seconds")
 
 
 t0 = time()
-tweets_data = sy.Tensor(impressions).private(
+tweets_data = sy.Tensor(impressions).annotate_with_dp_metadata(
     lower_bound=70, upper_bound=2000, data_subjects=data_subjects
 )
 tf = round(time() - t0, 4)
