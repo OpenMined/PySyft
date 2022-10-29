@@ -21,10 +21,8 @@ from grid.periodic_tasks import cleanup_incomplete_uploads_from_blob_store
 
 # TODO : Should be modified to use exponential backoff (for efficiency)
 # Initially we have set 0.1 as the retry time.
-# We have set max retries =(1200) 120 seconds
-
-
-@celery_app.task(bind=True, acks_late=True)
+# We have set max retries=(1200) 120 seconds
+@celery_app.task(bind=True, autoretry_for=(Exception,), retry_backoff=True)
 def msg_without_reply(self, obj_msg: Any) -> None:  # type: ignore
     if isinstance(obj_msg, SignedImmediateSyftMessageWithoutReply):
         try:
