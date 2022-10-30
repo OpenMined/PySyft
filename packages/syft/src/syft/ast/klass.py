@@ -241,7 +241,8 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
             args=args,
             kwargs=kwargs,
         )
-
+        __self.client.processing_pointers.pop(__self.id_at_location, None)
+        __self.client.processing_pointers[result_id_at_location] = True
         return result
 
     method_name = attr_path_and_name.rsplit(".", 1)[-1]
@@ -802,7 +803,13 @@ class Class(Callable):
                 # Step 7: send message
                 client.send_immediate_msg_without_reply(msg=obj_msg)
 
-                # Step 8: return pointer
+                # Setp 8: add it in the lit of processing pointers
+                # Add in client side a list of pointers that
+                # might be in the middle of some computation making it not
+                # available immediately.
+                client.processing_pointers[id_at_location] = True
+
+                # Step 9: return pointer
                 return ptr
             else:
                 return ptr, obj_msg
@@ -1021,6 +1028,7 @@ def pointerize_args_and_kwargs(
         else:
             pointer_args.append(arg)
             arg.gc_enabled = gc_enabled
+            arg.client.processing_pointers.pop(arg.id_at_location, None)
 
     for k, arg in kwargs.items():
         # check if its already a pointer
@@ -1030,6 +1038,7 @@ def pointerize_args_and_kwargs(
             pointer_kwargs[k] = arg_ptr
         else:
             pointer_kwargs[k] = arg
+            arg.client.processing_pointers.pop(arg.id_at_location, None)
 
     if obj_lst:
         msg = ActionSequence(obj_lst=obj_lst, address=client.address)
