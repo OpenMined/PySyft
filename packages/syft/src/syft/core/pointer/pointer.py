@@ -217,9 +217,30 @@ class Pointer(AbstractPointer):
             delete_obj=delete_obj,
         )
 
-        obj = self.client.send_immediate_msg_with_reply(
-            msg=obj_msg, timeout=GET_OBJECT_TIMEOUT
+        obj: Any = None
+        is_processing_pointer = self.client.processing_pointers.get(
+            self.id_at_location, False
         )
+
+        while is_processing_pointer:
+            try:
+                obj = self.client.send_immediate_msg_with_reply(
+                    msg=obj_msg, timeout=GET_OBJECT_TIMEOUT, verbose=True
+                )
+                del self.client.processing_pointers[self.id_at_location]
+                is_processing_pointer = False
+            except Exception:
+                time.sleep(0.5)
+                pass
+
+        # If obj is still not defined, then it didn't went inside of
+        # processing pointer scope. Therefore, this pointer is not
+        # 'in process' mode.
+        if not obj and not is_processing_pointer:
+            obj = self.client.send_immediate_msg_with_reply(
+                msg=obj_msg, timeout=GET_OBJECT_TIMEOUT
+            )
+
         if not proxy_only and obj.obj.is_proxy:
             presigned_url_path = obj.obj._data.url
             presigned_url = self.client.url_from_path(presigned_url_path)
