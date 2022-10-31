@@ -1,19 +1,63 @@
 # # stdlib
 # from typing import Any
+# stdlib
+from typing import Callable
+
+# third party
 #
 # # third party
-# import numpy as np
+import numpy as np
+
 # from numpy.typing import ArrayLike
-# import pytest
+import pytest
+
+# syft absolute
 #
 # # syft absolute
 # import syft as sy
-# from syft.core.adp.data_subject_ledger import DataSubjectLedger
-# from syft.core.adp.data_subject_list import DataSubjectArray
+from syft.core.adp.data_subject_ledger import DataSubjectLedger
+from syft.core.adp.data_subject_list import DataSubjectArray
+from syft.core.adp.ledger_store import DictLedgerStore
+
 # from syft.core.adp.ledger_store import DictLedgerStore
-# from syft.core.tensor.autodp.gamma_tensor import GammaTensor
-# from syft.core.tensor.autodp.phi_tensor import PhiTensor as PT
-# from syft.core.tensor.lazy_repeat_array import lazyrepeatarray as lra
+from syft.core.tensor.autodp.gamma_tensor import GammaTensor
+from syft.core.tensor.autodp.phi_tensor import PhiTensor as PT
+from syft.core.tensor.lazy_repeat_array import lazyrepeatarray as lra
+
+
+@pytest.fixture
+def ledger_store() -> DictLedgerStore:
+    return DictLedgerStore()
+
+
+@pytest.fixture
+def user_key() -> bytes:
+    return b"1231"
+
+
+@pytest.fixture
+def ledger(user_key: bytes) -> DataSubjectLedger:
+    return DataSubjectLedger.get_or_create(store=ledger_store, user_key=user_key)
+
+
+@pytest.fixture
+def get_budget_for_user(*args: Any, **kwargs: Any) -> float:
+    return 999999
+
+
+@pytest.fixture
+def deduct_epsilon_for_user(*args: Any, **kwargs: Any) -> bool:
+    return True
+
+
+@pytest.fixture
+def gamma_tensor() -> GammaTensor:
+    return GammaTensor(
+        child=np.random.randint(low=0, high=100, size=(5, 5)),
+        data_subjects=DataSubjectArray.from_objs(np.random.choice([0, 1], size=(5, 5))),
+        min_vals=lra(data=0, shape=(5, 5)),
+        max_vals=lra(data=100, shape=(5, 5)),
+    )
 
 
 def test_gamma_inputs() -> None:
@@ -31,9 +75,34 @@ def test_imaginary_bounds_for_mechanism() -> None:
     pass
 
 
-def test_sigma_too_large() -> None:
+def test_sigma_too_large(
+    deduct_epsilon_for_user: Callable,
+    get_budget_for_user: Callable,
+    gamma_tensor: GammaTensor,
+    ledger: DataSubjectLedger,
+) -> None:
     """Test that sigma being too large results in low PB spend"""
-    pass
+    tensor = gamma_tensor
+
+    # Publish with sigma = 100
+    epsilon1 = tensor.publish(
+        get_budget_for_user=get_budget_for_user,
+        deduct_epsilon_for_user=deduct_epsilon_for_user,
+        sigma=100,
+        private=True,
+        ledger=ledger,
+    )
+
+    # Publish with sigma = 1M
+    epsilon2 = tensor.publish(
+        get_budget_for_user=get_budget_for_user,
+        deduct_epsilon_for_user=deduct_epsilon_for_user,
+        sigma=1_000_000,
+        private=True,
+        ledger=ledger,
+    )
+
+    assert epsilon2 <= epsilon1
 
 
 def test_sigma_too_small() -> None:
@@ -118,3 +187,7 @@ def test_multiple_publish_single_value() -> None:
     """Test that when publish filters values, and we're only publishing a single value,
     calling .all() doesn't result in system failure"""
     pass
+
+
+def test_filtering() -> None:
+    """Test that filtering a GammaTensor when the user doesn't have enough PB works as intended."""

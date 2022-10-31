@@ -107,6 +107,7 @@ def publish(
     sigma: float,
     is_linear: bool = True,
     private: bool = True,
+    return_epsilon: bool = False,
 ) -> np.ndarray:
     """
     This method applies Individual Differential Privacy (IDP) as defined in
@@ -366,13 +367,16 @@ def publish(
         else:
             raise Exception
 
-    noise = np.asarray(
-        [secrets.SystemRandom().gauss(0, sigma) for _ in range(zeros_like.size)]
-    ).reshape(zeros_like.shape)
-    zeros = np.zeros_like(
-        a=np.array([]), dtype=zeros_like.dtype, shape=zeros_like.shape
-    )
-    return zeros + noise
+    if return_epsilon:
+        return epsilon_spend
+    else:
+        noise = np.asarray(
+            [secrets.SystemRandom().gauss(0, sigma) for _ in range(zeros_like.size)]
+        ).reshape(zeros_like.shape)
+        zeros = np.zeros_like(
+            a=np.array([]), dtype=zeros_like.dtype, shape=zeros_like.shape
+        )
+        return zeros + noise
 
 
 # each time we attempt to publish and filter values we need to ensure
