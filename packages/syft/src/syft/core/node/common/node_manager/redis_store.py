@@ -192,6 +192,16 @@ class RedisStore(ObjectStore):
         local_session = sessionmaker(bind=self.db)()
         if create_metadata:
             local_session.add(metadata_obj)
+        else:
+            local_session.query(ObjectMetadata).filter_by(obj=key_str).update(
+                {
+                    "tags": value.tags,
+                    "description": value.description,
+                    "read_permissions": metadata_obj.read_permissions,
+                    "write_permissions": metadata_obj.write_permissions,
+                    "search_permissions": metadata_obj.search_permissions,
+                }
+            )
         local_session.commit()
         local_session.close()
 
