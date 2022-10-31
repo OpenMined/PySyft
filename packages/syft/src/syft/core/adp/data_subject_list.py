@@ -82,7 +82,7 @@ class DataSubjectList:
     ) -> None:
         deprec_msg = (
             f"{self.__class__.__name__} has been deprecated in v0.7.0 and will be removed in future versions. "
-            "Using this class may throw errors as it is no longer supported for calculation of Auto DP."
+            "Using this class may throw errors as it is no longer supported for calculation of Auto DP. "
             "Instead use the class `sy.DataSubjectArray.from_objs` to define data subjects for your dataset."
         )
         warn(deprec_msg, DeprecationWarning, stacklevel=2)
@@ -91,8 +91,15 @@ class DataSubjectList:
 
     @staticmethod
     def from_series(entities_dataframe_slice: pd.Series) -> DataSubjectList:
-        """Given a Pandas Series object (such as from
+        """[DEPRECATED] Given a Pandas Series object (such as from
         getting a column from a pandas DataFrame, return an DataSubjectList"""
+
+        deprec_msg = (
+            "DataSubjectList has been deprecated in v0.7.0 and will be removed in future versions. "
+            "Using this class may throw errors as it is no longer supported for calculation of Auto DP. "
+            "Instead use the class `sy.DataSubjectArray.from_objs` to define data subjects for your dataset."
+        )
+        warn(deprec_msg, DeprecationWarning, stacklevel=2)
 
         # This will be the equivalent of the DataSubjectList.data_subjects_indexed
         if not isinstance(entities_dataframe_slice, np.ndarray):
@@ -119,6 +126,13 @@ class DataSubjectList:
 
     @staticmethod
     def from_objs(entities: Union[np.ndarray, list]) -> DataSubjectList:
+
+        deprec_msg = (
+            "DataSubjectList has been deprecated in v0.7.0 and will be removed in future versions. "
+            "Using this class may throw errors as it is no longer supported for calculation of Auto DP. "
+            "Instead use the class `sy.DataSubjectArray.from_objs` to define data subjects for your dataset."
+        )
+        warn(deprec_msg, DeprecationWarning, stacklevel=2)
 
         entities = np.array(entities, copy=False)
         one_hot_lookup, entities_indexed = np.unique(entities, return_inverse=True)

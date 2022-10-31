@@ -426,8 +426,8 @@ class PhiTensorAncestor(TensorChainManager):
 
         _deprec_message = (
             "This method is deprecated in v0.7.0 and will be removed in future version. "
-            "It is renamed to `annotate_with_dp_metadata` with function arguments `min_val` and `max_val`"
-            "renamed to `lower_bound` and `upper_bound` respectively. This has been done to simplify the definition"
+            "It is renamed to `annotate_with_dp_metadata` with function arguments `min_val` and `max_val` "
+            "renamed to `lower_bound` and `upper_bound` respectively. This has been done to simplify the definition "
             "of the function in use. "
             "One can call `help(syft.Tensor.annotate_with_dp_metadata)` to learn more about its use."
         )
