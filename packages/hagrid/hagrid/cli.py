@@ -345,7 +345,9 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
         dry_run = False
 
     try:
-        silent = bool(kwargs["silent"]) if "silent" in kwargs else False
+        tail = False if "tail" in kwargs and not str_to_bool(kwargs["tail"]) else True
+        silent = not tail
+
         from_rendered_dir = (
             str_to_bool(cast(str, kwargs["from_template"])) and EDITABLE_MODE
         )
@@ -357,7 +359,7 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
         command = cmds[list(cmds.keys())[0]][0]  # type: ignore
         match_port = re.search("HTTP_PORT=[0-9]{1,5}", command)
 
-        if host_term.host == "docker" and match_port:
+        if host_term.host == "docker" and match_port and silent:
             rich.get_console().print(
                 "\n[bold green]⠋[bold blue] Checking  Node API [/bold blue]\t"
             )
@@ -594,10 +596,11 @@ def execute_commands(
         console.print("[bold green]⠋[bold blue] Launching Docker Images [/bold blue]\t")
         for cmd_name, cmd in cmds.items():
             with Progress(console=console, auto_refresh=False) as progress:
-                progress.add_task(
-                    f"[bold green]{cmd_name} Images",
-                    total=0,
-                )
+                if silent:
+                    progress.add_task(
+                        f"[bold green]{cmd_name} Images",
+                        total=0,
+                    )
                 process_cmd(
                     cmds=cmd,
                     dry_run=dry_run,
