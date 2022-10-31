@@ -415,25 +415,36 @@ def check_pulling(line: str, cmd_name: str, progress_bar: Progress) -> None:
 
 
 def check_building(line: str, cmd_name: str, progress_bar: Progress) -> None:
-    current_build_steps = 55
-    pattern = re.search("^#[0-9]{1,3}", line)
-    if pattern:
-        current_step = int(pattern.group()[1:])
-        task = progress_bar.tasks[0]
-        if current_step > task.completed:
-            progress_bar.update(
-                0,
-                description=f"⌛ [bold]{cmd_name} [{current_step} / {current_build_steps}]",
-                completed=current_step,
-                total=current_build_steps,
-                refresh=True,
-            )
-            if progress_bar.finished:
-                progress_bar.update(
-                    0,
-                    description=f"✅ [bold green]{cmd_name} [{task.completed} / {task.total}]",
-                    refresh=True,
-                )
+
+    load_pattern = re.compile(
+        r"^#.* load build definition from [A-Za-z0-9]+\.dockerfile$", re.IGNORECASE
+    )
+    build_pattern = re.compile(
+        r"^#.* naming to docker\.io/openmined/.* done$", re.IGNORECASE
+    )
+    task = progress_bar.tasks[0]
+
+    if load_pattern.match(line):
+        progress_bar.update(
+            0,
+            description=f"⌛ [bold]{cmd_name} [{task.completed} / {task.total +1}]",
+            total=task.total + 1,
+            refresh=True,
+        )
+    if build_pattern.match(line):
+        progress_bar.update(
+            0,
+            description=f"⌛ [bold]{cmd_name} [{task.completed+1} / {task.total}]",
+            completed=task.completed + 1,
+            refresh=True,
+        )
+
+    if progress_bar.finished:
+        progress_bar.update(
+            0,
+            description=f"✅ [bold green]{cmd_name} [{task.completed} / {task.total}]",
+            refresh=True,
+        )
 
 
 def check_launching(line: str, cmd_name: str, progress_bar: Progress) -> None:
@@ -503,7 +514,6 @@ def process_cmd(
         if from_rendered_dir
         else GRID_SRC_PATH
     )
-
     username, password = (
         extract_username_and_pass(cmds[0]) if len(cmds) > 0 else ("-", "-")
     )
