@@ -10,6 +10,7 @@ from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Type
+from warnings import warn
 
 # third party
 import numpy as np
@@ -378,6 +379,68 @@ class PhiTensorAncestor(TensorChainManager):
 
         return NotImplemented
 
+    def private(
+        self,
+        min_val: ArrayLike,
+        max_val: ArrayLike,
+        data_subjects: Optional[Any] = None,
+        skip_blocking_checks: bool = False,
+    ) -> PhiTensorAncestor:
+        """[DEPRECATED] This method will annotate your Tensor with metadata (an upper bound
+        and lower bound on the data, as well as the people whose data is in the dataset),
+        and thus enable Differential Privacy protection.
+
+        Note: Deprecated in 0.7.0
+        `.private` method will be removed in 0.8.0, it is replaced by `annotate_with_dp_metadata`.
+        """
+
+        _deprec_message = (
+            "This method is deprecated in v0.7.0 and will be removed in future version updates. "
+            "It is replaced with `annotate_with_dp_metadata` to provide a user-friendly experience. "
+            "One can call `help(syft.Tensor.annotate_with_dp_metadata)` to learn more about its use."
+        )
+
+        warn(_deprec_message, DeprecationWarning, stacklevel=2)
+
+        return self.annotate_with_dp_metadata(
+            lower_bound=min_val,
+            upper_bound=max_val,
+            data_subjects=data_subjects,
+            skip_blocking_checks=skip_blocking_checks,
+        )
+
+    def annotated_with_dp_metadata(
+        self,
+        min_val: ArrayLike,
+        max_val: ArrayLike,
+        data_subjects: Optional[Any] = None,
+        skip_blocking_checks: bool = False,
+    ) -> PhiTensorAncestor:
+        """[DEPRECATED] This method will annotate your Tensor with metadata (an upper bound
+        and lower bound on the data, as well as the people whose data is in the dataset),
+        and thus enable Differential Privacy protection.
+
+        Note: Deprecated in 0.7.0
+        `.annotated_with_dp_metadata` method will be removed in 0.8.0, it is renamed to `annotate_with_dp_metadata`.
+        """
+
+        _deprec_message = (
+            "This method is deprecated in v0.7.0 and will be removed in future version. "
+            "It is renamed to `annotate_with_dp_metadata` with function arguments `min_val` and `max_val`"
+            "renamed to `lower_bound` and `upper_bound` respectively. This has been done to simplify the definition"
+            "of the function in use. "
+            "One can call `help(syft.Tensor.annotate_with_dp_metadata)` to learn more about its use."
+        )
+
+        warn(_deprec_message, DeprecationWarning, stacklevel=2)
+
+        return self.annotate_with_dp_metadata(
+            lower_bound=min_val,
+            upper_bound=max_val,
+            data_subjects=data_subjects,
+            skip_blocking_checks=skip_blocking_checks,
+        )
+
     def annotate_with_dp_metadata(
         self,
         lower_bound: ArrayLike,
@@ -482,22 +545,22 @@ class PhiTensorAncestor(TensorChainManager):
         min_vals, max_vals = check_min_max_vals(
             min_val, max_val, target_shape=self.child.shape
         )
-            
+
         if self.child.min() < min_vals.data:
             msg = (
-                "It seems like you set your lower_bound higher than some of the values " 
+                "It seems like you set your lower_bound higher than some of the values "
                 + "in your data. The lower_bound in your case should be lower or equal to "
                 + str(self.child.min())
             )
             raise ValueError(msg)
         if self.child.max() > max_vals.data:
             msg = (
-                "It seems like you set your upper_bound lower than some of the values " 
+                "It seems like you set your upper_bound lower than some of the values "
                 + "in your data. The upper_bound in your case should be higher or equal to "
                 + str(self.child.max())
             )
             raise ValueError(msg)
-        
+
         if self.child.min() == min_vals.data:
             print(
                 "It seems like you set your upper_bound to the literal highest value in the dataset. If this is "
