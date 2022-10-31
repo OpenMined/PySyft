@@ -482,7 +482,22 @@ class PhiTensorAncestor(TensorChainManager):
         min_vals, max_vals = check_min_max_vals(
             min_val, max_val, target_shape=self.child.shape
         )
-
+            
+        if self.child.min() < min_vals.data:
+            msg = (
+                "It seems like you set your lower_bound higher than some of the values " 
+                + "in your data. The lower_bound in your case should be lower or equal to "
+                + str(self.child.min())
+            )
+            raise ValueError(msg)
+        if self.child.max() > max_vals.data:
+            msg = (
+                "It seems like you set your upper_bound lower than some of the values " 
+                + "in your data. The upper_bound in your case should be higher or equal to "
+                + str(self.child.max())
+            )
+            raise ValueError(msg)
+        
         if self.child.min() == min_vals.data:
             print(
                 "It seems like you set your upper_bound to the literal highest value in the dataset. If this is "
