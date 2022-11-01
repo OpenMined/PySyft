@@ -57,8 +57,8 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
         np.array(DataSubjectArray(["Other Asia, nes"])), canada_trade.shape
     )
 
-    lower_bound = min(canada_trade) - 1
-    upper_bound = max(canada_trade) + 1
+    lower_bound = int(min(canada_trade)) - 1
+    upper_bound = int(max(canada_trade)) + 1
 
     sampled_canada_dataset = sy.Tensor(canada_trade)
     sampled_canada_dataset.public_shape = sampled_canada_dataset.shape
@@ -97,8 +97,8 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
         np.array(DataSubjectArray(["Other Asia, nes"])), italy_trade.shape
     )
 
-    lower_bound = min(italy_trade) - 1
-    upper_bound = max(italy_trade) + 1
+    lower_bound = int(min(italy_trade)) - 1
+    upper_bound = int(max(italy_trade)) + 1
 
     sampled_italy_dataset = sampled_italy_dataset.annotate_with_dp_metadata(
         lower_bound, upper_bound, data_subjects=data_subjects_italy
