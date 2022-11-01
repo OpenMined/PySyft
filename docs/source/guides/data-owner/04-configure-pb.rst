@@ -23,20 +23,20 @@ Configuring Privacy Budget on your Domain Server
 
 
 A privacy budget is a collection of quantitative measures through which a Data Owner can 
-pre-determine the degree of information access they grant to a user using their domain server. 
+pre-determine the degree of information access they grant to a user using their domain server.
+For PyGrid, you can think of a privacy budget as a specified limit to the ``visibility`` a user 
+can have into any one data subject on your domain server. 
 As we saw in the :doc:`creating user accounts tutorial <02-create-account-configure-pb>`, when you 
-create a user account, that user is assigned the ``lowest level`` of permissions to access that 
-data, which means the data is highly private. We assigned a user the role of ``Data Scientist`` 
-and a privacy budget of ``0`` by default. 
+create a user account in PyGrid, by default that user is assigned the lowest level of ``permissions`` 
+and is given a privacy budget of ``0`` which means that they have ``0`` visibility into your domain’s data subjects. 
 
-In today's tutorial, you will discover the underlying concept behind privacy budget 
-(Differential Privacy), epsilon value or privacy budget, and how configuring your privacy 
-budget determines how much can be learned from any data subject.
+In today's tutorial, you will discover the underlying concept behind Differential Privacy and 
+how setting a privacy budget for a user determines how much can be learned from any data subject
  
 
 🚨 Pre-Requisites Steps
 ---------------------------
-Before you configure the privacy budget,  you must ``prepare`` the dataset, ``upload`` it, and 
+Before you can specify a privacy budget for your domain users, you must first ``prepare`` the dataset, ``upload`` it, and 
 ``create`` a user account for your team members or Data Scientists.
 The prerequisite steps are covered in the previous 
 tutorial :doc:`Creating User Accounts on your Domain Server <02-create-account-configure-pb>` and
@@ -48,7 +48,7 @@ Please execute those steps before implementing this tutorial.
 
 #. **Introduction** to Differential Privacy
 #. **Login** to PyGrid UI as a Domain Admin
-#. **Explore** different Privacy Budget
+#. **Explore** different Privacy Budgets
 
 Step 1: Introduction to Differential Privacy
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -69,15 +69,16 @@ Differential Privacy to protect the ``Privacy`` of the individuals or data subje
 within your datasets. In this case, Differential Privacy is maintained when a 
 query across both datasets ``with`` Jane Doe in it versus that same query on both 
 datasets ``without`` Jane Doe creates the ``same output``. Noise is added to help average 
-out and make up the difference between having Jane there versus not. 
+out and make up the difference between having Jane there versus not. In other words, Jane Doe becomes a very 
+difficult, if not impossible, straw to find within the haystack.
 
 From a top-level view, this means a couple of things:
 
 * Differential Privacy can help a Data Scientist see trends in data ``without`` being able to ``identify`` the participants.
 * The more a specific data subject involved in the query ``stands out`` in a dataset, the more noise has to be added to ``obfuscate`` them.
-* There is a natural ``tradeoff`` between how much ``Privacy`` is preserved versus how much ``Accuracy`` is given.
-* Data scientists can ``create answers`` from the list of allowed questions the Data Owner limited them to. This is enabled by the use and combination of different types of ``PETs``. (see the image 👇 for reference)
-* Data scientists can download their allowed answers, creating a streamlined flow where ``answering questions`` using an org's Domain Server will be as easy as going to the organization's public website. (see the image 👇 for reference)
+* There is a natural ``tradeoff`` between how much ``Privacy`` is preserved versus how much ``Accuracy`` is given to the Data Scientist..
+* You can set a privacy limit in PyGrid and trust that a Data Scientist will not be able to get answers to a query that surpasses that limit on any one ``Data Subject``. (see the image 👇 for reference)
+* Data scientists can download answers that remain within specified ``privacy limits``, creating a streamlined flow where answering questions using an org's Domain Server will be as easy as going to the organization's public website. (see the image 👇 for reference)
 
 |04-configure-pb-02|
 
@@ -95,7 +96,7 @@ is a way to measure the potential ``privacy loss`` or ``visibility`` you are all
 D. Takeaway
 ###############
 When you assign a ``privacy budget`` in Syft, you specify a ``risk tolerance`` on what 
-level of ``visibility`` you feel comfortable having that Data Scientist control your 
+level of ``visibility`` you feel comfortable having that Data Scientist have on your 
 data subjects. You are balancing this with keeping the ``accuracy`` they get on a 
 helpful level and maximizing the benefit of your dataset(s). 
 
