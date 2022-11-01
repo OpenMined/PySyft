@@ -1,14 +1,16 @@
 <h1 align="center">
 
   <br>
-  <a href="http://duet.openmined.org/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/main/packages/syft/docs/img/logo_big.png" alt="PySyft" width="200"></a>
+  <a href="https://openmined.github.io/PySyft/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/main/packages/syft/docs/img/logo_big.png" alt="PySyft" width="200"></a>
   <br>
   A library for computing on data<br /> you do not own and cannot see
   <br>
 
 </h1>
 
-<div align="center"> <a href="https://pypi.org/project/syft/"><img src="https://pepy.tech/badge/syft" /></a> <a href="https://pypi.org/project/syft/"><img src="https://badge.fury.io/py/syft.svg" /></a> <a href="https://github.com/OpenMined/PySyft/actions/workflows/syft-version_tests.yml"><img src="https://github.com/OpenMined/PySyft/actions/workflows/syft-version_tests.yml/badge.svg?branch=dev" /></a> <a href="https://openmined.github.io/PySyft/dev/bench/"><img src="https://github.com/OpenMined/PySyft/actions/workflows/syft-benchmark.yml/badge.svg?branch=dev" /></a><br /> <a href="#"><img src="https://github.com/OpenMined/PySyft/workflows/Tutorials/badge.svg" /></a> <a href="https://openmined.slack.com/messages/support"><img src="https://img.shields.io/badge/chat-on%20slack-7A5979.svg" /></a> <a href="https://mybinder.org/v2/gh/OpenMined/PySyft/main"><img src="https://mybinder.org/badge.svg" /></a> <a href="http://colab.research.google.com/github/OpenMined/PySyft/blob/main"><img src="https://colab.research.google.com/assets/colab-badge.svg" /></a>
+<div align="left"> <a href="https://pypi.org/project/syft/"><img src="https://pepy.tech/badge/syft" /></a> <a href="https://pypi.org/project/syft/"><img src="https://badge.fury.io/py/syft.svg" /></a> <a href="https://hub.docker.com/u/openmined"><img src="https://img.shields.io/badge/docker-images-blue?logo=docker" /></a> <a href="https://github.com/OpenMined/PySyft/actions/workflows/nightlies-run.yml"><img src="https://github.com/OpenMined/PySyft/actions/workflows/nightlies-run.yml/badge.svg?branch=dev" /></a> <a href="https://gitpod.io/#https://github.com/OpenMined/PySyft"><img src="https://img.shields.io/badge/gitpod-908a85?logo=gitpod" /></a>
+<a href="https://slack.openmined.org/"><img src="https://img.shields.io/badge/chat-on%20slack-purple?logo=slack" /></a> <a href="https://openmined.github.io/PySyft/"><img src="https://img.shields.io/badge/read-docs-yellow?logo=mdbook" /></a>
+<br /><br /></div>
 <br /><br />
 
 <div align="center"><a href="#"><img src="https://stars.medv.io/openmined/pysyft.svg" /></a></div>
@@ -32,163 +34,90 @@ Most software libraries let you compute over the information you own and see ins
 
 The Syft ecosystem seeks to change this system, allowing you to write software which can compute over information you do not own on machines you do not have (total) control over. This not only includes servers in the cloud, but also personal desktops, laptops, mobile phones, websites, and edge devices. Wherever your data wants to live in your ownership, the Syft ecosystem exists to help keep it there while allowing it to be used privately for computation.
 
-## 0.5.0 Release
 
-The current stable release is `0.5.0` which is available on:
+# Quickstart
 
-- [PyPI](https://pypi.org/project/syft/)
-- [Docker Hub](https://hub.docker.com/u/openmined)
+✅ `Linux` ✅ `macOS`\* ✅ `Windows`†‡
+<img src="packages/syft/docs/img/terminalizer.gif" width="50%" align="right" />
 
-For many use cases you can simply use:
+1. Install our handy 🛵 cli tool which makes deploying a Domain or Network server a one-liner:  
+   `pip install -U hagrid`
 
-```
-$ pip install -U syft --pre
-```
+2. Then run our interactive jupyter Install 🧙🏽‍♂️ Wizard<sup>BETA</sup>:  
+   `hagrid quickstart`
 
-If you are developing against this version please use the [`syft_0.5.0`](https://github.com/OpenMined/pysyft/tree/syft_0.5.0) branch.
+- In the tutorial you will learn how to install and deploy:  
+  `PySyft` = our `numpy`-like 🐍 Python library for computing on `private data` in someone else's `Domain`
 
-## Examples
+  `PyGrid` = our 🐳 `docker` / `k8s` / 🐧 `vm` `Domain` & `Network` Servers where `private data` lives
 
-The examples inside the `/packages/syft/examples/` folder are currently compatible with `0.5.0` however we will be updating and moving examples down to the root `/notebooks` folder in the `dev` branch as we begin work on `0.6.0`.
+- During quickstart we will deploy `PyGrid` to localhost with 🐳 `docker`, however 🛵 HAGrid can deploy to `k8s` or a 🐧 `ubuntu` VM on `azure` / `gcp` / `ANY_IP_ADDRESS` by using 🔨 `ansible`†
 
-## Mono Repo 🚝
+3. Read our 📚 <a href="https://openmined.github.io/PySyft/">Docs</a>
+4. Ask Questions ❔ in `#support` on <a href="https://slack.openmined.org/">Slack</a>
 
-This repo contains multiple projects which work together, namely PySyft and PyGrid.
+# Install Notes
 
-```
-OpenMined/PySyft
-├── README.md
-└── packages
-    ├── grid    <-- Code formerly @ OpenMined/PyGrid
-    └── syft    <-- You are here 📌
-```
-
-_NOTE_ Changing the entire folder structure will likely result in some minor issues.
-If you spot one please let us know or open a PR.
-
-## PySyft
-
-PySyft is the centerpiece of the Syft ecosystem. It has two primary purposes. You can either use PySyft to perform two types of computation:
-
-1. _Dynamic:_ Directly compute over data you cannot see.
-2. _Static:_ Create static graphs of computation which can be deployed/scaled at a later date on different compute.
-
-The [PyGrid library](https://github.com/OpenMined/PyGrid) serves as an API for the management and deployment of PySyft at scale. It also allows for you to extend PySyft for the purposes of Federated Learning on web, mobile, and edge devices using the following Syft worker libraries:
-
-- [KotlinSyft](https://github.com/OpenMined/KotlinSyft) (Android)
-- [SwiftSyft](https://github.com/OpenMined/SwiftSyft) (iOS)
-- [syft.js](https://github.com/OpenMined/syft.js) (Javascript)
-- PySyft (Python, you can use PySyft itself as one of these "FL worker libraries")
-
-However, the Syft ecosystem only focuses on consistent object serialization/deserialization, core abstractions, and algorithm design/execution across these languages. These libraries alone will not connect you with data in the real world. The Syft ecosystem is supported by the Grid ecosystem, which focuses on the deployment, scalability, and other additional concerns around running real-world systems to compute over and process data (such as data compliance web applications).
-
-- PySyft is the library that defines objects, abstractions, and algorithms.
-- [PyGrid](https://github.com/OpenMined/PyGrid) is the platform which lets you deploy them within a real institution.
-- [PyGrid Admin](https://github.com/OpenMined/pygrid-admin) is a UI which allows a data owner to manage their PyGrid deployment.
-
-A more detailed explanation of PySyft can be found in the
-[white paper on Arxiv](https://arxiv.org/abs/1811.04017).
-
-PySyft has also been explained in videos on YouTube:
-
-- [PriCon Sep 2020 Duet Demo](https://www.youtube.com/watch?v=DppXfA6C8L8&ab_channel=OpenMined)
-- [Introduction to Privacy-Preserving AI using PySyft by @iamtrask](https://www.youtube.com/watch?v=NJBBE_SN90A)
-
-## Pre-Installation
-
-PySyft is available on PyPI and Conda.
-
-We recommend that you install PySyft within a virtual environment like
-[Conda](https://docs.anaconda.com/anaconda/user-guide/getting-started/),
-due to its ease of use. If you are using Windows, we suggest installing
-[Anaconda and using the Anaconda
-Prompt](https://docs.anaconda.com/anaconda/user-guide/getting-started/) to
-work from the command line.
-
-```bash
-$ conda create -n pysyft python=3.9
-$ conda activate pysyft
-$ conda install jupyter notebook
-```
-
-## Version Support
-
-We support **Linux**, **MacOS** and **Windows** and the following Python and Torch versions.
-Older versions may work, however we have stopped testing and supporting them.
-
-| Py / Torch | 1.6 | 1.7 | 1.8+ |
-| ---------- | --- | --- | ---- |
-| 3.8        | ✅  | ✅  | ✅   |
-| 3.9        | ➖  | ✅  | ✅   |
-| 3.10       | ➖  | ✅  | ✅   |
-
-## Installation
-
-### Pip
-
-```bash
-$ pip install -U syft --pre
-```
-
-This will auto-install PyTorch and other dependencies as required to run the
-examples and tutorials. For more information on building from source see the contribution guide [here](https://github.com/OpenMined/PySyft/blob/main/packages/syft/CONTRIBUTING.md).
-
-## Documentation
-
-Coming soon! Until then, please view the Examples below.
-
-## Examples
-
-A comprehensive list of examples can be found [here](https://github.com/OpenMined/PySyft/tree/main/packages/syft/examples).
-
-These tutorials cover a variety of Python libraries for data science and machine learning.
-
-All the examples can be played with by launching a Jupyter Notebook and navigating to the `examples` folder.
-
-```bash
-$ jupyter notebook
-```
-
-### Duet
-
-<a href="https://github.com/OpenMined/PySyft/tree/main/packages/syft/examples/duet"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/main/packages/syft/docs/img/logo_duet.png" alt="PySyft" width="350"></a>
-
-Duet is a peer-to-peer tool within PySyft that provides a research-friendly API for a Data Owner to privately expose their data, while a Data Scientist can access or manipulate the data on the owner's side through a zero-knowledge access control mechanism. It's designed to lower the barrier between research and privacy-preserving mechanisms, so that scientific progress can be made on data that is currently inaccessible or tightly controlled. **The main benefit of using Duet is that allows you to get started using PySyft, without needing to manage a full PyGrid deployment. It is the simplest path to using Syft, without needing to install anything (except Syft 😉).**
-
-You can find all [Duet examples](https://github.com/OpenMined/PySyft/tree/main/packages/syft/examples/duet) in the `examples/duet` folder.
+- HAGrid Requires: 🐍 `python` 🐙 `git` - Run: `pip install -U hagrid`
+- Interactive Install 🧙🏽‍♂️ Wizard<sup>BETA</sup> Requires 🛵 `hagrid`: - Run: `hagrid quickstart`  
+  †`Windows` does not support `ansible`, preventing some remote deployment targets
+- PySyft Requires: 🐍 `python 3.7+` - Run: `pip install -U syft --pre`  
+  \*`macOS` Apple Silicon users need cmake: `brew install cmake`  
+  ‡`Windows` users must run this first: `pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html`
+- PyGrid Requires: 🐳 `docker` / `k8s` or 🐧 `ubuntu` VM - Run: `hagrid launch ...`
 
 ## Contributing
 
 The guide for contributors can be found [here](https://github.com/OpenMined/PySyft/blob/main/packages/syft/CONTRIBUTING.md).
 It covers all that you need to know to start contributing code to PySyft today.
 
-Also, join the rapidly growing community of 12,000+ on [Slack](http://slack.openmined.org).
-The Slack community is very friendly and great about quickly answering questions about the use and development of PySyft!
+# Supporters
 
-## Disclaimer
+<table border="0">
+<tr>
+<th align="center">
+<a href="https://sloan.org/"><img src="docs/img/logo_sloan.png" /></a>
+</th>
+<th align="center">
+<a href="https://opensource.fb.com/"><img src="docs/img/logo_meta.png" /></a>
+</th>
+<th align="center">
+<a href="https://pytorch.org/"><img src="docs/img/logo_torch.png" /></a>
+</th>
+<th align="center">
+<a href="https://www.udacity.com/"><img src="docs/img/logo_udacity.png" /></a>
+</th>
+<th align="center">
+<a href="https://summerofcode.withgoogle.com/"><img src="docs/img/logo_gsoc.png" /></a>
+</th>
+<th align="center">
+<a href="https://developers.google.com/season-of-docs"><img src="docs/img/logo_gsod.png" /></a>
+</th>
+<th align="center">
+<img src="docs/img/logo_arkhn_light.png#gh-light-mode-only" />
+<img src="docs/img/logo_arkhn.png#gh-dark-mode-only" />
+</th>
+<th align="center">
+<img src="docs/img/logo_cape_light.png#gh-light-mode-only" />
+<img src="docs/img/logo_cape.png#gh-dark-mode-only" />
+</th>
+<th align="center">
+<a href="https://begin.ai/"><img src="docs/img/logo_begin.png" /></a>
+</th>
+</tr>
+</table>
 
-This software is in beta. Use at your own risk.
+# Open Collective
 
-## A quick note about 0.2.x
+`OpenMined` is a registered `501(c)(3)` in the USA. We are funded by our gracious supporters on <a href="https://opencollective.com/openmined">Open Collective</a>. <br /><br />
+<img src="docs/img/opencollective_light.png#gh-light-mode-only" alt="Contributors" width="100%" />
+<img src="docs/img/opencollective_dark.png#gh-dark-mode-only" alt="Contributors" width="100%" />
 
-The PySyft 0.2.x codebase is now in its own branch [here](https://github.com/OpenMined/PySyft/tree/syft_0.2.x), but OpenMined will not offer official support for this version range. We have compiled a list of [FAQs](https://github.com/OpenMined/PySyft/blob/main/packages/syft/docs/FAQ_0.2.x.md) relating to this version.\_
+# Disclaimer
 
-## Support
+Syft is under active development and is not yet ready for pilots on private data without our assistance. As early access participants, please contact us via [Slack](https://slack.openmined.org/) or email if you would like to ask a question or have a use case that you would like to discuss.
 
-For support in using this library, please join the **#support** Slack channel. [Click here to join our Slack community!](https://slack.openmined.org)
+# License
 
-## Organizational Contributions
-
-We are very grateful for contributions to PySyft from the following organizations!
-
-- [<img src="https://github.com/udacity/private-ai/blob/master/udacity-logo-vert-white.png?raw=true" alt="Udacity" width="160"/>](https://udacity.com/)
-- [<img src="https://raw.githubusercontent.com/OpenMined/PySyft/main/packages/syft/docs/img/organizations/comind.png" alt="coMind" width="160" />](https://github.com/coMindOrg/federated-averaging-tutorials)
-- [<img src="https://i.ibb.co/vYwcG9N/arkhn-logo.png" alt="Arkhn" width="160" />](http://ark.hn)
-- [<img src="https://raw.githubusercontent.com/dropoutlabs/files/master/dropout-labs-logo-white-2500.png" alt="Dropout Labs" width="160"/>](https://dropoutlabs.com/)
-- [<img src="https://raw.githubusercontent.com/OpenMined/PySyft/main/packages/syft/docs/img/organizations/genbu.png" alt="GENBU AI" width="160"/>](https://genbu.ai/)
-- [<img src="https://raw.githubusercontent.com/OpenMined/PySyft/main/packages/syft/docs/img/organizations/bitdefender.png" alt="Bitdefender" width="160"/>](https://www.bitdefender.com/) |
-
-## License
-
-[Apache License 2.0](https://github.com/OpenMined/PySyft/blob/main/packages/syft/LICENSE)
-[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2FOpenMined%2FPySyft.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2FOpenMined%2FPySyft?ref=badge_large)
+[Apache License 2.0](LICENSE)<br />
+<a href="https://www.flaticon.com/free-icons/person" title="person icons">Person icons created by Freepik - Flaticon</a>
