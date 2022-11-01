@@ -563,10 +563,28 @@ class PhiTensorAncestor(TensorChainManager):
 
         if self.child.min() == min_vals.data:
             print(
-                "It seems like you set your upper_bound to the literal highest value in the dataset. If this is "
+                "It seems like you set your lower_bound to the literal lowest value in the dataset."
+                + "lower_bounds refers to the lowest possible value allowed by your dataset's schema."
+                + "If you are certain that this data's value can go no lower than "
+                + min_vals.data
+                + " then"
+                "please continue."
+                + "\n"
+                + "To see examples of good lower_bound selections, try running:"
+                " `help(syft.Tensor.annotate_with_dp_metadata)`"
             )
         if self.child.max() == max_vals.data:
-            print("It seems like ")
+            print(
+                "It seems like you set your upper_bound to the literal highest value in the dataset."
+                + "upper_bounds refers to the highest POSSIBLE value allowed by your dataset's schema."
+                + "If you are certain that this data's value can go no lower than "
+                + min_vals.data
+                + " then"
+                "please continue."
+                + "\n"
+                + "To see examples of good lower_bound selections, try running:"
+                " `help(syft.Tensor.annotate_with_dp_metadata)`"
+            )
 
         unique_data_subjects = len(data_subjects.sum())
         if unique_data_subjects == 1:
