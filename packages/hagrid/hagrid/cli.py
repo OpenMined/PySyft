@@ -471,16 +471,22 @@ def check_launching(line: str, cmd_name: str, progress_bar: Progress) -> None:
             )
 
 
+DOCKER_FUNC_MAP = {
+    "Pulling": check_pulling,
+    "Building": check_building,
+    "Launching": check_launching,
+}
+
+
 def read_thread_logs(
     progress_bar: Progress, pid: int, queue: Queue, cmd_name: str
 ) -> None:
     line = queue.get()
     line = str(line, encoding="utf-8").strip()
+
     if progress_bar:
         check_errors(line, pid, cmd_name, progress_bar=progress_bar)
-        check_pulling(line, cmd_name, progress_bar=progress_bar)
-        check_launching(line, cmd_name, progress_bar=progress_bar)
-        check_building(line, cmd_name, progress_bar=progress_bar)
+        DOCKER_FUNC_MAP[cmd_name](line, cmd_name, progress_bar=progress_bar)
 
 
 def create_thread_logs(process: subprocess.Popen) -> Queue:
