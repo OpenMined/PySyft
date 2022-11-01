@@ -561,10 +561,9 @@ def process_cmd(
                     # Creates two threads to get docker stdout and sterr
                     logs_queue = create_thread_logs(process=process)
 
+                    read_thread_logs(progress_bar, process.pid, logs_queue, cmd_name)
                     while process.poll() != 0:
-                        while True:
-                            if logs_queue.empty():
-                                break
+                        while not logs_queue.empty():
                             # Read stdout and sterr to check errors or update progress bar.
                             read_thread_logs(
                                 progress_bar, process.pid, logs_queue, cmd_name
