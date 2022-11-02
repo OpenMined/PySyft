@@ -566,7 +566,7 @@ class PhiTensorAncestor(TensorChainManager):
                 "It seems like you set your lower_bound to the literal lowest value in the dataset."
                 + "lower_bounds refers to the lowest possible value allowed by your dataset's schema."
                 + "If you are certain that this data's value can go no lower than "
-                + min_vals.data
+                + str(min_vals.data)
                 + " then"
                 "please continue."
                 + "\n"
@@ -578,7 +578,7 @@ class PhiTensorAncestor(TensorChainManager):
                 "It seems like you set your upper_bound to the literal highest value in the dataset."
                 + "upper_bounds refers to the highest POSSIBLE value allowed by your dataset's schema."
                 + "If you are certain that this data's value can go no lower than "
-                + min_vals.data
+                + str(min_vals.data)
                 + " then"
                 "please continue."
                 + "\n"
