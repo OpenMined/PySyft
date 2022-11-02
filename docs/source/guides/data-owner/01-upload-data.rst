@@ -75,7 +75,7 @@ To login to your Domain node, you will need to define which Domain you are loggi
 * IP Address of the domain host
 * Your user account Email and Password
 
-   **WARNING:** Change the default username and password below to a more secure and private combination of your preference.
+   **WARNING:** Change the default username and password below to a more secure and private combination of your preference. 
 
 ::
 
@@ -96,6 +96,12 @@ To login to your Domain node, you will need to define which Domain you are loggi
    Connecting to 20.253.155.183... done! Logging into openmined... done!
 
 Lovely :) You have just logged in to your Domain.
+
+.. note::
+   Steps to change the default admin credentials for Domain Owner are shown below 👇
+
+|01-upload-data-01|
+
 
 Step 3: Prepare Dataset
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -152,8 +158,8 @@ Important steps:
    ``theoretical`` amount of values that could be learned about that
    aspect.
 -  To help obscure the variables someone may learn about these datasets 
-   we then need to set an appropriate ``min_val`` to the ``lowest`` possible persons age ``(0)``, 
-   and the ``max_val`` to the ``highest`` possible (mostly) persons age ``(100)``.
+   we then need to set an appropriate ``lower_bound`` to the ``lowest`` possible persons age ``(0)``, 
+   and the ``upper_bound`` to the ``highest`` possible (mostly) persons age ``(100)``.
 
 
 ::
@@ -164,7 +170,7 @@ Important steps:
    data_subjects = sy.DataSubjectArray.from_objs(dataset["ID"])
 
    age_data = sy.Tensor(dataset["Age"]).annotate_with_dp_metadata(
-      min_val=0, max_val=100, data_subjects=data_subjects
+      lower_bound=0, upper_bound=100, data_subjects=data_subjects
    )
 
 ..
@@ -234,4 +240,7 @@ able to download them.
    datasets and work across all the different Domain nodes.
 
 .. |01-upload-data-00| image:: ../../_static/personas-image/data-owner/01-upload-data-00.jpg
+  :width: 95%
+
+.. |01-upload-data-01| image:: ../../_static/personas-image/data-owner/01-upload-data-01.gif
   :width: 95%
