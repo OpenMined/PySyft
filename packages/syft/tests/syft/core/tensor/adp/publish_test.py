@@ -1,6 +1,6 @@
 # # stdlib
-# from typing import Any
 # stdlib
+from typing import Any
 from typing import Callable
 
 # third party
@@ -21,7 +21,6 @@ from syft.core.adp.ledger_store import DictLedgerStore
 
 # from syft.core.adp.ledger_store import DictLedgerStore
 from syft.core.tensor.autodp.gamma_tensor import GammaTensor
-from syft.core.tensor.autodp.phi_tensor import PhiTensor as PT
 from syft.core.tensor.lazy_repeat_array import lazyrepeatarray as lra
 
 
@@ -91,15 +90,17 @@ def test_sigma_too_large(
         sigma=100,
         private=True,
         ledger=ledger,
+        return_epsilon=True,
     )
 
     # Publish with sigma = 1M
     epsilon2 = tensor.publish(
         get_budget_for_user=get_budget_for_user,
         deduct_epsilon_for_user=deduct_epsilon_for_user,
-        sigma=1_000_000,
+        sigma=1_000_000_000,
         private=True,
         ledger=ledger,
+        return_epsilon=True,
     )
 
     assert epsilon2 <= epsilon1

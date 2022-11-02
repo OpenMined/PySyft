@@ -3877,6 +3877,7 @@ class GammaTensor:
         ledger: DataSubjectLedger,
         sigma: float,
         private: bool,
+        return_epsilon: bool = False,
     ) -> np.ndarray:
 
         if (
@@ -3892,6 +3893,7 @@ class GammaTensor:
             sigma=sigma,
             is_linear=self.is_linear,
             private=private,
+            return_epsilon=return_epsilon,
         )
 
     # def expand_dims(self, axis: int) -> GammaTensor:

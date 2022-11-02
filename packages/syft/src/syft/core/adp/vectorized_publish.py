@@ -258,7 +258,12 @@ def publish(
                 query_constants=rdp_constants, entity_ids_query=input_entities
             )
             ledger._write_ledger()
-            return original_output + noise
+
+            if return_epsilon:
+                print("Epsilon Spent: ", epsilon_spend)
+                return epsilon_spend
+            else:
+                return original_output + noise
 
         # Step 4: Path 2 - User doesn't have enough privacy budget.
         elif not has_budget:

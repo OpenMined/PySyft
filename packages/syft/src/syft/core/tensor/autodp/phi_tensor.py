@@ -2829,9 +2829,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         ledger: DataSubjectLedger,
         sigma: float,
         private: bool,
+        return_epsilon: bool = False,
     ) -> AcceptableSimpleType:
-        print("PUBLISHING TO GAMMA:")
-        print(self.child)
+        # print("PUBLISHING TO GAMMA:")
+        # print(self.child)
 
         gamma = self.gamma
         # gamma.func = lambda x: x
@@ -2843,6 +2844,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             ledger=ledger,
             sigma=sigma,
             private=private,
+            return_epsilon=return_epsilon,
         )
 
         print("Final Values", res)
