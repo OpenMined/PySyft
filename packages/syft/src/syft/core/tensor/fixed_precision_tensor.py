@@ -13,16 +13,7 @@ from typing import Union
 import numpy as np
 
 # relative
-from ..common.serde.capnp import CapnpModule
-from ..common.serde.capnp import capnp_deserialize
-from ..common.serde.capnp import capnp_serialize
-from ..common.serde.capnp import chunk_bytes
-from ..common.serde.capnp import combine_bytes
-from ..common.serde.capnp import get_capnp_schema
-from ..common.serde.capnp import serde_magic_header
-from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import serializable
-from ..common.serde.serialize import _serialize as serialize
 from .config import DEFAULT_FLOAT_NUMPY_TYPE
 from .config import DEFAULT_INT_NUMPY_TYPE
 from .passthrough import PassthroughTensor  # type: ignore
@@ -30,10 +21,10 @@ from .passthrough import is_acceptable_simple_type  # type: ignore
 from .smpc import context
 
 
-@serializable(capnp_bytes=True)
+@serializable(recursive_serde=True)
 class FixedPrecisionTensor(PassthroughTensor):
 
-    # __attr_allowlist__ = ("child", "_base", "_precision", "_scale")
+    __attr_allowlist__ = ("child", "_base", "_precision", "_scale")
 
     def __init__(
         self,
@@ -260,57 +251,6 @@ class FixedPrecisionTensor(PassthroughTensor):
             res.child = np.array(self.child.sum(axis=axis))
         else:
             res.child = self.child.sum(axis=axis)
-        return res
-
-    def _object2bytes(self) -> bytes:
-        schema = get_capnp_schema(schema_file="fixed_precision_tensor.capnp")
-
-        fpt_struct: CapnpModule = schema.FPT  # type: ignore
-        fpt_msg = fpt_struct.new_message()  # type: ignore
-        # this is how we dispatch correct deserialization of bytes
-        fpt_msg.magicHeader = serde_magic_header(type(self))
-
-        # child of FPT tensor could either be ShareTensor or np.ndarray
-        if isinstance(self.child, np.ndarray) or np.isscalar(self.child):
-            chunk_bytes(
-                capnp_serialize(np.array(self.child), to_bytes=True), "child", fpt_msg
-            )
-            fpt_msg.isNumpy = True
-        else:
-            chunk_bytes(serialize(self.child, to_bytes=True), "child", fpt_msg)  # type: ignore
-            fpt_msg.isNumpy = False
-
-        fpt_msg.base = self.base
-        fpt_msg.precision = self.precision
-
-        # to pack or not to pack?
-        # to_bytes = fpt_msg.to_bytes()
-
-        return fpt_msg.to_bytes()
-
-    @staticmethod
-    def _bytes2object(buf: bytes) -> FixedPrecisionTensor:
-        schema = get_capnp_schema(schema_file="fixed_precision_tensor.capnp")
-        fpt_struct: CapnpModule = schema.FPT  # type: ignore
-        # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
-        MAX_TRAVERSAL_LIMIT = 2**64 - 1
-        # to pack or not to pack?
-        # fpt_msg = fpt_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
-        with fpt_struct.from_bytes(  # type: ignore
-            buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        ) as msg:
-            fpt_msg = msg
-
-        if fpt_msg.isNumpy:
-            child = capnp_deserialize(combine_bytes(fpt_msg.child), from_bytes=True)
-        else:
-            child = deserialize(combine_bytes(fpt_msg.child), from_bytes=True)
-
-        base = fpt_msg.base
-        precision = fpt_msg.precision
-
-        res = FixedPrecisionTensor(base=base, precision=precision)
-        res.child = child
         return res
 
     def __getitem__(

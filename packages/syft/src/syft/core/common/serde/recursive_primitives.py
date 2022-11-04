@@ -3,13 +3,13 @@ from collections import OrderedDict
 from enum import Enum
 import functools
 import sys
+from types import MappingProxyType
 from typing import Collection
 from typing import Mapping
 from typing import cast
 
 # relative
 from .capnp import get_capnp_schema
-from .capnp import serde_magic_header
 from .recursive import recursive_serde_register
 
 iterable_schema = get_capnp_schema("iterable.capnp").Iterable  # type: ignore
@@ -21,7 +21,6 @@ def serialize_iterable(iterable: Collection) -> bytes:
     from .serialize import _serialize
 
     message = iterable_schema.new_message()
-    message.magicHeader = serde_magic_header(type(iterable))
 
     message.init("values", len(iterable))
 
@@ -53,7 +52,6 @@ def serialze_kv(map: Mapping) -> bytes:
     from .serialize import _serialize
 
     message = kv_iterable_schema.new_message()
-    message.magicHeader = serde_magic_header(type(map))
 
     message.init("keys", len(map))
     message.init("values", len(map))
@@ -196,5 +194,15 @@ recursive_serde_register(
     deserialize=lambda x: slice(*deserialize_iterable(tuple, x)),
 )
 
+recursive_serde_register(
+    slice,
+    serialize=lambda x: serialize_iterable((x.start, x.stop, x.step)),
+    deserialize=lambda x: slice(*deserialize_iterable(tuple, x)),
+)
 
 recursive_serde_register(type, serialize=serialize_type, deserialize=deserialize_type)
+recursive_serde_register(
+    MappingProxyType,
+    serialize=serialze_kv,
+    deserialize=functools.partial(deserialize_kv, MappingProxyType),
+)

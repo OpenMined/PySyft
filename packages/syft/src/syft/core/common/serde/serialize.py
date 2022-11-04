@@ -10,11 +10,6 @@ def _serialize(
     # relative
     from .recursive import rs_object2proto
 
-    # capnp_bytes=True
-    if hasattr(obj, "_object2bytes"):
-        # capnp proto
-        return obj._object2bytes()  # type: ignore
-
     proto = rs_object2proto(obj)
 
     if to_bytes:
