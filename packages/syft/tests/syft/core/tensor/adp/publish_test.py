@@ -97,7 +97,7 @@ def test_sigma_too_large(
     epsilon2 = tensor.publish(
         get_budget_for_user=get_budget_for_user,
         deduct_epsilon_for_user=deduct_epsilon_for_user,
-        sigma=1_000_000_000,
+        sigma=1_000_000,
         private=True,
         ledger=ledger,
         return_epsilon=True,
@@ -106,9 +106,37 @@ def test_sigma_too_large(
     assert epsilon2 <= epsilon1
 
 
-def test_sigma_too_small() -> None:
+@pytest.mark.skip(reason="This test currently fails @Ishan")
+def test_sigma_too_small(
+    deduct_epsilon_for_user: Callable,
+    get_budget_for_user: Callable,
+    gamma_tensor: GammaTensor,
+    ledger: DataSubjectLedger,
+) -> None:
     """Test that sigma being too small results in high PB spend"""
-    pass
+    tensor = gamma_tensor
+
+    # Publish with sigma = 0.1
+    epsilon1 = tensor.publish(
+        get_budget_for_user=get_budget_for_user,
+        deduct_epsilon_for_user=deduct_epsilon_for_user,
+        sigma=0.1,
+        private=True,
+        ledger=ledger,
+        return_epsilon=True,
+    )
+
+    # Publish with sigma = 50
+    epsilon2 = tensor.publish(
+        get_budget_for_user=get_budget_for_user,
+        deduct_epsilon_for_user=deduct_epsilon_for_user,
+        sigma=500,
+        private=True,
+        ledger=ledger,
+        return_epsilon=True,
+    )
+
+    assert epsilon1 >= epsilon2
 
 
 def test_ledger_creating() -> None:
