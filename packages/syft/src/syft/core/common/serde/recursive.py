@@ -6,17 +6,21 @@ from typing import Optional
 from typing import Type
 from typing import Union
 
+# third party
+from capnp.lib.capnp import _DynamicStructBuilder
+
 # syft absolute
 import syft as sy
 
 # relative
-from ....proto.core.common.recursive_serde_pb2 import (
-    RecursiveSerde as RecursiveSerde_PB,
-)
 from ....util import get_fully_qualified_name
 from ....util import index_syft_by_module_name
+from .capnp import get_capnp_schema
+from .capnp import serde_magic_header
 
 TYPE_BANK = {}
+
+recursive_scheme = get_capnp_schema("recursive_serde.capnp").RecursiveSerde  # type: ignore
 
 
 def recursive_serde_register(
@@ -49,12 +53,16 @@ def recursive_serde_register(
     )
 
 
-def rs_object2proto(self: Any) -> RecursiveSerde_PB:
+def rs_object2proto(self: Any) -> _DynamicStructBuilder:
     # if __attr_allowlist__ then only include attrs from that list
+
+    msg = recursive_scheme.new_message()
     fqn = get_fully_qualified_name(self)
-    msg = RecursiveSerde_PB(fully_qualified_name=fqn)
+
     if fqn not in TYPE_BANK:
         raise Exception(f"{fqn} not in TYPE_BANK")
+
+    msg.fullyQualifiedName = fqn
     nonrecursive, serialize, deserialize, attribute_list, serde_overrides = TYPE_BANK[
         fqn
     ]
@@ -64,13 +72,16 @@ def rs_object2proto(self: Any) -> RecursiveSerde_PB:
             raise Exception(
                 f"Cant serialize {type(self)} nonrecursive without serialize."
             )
-        msg.nonrecursive_blob = serialize(self)
+        msg.nonrecursiveBlob = serialize(self)
         return msg
 
     if attribute_list is None:
         attribute_list = self.__dict__.keys()
 
-    for attr_name in sorted(attribute_list):
+    msg.init("fieldsName", len(attribute_list))
+    msg.init("fieldsData", len(attribute_list))
+
+    for idx, attr_name in enumerate(sorted(attribute_list)):
         if not hasattr(self, attr_name):
             raise ValueError(
                 f"{attr_name} on {type(self)} does not exist, serialization aborted!"
@@ -84,44 +95,43 @@ def rs_object2proto(self: Any) -> RecursiveSerde_PB:
 
         serialized = sy.serialize(field_obj, to_bytes=True)
 
-        msg.fields_name.append(attr_name)
-        msg.fields_data.append(serialized)
+        msg.fieldsName[idx] = attr_name
+        msg.fieldsData[idx] = serialized
 
-    # TODO: remove this coupling
-    # relative
-    from .capnp import create_protobuf_magic_header
-
-    msg.magic_header = create_protobuf_magic_header()
+    msg.magicHeader = serde_magic_header(type(self))
 
     return msg
 
 
 def rs_bytes2object(blob: bytes) -> Any:
-    rs_message = RecursiveSerde_PB()
-    rs_message.ParseFromString(blob)
-    return rs_proto2object(rs_message)
+    MAX_TRAVERSAL_LIMIT = 2**64 - 1
+
+    with recursive_scheme.from_bytes(  # type: ignore
+        blob, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
+    ) as msg:
+        return rs_proto2object(msg)
 
 
-def rs_proto2object(proto: RecursiveSerde_PB) -> Any:
+def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
     # relative
     from .deserialize import _deserialize
 
     # clean this mess, Tudor
-    module_parts = proto.fully_qualified_name.split(".")
+    module_parts = proto.fullyQualifiedName.split(".")
     klass = module_parts.pop()
 
     class_type: Type = type(None)
     if klass != "NoneType":
         try:
-            class_type = index_syft_by_module_name(proto.fully_qualified_name)  # type: ignore
+            class_type = index_syft_by_module_name(proto.fullyQualifiedName)  # type: ignore
         except Exception:  # nosec
             class_type = getattr(sys.modules[".".join(module_parts)], klass)
 
-    if proto.fully_qualified_name not in TYPE_BANK:
+    if proto.fullyQualifiedName not in TYPE_BANK:
         raise Exception(f"{proto.fully_qualified_name} not in TYPE_BANK")
 
     nonrecursive, serialize, deserialize, attribute_list, serde_overrides = TYPE_BANK[
-        proto.fully_qualified_name
+        proto.fullyQualifiedName
     ]
 
     if nonrecursive:
@@ -129,10 +139,10 @@ def rs_proto2object(proto: RecursiveSerde_PB) -> Any:
             raise Exception(
                 f"Cant serialize {type(proto)} nonrecursive without serialize."
             )
-        return deserialize(proto.nonrecursive_blob)
+        return deserialize(proto.nonrecursiveBlob)
 
     obj = class_type.__new__(class_type)  # type: ignore
-    for attr_name, attr_bytes in zip(proto.fields_name, proto.fields_data):
+    for attr_name, attr_bytes in zip(proto.fieldsName, proto.fieldsData):
         attr_value = _deserialize(attr_bytes, from_bytes=True)
         transforms = serde_overrides.get(attr_name, None)
         if transforms is None:

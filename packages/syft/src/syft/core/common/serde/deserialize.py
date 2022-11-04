@@ -1,39 +1,42 @@
 # stdlib
 from typing import Any
 
-# relative
-from .recursive import RecursiveSerde_PB
-from .recursive import rs_proto2object
-from .types import Deserializeable
+# third party
+from capnp.lib.capnp import _DynamicStructBuilder
 
 
 def _deserialize(
-    blob: Deserializeable,
+    blob: Any,
     from_proto: bool = True,
     from_bytes: bool = False,
 ) -> Any:
+    # relative
+    from .recursive import rs_bytes2object
+    from .recursive import rs_proto2object
+
+    if (
+        (from_bytes and not isinstance(blob, bytes))
+        or (
+            from_proto
+            and not from_bytes
+            and not isinstance(blob, _DynamicStructBuilder)
+        )
+        or not (from_bytes or from_proto)
+    ):
+        raise TypeError("Wrong deserialization format.")
+
     if from_bytes:
         # try to decode capnp first
         if isinstance(blob, bytes):
             # relative
-            from .capnp import CapnpMagicBytesNotFound
             from .capnp import deserialize_capnp
 
             try:
                 return deserialize_capnp(buf=blob)
-            except CapnpMagicBytesNotFound:  # nosec
-                # probably not capnp bytes
+            except Exception:  # nosec
                 pass
-            except Exception as e:
-                # capnp magic bytes found but another problem has occured
-                print("failed capnp deserialize", e)
-                raise e
 
-        message = RecursiveSerde_PB()
-        message.ParseFromString(blob)
-        blob = message
+        return rs_bytes2object(blob)
 
-    if not isinstance(blob, RecursiveSerde_PB):
-        raise TypeError("Wrong deserialization format.")
-
-    return rs_proto2object(blob)
+    if from_proto:
+        return rs_proto2object(blob)
