@@ -1,20 +1,29 @@
+variable "ubuntu_version" {
+  type =  string
+  default = "20.04.5"
+  sensitive = true
+}
 
 source "virtualbox-iso" "ubuntu2004" {
   boot_command           = [
-    "<enter><enter><f6><esc><wait> ",
-    "autoinstall ds=nocloud-net;seedfrom=http://{{ .HTTPIP }}:{{ .HTTPPort }}/", "<enter><wait>"
+    "<enter><wait><enter><f6><esc><wait> ",
+    "autoinstall<wait><enter>",
   ]
+  cd_files               = [
+    "./cloud-config/meta-data",
+    "./cloud-config/user-data"
+  ]
+  cd_label               = "cidata"
   boot_wait              = "5s"
   guest_os_type          = "ubuntu-64"
-  http_directory         = "cloud-config"
-  iso_checksum           = "file:http://no.releases.ubuntu.com/20.04.4/SHA256SUMS"
-  iso_url                = "http://no.releases.ubuntu.com/20.04.4/ubuntu-20.04.4-live-server-amd64.iso"
+  iso_checksum           = "file:http://no.releases.ubuntu.com/${var.ubuntu_version}/SHA256SUMS"
+  iso_url                = "http://no.releases.ubuntu.com/${var.ubuntu_version}/ubuntu-${var.ubuntu_version}-live-server-amd64.iso"
   memory                 = 4096
   disk_size              = 64000
   output_directory       = "output-base"
   output_filename        = "openmined.base.ubuntu2004"
   shutdown_command       = "sudo shutdown -P now"
-  ssh_handshake_attempts = "100"
+  ssh_handshake_attempts = "1000"
   ssh_password           = "ubuntu"
   ssh_pty                = true
   ssh_timeout            = "20m"
