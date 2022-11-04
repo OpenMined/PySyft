@@ -219,8 +219,13 @@ class TensorPointer(Pointer):
             )
             func = getattr(self_mpc, op_str)
             result = func(other_mpc)
-            other.client.processing_pointers[result.id_at_location] = True
-            other.client.processing_pointers.pop(other.id_at_location, None)
+
+            # We check to avoid calling id_at_location for MPCTensors
+            # since they don't have this attribute.
+            if hasattr(result, "id_at_location"):
+                other.client.processing_pointers[result.id_at_location] = True
+            if hasattr(other, "id_at_location"):
+                other.client.processing_pointers.pop(other.id_at_location, None)
         elif isinstance(other, MPCTensor):
             # "self" should be secretly shared
             other_mpc, self_mpc = MPCTensor.sanity_checks(other, self)
@@ -230,7 +235,11 @@ class TensorPointer(Pointer):
             result = self._apply_tensor_op(other=other, op_str=op_str, **kwargs)
 
         self.client.processing_pointers.pop(self.id_at_location, None)
-        self.client.processing_pointers[result.id_at_location] = True
+
+        # We check to avoid calling id_at_location for MPCTensors
+        # since they don't have this attribute.
+        if hasattr(result, "id_at_location"):
+            self.client.processing_pointers[result.id_at_location] = True
         return result
 
     def __add__(
