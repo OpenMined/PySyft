@@ -5,6 +5,7 @@ from pathlib import Path
 from queue import Queue
 import re
 import shutil
+import signal as sys_signal
 import socket
 import stat
 import subprocess  # nosec
@@ -31,6 +32,7 @@ import requests
 import rich
 from rich.console import Console
 from rich.live import Live
+from rich.progress import Progress
 from virtualenvapi.manage import VirtualEnvironment
 
 # relative
@@ -343,7 +345,9 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
         dry_run = False
 
     try:
-        silent = bool(kwargs["silent"]) if "silent" in kwargs else False
+        tail = False if "tail" in kwargs and not str_to_bool(kwargs["tail"]) else True
+        silent = not tail
+
         from_rendered_dir = (
             str_to_bool(cast(str, kwargs["from_template"])) and EDITABLE_MODE
         )
@@ -351,40 +355,180 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
         execute_commands(
             cmds, dry_run=dry_run, silent=silent, from_rendered_dir=from_rendered_dir
         )
-        print("Success!\n\n")
+        host_term = verb.get_named_term_hostgrammar(name="host")
+        command = cmds[list(cmds.keys())[0]][0]  # type: ignore
+        match_port = re.search("HTTP_PORT=[0-9]{1,5}", command)
+
+        if host_term.host == "docker" and match_port and silent:
+            rich.get_console().print(
+                "\n[bold green]⠋[bold blue] Checking  Node API [/bold blue]\t"
+            )
+            port = match_port.group().replace("HTTP_PORT=", "")
+            check_status("localhost" + ":" + port)
     except Exception as e:
         print(f"Error: {e}\n\n")
         return
 
 
-def execute_commands(
-    cmds: TypeList,
-    dry_run: bool = False,
-    silent: bool = False,
-    from_rendered_dir: bool = False,
-) -> None:
-    """Execute the launch commands and display their status in realtime.
+def check_errors(line: str, pid: int, cmd_name: str, progress_bar: Progress) -> None:
+    task = progress_bar.tasks[0]
+    if "Error response from daemon: " in line:
+        if progress_bar:
+            progress_bar.update(
+                0,
+                description=f"❌ [bold red]{cmd_name}[/bold red] [{task.completed} / {task.total}]",
+                refresh=True,
+            )
+            progress_bar.update(0, visible=False)
+            progress_bar.console.clear_live()
+            progress_bar.console.quiet = True
+            progress_bar.stop()
+            console = rich.get_console()
+            progress_bar.console.quiet = False
+            console.print(f"\n\n [red] ERROR [/red]: [bold]{line}[/bold]\n")
+        os.killpg(os.getpgid(pid), sys_signal.SIGTERM)
+        raise Exception
 
-    Args:
-        cmds (list): list of commands to be executed
-        dry_run (bool, optional): If `True` only displays cmds to be executed. Defaults to False.
-    """
-    process_list: TypeList = []
-    console = rich.get_console()
 
-    username, password = (
-        extract_username_and_pass(cmds[0]) if len(cmds) > 0 else ("-", "-")
+def check_pulling(line: str, cmd_name: str, progress_bar: Progress) -> None:
+    task = progress_bar.tasks[0]
+    if "Pulling" in line and "fs layer" not in line:
+        progress_bar.update(
+            0,
+            description=f"⌛ [bold]{cmd_name} [{task.completed} / {task.total+1}]",
+            total=task.total + 1,
+            refresh=True,
+        )
+    if "Pulled" in line:
+        progress_bar.update(
+            0,
+            description=f"⌛ [bold]{cmd_name} [{task.completed + 1} / {task.total}]",
+            completed=task.completed + 1,
+            refresh=True,
+        )
+        if progress_bar.finished:
+            progress_bar.update(
+                0,
+                description=f"✅ [bold green]{cmd_name} [{task.completed} / {task.total}]",
+                refresh=True,
+            )
+
+
+def check_building(line: str, cmd_name: str, progress_bar: Progress) -> None:
+
+    load_pattern = re.compile(
+        r"^#.* load build definition from [A-Za-z0-9]+\.dockerfile$", re.IGNORECASE
     )
-    # display VM credentials
-    console.print(generate_user_table(username=username, password=password))
+    build_pattern = re.compile(
+        r"^#.* naming to docker\.io/openmined/.* done$", re.IGNORECASE
+    )
+    task = progress_bar.tasks[0]
 
+    if load_pattern.match(line):
+        progress_bar.update(
+            0,
+            description=f"⌛ [bold]{cmd_name} [{task.completed} / {task.total +1}]",
+            total=task.total + 1,
+            refresh=True,
+        )
+    if build_pattern.match(line):
+        progress_bar.update(
+            0,
+            description=f"⌛ [bold]{cmd_name} [{task.completed+1} / {task.total}]",
+            completed=task.completed + 1,
+            refresh=True,
+        )
+
+    if progress_bar.finished:
+        progress_bar.update(
+            0,
+            description=f"✅ [bold green]{cmd_name} [{task.completed} / {task.total}]",
+            refresh=True,
+        )
+
+
+def check_launching(line: str, cmd_name: str, progress_bar: Progress) -> None:
+    task = progress_bar.tasks[0]
+    if "Starting" in line:
+        progress_bar.update(
+            0,
+            description=f"⌛ [bold]{cmd_name} [{task.completed} / {task.total+1}]",
+            total=task.total + 1,
+            refresh=True,
+        )
+    if "Started" in line:
+        progress_bar.update(
+            0,
+            description=f"⌛ [bold]{cmd_name} [{task.completed + 1} / {task.total}]",
+            completed=task.completed + 1,
+            refresh=True,
+        )
+        if progress_bar.finished:
+            progress_bar.update(
+                0,
+                description=f"✅ [bold green]{cmd_name} [{task.completed} / {task.total}]",
+                refresh=True,
+            )
+
+
+DOCKER_FUNC_MAP = {
+    "Pulling": check_pulling,
+    "Building": check_building,
+    "Launching": check_launching,
+}
+
+
+def read_thread_logs(
+    progress_bar: Progress, pid: int, queue: Queue, cmd_name: str
+) -> None:
+    line = queue.get()
+    line = str(line, encoding="utf-8").strip()
+
+    if progress_bar:
+        check_errors(line, pid, cmd_name, progress_bar=progress_bar)
+        DOCKER_FUNC_MAP[cmd_name](line, cmd_name, progress_bar=progress_bar)
+
+
+def create_thread_logs(process: subprocess.Popen) -> Queue:
+    def enqueue_output(out: Any, queue: Queue) -> None:
+        for line in iter(out.readline, b""):
+            queue.put(line)
+        out.close()
+
+    queue: Queue = Queue()
+    thread_1 = Thread(target=enqueue_output, args=(process.stdout, queue))
+    thread_2 = Thread(target=enqueue_output, args=(process.stderr, queue))
+
+    thread_1.daemon = True  # thread dies with the program
+    thread_1.start()
+    thread_2.daemon = True  # thread dies with the program
+    thread_2.start()
+    return queue
+
+
+def process_cmd(
+    cmds: TypeList[str],
+    dry_run: bool,
+    silent: bool,
+    from_rendered_dir: bool,
+    progress_bar: Union[Progress, None] = None,
+    cmd_name: str = "",
+) -> None:
+    process_list: TypeList = []
     cwd = (
         os.path.join(GRID_SRC_PATH, RENDERED_DIR)
         if from_rendered_dir
         else GRID_SRC_PATH
     )
+    username, password = (
+        extract_username_and_pass(cmds[0]) if len(cmds) > 0 else ("-", "-")
+    )
 
-    print("Current Working Directory: ", cwd)
+    # display VM credentials
+    console = rich.get_console()
+    credentials = generate_user_table(username=username, password=password)
+    if credentials:
+        console.print(credentials)
 
     for cmd in cmds:
         if dry_run:
@@ -409,15 +553,31 @@ def execute_commands(
             else:
                 display_jupyter_token(cmd)
                 if silent:
+                    ON_POSIX = "posix" in sys.builtin_module_names
+
                     process = subprocess.Popen(  # nosec
                         cmd_to_exec,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
                         cwd=cwd,
+                        close_fds=ON_POSIX,
                         shell=True,
                     )
-                    process.communicate()
+
+                    # Creates two threads to get docker stdout and sterr
+                    logs_queue = create_thread_logs(process=process)
+
+                    read_thread_logs(progress_bar, process.pid, logs_queue, cmd_name)
+                    while process.poll() != 0:
+                        while not logs_queue.empty():
+                            # Read stdout and sterr to check errors or update progress bar.
+                            read_thread_logs(
+                                progress_bar, process.pid, logs_queue, cmd_name
+                            )
                 else:
+                    if progress_bar:
+                        progress_bar.stop()
+
                     subprocess.run(  # nosec
                         cmd_to_exec,
                         shell=True,
@@ -432,6 +592,45 @@ def execute_commands(
 
         # save vm details as json
         save_vm_details_as_json(username, password, process_list)
+
+
+def execute_commands(
+    cmds: Union[TypeList[str], TypeDict[str, TypeList[str]]],
+    dry_run: bool = False,
+    silent: bool = False,
+    from_rendered_dir: bool = False,
+) -> None:
+    """Execute the launch commands and display their status in realtime.
+
+    Args:
+        cmds (list): list of commands to be executed
+        dry_run (bool, optional): If `True` only displays cmds to be executed. Defaults to False.
+    """
+    console = rich.get_console()
+    if isinstance(cmds, dict):
+        console.print("[bold green]⠋[bold blue] Launching Docker Images [/bold blue]\t")
+        for cmd_name, cmd in cmds.items():
+            with Progress(console=console, auto_refresh=False) as progress:
+                if silent:
+                    progress.add_task(
+                        f"[bold green]{cmd_name} Images",
+                        total=0,
+                    )
+                process_cmd(
+                    cmds=cmd,
+                    dry_run=dry_run,
+                    silent=silent,
+                    from_rendered_dir=from_rendered_dir,
+                    progress_bar=progress,
+                    cmd_name=cmd_name,
+                )
+    else:
+        process_cmd(
+            cmds=cmds,
+            dry_run=dry_run,
+            silent=silent,
+            from_rendered_dir=from_rendered_dir,
+        )
 
 
 def display_vm_status(process_list: TypeList) -> None:
@@ -809,7 +1008,7 @@ def create_launch_cmd(
     verb: GrammarVerb,
     kwargs: TypeDict[str, Any],
     ignore_docker_version_check: Optional[bool] = False,
-) -> Union[str, TypeList[str]]:
+) -> Union[str, TypeList[str], TypeDict[str, TypeList[str]]]:
     parsed_kwargs: TypeDict[str, Any] = {}
     host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host
@@ -905,6 +1104,7 @@ def create_launch_cmd(
         parsed_kwargs.update(kwargs)
 
     if host in ["docker"]:
+
         # Check docker service status
         if not ignore_docker_version_check:
             check_docker_service_status()
@@ -1388,13 +1588,39 @@ def create_launch_cmd(
     )
 
 
+def pull_command(cmd: str, kwargs: TypeDict[str, Any]) -> TypeList[str]:
+    pull_cmd = str(cmd)
+    if kwargs["release"] == "production":
+        pull_cmd += " --file docker-compose.yml"
+    else:
+        pull_cmd += " --file docker-compose.pull.yml"
+    pull_cmd += " pull"
+    return [pull_cmd]
+
+
+def build_command(cmd: str) -> TypeList[str]:
+    build_cmd = str(cmd)
+    build_cmd += " --file docker-compose.build.yml"
+    build_cmd += " --file docker-compose.dev.yml"
+    build_cmd += " build"
+    return [build_cmd]
+
+
+def deploy_command(cmd: str, tail: bool) -> TypeList[str]:
+    up_cmd = str(cmd)
+    up_cmd += " up"
+    if not tail:
+        up_cmd += " -d"
+    return [up_cmd]
+
+
 def create_launch_docker_cmd(
     verb: GrammarVerb,
     docker_version: str,
     kwargs: TypeDict[str, Any],
     tail: bool = True,
     silent: bool = False,
-) -> str:
+) -> TypeDict[str, TypeList[str]]:
     host_term = verb.get_named_term_hostgrammar(name="host")
     node_name = verb.get_named_term_type(name="node_name")
     node_type = verb.get_named_term_type(name="node_type")
@@ -1415,10 +1641,10 @@ def create_launch_docker_cmd(
 
     print("  - TYPE: " + str(node_type.input))
     print("  - NAME: " + str(snake_name))
-    # print("  - TAG: " + str(tag))
+    print("  - TAG: " + str(tag))
     print("  - PORT: " + str(host_term.free_port))
     print("  - DOCKER COMPOSE: " + docker_version)
-    # print("  - TAIL: " + str(tail))
+    print("  - TAIL: " + str(tail))
     print("\n")
 
     version_string = kwargs["tag"]
@@ -1489,6 +1715,9 @@ def create_launch_docker_cmd(
     if "test" in kwargs and kwargs["test"] is True:
         envs["S3_VOLUME_SIZE_MB"] = "100"  # GitHub CI is small
 
+    if kwargs.get("release", "") == "development":
+        envs["RABBITMQ_MANAGEMENT"] = "-management"
+
     if "release" in kwargs:
         envs["RELEASE"] = kwargs["release"]
 
@@ -1506,10 +1735,6 @@ def create_launch_docker_cmd(
         cmd += "; "
     else:
         cmd += " ".join(args)
-
-    if not build:
-        pull_cmd = str(cmd)
-        pull_cmd += " docker compose pull"
 
     cmd += " docker compose -p " + snake_name
 
@@ -1568,29 +1793,21 @@ def create_launch_docker_cmd(
     except Exception:  # nosec
         pass
 
+    final_commands = {}
+    final_commands["Pulling"] = pull_command(cmd, kwargs)
+
     cmd += " --file docker-compose.yml"
-    if build:
-        cmd += " --file docker-compose.build.yml"
-    if "release" in kwargs and kwargs["release"] == "development":
-        cmd += " --file docker-compose.dev.yml"
     if "tls" in kwargs and kwargs["tls"] is True:
         cmd += " --file docker-compose.tls.yml"
     if "test" in kwargs and kwargs["test"] is True:
         cmd += " --file docker-compose.test.yml"
-    cmd += " up"
-
-    if not tail:
-        cmd += " -d"
 
     if build:
-        cmd += " --build"  # force rebuild
-    else:
-        if is_windows():
-            cmd = pull_cmd + "; " + cmd
-        else:
-            cmd = pull_cmd + " && " + cmd
+        my_build_command = build_command(cmd)
+        final_commands["Building"] = my_build_command
 
-    return cmd
+    final_commands["Launching"] = deploy_command(cmd, tail)
+    return final_commands
 
 
 def create_launch_vagrant_cmd(verb: GrammarVerb) -> str:
