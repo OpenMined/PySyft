@@ -70,7 +70,7 @@ To utilize the privacy-enhancing features offered in PyGrid and to
 create an account for the user, you must first ``import`` OpenMined's 
 ``private`` deep learning library: PySyft.
 
-Lets import Syft by running the below cell:
+Let's import Syft by running the below cell:
 
 ::
 
@@ -146,7 +146,7 @@ There are ``three`` different ways for a new user account to be created on your 
 A. Using PySyft: Create account from Domain Client
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To create a Data Scientists account for someone within your team or organization, you need to tell your Domain 4 things:
+To create a Data Scientist account for someone within your team or organization, you need to tell your Domain 4 things:
 
 #. **Name**: Name of the individual
 #. **Email**: Associated email address of the individual
@@ -203,7 +203,7 @@ Print the details of the account you created and share the ``credentials`` with 
 B. Using PySyft: Create account from Domain URL
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A user can also ``signup`` or create an account on a Domain node if they have access to the ``URL`` to the Domain. 
+A user can also ``sign-up`` or create an account on a Domain node if they have access to the ``URL`` to the Domain. 
 Instead of creating an account individually for each Data Scientist, a Data Owner can ``share`` the URL to their 
 Domain node and ask their team members to ``register`` to the Domain. 
 
