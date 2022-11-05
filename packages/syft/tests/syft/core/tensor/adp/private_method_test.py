@@ -9,9 +9,9 @@ from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
 
 
 def test_incompatible_input_tensor_type() -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(Exception):
         x = sy.Tensor(np.float32([1, 2, 3, 4.0]))
-        bob = DataSubjectArray(["bob"])
+        bob = DataSubjectArray.from_objs(np.array(["bob", "billy"]))
         x.private(min_val=0, max_val=5, data_subjects=bob)
 
 

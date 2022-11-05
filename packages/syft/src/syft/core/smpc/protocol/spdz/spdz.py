@@ -11,7 +11,6 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
-from typing import Dict
 from typing import TYPE_CHECKING
 
 # relative
@@ -26,9 +25,7 @@ if TYPE_CHECKING:
     from ....tensor.smpc.mpc_tensor import MPCTensor
 
 
-def mul_master(
-    x: MPCTensor, y: MPCTensor, op_str: str, **kwargs: Dict[Any, Any]
-) -> MPCTensor:
+def mul_master(x: MPCTensor, y: MPCTensor, op_str: str, **kwargs: Any) -> MPCTensor:
 
     """Function that is executed by the orchestrator to multiply two secret values.
 

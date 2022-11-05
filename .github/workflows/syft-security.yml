@@ -71,6 +71,7 @@ jobs:
       - name: Scan for security issues
         if: steps.changes.outputs.syft == 'true'
         run: |
+          pip install importlib-metadata==4.13.0
           bandit -r src
           safety check
 

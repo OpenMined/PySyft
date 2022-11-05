@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package syft.core.node.common.service;
+
+import "proto/core/common/common_object.proto";
+import "proto/core/io/address.proto";
+
+message TFFMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 3;
+  bytes payload = 4;
+}
+
+message TFFReplyMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  bytes payload = 3;
+}
