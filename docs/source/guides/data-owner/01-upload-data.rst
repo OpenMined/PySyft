@@ -63,6 +63,8 @@ Lets import Syft by running the below cell:
 
    Out: Syft is imported
 
+.. _step2:
+
 Step 2: Log into Domain
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -126,6 +128,8 @@ For this tutorial, we will use a simple dataset of four peoples ``ages``.
    022    9
    034    8
 
+.. _step4:
+
 Step 4: Annotate Data for Automatic DP
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -164,6 +168,8 @@ Important steps:
 
    **Note:** If your project has a training set, validation set and test
    set, you must annotate each data set with Auto DP metadata.
+
+.. _step5:
 
 Step 5: Upload the Dataset
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
