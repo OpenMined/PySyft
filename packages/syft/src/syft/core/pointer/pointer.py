@@ -111,14 +111,12 @@ from ..common.uid import UID
 from ..io.address import Address
 from ..node.abstract.node import AbstractNode
 from ..node.common.action.get_object_action import GetObjectAction
-
 from ..node.common.exceptions import AuthorizationError
 from ..node.common.exceptions import DatasetDownloadError
 from ..node.common.node_service.get_repr.get_repr_service import GetReprMessage
 from ..node.common.node_service.object_search_permission_update.obj_search_permission_messages import (
     ObjectSearchPermissionUpdateMessage,
 )
-
 from ..store.storeable_object import StorableObject
 
 
@@ -232,7 +230,7 @@ class Pointer(AbstractPointer):
                 )
                 del self.client.processing_pointers[self.id_at_location]
                 is_processing_pointer = False
-            except UnknownPrivateException as e:
+            except UnknownPrivateException:
                 time.sleep(0.5)
                 pass
 
