@@ -614,7 +614,7 @@ def accept_or_deny_request(
                 )
                 tmp_obj.read_permissions[
                     VerifyKey(_req.verify_key.encode("utf-8"), encoder=HexEncoder)
-                ] = _req.id
+                ] = _req.user_id
                 node.store[UID.from_string(_req.object_id)] = tmp_obj
 
             # TODO: In the future we'll probably need to keep a request history

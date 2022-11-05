@@ -89,7 +89,7 @@ To login to your Domain node, you will need to define which Domain you are loggi
          password="changethis"
       )
    except Exception as e:
-      print("Unable to login. Please check your domain is up with `!hagrid check localhost:8081 --silent`")
+      print("Unable to login. Please check your domain is up with `!hagrid check localhost:8081`")
 
    Out:
 
@@ -156,7 +156,7 @@ Important steps:
    # run this cell
    data_subjects = sy.DataSubjectArray.from_objs(dataset["ID"])
 
-   age_data = sy.Tensor(dataset["Age"]).annotated_with_dp_metadata(
+   age_data = sy.Tensor(dataset["Age"]).annotate_with_dp_metadata(
       min_val=0, max_val=100, data_subjects=data_subjects
    )
 
