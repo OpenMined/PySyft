@@ -231,3 +231,9 @@ class OblvEnclaveError(Exception):
 class OblvError(Exception):
     def __init__(self, message: str = "") -> None:
         super().__init__(message)
+
+class OblvUnAuthorizedError(Exception):
+    def __init__(self, message: str = "") -> None:
+        if not message:
+            message = "User unauthorized to perform this action in enclave"
+        super().__init__(message)

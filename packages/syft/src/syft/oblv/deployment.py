@@ -66,5 +66,5 @@ def create_deployment(client: OblvClient, domain_clients: list, deployment_name:
     depl_input = CreateDeploymentInput(REPO_OWNER, REPO_NAME, VCS,
                                   REF, REGION, deployment_name, VISIBILITY, True, [], build_args)
     res = client.create_deployment(depl_input)
-    result = DeploymentClient(deployment_id=res.deployment_id, user_key_name=key_name, connection_port=connection_port)
+    result = DeploymentClient(deployment_id=res.deployment_id, oblv_client = client, user_key_name=key_name, connection_port=connection_port)
     return result

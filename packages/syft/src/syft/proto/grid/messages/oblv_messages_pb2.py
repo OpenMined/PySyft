@@ -20,7 +20,7 @@ from syft.proto.core.common import (
 from syft.proto.core.io import address_pb2 as proto_dot_core_dot_io_dot_address__pb2
 from syft.proto.lib.python import dict_pb2 as proto_dot_lib_dot_python_dot_dict__pb2
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\'proto/grid/messages/oblv_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto\x1a\x1bproto/lib/python/dict.proto\"\xaf\x01\n\x0eSyftOblvClient\x12\r\n\x05token\x18\x01 \x01(\t\x12\x19\n\x11oblivious_user_id\x18\x02 \x01(\t\x12&\n\x07\x63ookies\x18\x03 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07headers\x18\x04 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12\x0f\n\x07timeout\x18\x05 \x01(\x02\x12\x12\n\nverify_ssl\x18\x06 \x01(\x08\"\x8e\x01\n\x14\x43reateKeyPairMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\"x\n\x15\x43reateKeyPairResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x10\n\x08response\x18\x03 \x01(\t\"\x8d\x01\n\x13GetPublicKeyMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\"w\n\x14GetPublicKeyResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x10\n\x08response\x18\x03 \x01(\t\"\xa2\x02\n\x15PublishDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x12\n\ndataset_id\x18\x03 \x01(\t\x12\x15\n\rdeployment_id\x18\x04 \x01(\t\x12\x12\n\nhost_or_ip\x18\x05 \x01(\t\x12\x0c\n\x04port\x18\x06 \x01(\r\x12\x10\n\x08protocol\x18\x07 \x01(\t\x12\x32\n\x06\x63lient\x18\x08 \x01(\x0b\x32\".syft.grid.messages.SyftOblvClient\x12\'\n\x08reply_to\x18\t \x01(\x0b\x32\x15.syft.core.io.Address\"\xe2\x01\n\x1d\x43heckEnclaveConnectionMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x15\n\rdeployment_id\x18\x03 \x01(\t\x12\x32\n\x06\x63lient\x18\x04 \x01(\x0b\x32\".syft.grid.messages.SyftOblvClient\x12\'\n\x08reply_to\x18\x05 \x01(\x0b\x32\x15.syft.core.io.Address\"\xc5\x01\n\x16PublishDatasetResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x14\n\x0c\x64\x61taset_name\x18\x03 \x01(\t\x12\x12\n\ndataset_id\x18\x04 \x01(\t\x12\x32\n\x06\x63lient\x18\x05 \x01(\x0b\x32\".syft.grid.messages.SyftOblvClientb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\'proto/grid/messages/oblv_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto\x1a\x1bproto/lib/python/dict.proto\"\xaf\x01\n\x0eSyftOblvClient\x12\r\n\x05token\x18\x01 \x01(\t\x12\x19\n\x11oblivious_user_id\x18\x02 \x01(\t\x12&\n\x07\x63ookies\x18\x03 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07headers\x18\x04 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12\x0f\n\x07timeout\x18\x05 \x01(\x02\x12\x12\n\nverify_ssl\x18\x06 \x01(\x08\"\x8e\x01\n\x14\x43reateKeyPairMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\"x\n\x15\x43reateKeyPairResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x10\n\x08response\x18\x03 \x01(\t\"\x8d\x01\n\x13GetPublicKeyMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\"w\n\x14GetPublicKeyResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x10\n\x08response\x18\x03 \x01(\t\"\xa2\x02\n\x15PublishDatasetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x12\n\ndataset_id\x18\x03 \x01(\t\x12\x15\n\rdeployment_id\x18\x04 \x01(\t\x12\x12\n\nhost_or_ip\x18\x05 \x01(\t\x12\x0c\n\x04port\x18\x06 \x01(\r\x12\x10\n\x08protocol\x18\x07 \x01(\t\x12\x32\n\x06\x63lient\x18\x08 \x01(\x0b\x32\".syft.grid.messages.SyftOblvClient\x12\'\n\x08reply_to\x18\t \x01(\x0b\x32\x15.syft.core.io.Address\"\xe2\x01\n\x1d\x43heckEnclaveConnectionMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x15\n\rdeployment_id\x18\x03 \x01(\t\x12\x32\n\x06\x63lient\x18\x04 \x01(\x0b\x32\".syft.grid.messages.SyftOblvClient\x12\'\n\x08reply_to\x18\x05 \x01(\x0b\x32\x15.syft.core.io.Address\"{\n\x16PublishDatasetResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x12\n\ndataset_id\x18\x03 \x01(\t\"\xc5\x01\n\x16PublishApprovalMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x15\n\rdeployment_id\x18\x03 \x01(\t\x12\x11\n\tresult_id\x18\x04 \x01(\t\x12\x32\n\x06\x63lient\x18\x05 \x01(\x0b\x32\".syft.grid.messages.SyftOblvClient\"\xdc\x01\n\x13\x44\x65\x64uctBudgetMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x15\n\rdeployment_id\x18\x03 \x01(\t\x12\x11\n\tresult_id\x18\x04 \x01(\t\x12\x18\n\x10\x62udget_to_deduct\x18\x05 \x01(\x02\x12\x32\n\x06\x63lient\x18\x06 \x01(\x0b\x32\".syft.grid.messages.SyftOblvClientb\x06proto3')
 
 
 
@@ -32,6 +32,8 @@ _GETPUBLICKEYRESPONSE = DESCRIPTOR.message_types_by_name['GetPublicKeyResponse']
 _PUBLISHDATASETMESSAGE = DESCRIPTOR.message_types_by_name['PublishDatasetMessage']
 _CHECKENCLAVECONNECTIONMESSAGE = DESCRIPTOR.message_types_by_name['CheckEnclaveConnectionMessage']
 _PUBLISHDATASETRESPONSE = DESCRIPTOR.message_types_by_name['PublishDatasetResponse']
+_PUBLISHAPPROVALMESSAGE = DESCRIPTOR.message_types_by_name['PublishApprovalMessage']
+_DEDUCTBUDGETMESSAGE = DESCRIPTOR.message_types_by_name['DeductBudgetMessage']
 SyftOblvClient = _reflection.GeneratedProtocolMessageType('SyftOblvClient', (_message.Message,), {
   'DESCRIPTOR' : _SYFTOBLVCLIENT,
   '__module__' : 'proto.grid.messages.oblv_messages_pb2'
@@ -88,6 +90,20 @@ PublishDatasetResponse = _reflection.GeneratedProtocolMessageType('PublishDatase
   })
 _sym_db.RegisterMessage(PublishDatasetResponse)
 
+PublishApprovalMessage = _reflection.GeneratedProtocolMessageType('PublishApprovalMessage', (_message.Message,), {
+  'DESCRIPTOR' : _PUBLISHAPPROVALMESSAGE,
+  '__module__' : 'proto.grid.messages.oblv_messages_pb2'
+  # @@protoc_insertion_point(class_scope:syft.grid.messages.PublishApprovalMessage)
+  })
+_sym_db.RegisterMessage(PublishApprovalMessage)
+
+DeductBudgetMessage = _reflection.GeneratedProtocolMessageType('DeductBudgetMessage', (_message.Message,), {
+  'DESCRIPTOR' : _DEDUCTBUDGETMESSAGE,
+  '__module__' : 'proto.grid.messages.oblv_messages_pb2'
+  # @@protoc_insertion_point(class_scope:syft.grid.messages.DeductBudgetMessage)
+  })
+_sym_db.RegisterMessage(DeductBudgetMessage)
+
 if _descriptor._USE_C_DESCRIPTORS == False:
 
   DESCRIPTOR._options = None
@@ -105,6 +121,10 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _PUBLISHDATASETMESSAGE._serialized_end=1161
   _CHECKENCLAVECONNECTIONMESSAGE._serialized_start=1164
   _CHECKENCLAVECONNECTIONMESSAGE._serialized_end=1390
-  _PUBLISHDATASETRESPONSE._serialized_start=1393
-  _PUBLISHDATASETRESPONSE._serialized_end=1590
+  _PUBLISHDATASETRESPONSE._serialized_start=1392
+  _PUBLISHDATASETRESPONSE._serialized_end=1515
+  _PUBLISHAPPROVALMESSAGE._serialized_start=1518
+  _PUBLISHAPPROVALMESSAGE._serialized_end=1715
+  _DEDUCTBUDGETMESSAGE._serialized_start=1718
+  _DEDUCTBUDGETMESSAGE._serialized_end=1938
 # @@protoc_insertion_point(module_scope)

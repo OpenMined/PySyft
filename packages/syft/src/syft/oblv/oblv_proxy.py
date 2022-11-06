@@ -50,7 +50,6 @@ def install_oblv_proxy():
     elif system_name=="Darwin":
         darwin_proxy_installation()
 
-
 def windows_proxy_installation():
     try:
         url='https://oblv-cli-binary.s3.us-east-2.amazonaws.com/0.3.0/oblv-ccli-0.3.0-x86_64-pc-windows-msvc.zip'
@@ -147,29 +146,6 @@ def get_oblv_public_key(key_name):
         raise FileNotFoundError
     except Exception as e:
         raise Exception(e)
-
-def publish_action(action,arguments, deployment_id, cli):
-    conn_string = os.environ.get("OBLV_CONNECTION_STRING")
-    if conn_string==None:
-        raise Exception("proxy not running. Use the method connect_oblv_proxy to start the proxy.")
-    cli = OblvClient(
-        cli.token,cli.oblivious_user_id
-        )
-    depl = cli.deployment_info(deployment_id)
-    if depl.is_deleted==True:
-        raise Exception("User cannot connect to this deployment, as it is no longer available.")
-    
-    req = requests.post(conn_string + "/tensor/action?op={}".format(action), json=arguments)
-    if req.status_code==401:
-        raise OblvEnclaveUnAuthorizedError()
-    elif req.status_code == 400:
-        raise OblvEnclaveError(req.json()["detail"])
-    elif req.status_code==422:
-        print(req.text)
-    elif req.status_code!=200:
-        raise OblvEnclaveError("Request to publish dataset failed with status {}".format(req.status_code))
-    print("API Called. Now closing")
-    return req.text
 
 def close_oblv_proxy():
     pid = os.environ.get("OBLV_PROCESS_PID")

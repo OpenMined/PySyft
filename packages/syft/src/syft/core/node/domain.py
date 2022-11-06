@@ -64,6 +64,7 @@ from .common.node_service.object_request.object_request_service import (
     ObjectRequestServiceWithoutReply,
 )
 from .common.node_service.object_request.object_request_service import RequestService
+from .common.node_service.oblv.oblv_service import OblvBackgroundService
 from .common.node_service.oblv.oblv_service import OblvRequestAdminService
 from .common.node_service.oblv.oblv_service import OblvRequestUserService
 from .common.node_service.ping.ping_service import PingService
@@ -176,6 +177,7 @@ class Domain(Node):
         self.immediate_services_with_reply.append(OblvRequestAdminService)
         self.immediate_services_with_reply.append(OblvRequestUserService)
         self.immediate_services_without_reply.append(ObjectRequestServiceWithoutReply)
+        self.immediate_services_without_reply.append(OblvBackgroundService)
         self.immediate_services_without_reply.append(
             AssociationRequestWithoutReplyService
         )

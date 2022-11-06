@@ -21,10 +21,16 @@ from ......proto.grid.messages.oblv_messages_pb2 import (
     CreateKeyPairResponse as CreateKeyPairResponse_PB,
 )
 from ......proto.grid.messages.oblv_messages_pb2 import (
+    DeductBudgetMessage as DeductBudgetMessage_PB,
+)
+from ......proto.grid.messages.oblv_messages_pb2 import (
     GetPublicKeyMessage as GetPublicKeyMessage_PB,
 )
 from ......proto.grid.messages.oblv_messages_pb2 import (
     GetPublicKeyResponse as GetPublicKeyResponse_PB,
+)
+from ......proto.grid.messages.oblv_messages_pb2 import (
+    PublishApprovalMessage as PublishApprovalMessage_PB,
 )
 from ......proto.grid.messages.oblv_messages_pb2 import (
     PublishDatasetMessage as PublishDatasetMessage_PB,
@@ -582,14 +588,10 @@ class PublishDatasetResponse(ImmediateSyftMessageWithoutReply):
         self,
         address: Address,
         dataset_id: str = "",
-        dataset_name: str = "",
-        client: SyftOblvClient = None,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
         self.dataset_id = dataset_id
-        self.dataset_name = dataset_name
-        self.client = client
 
     def _object2proto(self) -> PublishDatasetResponse_PB:
         """Returns a protobuf serialization of self.
@@ -606,9 +608,7 @@ class PublishDatasetResponse(ImmediateSyftMessageWithoutReply):
         return PublishDatasetResponse_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            dataset_id = self.dataset_id,
-            dataset_name = self.dataset_name,
-            client=serialize(self.client)
+            dataset_id = self.dataset_id
         )
 
     @staticmethod
@@ -628,9 +628,7 @@ class PublishDatasetResponse(ImmediateSyftMessageWithoutReply):
         return PublishDatasetResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            dataset_id = proto.dataset_id,
-            dataset_name = proto.dataset_name,
-            client = _deserialize(blob=proto.client)
+            dataset_id = proto.dataset_id
         )
 
     @staticmethod
@@ -649,3 +647,157 @@ class PublishDatasetResponse(ImmediateSyftMessageWithoutReply):
         """
 
         return PublishDatasetResponse_PB
+
+@serializable()
+@final
+class PublishApprovalMessage(ImmediateSyftMessageWithoutReply):
+    def __init__(
+        self,
+        address: Address,
+        deployment_id: str,
+        result_id: str,
+        client: SyftOblvClient,
+        msg_id: Optional[UID] = None,
+    ):
+        super().__init__(address=address, msg_id=msg_id)
+        self.result_id = result_id
+        self.client = client
+        self.deployment_id=deployment_id
+
+    def _object2proto(self) -> PublishApprovalMessage_PB:
+        """Returns a protobuf serialization of self.
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms the current object into the corresponding
+        Protobuf object so that it can be further serialized.
+        :return: returns a protobuf object
+        :rtype: PublishApprovalMessage_PB
+        .. note::
+            This method is purely an internal method. Please use serialize(object) or one of
+            the other public serialization methods if you wish to serialize an
+            object.
+        """
+        return PublishApprovalMessage_PB(
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
+            result_id=self.result_id,
+            deployment_id=self.deployment_id,
+            client=serialize(self.client)
+        )
+
+    @staticmethod
+    def _proto2object(
+        proto: PublishApprovalMessage_PB,
+    ) -> "PublishApprovalMessage":
+        """Creates a PublishApprovalMessage from a protobuf
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms a protobuf object into an instance of this class.
+        :return: returns an instance of SignalingOfferMessage
+        :rtype: PublishApprovalMessage
+        .. note::
+            This method is purely an internal method. Please use syft.deserialize()
+            if you wish to deserialize an object.
+        """
+        
+        return PublishApprovalMessage(
+            msg_id=_deserialize(blob=proto.msg_id),
+            address=_deserialize(blob=proto.address),
+            result_id=proto.result_id,
+            deployment_id=proto.deployment_id,
+            client = _deserialize(blob=proto.client)
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        """Return the type of protobuf object which stores a class of this type
+        As a part of serialization and deserialization, we need the ability to
+        lookup the protobuf object type directly from the object type. This
+        static method allows us to do this.
+        Importantly, this method is also used to create the reverse lookup ability within
+        the metaclass of Serializable. In the metaclass, it calls this method and then
+        it takes whatever type is returned from this method and adds an attribute to it
+        with the type of this class attached to it. See the MetaSerializable class for
+        details.
+        :return: the type of protobuf object which corresponds to this class.
+        :rtype: GeneratedProtocolMessageType
+        """
+
+        return PublishApprovalMessage_PB
+
+@serializable()
+@final
+class DeductBudgetMessage(ImmediateSyftMessageWithoutReply):
+    def __init__(
+        self,
+        address: Address,
+        deployment_id: str,
+        result_id: str,
+        budget_to_deduct: float,
+        client: SyftOblvClient,
+        msg_id: Optional[UID] = None,
+    ):
+        super().__init__(address=address, msg_id=msg_id)
+        self.result_id = result_id
+        self.budget_to_deduct = budget_to_deduct
+        self.client = client
+        self.deployment_id=deployment_id
+
+    def _object2proto(self) -> DeductBudgetMessage_PB:
+        """Returns a protobuf serialization of self.
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms the current object into the corresponding
+        Protobuf object so that it can be further serialized.
+        :return: returns a protobuf object
+        :rtype: DeductBudgetMessage_PB
+        .. note::
+            This method is purely an internal method. Please use serialize(object) or one of
+            the other public serialization methods if you wish to serialize an
+            object.
+        """
+        return DeductBudgetMessage_PB(
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
+            result_id=self.result_id,
+            deployment_id=self.deployment_id,
+            budget_to_deduct=self.budget_to_deduct,
+            client=serialize(self.client)
+        )
+
+    @staticmethod
+    def _proto2object(
+        proto: DeductBudgetMessage_PB,
+    ) -> "DeductBudgetMessage":
+        """Creates a DeductBudgetMessage from a protobuf
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms a protobuf object into an instance of this class.
+        :return: returns an instance of SignalingOfferMessage
+        :rtype: DeductBudgetMessage
+        .. note::
+            This method is purely an internal method. Please use syft.deserialize()
+            if you wish to deserialize an object.
+        """
+        
+        return DeductBudgetMessage(
+            msg_id=_deserialize(blob=proto.msg_id),
+            address=_deserialize(blob=proto.address),
+            result_id=proto.result_id,
+            deployment_id=proto.deployment_id,
+            budget_to_deduct=proto.budget_to_deduct,
+            client = _deserialize(blob=proto.client)
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        """Return the type of protobuf object which stores a class of this type
+        As a part of serialization and deserialization, we need the ability to
+        lookup the protobuf object type directly from the object type. This
+        static method allows us to do this.
+        Importantly, this method is also used to create the reverse lookup ability within
+        the metaclass of Serializable. In the metaclass, it calls this method and then
+        it takes whatever type is returned from this method and adds an attribute to it
+        with the type of this class attached to it. See the MetaSerializable class for
+        details.
+        :return: the type of protobuf object which corresponds to this class.
+        :rtype: GeneratedProtocolMessageType
+        """
+
+        return DeductBudgetMessage_PB

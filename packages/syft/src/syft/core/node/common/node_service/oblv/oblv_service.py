@@ -22,6 +22,7 @@ import requests
 from ......grid import GridURL
 from ......logger import debug
 from .....common.message import ImmediateSyftMessageWithReply
+from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.uid import UID
 from ....common.action.get_object_action import GetObjectAction
 from ....common.action.get_object_action import GetObjectResponseMessage
@@ -40,25 +41,38 @@ from ..node_service import ImmediateNodeServiceWithoutReply
 from ..success_resp_message import SuccessResponseMessage
 from .oblv_messages import CheckEnclaveConnectionMessage
 from .oblv_messages import CreateKeyPairMessage
+from .oblv_messages import DeductBudgetMessage
 from .oblv_messages import GetPublicKeyMessage
 from .oblv_messages import GetPublicKeyResponse
+from .oblv_messages import PublishApprovalMessage
 from .oblv_messages import PublishDatasetMessage
 from .oblv_messages import PublishDatasetResponse
 from .oblv_messages import SyftOblvClient
 
-INPUT_TYPE = Union[
-    Type[CreateKeyPairMessage],
-    Type[GetPublicKeyMessage],
-    Type[PublishDatasetMessage]
-]
-
 USER_INPUT_MESSAGES = Union[
     GetPublicKeyMessage,
     PublishDatasetMessage,
+    CheckEnclaveConnectionMessage,
+    CreateKeyPairMessage
 ]
 
 USER_OUTPUT_MESSAGES = Union[SuccessResponseMessage, GetPublicKeyResponse]
 
+def create_keys_from_db(node):
+    file_path = os.getenv("OBLV_KEY_PATH", "/app/content")
+    file_name = os.getenv("OBLV_KEY_NAME", "oblv_key")
+    keys = node.oblv_keys.get()
+    if keys == None:
+        raise OblvKeyNotFoundError()
+    #Creating directory if not exist
+    os.makedirs(os.path.dirname(file_path+"/"+file_name+"_private.der"), exist_ok=True)
+    f_private = open(file_path+"/"+file_name+"_private.der","w+b")
+    f_private.write(keys.private_key)
+    f_private.close()
+    f_public = open(file_path+"/"+file_name+"_public.der","w+b")
+    f_public.write(keys.public_key)
+    f_public.close()
+    
 def create_key_pair_msg(
     msg: CreateKeyPairMessage,
     node: DomainInterface,
@@ -74,7 +88,7 @@ def create_key_pair_msg(
         verify_key (VerifyKey): public digital signature/key of the user.
 
     Raises:
-        AuthorizationError: If user does not have permissions to create new role.
+        AuthorizationError: If user does not have permissions to create new key.
 
     Returns:
         SuccessResponseMessage: Success message on key pair generation.
@@ -218,25 +232,7 @@ def publish_dataset(msg: PublishDatasetMessage,
         "owner_protocol": msg.protocol
         })
     process.kill()
-    process.wait(1)
-    
-    #For Testing
-    # print("Node Details\n\n\n\n\n\n")
-    # print(msg)
-    # obj = node.store.get(UID.from_string(msg.dataset_id))
-    # obj_bytes = obj.data._object2bytes()
-    # print(obj_bytes)
-    # req = requests.post("http://192.168.1.33:8010/tensor/dataset/add", headers={"x-oblv-user-name":node.name, "x-oblv-user-role": "domain"}, files={'input': obj_bytes}, data={
-    #     "dataset_id": msg.dataset_id,
-    #     "owner_url": msg.host_or_ip,
-    #     "owner_port": msg.port,
-    #     "owner_protocol": msg.protocol
-    #     # "owner_url": "192.168.1.33",
-    #     # "owner_port": 8010,
-    #     # "owner_protocol": "http"
-    #     })
-    #################
-    
+    process.wait(1) 
     
     debug(req.text)
     if req.status_code==401:
@@ -251,9 +247,7 @@ def publish_dataset(msg: PublishDatasetMessage,
 
     return PublishDatasetResponse(
         address=msg.reply_to,
-        dataset_id=msg.dataset_id,
-        dataset_name=msg.dataset_id,
-        client=msg.client
+        dataset_id=msg.dataset_id
     )
 
 def check_connection(msg: CheckEnclaveConnectionMessage,
@@ -269,7 +263,6 @@ def check_connection(msg: CheckEnclaveConnectionMessage,
         verify_key (VerifyKey): public digital signature/key of the user.
 
     Raises:
-        AuthorizationError: If user does not have permissions to create new role.
         OblvKeyNotFoundError: If no key found.
         OblvProxyConnectPCRError: If unauthorized deployment code used
 
@@ -313,9 +306,6 @@ def check_connection(msg: CheckEnclaveConnectionMessage,
         
            
         #To Do - Timeout, and process not found
-            
-        # dataset, objs = node.datasets.get(msg.dataset_id)
-        # requests.post("http://127.0.0.1:3030", headers={'Content-Type': 'application/octet-stream'})
         
     else:
         raise AuthorizationError("You're not allowed to test connection!")
@@ -325,8 +315,144 @@ def check_connection(msg: CheckEnclaveConnectionMessage,
         resp_msg="Successfully connected to the enclave",
     )
     
-    # return
+def dataset_publish_budget(msg: PublishApprovalMessage,
+    node: DomainInterface,
+    verify_key: VerifyKey,):
+    """Provide approval for dataset publish
 
+    Args:
+        msg (PublishApprovalMessage): stores msg address.
+        node (DomainInterface): domain node.
+        verify_key (VerifyKey): public digital signature/key of the user.
+
+    Raises:
+        OblvKeyNotFoundError: If no key found.
+        OblvProxyConnectPCRError: If unauthorized deployment code used
+
+    Returns:
+        SuccessResponseMessage: Success message on key pair generation.
+    """
+
+    try:
+        with open(os.getenv("OBLV_KEY_PATH", "/app/content") + "/" + os.getenv("OBLV_KEY_NAME", "oblv_key") + "_public.der", "rb") as f:
+            data = f.read()
+    except FileNotFoundError:
+        create_keys_from_db(node)
+    cli = OblvClient(
+        msg.client.token,msg.client.oblivious_user_id
+        )
+    public_file_name = os.getenv("OBLV_KEY_PATH", "/app/content") + "/" + os.getenv("OBLV_KEY_NAME", "oblv_key") + "_public.der"
+    private_file_name = os.getenv("OBLV_KEY_PATH", "/app/content") + "/" + os.getenv("OBLV_KEY_NAME", "oblv_key") + "_private.der"
+    depl = cli.deployment_info(msg.deployment_id)
+    if depl.is_deleted==True:
+        raise OblvEnclaveError("User cannot connect to this deployment, as it is no longer available.")
+    process = subprocess.Popen([
+        "/usr/local/bin/oblv", "connect",
+        "--private-key", private_file_name,
+        "--public-key", public_file_name,
+        "--url", depl.instance.service_url,
+        "--port","443",
+        "--lport","3031",
+        "--disable-pcr-check"
+    ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    while process.poll() is None:
+        d = process.stderr.readline().decode()
+        debug(d)
+        if d.__contains__("Error:  Invalid PCR Values"):
+            raise OblvProxyConnectPCRError()
+        elif d.__contains__("Error"):
+            raise OblvEnclaveError(message=d)
+        elif d.__contains__("listening on"):
+            break
+    
+    current_budget = node.users.get_budget_for_user(verify_key)
+    data_obj = {
+        "publish_request_id": msg.result_id,
+        "current_budget": current_budget,
+        }
+    req = requests.post("http://127.0.0.1:3031/tensor/publish/current_budget", json=data_obj)
+    process.kill()
+    process.wait(1)       
+    debug(req.text)
+    if req.status_code==401:
+        raise OblvEnclaveUnAuthorizedError()
+    elif req.status_code == 400:
+        raise OblvEnclaveError(req.json()["detail"])
+    elif req.status_code==422:
+        debug(req.text)
+    elif req.status_code!=200:
+        raise OblvEnclaveError("Request to publish dataset failed with status {}".format(req.status_code))
+    
+def dataset_publish_budget_deduction(msg: DeductBudgetMessage,
+    node: DomainInterface,
+    verify_key: VerifyKey):
+    """Deduct budget for dataset publish
+
+    Args:
+        msg (DeductBudgetMessage): stores msg address.
+        node (DomainInterface): domain node.
+        verify_key (VerifyKey): public digital signature/key of the user.
+
+    Raises:
+        OblvKeyNotFoundError: If no key found.
+        OblvProxyConnectPCRError: If unauthorized deployment code used
+
+    Returns:
+        SuccessResponseMessage: Success message on key pair generation.
+    """
+    
+    try:
+        with open(os.getenv("OBLV_KEY_PATH", "/app/content") + "/" + os.getenv("OBLV_KEY_NAME", "oblv_key") + "_public.der", "rb") as f:
+            data = f.read()
+    except FileNotFoundError:
+        create_keys_from_db(node)
+    cli = OblvClient(
+        msg.client.token,msg.client.oblivious_user_id
+        )
+    public_file_name = os.getenv("OBLV_KEY_PATH", "/app/content") + "/" + os.getenv("OBLV_KEY_NAME", "oblv_key") + "_public.der"
+    private_file_name = os.getenv("OBLV_KEY_PATH", "/app/content") + "/" + os.getenv("OBLV_KEY_NAME", "oblv_key") + "_private.der"
+    depl = cli.deployment_info(msg.deployment_id)
+    if depl.is_deleted==True:
+        raise OblvEnclaveError("User cannot connect to this deployment, as it is no longer available.")
+    process = subprocess.Popen([
+        "/usr/local/bin/oblv", "connect",
+        "--private-key", private_file_name,
+        "--public-key", public_file_name,
+        "--url", depl.instance.service_url,
+        "--port","443",
+        "--lport","3031",
+        "--disable-pcr-check"
+    ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    while process.poll() is None:
+        d = process.stderr.readline().decode()
+        debug(d)
+        if d.__contains__("Error:  Invalid PCR Values"):
+            raise OblvProxyConnectPCRError()
+        elif d.__contains__("Error"):
+            raise OblvEnclaveError(message=d)
+        elif d.__contains__("listening on"):
+            break
+    approval = node.users.deduct_epsilon_for_user(verify_key,node.users.get_budget_for_user(verify_key),msg.budget_to_deduct)
+    req = requests.post("http://127.0.0.1:3031/tensor/publish/budget_deducted", json={
+        "publish_request_id": msg.result_id,
+        "budget_deducted": approval
+        })
+    process.kill()
+    process.wait(1)
+    if req.status_code==401:
+        raise OblvEnclaveUnAuthorizedError()
+    elif req.status_code == 400:
+        raise OblvEnclaveError(req.json()["detail"])
+    elif req.status_code==422:
+        debug(req.text)
+    elif req.status_code!=200:
+        raise OblvEnclaveError("Request to publish dataset failed with status {}".format(req.status_code))
+    else:
+        if req.json()!="Success":
+            debug("Already deducted so updating again")
+            user = node.users.get_user(verify_key=verify_key)
+            node.users.set(user_id=user.id,budget=user.budget+msg.budget_to_deduct)
+    return "Success"
 
 class OblvRequestAdminService(ImmediateNodeServiceWithReply):
     
@@ -379,3 +505,25 @@ class OblvRequestUserService(ImmediateNodeServiceWithReply):
             GetPublicKeyMessage, PublishDatasetMessage, CheckEnclaveConnectionMessage
         ]
 
+class OblvBackgroundService(ImmediateNodeServiceWithoutReply):
+    msg_handler_map: Dict[type, Callable] = {
+        PublishApprovalMessage: dataset_publish_budget,
+        DeductBudgetMessage: dataset_publish_budget_deduction
+    }
+
+    @staticmethod
+    @service_auth(guests_welcome=True)
+    def process(
+        node: DomainInterface,
+        msg: Union[PublishApprovalMessage,DeductBudgetMessage],
+        verify_key: VerifyKey,
+    ) -> USER_OUTPUT_MESSAGES:
+        return OblvBackgroundService.msg_handler_map[type(msg)](
+            msg=msg, node=node, verify_key=verify_key
+        )
+
+    @staticmethod
+    def message_handler_types() -> List[Type[ImmediateSyftMessageWithoutReply]]:
+        return [
+            PublishApprovalMessage, DeductBudgetMessage
+        ]

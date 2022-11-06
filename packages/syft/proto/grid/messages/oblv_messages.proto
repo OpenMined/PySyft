@@ -72,7 +72,24 @@ message CheckEnclaveConnectionMessage {
 message PublishDatasetResponse {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  string dataset_name = 3;
-  string dataset_id = 4;
+  string dataset_id = 3;
+}
+
+//Create PublishApprovalMessage
+message PublishApprovalMessage{
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string deployment_id = 3;
+  string result_id = 4;
   syft.grid.messages.SyftOblvClient client = 5;
+}
+
+//Create DeductBudgetMessage
+message DeductBudgetMessage{
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string deployment_id = 3;
+  string result_id = 4;
+  float budget_to_deduct = 5;
+  syft.grid.messages.SyftOblvClient client = 6;
 }
