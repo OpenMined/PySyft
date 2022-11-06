@@ -395,14 +395,14 @@ def check_pulling(line: str, cmd_name: str, progress_bar: Progress) -> None:
     if "Pulling" in line and "fs layer" not in line:
         progress_bar.update(
             0,
-            description=f"⌛ [bold]{cmd_name} [{task.completed} / {task.total+1}]",
+            description=f" [bold]{cmd_name} [{task.completed} / {task.total+1}]",
             total=task.total + 1,
             refresh=True,
         )
     if "Pulled" in line:
         progress_bar.update(
             0,
-            description=f"⌛ [bold]{cmd_name} [{task.completed + 1} / {task.total}]",
+            description=f" [bold]{cmd_name} [{task.completed + 1} / {task.total}]",
             completed=task.completed + 1,
             refresh=True,
         )
@@ -427,14 +427,14 @@ def check_building(line: str, cmd_name: str, progress_bar: Progress) -> None:
     if load_pattern.match(line):
         progress_bar.update(
             0,
-            description=f"⌛ [bold]{cmd_name} [{task.completed} / {task.total +1}]",
+            description=f" [bold]{cmd_name} [{task.completed} / {task.total +1}]",
             total=task.total + 1,
             refresh=True,
         )
     if build_pattern.match(line):
         progress_bar.update(
             0,
-            description=f"⌛ [bold]{cmd_name} [{task.completed+1} / {task.total}]",
+            description=f" [bold]{cmd_name} [{task.completed+1} / {task.total}]",
             completed=task.completed + 1,
             refresh=True,
         )
@@ -452,14 +452,14 @@ def check_launching(line: str, cmd_name: str, progress_bar: Progress) -> None:
     if "Starting" in line:
         progress_bar.update(
             0,
-            description=f"⌛ [bold]{cmd_name} [{task.completed} / {task.total+1}]",
+            description=f" [bold]{cmd_name} [{task.completed} / {task.total+1}]",
             total=task.total + 1,
             refresh=True,
         )
     if "Started" in line:
         progress_bar.update(
             0,
-            description=f"⌛ [bold]{cmd_name} [{task.completed + 1} / {task.total}]",
+            description=f" [bold]{cmd_name} [{task.completed + 1} / {task.total}]",
             completed=task.completed + 1,
             refresh=True,
         )
