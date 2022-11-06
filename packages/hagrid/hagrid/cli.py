@@ -32,7 +32,7 @@ import requests
 import rich
 from rich.console import Console
 from rich.live import Live
-from rich.progress import Progress
+from rich.progress import Progress, SpinnerColumn, TextColumn
 from virtualenvapi.manage import VirtualEnvironment
 
 # relative
@@ -610,7 +610,12 @@ def execute_commands(
     if isinstance(cmds, dict):
         console.print("[bold green]⠋[bold blue] Launching Docker Images [/bold blue]\t")
         for cmd_name, cmd in cmds.items():
-            with Progress(console=console, auto_refresh=False) as progress:
+            with Progress(
+                SpinnerColumn(), 
+                TextColumn("[progress.description]{task.description}"), 
+                console=console, 
+                auto_refresh=True
+                ) as progress:
                 if silent:
                     progress.add_task(
                         f"[bold green]{cmd_name} Images",
