@@ -3,9 +3,17 @@
     'solid-primary';
   export let size: 'xs' | 'sm' | 'md' | 'lg' = 'md';
   export let disabled: boolean = false;
+  export let onClick: Function = () => {};
 </script>
 
-<button class="{variant} {size}" aria-disabled={disabled}>
+<button
+  class="{variant} {size}"
+  on:click={(e) => {
+    e.preventDefault();
+    onClick();
+  }}
+  aria-disabled={disabled}
+>
   <slot />
 </button>
 

@@ -1,6 +1,9 @@
 <script lang="ts">
   import Button from '$lib/components/Button.svelte';
   import FormControl from '$lib/components/FormControl.svelte';
+  import Modal from '$lib/components/Modal.svelte';
+
+  let showDeleteNodeModal = false;
 </script>
 
 <main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col">
@@ -68,9 +71,34 @@
           before deleting your account you can follow the instructions <a href="/">here</a>
         </p>
         <div class="inline-flex py-6">
-          <Button>Delete Account</Button>
+          <Button onClick={() => (showDeleteNodeModal = true)}>Delete Account</Button>
         </div>
       </div>
     </form>
   </section>
+
+  {#if showDeleteNodeModal}
+    <Modal on:close={() => (showDeleteNodeModal = false)}>
+      <div slot="icon" class="flex justify-center">
+        <svg
+          class="w-6 h-6 fill-current text-yellow-500"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+        >
+          <path d="M0 0h24v24H0V0z" fill="none" /><path
+            d="M12 5.99L19.53 19H4.47L12 5.99M12 2L1 21h22L12 2zm1 14h-2v2h2v-2zm0-6h-2v4h2v-4z"
+          />
+        </svg>
+      </div>
+      <p slot="header" class="text-center text-2xl">
+        Are you sure you want to delete your account?
+      </p>
+      <p slot="content" class="text-center">
+        Because you are the domain owner, the domain node along with all uploaded datasets, user
+        accounts, and requests will be deleted. All network memberships will also be removed. If you
+        would like to keep this domain node but no longer want to be an owner press “cancel” and
+        follow the instructions here to transfer ownership of your domain node.
+      </p>
+    </Modal>
+  {/if}
 </main>
