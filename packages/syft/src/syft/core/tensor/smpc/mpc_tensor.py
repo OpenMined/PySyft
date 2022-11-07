@@ -359,6 +359,7 @@ class MPCTensor(PassthroughTensor):
                     address=party.address,
                 )
                 party.send_immediate_msg_without_reply(msg=cmd)
+                party.processing_pointers[result_id_at_location] = True
 
             shares.append(result)
 
