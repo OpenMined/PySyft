@@ -70,7 +70,7 @@ Few things to make a note of before starting:
 Step 1: Install wizard
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-To simplify the installation process, we have an `install wizard` will help you 
+To simplify the installation process, we have an `install wizard` that will help you 
 setup the latest versions of `hagrid` and `syft` on your machine.
 
 You can go to the install wizard at any time by running the below command:
