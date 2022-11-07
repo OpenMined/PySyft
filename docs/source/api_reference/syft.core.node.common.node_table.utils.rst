@@ -14,7 +14,6 @@ syft.core.node.common.node\_table.utils
    .. autosummary::
    
       create_memory_db_engine
-      expand_user_object
       model_to_json
       seed_db
    
