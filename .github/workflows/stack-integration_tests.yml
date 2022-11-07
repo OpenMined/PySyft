@@ -170,16 +170,12 @@ jobs:
       #     echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref }})"
 
 
-      #Use gh cli to get job id
-      - name: Get job id
-        id: job_id
+      #Get Pull request url
+      - name: Get pull request url
+        id: pull_request
         if: failure()
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "::set-output name=id::$(gh run view ${{ steps.job.outputs.url }} --json id --jq '.id')"
-
-
+          echo "::set-output name=url::$(echo ${{ github.event.pull_request.html_url }})"
 
 
       - name: Job Report Status
@@ -191,7 +187,7 @@ jobs:
           notification_title: ' ${workflow} has {status_message}'
           message_format: '${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}'
           footer: 'Branch is ${{steps.branch.outputs.branch}} ${{steps.branch.outputs.url}}'
-          mention_users: 'U01LNCACY03'
+          mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
           mention_users_when: 'failure,warnings'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
