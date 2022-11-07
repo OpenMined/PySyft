@@ -32,10 +32,10 @@ import requests
 import rich
 from rich.console import Console
 from rich.live import Live
+from rich.progress import BarColumn
 from rich.progress import Progress
 from rich.progress import SpinnerColumn
 from rich.progress import TextColumn
-from rich.progress import BarColumn
 from virtualenvapi.manage import VirtualEnvironment
 
 # relative
@@ -614,13 +614,13 @@ def execute_commands(
         console.print("[bold green]⠋[bold blue] Launching Docker Images [/bold blue]\t")
         for cmd_name, cmd in cmds.items():
             with Progress(
-                SpinnerColumn(), 
+                SpinnerColumn(),
                 TextColumn("[progress.description]{task.description}"),
                 BarColumn(),
                 TextColumn("[progress.percentage]{task.percentage:.2f}%   "),
-                console=console, 
+                console=console,
                 auto_refresh=True,
-                ) as progress:
+            ) as progress:
                 if silent:
                     progress.add_task(
                         f"[bold green]{cmd_name} Images",
