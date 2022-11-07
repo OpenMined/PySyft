@@ -376,9 +376,9 @@ class DomainClient(Client):
         self, obj_ptr: Type[Pointer], address: Address, pointable: bool = False
     ) -> None:
         content = {
-            RequestAPIFields.ADDRESS: serialize(address)
-            .SerializeToString()  # type: ignore
-            .decode(PyGridClientEnums.ENCODING),
+            RequestAPIFields.ADDRESS: serialize(address, to_bytes=True).decode(
+                PyGridClientEnums.ENCODING
+            ),
             RequestAPIFields.UID: str(obj_ptr.id_at_location.value),
             RequestAPIFields.POINTABLE: pointable,
         }

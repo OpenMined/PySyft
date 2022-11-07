@@ -17,19 +17,11 @@ import numpy as np
 import pandas as pd
 import torch as th
 
-# syft absolute
-import syft as sy
-
 # relative
 from ... import lib
 from ...ast.klass import pointerize_args_and_kwargs
 from ...core.adp.data_subject_ledger import DataSubjectLedger
 from ...util import inherit_tags
-from ..common.serde.capnp import CapnpModule
-from ..common.serde.capnp import chunk_bytes
-from ..common.serde.capnp import combine_bytes
-from ..common.serde.capnp import get_capnp_schema
-from ..common.serde.capnp import serde_magic_header
 from ..common.serde.serializable import serializable
 from ..common.uid import UID
 from ..node.abstract.node import AbstractNodeClient
@@ -445,7 +437,7 @@ def to32bit(np_array: np.ndarray, verbose: bool = True) -> np.ndarray:
     return out
 
 
-@serializable(capnp_bytes=True)
+@serializable(recursive_serde=True)
 class Tensor(
     PassthroughTensor,
     PhiTensorAncestor,
@@ -453,7 +445,7 @@ class Tensor(
     # MPCTensorAncestor,
 ):
 
-    # __attr_allowlist__ = ["child", "tag_name", "public_shape", "public_dtype"]
+    __attr_allowlist__ = ["child", "tag_name", "public_shape", "public_dtype"]
 
     PointerClassOverride = TensorPointer
 
@@ -628,44 +620,3 @@ class Tensor(
     def mpc_swap(self, other: Tensor) -> Tensor:
         self.child.child = other.child.child
         return self
-
-    def _object2bytes(self) -> bytes:
-        schema = get_capnp_schema(schema_file="tensor.capnp")
-        tensor_struct: CapnpModule = schema.Tensor  # type: ignore
-        tensor_msg = tensor_struct.new_message()  # type: ignore
-
-        # this is how we dispatch correct deserialization of bytes
-        tensor_msg.magicHeader = serde_magic_header(type(self))
-
-        chunk_bytes(sy.serialize(self.child, to_bytes=True), "child", tensor_msg)
-
-        tensor_msg.publicShape = sy.serialize(self.public_shape, to_bytes=True)
-
-        # upcast the String class before setting to capnp
-        public_dtype_func = getattr(
-            self.public_dtype, "upcast", lambda: self.public_dtype
-        )
-        tensor_msg.publicDtype = public_dtype_func()
-        tensor_msg.tagName = self.tag_name
-
-        return tensor_msg.to_bytes()
-
-    @staticmethod
-    def _bytes2object(buf: bytes) -> Tensor:
-        schema = get_capnp_schema(schema_file="tensor.capnp")
-        tensor_struct: CapnpModule = schema.Tensor  # type: ignore
-        # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
-        MAX_TRAVERSAL_LIMIT = 2**64 - 1
-        with tensor_struct.from_bytes(  # type: ignore
-            buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        ) as msg:
-            tensor_msg = msg
-
-        tensor = Tensor(
-            child=sy.deserialize(combine_bytes(tensor_msg.child), from_bytes=True),
-            public_shape=sy.deserialize(tensor_msg.publicShape, from_bytes=True),
-            public_dtype=tensor_msg.publicDtype,
-        )
-        tensor.tag_name = tensor_msg.tagName
-
-        return tensor

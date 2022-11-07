@@ -64,7 +64,7 @@ class CryptoStore:
         """
         retrieve_func = CryptoStore._func_get_store[op_str]
         primitives = retrieve_func(
-            store=self.store, ring_size=ring_size, *args, **kwargs
+            *args, store=self.store, ring_size=ring_size, **kwargs
         )
 
         return primitives
