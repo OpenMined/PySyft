@@ -701,6 +701,9 @@ class MPCTensor(PassthroughTensor):
         result = MPCTensor(
             shares=result, shape=shape, ring_size=ring_size, parties=x.parties
         )
+        if utils.ispointer(result[0]):
+            for share in result:
+                share.client.processing_pointers[share.id_at_location]
 
         return result
 
