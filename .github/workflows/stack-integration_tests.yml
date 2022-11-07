@@ -174,8 +174,11 @@ jobs:
       - name: Get job id
         id: job_id
         if: failure()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "::set-output name=id::$(gh run view ${{ steps.job.outputs.url }} --json id --jq '.id')"
+
 
 
 
