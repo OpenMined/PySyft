@@ -359,7 +359,7 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
         command = cmds[list(cmds.keys())[0]][0]  # type: ignore
         match_port = re.search("HTTP_PORT=[0-9]{1,5}", command)
 
-        if host_term.host == "docker" and match_port and silent:
+        if not dry_run and host_term.host == "docker" and match_port and silent:
             rich.get_console().print(
                 "\n[bold green]⠋[bold blue] Checking  Node API [/bold blue]\t"
             )
@@ -1606,8 +1606,10 @@ def build_command(cmd: str) -> TypeList[str]:
     return [build_cmd]
 
 
-def deploy_command(cmd: str, tail: bool) -> TypeList[str]:
+def deploy_command(cmd: str, tail: bool, release_type: str) -> TypeList[str]:
+
     up_cmd = str(cmd)
+    up_cmd += " --file docker-compose.dev.yml" if release_type == "development" else ""
     up_cmd += " up"
     if not tail:
         up_cmd += " -d"
@@ -1645,6 +1647,7 @@ def create_launch_docker_cmd(
     print("  - PORT: " + str(host_term.free_port))
     print("  - DOCKER COMPOSE: " + docker_version)
     print("  - TAIL: " + str(tail))
+    print("  - RELEASE: " + kwargs["release"])
     print("\n")
 
     version_string = kwargs["tag"]
@@ -1806,7 +1809,9 @@ def create_launch_docker_cmd(
         my_build_command = build_command(cmd)
         final_commands["Building"] = my_build_command
 
-    final_commands["Launching"] = deploy_command(cmd, tail)
+    release_type = kwargs["release"]
+
+    final_commands["Launching"] = deploy_command(cmd, tail, release_type)
     return final_commands
 
 
