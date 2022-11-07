@@ -25,18 +25,23 @@ syft.core.node.common.exceptions
       AssociationError
       AssociationRequestError
       AuthorizationError
+      BadPayloadException
       CycleNotFoundError
+      DatasetDownloadError
       DatasetNotFoundError
+      DatasetUploadError
       EnvironmentNotFoundError
       FLProcessConflict
       GroupNotFoundError
       InvalidCredentialsError
+      InvalidNodeCredentials
       InvalidParameterValueError
       InvalidRequestKeyError
       MaxCycleLimitExceededError
       MissingRequestKeyError
       ModelNotFoundError
       OwnerAlreadyExistsError
+      PermissionsNotDefined
       PlanInvalidError
       PlanNotFoundError
       PlanTranslationError
