@@ -12,7 +12,7 @@
 </script>
 
 <main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col">
-  <!-- Header Logo -->
+  <!-- Header -->
   <div
     class="flex items-center bg-primary-100 border-t border-b border-primary-500 text-black-700 px-4 py-3"
     role="alert"

@@ -1,10 +1,9 @@
 <script>
-  import { createEventDispatcher, onDestroy } from 'svelte';
+  import { createEventDispatcher } from 'svelte';
+  import Close from '$lib/components/icons/Close.svelte';
 
   const dispatch = createEventDispatcher();
   const close = () => dispatch('close');
-
-  let modal;
 
   const handle_keydown = (/** @type {{ key: string; }} */ e) => {
     if (e.key === 'Escape') {
@@ -18,10 +17,7 @@
 
 <div class="topModal visible" on:click={() => close()}>
   <div class="modal" on:click|stopPropagation={() => {}}>
-    <svg class="close" on:click={() => close()} viewBox="0 0 12 12">
-      <line x1="3" y1="3" x2="9" y2="9" />
-      <line x1="9" y1="3" x2="3" y2="9" />
-    </svg>
+    <Close onClick={() => close()} />
     <div class="modal-content flex flex-col space-y-3 mx-4">
       <slot name="icon" />
       <slot name="header" />
@@ -59,27 +55,7 @@
     visibility: visible !important;
   }
 
-  .close {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 24px;
-    height: 24px;
-    cursor: pointer;
-    transition: transform 0.3s;
-  }
-
-  .close:hover {
-    transform: scale(2);
-  }
-
-  .close line {
-    stroke: darkgray;
-  }
-
   .modal-content {
-    /* max-width: calc(100vw - 40px); */
-    /* max-width: 25vw; */
     max-height: calc(100vh - 20px);
     overflow: auto;
   }
