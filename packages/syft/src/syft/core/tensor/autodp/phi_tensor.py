@@ -29,16 +29,7 @@ from ....core.node.common.action.get_or_set_property_action import (
 from ....core.node.common.action.get_or_set_property_action import PropertyActions
 from ....lib.python.util import upcast
 from ....util import inherit_tags
-from ...common.serde.capnp import CapnpModule
-from ...common.serde.capnp import capnp_deserialize
-from ...common.serde.capnp import capnp_serialize
-from ...common.serde.capnp import chunk_bytes
-from ...common.serde.capnp import combine_bytes
-from ...common.serde.capnp import get_capnp_schema
-from ...common.serde.capnp import serde_magic_header
-from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
-from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
 from ...node.abstract.node import AbstractNodeClient
 from ...node.common.action.run_class_method_action import RunClassMethodAction
@@ -1006,10 +997,15 @@ def ones_like(
     return tensor.ones_like(*args, **kwargs)
 
 
-@serializable(capnp_bytes=True)
+@serializable(recursive_serde=True)
 class PhiTensor(PassthroughTensor, ADPTensor):
     PointerClassOverride = TensorWrappedPhiTensorPointer
-    # __attr_allowlist__ = ["child", "min_vals", "max_vals", "data_subjects"]
+    __attr_allowlist__ = ["child", "min_vals", "max_vals", "data_subjects"]
+
+    __serde_overrides__: Dict[str, Sequence[Callable]] = {
+        "data_subjects": [dslarraytonumpyutf8, numpyutf8todslarray],
+    }
+
     __slots__ = (
         "child",
         "min_vals",
@@ -2175,59 +2171,4 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             min_vals=self.min_vals,
             max_vals=self.max_vals,
             data_subjects=self.data_subjects,
-        )
-
-    def _object2bytes(self) -> bytes:
-        schema = get_capnp_schema(schema_file="phi_tensor.capnp")
-
-        pt_struct: CapnpModule = schema.PT  # type: ignore
-        pt_msg = pt_struct.new_message()  # type: ignore
-        # this is how we dispatch correct deserialization of bytes
-        pt_msg.magicHeader = serde_magic_header(type(self))
-
-        if isinstance(self.child, np.ndarray) or np.isscalar(self.child):
-            chunk_bytes(capnp_serialize(np.array(self.child), to_bytes=True), "child", pt_msg)  # type: ignore
-            pt_msg.isNumpy = True
-        else:
-            chunk_bytes(serialize(self.child, to_bytes=True), "child", pt_msg)  # type: ignore
-            pt_msg.isNumpy = False
-
-        pt_msg.minVals = serialize(self.min_vals, to_bytes=True)
-        pt_msg.maxVals = serialize(self.max_vals, to_bytes=True)
-        chunk_bytes(
-            capnp_serialize(dslarraytonumpyutf8(self.data_subjects), to_bytes=True),
-            "dataSubjects",
-            pt_msg,
-        )
-        return pt_msg.to_bytes()
-
-    @staticmethod
-    def _bytes2object(buf: bytes) -> PhiTensor:
-        schema = get_capnp_schema(schema_file="phi_tensor.capnp")
-        pt_struct: CapnpModule = schema.PT  # type: ignore
-        # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
-        MAX_TRAVERSAL_LIMIT = 2**64 - 1
-        # to pack or not to pack?
-        # pt_msg = pt_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
-        with pt_struct.from_bytes(  # type: ignore
-            buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        ) as msg:
-            pt_msg = msg
-
-        if pt_msg.isNumpy:
-            child = capnp_deserialize(combine_bytes(pt_msg.child), from_bytes=True)
-        else:
-            child = deserialize(combine_bytes(pt_msg.child), from_bytes=True)
-
-        min_vals = deserialize(pt_msg.minVals, from_bytes=True)
-        max_vals = deserialize(pt_msg.maxVals, from_bytes=True)
-        data_subjects = numpyutf8todslarray(
-            capnp_deserialize(combine_bytes(pt_msg.dataSubjects), from_bytes=True)
-        )
-
-        return PhiTensor(
-            child=child,
-            min_vals=min_vals,
-            max_vals=max_vals,
-            data_subjects=data_subjects,
         )

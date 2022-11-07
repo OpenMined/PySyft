@@ -1,5 +1,6 @@
 # third party
 import numpy as np
+from numpy import frombuffer
 
 # relative
 from ...core.common.serde import recursive_serde_register
@@ -34,4 +35,10 @@ DTYPE_REFACTOR = {
 
 recursive_serde_register(
     np.ndarray, serialize=arrow_serialize, deserialize=arrow_deserialize
+)
+
+recursive_serde_register(
+    np.int64,
+    serialize=lambda x: x.tobytes(),
+    deserialize=lambda buffer: frombuffer(buffer, dtype=np.int64),
 )
