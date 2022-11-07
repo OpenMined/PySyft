@@ -13,12 +13,12 @@ syft.core.node.common.action.smpc\_action\_functions
 
    .. autosummary::
    
-      bit_decomposition
-      get_action_generator_from_op
+      divide_mask
+      divide_wrap_correction
       get_id_at_location_from_op
       local_decomposition
-      smpc_basic_op
-      smpc_mul
+      private_mul
+      public_divide
       spdz_mask
       spdz_multiply
    

@@ -28,8 +28,6 @@ syft.grid.client
    :recursive:
 
    syft.grid.client.client
-   syft.grid.client.enums
-   syft.grid.client.exceptions
    syft.grid.client.grid_connection
-   syft.grid.client.request_api
+   syft.grid.client.proxy_client
 
