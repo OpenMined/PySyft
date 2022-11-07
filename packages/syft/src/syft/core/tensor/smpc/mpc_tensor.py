@@ -5,6 +5,7 @@ from __future__ import annotations
 import functools
 import itertools
 import secrets
+import time
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -19,7 +20,6 @@ from typing import Union
 import numpy as np
 import numpy.typing as npt
 import torch
-import time
 
 # relative
 from . import utils
@@ -437,7 +437,7 @@ class MPCTensor(PassthroughTensor):
             if share.client.processing_pointers.get(share.id_at_location, False):
                 while not share.exists:
                     time.sleep(0.5)
-                
+
                 # Then, delete it from the processing map.
                 del share.client.processing_pointers[share.id_at_location]
             else:

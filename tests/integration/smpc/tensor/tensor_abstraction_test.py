@@ -31,11 +31,9 @@ def test_tensor_abstraction_pointer(get_clients, op_str) -> None:
 
     # creates an MPCTensor between party 1 and party 2
     mpc_1_2 = op(tensor_pointer_1, tensor_pointer_2)
-    mpc_1_2.block_with_timeout(secs=40)
 
     # creates and MPCTensor between party 1,2,3
     mpc_1_2_3 = op(mpc_1_2, tensor_pointer_3)
-    mpc_1_2_3.block_with_timeout(secs=40)
 
     exp_res = op(data_1, data_2)
 
@@ -68,15 +66,11 @@ def test_tensor_abstraction_subsets(get_clients, op_str) -> None:
     # creates an MPCTensor between party 1 and party 2
     mpc_1_2 = op(tensor_pointer_1, tensor_pointer_2)
 
-    mpc_1_2.block_with_timeout(40)
-
     # creates and MPCTensor between party 2,3
     mpc_2_3 = op(tensor_pointer_2, tensor_pointer_3)
-    mpc_2_3.block_with_timeout(40)
 
     # creates and MPCTensor between party 1,2,3
     mpc_1_2_3 = op(mpc_1_2, mpc_2_3)
-    mpc_1_2_3.block_with_timeout(secs=40)
 
     exp_res_1 = op(data_1, data_2)
     assert (mpc_1_2.reconstruct() == exp_res_1.child).all()
@@ -107,15 +101,11 @@ def test_tensor_abstraction_concat(get_clients) -> None:
     # creates an MPCTensor between party 1 and party 2
     mpc_1_2 = tensor_pointer_1.concatenate(tensor_pointer_2)
 
-    mpc_1_2.block_with_timeout(40)
-
     # creates and MPCTensor between party 2,3
     mpc_2_3 = tensor_pointer_2.concatenate(tensor_pointer_3)
-    mpc_2_3.block_with_timeout(40)
 
     # creates and MPCTensor between party 1,2,3
     mpc_1_2_3 = mpc_1_2.concatenate(mpc_2_3)
-    mpc_1_2_3.block_with_timeout(secs=40)
 
     exp_res_1 = np.concatenate((data_1.child, data_2.child))
     assert (mpc_1_2.reconstruct() == exp_res_1).all()

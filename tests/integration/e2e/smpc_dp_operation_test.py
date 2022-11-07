@@ -183,7 +183,6 @@ def test_mul(
     result = domain1_data * domain2_data
     published_result = result.publish(sigma=10)
 
-
     assert published_result.shape == (2, 2)
     assert domain1.privacy_budget < prev_domain1_budget
     assert domain2.privacy_budget < prev_domain2_budget
