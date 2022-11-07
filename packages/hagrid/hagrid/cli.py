@@ -35,6 +35,7 @@ from rich.live import Live
 from rich.progress import Progress
 from rich.progress import SpinnerColumn
 from rich.progress import TextColumn
+from rich.progress import BarColumn
 from virtualenvapi.manage import VirtualEnvironment
 
 # relative
@@ -614,7 +615,9 @@ def execute_commands(
         for cmd_name, cmd in cmds.items():
             with Progress(
                 SpinnerColumn(), 
-                TextColumn("[progress.description]{task.description}"), 
+                TextColumn("[progress.description]{task.description}"),
+                BarColumn(),
+                TextColumn("[progress.percentage]{task.percentage:.2f}%   "),
                 console=console, 
                 auto_refresh=True,
                 ) as progress:
