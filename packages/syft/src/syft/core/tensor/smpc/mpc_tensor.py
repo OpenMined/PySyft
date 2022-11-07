@@ -19,6 +19,7 @@ from typing import Union
 import numpy as np
 import numpy.typing as npt
 import torch
+import time
 
 # relative
 from . import utils
@@ -431,12 +432,22 @@ class MPCTensor(PassthroughTensor):
             raise ValueError(f"Type for ring size {self.ring_size} was not found!")
 
         for share in self.child:
-            if not share.exists:
-                raise Exception(
-                    "One of the shares doesn't exist. This probably means the SMPC "
-                    "computation isn't yet complete. Try again in a moment or call .block.reconstruct()"
-                    "instead to block until the SMPC operation is complete which creates this variable."
-                )
+            # Check if share pointer is in processing stage
+            # If so, wait until it exists.
+            if share.client.processing_pointers.get(share.id_at_location, False):
+                while not share.exists:
+                    time.sleep(0.5)
+                
+                # Then, delete it from the processing map.
+                del share.client.processing_pointers[share.id_at_location]
+            else:
+                # If it's not in processing stage, then it's because it doesn't exist there.
+                if not share.exists:
+                    raise Exception(
+                        "One of the shares doesn't exist. This probably means the SMPC "
+                        "computation isn't yet complete. Try again in a moment or call .block.reconstruct()"
+                        "instead to block until the SMPC operation is complete which creates this variable."
+                    )
 
         local_shares = []
         for share in self.child:
