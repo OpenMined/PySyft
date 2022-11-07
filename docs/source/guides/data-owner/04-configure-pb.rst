@@ -143,6 +143,8 @@ Once we're logged in, you can move to the next section, which explores setting a
 Step 3: Explore Different Privacy Budget
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. _step3a:
+
 A. Assign Data Scientist Account with 0.5e Privacy Budget
 ##############################################################
 When you create a user account on your domain server, the privacy budget assigned to the 
@@ -181,6 +183,8 @@ The credentials to login as a Data Scientist are:
    In:
 
    # run this cell
+   import syft as sy
+
    ds_domain_client = sy.login(
       email="janedoe@email.com", 
       password="supersecretpassword", 
@@ -195,13 +199,111 @@ Now, as a Data Scientist, you can ``verify`` the privacy budget using the below 
    In:
 
    # run this cell
-   ds_domain_client.privacy_budget
+   print("Allotted PB: ", ds_domain_client.privacy_budget)
 
 Let's grab the age data from the domain and define a simple query to calculate the ``mean age``.
 
+::
 
+   In: 
 
+   age_data = ds_domain_client.datasets[0]["Age_Data"]
+   age_mean = age_data.mean()
+   age_mean_public = age_mean.publish(sigma=20)
 
+   # Check if mean data exists
+   age_mean_public.exists
+
+   # Download/Get mean age
+   age_mean_public.get(delete_obj=False)
+
+   print("Remaining PB: ", ds_domain_client.privacy_budget)
+
+.. note:: 
+   Remember, sigma represents how much noise the user wants added to the result. 
+   The noise is selected randomly from a Gaussian distribution with sigma as the 
+   standard deviation and zero mean.
+
+So, we want the noise to be picked randomly with a standard deviation of ``20``. 
+Thus decreasing the value of ``sigma`` will result in more accurate results but at 
+the expense of a more privacy budget being spent and leaking more information 
+about private data.
+
+C. Make a Query With 2e Privacy Budget As a Data Scientist
+#################################################################
+
+The privacy budget is cumulative and doesn't represent the actual spent value. Once something is 
+known, you can't remove that knowledge. Let us ``increase`` the ``privacy budget`` and perform again with 
+the same query as above and compare the accuracy of the result and the privacy budget spent.
+
+.. WARNING::
+   You need to go to :ref:`Step 3.A <step3a>` and change the privacy budget to ``2e`` this time, as shown in the image.
+
+After you have changed the privacy budget to ``2e``, we will again make a ``query`` and then ``analyze`` the results.
+
+:: 
+
+   In:
+
+   import syft as sy
+
+   ds_domain_client = sy.login(
+      email="janedoe@email.com", 
+      password="supersecretpassword", 
+      port=8081, 
+      url="localhost"
+   )
+
+   print("Allotted PB: ", ds_domain_client.privacy_budget)
+
+   age_data = ds_domain_client.datasets[0]["Age_Data"]
+   age_mean = age_data.mean()
+   age_mean_public = age_mean.publish(sigma=20)
+
+   # Check if mean data exists
+   age_mean_public.exists
+
+   # Download/Get mean age
+   age_mean_public.get(delete_obj=False)
+
+   print("Remaining PB: ", ds_domain_client.privacy_budget)
+
+D. Make a Query With 5e Privacy Budget As a Data Scientist
+#################################################################
+For the last time, let us change the value of the ``privacy budget`` to ``5e``, perform again with the 
+same query as above, and compare the accuracy of the result and the privacy budget spent.
+
+.. WARNING::
+   You need to go to :ref:`Step 3.A <step3a>` and change the privacy budget to ``5e`` this time, as shown in the image.
+
+After you have changed the privacy budget to ``5e``, we will again make a ``query`` and then ``analyze`` the results.
+
+:: 
+
+   In:
+
+   import syft as sy
+
+   ds_domain_client = sy.login(
+      email="janedoe@email.com", 
+      password="supersecretpassword", 
+      port=8081, 
+      url="localhost"
+   )
+
+   print("Allotted PB: ", ds_domain_client.privacy_budget)
+
+   age_data = ds_domain_client.datasets[0]["Age_Data"]
+   age_mean = age_data.mean()
+   age_mean_public = age_mean.publish(sigma=20)
+
+   # Check if mean data exists
+   age_mean_public.exists
+
+   # Download/Get mean age
+   age_mean_public.get(delete_obj=False)
+
+   print("Remaining PB: ", ds_domain_client.privacy_budget)
 
 
 ------------------------------------------------------------------
