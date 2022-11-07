@@ -160,16 +160,16 @@ jobs:
         run: |
           docker rm `docker ps -aq` --force || true
           docker volume prune -f || true
-      
+
       - name: Job Report Status
-        if: failure() || runner.os == 'Linux'
-        uses: ravsamhq/notify-slack-action@v1
+        if: failure()
+        uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
           notify_when: 'failure'
           notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{job}* {status_message} in  ${{steps.workflow_url.outputs.workflow_url}}'
-          footer: 'Job is in {workflow}'
+          message_format: '{emoji} *{job}* {status_message} in {workflow_url} '
+          footer: 'Job is in {run_url}'
           mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
           mention_users_when: 'failure,warnings'
         env:
@@ -324,16 +324,16 @@ jobs:
         run: |
           docker rm `docker ps -aq` --force || true
           docker volume prune -f || true
-      
+
       - name: Job Report Status
-        if: failure() || runner.os == 'Linux'
-        uses: ravsamhq/notify-slack-action@v1
+        if: failure()
+        uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
           notify_when: 'failure'
           notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{job}* {status_message} in  ${{steps.workflow_url.outputs.workflow_url}}'
-          footer: 'Job is in {workflow}'
+          message_format: '{emoji} *{job}* {status_message} in {workflow_url} '
+          footer: 'Job is in {run_url}'
           mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
           mention_users_when: 'failure,warnings'
         env:
@@ -483,6 +483,20 @@ jobs:
         run: |
           docker rm `docker ps -aq` --force || true
           docker volume prune -f || true
+
+      - name: Job Report Status
+        if: failure()
+        uses: ravsamhq/notify-slack-action@v2
+        with:
+          status: ${{ job.status }}
+          notify_when: 'failure'
+          notification_title: '{workflow} has {status_message}'
+          message_format: '{emoji} *{job}* {status_message} in {workflow_url} '
+          footer: 'Job is in {run_url}'
+          mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
+          mention_users_when: 'failure,warnings'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
 
   stack-integration-tests-smpc:
     strategy:
@@ -638,6 +652,20 @@ jobs:
           docker rm `docker ps -aq` --force || true
           docker volume prune -f || true
 
+      - name: Job Report Status
+        if: failure()
+        uses: ravsamhq/notify-slack-action@v2
+        with:
+          status: ${{ job.status }}
+          notify_when: 'failure'
+          notification_title: '{workflow} has {status_message}'
+          message_format: '{emoji} *{job}* {status_message} in {workflow_url} '
+          footer: 'Job is in {run_url}'
+          mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
+          mention_users_when: 'failure,warnings'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
+
   stack-integration-tests-k8s:
     strategy:
       max-parallel: 3
@@ -778,16 +806,16 @@ jobs:
         run: |
           docker rm `docker ps -aq` --force || true
           docker volume prune -f || true
-      
+
       - name: Job Report Status
-        if: always()
-        uses: ravsamhq/notify-slack-action@v1
+        if: failure()
+        uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
           notify_when: 'failure'
           notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{job}* {status_message} in  ${{steps.workflow_url.outputs.workflow_url}}'
-          footer: 'Job is in {workflow}'
+          message_format: '{emoji} *{job}* {status_message} in {workflow_url} '
+          footer: 'Job is in {run_url}'
           mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
           mention_users_when: 'failure,warnings'
         env:
@@ -908,16 +936,16 @@ jobs:
         run: |
           docker rm `docker ps -aq` --force || true
           docker volume prune -f || true
-      
+
       - name: Job Report Status
-        if: always() 
-        uses: ravsamhq/notify-slack-action@v1
+        if: failure()
+        uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
           notify_when: 'failure'
           notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{job}* {status_message} in  ${{steps.workflow_url.outputs.workflow_url}}'
-          footer: 'Job is in {workflow}'
+          message_format: '{emoji} *{job}* {status_message} in {workflow_url} '
+          footer: 'Job is in {run_url}'
           mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
           mention_users_when: 'failure,warnings'
         env:
