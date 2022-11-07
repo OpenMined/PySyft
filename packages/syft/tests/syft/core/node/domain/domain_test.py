@@ -144,3 +144,14 @@ def test_object_exists_on_domain(domain: sy.Domain) -> None:
     assert not ptr.exists
     ptr = x.send(domain_client, id_at_location_override=uid)
     assert ptr.exists
+
+
+@pytest.mark.asyncio
+def test_create_user(domain: sy.Domain) -> None:
+    domain.create_user(email="test@test.com", password="changethis", budget=1)
+
+
+@pytest.mark.asyncio
+def test_raise_error_create_user_invalid_budget(domain: sy.Domain) -> None:
+    with pytest.raises(ValueError):
+        domain.create_user(email="test@test.com", password="changethis", budget=-10)

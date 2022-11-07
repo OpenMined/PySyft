@@ -759,7 +759,9 @@ class DomainClient(Client):
             "\n\nRun `<your client variable>.datasets` to see your new dataset loaded into your machine!"
         )
 
-    def create_user(self, name: str, email: str, password: str, budget: int) -> dict:
+    def create_user(self, name: str, email: str, password: str, budget: float) -> dict:
+        if budget <= 0:
+            raise ValueError(f"Budget should be a positive number, but got {budget}")
         try:
             self.users.create(name=name, email=email, password=password, budget=budget)
             response = {
