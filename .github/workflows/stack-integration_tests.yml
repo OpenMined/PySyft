@@ -162,12 +162,22 @@ jobs:
           docker volume prune -f || true
 
       #Fetch branch name and url
-      - name: Get branch name and url
-        id: branch
+      # - name: Get branch name and url
+      #   id: branch
+      #   if: failure()
+      #   run: |
+      #     echo "::set-output name=branch::$(echo ${{ github.ref }})"
+      #     echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref }})"
+
+
+      #Use gh cli to get job id
+      - name: Get job id
+        id: job_id
         if: failure()
         run: |
-          echo "::set-output name=branch::$(echo ${{ github.ref }})"
-          echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref }})"
+          echo "::set-output name=job_id::$(gh run list --workflow ${{ github.workflow }} --status failure --limit 1 --json id,url --jq '.[0].id')"
+          echo ${{ steps.job_id.outputs.job_id }}
+
 
 
       - name: Job Report Status
