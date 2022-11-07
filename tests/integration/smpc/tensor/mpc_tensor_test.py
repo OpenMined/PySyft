@@ -30,7 +30,7 @@ def test_secret_sharing(get_clients) -> None:
 
     mpc_tensor = MPCTensor(secret=value_secret, shape=(2, 5), parties=clients)
 
-    mpc_tensor.block_with_timeout(secs=20)
+
 
     assert len(mpc_tensor.child) == len(clients)
 
@@ -59,7 +59,7 @@ def test_mpc_private_private_op(get_clients, op_str: str) -> None:
     op = getattr(operator, op_str)
     res_ptr = op(mpc_tensor_1, mpc_tensor_2)
 
-    res_ptr.block_with_timeout(secs=40)
+
 
     res = res_ptr.reconstruct()
     expected = op(value_1, value_2)
@@ -82,7 +82,7 @@ def test_mpc_private_public_op(get_clients, op_str: str) -> None:
     op = getattr(operator, op_str)
 
     res = op(mpc_tensor_1, public_value)
-    res.block_with_timeout(secs=20)
+
 
     res = res.reconstruct()
     expected = op(value_1, public_value)
@@ -106,7 +106,7 @@ def test_mpc_matmul_public(get_clients, op_str: str) -> None:
 
     op = getattr(operator, op_str)
     res = op(mpc_tensor_1, value_2)
-    res.block_with_timeout(secs=80)
+
 
     res = res.reconstruct()
 
@@ -134,7 +134,7 @@ def test_mpc_forward_methods(
 
     res = op_mpc(**kwargs)
 
-    res.block_with_timeout(secs=20)
+
     res = res.reconstruct()
 
     expected = op(**kwargs)
@@ -159,7 +159,7 @@ def test_comp_mpc_private_private_op(get_clients, op_str: str) -> None:
     op = getattr(operator, op_str)
     res_ptr = op(mpc_tensor_1, mpc_tensor_2)
 
-    res_ptr.block_with_timeout(secs=120)
+
 
     res = res_ptr.reconstruct()
     expected = op(value_1, value_2)
@@ -184,7 +184,7 @@ def test_comp_mpc_private_public_op(get_clients, op_str: str) -> None:
     op = getattr(operator, op_str)
     res_ptr = op(mpc_tensor_1, public_value)
 
-    res_ptr.block_with_timeout(secs=120)
+
 
     res = res_ptr.reconstruct()
     expected = op(value_1, public_value)

@@ -103,9 +103,6 @@ def test_large_blob_upload() -> None:
 
         # create new tensor from remote Tensor constructor
         new_tensor_ptr = domain_client.syft.core.tensor.tensor.Tensor(child=asset_ptr)
-        new_tensor_ptr.block_with_timeout(
-            90 * multiplier
-        )  # wait for obj upload and proxy obj creation
 
         # make sure new object is also in blob storage
         new_tensor_proxy = new_tensor_ptr.get(proxy_only=True)
@@ -113,9 +110,6 @@ def test_large_blob_upload() -> None:
 
         # pointer addition
         add_res_prt = asset_ptr + asset_ptr
-        add_res_prt.block_with_timeout(
-            90 * multiplier
-        )  # wait for obj upload and proxy obj creation
 
         # make sure new object is also in blob storage
         add_result_proxy = add_res_prt.get(delete_obj=False, proxy_only=True)
