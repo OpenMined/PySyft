@@ -698,12 +698,13 @@ class MPCTensor(PassthroughTensor):
         shape = utils.get_shape(op_str, self.shape, y_shape)
         ring_size = utils.get_ring_size(self.ring_size, y_ring_size)
 
-        result = MPCTensor(
-            shares=result, shape=shape, ring_size=ring_size, parties=x.parties
-        )
         if utils.ispointer(result[0]):
             for share in result:
                 share.client.processing_pointers[share.id_at_location]
+
+        result = MPCTensor(
+            shares=result, shape=shape, ring_size=ring_size, parties=x.parties
+        )
 
         return result
 
