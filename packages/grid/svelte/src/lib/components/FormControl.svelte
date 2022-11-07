@@ -6,7 +6,7 @@
   export let disabled = false;
   export let error = '';
   export let hint = '';
-  export let type = 'text';
+  export let type: 'text' | 'textarea' | 'password' | 'email' = 'text';
   export let placeholder = '';
 </script>
 

@@ -4,6 +4,7 @@
   import Modal from '$lib/components/Modal.svelte';
   import YellowWarn from '$lib/components/icons/YellowWarn.svelte';
   import GreenCheck from '$lib/components/icons/GreenCheck.svelte';
+  import Info from '$lib/components/icons/Info.svelte';
 
   let showDeleteNodeModal = false;
   let showDeleteAccountModal = false;
@@ -12,6 +13,16 @@
 
 <main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col">
   <!-- Header Logo -->
+  <div
+    class="flex items-center bg-primary-100 border-t border-b border-primary-500 text-black-700 px-4 py-3"
+    role="alert"
+  >
+    <Info />
+    <p>
+      Your profile information is public-facing information that other users and node owners can
+      see.
+    </p>
+  </div>
 
   <!-- Body content -->
   <section class="md:flex md:gap-x-[62px] lg:gap-x-[124px] mt-14 h-full">
@@ -149,14 +160,14 @@
             <FormControl
               label="Frustrations"
               id="frustrations"
-              type="text"
+              type="textarea"
               placeholder="What felt vague or cumbersome?"
               optional
             />
             <FormControl
               label="Suggestions"
               id="suggestions"
-              type="text"
+              type="textarea"
               placeholder="Did you have moments of thinking “I wish I could...”"
               optional
             />
