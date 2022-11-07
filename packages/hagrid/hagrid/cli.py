@@ -32,7 +32,9 @@ import requests
 import rich
 from rich.console import Console
 from rich.live import Live
-from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.progress import Progress
+from rich.progress import SpinnerColumn
+from rich.progress import TextColumn
 from virtualenvapi.manage import VirtualEnvironment
 
 # relative
@@ -614,7 +616,7 @@ def execute_commands(
                 SpinnerColumn(), 
                 TextColumn("[progress.description]{task.description}"), 
                 console=console, 
-                auto_refresh=True
+                auto_refresh=True,
                 ) as progress:
                 if silent:
                     progress.add_task(
