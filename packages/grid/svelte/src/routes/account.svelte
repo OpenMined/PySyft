@@ -2,8 +2,12 @@
   import Button from '$lib/components/Button.svelte';
   import FormControl from '$lib/components/FormControl.svelte';
   import Modal from '$lib/components/Modal.svelte';
+  import YellowWarn from '$lib/components/icons/YellowWarn.svelte';
+  import GreenCheck from '$lib/components/icons/GreenCheck.svelte';
 
   let showDeleteNodeModal = false;
+  let showDeleteAccountModal = false;
+  let showDeleteConfirmModal = false;
 </script>
 
 <main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col">
@@ -71,27 +75,48 @@
           before deleting your account you can follow the instructions <a href="/">here</a>
         </p>
         <div class="inline-flex py-6">
-          <Button onClick={() => (showDeleteNodeModal = true)}>Delete Account</Button>
+          <Button onClick={() => (showDeleteAccountModal = true)}>Delete Account</Button>
         </div>
       </div>
     </form>
   </section>
 
+  {#if showDeleteAccountModal}
+    <Modal on:close={() => (showDeleteAccountModal = false)}>
+      <div slot="icon" class="flex justify-center">
+        <YellowWarn />
+      </div>
+      <p slot="header" class="text-center text-2xl font-bold">
+        Are you sure you want to delete your account?
+      </p>
+      <p slot="content" class="text-center">
+        If deleted all uploaded documents will be deleted and all open requests will be closed. Keep
+        in mind any legal agreements pertaining to the use of your data requests will still apply
+        according to the terms of the agreement signed. If you would like to proceed press “Delete
+        Account” if not you can click “Cancel”.
+      </p>
+      <div slot="actions" class="flex justify-center pt-6">
+        <Button
+          variant="delete"
+          option="sm-pad"
+          onClick={() => {
+            showDeleteAccountModal = false;
+            showDeleteConfirmModal = true;
+          }}>Delete Account</Button
+        >
+        <a class="flex items-center no-underline pl-8 font-bold text-magenta-500" href="/">Cancel</a
+        >
+      </div>
+    </Modal>
+  {/if}
+
   {#if showDeleteNodeModal}
     <Modal on:close={() => (showDeleteNodeModal = false)}>
       <div slot="icon" class="flex justify-center">
-        <svg
-          class="w-6 h-6 fill-current text-yellow-500"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-        >
-          <path d="M0 0h24v24H0V0z" fill="none" /><path
-            d="M12 5.99L19.53 19H4.47L12 5.99M12 2L1 21h22L12 2zm1 14h-2v2h2v-2zm0-6h-2v4h2v-4z"
-          />
-        </svg>
+        <YellowWarn />
       </div>
-      <p slot="header" class="text-center text-2xl">
-        Are you sure you want to delete your account?
+      <p slot="header" class="text-center text-2xl font-bold">
+        Are you sure you want to delete your node?
       </p>
       <p slot="content" class="text-center">
         Because you are the domain owner, the domain node along with all uploaded datasets, user
@@ -99,6 +124,49 @@
         would like to keep this domain node but no longer want to be an owner press “cancel” and
         follow the instructions here to transfer ownership of your domain node.
       </p>
+      <div slot="actions" class="flex justify-center pt-6">
+        <Button variant="delete" option="sm-pad">Delete Node</Button>
+        <a class="flex items-center no-underline pl-8 font-bold text-magenta-500" href="/">Cancel</a
+        >
+      </div>
+    </Modal>
+  {/if}
+
+  {#if showDeleteConfirmModal}
+    <Modal on:close={() => (showDeleteConfirmModal = false)}>
+      <div slot="icon" class="flex justify-center">
+        <GreenCheck />
+      </div>
+      <p slot="header" class="text-center text-2xl font-bold">Your account has been deleted</p>
+      <div slot="content">
+        <p class="text-center">
+          To help us improve future experiences could you share with us any frustrations or
+          suggestions you have with or for the PyGridUI Platform?
+        </p>
+
+        <form class="w-[572px] flex-shrink-0 pt-6">
+          <div class="flex flex-col gap-y-4 gap-x-6">
+            <FormControl
+              label="Frustrations"
+              id="frustrations"
+              type="text"
+              placeholder="What felt vague or cumbersome?"
+              optional
+            />
+            <FormControl
+              label="Suggestions"
+              id="suggestions"
+              type="text"
+              placeholder="Did you have moments of thinking “I wish I could...”"
+              optional
+            />
+          </div>
+        </form>
+      </div>
+      <div slot="actions" class="flex justify-center pt-6">
+        <Button option="sm-pad">Submit Response</Button>
+        <a class="flex items-center no-underline pl-8 font-bold" href="/">Cancel</a>
+      </div>
     </Modal>
   {/if}
 </main>

@@ -22,10 +22,11 @@
       <line x1="3" y1="3" x2="9" y2="9" />
       <line x1="9" y1="3" x2="3" y2="9" />
     </svg>
-    <div class="modal-content">
+    <div class="modal-content flex flex-col space-y-3 mx-4">
       <slot name="icon" />
       <slot name="header" />
       <slot name="content" />
+      <slot name="actions" />
     </div>
   </div>
 </div>
