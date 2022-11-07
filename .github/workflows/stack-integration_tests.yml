@@ -161,6 +161,15 @@ jobs:
           docker rm `docker ps -aq` --force || true
           docker volume prune -f || true
 
+      #Fetch branch name and url
+      - name: Get branch name and url
+        id: branch
+        if: failure()
+        run: |
+          echo "::set-output name=branch::$(echo ${{ github.ref }})"
+          echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref }})"
+
+
       - name: Job Report Status
         if: failure()
         uses: ravsamhq/notify-slack-action@v2
@@ -169,7 +178,7 @@ jobs:
           notify_when: 'failure'
           notification_title: ' ${workflow} has {status_message}'
           message_format: '${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}'
-          footer: 'Branch is {branch}'
+          footer: 'Branch is ${{steps.branch.outputs.branch}} ${{steps.branch.outputs.url}}'
           mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
           mention_users_when: 'failure,warnings'
         env:
