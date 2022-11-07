@@ -175,8 +175,7 @@ jobs:
         id: job_id
         if: failure()
         run: |
-          echo "::set-output name=job_id::$(gh run list --workflow ${{ github.workflow }} --status failure --limit 1 --json id,url --jq '.[0].id')"
-          echo ${{ steps.job_id.outputs.job_id }}
+          echo "::set-output name=id::$(gh run view ${{ steps.job.outputs.url }} --json id --jq '.id')"
 
 
 
@@ -189,7 +188,7 @@ jobs:
           notification_title: ' ${workflow} has {status_message}'
           message_format: '${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}'
           footer: 'Branch is ${{steps.branch.outputs.branch}} ${{steps.branch.outputs.url}}'
-          mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
+          mention_users: 'U01LNCACY03'
           mention_users_when: 'failure,warnings'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
