@@ -155,7 +155,7 @@
           suggestions you have with or for the PyGridUI Platform?
         </p>
 
-        <form class="w-[572px] flex-shrink-0 pt-6">
+        <form class="flex-shrink-0 pt-6">
           <div class="flex flex-col gap-y-4 gap-x-6">
             <FormControl
               label="Frustrations"
