@@ -167,8 +167,8 @@ jobs:
         with:
           status: ${{ job.status }}
           notify_when: 'failure'
-          notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{job}* {status_message} in {run_url} '
+          notification_title: ' ${workflow} has {status_message}'
+          message_format: '${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}'
           footer: 'Branch is {branch}'
           mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
           mention_users_when: 'failure,warnings'
