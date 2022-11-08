@@ -16,6 +16,14 @@ from ..core.node.common.exceptions import OblvUnAuthorizedError
 from .oblv_proxy import check_oblv_proxy_installation_status
 
 
+class Client():
+    login: Any #Will use this for DomainClient
+    datasets: list = []
+    
+    def __init__(self,login: Any=None, datasets=[]):
+        self.login=login,
+        self.datasets=datasets
+
 class DeploymentClient():
     deployment_id: str
     user_key_name: str
@@ -128,8 +136,6 @@ class DeploymentClient():
             raise OblvEnclaveError("Request to publish dataset failed with status {}".format(req.status_code))
         else:
             result = req.json()
-            print(result)
-            print(type(result))
             if type(result)==str:
                 for o in self.client:
                     o.oblv.publish_budget(deployment_id=self.deployment_id,publish_request_id=publish_request_id,client=self.oblv_client)
