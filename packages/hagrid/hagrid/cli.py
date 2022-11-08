@@ -1660,6 +1660,7 @@ def create_launch_docker_cmd(
     print("  - TYPE: " + str(node_type.input))
     print("  - NAME: " + str(snake_name))
     print("  - SYFT_VERSION: " + version)
+    print("  - HAGRID_VERSION: " + str(__version__))
     print("  - PORT: " + str(host_term.free_port))
     print("  - DOCKER COMPOSE: " + docker_version)
     print("  - TAIL: " + str(tail))
