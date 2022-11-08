@@ -161,14 +161,6 @@ jobs:
           docker rm `docker ps -aq` --force || true
           docker volume prune -f || true
 
-      #Fetch branch name and url
-      # - name: Get branch name and url
-      #   id: branch
-      #   if: failure()
-      #   run: |
-      #     echo "::set-output name=branch::$(echo ${{ github.ref }})"
-      #     echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/tree/${{ github.ref }})"
-
 
       #Get Pull request url
       - name: Get pull request url
@@ -186,7 +178,7 @@ jobs:
           notify_when: 'failure'
           notification_title: ' ${workflow} has {status_message}'
           message_format: '${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}'
-          footer: 'Branch is ${{steps.branch.outputs.branch}} ${{steps.branch.outputs.url}}'
+          footer: 'Find the PR here ${{ steps.pull_request.outputs.url }}'
           mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
           mention_users_when: 'failure,warnings'
         env:
@@ -342,15 +334,23 @@ jobs:
           docker rm `docker ps -aq` --force || true
           docker volume prune -f || true
 
+      #Get Pull request url
+      - name: Get pull request url
+        id: pull_request
+        if: failure()
+        run: |
+          echo "::set-output name=url::$(echo ${{ github.event.pull_request.html_url }})"
+
+
       - name: Job Report Status
         if: failure()
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
           notify_when: 'failure'
-          notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{job}* {status_message} in {workflow_url} '
-          footer: 'Job is in {run_url}'
+          notification_title: ' ${workflow} has {status_message}'
+          message_format: '${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}'
+          footer: 'Find the PR here ${{ steps.pull_request.outputs.url }}'
           mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
           mention_users_when: 'failure,warnings'
         env:
@@ -501,15 +501,23 @@ jobs:
           docker rm `docker ps -aq` --force || true
           docker volume prune -f || true
 
+      #Get Pull request url
+      - name: Get pull request url
+        id: pull_request
+        if: failure()
+        run: |
+          echo "::set-output name=url::$(echo ${{ github.event.pull_request.html_url }})"
+
+
       - name: Job Report Status
         if: failure()
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
           notify_when: 'failure'
-          notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{job}* {status_message} in {workflow_url} '
-          footer: 'Job is in {run_url}'
+          notification_title: ' ${workflow} has {status_message}'
+          message_format: '${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}'
+          footer: 'Find the PR here ${{ steps.pull_request.outputs.url }}'
           mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
           mention_users_when: 'failure,warnings'
         env:
@@ -669,15 +677,23 @@ jobs:
           docker rm `docker ps -aq` --force || true
           docker volume prune -f || true
 
+    #Get Pull request url
+      - name: Get pull request url
+        id: pull_request
+        if: failure()
+        run: |
+          echo "::set-output name=url::$(echo ${{ github.event.pull_request.html_url }})"
+
+
       - name: Job Report Status
         if: failure()
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
           notify_when: 'failure'
-          notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{job}* {status_message} in {workflow_url} '
-          footer: 'Job is in {run_url}'
+          notification_title: ' ${workflow} has {status_message}'
+          message_format: '${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}'
+          footer: 'Find the PR here ${{ steps.pull_request.outputs.url }}'
           mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
           mention_users_when: 'failure,warnings'
         env:
@@ -824,15 +840,23 @@ jobs:
           docker rm `docker ps -aq` --force || true
           docker volume prune -f || true
 
+      #Get Pull request url
+      - name: Get pull request url
+        id: pull_request
+        if: failure()
+        run: |
+          echo "::set-output name=url::$(echo ${{ github.event.pull_request.html_url }})"
+
+
       - name: Job Report Status
         if: failure()
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
           notify_when: 'failure'
-          notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{job}* {status_message} in {workflow_url} '
-          footer: 'Job is in {run_url}'
+          notification_title: ' ${workflow} has {status_message}'
+          message_format: '${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}'
+          footer: 'Find the PR here ${{ steps.pull_request.outputs.url }}'
           mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
           mention_users_when: 'failure,warnings'
         env:
@@ -954,15 +978,23 @@ jobs:
           docker rm `docker ps -aq` --force || true
           docker volume prune -f || true
 
+      #Get Pull request url
+      - name: Get pull request url
+        id: pull_request
+        if: failure()
+        run: |
+          echo "::set-output name=url::$(echo ${{ github.event.pull_request.html_url }})"
+
+
       - name: Job Report Status
         if: failure()
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
           notify_when: 'failure'
-          notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{job}* {status_message} in {workflow_url}'
-          footer: 'Job is in {run_url}'
+          notification_title: ' ${workflow} has {status_message}'
+          message_format: '${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}'
+          footer: 'Find the PR here ${{ steps.pull_request.outputs.url }}'
           mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
           mention_users_when: 'failure,warnings'
         env:
