@@ -230,7 +230,7 @@ def upload_to_s3_using_presigned(
             )  # maintain list of part no and ETag
 
         # Step 4 - Send a message to PyGrid informing about dataset upload complete!
-        upload_response = client.datasets.perform_request(
+        client.datasets.perform_request(
             syft_msg=UploadDataCompleteMessage,
             content={
                 "upload_id": upload_response.payload.upload_id,
