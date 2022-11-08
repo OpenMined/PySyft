@@ -257,6 +257,8 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         result.public_shape = result_public_shape
         result.public_dtype = result_public_dtype
 
+        result.client.processing_pointers[result.id_at_location] = True
+
         return result
 
     @staticmethod
