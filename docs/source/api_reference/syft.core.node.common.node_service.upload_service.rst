@@ -1,18 +1,31 @@
-syft.core.node.common.node\_service.upload\_service package
-===========================================================
+syft.core.node.common.node\_service.upload\_service
+===================================================
 
 .. automodule:: syft.core.node.common.node_service.upload_service
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
-Submodules
-----------
+   
+   
+   
 
-syft.core.node.common.node\_service.upload\_service.upload\_service\_messages module
-------------------------------------------------------------------------------------
+   
+   
+   
 
-.. automodule:: syft.core.node.common.node_service.upload_service.upload_service_messages
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   
+   
+   
+
+   
+   
+   
+
+
+
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   syft.core.node.common.node_service.upload_service.upload_service_messages
+

@@ -32,7 +32,10 @@ import requests
 import rich
 from rich.console import Console
 from rich.live import Live
+from rich.progress import BarColumn
 from rich.progress import Progress
+from rich.progress import SpinnerColumn
+from rich.progress import TextColumn
 from virtualenvapi.manage import VirtualEnvironment
 
 # relative
@@ -395,14 +398,14 @@ def check_pulling(line: str, cmd_name: str, progress_bar: Progress) -> None:
     if "Pulling" in line and "fs layer" not in line:
         progress_bar.update(
             0,
-            description=f"⌛ [bold]{cmd_name} [{task.completed} / {task.total+1}]",
+            description=f" [bold]{cmd_name} [{task.completed} / {task.total+1}]",
             total=task.total + 1,
             refresh=True,
         )
     if "Pulled" in line:
         progress_bar.update(
             0,
-            description=f"⌛ [bold]{cmd_name} [{task.completed + 1} / {task.total}]",
+            description=f" [bold]{cmd_name} [{task.completed + 1} / {task.total}]",
             completed=task.completed + 1,
             refresh=True,
         )
@@ -427,14 +430,14 @@ def check_building(line: str, cmd_name: str, progress_bar: Progress) -> None:
     if load_pattern.match(line):
         progress_bar.update(
             0,
-            description=f"⌛ [bold]{cmd_name} [{task.completed} / {task.total +1}]",
+            description=f" [bold]{cmd_name} [{task.completed} / {task.total +1}]",
             total=task.total + 1,
             refresh=True,
         )
     if build_pattern.match(line):
         progress_bar.update(
             0,
-            description=f"⌛ [bold]{cmd_name} [{task.completed+1} / {task.total}]",
+            description=f" [bold]{cmd_name} [{task.completed+1} / {task.total}]",
             completed=task.completed + 1,
             refresh=True,
         )
@@ -452,14 +455,14 @@ def check_launching(line: str, cmd_name: str, progress_bar: Progress) -> None:
     if "Starting" in line:
         progress_bar.update(
             0,
-            description=f"⌛ [bold]{cmd_name} [{task.completed} / {task.total+1}]",
+            description=f" [bold]{cmd_name} [{task.completed} / {task.total+1}]",
             total=task.total + 1,
             refresh=True,
         )
     if "Started" in line:
         progress_bar.update(
             0,
-            description=f"⌛ [bold]{cmd_name} [{task.completed + 1} / {task.total}]",
+            description=f" [bold]{cmd_name} [{task.completed + 1} / {task.total}]",
             completed=task.completed + 1,
             refresh=True,
         )
@@ -610,7 +613,14 @@ def execute_commands(
     if isinstance(cmds, dict):
         console.print("[bold green]⠋[bold blue] Launching Docker Images [/bold blue]\t")
         for cmd_name, cmd in cmds.items():
-            with Progress(console=console, auto_refresh=False) as progress:
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                BarColumn(),
+                TextColumn("[progress.percentage]{task.percentage:.2f}%   "),
+                console=console,
+                auto_refresh=True,
+            ) as progress:
                 if silent:
                     progress.add_task(
                         f"[bold green]{cmd_name} Images",
