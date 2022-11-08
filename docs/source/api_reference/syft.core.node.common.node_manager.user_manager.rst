@@ -17,17 +17,19 @@ syft.core.node.common.node\_manager.user\_manager
 
    .. autosummary::
    
-      User
-      UserBase
-      UserCreate
-      UserInDB
-      UserInDBBase
       UserManager
-      UserUpdate
    
    
 
    
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      NegativeBudgetException
+      NotEnoughBudgetException
+      RefreshBudgetException
    
    
 
