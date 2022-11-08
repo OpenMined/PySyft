@@ -1107,7 +1107,7 @@ def create_launch_cmd(
     if parsed_kwargs["from_template"] and host is not None:
         # Setup the files from the manifest_template.yml
         kwargs = setup_from_manifest_template(host_type=host)
-        
+
         # Override template tag with user input tag
         if parsed_kwargs["tag"] is not None:
             kwargs.pop("tag")
@@ -1651,9 +1651,9 @@ def create_launch_docker_cmd(
         + str(host_term.free_port)
         + "!\n"
     )
-    
-    if kwargs['release'] == "development":
-        version = setup_from_manifest_template(host_type="docker")['tag']
+
+    if kwargs["release"] == "development":
+        version = setup_from_manifest_template(host_type="docker")["tag"]
     else:
         version = STABLE_BRANCH
 
