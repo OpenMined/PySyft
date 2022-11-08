@@ -46,6 +46,7 @@ from .auth import AuthCredentials
 from .cache import DEFAULT_BRANCH
 from .cache import DEFAULT_REPO
 from .cache import RENDERED_DIR
+from .cache import STABLE_BRANCH
 from .cache import arg_cache
 from .deps import DEPENDENCIES
 from .deps import allowed_hosts
@@ -1651,9 +1652,15 @@ def create_launch_docker_cmd(
         + "!\n"
     )
 
+    if kwargs["release"] == "development":
+        version = setup_from_manifest_template(host_type="docker")["tag"]
+    else:
+        version = STABLE_BRANCH
+
     print("  - TYPE: " + str(node_type.input))
     print("  - NAME: " + str(snake_name))
-    print("  - TAG: " + str(tag))
+    print("  - SYFT_VERSION: " + version)
+    print("  - HAGRID_VERSION: " + str(__version__))
     print("  - PORT: " + str(host_term.free_port))
     print("  - DOCKER COMPOSE: " + docker_version)
     print("  - TAIL: " + str(tail))
