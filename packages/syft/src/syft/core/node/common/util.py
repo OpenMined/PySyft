@@ -97,7 +97,6 @@ def upload_result_to_s3(
     # Retrieve fully qualified name to  use for pointer creation.
     obj_public_kwargs = getattr(data, "proxy_public_kwargs", {})
     data_fqn = str(get_fully_qualified_name(data))
-    data_dtype = str(type(data))
 
     # relative
     from ...tensor import Tensor
@@ -244,7 +243,6 @@ def upload_to_s3_using_presigned(
         # Retrieve fully qualified name to  use for pointer creation.
         obj_public_kwargs = getattr(data, "proxy_public_kwargs", {})
         data_fqn = str(get_fully_qualified_name(data))
-        data_dtype = str(type(data))
 
         # relative
         from ...tensor import Tensor
