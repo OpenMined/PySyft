@@ -241,7 +241,6 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
             args=args,
             kwargs=kwargs,
         )
-        __self.client.processing_pointers.pop(__self.id_at_location, None)
         __self.client.processing_pointers[result_id_at_location] = True
         return result
 
