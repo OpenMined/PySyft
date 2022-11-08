@@ -1028,7 +1028,6 @@ def pointerize_args_and_kwargs(
         else:
             pointer_args.append(arg)
             arg.gc_enabled = gc_enabled
-            arg.client.processing_pointers.pop(arg.id_at_location, None)
 
     for k, arg in kwargs.items():
         # check if its already a pointer
@@ -1038,7 +1037,6 @@ def pointerize_args_and_kwargs(
             pointer_kwargs[k] = arg_ptr
         else:
             pointer_kwargs[k] = arg
-            arg.client.processing_pointers.pop(arg.id_at_location, None)
 
     if obj_lst:
         msg = ActionSequence(obj_lst=obj_lst, address=client.address)

@@ -228,7 +228,7 @@ class Pointer(AbstractPointer):
                 obj = self.client.send_immediate_msg_with_reply(
                     msg=obj_msg, timeout=GET_OBJECT_TIMEOUT, verbose=True
                 )
-                del self.client.processing_pointers[self.id_at_location]
+                self.client.processing_pointers.pop(self.id_at_location, None)
                 is_processing_pointer = False
             except UnknownPrivateException:
                 time.sleep(0.5)
@@ -749,6 +749,9 @@ class Pointer(AbstractPointer):
         if (_client_type == Address) or issubclass(_client_type, AbstractNode):
             # it is a serialized pointer that we receive from another client do nothing
             return
+
+        # Check/Remove it if this pointer is still in processing_pointers dict
+        self.client.processing_pointers.pop(self.id_at_location, None)
 
         if self.gc_enabled:
             # this is not being used in the node currenetly
