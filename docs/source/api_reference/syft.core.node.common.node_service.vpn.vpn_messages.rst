@@ -15,6 +15,7 @@ syft.core.node.common.node\_service.vpn.vpn\_messages
    
       clean_status_output
       connect_with_key
+      disconnect
       extract_nested_json
       generate_key
       get_result
@@ -35,6 +36,9 @@ syft.core.node.common.node\_service.vpn.vpn\_messages
       VPNJoinMessage
       VPNJoinMessageWithReply
       VPNJoinReplyMessage
+      VPNJoinSelfMessage
+      VPNJoinSelfMessageWithReply
+      VPNJoinSelfReplyMessage
       VPNRegisterMessage
       VPNRegisterMessageWithReply
       VPNRegisterReplyMessage

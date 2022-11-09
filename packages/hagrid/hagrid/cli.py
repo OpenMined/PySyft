@@ -32,7 +32,10 @@ import requests
 import rich
 from rich.console import Console
 from rich.live import Live
+from rich.progress import BarColumn
 from rich.progress import Progress
+from rich.progress import SpinnerColumn
+from rich.progress import TextColumn
 from virtualenvapi.manage import VirtualEnvironment
 
 # relative
@@ -43,6 +46,7 @@ from .auth import AuthCredentials
 from .cache import DEFAULT_BRANCH
 from .cache import DEFAULT_REPO
 from .cache import RENDERED_DIR
+from .cache import STABLE_BRANCH
 from .cache import arg_cache
 from .deps import DEPENDENCIES
 from .deps import allowed_hosts
@@ -359,9 +363,9 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
         command = cmds[list(cmds.keys())[0]][0]  # type: ignore
         match_port = re.search("HTTP_PORT=[0-9]{1,5}", command)
 
-        if host_term.host == "docker" and match_port and silent:
+        if not dry_run and host_term.host == "docker" and match_port and silent:
             rich.get_console().print(
-                "\n[bold green]⠋[bold blue] Checking  Node API [/bold blue]\t"
+                "\n[bold green]⠋[bold blue] Checking Node API [/bold blue]\t"
             )
             port = match_port.group().replace("HTTP_PORT=", "")
             check_status("localhost" + ":" + port)
@@ -395,14 +399,14 @@ def check_pulling(line: str, cmd_name: str, progress_bar: Progress) -> None:
     if "Pulling" in line and "fs layer" not in line:
         progress_bar.update(
             0,
-            description=f"⌛ [bold]{cmd_name} [{task.completed} / {task.total+1}]",
+            description=f"[bold]{cmd_name} [{task.completed} / {task.total+1}]",
             total=task.total + 1,
             refresh=True,
         )
     if "Pulled" in line:
         progress_bar.update(
             0,
-            description=f"⌛ [bold]{cmd_name} [{task.completed + 1} / {task.total}]",
+            description=f"[bold]{cmd_name} [{task.completed + 1} / {task.total}]",
             completed=task.completed + 1,
             refresh=True,
         )
@@ -427,14 +431,14 @@ def check_building(line: str, cmd_name: str, progress_bar: Progress) -> None:
     if load_pattern.match(line):
         progress_bar.update(
             0,
-            description=f"⌛ [bold]{cmd_name} [{task.completed} / {task.total +1}]",
+            description=f"[bold]{cmd_name} [{task.completed} / {task.total +1}]",
             total=task.total + 1,
             refresh=True,
         )
     if build_pattern.match(line):
         progress_bar.update(
             0,
-            description=f"⌛ [bold]{cmd_name} [{task.completed+1} / {task.total}]",
+            description=f"[bold]{cmd_name} [{task.completed+1} / {task.total}]",
             completed=task.completed + 1,
             refresh=True,
         )
@@ -452,14 +456,14 @@ def check_launching(line: str, cmd_name: str, progress_bar: Progress) -> None:
     if "Starting" in line:
         progress_bar.update(
             0,
-            description=f"⌛ [bold]{cmd_name} [{task.completed} / {task.total+1}]",
+            description=f" [bold]{cmd_name} [{task.completed} / {task.total+1}]",
             total=task.total + 1,
             refresh=True,
         )
     if "Started" in line:
         progress_bar.update(
             0,
-            description=f"⌛ [bold]{cmd_name} [{task.completed + 1} / {task.total}]",
+            description=f" [bold]{cmd_name} [{task.completed + 1} / {task.total}]",
             completed=task.completed + 1,
             refresh=True,
         )
@@ -608,9 +612,16 @@ def execute_commands(
     """
     console = rich.get_console()
     if isinstance(cmds, dict):
-        console.print("[bold green]⠋[bold blue] Launching Docker Images [/bold blue]\t")
+        console.print("[bold green]⠋[bold blue] Launching Containers [/bold blue]\t")
         for cmd_name, cmd in cmds.items():
-            with Progress(console=console, auto_refresh=False) as progress:
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                BarColumn(),
+                TextColumn("[progress.percentage]{task.percentage:.2f}%   "),
+                console=console,
+                auto_refresh=True,
+            ) as progress:
                 if silent:
                     progress.add_task(
                         f"[bold green]{cmd_name} Images",
@@ -1606,8 +1617,10 @@ def build_command(cmd: str) -> TypeList[str]:
     return [build_cmd]
 
 
-def deploy_command(cmd: str, tail: bool) -> TypeList[str]:
+def deploy_command(cmd: str, tail: bool, release_type: str) -> TypeList[str]:
+
     up_cmd = str(cmd)
+    up_cmd += " --file docker-compose.dev.yml" if release_type == "development" else ""
     up_cmd += " up"
     if not tail:
         up_cmd += " -d"
@@ -1639,12 +1652,19 @@ def create_launch_docker_cmd(
         + "!\n"
     )
 
+    if kwargs["release"] == "development":
+        version = setup_from_manifest_template(host_type="docker")["tag"]
+    else:
+        version = STABLE_BRANCH
+
     print("  - TYPE: " + str(node_type.input))
     print("  - NAME: " + str(snake_name))
-    print("  - TAG: " + str(tag))
+    print("  - SYFT_VERSION: " + version)
+    print("  - HAGRID_VERSION: " + str(__version__))
     print("  - PORT: " + str(host_term.free_port))
     print("  - DOCKER COMPOSE: " + docker_version)
     print("  - TAIL: " + str(tail))
+    print("  - RELEASE: " + kwargs["release"])
     print("\n")
 
     version_string = kwargs["tag"]
@@ -1806,7 +1826,9 @@ def create_launch_docker_cmd(
         my_build_command = build_command(cmd)
         final_commands["Building"] = my_build_command
 
-    final_commands["Launching"] = deploy_command(cmd, tail)
+    release_type = kwargs["release"]
+
+    final_commands["Launching"] = deploy_command(cmd, tail, release_type)
     return final_commands
 
 
@@ -2871,7 +2893,7 @@ def _check_status(
             if silent:
                 with console.status("Gathering Node information") as console_status:
                     console_status.update(
-                        "[bold orange_red1]Waiting for Docker Container Creation"
+                        "[bold orange_red1]Waiting for Container Creation"
                     )
                     docker_status, domain_info = get_docker_status(ip_address)
                     while not docker_status:
@@ -2882,10 +2904,10 @@ def _check_status(
                         ):  # Stop execution if timeout is triggered
                             return
                     console.print(
-                        f"{OK_EMOJI} {domain_info[0]} {domain_info[1]} Docker Containers Created."
+                        f"{OK_EMOJI} {domain_info[0]} {domain_info[1]} Containers Created"
                     )
 
-                    console_status.update("[bold orange_red1]Installing Syft")
+                    console_status.update("[bold orange_red1]Starting Backend")
                     syft_install_status = get_syft_install_status(domain_info[0])
                     while not syft_install_status:
                         syft_install_status = get_syft_install_status(domain_info[0])
@@ -2893,8 +2915,8 @@ def _check_status(
                         # Stop execution if timeout is triggered
                         if signal and signal.is_set():
                             return
-                    console.print(f"{OK_EMOJI} Syft")
-                    console.print(f"{OK_EMOJI} Containers Startup Complete.")
+                    console.print(f"{OK_EMOJI} Backend")
+                    console.print(f"{OK_EMOJI} Startup Complete")
 
                 status, table_contents = get_health_checks(ip_address)
                 table = create_check_table(

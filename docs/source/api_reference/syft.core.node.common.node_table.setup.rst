@@ -9,12 +9,6 @@ syft.core.node.common.node\_table.setup
 
    
    
-   .. rubric:: Functions
-
-   .. autosummary::
-   
-      create_setup
-   
    
 
    
