@@ -435,7 +435,7 @@ class PhiTensorAncestor(TensorChainManager):
             min_val, max_val, target_shape=self.child.shape
         )
 
-        if any(len(x.item()) > 1 for x in np.nditer(data_subjects)):
+        if any(len(x.item()) > 1 for x in np.nditer(data_subjects, flags=["refs_ok"])):
             self.replace_abstraction_top(
                 tensor_type=_GammaTensor(),
                 child=self.child,
