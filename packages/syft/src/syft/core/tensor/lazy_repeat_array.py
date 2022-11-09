@@ -438,6 +438,7 @@ def compute_min_max(
         "__rmatmul__",
         "__truediv__",
         "__floordiv__",
+        "__rtruediv__"
     ]:
         if is_acceptable_simple_type(other):
             min_vals = getattr(x_min_vals, op_str)(other)

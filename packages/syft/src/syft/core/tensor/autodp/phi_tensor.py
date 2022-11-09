@@ -709,6 +709,21 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         """
         return TensorWrappedPhiTensorPointer._apply_op(self, other, "__truediv__")
 
+    def __rtruediv__(
+        self,
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
+        """Apply the "rtruediv" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__rtruediv__")
+
+
     def __floordiv__(
         self,
         other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
