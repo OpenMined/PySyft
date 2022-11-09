@@ -608,10 +608,6 @@ class Tensor(
 
         return None
 
-    def mpc_swap(self, other: Tensor) -> Tensor:
-        self.child.child = other.child.child
-        return self
-
     def _object2bytes(self) -> bytes:
         schema = get_capnp_schema(schema_file="tensor.capnp")
         tensor_struct: CapnpModule = schema.Tensor  # type: ignore
