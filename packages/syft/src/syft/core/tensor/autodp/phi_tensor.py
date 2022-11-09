@@ -2125,7 +2125,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         child = (
             np.zeros_like(self.child, *args, **kwargs)
             if isinstance(self.child, np.ndarray)
-            else self.child.ones_like(*args, **kwargs)
+            else self.child.zeros_like(*args, **kwargs)
         )
 
         return PhiTensor(
