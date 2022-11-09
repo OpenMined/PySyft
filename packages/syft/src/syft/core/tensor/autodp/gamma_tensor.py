@@ -1739,61 +1739,6 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
 
         return result
 
-    def one_hot(self: TensorWrappedGammaTensorPointer) -> np.array:
-        tensor_size = np.empty(self.public_shape).size
-        one_hot_Y = np.zeros((tensor_size, self.max_vals.data[0] + 1))
-        one_hot_Y = one_hot_Y.T
-
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.one_hot"
-
-        result = TensorWrappedGammaTensorPointer(
-            data_subjects=self.data_subjects,
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
-            client=self.client,
-        )
-
-        # QUESTION can the id_at_location be None?
-        result_id_at_location = getattr(result, "id_at_location", None)
-
-        if result_id_at_location is not None:
-            # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=[], kwargs={})
-
-            # then we convert anything which isnt a pointer into a pointer
-            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args,
-                kwargs=downcast_kwargs,
-                client=self.client,
-                gc_enabled=False,
-            )
-
-            cmd = RunClassMethodAction(
-                path=attr_path_and_name,
-                _self=self,
-                args=pointer_args,
-                kwargs=pointer_kwargs,
-                id_at_location=result_id_at_location,
-                address=self.client.address,
-            )
-            self.client.send_immediate_msg_without_reply(msg=cmd)
-
-        inherit_tags(
-            attr_path_and_name=attr_path_and_name,
-            result=result,
-            self_obj=self,
-            args=[],
-            kwargs={},
-        )
-
-        result.public_shape = one_hot_Y.shape
-        result.public_dtype = self.public_dtype
-
-        return result
-
     def to_local_object_without_private_data_child(self) -> GammaTensor:
         """Convert this pointer into a partial version of the GammaTensor but without
         any of the private data therein."""

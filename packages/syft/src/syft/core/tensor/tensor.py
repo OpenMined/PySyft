@@ -521,12 +521,6 @@ class Tensor(
         self.tag_name = name
         return self
 
-    def one_hot(self) -> Tensor:
-        if hasattr(self.child, "one_hot"):
-            return self.__class__(self.child.one_hot())
-        else:
-            raise ValueError("Tensor Chain does not have one_hot function")
-
     @property
     def shape(self) -> Tuple[Any, ...]:
         try:
