@@ -3519,3 +3519,13 @@ def logs(domain_name: str) -> None:
         container_names.append(
             Container(id=container, name=container_name, logs=log_command)
         )
+#Generate a table of the containers and their logs with Rich
+    table = rich.table.Table(title="Container Logs")
+    table.add_column("Container ID", justify="center", style="cyan", no_wrap=True)
+    table.add_column("Container Name", justify="center", style="cyan", no_wrap=True)
+    table.add_column("Logs", justify="center", style="cyan", no_wrap=True)
+    for container in container_names:
+        table.add_row(container.id, container.name, container.logs)
+    console = rich.console.Console()
+    console.print(table)
+cli.add_command(logs)
