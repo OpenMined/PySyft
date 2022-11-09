@@ -160,9 +160,9 @@ def publish(
                 raise Exception(
                     "Negative budget spend not allowed in PySyft for safety reasons."
                     "Please contact the OpenMined support team for help."
-                )    
+                )
             rdp_constants = compute_rdp_constant(rdp_params, private=False)
-        else:    
+        else:
             rdp_constants = compute_rdp_constant(rdp_params, private=private)
         print("Rdp constants", rdp_constants)
         all_epsilons = ledger._get_epsilon_spend(
