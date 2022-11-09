@@ -14,6 +14,7 @@ from typing_extensions import final
 # relative
 from ......grid import GridURL
 from .....common.serde.serializable import serializable
+from .....common.uid import UID
 from ....domain_interface import DomainInterface
 from ....domain_msg_registry import DomainMessageRegistry
 from ...permissions.permissions import BasePermission
@@ -57,8 +58,23 @@ class UploadDataMessage(SyftMessage, DomainMessageRegistry):
         # TODO : Move to permissions
         # if not node.users.can_upload_data(verify_key=verify_key):
         #    return {"message": "You're not authorized to do this."}
-
         key = f"{self.payload.filename}"
+        
+        # If we're saving the new object using UID keys as its asset name
+        # Then we need to check if this UID was registered previously.
+        if UID.is_valid_uuid(key.split("/")[-1]):
+            id_at_location = UID.from_string(key.split("/")[-1]) # Get Object ID.
+            old_obj = node.store.get_or_none(key=id_at_location, proxy_only=True)
+
+            if old_obj:
+                # Check if users' verify key is a subset of write_permissions set
+                has_write_permissions = old_obj.write_permissions.get(verify_key, None) != None
+                if not has_write_permissions:
+                    raise Exception("You're not allowed to perform this operation.")
+            
+            # Replace id_at_location string format to no_dash format
+            key = key.replace(id_at_location.to_string(), id_at_location.no_dash)
+
         s3_client = get_s3_client(settings=node.settings)
         result = s3_client.create_multipart_upload(Bucket=node.id.no_dash, Key=key)
         total_parts = math.ceil(self.payload.file_size / self.payload.chunk_size)
