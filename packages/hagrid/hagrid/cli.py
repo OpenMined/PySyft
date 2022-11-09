@@ -184,7 +184,7 @@ def clean(location: str) -> None:
 )
 @click.option(
     "--tail",
-    default="true",
+    default="false",
     required=False,
     type=str,
     help="Optional: don't tail logs on launch",
