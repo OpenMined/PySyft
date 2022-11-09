@@ -521,12 +521,6 @@ class Tensor(
         self.tag_name = name
         return self
 
-    def reciprocal(self) -> Tensor:
-        if hasattr(self.child, "reciprocal"):
-            return self.__class__(self.child.reciprocal())
-        else:
-            raise ValueError("Tensor Chain does not have reciprocal function")
-
     def one_hot(self) -> Tensor:
         if hasattr(self.child, "one_hot"):
             return self.__class__(self.child.one_hot())
