@@ -368,7 +368,7 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
 
         if not dry_run and host_term.host == "docker" and match_port and silent:
             rich.get_console().print(
-                "\n[bold green]⠋[bold blue] Checking  Node API [/bold blue]\t"
+                "\n[bold green]⠋[bold blue] Checking Node API [/bold blue]\t"
             )
             port = match_port.group().replace("HTTP_PORT=", "")
             check_status("localhost" + ":" + port)
@@ -402,14 +402,14 @@ def check_pulling(line: str, cmd_name: str, progress_bar: Progress) -> None:
     if "Pulling" in line and "fs layer" not in line:
         progress_bar.update(
             0,
-            description=f" [bold]{cmd_name} [{task.completed} / {task.total+1}]",
+            description=f"[bold]{cmd_name} [{task.completed} / {task.total+1}]",
             total=task.total + 1,
             refresh=True,
         )
     if "Pulled" in line:
         progress_bar.update(
             0,
-            description=f" [bold]{cmd_name} [{task.completed + 1} / {task.total}]",
+            description=f"[bold]{cmd_name} [{task.completed + 1} / {task.total}]",
             completed=task.completed + 1,
             refresh=True,
         )
@@ -434,14 +434,14 @@ def check_building(line: str, cmd_name: str, progress_bar: Progress) -> None:
     if load_pattern.match(line):
         progress_bar.update(
             0,
-            description=f" [bold]{cmd_name} [{task.completed} / {task.total +1}]",
+            description=f"[bold]{cmd_name} [{task.completed} / {task.total +1}]",
             total=task.total + 1,
             refresh=True,
         )
     if build_pattern.match(line):
         progress_bar.update(
             0,
-            description=f" [bold]{cmd_name} [{task.completed+1} / {task.total}]",
+            description=f"[bold]{cmd_name} [{task.completed+1} / {task.total}]",
             completed=task.completed + 1,
             refresh=True,
         )
@@ -615,7 +615,7 @@ def execute_commands(
     """
     console = rich.get_console()
     if isinstance(cmds, dict):
-        console.print("[bold green]⠋[bold blue] Launching Docker Images [/bold blue]\t")
+        console.print("[bold green]⠋[bold blue] Launching Containers [/bold blue]\t")
         for cmd_name, cmd in cmds.items():
             with Progress(
                 SpinnerColumn(),
@@ -2896,7 +2896,7 @@ def _check_status(
             if silent:
                 with console.status("Gathering Node information") as console_status:
                     console_status.update(
-                        "[bold orange_red1]Waiting for Docker Container Creation"
+                        "[bold orange_red1]Waiting for Container Creation"
                     )
                     docker_status, domain_info = get_docker_status(ip_address)
                     while not docker_status:
@@ -2907,10 +2907,10 @@ def _check_status(
                         ):  # Stop execution if timeout is triggered
                             return
                     console.print(
-                        f"{OK_EMOJI} {domain_info[0]} {domain_info[1]} Docker Containers Created."
+                        f"{OK_EMOJI} {domain_info[0]} {domain_info[1]} Containers Created"
                     )
 
-                    console_status.update("[bold orange_red1]Installing Syft")
+                    console_status.update("[bold orange_red1]Starting Backend")
                     syft_install_status = get_syft_install_status(domain_info[0])
                     while not syft_install_status:
                         syft_install_status = get_syft_install_status(domain_info[0])
@@ -2918,8 +2918,8 @@ def _check_status(
                         # Stop execution if timeout is triggered
                         if signal and signal.is_set():
                             return
-                    console.print(f"{OK_EMOJI} Syft")
-                    console.print(f"{OK_EMOJI} Containers Startup Complete.")
+                    console.print(f"{OK_EMOJI} Backend")
+                    console.print(f"{OK_EMOJI} Startup Complete")
 
                 status, table_contents = get_health_checks(ip_address)
                 table = create_check_table(
