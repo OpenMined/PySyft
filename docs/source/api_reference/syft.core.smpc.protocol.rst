@@ -1,17 +1,33 @@
-syft.core.smpc.protocol package
-===============================
+syft.core.smpc.protocol
+=======================
 
 .. automodule:: syft.core.smpc.protocol
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
-Subpackages
------------
+   
+   
+   
 
-.. toctree::
-   :maxdepth: 2
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
 
    syft.core.smpc.protocol.aby3
    syft.core.smpc.protocol.beaver
    syft.core.smpc.protocol.spdz
+

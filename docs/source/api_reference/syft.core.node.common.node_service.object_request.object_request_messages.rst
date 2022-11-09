@@ -22,6 +22,8 @@ syft.core.node.common.node\_service.object\_request.object\_request\_messages
       CreateRequestResponse
       DeleteRequestMessage
       DeleteRequestResponse
+      GetAllRequestsMessage
+      GetAllRequestsResponseMessage
       GetBudgetRequestsMessage
       GetBudgetRequestsResponse
       GetRequestMessage
