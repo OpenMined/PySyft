@@ -3498,7 +3498,7 @@ cli.add_command(ssh)
 @click.command(help="Get the logs of the HAGrid service")
 @click.argument("domain_name", type=str)
 def logs(domain_name: str) -> None:
-    containers = (
+    container_ids = (
         subprocess.check_output(f"docker ps -qf name=^{domain_name}-*", shell=True)
         .decode("utf-8")
         .split()
@@ -3506,7 +3506,7 @@ def logs(domain_name: str) -> None:
     Container = namedtuple("Container", "id name logs")
     container_names = []
     # container_log_command = []
-    for container in containers:
+    for container in container_ids:
         container_name = (
             subprocess.check_output(
                 "docker inspect --format '{{.Name}}' " + container, shell=True
@@ -3519,13 +3519,15 @@ def logs(domain_name: str) -> None:
         container_names.append(
             Container(id=container, name=container_name, logs=log_command)
         )
-#Generate a table of the containers and their logs with Rich
+    # Generate a table of the containers and their logs with Rich
     table = rich.table.Table(title="Container Logs")
     table.add_column("Container ID", justify="center", style="cyan", no_wrap=True)
-    table.add_column("Container Name", justify="center", style="cyan", no_wrap=True)
-    table.add_column("Logs", justify="center", style="cyan", no_wrap=True)
+    table.add_column("Container Name", justify="right", style="cyan", no_wrap=True)
+    table.add_column("Log Command", justify="right", style="cyan", no_wrap=True)
     for container in container_names:
         table.add_row(container.id, container.name, container.logs)
     console = rich.console.Console()
     console.print(table)
+
+
 cli.add_command(logs)
