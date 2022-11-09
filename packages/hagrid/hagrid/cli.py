@@ -1,4 +1,5 @@
 # stdlib
+from collections import namedtuple
 import json
 import os
 from pathlib import Path
@@ -16,7 +17,9 @@ from threading import Thread
 import time
 from typing import Any
 from typing import Callable
+from typing import Dict
 from typing import Dict as TypeDict
+from typing import List
 from typing import List as TypeList
 from typing import Optional
 from typing import Tuple
@@ -3490,3 +3493,29 @@ def ssh(ip_address: str, cmd: str) -> None:
 
 
 cli.add_command(ssh)
+
+# Add hagrid logs command to the CLI
+@click.command(help="Get the logs of the HAGrid service")
+@click.argument("domain_name", type=str)
+def logs(domain_name: str) -> None:
+    containers = (
+        subprocess.check_output(f"docker ps -qf name=^{domain_name}-*", shell=True)
+        .decode("utf-8")
+        .split()
+    )
+    Container = namedtuple("Container", "id name logs")
+    container_names = []
+    # container_log_command = []
+    for container in containers:
+        container_name = (
+            subprocess.check_output(
+                "docker inspect --format '{{.Name}}' " + container, shell=True
+            )
+            .decode("utf-8")
+            .strip()
+            .replace("/", "")
+        )
+        log_command = "docker logs -f " + container_name
+        container_names.append(
+            Container(id=container, name=container_name, logs=log_command)
+        )
