@@ -59,19 +59,21 @@ class UploadDataMessage(SyftMessage, DomainMessageRegistry):
         # if not node.users.can_upload_data(verify_key=verify_key):
         #    return {"message": "You're not authorized to do this."}
         key = f"{self.payload.filename}"
-        
+
         # If we're saving the new object using UID keys as its asset name
         # Then we need to check if this UID was registered previously.
         if UID.is_valid_uuid(key.split("/")[-1]):
-            id_at_location = UID.from_string(key.split("/")[-1]) # Get Object ID.
+            id_at_location = UID.from_string(key.split("/")[-1])  # Get Object ID.
             old_obj = node.store.get_or_none(key=id_at_location, proxy_only=True)
 
             if old_obj:
                 # Check if users' verify key is a subset of write_permissions set
-                has_write_permissions = old_obj.write_permissions.get(verify_key, None) != None
+                has_write_permissions = (
+                    old_obj.write_permissions.get(verify_key, None) is not None
+                )
                 if not has_write_permissions:
                     raise Exception("You're not allowed to perform this operation.")
-            
+
             # Replace id_at_location string format to no_dash format
             key = key.replace(id_at_location.to_string(), id_at_location.no_dash)
 

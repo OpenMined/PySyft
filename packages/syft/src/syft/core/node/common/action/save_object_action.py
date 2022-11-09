@@ -19,6 +19,7 @@ from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 
+
 @serializable()
 class SaveObjectAction(ImmediateActionWithoutReply):
     def __init__(
@@ -47,10 +48,12 @@ class SaveObjectAction(ImmediateActionWithoutReply):
 
         if old_obj:
             # Check if users' verify key is a subset of write_permissions set
-            has_write_permissions = old_obj.write_permissions.get(verify_key, None) != None
+            has_write_permissions = (
+                old_obj.write_permissions.get(verify_key, None) is not None
+            )
             if not has_write_permissions:
                 raise Exception("You're not allowed to perform this operation.")
-        
+
         self.obj.read_permissions = {
             node.verify_key: node.id,
             verify_key: None,  # we dont have the passed in sender's UID

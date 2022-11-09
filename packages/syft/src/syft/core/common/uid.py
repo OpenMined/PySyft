@@ -136,7 +136,7 @@ class UID:
             return self.value == other.value
         except Exception:
             return False
-    
+
     @staticmethod
     def is_valid_uuid(value: Any) -> bool:
         try:
@@ -144,7 +144,7 @@ class UID:
             return True
         except Exception:
             return False
-    
+
     @property
     def no_dash(self) -> str:
         return str(self.value).replace("-", "")
