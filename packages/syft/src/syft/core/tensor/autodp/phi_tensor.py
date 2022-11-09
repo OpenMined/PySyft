@@ -1451,81 +1451,6 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         """
         return self._apply_self_tensor_op("argsort", *args, **kwargs)
 
-    def exp(
-        self,
-    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
-        """Apply the "truediv" operation between "self" and "other"
-
-        Args:
-            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
-
-        Returns:
-            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
-        """
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.exp"
-
-        # TODO: should modify to log reduction.
-        def exp_reduction(val: np.ndarray) -> np.ndarray:
-            pos_index = val >= 0
-            neg_index = val < 0
-            exp = np.exp((pos_index * val * -1) + (neg_index * val))
-            pos_values = (pos_index) * exp
-            neg_values = (neg_index) * exp * -1
-            return pos_values + neg_values
-
-        min_vals = self.min_vals.copy()
-        min_vals.data = np.array(exp_reduction(min_vals.data))
-        max_vals = self.max_vals.copy()
-        max_vals.data = np.array(exp_reduction(max_vals.data))
-
-        result = TensorWrappedPhiTensorPointer(
-            data_subjects=self.data_subjects,
-            min_vals=min_vals,
-            max_vals=max_vals,
-            client=self.client,
-        )
-
-        # QUESTION can the id_at_location be None?
-        result_id_at_location = getattr(result, "id_at_location", None)
-
-        if result_id_at_location is not None:
-            # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=[], kwargs={})
-
-            # then we convert anything which isnt a pointer into a pointer
-            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args,
-                kwargs=downcast_kwargs,
-                client=self.client,
-                gc_enabled=False,
-            )
-
-            cmd = RunClassMethodAction(
-                path=attr_path_and_name,
-                _self=self,
-                args=pointer_args,
-                kwargs=pointer_kwargs,
-                id_at_location=result_id_at_location,
-                address=self.client.address,
-            )
-            self.client.send_immediate_msg_without_reply(msg=cmd)
-
-        inherit_tags(
-            attr_path_and_name=attr_path_and_name,
-            result=result,
-            self_obj=self,
-            args=[],
-            kwargs={},
-        )
-
-        result.public_shape = self.public_shape
-        result.public_dtype = self.public_dtype
-
-        return result
-
     def reciprocal(
         self,
     ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
@@ -3736,30 +3661,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=self.child,
             min_vals=self.min_vals,
             max_vals=self.max_vals,
-            data_subjects=self.data_subjects,
-        )
-
-    def exp(self) -> PhiTensor:
-        # relative
-        from ...smpc.approximations import exp
-
-        def exp_reduction(val: np.ndarray) -> np.ndarray:
-            pos_index = val >= 0
-            neg_index = val < 0
-            exp = np.exp((pos_index * val * -1) + (neg_index * val))
-            pos_values = (pos_index) * exp
-            neg_values = (neg_index) * exp * -1
-            return pos_values + neg_values
-
-        min_vals = self.min_vals.copy()
-        min_vals.data = np.array(exp_reduction(min_vals.data))
-        max_vals = self.max_vals.copy()
-        max_vals.data = np.array(exp_reduction(max_vals.data))
-
-        return PhiTensor(
-            child=exp(self.child),  # type: ignore
-            min_vals=min_vals,
-            max_vals=max_vals,
             data_subjects=self.data_subjects,
         )
 

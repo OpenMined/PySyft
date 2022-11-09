@@ -1448,81 +1448,6 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         """
         return self._apply_self_tensor_op("reshape", *args, **kwargs)
 
-    def exp(
-        self,
-    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-        """Apply the "truediv" operation between "self" and "other"
-
-        Args:
-            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
-
-        Returns:
-            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
-        """
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.exp"
-
-        # TODO: should modify to log reduction.
-        def exp_reduction(val: np.ndarray) -> np.ndarray:
-            pos_index = val >= 0
-            neg_index = val < 0
-            exp = np.exp((pos_index * val * -1) + (neg_index * val))
-            pos_values = (pos_index) * exp
-            neg_values = (neg_index) * exp * -1
-            return pos_values + neg_values
-
-        min_vals = self.min_vals.copy()
-        min_vals.data = np.array(exp_reduction(min_vals.data))
-        max_vals = self.max_vals.copy()
-        max_vals.data = np.array(exp_reduction(max_vals.data))
-
-        result = TensorWrappedGammaTensorPointer(
-            data_subjects=self.data_subjects,
-            min_vals=min_vals,
-            max_vals=max_vals,
-            client=self.client,
-        )
-
-        # QUESTION can the id_at_location be None?
-        result_id_at_location = getattr(result, "id_at_location", None)
-
-        if result_id_at_location is not None:
-            # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=[], kwargs={})
-
-            # then we convert anything which isnt a pointer into a pointer
-            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args,
-                kwargs=downcast_kwargs,
-                client=self.client,
-                gc_enabled=False,
-            )
-
-            cmd = RunClassMethodAction(
-                path=attr_path_and_name,
-                _self=self,
-                args=pointer_args,
-                kwargs=pointer_kwargs,
-                id_at_location=result_id_at_location,
-                address=self.client.address,
-            )
-            self.client.send_immediate_msg_without_reply(msg=cmd)
-
-        inherit_tags(
-            attr_path_and_name=attr_path_and_name,
-            result=result,
-            self_obj=self,
-            args=[],
-            kwargs={},
-        )
-
-        result.public_shape = self.public_shape
-        result.public_dtype = self.public_dtype
-
-        return result
-
     def repeat(
         self,
         *args: Any,
@@ -2774,36 +2699,6 @@ class GammaTensor:
             min_vals=lazyrepeatarray(data=0, shape=child.shape),
             max_vals=lazyrepeatarray(data=max_value, shape=child.shape),
             func_str=GAMMA_TENSOR_OP.ARGMIN.value,
-            sources=output_state,
-        )
-
-    def exp(self) -> GammaTensor:
-        output_state = dict()
-        # Add this tensor to the chain
-        output_state[self.id] = self
-
-        # relative
-        from ...smpc.approximations import exp
-
-        def exp_reduction(val: np.ndarray) -> np.ndarray:
-            pos_index = val >= 0
-            neg_index = val < 0
-            exp = np.exp((pos_index * val * -1) + (neg_index * val))
-            pos_values = (pos_index) * exp
-            neg_values = (neg_index) * exp * -1
-            return pos_values + neg_values
-
-        min_val = self.min_vals.copy()
-        min_val.data = np.array(exp_reduction(min_val.data))
-        max_val = self.max_vals.copy()
-        max_val.data = np.array(exp_reduction(max_val.data))
-
-        return GammaTensor(
-            child=exp(self.child),
-            min_vals=min_val,
-            max_vals=max_val,
-            data_subjects=self.data_subjects,
-            func_str=GAMMA_TENSOR_OP.EXP.value,
             sources=output_state,
         )
 

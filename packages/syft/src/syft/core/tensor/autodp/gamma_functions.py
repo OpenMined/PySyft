@@ -77,7 +77,6 @@ def generate_ops() -> Dict[GAMMA_TENSOR_OP, Callable]:
         GAMMA_TENSOR_OP.NOT_EQUAL: jnp.not_equal,
         GAMMA_TENSOR_OP.LESS: jnp.less,
         GAMMA_TENSOR_OP.LESS_EQUAL: jnp.less_equal,
-        GAMMA_TENSOR_OP.EXP: jnp.exp,
         GAMMA_TENSOR_OP.LOG: jnp.log,
         GAMMA_TENSOR_OP.TRANSPOSE: jnp.transpose,
         GAMMA_TENSOR_OP.SUM: jnp.sum,

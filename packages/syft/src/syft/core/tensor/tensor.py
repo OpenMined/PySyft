@@ -521,12 +521,6 @@ class Tensor(
         self.tag_name = name
         return self
 
-    def exp(self) -> Tensor:
-        if hasattr(self.child, "exp"):
-            return self.__class__(self.child.exp())
-        else:
-            raise ValueError("Tensor Chain does not have exp function")
-
     def reciprocal(self) -> Tensor:
         if hasattr(self.child, "reciprocal"):
             return self.__class__(self.child.reciprocal())
