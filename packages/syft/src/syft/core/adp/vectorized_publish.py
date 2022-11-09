@@ -155,7 +155,15 @@ def publish(
         # Step 2: Calculate the epsilon spend for this query
 
         # rdp_constant = all terms in Theorem. 2.7 or 2.8 of https://arxiv.org/abs/2008.11193 EXCEPT alpha
-        rdp_constants = compute_rdp_constant(rdp_params, private=private)
+        if any(np.isnan(l2_norms)):
+            if any(np.isnan(l2_norm_bounds)) or any(np.isinf(l2_norm_bounds)):
+                raise Exception(
+                    "Negative budget spend not allowed in PySyft for safety reasons."
+                    "Please contact the OpenMined support team for help."
+                )    
+            rdp_constants = compute_rdp_constant(rdp_params, private=False)
+        else:    
+            rdp_constants = compute_rdp_constant(rdp_params, private=private)
         print("Rdp constants", rdp_constants)
         all_epsilons = ledger._get_epsilon_spend(
             rdp_constants
