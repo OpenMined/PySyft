@@ -3498,9 +3498,9 @@ cli.add_command(ssh)
 @click.argument("domain_name", type=str)
 def logs(domain_name: str) -> None:
     container_ids = (
-        subprocess.check_output(
+        subprocess.check_output( # nosec
             f"docker ps -qf name=^{domain_name}-*", shell=True
-        )  # nosec
+        )  
         .decode("utf-8")
         .split()
     )
@@ -3508,7 +3508,7 @@ def logs(domain_name: str) -> None:
     container_names = []
     for container in container_ids:
         container_name = (
-            subprocess.check_output(
+            subprocess.check_output( # nosec
                 "docker inspect --format '{{.Name}}' " + container, shell=True
             )
             .decode("utf-8")
