@@ -33,7 +33,8 @@ for container in containers:
         "docker logs " + container, shell=True
     ).decode("utf-8")
 
-    path = job_path / container_name
+    unquoted_name = container_name.replace("'", "")
+    path = job_path / unquoted_name
     path.write_text(container_logs)
 
 print("============Log export completed for job: ", job_name)
