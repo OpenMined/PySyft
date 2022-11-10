@@ -16,9 +16,6 @@ import numpy as np
 import pandas as pd
 import torch as th
 
-# syft absolute
-import syft as sy
-
 # relative
 from ... import lib
 from ...ast.klass import pointerize_args_and_kwargs
@@ -29,7 +26,9 @@ from ..common.serde.capnp import chunk_bytes
 from ..common.serde.capnp import combine_bytes
 from ..common.serde.capnp import get_capnp_schema
 from ..common.serde.capnp import serde_magic_header
+from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import serializable
+from ..common.serde.serialize import _serialize as serialize
 from ..common.uid import UID
 from ..node.abstract.node import AbstractNodeClient
 from ..node.common.action import smpc_action_functions
@@ -644,9 +643,9 @@ class Tensor(
         # this is how we dispatch correct deserialization of bytes
         tensor_msg.magicHeader = serde_magic_header(type(self))
 
-        chunk_bytes(sy.serialize(self.child, to_bytes=True), "child", tensor_msg)
+        chunk_bytes(serialize(self.child, to_bytes=True), "child", tensor_msg)  # type: ignore
 
-        tensor_msg.publicShape = sy.serialize(self.public_shape, to_bytes=True)
+        tensor_msg.publicShape = serialize(self.public_shape, to_bytes=True)
 
         # upcast the String class before setting to capnp
         public_dtype_func = getattr(
@@ -668,8 +667,8 @@ class Tensor(
         )
 
         tensor = Tensor(
-            child=sy.deserialize(combine_bytes(tensor_msg.child), from_bytes=True),
-            public_shape=sy.deserialize(tensor_msg.publicShape, from_bytes=True),
+            child=deserialize(combine_bytes(tensor_msg.child), from_bytes=True),
+            public_shape=deserialize(tensor_msg.publicShape, from_bytes=True),
             public_dtype=np.dtype(tensor_msg.publicDtype),
         )
         tensor.tag_name = tensor_msg.tagName
