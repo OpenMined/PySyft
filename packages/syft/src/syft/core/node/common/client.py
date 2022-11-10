@@ -35,7 +35,9 @@ from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedImmediateSyftMessageWithoutReply
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
+from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
+from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
@@ -127,7 +129,7 @@ class Client(AbstractNodeClient):
         metadata: Metadata_PB,
     ) -> Tuple[SpecificLocation, str, UID]:
         # string of bytes
-        meta = sy.deserialize(blob=metadata)
+        meta = deserialize(blob=metadata)
         return meta.node, meta.name, meta.id
 
     def install_supported_frameworks(self) -> None:
@@ -328,9 +330,9 @@ class Client(AbstractNodeClient):
     def _object2proto(self) -> Client_PB:
         client_pb = Client_PB(
             obj_type=get_fully_qualified_name(obj=self),
-            id=sy.serialize(self.id),
+            id=serialize(self.id),
             name=self.name,
-            routes=[sy.serialize(route) for route in self.routes],
+            routes=[serialize(route) for route in self.routes],
             network=self.network._object2proto() if self.network else None,
             domain=self.domain._object2proto() if self.domain else None,
             device=self.device._object2proto() if self.device else None,
@@ -346,13 +348,11 @@ class Client(AbstractNodeClient):
 
         obj = obj_type(
             name=proto.name,
-            routes=[sy.deserialize(route) for route in proto.routes],
-            network=sy.deserialize(proto.network)
-            if proto.HasField("network")
-            else None,
-            domain=sy.deserialize(proto.domain) if proto.HasField("domain") else None,
-            device=sy.deserialize(proto.device) if proto.HasField("device") else None,
-            vm=sy.deserialize(proto.vm) if proto.HasField("vm") else None,
+            routes=[deserialize(route) for route in proto.routes],
+            network=deserialize(proto.network) if proto.HasField("network") else None,
+            domain=deserialize(proto.domain) if proto.HasField("domain") else None,
+            device=deserialize(proto.device) if proto.HasField("device") else None,
+            vm=deserialize(proto.vm) if proto.HasField("vm") else None,
         )
 
         if type(obj) != obj_type:
