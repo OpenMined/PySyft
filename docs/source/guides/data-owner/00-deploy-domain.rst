@@ -123,7 +123,7 @@ After completing the Install Wizard, run the cell below to launch your very firs
 
    DOMAIN_NAME = "My Domain"
 
-   !hagrid launch {DOMAIN_NAME} to docker:8081 --tag=latest --tail=false --silent
+   !hagrid launch {DOMAIN_NAME} to docker:8081 --tag=latest --tail=false
 
 While this command runs, you will see various ``volumes`` and
 ``containers`` being created. Once this step is complete, move on to

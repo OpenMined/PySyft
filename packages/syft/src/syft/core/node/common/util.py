@@ -97,7 +97,6 @@ def upload_result_to_s3(
     # Retrieve fully qualified name to  use for pointer creation.
     obj_public_kwargs = getattr(data, "proxy_public_kwargs", {})
     data_fqn = str(get_fully_qualified_name(data))
-    data_dtype = str(type(data))
 
     # relative
     from ...tensor import Tensor
@@ -115,7 +114,7 @@ def upload_result_to_s3(
         asset_name=asset_name,
         dataset_name=dataset_name,
         node_id=domain_id,
-        dtype=data_dtype,
+        dtype=data.__class__.__name__,
         fqn=data_fqn,
         shape=data.shape,
         obj_public_kwargs=obj_public_kwargs,
@@ -244,7 +243,6 @@ def upload_to_s3_using_presigned(
         # Retrieve fully qualified name to  use for pointer creation.
         obj_public_kwargs = getattr(data, "proxy_public_kwargs", {})
         data_fqn = str(get_fully_qualified_name(data))
-        data_dtype = str(type(data))
 
         # relative
         from ...tensor import Tensor
@@ -262,7 +260,7 @@ def upload_to_s3_using_presigned(
             asset_name=asset_name,
             dataset_name=dataset_name,
             node_id=client.id,
-            dtype=data_dtype,
+            dtype=data.__class__.__name__,
             fqn=data_fqn,
             shape=data.shape,
             obj_public_kwargs=obj_public_kwargs,
