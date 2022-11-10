@@ -781,7 +781,7 @@ class Class(Callable):
                     client=client,
                     data=self,
                     chunk_size=chunk_size,
-                    asset_name=id_at_location.to_string(),
+                    asset_name=id_at_location.no_dash,
                 )
             else:
                 store_data = self

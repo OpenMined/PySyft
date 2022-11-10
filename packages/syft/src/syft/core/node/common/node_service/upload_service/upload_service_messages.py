@@ -74,9 +74,6 @@ class UploadDataMessage(SyftMessage, DomainMessageRegistry):
                 if not has_write_permissions:
                     raise Exception("You're not allowed to perform this operation.")
 
-            # Replace id_at_location string format to no_dash format
-            key = key.replace(id_at_location.to_string(), id_at_location.no_dash)
-
         s3_client = get_s3_client(settings=node.settings)
         result = s3_client.create_multipart_upload(Bucket=node.id.no_dash, Key=key)
         total_parts = math.ceil(self.payload.file_size / self.payload.chunk_size)
