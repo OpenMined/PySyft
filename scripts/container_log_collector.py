@@ -1,19 +1,16 @@
 # stdlib
 import os
-import platform
+from pathlib import Path
 import subprocess
 
 # Make a log directory
-cwd = os.getcwd()
-log_path = os.path.join(cwd, "logs")
-if not os.path.exists(log_path):
-    os.makedirs(log_path)
+log_path = Path("log")
+log_path.mkdir(exist_ok=True)
 
 # Get the github job name and create a directory for it
 job_name = os.getenv("GITHUB_JOB")
-job_path = os.path.join(log_path, job_name)
-if not os.path.exists(job_path):
-    os.makedirs(job_path)
+job_path = log_path / job_name
+job_path.mkdir(exist_ok=True)
 
 # Get all the containers running (per job)
 containers = (
@@ -36,15 +33,7 @@ for container in containers:
         "docker logs " + container, shell=True
     ).decode("utf-8")
 
-    # Cater for windows
-    if platform.system() == "Windows":
-        # Store container logs in a file if windows
-        container_name = container_name.replace("/", "\\")
-        with open(f"{job_path}{container_name}.log", "w") as f:
-            f.write(container_logs)
-            f.close()
-    else:
-        with open(f"{job_path}{container_name}.log", "w") as f:
-            f.write(container_logs)
-            f.close()
+    path = job_path / container_name
+    path.write_text(container_logs)
+
 print("============Log export completed for job: ", job_name)
