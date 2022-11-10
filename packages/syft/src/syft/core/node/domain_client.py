@@ -760,7 +760,7 @@ class DomainClient(Client):
         )
 
     def create_user(self, name: str, email: str, password: str, budget: float) -> dict:
-        if budget <= 0:
+        if budget < 0:
             raise ValueError(f"Budget should be a positive number, but got {budget}")
         try:
             self.users.create(name=name, email=email, password=password, budget=budget)

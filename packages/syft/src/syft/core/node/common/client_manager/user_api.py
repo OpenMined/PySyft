@@ -48,7 +48,11 @@ class UserRequestAPI(RequestAPI):
     def __delitem__(self, key: int) -> None:
         self.delete(user_id=key)
 
-    def create(self, **kwargs: Any) -> None:
+    def create(self, budget: float, **kwargs: Any) -> None:
+        if budget < 0:
+            raise ValueError(
+                f"Budget should be a positive number, but received {budget}!"
+            )
         try:
             if "pdf" in kwargs.keys():
                 response = self.client.routes[0].connection.send_files(  # type: ignore
