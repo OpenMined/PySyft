@@ -14,11 +14,9 @@ from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 import requests
 
-# syft absolute
-import syft as sy
-
 # relative
 from .. import GridURL
+from ... import __version__
 from ...core.io.connection import ClientConnection
 from ...core.io.route import SoloRoute
 from ...core.node.common.client import Client
@@ -220,12 +218,12 @@ def login(
     else:
         print("Logging into", str(node.name), "... done!")
 
-    if sy.__version__ != node.version:
+    if __version__ != node.version:
         print(
             "\n**Warning**: The syft version on your system and the node are different."
         )
         print(
-            f"Version on your system: {sy.__version__}\nVersion on the node: {node.version}"
+            f"Version on your system: {__version__}\nVersion on the node: {node.version}"
         )
         print()
 

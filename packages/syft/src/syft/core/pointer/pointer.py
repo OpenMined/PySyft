@@ -107,6 +107,7 @@ from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
 from ..common.pointer import AbstractPointer
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import serializable
+from ..common.serde.serialize import _serialize as serialize
 from ..common.uid import UID
 from ..io.address import Address
 from ..node.abstract.node import AbstractNode
@@ -426,7 +427,7 @@ class Pointer(AbstractPointer):
         :rtype: Pointer_PB
 
         .. note::
-            This method is purely an internal method. Please use sy.serialize(object) or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
@@ -434,15 +435,13 @@ class Pointer(AbstractPointer):
         return Pointer_PB(
             points_to_object_with_path=self.path_and_name,
             pointer_name=type(self).__name__,
-            id_at_location=sy.serialize(self.id_at_location),
-            location=sy.serialize(self.client.address),
+            id_at_location=serialize(self.id_at_location),
+            location=serialize(self.client.address),
             tags=self.tags,
             description=self.description,
             object_type=self.object_type,
             attribute_name=getattr(self, "attribute_name", ""),
-            public_shape=sy.serialize(
-                getattr(self, "public_shape", None), to_bytes=True
-            ),
+            public_shape=serialize(getattr(self, "public_shape", None), to_bytes=True),
         )
 
     @staticmethod
@@ -476,7 +475,7 @@ class Pointer(AbstractPointer):
             object_type=proto.object_type,
         )
 
-        out.public_shape = sy.deserialize(proto.public_shape, from_bytes=True)
+        out.public_shape = _deserialize(proto.public_shape, from_bytes=True)
         return out
 
     @staticmethod
