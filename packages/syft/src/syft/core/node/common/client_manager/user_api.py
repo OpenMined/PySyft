@@ -48,8 +48,9 @@ class UserRequestAPI(RequestAPI):
     def __delitem__(self, key: int) -> None:
         self.delete(user_id=key)
 
-    def create(self, budget: float, **kwargs: Any) -> None:
-        if budget < 0:
+    def create(self, **kwargs: Any) -> None:
+        budget = kwargs.get("budget")
+        if budget is not None and budget < 0:
             raise ValueError(
                 f"Budget should be a positive number, but received {budget}!"
             )
