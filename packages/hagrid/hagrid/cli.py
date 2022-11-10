@@ -324,6 +324,13 @@ def clean(location: str) -> None:
     type=str,
     help="Optional: launch node using the manifest template",
 )
+@click.option(
+    "--health_checks",
+    default="true",
+    required=False,
+    type=str,
+    help="Optional: turn on or off auto health checks post node launch",
+)
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
     try:
@@ -348,6 +355,8 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
         dry_run = False
 
+    health_checks = str_to_bool(cast(str, kwargs["health_checks"]))
+
     try:
         tail = False if "tail" in kwargs and not str_to_bool(kwargs["tail"]) else True
         silent = not tail
@@ -363,7 +372,11 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
         command = cmds[list(cmds.keys())[0]][0]  # type: ignore
         match_port = re.search("HTTP_PORT=[0-9]{1,5}", command)
 
-        if not dry_run and host_term.host == "docker" and match_port and silent:
+        run_health_checks = (
+            health_checks and not dry_run and host_term.host == "docker" and silent
+        )
+
+        if run_health_checks and match_port:
             rich.get_console().print(
                 "\n[bold green]⠋[bold blue] Checking Node API [/bold blue]\t"
             )
