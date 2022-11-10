@@ -17,6 +17,8 @@ from sqlalchemy.orm.session import Session
 import syft as sy
 
 # relative
+from ....common.serde.deserialize import _deserialize as deserialize
+from ....common.serde.serialize import _serialize as serialize
 from ....common.uid import UID
 from ....node.common.node_table.bin_obj_dataset import BinObjDataset
 from ....store import ObjectStore
@@ -87,7 +89,7 @@ class DictStore(ObjectStore):
             # serialized contents
             if isinstance(store_obj, bytes):
                 try:
-                    de = sy.deserialize(store_obj, from_bytes=True)
+                    de = deserialize(store_obj, from_bytes=True)
                     obj = de
                 except Exception as e:
                     raise Exception(f"Failed to deserialize obj at key {key_str}. {e}")
@@ -119,17 +121,17 @@ class DictStore(ObjectStore):
                 description=obj_metadata.description,
                 tags=obj_metadata.tags,
                 read_permissions=dict(
-                    sy.deserialize(
+                    deserialize(
                         bytes.fromhex(obj_metadata.read_permissions), from_bytes=True
                     )
                 ),
                 search_permissions=dict(
-                    sy.deserialize(
+                    deserialize(
                         bytes.fromhex(obj_metadata.search_permissions), from_bytes=True
                     )
                 ),
                 write_permissions=dict(
-                    sy.deserialize(
+                    deserialize(
                         bytes.fromhex(obj_metadata.write_permissions), from_bytes=True
                     )
                 ),
@@ -161,13 +163,13 @@ class DictStore(ObjectStore):
             if id(value) == id(store_obj):
                 raise Exception("Objects must use deepcopy or mutation can occur")
         except Exception as e:
-            # if we get a pickling error from deepcopy we can juse use sy.serialize
+            # if we get a pickling error from deepcopy we can juse use serialize
             # in theory not having to do this unless necessary means it should be a
             # little faster and less memory intensive
             if "Pickling" in str(e):
                 try:
                     # deepcopy falls back to pickle and some objects can't be pickled
-                    self.kv_store[key_uid] = sy.serialize(value, to_bytes=True)
+                    self.kv_store[key_uid] = serialize(value, to_bytes=True)
                 except Exception as ex:
                     raise Exception(f"Failed to serialize object {type(value)}. {ex}")
             else:
@@ -191,15 +193,15 @@ class DictStore(ObjectStore):
         metadata_obj.description = value.description
         metadata_obj.read_permissions = cast(
             bytes,
-            sy.serialize(sy.lib.python.Dict(value.read_permissions), to_bytes=True),
+            serialize(sy.lib.python.Dict(value.read_permissions), to_bytes=True),
         ).hex()
         metadata_obj.search_permissions = cast(
             bytes,
-            sy.serialize(sy.lib.python.Dict(value.search_permissions), to_bytes=True),
+            serialize(sy.lib.python.Dict(value.search_permissions), to_bytes=True),
         ).hex()
         metadata_obj.write_permissions = cast(
             bytes,
-            sy.serialize(sy.lib.python.Dict(value.write_permissions), to_bytes=True),
+            serialize(sy.lib.python.Dict(value.write_permissions), to_bytes=True),
         ).hex()
 
         if create_metadata:
