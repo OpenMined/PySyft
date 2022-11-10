@@ -3527,5 +3527,46 @@ def logs(domain_name: str) -> None:
     console = rich.console.Console()
     console.print(table)
 
+    # Print instructions on how to view the logs
+    console.print(
+        rich.panel.Panel(
+            """[bold green]
+    ℹ To view the live logs of a container, copy the log command and paste it into your
+        terminal.
+
+    ℹ The logs will be streamed to your terminal until you exit the command.
+
+    ℹ To exit the logs, press CTRL + C.
+
+    🚨 The [bold white]backend & backend_stream[/bold white] containers are the most important to monitor for debugging.
+
+
+                                                 Ctop 🦾
+                              [bold white]------------------------------------------[/bold white]
+
+    🧠 To learn about using [bold white]ctop[/bold white] to monitor your containers,
+         visit {{Add link to Rasswanth's blog post ctop tutorial}}}}
+
+
+                                            How to view this. 🙂
+                            [bold white]------------------------------------------[/bold white]
+
+    ℹ  To view this information again, run [bold white]hagrid logs {{DOMAIN_NAME}}[/bold white] in your terminal.
+
+    🚨 DOMAIN_NAME above is the name of your Hagrid deployment,without the curly braces.
+        E.g hagrid logs myhagriddeployment
+
+
+                                    HAPPY DEBUGGING! 🐛🐞🦗🦟🦠🦠🦠
+
+    [/bold green]""",
+            title="How to view logs",
+            border_style="white",
+            expand=False,
+            padding=1,
+            highlight=True,
+        )
+    )
+
 
 cli.add_command(logs)
