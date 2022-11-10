@@ -8,15 +8,14 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft absolute
-import syft as sy
-
 # relative
 from .....proto.core.node.common.action.smpc_action_seq_batch_message_pb2 import (
     SMPCActionSeqBatchMessage as SMPCActionSeqBatchMessage_PB,
 )
 from ....common.message import ImmediateSyftMessageWithoutReply
+from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serializable import serializable
+from ....common.serde.serialize import _serialize as serialize
 from ....common.uid import UID
 from ....io.address import Address
 from .smpc_action_message import SMPCActionMessage
@@ -57,9 +56,9 @@ class SMPCActionSeqBatchMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return SMPCActionSeqBatchMessage_PB(
-            smpc_actions=list(map(lambda x: sy.serialize(x), self.smpc_actions)),
-            address=sy.serialize(self.address),
-            msg_id=sy.serialize(self.id),
+            smpc_actions=list(map(lambda x: serialize(x), self.smpc_actions)),
+            address=serialize(self.address),
+            msg_id=serialize(self.id),
         )
 
     @staticmethod
@@ -78,11 +77,9 @@ class SMPCActionSeqBatchMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return SMPCActionSeqBatchMessage(
-            smpc_actions=list(
-                map(lambda x: sy.deserialize(blob=x), proto.smpc_actions)
-            ),
-            address=sy.deserialize(blob=proto.address),
-            msg_id=sy.deserialize(blob=proto.msg_id),
+            smpc_actions=list(map(lambda x: deserialize(blob=x), proto.smpc_actions)),
+            address=deserialize(blob=proto.address),
+            msg_id=deserialize(blob=proto.msg_id),
         )
 
     @staticmethod

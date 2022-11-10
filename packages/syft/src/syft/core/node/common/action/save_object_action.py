@@ -5,14 +5,13 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
-# syft absolute
-import syft as sy
-
 # relative
 from .....proto.core.node.common.action.save_object_pb2 import (
     SaveObjectAction as SaveObjectAction_PB,
 )
+from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serializable import serializable
+from ....common.serde.serialize import _serialize as serialize
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
@@ -55,13 +54,13 @@ class SaveObjectAction(ImmediateActionWithoutReply):
 
     def _object2proto(self) -> SaveObjectAction_PB:
         obj = self.obj._object2proto()
-        addr = sy.serialize(self.address)
+        addr = serialize(self.address)
         return SaveObjectAction_PB(obj=obj, address=addr)
 
     @staticmethod
     def _proto2object(proto: SaveObjectAction_PB) -> "SaveObjectAction":
-        obj = sy.deserialize(blob=proto.obj)
-        addr = sy.deserialize(blob=proto.address)
+        obj = deserialize(blob=proto.obj)
+        addr = deserialize(blob=proto.address)
         return SaveObjectAction(obj=obj, address=addr)
 
     @staticmethod
