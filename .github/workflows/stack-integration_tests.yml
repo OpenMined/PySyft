@@ -150,7 +150,7 @@ jobs:
         uses: actions/upload-artifact@master
         if: failure()
         with:
-          name: stack.test.integration-${{ matrix.os }}-${{ steps.job_name.outputs.job_name }}-logs-${{ steps.date.outputs.date }}
+          name: ${{ matrix.os }}-${{ steps.job_name.outputs.job_name }}-logs-${{ steps.date.outputs.date }}
           path: ./logs/${{ steps.job_name.outputs.job_name}}/
 
       - name: Mandatory Container cleanup
@@ -300,7 +300,7 @@ jobs:
         uses: actions/upload-artifact@master
         if: failure()
         with:
-          name: stack.test.integration.tls-${{ matrix.os }}-${{ steps.job_name.outputs.job_name }}-logs-${{ steps.date.outputs.date }}
+          name: ${{ matrix.os }}-${{ steps.job_name.outputs.job_name }}-logs-${{ steps.date.outputs.date }}
           path: ./logs/${{ steps.job_name.outputs.job_name}}/
 
       - name: Mandatory Container cleanup
@@ -446,7 +446,7 @@ jobs:
         uses: actions/upload-artifact@master
         if: failure()
         with:
-          name: stack.test.integration.tff-${{ matrix.os }}-${{ steps.job_name.outputs.job_name }}-logs-${{ steps.date.outputs.date }}
+          name: ${{ matrix.os }}-${{ steps.job_name.outputs.job_name }}-logs-${{ steps.date.outputs.date }}
           path: ./logs/${{ steps.job_name.outputs.job_name}}/
 
       - name: Mandatory Container cleanup
@@ -593,7 +593,7 @@ jobs:
         uses: actions/upload-artifact@master
         if: failure()
         with:
-          name: stack.test.integration.smpc-${{ steps.job_name.outputs.job_name }}-logs-${{ steps.date.outputs.date }}
+          name: ${{ steps.job_name.outputs.job_name }}-logs-${{ steps.date.outputs.date }}
           path: ./logs/${{ steps.job_name.outputs.job_name}}/
 
       - name: Mandatory Container cleanup
@@ -735,7 +735,7 @@ jobs:
         uses: actions/upload-artifact@master
         if: failure()
         with:
-          name: stack.test.integration.k8s-${{ matrix.os }}-${{ steps.job_name.outputs.job_name }}-logs-${{ steps.date.outputs.date }}
+          name: ${{ matrix.os }}-${{ steps.job_name.outputs.job_name }}-logs-${{ steps.date.outputs.date }}
           path: ./logs/${{ steps.job_name.outputs.job_name}}/
 
       - name: Mandatory Container cleanup
@@ -851,7 +851,7 @@ jobs:
         uses: actions/upload-artifact@master
         if: failure()
         with:
-          name: stack.test.course-${{ matrix.os }}-${{ steps.job_name.outputs.job_name }}-logs-${{ steps.date.outputs.date }}
+          name: ${{ matrix.os }}-${{ steps.job_name.outputs.job_name }}-logs-${{ steps.date.outputs.date }}
           path: ./logs/${{ steps.job_name.outputs.job_name}}/
 
       - name: Mandatory Container cleanup
