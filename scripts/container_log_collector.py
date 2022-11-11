@@ -14,27 +14,23 @@ job_path.mkdir(exist_ok=True)
 
 # Get all the containers running (per job)
 containers = (
-    subprocess.check_output("docker ps -a -q", shell=True).decode("utf-8").split()
+    subprocess.check_output("docker ps --format '{{.Names}}'", shell=True)
+    .decode("utf-8")
+    .split()
 )
 
 # Loop through the container ids and create a log file for each in the job directory
 for container in containers:
     # Get the container name
-    container_name = (
-        subprocess.check_output(
-            "docker inspect --format '{{.Name}}' " + container, shell=True
-        )
-        .decode("utf-8")
-        .strip()
-    )
+
+    container_name = container.replace("'", "")
 
     # Get the container logs
     container_logs = subprocess.check_output(
-        "docker logs " + container, shell=True
+        "docker logs " + container_name, shell=True, stderr=subprocess.STDOUT
     ).decode("utf-8")
 
-    unquoted_name = container_name.replace("'", "")
-    path = job_path / unquoted_name
+    path = job_path / container_name
     path.write_text(container_logs)
 
 print("============Log export completed for job: ", job_name)
