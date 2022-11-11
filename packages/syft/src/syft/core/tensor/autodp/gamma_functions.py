@@ -37,9 +37,6 @@ def generate_ops() -> Dict[GAMMA_TENSOR_OP, Callable]:
 
         return wrapped_jnp
 
-    def _reciprocal(state: dict) -> jax.numpy.DeviceArray:
-        return jnp.divide(1, *reconstruct_from_inputs(state.values()))
-
     VALID_FLATTEN_TYPES = ["C", "F", "A", "K"]
 
     def get_flatten_type(order: str) -> Callable:
@@ -77,7 +74,6 @@ def generate_ops() -> Dict[GAMMA_TENSOR_OP, Callable]:
         GAMMA_TENSOR_OP.NOT_EQUAL: jnp.not_equal,
         GAMMA_TENSOR_OP.LESS: jnp.less,
         GAMMA_TENSOR_OP.LESS_EQUAL: jnp.less_equal,
-        GAMMA_TENSOR_OP.EXP: jnp.exp,
         GAMMA_TENSOR_OP.LOG: jnp.log,
         GAMMA_TENSOR_OP.TRANSPOSE: jnp.transpose,
         GAMMA_TENSOR_OP.SUM: jnp.sum,
@@ -127,14 +123,13 @@ def generate_ops() -> Dict[GAMMA_TENSOR_OP, Callable]:
         GAMMA_TENSOR_OP.ARGSORT: jnp.argsort,
         GAMMA_TENSOR_OP.REPEAT: jnp.repeat,
         GAMMA_TENSOR_OP.DIVMOD: jnp.divmod,
-        GAMMA_TENSOR_OP.RECIPROCAL: _reciprocal,
         GAMMA_TENSOR_OP.FLATTEN_C: get_flatten_type(order="C"),
         GAMMA_TENSOR_OP.FLATTEN_F: get_flatten_type(order="F"),
         GAMMA_TENSOR_OP.FLATTEN_A: get_flatten_type(order="A"),
         GAMMA_TENSOR_OP.FLATTEN_K: get_flatten_type(order="K"),
     }
 
-    non_generic_funcs = [GAMMA_TENSOR_OP.NOOP, GAMMA_TENSOR_OP.RECIPROCAL]
+    non_generic_funcs = [GAMMA_TENSOR_OP.NOOP]
 
     mapper = dict()
 
