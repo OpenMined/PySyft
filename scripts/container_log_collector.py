@@ -4,7 +4,7 @@ from pathlib import Path
 import subprocess
 
 # Make a log directory
-log_path = Path("log")
+log_path = Path("logs")
 log_path.mkdir(exist_ok=True)
 
 # Get the github job name and create a directory for it
