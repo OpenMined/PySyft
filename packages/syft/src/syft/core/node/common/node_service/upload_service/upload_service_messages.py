@@ -67,12 +67,7 @@ class UploadDataMessage(SyftMessage, DomainMessageRegistry):
             old_obj = node.store.get_or_none(key=id_at_location, proxy_only=True)
 
             if old_obj:
-                # Check if users' verify key is a subset of write_permissions set
-                has_write_permissions = (
-                    old_obj.write_permissions.get(verify_key, None) is not None
-                )
-                if not has_write_permissions:
-                    raise Exception("You're not allowed to perform this operation.")
+                raise Exception("You're not allowed to perform this operation.")
 
         s3_client = get_s3_client(settings=node.settings)
         result = s3_client.create_multipart_upload(Bucket=node.id.no_dash, Key=key)

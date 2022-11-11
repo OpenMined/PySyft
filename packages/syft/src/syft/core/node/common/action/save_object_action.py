@@ -47,12 +47,7 @@ class SaveObjectAction(ImmediateActionWithoutReply):
         old_obj = node.store.get_or_none(key=self.obj.id, proxy_only=True)
 
         if old_obj:
-            # Check if users' verify key is a subset of write_permissions set
-            has_write_permissions = (
-                old_obj.write_permissions.get(verify_key, None) is not None
-            )
-            if not has_write_permissions:
-                raise Exception("You're not allowed to perform this operation.")
+            raise Exception("You're not allowed to perform this operation.")
 
         self.obj.read_permissions = {
             node.verify_key: node.id,
