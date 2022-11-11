@@ -5,7 +5,6 @@ from pathlib import Path
 from queue import Queue
 import re
 import shutil
-import signal as sys_signal
 import socket
 import stat
 import subprocess  # nosec
@@ -374,7 +373,9 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
         return
 
 
-def check_errors(line: str, pid: int, cmd_name: str, progress_bar: Progress) -> None:
+def check_errors(
+    line: str, process: subprocess.Popen, cmd_name: str, progress_bar: Progress
+) -> None:
     task = progress_bar.tasks[0]
     if "Error response from daemon: " in line:
         if progress_bar:
@@ -390,7 +391,7 @@ def check_errors(line: str, pid: int, cmd_name: str, progress_bar: Progress) -> 
             console = rich.get_console()
             progress_bar.console.quiet = False
             console.print(f"\n\n [red] ERROR [/red]: [bold]{line}[/bold]\n")
-        os.killpg(os.getpgid(pid), sys_signal.SIGTERM)
+        process.terminate()
         raise Exception
 
 
@@ -483,13 +484,13 @@ DOCKER_FUNC_MAP = {
 
 
 def read_thread_logs(
-    progress_bar: Progress, pid: int, queue: Queue, cmd_name: str
+    progress_bar: Progress, process: subprocess.Popen, queue: Queue, cmd_name: str
 ) -> None:
     line = queue.get()
     line = str(line, encoding="utf-8").strip()
 
     if progress_bar:
-        check_errors(line, pid, cmd_name, progress_bar=progress_bar)
+        check_errors(line, process, cmd_name, progress_bar=progress_bar)
         DOCKER_FUNC_MAP[cmd_name](line, cmd_name, progress_bar=progress_bar)
 
 
@@ -571,12 +572,12 @@ def process_cmd(
                     # Creates two threads to get docker stdout and sterr
                     logs_queue = create_thread_logs(process=process)
 
-                    read_thread_logs(progress_bar, process.pid, logs_queue, cmd_name)
+                    read_thread_logs(progress_bar, process, logs_queue, cmd_name)
                     while process.poll() != 0:
                         while not logs_queue.empty():
                             # Read stdout and sterr to check errors or update progress bar.
                             read_thread_logs(
-                                progress_bar, process.pid, logs_queue, cmd_name
+                                progress_bar, process, logs_queue, cmd_name
                             )
                 else:
                     if progress_bar:
