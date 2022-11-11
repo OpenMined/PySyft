@@ -370,6 +370,12 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
             )
             port = match_port.group().replace("HTTP_PORT=", "")
             check_status("localhost" + ":" + port)
+            node_name = verb.get_named_term_type(name="node_name").raw_input
+            rich.get_console().print(
+                rich.panel.Panel.fit(
+                    f"🚨🚨🚨 To view container logs run [bold red] hagrid logs {node_name} [/bold red]\t"
+                )
+            )
     except Exception as e:
         print(f"Error: {e}\n\n")
         return
@@ -2786,6 +2792,15 @@ def from_url(url: str) -> Tuple[str, str, int, str, Union[Any, str]]:
         raise e
 
 
+"""
+get_container_name()
+get_docker_status()
+get_host_name()
+get_all_running_containers()
+
+"""
+
+
 def get_docker_status(ip_address: str) -> Tuple[bool, Tuple[str, str]]:
     proxy_containers = shell("docker ps --format '{{.Names}}' | grep 'proxy' ").split()
     backend_containers = shell(
@@ -3497,6 +3512,11 @@ cli.add_command(ssh)
 @click.command(help="Get the logs of the HAGrid service")
 @click.argument("domain_name", type=str)
 def logs(domain_name: str) -> None:
+
+    """
+    host_name = get_host_name(domain_name)
+
+    """
     container_ids = (
         subprocess.check_output(  # nosec
             f"docker ps -qf name=^{domain_name}-*", shell=True
