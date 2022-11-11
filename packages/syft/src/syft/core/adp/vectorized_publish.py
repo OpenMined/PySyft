@@ -162,6 +162,10 @@ def publish(
                 raise Exception(
                     "NaN or Inf values in bounds not allowed in PySyft for safety reasons."
                     "Please contact the OpenMined support team for help."
+                    "For that you can either:"
+                    " * describe your issue on our Slack #support channel. To join: https://openmined.slack.com/"
+                    " * send us an email describing your problem at support@openmined.org"
+                    " * leave us an issue here: https://github.com/OpenMined/PySyft/issues"
                 )
             rdp_constants = compute_rdp_constant(rdp_params, private=False)
         else:
@@ -174,6 +178,10 @@ def publish(
             raise Exception(
                 "Negative budget spend not allowed in PySyft for safety reasons."
                 "Please contact the OpenMined support team for help."
+                "For that you can either:"
+                " * describe your issue on our Slack #support channel. To join: https://openmined.slack.com/"
+                " * send us an email describing your problem at support@openmined.org"
+                " * leave us an issue here: https://github.com/OpenMined/PySyft/issues"
             )
 
         epsilon_spend = max(
@@ -187,6 +195,10 @@ def publish(
             raise Exception(
                 "Negative budget spend not allowed in PySyft for safety reasons."
                 "Please contact the OpenMined support team for help."
+                "For that you can either:"
+                " * describe your issue on our Slack #support channel. To join: https://openmined.slack.com/"
+                " * send us an email describing your problem at support@openmined.org"
+                " * leave us an issue here: https://github.com/OpenMined/PySyft/issues"
             )
 
         # Step 3: Check if the user has enough privacy budget for this query
