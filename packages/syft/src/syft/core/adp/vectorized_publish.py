@@ -129,6 +129,8 @@ def publish(
 
     # if we dont return below we will terminate if the tensor gets replaced with zeros
     prev_tensor = None
+    print("VALUE: ", value)
+    print("Tensor: ", tensor.child)
 
     while can_reduce_further(value=value, zeros_like=zeros_like):
         if prev_tensor is None:
@@ -158,7 +160,7 @@ def publish(
         if any(np.isnan(l2_norms)):
             if any(np.isnan(l2_norm_bounds)) or any(np.isinf(l2_norm_bounds)):
                 raise Exception(
-                    "Negative budget spend not allowed in PySyft for safety reasons."
+                    "NaN or Inf values in bounds not allowed in PySyft for safety reasons."
                     "Please contact the OpenMined support team for help."
                 )
             rdp_constants = compute_rdp_constant(rdp_params, private=False)
@@ -189,6 +191,8 @@ def publish(
 
         # Step 3: Check if the user has enough privacy budget for this query
         privacy_budget = get_budget_for_user(verify_key=ledger.user_key)
+        print(privacy_budget)
+        print(epsilon_spend)
         has_budget = epsilon_spend <= privacy_budget
 
         # if we see the same budget and spend twice in a row we have failed to reduce it
