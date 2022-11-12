@@ -14,8 +14,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
 
 # relative
+from .....lib.python.dict import SyftDict as SyftDict
 from ....common.serde.deserialize import _deserialize as deserialize
-from .....lib.python.dict import Dict
 from ....common.serde.serialize import _serialize as serialize
 from ....common.uid import UID
 from ....node.common.node_table.bin_obj_dataset import BinObjDataset
@@ -191,15 +191,15 @@ class DictStore(ObjectStore):
         metadata_obj.description = value.description
         metadata_obj.read_permissions = cast(
             bytes,
-            serialize(Dict(value.read_permissions), to_bytes=True),
+            serialize(SyftDict(value.read_permissions), to_bytes=True),
         ).hex()
         metadata_obj.search_permissions = cast(
             bytes,
-            serialize(Dict(value.search_permissions), to_bytes=True),
+            serialize(SyftDict(value.search_permissions), to_bytes=True),
         ).hex()
         metadata_obj.write_permissions = cast(
             bytes,
-            serialize(Dict(value.write_permissions), to_bytes=True),
+            serialize(SyftDict(value.write_permissions), to_bytes=True),
         ).hex()
 
         if create_metadata:
