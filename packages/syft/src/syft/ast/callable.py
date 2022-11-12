@@ -10,24 +10,25 @@ from typing import Optional
 from typing import Union
 
 # relative
-from .. import ast
-from .. import lib
+from ..common.lib_ast_shares import downcast_args_and_kwargs
 from ..core.node.abstract.node import AbstractNodeClient
 from ..core.node.common.action.function_or_constructor_action import (
     RunFunctionOrConstructorAction,
 )
 from ..logger import traceback_and_raise
 from ..util import inherit_tags
+from .attribute import Attribute
 from .util import module_type
+from .util import pointerize_args_and_kwargs
 
 
-class Callable(ast.attribute.Attribute):
+class Callable(Attribute):
     """Represent a method (can be static), global function, or constructor which can be directly executed."""
 
     def __init__(
         self,
         path_and_name: str,
-        parent: ast.attribute.Attribute,
+        parent: Attribute,
         object_ref: Optional[Any] = None,
         return_type_name: Optional[str] = None,
         client: Optional[AbstractNodeClient] = None,
@@ -85,10 +86,10 @@ class Callable(ast.attribute.Attribute):
             (
                 downcast_args,
                 downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+            ) = downcast_args_and_kwargs(args=args, kwargs=kwargs)
 
             # then we convert anything which isn't a pointer into a pointer
-            pointer_args, pointer_kwargs = ast.klass.pointerize_args_and_kwargs(
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
                 args=downcast_args,
                 kwargs=downcast_kwargs,
                 client=self.client,
@@ -157,7 +158,7 @@ class Callable(ast.attribute.Attribute):
                 ValueError("Module cannot be an attribute of Callable.")
             )
 
-        self.attrs[path[index]] = ast.callable.Callable(
+        self.attrs[path[index]] = Callable(
             path_and_name=".".join(path[: index + 1]),
             object_ref=attr_ref,
             return_type_name=return_type_name,
