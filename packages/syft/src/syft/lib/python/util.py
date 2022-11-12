@@ -1,9 +1,5 @@
 # stdlib
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Tuple
-from typing import Union
 
 # relative
 from .primitive_factory import PrimitiveFactory
@@ -17,9 +13,9 @@ def downcast(value: Any, recurse: bool = True) -> Any:
     else:
         return value
 
+
 def upcast(value: Any) -> Any:
     upcast_method = getattr(value, "upcast", None)
     if upcast_method is not None:
         return upcast_method()
     return value
-

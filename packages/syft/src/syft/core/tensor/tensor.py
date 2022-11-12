@@ -17,8 +17,8 @@ import pandas as pd
 import torch as th
 
 # relative
-from ... import lib
-from ...ast.klass import pointerize_args_and_kwargs
+from ...ast.util import pointerize_args_and_kwargs
+from ...common.lib_ast_shares import downcast_args_and_kwargs
 from ...core.adp.data_subject_ledger import DataSubjectLedger
 from ...util import inherit_tags
 from ..common.serde.capnp import CapnpModule
@@ -128,9 +128,7 @@ class TensorPointer(Pointer):
             (
                 downcast_args,
                 downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(
-                args=[self, other], kwargs=kwargs
-            )
+            ) = downcast_args_and_kwargs(args=[self, other], kwargs=kwargs)
 
             # then we convert anything which isnt a pointer into a pointer
             pointer_args, pointer_kwargs = pointerize_args_and_kwargs(

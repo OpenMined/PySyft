@@ -12,6 +12,7 @@ from nacl.signing import VerifyKey
 # relative
 # from . import context
 from ..... import lib
+from .....common.lib_ast_shares import upcast_args_and_kwargs
 from .....logger import traceback_and_raise
 from .....logger import warning
 from .....proto.core.node.common.action.run_class_method_pb2 import (
@@ -153,7 +154,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         (
             upcasted_args,
             upcasted_kwargs,
-        ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
+        ) = upcast_args_and_kwargs(resolved_args, resolved_kwargs)
 
         resolved_self_previous_bytes: Optional[bytes] = None
         if self.is_static:

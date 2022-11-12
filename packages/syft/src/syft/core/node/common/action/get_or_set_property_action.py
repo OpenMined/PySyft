@@ -14,6 +14,7 @@ from nacl.signing import VerifyKey
 
 # relative
 from ..... import lib
+from .....common.lib_ast_shares import upcast_args_and_kwargs
 from .....proto.core.node.common.action.get_set_property_pb2 import (
     GetOrSetPropertyAction as GetOrSetPropertyAction_PB,
 )
@@ -102,7 +103,7 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         (
             upcasted_args,
             upcasted_kwargs,
-        ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
+        ) = upcast_args_and_kwargs(resolved_args, resolved_kwargs)
 
         data = resolved_self.data
 

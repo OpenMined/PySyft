@@ -12,6 +12,7 @@ from nacl.signing import VerifyKey
 
 # relative
 from ..... import lib
+from .....common.lib_ast_shares import upcast_args_and_kwargs
 from .....logger import traceback_and_raise
 from .....proto.core.node.common.action.run_function_or_constructor_pb2 import (
     RunFunctionOrConstructorAction as RunFunctionOrConstructorAction_PB,
@@ -126,7 +127,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         (
             upcasted_args,
             upcasted_kwargs,
-        ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
+        ) = upcast_args_and_kwargs(resolved_args, resolved_kwargs)
 
         # execute the method with the newly upcasted args and kwargs
         result = method(*upcasted_args, **upcasted_kwargs)

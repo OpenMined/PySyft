@@ -25,8 +25,8 @@ from numpy.typing import NDArray
 from scipy.optimize import shgo
 
 # relative
-from .... import lib
-from ....ast.klass import pointerize_args_and_kwargs
+from ....common.lib_ast_shares import downcast_args_and_kwargs
+from ....ast.util import pointerize_args_and_kwargs
 from ....core.node.common.action.get_or_set_property_action import (
     GetOrSetPropertyAction,
 )
@@ -195,7 +195,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             (
                 downcast_args,
                 downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=[other], kwargs={})
+            ) = downcast_args_and_kwargs(args=[other], kwargs={})
 
             # then we convert anything which isnt a pointer into a pointer
             pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
@@ -387,7 +387,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             (
                 downcast_args,
                 downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+            ) = downcast_args_and_kwargs(args=args, kwargs=kwargs)
 
             # then we convert anything which isnt a pointer into a pointer
             pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
@@ -1154,7 +1154,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             (
                 downcast_args,
                 downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+            ) = downcast_args_and_kwargs(args=args, kwargs=kwargs)
 
             # then we convert anything which isnt a pointer into a pointer
             pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
@@ -1490,7 +1490,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             (
                 downcast_args,
                 downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=[], kwargs={})
+            ) = downcast_args_and_kwargs(args=[], kwargs={})
 
             # then we convert anything which isnt a pointer into a pointer
             pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
@@ -1571,7 +1571,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             (
                 downcast_args,
                 downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=[], kwargs={})
+            ) = downcast_args_and_kwargs(args=[], kwargs={})
 
             # then we convert anything which isnt a pointer into a pointer
             pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
@@ -1863,7 +1863,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             (
                 downcast_args,
                 downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=[], kwargs={})
+            ) = downcast_args_and_kwargs(args=[], kwargs={})
 
             # then we convert anything which isnt a pointer into a pointer
             pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
@@ -1916,7 +1916,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             (
                 downcast_args,
                 downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=[], kwargs={})
+            ) = downcast_args_and_kwargs(args=[], kwargs={})
 
             # then we convert anything which isnt a pointer into a pointer
             pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
@@ -1975,7 +1975,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             (
                 downcast_args,
                 downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=[], kwargs={})
+            ) = downcast_args_and_kwargs(args=[], kwargs={})
 
             # then we convert anything which isnt a pointer into a pointer
             pointer_args, pointer_kwargs = pointerize_args_and_kwargs(

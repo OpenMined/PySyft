@@ -8,7 +8,7 @@ from typing import Optional
 from nacl.signing import VerifyKey
 
 # relative
-from ..... import lib
+from .....common.lib_ast_shares import upcast_args_and_kwargs
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
@@ -77,7 +77,7 @@ class BeaverPrimitiveAction(ImmediateActionWithoutReply):
         (
             upcasted_args,
             upcasted_kwargs,
-        ) = lib.python.util.upcast_args_and_kwargs(self.args, self.kwargs)
+        ) = upcast_args_and_kwargs(self.args, self.kwargs)
 
         result = populate_store(*upcasted_args, **upcasted_kwargs)  # type: ignore
 

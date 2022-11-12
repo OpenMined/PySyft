@@ -18,7 +18,7 @@ import warnings
 
 # relative
 from .. import ast
-from .. import lib
+from ..common.lib_ast_shares import downcast_args_and_kwargs
 from ..core.common.group import VERIFYALL
 from ..core.common.uid import UID
 from ..core.node.common.action.get_or_set_property_action import GetOrSetPropertyAction
@@ -151,7 +151,7 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
         (
             downcast_args,
             downcast_kwargs,
-        ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+        ) = downcast_args_and_kwargs(args=args, kwargs=kwargs)
 
         # then we convert anything which isnt a pointer into a pointer
         pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
@@ -214,7 +214,7 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
             (
                 downcast_args,
                 downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+            ) = downcast_args_and_kwargs(args=args, kwargs=kwargs)
 
             # then we convert anything which isnt a pointer into a pointer
             pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
@@ -293,7 +293,7 @@ def generate_class_property_function(
             (
                 downcast_args,
                 downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+            ) = downcast_args_and_kwargs(args=args, kwargs=kwargs)
 
             # then we convert anything which isnt a pointer into a pointer
             pointer_args, pointer_kwargs = pointerize_args_and_kwargs(

@@ -13,6 +13,7 @@ from nacl.signing import VerifyKey
 
 # relative
 from ..... import lib
+from .....common.lib_ast_shares import upcast_args_and_kwargs
 from .....logger import traceback_and_raise
 from .....proto.core.node.common.action.run_class_method_smpc_pb2 import (
     RunClassMethodSMPCAction as RunClassMethodSMPCAction_PB,
@@ -126,7 +127,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         (
             upcasted_args,
             upcasted_kwargs,
-        ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
+        ) = upcast_args_and_kwargs(resolved_args, resolved_kwargs)
 
         method = node.lib_ast(self.path)
         seed_id_locations = self.seed_id_locations
@@ -289,7 +290,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
 #     (
 #         upcasted_args,
 #         upcasted_kwargs,
-#     ) = lib.python.util.upcast_args_and_kwargs(args, kwargs)
+#     ) = upcast_args_and_kwargs(args, kwargs)
 #     logger.warning(func)
 
 #     if msg.name_action in {"spdz_multiply", "spdz_mask"}:
