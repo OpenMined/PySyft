@@ -6,12 +6,17 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Union
 
 # relative
-from .. import ast
 from ..core.node.abstract.node import AbstractNodeClient
 from ..logger import traceback_and_raise
+
+if TYPE_CHECKING:
+    # relative
+    from .klass import Class
+    from .property import Property
 
 
 class Attribute:
@@ -75,11 +80,7 @@ class Attribute:
 
     def _extract_attr_type(
         self,
-        container: Union[
-            List["ast.klass.Class"],
-            List["ast.module.Module"],
-            List["ast.property.Property"],
-        ],
+        container: List["Attribute"],
         field: str,
     ) -> None:
         """Helper function to extract a class of nodes whose parent is the current node.
@@ -96,34 +97,38 @@ class Attribute:
             container.extend(sub_prop)
 
     @property
-    def classes(self) -> List["ast.klass.Class"]:
+    def classes(self) -> List["Class"]:  # type: ignore
         """Extract all classes from the current node attributes.
 
         Returns:
             The list of classes in the current AST node attributes.
         """
+
         out = []
 
-        if isinstance(self, ast.klass.Class):
+        # TODO: Maybe replace it by self.__class__.__name__ == "Class"
+        if getattr(self, "instance_type", None) == "class":
             out.append(self)
 
         self._extract_attr_type(out, "classes")
-        return out
+        return out  # type: ignore
 
     @property
-    def properties(self) -> List["ast.property.Property"]:
+    def properties(self) -> List["Property"]:  # type: ignore
         """Extract all properties from the current node attributes.
 
         Returns:
             The list of properties in the current AST node attributes.
         """
+
         out = []
 
-        if isinstance(self, ast.property.Property):
+        # TODO: Maybe replace it by self.__class__.__name__ == "Property"
+        if getattr(self, "instance_type", None) == "property":
             out.append(self)
 
         self._extract_attr_type(out, "properties")
-        return out
+        return out  # type: ignore
 
     def query(
         self, path: Union[List[str], str], obj_type: Optional[type] = None

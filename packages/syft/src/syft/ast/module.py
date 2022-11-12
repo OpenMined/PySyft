@@ -69,6 +69,8 @@ class Module(ast.attribute.Attribute):
             parent=parent,
         )
 
+        self.instance_type = "module"
+
         if object_ref is None and self.name:
             try:
                 self.object_ref = sys.modules[path_and_name if path_and_name else ""]

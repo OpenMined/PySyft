@@ -8,11 +8,11 @@ from typing import Optional
 from typing import Union
 
 # relative
-from .. import ast
 from ..logger import traceback_and_raise
+from .attribute import Attribute
 
 
-class Property(ast.attribute.Attribute):
+class Property(Attribute):
     """Creates property objects which implements getter and setter objects.
 
     Each valid action on AST triggers GetSetPropertyAction.
@@ -21,7 +21,7 @@ class Property(ast.attribute.Attribute):
     def __init__(
         self,
         path_and_name: str,
-        parent: ast.attribute.Attribute,
+        parent: Attribute,
         object_ref: Optional[Any] = None,
         return_type_name: Optional[str] = None,
         client: Optional[Any] = None,
@@ -42,7 +42,7 @@ class Property(ast.attribute.Attribute):
             return_type_name=return_type_name,
             client=client,
         )
-
+        self.instance_type = "property"
         self.is_static = False
 
     def __call__(

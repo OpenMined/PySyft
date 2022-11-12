@@ -540,6 +540,9 @@ class Class(Callable):
             client=client,
             parent=parent,
         )
+
+        self.instance_type = "class"
+
         if self.path_and_name is not None:
             self.pointer_name = self.path_and_name.split(".")[-1] + "Pointer"
 
