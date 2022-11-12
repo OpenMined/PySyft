@@ -188,7 +188,6 @@ def exec_node_command(command: str, node_name: str) -> None:
 
 @pytest.mark.network
 def test_auto_connect_network_to_self() -> None:
-    assert False  # Remove before merge.
     # wait for NETWORK_CHECK_INTERVAL to trigger auto reconnect
     retry_time = 20
     while retry_time > 0:
