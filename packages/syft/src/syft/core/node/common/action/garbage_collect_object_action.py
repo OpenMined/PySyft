@@ -5,15 +5,14 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
-# syft absolute
-import syft as sy
-
 # relative
 from .....logger import critical
 from .....proto.core.node.common.action.garbage_collect_object_pb2 import (
     GarbageCollectObjectAction as GarbageCollectObjectAction_PB,
 )
 from ....common.serde.serializable import serializable
+from ....common.serde.serialize import _serialize as serialize
+from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.uid import UID
 from ....io.address import Address
 from ...abstract.node import AbstractNode
@@ -39,8 +38,8 @@ class GarbageCollectObjectAction(EventualActionWithoutReply):
 
     def _object2proto(self) -> GarbageCollectObjectAction_PB:
 
-        id_pb = sy.serialize(self.id_at_location)
-        addr = sy.serialize(self.address)
+        id_pb = serialize(self.id_at_location)
+        addr = serialize(self.address)
 
         return GarbageCollectObjectAction_PB(
             id_at_location=id_pb,
@@ -52,8 +51,8 @@ class GarbageCollectObjectAction(EventualActionWithoutReply):
         proto: GarbageCollectObjectAction_PB,
     ) -> "GarbageCollectObjectAction":
 
-        id_at_location = sy.deserialize(blob=proto.id_at_location)
-        addr = sy.deserialize(blob=proto.address)
+        id_at_location = deserialize(blob=proto.id_at_location)
+        addr = deserialize(blob=proto.address)
 
         return GarbageCollectObjectAction(
             id_at_location=id_at_location,

@@ -7,9 +7,6 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
-# syft absolute
-import syft as sy
-
 # relative
 from .....proto.core.node.common.action.beaver_action_pb2 import (
     BeaverAction as BeaverAction_PB,
@@ -23,6 +20,7 @@ from ....store.storeable_object import StorableObject
 from ....tensor.smpc.share_tensor import ShareTensor
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
+from .....lib.python.list import List as SyftList
 
 BEAVER_CACHE: Dict[UID, StorableObject] = {}  # Global cache for spdz mask values
 
@@ -67,14 +65,14 @@ class BeaverAction(ImmediateActionWithoutReply):
 
         obj = BEAVER_CACHE.get(id_at_location, None)  # type: ignore
         if obj is None:
-            list_data = sy.lib.python.List([data])
+            list_data = SyftList([data])
             result = StorableObject(
                 id=id_at_location,
                 data=list_data,
                 read_permissions={},
             )
             BEAVER_CACHE[id_at_location] = result  # type: ignore
-        elif isinstance(obj.data, sy.lib.python.List):
+        elif isinstance(obj.data, SyftList):
             list_obj: List = obj.data
             list_obj.append(data)
             result = StorableObject(

@@ -7,8 +7,6 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from pydantic import BaseSettings
 
-# syft absolute
-import syft as sy
 
 # relative
 from ...logger import traceback_and_raise
@@ -133,7 +131,8 @@ class StorableObject(AbstractStorableObject):
     def _object2proto(self) -> StorableObject_PB:
         # relative
         from ...lib.python.bytes import Bytes
-
+        from ...lib.python.dict import Dict
+        
         proto = StorableObject_PB()
 
         # Step 1: Serialize the id to protobuf and copy into protobuf
@@ -169,21 +168,21 @@ class StorableObject(AbstractStorableObject):
 
         # Step 6: save read permissions
         if len(self.read_permissions) > 0:
-            permission_data = sy.lib.python.Dict()
+            permission_data = Dict()
             for k, v in self.read_permissions.items():
                 permission_data[k] = v
             proto.read_permissions = _serialize(permission_data, to_bytes=True)
 
         # Step 7: save search permissions
         if len(self.search_permissions.keys()) > 0:
-            permission_data = sy.lib.python.Dict()
+            permission_data = Dict()
             for k, v in self.search_permissions.items():
                 permission_data[k] = v
             proto.search_permissions = _serialize(permission_data, to_bytes=True)
 
         # Step 8: save write permissions
         if len(self.write_permissions.keys()) > 0:
-            permission_data = sy.lib.python.Dict()
+            permission_data = Dict()
             for k, v in self.write_permissions.items():
                 permission_data[k] = v
             proto.write_permissions = _serialize(permission_data, to_bytes=True)

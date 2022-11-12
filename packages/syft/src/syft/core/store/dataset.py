@@ -8,9 +8,6 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft absolute
-import syft as sy
-
 # relative
 from ...proto.core.store.dataset_pb2 import Dataset as Dataset_PB
 from ...util import get_fully_qualified_name
@@ -100,6 +97,7 @@ class Dataset:
         self.data = [el for el in self.data if el.id != _id]
 
     def _object2proto(self) -> Dataset_PB:
+        from ...lib.python.dict import Dict
         proto = Dataset_PB()
 
         # Step 1: Serialize the id to protobuf and copy into protobuf
@@ -129,14 +127,14 @@ class Dataset:
 
         # Step 6: save read permissions
         if len(self.read_permissions.keys()) > 0:
-            permission_data = sy.lib.python.Dict()
+            permission_data = Dict()
             for k, v in self.read_permissions.items():
                 permission_data[k] = v
             proto.read_permissions = serialize(permission_data, to_bytes=True)
 
         # Step 7: save search permissions
         if len(self.search_permissions.keys()) > 0:
-            permission_data = sy.lib.python.Dict()
+            permission_data = Dict()
             for k, v in self.search_permissions.items():
                 permission_data[k] = v
             proto.search_permissions = serialize(permission_data, to_bytes=True)

@@ -96,8 +96,6 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 import requests
 
-# syft absolute
-import syft as sy
 
 # relative
 from ...logger import debug
@@ -458,10 +456,11 @@ class Pointer(AbstractPointer):
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
+        from ...lib import lib_ast
         # TODO: we need _proto2object to include a reference to the node doing the
         # deserialization so that we can convert location into a client object. At present
         # it is an address object which will cause things to break later.
-        points_to_type = sy.lib_ast.query(proto.points_to_object_with_path)
+        points_to_type = lib_ast.query(proto.points_to_object_with_path)
         pointer_type = getattr(points_to_type, proto.pointer_name)
 
         # WARNING: This is sending a serialized Address back to the constructor

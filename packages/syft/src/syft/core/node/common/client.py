@@ -14,11 +14,9 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import pandas as pd
 
-# syft absolute
-import syft as sy
-
 # relative
 from ....grid import GridURL
+from ....lib import create_lib_ast
 from ....logger import critical
 from ....logger import debug
 from ....logger import error
@@ -133,7 +131,7 @@ class Client(AbstractNodeClient):
         return meta.node, meta.name, meta.id
 
     def install_supported_frameworks(self) -> None:
-        self.lib_ast = sy.lib.create_lib_ast(client=self)
+        self.lib_ast = create_lib_ast(client=self)
 
         # first time we want to register for future updates
         self.lib_ast.register_updates(self)
