@@ -1,6 +1,6 @@
 # syft absolute
 from syft.lib.python.primitive_factory import PrimitiveFactory
-from syft.lib.python.util import downcast_args_and_kwargs
+from syft.common.lib_ast_shares import downcast_args_and_kwargs
 
 
 def test_downcast():
