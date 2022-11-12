@@ -25,8 +25,8 @@ from numpy.typing import NDArray
 from scipy.optimize import shgo
 
 # relative
-from ....common.lib_ast_shares import downcast_args_and_kwargs
 from ....ast.util import pointerize_args_and_kwargs
+from ....common.lib_ast_shares import downcast_args_and_kwargs
 from ....core.node.common.action.get_or_set_property_action import (
     GetOrSetPropertyAction,
 )
