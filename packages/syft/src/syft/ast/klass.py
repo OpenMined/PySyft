@@ -21,7 +21,6 @@ from .. import ast
 from .. import lib
 from ..core.common.group import VERIFYALL
 from ..core.common.uid import UID
-from ..core.node.common.action.action_sequence import ActionSequence
 from ..core.node.common.action.get_or_set_property_action import GetOrSetPropertyAction
 from ..core.node.common.action.get_or_set_property_action import PropertyActions
 from ..core.node.common.action.run_class_method_action import RunClassMethodAction
@@ -41,6 +40,7 @@ from ..logger import warning
 from ..util import aggressive_set_attr
 from ..util import inherit_tags
 from .callable import Callable
+from .util import pointerize_args_and_kwargs
 
 
 def _resolve_pointer_type(self: Pointer) -> Pointer:
@@ -985,56 +985,3 @@ class Class(Callable):
                     return target_object.set_remote_value(value)
 
         return super().__setattr__(key, value)
-
-
-# TODO: this should move out of AST into a util somewhere? or osmething related to Pointer
-def pointerize_args_and_kwargs(
-    args: Union[List[Any], Tuple[Any, ...]],
-    kwargs: Dict[Any, Any],
-    client: Any,
-    gc_enabled: bool = True,
-) -> Tuple[List[Any], Dict[Any, Any]]:
-    """Get pointers to args and kwargs.
-
-    Args:
-        args: List of arguments.
-        kwargs: Dict of Keyword arguments.
-        client: Client node.
-
-    Returns:
-        Tuple of args and kwargs with pointer to values.
-    """
-    # When we try to send params to a remote function they need to be pointers so
-    # that they can be serialized and fetched from the remote store on arrival
-    # this ensures that any args which are passed in from the user side are first
-    # converted to pointers and sent then the pointer values are used for the
-    # method invocation
-    obj_lst = []
-    pointer_args = []
-    pointer_kwargs = {}
-    for arg in args:
-        # check if its already a pointer
-        if not isinstance(arg, Pointer):
-            arg_ptr, obj = arg.send(client, pointable=not gc_enabled, immediate=False)
-            obj_lst.append(obj)
-            pointer_args.append(arg_ptr)
-        else:
-            pointer_args.append(arg)
-            arg.gc_enabled = gc_enabled
-
-    for k, arg in kwargs.items():
-        # check if its already a pointer
-        if not isinstance(arg, Pointer):
-            arg_ptr, obj = arg.send(client, pointable=not gc_enabled, immediate=False)
-            obj_lst.append(obj)
-            pointer_kwargs[k] = arg_ptr
-        else:
-            pointer_kwargs[k] = arg
-
-    if obj_lst:
-        msg = ActionSequence(obj_lst=obj_lst, address=client.address)
-
-        # send message to client
-        client.send_immediate_msg_without_reply(msg=msg)
-
-    return pointer_args, pointer_kwargs
