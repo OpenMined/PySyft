@@ -96,7 +96,6 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 import requests
 
-
 # relative
 from ...logger import debug
 from ...logger import error
@@ -456,7 +455,9 @@ class Pointer(AbstractPointer):
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
+        # relative
         from ...lib import lib_ast
+
         # TODO: we need _proto2object to include a reference to the node doing the
         # deserialization so that we can convert location into a client object. At present
         # it is an address object which will cause things to break later.

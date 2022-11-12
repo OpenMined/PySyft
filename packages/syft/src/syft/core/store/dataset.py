@@ -97,7 +97,9 @@ class Dataset:
         self.data = [el for el in self.data if el.id != _id]
 
     def _object2proto(self) -> Dataset_PB:
+        # relative
         from ...lib.python.dict import Dict
+
         proto = Dataset_PB()
 
         # Step 1: Serialize the id to protobuf and copy into protobuf

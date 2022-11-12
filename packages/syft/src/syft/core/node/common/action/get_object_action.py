@@ -5,7 +5,6 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
-
 # relative
 from .....logger import debug
 from .....logger import traceback_and_raise
@@ -19,9 +18,9 @@ from .....proto.core.node.common.action.get_object_pb2 import (
 from .....util import get_fully_qualified_name
 from .....util import validate_type
 from ....common.message import ImmediateSyftMessageWithoutReply
+from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serializable import serializable
 from ....common.serde.serialize import _serialize as serialize
-from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject

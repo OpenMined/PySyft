@@ -10,9 +10,9 @@ from .....logger import critical
 from .....proto.core.node.common.action.garbage_collect_object_pb2 import (
     GarbageCollectObjectAction as GarbageCollectObjectAction_PB,
 )
+from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serializable import serializable
 from ....common.serde.serialize import _serialize as serialize
-from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.uid import UID
 from ....io.address import Address
 from ...abstract.node import AbstractNode

@@ -7,7 +7,6 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from pydantic import BaseSettings
 
-
 # relative
 from ...logger import traceback_and_raise
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
@@ -132,7 +131,7 @@ class StorableObject(AbstractStorableObject):
         # relative
         from ...lib.python.bytes import Bytes
         from ...lib.python.dict import Dict
-        
+
         proto = StorableObject_PB()
 
         # Step 1: Serialize the id to protobuf and copy into protobuf
