@@ -14,7 +14,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
 
 # relative
-from .....lib.python.dict import SyftDict as SyftDict
+from .....lib.python.dict import Dict as SyftDict
 from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serialize import _serialize as serialize
 from ....common.uid import UID
