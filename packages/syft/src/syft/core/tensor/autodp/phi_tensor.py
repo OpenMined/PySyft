@@ -515,7 +515,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         self,
         other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
     ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
-        """Apply the "matmul" operation between "self" and "other"
+        """Apply the "rmatmul" operation between "self" and "other"
 
         Args:
             y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -657,7 +657,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         *args: Any,
         **kwargs: Any,
     ) -> MPCTensor:
-        """Apply the "add" operation between "self" and "other"
+        """Apply the "concatenate" operation between "self" and "other"
 
         Args:
             y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -837,7 +837,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
     ) -> Union[
         TensorWrappedPhiTensorPointer, MPCTensor, TensorWrappedGammaTensorPointer
     ]:
-        """Apply the "truediv" operation between "self" and "other"
+        """Apply the "sum" operation between "self" and "other"
 
         Args:
             y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -952,7 +952,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
     def __getitem__(
         self, key: Union[int, bool, slice]
     ) -> TensorWrappedPhiTensorPointer:
-        """Apply the slice  operation on "self"
+        """Apply the getitem operation on "self"
         Args:
             y (Union[int,bool,slice]) : second operand.
 
@@ -977,7 +977,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         return self._apply_self_tensor_op("ones_like", *args, **kwargs)
 
     def repeat(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
-        """Apply the repeat" operation
+        """Apply the "repeat" operation
 
         Args:
             y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
