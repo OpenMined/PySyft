@@ -292,7 +292,7 @@ class TensorPointer(Pointer):
         other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
         **kwargs: Any,
     ) -> Union[TensorPointer, MPCTensor]:
-        """Apply the "mul" operation between "self" and "other"
+        """Apply the "truediv" operation between "self" and "other"
 
         Args:
             y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -307,7 +307,7 @@ class TensorPointer(Pointer):
         other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
         **kwargs: Any,
     ) -> Union[TensorPointer, MPCTensor]:
-        """Apply the "mul" operation between "self" and "other"
+        """Apply the "rtruediv" operation between "self" and "other"
 
         Args:
             y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -407,7 +407,7 @@ class TensorPointer(Pointer):
         *args: Any,
         **kwargs: Any,
     ) -> Union[TensorPointer, MPCTensor]:
-        """Apply the "add" operation between "self" and "other"
+        """Apply the "concatenate" operation between "self" and "other"
 
         Args:
             y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
