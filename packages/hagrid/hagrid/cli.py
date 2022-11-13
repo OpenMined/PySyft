@@ -298,6 +298,13 @@ def clean(location: str) -> None:
     help="Optional: git branch to use for launch / build operations",
 )
 @click.option(
+    "--skip_check",
+    default="false",
+    required=False,
+    type=str,
+    help="Optional: Check Node network after deploying it.",
+)
+@click.option(
     "--platform",
     default=None,
     required=False,
@@ -347,6 +354,13 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
         dry_run = False
 
+    skip_check = True
+    if (
+        "skip_check" not in kwargs
+        or str_to_bool(cast(str, kwargs["skip_check"])) is False
+    ):
+        skip_check = False
+
     try:
         tail = False if "tail" in kwargs and not str_to_bool(kwargs["tail"]) else True
         silent = not tail
@@ -362,11 +376,18 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
         command = cmds[list(cmds.keys())[0]][0]  # type: ignore
         match_port = re.search("HTTP_PORT=[0-9]{1,5}", command)
 
-        if not dry_run and host_term.host == "docker" and match_port and silent:
+        _check_node = (
+            not dry_run
+            and host_term.host == "docker"
+            and match_port
+            and silent
+            and not skip_check
+        )
+        if _check_node:
             rich.get_console().print(
                 "\n[bold green]⠋[bold blue] Checking Node API [/bold blue]\t"
             )
-            port = match_port.group().replace("HTTP_PORT=", "")
+            port = match_port.group().replace("HTTP_PORT=", "")  # type: ignore
             check_status("localhost" + ":" + port)
     except Exception as e:
         print(f"Error: {e}\n\n")
@@ -1096,6 +1117,11 @@ def create_launch_cmd(
         parsed_kwargs["jupyter"] = str_to_bool(cast(str, kwargs["jupyter"]))
     else:
         parsed_kwargs["jupyter"] = False
+
+    if "skip_check" in kwargs and kwargs["skip_check"] is not None:
+        parsed_kwargs["skip_check"] = str_to_bool(cast(str, kwargs["skip_check"]))
+    else:
+        parsed_kwargs["skip_check"] = False
 
     if "vpn" in kwargs and kwargs["vpn"] is not None:
         parsed_kwargs["vpn"] = str_to_bool(cast(str, kwargs["vpn"]))
