@@ -11,6 +11,9 @@ import torch as th
 # syft absolute
 import syft as sy
 from syft.core.node.common.client import AbstractNodeClient
+from syft.core.node.common.node_service.object_delete.object_delete_message import (
+    ObjectDeleteMessage,
+)
 from syft.core.pointer.pointer import Pointer
 
 
@@ -78,6 +81,32 @@ def test_make_unpointable(
         ptr.update_searchability(pointable=False)
 
     assert len(client.store) == 0
+
+@pytest.mark.slow
+def test_deleting_pointer_without_permission(
+    client: sy.VirtualMachineClient,
+    root_client: sy.VirtualMachineClient,
+) -> None:
+    ten = sy.Tensor(th.tensor([1, 2, 3, 4]))
+    ptr = ten.send(root_client)
+
+    # Get pointer as a regular user
+    ds_ptr = client.store[0]
+
+    # Assert that there's only one object in the store
+    assert len(root_client.store) == len(client.store)
+    assert len(client.store) == 1
+
+    obj_del_msg = ObjectDeleteMessage(
+        address=client.address,
+        reply_to=client.address,
+        kwargs={"id_at_location": ds_ptr.id_at_location.to_string()},
+    ).sign(signing_key=client.signing_key)
+
+    client.send_immediate_msg_with_reply(msg=obj_del_msg)
+
+    # DO Pointer is still there
+    assert ptr.get_copy() == ten
 
 
 @pytest.mark.slow
