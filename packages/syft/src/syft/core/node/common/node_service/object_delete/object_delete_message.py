@@ -58,6 +58,15 @@ class ObjectDeleteMessage(SyftMessage, DomainMessageRegistry, VMMessageRegistry)
                 f"Calling delete on Object with ID {self.payload.id_at_location} in store."  # ignore
             )
             id_at_location = UID.from_string(self.payload.id_at_location)
+            old_obj = node.store.get_or_none(key=id_at_location, proxy_only=True)
+            if old_obj:
+                # Check if users' verify key is a subset of write_permissions set
+                has_write_permissions = (
+                    old_obj.write_permissions.get(verify_key, None) is not None
+                )
+                if not has_write_permissions:
+                    raise Exception(f"User does not have permission to delete the object at id: {id_at_location}")
+
             if not node.store.is_dataset(key=id_at_location):  # type: ignore
                 node.store.delete(key=id_at_location)
         except Exception as e:
