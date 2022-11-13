@@ -153,5 +153,6 @@ def test_create_user(domain: sy.Domain) -> None:
 
 @pytest.mark.asyncio
 def test_raise_error_create_user_invalid_budget(domain: sy.Domain) -> None:
+    domain_client = domain.get_root_client()
     with pytest.raises(ValueError):
-        domain.create_user(email="test@test.com", password="changethis", budget=-10)
+        domain_client.create_user(email="test@test.com", password="changethis", budget=-10)
