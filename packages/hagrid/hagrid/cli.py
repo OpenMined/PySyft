@@ -383,7 +383,7 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
             match_port = re.search("HTTP_PORT=[0-9]{1,5}", command)
             if match_port:
                 rich.get_console().print(
-                    "\n[bold green]⠋[bold blue] Checking Node API [/bold blue]\t"
+                    "\n[bold green]⠋[bold blue] Checking node API [/bold blue]\t"
                 )
                 port = match_port.group().replace("HTTP_PORT=", "")
                 check_status("localhost" + ":" + port)
