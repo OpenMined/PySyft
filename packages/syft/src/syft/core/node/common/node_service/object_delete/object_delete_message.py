@@ -65,7 +65,9 @@ class ObjectDeleteMessage(SyftMessage, DomainMessageRegistry, VMMessageRegistry)
                     old_obj.write_permissions.get(verify_key, None) is not None
                 )
                 if not has_write_permissions:
-                    raise Exception(f"User does not have permission to delete the object at id: {id_at_location}")
+                    raise Exception(
+                        f"User does not have permission to delete the object at id: {id_at_location}"
+                    )
 
             if not node.store.is_dataset(key=id_at_location):  # type: ignore
                 node.store.delete(key=id_at_location)
