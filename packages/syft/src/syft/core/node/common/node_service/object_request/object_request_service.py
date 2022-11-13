@@ -147,6 +147,7 @@ def create_budget_request_msg(
     _duplicate_request = node.data_requests.contain(
         verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8"),
         status="pending",
+        request_type="budget",
     )
 
     if _duplicate_request:
@@ -433,7 +434,6 @@ def get_all_requests(
         )
         for req in _requests
     ]
-
     return GetAllRequestsResponseMessage(requests=data_requests, address=msg.reply_to)
 
 
