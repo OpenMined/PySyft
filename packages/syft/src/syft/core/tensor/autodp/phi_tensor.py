@@ -429,7 +429,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             Tuple[MPCTensor,Union[MPCTensor,int,float,np.ndarray]] : Result of the operation
         """
         if isinstance(other, TensorWrappedPhiTensorPointer):
-            if (self.data_subjects != other.data_subjects).all():  # type: ignore
+            if np.array(self.data_subjects != other.data_subjects).all():  # type: ignore
                 return getattr(self.gamma, op_str)(other.gamma)
         elif isinstance(other, TensorWrappedGammaTensorPointer):
             return getattr(self.gamma, op_str)(other)
@@ -2748,7 +2748,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def __mul__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         if isinstance(other, PhiTensor):
-            if (self.data_subjects == other.data_subjects).all():
+            if np.array(self.data_subjects == other.data_subjects).all():
                 min_min = self.min_vals.data * other.min_vals.data
                 min_max = self.min_vals.data * other.max_vals.data
                 max_min = self.max_vals.data * other.min_vals.data
@@ -2798,7 +2798,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def __truediv__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
         if isinstance(other, PhiTensor):
-            if (self.data_subjects != other.data_subjects).all():
+            if np.array(self.data_subjects != other.data_subjects).all():
                 return self.gamma / other.gamma
             else:
                 min_min = self.min_vals.data / other.min_vals.data
@@ -3254,7 +3254,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def __lt__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
         if isinstance(other, PhiTensor):
-            if (self.data_subjects == other.data_subjects).all():
+            if np.array(self.data_subjects == other.data_subjects).all():
                 return PhiTensor(
                     child=(self.child < other.child) * 1,
                     data_subjects=self.data_subjects,
@@ -3288,7 +3288,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         # if the tensor being compared is also private
         if isinstance(other, PhiTensor):
-            if (self.data_subjects == other.data_subjects).all():
+            if np.array(self.data_subjects == other.data_subjects).all():
                 return PhiTensor(
                     child=(self.child <= other.child) * 1,
                     data_subjects=self.data_subjects,
@@ -3322,7 +3322,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         # if the tensor being compared is also private
         if isinstance(other, PhiTensor):
-            if (self.data_subjects == other.data_subjects).all():
+            if np.array(self.data_subjects == other.data_subjects).all():
                 return PhiTensor(
                     child=(self.child > other.child) * 1,
                     data_subjects=self.data_subjects,
@@ -3355,7 +3355,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         # if the tensor being compared is also private
         if isinstance(other, PhiTensor):
-            if (self.data_subjects == other.data_subjects).all():
+            if np.array(self.data_subjects == other.data_subjects).all():
                 return PhiTensor(
                     child=(self.child >= other.child) * 1,
                     data_subjects=self.data_subjects,
@@ -3813,7 +3813,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         return self // value.
         """
         if isinstance(other, PhiTensor):
-            if (self.data_subjects != other.data_subjects).all():
+            if np.array(self.data_subjects != other.data_subjects).all():
                 return self.gamma // other.gamma
             else:
                 min_min = self.min_vals.data // other.min_vals.data
