@@ -29,9 +29,6 @@ from ..io.location import Location
 from ..io.location.specific import SpecificLocation
 from ..io.route import Route
 from ..io.virtual import VirtualClientConnection
-from ..node.common.node_service.network_search.network_search_messages import (
-    NetworkSearchMessage,
-)
 from ..pointer.pointer import Pointer
 from ..store.proxy_dataset import ProxyDataset
 from ..tensor.tensor import Tensor
