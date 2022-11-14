@@ -28,6 +28,7 @@ from ..io.address import Address
 from ..io.location import Location
 from ..io.location.specific import SpecificLocation
 from ..io.route import Route
+from ..io.virtual import VirtualClientConnection
 from ..node.common.node_service.network_search.network_search_messages import (
     NetworkSearchMessage,
 )
@@ -764,12 +765,10 @@ class DomainClient(Client):
             raise ValueError(f"Budget should be a positive number, but got {budget}")
         try:
             self.users.create(name=name, email=email, password=password, budget=budget)
-            response = {
-                "name": name,
-                "email": email,
-                "password": password,
-                "url": self.routes[0].connection.base_url.host_or_ip,  # type: ignore
-            }
+            url = ""
+            if not isinstance(self.routes[0].connection, VirtualClientConnection):  # type: ignore
+                url = self.routes[0].connection.base_url.host_or_ip  # type: ignore
+            response = {"name": name, "email": email, "password": password, "url": url}
             return response
         except Exception as e:
             raise e
