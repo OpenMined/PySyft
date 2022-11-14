@@ -147,7 +147,10 @@ def test_object_exists_on_domain(domain: sy.Domain) -> None:
 
 
 @pytest.mark.asyncio
-def test_create_user(domain: sy.Domain) -> None:
+def test_create_user() -> None:
+    domain = sy.Domain(
+        name="remote domain", store_type=DictStore, ledger_store_type=DictLedgerStore
+    )
     root_client = domain.get_root_client()
     domain.initial_setup(
         signing_key=root_client.signing_key,
@@ -157,10 +160,6 @@ def test_create_user(domain: sy.Domain) -> None:
         first_superuser_budget=5.55,
         domain_name="remote domain",
     )
-    user_id = domain.users.create_user_application(
-        name="test", email="test@openmined.org", password="test", daa_pdf=b""
-    )
-    domain.users.process_user_application(user_id, "accepted", root_client.verify_key)
 
     name = "Test Create"
     email = "test@test.com"
