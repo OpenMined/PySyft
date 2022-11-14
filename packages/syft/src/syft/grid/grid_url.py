@@ -4,13 +4,13 @@ from __future__ import annotations
 # stdlib
 import copy
 import os
+import re
 from typing import Optional
 from typing import Union
 from urllib.parse import urlparse
 
 # third party
 import requests
-import re
 
 # relative
 from ..core.common.serde.serializable import serializable
@@ -65,12 +65,12 @@ class GridURL:
             protocol = str(sub_grid_url.protocol)  # type: ignore
             path = str(sub_grid_url.path)  # type: ignore
 
-
         prtcl_pattrn = "://"
         if prtcl_pattrn in host_or_ip:
-            protocol = host_or_ip[:host_or_ip.find(prtcl_pattrn)]
-            host_or_ip = host_or_ip[host_or_ip.find(prtcl_pattrn) + len(prtcl_pattrn):]
-        
+            protocol = host_or_ip[: host_or_ip.find(prtcl_pattrn)]
+            start_index = host_or_ip.find(prtcl_pattrn) + len(prtcl_pattrn)
+            host_or_ip = host_or_ip[start_index:]
+
         self.host_or_ip = host_or_ip
         self.path = path
         self.port = port
