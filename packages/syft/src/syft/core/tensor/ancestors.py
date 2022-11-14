@@ -342,11 +342,11 @@ class PhiTensorAncestor(TensorChainManager):
 
     @property
     def min_vals(self):  # type: ignore
-        return self.__class__(self.child.min_vals)
+        return self.child.min_vals
 
     @property
     def max_vals(self):  # type: ignore
-        return self.__class__(self.child.max_vals)
+        return self.child.max_vals
 
     @property
     def gamma(self):  # type: ignore
