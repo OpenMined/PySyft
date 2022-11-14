@@ -121,6 +121,7 @@ def test_make_unpointable(
 
     assert len(client.store) == 0
 
+
 @pytest.mark.slow
 def test_deleting_pointer_without_permission(
     client: sy.VirtualMachineClient,
