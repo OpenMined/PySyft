@@ -61,6 +61,11 @@ def create_user_msg(
         # If email not registered, a new user can be created.
         pass
 
+    if msg.budget and msg.budget < 0:
+        raise AuthorizationError(
+            f"You can't create a new User using a negative budget:{msg.budget}!"
+        )
+
     app_id = node.users.create_user_application(
         name=msg.name,
         email=msg.email,
