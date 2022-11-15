@@ -140,7 +140,6 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
     if attr_list[-1] == "VerifyAll":
         # relative
         from .core.common.group import VERIFYALL
-
         return type(VERIFYALL)
 
     if attr_list[0] != "syft":
@@ -155,7 +154,7 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
     ):
         raise ReferenceError(f"Reference don't match: {attr_list[1]}")
 
-    return index_modules(a_dict=globals()["syft"], keys=attr_list[1:])
+    return index_modules(a_dict=get_syft_built(), keys=attr_list[1:])
 
 
 def get_fully_qualified_name(obj: object) -> str:
