@@ -27,8 +27,10 @@ to access the data (which means data is highly private) and will be assigned a P
 
 .. note::
    Check out this tutorial to understand how Domain Owners 
-   can :doc:`create a user account <02-create-account-configure-pb>` on their Domain Servers.
+   can :doc:`create a user account <../data-owner/02-create-account-configure-pb>` on their Domain Servers.
 
+   Throughout the tutorials, we also mean Data Scientists
+   whenever we refer to users. Both are used interchangeably.
 
 Steps to Connect to a Domain Server
 -------------------------------------
@@ -44,5 +46,47 @@ Steps to Connect to a Domain Server
 Step 1: Obtain the Login Credentials
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+To utilize the ``privacy-enhancing`` features and play around with different ``privacy budgets``, 
+Data Scientists must first get their login ``credentials``, using which they can login into their 
+organization's private data servers. Here are a few points to follow to get your login credentials:
+
+* If your account was created by the Domain Owners within your organization, you could ask them to 
+  securely ``share`` the credentials with you. If you do not have a domain owner, you can ``create`` 
+  one locally following the tutorials starting here: `data-owner/00-deploy-domain <../data-owner/00-deploy-domain.html>`_.
+  
+* You can also signup or create an account on a Domain node if you have access to the ``URL`` to the Domain. 
+  To ``register`` yourself to the Domain, you need to run the following code:
+
+.. WARNING::
+   Change the default username and password below to a more secure and private combination of your preference.
+
+::
+
+   '''
+   Name: Name of the Data Scientist
+   Email: Email of the Data Scientist
+   Password: A secured password to log into the Domain
+   Url: Url to the domain node.
+   Port: Port number
+   '''
+
+   In:
+
+   # run this cell
+   import syft as sy
+   domain_client = sy.register(
+      name="Jane Doe",
+      email="jane@email.com",
+      password="supersecurepassword",
+      url="localhost",
+      port=8081
+   )
+
+.. note::
+   By default, the role assigned to the registered user is of a Data Scientist, and the assigned privacy budget is 0.
+
+
+Step 2: Start a Private Data Server
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
    
