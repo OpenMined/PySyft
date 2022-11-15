@@ -12,10 +12,8 @@ import redis
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
 
-# syft absolute
-import syft
-
 # relative
+from .....lib.python.dict import Dict as SyftDict
 from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serialize import _serialize as serialize
 from ....common.uid import UID
@@ -175,15 +173,15 @@ class RedisStore(ObjectStore):
         metadata_obj.description = value.description
         metadata_obj.read_permissions = cast(
             bytes,
-            serialize(syft.lib.python.Dict(value.read_permissions), to_bytes=True),
+            serialize(SyftDict(value.read_permissions), to_bytes=True),
         ).hex()
         metadata_obj.search_permissions = cast(
             bytes,
-            serialize(syft.lib.python.Dict(value.search_permissions), to_bytes=True),
+            serialize(SyftDict(value.search_permissions), to_bytes=True),
         ).hex()
         metadata_obj.write_permissions = cast(
             bytes,
-            serialize(syft.lib.python.Dict(value.write_permissions), to_bytes=True),
+            serialize(SyftDict(value.write_permissions), to_bytes=True),
         ).hex()
         metadata_obj.is_proxy_dataset = is_proxy_dataset
 
