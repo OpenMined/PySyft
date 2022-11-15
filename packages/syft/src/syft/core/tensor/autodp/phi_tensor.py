@@ -483,20 +483,6 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         """
         return TensorWrappedPhiTensorPointer._apply_op(self, other, "__sub__")
 
-    def __mul__(
-        self,
-        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
-    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
-        """Apply the "mul" operation between "self" and "other"
-
-        Args:
-            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
-
-        Returns:
-            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
-        """
-        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__mul__")
-
     def __matmul__(
         self,
         other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
@@ -2740,57 +2726,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             min_vals=min_vals,
             max_vals=max_vals,
         )
-
-    def __mul__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
-
-        if isinstance(other, PhiTensor):
-            if np.array(self.data_subjects == other.data_subjects).all():
-                min_min = self.min_vals.data * other.min_vals.data
-                min_max = self.min_vals.data * other.max_vals.data
-                max_min = self.max_vals.data * other.min_vals.data
-                max_max = self.max_vals.data * other.max_vals.data
-
-                _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-                _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-
-                return PhiTensor(
-                    child=self.child * other.child,
-                    data_subjects=self.data_subjects,
-                    min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
-                    max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
-                )
-            else:
-                return self.gamma * other.gamma
-
-        elif is_acceptable_simple_type(other):
-
-            data = self.child * other
-
-            min_min = self.min_vals.data * other
-            min_max = self.min_vals.data * other
-            max_min = self.max_vals.data * other
-            max_max = self.max_vals.data * other
-
-            _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            min_vals = self.min_vals.copy()
-            min_vals.data = _min_vals
-            max_vals = self.max_vals.copy()
-            max_vals.data = _max_vals
-
-            data_subjects = self.data_subjects
-
-            return PhiTensor(
-                child=data,
-                data_subjects=data_subjects,
-                min_vals=min_vals,
-                max_vals=max_vals,
-            )
-        elif isinstance(other, GammaTensor):
-            return self.gamma * other
-        else:
-            print("Type is unsupported:" + str(type(other)))
-            raise NotImplementedError
 
     def __truediv__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
         if isinstance(other, PhiTensor):

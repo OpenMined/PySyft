@@ -477,22 +477,6 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         """
         return TensorWrappedGammaTensorPointer._apply_op(self, other, "__sub__")
 
-    def __mul__(
-        self,
-        other: Union[
-            TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
-        ],
-    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-        """Apply the "mul" operation between "self" and "other"
-
-        Args:
-            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
-
-        Returns:
-            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
-        """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__mul__")
-
     def __matmul__(
         self,
         other: Union[
@@ -2121,53 +2105,6 @@ class GammaTensor:
             min_vals=min_val,
             max_vals=max_val,
             func_str=GAMMA_TENSOR_OP.SUBTRACT.value,
-            sources=output_state,
-        )
-
-    def __mul__(self, other: Any) -> GammaTensor:
-        # relative
-        from .phi_tensor import PhiTensor
-
-        output_state = dict()
-        # Add this tensor to the chain
-        output_state[self.id] = self
-
-        if isinstance(other, PhiTensor):
-            other = other.gamma
-
-        if isinstance(other, GammaTensor):
-            output_state[other.id] = other
-            child = self.child * other.child
-            min_min = self.min_vals.data * other.min_vals.data
-            min_max = self.min_vals.data * other.max_vals.data
-            max_min = self.max_vals.data * other.min_vals.data
-            max_max = self.max_vals.data * other.max_vals.data
-            _min_val = np.array(np.min([min_min, min_max, max_min, max_max], axis=0))  # type: ignore
-            _max_val = np.array(np.max([min_min, min_max, max_min, max_max], axis=0))  # type: ignore
-            output_ds = self.data_subjects * other.data_subjects
-
-        else:
-            child = self.child * other
-            min_min = self.min_vals.data * other
-            min_max = self.min_vals.data * other
-            max_min = self.max_vals.data * other
-            max_max = self.max_vals.data * other
-            _min_val = np.array(np.min([min_min, min_max, max_min, max_max], axis=0))  # type: ignore
-            _max_val = np.array(np.max([min_min, min_max, max_min, max_max], axis=0))  # type: ignore
-            output_ds = self.data_subjects * other
-            output_state[np.random.randint(low=0, high=2**31 - 1)] = other
-
-        min_val = self.min_vals.copy()
-        min_val.data = _min_val
-        max_val = self.max_vals.copy()
-        max_val.data = _max_val
-
-        return GammaTensor(
-            child=child,
-            data_subjects=output_ds,
-            min_vals=min_val,
-            max_vals=max_val,
-            func_str=GAMMA_TENSOR_OP.MULTIPLY.value,
             sources=output_state,
         )
 
