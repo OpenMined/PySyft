@@ -88,5 +88,45 @@ organization's private data servers. Here are a few points to follow to get your
 
 Step 2: Start a Private Data Server
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+PyGrid's UI is meant to help users get a bigger picture view of their organization's domains, analyze 
+the ``datasets``, manage ``permissions``, and play with different ``privacy budgets``. 
 
+We will use the ``hagrid launch`` command to start a private data server. By default, the port is launched at ``8081``.
+
+.. note::
+   Make sure your docker application is up and running in the background.
+
+We will use this port number to visit the following UI interface at the ``URL``:
+
+::
+
+   http://localhost:<port_number>
+
+   e.g.
+
+   http://localhost:8081
+
+Once the ``hagrid launch`` command is executed successfully, you will see the message as shown in the image below:
+
+|00-connect-to-domain-00|
    
+
+Step 3: Login to your Server
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.. |00-connect-to-domain-00| image:: ../../_static/personas-image/data-scientist/00-connect-to-domain-00.png
+   :width: 95%
