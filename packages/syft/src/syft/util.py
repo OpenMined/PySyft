@@ -54,7 +54,7 @@ def validate_type(_object: object, _type: type, optional: bool = False) -> Any:
 
 
 def get_syft_built() -> ModuleType:
-    return sys.modules["syft"]
+    return sys.modules[__name__.split(".")[:-1][0]]
 
 
 def validate_field(_object: object, _field: str) -> Any:
@@ -140,6 +140,7 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
     if attr_list[-1] == "VerifyAll":
         # relative
         from .core.common.group import VERIFYALL
+
         return type(VERIFYALL)
 
     if attr_list[0] != "syft":
