@@ -9,7 +9,6 @@ import torch as th
 import syft as sy
 from syft.core.node.common.action.run_class_method_action import RunClassMethodAction
 
-
 def test_store_object_mutation(
     client: sy.VirtualMachineClient, root_client: sy.VirtualMachineClient
 ) -> None:
@@ -28,7 +27,7 @@ def test_store_object_mutation(
 
     # guest constructs a pointer to the guessed hidden object
     guest_y = copy(guest_x)
-    guest_y.id_at_location = sy.common.UID.from_string(y_ptr.id_at_location.no_dash)
+    guest_y.id_at_location = UID.from_string(y_ptr.id_at_location.no_dash)
     guest_y.add_(guest_y)
 
     # guest user should not be able to mutate objects that don't belong to them
@@ -49,7 +48,7 @@ def test_store_object_mutation(
     # guest should not be able to mutate new destination
     # which means that write permissions should not flow as a union of execution
     guest_xg = copy(guest_x)
-    guest_xg.id_at_location = sy.common.UID.from_string(xg_ptr.id_at_location.no_dash)
+    guest_xg.id_at_location = UID.from_string(xg_ptr.id_at_location.no_dash)
     guest_xg.add_(guest_xg)
 
     result_after = xg_ptr.get(delete_obj=False)
@@ -72,6 +71,7 @@ def test_store_object_mutation(
 
     new_result = y_ptr.get(delete_obj=False)
     assert all(new_result == (y + y)) is True
+
 
 
 def test_store_overwrite_key(
