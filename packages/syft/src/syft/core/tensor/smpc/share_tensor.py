@@ -16,7 +16,6 @@ from typing import Tuple
 from typing import Union
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 import torch
 
@@ -27,7 +26,14 @@ import syft as sy
 from . import utils
 from .... import logger
 from ....grid import GridURL
+from ....lib.numpy.array import capnp_deserialize
+from ....lib.numpy.array import capnp_serialize
 from ....proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
+from ...common.serde.capnp import CapnpModule
+from ...common.serde.capnp import chunk_bytes
+from ...common.serde.capnp import combine_bytes
+from ...common.serde.capnp import get_capnp_schema
+from ...common.serde.capnp import serde_magic_header
 from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize as serialize
@@ -105,11 +111,12 @@ RING_SIZE_TO_OP = {
 CACHE_CLIENTS: Dict[str, Any] = {}
 
 
-def populate_store(*args: List[Any], **kwargs: Dict[Any, Any]) -> None:
+def populate_store(*args: Any, **kwargs: Any) -> None:
     ShareTensor.crypto_store.populate_store(*args, **kwargs)  # type: ignore
+    return None
 
 
-@serializable()
+@serializable(capnp_bytes=True)
 class ShareTensor(PassthroughTensor):
     crypto_store = CryptoStore()
 
@@ -307,7 +314,7 @@ class ShareTensor(PassthroughTensor):
             getattr(value, "dtype", None), None
         )
         if ring_size_from_type is None:
-            logger.warning("Could not get ring size from {value}")
+            logger.warning(f"Could not get ring size from {value}")
         else:
             ring_size_final = ring_size_from_type
             numpy_type = value.dtype
@@ -376,7 +383,27 @@ class ShareTensor(PassthroughTensor):
         share_wrapper: Any,
         ring_size: Union[int, str] = DEFAULT_RING_SIZE,
     ) -> PassthroughTensor:
+        # relative
+        from ..autodp.gamma_tensor import GammaTensor
+
         ring_size = int(ring_size)
+        if value and hasattr(value, "child"):
+            if isinstance(value.child, GammaTensor):
+                # We do this, since GammaTensor is a FrozenInstance, which prevents us from modifying child values.
+                gt: GammaTensor = value.child
+                new_gamma = GammaTensor(
+                    child=FixedPrecisionTensor(value.child.child),
+                    data_subjects=gt.data_subjects,
+                    min_vals=gt.min_vals,
+                    max_vals=gt.max_vals,
+                    func_str=gt.func_str,
+                    sources=gt.sources,
+                )
+                value.child = new_gamma
+
+            else:
+                value.child.child = FixedPrecisionTensor(value.child.child)  # type: ignore
+
         if value is not None:
             share = ShareTensor.generate_przs(
                 value=value.child,
@@ -396,9 +423,10 @@ class ShareTensor(PassthroughTensor):
                 ring_size=ring_size,
             )
         # relative
+        from ..autodp.gamma_tensor import GammaTensor
         from ..autodp.phi_tensor import PhiTensor
 
-        if isinstance(share_wrapper.child, PhiTensor):
+        if isinstance(share_wrapper.child, (PhiTensor, GammaTensor)):
             share_wrapper.child.child.child = share.child
         else:
             share_wrapper.child.child = share.child
@@ -724,6 +752,10 @@ class ShareTensor(PassthroughTensor):
 
         # return True
 
+        # ATTENTION: Why are we getting here now when we never did before?
+        if not hasattr(other, "child"):
+            return self.child == other
+
         return self.child == other.child
 
     # TRASK: commenting out because ShareTEnsor doesn't appear to have .session_uuid or .config
@@ -776,9 +808,7 @@ class ShareTensor(PassthroughTensor):
         share.child = value
         return share
 
-    def concatenate(
-        self, other: ShareTensor, *args: List[Any], **kwargs: Dict[str, Any]
-    ) -> ShareTensor:
+    def concatenate(self, other: ShareTensor, *args: Any, **kwargs: Any) -> ShareTensor:
         res = self.copy()
         res.child = np.concatenate((self.child, other.child), *args, **kwargs)
         return res
@@ -794,14 +824,16 @@ class ShareTensor(PassthroughTensor):
             A hooked method
         """
 
-        def method_all_shares(
-            _self: ShareTensor, *args: List[Any], **kwargs: Dict[Any, Any]
-        ) -> Any:
+        def method_all_shares(_self: ShareTensor, *args: Any, **kwargs: Any) -> Any:
 
             share = _self.child
 
             method = getattr(share, method_name)
-            new_share = method(*args, **kwargs)
+            if method_name not in INPLACE_OPS:
+                new_share = method(*args, **kwargs)
+            else:
+                method(*args, **kwargs)
+                new_share = share
 
             res = _self.copy_tensor()
             res.child = np.array(new_share)
@@ -850,9 +882,54 @@ class ShareTensor(PassthroughTensor):
         res.generator_przs = generator_przs
         return res
 
+    def _object2bytes(self) -> bytes:
+        schema = get_capnp_schema(schema_file="share_tensor.capnp")
+
+        st_struct: CapnpModule = schema.ShareTensor  # type: ignore
+        st_msg = st_struct.new_message()
+        # this is how we dispatch correct deserialization of bytes
+        st_msg.magicHeader = serde_magic_header(type(self))
+
+        # child of Share tensor could either be Python Scalar or np.ndarray
+        if isinstance(self.child, np.ndarray) or np.isscalar(self.child):
+            chunk_bytes(
+                capnp_serialize(np.array(self.child), to_bytes=True), "child", st_msg
+            )
+            st_msg.isNumpy = True
+        else:
+            chunk_bytes(serialize(self.child, to_bytes=True), "child", st_msg)  # type: ignore
+            st_msg.isNumpy = False
+
+        st_msg.rank = self.rank
+        st_msg.partiesInfo = serialize(self.parties_info, to_bytes=True)
+        st_msg.seedPrzs = self.seed_przs
+        st_msg.ringSize = str(self.ring_size)
+
+        return st_msg.to_bytes_packed()
+
     @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return ShareTensor_PB
+    def _bytes2object(buf: bytes) -> ShareTensor:
+        schema = get_capnp_schema(schema_file="share_tensor.capnp")
+        st_struct: CapnpModule = schema.ShareTensor  # type: ignore
+        # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
+        MAX_TRAVERSAL_LIMIT = 2**64 - 1
+
+        st_msg = st_struct.from_bytes_packed(
+            buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
+        )
+
+        if st_msg.isNumpy:
+            child = capnp_deserialize(combine_bytes(st_msg.child), from_bytes=True)
+        else:
+            child = deserialize(combine_bytes(st_msg.child), from_bytes=True)
+
+        return ShareTensor(
+            value=child,
+            rank=st_msg.rank,
+            parties_info=deserialize(st_msg.partiesInfo, from_bytes=True),
+            seed_przs=st_msg.seedPrzs,
+            ring_size=int(st_msg.ringSize),
+        )
 
     __add__ = add
     __radd__ = add

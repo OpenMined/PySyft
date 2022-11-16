@@ -28,6 +28,14 @@ from ..generic_payload.messages import GenericPayloadMessage
 from ..generic_payload.messages import GenericPayloadMessageWithReply
 from ..generic_payload.messages import GenericPayloadReplyMessage
 
+TAILSCALE_HOST = "proxy"
+TAILSCALE_PORT = 4000
+TAILSCALE_URL = f"http://{TAILSCALE_HOST}:{TAILSCALE_PORT}"
+
+HEADSCALE_HOST = "headscale"
+HEADSCALE_PORT = 4000
+HEADSCALE_URL = f"http://{HEADSCALE_HOST}:{HEADSCALE_PORT}"
+
 
 def grid_url_from_kwargs(kwargs: Dict[str, Any]) -> GridURL:
     try:
@@ -70,8 +78,12 @@ class VPNConnectMessageWithReply(GenericPayloadMessageWithReply):
             grid_url = grid_url.with_path("/vpn")
             vpn_auth_key = str(self.kwargs["vpn_auth_key"])
 
+            status, error = disconnect(tailscale_host=TAILSCALE_URL)
+            if not status:
+                print("Failed to run tailscale down first", error)
+
             status, error = connect_with_key(
-                tailscale_host="http://tailscale:4000",
+                tailscale_host=TAILSCALE_URL,
                 headscale_host=str(grid_url),
                 vpn_auth_key=vpn_auth_key,
             )
@@ -83,6 +95,33 @@ class VPNConnectMessageWithReply(GenericPayloadMessageWithReply):
         except Exception as e:
             print(f"Failed to run {type(self)}", self.kwargs, e)
             return {"status": "error"}
+
+
+def disconnect(tailscale_host: str) -> Tuple[bool, str]:
+    try:
+        # we need --accept-dns=false because magicDNS replaces /etc/resolv.conf which
+        # breaks using tailscale in network_mode with docker compose because the
+        # /etc/resolv.conf has the mDNS ip nameserver 127.0.0.11
+        data = {
+            "args": [],
+            "timeout": 60,
+            "force_unique_key": True,
+        }
+
+        command_url = f"{tailscale_host}/commands/down"
+
+        headers = {"X-STACK-API-KEY": os.environ.get("STACK_API_KEY", "")}
+        resp = requests.post(command_url, json=data, headers=headers)
+        report = get_result(json=resp.json())
+        report_dict = json.loads(report)
+
+        if int(report_dict["returncode"]) == 0:
+            return (True, "")
+        else:
+            return (False, report_dict.get("report", ""))
+    except Exception as e:
+        critical(f"Failed to disconnect VPN. {e}")
+        raise e
 
 
 def connect_with_key(
@@ -156,23 +195,35 @@ class VPNJoinMessageWithReply(GenericPayloadMessageWithReply):
             grid_url = grid_url_from_kwargs(self.kwargs).as_container_host(
                 container_host=node.settings.CONTAINER_HOST
             )
-
             res = requests.post(
                 str(grid_url.with_path("/api/v1/vpn/register")), verify=verify_tls()
             )
             res_json = res.json()
-
             if "vpn_auth_key" not in res_json:
                 print("Registration failed", res)
                 return {"status": "error"}
 
+            status, error = disconnect(tailscale_host=TAILSCALE_URL)
+            if not status:
+                print("Failed to run tailscale down first", error)
+
             status, error = connect_with_key(
-                tailscale_host="http://tailscale:4000",
+                tailscale_host=TAILSCALE_URL,
                 headscale_host=str(grid_url.with_path("/vpn")),
                 vpn_auth_key=res_json["vpn_auth_key"],
             )
 
             if status:
+                node_id = node.node.create_or_get_node(  # type: ignore
+                    node_uid=res_json["node_id"],
+                    node_name=res_json["node_name"],
+                )
+                node.node_route.update_route_for_node(  # type: ignore
+                    node_id=node_id,
+                    host_or_ip=res_json["host_or_ip"],
+                    vpn_endpoint=str(grid_url.with_path("/vpn")),
+                    vpn_key=res_json["vpn_auth_key"],
+                )
                 return {"status": "ok"}
             else:
                 print("connect with key failed", error)
@@ -212,22 +263,24 @@ class VPNJoinSelfMessageWithReply(GenericPayloadMessageWithReply):
                 )
 
             # get status
-            up_status, _, _ = get_status(tailscale_host="http://tailscale:4000")
+            up_status, _, _ = get_status(tailscale_host=TAILSCALE_URL)
             if up_status:
                 print("Already connected!")
                 return {"status": "ok"}
             print("Connecting...")
 
-            key_status, vpn_auth_key = generate_key(
-                headscale_host="http://headscale:4000"
-            )
+            key_status, vpn_auth_key = generate_key(headscale_host=HEADSCALE_URL)
 
             if not key_status:
                 raise Exception("Failed to generate key for joining VPN")
 
+            status, error = disconnect(tailscale_host=TAILSCALE_URL)
+            if not status:
+                print("Failed to run tailscale down first", error)
+
             connect_status, error = connect_with_key(
-                tailscale_host="http://tailscale:4000",
-                headscale_host="http://headscale:8080",
+                tailscale_host=TAILSCALE_URL,
+                headscale_host=f"http://{HEADSCALE_HOST}:8080",
                 vpn_auth_key=vpn_auth_key,
             )
 
@@ -262,7 +315,7 @@ class VPNRegisterMessageWithReply(GenericPayloadMessageWithReply):
 
     def run(self, node: AbstractNode, verify_key: Optional[VerifyKey] = None) -> Any:
         try:
-            status, vpn_auth_key = generate_key(headscale_host="http://headscale:4000")
+            status, vpn_auth_key = generate_key(headscale_host=HEADSCALE_URL)
 
             if status:
                 return {"status": "ok", "vpn_auth_key": vpn_auth_key}
@@ -324,7 +377,7 @@ class VPNStatusMessageWithReply(GenericPayloadMessageWithReply):
 
     def run(self, node: AbstractNode, verify_key: Optional[VerifyKey] = None) -> Any:
         try:
-            up, host, peers = get_status(tailscale_host="http://tailscale:4000")
+            up, host, peers = get_status(tailscale_host=TAILSCALE_URL)
             return {"status": "ok", "connected": up, "host": host, "peers": peers}
         except Exception as e:
             print(f"Failed to run {type(self)}", self.kwargs, e)
@@ -413,6 +466,22 @@ def get_status(
     except Exception as e:
         print("failed to make request", e)
     return connected, host, peers
+
+
+def get_network_url(tailscale_host: str = TAILSCALE_URL) -> Union[None, GridURL]:
+    data = {"timeout": 5, "force_unique_key": True}
+    command_url = f"{tailscale_host}/commands/debug"
+    try:
+        headers = {"X-STACK-API-KEY": os.environ.get("STACK_API_KEY", "")}
+        resp = requests.post(command_url, json=data, headers=headers)
+        report = get_result(json=resp.json())
+        network_url = GridURL.from_url(
+            json.loads(json.loads(report)["report"])["ControlURL"][:-4]
+        )
+        return network_url
+    except Exception as e:
+        print("failed to make request", e)
+    return None
 
 
 def get_result(json: Dict) -> str:

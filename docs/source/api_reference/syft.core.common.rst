@@ -27,6 +27,7 @@ syft.core.common
    :toctree:
    :recursive:
 
+   syft.core.common.decorators
    syft.core.common.environment
    syft.core.common.group
    syft.core.common.message

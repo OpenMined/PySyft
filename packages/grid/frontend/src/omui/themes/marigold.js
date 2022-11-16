@@ -5,5 +5,5 @@ module.exports = {
   error: colors.magenta,
   success: colors.lime,
   warning: colors.magenta,
-  gray: colors.gray
+  gray: colors.gray,
 }

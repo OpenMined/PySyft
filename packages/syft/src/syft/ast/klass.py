@@ -113,7 +113,7 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
 
     def run_class_smpc_method(
         __self: Any,
-        *args: Tuple[Any, ...],
+        *args: Any,
         **kwargs: Any,
     ) -> object:
         """Run remote class method on a SharePointer and get pointer to returned object.
@@ -184,7 +184,7 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
 
     def run_class_method(
         __self: Any,
-        *args: Tuple[Any, ...],
+        *args: Any,
         **kwargs: Any,
     ) -> object:
         """Run remote class method and get pointer to returned object.
@@ -661,7 +661,7 @@ class Class(Callable):
         Stores args and kwargs of outer_self init by wrapping the init method.
         """
 
-        def init_wrapper(self: Any, *args: List[Any], **kwargs: Dict[Any, Any]) -> None:
+        def init_wrapper(self: Any, *args: Any, **kwargs: Any) -> None:
             outer_self.object_ref._wrapped_init(self, *args, **kwargs)
             self._init_args = args
             self._init_kwargs = kwargs
@@ -682,10 +682,9 @@ class Class(Callable):
             description: str = "",
             tags: Optional[List[str]] = None,
             searchable: Optional[bool] = None,
-            id_at_location_override: Optional[UID] = None,
             chunk_size: Optional[int] = None,
-            send_to_blob_storage: bool = False,
-            **kwargs: Dict[str, Any],
+            send_to_blob_storage: bool = True,
+            **kwargs: Any,
         ) -> Union[Pointer, Tuple[Pointer, SaveObjectAction]]:
 
             """Send obj to client and return pointer to the object.
@@ -736,10 +735,7 @@ class Class(Callable):
                 attach_tags(self, tags)
                 attach_description(self, description)
 
-            if id_at_location_override is not None:
-                id_at_location = id_at_location_override
-            else:
-                id_at_location = UID()
+            id_at_location = UID()
 
             if hasattr(self, "init_pointer"):
                 constructor = self.init_pointer
@@ -763,7 +759,7 @@ class Class(Callable):
 
             # Check if the client has blob storage enabled
             # blob storage can only be used if client node has blob storage enabled.
-            if send_to_blob_storage and not client.settings.get(
+            if not hasattr(client, "settings") or not client.settings.get(
                 "use_blob_storage", False
             ):
                 sys.stdout.write(
@@ -1031,9 +1027,10 @@ def pointerize_args_and_kwargs(
         else:
             pointer_kwargs[k] = arg
 
-    msg = ActionSequence(obj_lst=obj_lst, address=client.address)
+    if obj_lst:
+        msg = ActionSequence(obj_lst=obj_lst, address=client.address)
 
-    # send message to client
-    client.send_immediate_msg_without_reply(msg=msg)
+        # send message to client
+        client.send_immediate_msg_without_reply(msg=msg)
 
     return pointer_args, pointer_kwargs

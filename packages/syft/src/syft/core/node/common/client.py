@@ -33,6 +33,7 @@ from ...common.message import ImmediateSyftMessageWithoutReply
 from ...common.message import SignedEventualSyftMessageWithoutReply
 from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedImmediateSyftMessageWithoutReply
+from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
@@ -43,6 +44,7 @@ from ...pointer.garbage_collection import GarbageCollection
 from ...pointer.garbage_collection import gc_get_default_strategy
 from ...pointer.pointer import Pointer
 from ..abstract.node import AbstractNodeClient
+from ..common.client_manager.node_networking_api import NodeNetworkingAPI
 from .action.exception_action import ExceptionMessage
 from .node_service.object_search.obj_search_service import ObjectSearchMessage
 
@@ -94,6 +96,7 @@ class Client(AbstractNodeClient):
         self.install_supported_frameworks()
 
         self.store = StoreClient(client=self)
+        self.networking = NodeNetworkingAPI(client=self)
         self.version = version
 
     def obj_exists(self, obj_id: UID) -> bool:
@@ -166,12 +169,16 @@ class Client(AbstractNodeClient):
 
     @property
     def settings(self, **kwargs: Any) -> Dict[Any, Any]:  # type: ignore
-        # relative
-        from .node_service.node_setup.node_setup_messages import GetSetUpMessage
+        try:
+            # relative
+            from .node_service.node_setup.node_setup_messages import GetSetUpMessage
 
-        return self._perform_grid_request(  # type: ignore
-            grid_msg=GetSetUpMessage, content=kwargs
-        ).content  # type : ignore
+            return self._perform_grid_request(  # type: ignore
+                grid_msg=GetSetUpMessage, content=kwargs
+            ).content  # type : ignore
+        except Exception:  # nosec
+            # unable to fetch settings
+            return {}
 
     def join_network(
         self,
@@ -212,15 +219,19 @@ class Client(AbstractNodeClient):
             ImmediateSyftMessageWithReply,
             Any,  # TEMPORARY until we switch everything to NodeRunnableMessage types.
         ],
-        route_index: int = 0,
         timeout: Optional[float] = None,
-    ) -> SyftMessage:
+        return_signed: bool = False,
+        route_index: int = 0,
+    ) -> Union[SyftMessage, SignedMessage]:
 
         # relative
         from .node_service.simple.simple_messages import NodeRunnableMessageWithReply
+        from .node_service.tff.tff_messages import TFFMessageWithReply
 
         # TEMPORARY: if message is instance of NodeRunnableMessageWithReply then we need to wrap it in a SimpleMessage
-        if isinstance(msg, NodeRunnableMessageWithReply):
+        if isinstance(msg, NodeRunnableMessageWithReply) or isinstance(
+            msg, TFFMessageWithReply
+        ):
             msg = msg.prepare(address=self.address, reply_to=self.address)
 
         route_index = route_index or self.default_route_index
@@ -245,6 +256,8 @@ class Client(AbstractNodeClient):
                 error(str(exception))
                 traceback_and_raise(exception)
             else:
+                if return_signed:
+                    return response
                 return response.message
 
         traceback_and_raise(
@@ -370,6 +383,9 @@ class Client(AbstractNodeClient):
         return hash(self.id)
 
 
+GET_OBJECT_TIMEOUT = 60  # seconds
+
+
 class StoreClient:
     def __init__(self, client: Client) -> None:
         self.client = client
@@ -381,7 +397,11 @@ class StoreClient:
         )
 
         results = getattr(
-            self.client.send_immediate_msg_with_reply(msg=msg), "results", None
+            self.client.send_immediate_msg_with_reply(
+                msg=msg, timeout=GET_OBJECT_TIMEOUT
+            ),
+            "results",
+            None,
         )
         if results is None:
             traceback_and_raise(ValueError("TODO"))
@@ -500,7 +520,11 @@ class StoreClient:
                 address=self.client.address, reply_to=self.client.address, obj_id=key
             )
             results = getattr(
-                self.client.send_immediate_msg_with_reply(msg=msg), "results", None
+                self.client.send_immediate_msg_with_reply(
+                    msg=msg, timeout=GET_OBJECT_TIMEOUT
+                ),
+                "results",
+                None,
             )
 
             if results is None:

@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 # stdlib
-import sys
+from concurrent import futures
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Union
 
 # third party
@@ -39,14 +40,10 @@ class NetworkRegistry:
 
     @property
     def online_networks(self) -> List[Dict]:
-        online_networks = list()
 
-        an = self.all_networks
+        networks = self.all_networks
 
-        for i, network in enumerate(an):
-            sys.stdout.write(
-                "\rChecking network availability: " + str(i + 1) + " of " + str(len(an))
-            )
+        def check_network(network: Dict) -> Optional[Dict[Any, Any]]:
             url = "http://" + network["host_or_ip"] + ":" + str(network["port"]) + "/"
             try:
                 res = requests.get(url, timeout=0.5)
@@ -54,9 +51,44 @@ class NetworkRegistry:
             except Exception:
                 online = False
 
+            # networks without frontend have a /ping route in 0.7.0
+            if not online:
+                try:
+                    ping_url = url + "ping"
+                    res = requests.get(ping_url, timeout=0.5)
+                    online = res.status_code == 200
+                except Exception:
+                    online = False
+
             if online:
-                online_networks.append(network)
-        sys.stdout.write("\r                                             ")
+                version = network.get("version", None)
+                # Check if syft version was described in NetworkRegistry
+                # If it's unknown, try to update it to an available version.
+                if not version or version == "unknown":
+                    # If not defined, try to ask in /syft/version endpoint (supported by 0.7.0)
+                    try:
+                        version_url = url + "api/v1/syft/version"
+                        res = requests.get(version_url, timeout=0.5)
+                        if res.status_code == 200:
+                            network["version"] = res.json()["version"]
+                        else:
+                            network["version"] = "unknown"
+                    except Exception:
+                        network["version"] = "unknown"
+                return network
+            return None
+
+        # We can use a with statement to ensure threads are cleaned up promptly
+        with futures.ThreadPoolExecutor(max_workers=20) as executor:
+            # map
+            _online_networks = list(
+                executor.map(lambda network: check_network(network), networks)
+            )
+
+        online_networks = list()
+        for each in _online_networks:
+            if each is not None:
+                online_networks.append(each)
         return online_networks
 
     def _repr_html_(self) -> str:
@@ -64,6 +96,12 @@ class NetworkRegistry:
         if len(on) == 0:
             return "(no networks online - try syft.networks.all_networks to see offline networks)"
         return pd.DataFrame(on)._repr_html_()
+
+    def __repr__(self) -> str:
+        on = self.online_networks
+        if len(on) == 0:
+            return "(no networks online - try syft.networks.all_networks to see offline networks)"
+        return pd.DataFrame(on).to_string()
 
     def create_client(self, network: Dict[str, Any]) -> Client:
         try:

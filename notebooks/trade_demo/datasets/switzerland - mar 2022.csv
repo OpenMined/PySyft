@@ -1,0 +1,163 @@
+Classification,Year,Period,Period Desc.,Aggregate Level,Is Leaf Code,Trade Flow Code,Trade Flow,Reporter Code,Reporter,Reporter ISO,Partner Code,Partner,Partner ISO,Commodity Code,Commodity,Qty Unit Code,Qty Unit,Qty,Netweight (kg),Trade Value (US$),Flag
+HS,2022,202203,Mar-22,0,0,1,Imports,31,Azerbaijan,,757,Switzerland,,TOTAL,All Commodities,,,,,3257673,0
+HS,2022,202203,Mar-22,0,0,2,Exports,31,Azerbaijan,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,12253708,0
+HS,2022,202203,Mar-22,0,0,1,Imports,32,Argentina,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,49507866,0
+HS,2022,202203,Mar-22,0,0,2,Exports,32,Argentina,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,144645590,0
+HS,2022,202203,Mar-22,0,0,1,Imports,36,Australia,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,277540375,0
+HS,2022,202203,Mar-22,0,0,2,Exports,36,Australia,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,74863771,0
+HS,2022,202203,Mar-22,0,0,1,Imports,51,Armenia,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,1497881,0
+HS,2022,202203,Mar-22,0,0,2,Exports,51,Armenia,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,21084247,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,51,Armenia,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,562657,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,51,Armenia,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,4932,0
+HS,2022,202203,Mar-22,0,0,1,Imports,52,Barbados,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,209063,0
+HS,2022,202203,Mar-22,0,0,1,Imports,56,Belgium,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,743061675,0
+HS,2022,202203,Mar-22,0,0,2,Exports,56,Belgium,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,528587438,0
+HS,2022,202203,Mar-22,0,0,1,Imports,68,Bolivia,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,39548631,0
+HS,2022,202203,Mar-22,0,0,2,Exports,68,Bolivia,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,21786,0
+HS,2022,202203,Mar-22,0,0,1,Imports,70,Bosnia Herzegovina,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,6318989,0
+HS,2022,202203,Mar-22,0,0,2,Exports,70,Bosnia Herzegovina,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,11217019,0
+HS,2022,202203,Mar-22,0,0,1,Imports,72,Botswana,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,264091,0
+HS,2022,202203,Mar-22,0,0,2,Exports,72,Botswana,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,21312273,0
+HS,2022,202203,Mar-22,0,0,1,Imports,76,Brazil,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,200674053,0
+HS,2022,202203,Mar-22,0,0,2,Exports,76,Brazil,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,101269639,0
+HS,2022,202203,Mar-22,0,0,1,Imports,84,Belize,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,334407,0
+HS,2022,202203,Mar-22,0,0,2,Exports,84,Belize,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,104952,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,84,Belize,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,104952,0
+HS,2022,202203,Mar-22,0,0,1,Imports,97,EU,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,15635999892,0
+HS,2022,202203,Mar-22,0,0,2,Exports,97,EU,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,18706725552,0
+HS,2022,202203,Mar-22,0,0,1,Imports,112,Belarus,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,11881200,0
+HS,2022,202203,Mar-22,0,0,2,Exports,112,Belarus,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,1575900,0
+HS,2022,202203,Mar-22,0,0,1,Imports,124,Canada,,757,Switzerland,,TOTAL,All Commodities,,,,,847888782,0
+HS,2022,202203,Mar-22,0,0,2,Exports,124,Canada,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,184913611,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,124,Canada,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,4561165,0
+HS,2022,202203,Mar-22,0,0,1,Imports,152,Chile,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,30823912,0
+HS,2022,202203,Mar-22,0,0,2,Exports,152,Chile,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,78326876,0
+HS,2022,202203,Mar-22,0,0,1,Imports,156,China,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,2941416338,0
+HS,2022,202203,Mar-22,0,0,2,Exports,156,China,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,718415234,0
+HS,2022,202203,Mar-22,0,0,1,Imports,191,Croatia,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,20891529,0
+HS,2022,202203,Mar-22,0,0,2,Exports,191,Croatia,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,28574086,0
+HS,2022,202203,Mar-22,0,0,1,Imports,203,Czech Rep.,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,227998694,0
+HS,2022,202203,Mar-22,0,0,2,Exports,203,Czech Rep.,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,302276324,0
+HS,2022,202203,Mar-22,0,0,1,Imports,208,Denmark,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,77799315,0
+HS,2022,202203,Mar-22,0,0,2,Exports,208,Denmark,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,100124864,0
+HS,2022,202203,Mar-22,0,0,1,Imports,222,El Salvador,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,5053397,0
+HS,2022,202203,Mar-22,0,0,2,Exports,222,El Salvador,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,152141,0
+HS,2022,202203,Mar-22,0,0,1,Imports,233,Estonia,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,31686127,0
+HS,2022,202203,Mar-22,0,0,2,Exports,233,Estonia,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,21040486,0
+HS,2022,202203,Mar-22,0,0,1,Imports,242,Fiji,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,66075,0
+HS,2022,202203,Mar-22,0,0,2,Exports,242,Fiji,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,3316,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,242,Fiji,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,2132,0
+HS,2022,202203,Mar-22,0,0,1,Imports,246,Finland,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,101423938,0
+HS,2022,202203,Mar-22,0,0,2,Exports,246,Finland,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,185438288,0
+HS,2022,202203,Mar-22,0,0,1,Imports,268,Georgia,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,7091816,0
+HS,2022,202203,Mar-22,0,0,2,Exports,268,Georgia,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,7874452,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,268,Georgia,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,1506402,0
+HS,2022,202203,Mar-22,0,0,1,Imports,276,Germany,,757,Switzerland,,TOTAL,All Commodities,,,,,5981827706,0
+HS,2022,202203,Mar-22,0,0,2,Exports,276,Germany,,757,Switzerland,,TOTAL,All Commodities,,,,,7322442009,0
+HS,2022,202203,Mar-22,0,0,1,Imports,300,Greece,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,54517526,0
+HS,2022,202203,Mar-22,0,0,2,Exports,300,Greece,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,18696035,0
+HS,2022,202203,Mar-22,0,0,1,Imports,308,Grenada,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,100799,0
+HS,2022,202203,Mar-22,0,0,1,Imports,320,Guatemala,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,6788234,0
+HS,2022,202203,Mar-22,0,0,2,Exports,320,Guatemala,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,4875886,0
+HS,2022,202203,Mar-22,0,0,1,Imports,328,Guyana,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,478457,0
+HS,2022,202203,Mar-22,0,0,1,Imports,344,"China, Hong Kong SAR",,757,Switzerland,,TOTAL,All Commodities,,,,0.0,625746411,0
+HS,2022,202203,Mar-22,0,0,2,Exports,344,"China, Hong Kong SAR",,757,Switzerland,,TOTAL,All Commodities,,,,0.0,622064909,0
+HS,2022,202203,Mar-22,0,0,1,Imports,348,Hungary,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,77248548,0
+HS,2022,202203,Mar-22,0,0,2,Exports,348,Hungary,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,121771957,0
+HS,2022,202203,Mar-22,0,0,1,Imports,352,Iceland,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,7184112,0
+HS,2022,202203,Mar-22,0,0,2,Exports,352,Iceland,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,1996435,0
+HS,2022,202203,Mar-22,0,0,1,Imports,360,Indonesia,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,56190333,0
+HS,2022,202203,Mar-22,0,0,2,Exports,360,Indonesia,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,614789938,0
+HS,2022,202203,Mar-22,0,0,1,Imports,376,Israel,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,104045000,0
+HS,2022,202203,Mar-22,0,0,2,Exports,376,Israel,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,64317000,0
+HS,2022,202203,Mar-22,0,0,1,Imports,381,Italy,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,1736501525,0
+HS,2022,202203,Mar-22,0,0,2,Exports,381,Italy,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,3388490298,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,381,Italy,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,375545339,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,381,Italy,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,2864074,0
+HS,2022,202203,Mar-22,0,0,1,Imports,392,Japan,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,687027127,0
+HS,2022,202203,Mar-22,0,0,2,Exports,392,Japan,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,325151838,0
+HS,2022,202203,Mar-22,0,0,1,Imports,417,Kyrgyzstan,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,416623,0
+HS,2022,202203,Mar-22,0,0,2,Exports,417,Kyrgyzstan,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,240744,0
+HS,2022,202203,Mar-22,0,0,1,Imports,428,Latvia,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,8812942,0
+HS,2022,202203,Mar-22,0,0,2,Exports,428,Latvia,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,6386528,0
+HS,2022,202203,Mar-22,0,0,1,Imports,440,Lithuania,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,7025680,0
+HS,2022,202203,Mar-22,0,0,2,Exports,440,Lithuania,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,27552593,0
+HS,2022,202203,Mar-22,0,0,1,Imports,442,Luxembourg,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,36562663,0
+HS,2022,202203,Mar-22,0,0,2,Exports,442,Luxembourg,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,22543484,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,442,Luxembourg,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,3384,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,442,Luxembourg,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,29784,0
+HS,2022,202203,Mar-22,0,0,1,Imports,446,"China, Macao SAR",,757,Switzerland,,TOTAL,All Commodities,,,,0.0,144504436,0
+HS,2022,202203,Mar-22,0,0,2,Exports,446,"China, Macao SAR",,757,Switzerland,,TOTAL,All Commodities,,,,0.0,306178,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,446,"China, Macao SAR",,757,Switzerland,,TOTAL,All Commodities,,,,0.0,306178,0
+HS,2022,202203,Mar-22,0,0,1,Imports,480,Mauritius,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,3521413,0
+HS,2022,202203,Mar-22,0,0,2,Exports,480,Mauritius,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,2526876,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,480,Mauritius,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,44781,0
+HS,2022,202203,Mar-22,0,0,1,Imports,484,Mexico,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,183590312,0
+HS,2022,202203,Mar-22,0,0,2,Exports,484,Mexico,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,115757261,0
+HS,2022,202203,Mar-22,0,0,1,Imports,498,Rep. of Moldova,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,3554386,0
+HS,2022,202203,Mar-22,0,0,2,Exports,498,Rep. of Moldova,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,9765467,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,498,Rep. of Moldova,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,1675940,0
+HS,2022,202203,Mar-22,0,0,1,Imports,516,Namibia,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,3782506,0
+HS,2022,202203,Mar-22,0,0,2,Exports,516,Namibia,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,53494,0
+HS,2022,202203,Mar-22,0,0,1,Imports,528,Netherlands,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,467435904,0
+HS,2022,202203,Mar-22,0,0,2,Exports,528,Netherlands,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,860256361,0
+HS,2022,202203,Mar-22,0,0,1,Imports,554,New Zealand,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,28310137,0
+HS,2022,202203,Mar-22,0,0,2,Exports,554,New Zealand,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,9662931,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,554,New Zealand,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,2750932,0
+HS,2022,202203,Mar-22,0,0,1,Imports,566,Nigeria,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,16712782,0
+HS,2022,202203,Mar-22,0,0,2,Exports,566,Nigeria,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,8147984,0
+HS,2022,202203,Mar-22,0,0,1,Imports,579,Norway,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,78881802,0
+HS,2022,202203,Mar-22,0,0,2,Exports,579,Norway,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,43689098,0
+HS,2022,202203,Mar-22,0,0,1,Imports,586,Pakistan,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,16506399,0
+HS,2022,202203,Mar-22,0,0,2,Exports,586,Pakistan,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,898398,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,586,Pakistan,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,36098,0
+HS,2022,202203,Mar-22,0,0,1,Imports,591,Panama,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,2422993,0
+HS,2022,202203,Mar-22,0,0,2,Exports,591,Panama,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,3060589,0
+HS,2022,202203,Mar-22,0,0,1,Imports,600,Paraguay,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,14036319,0
+HS,2022,202203,Mar-22,0,0,2,Exports,600,Paraguay,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,2110903,0
+HS,2022,202203,Mar-22,0,0,1,Imports,608,Philippines,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,28977037,0
+HS,2022,202203,Mar-22,0,0,2,Exports,608,Philippines,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,70633518,0
+HS,2022,202203,Mar-22,0,0,1,Imports,616,Poland,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,238523066,0
+HS,2022,202203,Mar-22,0,0,2,Exports,616,Poland,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,333835253,0
+HS,2022,202203,Mar-22,0,0,1,Imports,620,Portugal,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,42284482,0
+HS,2022,202203,Mar-22,0,0,2,Exports,620,Portugal,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,73243718,0
+HS,2022,202203,Mar-22,0,0,1,Imports,642,Romania,,757,Switzerland,,TOTAL,All Commodities,,,,,161977687,0
+HS,2022,202203,Mar-22,0,0,2,Exports,642,Romania,,757,Switzerland,,TOTAL,All Commodities,,,,,60773191,0
+HS,2022,202203,Mar-22,0,0,1,Imports,646,Rwanda,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,4901981,0
+HS,2022,202203,Mar-22,0,0,2,Exports,646,Rwanda,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,77401,0
+HS,2022,202203,Mar-22,0,0,1,Imports,686,Senegal,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,35305630,0
+HS,2022,202203,Mar-22,0,0,2,Exports,686,Senegal,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,69337831,0
+HS,2022,202203,Mar-22,0,0,1,Imports,688,Serbia,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,64672750,0
+HS,2022,202203,Mar-22,0,0,2,Exports,688,Serbia,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,19948271,0
+HS,2022,202203,Mar-22,0,0,1,Imports,699,India,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,593965548,0
+HS,2022,202203,Mar-22,0,0,2,Exports,699,India,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,116026879,0
+HS,2022,202203,Mar-22,0,0,1,Imports,703,Slovakia,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,68453720,0
+HS,2022,202203,Mar-22,0,0,2,Exports,703,Slovakia,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,139981616,0
+HS,2022,202203,Mar-22,0,0,1,Imports,705,Slovenia,,757,Switzerland,,TOTAL,All Commodities,,,,,741784186,0
+HS,2022,202203,Mar-22,0,0,2,Exports,705,Slovenia,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,619933829,0
+HS,2022,202203,Mar-22,0,0,1,Imports,724,Spain,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,844561986,0
+HS,2022,202203,Mar-22,0,0,2,Exports,724,Spain,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,753605995,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,724,Spain,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,6483577,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,724,Spain,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,284253,0
+HS,2022,202203,Mar-22,0,0,1,Imports,752,Sweden,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,128507273,0
+HS,2022,202203,Mar-22,0,0,2,Exports,752,Sweden,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,187050007,0
+HS,2022,202203,Mar-22,0,0,1,Imports,768,Togo,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,64315,0
+HS,2022,202203,Mar-22,0,0,2,Exports,768,Togo,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,452275,0
+HS,2022,202203,Mar-22,0,0,1,Imports,792,Turkey,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,354179388,0
+HS,2022,202203,Mar-22,0,0,2,Exports,792,Turkey,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,125363415,0
+HS,2022,202203,Mar-22,0,0,1,Imports,804,Ukraine,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,161246335,0
+HS,2022,202203,Mar-22,0,0,2,Exports,804,Ukraine,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,8168200,0
+HS,2022,202203,Mar-22,0,0,1,Imports,807,TFYR of Macedonia,,757,Switzerland,,TOTAL,All Commodities,,,,,14105613,0
+HS,2022,202203,Mar-22,0,0,2,Exports,807,TFYR of Macedonia,,757,Switzerland,,TOTAL,All Commodities,,,,,4673116,0
+HS,2022,202203,Mar-22,0,0,1,Imports,818,Egypt,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,85980373,0
+HS,2022,202203,Mar-22,0,0,2,Exports,818,Egypt,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,59512873,0
+HS,2022,202203,Mar-22,0,0,1,Imports,826,United Kingdom,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,1841088446,0
+HS,2022,202203,Mar-22,0,0,2,Exports,826,United Kingdom,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,2051988177,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,826,United Kingdom,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,23648833,0
+HS,2022,202203,Mar-22,0,0,1,Imports,842,United States of America,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,10788643752,0
+HS,2022,202203,Mar-22,0,0,2,Exports,842,United States of America,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,1794228225,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,842,United States of America,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,485659367,0
+HS,2022,202203,Mar-22,0,0,1,Imports,854,Burkina Faso,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,527177,0
+HS,2022,202203,Mar-22,0,0,2,Exports,854,Burkina Faso,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,351348567,0
+HS,2022,202203,Mar-22,0,0,1,Imports,860,Uzbekistan,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,20245098,0
+HS,2022,202203,Mar-22,0,0,2,Exports,860,Uzbekistan,,757,Switzerland,,TOTAL,All Commodities,,,,0.0,25631,0

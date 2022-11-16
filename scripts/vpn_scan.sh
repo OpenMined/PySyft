@@ -1,8 +1,11 @@
 #!/bin/bash
 
 # use with:
-# $ cat scripts/vpn_scan.sh | docker exec -i test_network_1-tailscale-1 ash
+# $ cat scripts/vpn_scan.sh | docker exec -i test_network_1-tailscale-1 bash
 
+apk -U upgrade || true
+apk fix || true
+apk add bash
 apk add netcat-openbsd
 apk add lsof
 apk add jq
@@ -19,7 +22,8 @@ apk add jq
 # otherwise they will route all the traffic through a relay and this will be really slow
 # for example:
 # docker network connect test_domain_1_default test_network_1-tailscale-1
-tailscale status | grep -v "$(hostname)" | awk '{print $1}' | while read line; do
+# | tr '_' - replaces all underscores with - because tailscale does that now
+tailscale status | grep -v "$(hostname | tr '_' -)" | awk '{print $1}' | while read line; do
     echo "Scanning $line"
     if [[ $line =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
         nc -z -v "$line" 1-65535 2>&1 | grep succeeded

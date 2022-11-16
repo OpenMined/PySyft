@@ -28,5 +28,4 @@ syft.core.node.common.node\_service.object\_transfer
    :recursive:
 
    syft.core.node.common.node_service.object_transfer.object_transfer_messages
-   syft.core.node.common.node_service.object_transfer.object_transfer_service
 

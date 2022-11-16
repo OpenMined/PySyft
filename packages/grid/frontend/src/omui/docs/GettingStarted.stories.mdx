@@ -1,4 +1,4 @@
-import {Meta} from '@storybook/addon-docs/blocks'
+import { Meta } from '@storybook/addon-docs/blocks'
 
 <Meta title="Introduction/Getting Started" />
 
@@ -12,91 +12,119 @@ import {Meta} from '@storybook/addon-docs/blocks'
 
 # OpenMined UI
 
-Welcome to OpenMined UI, or "OMUI" for short, the user interface component system for all OpenMined projects. In this
-documentation we will describe the intended uses of our system, explain how it applies to various members of our
-community, as well as elaborate on technical specifications. Here's a high-level overview of this system:
+Welcome to OpenMined UI, or "OMUI" for short, the user interface component
+system for all OpenMined projects. In this documentation we will describe the
+intended uses of our system, explain how it applies to various members of our
+community, as well as elaborate on technical specifications. Here's a high-level
+overview of this system:
 
-- ⌨️ &nbsp; Developed using [Typescript](https://www.typescriptlang.org/) to allow for rich code editor integration
-- ⚛️ &nbsp; Ready to be imported into any [React.js](https://reactjs.org/) web application
+- ⌨️ &nbsp; Developed using [Typescript](https://www.typescriptlang.org/) to
+  allow for rich code editor integration
+- ⚛️ &nbsp; Ready to be imported into any [React.js](https://reactjs.org/) web
+  application
 
 ## Goals
 
 The OMUI design system should accomplish the following goals:
 
-1. **Quick** - Be quick to iterate on UI's for data scientists and other non-designer stakeholders
+1. **Quick** - Be quick to iterate on UI's for data scientists and other
+   non-designer stakeholders
 2. **Smart** - Have intelligent defaults set for user experience
-3. **Centralized** - Be a single source of truth for both UI designers and developers alike
+3. **Centralized** - Be a single source of truth for both UI designers and
+   developers alike
 4. **Flexible** - Be easily extensible by those concerned with the fine details
-5. **Deliberate** - Allow all OpenMined web applications, community developed or officially maintained, to be "on brand"
+5. **Deliberate** - Allow all OpenMined web applications, community developed or
+   officially maintained, to be "on brand"
 
 ## How to Read this Document
 
-If this is your first time diving into OMUI, we highly suggest that you start reading all the documents on the left-hand
-side from the top to the bottom, in order. We've organized our documentation to where it reads in a logical order.
+If this is your first time diving into OMUI, we highly suggest that you start
+reading all the documents on the left-hand side from the top to the bottom, in
+order. We've organized our documentation to where it reads in a logical order.
 However, there are a few details worth noticing:
 
-- **The "Introduction" section** is primarily used to give an overview of everything you'll see in the OMUI system.
-- **The "Primitives" section** is intended to be technical documentation for the most base-level ("primitive")
-  components of the system. These components are often the building blocks for much more complex components. In the
-  world of [Atomic Design](https://bradfrost.com/blog/post/atomic-web-design/), they are our "Atoms".
-- **The "Components" section** is intended to be technical documentation for all complex components in the system. These
-  are the ones you will use most often when devleoping a user interface. In the world of
-  [Atomic Design](https://bradfrost.com/blog/post/atomic-web-design/), they are our "Molecules" and "Organisms".
+- **The "Introduction" section** is primarily used to give an overview of
+  everything you'll see in the OMUI system.
+- **The "Primitives" section** is intended to be technical documentation for the
+  most base-level ("primitive") components of the system. These components are
+  often the building blocks for much more complex components. In the world of
+  [Atomic Design](https://bradfrost.com/blog/post/atomic-web-design/), they are
+  our "Atoms".
+- **The "Components" section** is intended to be technical documentation for all
+  complex components in the system. These are the ones you will use most often
+  when devleoping a user interface. In the world of
+  [Atomic Design](https://bradfrost.com/blog/post/atomic-web-design/), they are
+  our "Molecules" and "Organisms".
 
 ## Methodology
 
-The methodology behind this UI system is to solve a few needs, depending on who is using it. Below, we'll explore the
-main consumers of this system based on our particular community's needs.
+The methodology behind this UI system is to solve a few needs, depending on who
+is using it. Below, we'll explore the main consumers of this system based on our
+particular community's needs.
 
 ### For Data Scientists
 
-Our community is primarily comprised of data scientists and other machine learning professionals. In their normal
-practice of rapid iteration, it is helpful to create user interfaces that are:
+Our community is primarily comprised of data scientists and other machine
+learning professionals. In their normal practice of rapid iteration, it is
+helpful to create user interfaces that are:
 
 1. Quick and easy to create and iterate
 2. Visually appealing
 3. Representative of the OpenMined brand
 
-To help data scientists quickly bring their application ideas to life, OMUI was built to be easily used out of the box.
-Intelligent UX defaults allow data scientists to iterate quickly without having to be UI experts. When a rapid prototype
-is ready to be made into an application OMUI gives incredible flexibility to front-end developers to then extend and
-customize the base components as needed.
+To help data scientists quickly bring their application ideas to life, OMUI was
+built to be easily used out of the box. Intelligent UX defaults allow data
+scientists to iterate quickly without having to be UI experts. When a rapid
+prototype is ready to be made into an application OMUI gives incredible
+flexibility to front-end developers to then extend and customize the base
+components as needed.
 
 ### For UI Designers
 
-In most design software, to show any form of interaction on a particular design prototype, a UI designer needs to
-duplicate the contents of an entire screen just to show a slight alteration in "state" (i.e. a button being pressed, a
-dialog box opening, etc.). For pages where there are many stateful permutations, this can get out of control very
-quickly. Because of the stateless nature of most design prototyping software, design presentations end up being very
+In most design software, to show any form of interaction on a particular design
+prototype, a UI designer needs to duplicate the contents of an entire screen
+just to show a slight alteration in "state" (i.e. a button being pressed, a
+dialog box opening, etc.). For pages where there are many stateful permutations,
+this can get out of control very quickly. Because of the stateless nature of
+most design prototyping software, design presentations end up being very
 unrealistic and "staggered" in appearance.
 
-Framer is one of a slew of new design prototyping tools developed in the last few years, but is unique for its emphasis
-on interactivity via "code components". The OMUI design system is integrated deeply with Framer, allowing OpenMined's
-design team the ability to **use real-world, production-ready UI components** in their prototypes. This also means that
-OMUI is the "single source of truth" for what components look like, and how they interact, both in fully-developed web
-applications, as well as in design prototypes. With this workflow, designers are no longer tasked with the handoff
-process to front-end developers, where they often end up playing the double-role of QA manager.
+Framer is one of a slew of new design prototyping tools developed in the last
+few years, but is unique for its emphasis on interactivity via "code
+components". The OMUI design system is integrated deeply with Framer, allowing
+OpenMined's design team the ability to **use real-world, production-ready UI
+components** in their prototypes. This also means that OMUI is the "single
+source of truth" for what components look like, and how they interact, both in
+fully-developed web applications, as well as in design prototypes. With this
+workflow, designers are no longer tasked with the handoff process to front-end
+developers, where they often end up playing the double-role of QA manager.
 
 ### For Front-end Developers
 
-Any React developer who has used Styled System in a project, will likely end up finding themselves to be a disciple
-pretty quickly. Having the ability to set a base-level of default "style props", but with the ability to override them
-per-component, provides flexibility that is unparalleled by other component design approaches.
+Any React developer who has used Styled System in a project, will likely end up
+finding themselves to be a disciple pretty quickly. Having the ability to set a
+base-level of default "style props", but with the ability to override them
+per-component, provides flexibility that is unparalleled by other component
+design approaches.
 
-Rather than develop and entire UI system ourselves, we instead opted to piggy-back off one of the most well-known (and
-well-developed) UI component projects for Styled System: Chakra. All of our components either export Chakra components
-directly, build on them to make them easier to use by non-developers, or are composed based on Chakra primitive
-components. The good news is that any front-end developer who knows Chakra, knows OMUI automatically.
+Rather than develop and entire UI system ourselves, we instead opted to
+piggy-back off one of the most well-known (and well-developed) UI component
+projects for Styled System: Chakra. All of our components either export Chakra
+components directly, build on them to make them easier to use by non-developers,
+or are composed based on Chakra primitive components. The good news is that any
+front-end developer who knows Chakra, knows OMUI automatically.
 
 ## Support
 
-For support in using this library, please join the **#lib_omui** Slack channel. If you'd like to follow along with any
-code changes to the library, please join the **#code_omui** Slack channel.
+For support in using this library, please join the **#lib_omui** Slack channel.
+If you'd like to follow along with any code changes to the library, please join
+the **#code_omui** Slack channel.
 [Click here to join our Slack community!](https://slack.openmined.org)
 
 ## Contributing
 
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+Pull requests are welcome. For major changes, please open an issue first to
+discuss what you would like to change.
 
 Please make sure to update tests as appropriate.
 

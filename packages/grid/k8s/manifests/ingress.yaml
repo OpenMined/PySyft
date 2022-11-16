@@ -12,6 +12,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: tailscale
+                name: proxy
                 port:
                   number: 80

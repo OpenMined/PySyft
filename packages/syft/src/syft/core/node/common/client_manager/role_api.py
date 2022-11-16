@@ -3,7 +3,7 @@ from typing import Any
 
 # relative
 from ...abstract.node import AbstractNodeClient
-from ...domain.enums import ResponseObjectEnum
+from ...enums import ResponseObjectEnum
 from ..node_service.role_manager.role_manager_messages import CreateRoleMessage
 from ..node_service.role_manager.role_manager_messages import DeleteRoleMessage
 from ..node_service.role_manager.role_manager_messages import GetRoleMessage

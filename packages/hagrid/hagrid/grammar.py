@@ -81,7 +81,7 @@ class GrammarTerm:
         default: Optional[Union[str, Callable]] = None,
         options: Optional[TypeList] = None,
         example: Optional[str] = None,
-        **kwargs: TypeDict[str, Any],
+        **kwargs: Any,
     ) -> None:
         self.raw_input: Optional[str] = None
         self.input: Optional[str] = None
@@ -204,7 +204,7 @@ class HostGrammarTerm(GrammarTerm):
                 int(port[0:-1])
             else:
                 int(port)
-        except Exception:
+        except Exception:  # nosec
             raise BadGrammar(
                 f"{port} is not a valid port option. Try: {self.get_example()}"
             )

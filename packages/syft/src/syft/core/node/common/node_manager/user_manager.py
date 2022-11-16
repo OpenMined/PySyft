@@ -199,7 +199,7 @@ class UserManager(DatabaseManager):
         role: int,
         private_key: str,
         verify_key: str,
-    ) -> SyftUser:
+    ) -> Union[SyftUser, None]:
         """Registers a user in the database, when they signup on a domain.
 
         Args:
@@ -214,18 +214,20 @@ class UserManager(DatabaseManager):
         Returns:
             SyftUser: the registered user object.
         """
-        salt, hashed = self.__salt_and_hash_password(password, 12)
-        return self.register(
-            name=name,
-            email=email,
-            role=role,
-            budget=budget,
-            private_key=private_key,
-            verify_key=verify_key,
-            hashed_password=hashed,
-            salt=salt,
-            created_at=datetime.now(),
-        )
+        if not super().contain(email=email):
+            salt, hashed = self.__salt_and_hash_password(password, 12)
+            return self.register(
+                name=name,
+                email=email,
+                role=role,
+                budget=budget,
+                private_key=private_key,
+                verify_key=verify_key,
+                hashed_password=hashed,
+                salt=salt,
+                created_at=datetime.now(),
+            )
+        return None
 
     def query(self, **kwargs: Any) -> Query:
         results = super().query(**kwargs)
@@ -285,10 +287,6 @@ class UserManager(DatabaseManager):
         if email:
             key = "email"
             value = email
-        elif password:
-            salt, hashed = self.__salt_and_hash_password(password, 12)
-            self.modify({"id": user_id}, {"salt": salt, "hashed_password": hashed})
-            return
         elif role != 0:
             key = "role"
             value = role
@@ -311,6 +309,20 @@ class UserManager(DatabaseManager):
             raise Exception
 
         self.modify({"id": user_id}, {key: value})
+
+    def change_password(self, user_id: str, current_pwd: str, new_pwd: str) -> None:
+        user = self.first(id=user_id)
+
+        hashed = user.hashed_password.encode("UTF-8")
+        salt = user.salt.encode("UTF-8")
+        bytes_pass = current_pwd.encode("UTF-8")
+
+        if checkpw(bytes_pass, salt + hashed):
+            salt, hashed = self.__salt_and_hash_password(new_pwd, 12)
+            self.modify({"id": user_id}, {"salt": salt, "hashed_password": hashed})
+        else:
+            # Should it warn the user about his wrong current password input?
+            raise InvalidCredentialsError
 
     def can_create_users(self, verify_key: VerifyKey) -> bool:
         """Checks if a user has permissions to create new users."""

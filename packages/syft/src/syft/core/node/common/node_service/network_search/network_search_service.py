@@ -11,7 +11,7 @@ from ......logger import error
 from .....common.message import ImmediateSyftMessageWithReply
 from .....common.uid import UID
 from ....abstract.node import AbstractNode
-from ....domain.client import DomainClient
+from ....domain_client import DomainClient
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
 from ..peer_discovery.peer_discovery_messages import node_id_to_peer_route_metadata

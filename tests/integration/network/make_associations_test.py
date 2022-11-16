@@ -1,5 +1,6 @@
 # stdlib
 import os
+import time
 
 # third party
 import pytest
@@ -27,33 +28,7 @@ def test_domain1_association_network1() -> None:
 
     domain.apply_to_network(client=network_guest)
 
-    network = sy.login(
-        email="info@openmined.org",
-        password="changethis",
-        port=NETWORK_PORT,
-        url=HOST_IP,
-    )
-    associations = network.association.all()
-    for association in associations:
-        if association["node_address"] == domain.target_id.id.no_dash:
-            request_id = int(association["association_id"])
-
-    network.association[request_id].accept()
-    assert domain.association.all()[0]["status"] == "ACCEPTED"
-
-
-@pytest.mark.network
-def test_domain2_association_network1() -> None:
-    network_guest = sy.login(port=NETWORK_PORT)
-
-    domain = sy.login(
-        email="info@openmined.org",
-        password="changethis",
-        port=DOMAIN2_PORT,
-        url=HOST_IP,
-    )
-
-    domain.apply_to_network(client=network_guest)
+    time.sleep(5)
 
     network = sy.login(
         email="info@openmined.org",
@@ -67,4 +42,7 @@ def test_domain2_association_network1() -> None:
             request_id = int(association["association_id"])
 
     network.association[request_id].accept()
+
+    time.sleep(5)
+
     assert domain.association.all()[0]["status"] == "ACCEPTED"

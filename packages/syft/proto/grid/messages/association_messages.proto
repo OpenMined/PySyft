@@ -19,9 +19,8 @@ message ReceiveAssociationRequestMessage {
   syft.core.io.Address address = 2;
   map<string, string> metadata = 3;
   string response = 4;
-  syft.core.io.Address reply_to = 5;
-  string source = 6;
-  string target = 7;
+  string source = 5;
+  string target = 6;
 }
 
 message RespondAssociationRequestMessage {

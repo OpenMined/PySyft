@@ -195,3 +195,10 @@ class DatasetDownloadError(Exception):
         if not message:
             message = "Failed to retrieve data from blob store."
         super().__init__(message)
+
+
+class InvalidNodeCredentials(Exception):
+    def __init__(self, message: str = "") -> None:
+        if not message:
+            message = "Invalid Credentials, verify_key does not match"
+        super().__init__(message)

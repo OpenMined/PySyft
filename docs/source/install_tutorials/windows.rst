@@ -75,11 +75,12 @@ Our next step is an important one. It'll help us make sure our software can inst
 We're going to use a tool called Anaconda to do this. It'll help us create something called a "Virtual Environment."
 
 To install Anaconda, please follow the yellow brick road I lay down here below:
+
 - `Head to the Anaconda website <https://www.anaconda.com/products/individual#Downloads>`_, and find the latest Linux installer.
 - Right click the installer, and select **"Copy Link Address"**
 - Head back to your WSL terminal, and type "wget " and then right click next to it. This should paste the link you copied, which should produce something like::
 
-    wget https://repo.anaconda.com/archive/Anaconda3-2021.05-Linux-x86_64.sh
+    wget https://repo.anaconda.com/archive/Anaconda3-2022.05-Linux-x86_64.sh
 
 - You got it! Not only did you get it, you made it look **easy.** Now just hit enter.
 - At this point, Conda will start installing. Type "yes" and hit Enter for all the various prompts that follow (Accepting the Terms and Conditions, Running Conda Init, etc)
@@ -124,6 +125,8 @@ Step 5: Become the Docker Doctor
 The last tool needed to complete your arsenal is called Docker.
 You can install it by following the instructions `here <https://docs.docker.com/desktop/windows/install/>`_.
 
+Note: The windows user account that launches wsl 2 has to be added to the local group "docker-users". On Windows 10 Home, run netplwiz to add the Windows user to the group "docker-users".
+
 Once you have it running, you just have to ensure the following:
 - You've allocated a sufficient amount of RAM (we recommend atleast 8GB, but you can get by with less)
 - You're using the WSL2 backend
@@ -150,6 +153,8 @@ Everything we've done so far has been to make this next part as easy as possible
 To launch a domain node called "test_domain", ensure your Virtual Environment ("syft_env" in the steps above) is active, that Docker Desktop is running, and run the command below on your WSL terminal::
 
     hagrid launch test_domain
+
+Note: If you get the error message "test_domain is not valid for node_type please use one of the following options: ['domain', 'network']" then rerun the command by changing test_domain to domain.
 
 You should see the containers begin to appear on Docker!
 

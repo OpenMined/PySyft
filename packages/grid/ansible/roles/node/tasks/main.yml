@@ -4,6 +4,16 @@
     var: hostvars[inventory_hostname]
     verbosity: 1
 
+- name: Stop existing cronjobs if provisioning from outside
+  shell: (crontab -r  || true) && sudo kill -9 $(pgrep cron)
+  become: yes
+  when: inventory_hostname != "localhost"
+
+- name: Stop existing ansible provisioning running against localhost
+  shell: pgrep ansible | xargs -I {} bash -c "ps -o cmd fp {} | grep 'connection=local' | kill {}"
+  become: yes
+  when: inventory_hostname != "localhost"
+
 - name: Apply system changes
   import_tasks: system.yml
   when: deploy_only is not defined and install == "true"
@@ -34,24 +44,4 @@
     force: yes
   become_user: "{{ om_user }}"
   ignore_errors: yes
-  when: vagrant is not defined and install == "true"
-
-- name: Check Build Directory
-  stat:
-    path: "{{ build_dir }}"
-    get_checksum: no
-    get_md5: no
-    mime: no
-  register: build_dir_exists
-
-- name: Copy code checkout to build
-  ansible.builtin.copy:
-    src: "{{ syft_dir }}/"
-    dest: "{{ build_dir }}"
-    force: yes
-    remote_src: yes
-    owner: "{{ om_user }}"
-    group: "{{ om_user }}"
-  become_user: "{{ om_user }}"
-  ignore_errors: yes
-  when: build_dir_exists.stat.exists == False and vagrant is not defined and install == "true"
+  when: vagrant is not defined

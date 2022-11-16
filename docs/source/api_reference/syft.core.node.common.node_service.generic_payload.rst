@@ -28,4 +28,5 @@ syft.core.node.common.node\_service.generic\_payload
    :recursive:
 
    syft.core.node.common.node_service.generic_payload.messages
+   syft.core.node.common.node_service.generic_payload.syft_message
 

@@ -85,7 +85,7 @@ back on the official documentation page.).
 
   After a moment or two a popup *might* appear like this:
 
-  |conda_install_6_popup_access|
+
 
   Click "OK" and keep waiting...
 
@@ -107,7 +107,7 @@ back on the official documentation page.).
 
 * Step 3.8: Click "Continue" and you'll see a screen like this:
 
-  |conda_install_8|
+
 
   CONGRATULATIONS!!!! You installed Anaconda!!! You may click the "Close" button and
   proceed to Step 4.
@@ -203,7 +203,13 @@ Step 5: Install Necessary Python Packages
 
   .. code-block:: bash
 
-      pip install hagrid
+      pip install -U hagrid
+      
+* Step 5.5: Install Syft
+
+  .. code-block:: bash
+  
+      pip install -U syft --pre
 
 
 Step 6: Install Docker
@@ -239,11 +245,11 @@ Step 6: Install Docker
 
 * Step 6.7: When you double-click it, you'll see a dialog like the following:
 
-  |docker_install_6|
+
 
 * Step 6.8: Click "Open" and after a few moments the following screen will appear:
 
-  |docker_install_7|
+  |docker_install_6|
 
 * Step 6.9: The yellow color in the bottom right means Docker is still booting. Wait until it's green to proceed. It will look like:
 
@@ -277,11 +283,11 @@ Step 7: Increase the RAM Docker uses to 8GB
 
 * Step 7.4: Click "Apply & Restart" and then wait until the bottom left tab returns from Yellow to Green.
 
-  |docker_install_11|
+
 
 * Step 7.5: You are done! You may now proceed back to the main Docker dashboard by clicking the "X" in the top right corner of the docker window, taking you to a dashboard that looks like:
 
-  |docker_install_12|
+  |docker_install_11|
 
 Congratulations! You're now fully installed and ready to go!!! You may now close your Terminal!
 
@@ -294,7 +300,7 @@ Step 8: Test Hagrid (optional)
 
   .. code-block:: bash
 
-      conda activate syft
+      conda activate syft_env
       hagrid launch test
 
   Wait several minutes. You should see LOTS of logging. The logging will occasionally hang during downloads. If your
@@ -314,7 +320,7 @@ Step 8: Test Hagrid (optional)
 
   .. code-block:: bash
 
-      conda activate syft
+      conda activate syft_env
       jupyter lab
 
   A new browser window should open up.
@@ -357,104 +363,104 @@ Step 8: Test Hagrid (optional)
 
 Well done!
 
-.. |osx_terminal| image:: ../_static/install_tutorials/osx_11_5_1_empty_terminal.png
+.. |osx_terminal| image:: ../_static/install_tutorials/osx_terminal.png
    :width: 50%
 
 .. |find_osx_version| image:: ../_static/install_tutorials/find_osx_version.png
    :width: 50%
 
-.. |conda_button| image:: ../_static/install_tutorials/osx_11_5_1_conda_button.png
+.. |conda_button| image:: ../_static/install_tutorials/conda_button.png
    :width: 50%
 
-.. |click_save| image:: ../_static/install_tutorials/osx_11_5_1_click_save.png
+.. |click_save| image:: ../_static/install_tutorials/click_save.png
    :width: 50%
 
-.. |conda_icon| image:: ../_static/install_tutorials/osx_11_5_1_conda_icon.png
+.. |conda_icon| image:: ../_static/install_tutorials/conda_icon.png
    :width: 50%
 
-.. |conda_install_1| image:: ../_static/install_tutorials/osx_11_5_1_conda_install_1.png
+.. |conda_install_1| image:: ../_static/install_tutorials/conda_install_1.png
    :width: 50%
 
-.. |conda_install_2| image:: ../_static/install_tutorials/osx_11_5_1_conda_install_2.png
+.. |conda_install_2| image:: ../_static/install_tutorials/conda_install_2.png
    :width: 50%
 
-.. |conda_install_3| image:: ../_static/install_tutorials/osx_11_5_1_conda_install_3.png
+.. |conda_install_3| image:: ../_static/install_tutorials/conda_install_3.png
    :width: 50%
 
-.. |conda_install_4| image:: ../_static/install_tutorials/osx_11_5_1_conda_install_4.png
+.. |conda_install_4| image:: ../_static/install_tutorials/conda_install_4.png
    :width: 50%
 
-.. |conda_install_5| image:: ../_static/install_tutorials/osx_11_5_1_conda_install_5.png
+.. |conda_install_5| image:: ../_static/install_tutorials/conda_install_5.png
    :width: 50%
 
-.. |conda_install_6| image:: ../_static/install_tutorials/osx_11_5_1_conda_install_6.png
+.. |conda_install_6| image:: ../_static/install_tutorials/conda_install_6.png
    :width: 50%
 
-.. |conda_install_6_popup| image:: ../_static/install_tutorials/osx_11_5_1_conda_install_6_popup.png
+.. |conda_install_6_popup| image:: ../_static/install_tutorials/conda_install_6_popup.png
    :width: 50%
 
-.. |conda_install_6_popup_already_installed| image:: ../_static/install_tutorials/osx_11_5_1_conda_install_6_popup_already_installed.png
+.. |conda_install_6_popup_already_installed| image:: ../_static/install_tutorials/conda_install_6_popup_already_installed.png
    :width: 50%
 
-.. |conda_install_6_popup_access| image:: ../_static/install_tutorials/osx_11_5_1_conda_install_6_popup_access.png
+.. |conda_install_6_popup_access| image:: ../_static/install_tutorials/conda_install_6_popup_access.png
    :width: 50%
 
-.. |conda_install_7| image:: ../_static/install_tutorials/osx_11_5_1_conda_install_7.png
+.. |conda_install_7| image:: ../_static/install_tutorials/conda_install_7.png
    :width: 50%
 
-.. |conda_install_8| image:: ../_static/install_tutorials/osx_11_5_1_conda_install_8.png
+.. |conda_install_8| image:: ../_static/install_tutorials/conda_install_8.png
    :width: 50%
 
-.. |docker_install_1| image:: ../_static/install_tutorials/osx_11_5_1_docker_install_1.png
+.. |docker_install_1| image:: ../_static/install_tutorials/docker_install_1.png
    :width: 50%
 
-.. |docker_install_2| image:: ../_static/install_tutorials/osx_11_5_1_docker_install_2.png
+.. |docker_install_2| image:: ../_static/install_tutorials/docker_install_2.png
    :width: 50%
 
-.. |docker_install_3| image:: ../_static/install_tutorials/osx_11_5_1_docker_install_3.png
+.. |docker_install_3| image:: ../_static/install_tutorials/docker_install_3.png
    :width: 50%
 
-.. |docker_install_4| image:: ../_static/install_tutorials/osx_11_5_1_docker_install_4.png
+.. |docker_install_4| image:: ../_static/install_tutorials/docker_install_4.png
    :width: 50%
 
-.. |docker_install_5| image:: ../_static/install_tutorials/osx_11_5_1_docker_install_5.png
+.. |docker_install_5| image:: ../_static/install_tutorials/docker_install_5.png
    :width: 50%
 
-.. |docker_install_6| image:: ../_static/install_tutorials/osx_11_5_1_docker_install_6.png
+.. |docker_install_6| image:: ../_static/install_tutorials/docker_install_6.png
    :width: 50%
 
-.. |docker_install_7| image:: ../_static/install_tutorials/osx_11_5_1_docker_install_7.png
+.. |docker_install_7| image:: ../_static/install_tutorials/docker_install_7.png
    :width: 50%
 
-.. |docker_install_8| image:: ../_static/install_tutorials/osx_11_5_1_docker_install_8.png
+.. |docker_install_8| image:: ../_static/install_tutorials/docker_install_8.png
    :width: 50%
 
-.. |docker_install_9| image:: ../_static/install_tutorials/osx_11_5_1_docker_install_9.png
+.. |docker_install_9| image:: ../_static/install_tutorials/docker_install_9.png
    :width: 50%
 
-.. |docker_install_10| image:: ../_static/install_tutorials/osx_11_5_1_docker_install_10.png
+.. |docker_install_10| image:: ../_static/install_tutorials/docker_install_10.png
    :width: 50%
 
-.. |docker_install_11| image:: ../_static/install_tutorials/osx_11_5_1_docker_install_11.png
+.. |docker_install_11| image:: ../_static/install_tutorials/docker_install_11.png
    :width: 50%
 
-.. |docker_install_12| image:: ../_static/install_tutorials/osx_11_5_1_docker_install_12.png
+.. |docker_install_12| image:: ../_static/install_tutorials/docker_install_12.png
    :width: 50%
 
-.. |docker_logo| image:: ../_static/install_tutorials/osx_11_5_1_docker_logo.png
+.. |docker_logo| image:: ../_static/install_tutorials/docker_logo.png
    :width: 50%
 
-.. |hagrid_startup_complete| image:: ../_static/install_tutorials/osx_11_5_1_hagrid_startup_complete.png
+.. |hagrid_startup_complete| image:: ../_static/install_tutorials/hagrid_startup_complete.png
    :width: 50%
 
-.. |pygrid_ui| image:: ../_static/install_tutorials/osx_11_5_1_pygrid_ui.png
+.. |pygrid_ui| image:: ../_static/install_tutorials/pygrid_ui.png
    :width: 50%
 
-.. |syft_1| image:: ../_static/install_tutorials/osx_11_5_1_syft_1.png
+.. |syft_1| image:: ../_static/install_tutorials/syft_1.png
    :width: 50%
 
-.. |syft_2| image:: ../_static/install_tutorials/osx_11_5_1_syft_2.png
+.. |syft_2| image:: ../_static/install_tutorials/syft_2.png
    :width: 50%
 
-.. |syft_3| image:: ../_static/install_tutorials/osx_11_5_1_syft_3.png
+.. |syft_3| image:: ../_static/install_tutorials/syft_3.png
    :width: 50%

@@ -1,6 +1,6 @@
-import {Badge} from '@/omui'
+import { Badge } from '@/omui'
 
-export function RequestStatusBadge({status}) {
+export function RequestStatusBadge({ status }) {
   if (status === 'pending')
     return (
       <Badge variant="primary" type="solid">
@@ -25,5 +25,3 @@ export function RequestStatusBadge({status}) {
     </Badge>
   )
 }
-
-

@@ -1,3 +1,6 @@
+# future
+from __future__ import annotations
+
 # stdlib
 from collections import UserString
 from typing import Any
@@ -7,6 +10,7 @@ from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from typing_extensions import SupportsIndex
 
 # syft absolute
 import syft as sy
@@ -58,7 +62,7 @@ class String(UserString, PyPrimitive):
         res = super().__ge__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def __getitem__(self, key: Union[int, slice, Slice]) -> Any:
+    def __getitem__(self, key: Union[int, slice, Slice, SupportsIndex]) -> Any:
         if isinstance(key, Slice):
             key = key.upcast()
         res = super().__getitem__(key)
@@ -415,5 +419,7 @@ class String(UserString, PyPrimitive):
 
     # fixes __rmod__ in python <= 3.7
     # https://github.com/python/cpython/commit/7abf8c60819d5749e6225b371df51a9c5f1ea8e9
-    def __rmod__(self, template: Union[PyPrimitive, str]) -> PyPrimitive:
+    def __rmod__(
+        self, template: Union[PyPrimitive, str, object]
+    ) -> Union[SyPrimitiveRet, String]:
         return self.__class__(str(template) % self)

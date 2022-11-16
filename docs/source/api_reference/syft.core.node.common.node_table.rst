@@ -28,17 +28,14 @@ syft.core.node.common.node\_table
    :recursive:
 
    syft.core.node.common.node_table.association_request
-   syft.core.node.common.node_table.bin_obj
    syft.core.node.common.node_table.bin_obj_dataset
    syft.core.node.common.node_table.bin_obj_metadata
    syft.core.node.common.node_table.dataset
    syft.core.node.common.node_table.dataset_group
    syft.core.node.common.node_table.entity
    syft.core.node.common.node_table.environment
-   syft.core.node.common.node_table.groups
    syft.core.node.common.node_table.json_obj
    syft.core.node.common.node_table.ledger
-   syft.core.node.common.node_table.mechanism
    syft.core.node.common.node_table.metadata
    syft.core.node.common.node_table.node
    syft.core.node.common.node_table.node_route
@@ -48,6 +45,5 @@ syft.core.node.common.node\_table
    syft.core.node.common.node_table.setup
    syft.core.node.common.node_table.user
    syft.core.node.common.node_table.user_environment
-   syft.core.node.common.node_table.usergroup
    syft.core.node.common.node_table.utils
 

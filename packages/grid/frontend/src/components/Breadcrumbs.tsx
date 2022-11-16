@@ -1,10 +1,10 @@
-import {Fragment} from 'react'
+import { Fragment } from 'react'
 import cn from 'classnames'
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
-import {faChevronRight} from '@fortawesome/free-solid-svg-icons'
-import {Text} from '@/omui'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faChevronRight } from '@fortawesome/free-solid-svg-icons'
+import { Text } from '@/omui'
 
-function Breadcrumbs({path}: {path: string}) {
+function Breadcrumbs({ path }: { path: string }) {
   const split = path.split('.')
 
   return (
@@ -15,7 +15,12 @@ function Breadcrumbs({path}: {path: string}) {
         return (
           <Fragment key={`bc-${crumb}-${index}`}>
             {index > 0 && (
-              <div className={cn(isLast && activeColors, 'w-6 h-6 flex items-center justify-center text-xxs')}>
+              <div
+                className={cn(
+                  isLast && activeColors,
+                  'w-6 h-6 flex items-center justify-center text-xxs'
+                )}
+              >
                 <FontAwesomeIcon icon={faChevronRight} />
               </div>
             )}
@@ -27,4 +32,4 @@ function Breadcrumbs({path}: {path: string}) {
   )
 }
 
-export {Breadcrumbs}
+export { Breadcrumbs }

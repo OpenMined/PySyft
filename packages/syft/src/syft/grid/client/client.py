@@ -22,8 +22,9 @@ from .. import GridURL
 from ...core.io.connection import ClientConnection
 from ...core.io.route import SoloRoute
 from ...core.node.common.client import Client
-from ...core.node.domain.client import DomainClient
-from ...core.node.network.client import NetworkClient
+from ...core.node.domain_client import DomainClient
+from ...core.node.network_client import NetworkClient
+from ...util import bcolors
 from ...util import verify_tls
 from .grid_connection import GridHTTPConnection
 
@@ -101,19 +102,26 @@ def login(
     password: Optional[str] = None,
     conn_type: Type[ClientConnection] = GridHTTPConnection,
     verbose: Optional[bool] = True,
+    timeout: Optional[float] = None,
+    retry: Optional[int] = None,
 ) -> Client:
+
+    retry = 5 if retry is None else retry  # Default to 5 retries
+    timeout = 10 if timeout is None else timeout  # Default to 10 seconds
 
     if password == "changethis":  # nosec
 
         if email == "info@openmined.org":
             print(
-                "WARNING: CHANGE YOUR USERNAME AND PASSWORD!!! \n\nAnyone can login as an admin to your node"
+                f"{bcolors.YELLOW}WARNING:{bcolors.ENDC} CHANGE YOUR USERNAME AND PASSWORD!!! \n\n"
+                + "Anyone can login as an admin to your node"
                 + " right now because your password is still the default PySyft username and password!!!\n"
             )
         else:
             print(
-                "WARNING: CHANGE YOUR PASSWORD!!! \n\nAnyone can login as an admin to your node"
-                + " right now because your password is still the default PySyft password!!!\n"
+                f"{bcolors.YELLOW}WARNING:{bcolors.ENDC} CHANGE YOUR PASSWORD!!! \n\n"
+                + "Anyone can login into your account"
+                + " right now because your password is the default PySyft password!!!\n"
             )
 
     # TRASK: please keep this so that people will stop putting their passwords in notebooks.
@@ -150,10 +158,59 @@ def login(
         credentials = {"email": email, "password": password}
 
     # connecting to domain
-    node = connect(url=grid_url, credentials=credentials, conn_type=conn_type)
+    node = None
+    timeout_btw_retries = timeout
+    retry_attempt = 1
+
+    while node is None and retry_attempt <= retry:
+        try:
+            node = connect(
+                url=grid_url,
+                credentials=credentials,
+                conn_type=conn_type,
+                timeout=timeout,
+            )
+        except requests.ReadTimeout:
+            print(
+                f"\n{bcolors.BOLD}{bcolors.RED}ReadTimeout:{bcolors.ENDC}\n"
+                f"\tConnection to node with url: {grid_url.host_or_ip}:{grid_url.port} "
+                f"timed out after {timeout} seconds.\n"
+                "\tPlease try the following options:\n"
+                "\t- Please try increasing the timeout by passing it as an argument to the login method.\n"
+                "\te.g. `sy.login(email='my@email.com', password='password', url='localhost', timeout=30)`\n"
+                "\t- The domain/network node you're trying to connect could be offline "
+                "at the current moment. Please try again later.\t"
+            )
+            return  # type: ignore
+
+        except requests.ConnectionError as e:
+            if retry_attempt <= retry:
+                print(
+                    f"\r{bcolors.BOLD}ConnectionError{bcolors.ENDC}: Retrying again.... Attempt: {retry_attempt}",
+                    end="\r",
+                )
+                time.sleep(timeout_btw_retries)
+            else:
+                raise e
+        retry_attempt += 1
+
+    if node is None:
+        print(
+            f"\n{bcolors.BOLD}{bcolors.RED}ConnectionError:{bcolors.ENDC}\n"
+            f"\tOops !!! We can't seem to connect to the node: '{grid_url.host_or_ip}:{grid_url.port}'\n"
+            "\tPlease try the following options:\n"
+            f"\t- Are you sure the server at '{grid_url.host_or_ip}:{grid_url.port}' is running? "
+            "Please check the `url`/`port` you entered are correct.\n"
+            f"\t- Are you sure you can connect to the server at '{grid_url.host_or_ip}:{grid_url.port}'? "
+            "Perhaps there's a firewall between you and the server?\n"
+            "\t- The domain/network node you're trying to connect could be offline "
+            "at the current moment. Please try again later.\n"
+        )
+        return  # type: ignore
 
     if verbose:
         # bit of fanciness
+        sys.stdout.write("\rConnecting to " + str(grid_url.host_or_ip) + "...")
         sys.stdout.write(" done! \t Logging into")
         sys.stdout.write(" " + str(node.name) + "... ")
         if email is None or password is None:
@@ -161,7 +218,7 @@ def login(
         time.sleep(1)  # ok maybe too fancy... but c'mon don't you want to be fancy?
         print("done!")
     else:
-        print("Logging into: ...", str(node.name), " Done...")
+        print("Logging into", str(node.name), "... done!")
 
     if sy.__version__ != node.version:
         print(
@@ -193,21 +250,24 @@ def register(
         password = getpass("Please enter your password")
 
     if url is None:
-        url = input("Please enter URL of domain (ex: 'http://localhost'):")
+        url = input("Please enter URL of domain (ex: 'localhost'):")
 
     if port is None:
         port = int(input("Please enter the port your domain is running on:"))
 
-    register_url = url + ":" + str(port) + "/api/v1/register"
+    grid_url = GridURL(host_or_ip=url, port=port)
+
+    register_url = grid_url.url + "/api/v1/register"
     myobj = {"name": name, "email": email, "password": password}
 
-    x = requests.post(register_url, data=json.dumps(myobj))
+    response = requests.post(register_url, data=json.dumps(myobj))
 
-    if "error" not in json.loads(x.text):
+    if "error" not in json.loads(response.text):
         if verbose:
             print("Successfully registered! Logging in...")
+
         return login(
-            url=url, port=port, email=email, password=password, verbose=verbose
+            url=grid_url, port=port, email=email, password=password, verbose=verbose
         )
 
-    raise Exception(x.text)
+    raise Exception(response.text)

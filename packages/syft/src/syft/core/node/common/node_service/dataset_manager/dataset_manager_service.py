@@ -20,7 +20,7 @@ from .....common.group import VERIFYALL
 from .....common.message import ImmediateSyftMessageWithReply
 from .....common.uid import UID
 from .....store.storeable_object import StorableObject
-from ....domain.domain_interface import DomainInterface
+from ....domain_interface import DomainInterface
 from ...exceptions import AuthorizationError
 from ...exceptions import DatasetNotFoundError
 from ...node_table.utils import model_to_json

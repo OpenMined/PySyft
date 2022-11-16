@@ -49,10 +49,22 @@ def basic_auth_check(f: Any) -> Callable:
     return inner_decorator
 
 
+def down_callback(context: Dict, future: Future) -> None:
+    # optional user-defined callback function
+    print(context, future.result())
+
+
 def up_callback(context: Dict, future: Future) -> None:
     # optional user-defined callback function
     print(context, future.result())
 
+
+shell2http.register_command(
+    endpoint="down",
+    command_name="tailscale down",
+    callback_fn=down_callback,
+    decorators=[basic_auth_check],
+)
 
 shell2http.register_command(
     endpoint="up",
@@ -71,5 +83,18 @@ shell2http.register_command(
     endpoint="status",
     command_name="tailscale status",
     callback_fn=status_callback,
+    decorators=[basic_auth_check],
+)
+
+
+def debug_prefs_callback(context: Dict, future: Future) -> None:
+    # optional user-defined callback function
+    print(context, future.result())
+
+
+shell2http.register_command(
+    endpoint="debug",
+    command_name="tailscale debug prefs",
+    callback_fn=debug_prefs_callback,
     decorators=[basic_auth_check],
 )

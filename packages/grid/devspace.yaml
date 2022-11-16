@@ -25,7 +25,7 @@ vars:
     value: tailscale
   - name: SERVICE_NAME_REDIS
     value: redis
-  - name: SERVICE_NAME_TRAEFIK
+  - name: SERVICE_NAME_PROXY
     value: proxy
   - name: SERVICE_NAME_SEAWEEDFS
     value: seaweedfs
@@ -33,8 +33,10 @@ vars:
     command: "python3 ../../VERSION"
   - name: VERSION_HASH
     command: "python3 ../../VERSION hash"
+  - name: STACK_API_KEY
+    command: "python3 ../hagrid/hagrid/rand_sec.py"
   - name: NODE_TYPE
-    value: network
+    value: "network"
   - name: RELEASE
     value: production
   - name: CONTAINER_HOST
@@ -83,6 +85,10 @@ vars:
     value: traefik-domain.yaml
   - name: NETWORK_CHECK_INTERVAL
     value: "60"
+  - name: DOMAIN_CHECK_INTERVAL
+    value: "60"
+  - name: TEST_MODE
+    value: "0"
 
 images:
   backend:
@@ -91,7 +97,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.16"
+      - "0.7.0-beta.57"
     createPullSecret: true
     dockerfile: ./backend/backend.dockerfile
     context: ../
@@ -103,7 +109,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.16"
+      - "0.7.0-beta.57"
     createPullSecret: true
     dockerfile: ./frontend/frontend.dockerfile
     context: ./frontend
@@ -122,7 +128,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.16"
+      - "0.7.0-beta.57"
     createPullSecret: true
     dockerfile: ./vpn/headscale.dockerfile
     context: ./vpn
@@ -134,7 +140,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.16"
+      - "0.7.0-beta.57"
     createPullSecret: true
     dockerfile: ./vpn/tailscale.dockerfile
     context: ./vpn
@@ -146,7 +152,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.15"
+      - "0.7.0-beta.57"
     createPullSecret: true
     dockerfile: ./vpn/iptables.dockerfile
     context: ./vpn
@@ -182,7 +188,7 @@ deployments:
   #       - k8s/manifests/vpn-iptables
 
   # containers
-  - name: tailscale
+  - name: proxy
     helm:
       componentChart: true
       values:
@@ -194,7 +200,7 @@ deployments:
                   name: traefik-conf
             env:
               - name: SERVICE_NAME
-                value: ${SERVICE_NAME_TRAEFIK}
+                value: ${SERVICE_NAME_PROXY}
           - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}
             securityContext:
               capabilities:
@@ -218,7 +224,7 @@ deployments:
             configMap:
               name: traefik-main-config
         service:
-          name: ${SERVICE_NAME_TAILSCALE}
+          name: ${SERVICE_NAME_PROXY}
           ports:
             - name: proxy
               port: 80
@@ -412,6 +418,8 @@ deployments:
                 value: ${REDIS_HOST}
               - name: REDIS_PORT
                 value: ${REDIS_PORT}
+              - name: SERVICE_NAME
+                value: ${SERVICE_NAME_BACKEND}
               - name: S3_ENDPOINT
                 value: ${S3_ENDPOINT}
               - name: S3_PORT
@@ -428,6 +436,8 @@ deployments:
                 value: ${RELEASE}
               - name: USE_BLOB_STORAGE
                 value: ${USE_BLOB_STORAGE}
+              - name: TEST_MODE
+                value: $!{TEST_MODE}
         service:
           name: ${SERVICE_NAME_BACKEND}
           ports:
@@ -440,15 +450,7 @@ deployments:
         containers:
           - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
             command:
-              - waitforit
-            args:
-              [
-                "-address=http://backend:80/api/v1/syft/metadata",
-                "-status=200",
-                "-timeout=600",
-                "--",
-                "/start.sh",
-              ]
+              - /start.sh
             securityContext:
               capabilities:
                 add: ["NET_ADMIN"]
@@ -476,6 +478,8 @@ deployments:
                 value: ${SERVICE_NAME_DB}
               - name: POSTGRES_DB
                 value: ${POSTGRES_DB}
+              - name: SERVICE_NAME
+                value: ${SERVICE_NAME_BACKEND_STREAM}
               - name: POSTGRES_USER
                 value: ${POSTGRES_USER}
               - name: POSTGRES_PASSWORD
@@ -524,6 +528,8 @@ deployments:
                 value: ${RELEASE}
               - name: USE_BLOB_STORAGE
                 value: ${USE_BLOB_STORAGE}
+              - name: TEST_MODE
+                value: $!{TEST_MODE}
         service:
           name: ${SERVICE_NAME_BACKEND_STREAM}
           ports:
@@ -536,15 +542,7 @@ deployments:
         containers:
           - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
             command:
-              - waitforit
-            args:
-              [
-                "-address=http://backend:80/api/v1/syft/metadata",
-                "-status=200",
-                "-timeout=600",
-                "--",
-                "/worker-start.sh",
-              ]
+              - /worker-start.sh
             securityContext:
               capabilities:
                 add: ["NET_ADMIN"]
@@ -606,8 +604,12 @@ deployments:
                 value: ${RELEASE}
               - name: NETWORK_CHECK_INTERVAL
                 value: $!{NETWORK_CHECK_INTERVAL}
+              - name: DOMAIN_CHECK_INTERVAL
+                value: $!{DOMAIN_CHECK_INTERVAL}
               - name: USE_BLOB_STORAGE
                 value: ${USE_BLOB_STORAGE}
+              - name: TEST_MODE
+                value: $!{TEST_MODE}
 
   - name: frontend
     helm:

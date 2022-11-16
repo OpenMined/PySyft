@@ -9,6 +9,8 @@ on:
       - main
       - "0.6.0"
       - "0.7.0"
+      - "0.8"
+
 defaults:
   run:
     working-directory: ./packages/hagrid
@@ -19,11 +21,12 @@ jobs:
       max-parallel: 3
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.10"]
+        # python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.7", "3.10"]
 
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -34,7 +37,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         if: steps.changes.outputs.hagrid == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -42,7 +45,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.hagrid == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache
@@ -51,7 +54,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         if: steps.changes.outputs.hagrid == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -65,12 +68,19 @@ jobs:
           pip install --upgrade bandit safety setuptools wheel twine tox
           pip install -e .
 
-      - name: Scan for security issues
-        continue-on-error: true
-        if: steps.changes.outputs.hagrid == 'true'
+      - name: Scan for security issues python 3.8+
+        if: steps.changes.outputs.hagrid == 'true' && matrix.python-version != '3.7'
         run: |
-          bandit -r .
-          safety check
+          pip install importlib-metadata==4.13.0
+          bandit -r hagrid
+          safety check -i 42923
+
+      - name: Scan for security issues python 3.7
+        if: steps.changes.outputs.hagrid == 'true' && matrix.python-version == '3.7'
+        run: |
+          pip install importlib-metadata==4.13.0
+          bandit -r hagrid
+          safety check -i 42923
 
       - name: Build Wheel
         if: steps.changes.outputs.hagrid == 'true'
@@ -86,7 +96,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -106,11 +116,12 @@ jobs:
       max-parallel: 3
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.10"]
+        # python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.7", "3.10"]
 
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -121,7 +132,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         if: steps.changes.outputs.hagrid == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -129,7 +140,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.hagrid == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache
@@ -138,7 +149,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         if: steps.changes.outputs.hagrid == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -150,7 +161,6 @@ jobs:
         if: steps.changes.outputs.hagrid == 'true'
         run: |
           pip install packaging wheel --default-timeout=60
-          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
           pip install -e .
           pip install pytest
 
@@ -163,3 +173,8 @@ jobs:
         if: steps.changes.outputs.hagrid == 'true'
         run: |
           hagrid debug
+
+      - name: Run hagrid quickstart
+        if: steps.changes.outputs.hagrid == 'true'
+        run: |
+          hagrid quickstart --reset --quiet --test

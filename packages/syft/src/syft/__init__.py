@@ -26,7 +26,7 @@ Syft "python" functionality includes the following modules:
 To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
 
-__version__ = "0.7.0-beta.16"
+__version__ = "0.7.0-beta.57"
 
 # stdlib
 from pathlib import Path
@@ -46,25 +46,33 @@ from . import logger  # noqa: F401
 
 # ASTRACT OBJECT IMPORTS
 from .core import common  # noqa: F401
+from .core.adp.data_subject_list import DataSubjectArray  # noqa: F401
+from .core.adp.data_subject_list import DataSubjectList  # noqa: F401
 
 # Convenience Methods
 from .core.common.serde.deserialize import _deserialize as deserialize  # noqa: F401
 from .core.common.serde.serialize import _serialize as serialize  # noqa: F401
+
+# TFF
+from .core.node.common.node_service import tff  # noqa: F401
 from .core.node.common.node_service.testing_services.repr_service import (  # noqa: F401
     ReprMessage,
 )
-from .core.node.device.device import Device  # noqa: F401
-from .core.node.device.device import DeviceClient  # noqa: F401
-from .core.node.domain.domain import Domain  # noqa: F401
-from .core.node.domain.domain import DomainClient  # noqa: F401
-from .core.node.network.network import Network  # noqa: F401
-from .core.node.network.network import NetworkClient  # noqa: F401
+from .core.node.device import Device  # noqa: F401
+from .core.node.device_client import DeviceClient  # noqa: F401
+from .core.node.domain import Domain  # noqa: F401
+from .core.node.domain import DomainClient  # noqa: F401
+from .core.node.network import Network  # noqa: F401
+from .core.node.network_client import NetworkClient  # noqa: F401
 
 # Convenience Constructors
-from .core.node.vm.vm import VirtualMachine  # noqa: F401
-from .core.node.vm.vm import VirtualMachineClient  # noqa: F401
+from .core.node.vm import VirtualMachine  # noqa: F401
+from .core.node.vm_client import VirtualMachineClient  # noqa: F401
 from .core.tensor import autodp  # noqa: F401
-from .core.tensor.autodp import phi_tensor  # noqa: F401
+from .core.tensor import nn  # noqa: F401
+from .core.tensor.autodp.gamma_tensor import GammaTensor  # noqa: F401
+from .core.tensor.autodp.phi_tensor import PhiTensor  # noqa: F401
+from .core.tensor.lazy_repeat_array import lazyrepeatarray  # noqa: F401
 from .core.tensor.tensor import Tensor  # noqa: F401
 from .experimental_flags import flags  # noqa: F401
 from .grid.client.client import connect  # noqa: F401

@@ -2,22 +2,30 @@
 import platform
 
 # third party
-from hagrid import __version__
 from setuptools import find_packages
 from setuptools import setup
 
-DATA_FILES = {
-    "img": ["hagrid/img/*.png"],
-}
+__version__ = "0.2.111"
+
+DATA_FILES = {"img": ["hagrid/img/*.png"], "hagrid": ["*.yml"]}
 
 packages = [
     "ascii_magic",
     "click",
+    "cryptography>=37.0.2",
     "gitpython",
+    "jinja2",
     "names",
+    "packaging>=21.3",
+    "paramiko",
+    "pyOpenSSL>=22.0.0",
     "requests",
     "rich",
     "setuptools",
+    "virtualenv-api",
+    "virtualenv",
+    "PyYAML",
+    "tqdm",
 ]
 
 if platform.system().lower() != "windows":
@@ -28,6 +36,8 @@ if platform.system().lower() != "windows":
 setup(
     name="hagrid",
     description="Happy Automation for Grid",
+    long_description="HAGrid is the swiss army knife of OpenMined's PySyft and PyGrid.",
+    long_description_content_type="text/plain",
     version=__version__,
     author="Andrew Trask <andrew@openmined.org>",
     packages=find_packages(),

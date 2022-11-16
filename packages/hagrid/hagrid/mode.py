@@ -21,7 +21,7 @@ def is_editable_mode() -> bool:
             # if the current code is in the same path as the egg-link its -e mode
             installed_as_editable = current_package_root in linked_folder
             break
-        except Exception:
+        except Exception:  # nosec
             pass
 
     if os.path.exists(Path(current_package_root) / "hagrid.egg-info"):

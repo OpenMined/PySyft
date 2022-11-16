@@ -4,7 +4,7 @@ describe('PyGrid Domain integration test', () => {
     cy.findByText(/This domain is running/)
     cy.findByPlaceholderText(/abc@university.edu/).type('info@openmined.org')
     cy.findByPlaceholderText('···········').type('changethis')
-    cy.findByRole('button', {name: /login/i}).click()
+    cy.findByRole('button', { name: /login/i }).click()
     cy.location('pathname').should('equal', '/users')
   })
 })

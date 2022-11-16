@@ -104,7 +104,6 @@ from ...logger import debug
 from ...logger import error
 from ...logger import warning
 from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
-from ...util import obj2pointer_type
 from ..common.pointer import AbstractPointer
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import serializable
@@ -204,6 +203,9 @@ class Pointer(AbstractPointer):
         :rtype: StorableObject
         """
 
+        # relative
+        from ...core.node.common.client import GET_OBJECT_TIMEOUT
+
         debug(
             f"> GetObjectAction for id_at_location={self.id_at_location} "
             + f"with delete_obj={delete_obj}"
@@ -215,7 +217,9 @@ class Pointer(AbstractPointer):
             delete_obj=delete_obj,
         )
 
-        obj = self.client.send_immediate_msg_with_reply(msg=obj_msg)
+        obj = self.client.send_immediate_msg_with_reply(
+            msg=obj_msg, timeout=GET_OBJECT_TIMEOUT
+        )
         if not proxy_only and obj.obj.is_proxy:
             presigned_url_path = obj.obj._data.url
             presigned_url = self.client.url_from_path(presigned_url_path)
@@ -328,17 +332,12 @@ class Pointer(AbstractPointer):
 
         return self
 
-    def publish(self, sigma: float = 1.5) -> Any:
+    def publish(self, sigma: float = 1.5, private: bool = True) -> Any:
 
         # relative
-        from ...lib.python import Float
         from ..node.common.node_service.publish.publish_service import (
             PublishScalarsAction,
         )
-
-        # TODO: make publish genuinely asynchronous (not sure why it isn't already but
-        # if you call publish on an object before it exists it complains.
-        self.block
 
         id_at_location = UID()
 
@@ -347,17 +346,16 @@ class Pointer(AbstractPointer):
             address=self.client.address,
             publish_ids_at_location=[self.id_at_location],
             sigma=sigma,
+            private=private,
         )
 
         self.client.send_immediate_msg_without_reply(msg=obj_msg)
         # create pointer which will point to float result
 
-        afloat = Float(0.0)
-        ptr_type = obj2pointer_type(obj=afloat)
-        ptr = ptr_type(
-            client=self.client,
-            id_at_location=id_at_location,
+        ptr = self.client.lib_ast.query("syft.lib.python.Any").pointer_type(
+            client=self.client
         )
+        ptr.id_at_location = id_at_location
         ptr._pointable = True
 
         # return pointer
@@ -366,7 +364,7 @@ class Pointer(AbstractPointer):
     def get(
         self,
         request_block: bool = False,
-        timeout_secs: int = 20,
+        timeout_secs: int = 600,
         reason: str = "",
         delete_obj: bool = True,
         verbose: bool = False,
@@ -469,6 +467,7 @@ class Pointer(AbstractPointer):
 
         # WARNING: This is sending a serialized Address back to the constructor
         # which currently depends on a Client for send_immediate_msg_with_reply
+
         out = pointer_type(
             id_at_location=_deserialize(blob=proto.id_at_location),
             client=_deserialize(blob=proto.location),
@@ -478,7 +477,6 @@ class Pointer(AbstractPointer):
         )
 
         out.public_shape = sy.deserialize(proto.public_shape, from_bytes=True)
-
         return out
 
     @staticmethod
@@ -731,4 +729,5 @@ class Pointer(AbstractPointer):
             return
 
         if self.gc_enabled:
+            # this is not being used in the node currenetly
             self.client.gc.apply(self)

@@ -5,8 +5,9 @@
 # third party
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
+from google.protobuf import message as _message
+from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -22,10 +23,19 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b'\n\x1cproto/core/io/location.proto\x12\x0csyft.core.io\x1a%proto/core/common/common_object.proto"C\n\x10SpecificLocation\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0c\n\x04name\x18\x02 \x01(\tb\x06proto3'
 )
 
-_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
-_builder.BuildTopDescriptorsAndMessages(
-    DESCRIPTOR, "proto.core.io.location_pb2", globals()
+
+_SPECIFICLOCATION = DESCRIPTOR.message_types_by_name["SpecificLocation"]
+SpecificLocation = _reflection.GeneratedProtocolMessageType(
+    "SpecificLocation",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _SPECIFICLOCATION,
+        "__module__": "proto.core.io.location_pb2"
+        # @@protoc_insertion_point(class_scope:syft.core.io.SpecificLocation)
+    },
 )
+_sym_db.RegisterMessage(SpecificLocation)
+
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None

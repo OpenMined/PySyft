@@ -20,16 +20,16 @@ def test_quality_check(tb):
 
 def test_data_and_pygrid(tb):
     assert (
-        tb.cell_output_text(31)
-        == "raw_data is of type: <class 'pandas.core.frame.DataFrame'>\nraw_data is of type: <class 'numpy.ndarray'>"
+        "raw_data is of type: <class 'pandas.core.frame.DataFrame'>\nraw_data is of type: <class 'numpy.ndarray'>"
+        in tb.cell_output_text(31)
     )
     assert (
-        tb.cell_output_text(32)
-        == "test_data is of type: <class 'torch.Tensor'>\ntest_data is of type: <class 'numpy.ndarray'>"
+        "test_data is of type: <class 'torch.Tensor'>\ntest_data is of type: <class 'numpy.ndarray'>"
+        in tb.cell_output_text(32)
     )
     assert (
-        tb.cell_output_text(36)
-        == "random_data is of dtype: float64\nrandom_data is now of type: int32"
+        "random_data is of dtype: float64\nrandom_data is now of type: int32"
+        in tb.cell_output_text(36)
     )
 
 

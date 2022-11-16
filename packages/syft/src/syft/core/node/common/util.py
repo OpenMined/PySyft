@@ -95,15 +95,29 @@ def upload_result_to_s3(
 
     # 3 - Create a ProxyDataset for the given data
     # Retrieve fully qualified name to  use for pointer creation.
+    obj_public_kwargs = getattr(data, "proxy_public_kwargs", {})
     data_fqn = str(get_fully_qualified_name(data))
-    data_dtype = str(type(data))
+
+    # relative
+    from ...tensor import Tensor
+    from ...tensor.autodp.gamma_tensor import GammaTensor as GT
+    from ...tensor.autodp.phi_tensor import PhiTensor as PT
+
+    if isinstance(data, Tensor) and (
+        isinstance(data.child, PT) or isinstance(data.child, GT)
+    ):
+        data_fqn = str(get_fully_qualified_name(data.child))
+        child_kwargs = getattr(data.child, "proxy_public_kwargs", {})
+        obj_public_kwargs.update(child_kwargs)
+
     proxy_obj = ProxyDataset(
         asset_name=asset_name,
         dataset_name=dataset_name,
         node_id=domain_id,
-        dtype=data_dtype,
+        dtype=data.__class__.__name__,
         fqn=data_fqn,
         shape=data.shape,
+        obj_public_kwargs=obj_public_kwargs,
     )
     return proxy_obj
 
@@ -216,7 +230,7 @@ def upload_to_s3_using_presigned(
             )  # maintain list of part no and ETag
 
         # Step 4 - Send a message to PyGrid informing about dataset upload complete!
-        upload_response = client.datasets.perform_request(
+        client.datasets.perform_request(
             syft_msg=UploadDataCompleteMessage,
             content={
                 "upload_id": upload_response.payload.upload_id,
@@ -227,14 +241,26 @@ def upload_to_s3_using_presigned(
 
         # Step 5 - Create a proxy dataset for the uploaded data.
         # Retrieve fully qualified name to  use for pointer creation.
-        obj_public_kwargs = getattr(data, "proxy_public_kwargs", None)
+        obj_public_kwargs = getattr(data, "proxy_public_kwargs", {})
         data_fqn = str(get_fully_qualified_name(data))
-        data_dtype = str(type(data))
+
+        # relative
+        from ...tensor import Tensor
+        from ...tensor.autodp.gamma_tensor import GammaTensor as GT
+        from ...tensor.autodp.phi_tensor import PhiTensor as PT
+
+        if isinstance(data, Tensor) and (
+            isinstance(data.child, PT) or isinstance(data.child, GT)
+        ):
+            data_fqn = str(get_fully_qualified_name(data.child))
+            child_kwargs = getattr(data.child, "proxy_public_kwargs", {})
+            obj_public_kwargs.update(child_kwargs)
+
         proxy_data = ProxyDataset(
             asset_name=asset_name,
             dataset_name=dataset_name,
             node_id=client.id,
-            dtype=data_dtype,
+            dtype=data.__class__.__name__,
             fqn=data_fqn,
             shape=data.shape,
             obj_public_kwargs=obj_public_kwargs,

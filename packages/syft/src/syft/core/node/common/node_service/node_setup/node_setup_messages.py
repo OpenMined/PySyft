@@ -6,6 +6,7 @@ from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from nacl.signing import SigningKey
 from typing_extensions import final
 
 # relative
@@ -180,6 +181,7 @@ class CreateInitialSetUpMessage(ImmediateSyftMessageWithReply):
         domain_name: str,
         budget: float,
         reply_to: Address,
+        signing_key: SigningKey,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -188,6 +190,7 @@ class CreateInitialSetUpMessage(ImmediateSyftMessageWithReply):
         self.password = password
         self.domain_name = domain_name
         self.budget = budget
+        self.signing_key = signing_key
 
     def _object2proto(self) -> CreateInitialSetUpMessage_PB:
         """Returns a protobuf serialization of self.
@@ -210,6 +213,7 @@ class CreateInitialSetUpMessage(ImmediateSyftMessageWithReply):
             domain_name=self.domain_name,
             budget=self.budget,
             reply_to=serialize(self.reply_to),
+            signing_key=bytes(self.signing_key),
         )
 
     @staticmethod
@@ -235,6 +239,7 @@ class CreateInitialSetUpMessage(ImmediateSyftMessageWithReply):
             budget=proto.budget,
             domain_name=proto.domain_name,
             reply_to=_deserialize(blob=proto.reply_to),
+            signing_key=SigningKey(proto.signing_key),
         )
 
     @staticmethod

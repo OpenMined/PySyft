@@ -42,5 +42,6 @@ syft.core.node.common
    syft.core.node.common.node_manager
    syft.core.node.common.node_service
    syft.core.node.common.node_table
+   syft.core.node.common.permissions
    syft.core.node.common.util
 

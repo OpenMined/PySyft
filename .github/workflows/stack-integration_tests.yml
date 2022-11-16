@@ -12,6 +12,8 @@ on:
       - main
       - "0.6.0"
       - "0.7.0"
+      - "0.8"
+
   workflow_dispatch:
     inputs:
       none:
@@ -21,15 +23,17 @@ on:
 jobs:
   stack-integration-tests:
     strategy:
-      max-parallel: 3
+      max-parallel: 99
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, windows]
         python-version: ["3.10"]
+        pytest-modules: ["frontend network security", "e2e"]
+      fail-fast: false
 
     runs-on: ${{matrix.os}}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -40,7 +44,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -52,7 +56,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -63,92 +67,113 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
           pip install tox --upgrade
 
+      - name: Show choco installed packages
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: list --localonly
+
+      - name: Install git
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install git.install --params "/GitAndUnixToolsOnPath /WindowsTerminal /NoAutoCrlf" -y
+
+      - name: Install cmake
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install cmake.portable --installargs 'ADD_CMAKE_TO_PATH=System' -y
+
+      - name: Check cmake version
+        if: steps.changes.outputs.stack == 'true' &&  matrix.os == 'windows'
+        run: |
+          cmake --version
+        shell: cmd
+
+      - name: Install visualcpp-build-tools
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install visualstudio2019-workload-vctools -y
+
+      - name: Install jaxlib
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        run: |
+          python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
+
       - name: Install Docker Compose
-        if: runner.os == 'Linux'
+        if: steps.changes.outputs.stack == 'true' && runner.os == 'Linux'
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.3.4
+          DOCKER_COMPOSE_VERSION=v2.7.0
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 30
+        env:
+          HAGRID_ART: false
+          PYTEST_MODULES: "${{ matrix.pytest-modules }}"
         run: |
           tox -e stack.test.integration
-
-  stack-integration-tests-public:
-    strategy:
-      max-parallel: 3
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.10"]
-
-    runs-on: ${{matrix.os}}
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Get pip cache dir
-        id: pip-cache
-        run: |
-          echo "::set-output name=dir::$(pip cache dir)"
-
-      - name: pip cache
-        uses: actions/cache@v2
-        with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
-          restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}
-
-      - name: Upgrade pip
-        run: |
-          pip install --upgrade --user pip
-
-      - name: Install tox
-        run: |
-          pip install tox --upgrade
-
-      - name: Install Docker Compose
-        if: runner.os == 'Linux'
+      #Run log collector python script
+      - name: Run log collector
+        if: failure()
         shell: bash
         run: |
-          mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.3.4
-          curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
-          chmod +x ~/.docker/cli-plugins/docker-compose
+          python ./scripts/container_log_collector.py
 
-      - name: Run integration tests
-        timeout-minutes: 30
-        continue-on-error: true
+      # Get Job name and url
+      - name: Get job name and url
+        id: job_name
+        if: failure()
         run: |
-          HAGRID_FLAGS="--tag=latest --test" tox -e stack.test.integration
+          echo "::set-output name=job_name::$(echo ${{ github.job }})"
+          echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
+      - name: Get current date
+        id: date
+        if: failure()
+        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+
+      - name: Upload logs to GitHub
+        uses: actions/upload-artifact@master
+        if: failure()
+        with:
+          name: ${{ matrix.os }}-${{ steps.job_name.outputs.job_name }}-${{ matrix.pytest-modules }}-logs-${{ steps.date.outputs.date }}
+          path: ./logs/${{ steps.job_name.outputs.job_name}}/
+
+      - name: Mandatory Container cleanup
+        if: steps.changes.outputs.stack == 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
+          docker rm `docker ps -aq` --force || true
+          docker volume prune -f || true
 
   stack-integration-tests-tls:
     strategy:
-      max-parallel: 3
+      max-parallel: 99
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.10"]
+        pytest-modules: ["frontend network security", "e2e"]
+      fail-fast: false
 
     runs-on: ${{matrix.os}}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -159,7 +184,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -171,7 +196,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -182,19 +207,54 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
           pip install tox --upgrade
 
+      - name: Show choco installed packages
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: list --localonly
+
+      - name: Install git
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install git.install --params "/GitAndUnixToolsOnPath /WindowsTerminal /NoAutoCrlf" -y
+
+      - name: Install cmake
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install cmake.portable --installargs 'ADD_CMAKE_TO_PATH=System' -y
+
+      - name: Check cmake version
+        if: steps.changes.outputs.stack == 'true' &&  matrix.os == 'windows'
+        run: |
+          cmake --version
+        shell: cmd
+
+      - name: Install visualcpp-build-tools
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install visualstudio2019-workload-vctools -y
+
+      - name: Install jaxlib
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        run: |
+          python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
+
       - name: Install Docker Compose
-        if: runner.os == 'Linux'
+        if: steps.changes.outputs.stack == 'true' && runner.os == 'Linux'
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.3.4
+          DOCKER_COMPOSE_VERSION=v2.7.0
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 
@@ -203,7 +263,7 @@ jobs:
         shell: bash
         run: |
           sudo apt update && sudo apt install libnss3-tools -y
-          MKCERT_VERSION=v1.4.3
+          MKCERT_VERSION=v1.4.4
           curl -sSL https://github.com/FiloSottile/mkcert/releases/download/${MKCERT_VERSION}/mkcert-${MKCERT_VERSION}-linux-amd64 -o /usr/local/bin/mkcert
           chmod +x /usr/local/bin/mkcert
           which mkcert
@@ -211,164 +271,59 @@ jobs:
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 30
+        env:
+          HAGRID_ART: false
+          PYTEST_MODULES: "${{ matrix.pytest-modules }}"
         run: |
           tox -e stack.test.integration.tls
+      #Run log collector python script
+      - name: Run log collector
+        if: failure()
+        shell: bash
+        run: |
+          python ./scripts/container_log_collector.py
 
-  stack-integration-tests-windows:
+      # Get Job name and url
+      - name: Get job name and url
+        id: job_name
+        if: failure()
+        run: |
+          echo "::set-output name=job_name::$(echo ${{ github.job }})"
+          echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
+      - name: Get current date
+        id: date
+        if: failure()
+        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+
+      - name: Upload logs to GitHub
+        uses: actions/upload-artifact@master
+        if: failure()
+        with:
+          name: ${{ matrix.os }}-${{ steps.job_name.outputs.job_name }}-${{ matrix.pytest-modules }}-logs-${{ steps.date.outputs.date }}
+          path: ./logs/${{ steps.job_name.outputs.job_name}}/
+
+      - name: Mandatory Container cleanup
+        if: steps.changes.outputs.stack == 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
+          docker rm `docker ps -aq` --force || true
+          docker volume prune -f || true
+
+  stack-integration-tests-tff:
     strategy:
-      max-parallel: 3
-      matrix:
-        os: [Windows-10]
-        python-version: ["3.10"]
-
-    runs-on: [self-hosted, windows]
-
-    steps:
-      - name: Start Docker Desktop
-        run: |
-          powershell.exe -command 'start "C:\Program Files\Docker\Docker\Docker Desktop.exe"'
-        shell: cmd
-
-      - name: Stop all running containers
-        continue-on-error: true
-        run: |
-          powershell.exe -command "docker rm $(docker ps -aq) --force"
-        shell: cmd
-
-      - name: Prune all volumes
-        continue-on-error: true
-        run: |
-          powershell.exe -command "docker volume prune --force"
-        shell: cmd
-
-      - uses: actions/checkout@v2
-
-      - name: Check for file changes
-        uses: dorny/paths-filter@v2
-        id: changes
-        with:
-          base: ${{ github.ref }}
-          token: ${{ github.token }}
-          filters: .github/file-filters.yml
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        if: steps.changes.outputs.stack == 'true'
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Get pip cache dir
-        if: steps.changes.outputs.stack == 'true'
-        id: pip-cache
-        run: |
-          echo "::set-output name=dir::$(pip cache dir)"
-        shell: cmd
-
-      # - name: pip cache
-      #   uses: actions/cache@v2
-      #   if: steps.changes.outputs.stack == 'true'
-      #   with:
-      #     path: ${{ steps.pip-cache.outputs.dir }}
-      #     key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-pip-py${{ matrix.python-version }}
-
-      - name: Upgrade pip
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          pip install --upgrade --user pip
-        shell: cmd
-
-      - name: Install tox
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          pip install tox --upgrade
-        shell: cmd
-
-      - name: Check python version
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          python -VV
-        shell: cmd
-
-      - name: Show choco installed packages
-        uses: crazy-max/ghaction-chocolatey@v1
-        with:
-          args: list --localonly
-
-      - name: Install cmake
-        uses: crazy-max/ghaction-chocolatey@v1
-        with:
-          args: install cmake.portable --installargs 'ADD_CMAKE_TO_PATH=System' -y
-
-      - name: Check cmake version
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          cmake --version
-        shell: cmd
-
-      - name: Install visualcpp-build-tools
-        uses: crazy-max/ghaction-chocolatey@v1
-        with:
-          args: install visualstudio2019-workload-vctools -y
-
-      - name: Start stacks
-        if: steps.changes.outputs.stack == 'true'
-        timeout-minutes: 30
-        env:
-          HAGRID_ART: false
-        run: |
-          pip install -e packages/hagrid
-          pip install cython
-          pip install pycapnp
-          set HAGRID_ART=false
-          set NETWORK_CHECK_INTERVAL=5
-          hagrid launch test_network_1 network to docker:9081 --tag=local --tail=false --headless=true --test
-          hagrid launch test_domain_1 domain to docker:9082 --tag=local --tail=false --headless=true --test
-          hagrid launch test_domain_2 domain to docker:9083 --tag=local --tail=false --build=false --headless=true --test
-          bash -c "(docker logs test_domain_1-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
-          bash -c "(docker logs test_domain_2-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
-          docker ps
-        shell: cmd
-
-      - name: Run integration tests
-        if: steps.changes.outputs.stack == 'true'
-        timeout-minutes: 30
-        env:
-          HAGRID_ART: false
-        run: |
-          tox -e stack.test.integration.windows
-        shell: cmd
-
-      - name: Stop all running containers
-        if: steps.changes.outputs.stack == 'true'
-        continue-on-error: true
-        run: |
-          powershell.exe -command "docker rm $(docker ps -aq) --force"
-        shell: cmd
-
-      - name: Prune all volumes
-        if: steps.changes.outputs.stack == 'true'
-        continue-on-error: true
-        run: |
-          powershell.exe -command "docker volume prune --force"
-        shell: cmd
-
-  stack-integration-tests-smpc:
-    strategy:
-      max-parallel: 3
+      max-parallel: 99
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.10"]
+        pytest-modules: ["tff"]
+      fail-fast: false
 
-    runs-on: [self-hosted, linux]
+    runs-on: ${{matrix.os}}
 
     steps:
-      - name: set permissions on work folder for self-runners
-        run: |
-          sudo chown -R $USER:$USER ~/actions-runner/_work/
-
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -379,7 +334,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -391,7 +346,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -402,41 +357,252 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade --user pip
-
-      - name: Install build essentials
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          sudo apt-get update && sudo apt-get install -y cmake libssl-dev build-essential
+          python -m pip install --upgrade --user pip
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
           pip install tox --upgrade
 
-      - name: docker cache
-        uses: actions/cache@v2
-        if: steps.changes.outputs.stack == 'true'
-        continue-on-error: true
+      - name: Show choco installed packages
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
         with:
-          path: .docker-cache
-          key: ${{ runner.os }}-docker
-          restore-keys: |
-            ${{ runner.os }}-docker
+          args: list --localonly
 
-      - name: Run integration tests
+      - name: Install git
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install git.install --params "/GitAndUnixToolsOnPath /WindowsTerminal /NoAutoCrlf" -y
+
+      - name: Install cmake
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install cmake.portable --installargs 'ADD_CMAKE_TO_PATH=System' -y
+
+      - name: Check cmake version
+        if: steps.changes.outputs.stack == 'true' &&  matrix.os == 'windows'
+        run: |
+          cmake --version
+        shell: cmd
+
+      - name: Install visualcpp-build-tools
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install visualstudio2019-workload-vctools -y
+
+      - name: Install jaxlib
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        run: |
+          python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
+
+      - name: Install tff python 3.10
         if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install ./packages/grid/backend/wheels/tensorflow_federated-0.36.0-py2.py3-none-any.whl
+
+      - name: Install Docker Compose
+        if: steps.changes.outputs.stack == 'true' && runner.os == 'Linux'
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.3.4
+          DOCKER_COMPOSE_VERSION=v2.7.0
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
+
+      - name: Run integration tests
+        if: steps.changes.outputs.stack == 'true'
+        timeout-minutes: 30
+        env:
+          HAGRID_ART: false
+          PYTEST_MODULES: "${{ matrix.pytest-modules }}"
+        run: |
+          tox -e stack.test.integration.tff
+      #Run log collector python script
+      - name: Run log collector
+        if: failure()
+        shell: bash
+        run: |
+          python ./scripts/container_log_collector.py
+
+      # Get Job name and url
+      - name: Get job name and url
+        id: job_name
+        if: failure()
+        run: |
+          echo "::set-output name=job_name::$(echo ${{ github.job }})"
+          echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
+
+      - name: Get current date
+        id: date
+        if: failure()
+        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+
+      - name: Upload logs to GitHub
+        uses: actions/upload-artifact@master
+        if: failure()
+        with:
+          name: ${{ matrix.os }}-${{ steps.job_name.outputs.job_name }}-logs-${{ steps.date.outputs.date }}
+          path: ./logs/${{ steps.job_name.outputs.job_name}}/
+
+      - name: Mandatory Container cleanup
+        if: steps.changes.outputs.stack == 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
           docker rm `docker ps -aq` --force || true
-          rm -rf .tox
+          docker volume prune -f || true
+
+  stack-integration-tests-smpc:
+    strategy:
+      max-parallel: 99
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10"]
+        pytest-modules:
+          ["smpc_np smpc_abstract smpc_share_tensor smpc_mpc_tensor"]
+      fail-fast: false
+
+    runs-on: [self-hosted, linux]
+
+    steps:
+      - name: set permissions on work folder for self-runners
+        run: |
+          sudo chown -R $USER:$USER ~/actions-runner/_work/
+
+      - uses: actions/checkout@v3
+
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          base: ${{ github.ref }}
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Get pip cache dir
+        if: steps.changes.outputs.stack == 'true'
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v3
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          python -m pip install --upgrade --user pip
+
+      - name: Install tox
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install tox --upgrade
+
+      - name: Show choco installed packages
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: list --localonly
+
+      - name: Install git
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install git.install --params "/GitAndUnixToolsOnPath /WindowsTerminal /NoAutoCrlf" -y
+
+      - name: Install cmake
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install cmake.portable --installargs 'ADD_CMAKE_TO_PATH=System' -y
+
+      - name: Check cmake version
+        if: steps.changes.outputs.stack == 'true' &&  matrix.os == 'windows'
+        run: |
+          cmake --version
+        shell: cmd
+
+      - name: Install visualcpp-build-tools
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install visualstudio2019-workload-vctools -y
+
+      - name: Install jaxlib
+        if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
+        run: |
+          python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
+
+      - name: Install Docker Compose
+        if: steps.changes.outputs.stack == 'true' && runner.os == 'Linux'
+        shell: bash
+        run: |
+          mkdir -p ~/.docker/cli-plugins
+          DOCKER_COMPOSE_VERSION=v2.7.0
+          curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+          chmod +x ~/.docker/cli-plugins/docker-compose
+
+      - name: Run integration tests
+        if: steps.changes.outputs.stack == 'true'
+        timeout-minutes: 30
+        env:
+          HAGRID_ART: false
+          PYTEST_MODULES: "${{ matrix.pytest-modules }}"
+        run: |
           tox -e stack.test.integration.smpc
+
+      #Run log collector python script
+      - name: Run log collector
+        if: failure()
+        shell: bash
+        run: |
+          python ./scripts/container_log_collector.py
+
+
+      # Get Job name and url
+      - name: Get job name and url
+        id: job_name
+        if: failure()
+        run: |
+          echo "::set-output name=job_name::$(echo ${{ github.job }})"
+          echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
+      - name: Get current date
+        id: date
+        if: failure()
+        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+
+      - name: Upload logs to GitHub
+        uses: actions/upload-artifact@master
+        if: failure()
+        with:
+          name: ${{ matrix.os }}-${{ steps.job_name.outputs.job_name }}-${{ matrix.pytest-modules }}-logs-${{ steps.date.outputs.date }}
+          path: ./logs/${{ steps.job_name.outputs.job_name}}/
+
+      - name: Mandatory Container cleanup
+        if: steps.changes.outputs.stack == 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
           docker rm `docker ps -aq` --force || true
-          docker system prune --volumes --force || true
+          docker volume prune -f || true
 
   stack-integration-tests-k8s:
     strategy:
@@ -452,7 +618,7 @@ jobs:
         run: |
           sudo chown -R $USER:$USER ~/actions-runner/_work/
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -463,7 +629,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -475,7 +641,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -486,7 +652,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
@@ -496,12 +662,12 @@ jobs:
       - name: Install kubectl
         if: steps.changes.outputs.stack == 'true'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y apt-transport-https ca-certificates curl
-          sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
-          echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
-          sudo apt-get update
-          sudo apt-get install -y kubectl
+          # cleanup apt version
+          sudo apt remove kubectl || true
+          # install kubectl 1.22
+          curl -LO https://dl.k8s.io/release/v1.22.9/bin/linux/amd64/kubectl
+          chmod +x kubectl
+          sudo install kubectl /usr/local/bin;
 
       - name: Install jq
         if: steps.changes.outputs.stack == 'true'
@@ -518,20 +684,67 @@ jobs:
           chmod +x k9s
           sudo install k9s /usr/local/bin;
 
-      - name: Run integration tests
+      - name: Remove existing containers
         if: steps.changes.outputs.stack == 'true'
         continue-on-error: true
         shell: bash
         run: |
+          docker rm $(docker ps -aq) --force || true
+          docker volume prune -f || true
+          docker buildx use default || true
+
+      - name: Run integration tests
+        if: steps.changes.outputs.stack == 'true'
+        timeout-minutes: 60
+        shell: bash
+        run: |
           # install k3d
-          wget https://github.com/k3d-io/k3d/releases/download/v5.4.1/k3d-linux-amd64
+          wget https://github.com/k3d-io/k3d/releases/download/v5.4.4/k3d-linux-amd64
           mv k3d-linux-amd64 k3d
           chmod +x k3d
           export PATH=`pwd`:$PATH
           k3d version
-          curl -s -L "https://github.com/loft-sh/devspace/releases/latest" | sed -nE 's!.*"([^"]*devspace-linux-amd64)".*!https://github.com\1!p' | xargs -n 1 curl -L -o devspace && chmod +x devspace;
-          sudo install devspace /usr/local/bin;
+          DEVSPACE_VERSION=v5.18.5
+          curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
+          chmod +x devspace
+          devspace --version
           tox -e stack.test.integration.k8s
+
+        #Run log collector python script
+      - name: Run log collector
+        if: failure()
+        shell: bash
+        run: |
+          python ./scripts/container_log_collector.py
+
+        # Get Job name and url
+      - name: Get job name and url
+        id: job_name
+        if: failure()
+        run: |
+          echo "::set-output name=job_name::$(echo ${{ github.job }})"
+          echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
+
+      - name: Get current date
+        id: date
+        if: failure()
+        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+
+      - name: Upload logs to GitHub
+        uses: actions/upload-artifact@master
+        if: failure()
+        with:
+          name: ${{ matrix.os }}-${{ steps.job_name.outputs.job_name }}-logs-${{ steps.date.outputs.date }}
+          path: ./logs/${{ steps.job_name.outputs.job_name}}/
+
+      - name: Mandatory Container cleanup
+        if: steps.changes.outputs.stack == 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
+          docker rm `docker ps -aq` --force || true
+          docker volume prune -f || true
 
   stack-tests-course:
     strategy:
@@ -546,7 +759,7 @@ jobs:
       #   run: |
       #     sudo chown -R $USER:$USER ~/actions-runner/_work/
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -557,7 +770,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -569,7 +782,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -580,7 +793,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
@@ -588,7 +801,7 @@ jobs:
           pip install tox --upgrade
 
       - name: docker cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         if: steps.changes.outputs.stack == 'true'
         continue-on-error: true
         with:
@@ -597,15 +810,54 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-docker
 
+      - name: Install Docker Compose
+        if: steps.changes.outputs.stack == 'true' && runner.os == 'Linux'
+        shell: bash
+        run: |
+          mkdir -p ~/.docker/cli-plugins
+          DOCKER_COMPOSE_VERSION=v2.7.0
+          curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+          chmod +x ~/.docker/cli-plugins/docker-compose
+
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
         shell: bash
         run: |
-          mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.3.4
-          curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
-          chmod +x ~/.docker/cli-plugins/docker-compose
           docker rm `docker ps -aq` --force || true
-          rm -rf .tox
           tox -e stack.test.course
+
+
+      #Run log collector python script
+      - name: Run log collector
+        if: failure()
+        shell: bash
+        run: |
+          python ./scripts/container_log_collector.py
+
+       # Get Job name and url
+      - name: Get job name and url
+        id: job_name
+        if: failure()
+        run: |
+          echo "::set-output name=job_name::$(echo ${{ github.job }})"
+          echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
+      - name: Get current date
+        id: date
+        if: failure()
+        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+
+      - name: Upload logs to GitHub
+        uses: actions/upload-artifact@master
+        if: failure()
+        with:
+          name: ${{ matrix.os }}-${{ steps.job_name.outputs.job_name }}-logs-${{ steps.date.outputs.date }}
+          path: ./logs/${{ steps.job_name.outputs.job_name}}/
+
+      - name: Mandatory Container cleanup
+        if: steps.changes.outputs.stack == 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
           docker rm `docker ps -aq` --force || true
+          docker volume prune -f || true

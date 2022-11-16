@@ -9,6 +9,6 @@ module.exports = {
   coverageReporters: ['lcov', 'text'],
   resetMocks: true,
   moduleNameMapper: {
-    '@/(.*)': ['<rootDir>/src/$1']
-  }
+    '@/(.*)': ['<rootDir>/src/$1'],
+  },
 }

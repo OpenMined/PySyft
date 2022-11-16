@@ -1,7 +1,9 @@
 ipython==8.1.0
+markupsafe==2.0.1
 pydata-sphinx-theme==0.7.2
 sphinx==4.3.0
 sphinx-autoapi==1.8.4
 sphinx-code-include==1.1.1
 sphinx-copybutton==0.4.0
 sphinx-panels==0.6.0
+syft

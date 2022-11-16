@@ -28,9 +28,6 @@ syft.core.tensor.autodp
    :recursive:
 
    syft.core.tensor.autodp.adp_tensor
-   syft.core.tensor.autodp.dp_tensor_converter
-   syft.core.tensor.autodp.initial_gamma
-   syft.core.tensor.autodp.intermediate_gamma
-   syft.core.tensor.autodp.row_entity_phi
-   syft.core.tensor.autodp.single_entity_phi
+   syft.core.tensor.autodp.gamma_tensor
+   syft.core.tensor.autodp.phi_tensor
 

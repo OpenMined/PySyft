@@ -1,8 +1,13 @@
 import React from 'react'
 import cn from 'classnames'
-import type {PropsWithRef, ComponentPropsWithoutRef, ComponentProps, LegacyRef} from 'react'
+import type {
+  PropsWithRef,
+  ComponentPropsWithoutRef,
+  ComponentProps,
+  LegacyRef,
+} from 'react'
 
-import {useRadioGroupContext} from './RadioGroup'
+import { useRadioGroupContext } from './RadioGroup'
 
 export type RadioSizeProp = 'sm' | 'md' | 'lg'
 
@@ -63,7 +68,10 @@ function Radio({
       ? 'bg-primary-500 border-primary-500 dark:border-primary-400 dark:bg-primary-400 dark:bg-radio'
       : 'border-gray-400 bg-transparent'
   )
-  const labelClasses = cn('text-gray-600 dark:text-gray-200 ml-2', disabled && 'opacity-40')
+  const labelClasses = cn(
+    'text-gray-600 dark:text-gray-200 ml-2',
+    disabled && 'opacity-40'
+  )
 
   /**
    * Checked value and onChange are inherited
@@ -76,7 +84,7 @@ function Radio({
 
   let onChange = onChangeProp
   if (group?.onChange && value !== null) {
-    onChange = e => {
+    onChange = (e) => {
       group.onChange(e.target.value)
       onChangeProp?.(e)
     }
@@ -102,4 +110,4 @@ function Radio({
   )
 }
 
-export {Radio}
+export { Radio }

@@ -1,11 +1,13 @@
-import {createContext, useContext} from 'react'
+import { createContext, useContext } from 'react'
 
-const DomainSettingsContext = createContext({settings: null})
+const DomainSettingsContext = createContext({ settings: null })
 
 const useDomainSettings = () => useContext(DomainSettingsContext)
 
-const DomainSettingsProvider = ({value, children}) => (
-  <DomainSettingsContext.Provider value={value}>{children}</DomainSettingsContext.Provider>
+const DomainSettingsProvider = ({ value, children }) => (
+  <DomainSettingsContext.Provider value={value}>
+    {children}
+  </DomainSettingsContext.Provider>
 )
 
-export {useDomainSettings, DomainSettingsProvider}
+export { useDomainSettings, DomainSettingsProvider }

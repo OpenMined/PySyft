@@ -19,5 +19,5 @@ export const cacheKeys = {
   roles: `${ROLES}`,
   settings: `${SETUP}`,
   status: `${STATUS}`,
-  ping: `ping`
+  ping: `ping`,
 }

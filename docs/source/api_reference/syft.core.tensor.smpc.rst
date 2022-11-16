@@ -27,6 +27,7 @@ syft.core.tensor.smpc
    :toctree:
    :recursive:
 
+   syft.core.tensor.smpc.context
    syft.core.tensor.smpc.mpc_tensor
    syft.core.tensor.smpc.mpc_tensor_ancestor
    syft.core.tensor.smpc.share_tensor

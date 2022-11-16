@@ -33,6 +33,7 @@ syft.core.smpc
    :toctree:
    :recursive:
 
+   syft.core.smpc.approximations
    syft.core.smpc.protocol
    syft.core.smpc.store
 

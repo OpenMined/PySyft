@@ -3,12 +3,13 @@ using Array = import "array.capnp".Array;
 
 struct GammaTensor {
   magicHeader @0 :Data;
-  value @1 :Array;
-  state @2 :Data;
-  dataSubjectsIndexed @3 :Array;
-  oneHotLookup @4 :Array;
-  minVal @5 :Float64;
-  maxVal @6 :Float64;
-  isLinear @7 :Bool;
-  id @8 :Text;
+  child @1 :List(Data);
+  sources @2 :Data;
+  dataSubjects @3 :List(Data);
+  minVal @4 :Data;
+  maxVal @5 :Data;
+  isLinear @6 :Bool;
+  id @7 :Text;
+  isNumpy @8 :Bool;
+  funcStr @9 :Text;
 }

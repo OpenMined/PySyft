@@ -1,0 +1,165 @@
+Classification,Year,Period,Period Desc.,Aggregate Level,Is Leaf Code,Trade Flow Code,Trade Flow,Reporter Code,Reporter,Reporter ISO,Partner Code,Partner,Partner ISO,Commodity Code,Commodity,Qty Unit Code,Qty Unit,Qty,Netweight (kg),Trade Value (US$),Flag
+HS,2022,202203,Mar-22,0,0,1,Imports,31,Azerbaijan,,124,Canada,,TOTAL,All Commodities,,,,0.0,769998,0
+HS,2022,202203,Mar-22,0,0,2,Exports,31,Azerbaijan,,124,Canada,,TOTAL,All Commodities,,,,0.0,43645,0
+HS,2022,202203,Mar-22,0,0,1,Imports,32,Argentina,,124,Canada,,TOTAL,All Commodities,,,,0.0,71433874,0
+HS,2022,202203,Mar-22,0,0,2,Exports,32,Argentina,,124,Canada,,TOTAL,All Commodities,,,,0.0,71279212,0
+HS,2022,202203,Mar-22,0,0,1,Imports,36,Australia,,124,Canada,,TOTAL,All Commodities,,,,0.0,180649635,0
+HS,2022,202203,Mar-22,0,0,2,Exports,36,Australia,,124,Canada,,TOTAL,All Commodities,,,,0.0,122567261,0
+HS,2022,202203,Mar-22,0,0,1,Imports,51,Armenia,,124,Canada,,TOTAL,All Commodities,,,,0.0,2698527,0
+HS,2022,202203,Mar-22,0,0,2,Exports,51,Armenia,,124,Canada,,TOTAL,All Commodities,,,,0.0,82312,0
+HS,2022,202203,Mar-22,0,0,1,Imports,52,Barbados,,124,Canada,,TOTAL,All Commodities,,,,0.0,3841932,0
+HS,2022,202203,Mar-22,0,0,2,Exports,52,Barbados,,124,Canada,,TOTAL,All Commodities,,,,0.0,1796109,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,52,Barbados,,124,Canada,,TOTAL,All Commodities,,,,0.0,4886,0
+HS,2022,202203,Mar-22,0,0,1,Imports,56,Belgium,,124,Canada,,TOTAL,All Commodities,,,,0.0,342217319,0
+HS,2022,202203,Mar-22,0,0,2,Exports,56,Belgium,,124,Canada,,TOTAL,All Commodities,,,,0.0,200061901,0
+HS,2022,202203,Mar-22,0,0,1,Imports,68,Bolivia,,124,Canada,,TOTAL,All Commodities,,,,0.0,2459585,0
+HS,2022,202203,Mar-22,0,0,2,Exports,68,Bolivia,,124,Canada,,TOTAL,All Commodities,,,,0.0,16169403,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,68,Bolivia,,124,Canada,,TOTAL,All Commodities,,,,0.0,3650,0
+HS,2022,202203,Mar-22,0,0,1,Imports,70,Bosnia Herzegovina,,124,Canada,,TOTAL,All Commodities,,,,0.0,743823,0
+HS,2022,202203,Mar-22,0,0,2,Exports,70,Bosnia Herzegovina,,124,Canada,,TOTAL,All Commodities,,,,0.0,539666,0
+HS,2022,202203,Mar-22,0,0,1,Imports,72,Botswana,,124,Canada,,TOTAL,All Commodities,,,,0.0,48144895,0
+HS,2022,202203,Mar-22,0,0,2,Exports,72,Botswana,,124,Canada,,TOTAL,All Commodities,,,,0.0,624598,0
+HS,2022,202203,Mar-22,0,0,1,Imports,76,Brazil,,124,Canada,,TOTAL,All Commodities,,,,0.0,277575710,0
+HS,2022,202203,Mar-22,0,0,2,Exports,76,Brazil,,124,Canada,,TOTAL,All Commodities,,,,0.0,418906617,0
+HS,2022,202203,Mar-22,0,0,1,Imports,84,Belize,,124,Canada,,TOTAL,All Commodities,,,,0.0,3189599,0
+HS,2022,202203,Mar-22,0,0,2,Exports,84,Belize,,124,Canada,,TOTAL,All Commodities,,,,0.0,77289,0
+HS,2022,202203,Mar-22,0,0,1,Imports,97,EU,,124,Canada,,TOTAL,All Commodities,,,,0.0,2149826834,0
+HS,2022,202203,Mar-22,0,0,2,Exports,97,EU,,124,Canada,,TOTAL,All Commodities,,,,0.0,4603807209,0
+HS,2022,202203,Mar-22,0,0,1,Imports,112,Belarus,,124,Canada,,TOTAL,All Commodities,,,,0.0,2411400,0
+HS,2022,202203,Mar-22,0,0,2,Exports,112,Belarus,,124,Canada,,TOTAL,All Commodities,,,,0.0,667200,0
+HS,2022,202203,Mar-22,0,0,1,Imports,124,Canada,,124,Canada,,TOTAL,All Commodities,,,,,361902605,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,124,Canada,,124,Canada,,TOTAL,All Commodities,,,,,361902605,0
+HS,2022,202203,Mar-22,0,0,1,Imports,152,Chile,,124,Canada,,TOTAL,All Commodities,,,,0.0,57338883,0
+HS,2022,202203,Mar-22,0,0,2,Exports,152,Chile,,124,Canada,,TOTAL,All Commodities,,,,0.0,163356040,0
+HS,2022,202203,Mar-22,0,0,1,Imports,156,China,,124,Canada,,TOTAL,All Commodities,,,,0.0,2119713834,0
+HS,2022,202203,Mar-22,0,0,2,Exports,156,China,,124,Canada,,TOTAL,All Commodities,,,,0.0,4458309059,0
+HS,2022,202203,Mar-22,0,0,1,Imports,191,Croatia,,124,Canada,,TOTAL,All Commodities,,,,0.0,2337508,0
+HS,2022,202203,Mar-22,0,0,2,Exports,191,Croatia,,124,Canada,,TOTAL,All Commodities,,,,0.0,4028142,0
+HS,2022,202203,Mar-22,0,0,1,Imports,203,Czech Rep.,,124,Canada,,TOTAL,All Commodities,,,,0.0,42765654,0
+HS,2022,202203,Mar-22,0,0,2,Exports,203,Czech Rep.,,124,Canada,,TOTAL,All Commodities,,,,0.0,39031923,0
+HS,2022,202203,Mar-22,0,0,1,Imports,208,Denmark,,124,Canada,,TOTAL,All Commodities,,,,0.0,18512212,0
+HS,2022,202203,Mar-22,0,0,2,Exports,208,Denmark,,124,Canada,,TOTAL,All Commodities,,,,0.0,82053411,0
+HS,2022,202203,Mar-22,0,0,1,Imports,222,El Salvador,,124,Canada,,TOTAL,All Commodities,,,,0.0,14092867,0
+HS,2022,202203,Mar-22,0,0,2,Exports,222,El Salvador,,124,Canada,,TOTAL,All Commodities,,,,0.0,3759081,0
+HS,2022,202203,Mar-22,0,0,1,Imports,233,Estonia,,124,Canada,,TOTAL,All Commodities,,,,0.0,2632712,0
+HS,2022,202203,Mar-22,0,0,2,Exports,233,Estonia,,124,Canada,,TOTAL,All Commodities,,,,0.0,24725146,0
+HS,2022,202203,Mar-22,0,0,1,Imports,242,Fiji,,124,Canada,,TOTAL,All Commodities,,,,0.0,249669,0
+HS,2022,202203,Mar-22,0,0,2,Exports,242,Fiji,,124,Canada,,TOTAL,All Commodities,,,,0.0,442791,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,242,Fiji,,124,Canada,,TOTAL,All Commodities,,,,0.0,28171,0
+HS,2022,202203,Mar-22,0,0,1,Imports,246,Finland,,124,Canada,,TOTAL,All Commodities,,,,0.0,30882050,0
+HS,2022,202203,Mar-22,0,0,2,Exports,246,Finland,,124,Canada,,TOTAL,All Commodities,,,,0.0,77954763,0
+HS,2022,202203,Mar-22,0,0,1,Imports,268,Georgia,,124,Canada,,TOTAL,All Commodities,,,,0.0,2162253,0
+HS,2022,202203,Mar-22,0,0,2,Exports,268,Georgia,,124,Canada,,TOTAL,All Commodities,,,,0.0,525667,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,268,Georgia,,124,Canada,,TOTAL,All Commodities,,,,0.0,84600,0
+HS,2022,202203,Mar-22,0,0,1,Imports,276,Germany,,124,Canada,,TOTAL,All Commodities,,,,0.0,708074783,0
+HS,2022,202203,Mar-22,0,0,2,Exports,276,Germany,,124,Canada,,TOTAL,All Commodities,,,,0.0,1262641595,0
+HS,2022,202203,Mar-22,0,0,1,Imports,300,Greece,,124,Canada,,TOTAL,All Commodities,,,,0.0,5943069,0
+HS,2022,202203,Mar-22,0,0,2,Exports,300,Greece,,124,Canada,,TOTAL,All Commodities,,,,0.0,20095264,0
+HS,2022,202203,Mar-22,0,0,1,Imports,308,Grenada,,124,Canada,,TOTAL,All Commodities,,,,0.0,815497,0
+HS,2022,202203,Mar-22,0,0,2,Exports,308,Grenada,,124,Canada,,TOTAL,All Commodities,,,,0.0,520,0
+HS,2022,202203,Mar-22,0,0,1,Imports,320,Guatemala,,124,Canada,,TOTAL,All Commodities,,,,0.0,15267176,0
+HS,2022,202203,Mar-22,0,0,2,Exports,320,Guatemala,,124,Canada,,TOTAL,All Commodities,,,,0.0,24155115,0
+HS,2022,202203,Mar-22,0,0,1,Imports,328,Guyana,,124,Canada,,TOTAL,All Commodities,,,,0.0,2501995,0
+HS,2022,202203,Mar-22,0,0,2,Exports,328,Guyana,,124,Canada,,TOTAL,All Commodities,,,,0.0,1552327,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,328,Guyana,,124,Canada,,TOTAL,All Commodities,,,,0.0,2600,0
+HS,2022,202203,Mar-22,0,0,1,Imports,344,"China, Hong Kong SAR",,124,Canada,,TOTAL,All Commodities,,,,0.0,73108883,0
+HS,2022,202203,Mar-22,0,0,2,Exports,344,"China, Hong Kong SAR",,124,Canada,,TOTAL,All Commodities,,,,0.0,197547934,0
+HS,2022,202203,Mar-22,0,0,1,Imports,348,Hungary,,124,Canada,,TOTAL,All Commodities,,,,0.0,6777356,0
+HS,2022,202203,Mar-22,0,0,2,Exports,348,Hungary,,124,Canada,,TOTAL,All Commodities,,,,0.0,20535080,0
+HS,2022,202203,Mar-22,0,0,1,Imports,352,Iceland,,124,Canada,,TOTAL,All Commodities,,,,0.0,7206650,0
+HS,2022,202203,Mar-22,0,0,2,Exports,352,Iceland,,124,Canada,,TOTAL,All Commodities,,,,0.0,10129305,0
+HS,2022,202203,Mar-22,0,0,1,Imports,360,Indonesia,,124,Canada,,TOTAL,All Commodities,,,,0.0,226109523,0
+HS,2022,202203,Mar-22,0,0,2,Exports,360,Indonesia,,124,Canada,,TOTAL,All Commodities,,,,0.0,114292927,0
+HS,2022,202203,Mar-22,0,0,1,Imports,376,Israel,,124,Canada,,TOTAL,All Commodities,,,,0.0,49696000,0
+HS,2022,202203,Mar-22,0,0,2,Exports,376,Israel,,124,Canada,,TOTAL,All Commodities,,,,0.0,144129000,0
+HS,2022,202203,Mar-22,0,0,1,Imports,381,Italy,,124,Canada,,TOTAL,All Commodities,,,,0.0,153287318,0
+HS,2022,202203,Mar-22,0,0,2,Exports,381,Italy,,124,Canada,,TOTAL,All Commodities,,,,0.0,608849071,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,381,Italy,,124,Canada,,TOTAL,All Commodities,,,,0.0,8596222,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,381,Italy,,124,Canada,,TOTAL,All Commodities,,,,0.0,1981036,0
+HS,2022,202203,Mar-22,0,0,1,Imports,392,Japan,,124,Canada,,TOTAL,All Commodities,,,,0.0,1356041336,0
+HS,2022,202203,Mar-22,0,0,2,Exports,392,Japan,,124,Canada,,TOTAL,All Commodities,,,,0.0,914180389,0
+HS,2022,202203,Mar-22,0,0,1,Imports,417,Kyrgyzstan,,124,Canada,,TOTAL,All Commodities,,,,0.0,568616,0
+HS,2022,202203,Mar-22,0,0,1,Imports,428,Latvia,,124,Canada,,TOTAL,All Commodities,,,,0.0,2168520,0
+HS,2022,202203,Mar-22,0,0,2,Exports,428,Latvia,,124,Canada,,TOTAL,All Commodities,,,,0.0,3237798,0
+HS,2022,202203,Mar-22,0,0,1,Imports,440,Lithuania,,124,Canada,,TOTAL,All Commodities,,,,0.0,2521749,0
+HS,2022,202203,Mar-22,0,0,2,Exports,440,Lithuania,,124,Canada,,TOTAL,All Commodities,,,,0.0,18633807,0
+HS,2022,202203,Mar-22,0,0,1,Imports,442,Luxembourg,,124,Canada,,TOTAL,All Commodities,,,,0.0,4126341,0
+HS,2022,202203,Mar-22,0,0,2,Exports,442,Luxembourg,,124,Canada,,TOTAL,All Commodities,,,,0.0,8390016,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,442,Luxembourg,,124,Canada,,TOTAL,All Commodities,,,,0.0,4532,0
+HS,2022,202203,Mar-22,0,0,1,Imports,446,"China, Macao SAR",,124,Canada,,TOTAL,All Commodities,,,,0.0,3930134,0
+HS,2022,202203,Mar-22,0,0,2,Exports,446,"China, Macao SAR",,124,Canada,,TOTAL,All Commodities,,,,0.0,32834,0
+HS,2022,202203,Mar-22,0,0,1,Imports,480,Mauritius,,124,Canada,,TOTAL,All Commodities,,,,0.0,741960,0
+HS,2022,202203,Mar-22,0,0,2,Exports,480,Mauritius,,124,Canada,,TOTAL,All Commodities,,,,0.0,349176,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,480,Mauritius,,124,Canada,,TOTAL,All Commodities,,,,0.0,2257,0
+HS,2022,202203,Mar-22,0,0,1,Imports,484,Mexico,,124,Canada,,TOTAL,All Commodities,,,,0.0,1206900089,0
+HS,2022,202203,Mar-22,0,0,2,Exports,484,Mexico,,124,Canada,,TOTAL,All Commodities,,,,0.0,1440258437,0
+HS,2022,202203,Mar-22,0,0,1,Imports,498,Rep. of Moldova,,124,Canada,,TOTAL,All Commodities,,,,0.0,569498,0
+HS,2022,202203,Mar-22,0,0,2,Exports,498,Rep. of Moldova,,124,Canada,,TOTAL,All Commodities,,,,0.0,2646253,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,498,Rep. of Moldova,,124,Canada,,TOTAL,All Commodities,,,,0.0,401500,0
+HS,2022,202203,Mar-22,0,0,1,Imports,516,Namibia,,124,Canada,,TOTAL,All Commodities,,,,0.0,1195246,0
+HS,2022,202203,Mar-22,0,0,2,Exports,516,Namibia,,124,Canada,,TOTAL,All Commodities,,,,0.0,4065,0
+HS,2022,202203,Mar-22,0,0,1,Imports,528,Netherlands,,124,Canada,,TOTAL,All Commodities,,,,0.0,207960346,0
+HS,2022,202203,Mar-22,0,0,2,Exports,528,Netherlands,,124,Canada,,TOTAL,All Commodities,,,,0.0,449144588,0
+HS,2022,202203,Mar-22,0,0,1,Imports,554,New Zealand,,124,Canada,,TOTAL,All Commodities,,,,0.0,64550876,0
+HS,2022,202203,Mar-22,0,0,2,Exports,554,New Zealand,,124,Canada,,TOTAL,All Commodities,,,,0.0,69028112,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,554,New Zealand,,124,Canada,,TOTAL,All Commodities,,,,0.0,1575813,0
+HS,2022,202203,Mar-22,0,0,1,Imports,566,Nigeria,,124,Canada,,TOTAL,All Commodities,,,,0.0,48406731,0
+HS,2022,202203,Mar-22,0,0,2,Exports,566,Nigeria,,124,Canada,,TOTAL,All Commodities,,,,0.0,352088716,0
+HS,2022,202203,Mar-22,0,0,1,Imports,579,Norway,,124,Canada,,TOTAL,All Commodities,,,,0.0,389926431,0
+HS,2022,202203,Mar-22,0,0,2,Exports,579,Norway,,124,Canada,,TOTAL,All Commodities,,,,0.0,115223317,0
+HS,2022,202203,Mar-22,0,0,1,Imports,586,Pakistan,,124,Canada,,TOTAL,All Commodities,,,,0.0,12838790,0
+HS,2022,202203,Mar-22,0,0,2,Exports,586,Pakistan,,124,Canada,,TOTAL,All Commodities,,,,0.0,27198823,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,586,Pakistan,,124,Canada,,TOTAL,All Commodities,,,,0.0,25764,0
+HS,2022,202203,Mar-22,0,0,1,Imports,591,Panama,,124,Canada,,TOTAL,All Commodities,,,,0.0,6791628,0
+HS,2022,202203,Mar-22,0,0,2,Exports,591,Panama,,124,Canada,,TOTAL,All Commodities,,,,0.0,32400,0
+HS,2022,202203,Mar-22,0,0,1,Imports,600,Paraguay,,124,Canada,,TOTAL,All Commodities,,,,0.0,7011142,0
+HS,2022,202203,Mar-22,0,0,2,Exports,600,Paraguay,,124,Canada,,TOTAL,All Commodities,,,,0.0,1294829,0
+HS,2022,202203,Mar-22,0,0,1,Imports,608,Philippines,,124,Canada,,TOTAL,All Commodities,,,,0.0,74843830,0
+HS,2022,202203,Mar-22,0,0,2,Exports,608,Philippines,,124,Canada,,TOTAL,All Commodities,,,,0.0,58889447,0
+HS,2022,202203,Mar-22,0,0,1,Imports,616,Poland,,124,Canada,,TOTAL,All Commodities,,,,0.0,72562578,0
+HS,2022,202203,Mar-22,0,0,2,Exports,616,Poland,,124,Canada,,TOTAL,All Commodities,,,,0.0,145545871,0
+HS,2022,202203,Mar-22,0,0,1,Imports,620,Portugal,,124,Canada,,TOTAL,All Commodities,,,,0.0,4446730,0
+HS,2022,202203,Mar-22,0,0,2,Exports,620,Portugal,,124,Canada,,TOTAL,All Commodities,,,,0.0,51678364,0
+HS,2022,202203,Mar-22,0,0,1,Imports,642,Romania,,124,Canada,,TOTAL,All Commodities,,,,0.0,3508529,0
+HS,2022,202203,Mar-22,0,0,2,Exports,642,Romania,,124,Canada,,TOTAL,All Commodities,,,,0.0,18840828,0
+HS,2022,202203,Mar-22,0,0,1,Imports,646,Rwanda,,124,Canada,,TOTAL,All Commodities,,,,0.0,304872,0
+HS,2022,202203,Mar-22,0,0,2,Exports,646,Rwanda,,124,Canada,,TOTAL,All Commodities,,,,0.0,77865,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,646,Rwanda,,124,Canada,,TOTAL,All Commodities,,,,0.0,55073,0
+HS,2022,202203,Mar-22,0,0,1,Imports,686,Senegal,,124,Canada,,TOTAL,All Commodities,,,,0.0,2505318,0
+HS,2022,202203,Mar-22,0,0,2,Exports,686,Senegal,,124,Canada,,TOTAL,All Commodities,,,,0.0,187544,0
+HS,2022,202203,Mar-22,0,0,1,Imports,688,Serbia,,124,Canada,,TOTAL,All Commodities,,,,0.0,4884708,0
+HS,2022,202203,Mar-22,0,0,2,Exports,688,Serbia,,124,Canada,,TOTAL,All Commodities,,,,0.0,3054514,0
+HS,2022,202203,Mar-22,0,0,1,Imports,699,India,,124,Canada,,TOTAL,All Commodities,,,,0.0,270642140,0
+HS,2022,202203,Mar-22,0,0,2,Exports,699,India,,124,Canada,,TOTAL,All Commodities,,,,0.0,391786626,0
+HS,2022,202203,Mar-22,0,0,1,Imports,703,Slovakia,,124,Canada,,TOTAL,All Commodities,,,,0.0,9258286,0
+HS,2022,202203,Mar-22,0,0,2,Exports,703,Slovakia,,124,Canada,,TOTAL,All Commodities,,,,0.0,27659035,0
+HS,2022,202203,Mar-22,0,0,1,Imports,705,Slovenia,,124,Canada,,TOTAL,All Commodities,,,,0.0,28963429,0
+HS,2022,202203,Mar-22,0,0,2,Exports,705,Slovenia,,124,Canada,,TOTAL,All Commodities,,,,0.0,13681310,0
+HS,2022,202203,Mar-22,0,0,1,Imports,724,Spain,,124,Canada,,TOTAL,All Commodities,,,,0.0,174250740,0
+HS,2022,202203,Mar-22,0,0,2,Exports,724,Spain,,124,Canada,,TOTAL,All Commodities,,,,0.0,180123976,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,724,Spain,,124,Canada,,TOTAL,All Commodities,,,,0.0,10838069,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,724,Spain,,124,Canada,,TOTAL,All Commodities,,,,0.0,8439,0
+HS,2022,202203,Mar-22,0,0,1,Imports,752,Sweden,,124,Canada,,TOTAL,All Commodities,,,,0.0,40463485,0
+HS,2022,202203,Mar-22,0,0,2,Exports,752,Sweden,,124,Canada,,TOTAL,All Commodities,,,,0.0,128544675,0
+HS,2022,202203,Mar-22,0,0,1,Imports,757,Switzerland,,124,Canada,,TOTAL,All Commodities,,,,0.0,480604768,0
+HS,2022,202203,Mar-22,0,0,2,Exports,757,Switzerland,,124,Canada,,TOTAL,All Commodities,,,,0.0,517128075,0
+HS,2022,202203,Mar-22,0,0,1,Imports,768,Togo,,124,Canada,,TOTAL,All Commodities,,,,0.0,1613656,0
+HS,2022,202203,Mar-22,0,0,2,Exports,768,Togo,,124,Canada,,TOTAL,All Commodities,,,,0.0,3642532,0
+HS,2022,202203,Mar-22,0,0,1,Imports,792,Turkey,,124,Canada,,TOTAL,All Commodities,,,,0.0,45082657,0
+HS,2022,202203,Mar-22,0,0,2,Exports,792,Turkey,,124,Canada,,TOTAL,All Commodities,,,,0.0,221741651,0
+HS,2022,202203,Mar-22,0,0,1,Imports,804,Ukraine,,124,Canada,,TOTAL,All Commodities,,,,0.0,3634022,0
+HS,2022,202203,Mar-22,0,0,2,Exports,804,Ukraine,,124,Canada,,TOTAL,All Commodities,,,,0.0,326194,0
+HS,2022,202203,Mar-22,0,0,1,Imports,807,TFYR of Macedonia,,124,Canada,,TOTAL,All Commodities,,,,0.0,558208,0
+HS,2022,202203,Mar-22,0,0,2,Exports,807,TFYR of Macedonia,,124,Canada,,TOTAL,All Commodities,,,,0.0,346976,0
+HS,2022,202203,Mar-22,0,0,1,Imports,818,Egypt,,124,Canada,,TOTAL,All Commodities,,,,0.0,15881569,0
+HS,2022,202203,Mar-22,0,0,2,Exports,818,Egypt,,124,Canada,,TOTAL,All Commodities,,,,0.0,106309919,0
+HS,2022,202203,Mar-22,0,0,1,Imports,826,United Kingdom,,124,Canada,,TOTAL,All Commodities,,,,0.0,1543672910,0
+HS,2022,202203,Mar-22,0,0,2,Exports,826,United Kingdom,,124,Canada,,TOTAL,All Commodities,,,,0.0,712658911,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,826,United Kingdom,,124,Canada,,TOTAL,All Commodities,,,,0.0,19590062,0
+HS,2022,202203,Mar-22,0,0,1,Imports,842,United States of America,,124,Canada,,TOTAL,All Commodities,,,,0.0,41203564658,0
+HS,2022,202203,Mar-22,0,0,2,Exports,842,United States of America,,124,Canada,,TOTAL,All Commodities,,,,0.0,32389156036,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,842,United States of America,,124,Canada,,TOTAL,All Commodities,,,,0.0,6013651835,0
+HS,2022,202203,Mar-22,0,0,1,Imports,854,Burkina Faso,,124,Canada,,TOTAL,All Commodities,,,,0.0,2254156,0
+HS,2022,202203,Mar-22,0,0,2,Exports,854,Burkina Faso,,124,Canada,,TOTAL,All Commodities,,,,0.0,68795,0
+HS,2022,202203,Mar-22,0,0,1,Imports,860,Uzbekistan,,124,Canada,,TOTAL,All Commodities,,,,0.0,1069785,0
+HS,2022,202203,Mar-22,0,0,2,Exports,860,Uzbekistan,,124,Canada,,TOTAL,All Commodities,,,,0.0,352248,0

@@ -8,7 +8,7 @@ import pytest
 from syft.core.tensor.smpc.share_tensor import ShareTensor
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_share_tensor
 def test_bit_extraction() -> None:
     share = ShareTensor(rank=0, parties_info=[], ring_size=2**32)
     data = np.array([[21, 32], [-54, 89]], dtype=np.int32)
@@ -23,7 +23,7 @@ def test_bit_extraction() -> None:
     assert (res == exp_res2).all()
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_share_tensor
 def test_bit_extraction_exception() -> None:
     share = ShareTensor(rank=0, parties_info=[], ring_size=2**32)
     data = np.array([[21, 32], [-54, 89]], dtype=np.int32)

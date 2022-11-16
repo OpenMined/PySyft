@@ -9,12 +9,6 @@ syft.core.adp
 
    
    
-   .. rubric:: Functions
-
-   .. autosummary::
-   
-      create_adp_ast
-   
    
 
    
@@ -33,11 +27,10 @@ syft.core.adp
    :toctree:
    :recursive:
 
-   syft.core.adp.adversarial_accountant
-   syft.core.adp.entity
-   syft.core.adp.idp_gaussian_mechanism
-   syft.core.adp.publish
-   syft.core.adp.scalar
-   syft.core.adp.search
-   syft.core.adp.vm_private_scalar_manager
+   syft.core.adp.abstract_ledger_store
+   syft.core.adp.data_subject
+   syft.core.adp.data_subject_ledger
+   syft.core.adp.data_subject_list
+   syft.core.adp.ledger_store
+   syft.core.adp.vectorized_publish
 

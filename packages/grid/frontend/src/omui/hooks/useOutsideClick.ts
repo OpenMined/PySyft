@@ -1,5 +1,5 @@
-import {useEffect, useRef} from 'react'
-import type {RefObject} from 'react'
+import { useEffect, useRef } from 'react'
+import type { RefObject } from 'react'
 
 export type UseOutsideClickProps = {
   ref: RefObject<HTMLElement>
@@ -19,10 +19,10 @@ export type UseOutsideClickProps = {
  *   return <div {...props} ref={useMergeRefs(innerRef, ref)} />;
  * });
  */
-export function useOutsideClick({ref, callback}: UseOutsideClickProps) {
+export function useOutsideClick({ ref, callback }: UseOutsideClickProps) {
   const stateRef = useRef({
     isPointerDown: false,
-    ignoreEmulatedMouseEvents: false
+    ignoreEmulatedMouseEvents: false,
   })
 
   const state = stateRef.current
@@ -75,7 +75,10 @@ function isValidEvent(event: any, ref: RefObject<HTMLElement>) {
 
   if (event.target) {
     const ownerDocument = event.target.ownerDocument
-    if (!ownerDocument || !ownerDocument.documentElement.contains(event.target)) {
+    if (
+      !ownerDocument ||
+      !ownerDocument.documentElement.contains(event.target)
+    ) {
       return false
     }
   }

@@ -1,44 +1,60 @@
 # stdlib
-from datetime import datetime
 import json
 import os
-from os import urandom
+from pathlib import Path
+from queue import Queue
 import re
+import shutil
 import socket
 import stat
-import string
-import subprocess
+import subprocess  # nosec
 import sys
+import tempfile
+from threading import Event
+from threading import Thread
 import time
 from typing import Any
+from typing import Callable
 from typing import Dict as TypeDict
 from typing import List as TypeList
 from typing import Optional
-from typing import Set
 from typing import Tuple
 from typing import Tuple as TypeTuple
 from typing import Union
 from typing import cast
+from urllib.parse import urlparse
+import webbrowser
 
 # third party
 import click
+import requests
 import rich
+from rich.console import Console
 from rich.live import Live
+from rich.progress import BarColumn
+from rich.progress import Progress
+from rich.progress import SpinnerColumn
+from rich.progress import TextColumn
+from virtualenvapi.manage import VirtualEnvironment
 
 # relative
-from . import __version__
+from .art import RichEmoji
 from .art import hagrid
+from .art import quickstart_art
 from .auth import AuthCredentials
 from .cache import DEFAULT_BRANCH
+from .cache import DEFAULT_REPO
+from .cache import RENDERED_DIR
+from .cache import STABLE_BRANCH
 from .cache import arg_cache
 from .deps import DEPENDENCIES
-from .deps import ENVIRONMENT
-from .deps import MissingDependency
 from .deps import allowed_hosts
-from .deps import docker_info
+from .deps import check_docker_service_status
+from .deps import check_docker_version
+from .deps import check_grid_docker
+from .deps import gather_debug
 from .deps import is_windows
-from .deps import wsl_info
-from .deps import wsl_linux_info
+from .exceptions import MissingDependency
 from .grammar import BadGrammar
 from .grammar import GrammarVerb
 from .grammar import parse_grammar
@@ -48,20 +64,45 @@ from .lib import GIT_REPO
 from .lib import GRID_SRC_PATH
 from .lib import GRID_SRC_VERSION
 from .lib import check_api_metadata
-from .lib import check_docker_version
 from .lib import check_host
 from .lib import check_jupyter_server
 from .lib import check_login_page
-from .lib import commit_hash
 from .lib import docker_desktop_memory
 from .lib import generate_process_status_table
 from .lib import generate_user_table
+from .lib import gitpod_url
 from .lib import hagrid_root
+from .lib import is_gitpod
 from .lib import name_tag
+from .lib import save_vm_details_as_json
 from .lib import update_repo
 from .lib import use_branch
 from .mode import EDITABLE_MODE
+from .parse_template import render_templates
+from .parse_template import setup_from_manifest_template
+from .quickstart_ui import fetch_notebooks_for_url
+from .quickstart_ui import quickstart_download_notebook
+from .rand_sec import generate_sec_random_password
 from .style import RichGroup
+from .version import __version__
+
+
+def fix_windows_virtualenv_api(cls: type) -> None:
+    # fix bug in windows
+    def _python_rpath(self: Any) -> str:
+        """The relative path (from environment root) to python."""
+        # Windows virtualenv installation installs pip to the [Ss]cripts
+        # folder. Here's a simple check to support:
+        if sys.platform == "win32":
+            # fix here https://github.com/sjkingo/virtualenv-api/issues/47
+            return os.path.join(self.path, "Scripts", "python.exe")
+        return os.path.join("bin", "python")
+
+    setattr(cls, "_python_rpath", property(_python_rpath))
+
+
+# fix VirtualEnvironment bug in windows
+fix_windows_virtualenv_api(VirtualEnvironment)
 
 
 def get_azure_image(short_name: str) -> str:
@@ -90,17 +131,17 @@ def clean(location: str) -> None:
     if location == "library" or location == "volumes":
         print("Deleting all Docker volumes in 2 secs (Ctrl-C to stop)")
         time.sleep(2)
-        subprocess.call("docker volume rm $(docker volume ls -q)", shell=True)
+        subprocess.call("docker volume rm $(docker volume ls -q)", shell=True)  # nosec
 
     if location == "containers" or location == "pantry":
         print("Deleting all Docker containers in 2 secs (Ctrl-C to stop)")
         time.sleep(2)
-        subprocess.call("docker rm -f $(docker ps -a -q)", shell=True)
+        subprocess.call("docker rm -f $(docker ps -a -q)", shell=True)  # nosec
 
     if location == "images":
         print("Deleting all Docker images in 2 secs (Ctrl-C to stop)")
         time.sleep(2)
-        subprocess.call("docker rmi $(docker images -q)", shell=True)
+        subprocess.call("docker rmi $(docker images -q)", shell=True)  # nosec
 
 
 @click.command(help="Start a new PyGrid domain/network node!")
@@ -256,7 +297,40 @@ def clean(location: str) -> None:
     type=str,
     help="Optional: git branch to use for launch / build operations",
 )
-def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
+@click.option(
+    "--platform",
+    default=None,
+    required=False,
+    type=str,
+    help="Optional: run docker with a different platform like linux/arm64",
+)
+@click.option(
+    "--vpn",
+    default="true",
+    required=False,
+    type=str,
+    help="Optional: turn tailscale vpn container on or off",
+)
+@click.option(
+    "--silent",
+    is_flag=True,
+    help="Optional: prevent lots of launch output",
+)
+@click.option(
+    "--from_template",
+    default="false",
+    required=False,
+    type=str,
+    help="Optional: launch node using the manifest template",
+)
+@click.option(
+    "--health_checks",
+    default="true",
+    required=False,
+    type=str,
+    help="Optional: turn on or off auto health checks post node launch",
+)
+def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
     try:
         grammar = parse_grammar(args=args, verb=verb)
@@ -273,35 +347,213 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
         cmds = create_launch_cmd(verb=verb, kwargs=kwargs)
         cmds = [cmds] if isinstance(cmds, str) else cmds
     except Exception as e:
-        print(f"{e}")
+        print(f"Error: {e}\n\n")
         return
 
     dry_run = True
     if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
         dry_run = False
 
+    health_checks = str_to_bool(cast(str, kwargs["health_checks"]))
+
     try:
-        execute_commands(cmds, dry_run=dry_run)
+        tail = False if "tail" in kwargs and not str_to_bool(kwargs["tail"]) else True
+        silent = not tail
+
+        from_rendered_dir = (
+            str_to_bool(cast(str, kwargs["from_template"])) and EDITABLE_MODE
+        )
+
+        execute_commands(
+            cmds, dry_run=dry_run, silent=silent, from_rendered_dir=from_rendered_dir
+        )
+
+        host_term = verb.get_named_term_hostgrammar(name="host")
+        run_health_checks = (
+            health_checks and not dry_run and host_term.host == "docker" and silent
+        )
+
+        if run_health_checks:
+            docker_cmds = cast(TypeDict[str, TypeList[str]], cmds)
+
+            # get the first command (cmd1) from docker_cmds which is of the form
+            # {"<first>": [cmd1, cmd2], "<second>": [cmd3, cmd4]}
+            (command, *_), *_ = docker_cmds.values()
+
+            match_port = re.search("HTTP_PORT=[0-9]{1,5}", command)
+            if match_port:
+                rich.get_console().print(
+                    "\n[bold green]⠋[bold blue] Checking node API [/bold blue]\t"
+                )
+                port = match_port.group().replace("HTTP_PORT=", "")
+                check_status("localhost" + ":" + port)
+
     except Exception as e:
-        print(f"{e}")
+        print(f"Error: {e}\n\n")
         return
 
 
-def execute_commands(cmds: list, dry_run: bool = False) -> None:
-    """Execute the launch commands and display their status in realtime.
+def check_errors(
+    line: str, process: subprocess.Popen, cmd_name: str, progress_bar: Progress
+) -> None:
+    task = progress_bar.tasks[0]
+    if "Error response from daemon: " in line:
+        if progress_bar:
+            progress_bar.update(
+                0,
+                description=f"❌ [bold red]{cmd_name}[/bold red] [{task.completed} / {task.total}]",
+                refresh=True,
+            )
+            progress_bar.update(0, visible=False)
+            progress_bar.console.clear_live()
+            progress_bar.console.quiet = True
+            progress_bar.stop()
+            console = rich.get_console()
+            progress_bar.console.quiet = False
+            console.print(f"\n\n [red] ERROR [/red]: [bold]{line}[/bold]\n")
+        process.terminate()
+        raise Exception
 
-    Args:
-        cmds (list): list of commands to be executed
-        dry_run (bool, optional): If `True` only displays cmds to be executed. Defaults to False.
-    """
-    process_list: list = []
-    console = rich.get_console()
 
+def check_pulling(line: str, cmd_name: str, progress_bar: Progress) -> None:
+    task = progress_bar.tasks[0]
+    if "Pulling" in line and "fs layer" not in line:
+        progress_bar.update(
+            0,
+            description=f"[bold]{cmd_name} [{task.completed} / {task.total+1}]",
+            total=task.total + 1,
+            refresh=True,
+        )
+    if "Pulled" in line:
+        progress_bar.update(
+            0,
+            description=f"[bold]{cmd_name} [{task.completed + 1} / {task.total}]",
+            completed=task.completed + 1,
+            refresh=True,
+        )
+        if progress_bar.finished:
+            progress_bar.update(
+                0,
+                description=f"✅ [bold green]{cmd_name} [{task.completed} / {task.total}]",
+                refresh=True,
+            )
+
+
+def check_building(line: str, cmd_name: str, progress_bar: Progress) -> None:
+
+    load_pattern = re.compile(
+        r"^#.* load build definition from [A-Za-z0-9]+\.dockerfile$", re.IGNORECASE
+    )
+    build_pattern = re.compile(
+        r"^#.* naming to docker\.io/openmined/.* done$", re.IGNORECASE
+    )
+    task = progress_bar.tasks[0]
+
+    if load_pattern.match(line):
+        progress_bar.update(
+            0,
+            description=f"[bold]{cmd_name} [{task.completed} / {task.total +1}]",
+            total=task.total + 1,
+            refresh=True,
+        )
+    if build_pattern.match(line):
+        progress_bar.update(
+            0,
+            description=f"[bold]{cmd_name} [{task.completed+1} / {task.total}]",
+            completed=task.completed + 1,
+            refresh=True,
+        )
+
+    if progress_bar.finished:
+        progress_bar.update(
+            0,
+            description=f"✅ [bold green]{cmd_name} [{task.completed} / {task.total}]",
+            refresh=True,
+        )
+
+
+def check_launching(line: str, cmd_name: str, progress_bar: Progress) -> None:
+    task = progress_bar.tasks[0]
+    if "Starting" in line:
+        progress_bar.update(
+            0,
+            description=f" [bold]{cmd_name} [{task.completed} / {task.total+1}]",
+            total=task.total + 1,
+            refresh=True,
+        )
+    if "Started" in line:
+        progress_bar.update(
+            0,
+            description=f" [bold]{cmd_name} [{task.completed + 1} / {task.total}]",
+            completed=task.completed + 1,
+            refresh=True,
+        )
+        if progress_bar.finished:
+            progress_bar.update(
+                0,
+                description=f"✅ [bold green]{cmd_name} [{task.completed} / {task.total}]",
+                refresh=True,
+            )
+
+
+DOCKER_FUNC_MAP = {
+    "Pulling": check_pulling,
+    "Building": check_building,
+    "Launching": check_launching,
+}
+
+
+def read_thread_logs(
+    progress_bar: Progress, process: subprocess.Popen, queue: Queue, cmd_name: str
+) -> None:
+    line = queue.get()
+    line = str(line, encoding="utf-8").strip()
+
+    if progress_bar:
+        check_errors(line, process, cmd_name, progress_bar=progress_bar)
+        DOCKER_FUNC_MAP[cmd_name](line, cmd_name, progress_bar=progress_bar)
+
+
+def create_thread_logs(process: subprocess.Popen) -> Queue:
+    def enqueue_output(out: Any, queue: Queue) -> None:
+        for line in iter(out.readline, b""):
+            queue.put(line)
+        out.close()
+
+    queue: Queue = Queue()
+    thread_1 = Thread(target=enqueue_output, args=(process.stdout, queue))
+    thread_2 = Thread(target=enqueue_output, args=(process.stderr, queue))
+
+    thread_1.daemon = True  # thread dies with the program
+    thread_1.start()
+    thread_2.daemon = True  # thread dies with the program
+    thread_2.start()
+    return queue
+
+
+def process_cmd(
+    cmds: TypeList[str],
+    dry_run: bool,
+    silent: bool,
+    from_rendered_dir: bool,
+    progress_bar: Union[Progress, None] = None,
+    cmd_name: str = "",
+) -> None:
+    process_list: TypeList = []
+    cwd = (
+        os.path.join(GRID_SRC_PATH, RENDERED_DIR)
+        if from_rendered_dir
+        else GRID_SRC_PATH
+    )
     username, password = (
         extract_username_and_pass(cmds[0]) if len(cmds) > 0 else ("-", "-")
     )
+
     # display VM credentials
-    console.print(generate_user_table(username=username, password=password))
+    console = rich.get_console()
+    credentials = generate_user_table(username=username, password=password)
+    if credentials:
+        console.print(credentials)
 
     for cmd in cmds:
         if dry_run:
@@ -313,24 +565,49 @@ def execute_commands(cmds: list, dry_run: bool = False) -> None:
 
         try:
             if len(cmds) > 1:
-                process = subprocess.Popen(
+                process = subprocess.Popen(  # nosec
                     cmd_to_exec,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
-                    cwd=GRID_SRC_PATH,
+                    cwd=cwd,
                     shell=True,
                 )
-
                 ip_address = extract_host_ip_from_cmd(cmd)
                 jupyter_token = extract_jupyter_token(cmd)
                 process_list.append((ip_address, process, jupyter_token))
             else:
                 display_jupyter_token(cmd)
-                subprocess.run(
-                    cmd_to_exec,
-                    shell=True,
-                    cwd=GRID_SRC_PATH,
-                )
+                if silent:
+                    ON_POSIX = "posix" in sys.builtin_module_names
+
+                    process = subprocess.Popen(  # nosec
+                        cmd_to_exec,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        cwd=cwd,
+                        close_fds=ON_POSIX,
+                        shell=True,
+                    )
+
+                    # Creates two threads to get docker stdout and sterr
+                    logs_queue = create_thread_logs(process=process)
+
+                    read_thread_logs(progress_bar, process, logs_queue, cmd_name)
+                    while process.poll() != 0:
+                        while not logs_queue.empty():
+                            # Read stdout and sterr to check errors or update progress bar.
+                            read_thread_logs(
+                                progress_bar, process, logs_queue, cmd_name
+                            )
+                else:
+                    if progress_bar:
+                        progress_bar.stop()
+
+                    subprocess.run(  # nosec
+                        cmd_to_exec,
+                        shell=True,
+                        cwd=cwd,
+                    )
         except Exception as e:
             print(f"Failed to run cmd: {cmd}. {e}")
 
@@ -338,8 +615,57 @@ def execute_commands(cmds: list, dry_run: bool = False) -> None:
         # display VM launch status
         display_vm_status(process_list)
 
+        # save vm details as json
+        save_vm_details_as_json(username, password, process_list)
 
-def display_vm_status(process_list: list) -> None:
+
+def execute_commands(
+    cmds: Union[TypeList[str], TypeDict[str, TypeList[str]]],
+    dry_run: bool = False,
+    silent: bool = False,
+    from_rendered_dir: bool = False,
+) -> None:
+    """Execute the launch commands and display their status in realtime.
+
+    Args:
+        cmds (list): list of commands to be executed
+        dry_run (bool, optional): If `True` only displays cmds to be executed. Defaults to False.
+    """
+    console = rich.get_console()
+    if isinstance(cmds, dict):
+        console.print("[bold green]⠋[bold blue] Launching Containers [/bold blue]\t")
+        for cmd_name, cmd in cmds.items():
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                BarColumn(),
+                TextColumn("[progress.percentage]{task.percentage:.2f}%   "),
+                console=console,
+                auto_refresh=True,
+            ) as progress:
+                if silent:
+                    progress.add_task(
+                        f"[bold green]{cmd_name} Images",
+                        total=0,
+                    )
+                process_cmd(
+                    cmds=cmd,
+                    dry_run=dry_run,
+                    silent=silent,
+                    from_rendered_dir=from_rendered_dir,
+                    progress_bar=progress,
+                    cmd_name=cmd_name,
+                )
+    else:
+        process_cmd(
+            cmds=cmds,
+            dry_run=dry_run,
+            silent=silent,
+            from_rendered_dir=from_rendered_dir,
+        )
+
+
+def display_vm_status(process_list: TypeList) -> None:
     """Display the status of the processes being executed on the VM.
 
     Args:
@@ -525,13 +851,13 @@ def fix_key_permission(private_key_path: str) -> None:
             raise e
 
 
-def private_to_public_key(private_key_path: str, username: str) -> str:
+def private_to_public_key(private_key_path: str, temp_path: str, username: str) -> str:
     # check key permission
     fix_key_permission(private_key_path=private_key_path)
-    output_path = f"/tmp/hagrid_{username}_key.pub"
+    output_path = f"{temp_path}/hagrid_{username}_key.pub"
     cmd = f"ssh-keygen -f {private_key_path} -y > {output_path}"
     try:
-        subprocess.check_call(cmd, shell=True)
+        subprocess.check_call(cmd, shell=True)  # nosec
     except Exception as e:
         print("failed to make ssh key", e)
         raise e
@@ -541,9 +867,9 @@ def private_to_public_key(private_key_path: str, username: str) -> str:
 def check_azure_authed() -> bool:
     cmd = "az account show"
     try:
-        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)
+        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)  # nosec
         return True
-    except Exception:
+    except Exception:  # nosec
         pass
     return False
 
@@ -551,16 +877,16 @@ def check_azure_authed() -> bool:
 def login_azure() -> bool:
     cmd = "az login"
     try:
-        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)
+        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)  # nosec
         return True
-    except Exception:
+    except Exception:  # nosec
         pass
     return False
 
 
 def check_azure_cli_installed() -> bool:
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec
             ["az", "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
         )
         if result.returncode != 0:
@@ -576,7 +902,7 @@ Please install it and then retry your command.\
 
 def check_gcloud_cli_installed() -> bool:
     try:
-        subprocess.call(["gcloud", "version"])
+        subprocess.call(["gcloud", "version"])  # nosec
         print("Gcloud cli installed!")
     except FileNotFoundError:
         msg = "\nYou don't appear to have the gcloud CLI tool installed! \n\n\
@@ -589,12 +915,12 @@ Please install it and then retry again.\
 
 def check_gcloud_authed() -> bool:
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec
             ["gcloud", "auth", "print-identity-token"], stdout=subprocess.PIPE
         )
         if result.returncode == 0:
             return True
-    except Exception:
+    except Exception:  # nosec
         pass
     return False
 
@@ -602,9 +928,9 @@ def check_gcloud_authed() -> bool:
 def login_gcloud() -> bool:
     cmd = "gcloud auth login"
     try:
-        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)
+        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)  # nosec
         return True
-    except Exception:
+    except Exception:  # nosec
         pass
     return False
 
@@ -628,7 +954,7 @@ def generate_gcloud_key_at_path(key_path: str) -> str:
         # triggers a key check
         cmd = "gcloud compute ssh '' --dry-run"
         try:
-            subprocess.check_call(cmd, shell=True)
+            subprocess.check_call(cmd, shell=True)  # nosec
         except Exception:  # nosec
             pass
         if not os.path.exists(key_path):
@@ -644,7 +970,7 @@ def generate_key_at_path(key_path: str) -> str:
     else:
         cmd = f"ssh-keygen -N '' -f {key_path}"
         try:
-            subprocess.check_call(cmd, shell=True)
+            subprocess.check_call(cmd, shell=True)  # nosec
             if not os.path.exists(key_path):
                 raise Exception(f"Failed to generate ssh-key at: {key_path}")
         except Exception as e:
@@ -714,7 +1040,7 @@ def create_launch_cmd(
     verb: GrammarVerb,
     kwargs: TypeDict[str, Any],
     ignore_docker_version_check: Optional[bool] = False,
-) -> Union[str, list[str]]:
+) -> Union[str, TypeList[str], TypeDict[str, TypeList[str]]]:
     parsed_kwargs: TypeDict[str, Any] = {}
     host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host
@@ -754,6 +1080,11 @@ def create_launch_cmd(
     parsed_kwargs["test"] = bool(kwargs["test"]) if "test" in kwargs else False
     parsed_kwargs["dev"] = bool(kwargs["dev"]) if "dev" in kwargs else False
 
+    parsed_kwargs["silent"] = bool(kwargs["silent"]) if "silent" in kwargs else False
+    parsed_kwargs["from_template"] = (
+        str_to_bool(kwargs["from_template"]) if "from_template" in kwargs else False
+    )
+
     parsed_kwargs["release"] = "production"
     if "release" in kwargs and kwargs["release"] != "production":
         parsed_kwargs["release"] = kwargs["release"]
@@ -786,7 +1117,33 @@ def create_launch_cmd(
     else:
         parsed_kwargs["jupyter"] = False
 
+    if "vpn" in kwargs and kwargs["vpn"] is not None:
+        parsed_kwargs["vpn"] = str_to_bool(cast(str, kwargs["vpn"]))
+    else:
+        parsed_kwargs["vpn"] = True
+
+    # allows changing docker platform to other cpu architectures like arm64
+    parsed_kwargs["platform"] = kwargs["platform"] if "platform" in kwargs else None
+
+    if parsed_kwargs["from_template"] and host is not None:
+        # Setup the files from the manifest_template.yml
+        kwargs = setup_from_manifest_template(host_type=host)
+
+        # Override template tag with user input tag
+        if parsed_kwargs["tag"] is not None:
+            kwargs.pop("tag")
+
+        parsed_kwargs.update(kwargs)
+
     if host in ["docker"]:
+
+        # Check docker service status
+        if not ignore_docker_version_check:
+            check_docker_service_status()
+
+        # Check grid docker versions
+        if not ignore_docker_version_check:
+            check_grid_docker(display=True, output_in_text=True)
 
         if not ignore_docker_version_check:
             version = check_docker_version()
@@ -809,7 +1166,10 @@ def create_launch_cmd(
                     f"\tWindows Help: https://docs.docker.com/desktop/windows/\n\n"
                     f"Then re-run your hagrid command.\n\n"
                     f"If you see this warning on Linux then something isn't right. "
-                    f"Please file a Github Issue on PySyft's Github"
+                    f"Please file a Github Issue on PySyft's Github.\n\n"
+                    f"Alternatively in case no more memory could be allocated, "
+                    f"you can run hagrid on the cloud with GitPod by visiting "
+                    f"https://gitpod.io/#https://github.com/OpenMined/PySyft."
                 )
 
             if is_windows() and not DEPENDENCIES["wsl"]:
@@ -820,7 +1180,11 @@ def create_launch_cmd(
                 )
 
             return create_launch_docker_cmd(
-                verb=verb, docker_version=version, tail=tail, kwargs=parsed_kwargs
+                verb=verb,
+                docker_version=version,
+                tail=tail,
+                kwargs=parsed_kwargs,
+                silent=parsed_kwargs["silent"],
             )
 
     elif host in ["vm"]:
@@ -949,9 +1313,9 @@ def create_launch_cmd(
                     ),
                     kwargs=kwargs,
                 )
-                if auto_generate_password == "y":
+                if auto_generate_password == "y":  # nosec
                     parsed_kwargs["password"] = generate_sec_random_password(length=16)
-                elif auto_generate_password == "n":
+                elif auto_generate_password == "n":  # nosec
                     parsed_kwargs["password"] = ask(
                         question=Question(
                             var_name="password",
@@ -1256,12 +1620,41 @@ def create_launch_cmd(
     )
 
 
+def pull_command(cmd: str, kwargs: TypeDict[str, Any]) -> TypeList[str]:
+    pull_cmd = str(cmd)
+    if kwargs["release"] == "production":
+        pull_cmd += " --file docker-compose.yml"
+    else:
+        pull_cmd += " --file docker-compose.pull.yml"
+    pull_cmd += " pull"
+    return [pull_cmd]
+
+
+def build_command(cmd: str) -> TypeList[str]:
+    build_cmd = str(cmd)
+    build_cmd += " --file docker-compose.build.yml"
+    build_cmd += " --file docker-compose.dev.yml"
+    build_cmd += " build"
+    return [build_cmd]
+
+
+def deploy_command(cmd: str, tail: bool, release_type: str) -> TypeList[str]:
+
+    up_cmd = str(cmd)
+    up_cmd += " --file docker-compose.dev.yml" if release_type == "development" else ""
+    up_cmd += " up"
+    if not tail:
+        up_cmd += " -d"
+    return [up_cmd]
+
+
 def create_launch_docker_cmd(
     verb: GrammarVerb,
     docker_version: str,
     kwargs: TypeDict[str, Any],
     tail: bool = True,
-) -> str:
+    silent: bool = False,
+) -> TypeDict[str, TypeList[str]]:
     host_term = verb.get_named_term_hostgrammar(name="host")
     node_name = verb.get_named_term_type(name="node_name")
     node_type = verb.get_named_term_type(name="node_type")
@@ -1269,28 +1662,37 @@ def create_launch_docker_cmd(
     snake_name = str(node_name.snake_input)
     tag = name_tag(name=str(node_name.input))
 
-    if ART:
+    if ART and not silent:
         hagrid()
 
     print(
-        "Launching a "
-        + str(node_type.input)
-        + " PyGrid node on port "
+        "Launching a PyGrid "
+        + str(node_type.input).capitalize()
+        + " node on port "
         + str(host_term.free_port)
         + "!\n"
     )
 
+    if kwargs["release"] == "development":
+        version = setup_from_manifest_template(host_type="docker")["tag"]
+    else:
+        version = STABLE_BRANCH
+
     print("  - TYPE: " + str(node_type.input))
     print("  - NAME: " + str(snake_name))
-    print("  - TAG: " + str(tag))
+    print("  - SYFT_VERSION: " + version)
+    print("  - HAGRID_VERSION: " + str(__version__))
     print("  - PORT: " + str(host_term.free_port))
-    print("  - DOCKER: " + docker_version)
+    print("  - DOCKER COMPOSE: " + docker_version)
     print("  - TAIL: " + str(tail))
+    print("  - RELEASE: " + kwargs["release"])
     print("\n")
 
     version_string = kwargs["tag"]
     version_hash = "dockerhub"
     build = kwargs["build"]
+    from_template = kwargs["from_template"]
+
     if "release" in kwargs and kwargs["release"] == "development":
         # force version to have -dev at the end in dev mode
         # during development we can use the latest beta version
@@ -1332,7 +1734,13 @@ def create_launch_docker_cmd(
         "VERSION": version_string,
         "VERSION_HASH": version_hash,
         "USE_BLOB_STORAGE": use_blob_storage,
+        "STACK_API_KEY": str(
+            generate_sec_random_password(length=48, special_chars=False)
+        ),
     }
+
+    if "platform" in kwargs and kwargs["platform"] is not None:
+        envs["DOCKER_DEFAULT_PLATFORM"] = kwargs["platform"]
 
     if "tls" in kwargs and kwargs["tls"] is True and len(kwargs["cert_store_path"]) > 0:
         envs["TRAEFIK_TLS_CERTS"] = kwargs["cert_store_path"]
@@ -1347,6 +1755,9 @@ def create_launch_docker_cmd(
 
     if "test" in kwargs and kwargs["test"] is True:
         envs["S3_VOLUME_SIZE_MB"] = "100"  # GitHub CI is small
+
+    if kwargs.get("release", "") == "development":
+        envs["RABBITMQ_MANAGEMENT"] = "-management"
 
     if "release" in kwargs:
         envs["RELEASE"] = kwargs["release"]
@@ -1366,11 +1777,11 @@ def create_launch_docker_cmd(
     else:
         cmd += " ".join(args)
 
-    if not build:
-        pull_cmd = str(cmd)
-        pull_cmd += " docker compose pull"
-
     cmd += " docker compose -p " + snake_name
+
+    if "vpn" in kwargs and kwargs["vpn"]:
+        cmd += " --profile vpn"
+
     if str(node_type.input) == "network":
         cmd += " --profile network"
     else:
@@ -1380,29 +1791,66 @@ def create_launch_docker_cmd(
     if str(node_type.input) != "network" and kwargs["headless"] is False:
         cmd += " --profile frontend"
 
+    # new docker compose regression work around
+    # default_env = os.path.expanduser("~/.hagrid/app/.env")
+    default_env = f"{GRID_SRC_PATH}/.env"
+    default_envs = {}
+    with open(default_env, "r") as f:
+        for line in f.readlines():
+            if "=" in line:
+                parts = line.strip().split("=")
+                key = parts[0]
+                value = ""
+                if len(parts) > 1:
+                    value = parts[1]
+                default_envs[key] = value
+    default_envs.update(envs)
+
+    # env file path
+    env_file_path = os.path.join(GRID_SRC_PATH, ".envfile")
+
+    # Render templates if creating stack from the manifest_template.yml
+    if from_template and host_term.host is not None:
+        # If release is development, update relative path
+        if EDITABLE_MODE:
+            default_envs["RELATIVE_PATH"] = "../"
+
+        render_templates(
+            env_vars=default_envs,
+            host_type=host_term.host,
+        )
+
+        env_file_path = os.path.join(GRID_SRC_PATH, RENDERED_DIR, ".envfile")
+
+    try:
+        env_file = ""
+        for k, v in default_envs.items():
+            env_file += f"{k}={v}\n"
+
+        with open(env_file_path, "w") as f:
+            f.write(env_file)
+
+        cmd += f" --env-file {env_file_path}"
+    except Exception:  # nosec
+        pass
+
+    final_commands = {}
+    final_commands["Pulling"] = pull_command(cmd, kwargs)
+
     cmd += " --file docker-compose.yml"
-    if build:
-        cmd += " --file docker-compose.build.yml"
-    if "release" in kwargs and kwargs["release"] == "development":
-        cmd += " --file docker-compose.dev.yml"
     if "tls" in kwargs and kwargs["tls"] is True:
         cmd += " --file docker-compose.tls.yml"
     if "test" in kwargs and kwargs["test"] is True:
         cmd += " --file docker-compose.test.yml"
-    cmd += " up"
-
-    if not tail:
-        cmd += " -d"
 
     if build:
-        cmd += " --build"  # force rebuild
-    else:
-        if is_windows():
-            cmd = pull_cmd + "; " + cmd
-        else:
-            cmd = pull_cmd + " && " + cmd
+        my_build_command = build_command(cmd)
+        final_commands["Building"] = my_build_command
 
-    return cmd
+    release_type = kwargs["release"]
+
+    final_commands["Launching"] = deploy_command(cmd, tail, release_type)
+    return final_commands
 
 
 def create_launch_vagrant_cmd(verb: GrammarVerb) -> str:
@@ -1444,8 +1892,8 @@ def get_or_make_resource_group(resource_group: str, location: str = "westus") ->
     cmd = f"az group show --resource-group {resource_group}"
     exists = True
     try:
-        subprocess.check_call(cmd, shell=True)
-    except Exception:
+        subprocess.check_call(cmd, shell=True)  # nosec
+    except Exception:  # nosec
         # group doesn't exist so lets create it
         exists = False
 
@@ -1453,7 +1901,7 @@ def get_or_make_resource_group(resource_group: str, location: str = "westus") ->
         cmd = f"az group create -l {location} -n {resource_group}"
         try:
             print(f"Creating resource group.\nRunning: {cmd}")
-            subprocess.check_call(cmd, shell=True)
+            subprocess.check_call(cmd, shell=True)  # nosec
         except Exception as e:
             raise Exception(
                 f"Unable to create resource group {resource_group} @ {location}. {e}"
@@ -1476,11 +1924,11 @@ def extract_host_ip(stdout: bytes) -> Optional[str]:
     return None
 
 
-def get_vm_host_ips(node_name: str, resource_group: str) -> Optional[list]:
+def get_vm_host_ips(node_name: str, resource_group: str) -> Optional[TypeList]:
     cmd = f"az vm list-ip-addresses -g {resource_group} --query "
     cmd += f""""[?starts_with(virtualMachine.name, '{node_name}')]"""
     cmd += '''.virtualMachine.network.publicIpAddresses[0].ipAddress"'''
-    output = subprocess.check_output(cmd, shell=True)
+    output = subprocess.check_output(cmd, shell=True)  # nosec
     try:
         host_ips = json.loads(output)
         return host_ips
@@ -1519,7 +1967,7 @@ def extract_host_ip_from_cmd(cmd: str) -> Optional[str]:
         ips = re.findall(matcher, cmd)
         if ips:
             return ips[0]
-    except Exception:
+    except Exception:  # nosec
         pass
 
     return None
@@ -1566,13 +2014,20 @@ def make_vm_azure(
     size: str,
     image_name: str,
     node_count: int,
-) -> list:
+) -> TypeList:
     disk_size_gb = "200"
-    public_key_path = (
-        private_to_public_key(private_key_path=key_path, username=username)
-        if key_path
-        else None
-    )
+    try:
+        temp_dir = tempfile.TemporaryDirectory()
+        public_key_path = (
+            private_to_public_key(
+                private_key_path=key_path, temp_path=temp_dir.name, username=username
+            )
+            if key_path
+            else None
+        )
+    except Exception:  # nosec
+        temp_dir.cleanup()
+
     authentication_type = "ssh" if key_path else "password"
     cmd = f"az vm create -n {node_name} -g {resource_group} --size {size} "
     cmd += f"--image {image_name} --os-disk-size-gb {disk_size_gb} "
@@ -1581,13 +2036,15 @@ def make_vm_azure(
     cmd += f"--admin-password '{password}' " if password else ""
     cmd += f"--count {node_count} " if node_count > 1 else ""
 
-    host_ips: Optional[list] = []
+    host_ips: Optional[TypeList] = []
     try:
         print(f"Creating vm.\nRunning: {hide_azure_vm_password(cmd)}")
-        subprocess.check_output(cmd, shell=True)
+        subprocess.check_output(cmd, shell=True)  # nosec
         host_ips = get_vm_host_ips(node_name=node_name, resource_group=resource_group)
     except Exception as e:
         print("failed", e)
+    finally:
+        temp_dir.cleanup()
 
     if not host_ips:
         raise Exception("Failed to create vm or get VM public ip")
@@ -1596,7 +2053,7 @@ def make_vm_azure(
         # clean up temp public key
         if public_key_path:
             os.unlink(public_key_path)
-    except Exception:
+    except Exception:  # nosec
         pass
 
     return host_ips
@@ -1609,7 +2066,7 @@ def open_port_vm_azure(
     cmd += f"--nsg-name {node_name}NSG --name {port_name} --destination-port-ranges {port} --priority {priority}"
     try:
         print(f"Creating {port_name} {port} ngs rule.\nRunning: {cmd}")
-        output = subprocess.check_call(cmd, shell=True)
+        output = subprocess.check_call(cmd, shell=True)  # nosec
         print("output", output)
         pass
     except Exception as e:
@@ -1620,7 +2077,7 @@ def create_project(project_id: str) -> None:
     cmd = f"gcloud projects create {project_id} --set-as-default"
     try:
         print(f"Creating project.\nRunning: {cmd}")
-        subprocess.check_call(cmd, shell=True)
+        subprocess.check_call(cmd, shell=True)  # nosec
     except Exception as e:
         print("failed", e)
 
@@ -1725,7 +2182,7 @@ def make_gcp_vm(
     host_ip = None
     try:
         print(f"Creating vm.\nRunning: {cmd}")
-        output = subprocess.check_output(cmd, shell=True)
+        output = subprocess.check_output(cmd, shell=True)  # nosec
         host_ip = extract_host_ip_gcp(stdout=output)
     except Exception as e:
         print("failed", e)
@@ -1749,7 +2206,7 @@ def create_launch_azure_cmd(
     auth: AuthCredentials,
     ansible_extras: str,
     kwargs: TypeDict[str, Any],
-) -> list[str]:
+) -> TypeList[str]:
 
     get_or_make_resource_group(resource_group=resource_group, location=location)
 
@@ -1799,7 +2256,7 @@ def create_launch_azure_cmd(
             priority=502,
         )
 
-    launch_cmds: list[str] = []
+    launch_cmds: TypeList[str] = []
 
     for host_ip in host_ips:
         # get old host
@@ -1831,6 +2288,9 @@ def create_launch_azure_cmd(
             kwargs.update(extra_kwargs)
 
             # provision
+            host_up = check_ip_for_ssh(host_ip=host_ip)
+            if not host_up:
+                print(f"Warning: {host_ip} ssh not available yet")
             launch_cmd = create_launch_custom_cmd(verb=verb, auth=auth, kwargs=kwargs)
             launch_cmds.append(launch_cmd)
 
@@ -2005,8 +2465,9 @@ def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
     host = host_term.host if host_term.host is not None else ""
 
     if host in ["docker"]:
-        if verb.get_named_term_grammar("node_name").input == "all":
-            # subprocess.call("docker rm `docker ps -aq` --force", shell=True)
+        target = verb.get_named_term_grammar("node_name").input
+        if target == "all":
+            # subprocess.call("docker rm `docker ps -aq` --force", shell=True) # nosec
             return "docker rm `docker ps -aq` --force"
 
         version = check_docker_version()
@@ -2123,9 +2584,20 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
     type=str,
     help="Optional: git branch to use for launch / build operations",
 )
-def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
+@click.option(
+    "--silent",
+    is_flag=True,
+    help="Optional: prevent lots of land output",
+)
+@click.option(
+    "--force",
+    is_flag=True,
+    help="Optional: bypass the prompt during hagrid land ",
+)
+def land(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_land_verb()
-
+    silent = bool(kwargs["silent"]) if "silent" in kwargs else False
+    force = bool(kwargs["force"]) if "force" in kwargs else False
     try:
         grammar = parse_grammar(args=args, verb=verb)
         verb.load_grammar(grammar=grammar)
@@ -2143,14 +2615,41 @@ def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     except Exception as e:
         print(f"{e}")
         return
-    print("Running: \n", hide_password(cmd=cmd))
 
-    if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
-        print("Running: \n", cmd)
-        try:
-            subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)
-        except Exception as e:
-            print(f"Failed to run cmd: {cmd}. {e}")
+    target = verb.get_named_term_grammar("node_name").input
+
+    if not force:
+        _land_domain = ask(
+            Question(
+                var_name="_land_domain",
+                question=f"Are you sure you want to land {target} (y/n)",
+                kind="yesno",
+            ),
+            kwargs={},
+        )
+
+    if force or _land_domain == "y":
+        if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
+            if not silent:
+                print("Running: \n", cmd)
+            try:
+                if silent:
+                    process = subprocess.Popen(  # nosec
+                        cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        cwd=GRID_SRC_PATH,
+                        shell=True,
+                    )
+                    process.communicate()
+
+                    print(f"HAGrid land {target} complete!")
+                else:
+                    subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)  # nosec
+            except Exception as e:
+                print(f"Failed to run cmd: {cmd}. {e}")
+    else:
+        print("Hagrid land aborted.")
 
 
 cli.add_command(launch)
@@ -2161,21 +2660,7 @@ cli.add_command(clean)
 @click.command(help="Show HAGrid debug information")
 @click.argument("args", type=str, nargs=-1)
 def debug(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
-    now = datetime.now().astimezone()
-    dt_string = now.strftime("%d/%m/%Y %H:%M:%S %Z")
-    debug_info: TypeDict[str, Any] = {}
-    debug_info["datetime"] = dt_string
-    debug_info["python_binary"] = sys.executable
-    debug_info["dependencies"] = DEPENDENCIES
-    debug_info["environment"] = ENVIRONMENT
-    debug_info["hagrid"] = __version__
-    debug_info["hagrid_dev"] = EDITABLE_MODE
-    debug_info["hagrid_path"] = hagrid_root()
-    debug_info["hagrid_repo_sha"] = commit_hash()
-    debug_info["docker"] = docker_info()
-    if is_windows():
-        debug_info["wsl"] = wsl_info()
-        debug_info["wsl_linux"] = wsl_linux_info()
+    debug_info = gather_debug()
     print("\n\nWhen reporting bugs, please copy everything between the lines.")
     print("==================================================================\n")
     print(json.dumps(debug_info))
@@ -2185,148 +2670,760 @@ def debug(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 cli.add_command(debug)
 
 
-@click.command(help="Check health of an IP address/addresses or a resource group")
-@click.argument("ip_addresses", type=str, nargs=-1)
-def check(ip_addresses: list[str]) -> None:
-    console = rich.get_console()
+DEFAULT_HEALTH_CHECKS = ["host", "UI (βeta)", "api", "ssh", "jupyter"]
+HEALTH_CHECK_FUNCTIONS = {
+    "host": check_host,
+    "UI (βeta)": check_login_page,
+    "api": check_api_metadata,
+    "ssh": check_ip_for_ssh,
+    "jupyter": check_jupyter_server,
+}
 
-    for ip_address in ip_addresses:
+HEALTH_CHECK_ICONS = {
+    "host": "🔌",
+    "UI (βeta)": "🖱",
+    "api": "⚙️",
+    "ssh": "🔐",
+    "jupyter": "📗",
+}
 
-        console.print(
-            "[bold magenta]Checking host:[/bold magenta]", ip_address, ":mage:"
+HEALTH_CHECK_URLS = {
+    "host": "{ip_address}",
+    "UI (βeta)": "http://{ip_address}/login",
+    "api": "http://{ip_address}/api/v1/openapi.json",
+    "ssh": "hagrid ssh {ip_address}",
+    "jupyter": "http://{ip_address}:8888",
+}
+
+
+def check_host_health(ip_address: str, keys: TypeList[str]) -> TypeDict[str, bool]:
+    status = {}
+    for key in keys:
+        func: Callable = HEALTH_CHECK_FUNCTIONS[key]  # type: ignore
+        status[key] = func(ip_address, silent=True)
+    return status
+
+
+def icon_status(status: bool) -> str:
+    return "✅" if status else "❌"
+
+
+def get_health_checks(ip_address: str) -> TypeTuple[bool, TypeList[TypeList[str]]]:
+    keys = list(DEFAULT_HEALTH_CHECKS)
+    if "localhost" in ip_address:
+        new_keys = []
+        for key in keys:
+            if key not in ["host", "jupyter", "ssh"]:
+                new_keys.append(key)
+        keys = new_keys
+
+    health_status = check_host_health(ip_address=ip_address, keys=keys)
+    complete_status = all(health_status.values())
+
+    # find port from ip_address
+    try:
+        port = int(ip_address.split(":")[1])
+    except Exception:
+        # default to 80
+        port = 80
+
+    # url to display based on running environment
+    display_url = gitpod_url(port).split("//")[1] if is_gitpod() else ip_address
+
+    # figure out how to add this back?
+    # console.print("[bold magenta]Checking host:[/bold magenta]", ip_address, ":mage:")
+    table_contents = []
+    for key, value in health_status.items():
+        table_contents.append(
+            [
+                HEALTH_CHECK_ICONS[key],
+                key,
+                HEALTH_CHECK_URLS[key].replace("{ip_address}", display_url),
+                icon_status(value),
+            ]
         )
 
-        if check_host(ip_address, silent=True):
-            base_host_status = "✅"
-        else:
-            base_host_status = "❌"
+    return complete_status, table_contents
 
-        if check_login_page(ip_address, silent=True):
-            login_page_status = "✅"
-        else:
-            login_page_status = "❌"
 
-        if check_api_metadata(ip_address, silent=True):
-            backend_status = "✅"
-        else:
-            backend_status = "❌"
+def create_check_table(
+    table_contents: TypeList[TypeList[str]], time_left: int = 0
+) -> rich.table.Table:
+    table = rich.table.Table()
+    table.add_column("PyGrid", style="magenta")
+    table.add_column("Info", justify="left", overflow="fold")
+    time_left_str = "" if time_left == 0 else str(time_left)
+    table.add_column(time_left_str, justify="left")
+    for row in table_contents:
+        table.add_row(row[1], row[2], row[3])
+    return table
 
-        if check_ip_for_ssh(ip_address, silent=True):
-            ssh_status = "✅"
-        else:
-            ssh_status = "❌"
 
-        if check_jupyter_server(ip_address, silent=True):
-            jupyter_status = "✅"
-        else:
-            jupyter_status = "❌"
+def shell(command: str) -> str:
+    try:
+        output = subprocess.check_output(  # nosec
+            command, shell=True, stderr=subprocess.STDOUT
+        )
+    except Exception:
+        output = b""
+    return output.decode("utf-8")
 
-        table_contents = [
-            ["🔌", "Host", f"{ip_address}", base_host_status],
-            ["🖱", "UI", f"http://{ip_address}/login", login_page_status],
-            ["⚙️", "API", f"http://{ip_address}/api/v1", backend_status],
-            ["🔐", "SSH", f"hagrid ssh {ip_address}", ssh_status],
-            ["", "Jupyter", f"http://{ip_address}:8888/", jupyter_status],
-        ]
 
-        table = rich.table.Table()
+def get_host_name(container_name: str) -> str:
+    # Assumption we always get proxy containers first.
+    # if users have old docker compose versios.
+    # the container names are _ instead of -
+    # canada_proxy_1 instead of canada-proxy-1
+    try:
+        host_name = container_name[0 : container_name.find("proxy") - 1]  # noqa: E203
+    except Exception:
+        host_name = ""
+    return host_name
 
-        table.add_column("PyGrid", style="magenta")
-        table.add_column("Info", justify="left")
-        table.add_column("", justify="left")
-        for row in table_contents:
-            table.add_row(row[1], row[2], row[3])
+
+def from_url(url: str) -> Tuple[str, str, int, str, Union[Any, str]]:
+
+    try:
+        # urlparse doesnt handle no protocol properly
+        if "://" not in url:
+            url = "http://" + url
+        parts = urlparse(url)
+        host_or_ip_parts = parts.netloc.split(":")
+        # netloc is host:port
+        port = 80
+        if len(host_or_ip_parts) > 1:
+            port = int(host_or_ip_parts[1])
+        host_or_ip = host_or_ip_parts[0]
+        return (
+            host_or_ip,
+            parts.path,
+            port,
+            parts.scheme,
+            getattr(parts, "query", ""),
+        )
+    except Exception as e:
+        print(f"Failed to convert url: {url} to GridURL. {e}")
+        raise e
+
+
+def get_docker_status(ip_address: str) -> Tuple[bool, Tuple[str, str]]:
+    proxy_containers = shell("docker ps --format '{{.Names}}' | grep 'proxy' ").split()
+    backend_containers = shell(
+        "docker ps --format '{{.Names}}' | grep 'backend' "
+    ).split()
+
+    # to prevent importing syft, have duplicated the from_url code from GridURL
+    url = from_url(ip_address)
+    container_name = None
+    for container in proxy_containers:
+        ports = shell(f"docker port {container}")
+        if ports.count(str(url[2])):
+            container_name = container
+            break
+
+    if not container_name:
+        return False, ("", "")
+    host_name = get_host_name(container_name)
+
+    _backend_exists = False
+    for container in backend_containers:
+        if host_name in container and "stream" not in container:
+            _backend_exists = True
+            break
+    if not _backend_exists:
+        return False, ("", "")
+
+    # Identifying Type of Node.
+    headscale_containers = shell(
+        "docker ps --format '{{.Names}}' | grep 'headscale' "
+    ).split()
+
+    node_type = "Domain"
+    for container in headscale_containers:
+        if host_name in container:
+            node_type = "Network"
+            break
+
+    return True, (host_name, node_type)
+
+
+def get_syft_install_status(host_name: str) -> bool:
+    backend_containers = shell(
+        "docker ps --format '{{.Names}}' | grep 'backend' "
+    ).split()
+    backend_container = None
+    for container in backend_containers:
+        if host_name in container and "stream" not in container:
+            backend_container = container
+            break
+    if not backend_container:
+        print(f"❌ Backend Docker Stack for: {host_name} not found")
+        exit(0)
+    else:
+        backend_log = shell(f"docker logs {backend_container}")
+        if "Application startup complete" not in backend_log:
+            return False
+        return True
+
+
+@click.command(help="Check health of an IP address/addresses or a resource group")
+@click.argument("ip_addresses", type=str, nargs=-1)
+@click.option(
+    "--timeout",
+    default=300,
+    help="Timeout for hagrid check command,Default: 300 seconds",
+)
+@click.option(
+    "--silent",
+    default=True,
+    help="Optional: don't refresh output,Defaults True",
+)
+def check(
+    ip_addresses: TypeList[str], silent: bool = True, timeout: Union[int, str] = 300
+) -> None:
+    check_status(ip_addresses=ip_addresses, silent=silent, timeout=timeout)
+
+
+def _check_status(
+    ip_addresses: Union[str, TypeList[str]],
+    silent: bool = True,
+    signal: Optional[Event] = None,
+) -> None:
+    OK_EMOJI = RichEmoji("white_heavy_check_mark").to_str()
+    # Check if ip_addresses is str, then convert to list
+    if ip_addresses and isinstance(ip_addresses, str):
+        ip_addresses = [ip_addresses]
+    console = Console()
+
+    if len(ip_addresses) == 0:
+        headers = {"User-Agent": "curl/7.79.1"}
+        print("Detecting External IP...")
+        ip_res = requests.get("https://ifconfig.co", headers=headers)
+        ip_address = ip_res.text.strip()
+        ip_addresses = [ip_address]
+
+    if len(ip_addresses) == 1:
+        ip_address = ip_addresses[0]
+        status, table_contents = get_health_checks(ip_address=ip_address)
+        table = create_check_table(table_contents=table_contents)
+        max_timeout = 600
+        if not status:
+            table = create_check_table(
+                table_contents=table_contents, time_left=max_timeout
+            )
+            if silent:
+                with console.status("Gathering Node information") as console_status:
+                    console_status.update(
+                        "[bold orange_red1]Waiting for Container Creation"
+                    )
+                    docker_status, domain_info = get_docker_status(ip_address)
+                    while not docker_status:
+                        docker_status, domain_info = get_docker_status(ip_address)
+                        time.sleep(1)
+                        if (
+                            signal and signal.is_set()
+                        ):  # Stop execution if timeout is triggered
+                            return
+                    console.print(
+                        f"{OK_EMOJI} {domain_info[0]} {domain_info[1]} Containers Created"
+                    )
+
+                    console_status.update("[bold orange_red1]Starting Backend")
+                    syft_install_status = get_syft_install_status(domain_info[0])
+                    while not syft_install_status:
+                        syft_install_status = get_syft_install_status(domain_info[0])
+                        time.sleep(1)
+                        # Stop execution if timeout is triggered
+                        if signal and signal.is_set():
+                            return
+                    console.print(f"{OK_EMOJI} Backend")
+                    console.print(f"{OK_EMOJI} Startup Complete")
+
+                status, table_contents = get_health_checks(ip_address)
+                table = create_check_table(
+                    table_contents=table_contents, time_left=max_timeout
+                )
+            else:
+                while not status:
+                    # Stop execution if timeout is triggered
+                    if signal is not None and signal.is_set():
+                        return
+                    with Live(
+                        table, refresh_per_second=2, screen=True, auto_refresh=False
+                    ) as live:
+                        max_timeout -= 1
+                        if max_timeout % 5 == 0:
+                            status, table_contents = get_health_checks(ip_address)
+                        table = create_check_table(
+                            table_contents=table_contents, time_left=max_timeout
+                        )
+                        live.update(table)
+                        if status:
+                            break
+                        time.sleep(1)
+
         console.print(table)
+    else:
+        for ip_address in ip_addresses:
+            _, table_contents = get_health_checks(ip_address)
+            table = create_check_table(table_contents=table_contents)
+            console.print(table)
+
+
+def check_status(
+    ip_addresses: Union[str, TypeList[str]],
+    silent: bool = True,
+    timeout: Union[int, str] = 300,
+) -> None:
+    timeout = int(timeout)
+    # third party
+    from rich import print
+
+    signal = Event()
+
+    t = Thread(
+        target=_check_status,
+        kwargs={"ip_addresses": ip_addresses, "silent": silent, "signal": signal},
+    )
+    t.start()
+    t.join(timeout=timeout)
+
+    if t.is_alive():
+        signal.set()
+        t.join()
+
+        print(f"Hagrid check command timed out after: {timeout} seconds 🕛")
+        print(
+            "Please try increasing the timeout or kindly check the docker containers for error logs."
+        )
+        print("You can view your container logs using the following tool:")
+        print("Tool: [link=https://ctop.sh]Ctop[/link]")
+        print(
+            "Video Explanation: [link=https://youtu.be/BJhlCxerQP4]How to use Ctop[/link]\n"
+        )
 
 
 cli.add_command(check)
 
 
-def generate_sec_random_password(
-    length: int,
-    special_chars: bool = True,
-    digits: bool = True,
-    lower_case: bool = True,
-    upper_case: bool = True,
-) -> str:
-    """Generates a random password of the given length.
-
-    Args:
-        length (int): length of the password
-        special_chars (bool, optional): Include at least one specials char in the password. Defaults to True.
-        digits (bool, optional): Include at least one digit in the password. Defaults to True.
-        lower_case (bool, optional): Include at least one lower case character in the password. Defaults to True.
-        upper_case (bool, optional): Includde at least one upper case character in the password. Defaults to True.
-
-    Raises:
-        ValueError: If password length if too short.
-
-    Returns:
-        str: randomly generated password
-    """
-    if not isinstance(length, int) or length < 10:
-        raise ValueError(
-            "Password should have a positive safe length of at least 10 characters!"
-        )
-
-    choices: str = ""
-    required_tokens: list[str] = []
-    if special_chars:
-        special_characters = "!@#$%^&*()_+"
-        choices += special_characters
-        required_tokens.append(
-            special_characters[
-                int.from_bytes(urandom(1), sys.byteorder) % len(special_characters)
-            ]
-        )
-    if lower_case:
-        choices += string.ascii_lowercase
-        required_tokens.append(
-            string.ascii_lowercase[
-                int.from_bytes(urandom(1), sys.byteorder) % len(string.ascii_lowercase)
-            ]
-        )
-    if upper_case:
-        choices += string.ascii_uppercase
-        required_tokens.append(
-            string.ascii_uppercase[
-                int.from_bytes(urandom(1), sys.byteorder) % len(string.ascii_uppercase)
-            ]
-        )
-    if digits:
-        choices += string.digits
-        required_tokens.append(
-            string.digits[
-                int.from_bytes(urandom(1), sys.byteorder) % len(string.digits)
-            ]
-        )
-
-    # original Python 2 (urandom returns str)
-    # return "".join(chars[ord(c) % len(chars)] for c in urandom(length))
-
-    # Python 3 (urandom returns bytes)
-
-    password = [choices[c % len(choices)] for c in urandom(length)]
-
-    # Pick some random indexes
-    random_indexes: Set[int] = set()
-    while len(random_indexes) < len(required_tokens):
-        random_indexes.add(int.from_bytes(urandom(1), sys.byteorder) % len(password))
-
-    # Replace the random indexes with the required tokens
-    for i, idx in enumerate(random_indexes):
-        password[idx] = required_tokens[i]
-
-    return "".join(password)
-
-
 # add Hagrid info to the cli
-@click.command(help="Show Hagrid info")
+@click.command(help="Show HAGrid info")
 def version() -> None:
-    print(f"Hagrid version: {__version__}")
+    print(f"HAGrid version: {__version__}")
 
 
 cli.add_command(version)
+
+
+def run_quickstart(
+    url: Optional[str] = None,
+    syft: str = "latest",
+    reset: bool = False,
+    quiet: bool = False,
+    pre: bool = False,
+    test: bool = False,
+    repo: str = DEFAULT_REPO,
+    branch: str = DEFAULT_BRANCH,
+    commit: Optional[str] = None,
+    python: Optional[str] = None,
+) -> None:
+    try:
+        quickstart_art()
+        directory = os.path.expanduser("~/.hagrid/quickstart/")
+        confirm_reset = None
+        if reset:
+            if not quiet:
+                confirm_reset = click.confirm(
+                    "This will create a new quickstart virtualenv and reinstall Syft and "
+                    "Jupyter. Are you sure you want to continue?"
+                )
+            else:
+                confirm_reset = True
+        if confirm_reset is False:
+            return
+
+        if reset and confirm_reset or not os.path.isdir(directory):
+            quickstart_setup(
+                directory=directory,
+                syft_version=syft,
+                reset=reset,
+                pre=pre,
+                python=python,
+            )
+        downloaded_files = []
+        if url:
+            downloaded_files = fetch_notebooks_for_url(
+                url=url,
+                directory=directory,
+                reset=reset,
+                repo=repo,
+                branch=branch,
+                commit=commit,
+            )
+        else:
+            file_path = add_intro_notebook(directory=directory, reset=reset)
+            downloaded_files.append(file_path)
+
+        if len(downloaded_files) == 0:
+            raise Exception(f"Unable to find files at: {url}")
+        file_path = sorted(downloaded_files)[0]
+
+        # add virtualenv path
+        environ = os.environ.copy()
+        os_bin_path = "Scripts" if is_windows() else "bin"
+        venv_dir = directory + ".venv"
+        environ["PATH"] = venv_dir + os.sep + os_bin_path + os.pathsep + environ["PATH"]
+        jupyter_binary = "jupyter.exe" if is_windows() else "jupyter"
+
+        if is_windows():
+            env_activate_cmd = (
+                "(Powershell): "
+                + "cd "
+                + venv_dir
+                + "; "
+                + os_bin_path
+                + os.sep
+                + "activate"
+            )
+        else:
+            env_activate_cmd = (
+                "(Linux): source " + venv_dir + os.sep + os_bin_path + "/activate"
+            )
+
+        print(f"To activate your virtualenv {env_activate_cmd}")
+
+        try:
+            allow_browser = " --no-browser" if is_gitpod() else ""
+            cmd = (
+                venv_dir
+                + os.sep
+                + os_bin_path
+                + os.sep
+                + f"{jupyter_binary} lab{allow_browser} --ip 0.0.0.0 --notebook-dir={directory} {file_path}"
+            )
+            if test:
+                jupyter_path = venv_dir + os.sep + os_bin_path + os.sep + jupyter_binary
+                if not os.path.exists(jupyter_path):
+                    print(f"Failed to install Jupyter in path: {jupyter_path}")
+                    sys.exit(1)
+                print(f"Jupyter exists at: {jupyter_path}. CI Test mode exiting.")
+                sys.exit(0)
+
+            disable_toolbar_extension = (
+                venv_dir
+                + os.sep
+                + os_bin_path
+                + os.sep
+                + f"{jupyter_binary} labextension disable @jupyterlab/cell-toolbar-extension"
+            )
+
+            subprocess.run(  # nosec
+                disable_toolbar_extension.split(" "), cwd=directory, env=environ
+            )
+
+            ON_POSIX = "posix" in sys.builtin_module_names
+
+            def enqueue_output(out: Any, queue: Queue) -> None:
+                for line in iter(out.readline, b""):
+                    queue.put(line)
+                out.close()
+
+            proc = subprocess.Popen(  # nosec
+                cmd.split(" "),
+                cwd=directory,
+                env=environ,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                close_fds=ON_POSIX,
+            )
+            queue: Queue = Queue()
+            thread_1 = Thread(target=enqueue_output, args=(proc.stdout, queue))
+            thread_2 = Thread(target=enqueue_output, args=(proc.stderr, queue))
+            thread_1.daemon = True  # thread dies with the program
+            thread_1.start()
+            thread_2.daemon = True  # thread dies with the program
+            thread_2.start()
+
+            display_url = None
+            console = rich.get_console()
+
+            # keepn reading the queue of stdout + stderr
+            while True:
+                try:
+                    if not display_url:
+                        # try to read the line and extract a jupyter url:
+                        with console.status(
+                            "Starting Jupyter service"
+                        ) as console_status:
+                            line = queue.get()
+                            display_url = extract_jupyter_url(line.decode("utf-8"))
+                            if display_url:
+                                display_jupyter_url(url_parts=display_url)
+                                console_status.stop()
+                except KeyboardInterrupt:
+                    proc.kill()  # make sure jupyter gets killed
+                    sys.exit(1)
+                except Exception:  # nosec
+                    pass  # nosec
+        except KeyboardInterrupt:
+            proc.kill()  # make sure jupyter gets killed
+            sys.exit(1)
+    except Exception as e:
+        print(f"Error running quickstart: {e}")
+        raise e
+
+
+@click.command(help="Launch a Syft + Jupyter Session with a Notebook URL / Path")
+@click.argument("url", type=str, required=False)
+@click.option(
+    "--reset",
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help="Force hagrid quickstart to setup a fresh virtualenv",
+)
+@click.option(
+    "--syft",
+    default="latest",
+    help="Choose a syft version or just use latest",
+)
+@click.option(
+    "--quiet",
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help="Silence confirmation prompts",
+)
+@click.option(
+    "--pre",
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help="Install pre-release versions of syft",
+)
+@click.option(
+    "--python",
+    default=None,
+    help="Specify the path to which python to use",
+)
+@click.option(
+    "--test",
+    default=False,
+    is_flag=True,
+    help="CI Test Mode, don't hang on Jupyter",
+)
+@click.option(
+    "--repo",
+    default=DEFAULT_REPO,
+    help="Choose a repo to fetch the notebook from or just use OpenMined/PySyft",
+)
+@click.option(
+    "--branch",
+    default=DEFAULT_BRANCH,
+    help="Choose a branch to fetch from or just use dev",
+)
+@click.option(
+    "--commit",
+    help="Choose a specific commit to fetch the notebook from",
+)
+def quickstart_cli(
+    url: Optional[str] = None,
+    syft: str = "latest",
+    reset: bool = False,
+    quiet: bool = False,
+    pre: bool = False,
+    test: bool = False,
+    repo: str = DEFAULT_REPO,
+    branch: str = DEFAULT_BRANCH,
+    commit: Optional[str] = None,
+    python: Optional[str] = None,
+) -> None:
+    return run_quickstart(
+        url=url,
+        syft=syft,
+        reset=reset,
+        quiet=quiet,
+        pre=pre,
+        test=test,
+        repo=repo,
+        branch=branch,
+        commit=commit,
+        python=python,
+    )
+
+
+cli.add_command(quickstart_cli, "quickstart")
+
+
+def display_jupyter_url(url_parts: Tuple[str, str, int]) -> None:
+    url = url_parts[0]
+    if is_gitpod():
+        parts = urlparse(url)
+        query = getattr(parts, "query", "")
+        url = gitpod_url(port=url_parts[2]) + "?" + query
+
+    console = rich.get_console()
+
+    tick_emoji = RichEmoji("white_heavy_check_mark").to_str()
+    link_emoji = RichEmoji("link").to_str()
+
+    console.print(
+        f"[bold white]{tick_emoji} Jupyter Server is running at:\n{link_emoji} [bold blue]{url}\n"
+        + "[bold white]Use Control-C to stop this server and shut down all kernels.",
+        new_line_start=True,
+    )
+
+    # if is_gitpod():
+    #     open_browser_with_url(url=url)
+
+
+def open_browser_with_url(url: str) -> None:
+    webbrowser.open(url)
+
+
+def extract_jupyter_url(line: str) -> Optional[Tuple[str, str, int]]:
+    jupyter_regex = r"^.*(http.*127.*)"
+    try:
+        matches = re.match(jupyter_regex, line)
+        if matches is not None:
+            url = matches.group(1).strip()
+            parts = urlparse(url)
+            host_or_ip_parts = parts.netloc.split(":")
+            # netloc is host:port
+            port = 8888
+            if len(host_or_ip_parts) > 1:
+                port = int(host_or_ip_parts[1])
+            host_or_ip = host_or_ip_parts[0]
+            return (url, host_or_ip, port)
+    except Exception as e:
+        print("failed to parse jupyter url", e)
+    return None
+
+
+def quickstart_setup(
+    directory: str,
+    syft_version: str,
+    reset: bool = False,
+    pre: bool = False,
+    python: Optional[str] = None,
+) -> None:
+
+    console = rich.get_console()
+    OK_EMOJI = RichEmoji("white_heavy_check_mark").to_str()
+
+    try:
+        with console.status(
+            "[bold blue]Setting up Quickstart Environment"
+        ) as console_status:
+            os.makedirs(directory, exist_ok=True)
+            virtual_env_dir = os.path.abspath(directory + ".venv/")
+            if reset and os.path.exists(virtual_env_dir):
+                shutil.rmtree(virtual_env_dir)
+            env = VirtualEnvironment(virtual_env_dir, python=python)
+            console.print(
+                f"{OK_EMOJI} Created Virtual Environment {RichEmoji('evergreen_tree').to_str()}"
+            )
+
+            # upgrade pip
+            console_status.update("[bold blue]Installing pip")
+            env.install("pip", options=["-U"])
+            console.print(f"{OK_EMOJI} pip")
+
+            # upgrade packaging
+            console_status.update("[bold blue]Installing packaging")
+            env.install("packaging", options=["-U"])
+            console.print(f"{OK_EMOJI} packaging")
+
+            # Install jupyter lab
+            console_status.update("[bold blue]Installing Jupyter Lab")
+            env.install("jupyterlab")
+            env.install("ipywidgets")
+            console.print(f"{OK_EMOJI} Jupyter Lab")
+
+            # Install hagrid
+            if EDITABLE_MODE:
+                local_hagrid_dir = Path(
+                    os.path.abspath(Path(hagrid_root()) / "../hagrid")
+                )
+                console_status.update(
+                    f"[bold blue]Installing HAGrid in Editable Mode: {str(local_hagrid_dir)}"
+                )
+                env.install("-e " + str(local_hagrid_dir))
+                console.print(
+                    f"{OK_EMOJI} HAGrid in Editable Mode: {str(local_hagrid_dir)}"
+                )
+            else:
+                console_status.update("[bold blue]Installing hagrid")
+                env.install("hagrid", options=["-U"])
+                console.print(f"{OK_EMOJI} HAGrid")
+    except Exception as e:
+        print(e)
+        raise e
+
+
+def add_intro_notebook(directory: str, reset: bool = False) -> str:
+    filenames = ["00-quickstart.ipynb", "01-install-wizard.ipynb"]
+
+    files = os.listdir(directory)
+    try:
+        files.remove(".venv")
+    except Exception:  # nosec
+        pass
+
+    existing = 0
+    for file in files:
+        if file in filenames:
+            existing += 1
+
+    if existing != len(filenames) or reset:
+        if EDITABLE_MODE:
+            local_src_dir = Path(os.path.abspath(Path(hagrid_root()) / "../../"))
+            for filename in filenames:
+                file_path = os.path.abspath(f"{directory}/{filename}")
+                shutil.copyfile(
+                    local_src_dir / f"notebooks/quickstart/{filename}",
+                    file_path,
+                )
+        else:
+            for filename in filenames:
+                url = (
+                    "https://raw.githubusercontent.com/OpenMined/PySyft/dev/"
+                    + f"notebooks/quickstart/{filename}"
+                )
+                file_path, _, _ = quickstart_download_notebook(
+                    url=url, directory=directory, reset=reset
+                )
+    if arg_cache.install_wizard_complete:
+        filename = filenames[0]
+    else:
+        filename = filenames[1]
+    return os.path.abspath(f"{directory}/{filename}")
+
+
+@click.command(help="Walk the Path")
+@click.option(
+    "--repo",
+    default=DEFAULT_REPO,
+    help="Choose a repo to fetch the notebook from or just use OpenMined/PySyft",
+)
+@click.option(
+    "--branch",
+    default=DEFAULT_BRANCH,
+    help="Choose a branch to fetch from or just use dev",
+)
+@click.option(
+    "--commit",
+    help="Choose a specific commit to fetch the notebook from",
+)
+def dagobah(
+    repo: str = DEFAULT_REPO,
+    branch: str = DEFAULT_BRANCH,
+    commit: Optional[str] = None,
+) -> None:
+    return run_quickstart(url="padawan", repo=repo, branch=branch, commit=commit)
+
+
+cli.add_command(dagobah)
 
 
 def ssh_into_remote_machine(
@@ -2346,11 +3443,11 @@ def ssh_into_remote_machine(
     """
     try:
         if auth_type == "key":
-            subprocess.call(
+            subprocess.call(  # nosec
                 ["ssh", "-i", f"{private_key_path}", f"{username}@{host_ip}", cmd]
             )
         elif auth_type == "password":
-            subprocess.call(["ssh", f"{username}@{host_ip}", cmd])
+            subprocess.call(["ssh", f"{username}@{host_ip}", cmd])  # nosec
     except Exception as e:
         raise e
 
@@ -2365,7 +3462,7 @@ def ssh_into_remote_machine(
     help="Optional: command to execute on the remote machine.",
 )
 def ssh(ip_address: str, cmd: str) -> None:
-    kwargs: dict = {}
+    kwargs: TypeDict = {}
     key_path: Optional[str] = None
 
     if check_ip_for_ssh(ip_address, timeout=10, silent=False):

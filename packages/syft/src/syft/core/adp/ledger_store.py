@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any
 from typing import Dict
 from typing import Optional
-from typing import Tuple
 
 # third party
 from nacl.signing import VerifyKey
@@ -21,7 +20,7 @@ from .abstract_ledger_store import AbstractLedgerStore
 
 
 class DictLedgerStore(AbstractLedgerStore):
-    def __init__(self, *args: Tuple[Any, ...], **kwargs: Any) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.kv_store: Dict[VerifyKey, AbstractDataSubjectLedger] = {}
 
     def get(self, key: VerifyKey) -> AbstractDataSubjectLedger:

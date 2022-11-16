@@ -1,6 +1,7 @@
 # stdlib
 from typing import Any
 from typing import Generator
+from typing import List
 from typing import Optional
 import uuid
 from uuid import UUID as uuid_type
@@ -20,7 +21,7 @@ from .serde.serializable import serializable
 @singleton
 class UIDValueGenerator:
     def __init__(self, n_uids: int = 1000) -> None:
-        self.uid_store: list[uuid_type] = []
+        self.uid_store: List[uuid_type] = []
         self.__prepopulate(n_uids)
 
     def __prepopulate(self, n_uids: int) -> None:
@@ -133,6 +134,14 @@ class UID:
 
         try:
             return self.value == other.value
+        except Exception:
+            return False
+
+    @staticmethod
+    def is_valid_uuid(value: Any) -> bool:
+        try:
+            UID(value=uuid.UUID(value))
+            return True
         except Exception:
             return False
 

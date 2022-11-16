@@ -1,8 +1,8 @@
 name: Benchmark Test
 
 on:
-  schedule:
-    - cron: "0 00 * * *" # 12am UTC, 5:30pm Indian, 9pm Brazil, 11am AEDT #Trigger commit
+  # schedule:
+  #   - cron: "0 00 * * *" # 12am UTC, 5:30pm Indian, 9pm Brazil, 11am AEDT #Trigger commit
 
   workflow_call:
 
@@ -25,15 +25,15 @@ jobs:
       - name: set permissions on work folder for self-runners
         run: |
           sudo chown -R $USER:$USER ~/actions-runner/_work/
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Upgrade pip
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Install tox
         run: |
@@ -48,7 +48,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.3.4
+          DOCKER_COMPOSE_VERSION=v2.7.0
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 
@@ -63,4 +63,3 @@ jobs:
         run: |
           mongoimport --uri ${{ secrets.MONGO_URI }} --collection macro_benchmark --file macro_benchmark.json
           mongoimport --uri ${{ secrets.MONGO_URI }} --collection micro_benchmark --file micro_benchmark.json
-

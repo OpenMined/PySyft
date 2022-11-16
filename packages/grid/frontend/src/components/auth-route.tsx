@@ -1,22 +1,22 @@
-import {useEffect} from 'react'
-import {useRouter} from 'next/router'
-import {LoadingPyGrid} from '@/components'
-import {useAuth} from '@/context/auth-context'
-import {useDomainStatus} from '@/lib/data'
-import type {ReactNode} from 'react'
+import { useEffect } from 'react'
+import { useRouter } from 'next/router'
+import { LoadingPyGrid } from '@/components'
+import { useAuth } from '@/context/auth-context'
+import { useDomainStatus } from '@/lib/data'
+import type { ReactNode } from 'react'
 
 interface Pages {
   children: ReactNode
 }
 
-export function CheckAuthRoute({children}: Pages) {
+export function CheckAuthRoute({ children }: Pages) {
   const router = useRouter()
-  const {getToken} = useAuth()
-  const {data, isError} = useDomainStatus()
+  const { getToken } = useAuth()
+  const { data, isError } = useDomainStatus()
   const publicRoutes = ['/status', '/offline', '/login', '/start']
   const isPublicRoute = publicRoutes.includes(router.route)
 
-  console.log({data})
+  console.log({ data })
 
   useEffect(() => {
     // if (data) {

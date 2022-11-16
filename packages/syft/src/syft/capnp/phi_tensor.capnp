@@ -6,6 +6,6 @@ struct PT {
   child @1 :List(Data);
   minVals @2 :Data;
   maxVals @3 :Data;
-  dataSubjectsIndexed @4 :Array;
-  oneHotLookup @5 :Array;
+  dataSubjects @4 :List(Data);
+  isNumpy @5 :Bool;
 }
