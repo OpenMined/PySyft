@@ -7,6 +7,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Union
 
 # third party
@@ -14,11 +15,13 @@ import pandas as pd
 import requests
 
 # relative
-from . import login
-from .core.node.common.client import Client
 from .grid import GridURL
 from .logger import error
 from .logger import warning
+
+if TYPE_CHECKING:
+    # relative
+    from .core.node.common.client import Client
 
 NETWORK_REGISTRY_URL = (
     "https://raw.githubusercontent.com/OpenMined/NetworkRegistry/main/networks.json"
@@ -103,7 +106,10 @@ class NetworkRegistry:
             return "(no networks online - try syft.networks.all_networks to see offline networks)"
         return pd.DataFrame(on).to_string()
 
-    def create_client(self, network: Dict[str, Any]) -> Client:
+    def create_client(self, network: Dict[str, Any]) -> Client:  # type: ignore
+        # relative
+        from .grid.client.client import login
+
         try:
             port = int(network["port"])
             protocol = network["protocol"]
@@ -114,7 +120,7 @@ class NetworkRegistry:
             error(f"Failed to login with: {network}. {e}")
             raise e
 
-    def __getitem__(self, key: Union[str, int]) -> Client:
+    def __getitem__(self, key: Union[str, int]) -> Client:  # type: ignore
         if isinstance(key, int):
             return self.create_client(network=self.online_networks[key])
         else:
