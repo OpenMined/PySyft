@@ -54,7 +54,7 @@ def validate_type(_object: object, _type: type, optional: bool = False) -> Any:
 
 
 def get_syft_built() -> ModuleType:
-    return sys.modules[__name__.split(".")[:-1][0]]
+    return sys.modules[__name__.split(".")[0]]
 
 
 def validate_field(_object: object, _field: str) -> Any:
