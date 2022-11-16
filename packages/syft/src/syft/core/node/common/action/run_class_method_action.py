@@ -97,11 +97,9 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
-        old_obj = node.store.get_or_none(key=self.id_at_location, proxy_only=True)
-        if old_obj:
-            raise Exception(
-                "You're not allowed to perform this operation using this ID."
-            )
+
+        # If if there's another object with the same ID.
+        node.store.check_collision(self.id_at_location)
 
         mutating_internal = False
         if (
