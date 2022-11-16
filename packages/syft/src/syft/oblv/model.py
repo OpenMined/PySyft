@@ -1,6 +1,5 @@
 # stdlib
 import os
-from signal import SIGILL
 from signal import SIGTERM
 import subprocess
 from typing import Any
@@ -33,39 +32,49 @@ class DeploymentClient():
     conn_string: str
     pid: int
     
-    def __init__(self,deployment_id: Any=None, oblv_client: OblvClient = None,user_key_name="" , connection_port=3032):
+    def __init__(self,deployment_id: str=None, oblv_client: OblvClient = None,domain_clients: List[Any] = [],user_key_name="" , connection_port=3032):
         self.deployment_id=deployment_id
         self.user_key_name = user_key_name
         self.connection_port = connection_port
         self.oblv_client = oblv_client
+        self.client = domain_clients
         self.conn_string = ""
+        self.pid = None
+
 
     def initiate_connection(self):
         check_oblv_proxy_installation_status()
+        self.close_connection() #To close any existing connections
         public_file_name = os.path.join(os.path.expanduser('~'),'.ssh',self.user_key_name,self.user_key_name+'_public.der')
         private_file_name = os.path.join(os.path.expanduser('~'),'.ssh',self.user_key_name,self.user_key_name+'_private.der')
         depl = self.oblv_client.deployment_info(self.deployment_id)
         if depl.is_deleted==True:
             raise Exception("User cannot connect to this deployment, as it is no longer available.")
-        process = subprocess.Popen([
-            "oblv", "connect",
-            "--private-key", private_file_name,
-            "--public-key", public_file_name,
-            "--url", depl.instance.service_url,
-            "--port","443",
-            "--lport",str(self.connection_port),
-            "--disable-pcr-check"
-        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        subprocess.check_call
-        while process.poll() is None:
-            d = process.stderr.readline().decode()
-            print(d)
-            if d.__contains__("Error:  Invalid PCR Values"):
-                raise Exception("PCR Validation Failed")
-            elif d.__contains__("Error"):
-                raise Exception(message=d)
-            elif d.__contains__("listening on"):
-                break
+        try:
+            process = subprocess.Popen([
+                "oblv", "connect",
+                "--private-key", private_file_name,
+                "--public-key", public_file_name,
+                "--url", depl.instance.service_url,
+                "--port","443",
+                "--lport",str(self.connection_port),
+                "--disable-pcr-check"
+            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            while process.poll() is None:
+                d = process.stderr.readline().decode()
+                if d.__contains__("Error:  Invalid PCR Values"):
+                    raise Exception("PCR Validation Failed")
+                if d.__contains__("Only one usage of each socket address"):
+                    raise Exception("Another oblv proxy instance running. Either close that connection or change the *connection_port*")
+                elif d.lower().__contains__("error"):
+                    raise Exception(message=d)
+                elif d.__contains__("listening on"):
+                    break
+        except Exception as e:
+            print("Could not connect to Proxy")
+            raise e
+        else:
+            print("Successfully connected to proxy on port {}".format(self.connection_port))
         self.conn_string = "http://127.0.0.1:"+str(self.connection_port)
         self.pid = process.pid
         return
@@ -94,6 +103,8 @@ class DeploymentClient():
         return req.json()
 
     def request_publish(self, dataset_id, sigma = 0.5):
+        if len(self.client)==0:
+            raise Exception("No Domain Clients added. Set the propert *client* with the list of your domain logins")
         if self.conn_string==None:
             raise Exception("proxy not running. Use the method connect_oblv_proxy to start the proxy.")
         elif self.conn_string=="":
@@ -170,4 +181,5 @@ class DeploymentClient():
     def close_connection(self):
         if self.pid!=None:
             os.kill(self.pid, SIGTERM)
-        
+        else:
+            return "No Proxy Connection Found"

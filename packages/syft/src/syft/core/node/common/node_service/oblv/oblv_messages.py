@@ -421,9 +421,6 @@ class PublishDatasetMessage(ImmediateSyftMessageWithReply):
         address: Address,
         reply_to: Address,
         deployment_id: str,
-        host_or_ip: str,
-        port: int,
-        protocol: str,
         client: SyftOblvClient,
         dataset_id: Union[str,TensorWrappedPhiTensorPointer] = "",
         msg_id: Optional[UID] = None,
@@ -435,9 +432,7 @@ class PublishDatasetMessage(ImmediateSyftMessageWithReply):
             self.dataset_id = dataset_id.id_at_location.to_string()
         else:
             self.dataset_id = dataset_id
-        self.host_or_ip = host_or_ip
-        self.protocol = protocol
-        self.port = port
+
 
     def _object2proto(self) -> PublishDatasetMessage_PB:
         """Returns a protobuf serialization of self.
@@ -457,9 +452,6 @@ class PublishDatasetMessage(ImmediateSyftMessageWithReply):
             reply_to=serialize(self.reply_to),
             dataset_id=self.dataset_id,
             deployment_id=self.deployment_id,
-            host_or_ip = self.host_or_ip,
-            protocol = self.protocol,
-            port = self.port,
             client=serialize(self.client),
         )
 
@@ -483,9 +475,6 @@ class PublishDatasetMessage(ImmediateSyftMessageWithReply):
             reply_to=_deserialize(blob=proto.reply_to),
             dataset_id=proto.dataset_id,
             deployment_id=proto.deployment_id,
-            host_or_ip=proto.host_or_ip,
-            protocol=proto.protocol,
-            port=proto.port,
             client=_deserialize(blob=proto.client),
         )
 

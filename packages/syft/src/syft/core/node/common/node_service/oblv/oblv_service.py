@@ -226,10 +226,7 @@ def publish_dataset(msg: PublishDatasetMessage,
     obj = node.store.get(UID.from_string(msg.dataset_id))
     obj_bytes = obj.data._object2bytes()
     req = requests.post("http://127.0.0.1:3030/tensor/dataset/add", files={'input': obj_bytes}, data={
-        "dataset_id": msg.dataset_id,
-        "owner_url": msg.host_or_ip,
-        "owner_port": msg.port,
-        "owner_protocol": msg.protocol
+        "dataset_id": msg.dataset_id
         })
     process.kill()
     process.wait(1) 
@@ -332,7 +329,6 @@ def dataset_publish_budget(msg: PublishApprovalMessage,
     Returns:
         SuccessResponseMessage: Success message on key pair generation.
     """
-
     try:
         with open(os.getenv("OBLV_KEY_PATH", "/app/content") + "/" + os.getenv("OBLV_KEY_NAME", "oblv_key") + "_public.der", "rb") as f:
             data = f.read()
@@ -400,7 +396,6 @@ def dataset_publish_budget_deduction(msg: DeductBudgetMessage,
     Returns:
         SuccessResponseMessage: Success message on key pair generation.
     """
-    
     try:
         with open(os.getenv("OBLV_KEY_PATH", "/app/content") + "/" + os.getenv("OBLV_KEY_NAME", "oblv_key") + "_public.der", "rb") as f:
             data = f.read()
