@@ -135,10 +135,10 @@ jobs:
 
       # Get Job name and url
       - name: Get job name and url
-        id: job
+        id: job_name
         if: failure()
         run: |
-          echo "::set-output name=job::$(echo ${{ github.job }})"
+          echo "::set-output name=job_name::$(echo ${{ github.job }})"
           echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
 
       - name: Get current date
@@ -150,7 +150,7 @@ jobs:
         uses: actions/upload-artifact@master
         if: failure()
         with:
-          name: ${{ matrix.os }}-${{ steps.job_name.outputs.job_name }}-logs-${{ steps.date.outputs.date }}
+          name: ${{ matrix.os }}-${{ steps.job_name.outputs.job_name }}-${{ matrix.pytest-modules }}-logs-${{ steps.date.outputs.date }}
           path: ./logs/${{ steps.job_name.outputs.job_name}}/
 
       - name: Mandatory Container cleanup
@@ -308,10 +308,10 @@ jobs:
 
       # Get Job name and url
       - name: Get job name and url
-        id: job
+        id: job_name
         if: failure()
         run: |
-          echo "::set-output name=job::$(echo ${{ github.job }})"
+          echo "::set-output name=job_name::$(echo ${{ github.job }})"
           echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
 
       - name: Get current date
@@ -323,7 +323,7 @@ jobs:
         uses: actions/upload-artifact@master
         if: failure()
         with:
-          name: ${{ matrix.os }}-${{ steps.job_name.outputs.job_name }}-logs-${{ steps.date.outputs.date }}
+          name: ${{ matrix.os }}-${{ steps.job_name.outputs.job_name }}-${{ matrix.pytest-modules }}-logs-${{ steps.date.outputs.date }}
           path: ./logs/${{ steps.job_name.outputs.job_name}}/
 
       - name: Mandatory Container cleanup
@@ -475,11 +475,12 @@ jobs:
 
       # Get Job name and url
       - name: Get job name and url
-        id: job
+        id: job_name
         if: failure()
         run: |
-          echo "::set-output name=job::$(echo ${{ github.job }})"
+          echo "::set-output name=job_name::$(echo ${{ github.job }})"
           echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
 
       - name: Get current date
         id: date
@@ -641,13 +642,6 @@ jobs:
         run: |
           python ./scripts/container_log_collector.py
 
-      # Get Job name and url
-      - name: Get job name and url
-        id: job
-        if: failure()
-        run: |
-          echo "::set-output name=job::$(echo ${{ github.job }})"
-          echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
 
       # Get Job name and url
       - name: Get job name and url
@@ -666,7 +660,7 @@ jobs:
         uses: actions/upload-artifact@master
         if: failure()
         with:
-          name: ${{ steps.job_name.outputs.job_name }}-logs-${{ steps.date.outputs.date }}
+          name: ${{ matrix.os }}-${{ steps.job_name.outputs.job_name }}-${{ matrix.pytest-modules }}-logs-${{ steps.date.outputs.date }}
           path: ./logs/${{ steps.job_name.outputs.job_name}}/
 
       - name: Mandatory Container cleanup
@@ -812,13 +806,14 @@ jobs:
         run: |
           python ./scripts/container_log_collector.py
 
-      # Get Job name and url
+        # Get Job name and url
       - name: Get job name and url
-        id: job
+        id: job_name
         if: failure()
         run: |
-          echo "::set-output name=job::$(echo ${{ github.job }})"
+          echo "::set-output name=job_name::$(echo ${{ github.job }})"
           echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
 
       - name: Get current date
         id: date

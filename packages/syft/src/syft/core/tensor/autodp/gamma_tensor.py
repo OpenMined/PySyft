@@ -515,7 +515,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
         ],
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-        """Apply the "matmul" operation between "self" and "other"
+        """Apply the "rmatmul" operation between "self" and "other"
 
         Args:
             y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -627,7 +627,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         *args: Any,
         **kwargs: Any,
     ) -> MPCTensor:
-        """Apply the "add" operation between "self" and "other"
+        """Apply the "concatenate" operation between "self" and "other"
 
         Args:
             y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -719,7 +719,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
         ],
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-        """Apply the "floodiv" operation between "self" and "other"
+        """Apply the "floordiv" operation between "self" and "other"
 
         Args:
             y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -802,7 +802,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         *args: Any,
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-        """Apply the "argmin" operation between "self" and "other"
+        """Apply the "ptp" operation between "self" and "other"
 
         Args:
             y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -833,7 +833,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         *args: Any,
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-        """Apply the "argmin" operation between "self" and "other"
+        """Apply the "argmax" operation between "self" and "other"
 
         Args:
             y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -879,7 +879,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         *args: Any,
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-        """Apply the "absolute" operation between "self" and "other"
+        """Apply the "abs" operation between "self" and "other"
 
         Args:
             y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -926,7 +926,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         return self.round(*args, **kwargs)
 
     def __pos__(self) -> TensorWrappedGammaTensorPointer:
-        """Apply the __pos__ (+) operator  on self.
+        """Apply the pos (+) operator  on self.
 
         Returns:
             Union[TensorWrappedGammaTensorPointer] : Result of the operation.
@@ -1365,7 +1365,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
     def __getitem__(
         self, key: Union[int, bool, slice]
     ) -> TensorWrappedGammaTensorPointer:
-        """Apply the slice  operation on "self"
+        """Return self[key].
         Args:
             y (Union[int,bool,slice]) : second operand.
 
@@ -1448,81 +1448,6 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         """
         return self._apply_self_tensor_op("reshape", *args, **kwargs)
 
-    def exp(
-        self,
-    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-        """Apply the "truediv" operation between "self" and "other"
-
-        Args:
-            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
-
-        Returns:
-            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
-        """
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.exp"
-
-        # TODO: should modify to log reduction.
-        def exp_reduction(val: np.ndarray) -> np.ndarray:
-            pos_index = val >= 0
-            neg_index = val < 0
-            exp = np.exp((pos_index * val * -1) + (neg_index * val))
-            pos_values = (pos_index) * exp
-            neg_values = (neg_index) * exp * -1
-            return pos_values + neg_values
-
-        min_vals = self.min_vals.copy()
-        min_vals.data = np.array(exp_reduction(min_vals.data))
-        max_vals = self.max_vals.copy()
-        max_vals.data = np.array(exp_reduction(max_vals.data))
-
-        result = TensorWrappedGammaTensorPointer(
-            data_subjects=self.data_subjects,
-            min_vals=min_vals,
-            max_vals=max_vals,
-            client=self.client,
-        )
-
-        # QUESTION can the id_at_location be None?
-        result_id_at_location = getattr(result, "id_at_location", None)
-
-        if result_id_at_location is not None:
-            # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=[], kwargs={})
-
-            # then we convert anything which isnt a pointer into a pointer
-            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args,
-                kwargs=downcast_kwargs,
-                client=self.client,
-                gc_enabled=False,
-            )
-
-            cmd = RunClassMethodAction(
-                path=attr_path_and_name,
-                _self=self,
-                args=pointer_args,
-                kwargs=pointer_kwargs,
-                id_at_location=result_id_at_location,
-                address=self.client.address,
-            )
-            self.client.send_immediate_msg_without_reply(msg=cmd)
-
-        inherit_tags(
-            attr_path_and_name=attr_path_and_name,
-            result=result,
-            self_obj=self,
-            args=[],
-            kwargs={},
-        )
-
-        result.public_shape = self.public_shape
-        result.public_dtype = self.public_dtype
-
-        return result
-
     def repeat(
         self,
         *args: Any,
@@ -1538,80 +1463,12 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         """
         return self._apply_self_tensor_op("repeat", *args, **kwargs)
 
-    def reciprocal(
-        self,
-    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-        """Apply the "reciprocal" operation between "self" and "other"
-
-        Args:
-            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
-
-        Returns:
-            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
-        """
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.reciprocal"
-
-        min_vals = self.min_vals.copy()
-        min_vals.data = np.array(1 / min_vals.data)
-        max_vals = self.max_vals.copy()
-        max_vals.data = np.array(1 / max_vals.data)
-
-        result = TensorWrappedGammaTensorPointer(
-            data_subjects=self.data_subjects,
-            min_vals=min_vals,
-            max_vals=max_vals,
-            client=self.client,
-        )
-
-        # QUESTION can the id_at_location be None?
-        result_id_at_location = getattr(result, "id_at_location", None)
-
-        if result_id_at_location is not None:
-            # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=[], kwargs={})
-
-            # then we convert anything which isnt a pointer into a pointer
-            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args,
-                kwargs=downcast_kwargs,
-                client=self.client,
-                gc_enabled=False,
-            )
-
-            cmd = RunClassMethodAction(
-                path=attr_path_and_name,
-                _self=self,
-                args=pointer_args,
-                kwargs=pointer_kwargs,
-                id_at_location=result_id_at_location,
-                address=self.client.address,
-            )
-            self.client.send_immediate_msg_without_reply(msg=cmd)
-
-        inherit_tags(
-            attr_path_and_name=attr_path_and_name,
-            result=result,
-            self_obj=self,
-            args=[],
-            kwargs={},
-        )
-
-        result.public_shape = self.public_shape
-        result.public_dtype = self.public_dtype
-
-        return result
-
     def diagonal(
         self,
         *args: Any,
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
         """
-        Return the sum along diagonals of the array.
-
         Return specified diagonals.
         If a is 2-D, returns the diagonal of a with the given offset, i.e., the collection of elements
         of the form a[i, i+offset].
@@ -1823,79 +1680,6 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         """
         return self._apply_self_tensor_op("choose", *args, **kwargs)
 
-    def softmax(
-        self,
-    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-        """Apply the softmax operation on self
-
-        Args:
-            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
-
-        Returns:
-            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
-        """
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.softmax"
-
-        # TODO: should modify to log reduction.
-        def softmax(val: np.ndarray) -> np.ndarray:
-            logits = val - val.max()
-            numerator = np.exp(logits)
-            inv = 1 / numerator.sum()
-            return numerator * inv
-
-        min_vals = self.min_vals.copy()
-        min_vals.data = np.array(softmax(min_vals.data))
-        max_vals = self.max_vals.copy()
-        max_vals.data = np.array(softmax(max_vals.data))
-
-        result = TensorWrappedGammaTensorPointer(
-            data_subjects=self.data_subjects,
-            min_vals=min_vals,
-            max_vals=max_vals,
-            client=self.client,
-        )
-
-        # QUESTION can the id_at_location be None?
-        result_id_at_location = getattr(result, "id_at_location", None)
-
-        if result_id_at_location is not None:
-            # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=[], kwargs={})
-
-            # then we convert anything which isnt a pointer into a pointer
-            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args,
-                kwargs=downcast_kwargs,
-                client=self.client,
-                gc_enabled=False,
-            )
-
-            cmd = RunClassMethodAction(
-                path=attr_path_and_name,
-                _self=self,
-                args=pointer_args,
-                kwargs=pointer_kwargs,
-                id_at_location=result_id_at_location,
-                address=self.client.address,
-            )
-            self.client.send_immediate_msg_without_reply(msg=cmd)
-
-        inherit_tags(
-            attr_path_and_name=attr_path_and_name,
-            result=result,
-            self_obj=self,
-            args=[],
-            kwargs={},
-        )
-
-        result.public_shape = self.public_shape
-        result.public_dtype = self.public_dtype
-
-        return result
-
     @property
     def T(self) -> TensorWrappedGammaTensorPointer:
         # We always maintain a Tensor hierarchy Tensor ---> PT--> Actual Data
@@ -1949,61 +1733,6 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         result_public_shape = np.empty(self.public_shape).T.shape
 
         result.public_shape = result_public_shape
-        result.public_dtype = self.public_dtype
-
-        return result
-
-    def one_hot(self: TensorWrappedGammaTensorPointer) -> np.array:
-        tensor_size = np.empty(self.public_shape).size
-        one_hot_Y = np.zeros((tensor_size, self.max_vals.data[0] + 1))
-        one_hot_Y = one_hot_Y.T
-
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.one_hot"
-
-        result = TensorWrappedGammaTensorPointer(
-            data_subjects=self.data_subjects,
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
-            client=self.client,
-        )
-
-        # QUESTION can the id_at_location be None?
-        result_id_at_location = getattr(result, "id_at_location", None)
-
-        if result_id_at_location is not None:
-            # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=[], kwargs={})
-
-            # then we convert anything which isnt a pointer into a pointer
-            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args,
-                kwargs=downcast_kwargs,
-                client=self.client,
-                gc_enabled=False,
-            )
-
-            cmd = RunClassMethodAction(
-                path=attr_path_and_name,
-                _self=self,
-                args=pointer_args,
-                kwargs=pointer_kwargs,
-                id_at_location=result_id_at_location,
-                address=self.client.address,
-            )
-            self.client.send_immediate_msg_without_reply(msg=cmd)
-
-        inherit_tags(
-            attr_path_and_name=attr_path_and_name,
-            result=result,
-            self_obj=self,
-            args=[],
-            kwargs={},
-        )
-
-        result.public_shape = one_hot_Y.shape
         result.public_dtype = self.public_dtype
 
         return result
@@ -2850,36 +2579,6 @@ class GammaTensor:
             sources=output_state,
         )
 
-    def exp(self) -> GammaTensor:
-        output_state = dict()
-        # Add this tensor to the chain
-        output_state[self.id] = self
-
-        # relative
-        from ...smpc.approximations import exp
-
-        def exp_reduction(val: np.ndarray) -> np.ndarray:
-            pos_index = val >= 0
-            neg_index = val < 0
-            exp = np.exp((pos_index * val * -1) + (neg_index * val))
-            pos_values = (pos_index) * exp
-            neg_values = (neg_index) * exp * -1
-            return pos_values + neg_values
-
-        min_val = self.min_vals.copy()
-        min_val.data = np.array(exp_reduction(min_val.data))
-        max_val = self.max_vals.copy()
-        max_val.data = np.array(exp_reduction(max_val.data))
-
-        return GammaTensor(
-            child=exp(self.child),
-            min_vals=min_val,
-            max_vals=max_val,
-            data_subjects=self.data_subjects,
-            func_str=GAMMA_TENSOR_OP.EXP.value,
-            sources=output_state,
-        )
-
     def log(self) -> GammaTensor:
         output_state = dict()
         output_state[self.id] = self
@@ -2910,79 +2609,6 @@ class GammaTensor:
             func_str=GAMMA_TENSOR_OP.LOG.value,
             sources=output_state,
         )
-
-    def reciprocal(self) -> GammaTensor:
-        output_state = dict()
-        # Add this tensor to the chain
-        output_state[self.id] = self
-
-        # relative
-        from ...smpc.approximations import reciprocal
-
-        min_val = self.min_vals.copy()
-        min_val.data = np.array(1 / (min_val.data))
-        max_val = self.max_vals.copy()
-        max_val.data = np.array(1 / (max_val.data))
-
-        # TODO: Explore why overflow does not occur for arrays
-        fpt = self.child.copy()
-        if hasattr(fpt.child, "shape") and fpt.child.shape == ():
-            fpt.child = np.expand_dims(fpt.child, 0)
-
-        child_inv = reciprocal(fpt)
-
-        if hasattr(self.child.child, "shape") and self.child.child.shape == ():
-            child_inv.child = np.squeeze(child_inv.child)
-
-        return GammaTensor(
-            child=child_inv,
-            min_vals=min_val,
-            max_vals=max_val,
-            data_subjects=self.data_subjects,
-            func_str=GAMMA_TENSOR_OP.RECIPROCAL.value,
-            sources=output_state,
-        )
-
-    def softmax(self) -> GammaTensor:
-        # TODO: Need to figure out how to modify _softmax to make this work with new publish
-        # output_state = dict()
-        # # Add this tensor to the chain
-        # output_state[self.id] = self
-        #
-        # # relative
-        # from ...smpc.approximations import exp
-        # from ...smpc.approximations import reciprocal
-        #
-        # def softmax(val: np.ndarray) -> np.ndarray:
-        #     logits = val - val.max()
-        #     numerator = np.exp(logits)
-        #     inv = 1 / numerator.sum()
-        #     return numerator * inv
-        #
-        # min_val = self.min_vals.copy()
-        # min_val.data = np.array(softmax(min_val.data))
-        # max_val = self.max_vals.copy()
-        # max_val.data = np.array(softmax(max_val.data))
-        # fpt = self.child.copy()
-        # if not isinstance(fpt.child, np.ndarray):
-        #     raise ValueError("Softmax currently works only for numpy child")
-        #
-        # fpt.child = fpt.child - fpt.child.max()
-        # numerator = exp(fpt)
-        # inv = reciprocal(numerator.sum())  # type: ignore
-        #
-        # def _softmax(state: dict) -> jax.numpy.DeviceArray:
-        #     return jnp.exp(self.run(state)) / jnp.exp(self.run(state)).sum()
-        #
-        # return GammaTensor(
-        #     child=numerator * inv,
-        #     min_vals=min_val,
-        #     max_vals=max_val,
-        #     data_subjects=self.data_subjects,
-        #     func_str=_softmax,
-        #     sources=output_state,
-        # )
-        raise NotImplementedError
 
     def flatten(self, order: str = "C") -> GammaTensor:
         """

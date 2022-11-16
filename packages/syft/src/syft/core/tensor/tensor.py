@@ -292,7 +292,7 @@ class TensorPointer(Pointer):
         other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
         **kwargs: Any,
     ) -> Union[TensorPointer, MPCTensor]:
-        """Apply the "mul" operation between "self" and "other"
+        """Apply the "truediv" operation between "self" and "other"
 
         Args:
             y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -307,7 +307,7 @@ class TensorPointer(Pointer):
         other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
         **kwargs: Any,
     ) -> Union[TensorPointer, MPCTensor]:
-        """Apply the "mul" operation between "self" and "other"
+        """Apply the "rtruediv" operation between "self" and "other"
 
         Args:
             y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -407,7 +407,7 @@ class TensorPointer(Pointer):
         *args: Any,
         **kwargs: Any,
     ) -> Union[TensorPointer, MPCTensor]:
-        """Apply the "add" operation between "self" and "other"
+        """Apply the "concatenate" operation between "self" and "other"
 
         Args:
             y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -521,30 +521,6 @@ class Tensor(
         self.tag_name = name
         return self
 
-    def exp(self) -> Tensor:
-        if hasattr(self.child, "exp"):
-            return self.__class__(self.child.exp())
-        else:
-            raise ValueError("Tensor Chain does not have exp function")
-
-    def reciprocal(self) -> Tensor:
-        if hasattr(self.child, "reciprocal"):
-            return self.__class__(self.child.reciprocal())
-        else:
-            raise ValueError("Tensor Chain does not have reciprocal function")
-
-    def softmax(self) -> Tensor:
-        if hasattr(self.child, "softmax"):
-            return self.__class__(self.child.softmax())
-        else:
-            raise ValueError("Tensor Chain does not have softmax function")
-
-    def one_hot(self) -> Tensor:
-        if hasattr(self.child, "one_hot"):
-            return self.__class__(self.child.one_hot())
-        else:
-            raise ValueError("Tensor Chain does not have one_hot function")
-
     @property
     def shape(self) -> Tuple[Any, ...]:
         try:
@@ -631,10 +607,6 @@ class Tensor(
             self.child.bit_decomposition(ring_size, bitwise)
 
         return None
-
-    def mpc_swap(self, other: Tensor) -> Tensor:
-        self.child.child = other.child.child
-        return self
 
     def _object2bytes(self) -> bytes:
         schema = get_capnp_schema(schema_file="tensor.capnp")

@@ -5,7 +5,6 @@ from pathlib import Path
 from queue import Queue
 import re
 import shutil
-import signal as sys_signal
 import socket
 import stat
 import subprocess  # nosec
@@ -324,6 +323,13 @@ def clean(location: str) -> None:
     type=str,
     help="Optional: launch node using the manifest template",
 )
+@click.option(
+    "--health_checks",
+    default="true",
+    required=False,
+    type=str,
+    help="Optional: turn on or off auto health checks post node launch",
+)
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
     try:
@@ -348,6 +354,8 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
         dry_run = False
 
+    health_checks = str_to_bool(cast(str, kwargs["health_checks"]))
+
     try:
         tail = False if "tail" in kwargs and not str_to_bool(kwargs["tail"]) else True
         silent = not tail
@@ -359,22 +367,35 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
         execute_commands(
             cmds, dry_run=dry_run, silent=silent, from_rendered_dir=from_rendered_dir
         )
-        host_term = verb.get_named_term_hostgrammar(name="host")
-        command = cmds[list(cmds.keys())[0]][0]  # type: ignore
-        match_port = re.search("HTTP_PORT=[0-9]{1,5}", command)
 
-        if not dry_run and host_term.host == "docker" and match_port and silent:
-            rich.get_console().print(
-                "\n[bold green]⠋[bold blue] Checking  Node API [/bold blue]\t"
-            )
-            port = match_port.group().replace("HTTP_PORT=", "")
-            check_status("localhost" + ":" + port)
+        host_term = verb.get_named_term_hostgrammar(name="host")
+        run_health_checks = (
+            health_checks and not dry_run and host_term.host == "docker" and silent
+        )
+
+        if run_health_checks:
+            docker_cmds = cast(TypeDict[str, TypeList[str]], cmds)
+
+            # get the first command (cmd1) from docker_cmds which is of the form
+            # {"<first>": [cmd1, cmd2], "<second>": [cmd3, cmd4]}
+            (command, *_), *_ = docker_cmds.values()
+
+            match_port = re.search("HTTP_PORT=[0-9]{1,5}", command)
+            if match_port:
+                rich.get_console().print(
+                    "\n[bold green]⠋[bold blue] Checking node API [/bold blue]\t"
+                )
+                port = match_port.group().replace("HTTP_PORT=", "")
+                check_status("localhost" + ":" + port)
+
     except Exception as e:
         print(f"Error: {e}\n\n")
         return
 
 
-def check_errors(line: str, pid: int, cmd_name: str, progress_bar: Progress) -> None:
+def check_errors(
+    line: str, process: subprocess.Popen, cmd_name: str, progress_bar: Progress
+) -> None:
     task = progress_bar.tasks[0]
     if "Error response from daemon: " in line:
         if progress_bar:
@@ -390,7 +411,7 @@ def check_errors(line: str, pid: int, cmd_name: str, progress_bar: Progress) -> 
             console = rich.get_console()
             progress_bar.console.quiet = False
             console.print(f"\n\n [red] ERROR [/red]: [bold]{line}[/bold]\n")
-        os.killpg(os.getpgid(pid), sys_signal.SIGTERM)
+        process.terminate()
         raise Exception
 
 
@@ -399,14 +420,14 @@ def check_pulling(line: str, cmd_name: str, progress_bar: Progress) -> None:
     if "Pulling" in line and "fs layer" not in line:
         progress_bar.update(
             0,
-            description=f" [bold]{cmd_name} [{task.completed} / {task.total+1}]",
+            description=f"[bold]{cmd_name} [{task.completed} / {task.total+1}]",
             total=task.total + 1,
             refresh=True,
         )
     if "Pulled" in line:
         progress_bar.update(
             0,
-            description=f" [bold]{cmd_name} [{task.completed + 1} / {task.total}]",
+            description=f"[bold]{cmd_name} [{task.completed + 1} / {task.total}]",
             completed=task.completed + 1,
             refresh=True,
         )
@@ -431,14 +452,14 @@ def check_building(line: str, cmd_name: str, progress_bar: Progress) -> None:
     if load_pattern.match(line):
         progress_bar.update(
             0,
-            description=f" [bold]{cmd_name} [{task.completed} / {task.total +1}]",
+            description=f"[bold]{cmd_name} [{task.completed} / {task.total +1}]",
             total=task.total + 1,
             refresh=True,
         )
     if build_pattern.match(line):
         progress_bar.update(
             0,
-            description=f" [bold]{cmd_name} [{task.completed+1} / {task.total}]",
+            description=f"[bold]{cmd_name} [{task.completed+1} / {task.total}]",
             completed=task.completed + 1,
             refresh=True,
         )
@@ -483,13 +504,13 @@ DOCKER_FUNC_MAP = {
 
 
 def read_thread_logs(
-    progress_bar: Progress, pid: int, queue: Queue, cmd_name: str
+    progress_bar: Progress, process: subprocess.Popen, queue: Queue, cmd_name: str
 ) -> None:
     line = queue.get()
     line = str(line, encoding="utf-8").strip()
 
     if progress_bar:
-        check_errors(line, pid, cmd_name, progress_bar=progress_bar)
+        check_errors(line, process, cmd_name, progress_bar=progress_bar)
         DOCKER_FUNC_MAP[cmd_name](line, cmd_name, progress_bar=progress_bar)
 
 
@@ -571,12 +592,12 @@ def process_cmd(
                     # Creates two threads to get docker stdout and sterr
                     logs_queue = create_thread_logs(process=process)
 
-                    read_thread_logs(progress_bar, process.pid, logs_queue, cmd_name)
+                    read_thread_logs(progress_bar, process, logs_queue, cmd_name)
                     while process.poll() != 0:
                         while not logs_queue.empty():
                             # Read stdout and sterr to check errors or update progress bar.
                             read_thread_logs(
-                                progress_bar, process.pid, logs_queue, cmd_name
+                                progress_bar, process, logs_queue, cmd_name
                             )
                 else:
                     if progress_bar:
@@ -612,7 +633,7 @@ def execute_commands(
     """
     console = rich.get_console()
     if isinstance(cmds, dict):
-        console.print("[bold green]⠋[bold blue] Launching Docker Images [/bold blue]\t")
+        console.print("[bold green]⠋[bold blue] Launching Containers [/bold blue]\t")
         for cmd_name, cmd in cmds.items():
             with Progress(
                 SpinnerColumn(),
@@ -2893,7 +2914,7 @@ def _check_status(
             if silent:
                 with console.status("Gathering Node information") as console_status:
                     console_status.update(
-                        "[bold orange_red1]Waiting for Docker Container Creation"
+                        "[bold orange_red1]Waiting for Container Creation"
                     )
                     docker_status, domain_info = get_docker_status(ip_address)
                     while not docker_status:
@@ -2904,10 +2925,10 @@ def _check_status(
                         ):  # Stop execution if timeout is triggered
                             return
                     console.print(
-                        f"{OK_EMOJI} {domain_info[0]} {domain_info[1]} Docker Containers Created."
+                        f"{OK_EMOJI} {domain_info[0]} {domain_info[1]} Containers Created"
                     )
 
-                    console_status.update("[bold orange_red1]Installing Syft")
+                    console_status.update("[bold orange_red1]Starting Backend")
                     syft_install_status = get_syft_install_status(domain_info[0])
                     while not syft_install_status:
                         syft_install_status = get_syft_install_status(domain_info[0])
@@ -2915,8 +2936,8 @@ def _check_status(
                         # Stop execution if timeout is triggered
                         if signal and signal.is_set():
                             return
-                    console.print(f"{OK_EMOJI} Syft")
-                    console.print(f"{OK_EMOJI} Containers Startup Complete.")
+                    console.print(f"{OK_EMOJI} Backend")
+                    console.print(f"{OK_EMOJI} Startup Complete")
 
                 status, table_contents = get_health_checks(ip_address)
                 table = create_check_table(
