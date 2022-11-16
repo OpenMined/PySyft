@@ -10,15 +10,14 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft absolute
-import syft as sy
-
 # relative
 from .....proto.core.node.common.action.smpc_action_message_pb2 import (
     SMPCActionMessage as SMPCActionMessage_PB,
 )
 from ....common.message import ImmediateSyftMessageWithoutReply
+from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serializable import serializable
+from ....common.serde.serialize import _serialize as serialize
 from ....common.uid import UID
 from ....io.address import Address
 
@@ -98,13 +97,13 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
 
         return SMPCActionMessage_PB(
             name_action=self.name_action,
-            self_id=sy.serialize(self.self_id),
-            args_id=list(map(lambda x: sy.serialize(x), self.args_id)),
-            kwargs_id={k: sy.serialize(v) for k, v in self.kwargs_id.items()},
-            kwargs={k: sy.serialize(v, to_bytes=True) for k, v in self.kwargs.items()},
-            id_at_location=sy.serialize(self.id_at_location),
-            address=sy.serialize(self.address),
-            msg_id=sy.serialize(self.id),
+            self_id=serialize(self.self_id),
+            args_id=list(map(lambda x: serialize(x), self.args_id)),
+            kwargs_id={k: serialize(v) for k, v in self.kwargs_id.items()},
+            kwargs={k: serialize(v, to_bytes=True) for k, v in self.kwargs.items()},
+            id_at_location=serialize(self.id_at_location),
+            address=serialize(self.address),
+            msg_id=serialize(self.id),
         )
 
     @staticmethod
@@ -124,16 +123,15 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
 
         return SMPCActionMessage(
             name_action=proto.name_action,
-            self_id=sy.deserialize(blob=proto.self_id),
-            args_id=list(map(lambda x: sy.deserialize(blob=x), proto.args_id)),
-            kwargs_id={k: sy.deserialize(blob=v) for k, v in proto.kwargs_id.items()},
+            self_id=deserialize(blob=proto.self_id),
+            args_id=list(map(lambda x: deserialize(blob=x), proto.args_id)),
+            kwargs_id={k: deserialize(blob=v) for k, v in proto.kwargs_id.items()},
             kwargs={
-                k: sy.deserialize(blob=v, from_bytes=True)
-                for k, v in proto.kwargs.items()
+                k: deserialize(blob=v, from_bytes=True) for k, v in proto.kwargs.items()
             },
-            result_id=sy.deserialize(blob=proto.id_at_location),
-            address=sy.deserialize(blob=proto.address),
-            msg_id=sy.deserialize(blob=proto.msg_id),
+            result_id=deserialize(blob=proto.id_at_location),
+            address=deserialize(blob=proto.address),
+            msg_id=deserialize(blob=proto.msg_id),
         )
 
     @staticmethod
