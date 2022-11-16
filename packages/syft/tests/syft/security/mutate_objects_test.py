@@ -7,7 +7,9 @@ import torch as th
 
 # syft absolute
 import syft as sy
+from syft.core.common.uid import UID
 from syft.core.node.common.action.run_class_method_action import RunClassMethodAction
+
 
 def test_store_object_mutation(
     client: sy.VirtualMachineClient, root_client: sy.VirtualMachineClient
@@ -71,7 +73,6 @@ def test_store_object_mutation(
 
     new_result = y_ptr.get(delete_obj=False)
     assert all(new_result == (y + y)) is True
-
 
 
 def test_store_overwrite_key(
