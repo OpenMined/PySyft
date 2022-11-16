@@ -37,9 +37,6 @@ def generate_ops() -> Dict[GAMMA_TENSOR_OP, Callable]:
 
         return wrapped_jnp
 
-    def _reciprocal(state: dict) -> jax.numpy.DeviceArray:
-        return jnp.divide(1, *reconstruct_from_inputs(state.values()))
-
     VALID_FLATTEN_TYPES = ["C", "F", "A", "K"]
 
     def get_flatten_type(order: str) -> Callable:
@@ -77,7 +74,6 @@ def generate_ops() -> Dict[GAMMA_TENSOR_OP, Callable]:
         GAMMA_TENSOR_OP.NOT_EQUAL: jnp.not_equal,
         GAMMA_TENSOR_OP.LESS: jnp.less,
         GAMMA_TENSOR_OP.LESS_EQUAL: jnp.less_equal,
-        GAMMA_TENSOR_OP.EXP: jnp.exp,
         GAMMA_TENSOR_OP.LOG: jnp.log,
         GAMMA_TENSOR_OP.TRANSPOSE: jnp.transpose,
         GAMMA_TENSOR_OP.SUM: jnp.sum,
@@ -85,6 +81,7 @@ def generate_ops() -> Dict[GAMMA_TENSOR_OP, Callable]:
         GAMMA_TENSOR_OP.ZEROS_LIKE: jnp.zeros_like,
         GAMMA_TENSOR_OP.RAVEL: jnp.ravel,
         GAMMA_TENSOR_OP.RESIZE: jnp.resize,
+        GAMMA_TENSOR_OP.RESHAPE: jnp.reshape,
         GAMMA_TENSOR_OP.COMPRESS: jnp.compress,
         GAMMA_TENSOR_OP.SQUEEZE: jnp.squeeze,
         GAMMA_TENSOR_OP.ANY: jnp.any,
@@ -101,12 +98,15 @@ def generate_ops() -> Dict[GAMMA_TENSOR_OP, Callable]:
         GAMMA_TENSOR_OP.CUMPROD: jnp.cumprod,
         GAMMA_TENSOR_OP.SQRT: jnp.sqrt,
         GAMMA_TENSOR_OP.ABS: jnp.abs,
+        GAMMA_TENSOR_OP.CHOOSE: jnp.choose,
         GAMMA_TENSOR_OP.CLIP: jnp.clip,
         GAMMA_TENSOR_OP.COPY: jnp.copy,
         GAMMA_TENSOR_OP.TAKE: jnp.take,
         GAMMA_TENSOR_OP.PUT: jnp.put,
         GAMMA_TENSOR_OP.ARGMAX: jnp.argmax,
         GAMMA_TENSOR_OP.ARGMIN: jnp.argmin,
+        GAMMA_TENSOR_OP.PTP: jnp.ptp,
+        GAMMA_TENSOR_OP.MOD: jnp.mod,
         GAMMA_TENSOR_OP.SWAPAXES: jnp.swapaxes,
         GAMMA_TENSOR_OP.NONZERO: jnp.nonzero,
         GAMMA_TENSOR_OP.PROD: jnp.prod,
@@ -115,15 +115,21 @@ def generate_ops() -> Dict[GAMMA_TENSOR_OP, Callable]:
         GAMMA_TENSOR_OP.TRACE: jnp.trace,
         GAMMA_TENSOR_OP.MIN: jnp.min,
         GAMMA_TENSOR_OP.MAX: jnp.max,
+        GAMMA_TENSOR_OP.LSHIFT: jnp.left_shift,
+        GAMMA_TENSOR_OP.RSHIFT: jnp.right_shift,
+        GAMMA_TENSOR_OP.XOR: jnp.bitwise_xor,
+        GAMMA_TENSOR_OP.ROUND: jnp.round,
+        GAMMA_TENSOR_OP.SORT: jnp.sort,
+        GAMMA_TENSOR_OP.ARGSORT: jnp.argsort,
         GAMMA_TENSOR_OP.REPEAT: jnp.repeat,
-        GAMMA_TENSOR_OP.RECIPROCAL: _reciprocal,
+        GAMMA_TENSOR_OP.DIVMOD: jnp.divmod,
         GAMMA_TENSOR_OP.FLATTEN_C: get_flatten_type(order="C"),
         GAMMA_TENSOR_OP.FLATTEN_F: get_flatten_type(order="F"),
         GAMMA_TENSOR_OP.FLATTEN_A: get_flatten_type(order="A"),
         GAMMA_TENSOR_OP.FLATTEN_K: get_flatten_type(order="K"),
     }
 
-    non_generic_funcs = [GAMMA_TENSOR_OP.NOOP, GAMMA_TENSOR_OP.RECIPROCAL]
+    non_generic_funcs = [GAMMA_TENSOR_OP.NOOP]
 
     mapper = dict()
 

@@ -97,7 +97,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.54"
+      - "0.7.0-beta.57"
     createPullSecret: true
     dockerfile: ./backend/backend.dockerfile
     context: ../
@@ -109,7 +109,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.54"
+      - "0.7.0-beta.57"
     createPullSecret: true
     dockerfile: ./frontend/frontend.dockerfile
     context: ./frontend
@@ -128,7 +128,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.54"
+      - "0.7.0-beta.57"
     createPullSecret: true
     dockerfile: ./vpn/headscale.dockerfile
     context: ./vpn
@@ -140,7 +140,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.54"
+      - "0.7.0-beta.57"
     createPullSecret: true
     dockerfile: ./vpn/tailscale.dockerfile
     context: ./vpn
@@ -152,7 +152,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.54"
+      - "0.7.0-beta.57"
     createPullSecret: true
     dockerfile: ./vpn/iptables.dockerfile
     context: ./vpn
@@ -418,6 +418,8 @@ deployments:
                 value: ${REDIS_HOST}
               - name: REDIS_PORT
                 value: ${REDIS_PORT}
+              - name: SERVICE_NAME
+                value: ${SERVICE_NAME_BACKEND}
               - name: S3_ENDPOINT
                 value: ${S3_ENDPOINT}
               - name: S3_PORT
@@ -476,6 +478,8 @@ deployments:
                 value: ${SERVICE_NAME_DB}
               - name: POSTGRES_DB
                 value: ${POSTGRES_DB}
+              - name: SERVICE_NAME
+                value: ${SERVICE_NAME_BACKEND_STREAM}
               - name: POSTGRES_USER
                 value: ${POSTGRES_USER}
               - name: POSTGRES_PASSWORD

@@ -61,7 +61,6 @@ You Will Learn ⬇️
 
 .. dropdown:: More Tutorials 📝
     :animate: fade-in
-
     This set of tutorials is for ``Data Engineers`` 👩‍💻 who want to learn to ``deploy`` Syft for ``production``.
 
     | :doc:`Part 12: How to setup development mode locally`

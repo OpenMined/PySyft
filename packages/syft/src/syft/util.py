@@ -8,11 +8,13 @@ import functools
 from itertools import repeat
 import multiprocessing
 import multiprocessing as mp
+from multiprocessing import set_start_method
 from multiprocessing.synchronize import Event as EventClass
 from multiprocessing.synchronize import Lock as LockBase
 import operator
 import os
 from pathlib import Path
+import platform
 from secrets import randbelow
 import sys
 import time
@@ -735,6 +737,14 @@ def print_process(  # type: ignore
         sys.stdout.flush()
 
 
+def os_name() -> str:
+    os_name = platform.system()
+    if os_name.lower() == "darwin":
+        return "macOS"
+    else:
+        return os_name
+
+
 def print_dynamic_log(
     message: str,
 ) -> Tuple[EventClass, EventClass]:
@@ -748,6 +758,11 @@ def print_dynamic_log(
     finish = multiprocessing.Event()
     success = multiprocessing.Event()
     lock = multiprocessing.Lock()
+
+    if os_name() == "macOS":
+        # set start method to fork in case of MacOS
+        set_start_method("fork", force=True)
+
     multiprocessing.Process(
         target=print_process, args=(message, finish, success, lock)
     ).start()
