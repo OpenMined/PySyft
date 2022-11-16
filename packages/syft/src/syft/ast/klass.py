@@ -39,7 +39,7 @@ from ..core.store.storeable_object import StorableObject
 from ..logger import traceback_and_raise
 from ..logger import warning
 from ..util import aggressive_set_attr
-from ..util import get_syft_built
+from ..util import get_loaded_syft
 from ..util import inherit_tags
 from .callable import Callable
 
@@ -647,7 +647,7 @@ class Class(Callable):
 
         module_type = type(sys)
 
-        parent = get_syft_built()
+        parent = get_loaded_syft()
         for part in parts[1:]:
             if part not in parent.__dict__:
                 parent.__dict__[part] = module_type(name=part)

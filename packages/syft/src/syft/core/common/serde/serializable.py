@@ -8,7 +8,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # relative
 from ....util import aggressive_set_attr
-from ....util import get_syft_built
+from ....util import get_loaded_syft
 from .capnp import CAPNP_REGISTRY
 
 
@@ -51,7 +51,7 @@ def GenerateWrapper(
     Wrapper.__name__ = f"{klass}Wrapper"
     Wrapper.__module__ = f"syft.wrappers.{'.'.join(module_parts)}"
 
-    syft_module = get_syft_built()
+    syft_module = get_loaded_syft()
     module_type = type(syft_module)
     # create a fake module `wrappers` under `syft`
     if "wrappers" not in syft_module.__dict__:
