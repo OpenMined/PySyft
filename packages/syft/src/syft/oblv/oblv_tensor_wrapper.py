@@ -269,6 +269,163 @@ class OblvTensorWrapper():
         res = self.apply_function("__eq__",other)
         return res
 
+    def sum(
+        self
+    ) -> "OblvTensorWrapper":
+        """
+        Sum of array elements
+        """
+        return self.apply_function("sum")
+
+    def __lshift__(
+        self,
+        other: Union[
+            "OblvTensorWrapper", int, float, np.ndarray
+        ],
+    ) -> "OblvTensorWrapper":
+        """Apply the "lshift" operation between "self" and "other"
+
+        Args:
+            y (Union["OblvTensorWrapper",int,float,np.ndarray]) : second operand.
+
+        Returns:
+            "OblvTensorWrapper" : Result of the operation.
+        """
+        return self.apply_function(other, "__lshift__")
+
+    def __rshift__(
+        self,
+        other: Union[
+            "OblvTensorWrapper", int, float, np.ndarray
+        ],
+    ) -> "OblvTensorWrapper":
+        """Apply the "rshift" operation between "self" and "other"
+
+        Args:
+            y (Union["OblvTensorWrapper",int,float,np.ndarray]) : second operand.
+
+        Returns:
+            "OblvTensorWrapper" : Result of the operation.
+        """
+        return self.apply_function(other, "__rshift__")
+
+    def __abs__(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> "OblvTensorWrapper":
+        """Apply the "abs" operation between "self" and "other"
+
+        Args:
+            y (Union["OblvTensorWrapper",int,float,np.ndarray]) : second operand.
+
+        Returns:
+            "OblvTensorWrapper" : Result of the operation.
+        """
+        return self.apply_function("__abs__")
+
+
+    def __pos__(self) -> "OblvTensorWrapper":
+        """Apply the pos (+) operator  on self.
+
+        Returns:
+            "OblvTensorWrapper" : Result of the operation.
+        """
+        return self.apply_function("__pos__")
+
+    def cumsum(
+        self
+    ) -> "OblvTensorWrapper":
+        """ "
+        Return the cumulative sum of the elements 
+        """
+        return self.apply_function("cumsum")
+
+    def cumprod(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> "OblvTensorWrapper":
+        """
+        Return the cumulative product of the elements
+        """
+        return self.apply_function("cumprod")
+
+    def prod(
+        self
+    ) -> "OblvTensorWrapper":
+        """
+        Return the product of array elements
+        """
+        return self.apply_function("prod")
+
+    def __xor__(
+        self,
+        other: Union[
+            "OblvTensorWrapper", int, float, np.ndarray
+        ],
+    ) -> "OblvTensorWrapper":
+        """Apply the "xor" operation between "self" and "other"
+
+        Args:
+            y (Union["OblvTensorWrapper",int,float,np.ndarray]) : second operand.
+
+        Returns:
+            "OblvTensorWrapper" : Result of the operation.
+        """
+        return self.apply_function("__xor__", other)
+
+    def mean(self) -> "OblvTensorWrapper":
+        """
+        Compute the arithmetic mean 
+        """
+        return self.apply_function("mean")
+
+    def std(
+        self
+    ) -> "OblvTensorWrapper":
+        """
+        Compute the standard deviation 
+        """
+        return self.apply_function("std")
+
+    def min(
+        self
+    ) -> "OblvTensorWrapper":
+        """
+        Return the minimum of an array 
+        """
+        return self.apply_function("min")
+
+    def max(
+        self
+    ) -> "OblvTensorWrapper":
+        """
+        Return the maximum of an array
+        """
+        return self.apply_function("max")
+
+    def flatten(
+        self
+    ) -> "OblvTensorWrapper":
+        """
+        Return a copy of the array collapsed into one dimension.
+
+        Parameters
+            order: {‘C’, ‘F’, ‘A’, ‘K’}, optional
+            ‘C’ means to flatten in row-major (C-style) order.
+            ‘F’ means to flatten in column-major (Fortran- style) order.
+            ‘A’ means to flatten in column-major order if a is Fortran contiguous in memory, row-major order otherwise.
+            ‘K’ means to flatten a in the order the elements occur in memory. The default is ‘C’.
+
+        Returns
+            y: PhiTensor
+                A copy of the input array, flattened to one dimension.
+        """
+        return self.apply_function("flatten")
+
+    
+
     __add__ = add
     __radd__ = add
     __sub__ = sub

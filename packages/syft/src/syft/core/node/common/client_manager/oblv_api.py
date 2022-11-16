@@ -67,8 +67,7 @@ class OblvAPI(RequestAPI):
                 raise Exception(f"{type(self)} has no response")
             return content
 
-    def publish_dataset(self, deployment: DeploymentClient, dataset: Union[str,TensorWrappedPhiTensorPointer],**kwargs: Any) -> Any:
-        connection = self.client.routes[0].connection.base_url
+    def send_dataset(self, deployment: DeploymentClient, dataset: Union[str,TensorWrappedPhiTensorPointer],**kwargs: Any) -> Any:
         content={"deployment_id":deployment.deployment_id,"client":SyftOblvClient.from_client(deployment.oblv_client)}
         dataset_id = dataset if type(dataset)=='str' else dataset.id_at_location.to_string()
         content.update({"dataset_id":dataset_id})
