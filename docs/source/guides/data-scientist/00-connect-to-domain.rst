@@ -124,18 +124,22 @@ The ``Email`` and ``Password`` are your login credentials which you already have
 Once we're ``logged`` in, you can move to the next section, which ``explores`` the user homepage.
 
 
-Step 3: Explore the User HomePage
+Step 4: Explore the User HomePage
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+When you login, the first page seen by the Data Scientists is the ``User`` homepage.
 
+When on this page, you can ``create`` an account for other team members within your organization and 
+check the requests for ``pending`` users and ``denied`` users. Also, it gives you information like privacy budget 
+allocated, date added, email, and the name of other users in a table-like format.
 
+|00-connect-to-domain-02|
 
+In the next section, you can set ``permissions`` for a user by their assigned roles. There are different ``roles`` 
+and their associated permissions, but you are restricted to managing the Domain as a user. You can ``review`` and 
+``customize`` what permissions apply to the roles on this page. 
 
-
-
-
-
-
+|00-connect-to-domain-03|
 
 
 
@@ -143,4 +147,10 @@ Step 3: Explore the User HomePage
    :width: 95%
 
 .. |00-connect-to-domain-01| image:: ../../_static/personas-image/data-scientist/00-connect-to-domain-01.png
+   :width: 95%
+
+.. |00-connect-to-domain-02| image:: ../../_static/personas-image/data-scientist/00-connect-to-domain-02.png
+   :width: 95%
+
+.. |00-connect-to-domain-03| image:: ../../_static/personas-image/data-scientist/00-connect-to-domain-03.png
    :width: 95%
