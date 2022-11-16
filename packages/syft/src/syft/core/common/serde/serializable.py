@@ -6,14 +6,10 @@ import warnings
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft absolute
-import syft
-
 # relative
 from ....util import aggressive_set_attr
+from ....util import get_loaded_syft
 from .capnp import CAPNP_REGISTRY
-
-module_type = type(syft)
 
 
 # this will overwrite the ._sy_serializable_wrapper_type with an auto generated
@@ -54,11 +50,14 @@ def GenerateWrapper(
     klass = module_parts.pop()
     Wrapper.__name__ = f"{klass}Wrapper"
     Wrapper.__module__ = f"syft.wrappers.{'.'.join(module_parts)}"
+
+    syft_module = get_loaded_syft()
+    module_type = type(syft_module)
     # create a fake module `wrappers` under `syft`
-    if "wrappers" not in syft.__dict__:
-        syft.__dict__["wrappers"] = module_type(name="wrappers")
+    if "wrappers" not in syft_module.__dict__:
+        syft_module.__dict__["wrappers"] = module_type(name="wrappers")
     # for each part of the path, create a fake module and add it to it's parent
-    parent = syft.__dict__["wrappers"]
+    parent = syft_module.__dict__["wrappers"]
     for n in module_parts:
         if n not in parent.__dict__:
             parent.__dict__[n] = module_type(name=n)

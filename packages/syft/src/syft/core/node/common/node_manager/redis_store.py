@@ -12,10 +12,10 @@ import redis
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
 
-# syft absolute
-import syft
-
 # relative
+from .....lib.python.dict import Dict as SyftDict
+from ....common.serde.deserialize import _deserialize as deserialize
+from ....common.serde.serialize import _serialize as serialize
 from ....common.uid import UID
 from ....node.common.node_table.bin_obj_dataset import BinObjDataset
 from ....store import ObjectStore
@@ -98,7 +98,7 @@ class RedisStore(ObjectStore):
         if obj is None or obj_metadata is None:
             raise KeyError(f"Object not found! for UID: {key_str}")
 
-        obj = syft.deserialize(obj, from_bytes=True)
+        obj = deserialize(obj, from_bytes=True)
         if proxy_only is False and isinstance(obj, ProxyDataset):
             obj = self.resolve_proxy_object(obj=obj)
 
@@ -108,17 +108,17 @@ class RedisStore(ObjectStore):
             description=obj_metadata.description,
             tags=obj_metadata.tags,
             read_permissions=dict(
-                syft.deserialize(
+                deserialize(
                     bytes.fromhex(obj_metadata.read_permissions), from_bytes=True
                 )
             ),
             search_permissions=dict(
-                syft.deserialize(
+                deserialize(
                     bytes.fromhex(obj_metadata.search_permissions), from_bytes=True
                 )
             ),
             write_permissions=dict(
-                syft.deserialize(
+                deserialize(
                     bytes.fromhex(obj_metadata.write_permissions), from_bytes=True
                 )
             ),
@@ -149,11 +149,11 @@ class RedisStore(ObjectStore):
 
         is_proxy_dataset = False
         if isinstance(value._data, ProxyDataset):
-            bin = syft.serialize(value._data, to_bytes=True)
+            bin = serialize(value._data, to_bytes=True)
             is_proxy_dataset = True
         else:
-            bin = syft.serialize(value.data, to_bytes=True)
-        self.redis.set(key_str, bin)
+            bin = serialize(value.data, to_bytes=True)
+        self.redis.set(key_str, bin)  # type: ignore
 
         create_metadata = True
         local_session = sessionmaker(bind=self.db)()
@@ -173,19 +173,15 @@ class RedisStore(ObjectStore):
         metadata_obj.description = value.description
         metadata_obj.read_permissions = cast(
             bytes,
-            syft.serialize(syft.lib.python.Dict(value.read_permissions), to_bytes=True),
+            serialize(SyftDict(value.read_permissions), to_bytes=True),
         ).hex()
         metadata_obj.search_permissions = cast(
             bytes,
-            syft.serialize(
-                syft.lib.python.Dict(value.search_permissions), to_bytes=True
-            ),
+            serialize(SyftDict(value.search_permissions), to_bytes=True),
         ).hex()
         metadata_obj.write_permissions = cast(
             bytes,
-            syft.serialize(
-                syft.lib.python.Dict(value.write_permissions), to_bytes=True
-            ),
+            serialize(SyftDict(value.write_permissions), to_bytes=True),
         ).hex()
         metadata_obj.is_proxy_dataset = is_proxy_dataset
 
