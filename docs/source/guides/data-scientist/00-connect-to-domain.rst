@@ -42,6 +42,7 @@ Steps to Connect to a Domain Server
 #. **Login** to your Server
 #. **Explore** the User HomePage
 
+.. _step-ds-1:
 
 Step 1: Obtain the Login Credentials
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -75,8 +76,8 @@ organization's private data servers. Here are a few points to follow to get your
    # run this cell
    import syft as sy
    domain_client = sy.register(
-      name="Jane Doe",
-      email="jane@email.com",
+      name="Alice",
+      email="alice@email.com",
       password="supersecurepassword",
       url="localhost",
       port=8081
@@ -114,7 +115,17 @@ Once the ``hagrid launch`` command is executed successfully, you will see the me
 Step 3: Login to your Server
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Once you have launched your domain node, you can now visit ``http://localhost:8081``, where you will see the below login page:
 
+|00-connect-to-domain-01|
+
+The ``Email`` and ``Password`` are your login credentials which you already have if you executed :ref:`Step 1 <step-ds-1>` above.
+
+Once we're ``logged`` in, you can move to the next section, which ``explores`` the user homepage.
+
+
+Step 3: Explore the User HomePage
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 
@@ -129,4 +140,7 @@ Step 3: Login to your Server
 
 
 .. |00-connect-to-domain-00| image:: ../../_static/personas-image/data-scientist/00-connect-to-domain-00.png
+   :width: 95%
+
+.. |00-connect-to-domain-01| image:: ../../_static/personas-image/data-scientist/00-connect-to-domain-01.png
    :width: 95%
