@@ -515,7 +515,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
         ],
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-        """Apply the "matmul" operation between "self" and "other"
+        """Apply the "rmatmul" operation between "self" and "other"
 
         Args:
             y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -627,7 +627,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         *args: Any,
         **kwargs: Any,
     ) -> MPCTensor:
-        """Apply the "add" operation between "self" and "other"
+        """Apply the "concatenate" operation between "self" and "other"
 
         Args:
             y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -719,7 +719,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
         ],
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-        """Apply the "floodiv" operation between "self" and "other"
+        """Apply the "floordiv" operation between "self" and "other"
 
         Args:
             y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -802,7 +802,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         *args: Any,
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-        """Apply the "argmin" operation between "self" and "other"
+        """Apply the "ptp" operation between "self" and "other"
 
         Args:
             y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -833,7 +833,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         *args: Any,
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-        """Apply the "argmin" operation between "self" and "other"
+        """Apply the "argmax" operation between "self" and "other"
 
         Args:
             y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -879,7 +879,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         *args: Any,
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-        """Apply the "absolute" operation between "self" and "other"
+        """Apply the "abs" operation between "self" and "other"
 
         Args:
             y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -926,7 +926,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         return self.round(*args, **kwargs)
 
     def __pos__(self) -> TensorWrappedGammaTensorPointer:
-        """Apply the __pos__ (+) operator  on self.
+        """Apply the pos (+) operator  on self.
 
         Returns:
             Union[TensorWrappedGammaTensorPointer] : Result of the operation.
@@ -1365,7 +1365,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
     def __getitem__(
         self, key: Union[int, bool, slice]
     ) -> TensorWrappedGammaTensorPointer:
-        """Apply the slice  operation on "self"
+        """Return self[key].
         Args:
             y (Union[int,bool,slice]) : second operand.
 
@@ -1469,8 +1469,6 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
         """
-        Return the sum along diagonals of the array.
-
         Return specified diagonals.
         If a is 2-D, returns the diagonal of a with the given offset, i.e., the collection of elements
         of the form a[i, i+offset].

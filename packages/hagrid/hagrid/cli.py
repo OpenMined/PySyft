@@ -323,6 +323,13 @@ def clean(location: str) -> None:
     type=str,
     help="Optional: launch node using the manifest template",
 )
+@click.option(
+    "--health_checks",
+    default="true",
+    required=False,
+    type=str,
+    help="Optional: turn on or off auto health checks post node launch",
+)
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
     try:
@@ -347,6 +354,8 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
         dry_run = False
 
+    health_checks = str_to_bool(cast(str, kwargs["health_checks"]))
+
     try:
         tail = False if "tail" in kwargs and not str_to_bool(kwargs["tail"]) else True
         silent = not tail
@@ -358,16 +367,27 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
         execute_commands(
             cmds, dry_run=dry_run, silent=silent, from_rendered_dir=from_rendered_dir
         )
-        host_term = verb.get_named_term_hostgrammar(name="host")
-        command = cmds[list(cmds.keys())[0]][0]  # type: ignore
-        match_port = re.search("HTTP_PORT=[0-9]{1,5}", command)
 
-        if not dry_run and host_term.host == "docker" and match_port and silent:
-            rich.get_console().print(
-                "\n[bold green]⠋[bold blue] Checking Node API [/bold blue]\t"
-            )
-            port = match_port.group().replace("HTTP_PORT=", "")
-            check_status("localhost" + ":" + port)
+        host_term = verb.get_named_term_hostgrammar(name="host")
+        run_health_checks = (
+            health_checks and not dry_run and host_term.host == "docker" and silent
+        )
+
+        if run_health_checks:
+            docker_cmds = cast(TypeDict[str, TypeList[str]], cmds)
+
+            # get the first command (cmd1) from docker_cmds which is of the form
+            # {"<first>": [cmd1, cmd2], "<second>": [cmd3, cmd4]}
+            (command, *_), *_ = docker_cmds.values()
+
+            match_port = re.search("HTTP_PORT=[0-9]{1,5}", command)
+            if match_port:
+                rich.get_console().print(
+                    "\n[bold green]⠋[bold blue] Checking node API [/bold blue]\t"
+                )
+                port = match_port.group().replace("HTTP_PORT=", "")
+                check_status("localhost" + ":" + port)
+
     except Exception as e:
         print(f"Error: {e}\n\n")
         return
