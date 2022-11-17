@@ -49,6 +49,13 @@ class RedisStore(ObjectStore):
         except KeyError:
             return None
 
+    def check_collision(self, key: UID) -> None:
+        # Check ID collision with pointer's result.
+        if self.get_or_none(key=key, proxy_only=True):
+            raise Exception(
+                "You're not allowed to perform this operation using this ID."
+            )
+
     def get_objects_of_type(self, obj_type: type) -> Iterable[StorableObject]:
         # TODO: remove this kind of operation which pulls all the data out in one go
         # raise NotImplementedError("get_objects_of_type")
