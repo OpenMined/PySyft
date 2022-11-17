@@ -85,8 +85,6 @@ from .lib import load  # noqa: F401
 from .lib import load_lib  # noqa: F401
 from .oblv import OblvTensorWrapper
 from .oblv import check_oblv_proxy_installation_status
-from .oblv import close_oblv_proxy
-from .oblv import connect_oblv_proxy
 from .oblv import create_deployment
 from .oblv import create_oblv_key_pair
 from .oblv import get_oblv_public_key

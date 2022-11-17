@@ -122,7 +122,14 @@ class DeploymentClient():
             return "Failed"
         elif req.status_code!=200:
             raise OblvEnclaveError("Request to publish dataset failed with status {}".format(req.status_code))        
-        return req.json()
+        else:
+            #Status code 200
+            #TODO - Remove this after oblv proxy is resolved
+            data = req.json()
+            if type(data)==dict and data.get("detail")!=None:
+                raise OblvEnclaveError(data["detail"])
+            return data
+        #return req.json()
 
     def request_publish(self, dataset_id, sigma = 0.5):
         if len(self.client)==0:
@@ -144,8 +151,15 @@ class DeploymentClient():
             #ToDo - Update here
             return "Failed"
         elif req.status_code!=200:
-            raise OblvEnclaveError("Request to publish dataset failed with status {}".format(req.status_code))
-        return req.json() ##This is the publish_request_id
+            raise OblvEnclaveError("Request to publish dataset failed with status {}".format(req.status_code))        
+        else:
+            #Status code 200
+            #TODO - Remove this after oblv proxy is resolved
+            data = req.json()
+            if type(data)==dict and data.get("detail")!=None:
+                raise OblvEnclaveError(data["detail"])
+            return data
+        #return req.json() ##This is the publish_request_id
 
     def check_publish_request_status(self,publish_request_id):
         if self.conn_string==None:
@@ -173,10 +187,14 @@ class DeploymentClient():
                 for o in self.client:
                     o.oblv.publish_budget(deployment_id=self.deployment_id,publish_request_id=publish_request_id,client=self.oblv_client)
                 print("Not yet Ready")
-            else:
+            elif type(result)!=dict:
                 for o in self.client:
                     o.oblv.publish_request_budget_deduction(deployment_id=self.deployment_id,publish_request_id=publish_request_id,client=self.oblv_client,budget_to_deduct=result)
-                print("Result is ready") ##This is the publish_request_id
+                print("Result is ready") ##This is the publish_request_id        
+            else:
+                #TODO - Remove this after oblv proxy is resolved
+                if result.get("detail")!=None:
+                    raise OblvEnclaveError(result["detail"])
 
     def fetch_result(self, publish_request_id):
         if self.conn_string==None:

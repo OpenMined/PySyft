@@ -83,39 +83,6 @@ def darwin_proxy_installation():
         zipObj.extractall()
     ###Need to test this out
     os.symlink('/usr/local/bin/oblv', os.getcwd()+"/oblv-ccli-0.3.0-x86_64-apple-darwin/oblv")
-
-def connect_oblv_proxy(deployment_id, cli, key_name, port = 3032):
-    check_oblv_proxy_installation_status()
-    cli = OblvClient(
-        cli.token,cli.oblivious_user_id
-        )
-    public_file_name = os.path.join(os.path.expanduser('~'),'.ssh',key_name,key_name+'_public.der')
-    private_file_name = os.path.join(os.path.expanduser('~'),'.ssh',key_name,key_name+'_private.der')
-    depl = cli.deployment_info(deployment_id)
-    if depl.is_deleted==True:
-        raise Exception("User cannot connect to this deployment, as it is no longer available.")
-    process = subprocess.Popen([
-        "oblv", "connect",
-        "--private-key", private_file_name,
-        "--public-key", public_file_name,
-        "--url", depl.instance.service_url,
-        "--port","443",
-        "--lport",str(port),
-        "--disable-pcr-check"
-    ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    subprocess.check_call
-    while process.poll() is None:
-        d = process.stderr.readline().decode()
-        print(d)
-        if d.__contains__("Error:  Invalid PCR Values"):
-            raise Exception("PCR Validation Failed")
-        elif d.__contains__("Error"):
-            raise Exception(message=d)
-        elif d.__contains__("listening on"):
-            break
-    os.environ.setdefault("OBLV_CONNECTION_STRING","http://127.0.0.1:{}".format(port))
-    os.environ.setdefault("OBLV_PROCESS_PID",str(process.pid))
-# def check
     
 def create_oblv_key_pair(key_name):
     check_oblv_proxy_installation_status()
@@ -146,14 +113,3 @@ def get_oblv_public_key(key_name):
         raise FileNotFoundError
     except Exception as e:
         raise Exception(e)
-
-def close_oblv_proxy():
-    pid = os.environ.get("OBLV_PROCESS_PID")
-    if pid==None:
-        print("process id not set")
-        return
-    # os.kill(pid, signal.SIGTERM) #or signal.SIGKILL 
-    os.kill(int(pid), signal.SIGKILL)
-    
-    os.environ.pop("OBLV_CONNECTION_STRING")
-    os.environ.pop("OBLV_PROCESS_PID")
