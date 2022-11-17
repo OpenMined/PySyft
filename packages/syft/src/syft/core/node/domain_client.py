@@ -29,13 +29,8 @@ from ..io.location import Location
 from ..io.location.specific import SpecificLocation
 from ..io.route import Route
 from ..io.virtual import VirtualClientConnection
-from ..node.common.node_service.network_search.network_search_messages import (
-    NetworkSearchMessage,
-)
 from ..pointer.pointer import Pointer
 from ..store.proxy_dataset import ProxyDataset
-from ..tensor.autodp.gamma_tensor import GammaTensor
-from ..tensor.autodp.phi_tensor import PhiTensor
 from ..tensor.tensor import Tensor
 from .abstract.node import AbstractNodeClient
 from .common.action.exception_action import ExceptionMessage
@@ -411,15 +406,6 @@ class DomainClient(Client):
         if response == "y":
             response = self.routes[0].connection.reset()  # type: ignore
 
-    def search(self, query: List, pandas: bool = False) -> Any:
-        response = self._perform_grid_request(
-            grid_msg=NetworkSearchMessage, content={RequestAPIFields.QUERY: query}
-        )
-        if pandas:
-            response = pd.DataFrame(response)
-
-        return response
-
     def _perform_grid_request(
         self, grid_msg: Any, content: Optional[Dict[Any, Any]] = None
     ) -> SyftMessage:
@@ -599,6 +585,10 @@ class DomainClient(Client):
         use_blob_storage: bool = True,
         **metadata: Dict,
     ) -> None:
+        # relative
+        from ..tensor.autodp.gamma_tensor import GammaTensor
+        from ..tensor.autodp.phi_tensor import PhiTensor
+
         sys.stdout.write("Loading dataset...")
         if assets is None or not isinstance(assets, dict):
             raise Exception(

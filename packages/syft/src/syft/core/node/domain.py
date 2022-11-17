@@ -160,7 +160,6 @@ class Domain(Node):
 
         # Grid Domain Services
         self.immediate_services_with_reply.append(AssociationRequestService)
-        # self.immediate_services_with_reply.append(DomainInfrastructureService)
         self.immediate_services_with_reply.append(GetRemainingBudgetService)
         self.immediate_services_with_reply.append(SimpleService)
         self.immediate_services_with_reply.append(TFFService)

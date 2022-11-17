@@ -7,14 +7,14 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
-# syft absolute
-import syft as sy
-
 # relative
+from .....lib.python.list import List as SyftList
 from .....proto.core.node.common.action.beaver_action_pb2 import (
     BeaverAction as BeaverAction_PB,
 )
+from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serializable import serializable
+from ....common.serde.serialize import _serialize as serialize
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
@@ -65,15 +65,15 @@ class BeaverAction(ImmediateActionWithoutReply):
 
         obj = BEAVER_CACHE.get(id_at_location, None)  # type: ignore
         if obj is None:
-            list_data = sy.lib.python.List([data])
+            list_data = SyftList([data])
             result = StorableObject(
                 id=id_at_location,
                 data=list_data,
                 read_permissions={},
             )
             BEAVER_CACHE[id_at_location] = result  # type: ignore
-        elif isinstance(obj.data, sy.lib.python.List):
-            list_obj: List = obj.data
+        elif isinstance(obj.data, SyftList):
+            list_obj: SyftList = obj.data
             list_obj.append(data)
             result = StorableObject(
                 id=id_at_location,
@@ -89,16 +89,16 @@ class BeaverAction(ImmediateActionWithoutReply):
             BeaverAction.beaver_populate(value, location, node)
 
     def _object2proto(self) -> BeaverAction_PB:
-        values = [sy.serialize(value, to_bytes=True) for value in self.values]
-        locations = [sy.serialize(location) for location in self.locations]
-        addr = sy.serialize(self.address)
+        values = [serialize(value, to_bytes=True) for value in self.values]
+        locations = [serialize(location) for location in self.locations]
+        addr = serialize(self.address)
         return BeaverAction_PB(values=values, locations=locations, address=addr)
 
     @staticmethod
     def _proto2object(proto: BeaverAction_PB) -> "BeaverAction":
-        values = [sy.deserialize(value, from_bytes=True) for value in proto.values]
-        locations = [sy.deserialize(location) for location in proto.locations]
-        addr = sy.deserialize(blob=proto.address)
+        values = [deserialize(value, from_bytes=True) for value in proto.values]
+        locations = [deserialize(location) for location in proto.locations]
+        addr = deserialize(blob=proto.address)
         return BeaverAction(values=values, locations=locations, address=addr)
 
     @staticmethod
