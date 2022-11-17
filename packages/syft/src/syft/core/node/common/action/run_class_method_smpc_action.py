@@ -95,6 +95,9 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         # relative
         from ....tensor.smpc import context
 
+        # If if there's another object with the same ID.
+        node.store.check_collision(self.id_at_location)
+
         resolved_self = retrieve_object(node, self._self.id_at_location, self.path)
         result_read_permissions = resolved_self.read_permissions
 
