@@ -64,10 +64,8 @@ class UploadDataMessage(SyftMessage, DomainMessageRegistry):
         # Then we need to check if this UID was registered previously.
         if UID.is_valid_uuid(key.split("/")[-1]):
             id_at_location = UID.from_string(key.split("/")[-1])  # Get Object ID.
-            old_obj = node.store.get_or_none(key=id_at_location, proxy_only=True)
-
-            if old_obj:
-                raise Exception("You're not allowed to perform this operation.")
+            # If if there's another object with the same ID.
+            node.store.check_collision(id_at_location)
 
         s3_client = get_s3_client(settings=node.settings)
         result = s3_client.create_multipart_upload(Bucket=node.id.no_dash, Key=key)

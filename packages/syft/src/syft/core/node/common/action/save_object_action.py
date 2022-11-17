@@ -42,11 +42,9 @@ class SaveObjectAction(ImmediateActionWithoutReply):
         return f"SaveObjectAction {obj_str}"
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
-        # Check if it uses an id previously registered.
-        old_obj = node.store.get_or_none(key=self.obj.id, proxy_only=True)
 
-        if old_obj:
-            raise Exception("You're not allowed to perform this operation.")
+        # If if there's another object with the same ID.
+        node.store.check_collision(self.obj.id)
 
         self.obj.read_permissions = {
             node.verify_key: node.id,
