@@ -67,7 +67,7 @@ class DeploymentClient():
                 if d.__contains__("Only one usage of each socket address"):
                     raise Exception("Another oblv proxy instance running. Either close that connection or change the *connection_port*")
                 elif d.lower().__contains__("error"):
-                    raise Exception(message=d)
+                    raise Exception(d)
                 elif d.__contains__("listening on"):
                     break
         except Exception as e:
@@ -79,6 +79,29 @@ class DeploymentClient():
         self.pid = process.pid
         return
 
+    def get_uploaded_datasets(self):
+        if len(self.client)==0:
+            raise Exception("No Domain Clients added. Set the propert *client* with the list of your domain logins")
+        if self.conn_string==None:
+            raise Exception("proxy not running. Use the method connect_oblv_proxy to start the proxy.")
+        elif self.conn_string=="":
+            raise Exception("Either proxy not running or not initiated using syft. Set the conn_string to get started or run the method initiate_connection to initiate the proxy connection")
+        depl = self.oblv_client.deployment_info(self.deployment_id)
+        if depl.is_deleted==True:
+            raise Exception("User cannot connect to this deployment, as it is no longer available.")
+        req = requests.post(self.conn_string + "/tensor/dataset/list")
+        if req.status_code==401:
+            raise OblvUnAuthorizedError()
+        elif req.status_code == 400:
+            raise OblvEnclaveError(req.json()["detail"])
+        elif req.status_code==422:
+            print(req.text)
+            #ToDo - Update here
+            return "Failed"
+        elif req.status_code!=200:
+            raise OblvEnclaveError("Request to publish dataset failed with status {}".format(req.status_code))
+        return req.json() ##This is the publish_request_id
+
     def publish_action(self,action: str, arguments):
         if self.conn_string==None:
             raise Exception("proxy not running. Use the method connect_oblv_proxy to start the proxy.")
@@ -88,7 +111,6 @@ class DeploymentClient():
         if depl.is_deleted==True:
             raise Exception("User cannot connect to this deployment, as it is no longer available.")
         req = requests.post(self.conn_string + "/tensor/action?op={}".format(action)
-                            , headers={"x-oblv-user-name":"vinal", "x-oblv-user-role": "user"}
                             , json=arguments)
         if req.status_code==401:
             raise OblvUnAuthorizedError()
@@ -112,7 +134,7 @@ class DeploymentClient():
         depl = self.oblv_client.deployment_info(self.deployment_id)
         if depl.is_deleted==True:
             raise Exception("User cannot connect to this deployment, as it is no longer available.")
-        req = requests.post(self.conn_string + "/tensor/publish/request", json={"dataset_id": dataset_id, "sigma": sigma}, headers={"x-oblv-user-name":"vinal", "x-oblv-user-role": "user"})
+        req = requests.post(self.conn_string + "/tensor/publish/request", json={"dataset_id": dataset_id, "sigma": sigma})
         if req.status_code==401:
             raise OblvUnAuthorizedError()
         elif req.status_code == 400:
@@ -133,8 +155,8 @@ class DeploymentClient():
         depl = self.oblv_client.deployment_info(self.deployment_id)
         if depl.is_deleted==True:
             raise Exception("User cannot connect to this deployment, as it is no longer available.")
-        req = requests.get(self.conn_string + "/tensor/publish/result_ready?publish_request_id="+publish_request_id
-                            , headers={"x-oblv-user-name":"vinal", "x-oblv-user-role": "user"})
+        req = requests.get(self.conn_string + "/tensor/publish/result_ready?publish_request_id="+publish_request_id)
+        
         if req.status_code==401:
             raise OblvUnAuthorizedError()
         elif req.status_code == 400:
@@ -164,8 +186,7 @@ class DeploymentClient():
         depl = self.oblv_client.deployment_info(self.deployment_id)
         if depl.is_deleted==True:
             raise Exception("User cannot connect to this deployment, as it is no longer available.")
-        req = requests.get(self.conn_string + "/tensor/publish/result?request_id="+publish_request_id
-                            , headers={"x-oblv-user-name":"vinal", "x-oblv-user-role": "user"})
+        req = requests.get(self.conn_string + "/tensor/publish/result?request_id="+publish_request_id)
         if req.status_code==401:
             raise OblvUnAuthorizedError()
         elif req.status_code == 400:
