@@ -32,7 +32,7 @@ for container in containers:
     ).decode("utf-8")
 
     path = job_path / container_name
-    path.write_text(container_logs)
+    path.write_text(container_logs, encoding="utf-8")
 
 stored_files = list(job_path.iterdir())
 for file in stored_files:
