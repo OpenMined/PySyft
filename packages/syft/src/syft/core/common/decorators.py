@@ -3,7 +3,6 @@ import functools
 from typing import Any
 from typing import Callable
 from typing import Dict
-from typing import List
 
 
 def singleton(cls: Any) -> Callable:
@@ -35,7 +34,7 @@ def singleton(cls: Any) -> Callable:
     previous_instances: Dict[Any, Any] = {}
 
     @functools.wraps(cls)
-    def wrapper(*args: List[Any], **kwargs: Dict[Any, Any]) -> Any:
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
         if cls in previous_instances and previous_instances.get(cls, None).get(
             "args"
         ) == (args, kwargs):

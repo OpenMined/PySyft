@@ -6,14 +6,13 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
-# syft absolute
-import syft as sy
-
 # relative
 from .....proto.core.node.common.action.action_sequence_pb2 import (
     ActionSequence as ActionSequence_PB,
 )
+from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serializable import serializable
+from ....common.serde.serialize import _serialize as serialize
 from ....common.uid import UID
 from ....io.address import Address
 from ...abstract.node import AbstractNode
@@ -48,14 +47,14 @@ class ActionSequence(ImmediateActionWithoutReply):
             obj.execute_action(node=node, verify_key=verify_key)
 
     def _object2proto(self) -> ActionSequence_PB:
-        obj_lst = list(map(lambda x: sy.serialize(x), self.obj_lst))
-        addr = sy.serialize(self.address)
+        obj_lst = list(map(lambda x: serialize(x), self.obj_lst))
+        addr = serialize(self.address)
         return ActionSequence_PB(obj=obj_lst, address=addr)
 
     @staticmethod
     def _proto2object(proto: ActionSequence_PB) -> "ActionSequence":
-        obj_lst = list(map(lambda x: sy.deserialize(blob=x), proto.obj))
-        addr = sy.deserialize(blob=proto.address)
+        obj_lst = list(map(lambda x: deserialize(blob=x), proto.obj))
+        addr = deserialize(blob=proto.address)
         return ActionSequence(obj_lst=obj_lst, address=addr)
 
     @staticmethod

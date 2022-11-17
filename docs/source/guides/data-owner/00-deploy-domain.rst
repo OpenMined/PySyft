@@ -70,7 +70,7 @@ Few things to make a note of before starting:
 Step 1: Install wizard
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-To simplify the installation process, we have an `install wizard` will help you 
+To simplify the installation process, we have an `install wizard` that will help you 
 setup the latest versions of `hagrid` and `syft` on your machine.
 
 You can go to the install wizard at any time by running the below command:
@@ -123,7 +123,7 @@ After completing the Install Wizard, run the cell below to launch your very firs
 
    DOMAIN_NAME = "My Domain"
 
-   !hagrid launch {DOMAIN_NAME} to docker:8081 --tag=latest --tail=false --silent
+   !hagrid launch {DOMAIN_NAME} to docker:8081 --tag=latest --tail=false
 
 While this command runs, you will see various ``volumes`` and
 ``containers`` being created. Once this step is complete, move on to
@@ -143,7 +143,7 @@ Let's do a quick health check to ensure the Domain is up and running.
    In:
 
    # run this cell
-   !hagrid check localhost:8081 --silent
+   !hagrid check localhost:8081
 
    Out: 
 

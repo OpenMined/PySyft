@@ -18,6 +18,7 @@ syft.core.node.common.node\_service.vpn.vpn\_service
    .. autosummary::
    
       VPNConnectService
+      VPNJoinSelfService
       VPNJoinService
       VPNRegisterService
       VPNStatusService

@@ -1,0 +1,169 @@
+Classification,Year,Period,Period Desc.,Aggregate Level,Is Leaf Code,Trade Flow Code,Trade Flow,Reporter Code,Reporter,Reporter ISO,Partner Code,Partner,Partner ISO,Commodity Code,Commodity,Qty Unit Code,Qty Unit,Qty,Netweight (kg),Trade Value (US$),Flag
+HS,2022,202203,Mar-22,0,0,1,Imports,31,Azerbaijan,,826,United Kingdom,,TOTAL,All Commodities,,,,,14879956,0
+HS,2022,202203,Mar-22,0,0,2,Exports,31,Azerbaijan,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,948735,0
+HS,2022,202203,Mar-22,0,0,1,Imports,32,Argentina,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,55889009,0
+HS,2022,202203,Mar-22,0,0,2,Exports,32,Argentina,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,58586832,0
+HS,2022,202203,Mar-22,0,0,1,Imports,36,Australia,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,521655120,0
+HS,2022,202203,Mar-22,0,0,2,Exports,36,Australia,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,186697192,0
+HS,2022,202203,Mar-22,0,0,1,Imports,51,Armenia,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,3860912,0
+HS,2022,202203,Mar-22,0,0,2,Exports,51,Armenia,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,523852,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,51,Armenia,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,55511,0
+HS,2022,202203,Mar-22,0,0,1,Imports,52,Barbados,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,7501931,0
+HS,2022,202203,Mar-22,0,0,2,Exports,52,Barbados,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,979235,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,52,Barbados,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,120816,0
+HS,2022,202203,Mar-22,0,0,1,Imports,56,Belgium,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,2218370088,0
+HS,2022,202203,Mar-22,0,0,2,Exports,56,Belgium,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,1819009840,0
+HS,2022,202203,Mar-22,0,0,1,Imports,68,Bolivia,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,2549144,0
+HS,2022,202203,Mar-22,0,0,2,Exports,68,Bolivia,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,13563056,0
+HS,2022,202203,Mar-22,0,0,1,Imports,70,Bosnia Herzegovina,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,6373199,0
+HS,2022,202203,Mar-22,0,0,2,Exports,70,Bosnia Herzegovina,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,3509079,0
+HS,2022,202203,Mar-22,0,0,1,Imports,72,Botswana,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,2210135,0
+HS,2022,202203,Mar-22,0,0,2,Exports,72,Botswana,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,53138,0
+HS,2022,202203,Mar-22,0,0,1,Imports,76,Brazil,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,234994782,0
+HS,2022,202203,Mar-22,0,0,2,Exports,76,Brazil,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,298510079,0
+HS,2022,202203,Mar-22,0,0,1,Imports,84,Belize,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,830025,0
+HS,2022,202203,Mar-22,0,0,2,Exports,84,Belize,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,2538201,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,84,Belize,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,6957,0
+HS,2022,202203,Mar-22,0,0,1,Imports,97,EU,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,4226820192,0
+HS,2022,202203,Mar-22,0,0,2,Exports,97,EU,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,5529879233,0
+HS,2022,202203,Mar-22,0,0,1,Imports,112,Belarus,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,9097800,0
+HS,2022,202203,Mar-22,0,0,2,Exports,112,Belarus,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,4313900,0
+HS,2022,202203,Mar-22,0,0,1,Imports,124,Canada,,826,United Kingdom,,TOTAL,All Commodities,,,,,584789911,0
+HS,2022,202203,Mar-22,0,0,2,Exports,124,Canada,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,1408256756,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,124,Canada,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,41701571,0
+HS,2022,202203,Mar-22,0,0,1,Imports,152,Chile,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,50826178,0
+HS,2022,202203,Mar-22,0,0,2,Exports,152,Chile,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,49101657,0
+HS,2022,202203,Mar-22,0,0,1,Imports,156,China,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,2171774928,0
+HS,2022,202203,Mar-22,0,0,2,Exports,156,China,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,6177686015,0
+HS,2022,202203,Mar-22,0,0,1,Imports,191,Croatia,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,11969525,0
+HS,2022,202203,Mar-22,0,0,2,Exports,191,Croatia,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,19610040,0
+HS,2022,202203,Mar-22,0,0,1,Imports,203,Czech Rep.,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,319100546,0
+HS,2022,202203,Mar-22,0,0,2,Exports,203,Czech Rep.,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,840559304,0
+HS,2022,202203,Mar-22,0,0,1,Imports,208,Denmark,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,331360125,0
+HS,2022,202203,Mar-22,0,0,2,Exports,208,Denmark,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,500530212,0
+HS,2022,202203,Mar-22,0,0,1,Imports,222,El Salvador,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,4988500,0
+HS,2022,202203,Mar-22,0,0,2,Exports,222,El Salvador,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,9540963,0
+HS,2022,202203,Mar-22,0,0,1,Imports,233,Estonia,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,40743410,0
+HS,2022,202203,Mar-22,0,0,2,Exports,233,Estonia,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,45312552,0
+HS,2022,202203,Mar-22,0,0,1,Imports,242,Fiji,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,662298,0
+HS,2022,202203,Mar-22,0,0,2,Exports,242,Fiji,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,328566,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,242,Fiji,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,7054,0
+HS,2022,202203,Mar-22,0,0,1,Imports,246,Finland,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,178449274,0
+HS,2022,202203,Mar-22,0,0,2,Exports,246,Finland,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,246035248,0
+HS,2022,202203,Mar-22,0,0,1,Imports,268,Georgia,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,6579158,0
+HS,2022,202203,Mar-22,0,0,2,Exports,268,Georgia,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,1438633,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,268,Georgia,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,133102,0
+HS,2022,202203,Mar-22,0,0,1,Imports,276,Germany,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,3926835885,0
+HS,2022,202203,Mar-22,0,0,2,Exports,276,Germany,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,7243892833,0
+HS,2022,202203,Mar-22,0,0,1,Imports,300,Greece,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,82074342,0
+HS,2022,202203,Mar-22,0,0,2,Exports,300,Greece,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,216011362,0
+HS,2022,202203,Mar-22,0,0,1,Imports,308,Grenada,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,1406196,0
+HS,2022,202203,Mar-22,0,0,2,Exports,308,Grenada,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,135220,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,308,Grenada,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,123225,0
+HS,2022,202203,Mar-22,0,0,1,Imports,320,Guatemala,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,15617056,0
+HS,2022,202203,Mar-22,0,0,2,Exports,320,Guatemala,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,9464627,0
+HS,2022,202203,Mar-22,0,0,1,Imports,328,Guyana,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,5189629,0
+HS,2022,202203,Mar-22,0,0,2,Exports,328,Guyana,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,2990874,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,328,Guyana,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,14890,0
+HS,2022,202203,Mar-22,0,0,1,Imports,344,"China, Hong Kong SAR",,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,708003509,0
+HS,2022,202203,Mar-22,0,0,2,Exports,344,"China, Hong Kong SAR",,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,575797345,0
+HS,2022,202203,Mar-22,0,0,1,Imports,348,Hungary,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,139785757,0
+HS,2022,202203,Mar-22,0,0,2,Exports,348,Hungary,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,353017409,0
+HS,2022,202203,Mar-22,0,0,1,Imports,352,Iceland,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,33494230,0
+HS,2022,202203,Mar-22,0,0,2,Exports,352,Iceland,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,67505818,0
+HS,2022,202203,Mar-22,0,0,1,Imports,360,Indonesia,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,88197232,0
+HS,2022,202203,Mar-22,0,0,2,Exports,360,Indonesia,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,130224534,0
+HS,2022,202203,Mar-22,0,0,1,Imports,376,Israel,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,215420000,0
+HS,2022,202203,Mar-22,0,0,2,Exports,376,Israel,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,269805000,0
+HS,2022,202203,Mar-22,0,0,1,Imports,381,Italy,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,789051734,0
+HS,2022,202203,Mar-22,0,0,2,Exports,381,Italy,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,2972065831,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,381,Italy,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,52981191,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,381,Italy,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,13169055,0
+HS,2022,202203,Mar-22,0,0,1,Imports,392,Japan,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,575102699,0
+HS,2022,202203,Mar-22,0,0,2,Exports,392,Japan,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,1321727925,0
+HS,2022,202203,Mar-22,0,0,1,Imports,417,Kyrgyzstan,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,961570,0
+HS,2022,202203,Mar-22,0,0,2,Exports,417,Kyrgyzstan,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,114672,0
+HS,2022,202203,Mar-22,0,0,1,Imports,428,Latvia,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,18912183,0
+HS,2022,202203,Mar-22,0,0,2,Exports,428,Latvia,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,118439857,0
+HS,2022,202203,Mar-22,0,0,1,Imports,440,Lithuania,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,191461920,0
+HS,2022,202203,Mar-22,0,0,2,Exports,440,Lithuania,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,153905617,0
+HS,2022,202203,Mar-22,0,0,1,Imports,442,Luxembourg,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,58677951,0
+HS,2022,202203,Mar-22,0,0,2,Exports,442,Luxembourg,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,49053835,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,442,Luxembourg,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,11080,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,442,Luxembourg,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,18466,0
+HS,2022,202203,Mar-22,0,0,1,Imports,446,"China, Macao SAR",,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,31203533,0
+HS,2022,202203,Mar-22,0,0,2,Exports,446,"China, Macao SAR",,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,25713,0
+HS,2022,202203,Mar-22,0,0,1,Imports,480,Mauritius,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,7863293,0
+HS,2022,202203,Mar-22,0,0,2,Exports,480,Mauritius,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,14010982,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,480,Mauritius,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,318849,0
+HS,2022,202203,Mar-22,0,0,1,Imports,484,Mexico,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,195137643,0
+HS,2022,202203,Mar-22,0,0,2,Exports,484,Mexico,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,252942292,0
+HS,2022,202203,Mar-22,0,0,1,Imports,498,Rep. of Moldova,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,8097359,0
+HS,2022,202203,Mar-22,0,0,2,Exports,498,Rep. of Moldova,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,5963704,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,498,Rep. of Moldova,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,4774606,0
+HS,2022,202203,Mar-22,0,0,1,Imports,516,Namibia,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,7543780,0
+HS,2022,202203,Mar-22,0,0,2,Exports,516,Namibia,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,1582111,0
+HS,2022,202203,Mar-22,0,0,1,Imports,554,New Zealand,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,130662130,0
+HS,2022,202203,Mar-22,0,0,2,Exports,554,New Zealand,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,107033352,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,554,New Zealand,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,12793958,0
+HS,2022,202203,Mar-22,0,0,1,Imports,566,Nigeria,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,108001972,0
+HS,2022,202203,Mar-22,0,0,2,Exports,566,Nigeria,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,182544758,0
+HS,2022,202203,Mar-22,0,0,1,Imports,579,Norway,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,337597139,0
+HS,2022,202203,Mar-22,0,0,2,Exports,579,Norway,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,5731379950,0
+HS,2022,202203,Mar-22,0,0,1,Imports,586,Pakistan,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,81305084,0
+HS,2022,202203,Mar-22,0,0,2,Exports,586,Pakistan,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,165263638,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,586,Pakistan,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,314844,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,586,Pakistan,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,106948,0
+HS,2022,202203,Mar-22,0,0,1,Imports,591,Panama,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,5813540,0
+HS,2022,202203,Mar-22,0,0,2,Exports,591,Panama,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,4306902,0
+HS,2022,202203,Mar-22,0,0,1,Imports,600,Paraguay,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,3325693,0
+HS,2022,202203,Mar-22,0,0,2,Exports,600,Paraguay,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,6771101,0
+HS,2022,202203,Mar-22,0,0,1,Imports,608,Philippines,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,59375932,0
+HS,2022,202203,Mar-22,0,0,2,Exports,608,Philippines,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,42316144,0
+HS,2022,202203,Mar-22,0,0,1,Imports,616,Poland,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,631519058,0
+HS,2022,202203,Mar-22,0,0,2,Exports,616,Poland,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,1593324549,0
+HS,2022,202203,Mar-22,0,0,1,Imports,620,Portugal,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,130917710,0
+HS,2022,202203,Mar-22,0,0,2,Exports,620,Portugal,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,314518106,0
+HS,2022,202203,Mar-22,0,0,1,Imports,642,Romania,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,109064430,0
+HS,2022,202203,Mar-22,0,0,2,Exports,642,Romania,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,261682499,0
+HS,2022,202203,Mar-22,0,0,1,Imports,646,Rwanda,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,1821246,0
+HS,2022,202203,Mar-22,0,0,2,Exports,646,Rwanda,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,2655949,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,646,Rwanda,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,128473,0
+HS,2022,202203,Mar-22,0,0,1,Imports,686,Senegal,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,5386104,0
+HS,2022,202203,Mar-22,0,0,2,Exports,686,Senegal,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,9446438,0
+HS,2022,202203,Mar-22,0,0,1,Imports,688,Serbia,,826,United Kingdom,,TOTAL,All Commodities,,,,,30148690,0
+HS,2022,202203,Mar-22,0,0,2,Exports,688,Serbia,,826,United Kingdom,,TOTAL,All Commodities,,,,,44596779,0
+HS,2022,202203,Mar-22,0,0,1,Imports,699,India,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,430242275,0
+HS,2022,202203,Mar-22,0,0,2,Exports,699,India,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,1028519171,0
+HS,2022,202203,Mar-22,0,0,1,Imports,703,Slovakia,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,152261541,0
+HS,2022,202203,Mar-22,0,0,2,Exports,703,Slovakia,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,427965639,0
+HS,2022,202203,Mar-22,0,0,1,Imports,705,Slovenia,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,38867548,0
+HS,2022,202203,Mar-22,0,0,2,Exports,705,Slovenia,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,76928465,0
+HS,2022,202203,Mar-22,0,0,1,Imports,724,Spain,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,1052883080,0
+HS,2022,202203,Mar-22,0,0,2,Exports,724,Spain,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,2012693346,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,724,Spain,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,179467718,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,724,Spain,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,3481783,0
+HS,2022,202203,Mar-22,0,0,1,Imports,752,Sweden,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,813193243,0
+HS,2022,202203,Mar-22,0,0,2,Exports,752,Sweden,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,997167305,0
+HS,2022,202203,Mar-22,0,0,1,Imports,757,Switzerland,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,1976612988,0
+HS,2022,202203,Mar-22,0,0,2,Exports,757,Switzerland,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,2051730296,0
+HS,2022,202203,Mar-22,0,0,1,Imports,768,Togo,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,4242765,0
+HS,2022,202203,Mar-22,0,0,2,Exports,768,Togo,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,16279,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,768,Togo,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,16279,0
+HS,2022,202203,Mar-22,0,0,1,Imports,792,Turkey,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,495762720,0
+HS,2022,202203,Mar-22,0,0,2,Exports,792,Turkey,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,1165314151,0
+HS,2022,202203,Mar-22,0,0,1,Imports,804,Ukraine,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,10791805,0
+HS,2022,202203,Mar-22,0,0,2,Exports,804,Ukraine,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,12247553,0
+HS,2022,202203,Mar-22,0,0,1,Imports,807,TFYR of Macedonia,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,142474644,0
+HS,2022,202203,Mar-22,0,0,2,Exports,807,TFYR of Macedonia,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,17030173,0
+HS,2022,202203,Mar-22,0,0,1,Imports,818,Egypt,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,158933137,0
+HS,2022,202203,Mar-22,0,0,2,Exports,818,Egypt,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,251262990,0
+HS,2022,202203,Mar-22,0,0,1,Imports,826,United Kingdom,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,413375456,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,826,United Kingdom,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,413375456,0
+HS,2022,202203,Mar-22,0,0,1,Imports,842,United States of America,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,5713199363,0
+HS,2022,202203,Mar-22,0,0,2,Exports,842,United States of America,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,6317931147,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,842,United States of America,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,924987070,0
+HS,2022,202203,Mar-22,0,0,1,Imports,854,Burkina Faso,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,2271873,0
+HS,2022,202203,Mar-22,0,0,2,Exports,854,Burkina Faso,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,130228,0
+HS,2022,202203,Mar-22,0,0,1,Imports,860,Uzbekistan,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,4011333,0
+HS,2022,202203,Mar-22,0,0,2,Exports,860,Uzbekistan,,826,United Kingdom,,TOTAL,All Commodities,,,,0.0,3364944,0

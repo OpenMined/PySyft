@@ -96,9 +96,6 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 import requests
 
-# syft absolute
-import syft as sy
-
 # relative
 from ...logger import debug
 from ...logger import error
@@ -107,6 +104,7 @@ from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
 from ..common.pointer import AbstractPointer
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import serializable
+from ..common.serde.serialize import _serialize as serialize
 from ..common.uid import UID
 from ..io.address import Address
 from ..node.abstract.node import AbstractNode
@@ -332,7 +330,7 @@ class Pointer(AbstractPointer):
 
         return self
 
-    def publish(self, sigma: float = 1.5) -> Any:
+    def publish(self, sigma: float = 1.5, private: bool = True) -> Any:
 
         # relative
         from ..node.common.node_service.publish.publish_service import (
@@ -346,6 +344,7 @@ class Pointer(AbstractPointer):
             address=self.client.address,
             publish_ids_at_location=[self.id_at_location],
             sigma=sigma,
+            private=private,
         )
 
         self.client.send_immediate_msg_without_reply(msg=obj_msg)
@@ -425,7 +424,7 @@ class Pointer(AbstractPointer):
         :rtype: Pointer_PB
 
         .. note::
-            This method is purely an internal method. Please use sy.serialize(object) or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
@@ -433,15 +432,13 @@ class Pointer(AbstractPointer):
         return Pointer_PB(
             points_to_object_with_path=self.path_and_name,
             pointer_name=type(self).__name__,
-            id_at_location=sy.serialize(self.id_at_location),
-            location=sy.serialize(self.client.address),
+            id_at_location=serialize(self.id_at_location),
+            location=serialize(self.client.address),
             tags=self.tags,
             description=self.description,
             object_type=self.object_type,
             attribute_name=getattr(self, "attribute_name", ""),
-            public_shape=sy.serialize(
-                getattr(self, "public_shape", None), to_bytes=True
-            ),
+            public_shape=serialize(getattr(self, "public_shape", None), to_bytes=True),
         )
 
     @staticmethod
@@ -458,10 +455,13 @@ class Pointer(AbstractPointer):
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
+        # relative
+        from ...lib import lib_ast
+
         # TODO: we need _proto2object to include a reference to the node doing the
         # deserialization so that we can convert location into a client object. At present
         # it is an address object which will cause things to break later.
-        points_to_type = sy.lib_ast.query(proto.points_to_object_with_path)
+        points_to_type = lib_ast.query(proto.points_to_object_with_path)
         pointer_type = getattr(points_to_type, proto.pointer_name)
 
         # WARNING: This is sending a serialized Address back to the constructor
@@ -475,7 +475,7 @@ class Pointer(AbstractPointer):
             object_type=proto.object_type,
         )
 
-        out.public_shape = sy.deserialize(proto.public_shape, from_bytes=True)
+        out.public_shape = _deserialize(proto.public_shape, from_bytes=True)
         return out
 
     @staticmethod
