@@ -1,4 +1,4 @@
-Searching for Datasets a Domain Server
+Search for Datasets a Domain Server
 ============================================================
 
 **Data Scientist Tutorials**
@@ -21,14 +21,14 @@ In the last tutorial, you learned :doc:`How to Connect to a Domain Server <00-de
 that allows us to connect to your organization’s private data servers.
 
 Once we are connected to the data servers, the first thing that we 
-would like to do is to look for the available datasets on it. And this 
+would like to do is to look for the available datasets on it. This 
 is exactly what we are going to cover in this tutorial.
 
 After today’s tutorial, you will learn how to ``search for datasets`` 
 on the ``domain node`` you are connected to. 
 
-   **Note:** Throughout the tutorials, we also mean Domain Servers
-   whenever we refer to Domain Node. Both mean the same and are used
+   **Note:** Throughout the tutorials, we mean Domain Servers
+   whenever we refer to Domain Node. Both point to the same and are used
    interchangeably.
 
 Steps to Search for Datasets on a Domain
@@ -50,7 +50,7 @@ To utilize the privacy-enhancing features offered in PyGrid and to
 communicate with your domain node, you must first ``import`` OpenMined's 
 ``private`` deep learning library: PySyft.
 
-Lets import Syft by running the below cell:
+Let's import Syft by running the below cell:
 
 ::
 
@@ -68,7 +68,7 @@ Lets import Syft by running the below cell:
 Step 2: Log into Domain
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Lets login to our Domain with the credentials provided to you by a domain owner. 
+Let's login to our Domain with the credentials provided to you by a domain owner. 
 If you do not have a domain owner, you can create one locally for yourself following 
 the tutorials starting here: `data-owner/00-deploy-domain <../data-owner/00-deploy-domain.html>`_.
 
@@ -119,11 +119,10 @@ each of the datasets.
 Step 4: Select a Dataset and Preview It
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Now that we can view the available datasets, lets 
-create a variable that works as a pointer to one of 
-the datasets which we can fetch with the index value.
-Then, we try to preview what all details we can get 
-from our pointer about the selected dataset.
+Now that we can view the available datasets, we 
+can fetch a dataset using the index within the 
+datatsets list and store a pointer to (here 
+called family_age_dataset) to refer to it easily afterwords.
 
 ::
 
