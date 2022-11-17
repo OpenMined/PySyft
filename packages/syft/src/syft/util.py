@@ -18,6 +18,7 @@ import platform
 from secrets import randbelow
 import sys
 import time
+from types import ModuleType
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -36,9 +37,6 @@ from nacl.signing import VerifyKey
 from pympler.asizeof import asizeof
 import requests
 
-# syft absolute
-import syft
-
 # relative
 from .logger import critical
 from .logger import debug
@@ -53,6 +51,10 @@ def validate_type(_object: object, _type: type, optional: bool = False) -> Any:
     traceback_and_raise(
         f"Object {_object} should've been of type {_type}, not {_object}."
     )
+
+
+def get_loaded_syft() -> ModuleType:
+    return sys.modules[__name__.split(".")[0]]
 
 
 def validate_field(_object: object, _field: str) -> Any:
@@ -136,7 +138,10 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
 
     # we deal with VerifyAll differently, because we don't it be imported and used by users
     if attr_list[-1] == "VerifyAll":
-        return type(syft.core.common.group.VERIFYALL)
+        # relative
+        from .core.common.group import VERIFYALL
+
+        return type(VERIFYALL)
 
     if attr_list[0] != "syft":
         raise ReferenceError(f"Reference don't match: {attr_list[0]}")
@@ -150,7 +155,7 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
     ):
         raise ReferenceError(f"Reference don't match: {attr_list[1]}")
 
-    return index_modules(a_dict=globals()["syft"], keys=attr_list[1:])
+    return index_modules(a_dict=get_loaded_syft(), keys=attr_list[1:])
 
 
 def get_fully_qualified_name(obj: object) -> str:
@@ -209,7 +214,7 @@ def obj2pointer_type(obj: Optional[object] = None, fqn: Optional[str] = None) ->
             fqn = "syft.lib.python._SyNone"
 
     try:
-        ref = syft.lib_ast.query(fqn, obj_type=type(obj))
+        ref = get_loaded_syft().lib_ast.query(fqn, obj_type=type(obj))
     except Exception as e:
         log = f"Cannot find {type(obj)} {fqn} in lib_ast. {e}"
         critical(log)

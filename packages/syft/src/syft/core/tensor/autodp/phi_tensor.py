@@ -425,7 +425,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
             Tuple[MPCTensor,Union[MPCTensor,int,float,np.ndarray]] : Result of the operation
         """
         if isinstance(other, TensorWrappedPhiTensorPointer):
-            if (self.data_subjects != other.data_subjects).all():  # type: ignore
+            if np.array(self.data_subjects != other.data_subjects).all():  # type: ignore
                 return getattr(self.gamma, op_str)(other.gamma)
         elif isinstance(other, TensorWrappedGammaTensorPointer):
             return getattr(self.gamma, op_str)(other)
@@ -515,7 +515,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         self,
         other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
     ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
-        """Apply the "matmul" operation between "self" and "other"
+        """Apply the "rmatmul" operation between "self" and "other"
 
         Args:
             y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -657,7 +657,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         *args: Any,
         **kwargs: Any,
     ) -> MPCTensor:
-        """Apply the "add" operation between "self" and "other"
+        """Apply the "concatenate" operation between "self" and "other"
 
         Args:
             y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -822,7 +822,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
     ) -> Union[
         TensorWrappedPhiTensorPointer, MPCTensor, TensorWrappedGammaTensorPointer
     ]:
-        """Apply the "truediv" operation between "self" and "other"
+        """Apply the "sum" operation between "self" and "other"
 
         Args:
             y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -937,7 +937,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
     def __getitem__(
         self, key: Union[int, bool, slice]
     ) -> TensorWrappedPhiTensorPointer:
-        """Apply the slice  operation on "self"
+        """Apply the getitem operation on "self"
         Args:
             y (Union[int,bool,slice]) : second operand.
 
@@ -962,7 +962,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         return self._apply_self_tensor_op("ones_like", *args, **kwargs)
 
     def repeat(self, *args: Any, **kwargs: Any) -> TensorWrappedPhiTensorPointer:
-        """Apply the repeat" operation
+        """Apply the "repeat" operation
 
         Args:
             y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -2744,7 +2744,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def __mul__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         if isinstance(other, PhiTensor):
-            if (self.data_subjects == other.data_subjects).all():
+            if np.array(self.data_subjects == other.data_subjects).all():
                 min_min = self.min_vals.data * other.min_vals.data
                 min_max = self.min_vals.data * other.max_vals.data
                 max_min = self.max_vals.data * other.min_vals.data
@@ -2794,7 +2794,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def __truediv__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
         if isinstance(other, PhiTensor):
-            if (self.data_subjects != other.data_subjects).all():
+            if np.array(self.data_subjects != other.data_subjects).all():
                 return self.gamma / other.gamma
             else:
                 min_min = self.min_vals.data / other.min_vals.data
@@ -3250,7 +3250,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def __lt__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
         if isinstance(other, PhiTensor):
-            if (self.data_subjects == other.data_subjects).all():
+            if np.array(self.data_subjects == other.data_subjects).all():
                 return PhiTensor(
                     child=(self.child < other.child) * 1,
                     data_subjects=self.data_subjects,
@@ -3284,7 +3284,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         # if the tensor being compared is also private
         if isinstance(other, PhiTensor):
-            if (self.data_subjects == other.data_subjects).all():
+            if np.array(self.data_subjects == other.data_subjects).all():
                 return PhiTensor(
                     child=(self.child <= other.child) * 1,
                     data_subjects=self.data_subjects,
@@ -3318,7 +3318,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         # if the tensor being compared is also private
         if isinstance(other, PhiTensor):
-            if (self.data_subjects == other.data_subjects).all():
+            if np.array(self.data_subjects == other.data_subjects).all():
                 return PhiTensor(
                     child=(self.child > other.child) * 1,
                     data_subjects=self.data_subjects,
@@ -3351,7 +3351,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         # if the tensor being compared is also private
         if isinstance(other, PhiTensor):
-            if (self.data_subjects == other.data_subjects).all():
+            if np.array(self.data_subjects == other.data_subjects).all():
                 return PhiTensor(
                     child=(self.child >= other.child) * 1,
                     data_subjects=self.data_subjects,
@@ -3809,7 +3809,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         return self // value.
         """
         if isinstance(other, PhiTensor):
-            if (self.data_subjects != other.data_subjects).all():
+            if np.array(self.data_subjects != other.data_subjects).all():
                 return self.gamma // other.gamma
             else:
                 min_min = self.min_vals.data // other.min_vals.data

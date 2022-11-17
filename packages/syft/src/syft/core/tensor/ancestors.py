@@ -342,11 +342,11 @@ class PhiTensorAncestor(TensorChainManager):
 
     @property
     def min_vals(self):  # type: ignore
-        return self.__class__(self.child.min_vals)
+        return self.child.min_vals
 
     @property
     def max_vals(self):  # type: ignore
-        return self.__class__(self.child.max_vals)
+        return self.child.max_vals
 
     @property
     def gamma(self):  # type: ignore
@@ -435,10 +435,9 @@ class PhiTensorAncestor(TensorChainManager):
             min_val, max_val, target_shape=self.child.shape
         )
 
-        unique_data_subjects = len(data_subjects.sum())
-        if unique_data_subjects == 1:
+        if any(len(x.item()) > 1 for x in np.nditer(data_subjects, flags=["refs_ok"])):
             self.replace_abstraction_top(
-                tensor_type=_PhiTensor(),
+                tensor_type=_GammaTensor(),
                 child=self.child,
                 min_vals=min_vals,
                 max_vals=max_vals,
@@ -446,7 +445,7 @@ class PhiTensorAncestor(TensorChainManager):
             )  # type: ignore
         else:
             self.replace_abstraction_top(
-                tensor_type=_GammaTensor(),
+                tensor_type=_PhiTensor(),
                 child=self.child,
                 min_vals=min_vals,
                 max_vals=max_vals,
