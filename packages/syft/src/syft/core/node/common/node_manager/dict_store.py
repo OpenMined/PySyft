@@ -40,6 +40,13 @@ class DictStore(ObjectStore):
         except KeyError as e:  # noqa: F841
             return None
 
+    def check_collision(self, key: UID) -> None:
+        # Check ID collision with pointer's result.
+        if self.get_or_none(key=key, proxy_only=True):
+            raise Exception(
+                "You're not allowed to perform this operation using this ID."
+            )
+
     def get_objects_of_type(self, obj_type: type) -> Iterable[StorableObject]:
         # raise NotImplementedError("get_objects_of_type")
         # return [obj for obj in self.values() if isinstance(obj.data, obj_type)]
