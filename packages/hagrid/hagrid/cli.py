@@ -389,7 +389,6 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
                 port = match_port.group().replace("HTTP_PORT=", "")
                 check_status("localhost" + ":" + port)
 
-
         if not dry_run and host_term.host == "docker" and match_port and silent:
             rich.get_console().print(
                 "\n[bold green]⠋[bold blue] Checking Node API [/bold blue]\t"
@@ -402,7 +401,6 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
                     f"🚨🚨🚨 To view container logs run [bold red] hagrid logs {node_name} [/bold red]\t"
                 )
             )
-
 
     except Exception as e:
         print(f"Error: {e}\n\n")
@@ -2820,15 +2818,6 @@ def from_url(url: str) -> Tuple[str, str, int, str, Union[Any, str]]:
     except Exception as e:
         print(f"Failed to convert url: {url} to GridURL. {e}")
         raise e
-
-
-"""
-get_container_name()
-get_docker_status()
-get_host_name()
-get_all_running_containers()
-
-"""
 
 
 def get_docker_status(ip_address: str) -> Tuple[bool, Tuple[str, str]]:
