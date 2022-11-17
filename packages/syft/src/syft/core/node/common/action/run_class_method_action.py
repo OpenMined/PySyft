@@ -98,6 +98,9 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
 
+        # If if there's another object with the same ID.
+        node.store.check_collision(self.id_at_location)
+
         mutating_internal = False
         if (
             self.path.startswith("torch.Tensor")

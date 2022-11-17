@@ -76,6 +76,8 @@ class PRZSAction(ImmediateActionWithoutReply):
         return f"PRZSAction ({arg_names}, {kwargs_names})"
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
+        # If if there's another object with the same ID.
+        node.store.check_collision(self.id_at_location)
 
         (
             upcasted_args,
