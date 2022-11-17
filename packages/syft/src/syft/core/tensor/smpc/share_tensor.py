@@ -19,9 +19,6 @@ from typing import Union
 import numpy as np
 import torch
 
-# syft absolute
-import syft as sy
-
 # relative
 from . import utils
 from .... import logger
@@ -165,6 +162,9 @@ class ShareTensor(PassthroughTensor):
 
     @staticmethod
     def login_clients(parties_info: List[GridURL]) -> Any:
+        # relative
+        from ....grid.client.client import login
+
         clients = []
         for party_info in parties_info:
             # if its localhost change it to a host that resolves outside the container
@@ -177,7 +177,7 @@ class ShareTensor(PassthroughTensor):
                 # during socket connection initialization.
                 CACHE_CLIENTS[str(external_host_info)] = True
                 # TODO: refactor to use a guest account
-                client = sy.login(  # nosec
+                client = login(  # nosec
                     url=external_host_info,
                     email="info@openmined.org",
                     password="changethis",
@@ -383,9 +383,26 @@ class ShareTensor(PassthroughTensor):
         share_wrapper: Any,
         ring_size: Union[int, str] = DEFAULT_RING_SIZE,
     ) -> PassthroughTensor:
+        # relative
+        from ..autodp.gamma_tensor import GammaTensor
+
         ring_size = int(ring_size)
-        if hasattr(value, "child"):
-            value.child.child = FixedPrecisionTensor(value.child.child)  # type: ignore
+        if value and hasattr(value, "child"):
+            if isinstance(value.child, GammaTensor):
+                # We do this, since GammaTensor is a FrozenInstance, which prevents us from modifying child values.
+                gt: GammaTensor = value.child
+                new_gamma = GammaTensor(
+                    child=FixedPrecisionTensor(value.child.child),
+                    data_subjects=gt.data_subjects,
+                    min_vals=gt.min_vals,
+                    max_vals=gt.max_vals,
+                    func_str=gt.func_str,
+                    sources=gt.sources,
+                )
+                value.child = new_gamma
+
+            else:
+                value.child.child = FixedPrecisionTensor(value.child.child)  # type: ignore
 
         if value is not None:
             share = ShareTensor.generate_przs(
@@ -812,7 +829,11 @@ class ShareTensor(PassthroughTensor):
             share = _self.child
 
             method = getattr(share, method_name)
-            new_share = method(*args, **kwargs)
+            if method_name not in INPLACE_OPS:
+                new_share = method(*args, **kwargs)
+            else:
+                method(*args, **kwargs)
+                new_share = share
 
             res = _self.copy_tensor()
             res.child = np.array(new_share)

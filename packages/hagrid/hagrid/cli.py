@@ -10,6 +10,7 @@ import stat
 import subprocess  # nosec
 import sys
 import tempfile
+from threading import Event
 from threading import Thread
 import time
 from typing import Any
@@ -28,7 +29,12 @@ import webbrowser
 import click
 import requests
 import rich
+from rich.console import Console
 from rich.live import Live
+from rich.progress import BarColumn
+from rich.progress import Progress
+from rich.progress import SpinnerColumn
+from rich.progress import TextColumn
 from virtualenvapi.manage import VirtualEnvironment
 
 # relative
@@ -39,6 +45,7 @@ from .auth import AuthCredentials
 from .cache import DEFAULT_BRANCH
 from .cache import DEFAULT_REPO
 from .cache import RENDERED_DIR
+from .cache import STABLE_BRANCH
 from .cache import arg_cache
 from .deps import DEPENDENCIES
 from .deps import allowed_hosts
@@ -316,6 +323,13 @@ def clean(location: str) -> None:
     type=str,
     help="Optional: launch node using the manifest template",
 )
+@click.option(
+    "--health_checks",
+    default="true",
+    required=False,
+    type=str,
+    help="Optional: turn on or off auto health checks post node launch",
+)
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
     try:
@@ -340,8 +354,12 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
         dry_run = False
 
+    health_checks = str_to_bool(cast(str, kwargs["health_checks"]))
+
     try:
-        silent = bool(kwargs["silent"]) if "silent" in kwargs else False
+        tail = False if "tail" in kwargs and not str_to_bool(kwargs["tail"]) else True
+        silent = not tail
+
         from_rendered_dir = (
             str_to_bool(cast(str, kwargs["from_template"])) and EDITABLE_MODE
         )
@@ -349,40 +367,193 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
         execute_commands(
             cmds, dry_run=dry_run, silent=silent, from_rendered_dir=from_rendered_dir
         )
-        print("Success!\n\n")
+
+        host_term = verb.get_named_term_hostgrammar(name="host")
+        run_health_checks = (
+            health_checks and not dry_run and host_term.host == "docker" and silent
+        )
+
+        if run_health_checks:
+            docker_cmds = cast(TypeDict[str, TypeList[str]], cmds)
+
+            # get the first command (cmd1) from docker_cmds which is of the form
+            # {"<first>": [cmd1, cmd2], "<second>": [cmd3, cmd4]}
+            (command, *_), *_ = docker_cmds.values()
+
+            match_port = re.search("HTTP_PORT=[0-9]{1,5}", command)
+            if match_port:
+                rich.get_console().print(
+                    "\n[bold green]⠋[bold blue] Checking node API [/bold blue]\t"
+                )
+                port = match_port.group().replace("HTTP_PORT=", "")
+                check_status("localhost" + ":" + port)
+
     except Exception as e:
         print(f"Error: {e}\n\n")
         return
 
 
-def execute_commands(
-    cmds: TypeList,
-    dry_run: bool = False,
-    silent: bool = False,
-    from_rendered_dir: bool = False,
+def check_errors(
+    line: str, process: subprocess.Popen, cmd_name: str, progress_bar: Progress
 ) -> None:
-    """Execute the launch commands and display their status in realtime.
+    task = progress_bar.tasks[0]
+    if "Error response from daemon: " in line:
+        if progress_bar:
+            progress_bar.update(
+                0,
+                description=f"❌ [bold red]{cmd_name}[/bold red] [{task.completed} / {task.total}]",
+                refresh=True,
+            )
+            progress_bar.update(0, visible=False)
+            progress_bar.console.clear_live()
+            progress_bar.console.quiet = True
+            progress_bar.stop()
+            console = rich.get_console()
+            progress_bar.console.quiet = False
+            console.print(f"\n\n [red] ERROR [/red]: [bold]{line}[/bold]\n")
+        process.terminate()
+        raise Exception
 
-    Args:
-        cmds (list): list of commands to be executed
-        dry_run (bool, optional): If `True` only displays cmds to be executed. Defaults to False.
-    """
-    process_list: TypeList = []
-    console = rich.get_console()
 
-    username, password = (
-        extract_username_and_pass(cmds[0]) if len(cmds) > 0 else ("-", "-")
+def check_pulling(line: str, cmd_name: str, progress_bar: Progress) -> None:
+    task = progress_bar.tasks[0]
+    if "Pulling" in line and "fs layer" not in line:
+        progress_bar.update(
+            0,
+            description=f"[bold]{cmd_name} [{task.completed} / {task.total+1}]",
+            total=task.total + 1,
+            refresh=True,
+        )
+    if "Pulled" in line:
+        progress_bar.update(
+            0,
+            description=f"[bold]{cmd_name} [{task.completed + 1} / {task.total}]",
+            completed=task.completed + 1,
+            refresh=True,
+        )
+        if progress_bar.finished:
+            progress_bar.update(
+                0,
+                description=f"✅ [bold green]{cmd_name} [{task.completed} / {task.total}]",
+                refresh=True,
+            )
+
+
+def check_building(line: str, cmd_name: str, progress_bar: Progress) -> None:
+
+    load_pattern = re.compile(
+        r"^#.* load build definition from [A-Za-z0-9]+\.dockerfile$", re.IGNORECASE
     )
-    # display VM credentials
-    console.print(generate_user_table(username=username, password=password))
+    build_pattern = re.compile(
+        r"^#.* naming to docker\.io/openmined/.* done$", re.IGNORECASE
+    )
+    task = progress_bar.tasks[0]
 
+    if load_pattern.match(line):
+        progress_bar.update(
+            0,
+            description=f"[bold]{cmd_name} [{task.completed} / {task.total +1}]",
+            total=task.total + 1,
+            refresh=True,
+        )
+    if build_pattern.match(line):
+        progress_bar.update(
+            0,
+            description=f"[bold]{cmd_name} [{task.completed+1} / {task.total}]",
+            completed=task.completed + 1,
+            refresh=True,
+        )
+
+    if progress_bar.finished:
+        progress_bar.update(
+            0,
+            description=f"✅ [bold green]{cmd_name} [{task.completed} / {task.total}]",
+            refresh=True,
+        )
+
+
+def check_launching(line: str, cmd_name: str, progress_bar: Progress) -> None:
+    task = progress_bar.tasks[0]
+    if "Starting" in line:
+        progress_bar.update(
+            0,
+            description=f" [bold]{cmd_name} [{task.completed} / {task.total+1}]",
+            total=task.total + 1,
+            refresh=True,
+        )
+    if "Started" in line:
+        progress_bar.update(
+            0,
+            description=f" [bold]{cmd_name} [{task.completed + 1} / {task.total}]",
+            completed=task.completed + 1,
+            refresh=True,
+        )
+        if progress_bar.finished:
+            progress_bar.update(
+                0,
+                description=f"✅ [bold green]{cmd_name} [{task.completed} / {task.total}]",
+                refresh=True,
+            )
+
+
+DOCKER_FUNC_MAP = {
+    "Pulling": check_pulling,
+    "Building": check_building,
+    "Launching": check_launching,
+}
+
+
+def read_thread_logs(
+    progress_bar: Progress, process: subprocess.Popen, queue: Queue, cmd_name: str
+) -> None:
+    line = queue.get()
+    line = str(line, encoding="utf-8").strip()
+
+    if progress_bar:
+        check_errors(line, process, cmd_name, progress_bar=progress_bar)
+        DOCKER_FUNC_MAP[cmd_name](line, cmd_name, progress_bar=progress_bar)
+
+
+def create_thread_logs(process: subprocess.Popen) -> Queue:
+    def enqueue_output(out: Any, queue: Queue) -> None:
+        for line in iter(out.readline, b""):
+            queue.put(line)
+        out.close()
+
+    queue: Queue = Queue()
+    thread_1 = Thread(target=enqueue_output, args=(process.stdout, queue))
+    thread_2 = Thread(target=enqueue_output, args=(process.stderr, queue))
+
+    thread_1.daemon = True  # thread dies with the program
+    thread_1.start()
+    thread_2.daemon = True  # thread dies with the program
+    thread_2.start()
+    return queue
+
+
+def process_cmd(
+    cmds: TypeList[str],
+    dry_run: bool,
+    silent: bool,
+    from_rendered_dir: bool,
+    progress_bar: Union[Progress, None] = None,
+    cmd_name: str = "",
+) -> None:
+    process_list: TypeList = []
     cwd = (
         os.path.join(GRID_SRC_PATH, RENDERED_DIR)
         if from_rendered_dir
         else GRID_SRC_PATH
     )
+    username, password = (
+        extract_username_and_pass(cmds[0]) if len(cmds) > 0 else ("-", "-")
+    )
 
-    print("Current Working Directory: ", cwd)
+    # display VM credentials
+    console = rich.get_console()
+    credentials = generate_user_table(username=username, password=password)
+    if credentials:
+        console.print(credentials)
 
     for cmd in cmds:
         if dry_run:
@@ -407,15 +578,31 @@ def execute_commands(
             else:
                 display_jupyter_token(cmd)
                 if silent:
+                    ON_POSIX = "posix" in sys.builtin_module_names
+
                     process = subprocess.Popen(  # nosec
                         cmd_to_exec,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
                         cwd=cwd,
+                        close_fds=ON_POSIX,
                         shell=True,
                     )
-                    process.communicate()
+
+                    # Creates two threads to get docker stdout and sterr
+                    logs_queue = create_thread_logs(process=process)
+
+                    read_thread_logs(progress_bar, process, logs_queue, cmd_name)
+                    while process.poll() != 0:
+                        while not logs_queue.empty():
+                            # Read stdout and sterr to check errors or update progress bar.
+                            read_thread_logs(
+                                progress_bar, process, logs_queue, cmd_name
+                            )
                 else:
+                    if progress_bar:
+                        progress_bar.stop()
+
                     subprocess.run(  # nosec
                         cmd_to_exec,
                         shell=True,
@@ -430,6 +617,52 @@ def execute_commands(
 
         # save vm details as json
         save_vm_details_as_json(username, password, process_list)
+
+
+def execute_commands(
+    cmds: Union[TypeList[str], TypeDict[str, TypeList[str]]],
+    dry_run: bool = False,
+    silent: bool = False,
+    from_rendered_dir: bool = False,
+) -> None:
+    """Execute the launch commands and display their status in realtime.
+
+    Args:
+        cmds (list): list of commands to be executed
+        dry_run (bool, optional): If `True` only displays cmds to be executed. Defaults to False.
+    """
+    console = rich.get_console()
+    if isinstance(cmds, dict):
+        console.print("[bold green]⠋[bold blue] Launching Containers [/bold blue]\t")
+        for cmd_name, cmd in cmds.items():
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                BarColumn(),
+                TextColumn("[progress.percentage]{task.percentage:.2f}%   "),
+                console=console,
+                auto_refresh=True,
+            ) as progress:
+                if silent:
+                    progress.add_task(
+                        f"[bold green]{cmd_name} Images",
+                        total=0,
+                    )
+                process_cmd(
+                    cmds=cmd,
+                    dry_run=dry_run,
+                    silent=silent,
+                    from_rendered_dir=from_rendered_dir,
+                    progress_bar=progress,
+                    cmd_name=cmd_name,
+                )
+    else:
+        process_cmd(
+            cmds=cmds,
+            dry_run=dry_run,
+            silent=silent,
+            from_rendered_dir=from_rendered_dir,
+        )
 
 
 def display_vm_status(process_list: TypeList) -> None:
@@ -807,7 +1040,7 @@ def create_launch_cmd(
     verb: GrammarVerb,
     kwargs: TypeDict[str, Any],
     ignore_docker_version_check: Optional[bool] = False,
-) -> Union[str, TypeList[str]]:
+) -> Union[str, TypeList[str], TypeDict[str, TypeList[str]]]:
     parsed_kwargs: TypeDict[str, Any] = {}
     host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host
@@ -903,6 +1136,7 @@ def create_launch_cmd(
         parsed_kwargs.update(kwargs)
 
     if host in ["docker"]:
+
         # Check docker service status
         if not ignore_docker_version_check:
             check_docker_service_status()
@@ -1386,13 +1620,41 @@ def create_launch_cmd(
     )
 
 
+def pull_command(cmd: str, kwargs: TypeDict[str, Any]) -> TypeList[str]:
+    pull_cmd = str(cmd)
+    if kwargs["release"] == "production":
+        pull_cmd += " --file docker-compose.yml"
+    else:
+        pull_cmd += " --file docker-compose.pull.yml"
+    pull_cmd += " pull"
+    return [pull_cmd]
+
+
+def build_command(cmd: str) -> TypeList[str]:
+    build_cmd = str(cmd)
+    build_cmd += " --file docker-compose.build.yml"
+    build_cmd += " --file docker-compose.dev.yml"
+    build_cmd += " build"
+    return [build_cmd]
+
+
+def deploy_command(cmd: str, tail: bool, release_type: str) -> TypeList[str]:
+
+    up_cmd = str(cmd)
+    up_cmd += " --file docker-compose.dev.yml" if release_type == "development" else ""
+    up_cmd += " up"
+    if not tail:
+        up_cmd += " -d"
+    return [up_cmd]
+
+
 def create_launch_docker_cmd(
     verb: GrammarVerb,
     docker_version: str,
     kwargs: TypeDict[str, Any],
     tail: bool = True,
     silent: bool = False,
-) -> str:
+) -> TypeDict[str, TypeList[str]]:
     host_term = verb.get_named_term_hostgrammar(name="host")
     node_name = verb.get_named_term_type(name="node_name")
     node_type = verb.get_named_term_type(name="node_type")
@@ -1411,12 +1673,19 @@ def create_launch_docker_cmd(
         + "!\n"
     )
 
+    if kwargs["release"] == "development":
+        version = setup_from_manifest_template(host_type="docker")["tag"]
+    else:
+        version = STABLE_BRANCH
+
     print("  - TYPE: " + str(node_type.input))
     print("  - NAME: " + str(snake_name))
-    # print("  - TAG: " + str(tag))
+    print("  - SYFT_VERSION: " + version)
+    print("  - HAGRID_VERSION: " + str(__version__))
     print("  - PORT: " + str(host_term.free_port))
     print("  - DOCKER COMPOSE: " + docker_version)
-    # print("  - TAIL: " + str(tail))
+    print("  - TAIL: " + str(tail))
+    print("  - RELEASE: " + kwargs["release"])
     print("\n")
 
     version_string = kwargs["tag"]
@@ -1487,6 +1756,9 @@ def create_launch_docker_cmd(
     if "test" in kwargs and kwargs["test"] is True:
         envs["S3_VOLUME_SIZE_MB"] = "100"  # GitHub CI is small
 
+    if kwargs.get("release", "") == "development":
+        envs["RABBITMQ_MANAGEMENT"] = "-management"
+
     if "release" in kwargs:
         envs["RELEASE"] = kwargs["release"]
 
@@ -1504,10 +1776,6 @@ def create_launch_docker_cmd(
         cmd += "; "
     else:
         cmd += " ".join(args)
-
-    if not build:
-        pull_cmd = str(cmd)
-        pull_cmd += " docker compose pull"
 
     cmd += " docker compose -p " + snake_name
 
@@ -1566,29 +1834,23 @@ def create_launch_docker_cmd(
     except Exception:  # nosec
         pass
 
+    final_commands = {}
+    final_commands["Pulling"] = pull_command(cmd, kwargs)
+
     cmd += " --file docker-compose.yml"
-    if build:
-        cmd += " --file docker-compose.build.yml"
-    if "release" in kwargs and kwargs["release"] == "development":
-        cmd += " --file docker-compose.dev.yml"
     if "tls" in kwargs and kwargs["tls"] is True:
         cmd += " --file docker-compose.tls.yml"
     if "test" in kwargs and kwargs["test"] is True:
         cmd += " --file docker-compose.test.yml"
-    cmd += " up"
-
-    if not tail:
-        cmd += " -d"
 
     if build:
-        cmd += " --build"  # force rebuild
-    else:
-        if is_windows():
-            cmd = pull_cmd + "; " + cmd
-        else:
-            cmd = pull_cmd + " && " + cmd
+        my_build_command = build_command(cmd)
+        final_commands["Building"] = my_build_command
 
-    return cmd
+    release_type = kwargs["release"]
+
+    final_commands["Launching"] = deploy_command(cmd, tail, release_type)
+    return final_commands
 
 
 def create_launch_vagrant_cmd(verb: GrammarVerb) -> str:
@@ -2497,28 +2759,142 @@ def create_check_table(
     return table
 
 
+def shell(command: str) -> str:
+    try:
+        output = subprocess.check_output(  # nosec
+            command, shell=True, stderr=subprocess.STDOUT
+        )
+    except Exception:
+        output = b""
+    return output.decode("utf-8")
+
+
+def get_host_name(container_name: str) -> str:
+    # Assumption we always get proxy containers first.
+    # if users have old docker compose versios.
+    # the container names are _ instead of -
+    # canada_proxy_1 instead of canada-proxy-1
+    try:
+        host_name = container_name[0 : container_name.find("proxy") - 1]  # noqa: E203
+    except Exception:
+        host_name = ""
+    return host_name
+
+
+def from_url(url: str) -> Tuple[str, str, int, str, Union[Any, str]]:
+
+    try:
+        # urlparse doesnt handle no protocol properly
+        if "://" not in url:
+            url = "http://" + url
+        parts = urlparse(url)
+        host_or_ip_parts = parts.netloc.split(":")
+        # netloc is host:port
+        port = 80
+        if len(host_or_ip_parts) > 1:
+            port = int(host_or_ip_parts[1])
+        host_or_ip = host_or_ip_parts[0]
+        return (
+            host_or_ip,
+            parts.path,
+            port,
+            parts.scheme,
+            getattr(parts, "query", ""),
+        )
+    except Exception as e:
+        print(f"Failed to convert url: {url} to GridURL. {e}")
+        raise e
+
+
+def get_docker_status(ip_address: str) -> Tuple[bool, Tuple[str, str]]:
+    proxy_containers = shell("docker ps --format '{{.Names}}' | grep 'proxy' ").split()
+    backend_containers = shell(
+        "docker ps --format '{{.Names}}' | grep 'backend' "
+    ).split()
+
+    # to prevent importing syft, have duplicated the from_url code from GridURL
+    url = from_url(ip_address)
+    container_name = None
+    for container in proxy_containers:
+        ports = shell(f"docker port {container}")
+        if ports.count(str(url[2])):
+            container_name = container
+            break
+
+    if not container_name:
+        return False, ("", "")
+    host_name = get_host_name(container_name)
+
+    _backend_exists = False
+    for container in backend_containers:
+        if host_name in container and "stream" not in container:
+            _backend_exists = True
+            break
+    if not _backend_exists:
+        return False, ("", "")
+
+    # Identifying Type of Node.
+    headscale_containers = shell(
+        "docker ps --format '{{.Names}}' | grep 'headscale' "
+    ).split()
+
+    node_type = "Domain"
+    for container in headscale_containers:
+        if host_name in container:
+            node_type = "Network"
+            break
+
+    return True, (host_name, node_type)
+
+
+def get_syft_install_status(host_name: str) -> bool:
+    backend_containers = shell(
+        "docker ps --format '{{.Names}}' | grep 'backend' "
+    ).split()
+    backend_container = None
+    for container in backend_containers:
+        if host_name in container and "stream" not in container:
+            backend_container = container
+            break
+    if not backend_container:
+        print(f"❌ Backend Docker Stack for: {host_name} not found")
+        exit(0)
+    else:
+        backend_log = shell(f"docker logs {backend_container}")
+        if "Application startup complete" not in backend_log:
+            return False
+        return True
+
+
 @click.command(help="Check health of an IP address/addresses or a resource group")
 @click.argument("ip_addresses", type=str, nargs=-1)
 @click.option(
-    "--wait",
-    is_flag=True,
-    help="Optional: wait until checks pass",
+    "--timeout",
+    default=300,
+    help="Timeout for hagrid check command,Default: 300 seconds",
 )
 @click.option(
     "--silent",
-    is_flag=True,
-    help="Optional: don't refresh output during wait",
+    default=True,
+    help="Optional: don't refresh output,Defaults True",
 )
 def check(
-    ip_addresses: TypeList[str], wait: bool = False, silent: bool = False
+    ip_addresses: TypeList[str], silent: bool = True, timeout: Union[int, str] = 300
 ) -> None:
-    check_status(ip_addresses=ip_addresses, wait=wait, silent=silent)
+    check_status(ip_addresses=ip_addresses, silent=silent, timeout=timeout)
 
 
-def check_status(
-    ip_addresses: TypeList[str], wait: bool = False, silent: bool = False
+def _check_status(
+    ip_addresses: Union[str, TypeList[str]],
+    silent: bool = True,
+    signal: Optional[Event] = None,
 ) -> None:
-    console = rich.get_console()
+    OK_EMOJI = RichEmoji("white_heavy_check_mark").to_str()
+    # Check if ip_addresses is str, then convert to list
+    if ip_addresses and isinstance(ip_addresses, str):
+        ip_addresses = [ip_addresses]
+    console = Console()
+
     if len(ip_addresses) == 0:
         headers = {"User-Agent": "curl/7.79.1"}
         print("Detecting External IP...")
@@ -2531,15 +2907,50 @@ def check_status(
         status, table_contents = get_health_checks(ip_address=ip_address)
         table = create_check_table(table_contents=table_contents)
         max_timeout = 600
-        if wait and not status:
+        if not status:
             table = create_check_table(
                 table_contents=table_contents, time_left=max_timeout
             )
             if silent:
-                print("Checking...")
-            while not status:
-                if not silent:
-                    with Live(table, refresh_per_second=4, screen=True) as live:
+                with console.status("Gathering Node information") as console_status:
+                    console_status.update(
+                        "[bold orange_red1]Waiting for Container Creation"
+                    )
+                    docker_status, domain_info = get_docker_status(ip_address)
+                    while not docker_status:
+                        docker_status, domain_info = get_docker_status(ip_address)
+                        time.sleep(1)
+                        if (
+                            signal and signal.is_set()
+                        ):  # Stop execution if timeout is triggered
+                            return
+                    console.print(
+                        f"{OK_EMOJI} {domain_info[0]} {domain_info[1]} Containers Created"
+                    )
+
+                    console_status.update("[bold orange_red1]Starting Backend")
+                    syft_install_status = get_syft_install_status(domain_info[0])
+                    while not syft_install_status:
+                        syft_install_status = get_syft_install_status(domain_info[0])
+                        time.sleep(1)
+                        # Stop execution if timeout is triggered
+                        if signal and signal.is_set():
+                            return
+                    console.print(f"{OK_EMOJI} Backend")
+                    console.print(f"{OK_EMOJI} Startup Complete")
+
+                status, table_contents = get_health_checks(ip_address)
+                table = create_check_table(
+                    table_contents=table_contents, time_left=max_timeout
+                )
+            else:
+                while not status:
+                    # Stop execution if timeout is triggered
+                    if signal is not None and signal.is_set():
+                        return
+                    with Live(
+                        table, refresh_per_second=2, screen=True, auto_refresh=False
+                    ) as live:
                         max_timeout -= 1
                         if max_timeout % 5 == 0:
                             status, table_contents = get_health_checks(ip_address)
@@ -2550,20 +2961,46 @@ def check_status(
                         if status:
                             break
                         time.sleep(1)
-                else:
-                    max_timeout -= 1
-                    if max_timeout % 5 == 0:
-                        status, table_contents = get_health_checks(ip_address)
-                    table = create_check_table(
-                        table_contents=table_contents, time_left=max_timeout
-                    )
-                    time.sleep(1)
+
         console.print(table)
     else:
         for ip_address in ip_addresses:
             _, table_contents = get_health_checks(ip_address)
             table = create_check_table(table_contents=table_contents)
             console.print(table)
+
+
+def check_status(
+    ip_addresses: Union[str, TypeList[str]],
+    silent: bool = True,
+    timeout: Union[int, str] = 300,
+) -> None:
+    timeout = int(timeout)
+    # third party
+    from rich import print
+
+    signal = Event()
+
+    t = Thread(
+        target=_check_status,
+        kwargs={"ip_addresses": ip_addresses, "silent": silent, "signal": signal},
+    )
+    t.start()
+    t.join(timeout=timeout)
+
+    if t.is_alive():
+        signal.set()
+        t.join()
+
+        print(f"Hagrid check command timed out after: {timeout} seconds 🕛")
+        print(
+            "Please try increasing the timeout or kindly check the docker containers for error logs."
+        )
+        print("You can view your container logs using the following tool:")
+        print("Tool: [link=https://ctop.sh]Ctop[/link]")
+        print(
+            "Video Explanation: [link=https://youtu.be/BJhlCxerQP4]How to use Ctop[/link]\n"
+        )
 
 
 cli.add_command(check)
