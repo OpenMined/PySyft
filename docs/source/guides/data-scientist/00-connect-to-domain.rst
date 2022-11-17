@@ -141,6 +141,34 @@ and their associated permissions, but you are restricted to managing the Domain 
 
 |00-connect-to-domain-03|
 
+``Data requests`` are one-time requests made by Data Scientists on the organization's Domain Node 
+to ``download`` the results of their computations. Unlike setting privacy budgets, data requests must 
+be manually triaged and do not count as ongoing credits. They are individual ``allowances`` based off 
+of specific computations on specified ``data objects``.
+
+On this page, you can check the ``pending`` data requests in your queue and the ``status`` of users' past data requests.
+
+|00-connect-to-domain-04|
+
+``Networks`` are the primary way to ``connect`` Data Scientists to any organization's Domain Node. Users 
+can join any public network and find the type of ``datasets`` they want to work on. They can search and 
+approve bulk project requests to simultaneously participate in a project across groups of domains. 
+
+Once the user agrees to the ``Network Agreements``, they can ``explore`` and ``analyze`` the ``datasets`` hosted 
+by the Domain Owners. In the image below are the three public domains that Data Scientists can join as 
+a ``guest``; alternatively, they can search for their preferred Domain using the search bar.
+
+|00-connect-to-domain-05|
+
+Awesome 👏 You have now successfully connected to a Domain Node !! 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+What's Next? 
+---------------
+Alright, now that you are connected to a Domain node, we would first like to look for the 
+available datasets on the public network which users can join. 
+
+   The following tutorial will show how Data Scientists can search for a dataset on the Domain Node. 
 
 
 .. |00-connect-to-domain-00| image:: ../../_static/personas-image/data-scientist/00-connect-to-domain-00.png
@@ -153,4 +181,10 @@ and their associated permissions, but you are restricted to managing the Domain 
    :width: 95%
 
 .. |00-connect-to-domain-03| image:: ../../_static/personas-image/data-scientist/00-connect-to-domain-03.png
+   :width: 95%
+
+.. |00-connect-to-domain-04| image:: ../../_static/personas-image/data-scientist/00-connect-to-domain-04.png
+   :width: 95%
+
+.. |00-connect-to-domain-05| image:: ../../_static/personas-image/data-scientist/00-connect-to-domain-05.png
    :width: 95%
