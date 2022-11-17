@@ -38,7 +38,6 @@ Steps to Connect to a Domain Server
 📒 Overview of this tutorial:  
 
 #. **Obtain** the Login Credentials
-#. **Start** a private Data Server
 #. **Login** to your Server
 #. **Explore** the User HomePage
 
@@ -53,7 +52,7 @@ organization's private data servers. Here are a few points to follow to get your
 
 * If your account was created by the Domain Owners within your organization, you could ask them to 
   securely ``share`` the credentials with you. If you do not have a domain owner, you can ``create`` 
-  one locally following the tutorials starting here: `data-owner/00-deploy-domain <../data-owner/00-deploy-domain.html>`_.
+  one locally following the tutorials starting here: `Deploy your own Domain Server <../data-owner/00-deploy-domain.html>`_.
   
 * You can also signup or create an account on a Domain node if you have access to the ``URL`` to the Domain. 
   To ``register`` yourself to the Domain, you need to run the following code:
@@ -87,35 +86,16 @@ organization's private data servers. Here are a few points to follow to get your
    By default, the role assigned to the registered user is of a Data Scientist, and the assigned privacy budget is 0.
 
 
-Step 2: Start a Private Data Server
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-PyGrid's UI is meant to help users get a bigger picture view of their organization's domains, analyze 
-the ``datasets``, manage ``permissions``, and play with different ``privacy budgets``. 
-
-We will use the ``hagrid launch`` command to start a private data server. By default, the port is launched at ``8081``.
-
-.. note::
-   Make sure your docker application is up and running in the background.
-
-We will use this port number to visit the following UI interface at the ``URL``:
-
-::
-
-   http://localhost:<port_number>
-
-   e.g.
-
-   http://localhost:8081
-
-Once the ``hagrid launch`` command is executed successfully, you will see the message as shown in the image below:
-
-|00-connect-to-domain-00|
-   
-
-Step 3: Login to your Server
+Step 2: Login to your Server
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Once you have launched your domain node, you can now visit ``http://localhost:8081``, where you will see the below login page:
+Once you have your login credentials, you can ask your Domain Owner to provide you with the link to the ``URL`` to access your Domain.
+
+.. WARNING:: 
+   If you do not have a domain owner, you can ``create`` one locally following the tutorials 
+   starting here: `Deploy your own Domain Server <../data-owner/00-deploy-domain.html>`_.
+
+Using the link, you can visit the Data Scientists ``login page``, as shown in the image below.
 
 |00-connect-to-domain-01|
 
@@ -124,7 +104,7 @@ The ``Email`` and ``Password`` are your login credentials which you already have
 Once we're ``logged`` in, you can move to the next section, which ``explores`` the user homepage.
 
 
-Step 4: Explore the User HomePage
+Step 3: Explore the User HomePage
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When you login, the first page seen by the Data Scientists is the ``User`` homepage.
