@@ -98,11 +98,9 @@ class PRZSAction(ImmediateActionWithoutReply):
 
         result_read_permissions = {
             node.verify_key: node.id,
-            verify_key: None,  # we dont have the passed in sender's UID
         }
         result_write_permissions = {
             node.verify_key: node.id,
-            verify_key: None,  # we dont have the passed in sender's UID
         }
 
         if not isinstance(result, StorableObject):
