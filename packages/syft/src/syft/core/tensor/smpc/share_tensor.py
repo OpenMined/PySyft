@@ -362,9 +362,18 @@ class ShareTensor(PassthroughTensor):
                     address=client.address,
                 )
                 client.send_immediate_msg_without_reply(msg=beaver_action)
-        other_generator_seed = przs_retrieve_object(node, przs_location)
-        print("self generator seed", self_generator_seed)
-        print("other_generator seed", other_generator_seed)
+        other_generator_seed = przs_retrieve_object(node, przs_location).data
+        if len(other_generator_seed) > 1:
+            raise ValueError(
+                f"PRZS should receive only one seed from peer client,got: {len(other_generator_seed)}"
+            )
+        other_generator_seed = int(other_generator_seed[0])
+
+        self_generator = np.random.default_rng(self_generator_seed)
+        other_generator = np.random.default_rng(other_generator_seed)
+
+        print("self generator ", self_generator)
+        print("other_generator", other_generator)
 
         # Try:
         # 1. First get numpy type if secret is numpy and obtain ring size from there
