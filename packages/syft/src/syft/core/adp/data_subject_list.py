@@ -647,7 +647,7 @@ class DataSubjectArray:
         # per data point, we should make sure that we implement in such a way we expand
         # the datasubjects automatically for row to data point mapping.
         if not isinstance(input_subjects, np.ndarray):
-            input_subjects = np.array(input_subjects)
+            input_subjects = np.array(input_subjects, dtype=DataSubjectArray)
 
         data_map = (
             lambda x: DataSubjectArray([str(x)])

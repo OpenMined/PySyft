@@ -11,10 +11,9 @@ from nacl.signing import VerifyKey
 from pydantic import BaseSettings
 import redis
 
-# syft absolute
-import syft as sy
-
 # relative
+from ..common.serde.deserialize import _deserialize as deserialize
+from ..common.serde.serialize import _serialize as serialize
 from .abstract_ledger_store import AbstractDataSubjectLedger
 from .abstract_ledger_store import AbstractLedgerStore
 
@@ -52,7 +51,7 @@ class RedisLedgerStore(AbstractLedgerStore):
             buf = self.redis.get(key_str)
             if buf is None:
                 raise KeyError()
-            return sy.deserialize(buf, from_bytes=True)
+            return deserialize(buf, from_bytes=True)
         except Exception as e:
             print(f"Failed to get ledger from database. {e}")
             raise e
@@ -60,8 +59,8 @@ class RedisLedgerStore(AbstractLedgerStore):
     def set(self, key: VerifyKey, value: AbstractDataSubjectLedger) -> None:
         try:
             key_str = bytes(key).hex()
-            buf = sy.serialize(value, to_bytes=True)
-            self.redis.set(key_str, buf)
+            buf = serialize(value, to_bytes=True)
+            self.redis.set(key_str, buf)  # type: ignore
         except Exception as e:
             print(f"Failed to set ledger to database. {e}")
             raise e

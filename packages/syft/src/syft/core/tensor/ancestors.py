@@ -351,11 +351,11 @@ class PhiTensorAncestor(TensorChainManager):
 
     @property
     def min_vals(self):  # type: ignore
-        return self.__class__(self.child.min_vals)
+        return self.child.min_vals
 
     @property
     def max_vals(self):  # type: ignore
-        return self.__class__(self.child.max_vals)
+        return self.child.max_vals
 
     @property
     def gamma(self):  # type: ignore
@@ -546,50 +546,9 @@ class PhiTensorAncestor(TensorChainManager):
             min_val, max_val, target_shape=self.child.shape
         )
 
-        if self.child.min() < min_vals.data:
-            msg = (
-                "It seems like you set your lower_bound higher than some of the values "
-                + "in your data. The lower_bound in your case should be lower or equal to "
-                + str(self.child.min())
-            )
-            raise ValueError(msg)
-        if self.child.max() > max_vals.data:
-            msg = (
-                "It seems like you set your upper_bound lower than some of the values "
-                + "in your data. The upper_bound in your case should be higher or equal to "
-                + str(self.child.max())
-            )
-            raise ValueError(msg)
-
-        if self.child.min() == min_vals.data:
-            print(
-                "It seems like you set your lower_bound to the literal lowest value in the dataset."
-                + "lower_bounds refers to the lowest possible value allowed by your dataset's schema."
-                + "If you are certain that this data's value can go no lower than "
-                + str(min_vals.data)
-                + " then"
-                "please continue."
-                + "\n"
-                + "To see examples of good lower_bound selections, try running:"
-                " `help(syft.Tensor.annotate_with_dp_metadata)`"
-            )
-        if self.child.max() == max_vals.data:
-            print(
-                "It seems like you set your upper_bound to the literal highest value in the dataset."
-                + "upper_bounds refers to the highest POSSIBLE value allowed by your dataset's schema."
-                + "If you are certain that this data's value can go no lower than "
-                + str(min_vals.data)
-                + " then"
-                "please continue."
-                + "\n"
-                + "To see examples of good lower_bound selections, try running:"
-                " `help(syft.Tensor.annotate_with_dp_metadata)`"
-            )
-
-        unique_data_subjects = len(data_subjects.sum())
-        if unique_data_subjects == 1:
+        if any(len(x.item()) > 1 for x in np.nditer(data_subjects, flags=["refs_ok"])):
             self.replace_abstraction_top(
-                tensor_type=_PhiTensor(),
+                tensor_type=_GammaTensor(),
                 child=self.child,
                 min_vals=min_vals,
                 max_vals=max_vals,
@@ -597,7 +556,7 @@ class PhiTensorAncestor(TensorChainManager):
             )  # type: ignore
         else:
             self.replace_abstraction_top(
-                tensor_type=_GammaTensor(),
+                tensor_type=_PhiTensor(),
                 child=self.child,
                 min_vals=min_vals,
                 max_vals=max_vals,

@@ -4,6 +4,7 @@ import pytest
 
 # syft absolute
 import syft as sy
+from syft.core.adp.data_subject_list import DataSubjectArray
 from syft.core.tensor.autodp.gamma_tensor import GammaTensor as GT
 from syft.core.tensor.autodp.phi_tensor import PhiTensor as PT
 from syft.core.tensor.lazy_repeat_array import lazyrepeatarray as lra
@@ -167,7 +168,34 @@ def test_2d_array(tensor: Tensor, low: int, high: int) -> None:
     assert len(private.child.data_subjects.sum()) == 1
 
 
+def test_phi(tensor: Tensor, low: int, high: int) -> None:
+    data_subjects = np.random.choice(["Optimus Prime", "Bumblebee"], (5, 5))
+    # Make sure there's at least one of "Optimus Prime" and "Bumblebee" to prevent
+    # the 1/2^24 chance of failure
+    data_subjects[0, 0] = "Optimus Prime"
+    data_subjects[4, 4] = "Bumblebee"
+
+    private = tensor.private(
+        min_val=low,
+        max_val=high,
+        data_subjects=data_subjects,
+    )
+    assert isinstance(private, Tensor)
+    assert isinstance(private.child, PT)
+    assert isinstance(private.child.min_vals, lra)
+    assert isinstance(private.child.max_vals, lra)
+    assert private.child.min_vals.shape == private.child.shape
+    assert private.child.max_vals.shape == private.child.shape
+    assert isinstance(private.child.data_subjects, np.ndarray)
+    assert private.child.data_subjects.shape == private.child.shape
+    assert len(private.child.data_subjects.sum()) == 2
+
+
 def test_gamma(tensor: Tensor, low: int, high: int) -> None:
+    data_subjects = np.random.choice(["Optimus Prime", "Bumblebee"], (5, 5)).tolist()
+    data_subjects = [[DataSubjectArray([x]) for x in row] for row in data_subjects]
+    data_subjects[0][0] = DataSubjectArray(["Optimus Prime", "Bumblebee"])
+
     private = tensor.annotate_with_dp_metadata(
         lower_bound=low,
         upper_bound=high,

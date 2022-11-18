@@ -5,12 +5,11 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft absolute
-import syft as sy
-
 # relative
 from ...core.common import UID
+from ...core.common.serde.deserialize import _deserialize as deserialize
 from ...core.common.serde.serializable import serializable
+from ...core.common.serde.serialize import _serialize as serialize
 from ...proto.lib.python.float_pb2 import Float as Float_PB
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
@@ -226,13 +225,13 @@ class Float(float, PyPrimitive):
 
     def _object2proto(self) -> Float_PB:
         return Float_PB(
-            id=sy.serialize(obj=self.id),
+            id=serialize(obj=self.id),
             data=self,
         )
 
     @staticmethod
     def _proto2object(proto: Float_PB) -> "Float":
-        return Float(value=proto.data, id=sy.deserialize(blob=proto.id))
+        return Float(value=proto.data, id=deserialize(blob=proto.id))
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
