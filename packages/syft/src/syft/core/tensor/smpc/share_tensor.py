@@ -6,6 +6,7 @@ from copy import deepcopy
 import functools
 from functools import lru_cache
 import operator
+import secrets
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -14,8 +15,10 @@ from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Union
+from uuid import UUID
 
 # third party
+import gevent
 import numpy as np
 import torch
 
@@ -26,6 +29,7 @@ from ....grid import GridURL
 from ....lib.numpy.array import capnp_deserialize
 from ....lib.numpy.array import capnp_serialize
 from ....proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
+from ...common import UID
 from ...common.serde.capnp import CapnpModule
 from ...common.serde.capnp import chunk_bytes
 from ...common.serde.capnp import combine_bytes
@@ -34,6 +38,7 @@ from ...common.serde.capnp import serde_magic_header
 from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize as serialize
+from ...node.common.action.greenlets_switch import przs_retrieve_object
 from ...smpc.store.crypto_store import CryptoStore
 from ..config import DEFAULT_RING_SIZE
 from ..fixed_precision_tensor import FixedPrecisionTensor
@@ -172,10 +177,10 @@ class ShareTensor(PassthroughTensor):
             client = CACHE_CLIENTS.get(str(external_host_info), None)
 
             if client is None:
-                # default cache to true, here to prevent multiple logins
-                # due to gevent monkey patching, context switch is done during
-                # during socket connection initialization.
-                CACHE_CLIENTS[str(external_host_info)] = True
+                # # default cache to true, here to prevent multiple logins
+                # # due to gevent monkey patching, context switch is done during
+                # # during socket connection initialization.
+                # CACHE_CLIENTS[str(external_host_info)] = True
                 # TODO: refactor to use a guest account
                 client = login(  # nosec
                     url=external_host_info,
@@ -187,6 +192,16 @@ class ShareTensor(PassthroughTensor):
                 CACHE_CLIENTS[str(external_host_info)] = client
             clients.append(client)
         return clients
+
+    @staticmethod
+    def get_id_rank_mapping(clients: List[Any]) -> Dict:
+        client_uids = [client.id.no_dash for client in clients]
+        client_uids.sort()
+        ID_RANK_MAP = {}
+        for idx, client_uid in enumerate(client_uids):
+            ID_RANK_MAP[idx] = client_uid
+            ID_RANK_MAP[client_uid] = idx
+        return ID_RANK_MAP
 
     def __getitem__(self, item: Union[str, int, slice]) -> ShareTensor:
         return ShareTensor(
@@ -298,10 +313,58 @@ class ShareTensor(PassthroughTensor):
         init_clients: bool = True,
     ) -> Tensor:
         # relative
+        from ...node.common.action.beaver_action import BeaverAction
+        from ...tensor.smpc import context
         from ..tensor import Tensor
 
+        seed_id_locations = context.SMPC_CONTEXT.get("seed_id_locations", None)
+        node = context.SMPC_CONTEXT.get("node", None)
+        if seed_id_locations is None:
+            raise ValueError(
+                f"seed_id_locations:{seed_id_locations}  input should be a valid integer for PRZS generation"
+            )
+        if node is None:
+            raise ValueError(
+                f"Node:{seed_id_locations} input should be a valid Node Object"
+            )
         ring_size = int(ring_size)
         nr_parties = len(parties_info)
+
+        print("parties info", parties_info)
+        clients = ShareTensor.login_clients(parties_info=parties_info)
+
+        ctr = 0
+        while ctr <= 100 and len(clients) != nr_parties:
+            gevent.sleep(0)
+            ctr += 1
+        else:
+            logger.critical(
+                "Failed to Login to parties in the SMPC computation"
+                + "ensure that all clients are healthy."
+            )
+
+        print("Clients", clients)
+        id_rank_map = ShareTensor.get_id_rank_mapping(clients)
+
+        rank = id_rank_map[node.id.no_dash]  # rank of the current party
+        przs_client_id = id_rank_map[
+            (rank + 1) % nr_parties
+        ]  # get the client id of the next party
+        self_generator_seed = secrets.randbits(64)
+        generator = np.random.default_rng(seed_id_locations)
+        przs_location = UID(UUID(bytes=generator.bytes(16)))
+
+        for client in clients:
+            if client.id.no_dash == przs_client_id:
+                beaver_action = BeaverAction(
+                    values=[str(self_generator_seed)],
+                    locations=[przs_location],
+                    address=client.address,
+                )
+                client.send_immediate_msg_without_reply(msg=beaver_action)
+        other_generator_seed = przs_retrieve_object(node, przs_location)
+        print("self generator seed", self_generator_seed)
+        print("other_generator seed", other_generator_seed)
 
         # Try:
         # 1. First get numpy type if secret is numpy and obtain ring size from there

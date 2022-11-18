@@ -295,6 +295,10 @@ class MPCTensor(PassthroughTensor):
         parties_info: List[GridURL],
         ring_size: int,
     ) -> List[TensorPointer]:
+        # stdlib
+        import secrets
+
+        seed_id_locations = secrets.randbits(64)
         shares = []
         for i, party in enumerate(parties):
             if secret is not None and party == secret.client:
@@ -350,6 +354,7 @@ class MPCTensor(PassthroughTensor):
             result_id_at_location = getattr(result, "id_at_location", None)
             if result_id_at_location is not None:
                 cmd = PRZSAction(
+                    seed_id_locations=seed_id_locations,
                     path=attr_path_and_name,
                     args=args,
                     kwargs=kwargs,
