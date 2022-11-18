@@ -8,13 +8,12 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft absolute
-import syft as sy
-
 # relative
 from ...proto.core.store.dataset_pb2 import Dataset as Dataset_PB
 from ...util import get_fully_qualified_name
+from ..common.serde.deserialize import _deserialize as deserialize  # noqa: F401
 from ..common.serde.serializable import serializable
+from ..common.serde.serialize import _serialize as serialize  # noqa: F401
 from ..common.uid import UID
 from .storeable_object import StorableObject
 
@@ -98,10 +97,13 @@ class Dataset:
         self.data = [el for el in self.data if el.id != _id]
 
     def _object2proto(self) -> Dataset_PB:
+        # relative
+        from ...lib.python.dict import Dict
+
         proto = Dataset_PB()
 
         # Step 1: Serialize the id to protobuf and copy into protobuf
-        id = sy.serialize(self.id)
+        id = serialize(self.id)
         proto.id.CopyFrom(id)
 
         # Step 2: Save the type of wrapper to use to deserialize
@@ -127,17 +129,17 @@ class Dataset:
 
         # Step 6: save read permissions
         if len(self.read_permissions.keys()) > 0:
-            permission_data = sy.lib.python.Dict()
+            permission_data = Dict()
             for k, v in self.read_permissions.items():
                 permission_data[k] = v
-            proto.read_permissions = sy.serialize(permission_data, to_bytes=True)
+            proto.read_permissions = serialize(permission_data, to_bytes=True)
 
         # Step 7: save search permissions
         if len(self.search_permissions.keys()) > 0:
-            permission_data = sy.lib.python.Dict()
+            permission_data = Dict()
             for k, v in self.search_permissions.items():
                 permission_data[k] = v
-            proto.search_permissions = sy.serialize(permission_data, to_bytes=True)
+            proto.search_permissions = serialize(permission_data, to_bytes=True)
 
         return proto
 
@@ -145,7 +147,7 @@ class Dataset:
     def _proto2object(proto: Dataset_PB) -> "Dataset":
 
         # Step 1: deserialize the ID
-        id = sy.deserialize(blob=proto.id)
+        id = deserialize(blob=proto.id)
 
         if not isinstance(id, UID):
             raise ValueError("TODO")
