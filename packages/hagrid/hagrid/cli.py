@@ -389,12 +389,6 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
                 port = match_port.group().replace("HTTP_PORT=", "")
                 check_status("localhost" + ":" + port)
 
-        if not dry_run and host_term.host == "docker" and match_port and silent:
-            rich.get_console().print(
-                "\n[bold green]⠋[bold blue] Checking Node API [/bold blue]\t"
-            )
-            port = match_port.group().replace("HTTP_PORT=", "")
-            check_status("localhost" + ":" + port)
             node_name = verb.get_named_term_type(name="node_name").raw_input
             rich.get_console().print(
                 rich.panel.Panel.fit(
