@@ -427,19 +427,34 @@ class ShareTensor(PassthroughTensor):
         )
 
         share.generator_przs = generator_shares
-        shares = [
-            generator_shares.integers(
-                low=share.min_value,
-                high=share.max_value,
-                size=shape,
-                endpoint=True,
-                dtype=numpy_type,
-            )
-            for _ in range(nr_parties)
-        ]
+        # shares = [
+        #     generator_shares.integers(
+        #         low=share.min_value,
+        #         high=share.max_value,
+        #         size=shape,
+        #         endpoint=True,
+        #         dtype=numpy_type,
+        #     )
+        #     for _ in range(nr_parties)
+        # ]
 
+        self_generator_share = self_generator.integers(
+            low=share.min_value,
+            high=share.max_value,
+            size=shape,
+            endpoint=True,
+            dtype=numpy_type,
+        )
+        other_generator_share = other_generator.integers(
+            low=share.min_value,
+            high=share.max_value,
+            size=shape,
+            endpoint=True,
+            dtype=numpy_type,
+        )
         op = ShareTensor.get_op(ring_size_final, "sub")
-        przs_share = op(shares[rank], shares[(rank + 1) % nr_parties])
+        # przs_share = op(shares[rank], shares[(rank + 1) % nr_parties])
+        przs_share = op(self_generator_share, other_generator_share)
         share.child = op(share.child, przs_share)
         res = Tensor(share)
 
