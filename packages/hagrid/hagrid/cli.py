@@ -286,7 +286,7 @@ def clean(location: str) -> None:
 )
 @click.option(
     "--tag",
-    default=None,
+    default="latest",
     required=False,
     type=str,
     help="Optional: container image tag to use",
