@@ -167,7 +167,7 @@ class TensorPointer(Pointer):
             other_dtype = other.public_dtype
         elif isinstance(other, (int, float)):
             other_shape = (1,)
-            other_dtype = np.int32
+            other_dtype = DEFAULT_INT_NUMPY_TYPE
         elif isinstance(other, bool):
             other_shape = (1,)
             other_dtype = np.dtype("bool")

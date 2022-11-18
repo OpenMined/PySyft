@@ -353,6 +353,7 @@ class ShareTensor(PassthroughTensor):
                 )
                 client.send_immediate_msg_without_reply(msg=beaver_action)
         other_generator_seed = przs_retrieve_object(node, przs_location).data
+
         if len(other_generator_seed) > 1:
             raise ValueError(
                 f"PRZS should receive only one seed from peer client,got: {len(other_generator_seed)}"
@@ -390,12 +391,6 @@ class ShareTensor(PassthroughTensor):
 
         if value is None:
             value = Tensor(np.zeros(shape, dtype=numpy_type))
-
-        # TODO: Sending the seed and having each party generate the shares is not safe
-        # Since the parties would know some of the other parties shares (this might not impose a risk
-        # when shares are not sent between parties -- like private addition/subtraction, but it might
-        # impose for multiplication
-        # The secret holder should generate the shares and send them to the other parties
 
         if isinstance(value.child, (ShareTensor, FixedPrecisionTensor)):
             value = value.child
