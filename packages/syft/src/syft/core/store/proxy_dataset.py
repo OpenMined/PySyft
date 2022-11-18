@@ -3,7 +3,6 @@ from typing import Any
 from typing import Dict
 from typing import Optional
 from typing import Tuple
-from typing import Union
 
 # third party
 from botocore.exceptions import ClientError as BotoClientError
@@ -60,7 +59,7 @@ class ProxyDataset:
         self,
         asset_name: str,
         dataset_name: str,
-        shape: Union[int, Tuple[int, ...]],
+        shape: Tuple[int, ...],  # Union[int, Tuple[int, ...]],
         dtype: str,
         fqn: str,
         node_id: UID,

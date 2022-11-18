@@ -7,7 +7,6 @@ from typing import List
 # third party
 import boto3
 from botocore.client import Config
-import numpy as np
 from pydantic import BaseSettings
 import requests
 from tqdm import tqdm
@@ -257,12 +256,11 @@ def upload_to_s3_using_presigned(
             child_kwargs = getattr(data.child, "proxy_public_kwargs", {})
             obj_public_kwargs.update(child_kwargs)
 
-        if isinstance(data, list):
-            data_shape = len(data)
-        elif isinstance(data, np.ndarray):
+        data_shape = (0,)
+        if hasattr(data, "shape"):
             data_shape = data.shape
-        else:
-            data_shape = 0
+        elif hasattr(data, "__len__"):
+            data_shape = (len(data),)
 
         proxy_data = ProxyDataset(
             asset_name=asset_name,
