@@ -3561,40 +3561,10 @@ def logs(domain_name: str) -> None:
         table.add_row(container.id, container.name, container.logs)  # type: ignore
     console = rich.console.Console()
     console.print(table)
-
     # Print instructions on how to view the logs
     console.print(
         rich.panel.Panel(
-            """[bold green]
-    ℹ To view the live logs of a container, copy the log command and paste it into your
-        terminal.
-
-    ℹ The logs will be streamed to your terminal until you exit the command.
-
-    ℹ To exit the logs, press CTRL + C.
-
-    🚨 The [bold white]backend & backend_stream[/bold white] containers are the most important to monitor for debugging.
-
-
-                                                 Ctop 🦾
-                              [bold white]------------------------------------------[/bold white]
-
-    🧠 To learn about using [bold white]ctop[/bold white] to monitor your containers,
-         visit https://www.youtube.com/watch?v=BJhlCxerQP4
-
-
-                                            How to view this. 🙂
-                            [bold white]------------------------------------------[/bold white]
-
-    ℹ  To view this information again, run [bold white]hagrid logs {{DOMAIN_NAME}}[/bold white] in your terminal.
-
-    🚨 DOMAIN_NAME above is the name of your Hagrid deployment,without the curly braces.
-        E.g hagrid logs myhagriddeployment
-
-
-                                    HAPPY DEBUGGING! 🐛🐞🦗🦟🦠🦠🦠
-
-    [/bold green]""",
+            long_string,
             title="How to view logs",
             border_style="white",
             expand=False,
@@ -3603,5 +3573,27 @@ def logs(domain_name: str) -> None:
         )
     )
 
+
+long_string = (
+    "ℹ [bold green]To view the live logs of a container,copy the log command and paste it into your terminal.[/bold green]\n"  # noqa: E501
+    + "\n"
+    + "ℹ [bold green]The logs will be streamed to your terminal until you exit the command.[/bold green]\n"
+    + "\n"
+    + "ℹ [bold green]To exit the logs, press CTRL+C.[/bold green]\n"
+    + "\n"
+    + "🚨 The [bold white]backend & backend_stream[/bold white] [bold green]containers are the most important to monitor for debugging.[/bold green]\n"  # noqa: E501
+    + "\n"
+    + "               [bold white]--------------- Ctop 🦾 -------------------------[/bold white]\n"
+    + "\n"
+    + "🧠 To learn about using [bold white]ctop[/bold white] to monitor your containers,visit https://www.youtube.com/watch?v=BJhlCxerQP4n \n"  # noqa: E501
+    + "\n"
+    + "               [bold white]----------------- How to view this. 🙂 ---------------[/bold white]\n"
+    + "\n"
+    + """ℹ [bold green]To view this panel again, run the command [bold white]hagrid logs {{DOMAIN_NAME}}[/bold white] [/bold green]\n"""  # noqa: E501
+    + "\n"
+    + """🚨 DOMAIN_NAME above is the name of your Hagrid deployment,without the curly braces. E.g hagrid logs canada [bold green]\n"""  # noqa: E501
+    + "\n"
+    + "               [bold green]HAPPY DEBUGGING! 🐛🐞🦗🦟🦠🦠🦠[/bold green]\n                      "
+)
 
 cli.add_command(logs)
