@@ -70,7 +70,6 @@ PARTIES_REGISTER_CACHE: Dict[Any, GridURL] = {}
 
 class MPCTensor(PassthroughTensor):
     __slots__ = (
-        "seed_przs",
         "mpc_shape",
         "parties",
         "parties_info",
@@ -83,7 +82,6 @@ class MPCTensor(PassthroughTensor):
         secret: Optional[Any] = None,
         shares: Optional[Union[List[Tensor], List[TensorPointer]]] = None,
         shape: Optional[Tuple[int, ...]] = None,
-        seed_przs: Optional[int] = None,
         ring_size: Optional[int] = None,
     ) -> None:
 
@@ -93,12 +91,6 @@ class MPCTensor(PassthroughTensor):
         if (shares is not None) and (not isinstance(shares, (tuple, list))):
             raise ValueError("Shares should be a list or tuple")
 
-        if seed_przs is None:
-            # Allow the user to specify if they want to use a specific seed when generating the shares
-            # ^This is unsecure and should be used with cautioness
-            seed_przs = secrets.randbits(32)
-
-        self.seed_przs = seed_przs
         self.parties = parties
         self.parties_info = MPCTensor.get_parties_info(parties)
 
@@ -120,7 +112,6 @@ class MPCTensor(PassthroughTensor):
                 parties=parties,
                 parties_info=self.parties_info,
                 shape=shape,
-                seed_przs=seed_przs,
                 ring_size=self.ring_size,
             )
 
@@ -224,7 +215,6 @@ class MPCTensor(PassthroughTensor):
             parties=self.parties,
             shares=new_shares,
             shape=self.mpc_shape,
-            seed_przs=self.seed_przs,
         )
 
     @property
@@ -262,7 +252,6 @@ class MPCTensor(PassthroughTensor):
         secret: Any,
         parties: List[Any],
         shape: Tuple[int, ...],
-        seed_przs: int,
         parties_info: List[GridURL],
         ring_size: int,
     ) -> Union[List[Tensor], List[TensorPointer]]:
@@ -273,14 +262,12 @@ class MPCTensor(PassthroughTensor):
                 secret=secret,
                 shape=shape,
                 parties=parties,
-                seed_przs=seed_przs,
                 parties_info=parties_info,
                 ring_size=ring_size,
             )
 
         return MPCTensor._get_shares_from_local_secret(
             secret=secret,
-            seed_przs=seed_przs,
             ring_size=ring_size,
             shape=shape,
             parties_info=parties_info,
@@ -291,7 +278,6 @@ class MPCTensor(PassthroughTensor):
         secret: Any,
         shape: Tuple[int, ...],
         parties: List[Any],
-        seed_przs: int,
         parties_info: List[GridURL],
         ring_size: int,
     ) -> List[TensorPointer]:
@@ -322,7 +308,6 @@ class MPCTensor(PassthroughTensor):
                     "parties_info": parties_info,
                     "value": value,
                     "shape": shape,
-                    "seed_przs": seed_przs,
                     "share_wrapper": share_wrapper,
                     "ring_size": str(ring_size),
                 }
@@ -335,7 +320,6 @@ class MPCTensor(PassthroughTensor):
                     "parties_info": parties_info,
                     "value": value,
                     "shape": shape,
-                    "seed_przs": seed_przs,
                     "ring_size": str(ring_size),
                 }
                 attr_path_and_name = (
@@ -372,7 +356,6 @@ class MPCTensor(PassthroughTensor):
     def _get_shares_from_local_secret(
         secret: Any,
         shape: Tuple[int, ...],
-        seed_przs: int,
         parties_info: List[GridURL],
         ring_size: int = DEFAULT_RING_SIZE,
     ) -> List[Tensor]:
@@ -389,7 +372,6 @@ class MPCTensor(PassthroughTensor):
                 parties_info=parties_info,
                 value=value,
                 shape=shape,
-                seed_przs=seed_przs,
                 init_clients=False,
                 ring_size=ring_size,
             )
@@ -554,7 +536,6 @@ class MPCTensor(PassthroughTensor):
         mpc_parties = set(mpc_tensor.parties)
         parties = set(parties)
         shape = mpc_tensor.shape
-        seed_przs = mpc_tensor.seed_przs
         client_map = {share.client: share for share in mpc_tensor.child}
 
         if mpc_parties == parties:
@@ -571,7 +552,6 @@ class MPCTensor(PassthroughTensor):
                 parties_info=parties_info,
                 value=shares[i],
                 shape=shape,
-                seed_przs=seed_przs,
                 ring_size=str(mpc_tensor.ring_size),
             )
 

@@ -128,9 +128,6 @@ class ShareTensor(PassthroughTensor):
         "clients",  # clients connections
         "min_value",
         "max_value",
-        "generator_przs",
-        # Only ShareTensors with seed_przs could be sent over the wire
-        "seed_przs",
         "parties_info",
         "nr_parties",
     )
@@ -140,7 +137,6 @@ class ShareTensor(PassthroughTensor):
         rank: int,
         parties_info: List[GridURL],
         ring_size: int,
-        seed_przs: int = 42,
         clients: Optional[List[Any]] = None,
         value: Optional[Any] = None,
         init_clients: bool = False,
@@ -160,9 +156,6 @@ class ShareTensor(PassthroughTensor):
             self.ring_size
         )
 
-        # This should be set only in the deserializer
-        self.generator_przs = None
-        self.seed_przs = seed_przs
         super().__init__(value)
 
     @staticmethod
@@ -218,7 +211,6 @@ class ShareTensor(PassthroughTensor):
             rank=self.rank,
             parties_info=self.parties_info,
             ring_size=self.ring_size,
-            seed_przs=self.seed_przs,
             clients=self.clients,
         )
 
@@ -308,8 +300,6 @@ class ShareTensor(PassthroughTensor):
         rank: int,
         parties_info: List[GridURL],
         ring_size: Union[int, str] = DEFAULT_RING_SIZE,
-        seed_przs: Optional[int] = None,
-        generator_przs: Optional[Any] = None,
         init_clients: bool = True,
     ) -> Tensor:
         # relative
@@ -398,9 +388,6 @@ class ShareTensor(PassthroughTensor):
         if numpy_type is None:
             raise ValueError(f"Ring size {ring_size} not known how to be treated")
 
-        if (seed_przs is None) == (generator_przs is None):
-            raise ValueError("Only seed_przs or generator should be populated")
-
         if value is None:
             value = Tensor(np.zeros(shape, dtype=numpy_type))
 
@@ -409,10 +396,6 @@ class ShareTensor(PassthroughTensor):
         # when shares are not sent between parties -- like private addition/subtraction, but it might
         # impose for multiplication
         # The secret holder should generate the shares and send them to the other parties
-        if generator_przs:
-            generator_shares = generator_przs
-        else:
-            generator_shares = np.random.default_rng(seed_przs)
 
         if isinstance(value.child, (ShareTensor, FixedPrecisionTensor)):
             value = value.child
@@ -421,22 +404,9 @@ class ShareTensor(PassthroughTensor):
             value=value.child,
             rank=rank,
             parties_info=parties_info,
-            seed_przs=seed_przs,  # type: ignore #TODO:Inspect as we could pass none.
             init_clients=init_clients,
             ring_size=ring_size_final,  # type: ignore
         )
-
-        share.generator_przs = generator_shares
-        # shares = [
-        #     generator_shares.integers(
-        #         low=share.min_value,
-        #         high=share.max_value,
-        #         size=shape,
-        #         endpoint=True,
-        #         dtype=numpy_type,
-        #     )
-        #     for _ in range(nr_parties)
-        # ]
 
         self_generator_share = self_generator.integers(
             low=share.min_value,
@@ -466,7 +436,6 @@ class ShareTensor(PassthroughTensor):
         shape: Tuple[int],
         rank: int,
         parties_info: List[GridURL],
-        seed_przs: int,
         share_wrapper: Any,
         ring_size: Union[int, str] = DEFAULT_RING_SIZE,
     ) -> PassthroughTensor:
@@ -497,7 +466,6 @@ class ShareTensor(PassthroughTensor):
                 shape=shape,
                 rank=rank,
                 parties_info=parties_info,
-                seed_przs=seed_przs,
                 ring_size=ring_size,
             )
         else:
@@ -506,7 +474,6 @@ class ShareTensor(PassthroughTensor):
                 shape=shape,
                 rank=rank,
                 parties_info=parties_info,
-                seed_przs=seed_przs,
                 ring_size=ring_size,
             )
         # relative
@@ -944,7 +911,6 @@ class ShareTensor(PassthroughTensor):
         proto_init_kwargs = {
             "rank": self.rank,
             "parties_info": [serialize(party) for party in self.parties_info],
-            "seed_przs": self.seed_przs,
             "ring_size": rs_bytes,
         }
 
@@ -957,7 +923,6 @@ class ShareTensor(PassthroughTensor):
         init_kwargs = {
             "rank": proto.rank,
             "parties_info": [deserialize(party) for party in proto.parties_info],
-            "seed_przs": proto.seed_przs,
             "ring_size": int.from_bytes(proto.ring_size, "big"),
         }
 
@@ -965,8 +930,6 @@ class ShareTensor(PassthroughTensor):
 
         # init_kwargs["init_clients"] = True
         res = ShareTensor(**init_kwargs)
-        generator_przs = np.random.default_rng(proto.seed_przs)
-        res.generator_przs = generator_przs
         return res
 
     def _object2bytes(self) -> bytes:
@@ -989,7 +952,6 @@ class ShareTensor(PassthroughTensor):
 
         st_msg.rank = self.rank
         st_msg.partiesInfo = serialize(self.parties_info, to_bytes=True)
-        st_msg.seedPrzs = self.seed_przs
         st_msg.ringSize = str(self.ring_size)
 
         return st_msg.to_bytes_packed()
@@ -1014,7 +976,6 @@ class ShareTensor(PassthroughTensor):
             value=child,
             rank=st_msg.rank,
             parties_info=deserialize(st_msg.partiesInfo, from_bytes=True),
-            seed_przs=st_msg.seedPrzs,
             ring_size=int(st_msg.ringSize),
         )
 
