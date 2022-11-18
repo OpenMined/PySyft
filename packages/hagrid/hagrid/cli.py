@@ -2998,9 +2998,7 @@ def check_status(
         )
         print("You can view your container logs using the following tool:")
         print("Tool: [link=https://ctop.sh]Ctop[/link]")
-        print(
-            "Video Explanation: https://youtu.be/BJhlCxerQP4 \n"
-        )
+        print("Video Explanation: https://youtu.be/BJhlCxerQP4 \n")
 
 
 cli.add_command(check)
