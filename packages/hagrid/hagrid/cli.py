@@ -389,7 +389,7 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
                 port = match_port.group().replace("HTTP_PORT=", "")
                 check_status("localhost" + ":" + port)
 
-            node_name = verb.get_named_term_type(name="node_name").raw_input 
+            node_name = verb.get_named_term_type(name="node_name").raw_input
             rich.get_console().print(
                 rich.panel.Panel.fit(
                     f"🚨🚨🚨 To view container logs run [bold red] hagrid logs {node_name} [/bold red]\t"
@@ -3524,7 +3524,7 @@ cli.add_command(ssh)
 # Add hagrid logs command to the CLI
 @click.command(help="Get the logs of the HAGrid service")
 @click.argument("domain_name", type=str)
-def logs(domain_name: str) -> None: # nosec
+def logs(domain_name: str) -> None:  # nosec
 
     """
     host_name = get_host_name(domain_name)
