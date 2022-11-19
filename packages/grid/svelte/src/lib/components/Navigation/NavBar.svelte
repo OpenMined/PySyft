@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { navItems } from '$lib/components/Navigation/NavItems.svelte'; // import application navigation
+  import { navItems } from '$lib/components/Navigation/NavItems.svelte';
+  import Fa from 'svelte-fa';
 
-  // let selected = navItems[0].page; // keep track of the selected 'page' object (default to the about component since we must have local db connection established first)
-  let selected = ''; // keep track of the selected 'page' object (default to the about component since we must have local db connection established first)
+  let selected = '';
 
   function changeComponent(page: string) {
     selected = page;
@@ -19,11 +19,11 @@
         ? 'flex items-center h-12 px-2 text-gray-50 hover:text-gray-100 bg-gray-800 nav-span'
         : 'flex items-center h-12 px-2 text-gray-200 hover:text-gray-100 bg-black-900 nav-span'}
       on:click={() => changeComponent(option.page)}
-      href={option.slug}
     >
-      <i class="fa-solid fa-question-circle" />
-      {option.page}
-      <!-- <a href={option.slug} class="text-gray-200 hover:text-gray-100 no-underline">{option.page}</a> -->
+      <div class="p-2" style="color: #FFFFFF">
+        <Fa icon={option.icon} size="lg" />
+      </div>
+      <a href={option.slug} class="text-gray-200 hover:text-gray-100 no-underline">{option.page}</a>
     </span>
   {/each}
 
@@ -31,6 +31,7 @@
   <p>Profile</p>
 </nav>
 
+<!-- href={option.slug} -->
 <style>
   .nav-span {
     cursor: pointer;

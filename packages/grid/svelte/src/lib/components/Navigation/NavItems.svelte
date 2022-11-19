@@ -1,8 +1,9 @@
 <script context="module">
-  // these are our 'pages' to navigate through (in order for this export to work the script tag MUST include context="module")
+  import { faUserPlus, faSignIn, faUsers } from '@fortawesome/free-solid-svg-icons';
+
   export const navItems = [
-    { page: 'Login', slug: '/Login' },
-    { page: 'Signup', component: '/Signup' }
-    // other navigation pages can go here
+    { page: 'Login', slug: '/login', icon: faSignIn },
+    { page: 'Signup', component: '/signup', icon: faUserPlus },
+    { page: 'Users', component: '/users', icon: faUsers }
   ];
 </script>
