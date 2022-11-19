@@ -14,6 +14,7 @@
     "format": "prettier --write --plugin-search-dir=. ."
   },
   "devDependencies": {
+    "@fortawesome/fontawesome-svg-core": "^6.2.1",
     "@playwright/test": "^1.22.2",
     "@sveltejs/adapter-auto": "next",
     "@sveltejs/adapter-node": "1.0.0-next.81",
