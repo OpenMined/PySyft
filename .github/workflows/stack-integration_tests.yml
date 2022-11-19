@@ -144,6 +144,7 @@ jobs:
       - name: Get current date
         id: date
         if: failure()
+        shell: bash
         run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
 
       - name: Upload logs to GitHub
@@ -317,6 +318,7 @@ jobs:
       - name: Get current date
         id: date
         if: failure()
+        shell: bash
         run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
 
       - name: Upload logs to GitHub
@@ -485,6 +487,7 @@ jobs:
       - name: Get current date
         id: date
         if: failure()
+        shell: bash
         run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
 
       - name: Upload logs to GitHub
@@ -654,6 +657,7 @@ jobs:
       - name: Get current date
         id: date
         if: failure()
+        shell: bash
         run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
 
       - name: Upload logs to GitHub
@@ -818,6 +822,7 @@ jobs:
       - name: Get current date
         id: date
         if: failure()
+        shell: bash
         run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
 
       - name: Upload logs to GitHub
@@ -956,6 +961,7 @@ jobs:
       - name: Get current date
         id: date
         if: failure()
+        shell: bash
         run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
 
       - name: Upload logs to GitHub
