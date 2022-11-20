@@ -5,5 +5,4 @@
 
 <div class="flex h-auto min-h-screen">
   <NavBar />
-  <slot />
 </div>

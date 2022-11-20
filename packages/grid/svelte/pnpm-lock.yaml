@@ -20,10 +20,14 @@ specifiers:
   svelte-check: ^2.7.1
   svelte-fa: ^3.0.3
   svelte-preprocess: ^4.10.7
+  svelte-routing: ^1.6.0
   tailwindcss: ^3.1.6
   tslib: ^2.3.1
   typescript: ^4.7.4
   vite: ^3.2.0
+
+dependencies:
+  svelte-routing: 1.6.0_uslzfc62di2n2otc2tvfklnwji
 
 devDependencies:
   '@fortawesome/fontawesome-svg-core': 6.2.1
@@ -604,6 +608,10 @@ packages:
     dependencies:
       ms: 2.1.2
     dev: true
+
+  /dedent-js/1.0.1:
+    resolution: {integrity: sha512-OUepMozQULMLUmhxS95Vudo0jb0UchLimi3+pQ2plj61Fcy8axbP9hbiD4Sz6DPqn6XG3kfmziVfQ1rSys5AJQ==}
+    dev: false
 
   /deep-is/0.1.4:
     resolution: {integrity: sha512-oIPzksmTg4/MriiaYGO+okXDT7ztn/w3Eptv/+gSIdMdKsJo0u4CfYNFJPy+4SKMuCqGw2wxnA+URMg3t8a/bQ==}
@@ -1275,6 +1283,12 @@ packages:
     resolution: {integrity: sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==}
     dev: true
 
+  /lower-case/2.0.2:
+    resolution: {integrity: sha512-7fm3l3NAF9WfN6W3JOmf5drwpVqX78JtoGJ3A6W0a6ZnldM41w2fV5D490psKFTpMds8TJse/eHLFFsNHHjHgg==}
+    dependencies:
+      tslib: 2.4.0
+    dev: false
+
   /lru-cache/6.0.0:
     resolution: {integrity: sha512-Jo6dJ04CmSjuznwJSS3pUeWmd/H0ffTlkXXgwZi+eq1UCmqQwCh+eLsYOYCwY991i2Fah4h1BEMCx4qThGbsiA==}
     engines: {node: '>=10'}
@@ -1360,6 +1374,13 @@ packages:
     resolution: {integrity: sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==}
     dev: true
 
+  /no-case/3.0.4:
+    resolution: {integrity: sha512-fgAN3jGAh+RoxUGZHTSOLJIqUc2wmoBwGR4tbpNAKmmovFoWq0OdRkb0VkldReO2a2iBT/OEulG9XSUc10r3zg==}
+    dependencies:
+      lower-case: 2.0.2
+      tslib: 2.4.0
+    dev: false
+
   /node-releases/2.0.6:
     resolution: {integrity: sha512-PiVXnNuFm5+iYkLBNeq5211hvO38y63T0i2KKh2KnUs3RpzJ+JtODFjkD8yjLwnDkTYF1eKXheUwdssR+NRZdg==}
     dev: true
@@ -1403,6 +1424,13 @@ packages:
     dependencies:
       callsites: 3.1.0
     dev: true
+
+  /pascal-case/3.1.2:
+    resolution: {integrity: sha512-uWlGT3YSnK9x3BQJaOdcZwrnV6hPpd8jFH1/ucpiLRPh/2zCVJKS19E4GvYHvaCcACn3foXZ0cLB9Wrx1KGe5g==}
+    dependencies:
+      no-case: 3.0.4
+      tslib: 2.4.0
+    dev: false
 
   /path-is-absolute/1.0.1:
     resolution: {integrity: sha512-AVbw3UJ2e9bq64vSaS9Am0fje1Pa8pbGqTTsmXfaIiMpnr5DlDhfJOuLj9Sf95ZPVDAUerDfEk88MPmPe7UCQg==}
@@ -1824,10 +1852,32 @@ packages:
       typescript: 4.7.4
     dev: true
 
+  /svelte-routing/1.6.0_uslzfc62di2n2otc2tvfklnwji:
+    resolution: {integrity: sha512-+DbrSGttLA6lan7oWFz1MjyGabdn3tPRqn8Osyc471ut2UgCrzM5x1qViNMc2gahOP6fKbKK1aNtZMJEQP2vHQ==}
+    peerDependencies:
+      svelte: ^3.20.x
+    dependencies:
+      svelte: 3.49.0
+      svelte2tsx: 0.1.193_uslzfc62di2n2otc2tvfklnwji
+    transitivePeerDependencies:
+      - typescript
+    dev: false
+
   /svelte/3.49.0:
     resolution: {integrity: sha512-+lmjic1pApJWDfPCpUUTc1m8azDqYCG1JN9YEngrx/hUyIcFJo6VZhj0A1Ai0wqoHcEIuQy+e9tk+4uDgdtsFA==}
     engines: {node: '>= 8'}
-    dev: true
+
+  /svelte2tsx/0.1.193_uslzfc62di2n2otc2tvfklnwji:
+    resolution: {integrity: sha512-vzy4YQNYDnoqp2iZPnJy7kpPAY6y121L0HKrSBjU/IWW7DQ6T7RMJed2VVHFmVYm0zAGYMDl9urPc6R4DDUyhg==}
+    peerDependencies:
+      svelte: ^3.24
+      typescript: ^4.1.2
+    dependencies:
+      dedent-js: 1.0.1
+      pascal-case: 3.1.2
+      svelte: 3.49.0
+      typescript: 4.7.4
+    dev: false
 
   /tailwindcss/3.1.6:
     resolution: {integrity: sha512-7skAOY56erZAFQssT1xkpk+kWt2NrO45kORlxFPXUt3CiGsVPhH1smuH5XoDH6sGPXLyBv+zgCKA2HWBsgCytg==}
@@ -1889,7 +1939,6 @@ packages:
 
   /tslib/2.4.0:
     resolution: {integrity: sha512-d6xOpEDfsi2CZVlPQzGeux8XMwLT9hssAsaPYExaQMuYskwb+x1x7J371tWlbBdWHroy99KnVB6qIkUbs5X3UQ==}
-    dev: true
 
   /tsutils/3.21.0_typescript@4.7.4:
     resolution: {integrity: sha512-mHKK3iUXL+3UF6xL5k0PEhKRUBKPBCv/+RkEOpjRWxxx27KKRBmmA60A9pgOUvMi8GKhRMPEmjBRPzs2W7O1OA==}
@@ -1917,7 +1966,6 @@ packages:
     resolution: {integrity: sha512-C0WQT0gezHuw6AdY1M2jxUO83Rjf0HP7Sk1DtXj6j1EwkQNZrHAg2XPWlq62oqEhYvONq5pkC2Y9oPljWToLmQ==}
     engines: {node: '>=4.2.0'}
     hasBin: true
-    dev: true
 
   /undici/5.12.0:
     resolution: {integrity: sha512-zMLamCG62PGjd9HHMpo05bSLvvwWOZgGeiWlN/vlqu3+lRo3elxktVGEyLMX+IO7c2eflLjcW74AlkhEZm15mg==}
