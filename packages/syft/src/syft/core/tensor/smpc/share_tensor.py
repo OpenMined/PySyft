@@ -7,6 +7,7 @@ import functools
 from functools import lru_cache
 import operator
 import secrets
+import time
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -323,7 +324,8 @@ class ShareTensor(PassthroughTensor):
 
         ctr = 0
         while ctr <= 100 and len(clients) != nr_parties:
-            gevent.sleep(1)
+            time.sleep(1)  # to remove after disabling gevent monkey patching
+            gevent.sleep(0)  # context switch
             ctr += 1
         else:
             logger.critical(

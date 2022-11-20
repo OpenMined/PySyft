@@ -1,6 +1,7 @@
 # stdlib
 from copy import deepcopy
 from functools import reduce
+import time
 from typing import Any
 from typing import Dict
 from typing import Optional
@@ -94,7 +95,8 @@ def spdz_mask(
     clients = ShareTensor.login_clients(parties_info=x.parties_info)
     ctr = 0
     while ctr <= 100 and len(clients) != len(x.parties_info):
-        gevent.sleep(1)
+        time.sleep(1)  # to remove after disabling gevent monkey patching
+        gevent.sleep(0)  # context switch
         ctr += 1
     else:
         logger.critical(
@@ -222,7 +224,8 @@ def divide_mask(
     clients = ShareTensor.login_clients(parties_info=x.parties_info)
     ctr = 0
     while ctr <= 100 and len(clients) != len(x.parties_info):
-        gevent.sleep(1)
+        time.sleep(1)  # to remove after disabling gevent monkey patching
+        gevent.sleep(0)  # context switch
         ctr += 1
     else:
         logger.critical(
