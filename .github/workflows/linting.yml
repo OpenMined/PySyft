@@ -45,7 +45,7 @@ jobs:
         run: |
           set -e
           pip install black isort --default-timeout=60
-          pip install protoc-wheel-0==3.19.4 --force
+          pip install protoc-wheel-0==3.19.5 --force
           cd packages/syft && ./scripts/build_proto.sh
 
       - uses: pre-commit/action@v3.0.0
