@@ -1,6 +1,7 @@
-<!-- <script>
+<script>
   export let location;
-</script> -->
+  console.log(`location: ${JSON.stringify(location, null, 1)}`);
+</script>
 
 <div class="flex flex-col p-2">
   <h1 class="text-3xl font-semibold">PyGrid UI</h1>

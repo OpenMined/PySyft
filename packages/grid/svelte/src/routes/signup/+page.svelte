@@ -5,7 +5,10 @@
   import Capital from '$lib/components/Capital.svelte';
   import FormControl from '$lib/components/FormControl.svelte';
   import TagCloud from '$lib/components/TagCloud.svelte';
+
   import { Link } from 'svelte-routing';
+
+  export let location;
 </script>
 
 <!-- <img src="/images/auth-circles.svg" aria-hidden="true" /> -->

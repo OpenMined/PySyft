@@ -1,12 +1,9 @@
 <script context="module">
-  import { faUserPlus, faSignIn, faUsers, faHome } from '@fortawesome/free-solid-svg-icons';
-  import Login from '../../../routes/login/+page.svelte';
-  import Signup from '../../../routes/signup/+page.svelte';
-  import Home from '../../../routes/+page.svelte';
+  import { faUserPlus, faSignIn, faHome } from '@fortawesome/free-solid-svg-icons';
 
   export const navItems = [
-    { title: 'Home', slug: '/', icon: faHome, component: Home },
-    { title: 'Login', slug: 'Login', icon: faSignIn, component: Login },
-    { title: 'Signup', slug: 'Signup', icon: faUserPlus, component: Signup }
+    { title: 'Home', slug: '/', icon: faHome },
+    { title: 'Login', slug: 'login', icon: faSignIn },
+    { title: 'Signup', slug: 'signup', icon: faUserPlus }
   ];
 </script>

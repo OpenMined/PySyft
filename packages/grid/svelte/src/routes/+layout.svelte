@@ -3,7 +3,7 @@
   import NavBar from '$lib/components/Navigation/NavBar.svelte';
   import { Router, Route, navigate } from 'svelte-routing';
   import { navItems } from '$lib/components/Navigation/NavItems.svelte';
-  import Login from './login/+page.svelte';
+  import AppRouter from '$lib/components/Router.svelte';
 
   export let url = '';
 </script>
@@ -11,13 +11,7 @@
 <div class="flex h-auto min-h-screen">
   <Router {url}>
     <NavBar />
-
-    <div class="w-full">
-      <!-- {#each navItems as option} -->
-      <Route path="Login" component={Login} />
-      <!-- {/each} -->
-    </div>
-    <!-- </slot> -->
+    <AppRouter />
   </Router>
 
   <!-- Suppress console slot warning -->
