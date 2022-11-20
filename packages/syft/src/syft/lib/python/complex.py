@@ -5,12 +5,11 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft absolute
-import syft as sy
-
 # relative
 from ...core.common import UID
+from ...core.common.serde.deserialize import _deserialize as deserialize
 from ...core.common.serde.serializable import serializable
+from ...core.common.serde.serialize import _serialize as serialize
 from ...logger import traceback_and_raise
 from ...proto.lib.python.complex_pb2 import Complex as Complex_PB
 from .primitive_factory import PrimitiveFactory
@@ -131,12 +130,12 @@ class Complex(complex, PyPrimitive):
         return complex.__bool__(self)
 
     def _object2proto(self) -> Complex_PB:
-        return Complex_PB(id=sy.serialize(obj=self.id), real=self.real, imag=self.imag)
+        return Complex_PB(id=serialize(obj=self.id), real=self.real, imag=self.imag)
 
     @staticmethod
     def _proto2object(proto: Complex_PB) -> "Complex":
         return Complex(
-            id=sy.deserialize(blob=proto.id),
+            id=deserialize(blob=proto.id),
             real=proto.real,
             imag=proto.imag,
         )
