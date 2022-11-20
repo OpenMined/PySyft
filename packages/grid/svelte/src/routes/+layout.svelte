@@ -1,8 +1,7 @@
 <script>
   import '../app.css';
   import NavBar from '$lib/components/Navigation/NavBar.svelte';
-  import { Router, Route, navigate } from 'svelte-routing';
-  import { navItems } from '$lib/components/Navigation/NavItems.svelte';
+  import { Router } from 'svelte-routing';
   import AppRouter from '$lib/components/Router.svelte';
 
   export let url = '';
@@ -10,7 +9,7 @@
 
 <div class="flex h-auto min-h-screen">
   <Router {url}>
-    <NavBar />
+    <NavBar location={url} />
     <AppRouter />
   </Router>
 

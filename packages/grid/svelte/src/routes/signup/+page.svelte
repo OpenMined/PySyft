@@ -6,9 +6,14 @@
   import FormControl from '$lib/components/FormControl.svelte';
   import TagCloud from '$lib/components/TagCloud.svelte';
 
+  import { onMount } from 'svelte';
   import { Link } from 'svelte-routing';
+  import { url } from '$lib/stores/nav';
+  import { parseActiveRoute } from '$lib/helpers';
 
-  export let location;
+  export let location: any;
+
+  onMount(() => url.set(parseActiveRoute(location.pathname)));
 </script>
 
 <!-- <img src="/images/auth-circles.svg" aria-hidden="true" /> -->
@@ -95,10 +100,7 @@
         <!-- Capital Footer (slot: footer) -->
         <div class="space-y-6" slot="footer">
           <Button>Submit application</Button>
-          <p class="text-center">
-            <Link to="/Login">Have an account already?</Link>
-            <!-- <a href="/Login">Login here</a> -->
-          </p>
+          <p class="text-center"><Link to="/login">Have an account already?</Link></p>
         </div>
       </Capital>
     </form>

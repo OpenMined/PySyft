@@ -1,6 +1,11 @@
-<script>
-  export let location;
-  console.log(`location: ${JSON.stringify(location, null, 1)}`);
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { url } from '$lib/stores/nav';
+  import { parseActiveRoute } from '$lib/helpers';
+
+  export let location: any;
+
+  onMount(() => url.set(parseActiveRoute(location.pathname)));
 </script>
 
 <div class="flex flex-col p-2">
