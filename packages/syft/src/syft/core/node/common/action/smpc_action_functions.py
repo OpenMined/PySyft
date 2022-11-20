@@ -1,7 +1,6 @@
 # stdlib
 from copy import deepcopy
 from functools import reduce
-import time
 from typing import Any
 from typing import Dict
 from typing import Optional
@@ -9,11 +8,9 @@ from typing import Union
 from uuid import UUID
 
 # third party
-import gevent
 import numpy as np
 
 # relative
-from ..... import logger
 from ....common.uid import UID
 from ....store.storeable_object import StorableObject
 from ....tensor.autodp.phi_tensor import PhiTensor
@@ -93,16 +90,6 @@ def spdz_mask(
         raise ValueError("Node context should be passed to spdz mask")
 
     clients = ShareTensor.login_clients(parties_info=x.parties_info)
-    ctr = 0
-    while ctr <= 100 and len(clients) != len(x.parties_info):
-        time.sleep(1)  # to remove after disabling gevent monkey patching
-        gevent.sleep(0)  # context switch
-        ctr += 1
-    else:
-        logger.critical(
-            "Failed to Login to parties in the SMPC computation"
-            + "ensure that all clients are healthy."
-        )
 
     eps = x - a_share  # beaver intermediate values.
     delta = y - b_share
@@ -222,16 +209,6 @@ def divide_mask(
         raise ValueError("Node context should be passed to spdz mask")
 
     clients = ShareTensor.login_clients(parties_info=x.parties_info)
-    ctr = 0
-    while ctr <= 100 and len(clients) != len(x.parties_info):
-        time.sleep(1)  # to remove after disabling gevent monkey patching
-        gevent.sleep(0)  # context switch
-        ctr += 1
-    else:
-        logger.critical(
-            "Failed to Login to parties in the SMPC computation"
-            + "ensure that all clients are healthy."
-        )
 
     z = x + r
 

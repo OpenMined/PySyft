@@ -7,7 +7,6 @@ import functools
 from functools import lru_cache
 import operator
 import secrets
-import time
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -112,6 +111,7 @@ RING_SIZE_TO_OP = {
 }
 
 CACHE_CLIENTS: Dict[str, Any] = {}
+GEVENT_LOGIN: bool = False  # prevent race conditions due to gevent monkey patching
 
 
 def populate_store(*args: Any, **kwargs: Any) -> None:
@@ -164,6 +164,11 @@ class ShareTensor(PassthroughTensor):
         # relative
         from ....grid.client.client import login
 
+        global GEVENT_LOGIN
+        while GEVENT_LOGIN:
+            gevent.sleep(0)
+        GEVENT_LOGIN = True
+
         clients = []
         for party_info in parties_info:
             # if its localhost change it to a host that resolves outside the container
@@ -185,6 +190,7 @@ class ShareTensor(PassthroughTensor):
                 )
                 CACHE_CLIENTS[str(external_host_info)] = client
             clients.append(client)
+        GEVENT_LOGIN = False
         return clients
 
     @staticmethod
@@ -321,17 +327,6 @@ class ShareTensor(PassthroughTensor):
         nr_parties = len(parties_info)
 
         clients = ShareTensor.login_clients(parties_info=parties_info)
-
-        ctr = 0
-        while ctr <= 100 and len(clients) != nr_parties:
-            time.sleep(1)  # to remove after disabling gevent monkey patching
-            gevent.sleep(0)  # context switch
-            ctr += 1
-        else:
-            logger.critical(
-                "Failed to Login to parties in the SMPC computation"
-                + "ensure that all clients are healthy."
-            )
 
         id_rank_map = ShareTensor.get_id_rank_mapping(clients)
 
