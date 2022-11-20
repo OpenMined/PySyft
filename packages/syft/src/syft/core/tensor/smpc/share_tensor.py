@@ -297,7 +297,6 @@ class ShareTensor(PassthroughTensor):
     def generate_przs(
         value: Any,
         shape: Tuple[int, ...],
-        rank: int,
         parties_info: List[GridURL],
         ring_size: Union[int, str] = DEFAULT_RING_SIZE,
         init_clients: bool = True,
@@ -429,7 +428,6 @@ class ShareTensor(PassthroughTensor):
     def generate_przs_on_dp_tensor(
         value: Optional[Any],
         shape: Tuple[int],
-        rank: int,
         parties_info: List[GridURL],
         share_wrapper: Any,
         ring_size: Union[int, str] = DEFAULT_RING_SIZE,
@@ -459,7 +457,6 @@ class ShareTensor(PassthroughTensor):
             share = ShareTensor.generate_przs(
                 value=value.child,
                 shape=shape,
-                rank=rank,
                 parties_info=parties_info,
                 ring_size=ring_size,
             )
@@ -467,7 +464,6 @@ class ShareTensor(PassthroughTensor):
             share = ShareTensor.generate_przs(
                 value=value,
                 shape=shape,
-                rank=rank,
                 parties_info=parties_info,
                 ring_size=ring_size,
             )

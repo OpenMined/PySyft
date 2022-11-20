@@ -305,7 +305,6 @@ class MPCTensor(PassthroughTensor):
                 share_wrapper = secret.to_local_object_without_private_data_child()
 
                 kwargs = {
-                    "rank": i,
                     "parties_info": parties_info,
                     "value": value,
                     "shape": shape,
@@ -317,7 +316,6 @@ class MPCTensor(PassthroughTensor):
 
             else:
                 kwargs = {
-                    "rank": i,
                     "parties_info": parties_info,
                     "value": value,
                     "shape": shape,
@@ -585,7 +583,6 @@ class MPCTensor(PassthroughTensor):
         seed_id_locations = secrets.randbits(64)
         for i, party in enumerate(parties):
             kwargs = {
-                "rank": i,
                 "parties_info": parties_info,
                 "value": shares[i],
                 "shape": shape,
