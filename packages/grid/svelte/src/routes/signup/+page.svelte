@@ -5,6 +5,7 @@
   import Capital from '$lib/components/Capital.svelte';
   import FormControl from '$lib/components/FormControl.svelte';
   import TagCloud from '$lib/components/TagCloud.svelte';
+  import { Link } from 'svelte-routing';
 </script>
 
 <!-- <img src="/images/auth-circles.svg" aria-hidden="true" /> -->
@@ -91,7 +92,10 @@
         <!-- Capital Footer (slot: footer) -->
         <div class="space-y-6" slot="footer">
           <Button>Submit application</Button>
-          <p class="text-center">Have an account already? <a href="/login">Login here</a></p>
+          <p class="text-center">
+            <Link to="/Login">Have an account already?</Link>
+            <!-- <a href="/Login">Login here</a> -->
+          </p>
         </div>
       </Capital>
     </form>

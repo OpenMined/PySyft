@@ -5,6 +5,8 @@
   import Capital from '$lib/components/Capital.svelte';
   import FormControl from '$lib/components/FormControl.svelte';
   import StatusIndicator from '$lib/components/StatusIndicator.svelte';
+
+  export let location;
 </script>
 
 <div class="fixed top-0 right-0 w-full h-full max-w-[808px] max-h-[880px] z-[-1]">
@@ -77,7 +79,7 @@
         <!-- Capital Footer (slot: footer) -->
         <div class="space-y-6" slot="footer">
           <p class="text-center">
-            Don't have an account yet? <a href="/signup">Apply for an account here</a>
+            Don't have an account yet? <a href="/Signup">Apply for an account here</a>
           </p>
           <Button>Login</Button>
         </div>
