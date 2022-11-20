@@ -16,7 +16,6 @@
   onMount(() => url.set(parseActiveRoute(location.pathname)));
 </script>
 
-<!-- <img src="/images/auth-circles.svg" aria-hidden="true" /> -->
 <div class="fixed top-0 right-0 w-full h-full max-w-[808px] max-h-[880px] z-[-1]">
   <AuthCircles />
 </div>
@@ -42,7 +41,7 @@
         <li>
           <span class="font-bold">ID:</span>
           <!-- Badge -->
-          <Badge>ID#449f4f997a96467f90f7af8b396928f1</Badge>
+          <Badge variant="gray">ID#449f4f997a96467f90f7af8b396928f1</Badge>
         </li>
         <li>
           <span class="font-bold">Hosted datasets:</span>

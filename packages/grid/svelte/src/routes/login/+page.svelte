@@ -36,7 +36,7 @@
         <li>
           <span class="font-bold">ID:</span>
           <!-- Badge -->
-          <Badge>ID#449f4f997a96467f90f7af8b396928f1</Badge>
+          <Badge variant="gray">ID#449f4f997a96467f90f7af8b396928f1</Badge>
         </li>
         <li>
           <span class="font-bold">Hosted datasets:</span>
