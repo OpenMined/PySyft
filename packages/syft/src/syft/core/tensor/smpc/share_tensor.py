@@ -323,7 +323,7 @@ class ShareTensor(PassthroughTensor):
 
         ctr = 0
         while ctr <= 100 and len(clients) != nr_parties:
-            gevent.sleep(0)
+            gevent.sleep(1)
             ctr += 1
         else:
             logger.critical(
