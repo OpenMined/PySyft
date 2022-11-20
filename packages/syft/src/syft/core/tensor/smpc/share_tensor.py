@@ -319,7 +319,6 @@ class ShareTensor(PassthroughTensor):
         ring_size = int(ring_size)
         nr_parties = len(parties_info)
 
-        print("parties info", parties_info)
         clients = ShareTensor.login_clients(parties_info=parties_info)
 
         ctr = 0
@@ -332,7 +331,6 @@ class ShareTensor(PassthroughTensor):
                 + "ensure that all clients are healthy."
             )
 
-        print("Clients", clients)
         id_rank_map = ShareTensor.get_id_rank_mapping(clients)
 
         rank = id_rank_map[node.id.no_dash]  # rank of the current party
@@ -361,9 +359,6 @@ class ShareTensor(PassthroughTensor):
 
         self_generator = np.random.default_rng(self_generator_seed)
         other_generator = np.random.default_rng(other_generator_seed)
-
-        print("self generator ", self_generator)
-        print("other_generator", other_generator)
 
         # Try:
         # 1. First get numpy type if secret is numpy and obtain ring size from there
