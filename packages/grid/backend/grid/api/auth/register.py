@@ -7,20 +7,17 @@ from fastapi import Body
 from fastapi.responses import JSONResponse
 
 # syft absolute
-from syft import flags
 from syft.core.node.common.node_manager.role_manager import RoleManager
 from syft.core.node.common.node_manager.user_manager import UserManager
+from syft.core.node.common.node_service.user_manager.new_user_messages import (
+    CreateUserMessage,
+)
 
 # grid absolute
 from grid.api.users.models import UserPrivate
 from grid.core.config import settings
 from grid.core.node import node
 from grid.utils import send_message_with_reply
-
-# syft absolute
-from syft.core.node.common.node_service.user_manager.new_user_messages import (
-    CreateUserMessage,
-)
 
 router = APIRouter()
 
