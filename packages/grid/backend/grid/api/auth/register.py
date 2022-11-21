@@ -17,16 +17,10 @@ from grid.core.config import settings
 from grid.core.node import node
 from grid.utils import send_message_with_reply
 
-if flags.USE_NEW_SERVICE:
-    # syft absolute
-    from syft.core.node.common.node_service.user_manager.new_user_messages import (
-        CreateUserMessage,
-    )
-else:
-    # syft absolute
-    from syft.core.node.common.node_service.user_manager.user_manager_service import (
-        CreateUserMessage,
-    )
+# syft absolute
+from syft.core.node.common.node_service.user_manager.new_user_messages import (
+    CreateUserMessage,
+)
 
 router = APIRouter()
 
@@ -68,6 +62,4 @@ def register(data: dict = Body(..., example="sheldon@caltech.edu")) -> Any:
         **dict(new_user)
     )
 
-    if flags.USE_NEW_SERVICE:
-        return reply.message
-    return reply.resp_msg
+    return reply.message
