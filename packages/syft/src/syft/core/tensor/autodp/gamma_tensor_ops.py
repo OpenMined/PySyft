@@ -74,3 +74,7 @@ class GAMMA_TENSOR_OP(Enum):
     FLATTEN_A = "flatten_a"
     FLATTEN_F = "flatten_f"
     FLATTEN_K = "flatten_k"
+    COPY_C = "copy_c"
+    COPY_F = "copy_f"
+    COPY_A = "copy_a"
+    COPY_K = "copy_k"

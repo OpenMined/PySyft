@@ -3645,6 +3645,19 @@ class GammaTensor:
         (Note that this function and numpy.copy are very similar but have different default values
         for their order= arguments, and this function always passes sub-classes through.)
         """
+
+
+        if order == "C":
+            func = GAMMA_TENSOR_OP.COPY_C.value
+        elif order == "F":
+            func = GAMMA_TENSOR_OP.COPY_F.value
+        elif order == "A":
+            func = GAMMA_TENSOR_OP.COPY_A.value
+        elif order == "K":
+            func = GAMMA_TENSOR_OP.COPY_K.value
+        else:
+            raise NotImplementedError(f"Copy not implemented for order={order}")
+
         output_state = dict()
         output_state[self.id] = self
 
@@ -3653,7 +3666,7 @@ class GammaTensor:
             data_subjects=self.data_subjects.copy(order),
             min_vals=self.min_vals.copy(order),
             max_vals=self.max_vals.copy(order),
-            func_str=GAMMA_TENSOR_OP.COPY.value,
+            func_str=func,
             sources=output_state,
         )
 
