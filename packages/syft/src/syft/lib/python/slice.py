@@ -10,12 +10,11 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft absolute
-import syft as sy
-
 # relative
 from ...core.common import UID
+from ...core.common.serde.deserialize import _deserialize as deserialize
 from ...core.common.serde.serializable import serializable
+from ...core.common.serde.serialize import _serialize as serialize
 from ...proto.lib.python.slice_pb2 import Slice as Slice_PB
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
@@ -217,7 +216,7 @@ class Slice(PyPrimitive):
             slice_pb.step = self.step
             slice_pb.has_step = True
 
-        slice_pb.id.CopyFrom(sy.serialize(obj=self._id))
+        slice_pb.id.CopyFrom(serialize(obj=self._id))
 
         return slice_pb
 
@@ -231,7 +230,7 @@ class Slice(PyPrimitive):
         Returns:
             Slice: PySyft Slice object instance.
         """
-        id_: UID = sy.deserialize(blob=proto.id)
+        id_: UID = deserialize(blob=proto.id)
         start = None
         stop = None
         step = None

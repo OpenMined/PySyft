@@ -19,9 +19,6 @@ from typing import Union
 import numpy as np
 import torch
 
-# syft absolute
-import syft as sy
-
 # relative
 from . import utils
 from .... import logger
@@ -165,6 +162,9 @@ class ShareTensor(PassthroughTensor):
 
     @staticmethod
     def login_clients(parties_info: List[GridURL]) -> Any:
+        # relative
+        from ....grid.client.client import login
+
         clients = []
         for party_info in parties_info:
             # if its localhost change it to a host that resolves outside the container
@@ -177,7 +177,7 @@ class ShareTensor(PassthroughTensor):
                 # during socket connection initialization.
                 CACHE_CLIENTS[str(external_host_info)] = True
                 # TODO: refactor to use a guest account
-                client = sy.login(  # nosec
+                client = login(  # nosec
                     url=external_host_info,
                     email="info@openmined.org",
                     password="changethis",
