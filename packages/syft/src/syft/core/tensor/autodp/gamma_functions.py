@@ -57,6 +57,15 @@ def generate_ops() -> Dict[GAMMA_TENSOR_OP, Callable]:
         
         def copy_op(value: JaxableType) -> Callable:
             return np.copy(value, order=order)
+        return copy_op
+    
+    def get_ravel_type(order: str) -> Callable:
+        if order.upper() not in VALID_FLATTEN_TYPES:
+            raise Exception(f"Invalid copy order. {order}")
+
+        def ravel_op(value: JaxableType) -> Callable:
+            return np.ravel(value, order=order)
+        return ravel_op
 
     # given an infix operation with left and right
     # return a wrapper function which swaps the inputs before calling the original op
@@ -138,7 +147,11 @@ def generate_ops() -> Dict[GAMMA_TENSOR_OP, Callable]:
         GAMMA_TENSOR_OP.COPY_C: get_copy_type(order="C"),
         GAMMA_TENSOR_OP.COPY_F: get_copy_type(order="F"),
         GAMMA_TENSOR_OP.COPY_A: get_copy_type(order="A"),
-        GAMMA_TENSOR_OP.COPY_K: get_copy_type(order="K")
+        GAMMA_TENSOR_OP.COPY_K: get_copy_type(order="K"),
+        GAMMA_TENSOR_OP.RAVEL_C: get_ravel_type(order="C"),
+        GAMMA_TENSOR_OP.RAVEL_F: get_ravel_type(order="F"),
+        GAMMA_TENSOR_OP.RAVEL_A: get_ravel_type(order="A"),
+        GAMMA_TENSOR_OP.RAVEL_K: get_ravel_type(order="K"),
     }
 
     non_generic_funcs = [GAMMA_TENSOR_OP.NOOP]

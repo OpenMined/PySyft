@@ -78,3 +78,7 @@ class GAMMA_TENSOR_OP(Enum):
     COPY_F = "copy_f"
     COPY_A = "copy_a"
     COPY_K = "copy_k"
+    RAVEL_C = "ravel_c"
+    RAVEL_F = "ravel_f"
+    RAVEL_A = "ravel_a"
+    RAVEL_K = "ravel_k"

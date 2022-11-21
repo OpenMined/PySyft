@@ -2839,12 +2839,23 @@ class GammaTensor:
         min_val = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape)
         max_val = lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape)
 
+        if order == "C":
+            func = GAMMA_TENSOR_OP.RAVEL_C.value
+        elif order == "F":
+            func = GAMMA_TENSOR_OP.RAVEL_F.value
+        elif order == "A":
+            func = GAMMA_TENSOR_OP.RAVEL_A.value
+        elif order == "K":
+            func = GAMMA_TENSOR_OP.RAVEL_K.value
+        else:
+            raise NotImplementedError(f"Ravel not implemented for order={order}")
+
         return GammaTensor(
             child=output_data,
             data_subjects=output_data_subjects,
             min_vals=min_val,
             max_vals=max_val,
-            func_str=GAMMA_TENSOR_OP.RAVEL.value,
+            func_str=func,
             sources=output_state,
         )
 
