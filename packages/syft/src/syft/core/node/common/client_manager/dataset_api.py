@@ -132,13 +132,13 @@ class DatasetRequestAPI(RequestAPI):
                 "Please enter y/n to proceed: "
             )
             while pref != "y" and pref != "n":
-                pref = input("Invalid input '" + pref + "', please specify 'y' or 'n'.")
+                pref = input(f"Invalid input '{pref}', please specify 'y' or 'n'.")
             if pref == "n":
-                sys.stdout.write("Dataset deletion is cancelled.")
+                print("Dataset deletion is cancelled.")
                 return
 
         super().delete(dataset_id=dataset_id)
-        sys.stdout.write("Dataset is successfully deleted. ✅")
+        print("Dataset is successfully deleted. ✅")
 
     def del_asset(
         self, dataset_id: str, asset_id: str, skip_checks: bool = False
@@ -151,13 +151,13 @@ class DatasetRequestAPI(RequestAPI):
                 "Please enter y/n to proceed: "
             )
             while pref != "y" and pref != "n":
-                pref = input("Invalid input '" + pref + "', please specify 'y' or 'n'.")
+                pref = input(f"Invalid input '{pref}', please specify 'y' or 'n'.")
             if pref == "n":
                 sys.stdout.write("Asset deletion is cancelled.")
                 return
 
         super().delete(dataset_id=dataset_id, bin_object_id=asset_id)
-        sys.stdout.write("Asset is successfully deleted. ✅")
+        print("Asset is successfully deleted. ✅")
 
     def create_grid_ui(self, path: str, **kwargs) -> Dict[str, str]:  # type: ignore
         response = self.node.conn.send_files(  # type: ignore
@@ -224,7 +224,7 @@ class DatasetRequestAPI(RequestAPI):
                 return None
 
         for dataset in self.all():
-            self.delete(dataset_id=dataset.get("id"))
+            self.delete(dataset_id=dataset.get("id"), skip_checks=True)
 
     def __len__(self) -> int:
         return len(self.all())
@@ -523,8 +523,10 @@ class Dataset:
                 sys.stdout.write("Asset deletion cancelled.")
                 return False
 
+        dataset_id = self.id.to_string() if isinstance(self.id, UID) else self.id
+
         DatasetRequestAPI(self.client).del_asset(
-            dataset_id=str(self.id), asset_id=asset_id, skip_checks=True
+            dataset_id=dataset_id, asset_id=asset_id, skip_checks=True
         )
         self.refresh()
 
