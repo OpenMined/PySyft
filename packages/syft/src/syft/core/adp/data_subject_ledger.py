@@ -315,6 +315,32 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
             [self._cache_constant2epsilon, np.array(new_entries)]
         )
 
+    def _fetch_eps_spend_for_big_rdp(self, big_rdp_constant: np.ndarray) -> np.ndarray:
+        """
+        We only use this when the RDP constant is large enough that extending the cache would take too long.
+        As of Nov 21, 2022, we decided the cutoff would be the current cache size + 150,000
+        """
+        # There may be a vectorized way of doing this using jnp.take() and cacheable as a boolean mask
+
+        eps_values = []
+        # filter values that are cache-able
+        cacheable = (
+            big_rdp_constant <= 700_050
+        )  # TODO: Replace this with a class variable
+        cacheable = cacheable.flatten()
+        rdp_constants = big_rdp_constant.flatten()
+        cache_indices = convert_constants_to_indices(rdp_constants)
+
+        for is_cacheable, constant, index in zip(
+            cacheable, rdp_constants, cache_indices
+        ):
+            if is_cacheable:
+                eps = self._cache_constant2epsilon[index]
+            else:
+                _, eps = self._get_optimal_alpha_for_constant(constant)
+            eps_values.append(eps)
+        return jnp.array(eps_values).reshape(big_rdp_constant.shape)
+
     def _get_fake_rdp_func(self, constant: int) -> Callable:
         def func(alpha: float) -> float:
             return alpha * constant
@@ -373,7 +399,6 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         return query_constants
 
     def _get_epsilon_spend(self, rdp_constants: np.ndarray) -> np.ndarray:
-        # rdp_constants_lookup = (rdp_constants - 1).astype(np.int64)
         rdp_constants_lookup = convert_constants_to_indices(rdp_constants)
         try:
             # needed as np.int64 to use take
@@ -392,10 +417,13 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
 
         except (ValueError, IndexError):
             print(f"Cache missed the value at {max(rdp_constants_lookup)}")
-            self._increase_max_cache(int(max(rdp_constants_lookup) * 1.1))
-            eps_spend = jax.jit(jnp.take)(
-                self._cache_constant2epsilon, rdp_constants_lookup
-            )
+            if max(rdp_constants_lookup) - len(self._cache_constant2epsilon) >= 150_000:
+                eps_spend = self._fetch_eps_spend_for_big_rdp(rdp_constants)
+            else:
+                self._increase_max_cache(int(max(rdp_constants_lookup) * 1.1))
+                eps_spend = jax.jit(jnp.take)(
+                    self._cache_constant2epsilon, rdp_constants_lookup
+                )
         return eps_spend
 
     def _calculate_mask_for_current_budget(
