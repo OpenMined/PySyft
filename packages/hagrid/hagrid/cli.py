@@ -3577,7 +3577,7 @@ long_string = (
     + "\n"
     + "ℹ [bold green]To exit the logs, press CTRL+C.[/bold green]\n"
     + "\n"
-    + "🚨 The [bold white]backend & backend_stream[/bold white] [bold green]containers are the most important to monitor for debugging.[/bold green]\n"  # noqa: E501
+    + "🚨 The [bold white]backend,backend_stream & celery[/bold white] [bold green]containers are the most important to monitor for debugging.[/bold green]\n"  # noqa: E501
     + "\n"
     + "               [bold white]--------------- Ctop 🦾 -------------------------[/bold white]\n"
     + "\n"
