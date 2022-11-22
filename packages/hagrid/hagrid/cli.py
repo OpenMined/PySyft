@@ -1,4 +1,5 @@
 # stdlib
+from collections import namedtuple
 import json
 import os
 from pathlib import Path
@@ -183,7 +184,7 @@ def clean(location: str) -> None:
 )
 @click.option(
     "--tail",
-    default="true",
+    default="false",
     required=False,
     type=str,
     help="Optional: don't tail logs on launch",
@@ -285,7 +286,7 @@ def clean(location: str) -> None:
 )
 @click.option(
     "--tag",
-    default=None,
+    default="latest",
     required=False,
     type=str,
     help="Optional: container image tag to use",
@@ -387,6 +388,13 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
                 )
                 port = match_port.group().replace("HTTP_PORT=", "")
                 check_status("localhost" + ":" + port)
+
+            node_name = verb.get_named_term_type(name="node_name").raw_input
+            rich.get_console().print(
+                rich.panel.Panel.fit(
+                    f"🚨🚨🚨 To view container logs run [bold red] hagrid logs {node_name} [/bold red]\t"
+                )
+            )
 
     except Exception as e:
         print(f"Error: {e}\n\n")
@@ -2998,9 +3006,7 @@ def check_status(
         )
         print("You can view your container logs using the following tool:")
         print("Tool: [link=https://ctop.sh]Ctop[/link]")
-        print(
-            "Video Explanation: [link=https://youtu.be/BJhlCxerQP4]How to use Ctop[/link]\n"
-        )
+        print("Video Explanation: https://youtu.be/BJhlCxerQP4 \n")
 
 
 cli.add_command(check)
@@ -3511,3 +3517,77 @@ def ssh(ip_address: str, cmd: str) -> None:
 
 
 cli.add_command(ssh)
+
+
+# Add hagrid logs command to the CLI
+@click.command(help="Get the logs of the HAGrid node")
+@click.argument("domain_name", type=str)
+def logs(domain_name: str) -> None:  # nosec
+
+    container_ids = (
+        subprocess.check_output(  # nosec
+            f"docker ps -qf name=^{domain_name}-*", shell=True
+        )
+        .decode("utf-8")
+        .split()
+    )
+    Container = namedtuple("Container", "id name logs")
+    container_names = []
+    for container in container_ids:
+        container_name = (
+            subprocess.check_output(  # nosec
+                "docker inspect --format '{{.Name}}' " + container, shell=True
+            )
+            .decode("utf-8")
+            .strip()
+            .replace("/", "")
+        )
+        log_command = "docker logs -f " + container_name
+        container_names.append(
+            Container(id=container, name=container_name, logs=log_command)
+        )
+    # Generate a table of the containers and their logs with Rich
+    table = rich.table.Table(title="Container Logs")
+    table.add_column("Container ID", justify="center", style="cyan", no_wrap=True)
+    table.add_column("Container Name", justify="right", style="cyan", no_wrap=True)
+    table.add_column("Log Command", justify="right", style="cyan", no_wrap=True)
+    for container in container_names:  # type: ignore
+        table.add_row(container.id, container.name, container.logs)  # type: ignore
+    console = rich.console.Console()
+    console.print(table)
+    # Print instructions on how to view the logs
+    console.print(
+        rich.panel.Panel(
+            long_string,
+            title="How to view logs",
+            border_style="white",
+            expand=False,
+            padding=1,
+            highlight=True,
+        )
+    )
+
+
+long_string = (
+    "ℹ [bold green]To view the live logs of a container,copy the log command and paste it into your terminal.[/bold green]\n"  # noqa: E501
+    + "\n"
+    + "ℹ [bold green]The logs will be streamed to your terminal until you exit the command.[/bold green]\n"
+    + "\n"
+    + "ℹ [bold green]To exit the logs, press CTRL+C.[/bold green]\n"
+    + "\n"
+    + "🚨 The [bold white]backend,backend_stream & celery[/bold white] [bold green]containers are the most important to monitor for debugging.[/bold green]\n"  # noqa: E501
+    + "\n"
+    + "               [bold white]--------------- Ctop 🦾 -------------------------[/bold white]\n"
+    + "\n"
+    + "🧠 To learn about using [bold white]ctop[/bold white] to monitor your containers,visit https://www.youtube.com/watch?v=BJhlCxerQP4n \n"  # noqa: E501
+    + "\n"
+    + "               [bold white]----------------- How to view this. 🙂 ---------------[/bold white]\n"
+    + "\n"
+    + """ℹ [bold green]To view this panel again, run the command [bold white]hagrid logs {{DOMAIN_NAME}}[/bold white] [/bold green]\n"""  # noqa: E501
+    + "\n"
+    + """🚨 DOMAIN_NAME above is the name of your Hagrid deployment,without the curly braces. E.g hagrid logs canada [bold green]\n"""  # noqa: E501
+    + "\n"
+    + "               [bold green]HAPPY DEBUGGING! 🐛🐞🦗🦟🦠🦠🦠[/bold green]\n                      "
+)
+
+cli.add_command(logs)
