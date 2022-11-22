@@ -61,7 +61,9 @@ def convert_constants_to_indices(rdp_constant_array: np.ndarray) -> np.ndarray:
     """
     # Find indices for all RDP constants <= 50
     sub50_mask = rdp_constant_array <= 50
-    sub50_indices = (((rdp_constant_array - 1) * sub50_mask) * 10_000).astype(int)
+    sub50_indices = np.maximum(
+        ((rdp_constant_array * sub50_mask * 10_000) - 1), 0
+    ).astype(int)
 
     # Find indices for all RDP constants > 50
     gt50_mask = rdp_constant_array > 50
