@@ -28,7 +28,6 @@ def auth_using_signing_key(
     signing_key: str = Body(..., embed=True),
 ) -> Any:
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    admin = node.users.all()[0]
     user = node.users.first(private_key=signing_key)
 
     access_token = security.create_access_token(
