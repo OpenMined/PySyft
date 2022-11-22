@@ -400,26 +400,26 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
 
     def _get_epsilon_spend(self, rdp_constants: np.ndarray) -> np.ndarray:
         rdp_constants_lookup = convert_constants_to_indices(rdp_constants)
-        try:
-            # needed as np.int64 to use take
-            eps_spend = jax.jit(jnp.take)(
-                self._cache_constant2epsilon, rdp_constants_lookup
-            )
+        if rdp_constants_lookup.max() - len(self._cache_constant2epsilon) >= 150_000:
+            eps_spend = self._fetch_eps_spend_for_big_rdp(rdp_constants)
+        else:
+            try:
+                # needed as np.int64 to use take
+                eps_spend = jax.jit(jnp.take)(
+                    self._cache_constant2epsilon, rdp_constants_lookup
+                )
 
-            # take no longer wraps which was probably wrong:
-            # https://github.com/google/jax/commit/0b470361dac51fb4f5ab2f720f1cf35e442db005
-            # now we should expect NaN when the max rdp_constants_lookup is higher
-            # than the length of self._cache_constant2epsilon
-            # we could also check the max head of time if its faster than checking the
-            # output for NaNs
-            if jnp.isnan(eps_spend).any():
-                raise ValueError("NaNs from RDP Lookup, we need to recalculate")
+                # take no longer wraps which was probably wrong:
+                # https://github.com/google/jax/commit/0b470361dac51fb4f5ab2f720f1cf35e442db005
+                # now we should expect NaN when the max rdp_constants_lookup is higher
+                # than the length of self._cache_constant2epsilon
+                # we could also check the max head of time if its faster than checking the
+                # output for NaNs
+                if jnp.isnan(eps_spend).any():
+                    raise ValueError("NaNs from RDP Lookup, we need to recalculate")
 
-        except (ValueError, IndexError):
-            print(f"Cache missed the value at {max(rdp_constants_lookup)}")
-            if max(rdp_constants_lookup) - len(self._cache_constant2epsilon) >= 150_000:
-                eps_spend = self._fetch_eps_spend_for_big_rdp(rdp_constants)
-            else:
+            except (ValueError, IndexError):
+                print(f"Cache missed the value at {max(rdp_constants_lookup)}")
                 self._increase_max_cache(int(max(rdp_constants_lookup) * 1.1))
                 eps_spend = jax.jit(jnp.take)(
                     self._cache_constant2epsilon, rdp_constants_lookup
