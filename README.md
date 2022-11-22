@@ -103,9 +103,9 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 
 - <a href="/notebooks/quickstart/data-owner/00-deploy-domain.ipynb">Deploy a Domain Server</a>
 - <a href="/notebooks/quickstart/data-owner/01-upload-data.ipynb">Upload Private Data</a>
-- Create Accounts</a>
+- <a href="/notebooks/quickstart/data-owner/02-create-account-configure-pb.ipynb">Create Accounts</a>
 - Manage Privacy Budget</a>
-- Join a Network</a>
+- <a href="/notebooks/quickstart/data-owner/03-join-network.ipynb">Join a Network</a>
 - Learn how PETs streamline Data Policies
 
 </td>
