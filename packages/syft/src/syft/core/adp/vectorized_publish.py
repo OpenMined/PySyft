@@ -135,7 +135,8 @@ def publish(
             prev_tensor = value
         else:
             if (prev_tensor == value).all():  # type: ignore
-                raise Exception("Tensor has not changed and is not all zeros")
+                print("Tensor has not changed and is not all zeros")
+                break
             else:
                 prev_tensor = value
 
@@ -261,103 +262,40 @@ def publish(
             # TODO: Modify to work with private/public operations (when input_tensor is a scalar)
 
             # Step 4.2: Figure out which Tensors in the Source dictionary have those data subjects
+            tensor_copy = deepcopy(tensor)
+            raw_data_tensors = get_leaves_from_gamma_tensor_tree(tensor_copy)
+            for raw_tensor in raw_data_tensors:
+                l2_norms = jnp.sqrt(jnp.sum(jnp.square(raw_tensor.child)))
 
-            # create a seperate iterable of the keys so they can be mutated below
-            filtered_sourcetree = deepcopy(tensor.sources)
-            input_tensors = list(filtered_sourcetree.values())
+                rdp_params = RDPParams(
+                    sigmas=sigmas,
+                    l2_norms=l2_norms,
+                    l2_norm_bounds=l2_norm_bounds,
+                    Ls=lipschitz_bounds,
+                    coeffs=coeffs,
+                )
 
-            parent_branch = [
-                filtered_sourcetree for _ in input_tensors
-            ]  # TODO: Ensure this isn't deepcopying!
-
-            # relative
-            from ..tensor.autodp.gamma_tensor import GammaTensor
-
-            # ATTENTION: is this the same as tensor.sources.items() ?
-            for parent_state, input_tensor in zip(parent_branch, input_tensors):
-
-                if isinstance(input_tensor, GammaTensor):
-                    if (
-                        input_tensor.func_str == GAMMA_TENSOR_OP.NOOP.value
-                    ):  # This is raw, unprocessed private data. Filter if eps spend > PB!
-                        # Calculate epsilon spend for this tensor
-                        l2_norms = jnp.sqrt(jnp.sum(jnp.square(input_tensor.child)))
-
-                        rdp_params = RDPParams(
-                            sigmas=sigmas,
-                            l2_norms=l2_norms,
-                            l2_norm_bounds=l2_norm_bounds,
-                            Ls=lipschitz_bounds,
-                            coeffs=coeffs,
+                # Privacy loss associated with this private data specifically
+                epsilon = max(
+                    ledger._get_epsilon_spend(
+                        np.asarray(
+                            compute_rdp_constant(rdp_params, private=private)
                         )
+                    )
+                )
+                # Filter if > privacy budget
+                if jnp.isnan(epsilon):
+                    raise Exception("Epsilon is NaN")
 
-                        # Privacy loss associated with this private data specifically
-                        epsilon = max(
-                            ledger._get_epsilon_spend(
-                                np.asarray(
-                                    compute_rdp_constant(rdp_params, private=private)
-                                )
-                            )
-                        )
-
-                        # Filter if > privacy budget
-                        if jnp.isnan(epsilon):
-                            raise Exception("Epsilon is NaN")
-
-                        if epsilon > privacy_budget:
-                            filtered_tensor = input_tensor.filtered()
-
-                            # Replace the original tensor with this filtered one
-                            # remove the original state id
-
-                            # TODO: This changes insertion order which could impact
-                            # the non commutable operations like div where by the
-                            # values are unpacked in order of insertion before being
-                            # executed as a tuple
-                            # see def _truediv(state: dict) -> jax.numpy.DeviceArray:
-                            # in gamma_functions.py
-
-                            del parent_state[input_tensor.id]
-
-                            # add the new zeroed state id tensor
-                            parent_state[filtered_tensor.id] = filtered_tensor
-                        # If epsilon <= privacy budget, we don't need to do anything -
-                        # the user has enough PB to use the data
-                    else:
-                        # Is this supposed to search the entire state tree with no_op
-                        # data nodes being the leaves?
-
-                        # ATTENTION: is this intended to walk the state tree?
-                        # now that we no longer use recursion, I don't think this will
-                        # work so we might want to have a stack / queue above to
-                        # explore the frontier
-                        input_tensors += list(input_tensor.sources.values())
-                        parent_branch += [
-                            input_tensor.sources for _ in input_tensor.sources.values()
-                        ]
-                else:
-                    # This is a public value, we don't touch 'em.
-                    continue
-
-            # Recompute the tensor's value now that some of its inputs have been
-            # filtered, and repeat epsilon calculations
-
-            # ATTENTION: When we swap state we need to handle the base case so that
-            # the .child gets replaced not the .source (state) otherwise it never
-            # terminates
-            tensor = tensor.swap_state(filtered_sourcetree)
+                if epsilon > privacy_budget:
+                    raw_tensor.inplace_filtered()
+            tensor = tensor.swap_state(tensor_copy.sources)
             print("tensor.child before restart: ", type(tensor.child), tensor.child)
             print("About to publish again with filtered source_tree!")
-
+            value = tensor.child
             # TODO: This isn't the most efficient way to do it since we can reuse sigmas, coeffs, etc.
             # TODO: Add a way to prevent infinite publishing?
             # TODO: Should we implement exponential backoff or something as a means of rate-limiting?
-            # return new_tensor.publish(
-            #     get_budget_for_user=get_budget_for_user,
-            #     deduct_epsilon_for_user=deduct_epsilon_for_user,
-            #     ledger=ledger,
-            #     sigma=sigma,
-            # )
         # Step 5: Revel in happiness.
 
         else:
@@ -371,6 +309,19 @@ def publish(
     )
     return zeros + noise
 
+# we only need to modify the PhiTensors which in our representation
+# are the leaves of the sources tree for a given GammaTesor
+def get_leaves_from_gamma_tensor_tree(input_tensor):
+    from ..tensor.autodp.gamma_tensor import GammaTensor
+    leaves = []
+    if isinstance(input_tensor, GammaTensor):
+        if (input_tensor.func_str != GAMMA_TENSOR_OP.NOOP.value):
+            for tensor in input_tensor.sources.values():
+                leaves.extend(get_leaves_from_gamma_tensor_tree(tensor))
+        else:
+            leaves.append(input_tensor)
+    
+    return leaves
 
 # each time we attempt to publish and filter values we need to ensure
 # the while loop comparison is valid. We check for three edge cases.

@@ -2826,6 +2826,14 @@ class GammaTensor:
             max_vals=self.max_vals * 1,
             func_str=GAMMA_TENSOR_OP.NOOP.value,
         )
+        
+    def inplace_filtered(self):
+        self.child=jnp.zeros_like(self.child),
+        self.data_subjects=self.data_subjects,
+        self.min_vals=self.min_vals * 0,
+        self.max_vals=self.max_vals * 1,
+        self.func_str=GAMMA_TENSOR_OP.NOOP.value,
+        
 
     def ravel(self, order: Optional[str] = "C") -> GammaTensor:
         output_state = dict()
