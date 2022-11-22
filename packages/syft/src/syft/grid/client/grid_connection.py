@@ -25,6 +25,7 @@ from ...core.common.message import SignedImmediateSyftMessageWithoutReply
 from ...core.common.message import SyftMessage
 from ...core.common.serde.serializable import serializable
 from ...core.common.serde.serialize import _serialize
+from ...core.node.common.exceptions import AuthorizationError
 from ...core.node.enums import RequestAPIFields
 from ...core.node.exceptions import RequestAPIException
 from ...logger import debug
@@ -132,6 +133,10 @@ class GridHTTPConnection(HTTPConnection):
             timeout=timeout,
             proxies=HTTPConnection.proxies,
         )
+        if r.status_code == 401:
+            raise AuthorizationError(
+                "Check if your credentials are still valid or if your session was expired."
+            )
         # else:
         #     r = self.send_streamed_messages(blob_message=msg_bytes)
 
