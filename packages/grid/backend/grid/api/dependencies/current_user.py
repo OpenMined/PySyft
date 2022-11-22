@@ -51,7 +51,7 @@ def get_current_user(token: str = Depends(reusable_oauth2)) -> UserPrivate:
             user = node.users.first(id=token_data.sub)
             current_user = UserPrivate.from_orm(user)
         return current_user
-    except Exception as e:
+    except Exception:
         # TODO: Improve error handling
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
