@@ -3522,7 +3522,7 @@ cli.add_command(ssh)
 
 
 # Add hagrid logs command to the CLI
-@click.command(help="Get the logs of the HAGrid service")
+@click.command(help="Get the logs of the HAGrid node")
 @click.argument("domain_name", type=str)
 def logs(domain_name: str) -> None:  # nosec
 
