@@ -9,6 +9,8 @@ from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from nacl.encoding import HexEncoder
+from nacl.signing import SigningKey
 import requests
 from requests.adapters import HTTPAdapter
 
@@ -58,6 +60,8 @@ class TimeoutHTTPAdapter(HTTPAdapter):
 class GridHTTPConnection(HTTPConnection):
 
     LOGIN_ROUTE = "/login"
+    KEY_ROUTE = "/key"
+    GUEST_ROUTE = "/guest"
     SYFT_ROUTE = "/syft"
     SYFT_ROUTE_STREAM = "/syft/stream"  # non blocking node
     # SYFT_MULTIPART_ROUTE = "/pysyft_multipart"
@@ -136,8 +140,13 @@ class GridHTTPConnection(HTTPConnection):
         return r
 
     def login(self, credentials: Dict) -> Tuple:
+        if credentials:
+            url = str(self.base_url) + GridHTTPConnection.LOGIN_ROUTE
+        else:
+            url = str(self.base_url) + GridHTTPConnection.GUEST_ROUTE
+
         response = requests.post(
-            url=str(self.base_url) + GridHTTPConnection.LOGIN_ROUTE,
+            url=url,
             json=credentials,
             verify=verify_tls(),
             timeout=2,
@@ -161,6 +170,30 @@ class GridHTTPConnection(HTTPConnection):
 
         # Return node metadata / user private key
         return (metadata_pb, content["key"])
+
+    def auth_using_key(self, user_key: SigningKey) -> Dict:
+        response = requests.post(
+            url=str(self.base_url) + GridHTTPConnection.KEY_ROUTE,
+            json={"signing_key": user_key.encode(encoder=HexEncoder).decode("utf-8")},
+            verify=verify_tls(),
+            timeout=2,
+            proxies=HTTPConnection.proxies,
+        )
+        # Response
+        content = json.loads(response.text)
+        # If fail
+        if response.status_code != requests.codes.ok:
+            raise Exception(content["detail"])
+
+        metadata = content["metadata"].encode("ISO-8859-1")
+        metadata_pb = Metadata_PB()
+        metadata_pb.ParseFromString(metadata)
+
+        # If success
+        # Save session token
+        self.session_token = content["access_token"]
+        self.token_type = content["token_type"]
+        return metadata_pb
 
     def _get_metadata(self, timeout: Optional[float] = 2) -> Tuple:
         """Request Node's metadata
