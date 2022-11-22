@@ -524,9 +524,9 @@ class DataSubjectArray:
 
     def __contains__(self, item: Union[str, DataSubjectArray]) -> bool:
         if isinstance(item, DataSubjectArray):
-            return self.data_subjects.isdisjoint(item.data_subjects)
+            return not self.data_subjects.isdisjoint(item.data_subjects)
         else:
-            return self.data_subjects.isdisjoint(set(item))
+            return not self.data_subjects.isdisjoint(set(item))
 
     def __pow__(self, power: int) -> DataSubjectArray:
         if not isinstance(power, int):
