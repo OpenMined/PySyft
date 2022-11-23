@@ -30,4 +30,4 @@ def test_cache_indexing_correctness() -> None:
             convert_constants_to_indices(np.array([i]))
         ][0]
         eps = dsl._get_epsilon_spend(np.array([i]))[0]
-        assert round(theoretical_epsilon, 8) == round(cache_value, 8) == round(eps, 8)
+        assert round(theoretical_epsilon, 7) == round(cache_value, 7) == round(eps, 7)
