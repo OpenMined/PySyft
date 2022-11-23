@@ -502,7 +502,13 @@ class PhiTensorAncestor(TensorChainManager):
         If this documentation is not clear- please feel free to post in the #support channel on Slack.
         You may join here: https://slack.openmined.org/
         """
-        print("Tensor annotated with DP Metadata")
+
+        print("Tensor annotated with DP Metadata!")
+        print(
+            "You can upload this Tensor to a domain node by calling domain_client.load_dataset \
+            and passing in this tensor as an asset."
+        )
+
         return self.copy()._private(
             min_val=lower_bound,
             max_val=upper_bound,
