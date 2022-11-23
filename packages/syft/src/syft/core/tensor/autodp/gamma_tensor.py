@@ -53,7 +53,7 @@ from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
 from ...node.abstract.node import AbstractNodeClient
 from ...node.common.action.run_class_method_action import RunClassMethodAction
-from ...node.enums import TensorPointerStatus
+from ...node.enums import PointerStatus
 from ...pointer.pointer import Pointer
 from ..config import DEFAULT_INT_NUMPY_TYPE
 from ..fixed_precision_tensor import FixedPrecisionTensor
@@ -148,9 +148,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
 
     def __repr__(self) -> str:
         _ptr_status = (
-            TensorPointerStatus.READY.value
-            if self.exists
-            else TensorPointerStatus.PROCESSING.value
+            PointerStatus.READY.value if self.exists else PointerStatus.PROCESSING.value
         )
         return (
             f"PointerId: {self.id_at_location.no_dash}"

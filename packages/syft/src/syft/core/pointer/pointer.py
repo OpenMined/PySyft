@@ -115,7 +115,7 @@ from ..node.common.node_service.get_repr.get_repr_service import GetReprMessage
 from ..node.common.node_service.object_search_permission_update.obj_search_permission_messages import (
     ObjectSearchPermissionUpdateMessage,
 )
-from ..node.enums import TensorPointerStatus
+from ..node.enums import PointerStatus
 from ..store.storeable_object import StorableObject
 
 
@@ -191,9 +191,7 @@ class Pointer(AbstractPointer):
 
     def __repr__(self) -> str:
         _ptr_status = (
-            TensorPointerStatus.READY.value
-            if self.exists
-            else TensorPointerStatus.PROCESSING.value
+            PointerStatus.READY.value if self.exists else PointerStatus.PROCESSING.value
         )
         return f"<{self.__name__} -> {self.client.name}:{self.id_at_location.no_dash}, status={_ptr_status}>"
 

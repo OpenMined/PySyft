@@ -42,6 +42,6 @@ class ResponseObjectEnum(str, Enum):
     DATA = "data"
 
 
-class TensorPointerStatus(str, Enum):
+class PointerStatus(str, Enum):
     READY = bcolors.green("Ready")
     PROCESSING = bcolors.yellow("Processing")
