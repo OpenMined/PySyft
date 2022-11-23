@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from copy import deepcopy
 import secrets
 from typing import Callable
+from typing import List
 from typing import TYPE_CHECKING
 from typing import Tuple
 
@@ -302,9 +303,7 @@ def publish(
                 # Privacy loss associated with this private data specifically
                 epsilon = max(
                     ledger._get_epsilon_spend(
-                        np.asarray(
-                            compute_rdp_constant(rdp_params, private=private)
-                        )
+                        np.asarray(compute_rdp_constant(rdp_params, private=private))
                     )
                 )
                 # Filter if > privacy budget
@@ -333,19 +332,23 @@ def publish(
     )
     return zeros + noise
 
+
 # we only need to modify the PhiTensors which in our representation
 # are the leaves of the sources tree for a given GammaTesor
-def get_leaves_from_gamma_tensor_tree(input_tensor):
+def get_leaves_from_gamma_tensor_tree(input_tensor: GammaTensor) -> List[GammaTensor]:
+    # relative
     from ..tensor.autodp.gamma_tensor import GammaTensor
+
     leaves = []
     if isinstance(input_tensor, GammaTensor):
-        if (input_tensor.func_str != GAMMA_TENSOR_OP.NOOP.value):
+        if input_tensor.func_str != GAMMA_TENSOR_OP.NOOP.value:
             for tensor in input_tensor.sources.values():
                 leaves.extend(get_leaves_from_gamma_tensor_tree(tensor))
         else:
             leaves.append(input_tensor)
-    
+
     return leaves
+
 
 # each time we attempt to publish and filter values we need to ensure
 # the while loop comparison is valid. We check for three edge cases.
