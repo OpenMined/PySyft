@@ -115,6 +115,7 @@ from ..node.common.node_service.get_repr.get_repr_service import GetReprMessage
 from ..node.common.node_service.object_search_permission_update.obj_search_permission_messages import (
     ObjectSearchPermissionUpdateMessage,
 )
+from ..node.enums import TensorPointerStatus
 from ..store.storeable_object import StorableObject
 
 
@@ -189,7 +190,12 @@ class Pointer(AbstractPointer):
         return self.client.obj_exists(obj_id=self.id_at_location)
 
     def __repr__(self) -> str:
-        return f"<{self.__name__} -> {self.client.name}:{self.id_at_location.no_dash}>"
+        _ptr_status = (
+            TensorPointerStatus.READY.value
+            if self.exists
+            else TensorPointerStatus.PROCESSING.value
+        )
+        return f"<{self.__name__} -> {self.client.name}:{self.id_at_location.no_dash}, status={_ptr_status}>"
 
     def _get(
         self, delete_obj: bool = True, verbose: bool = False, proxy_only: bool = False
