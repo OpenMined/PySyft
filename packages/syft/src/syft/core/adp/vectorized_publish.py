@@ -129,6 +129,7 @@ def publish(
 
     # if we dont return below we will terminate if the tensor gets replaced with zeros
     prev_tensor = None
+    max_rdp_before_query = ledger.get_max_rdp_constant()
 
     while can_reduce_further(value=value, zeros_like=zeros_like):
         if prev_tensor is None:
@@ -189,6 +190,7 @@ def publish(
         epsilon_spend = max(
             all_epsilons
         )  # This is the epsilon spend for the QUERY, a single float.
+        # most_at_risk_data_subject = all_epsilons.argmax()
 
         if not isinstance(epsilon_spend, float):
             epsilon_spend = float(epsilon_spend)
@@ -239,11 +241,31 @@ def publish(
                 ]
             ).reshape(original_output.shape)
 
+            # The RDP constants are adjusted to account for the amount of exposure every
+            # data subject's data has had.
+            ledger.update_rdp_constants(
+                query_constants=rdp_constants, entity_ids_query=input_entities
+            )
+            ledger._write_ledger()
+            max_rdp_after_query = ledger.get_max_rdp_constant()
+
             # The user spends their privacy budget before getting the result
             attempts = 0
+            print("we made it this far")
             while attempts < 5:
                 attempts += 1
                 try:
+                    print(
+                        "max rdp before and after: ",
+                        max_rdp_before_query,
+                        max_rdp_after_query,
+                    )
+                    epsilon_spend = float(
+                        ledger._get_epsilon_spend(
+                            np.array([max_rdp_after_query - max_rdp_before_query])
+                        )
+                    )
+                    print("epsilon spend: ", epsilon_spend, type(epsilon_spend))
                     ledger.spend_epsilon(
                         deduct_epsilon_for_user=deduct_epsilon_for_user,
                         epsilon_spend=epsilon_spend,
@@ -251,6 +273,12 @@ def publish(
                     )
                     break
                 except RefreshBudgetException:  # nosec
+                    print(
+                        "max rdp before and after: ",
+                        max_rdp_before_query,
+                        max_rdp_after_query,
+                    )
+                    print("epsilon spend: ", epsilon_spend, type(epsilon_spend))
                     ledger.spend_epsilon(
                         deduct_epsilon_for_user=deduct_epsilon_for_user,
                         epsilon_spend=epsilon_spend,
@@ -261,12 +289,6 @@ def publish(
                     print(f"Problem spending epsilon. {e}")
                     raise e
 
-            # The RDP constants are adjusted to account for the amount of exposure every
-            # data subject's data has had.
-            ledger.update_rdp_constants(
-                query_constants=rdp_constants, entity_ids_query=input_entities
-            )
-            ledger._write_ledger()
             return original_output + noise
 
         # Step 4: Path 2 - User doesn't have enough privacy budget.

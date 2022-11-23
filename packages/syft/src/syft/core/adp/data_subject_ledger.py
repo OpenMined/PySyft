@@ -364,6 +364,11 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         )
         return None
 
+    def get_max_rdp_constant(self) -> float:
+        if self._rdp_constants.size == 0:
+            return 0
+        return self._rdp_constants.max()
+
     def _get_batch_rdp_constants(
         self, entity_ids_query: jnp.ndarray, rdp_params: RDPParams, private: bool = True
     ) -> jnp.ndarray:
