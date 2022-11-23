@@ -147,15 +147,17 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         ).astype(public_dtype_func())
 
     def __repr__(self) -> str:
-        _ptr_status = (
-            PointerStatus.READY.value if self.exists else PointerStatus.PROCESSING.value
-        )
-        return (
-            f"PointerId: {self.id_at_location.no_dash}"
-            + f"\nStatus: {_ptr_status}"
-            + f"\nRepresentation: {self.synthetic.__repr__()}"
-            + "\n\n(The data printed above is synthetic - it's an imitation of the real data.)"
-        )
+        repr_string = f"PointerId: {self.id_at_location.no_dash}"
+        if hasattr(self.client, "obj_exists"):
+            _ptr_status = (
+                PointerStatus.READY.value
+                if self.exists
+                else PointerStatus.PROCESSING.value
+            )
+            repr_string += f"\nStatus: {_ptr_status}"
+        repr_string += f"\nRepresentation: {self.synthetic.__repr__()}"
+        repr_string += "\n\n(The data printed above is synthetic - it's an imitation of the real data.)"
+        return repr_string
 
     def share(self, *parties: Tuple[AbstractNodeClient, ...]) -> MPCTensor:
         all_parties = list(parties) + [self.client]

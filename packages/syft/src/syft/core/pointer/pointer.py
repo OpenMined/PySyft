@@ -190,10 +190,17 @@ class Pointer(AbstractPointer):
         return self.client.obj_exists(obj_id=self.id_at_location)
 
     def __repr__(self) -> str:
-        _ptr_status = (
-            PointerStatus.READY.value if self.exists else PointerStatus.PROCESSING.value
-        )
-        return f"<{self.__name__} -> {self.client.name}:{self.id_at_location.no_dash}, status={_ptr_status}>"
+        if hasattr(self.client, "obj_exists"):
+            _ptr_status = (
+                PointerStatus.READY.value
+                if self.exists
+                else PointerStatus.PROCESSING.value
+            )
+            return f"<{self.__name__} -> {self.client.name}:{self.id_at_location.no_dash}, status={_ptr_status}>"
+        else:
+            return (
+                f"<{self.__name__} -> {self.client.name}:{self.id_at_location.no_dash}>"
+            )
 
     def _get(
         self, delete_obj: bool = True, verbose: bool = False, proxy_only: bool = False
