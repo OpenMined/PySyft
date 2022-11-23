@@ -1,8 +1,3 @@
-# stdlib
-from datetime import datetime
-import time
-import uuid
-
 # third party
 import numpy as np
 import pytest
