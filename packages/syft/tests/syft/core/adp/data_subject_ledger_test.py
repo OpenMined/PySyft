@@ -4,6 +4,7 @@ import numpy as np
 # syft absolute
 import syft as sy
 from syft.core.adp.data_subject_ledger import DataSubjectLedger
+from syft.core.adp.data_subject_ledger import convert_constants_to_indices
 
 
 def test_data_subject_ledger_serde() -> None:
@@ -17,3 +18,16 @@ def test_data_subject_ledger_serde() -> None:
 
     assert de == dsl
     assert all(de._rdp_constants == rdp_constants)
+
+
+def test_cache_indexing_correctness() -> None:
+    dsl = DataSubjectLedger()
+    for i in [0.0001, 1, 50, 51, 100, 200_000]:
+        # This is the theoretical (correct) epsilon value
+        theoretical_epsilon = dsl._get_optimal_alpha_for_constant(i)[1]
+
+        cache_value = dsl._cache_constant2epsilon[
+            convert_constants_to_indices(np.array([i]))
+        ][0]
+        eps = dsl._get_epsilon_spend(np.array([i]))[0]
+        assert round(theoretical_epsilon, 7) == round(cache_value, 7) == round(eps, 7)
