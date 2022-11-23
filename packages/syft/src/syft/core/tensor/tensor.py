@@ -516,8 +516,10 @@ class Tensor(
         self.public_shape = public_shape
         self.public_dtype = public_dtype
 
-        print("Tensor created! You can activate Differential Privacy protection by calling .private() or \
-            .annotate_with_dp_metadata().")
+        print(
+            "Tensor created! You can activate Differential Privacy protection by calling .private() or \
+            .annotate_with_dp_metadata()."
+        )
 
     def tag(self, name: str) -> Tensor:
         self.tag_name = name
