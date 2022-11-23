@@ -350,7 +350,9 @@ class Pointer(AbstractPointer):
         self.client.send_immediate_msg_without_reply(msg=obj_msg)
         # create pointer which will point to float result
 
-        ptr = self.client.lib_ast.query("syft.lib.python.Any").pointer_type(
+        # FIXME: The result type is hardcoded
+        # because the result of publish from Pointers is currently always np.ndarray
+        ptr = self.client.lib_ast.query("numpy.ndarray").pointer_type(
             client=self.client
         )
         ptr.id_at_location = id_at_location
