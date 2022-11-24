@@ -156,6 +156,7 @@ def test_gamma_publish(
     assert -10 + lower_bound.to_numpy().sum() < results
     print(ledger_store.kv_store)
 
+
 def test_zeros_like(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -172,10 +173,11 @@ def test_zeros_like(
         min_vals=lower_bound,
     )
     output = reference_tensor.zeros_like()
-    assert np.all(output.child==0)
-    assert (output.min_vals.shape == reference_tensor.min_vals.shape)
-    assert (output.max_vals.shape == reference_tensor.max_vals.shape)
+    assert np.all(output.child == 0)
+    assert output.min_vals.shape == reference_tensor.min_vals.shape
+    assert output.max_vals.shape == reference_tensor.max_vals.shape
     assert (output.data_subjects == reference_tensor.data_subjects).all()
+
 
 def test_ones_like(
     reference_data: np.ndarray,
@@ -193,10 +195,11 @@ def test_ones_like(
         min_vals=lower_bound,
     )
     output = reference_tensor.ones_like()
-    assert np.all(output.child==1)
-    assert (output.min_vals.shape == reference_tensor.min_vals.shape)
-    assert (output.max_vals.shape == reference_tensor.max_vals.shape)
+    assert np.all(output.child == 1)
+    assert output.min_vals.shape == reference_tensor.min_vals.shape
+    assert output.max_vals.shape == reference_tensor.max_vals.shape
     assert (output.data_subjects == reference_tensor.data_subjects).all()
+
 
 def test_sum(
     reference_data: np.ndarray,
