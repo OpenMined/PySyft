@@ -98,7 +98,9 @@ def test_delete_entire_dataset(domain_owner, cleanup_storage):
     assert domain_owner.datasets[0].name == "Dataset_1"
     assert domain_owner.datasets[1].name == "Dataset_2"
 
-    domain_owner.datasets.delete(dataset_id=domain_owner.datasets[0].id)
+    domain_owner.datasets.delete(
+        dataset_id=domain_owner.datasets[0].id, skip_checks=True
+    )
 
     # Check if the number of available datasets has been decreased
     assert len(domain_owner.datasets) == 1

@@ -297,7 +297,7 @@ OpenMined and Syft appreciates all contributors, if you would like to fix a bug 
 
 # Open Collective
 
-`OpenMined` is a registered `501(c)(3)` in the USA. We are funded by our gracious supporters on <a href="https://opencollective.com/openmined">Open Collective</a>. <br /><br />
+`OpenMined` is a fiscally sponsored `501(c)(3)` in the USA. We are funded by our generous supporters on <a href="https://opencollective.com/openmined">Open Collective</a>. <br /><br />
 <img src="packages/syft/docs/img/opencollective_light.png#gh-light-mode-only" alt="Contributors" width="100%" />
 <img src="packages/syft/docs/img/opencollective_dark.png#gh-dark-mode-only" alt="Contributors" width="100%" />
 

@@ -71,14 +71,14 @@ def domain_owner() -> Client:
 def cleanup_storage(domain_owner):
     # Delete any dataset remaining before the test
     for dataset in domain_owner.datasets.all():
-        domain_owner.datasets.delete(dataset_id=dataset.get("id"))
+        domain_owner.datasets.delete(dataset_id=dataset.get("id"), skip_checks=True)
 
     # Execute tests
     yield
 
     # Delete any dataset remaining after the test
     for dataset in domain_owner.datasets.all():
-        domain_owner.datasets.delete(dataset_id=dataset.get("id"))
+        domain_owner.datasets.delete(dataset_id=dataset.get("id"), skip_checks=True)
 
 
 e2e_clients = []  # clients for e2e test
@@ -134,3 +134,4 @@ def pytest_configure(config: _pytest.config.Config) -> None:
     config.addinivalue_line("markers", "e2e: end-to-end integration tests")
     config.addinivalue_line("markers", "security: security integration tests")
     config.addinivalue_line("markers", "tff: PySyTFF integration tests")
+    config.addinivalue_line("markers", "redis: Dataset tests")
