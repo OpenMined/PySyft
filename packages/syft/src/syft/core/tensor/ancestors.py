@@ -377,7 +377,11 @@ class PhiTensorAncestor(TensorChainManager):
         data_subjects: Optional[Any] = None,
         skip_blocking_checks: bool = False,
     ) -> PhiTensorAncestor:
-        print("Tensor annotated with DP Metadata")
+        print("Tensor annotated with DP Metadata!")
+        print(
+            "You can upload this Tensor to a domain node by calling domain_client.load_dataset \
+            and passing in this tensor as an asset."
+        )
         return self.private(
             min_val=min_val,
             max_val=max_val,
@@ -392,6 +396,11 @@ class PhiTensorAncestor(TensorChainManager):
         data_subjects: Optional[Any] = None,
         skip_blocking_checks: bool = False,
     ) -> PhiTensorAncestor:
+        print("Tensor annotated with DP Metadata!")
+        print(
+            "You can upload this Tensor to a domain node by calling domain_client.load_dataset \
+            and passing in this tensor as an asset."
+        )
         return self.copy()._private(
             min_val=min_val,
             max_val=max_val,
