@@ -53,6 +53,7 @@ from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
 from ...node.abstract.node import AbstractNodeClient
 from ...node.common.action.run_class_method_action import RunClassMethodAction
+from ...node.enums import PointerStatus
 from ...pointer.pointer import Pointer
 from ..config import DEFAULT_INT_NUMPY_TYPE
 from ..fixed_precision_tensor import FixedPrecisionTensor
@@ -146,10 +147,17 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         ).astype(public_dtype_func())
 
     def __repr__(self) -> str:
-        return (
-            self.synthetic.__repr__()
-            + "\n\n (The data printed above is synthetic - it's an imitation of the real data.)"
-        )
+        repr_string = f"PointerId: {self.id_at_location.no_dash}"
+        if hasattr(self.client, "obj_exists"):
+            _ptr_status = (
+                PointerStatus.READY.value
+                if self.exists
+                else PointerStatus.PROCESSING.value
+            )
+            repr_string += f"\nStatus: {_ptr_status}"
+        repr_string += f"\nRepresentation: {self.synthetic.__repr__()}"
+        repr_string += "\n\n(The data printed above is synthetic - it's an imitation of the real data.)"
+        return repr_string
 
     def share(self, *parties: Tuple[AbstractNodeClient, ...]) -> MPCTensor:
         all_parties = list(parties) + [self.client]
