@@ -189,9 +189,9 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     assert sum(sycure_result) < 6000
     assert public_result.child[0].path_and_name == "numpy.ndarray"
 
-    assert ca.privacy_budget < PRIVACY_BUDGET
+    assert ca.privacy_budget < PRIVACY_BUDGET + BUDGET_INCREASE
     assert ca.privacy_budget > 10
-    assert it.privacy_budget < PRIVACY_BUDGET
+    assert it.privacy_budget < PRIVACY_BUDGET + BUDGET_INCREASE
     assert it.privacy_budget > 10
     # Commenting it out , due to inconsistent budget spent due to 64 bit.
     # assert ca.privacy_budget == it.privacy_budget
