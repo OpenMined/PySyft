@@ -56,6 +56,7 @@ class TensorPointer(Pointer):
     # the fact that klass.Class tries to override them (unsuccessfully)
     __name__ = "TensorPointer"
     __module__ = "syft.core.tensor.tensor"
+    PUBLISH_POINTER_TYPE = "numpy.ndarray"
 
     def __init__(
         self,

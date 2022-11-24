@@ -350,9 +350,12 @@ class Pointer(AbstractPointer):
         self.client.send_immediate_msg_without_reply(msg=obj_msg)
         # create pointer which will point to float result
 
-        # FIXME: The result type is hardcoded
-        # because the result of publish from Pointers is currently always np.ndarray
-        ptr = self.client.lib_ast.query("numpy.ndarray").pointer_type(
+        if not hasattr(self, "PUBLISH_POINTER_TYPE"):
+            raise TypeError(
+                f"Publish operation cannot be performed on pointer type: {self.__name__}"
+            )
+
+        ptr = self.client.lib_ast.query(self.PUBLISH_POINTER_TYPE).pointer_type(  # type: ignore
             client=self.client
         )
         ptr.id_at_location = id_at_location
