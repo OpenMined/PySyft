@@ -89,7 +89,6 @@ def syft_route(
 
 @router.post("/stream", response_model=str)
 def syft_stream(
-    current_user: UserPrivate = Depends(get_current_user),
     data: bytes = Depends(get_body),
 ) -> Any:
     with tracer.start_as_current_span("POST syft_route /stream"):
