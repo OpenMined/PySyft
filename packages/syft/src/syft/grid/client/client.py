@@ -49,7 +49,7 @@ def connect(
         metadata, _user_key = conn.login(credentials=credentials)  # type: ignore
         _user_key = SigningKey(_user_key.encode(), encoder=HexEncoder)
     else:
-        metadata = conn.auth_using_key(user_key=user_key)  # type: ignore
+        # metadata = conn.auth_using_key(user_key=user_key)  # type: ignore
         _user_key = user_key
 
     # Check node client type based on metadata response

@@ -64,10 +64,8 @@ def delete(current_user: UserPrivate = Depends(get_current_user)) -> Response:
 
 @router.post("", response_model=str)
 def syft_route(
-    current_user: UserPrivate = Depends(get_current_user),
     data: bytes = Depends(get_body),
 ) -> Any:
-    print("My Current User: ", current_user)
     with tracer.start_as_current_span("POST syft_route"):
         obj_msg = deserialize(blob=data, from_bytes=True)
         is_isr = isinstance(obj_msg, SignedImmediateSyftMessageWithReply) or isinstance(
