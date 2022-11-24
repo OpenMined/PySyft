@@ -61,7 +61,10 @@ def convert_constants_to_indices(rdp_constant_array: np.ndarray) -> np.ndarray:
     """
     # Find indices for all RDP constants <= 50
     sub50_mask = rdp_constant_array <= 50
-    sub50_indices = (((rdp_constant_array - 1) * sub50_mask) * 10_000).astype(int)
+    # np.maximum is to avoid negative indices when rdp_constant_array is < 1
+    sub50_indices = np.maximum(
+        ((rdp_constant_array * sub50_mask * 10_000) - 1), 0
+    ).astype(int)
 
     # Find indices for all RDP constants > 50
     gt50_mask = rdp_constant_array > 50
@@ -273,7 +276,6 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         rdp_constants = self._get_batch_rdp_constants(
             entity_ids_query=entity_ids_query, rdp_params=rdp_params, private=private
         )
-        print("rdp constants", rdp_constants)
 
         # here we iteratively attempt to calculate the overbudget mask and save
         # changes to the database
