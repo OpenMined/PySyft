@@ -130,6 +130,43 @@ def test_eq(
         reference_tensor.child == same_tensor.child
     ).all(), "Equality between identical PTs fails"
 
+def test_zeros_like(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+    output = reference_tensor.zeros_like()
+    assert np.all(output.child==0)
+    assert (output.min_vals.shape == reference_tensor.min_vals.shape)
+    assert (output.max_vals.shape == reference_tensor.max_vals.shape)
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+def test_ones_like(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+    output = reference_tensor.ones_like()
+    assert np.all(output.child==1)
+    assert (output.min_vals.shape == reference_tensor.min_vals.shape)
+    assert (output.max_vals.shape == reference_tensor.max_vals.shape)
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
 
 def test_add_wrong_types(
     reference_data: np.ndarray,
