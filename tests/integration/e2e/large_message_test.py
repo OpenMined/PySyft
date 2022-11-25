@@ -66,8 +66,13 @@ def test_large_blob_upload() -> None:
             np.array(DataSubjectArray([data_subject_name])), reference_data.shape
         )
 
-        tweets_data = sy.Tensor(reference_data).private(
-            min_val=0, max_val=30, data_subjects=data_subjects
+        lower_bound = int(reference_data.min()) - 10
+        upper_bound = int(reference_data.max()) + 10
+
+        tweets_data = sy.Tensor(reference_data).annotate_with_dp_metadata(
+            lower_bound=lower_bound,
+            upper_bound=upper_bound,
+            data_subjects=data_subjects,
         )
 
         report[size_name]["tensor_type"] = type(tweets_data.child).__name__
