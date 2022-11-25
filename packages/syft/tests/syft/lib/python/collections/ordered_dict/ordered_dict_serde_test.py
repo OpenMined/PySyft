@@ -108,3 +108,11 @@ def test_iterator_methods(
     for itemptr, local_item in zip(itemsptr, getattr(d, method_name)()):
         get_item = itemptr.get()
         assert get_item == local_item
+
+
+def test_ordered_dict_bytes() -> None:
+    # Testing if multiple serialization of the same object results in same bytes
+    d1 = {String("t1"): 1, String("t2"): 2}
+    dict1 = OrderedDict(d1)
+    dict2 = OrderedDict(d1)
+    assert sy.serialize(dict1, to_bytes=True) == sy.serialize(dict2, to_bytes=True)

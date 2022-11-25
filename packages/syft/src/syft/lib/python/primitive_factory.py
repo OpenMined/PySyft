@@ -154,9 +154,7 @@ class PrimitiveFactory(ABC):
                                 )
                             else:
                                 new_dict[k] = val
-            # if we pass id in as a kwargs it ends up in the actual dict
-            if id is not None:
-                new_dict._id = id
+
             return new_dict
 
         if type(value) in [str, UserString]:
