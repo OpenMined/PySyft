@@ -89,7 +89,7 @@ class PrimitiveFactory(ABC):
             return python.Bytes(value=value)
 
         if isinstance(value, float):
-            return python.Float(value=value, id=id)
+            return python.Float(value=value)
 
         if isinstance(value, complex):
             return python.Complex(real=value.real, imag=value.imag)
