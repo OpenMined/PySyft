@@ -28,7 +28,7 @@ def test_send(client: sy.VirtualMachineClient) -> None:
     assert res == syft_complex
 
 
-def test_int_bytes() -> None:
+def test_complex_bytes() -> None:
     # Testing if multiple serialization of the similar object results in same bytes
     value_1 = Complex(5, 3)
     value_2 = Complex(5, 3)

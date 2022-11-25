@@ -3,7 +3,7 @@ import syft as sy
 from syft.lib.python.bytes import Bytes
 
 
-def test_int_bytes() -> None:
+def test_bytes_bytes() -> None:
     # Testing if multiple serialization of the similar object results in same bytes
     value_1 = Bytes(b"hello")
     value_2 = Bytes(b"hello")
