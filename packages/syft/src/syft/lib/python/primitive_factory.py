@@ -83,7 +83,7 @@ class PrimitiveFactory(ABC):
             return python.Bool(value=value, id=id)
 
         if isinstance(value, int):
-            return python.Int(value=value, id=id)
+            return python.Int(value=value)
 
         if isinstance(value, bytes):
             return python.Bytes(value=value)

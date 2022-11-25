@@ -111,7 +111,7 @@ def test_iterator_methods(
 
 
 def test_ordered_dict_bytes() -> None:
-    # Testing if multiple serialization of the same object results in same bytes
+    # Testing if multiple serialization of the similar object results in same bytes
     d1 = {String("t1"): 1, String("t2"): 2}
     dict1 = OrderedDict(d1)
     dict2 = OrderedDict(d1)

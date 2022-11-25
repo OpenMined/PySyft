@@ -29,7 +29,7 @@ def test_string_send(client: sy.VirtualMachineClient) -> None:
 
 
 def test_string_bytes() -> None:
-    # Testing if multiple serialization of the same object results in same bytes
+    # Testing if multiple serialization of the similar object results in same bytes
     syft_string_1 = String("Hello OpenMined")
     syft_string_2 = String("Hello OpenMined")
     assert sy.serialize(syft_string_1, to_bytes=True) == sy.serialize(
