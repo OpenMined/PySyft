@@ -32,7 +32,9 @@ def tensor(data: np.ndarray) -> Tensor:
 
 
 def test_string(tensor: Tensor, low: int, high: int) -> None:
-    private = tensor.private(min_val=low, max_val=high, data_subjects="Optimus Prime")
+    private = tensor.annotate_with_dp_metadata(
+        lower_bound=low, upper_bound=high, data_subjects="Optimus Prime"
+    )
     assert isinstance(private, Tensor)
     assert isinstance(private.child, PT)
     assert isinstance(private.child.min_vals, lra)
@@ -45,7 +47,9 @@ def test_string(tensor: Tensor, low: int, high: int) -> None:
 
 
 def test_list(tensor: Tensor, low: int, high: int) -> None:
-    private = tensor.private(min_val=low, max_val=high, data_subjects=["Optimus Prime"])
+    private = tensor.annotate_with_dp_metadata(
+        lower_bound=low, upper_bound=high, data_subjects=["Optimus Prime"]
+    )
     assert isinstance(private, Tensor)
     assert isinstance(private.child, PT)
     assert isinstance(private.child.min_vals, lra)
@@ -58,8 +62,8 @@ def test_list(tensor: Tensor, low: int, high: int) -> None:
 
 
 def test_tuple(tensor: Tensor, low: int, high: int) -> None:
-    private = tensor.private(
-        min_val=low, max_val=high, data_subjects=("Optimus Prime",)
+    private = tensor.annotate_with_dp_metadata(
+        lower_bound=low, upper_bound=high, data_subjects=("Optimus Prime",)
     )
     assert isinstance(private, Tensor)
     assert isinstance(private.child, PT)
@@ -73,8 +77,8 @@ def test_tuple(tensor: Tensor, low: int, high: int) -> None:
 
 
 def test_array(tensor: Tensor, low: int, high: int) -> None:
-    private = tensor.private(
-        min_val=low, max_val=high, data_subjects=np.array(["Optimus Prime"])
+    private = tensor.annotate_with_dp_metadata(
+        lower_bound=low, upper_bound=high, data_subjects=np.array(["Optimus Prime"])
     )
     assert isinstance(private, Tensor)
     assert isinstance(private.child, PT)
@@ -88,8 +92,8 @@ def test_array(tensor: Tensor, low: int, high: int) -> None:
 
 
 def test_1d_list(tensor: Tensor, low: int, high: int) -> None:
-    private = tensor.private(
-        min_val=low, max_val=high, data_subjects=["Optimus Prime"] * 5
+    private = tensor.annotate_with_dp_metadata(
+        lower_bound=low, upper_bound=high, data_subjects=["Optimus Prime"] * 5
     )
     assert isinstance(private, Tensor)
     assert isinstance(private.child, PT)
@@ -103,8 +107,8 @@ def test_1d_list(tensor: Tensor, low: int, high: int) -> None:
 
 
 def test_1d_tuple(tensor: Tensor, low: int, high: int) -> None:
-    private = tensor.private(
-        min_val=low, max_val=high, data_subjects=tuple(["Optimus Prime"] * 5)
+    private = tensor.annotate_with_dp_metadata(
+        lower_bound=low, upper_bound=high, data_subjects=tuple(["Optimus Prime"] * 5)
     )
     assert isinstance(private, Tensor)
     assert isinstance(private.child, PT)
@@ -118,8 +122,8 @@ def test_1d_tuple(tensor: Tensor, low: int, high: int) -> None:
 
 
 def test_1d_array(tensor: Tensor, low: int, high: int) -> None:
-    private = tensor.private(
-        min_val=low, max_val=high, data_subjects=np.array(["Optimus Prime"] * 5)
+    private = tensor.annotate_with_dp_metadata(
+        lower_bound=low, upper_bound=high, data_subjects=np.array(["Optimus Prime"] * 5)
     )
     assert isinstance(private, Tensor)
     assert isinstance(private.child, PT)
@@ -133,8 +137,8 @@ def test_1d_array(tensor: Tensor, low: int, high: int) -> None:
 
 
 def test_2d_list(tensor: Tensor, low: int, high: int) -> None:
-    private = tensor.private(
-        min_val=low, max_val=high, data_subjects=[["Optimus Prime"] * 5] * 5
+    private = tensor.annotate_with_dp_metadata(
+        lower_bound=low, upper_bound=high, data_subjects=[["Optimus Prime"] * 5] * 5
     )
     assert isinstance(private, Tensor)
     assert isinstance(private.child, PT)
@@ -148,9 +152,9 @@ def test_2d_list(tensor: Tensor, low: int, high: int) -> None:
 
 
 def test_2d_array(tensor: Tensor, low: int, high: int) -> None:
-    private = tensor.private(
-        min_val=low,
-        max_val=high,
+    private = tensor.annotate_with_dp_metadata(
+        lower_bound=low,
+        upper_bound=high,
         data_subjects=np.random.choice(["Optimus Prime"], (5, 5)),
     )
     assert isinstance(private, Tensor)
@@ -192,9 +196,9 @@ def test_gamma(tensor: Tensor, low: int, high: int) -> None:
     data_subjects = [[DataSubjectArray([x]) for x in row] for row in data_subjects]
     data_subjects[0][0] = DataSubjectArray(["Optimus Prime", "Bumblebee"])
 
-    private = tensor.private(
-        min_val=low,
-        max_val=high,
+    private = tensor.annotate_with_dp_metadata(
+        lower_bound=low,
+        upper_bound=high,
         data_subjects=data_subjects,
     )
     assert isinstance(private, Tensor)
