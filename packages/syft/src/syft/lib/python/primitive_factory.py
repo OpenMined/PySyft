@@ -101,9 +101,7 @@ class PrimitiveFactory(ABC):
             return python.Set(value)
 
         if isinstance(value, slice):
-            return python.Slice(
-                start=value.start, stop=value.stop, step=value.step, id=id
-            )
+            return python.Slice(start=value.start, stop=value.stop, step=value.step)
 
         if isinstance(value, range):
             return python.Range(start=value.start, stop=value.stop, step=value.step)
