@@ -92,7 +92,7 @@ class PrimitiveFactory(ABC):
             return python.Float(value=value, id=id)
 
         if isinstance(value, complex):
-            return python.Complex(real=value.real, imag=value.imag, id=id)
+            return python.Complex(real=value.real, imag=value.imag)
 
         if isinstance(value, tuple):
             return python.Tuple(value)
