@@ -160,7 +160,7 @@ class PrimitiveFactory(ABC):
             return new_dict
 
         if type(value) in [str, UserString]:
-            return python.String(value=value, id=id, temporary_box=temporary_box)
+            return python.String(value=value, temporary_box=temporary_box)
 
         if value is NotImplemented:
             return value
