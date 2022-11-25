@@ -505,8 +505,8 @@ class PhiTensorAncestor(TensorChainManager):
 
         print("Tensor annotated with DP Metadata!")
         print(
-            "You can upload this Tensor to a domain node by calling domain_client.load_dataset \
-            and passing in this tensor as an asset."
+            "You can upload this Tensor to a domain node by calling `<domain_client>.load_dataset` "
+            "and passing in this tensor as an asset."
         )
 
         return self.copy()._private(
