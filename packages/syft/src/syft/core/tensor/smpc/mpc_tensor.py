@@ -93,7 +93,7 @@ class MPCTensor(PassthroughTensor):
             raise ValueError("Shares should be a list or tuple")
 
         self.parties = parties
-        self.parties_info: List[Any] = MPCTensor.get_parties_info(parties)
+        self.parties_info: List[Tuple] = MPCTensor.get_parties_info(parties)
 
         if ring_size is not None:
             self.ring_size = ring_size
@@ -158,11 +158,11 @@ class MPCTensor(PassthroughTensor):
         return DEFAULT_RING_SIZE
 
     @staticmethod
-    def get_parties_info(parties: Iterable[Any]) -> List[GridURL]:
+    def get_parties_info(parties: Iterable[Any]) -> List[Tuple]:
         # relative
         from ....grid.client import GridHTTPConnection
 
-        parties_info: List[GridURL] = []
+        parties_info: List[Tuple] = []
         for party in parties:
             connection = party.routes[0].connection
             if not isinstance(connection, GridHTTPConnection):
@@ -193,7 +193,7 @@ class MPCTensor(PassthroughTensor):
                     # TODO : should modify to return same client if registered.
                     # print("Proxy Client already User Register", e)
             if base_url is not None:
-                parties_info.append((base_url,party.id,party.name))
+                parties_info.append((base_url, party.id, party.name))
             else:
                 raise Exception(
                     f"Failed to get GridURL from {base_url} for party {party}."
@@ -253,7 +253,7 @@ class MPCTensor(PassthroughTensor):
         secret: Any,
         parties: List[Any],
         shape: Tuple[int, ...],
-        parties_info: List[GridURL],
+        parties_info: List[Tuple],
         ring_size: int,
     ) -> Union[List[Tensor], List[TensorPointer]]:
         if utils.ispointer(secret):
@@ -279,7 +279,7 @@ class MPCTensor(PassthroughTensor):
         secret: Any,
         shape: Tuple[int, ...],
         parties: List[Any],
-        parties_info: List[GridURL],
+        parties_info: List[Tuple],
         ring_size: int,
     ) -> List[TensorPointer]:
         # stdlib
@@ -355,7 +355,7 @@ class MPCTensor(PassthroughTensor):
     def _get_shares_from_local_secret(
         secret: Any,
         shape: Tuple[int, ...],
-        parties_info: List[GridURL],
+        parties_info: List[Tuple],
         ring_size: int = DEFAULT_RING_SIZE,
     ) -> List[Tensor]:
 

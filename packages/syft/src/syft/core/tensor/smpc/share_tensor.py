@@ -25,7 +25,6 @@ import torch
 # relative
 from . import utils
 from .... import logger
-from ....grid import GridURL
 from ....lib.numpy.array import capnp_deserialize
 from ....lib.numpy.array import capnp_serialize
 from ....proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
@@ -136,7 +135,7 @@ class ShareTensor(PassthroughTensor):
     def __init__(
         self,
         rank: int,
-        parties_info: List[GridURL],
+        parties_info: List[Tuple],
         ring_size: int,
         clients: Optional[List[Any]] = None,
         value: Optional[Any] = None,
@@ -160,7 +159,7 @@ class ShareTensor(PassthroughTensor):
         super().__init__(value)
 
     @staticmethod
-    def login_clients(parties_info: List[GridURL]) -> Any:
+    def login_clients(parties_info: List[Tuple]) -> Any:
         # relative
         from ....grid.client.client import login
         from ....grid.client.proxy_client import ProxyClient
@@ -174,7 +173,9 @@ class ShareTensor(PassthroughTensor):
         for party_info in parties_info:
             # if its localhost change it to a host that resolves outside the container
             external_host_info = party_info[0].as_container_host()
-            client = CACHE_CLIENTS.get(str(external_host_info)+party_info[1].no_dash, None)
+            client = CACHE_CLIENTS.get(
+                str(external_host_info) + party_info[1].no_dash, None
+            )
 
             if client is None:
                 # # default cache to true, here to prevent multiple logins
@@ -190,9 +191,9 @@ class ShareTensor(PassthroughTensor):
                     verbose=False,
                 )
                 if client.id != party_info[1]:
-                    client = ProxyClient.create(client,party_info[1],party_info[2])
+                    client = ProxyClient.create(client, party_info[1], party_info[2])
 
-                CACHE_CLIENTS[str(external_host_info)+party_info[1].no_dash] = client
+                CACHE_CLIENTS[str(external_host_info) + party_info[1].no_dash] = client
             clients.append(client)
         GEVENT_LOGIN = False
         return clients
@@ -308,7 +309,7 @@ class ShareTensor(PassthroughTensor):
     def generate_przs(
         value: Any,
         shape: Tuple[int, ...],
-        parties_info: List[GridURL],
+        parties_info: List[Tuple],
         ring_size: Union[int, str] = DEFAULT_RING_SIZE,
         init_clients: bool = True,
     ) -> Tensor:
@@ -424,7 +425,7 @@ class ShareTensor(PassthroughTensor):
     def generate_przs_on_dp_tensor(
         value: Optional[Any],
         shape: Tuple[int],
-        parties_info: List[GridURL],
+        parties_info: List[Tuple],
         share_wrapper: Any,
         ring_size: Union[int, str] = DEFAULT_RING_SIZE,
     ) -> PassthroughTensor:
