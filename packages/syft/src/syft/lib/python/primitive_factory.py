@@ -80,7 +80,7 @@ class PrimitiveFactory(ABC):
             return value
 
         if isinstance(value, bool):
-            return python.Bool(value=value, id=id)
+            return python.Bool(value=value)
 
         if isinstance(value, int):
             return python.Int(value=value)

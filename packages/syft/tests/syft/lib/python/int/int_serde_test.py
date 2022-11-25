@@ -28,7 +28,7 @@ def test_send(client: sy.VirtualMachineClient) -> None:
     assert res == syft_int
 
 
-def test_string_int() -> None:
+def test_int_bytes() -> None:
     # Testing if multiple serialization of the similar object results in same bytes
     syft_string_1 = Int(7)
     syft_string_2 = Int(7)

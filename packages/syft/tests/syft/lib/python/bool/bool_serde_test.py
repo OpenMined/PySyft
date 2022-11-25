@@ -27,3 +27,12 @@ def test_send(client: sy.VirtualMachineClient) -> None:
     # Check that we can get back the object
     res = ptr.get()
     assert res == syft_bool
+
+
+def test_bool_bytes() -> None:
+    # Testing if multiple serialization of the similar object results in same bytes
+    syft_string_1 = Bool(True)
+    syft_string_2 = Bool(True)
+    assert sy.serialize(syft_string_1, to_bytes=True) == sy.serialize(
+        syft_string_2, to_bytes=True
+    )
