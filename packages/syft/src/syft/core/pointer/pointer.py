@@ -738,6 +738,6 @@ class Pointer(AbstractPointer):
             # it is a serialized pointer that we receive from another client do nothing
             return
 
-        if self.gc_enabled:
-            # this is not being used in the node currenetly
-            self.client.gc.apply(self)
+        # if self.gc_enabled:
+        #     # this is not being used in the node currenetly
+        #     self.client.gc.apply(self)
