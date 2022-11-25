@@ -15,6 +15,7 @@ from tqdm import tqdm
 from ....grid import GridURL
 from ....util import get_fully_qualified_name
 from ....util import size_mb
+from ....util import verify_tls
 from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
 from ...store.proxy_dataset import ProxyDataset
@@ -129,7 +130,7 @@ def abort_s3_object_upload(
 
     Args:
         client (boto3.client): boto3 client.
-        upload_id (str): upload id generated for mutlipart upload.
+        upload_id (str): upload id generated for multipart upload.
         asset_name (str): name of the data/asset.
     """
     # relative
@@ -215,7 +216,7 @@ def upload_to_s3_using_presigned(
             client_url = client.url_from_path(presigned_url)
             part["client_url"] = client_url
 
-            res = requests.put(client_url, data=data_chunk)
+            res = requests.put(client_url, data=data_chunk, verify=verify_tls())
 
             if not res.ok:  # raise an error if upload fails
                 error_message = (

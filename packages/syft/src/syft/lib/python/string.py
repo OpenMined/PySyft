@@ -12,12 +12,11 @@ from typing import Union
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import SupportsIndex
 
-# syft absolute
-import syft as sy
-
 # relative
 from ...core.common import UID
+from ...core.common.serde.deserialize import _deserialize as deserialize
 from ...core.common.serde.serializable import serializable
+from ...core.common.serde.serialize import _serialize as serialize
 from ...proto.lib.python.string_pb2 import String as String_PB
 from .int import Int
 from .primitive_factory import PrimitiveFactory
@@ -400,13 +399,13 @@ class String(UserString, PyPrimitive):
     def _object2proto(self) -> String_PB:
         return String_PB(
             data=self.data,
-            id=sy.serialize(obj=self.id),
+            id=serialize(obj=self.id),
             temporary_box=self.temporary_box,
         )
 
     @staticmethod
     def _proto2object(proto: String_PB) -> "String":
-        str_id: UID = sy.deserialize(blob=proto.id)
+        str_id: UID = deserialize(blob=proto.id)
         return String(
             value=proto.data,
             id=str_id,

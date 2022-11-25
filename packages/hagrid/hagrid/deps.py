@@ -75,6 +75,10 @@ NO_COLOR = "\033[0;0m"
 WARNING_MSG = f"\033[0;33mWARNING:{NO_COLOR}"
 
 
+def get_version_string() -> str:
+    return str(__version__) + "-dev" if EDITABLE_MODE else ""
+
+
 @dataclass
 class SetupIssue:
     issue_name: str
@@ -375,7 +379,7 @@ def gather_debug() -> Dict[str, Any]:
     debug_info["python_binary"] = sys.executable
     debug_info["dependencies"] = DEPENDENCIES
     debug_info["environment"] = ENVIRONMENT
-    debug_info["hagrid"] = __version__
+    debug_info["hagrid"] = get_version_string()
     debug_info["hagrid_dev"] = EDITABLE_MODE
     debug_info["hagrid_path"] = hagrid_root()
     debug_info["hagrid_repo_sha"] = commit_hash()
@@ -630,7 +634,8 @@ def check_deps(
                     output += "\nCommand:\n" + f"{issue.command} "
                 output += "\n"
 
-        print(output)
+        if len(output) > 0:
+            print(output)
         return None  # type: ignore
 
 

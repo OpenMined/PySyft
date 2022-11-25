@@ -6,11 +6,9 @@ from typing import Union
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft absolute
-import syft as sy
-
 # relative
 from ...core.common import UID
+from ...core.common.serde.deserialize import _deserialize as deserialize
 from ...core.common.serde.serializable import serializable
 from ...proto.lib.python.range_pb2 import Range as Range_PB
 from .iterator import Iterator
@@ -127,7 +125,7 @@ class Range(PyPrimitive):
             start=proto.start,
             stop=proto.stop,
             step=proto.step,
-            id=sy.deserialize(blob=proto.id),
+            id=deserialize(blob=proto.id),
         )
 
     @staticmethod

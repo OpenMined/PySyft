@@ -5,75 +5,13 @@ import pytest
 import syft as sy
 from syft.core.common.message import AbstractMessage
 from syft.core.io.address import Address
-from syft.core.node.common.node_service.infra_manager import infra_manager_messages
 from syft.core.node.common.node_service.node_setup import node_setup_messages
 from syft.core.node.common.node_service.request_receiver import (
     request_receiver_messages,
 )
 from syft.core.node.common.node_service.role_manager import role_manager_messages
-from syft.core.node.common.node_service.tensor_manager import tensor_manager_messages
 
 messages = {
-    # infra_manager_messages
-    "CreateWorker": {
-        "module": infra_manager_messages,
-        "request_content": {
-            "settings": {
-                "instance-size": "t4g.medium",
-                "vCPU": "2",
-                "network-bandwith": "5Gbps",
-                "vGPU": True,
-            }
-        },
-        "response_content": {"msg": "Worker Environment Created Successfully!"},
-    },
-    "DeleteWorker": {
-        "module": infra_manager_messages,
-        "request_content": {"worker_id": "f2a6as5d16fasd"},
-        "response_content": {"msg": "Worker Environment deleted Successfully!"},
-    },
-    "GetWorker": {
-        "module": infra_manager_messages,
-        "request_content": {"worker-id": "eqw9e4a5d846"},
-        "response_content": {
-            "worker-id": "eqw9e4a5d846",
-            "environment-name": "Heart Diseases Environment",
-            "owner": "user-id7",
-            "deployment-date": "05/12/2021",
-        },
-    },
-    "GetWorkers": {
-        "module": infra_manager_messages,
-        "request_content": {},
-        "response_content": {
-            "workers": {
-                "626sadaf631": {
-                    "environment-name": "Heart Diseases Environment",
-                    "owner": "user-id7",
-                    "deployment-date": "05/12/2021",
-                },
-                "a84ew64wq6e": {
-                    "worker-id": "eqw9e4a5d846",
-                    "environment-name": "Brain Diseases Environment",
-                    "owner": "user-id8",
-                    "deployment-date": "15/12/2021",
-                },
-            }
-        },
-    },
-    "UpdateWorker": {
-        "module": infra_manager_messages,
-        "request_content": {
-            "worker-id": "eqw9e4a5d846",
-            "settings": {
-                "instance-size": "t4g.large",
-                "vCPU": "2",
-                "network-bandwith": "5Gbps",
-                "vGPU": True,
-            },
-        },
-        "response_content": {"msg": "Worker Environment updated successfully!"},
-    },
     # role_manager_messages
     "CreateRole": {
         "module": role_manager_messages,
@@ -169,61 +107,6 @@ messages = {
                 },
             }
         },
-    },
-    # tensor_manager_messages
-    "CreateTensor": {
-        "module": tensor_manager_messages,
-        "request_content": {
-            "tensor": [1, 2, 3, 4, 5, 6],
-            "description": "Tensor Description",
-            "tags": ["#x", "#data-sample"],
-            "pointable": True,
-        },
-        "response_content": {"msg": "Tensor created succesfully!"},
-    },
-    "DeleteTensor": {
-        "module": tensor_manager_messages,
-        "request_content": {"tensor_id": "f2a6as5d16fasd"},
-        "response_content": {"msg": "Tensor deleted successfully!"},
-    },
-    "GetTensor": {
-        "module": tensor_manager_messages,
-        "request_content": {"tensor_id": "eqw9e4a5d846"},
-        "response_content": {
-            "description": "Tensor description",
-            "tags": ["#x", "#data-sample"],
-        },
-    },
-    "GetTensors": {
-        "module": tensor_manager_messages,
-        "request_content": {},
-        "response_content": {
-            "workers": {
-                "626sadaf631": {
-                    "tensor": [1, 2, 3, 4, 5, 6],
-                    "description": "Tensor description",
-                    "tags": ["#x", "#data-sample"],
-                    "pointable": True,
-                },
-                "a84ew64wq6e": {
-                    "tensor": [9, 8, 2, 3, 5, 6],
-                    "description": "Tensor sample description",
-                    "tags": ["#y", "#label-sample"],
-                    "pointable": True,
-                },
-            }
-        },
-    },
-    "UpdateTensor": {
-        "module": tensor_manager_messages,
-        "request_content": {
-            "tensor_id": "546a4d51",
-            "tensor": [1, 2, 3, 4, 5, 6],
-            "description": "Tensor description",
-            "tags": ["#x", "#data-sample"],
-            "pointable": True,
-        },
-        "response_content": {"msg": "Tensor updated successfully!"},
     },
     # request_receiver_messages
     "CreateRequest": {
