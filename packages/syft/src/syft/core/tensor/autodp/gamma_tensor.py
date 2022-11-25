@@ -107,6 +107,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
     }
     _exhausted = False
     is_enum = False
+    PUBLISH_POINTER_TYPE = "numpy.ndarray"
 
     def __init__(
         self,
