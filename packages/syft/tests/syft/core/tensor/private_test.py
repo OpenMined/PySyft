@@ -199,7 +199,7 @@ def test_gamma(tensor: Tensor, low: int, high: int) -> None:
     private = tensor.annotate_with_dp_metadata(
         lower_bound=low,
         upper_bound=high,
-        data_subjects=np.random.choice(["Optimus Prime", "Bumblebee"], (5, 5)),
+        data_subjects=data_subjects,
     )
     assert isinstance(private, Tensor)
     assert isinstance(private.child, GT)
