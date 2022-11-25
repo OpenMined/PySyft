@@ -519,8 +519,8 @@ class Tensor(
         # TODO: re-enable this in a way that doesnt happen when internal methods
         # call the constructor so it doesn't spam the output of notebooks and ci
         # print(
-        #     "Tensor created! You can activate Differential Privacy protection by calling .private() or \
-        #     .annotate_with_dp_metadata()."
+        #     "Tensor created! You can activate Differential Privacy protection by calling"
+        #     ".private() or .annotate_with_dp_metadata()."
         # )
 
     def tag(self, name: str) -> Tensor:
