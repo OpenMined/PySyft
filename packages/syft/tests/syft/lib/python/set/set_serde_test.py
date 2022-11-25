@@ -14,7 +14,6 @@ def test_serde() -> None:
     deserialized = Set._proto2object(proto=serialized)
 
     assert isinstance(deserialized, Set)
-    assert deserialized.id == syft_int.id
     assert deserialized == syft_int
 
 
@@ -27,3 +26,10 @@ def test_send(client: sy.VirtualMachineClient) -> None:
     # Check that we can get back the object
     res = ptr.get()
     assert res == syft_int
+
+
+def test_set_bytes() -> None:
+    # Testing if multiple serialization of the similar object results in same bytes
+    value_1 = Set({1, 2, 1})
+    value_2 = Set({1, 2, 1})
+    assert sy.serialize(value_1, to_bytes=True) == sy.serialize(value_2, to_bytes=True)
