@@ -112,7 +112,7 @@ class PrimitiveFactory(ABC):
 
         if type(value) in [list, UserList]:
             if not recurse:
-                return python.List(value=value, id=id)
+                return python.List(value=value)
             else:
                 # allow recursive primitive downcasting
                 new_list = []
@@ -128,7 +128,7 @@ class PrimitiveFactory(ABC):
                             )
                         else:
                             new_list.append(val)
-                return python.List(value=new_list, id=id)
+                return python.List(value=new_list)
 
         if type(value) in [dict, UserDict, OrderedDict]:
             constructor = (
