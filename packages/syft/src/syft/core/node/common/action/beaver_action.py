@@ -2,6 +2,7 @@
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -29,7 +30,7 @@ BEAVER_CACHE: Dict[UID, StorableObject] = {}  # Global cache for spdz mask value
 class BeaverAction(ImmediateActionWithoutReply):
     def __init__(
         self,
-        values: List[ShareTensor],
+        values: Union[List[ShareTensor], List[str]],
         locations: List[UID],
         address: Address,
         msg_id: Optional[UID] = None,
@@ -51,7 +52,7 @@ class BeaverAction(ImmediateActionWithoutReply):
 
     @staticmethod
     def beaver_populate(
-        data: ShareTensor, id_at_location: UID, node: AbstractNode
+        data: Union[ShareTensor, str], id_at_location: UID, node: AbstractNode
     ) -> None:
         """Populate the given input ShareTensor in the location specified.
 
@@ -86,7 +87,7 @@ class BeaverAction(ImmediateActionWithoutReply):
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         for value, location in zip(self.values, self.locations):
-            BeaverAction.beaver_populate(value, location, node)
+            BeaverAction.beaver_populate(value, location, node)  # type: ignore
 
     def _object2proto(self) -> BeaverAction_PB:
         values = [serialize(value, to_bytes=True) for value in self.values]
