@@ -167,7 +167,7 @@ class TensorPointer(Pointer):
             other_dtype = other.public_dtype
         elif isinstance(other, (int, float)):
             other_shape = (1,)
-            other_dtype = np.int32
+            other_dtype = DEFAULT_INT_NUMPY_TYPE
         elif isinstance(other, bool):
             other_shape = (1,)
             other_dtype = np.dtype("bool")
@@ -516,10 +516,12 @@ class Tensor(
         self.public_shape = public_shape
         self.public_dtype = public_dtype
 
-        print(
-            "Tensor created! You can activate Differential Privacy protection by calling .private() or \
-            .annotate_with_dp_metadata()."
-        )
+        # TODO: re-enable this in a way that doesnt happen when internal methods
+        # call the constructor so it doesn't spam the output of notebooks and ci
+        # print(
+        #     "Tensor created! You can activate Differential Privacy protection by calling"
+        #     ".private() or .annotate_with_dp_metadata()."
+        # )
 
     def tag(self, name: str) -> Tensor:
         self.tag_name = name
