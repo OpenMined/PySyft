@@ -163,6 +163,7 @@ class ShareTensor(PassthroughTensor):
     def login_clients(parties_info: List[GridURL]) -> Any:
         # relative
         from ....grid.client.client import login
+        from ....grid.client.proxy_client import ProxyClient
 
         global GEVENT_LOGIN
         while GEVENT_LOGIN:
@@ -172,8 +173,8 @@ class ShareTensor(PassthroughTensor):
         clients = []
         for party_info in parties_info:
             # if its localhost change it to a host that resolves outside the container
-            external_host_info = party_info.as_container_host()
-            client = CACHE_CLIENTS.get(str(external_host_info), None)
+            external_host_info = party_info[0].as_container_host()
+            client = CACHE_CLIENTS.get(str(external_host_info)+party_info[1].no_dash, None)
 
             if client is None:
                 # # default cache to true, here to prevent multiple logins
@@ -188,7 +189,10 @@ class ShareTensor(PassthroughTensor):
                     port=external_host_info.port,
                     verbose=False,
                 )
-                CACHE_CLIENTS[str(external_host_info)] = client
+                if client.id != party_info[1]:
+                    client = ProxyClient.create(client,party_info[1],party_info[2])
+
+                CACHE_CLIENTS[str(external_host_info)+party_info[1].no_dash] = client
             clients.append(client)
         GEVENT_LOGIN = False
         return clients
