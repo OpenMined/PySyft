@@ -14,7 +14,6 @@ def test_serde() -> None:
     deserialized = Bool._proto2object(proto=serialized)
 
     assert isinstance(deserialized, Bool)
-    assert deserialized.id == syft_bool.id
     assert deserialized == syft_bool
 
 
