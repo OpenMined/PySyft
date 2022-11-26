@@ -17,7 +17,6 @@ def test_serde() -> None:
     deserialized = Float._proto2object(proto=serialized)
 
     assert isinstance(deserialized, Float)
-    assert deserialized.id == syft_float.id
     assert deserialized == syft_float
 
 
@@ -56,3 +55,10 @@ def test_python_double() -> None:
     de = sy.deserialize(ser, from_bytes=True)
 
     assert neg_min_float == de
+
+
+def test_float_bytes() -> None:
+    # Testing if multiple serialization of the similar object results in same bytes
+    value_1 = Float(7.5)
+    value_2 = Float(7.5)
+    assert sy.serialize(value_1, to_bytes=True) == sy.serialize(value_2, to_bytes=True)
