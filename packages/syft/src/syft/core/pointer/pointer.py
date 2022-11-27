@@ -361,7 +361,12 @@ class Pointer(AbstractPointer):
         self.client.send_immediate_msg_without_reply(msg=obj_msg)
         # create pointer which will point to float result
 
-        ptr = self.client.lib_ast.query("syft.lib.python.Any").pointer_type(
+        if not hasattr(self, "PUBLISH_POINTER_TYPE"):
+            raise TypeError(
+                f"Publish operation cannot be performed on pointer type: {self.__name__}"
+            )
+
+        ptr = self.client.lib_ast.query(self.PUBLISH_POINTER_TYPE).pointer_type(  # type: ignore
             client=self.client
         )
         ptr.id_at_location = id_at_location

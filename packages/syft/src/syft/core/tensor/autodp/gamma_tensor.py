@@ -106,6 +106,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
     }
     _exhausted = False
     is_enum = False
+    PUBLISH_POINTER_TYPE = "numpy.ndarray"
 
     def __init__(
         self,
@@ -377,6 +378,8 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
                 data_subjects = getattr(self.data_subjects, op_str)(*args, **kwargs)
             if op_str in INPLACE_OPS:
                 data_subjects = self.data_subjects
+        elif op_str in ("ones_like", "zeros_like"):
+            data_subjects = self.data_subjects
         else:
             raise ValueError(f"Invalid Numpy Operation: {op_str} for DSA")
 
@@ -1382,12 +1385,27 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         """
         return self._apply_self_tensor_op("__getitem__", key)
 
+    def zeros_like(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the "zeros_like" operation on "self"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return self._apply_self_tensor_op("zeros_like", *args, **kwargs)
+
     def ones_like(
         self,
         *args: Any,
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-        """Apply the "ones like" operation on self"
+        """Apply the "ones_like" operation on "self"
 
         Args:
             y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -1763,6 +1781,15 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             public_shape=public_shape,
             public_dtype=public_dtype,
         )
+
+
+@implements(TensorWrappedGammaTensorPointer, np.zeros_like)
+def zeros_like(
+    tensor: TensorWrappedGammaTensorPointer,
+    *args: Any,
+    **kwargs: Any,
+) -> TensorWrappedGammaTensorPointer:
+    return tensor.zeros_like(*args, **kwargs)
 
 
 @implements(TensorWrappedGammaTensorPointer, np.ones_like)
