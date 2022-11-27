@@ -6,10 +6,7 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # relative
-from ...core.common import UID
-from ...core.common.serde.deserialize import _deserialize as deserialize
 from ...core.common.serde.serializable import serializable
-from ...core.common.serde.serialize import _serialize as serialize
 from ...proto.lib.python.bool_pb2 import Bool as Bool_PB
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
@@ -24,25 +21,14 @@ def dispatch_other(obj: Any) -> bool:
 
 @serializable()
 class Bool(int, PyPrimitive):
-    def __new__(cls, value: Any = None, id: Optional[UID] = None) -> "Bool":
+    def __new__(cls, value: Any = None) -> "Bool":
         value = bool(value)
         obj = int.__new__(cls, value)
         return obj
 
-    def __init__(self, value: Any = None, id: Optional[UID] = None):
+    def __init__(self, value: Any = None):
         self.value: bool = bool(value)
-        self._id: UID = id if id else UID()
         self.my_field: int = 0
-
-    @property
-    def id(self) -> UID:
-        """We reveal PyPrimitive.id as a property to discourage users and
-        developers of Syft from modifying .id attributes after an object
-        has been initialized.
-        :return: returns the unique id of the object
-        :rtype: UID
-        """
-        return self._id
 
     def upcast(self) -> bool:
         return bool(self)
@@ -256,11 +242,11 @@ class Bool(int, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=self.value.real)
 
     def _object2proto(self) -> Bool_PB:
-        return Bool_PB(id=serialize(obj=self.id), data=self)
+        return Bool_PB(data=self)
 
     @staticmethod
     def _proto2object(proto: Bool_PB) -> "Bool":
-        return Bool(id=deserialize(blob=proto.id), value=proto.data)
+        return Bool(value=proto.data)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

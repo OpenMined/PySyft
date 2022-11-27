@@ -11,10 +11,7 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # relative
-from ...core.common import UID
-from ...core.common.serde.deserialize import _deserialize as deserialize
 from ...core.common.serde.serializable import serializable
-from ...core.common.serde.serialize import _serialize as serialize
 from ...proto.lib.python.slice_pb2 import Slice as Slice_PB
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
@@ -29,16 +26,14 @@ class Slice(PyPrimitive):
         start: Any = None,
         stop: Optional[Any] = None,
         step: Optional[Any] = None,
-        id: Optional[UID] = None,
     ):
         """
-        This class will receive start, stop, step and ID as valid parameters.
+        This class will receive start, stop, step  valid parameters.
 
         Args:
             start (Any): Index/position where the slicing of the object starts.
             stop (Any): Index/position which the slicing takes place. The slicing stops at index stop-1.
             step (Any): Determines the increment between each index for slicing.
-            id (UID): PySyft's objects have an unique ID related to them.
         """
 
         # first, second, third
@@ -48,19 +43,6 @@ class Slice(PyPrimitive):
             start = None
 
         self.value = slice(start, stop, step)
-        self._id: UID = id if id else UID()
-
-    @property
-    def id(self) -> UID:
-        """
-        We reveal PyPrimitive.id as a property to discourage users and
-        developers of Syft from modifying .id attributes after an object
-        has been initialized.
-
-        Returns:
-            UID: The unique ID of the object.
-        """
-        return self._id
 
     def __eq__(self, other: Any) -> SyPrimitiveRet:
         """
@@ -216,8 +198,6 @@ class Slice(PyPrimitive):
             slice_pb.step = self.step
             slice_pb.has_step = True
 
-        slice_pb.id.CopyFrom(serialize(obj=self._id))
-
         return slice_pb
 
     @staticmethod
@@ -230,7 +210,6 @@ class Slice(PyPrimitive):
         Returns:
             Slice: PySyft Slice object instance.
         """
-        id_: UID = deserialize(blob=proto.id)
         start = None
         stop = None
         step = None
@@ -247,7 +226,6 @@ class Slice(PyPrimitive):
             start=start,
             stop=stop,
             step=step,
-            id=id_,
         )
 
     @staticmethod
