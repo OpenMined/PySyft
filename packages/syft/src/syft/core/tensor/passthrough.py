@@ -708,14 +708,8 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
         return NotImplemented
 
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        implementation = query_implementation(self.__class__, ufunc)
-        if implementation:
-            return implementation(*inputs, **kwargs)
-
-        method_name = ufunc.__name__
-        implementation = getattr(self.__class__, method_name, None)
-        return implementation(*inputs, **kwargs) if implementation else NotImplemented
+    # Set __array_ufunc_ = None for now until we can implement this properly
+    __array_ufunc__ = None
 
     def __repr__(self):
         return f"{self.__class__.__name__}(child={self.child})"
