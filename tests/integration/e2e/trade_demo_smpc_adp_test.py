@@ -194,6 +194,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     assert len(sycure_result) == 10
     assert sum(sycure_result) > -6000
     assert sum(sycure_result) < 6000
+    assert public_result.child[0].path_and_name == "numpy.ndarray"
 
     assert ca.privacy_budget < PRIVACY_BUDGET + BUDGET_INCREASE
     assert ca.privacy_budget > 10
