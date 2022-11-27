@@ -1,7 +1,6 @@
 # stdlib
 from typing import Any
 from typing import Iterable
-from typing import Optional
 from typing import Set as TypeSet
 
 # third party
@@ -11,7 +10,6 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from ...core.common.serde.deserialize import _deserialize as deserialize
 from ...core.common.serde.serializable import serializable
 from ...core.common.serde.serialize import _serialize as serialize
-from ...core.common.uid import UID
 from ...proto.lib.python.set_pb2 import Set as Set_PB
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
@@ -22,21 +20,8 @@ from .util import upcast
 
 @serializable()
 class Set(set, PyPrimitive):
-    def __init__(self, iterable: Iterable, _id: Optional[UID] = None):
+    def __init__(self, iterable: Iterable):
         super().__init__(iterable)
-
-        self._id = UID() if _id is None else _id
-
-    @property
-    def id(self) -> UID:
-        """We reveal PyPrimitive.id as a property to discourage users and
-        developers of Syft from modifying .id attributes after an object
-        has been initialized.
-
-        :return: returns the unique id of the object
-        :rtype: UID
-        """
-        return self._id
 
     def upcast(self) -> TypeSet:
         # recursively upcast
@@ -171,19 +156,16 @@ class Set(set, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     def _object2proto(self) -> Set_PB:
-        id_ = serialize(obj=self.id)
         downcasted = [downcast(value=element) for element in self]
         data = [serialize(obj=element, to_bytes=True) for element in downcasted]
-        return Set_PB(id=id_, data=data)
+        return Set_PB(data=data)
 
     @staticmethod
     def _proto2object(proto: Set_PB) -> "Set":
-        id_: UID = deserialize(blob=proto.id)
         value = [
             upcast(deserialize(blob=element, from_bytes=True)) for element in proto.data
         ]
         new_list = Set(value)
-        new_list._id = id_
         return new_list
 
     @staticmethod
