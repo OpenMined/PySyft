@@ -112,7 +112,7 @@ class UserIsOwner(BasePermission):
         _is_owner = False
         if _target_user:  # If target user exists
             if (
-                node.roles.first(id=_target_user.role).name
+                node.roles.first(id=request_user.role).name  # type: ignore
                 == node.roles.owner_role.name
             ):  # If the user has role `Owner`
                 _is_owner = True

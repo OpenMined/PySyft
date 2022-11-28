@@ -1,12 +1,10 @@
 syntax = "proto3";
 
 package syft.lib.python;
-import "proto/core/common/common_object.proto";
 
 message Iterator {
-  syft.core.common.UID id = 1;
-  bytes obj_ref = 2;
-  int32 index = 3;
-  int32 max_len = 4;
-  bool exhausted = 5;
+  bytes obj_ref = 1;
+  int32 index = 2;
+  int32 max_len = 3;
+  bool exhausted = 4;
 }

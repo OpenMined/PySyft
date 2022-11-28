@@ -9,6 +9,7 @@ from typing import Optional
 from typing import Set
 from typing import Tuple
 from typing import Union
+from warnings import warn
 
 # third party
 import numpy as np
@@ -63,6 +64,9 @@ def liststrtonumpyutf8(string_list: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
 
 @serializable(recursive_serde=True)
 class DataSubjectList:
+    """[DEPRECATED] This class has been deprecated in v0.7.0 and will be removed in future versions.
+    Instead use the class `sy.DataSubjectArray` to define data subjects for your dataset."""
+
     __attr_allowlist__ = ("one_hot_lookup", "data_subjects_indexed")
     __slots__ = ("one_hot_lookup", "data_subjects_indexed")
 
@@ -76,13 +80,26 @@ class DataSubjectList:
         one_hot_lookup: np.ndarray[Union[DataSubject, str, np.integer]],
         data_subjects_indexed: np.ndaray,
     ) -> None:
+        deprec_msg = (
+            f"{self.__class__.__name__} has been deprecated in v0.7.0 and will be removed in future versions. "
+            "Using this class may throw errors as it is no longer supported for calculation of Auto DP. "
+            "Instead use the class `sy.DataSubjectArray.from_objs` to define data subjects for your dataset."
+        )
+        warn(deprec_msg, DeprecationWarning, stacklevel=2)
         self.one_hot_lookup = one_hot_lookup
         self.data_subjects_indexed = data_subjects_indexed
 
     @staticmethod
     def from_series(entities_dataframe_slice: pd.Series) -> DataSubjectList:
-        """Given a Pandas Series object (such as from
+        """[DEPRECATED] Given a Pandas Series object (such as from
         getting a column from a pandas DataFrame, return an DataSubjectList"""
+
+        deprec_msg = (
+            "DataSubjectList has been deprecated in v0.7.0 and will be removed in future versions. "
+            "Using this class may throw errors as it is no longer supported for calculation of Auto DP. "
+            "Instead use the class `sy.DataSubjectArray.from_objs` to define data subjects for your dataset."
+        )
+        warn(deprec_msg, DeprecationWarning, stacklevel=2)
 
         # This will be the equivalent of the DataSubjectList.data_subjects_indexed
         if not isinstance(entities_dataframe_slice, np.ndarray):
@@ -109,6 +126,13 @@ class DataSubjectList:
 
     @staticmethod
     def from_objs(entities: Union[np.ndarray, list]) -> DataSubjectList:
+
+        deprec_msg = (
+            "DataSubjectList has been deprecated in v0.7.0 and will be removed in future versions. "
+            "Using this class may throw errors as it is no longer supported for calculation of Auto DP. "
+            "Instead use the class `sy.DataSubjectArray.from_objs` to define data subjects for your dataset."
+        )
+        warn(deprec_msg, DeprecationWarning, stacklevel=2)
 
         entities = np.array(entities, copy=False)
         one_hot_lookup, entities_indexed = np.unique(entities, return_inverse=True)
