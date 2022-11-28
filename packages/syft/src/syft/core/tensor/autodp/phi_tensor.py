@@ -67,7 +67,7 @@ INPLACE_OPS = {"resize", "sort"}
 
 
 @serializable(recursive_serde=True)
-class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
+class TensorWrappedPhiTensorPointer(Pointer):
     __name__ = "TensorWrappedPhiTensorPointer"
     __module__ = "syft.core.tensor.autodp.phi_tensor"
     __attr_allowlist__ = [
