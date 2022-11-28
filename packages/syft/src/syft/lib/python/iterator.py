@@ -10,7 +10,6 @@ from .. import python as py
 from ...core.common.serde.deserialize import _deserialize as deserialize
 from ...core.common.serde.serializable import serializable
 from ...core.common.serde.serialize import _serialize as serialize
-from ...core.common.uid import UID
 from ...logger import traceback_and_raise
 from ...proto.lib.python.iterator_pb2 import Iterator as Iterator_PB
 from .primitive_factory import PrimitiveFactory
@@ -24,7 +23,6 @@ class Iterator(PyPrimitive):
         super().__init__()
         self._obj_ref = _ref
         self._index = 0
-        self._id = UID()
         self.max_len = max_len
         self.exhausted = False
 
@@ -138,13 +136,11 @@ class Iterator(PyPrimitive):
     # And there are similar edge cases to this.
 
     def _object2proto(self) -> Iterator_PB:
-        id_ = serialize(obj=self._id)
         obj_ref_ = serialize(py.list.List(list(self._obj_ref)), to_bytes=True)
         index_ = self._index
         max_len_ = self.max_len
         exhausted_ = self.exhausted
         return Iterator_PB(
-            id=id_,
             obj_ref=obj_ref_,
             index=index_,
             max_len=max_len_,
@@ -153,7 +149,6 @@ class Iterator(PyPrimitive):
 
     @staticmethod
     def _proto2object(proto: Iterator_PB) -> "Iterator":
-        id_: UID = deserialize(blob=proto.id)
         obj_ref_ = deserialize(blob=proto.obj_ref, from_bytes=True)
         index_ = proto.index
         max_len_ = proto.max_len
@@ -163,7 +158,6 @@ class Iterator(PyPrimitive):
 
         new_iter._index = index_
         new_iter.exhausted = exhausted_
-        new_iter._id = id_
 
         return new_iter
 

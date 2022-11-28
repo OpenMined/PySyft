@@ -455,7 +455,7 @@ class Dataset:
                     "ERROR: all private assets must be NumPy ndarray.int32 assets "
                     + "with proper Differential Privacy metadata applied.\n"
                     + "\n"
-                    + "Example: syft.Tensor(np.ndarray([1,2,3,4]).astype(np.int32)).private()\n\n"
+                    + "Example: syft.Tensor(np.ndarray([1,2,3,4]).astype(np.int32)).annotate_with_dp_metadata()\n\n"
                     + "and then follow the wizard. 🧙"
                 )
                 # print(
@@ -467,7 +467,8 @@ class Dataset:
                 #     + "This means you'll need to manually approve any requests which "
                 #     + "leverage this data. If this is ok with you, proceed. If you'd like to use "
                 #     + "automatic differential privacy budgeting, please pass in a DP-compatible tensor type "
-                #     + "such as by calling .private() on a sy.Tensor with a np.int32 or np.float32 inside."
+                #     + "such as by calling .annotate_with_dp_metadata() "
+                #     + "on a sy.Tensor with a np.int32 or np.float32 inside."
                 # )
                 #
                 # pref = input("Are you sure you want to proceed? (y/n)")
