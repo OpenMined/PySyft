@@ -1,0 +1,428 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Joining a Network &#8212; PySyft  documentation</title>
+    
+  <link href="../../_static/css/theme.css" rel="stylesheet">
+  <link href="../../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/pysyft.css" />
+    
+  <link rel="preload" as="script" href="../../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/clipboard.min.js"></script>
+    <script src="../../_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="None">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../../index.html">
+  <img src="../../_static/logo.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../getting_started/index.html">
+  Getting Started
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../api_reference/index.html">
+  API reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../developer_guide/index.html">
+  Contributor Guidelines
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../deployment/glossary.html">
+  Glossary
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../resources/index.html">
+  Resources
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../index.html">
+  How-to Guides
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/OpenMined/PySyft" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/openminedorg" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+              
+              <div class="toc-item">
+                
+<div class="tocsection onthispage pt-5 pb-3">
+    <i class="fas fa-list"></i> On this page
+</div>
+
+<nav id="bd-toc-nav">
+    <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#pre-requisites-steps">
+   🚨 Pre-Requisites Steps
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#overview-of-this-tutorial">
+   📒 Overview of this tutorial
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#step-1-import-syft">
+     Step 1: Import Syft
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#step-2-login-to-your-domain">
+     Step 2: Login to your domain
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#step-3-fetch-all-available-networks">
+     Step 3: Fetch all Available Networks
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#step-4-connect-to-the-network">
+     Step 4: Connect to the Network
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#step-5-fetch-all-domains-on-the-network">
+     Step 5: Fetch all Domains on the Network
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#step-6-apply-our-domain-to-the-network">
+     Step 6: Apply our Domain to the Network
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#step-7-verify-our-domain-on-the-same-network">
+     Step 7: Verify our Domain on the same Network
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#step-8-verify-the-vpn-status">
+     Step 8: Verify the VPN status
+    </a>
+   </li>
+  </ul>
+ </li>
+</ul>
+
+</nav>
+              </div>
+              
+              <div class="toc-item">
+                
+              </div>
+              
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <section id="joining-a-network">
+<h1>Joining a Network<a class="headerlink" href="#joining-a-network" title="Permalink to this headline">¶</a></h1>
+<p><strong>Data Owner Tutorials</strong></p>
+<p>☑️ 00-deploy-domain</p>
+<p>☑️ 01-upload-data</p>
+<p>☑️ 02-create-account</p>
+<p>◻️ 03-join-network👈</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><strong>TIP:</strong> To run this tutorial interactively in Jupyter Lab on your own machine type:</p>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">U</span> <span class="n">hagrid</span>
+<span class="n">hagrid</span> <span class="n">quickstart</span> <span class="n">data</span><span class="o">-</span><span class="n">owner</span>
+</pre></div>
+</div>
+<p>A Network Node is a node that connects different domains to a broader base of data scientists (also known as a network’s members). It is a server which exists outside of any data owner’s institution, providing search &amp; discovery, VPN, and authentication services to the network of data owners and data scientists.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Data is only stored on the separate Domain Servers. Network Nodes do not contain data, they simply provide an extra layer of services to Domain Nodes and Data Science users.</p>
+</div>
+<p>Let us give an example: assume you are in a hospital and the hospital has different cancer-related datasets hosted on their domain. The hospital now wants to increase the research impact their datasets can have but does not want to do so at the cost of risking a privacy leak nor at the risk of moving their data. By joining a network (for example one hosted by WHO) a Domain Owner can increase the searchability of their datasets to appropriate audiences without those datasets needing to leave the Domain servers.</p>
+<p>In today’s tutorial we will learn how to join a network and apply our domain to it.</p>
+<section id="pre-requisites-steps">
+<h2>🚨 Pre-Requisites Steps<a class="headerlink" href="#pre-requisites-steps" title="Permalink to this headline">¶</a></h2>
+<p>Before you can create user accounts on your domain, you have to first:</p>
+<ul class="simple">
+<li><p><cite>Login to your Domain Node</cite></p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The above prerequisite step is covered in an existing tutorial <a class="reference external" href="https://openmined.github.io/PySyft/guides/data-owner/00-deploy-domain.html">How to deploy a Domain Node</a>. Please execute those steps before implementing this tutorial.</p>
+</div>
+</section>
+<section id="overview-of-this-tutorial">
+<h2>📒 Overview of this tutorial<a class="headerlink" href="#overview-of-this-tutorial" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li><p><strong>Login</strong> to your Domain Server</p></li>
+<li><p><strong>Finding</strong> a Network</p></li>
+<li><p><strong>Applying</strong> our Domain to the Network</p></li>
+<li><p><strong>Verifying</strong> our Domain on the Network</p></li>
+</ol>
+<section id="step-1-import-syft">
+<h3>Step 1: Import Syft<a class="headerlink" href="#step-1-import-syft" title="Permalink to this headline">¶</a></h3>
+<p>Syft is the main library our Domain servers run off of, so to start we will need to import Syft so that our methods in later steps will work.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">In</span><span class="p">:</span>
+
+<span class="c1"># run this cell</span>
+<span class="kn">import</span> <span class="nn">syft</span> <span class="k">as</span> <span class="nn">sy</span>
+</pre></div>
+</div>
+</section>
+<section id="step-2-login-to-your-domain">
+<h3>Step 2: Login to your domain<a class="headerlink" href="#step-2-login-to-your-domain" title="Permalink to this headline">¶</a></h3>
+<p>Once you have imported syft, and have your domain node up along with it’s credentials available to you, connect and login to the domain hosted at the URL generated on the Step 4 of the Deploy Domain notebook.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The below cell has default credentials, please change accordingly.</p>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">In</span><span class="p">:</span>
+
+<span class="c1"># run this cell</span>
+<span class="n">domain_client</span> <span class="o">=</span> <span class="n">sy</span><span class="o">.</span><span class="n">login</span><span class="p">(</span>
+ <span class="n">url</span><span class="o">=</span><span class="s2">&quot;http://localhost:8081/&quot;</span><span class="p">,</span> <span class="n">email</span><span class="o">=</span><span class="s2">&quot;info@openmined.org&quot;</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="s2">&quot;changethis&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="step-3-fetch-all-available-networks">
+<h3>Step 3: Fetch all Available Networks<a class="headerlink" href="#step-3-fetch-all-available-networks" title="Permalink to this headline">¶</a></h3>
+<p>Now we’ve come to the main part, let’s take a look at what networks are available for us to join.
+The command below will fetch all of the currently available networks, this list may change as more networks get created or as they go on and offline.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">In</span><span class="p">:</span>
+
+<span class="c1"># run this cell</span>
+<span class="n">sy</span><span class="o">.</span><span class="n">networks</span>
+</pre></div>
+</div>
+<p>You can now choose the network that suits best your needs. After looking at the available networks, let’s choose a network that best fits our domain. For this tutorial we are going to choose the <strong>OpenMined</strong> network.</p>
+</section>
+<section id="step-4-connect-to-the-network">
+<h3>Step 4: Connect to the Network<a class="headerlink" href="#step-4-connect-to-the-network" title="Permalink to this headline">¶</a></h3>
+<p>In future iterations of PyGrid Network nodes will be able to have domains join as Members or as Guests, but in today’s current iteration of PyGrid all domains start out by joining as Guests. To apply to a network as a guest we first need to connect to the network server.</p>
+<p>Connecting to a network can be done via it’s name/URL/index in the above list.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">In</span><span class="p">:</span>
+
+<span class="c1"># run this cell</span>
+<span class="n">network_client</span> <span class="o">=</span> <span class="n">sy</span><span class="o">.</span><span class="n">networks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>On successful login, the <cite>network_client</cite> will contain an authenticated client to the network.</p>
+</section>
+<section id="step-5-fetch-all-domains-on-the-network">
+<h3>Step 5: Fetch all Domains on the Network<a class="headerlink" href="#step-5-fetch-all-domains-on-the-network" title="Permalink to this headline">¶</a></h3>
+<p>Now that we have an authenticated client with the network, let’s fetch and see the currently connected domains on the network.</p>
+<p>We can list all of them with the below command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">In</span><span class="p">:</span>
+
+<span class="c1"># run this cell</span>
+<span class="n">network_client</span><span class="o">.</span><span class="n">domains</span>
+</pre></div>
+</div>
+<p>Since we have not applied our domain yet, it should not be visible on the output of the above command.</p>
+</section>
+<section id="step-6-apply-our-domain-to-the-network">
+<h3>Step 6: Apply our Domain to the Network<a class="headerlink" href="#step-6-apply-our-domain-to-the-network" title="Permalink to this headline">¶</a></h3>
+<p>In this step, we will be joining the OpenMined network. If our application to join gets accepted, our domain will then be listed among the available domains on this network which will help Data Scientists find and work from our datasets.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This step might have multiple retries before actually getting connected, so please don’t worry!</p>
+</div>
+<p>The below command will apply our domain node to the network we just authenticated with</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">In</span><span class="p">:</span>
+
+<span class="c1"># run this cell</span>
+<span class="n">domain_client</span><span class="o">.</span><span class="n">apply_to_network</span><span class="p">(</span><span class="n">network_client</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="step-7-verify-our-domain-on-the-same-network">
+<h3>Step 7: Verify our Domain on the same Network<a class="headerlink" href="#step-7-verify-our-domain-on-the-same-network" title="Permalink to this headline">¶</a></h3>
+<p>In this step, we will verify whether we have successfully joined the network node or not. We will do this by listing the domains available on this network and seeing whether our domain appears.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">In</span><span class="p">:</span>
+
+<span class="c1"># run this cell</span>
+<span class="n">network_client</span><span class="o">.</span><span class="n">domains</span>
+</pre></div>
+</div>
+<p>If you can see your domain’s name here, then hoorah!</p>
+<p>If you haven’t, don’t worry, go through the above steps and see if you missed anything.</p>
+</section>
+<section id="step-8-verify-the-vpn-status">
+<h3>Step 8: Verify the VPN status<a class="headerlink" href="#step-8-verify-the-vpn-status" title="Permalink to this headline">¶</a></h3>
+<p>Now, let us verify that our domain is succesfully connected to the Network node via VPN.</p>
+<p>Run the cell below as mentioned:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">In</span><span class="p">:</span>
+
+<span class="c1"># run this cell</span>
+<span class="n">domain_client</span><span class="o">.</span><span class="n">vpn_status</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>You should receive the domain ID in the <cite>peers list</cite> in the connected field. This confirms our connection to the network, Yay!</p>
+<p>Now our domain node applied on the network and we have succesfully joined it!👏</p>
+</section>
+</section>
+</section>
+
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Openmined Community.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

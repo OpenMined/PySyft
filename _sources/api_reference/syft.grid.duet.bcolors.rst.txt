@@ -1,4 +1,4 @@
-﻿syft.grid.duet.bcolors
+syft.grid.duet.bcolors
 ======================
 
 .. currentmodule:: syft.grid.duet

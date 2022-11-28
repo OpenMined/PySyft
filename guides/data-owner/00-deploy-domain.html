@@ -287,7 +287,7 @@ let’s start by learning how to deploy a domain server.</p>
 </ul>
 <section id="step-1-install-wizard">
 <h3>Step 1: Install wizard<a class="headerlink" href="#step-1-install-wizard" title="Permalink to this headline">¶</a></h3>
-<p>To simplify the installation process, we have an <cite>install wizard</cite> will help you
+<p>To simplify the installation process, we have an <cite>install wizard</cite> that will help you
 setup the latest versions of <cite>hagrid</cite> and <cite>syft</cite> on your machine.</p>
 <p>You can go to the install wizard at any time by running the below command:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hagrid</span> <span class="n">quickstart</span>
@@ -328,7 +328,7 @@ preference.</p>
 
 DOMAIN_NAME = &quot;My Domain&quot;
 
-!hagrid launch {DOMAIN_NAME} to docker:8081 --tag=latest --tail=false --silent
+!hagrid launch {DOMAIN_NAME} to docker:8081 --tag=latest --tail=false
 </pre></div>
 </div>
 <p>While this command runs, you will see various <code class="docutils literal notranslate"><span class="pre">volumes</span></code> and
@@ -344,7 +344,7 @@ Let’s do a quick health check to ensure the Domain is up and running.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>In:
 
 # run this cell
-!hagrid check localhost:8081 --silent
+!hagrid check localhost:8081
 
 Out:
 

@@ -302,7 +302,7 @@ communicate with your domain node, you must first <code class="docutils literal 
 </div>
 </section>
 <section id="step-2-log-into-domain">
-<h3>Step 2: Log into Domain<a class="headerlink" href="#step-2-log-into-domain" title="Permalink to this headline">¶</a></h3>
+<span id="step2"></span><h3>Step 2: Log into Domain<a class="headerlink" href="#step-2-log-into-domain" title="Permalink to this headline">¶</a></h3>
 <p>By default, only the Domain node <code class="docutils literal notranslate"><span class="pre">Admin</span></code> can upload data,
 so to upload your data, you will need to first login as the admin.
 (<em>Upload data permissions can be customized after logging into the domain node.</em>)</p>
@@ -325,7 +325,7 @@ try:
       password=&quot;changethis&quot;
    )
 except Exception as e:
-   print(&quot;Unable to login. Please check your domain is up with `!hagrid check localhost:8081 --silent`&quot;)
+   print(&quot;Unable to login. Please check your domain is up with `!hagrid check localhost:8081`&quot;)
 
 Out:
 
@@ -333,6 +333,11 @@ Connecting to 20.253.155.183... done! Logging into openmined... done!
 </pre></div>
 </div>
 <p>Lovely :) You have just logged in to your Domain.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Steps to change the default admin credentials for Domain Owner are shown below 👇</p>
+</div>
+<p><a class="reference internal" href="../../_images/01-upload-data-01.gif"><img alt="01-upload-data-01" src="../../_images/01-upload-data-01.gif" style="width: 95%;" /></a></p>
 </section>
 <section id="step-3-prepare-dataset">
 <h3>Step 3: Prepare Dataset<a class="headerlink" href="#step-3-prepare-dataset" title="Permalink to this headline">¶</a></h3>
@@ -361,7 +366,7 @@ Connecting to 20.253.155.183... done! Logging into openmined... done!
 </div>
 </section>
 <section id="step-4-annotate-data-for-automatic-dp">
-<h3>Step 4: Annotate Data for Automatic DP<a class="headerlink" href="#step-4-annotate-data-for-automatic-dp" title="Permalink to this headline">¶</a></h3>
+<span id="step4"></span><h3>Step 4: Annotate Data for Automatic DP<a class="headerlink" href="#step-4-annotate-data-for-automatic-dp" title="Permalink to this headline">¶</a></h3>
 <p>Now that we have our dataset, we can begin annotating it with
 privacy-specific metadata called Auto DP metadata. Auto DP
 metadata allows the PySyft library to protect and adjust the
@@ -369,6 +374,12 @@ visibility different Data Scientists will have into any one of
 our data subjects. <code class="docutils literal notranslate"><span class="pre">Data</span> <span class="pre">Subjects</span></code> are the entities whose privacy
 we want to protect. So, in this case, they are the individual
 family members.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In order to protect the <code class="docutils literal notranslate"><span class="pre">privacy</span></code> of the people within our dataset we
+first need to specify who those people are. In this example we have
+created a column with unique <code class="docutils literal notranslate"><span class="pre">ID’s</span></code> for each person in this dataset.</p>
+</div>
 <section id="important-steps">
 <h4>Important steps:<a class="headerlink" href="#important-steps" title="Permalink to this headline">¶</a></h4>
 <ul class="simple">
@@ -378,16 +389,17 @@ family members.</p>
 <li><p>when defining min and max values, we are actually defining the
 <code class="docutils literal notranslate"><span class="pre">theoretical</span></code> amount of values that could be learned about that
 aspect.</p></li>
-<li><p>in our case, the minimum age can be <code class="docutils literal notranslate"><span class="pre">0</span></code>; theoretically, the maximum
-age can be <code class="docutils literal notranslate"><span class="pre">100</span></code> or the oldest living person to date.</p></li>
+<li><p>To help obscure the variables someone may learn about these datasets
+we then need to set an appropriate <code class="docutils literal notranslate"><span class="pre">lower_bound</span></code> to the <code class="docutils literal notranslate"><span class="pre">lowest</span></code> possible persons age <code class="docutils literal notranslate"><span class="pre">(0)</span></code>,
+and the <code class="docutils literal notranslate"><span class="pre">upper_bound</span></code> to the <code class="docutils literal notranslate"><span class="pre">highest</span></code> possible (mostly) persons age <code class="docutils literal notranslate"><span class="pre">(100)</span></code>.</p></li>
 </ul>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">In</span><span class="p">:</span>
 
 <span class="c1"># run this cell</span>
 <span class="n">data_subjects</span> <span class="o">=</span> <span class="n">sy</span><span class="o">.</span><span class="n">DataSubjectArray</span><span class="o">.</span><span class="n">from_objs</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;ID&quot;</span><span class="p">])</span>
 
-<span class="n">age_data</span> <span class="o">=</span> <span class="n">sy</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;Age&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">annotated_with_dp_metadata</span><span class="p">(</span>
-   <span class="n">min_val</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">max_val</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">data_subjects</span><span class="o">=</span><span class="n">data_subjects</span>
+<span class="n">age_data</span> <span class="o">=</span> <span class="n">sy</span><span class="o">.</span><span class="n">Tensor</span><span class="p">(</span><span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;Age&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">annotate_with_dp_metadata</span><span class="p">(</span>
+   <span class="n">lower_bound</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">upper_bound</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">data_subjects</span><span class="o">=</span><span class="n">data_subjects</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -398,7 +410,7 @@ set, you must annotate each data set with Auto DP metadata.</p>
 </section>
 </section>
 <section id="step-5-upload-the-dataset">
-<h3>Step 5: Upload the Dataset<a class="headerlink" href="#step-5-upload-the-dataset" title="Permalink to this headline">¶</a></h3>
+<span id="step5"></span><h3>Step 5: Upload the Dataset<a class="headerlink" href="#step-5-upload-the-dataset" title="Permalink to this headline">¶</a></h3>
 <p>Once you have prepared your data, it’s time to upload it to the Domain
 node. To help Data Scientists later <code class="docutils literal notranslate"><span class="pre">search</span></code> and <code class="docutils literal notranslate"><span class="pre">discover</span></code> our
 datasets, we will add details like a <code class="docutils literal notranslate"><span class="pre">name</span></code> and a <code class="docutils literal notranslate"><span class="pre">description</span></code> of
