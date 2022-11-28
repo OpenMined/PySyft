@@ -278,6 +278,7 @@ class Node(AbstractNode):
             Node.set_keys(node=self, signing_key=signing_key)
 
         # PERMISSION REGISTRY:
+        self.guest_signing_key_registry = set()
         self.guest_verify_key_registry = set()
         self.admin_verify_key_registry = set()
         self.cpl_ofcr_verify_key_registry = set()

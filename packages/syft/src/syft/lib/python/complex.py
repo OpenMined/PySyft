@@ -6,10 +6,7 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # relative
-from ...core.common import UID
-from ...core.common.serde.deserialize import _deserialize as deserialize
 from ...core.common.serde.serializable import serializable
-from ...core.common.serde.serialize import _serialize as serialize
 from ...logger import traceback_and_raise
 from ...proto.lib.python.complex_pb2 import Complex as Complex_PB
 from .primitive_factory import PrimitiveFactory
@@ -20,9 +17,7 @@ from .types import SyPrimitiveRet
 # TODO - actually make all of this work
 @serializable()
 class Complex(complex, PyPrimitive):
-    def __new__(
-        self, real: Any = None, imag: Any = None, id: Optional[UID] = None
-    ) -> "Complex":
+    def __new__(self, real: Any = None, imag: Any = None) -> "Complex":
         if real is None:
             return complex.__new__(self)
         if imag is None:
@@ -33,20 +28,8 @@ class Complex(complex, PyPrimitive):
             )
         return complex.__new__(self, real=real, imag=imag)
 
-    def __init__(self, real: Any = None, imag: Any = None, id: Optional[UID] = None):
+    def __init__(self, real: Any = None, imag: Any = None):
         complex.__init__(self)
-        self._id = id or UID()
-
-    @property
-    def id(self) -> UID:
-        """We reveal PyPrimitive.id as a property to discourage users and
-        developers of Syft from modifying .id attributes after an object
-        has been initialized.
-
-        :return: returns the unique id of the object
-        :rtype: UID
-        """
-        return self._id
 
     def upcast(self) -> complex:
         return super().complex(self)  # type: ignore
@@ -130,12 +113,11 @@ class Complex(complex, PyPrimitive):
         return complex.__bool__(self)
 
     def _object2proto(self) -> Complex_PB:
-        return Complex_PB(id=serialize(obj=self.id), real=self.real, imag=self.imag)
+        return Complex_PB(real=self.real, imag=self.imag)
 
     @staticmethod
     def _proto2object(proto: Complex_PB) -> "Complex":
         return Complex(
-            id=deserialize(blob=proto.id),
             real=proto.real,
             imag=proto.imag,
         )
