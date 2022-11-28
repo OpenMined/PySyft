@@ -16,9 +16,6 @@ import numpy as np
 import pandas as pd
 import torch as th
 
-# syft absolute
-import syft as sy
-
 # relative
 from ... import lib
 from ...ast.klass import pointerize_args_and_kwargs
@@ -29,7 +26,9 @@ from ..common.serde.capnp import chunk_bytes
 from ..common.serde.capnp import combine_bytes
 from ..common.serde.capnp import get_capnp_schema
 from ..common.serde.capnp import serde_magic_header
+from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import serializable
+from ..common.serde.serialize import _serialize as serialize
 from ..common.uid import UID
 from ..node.abstract.node import AbstractNodeClient
 from ..node.common.action import smpc_action_functions
@@ -57,6 +56,7 @@ class TensorPointer(Pointer):
     # the fact that klass.Class tries to override them (unsuccessfully)
     __name__ = "TensorPointer"
     __module__ = "syft.core.tensor.tensor"
+    PUBLISH_POINTER_TYPE = "numpy.ndarray"
 
     def __init__(
         self,
@@ -168,7 +168,7 @@ class TensorPointer(Pointer):
             other_dtype = other.public_dtype
         elif isinstance(other, (int, float)):
             other_shape = (1,)
-            other_dtype = np.int32
+            other_dtype = DEFAULT_INT_NUMPY_TYPE
         elif isinstance(other, bool):
             other_shape = (1,)
             other_dtype = np.dtype("bool")
@@ -292,7 +292,7 @@ class TensorPointer(Pointer):
         other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
         **kwargs: Any,
     ) -> Union[TensorPointer, MPCTensor]:
-        """Apply the "mul" operation between "self" and "other"
+        """Apply the "truediv" operation between "self" and "other"
 
         Args:
             y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -307,7 +307,7 @@ class TensorPointer(Pointer):
         other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
         **kwargs: Any,
     ) -> Union[TensorPointer, MPCTensor]:
-        """Apply the "mul" operation between "self" and "other"
+        """Apply the "rtruediv" operation between "self" and "other"
 
         Args:
             y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -407,7 +407,7 @@ class TensorPointer(Pointer):
         *args: Any,
         **kwargs: Any,
     ) -> Union[TensorPointer, MPCTensor]:
-        """Apply the "add" operation between "self" and "other"
+        """Apply the "concatenate" operation between "self" and "other"
 
         Args:
             y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -517,33 +517,16 @@ class Tensor(
         self.public_shape = public_shape
         self.public_dtype = public_dtype
 
+        # TODO: re-enable this in a way that doesnt happen when internal methods
+        # call the constructor so it doesn't spam the output of notebooks and ci
+        # print(
+        #     "Tensor created! You can activate Differential Privacy protection by calling"
+        #     ".private() or .annotate_with_dp_metadata()."
+        # )
+
     def tag(self, name: str) -> Tensor:
         self.tag_name = name
         return self
-
-    def exp(self) -> Tensor:
-        if hasattr(self.child, "exp"):
-            return self.__class__(self.child.exp())
-        else:
-            raise ValueError("Tensor Chain does not have exp function")
-
-    def reciprocal(self) -> Tensor:
-        if hasattr(self.child, "reciprocal"):
-            return self.__class__(self.child.reciprocal())
-        else:
-            raise ValueError("Tensor Chain does not have reciprocal function")
-
-    def softmax(self) -> Tensor:
-        if hasattr(self.child, "softmax"):
-            return self.__class__(self.child.softmax())
-        else:
-            raise ValueError("Tensor Chain does not have softmax function")
-
-    def one_hot(self) -> Tensor:
-        if hasattr(self.child, "one_hot"):
-            return self.__class__(self.child.one_hot())
-        else:
-            raise ValueError("Tensor Chain does not have one_hot function")
 
     @property
     def shape(self) -> Tuple[Any, ...]:
@@ -632,10 +615,6 @@ class Tensor(
 
         return None
 
-    def mpc_swap(self, other: Tensor) -> Tensor:
-        self.child.child = other.child.child
-        return self
-
     def _object2bytes(self) -> bytes:
         schema = get_capnp_schema(schema_file="tensor.capnp")
         tensor_struct: CapnpModule = schema.Tensor  # type: ignore
@@ -644,9 +623,9 @@ class Tensor(
         # this is how we dispatch correct deserialization of bytes
         tensor_msg.magicHeader = serde_magic_header(type(self))
 
-        chunk_bytes(sy.serialize(self.child, to_bytes=True), "child", tensor_msg)
+        chunk_bytes(serialize(self.child, to_bytes=True), "child", tensor_msg)  # type: ignore
 
-        tensor_msg.publicShape = sy.serialize(self.public_shape, to_bytes=True)
+        tensor_msg.publicShape = serialize(self.public_shape, to_bytes=True)
 
         # upcast the String class before setting to capnp
         public_dtype_func = getattr(
@@ -668,8 +647,8 @@ class Tensor(
         )
 
         tensor = Tensor(
-            child=sy.deserialize(combine_bytes(tensor_msg.child), from_bytes=True),
-            public_shape=sy.deserialize(tensor_msg.publicShape, from_bytes=True),
+            child=deserialize(combine_bytes(tensor_msg.child), from_bytes=True),
+            public_shape=deserialize(tensor_msg.publicShape, from_bytes=True),
             public_dtype=np.dtype(tensor_msg.publicDtype),
         )
         tensor.tag_name = tensor_msg.tagName

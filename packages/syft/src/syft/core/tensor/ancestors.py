@@ -10,6 +10,7 @@ from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Type
+from warnings import warn
 
 # third party
 import numpy as np
@@ -58,8 +59,8 @@ def data_subject_creation_wizard(data: Any) -> List[Any]:
 
     welcome_msg = "Welcome to the Data Subject Annotation Wizard!!!"
 
-    description1 = """You've arrived here because you called Tensor.private() without passing in any data_subjects!
-Since the purpose of .private() is to add metadata for the support of automatic differential
+    description1 = """You've arrived here because you called Tensor.annotate_with_dp_metadata() without passing in any data_subjects!
+Since the purpose of .annotate_with_dp_metadata() is to add metadata for the support of automatic differential
 privacy budgeting, you need to describe which parts of your Tensor correspond to which
 real-world data subjects (data_subjects) whose privacy you want to protect. This is the only
 way the system knows, for example, that it costs twice as much privacy budget when twice
@@ -73,7 +74,7 @@ If it's a group of people who are somehow similar/linked to each other (such as 
 make each data subject a different group. For more information on differential privacy, see OpenMined's
 course on the subject: https://courses.openmined.org/"""
 
-    description3 = """Since you didn't pass in data_subjects into .private() (or you did so incorrectly), this wizard is
+    description3 = """Since you didn't pass in data_subjects into .annotate_with_dp_metadata() (or you did so incorrectly), this wizard is
 going to guide you through the process of annotating your data with data_subjects."""
 
     description4 = """In this wizard, we're going to ask you for *unique identifiers* which refer to the data_subjects
@@ -162,7 +163,11 @@ protect the people or the business)"""
             )
         )
         print()
-        print(w.fill("\t.private(data_subjects='" + str(single_uid) + "')"))
+        print(
+            w.fill(
+                "\t.annotate_with_dp_metadata(data_subjects='" + str(single_uid) + "')"
+            )
+        )
         print()
         print("\t" + "=" * 69)
         return [single_uid]
@@ -210,13 +215,13 @@ protect the people or the business)"""
             print()
             print(
                 w.fill(
-                    "All done! Next time if you want to skip the wizard, call .private() like this:"
+                    "All done! Next time if you want to skip the wizard, call .annotate_with_dp_metadata() like this:"
                 )
             )
             print()
             print(
                 w.fill(
-                    ".private(data_subjects=['"
+                    ".annotate_with_dp_metadata(data_subjects=['"
                     + data_subjects[0]
                     + "', '"
                     + data_subjects[1]
@@ -241,21 +246,25 @@ protect the people or the business)"""
 
             print(
                 w.fill(
-                    "Excellent. Well, in that case you'll need to re-run .private() but pass in"
+                    "Excellent. Well, in that case you'll need to re-run .annotate_with_dp_metadata() but pass in"
                     " a list of strings where each string is a unique identifier for an data subject, and where"
                     " the length of the list is equal to the number of rows in your tensor. Like so:"
                 )
             )
 
             print()
-            print(w.fill(".private(data_subjects=['bob', 'alice', 'john'])"))
+            print(
+                w.fill(
+                    ".annotate_with_dp_metadata(data_subjects=['bob', 'alice', 'john'])"
+                )
+            )
             print()
             print(
                 " Now just to make sure I don't corrupt your tensor - I'm going to throw an exception."
             )
             print()
             raise Exception(
-                "Wizard aborted. Please run .private(data_subjects=<your data_subjects>)"
+                "Wizard aborted. Please run .annotate_with_dp_metadata(data_subjects=<your data_subjects>)"
                 " again with your list of data subject unique identifiers (strings),"
                 "one per row of your tensor."
             )
@@ -303,7 +312,7 @@ protect the people or the business)"""
             )
             print()
             print(
-                "\t\ttensor.private(min_vals=0, max_vals=1, data_subjects=data_subjects))"
+                "\t\ttensor.annotate_with_dp_metadata(min_vals=0, max_vals=1, data_subjects=data_subjects))"
             )
             print()
             print(
@@ -311,7 +320,7 @@ protect the people or the business)"""
             )
             print()
             raise Exception(
-                "Wizard aborted. Please run .private(data_subjects=<your data_subjects>)"
+                "Wizard aborted. Please run .annotate_with_dp_metadata(data_subjects=<your data_subjects>)"
                 " again with your np.ndarray of data subject unique identifiers (strings),"
                 " one per value of your tensor and where your np.ndarray of data_subjects is"
                 " the same shape as your data."
@@ -342,11 +351,11 @@ class PhiTensorAncestor(TensorChainManager):
 
     @property
     def min_vals(self):  # type: ignore
-        return self.__class__(self.child.min_vals)
+        return self.child.min_vals
 
     @property
     def max_vals(self):  # type: ignore
-        return self.__class__(self.child.max_vals)
+        return self.child.max_vals
 
     @property
     def gamma(self):  # type: ignore
@@ -370,21 +379,6 @@ class PhiTensorAncestor(TensorChainManager):
 
         return NotImplemented
 
-    def annotate_with_dp_metadata(
-        self,
-        min_val: ArrayLike,
-        max_val: ArrayLike,
-        data_subjects: Optional[Any] = None,
-        skip_blocking_checks: bool = False,
-    ) -> PhiTensorAncestor:
-        print("Tensor annotated with DP Metadata")
-        return self.private(
-            min_val=min_val,
-            max_val=max_val,
-            data_subjects=data_subjects,
-            skip_blocking_checks=skip_blocking_checks,
-        )
-
     def private(
         self,
         min_val: ArrayLike,
@@ -392,9 +386,132 @@ class PhiTensorAncestor(TensorChainManager):
         data_subjects: Optional[Any] = None,
         skip_blocking_checks: bool = False,
     ) -> PhiTensorAncestor:
+        """[DEPRECATED] This method will annotate your Tensor with metadata (an upper bound
+        and lower bound on the data, as well as the people whose data is in the dataset),
+        and thus enable Differential Privacy protection.
+
+        Note: Deprecated in 0.7.0
+        `.private` method will be removed in 0.8.0, it is replaced by `annotate_with_dp_metadata`.
+        """
+
+        _deprec_message = (
+            "This method is deprecated in v0.7.0 and will be removed in future version updates. "
+            "It is replaced with `annotate_with_dp_metadata` to provide a user-friendly experience. "
+            "One can call `help(syft.Tensor.annotate_with_dp_metadata)` to learn more about its use."
+        )
+
+        warn(_deprec_message, DeprecationWarning, stacklevel=2)
+
+        return self.annotate_with_dp_metadata(
+            lower_bound=min_val,
+            upper_bound=max_val,
+            data_subjects=data_subjects,
+            skip_blocking_checks=skip_blocking_checks,
+        )
+
+    def annotated_with_dp_metadata(
+        self,
+        min_val: ArrayLike,
+        max_val: ArrayLike,
+        data_subjects: Optional[Any] = None,
+        skip_blocking_checks: bool = False,
+    ) -> PhiTensorAncestor:
+        """[DEPRECATED] This method will annotate your Tensor with metadata (an upper bound
+        and lower bound on the data, as well as the people whose data is in the dataset),
+        and thus enable Differential Privacy protection.
+
+        Note: Deprecated in 0.7.0
+        `.annotated_with_dp_metadata` method will be removed in 0.8.0, it is renamed to `annotate_with_dp_metadata`.
+        """
+
+        _deprec_message = (
+            "This method is deprecated in v0.7.0 and will be removed in future version. "
+            "It is renamed to `annotate_with_dp_metadata` with function arguments `min_val` and `max_val` "
+            "renamed to `lower_bound` and `upper_bound` respectively. This has been done to simplify the definition "
+            "of the function in use. "
+            "One can call `help(syft.Tensor.annotate_with_dp_metadata)` to learn more about its use."
+        )
+
+        warn(_deprec_message, DeprecationWarning, stacklevel=2)
+
+        return self.annotate_with_dp_metadata(
+            lower_bound=min_val,
+            upper_bound=max_val,
+            data_subjects=data_subjects,
+            skip_blocking_checks=skip_blocking_checks,
+        )
+
+    def annotate_with_dp_metadata(
+        self,
+        lower_bound: ArrayLike,
+        upper_bound: ArrayLike,
+        data_subjects: Optional[Any] = None,
+        skip_blocking_checks: bool = False,
+    ) -> PhiTensorAncestor:
+        """
+        This method will annotate your Tensor with metadata (an upper bound and lower bound on the data,
+        as well as the people whose data is in the dataset), and thus enable Differential Privacy
+        protection.
+
+        Params:
+            lower_bound: float
+                The lowest possible value allowed by your dataset's schema.
+
+                e.g.
+                - if this is data about age, lower_bound would ideally be 0.
+                - if this is data about teenagers' ages, lower_bound would ideally be 13.
+                - if these are RGB images, lower_bound would ideally be 0.
+
+            upper_bound: float
+                The highest possible value allowed by your dataset's schema.
+
+                e.g.
+                - if this is data about age, upper_bound would ideally be 120.
+                (the age of the oldest known human)
+                - if this is data about teenagers' ages, upper_bound would ideally be 19.
+                (the oldest possible teenager)
+                - if these are RGB images, upper_bound would ideally be 255.
+
+
+            data_subjects: str, tuple, list, np.ndarray, DataSubjectArray
+                The individuals whose data is in this dataset, and whose privacy you wish to protect.
+
+                Can be either:
+                 - string: data_subjects="Bob"
+                 - list: data_subjects=["Bob", "Alice", "Joe"]
+                 - tuple: data_subjects=("Bob", "Alice")
+                 - array: data_subjects=np.array(["Bob", "Alice", "Joe"])
+
+                Please provide either:
+                    - 1 data subject for the whole dataset
+                        i.e. This is one person's finances. The dataset has shape=(10, 10), and we provide
+                        data_subject="Bob"
+
+                    - 1 data subjects per row
+                        i.e. This dataset is 5 images of size (28, 28) and thus has a shape of (5, 28, 28), we provide
+                        data_subjects=["Bob", "Alice", "Julian", "Billy", "Chris"]
+
+                    - 1 data subject per each data point
+                        i.e. This dataset has people's ages and has shape (1000,) and we provide
+                        data_subjects=np.arange(1000)
+
+        Returns:
+            Syft Tensor
+                This tensor can be protected by PySyft's differential Privacy System.
+
+        If this documentation is not clear- please feel free to post in the #support channel on Slack.
+        You may join here: https://slack.openmined.org/
+        """
+
+        print("Tensor annotated with DP Metadata!")
+        print(
+            "You can upload this Tensor to a domain node by calling `<domain_client>.load_dataset` "
+            "and passing in this tensor as an asset."
+        )
+
         return self.copy()._private(
-            min_val=min_val,
-            max_val=max_val,
+            min_val=lower_bound,
+            max_val=upper_bound,
             data_subjects=data_subjects,
             skip_blocking_checks=skip_blocking_checks,
         )
@@ -412,7 +529,7 @@ class PhiTensorAncestor(TensorChainManager):
         if not isinstance(self.child, np.ndarray):
 
             msg = (
-                "At present, you can only call .private() "
+                "At present, you can only call .annotate_with_dp_metadata() "
                 + "on syft.Tensor objects wrapping numpy arrays. You called it on a "
                 + "syft.Tensor wrapping a "
                 + str(type(self.child))
@@ -435,10 +552,9 @@ class PhiTensorAncestor(TensorChainManager):
             min_val, max_val, target_shape=self.child.shape
         )
 
-        unique_data_subjects = len(data_subjects.sum())
-        if unique_data_subjects == 1:
+        if any(len(x.item()) > 1 for x in np.nditer(data_subjects, flags=["refs_ok"])):
             self.replace_abstraction_top(
-                tensor_type=_PhiTensor(),
+                tensor_type=_GammaTensor(),
                 child=self.child,
                 min_vals=min_vals,
                 max_vals=max_vals,
@@ -446,7 +562,7 @@ class PhiTensorAncestor(TensorChainManager):
             )  # type: ignore
         else:
             self.replace_abstraction_top(
-                tensor_type=_GammaTensor(),
+                tensor_type=_PhiTensor(),
                 child=self.child,
                 min_vals=min_vals,
                 max_vals=max_vals,
@@ -463,7 +579,7 @@ def check_data_subjects(
     if data_subjects is None:
         if skip_blocking_checks:
             raise Exception(
-                "Error: 'data_subjects' argument to .private() must not be None!"
+                "Error: 'data_subjects' argument to .annotate_with_dp_metadata() must not be None!"
             )
         print(
             "ALERT: You didn't pass in any data_subjects. Launching data subject wizard...\n"
