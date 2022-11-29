@@ -257,13 +257,19 @@ def upload_to_s3_using_presigned(
             child_kwargs = getattr(data.child, "proxy_public_kwargs", {})
             obj_public_kwargs.update(child_kwargs)
 
+        data_shape = (0,)
+        if hasattr(data, "shape"):
+            data_shape = data.shape
+        elif hasattr(data, "__len__"):
+            data_shape = (len(data),)
+
         proxy_data = ProxyDataset(
             asset_name=asset_name,
             dataset_name=dataset_name,
             node_id=client.id,
             dtype=data.__class__.__name__,
             fqn=data_fqn,
-            shape=data.shape,
+            shape=data_shape,
             obj_public_kwargs=obj_public_kwargs,
         )
     except (Exception, KeyboardInterrupt) as e:

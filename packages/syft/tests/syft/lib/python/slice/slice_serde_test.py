@@ -1,5 +1,4 @@
 # third party
-# third party
 import torch as th
 
 # syft absolute
@@ -17,7 +16,6 @@ def test_slice_serde() -> None:
     deserialized = Slice._proto2object(proto=serialized)
 
     assert isinstance(deserialized, Slice)
-    assert deserialized.id == syft_slice.id
     assert deserialized.start == syft_slice.start
     assert deserialized.stop == syft_slice.stop
     assert deserialized.step == syft_slice.step
@@ -57,3 +55,10 @@ def test_slice_tensor(client) -> None:
     last_ptr = t_ptr[-1]
     last = last_ptr.item().get()
     assert last == 3
+
+
+def test_slice_bytes() -> None:
+    # Testing if multiple serialization of the similar object results in same bytes
+    value_1 = Slice(1, 3, -1)
+    value_2 = Slice(1, 3, -1)
+    assert sy.serialize(value_1, to_bytes=True) == sy.serialize(value_2, to_bytes=True)
