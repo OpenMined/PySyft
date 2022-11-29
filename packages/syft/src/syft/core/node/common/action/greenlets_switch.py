@@ -92,7 +92,7 @@ def przs_retrieve_object(node: AbstractNode, id_at_location: UID) -> StorableObj
     while True:
         store_obj = BEAVER_CACHE.get(id_at_location, None)  # type: ignore
         if store_obj is None:
-            if ctr % 15000 == 0:
+            if ctr % 150_000 == 0:
                 critical(
                     "PRZS Retrieval failed  due to missing object"
                     + f" at: {id_at_location} values: {store_obj}"

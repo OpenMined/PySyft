@@ -173,9 +173,7 @@ class ShareTensor(PassthroughTensor):
         for party_info in parties_info:
             # if its localhost change it to a host that resolves outside the container
             external_host_info = party_info[0].as_container_host()
-            client = CACHE_CLIENTS.get(
-                str(external_host_info) + party_info[1].no_dash, None
-            )
+            client = CACHE_CLIENTS.get(str(external_host_info), None)
 
             if client is None:
                 # # default cache to true, here to prevent multiple logins
@@ -190,10 +188,10 @@ class ShareTensor(PassthroughTensor):
                     port=external_host_info.port,
                     verbose=False,
                 )
-                if client.id != party_info[1]:
-                    client = ProxyClient.create(client, party_info[1], party_info[2])
+                CACHE_CLIENTS[str(external_host_info)] = client
 
-                CACHE_CLIENTS[str(external_host_info) + party_info[1].no_dash] = client
+            if client.id != party_info[1]:
+                client = ProxyClient.create(client, party_info[1], party_info[2])
             clients.append(client)
         GEVENT_LOGIN = False
         return clients
