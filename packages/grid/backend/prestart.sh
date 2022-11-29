@@ -15,15 +15,19 @@ then
     pip install --user -e /app/syft[dev]
 fi
 
-# Oblivious Proxy Client Installation
-apt-get update
-apt-get -y install wget
-apt-get -y install unzip
-wget -O oblv-ccli-0.3.0-x86_64-unknown-linux-musl.zip https://oblv-cli-binary.s3.us-east-2.amazonaws.com/0.3.0/oblv-ccli-0.3.0-x86_64-unknown-linux-musl.zip
-unzip -o oblv-ccli-0.3.0-x86_64-unknown-linux-musl.zip
-cd oblv-ccli-0.3.0-x86_64-unknown-linux-musl/
-chmod +x $(pwd)/oblv
-ln -sf $(pwd)/oblv /usr/local/bin/oblv  #-f is for force
+if [ "${INSTALL_OBLV_PROXY}"="true" ]
+then
+    echo "Allowed to install Oblv Proxy"
+    # Oblivious Proxy Client Installation
+    apt-get update
+    apt-get -y install wget
+    apt-get -y install unzip
+    wget -O oblv-ccli-0.4.0-x86_64-unknown-linux-musl.tar.gz https://api.oblivious.ai/oblv-ccli/0.4.0/oblv-ccli-0.4.0-x86_64-unknown-linux-musl.tar.gz
+    mkdir oblv-ccli-0.4.0-x86_64-unknown-linux-musl
+    tar -xf oblv-ccli-0.4.0-x86_64-unknown-linux-musl.tar.gz --directory oblv-ccli-0.4.0-x86_64-unknown-linux-musl
+    chmod +x $(pwd)/oblv-ccli-0.4.0-x86_64-unknown-linux-musl/oblv
+    ln -sf $(pwd)/oblv-ccli-0.4.0-x86_64-unknown-linux-musl/oblv /usr/local/bin/oblv  #-f is for force
+fi
 
 # Let the DB start
 python /app/grid/backend_prestart.py

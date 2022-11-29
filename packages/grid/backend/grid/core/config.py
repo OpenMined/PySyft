@@ -126,8 +126,11 @@ class Settings(BaseSettings):
     )
 
     # Oblv
-    OBLV_KEY_NAME: str = "oblv_key"
-    OBLV_KEY_PATH: str = "/app/content"
+    OBLV_KEY_NAME: str = str(os.getenv("OBLV_KEY_NAME", "oblv_key"))
+    OBLV_KEY_PATH: str = str(os.getenv("OBLV_KEY_NAME", "/app/content"))
+    INSTALL_OBLV_PROXY: bool = (
+        True if os.getenv("INSTALL_OBLV_PROXY", "false").lower() == "true" else False
+    )
 
     class Config:
         case_sensitive = True

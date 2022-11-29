@@ -196,6 +196,11 @@ def publish_dataset(msg: PublishDatasetMessage,
         SuccessResponseMessage: Success message on key pair generation.
     """
 
+    try:
+        with open(os.getenv("OBLV_KEY_PATH", "/app/content") + "/" + os.getenv("OBLV_KEY_NAME", "oblv_key") + "_public.der", "rb") as f:
+            data = f.read()
+    except FileNotFoundError:
+        create_keys_from_db(node)
     cli = OblvClient(
         msg.client.token,msg.client.oblivious_user_id
         )
@@ -209,16 +214,18 @@ def publish_dataset(msg: PublishDatasetMessage,
         "--private-key", private_file_name,
         "--public-key", public_file_name,
         "--url", depl.instance.service_url,
+        "--pcr0",depl.pcr_codes[0],
+        "--pcr1",depl.pcr_codes[1],
+        "--pcr2",depl.pcr_codes[2],
         "--port","443",
-        "--lport","3030",
-        "--disable-pcr-check"
+        "--lport","3030"
     ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     while process.poll() is None:
         d = process.stderr.readline().decode()
         debug(d)
         if d.__contains__("Error:  Invalid PCR Values"):
             raise OblvProxyConnectPCRError()
-        elif d.__contains__("Error"):
+        elif d.lower().__contains__("error"):
             raise OblvEnclaveError(message=d)
         elif d.__contains__("listening on"):
             break
@@ -283,9 +290,11 @@ def check_connection(msg: CheckEnclaveConnectionMessage,
             "--private-key", private_file_name,
             "--public-key", public_file_name,
             "--url", depl.instance.service_url,
+            "--pcr0",depl.pcr_codes[0],
+            "--pcr1",depl.pcr_codes[1],
+            "--pcr2",depl.pcr_codes[2],
             "--port","443",
-            "--lport","3030",
-            "--disable-pcr-check"
+            "--lport","3030"
         ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         while process.poll() is None:
             d = process.stderr.readline().decode()
@@ -347,16 +356,18 @@ def dataset_publish_budget(msg: PublishApprovalMessage,
         "--private-key", private_file_name,
         "--public-key", public_file_name,
         "--url", depl.instance.service_url,
+        "--pcr0",depl.pcr_codes[0],
+        "--pcr1",depl.pcr_codes[1],
+        "--pcr2",depl.pcr_codes[2],
         "--port","443",
-        "--lport","3031",
-        "--disable-pcr-check"
+        "--lport","3031"
     ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     while process.poll() is None:
         d = process.stderr.readline().decode()
         debug(d)
         if d.__contains__("Error:  Invalid PCR Values"):
             raise OblvProxyConnectPCRError()
-        elif d.__contains__("Error"):
+        elif d.lower().__contains__("error"):
             raise OblvEnclaveError(message=d)
         elif d.__contains__("listening on"):
             break
@@ -414,16 +425,18 @@ def dataset_publish_budget_deduction(msg: DeductBudgetMessage,
         "--private-key", private_file_name,
         "--public-key", public_file_name,
         "--url", depl.instance.service_url,
+        "--pcr0",depl.pcr_codes[0],
+        "--pcr1",depl.pcr_codes[1],
+        "--pcr2",depl.pcr_codes[2],
         "--port","443",
-        "--lport","3031",
-        "--disable-pcr-check"
+        "--lport","3031"
     ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     while process.poll() is None:
         d = process.stderr.readline().decode()
         debug(d)
         if d.__contains__("Error:  Invalid PCR Values"):
             raise OblvProxyConnectPCRError()
-        elif d.__contains__("Error"):
+        elif d.lower().__contains__("error"):
             raise OblvEnclaveError(message=d)
         elif d.__contains__("listening on"):
             break
