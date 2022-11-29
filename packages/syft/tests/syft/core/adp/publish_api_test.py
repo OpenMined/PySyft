@@ -110,4 +110,4 @@ def test_privacy_budget_spend_on_publish():
     assert user_budget.current_spend == eps_spend_for_fred
 
     # Remaining user budget should be less than 1
-    assert user_budget.budget < 1
+    assert user_budget.budget <= 1
