@@ -115,6 +115,7 @@ from ..node.common.node_service.get_repr.get_repr_service import GetReprMessage
 from ..node.common.node_service.object_search_permission_update.obj_search_permission_messages import (
     ObjectSearchPermissionUpdateMessage,
 )
+from ..node.enums import PointerStatus
 from ..store.storeable_object import StorableObject
 
 
@@ -189,7 +190,17 @@ class Pointer(AbstractPointer):
         return self.client.obj_exists(obj_id=self.id_at_location)
 
     def __repr__(self) -> str:
-        return f"<{self.__name__} -> {self.client.name}:{self.id_at_location.no_dash}>"
+        if hasattr(self.client, "obj_exists"):
+            _ptr_status = (
+                PointerStatus.READY.value
+                if self.exists
+                else PointerStatus.PROCESSING.value
+            )
+            return f"<{self.__name__} -> {self.client.name}:{self.id_at_location.no_dash}, status={_ptr_status}>"
+        else:
+            return (
+                f"<{self.__name__} -> {self.client.name}:{self.id_at_location.no_dash}>"
+            )
 
     def _get(
         self, delete_obj: bool = True, verbose: bool = False, proxy_only: bool = False
@@ -350,7 +361,12 @@ class Pointer(AbstractPointer):
         self.client.send_immediate_msg_without_reply(msg=obj_msg)
         # create pointer which will point to float result
 
-        ptr = self.client.lib_ast.query("syft.lib.python.Any").pointer_type(
+        if not hasattr(self, "PUBLISH_POINTER_TYPE"):
+            raise TypeError(
+                f"Publish operation cannot be performed on pointer type: {self.__name__}"
+            )
+
+        ptr = self.client.lib_ast.query(self.PUBLISH_POINTER_TYPE).pointer_type(  # type: ignore
             client=self.client
         )
         ptr.id_at_location = id_at_location

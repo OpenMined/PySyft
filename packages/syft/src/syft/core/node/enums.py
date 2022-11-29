@@ -1,6 +1,9 @@
 # stdlib
 from enum import Enum
 
+# relative
+from ...util import bcolors
+
 
 class PyGridClientEnums(str, Enum):
     ENCODING = "ISO-8859-1"
@@ -38,3 +41,8 @@ class ResponseObjectEnum(str, Enum):
     WORKER = "worker"
     DATA = "data"
     OBLV = "oblv"
+
+
+class PointerStatus(str, Enum):
+    READY = bcolors.green("Ready")
+    PROCESSING = bcolors.yellow("Processing")

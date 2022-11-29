@@ -1,4 +1,5 @@
 # stdlib
+from collections import namedtuple
 import json
 import os
 from pathlib import Path
@@ -45,7 +46,6 @@ from .auth import AuthCredentials
 from .cache import DEFAULT_BRANCH
 from .cache import DEFAULT_REPO
 from .cache import RENDERED_DIR
-from .cache import STABLE_BRANCH
 from .cache import arg_cache
 from .deps import DEPENDENCIES
 from .deps import allowed_hosts
@@ -53,6 +53,7 @@ from .deps import check_docker_service_status
 from .deps import check_docker_version
 from .deps import check_grid_docker
 from .deps import gather_debug
+from .deps import get_version_string
 from .deps import is_windows
 from .exceptions import MissingDependency
 from .grammar import BadGrammar
@@ -67,6 +68,7 @@ from .lib import check_api_metadata
 from .lib import check_host
 from .lib import check_jupyter_server
 from .lib import check_login_page
+from .lib import commit_hash
 from .lib import docker_desktop_memory
 from .lib import generate_process_status_table
 from .lib import generate_user_table
@@ -84,7 +86,6 @@ from .quickstart_ui import fetch_notebooks_for_url
 from .quickstart_ui import quickstart_download_notebook
 from .rand_sec import generate_sec_random_password
 from .style import RichGroup
-from .version import __version__
 
 
 def fix_windows_virtualenv_api(cls: type) -> None:
@@ -183,7 +184,7 @@ def clean(location: str) -> None:
 )
 @click.option(
     "--tail",
-    default="true",
+    default="false",
     required=False,
     type=str,
     help="Optional: don't tail logs on launch",
@@ -387,6 +388,13 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
                 )
                 port = match_port.group().replace("HTTP_PORT=", "")
                 check_status("localhost" + ":" + port)
+
+            node_name = verb.get_named_term_type(name="node_name").raw_input
+            rich.get_console().print(
+                rich.panel.Panel.fit(
+                    f"🚨🚨🚨 To view container logs run [bold red] hagrid logs {node_name} [/bold red]\t"
+                )
+            )
 
     except Exception as e:
         print(f"Error: {e}\n\n")
@@ -1673,26 +1681,13 @@ def create_launch_docker_cmd(
         + "!\n"
     )
 
-    if kwargs["release"] == "development":
-        version = setup_from_manifest_template(host_type="docker")["tag"]
-    else:
-        version = STABLE_BRANCH
-
-    print("  - TYPE: " + str(node_type.input))
-    print("  - NAME: " + str(snake_name))
-    print("  - SYFT_VERSION: " + version)
-    print("  - HAGRID_VERSION: " + str(__version__))
-    print("  - PORT: " + str(host_term.free_port))
-    print("  - DOCKER COMPOSE: " + docker_version)
-    print("  - TAIL: " + str(tail))
-    print("  - RELEASE: " + kwargs["release"])
-    print("\n")
-
     version_string = kwargs["tag"]
     version_hash = "dockerhub"
     build = kwargs["build"]
     from_template = kwargs["from_template"]
 
+    # if in development mode, generate a version_string which is either
+    # the one you inputed concatenated with -dev or the contents of the VERSION file
     if "release" in kwargs and kwargs["release"] == "development":
         # force version to have -dev at the end in dev mode
         # during development we can use the latest beta version
@@ -1703,6 +1698,9 @@ def create_launch_docker_cmd(
         if build is None:
             build = True
     else:
+        # whereas if in production mode and tag == "local" use the local VERSION file
+        # or if its not set somehow, which should never happen, use stable
+        # otherwise use the kwargs["tag"] from above
         if build is None:
             build = False
 
@@ -1713,7 +1711,21 @@ def create_launch_docker_cmd(
             version_hash = GRID_SRC_VERSION[1]
             build = True
         elif version_string is None:
-            version_string = "stable"
+            version_string = "latest"
+
+    print("  - NAME: " + str(snake_name))
+    print("  - RELEASE: " + kwargs["release"])
+    print("  - TYPE: " + str(node_type.input))
+    print("  - DOCKER_TAG: " + version_string)
+    if version_hash != "dockerhub":
+        print("  - GIT_HASH: " + version_hash)
+    print("  - HAGRID_VERSION: " + get_version_string())
+    if EDITABLE_MODE:
+        print("  - HAGRID_REPO_SHA: " + commit_hash())
+    print("  - PORT: " + str(host_term.free_port))
+    print("  - DOCKER COMPOSE: " + docker_version)
+
+    print("\n")
 
     use_blob_storage = "True"
     if str(node_type.input) == "network":
@@ -2998,9 +3010,7 @@ def check_status(
         )
         print("You can view your container logs using the following tool:")
         print("Tool: [link=https://ctop.sh]Ctop[/link]")
-        print(
-            "Video Explanation: [link=https://youtu.be/BJhlCxerQP4]How to use Ctop[/link]\n"
-        )
+        print("Video Explanation: https://youtu.be/BJhlCxerQP4 \n")
 
 
 cli.add_command(check)
@@ -3009,7 +3019,9 @@ cli.add_command(check)
 # add Hagrid info to the cli
 @click.command(help="Show HAGrid info")
 def version() -> None:
-    print(f"HAGrid version: {__version__}")
+    print(f"HAGRID_VERSION: {get_version_string()}")
+    if EDITABLE_MODE:
+        print(f"HAGRID_REPO_SHA: {commit_hash()}")
 
 
 cli.add_command(version)
@@ -3511,3 +3523,77 @@ def ssh(ip_address: str, cmd: str) -> None:
 
 
 cli.add_command(ssh)
+
+
+# Add hagrid logs command to the CLI
+@click.command(help="Get the logs of the HAGrid node")
+@click.argument("domain_name", type=str)
+def logs(domain_name: str) -> None:  # nosec
+
+    container_ids = (
+        subprocess.check_output(  # nosec
+            f"docker ps -qf name=^{domain_name}-*", shell=True
+        )
+        .decode("utf-8")
+        .split()
+    )
+    Container = namedtuple("Container", "id name logs")
+    container_names = []
+    for container in container_ids:
+        container_name = (
+            subprocess.check_output(  # nosec
+                "docker inspect --format '{{.Name}}' " + container, shell=True
+            )
+            .decode("utf-8")
+            .strip()
+            .replace("/", "")
+        )
+        log_command = "docker logs -f " + container_name
+        container_names.append(
+            Container(id=container, name=container_name, logs=log_command)
+        )
+    # Generate a table of the containers and their logs with Rich
+    table = rich.table.Table(title="Container Logs")
+    table.add_column("Container ID", justify="center", style="cyan", no_wrap=True)
+    table.add_column("Container Name", justify="right", style="cyan", no_wrap=True)
+    table.add_column("Log Command", justify="right", style="cyan", no_wrap=True)
+    for container in container_names:  # type: ignore
+        table.add_row(container.id, container.name, container.logs)  # type: ignore
+    console = rich.console.Console()
+    console.print(table)
+    # Print instructions on how to view the logs
+    console.print(
+        rich.panel.Panel(
+            long_string,
+            title="How to view logs",
+            border_style="white",
+            expand=False,
+            padding=1,
+            highlight=True,
+        )
+    )
+
+
+long_string = (
+    "ℹ [bold green]To view the live logs of a container,copy the log command and paste it into your terminal.[/bold green]\n"  # noqa: E501
+    + "\n"
+    + "ℹ [bold green]The logs will be streamed to your terminal until you exit the command.[/bold green]\n"
+    + "\n"
+    + "ℹ [bold green]To exit the logs, press CTRL+C.[/bold green]\n"
+    + "\n"
+    + "🚨 The [bold white]backend,backend_stream & celery[/bold white] [bold green]containers are the most important to monitor for debugging.[/bold green]\n"  # noqa: E501
+    + "\n"
+    + "               [bold white]--------------- Ctop 🦾 -------------------------[/bold white]\n"
+    + "\n"
+    + "🧠 To learn about using [bold white]ctop[/bold white] to monitor your containers,visit https://www.youtube.com/watch?v=BJhlCxerQP4n \n"  # noqa: E501
+    + "\n"
+    + "               [bold white]----------------- How to view this. 🙂 ---------------[/bold white]\n"
+    + "\n"
+    + """ℹ [bold green]To view this panel again, run the command [bold white]hagrid logs {{DOMAIN_NAME}}[/bold white] [/bold green]\n"""  # noqa: E501
+    + "\n"
+    + """🚨 DOMAIN_NAME above is the name of your Hagrid deployment,without the curly braces. E.g hagrid logs canada [bold green]\n"""  # noqa: E501
+    + "\n"
+    + "               [bold green]HAPPY DEBUGGING! 🐛🐞🦗🦟🦠🦠🦠[/bold green]\n                      "
+)
+
+cli.add_command(logs)

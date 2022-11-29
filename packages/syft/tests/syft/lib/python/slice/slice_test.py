@@ -10,7 +10,6 @@ import weakref
 import pytest
 
 # syft absolute
-from syft.core.common.uid import UID
 from syft.lib.python.list import List
 from syft.lib.python.slice import Slice
 from syft.lib.python.string import String
@@ -147,11 +146,6 @@ class SliceTest(unittest.TestCase):
         s2 = Slice(1, 2, BadCmp())
         self.assertEqual(s1, s1)
         self.assertRaises(Exc, lambda: s1.value == s2.value)
-
-    def test_id(self):
-        new_id = UID()
-        s1 = Slice(1, 2, 3, id=new_id)
-        assert new_id == s1.id
 
     def test_upcast(self):
         python_s1 = slice(1, 2, 3)

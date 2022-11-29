@@ -253,7 +253,7 @@ class DeleteUserMessage(SyftMessage, DomainMessageRegistry):
 
     def get_permissions(self) -> List[Union[Type[BasePermission], UnaryOperation]]:
         """Returns the list of permission classes applicable to this message."""
-        return [UserCanCreateUsers, ~UserIsOwner]
+        return [UserIsOwner]
 
 
 @serializable(recursive_serde=True)

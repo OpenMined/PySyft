@@ -53,6 +53,7 @@ from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
 from ...node.abstract.node import AbstractNodeClient
 from ...node.common.action.run_class_method_action import RunClassMethodAction
+from ...node.enums import PointerStatus
 from ...pointer.pointer import Pointer
 from ..config import DEFAULT_INT_NUMPY_TYPE
 from ..fixed_precision_tensor import FixedPrecisionTensor
@@ -79,7 +80,7 @@ INPLACE_OPS = {"resize", "sort"}
 
 
 @serializable(recursive_serde=True)
-class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
+class TensorWrappedGammaTensorPointer(Pointer):
     __name__ = "TensorWrappedGammaTensorPointer"
     __module__ = "syft.core.tensor.autodp.gamma_tensor"
     __attr_allowlist__ = [
@@ -105,6 +106,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
     }
     _exhausted = False
     is_enum = False
+    PUBLISH_POINTER_TYPE = "numpy.ndarray"
 
     def __init__(
         self,
@@ -146,10 +148,17 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         ).astype(public_dtype_func())
 
     def __repr__(self) -> str:
-        return (
-            self.synthetic.__repr__()
-            + "\n\n (The data printed above is synthetic - it's an imitation of the real data.)"
-        )
+        repr_string = f"PointerId: {self.id_at_location.no_dash}"
+        if hasattr(self.client, "obj_exists"):
+            _ptr_status = (
+                PointerStatus.READY.value
+                if self.exists
+                else PointerStatus.PROCESSING.value
+            )
+            repr_string += f"\nStatus: {_ptr_status}"
+        repr_string += f"\nRepresentation: {self.synthetic.__repr__()}"
+        repr_string += "\n\n(The data printed above is synthetic - it's an imitation of the real data.)"
+        return repr_string
 
     def share(self, *parties: Tuple[AbstractNodeClient, ...]) -> MPCTensor:
         all_parties = list(parties) + [self.client]
@@ -369,6 +378,8 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
                 data_subjects = getattr(self.data_subjects, op_str)(*args, **kwargs)
             if op_str in INPLACE_OPS:
                 data_subjects = self.data_subjects
+        elif op_str in ("ones_like", "zeros_like"):
+            data_subjects = self.data_subjects
         else:
             raise ValueError(f"Invalid Numpy Operation: {op_str} for DSA")
 
@@ -1374,12 +1385,27 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         """
         return self._apply_self_tensor_op("__getitem__", key)
 
+    def zeros_like(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the "zeros_like" operation on "self"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return self._apply_self_tensor_op("zeros_like", *args, **kwargs)
+
     def ones_like(
         self,
         *args: Any,
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-        """Apply the "ones like" operation on self"
+        """Apply the "ones_like" operation on "self"
 
         Args:
             y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -1755,6 +1781,15 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             public_shape=public_shape,
             public_dtype=public_dtype,
         )
+
+
+@implements(TensorWrappedGammaTensorPointer, np.zeros_like)
+def zeros_like(
+    tensor: TensorWrappedGammaTensorPointer,
+    *args: Any,
+    **kwargs: Any,
+) -> TensorWrappedGammaTensorPointer:
+    return tensor.zeros_like(*args, **kwargs)
 
 
 @implements(TensorWrappedGammaTensorPointer, np.ones_like)

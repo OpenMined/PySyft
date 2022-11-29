@@ -601,7 +601,8 @@ class DomainClient(Client):
                 "Please pass in a dictionary where the key is the name of the asset and the value is "
                 "the private dataset object (tensor) itself. We recommend uploading assets which "
                 "are differential-privacy trackable objects, such as a syft.Tensor() wrapped "
-                "numpy.int32 or numpy.float32 object which you then call .private() on. \n\nOnce "
+                "numpy.int32 or numpy.float32 object which you "
+                "then call .annotate_with_dp_metadata() on. \n\nOnce "
                 "you have an assets dictionary call load_dataset(assets=<your dict of objects>)."
             )
         sys.stdout.write("\rLoading dataset... checking assets...")
@@ -672,7 +673,7 @@ class DomainClient(Client):
                         "ERROR: All private assets must have "
                         + "proper Differential Privacy metadata applied.\n"
                         + "\n"
-                        + "Example: syft.Tensor([1,2,3,4]).private()\n\n"
+                        + "Example: syft.Tensor([1,2,3,4]).annotate_with_dp_metadata()\n\n"
                         + "and then follow the wizard. 🧙"
                     )
                     # print(
@@ -684,7 +685,8 @@ class DomainClient(Client):
                     #     + "This means you'll need to manually approve any requests which "
                     #     + "leverage this data. If this is ok with you, proceed. If you'd like to use "
                     #     + "automatic differential privacy budgeting, please pass in a DP-compatible tensor type "
-                    #     + "such as by calling .private() on a sy.Tensor with a np.int32 or np.float32 inside."
+                    #     + "such as by calling .annotate_with_dp_metadata() "
+                    #     + "on a sy.Tensor with a np.int32 or np.float32 inside."
                     # )
                     #
                     # pref = input("Are you sure you want to proceed? (y/n)")
