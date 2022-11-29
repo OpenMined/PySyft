@@ -630,16 +630,6 @@ class DataSubjectArray:
     def rint(self, *args: Any, **kwargs: Any) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)
 
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs) -> ArrayLike:  # type: ignore
-        method_name = ufunc.__name__
-        method = getattr(self, method_name, None)
-        if method is not None:
-            return method(*inputs, **kwargs)
-        else:
-            raise NotImplementedError(
-                f"Method: {method_name} not implemented in DataSubjectArray"
-            )
-
     @staticmethod
     def from_objs(input_subjects: Union[np.ndarray, list]) -> ArrayLike:
         # TODO: When the user passes the data subjects they might pass it as list
