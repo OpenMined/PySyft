@@ -16,8 +16,8 @@ def make_phitensor(data_file) -> PT:
     publication_title = list(df["publication_title"])
     data_subjects = DataSubjectList.from_objs(["Tom"] * len(publication_title))
 
-    phitensor_data = sy.Tensor(impressions).private(
-        min_val=0, max_val=30, data_subjects=data_subjects
+    phitensor_data = sy.Tensor(impressions).annotate_with_dp_metadata(
+        lower_bound=0, upper_bound=30, data_subjects=data_subjects
     )
 
     return phitensor_data
