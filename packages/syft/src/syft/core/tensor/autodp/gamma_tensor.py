@@ -80,7 +80,7 @@ INPLACE_OPS = {"resize", "sort"}
 
 
 @serializable(recursive_serde=True)
-class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
+class TensorWrappedGammaTensorPointer(Pointer):
     __name__ = "TensorWrappedGammaTensorPointer"
     __module__ = "syft.core.tensor.autodp.gamma_tensor"
     __attr_allowlist__ = [
