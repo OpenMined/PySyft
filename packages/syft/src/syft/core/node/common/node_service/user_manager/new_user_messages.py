@@ -304,6 +304,7 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
             or self.payload.name
             or self.payload.institution
             or self.payload.website
+            or self.payload.budget
         )
 
         # Change own information
@@ -311,7 +312,7 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
 
         if not _valid_parameters:
             raise MissingRequestKeyError(
-                "Missing json fields ( email,password,role,groups, name )"
+                "Missing json fields (email, password, role, groups, name or budget)"
             )
 
         if not _valid_user:
