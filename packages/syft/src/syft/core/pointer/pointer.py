@@ -242,17 +242,24 @@ class Pointer(AbstractPointer):
             + start_time
         )
 
+        # If pointer is one of the processing pointers and didn't timeout keep trying
         while is_processing_pointer and future_time > time.time():
             try:
                 obj = self.client.send_immediate_msg_with_reply(
                     msg=obj_msg, timeout=timeout_secs, verbose=True
                 )
-            except UnknownPrivateException:
-                pass
-            time.sleep(0.5)
 
+                # If we reached here it's because we didn't have any failure,
+                # so we were able to retrieve the pointer successfully.
+                # So it isn't a processing pointer anymore and we can exit the while loop.
+                # without wait the timeout
+                is_processing_pointer = False
+            except UnknownPrivateException:
+                time.sleep(0.5)
+                pass
+
+        # If pointer was there, then we remove it from the processing_pointer list
         self.client.processing_pointers.pop(self.id_at_location, None)
-        is_processing_pointer = False
 
         # if we didn't get the object try one last time
         if not obj:
@@ -787,4 +794,3 @@ class Pointer(AbstractPointer):
         # if self.gc_enabled:
         #     # this is not being used in the node currenetly
         #     self.client.gc.apply(self)
-
