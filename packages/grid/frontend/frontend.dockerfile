@@ -1,3 +1,7 @@
+FROM python:3.9-alpine as network_frontend
+COPY network_simple_server.py network_simple_server.py
+CMD ["python", "network_simple_server.py"]
+
 FROM node:16-alpine as grid-ui-development
 ENV NEXT_PUBLIC_ENVIRONMENT development
 ENV NEXT_PUBLIC_API_URL /api/v1
