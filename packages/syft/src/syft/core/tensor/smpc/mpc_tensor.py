@@ -25,7 +25,6 @@ import torch
 # relative
 from . import utils
 from .... import logger
-from ....core.node.common.client import GET_OBJECT_TIMEOUT
 from ....grid import GridURL
 from ...node.common.action.przs_action import PRZSAction
 from ...smpc.approximations import APPROXIMATIONS
@@ -459,6 +458,9 @@ class MPCTensor(PassthroughTensor):
             raise ValueError(f"Type for ring size {self.ring_size} was not found!")
 
         start_time = time.time()
+
+        # relative
+        from ....core.node.common.client import GET_OBJECT_TIMEOUT
 
         # make sure timeout_secs is valid
         try:
