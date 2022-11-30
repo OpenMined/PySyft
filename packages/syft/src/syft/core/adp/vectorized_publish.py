@@ -347,9 +347,11 @@ def publish(
                             parent_state[filtered_tensor.id] = filtered_tensor
                         # If epsilon <= privacy budget, we don't need to do anything -
                         # the user has enough PB to use the data
-                        else:
-                            # Calculate remaining privacy budget
-                            privacy_budget -= epsilon
+
+                        # TODO: Remove this once epsilon update is fixed.
+                        # else:
+                        #     # Calculate remaining privacy budget
+                        #     privacy_budget -= epsilon
                     else:
                         # Is this supposed to search the entire state tree with no_op
                         # data nodes being the leaves?
@@ -376,7 +378,6 @@ def publish(
             print("tensor.child before restart: ", type(tensor.child), tensor.child)
             print("About to publish again with filtered source_tree!")
 
-            # TODO: Verify this once with Ishan or Teodor
             value = tensor.child
 
             # TODO: This isn't the most efficient way to do it since we can reuse sigmas, coeffs, etc.
