@@ -25,6 +25,7 @@ import torch
 # relative
 from . import utils
 from .... import logger
+from ....core.node.common.client import GET_OBJECT_TIMEOUT
 from ....grid import GridURL
 from ...node.common.action.przs_action import PRZSAction
 from ...smpc.approximations import APPROXIMATIONS
@@ -446,7 +447,9 @@ class MPCTensor(PassthroughTensor):
 
         return self
 
-    def reconstruct(self, delete_obj: bool = True) -> np.ndarray:
+    def reconstruct(
+        self, delete_obj: bool = True, timeout_secs: int = 90
+    ) -> np.ndarray:
         # relative
         from ..fixed_precision_tensor import FixedPrecisionTensor
 
@@ -455,11 +458,23 @@ class MPCTensor(PassthroughTensor):
         if dtype is None:
             raise ValueError(f"Type for ring size {self.ring_size} was not found!")
 
+        start_time = time.time()
+
+        # make sure timeout_secs is valid
+        try:
+            timeout_secs = int(timeout_secs)
+            if timeout_secs < 0:
+                timeout_secs = GET_OBJECT_TIMEOUT
+        except Exception:
+            timeout_secs = GET_OBJECT_TIMEOUT
+
+        future_time = timeout_secs + start_time
+
         for share in self.child:
             # Check if share pointer is in processing stage
             # If so, wait until it exists.
             if share.client.processing_pointers.get(share.id_at_location, False):
-                while not share.exists:
+                while not share.exists and future_time > time.time():
                     time.sleep(0.5)
 
                 # Then, delete it from the processing map.

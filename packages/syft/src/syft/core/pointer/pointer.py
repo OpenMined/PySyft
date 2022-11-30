@@ -203,7 +203,11 @@ class Pointer(AbstractPointer):
             )
 
     def _get(
-        self, delete_obj: bool = True, verbose: bool = False, proxy_only: bool = False
+        self,
+        delete_obj: bool = True,
+        verbose: bool = False,
+        proxy_only: bool = False,
+        timeout_secs: Optional[int] = None,
     ) -> StorableObject:
         """Method to download a remote object from a pointer object if you have the right
         permissions.
@@ -232,23 +236,28 @@ class Pointer(AbstractPointer):
             self.id_at_location, False
         )
 
-        while is_processing_pointer:
+        start_time = time.time()
+        future_time = (
+            float(timeout_secs if timeout_secs is not None else GET_OBJECT_TIMEOUT)
+            + start_time
+        )
+
+        while is_processing_pointer and future_time > time.time():
             try:
                 obj = self.client.send_immediate_msg_with_reply(
-                    msg=obj_msg, timeout=GET_OBJECT_TIMEOUT, verbose=True
+                    msg=obj_msg, timeout=timeout_secs, verbose=True
                 )
-                self.client.processing_pointers.pop(self.id_at_location, None)
-                is_processing_pointer = False
             except UnknownPrivateException:
-                time.sleep(0.5)
                 pass
+            time.sleep(0.5)
 
-        # If obj is still not defined, then it didn't went inside of
-        # processing pointer scope. Therefore, this pointer is not
-        # 'in process' mode.
-        if not obj and not is_processing_pointer:
+        self.client.processing_pointers.pop(self.id_at_location, None)
+        is_processing_pointer = False
+
+        # if we didn't get the object try one last time
+        if not obj:
             obj = self.client.send_immediate_msg_with_reply(
-                msg=obj_msg, timeout=GET_OBJECT_TIMEOUT
+                msg=obj_msg, timeout=timeout_secs
             )
 
         if not proxy_only and obj.obj.is_proxy:
@@ -400,7 +409,7 @@ class Pointer(AbstractPointer):
     def get(
         self,
         request_block: bool = False,
-        timeout_secs: int = 600,
+        timeout_secs: Optional[int] = None,
         reason: str = "",
         delete_obj: bool = True,
         verbose: bool = False,
@@ -428,9 +437,14 @@ class Pointer(AbstractPointer):
 
         if not request_block:
             result = self._get(
-                delete_obj=delete_obj, verbose=verbose, proxy_only=proxy_only
+                delete_obj=delete_obj,
+                verbose=verbose,
+                proxy_only=proxy_only,
+                timeout_secs=timeout_secs,
             )
         else:
+            if timeout_secs is None:
+                timeout_secs = 600  # old default
             response_status = self.request(
                 reason=reason,
                 block=True,
@@ -441,7 +455,9 @@ class Pointer(AbstractPointer):
                 response_status is not None
                 and response_status == RequestStatus.Accepted
             ):
-                result = self._get(delete_obj=delete_obj, verbose=verbose)
+                result = self._get(
+                    delete_obj=delete_obj, verbose=verbose, timeout_secs=timeout_secs
+                )
             else:
                 return None
 

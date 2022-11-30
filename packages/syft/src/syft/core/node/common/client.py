@@ -77,7 +77,7 @@ class Client(AbstractNodeClient):
 
         self.routes = routes
         self.default_route_index = 0
-        self.processing_pointers: Dict[UID, str] = {}
+        self.processing_pointers: Dict[UID, bool] = {}
 
         gc_strategy_name = gc_get_default_strategy()
         self.gc = GarbageCollection(gc_strategy_name)
