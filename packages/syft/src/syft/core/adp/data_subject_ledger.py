@@ -103,7 +103,7 @@ class RDPParams:
         res = f"{res}\n l2_norms:{self.l2_norms}"
         res = f"{res}\n l2_norm_bounds:{self.l2_norm_bounds}"
         res = f"{res}\n Ls:{self.Ls}"
-        res = f"{res}\n coeffs:{self.coeffs}"
+        # res = f"{res}\n coeffs:{self.coeffs}"
 
         return res
 
@@ -188,7 +188,7 @@ def compute_rdp_constant(rdp_params: RDPParams, private: bool) -> jax.numpy.Devi
         # bounds is computed on the metadata
         squared_l2 = rdp_params.l2_norm_bounds**2
 
-    return (squared_Ls * squared_l2 / (2 * squared_sigma)) * rdp_params.coeffs
+    return (squared_Ls * squared_l2 / (2 * squared_sigma))
 
 
 @jax.jit
@@ -383,6 +383,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
     def _get_epsilon_spend(self, rdp_constants: np.ndarray) -> np.ndarray:
         # rdp_constants_lookup = (rdp_constants - 1).astype(np.int64)
         rdp_constants_lookup = convert_constants_to_indices(rdp_constants)
+        print(rdp_constants_lookup)
         try:
             # needed as np.int64 to use take
             eps_spend = jax.jit(jnp.take)(

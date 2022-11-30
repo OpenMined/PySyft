@@ -49,6 +49,131 @@ def calculate_bounds_for_mechanism(
     l2_norm = jnp.sqrt(jnp.sum(jnp.square(value_array))) * one_dim
     return l2_norm, worst_case_l2_norm, one_dim * sigma, one_dim
 
+def new_publish(
+    tensor: GammaTensor,
+    ledger: DataSubjectLedger,
+    get_budget_for_user: Callable,
+    deduct_epsilon_for_user: Callable,
+    sigma: float,
+    is_linear: bool = True,
+    private: bool = True,
+) -> np.ndarray:
+    if isinstance(tensor.data_subjects, np.ndarray):
+        root_child = None
+        while isinstance(tensor, PassthroughTensor):
+            root_child = tensor.child
+            tensor = root_child
+        input_entities = tensor.data_subjects
+        
+    privacy_budget = get_budget_for_user(verify_key=ledger.user_key)
+
+    tensor, epsilon_spend, rdp_constants = compute_epsilon(
+        tensor, privacy_budget, is_linear, sigma, private, ledger
+    )
+
+    original_output = tensor.child
+
+    # The user spends their privacy budget before getting the result
+    attempts = 0
+    while attempts < 5:
+        attempts += 1
+        try:
+            ledger.spend_epsilon(
+                deduct_epsilon_for_user=deduct_epsilon_for_user,
+                epsilon_spend=epsilon_spend,
+                old_user_budget=privacy_budget,
+            )
+            break
+        except RefreshBudgetException:  # nosec
+            ledger.spend_epsilon(
+                deduct_epsilon_for_user=deduct_epsilon_for_user,
+                epsilon_spend=epsilon_spend,
+                old_user_budget=privacy_budget,
+            )
+
+        except Exception as e:
+            print(f"Problem spending epsilon. {e}")
+            raise e
+    
+    # TODO(0.7): review the ledger code for 0.7
+    # The RDP constants are adjusted to account for the amount of exposure every
+    # data subject's data has had.
+    ledger.update_rdp_constants(
+        query_constants=rdp_constants, entity_ids_query=input_entities
+    )
+    ledger._write_ledger()
+
+    # We sample noise from a cryptographically secure distribution
+    # TODO(0.8): Replace with discrete gaussian distribution instead of regular
+    # gaussian to eliminate floating pt vulns
+    noise = np.asarray(
+        [
+            secrets.SystemRandom().gauss(0, sigma)
+            for _ in range(original_output.size)
+        ]
+    ).reshape(original_output.shape)
+
+    return original_output + noise  
+
+# TODO(0.8): this function should be vectorized for jax 
+def compute_epsilon(tensor, privacy_budget, is_linear, sigma, private, ledger):
+    # create a copy so we can recompute the final value after filtering
+    tensor_copy = deepcopy(tensor)
+    
+    # traverse the computation tree to get the phi_tensors
+    phi_tensors = get_leaves_from_gamma_tensor_tree(tensor_copy)
+    
+    # For each PhiTensor we either need the lipschitz bound or we can use 
+    # one to keep the same formula for the linear queries 
+    # TODO(0.7): replace this with a list with a different lipschitz for each PhiTensor
+    lipschitz_bound = 1 if is_linear else tensor.lipschitz_bound # this probably breaks
+    
+    # Compute the norms and bounds norms for each phi tensor
+    phi_tensors_params = [calculate_bounds_for_mechanism(
+                            tensor.child, 
+                            tensor.min_vals, 
+                            tensor.max_vals, 
+                            sigma
+                        ) for tensor in phi_tensors]
+
+    # with the norms for earlier we can create RDPparams to compute the constant
+    # TODO(0.8): maybe we can remove this step as we only need the norms
+    rdp_params = [RDPParams(
+                    sigmas=sigma,
+                    l2_norms=phi_tensor_param[0],
+                    l2_norm_bounds=phi_tensor_param[1],
+                    Ls=lipschitz_bound,
+                    # coeffs=phi_tensor_param[3],
+                ) for phi_tensor_param in phi_tensors_params]
+    
+    # compute the rdp constant for each phi tensor
+    rdp_constants = [compute_rdp_constant(
+                        rdp_params=param, 
+                        private=private
+                    ) for param in rdp_params]
+
+    # get epsilon for each tensor based on the rdp constant
+    # TODO(0.7): review the ledger code to see what changes based on the refactoring
+    epsilons = ledger._get_epsilon_spend(
+                rdp_constants
+                )
+
+    # compute a mask over the epsilones to see which PhiTensor can we afford
+    filtered_tensor_mask = [esp <= privacy_budget for esp in epsilons]
+    
+    # compute the maximum possible budget spent
+    epsilon_spend = max([epsilons[i] * filtered_tensor_mask[i] for i in range(len(epsilons))])
+    
+    # filter the PhiTensor based on the mask computed earlier
+    # TODO(0.8): this maybe can be improved for jax 
+    # TODO(0.8): replace the zeroing with operation specific values
+    for i in range(len(phi_tensors)):
+        if not filtered_tensor_mask[i]:
+            phi_tensors[i].inplace_filtered()
+    
+    # compute the new output based on the filtered values
+    tensor = tensor.swap_state(tensor_copy.sources)
+    return tensor, epsilon_spend, rdp_constants
 
 def publish(
     tensor: GammaTensor,
@@ -120,6 +245,8 @@ def publish(
         max_val_array=max_val_array,
         sigma=sigma,
     )
+    print("VALUE SHAPE", value.shape)
+    print("COEFFS shape", coeffs.shape)
 
     # its important that its the same type so that eq comparisons below dont break
     zeros_like = jnp.zeros_like(value)
@@ -140,12 +267,14 @@ def publish(
                 break
             else:
                 prev_tensor = value
-
+        print("IS_LINEAR:", is_linear)
         if is_linear:
             lipschitz_bounds = coeffs.copy()
         else:
             lipschitz_bounds = tensor.lipschitz_bound
 
+            print("LIP:", lipschitz_bounds)
+        
         rdp_params = RDPParams(
             sigmas=sigmas,
             l2_norms=l2_norms,
@@ -291,6 +420,7 @@ def publish(
             tensor_copy = deepcopy(tensor)
             raw_data_tensors = get_leaves_from_gamma_tensor_tree(tensor_copy)
             for raw_tensor in raw_data_tensors:
+                # filtered_result = 
                 l2_norms = jnp.sqrt(jnp.sum(jnp.square(raw_tensor.child)))
 
                 rdp_params = RDPParams(
