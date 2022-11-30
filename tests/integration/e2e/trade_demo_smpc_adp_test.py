@@ -181,7 +181,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     # the prestige 🎩
     print("running the prestige 🎩")
 
-    sycure_result = public_result.get()
+    sycure_result = public_result.get(timeout_secs=40)
 
     print("sycure_result", sycure_result)
     print("after ca", ca.privacy_budget)

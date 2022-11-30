@@ -110,14 +110,18 @@ def test_large_blob_upload() -> None:
         new_tensor_ptr = domain_client.syft.core.tensor.tensor.Tensor(child=asset_ptr)
 
         # make sure new object is also in blob storage
-        new_tensor_proxy = new_tensor_ptr.get(proxy_only=True)
+        new_tensor_proxy = new_tensor_ptr.get(
+            proxy_only=True, timeout_secs=90 * multiplier
+        )
         assert isinstance(new_tensor_proxy, ProxyDataset)
 
         # pointer addition
         add_res_prt = asset_ptr + asset_ptr
 
         # make sure new object is also in blob storage
-        add_result_proxy = add_res_prt.get(delete_obj=False, proxy_only=True)
+        add_result_proxy = add_res_prt.get(
+            delete_obj=False, proxy_only=True, timeout_secs=90 * multiplier
+        )
         assert isinstance(add_result_proxy, ProxyDataset)
 
         # compare result to locally generated result

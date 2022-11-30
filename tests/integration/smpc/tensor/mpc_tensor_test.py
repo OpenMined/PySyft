@@ -32,11 +32,11 @@ def test_secret_sharing(get_clients) -> None:
 
     assert len(mpc_tensor.child) == len(clients)
 
-    shares = [share.get_copy() for share in mpc_tensor.child]
+    shares = [share.get_copy(timeout_secs=20) for share in mpc_tensor.child]
     assert all(isinstance(share, Tensor) for share in shares)
     assert all(isinstance(share.child, ShareTensor) for share in shares)
 
-    res = mpc_tensor.reconstruct()
+    res = mpc_tensor.reconstruct(timeout_secs=40)
     assert (res == data.child).all()
 
 
@@ -57,7 +57,7 @@ def test_mpc_private_private_op(get_clients, op_str: str) -> None:
     op = getattr(operator, op_str)
     res_ptr = op(mpc_tensor_1, mpc_tensor_2)
 
-    res = res_ptr.reconstruct()
+    res = res_ptr.reconstruct(timeout_secs=40)
     expected = op(value_1, value_2)
 
     assert (res == expected.child).all()
@@ -79,7 +79,7 @@ def test_mpc_private_public_op(get_clients, op_str: str) -> None:
 
     res = op(mpc_tensor_1, public_value)
 
-    res = res.reconstruct()
+    res = res.reconstruct(timeout_secs=40)
     expected = op(value_1, public_value)
 
     assert (res == expected.child).all()
@@ -102,7 +102,7 @@ def test_mpc_matmul_public(get_clients, op_str: str) -> None:
     op = getattr(operator, op_str)
     res = op(mpc_tensor_1, value_2)
 
-    res = res.reconstruct()
+    res = res.reconstruct(timeout_secs=40)
 
     expected = op(value_1, value_2)
 
@@ -128,7 +128,7 @@ def test_mpc_forward_methods(
 
     res = op_mpc(**kwargs)
 
-    res = res.reconstruct()
+    res = res.reconstruct(timeout_secs=40)
 
     expected = op(**kwargs)
 
@@ -152,7 +152,7 @@ def test_comp_mpc_private_private_op(get_clients, op_str: str) -> None:
     op = getattr(operator, op_str)
     res_ptr = op(mpc_tensor_1, mpc_tensor_2)
 
-    res = res_ptr.reconstruct()
+    res = res_ptr.reconstruct(timeout_secs=40)
     expected = op(value_1, value_2)
 
     assert (res == expected.child).all()
@@ -175,7 +175,7 @@ def test_comp_mpc_private_public_op(get_clients, op_str: str) -> None:
     op = getattr(operator, op_str)
     res_ptr = op(mpc_tensor_1, public_value)
 
-    res = res_ptr.reconstruct()
+    res = res_ptr.reconstruct(timeout_secs=40)
     expected = op(value_1, public_value)
 
     assert (res == expected.child).all()

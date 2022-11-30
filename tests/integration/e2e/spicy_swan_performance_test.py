@@ -211,7 +211,7 @@ def test_benchmark_datasets() -> None:
 
         start_time = time.time()
         publish_ptr = sum_ptr.publish(sigma=500_000)
-        result = publish_ptr.get()
+        result = publish_ptr.get(timeout_secs=timeout)
         print("result", result)
 
         benchmark_report[size_name]["publish_secs"] = time.time() - start_time

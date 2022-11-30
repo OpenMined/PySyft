@@ -37,11 +37,11 @@ def test_tensor_abstraction_pointer(get_clients, op_str) -> None:
 
     exp_res = op(data_1, data_2)
 
-    assert (mpc_1_2.reconstruct() == exp_res.child).all()
+    assert (mpc_1_2.reconstruct(timeout_secs=40) == exp_res.child).all()
 
     exp_res = op(exp_res, data_3)
 
-    assert (mpc_1_2_3.reconstruct() == exp_res.child).all()
+    assert (mpc_1_2_3.reconstruct(timeout_secs=40) == exp_res.child).all()
 
 
 @pytest.mark.smpc_abstract
@@ -73,13 +73,13 @@ def test_tensor_abstraction_subsets(get_clients, op_str) -> None:
     mpc_1_2_3 = op(mpc_1_2, mpc_2_3)
 
     exp_res_1 = op(data_1, data_2)
-    assert (mpc_1_2.reconstruct() == exp_res_1.child).all()
+    assert (mpc_1_2.reconstruct(timeout_secs=40) == exp_res_1.child).all()
 
     exp_res_2 = op(data_2, data_3)
-    assert (mpc_2_3.reconstruct() == exp_res_2.child).all()
+    assert (mpc_2_3.reconstruct(timeout_secs=40) == exp_res_2.child).all()
 
     exp_res_3 = op(exp_res_1, exp_res_2)
-    assert (mpc_1_2_3.reconstruct() == exp_res_3.child).all()
+    assert (mpc_1_2_3.reconstruct(timeout_secs=40) == exp_res_3.child).all()
 
 
 @pytest.mark.smpc_abstract
@@ -108,10 +108,10 @@ def test_tensor_abstraction_concat(get_clients) -> None:
     mpc_1_2_3 = mpc_1_2.concatenate(mpc_2_3)
 
     exp_res_1 = np.concatenate((data_1.child, data_2.child))
-    assert (mpc_1_2.reconstruct() == exp_res_1).all()
+    assert (mpc_1_2.reconstruct(timeout_secs=40) == exp_res_1).all()
 
     exp_res_2 = np.concatenate((data_2.child, data_3.child))
-    assert (mpc_2_3.reconstruct() == exp_res_2).all()
+    assert (mpc_2_3.reconstruct(timeout_secs=40) == exp_res_2).all()
 
     exp_res_3 = np.concatenate((exp_res_1, exp_res_2))
-    assert (mpc_1_2_3.reconstruct() == exp_res_3).all()
+    assert (mpc_1_2_3.reconstruct(timeout_secs=40) == exp_res_3).all()
