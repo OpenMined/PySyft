@@ -784,6 +784,7 @@ class Pointer(AbstractPointer):
         # Check/Remove it if this pointer is still in processing_pointers dict
         self.client.processing_pointers.pop(self.id_at_location, None)
 
-        if self.gc_enabled:
-            # this is not being used in the node currenetly
-            self.client.gc.apply(self)
+        # if self.gc_enabled:
+        #     # this is not being used in the node currenetly
+        #     self.client.gc.apply(self)
+
