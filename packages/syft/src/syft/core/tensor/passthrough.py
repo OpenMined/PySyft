@@ -696,13 +696,20 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         implementation = query_implementation(self.__class__, func)
         if implementation:
             return implementation(*args, **kwargs)
-        return self.__class__(func(*args, **kwargs))
 
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        implementation = query_implementation(self.__class__, ufunc)
+        method_name = func.__name__
+        implementation = getattr(self.__class__, method_name, None)
         if implementation:
-            return implementation(*inputs, **kwargs)
-        return self.__class__(ufunc(*inputs, **kwargs))
+            return (
+                implementation(*args, **kwargs)
+                if callable(implementation)
+                else self.__getattribute__(method_name)
+            )
+
+        return NotImplemented
+
+    # Set __array_ufunc_ = None for now until we can implement this properly
+    __array_ufunc__ = None
 
     def __repr__(self):
         return f"{self.__class__.__name__}(child={self.child})"
