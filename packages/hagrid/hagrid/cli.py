@@ -1746,6 +1746,7 @@ def create_launch_docker_cmd(
         "VERSION": version_string,
         "VERSION_HASH": version_hash,
         "USE_BLOB_STORAGE": use_blob_storage,
+        "NETWORK_FRONTEND": "network_frontend" if str(node_type.input) == "network" else "",
         "STACK_API_KEY": str(
             generate_sec_random_password(length=48, special_chars=False)
         ),
@@ -1800,7 +1801,7 @@ def create_launch_docker_cmd(
         cmd += " --profile blob-storage"
 
     # network frontend disabled
-    if str(node_type.input) != "network" and kwargs["headless"] is False:
+    if kwargs["headless"] is False:
         cmd += " --profile frontend"
 
     # new docker compose regression work around
