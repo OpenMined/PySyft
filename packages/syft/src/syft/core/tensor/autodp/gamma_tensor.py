@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from collections import deque
+from dataclasses import replace
 from typing import Any
 from typing import Callable
 from typing import Deque
@@ -2861,6 +2862,13 @@ class GammaTensor:
             max_vals=self.max_vals * 1,
             func_str=GAMMA_TENSOR_OP.NOOP.value,
         )
+
+    def inplace_filtered(self) -> None:
+        replace(self, child=jnp.zeros_like(self.child))
+        replace(self, data_subjects=self.data_subjects)
+        replace(self, min_vals=self.min_vals * 0)
+        replace(self, max_vals=self.max_vals * 1)
+        replace(self, func_str=GAMMA_TENSOR_OP.NOOP.value)
 
     def ravel(self, order: Optional[str] = "C") -> GammaTensor:
         output_state = dict()
