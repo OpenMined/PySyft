@@ -287,6 +287,7 @@ def publish(
             # TODO: Modify to work with private/public operations (when input_tensor is a scalar)
 
             # Step 4.2: Figure out which Tensors in the Source dictionary have those data subjects
+
             tensor_copy = deepcopy(tensor)
             raw_data_tensors = get_leaves_from_gamma_tensor_tree(tensor_copy)
             for raw_tensor in raw_data_tensors:
@@ -316,6 +317,7 @@ def publish(
             print("tensor.child before restart: ", type(tensor.child), tensor.child)
             print("About to publish again with filtered source_tree!")
             value = tensor.child
+
             # TODO: This isn't the most efficient way to do it since we can reuse sigmas, coeffs, etc.
             # TODO: Add a way to prevent infinite publishing?
             # TODO: Should we implement exponential backoff or something as a means of rate-limiting?

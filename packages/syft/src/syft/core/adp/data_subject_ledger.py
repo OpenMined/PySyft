@@ -113,6 +113,10 @@ def get_unique_data_subjects(data_subjects_query: np.ndarray) -> np.ndarray:
     return sorted(list(data_subjects_query.sum()))
 
 
+def is_item_in_list(a: np.ndarray, b: np.ndarray) -> bool:
+    return a in b
+
+
 def convert_dsa_to_index_array(
     data_subject_array: np.ndarray,
 ) -> Tuple[np.ndarray, int]:
@@ -121,12 +125,14 @@ def convert_dsa_to_index_array(
     unique_data_subjects = get_unique_data_subjects(data_subject_array)
     max_entity = len(unique_data_subjects)
 
+    create_ds_mask = np.vectorize(is_item_in_list)
+
     input_entities_indexes_list: List[np.ndarray] = []
 
     for data_subject_idx, data_subject in enumerate(unique_data_subjects):
         # Create a mask where the current data subject is present
         data_subject = DataSubjectArray([data_subject])
-        ds_mask = np.isin(data_subject_array, data_subject)
+        ds_mask = create_ds_mask(data_subject, data_subject_array)
         input_entity_indexes = ds_mask * (
             np.ones_like(data_subject_array, np.int64) * (data_subject_idx + 1)
         )
