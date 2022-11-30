@@ -15,7 +15,7 @@ services:
 
   frontend:
     build:
-      target: "grid-ui-development"
+      target: ${NETWORK_FRONTEND:-grid-ui-development}
     volumes:
       - ${RELATIVE_PATH}./frontend/:/app
 
