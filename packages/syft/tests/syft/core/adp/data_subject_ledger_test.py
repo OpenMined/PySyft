@@ -35,6 +35,7 @@ def test_cache_bypass() -> None:
     ).all(), "It seems the cache has been modified?"
     assert (direct_eps == eps).all(), "It seems epsilon was incorrectly calculated."
 
+
 def test_cache_indexing_correctness() -> None:
     dsl = DataSubjectLedger()
     for i in [0.0001, 1, 50, 51, 100, 200_000]:
@@ -46,4 +47,3 @@ def test_cache_indexing_correctness() -> None:
         ][0]
         eps = dsl._get_epsilon_spend(np.array([i]))[0]
         assert round(theoretical_epsilon, 7) == round(cache_value, 7) == round(eps, 7)
-

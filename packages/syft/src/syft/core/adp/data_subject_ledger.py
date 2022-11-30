@@ -317,7 +317,9 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
             [self._cache_constant2epsilon, np.array(new_entries)]
         )
 
-    def _fetch_eps_spend_for_big_rdp(self, big_rdp_constant: np.ndarray) -> np.ndarray:
+    def _fetch_eps_spend_for_big_rdp(
+        self, big_rdp_constant: np.ndarray, indices: np.ndarray
+    ) -> np.ndarray:
         """
         We only use this when the RDP constant is large enough that extending the cache would take too long.
         As of Nov 21, 2022, we decided the cutoff would be the current cache size + 150,000
@@ -331,11 +333,8 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         )  # TODO: Replace this with a class variable
         cacheable = cacheable.flatten()
         rdp_constants = big_rdp_constant.flatten()
-        cache_indices = convert_constants_to_indices(rdp_constants)
 
-        for is_cacheable, constant, index in zip(
-            cacheable, rdp_constants, cache_indices
-        ):
+        for is_cacheable, constant, index in zip(cacheable, rdp_constants, indices):
             if is_cacheable:
                 eps = self._cache_constant2epsilon[index]
             else:
@@ -403,7 +402,9 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
     def _get_epsilon_spend(self, rdp_constants: np.ndarray) -> np.ndarray:
         rdp_constants_lookup = convert_constants_to_indices(rdp_constants)
         if rdp_constants_lookup.max() - len(self._cache_constant2epsilon) >= 150_000:
-            eps_spend = self._fetch_eps_spend_for_big_rdp(rdp_constants)
+            eps_spend = self._fetch_eps_spend_for_big_rdp(
+                rdp_constants, rdp_constants_lookup
+            )
         else:
             try:
                 # needed as np.int64 to use take
