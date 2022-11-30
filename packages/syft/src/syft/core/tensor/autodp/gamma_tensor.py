@@ -80,7 +80,7 @@ INPLACE_OPS = {"resize", "sort"}
 
 
 @serializable(recursive_serde=True)
-class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
+class TensorWrappedGammaTensorPointer(Pointer):
     __name__ = "TensorWrappedGammaTensorPointer"
     __module__ = "syft.core.tensor.autodp.gamma_tensor"
     __attr_allowlist__ = [
@@ -106,6 +106,7 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
     }
     _exhausted = False
     is_enum = False
+    PUBLISH_POINTER_TYPE = "numpy.ndarray"
 
     def __init__(
         self,

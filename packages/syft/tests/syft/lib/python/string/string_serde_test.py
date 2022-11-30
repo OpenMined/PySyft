@@ -14,7 +14,6 @@ def test_string_serde() -> None:
     deserialized = String._proto2object(proto=serialized)
 
     assert isinstance(deserialized, String)
-    assert deserialized.id == syft_string.id
 
 
 def test_string_send(client: sy.VirtualMachineClient) -> None:
@@ -27,3 +26,12 @@ def test_string_send(client: sy.VirtualMachineClient) -> None:
     # Check that we can get back the object
     res = ptr.get()
     assert res == syft_string
+
+
+def test_string_bytes() -> None:
+    # Testing if multiple serialization of the similar object results in same bytes
+    syft_string_1 = String("Hello OpenMined")
+    syft_string_2 = String("Hello OpenMined")
+    assert sy.serialize(syft_string_1, to_bytes=True) == sy.serialize(
+        syft_string_2, to_bytes=True
+    )
