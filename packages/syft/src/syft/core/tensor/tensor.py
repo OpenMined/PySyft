@@ -189,7 +189,11 @@ class TensorPointer(Pointer):
                 raise ValueError(
                     f"Type for self and other do not match ({self.public_dtype} vs {other_dtype})"
                 )
-            result_public_dtype = self.public_dtype
+
+        # calculate the dtype of the result based on the op_str
+        result_public_dtype = result_public_shape = utils.get_dtype(
+            op_str, self.public_shape, other_shape
+        )
 
         result.public_shape = result_public_shape
         result.public_dtype = result_public_dtype

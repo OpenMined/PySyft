@@ -105,6 +105,35 @@ def get_shape(
 
 
 @lru_cache(maxsize=128)
+def get_dtype(
+    op_str: str,
+    x_shape: Tuple[int],
+    y_shape: Tuple[int],
+) -> np.dtype:
+    """Get the shape of apply an operation on two values
+
+    Args:
+        op_str (str): the operation to be applied
+        x_shape (Tuple[int]): the shape of op1
+        y_shape (Tuple[int]): the shape of op2
+
+    Returns:
+        The dtype of the result
+    """
+    dummy_x = np.empty(x_shape, dtype=DEFAULT_INT_NUMPY_TYPE)
+    dummy_y = np.empty(y_shape, dtype=DEFAULT_INT_NUMPY_TYPE)
+    if op_str in OPERATOR_OPS:
+        op = getattr(operator, op_str)
+        res = op(dummy_x, dummy_y).dtype
+    elif op_str in NUMPY_OPS:
+        res = getattr(np, op_str)([dummy_x, dummy_y]).dtype
+    else:
+        res = getattr(dummy_x, op_str)(dummy_y).dtype
+
+    return res
+
+
+@lru_cache(maxsize=128)
 def get_ring_size(
     x_ring_size: int,
     y_ring_size: int,
