@@ -405,8 +405,13 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
         return self.__class__(self.child / other.child)
 
-    def __rtruediv__(self, other: Type[PassthroughTensor]) -> PassthroughTensor:
-        return other.__truediv__(self)
+    def __rtruediv__(
+        self, other: Union[Type[PassthroughTensor], AcceptableSimpleType]
+    ) -> PassthroughTensor:
+        if is_acceptable_simple_type(other):
+            return self.__class__(self.child.__rtruediv__(other))  # type: ignore
+
+        return self.__class__(self.child.__rtruediv__(other.child))
 
     def manual_dot(
         self, other: Union[Type[PassthroughTensor], np.ndarray]

@@ -735,6 +735,22 @@ class TensorWrappedGammaTensorPointer(Pointer):
         """
         return TensorWrappedGammaTensorPointer._apply_op(self, other, "__truediv__")
 
+    def __rtruediv__(
+        self,
+        other: Union[
+            TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the "rtruediv" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__rtruediv__")
+
     def __mod__(
         self,
         other: Union[
