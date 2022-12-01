@@ -2195,10 +2195,10 @@ class GammaTensor:
 
         if is_acceptable_simple_type(other):
             return GammaTensor(
-                child=(1 / self.child) * other,
-                min_vals=(1 / self.min_vals) * other,
-                max_vals=(1 / self.max_vals) * other,
-                data_subjects=(1 / self.data_subjects) * other,
+                child=(other / self.child),
+                min_vals=(other / self.min_vals),
+                max_vals=(other / self.max_vals),
+                data_subjects=self.data_subjects,
             )
         else:
             print("Type is unsupported:" + str(type(other)))

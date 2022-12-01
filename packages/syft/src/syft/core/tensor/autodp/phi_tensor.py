@@ -2952,9 +2952,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         if is_acceptable_simple_type(other):
             return PhiTensor(
-                child=(1 / self.child) * other,
-                min_vals=(1 / self.min_vals) * other,
-                max_vals=(1 / self.max_vals) * other,
+                child=(other / self.child),
+                min_vals=(other / self.min_vals),
+                max_vals=(other / self.max_vals),
                 data_subjects=self.data_subjects,
             )
 
