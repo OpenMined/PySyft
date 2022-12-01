@@ -393,6 +393,30 @@ def test_rtruediv(
 
 
 @pytest.mark.arithmetic
+def test_rfloordiv(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    ).gamma
+    input_data = np.ones_like(reference_data)
+    output = input_data // reference_tensor
+    assert output.shape == reference_tensor.shape
+    assert (output.child == input_data // reference_data).all()
+    assert (output.min_vals.data <= output.max_vals.data).all()
+    assert output.min_vals.shape == reference_tensor.shape
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.arithmetic
 @pytest.mark.public_op
 def test_sub_public(
     reference_data: np.ndarray,
