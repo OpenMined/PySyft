@@ -14,11 +14,9 @@ from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 import requests
 
-# syft absolute
-import syft as sy
-
 # relative
 from .. import GridURL
+from ... import __version__
 from ...core.io.connection import ClientConnection
 from ...core.io.route import SoloRoute
 from ...core.node.common.client import Client
@@ -41,23 +39,18 @@ def connect(
 ) -> Client:
     # Use Server metadata
     # to build client route
-    credentials = credentials if credentials else {}
     conn = conn_type(url=GridURL.from_url(url))  # type: ignore
 
     # get metadata and check for https redirect so that login is sent over TLS
     metadata = conn._get_metadata(timeout=timeout)  # type: ignore
 
-    credentials = credentials if credentials is not None else {}
-
-    if credentials:
+    if not user_key:
+        credentials = credentials if credentials is not None else {}
         metadata, _user_key = conn.login(credentials=credentials)  # type: ignore
         _user_key = SigningKey(_user_key.encode(), encoder=HexEncoder)
     else:
-
-        if not user_key:
-            _user_key = SigningKey.generate()
-        else:
-            _user_key = user_key
+        # metadata = conn.auth_using_key(user_key=user_key)  # type: ignore
+        _user_key = user_key
 
     # Check node client type based on metadata response
     client_type: Union[Type[DomainClient], Type[NetworkClient]]
@@ -220,12 +213,12 @@ def login(
     else:
         print("Logging into", str(node.name), "... done!")
 
-    if sy.__version__ != node.version:
+    if __version__ != node.version:
         print(
             "\n**Warning**: The syft version on your system and the node are different."
         )
         print(
-            f"Version on your system: {sy.__version__}\nVersion on the node: {node.version}"
+            f"Version on your system: {__version__}\nVersion on the node: {node.version}"
         )
         print()
 

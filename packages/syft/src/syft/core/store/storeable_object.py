@@ -7,9 +7,6 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from pydantic import BaseSettings
 
-# syft absolute
-import syft as sy
-
 # relative
 from ...logger import traceback_and_raise
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
@@ -18,6 +15,7 @@ from ...util import index_syft_by_module_name
 from ...util import key_emoji
 from ..common.serde.deserialize import CapnpMagicBytesNotFound
 from ..common.serde.deserialize import _deserialize
+from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.deserialize import deserialize_capnp
 from ..common.serde.serializable import serializable
 from ..common.serde.serialize import _serialize
@@ -132,11 +130,12 @@ class StorableObject(AbstractStorableObject):
     def _object2proto(self) -> StorableObject_PB:
         # relative
         from ...lib.python.bytes import Bytes
+        from ...lib.python.dict import Dict
 
         proto = StorableObject_PB()
 
         # Step 1: Serialize the id to protobuf and copy into protobuf
-        id = sy.serialize(self.id)
+        id = _serialize(self.id)
         proto.id.CopyFrom(id)
 
         # Step 2: Save the type of wrapper to use to deserialize
@@ -168,24 +167,24 @@ class StorableObject(AbstractStorableObject):
 
         # Step 6: save read permissions
         if len(self.read_permissions) > 0:
-            permission_data = sy.lib.python.Dict()
+            permission_data = Dict()
             for k, v in self.read_permissions.items():
                 permission_data[k] = v
-            proto.read_permissions = sy.serialize(permission_data, to_bytes=True)
+            proto.read_permissions = _serialize(permission_data, to_bytes=True)
 
         # Step 7: save search permissions
         if len(self.search_permissions.keys()) > 0:
-            permission_data = sy.lib.python.Dict()
+            permission_data = Dict()
             for k, v in self.search_permissions.items():
                 permission_data[k] = v
-            proto.search_permissions = sy.serialize(permission_data, to_bytes=True)
+            proto.search_permissions = _serialize(permission_data, to_bytes=True)
 
         # Step 8: save write permissions
         if len(self.write_permissions.keys()) > 0:
-            permission_data = sy.lib.python.Dict()
+            permission_data = Dict()
             for k, v in self.write_permissions.items():
                 permission_data[k] = v
-            proto.write_permissions = sy.serialize(permission_data, to_bytes=True)
+            proto.write_permissions = _serialize(permission_data, to_bytes=True)
 
         return proto
 
@@ -219,7 +218,7 @@ class StorableObject(AbstractStorableObject):
             try:
                 data = deserialize_capnp(buf=data)
             except CapnpMagicBytesNotFound:
-                data = sy.deserialize(data, from_bytes=True)
+                data = deserialize(data, from_bytes=True)
             except Exception as e:
                 traceback_and_raise(f"Failed to deserialize Bytes with capnp. {e}")
 

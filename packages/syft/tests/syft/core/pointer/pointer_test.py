@@ -91,7 +91,10 @@ def test_overwrite_tensor(
     with pytest.raises(Exception) as exc_info:
         client.send_immediate_msg_without_reply(msg=obj_msg)
 
-    assert str(exc_info.value) == "You're not allowed to perform this operation."
+    assert (
+        str(exc_info.value)
+        == "You're not allowed to perform this operation using this ID."
+    )
 
     # Check if tensor remains the same
     assert tensor_ptr.get_copy() == ten
