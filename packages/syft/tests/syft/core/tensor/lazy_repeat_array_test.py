@@ -4,6 +4,7 @@ import pytest
 
 # syft absolute
 import syft as sy
+from syft.core.tensor.lazy_repeat_array import has_nans_inf
 from syft.core.tensor.lazy_repeat_array import lazyrepeatarray
 
 
@@ -94,3 +95,15 @@ def test_sum() -> None:
     lazyarray = lazyrepeatarray(data=np.array([1]), shape=array.shape)
 
     assert lazyarray.sum(axis=None).data == array.sum(axis=None)
+
+
+def test_nans() -> None:
+    shape = (5, 5)
+    good_minv = lazyrepeatarray(1, shape)
+    bad_minv = lazyrepeatarray(np.nan, shape)
+    good_maxv = lazyrepeatarray(1000, shape)
+    bad_maxv = lazyrepeatarray(np.nan, shape)
+    assert has_nans_inf(min_val=good_minv, max_val=good_maxv) is False
+    assert has_nans_inf(min_val=good_minv, max_val=bad_maxv) is True
+    assert has_nans_inf(min_val=bad_minv, max_val=good_maxv) is True
+    assert has_nans_inf(min_val=bad_minv, max_val=bad_maxv) is True
