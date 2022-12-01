@@ -117,6 +117,9 @@ class lazyrepeatarray:
         else:
             return self.__class__(data=self.data + other.data, shape=self.shape)
 
+    def __radd__(self, other: Any) -> lazyrepeatarray:
+        return self.__add__(other)
+
     def __sub__(self, other: Any) -> lazyrepeatarray:
         """
         THIS MIGHT LOOK LIKE COPY-PASTED CODE!
@@ -434,11 +437,12 @@ def compute_min_max(
 
     if op_str in [
         "__add__",
+        "__radd__",
         "__matmul__",
         "__rmatmul__",
         "__truediv__",
         "__floordiv__",
-        "__rtruediv__"
+        "__rtruediv__",
     ]:
         if is_acceptable_simple_type(other):
             min_vals = getattr(x_min_vals, op_str)(other)

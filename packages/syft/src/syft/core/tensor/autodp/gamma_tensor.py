@@ -107,6 +107,7 @@ class TensorWrappedGammaTensorPointer(Pointer):
     _exhausted = False
     is_enum = False
     PUBLISH_POINTER_TYPE = "numpy.ndarray"
+    __array_ufunc__ = None
 
     def __init__(
         self,
@@ -473,6 +474,22 @@ class TensorWrappedGammaTensorPointer(Pointer):
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
         return TensorWrappedGammaTensorPointer._apply_op(self, other, "__add__")
+
+    def __radd__(
+        self,
+        other: Union[
+            TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the "radd" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__radd__")
 
     def __sub__(
         self,
@@ -1915,6 +1932,7 @@ class GammaTensor:
     """
 
     PointerClassOverride = TensorWrappedGammaTensorPointer
+    __array_ufunc__ = None
 
     child: jnp.array
     data_subjects: np.ndarray
@@ -2054,6 +2072,9 @@ class GammaTensor:
             func_str=GAMMA_TENSOR_OP.ADD.value,
             sources=output_state,
         )
+
+    def __radd__(self, other: Any) -> GammaTensor:
+        return self.__add__(other)
 
     def __mod__(self, other: Any) -> GammaTensor:
         # relative

@@ -94,6 +94,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
     _exhausted = False
     is_enum = False
     PUBLISH_POINTER_TYPE = "numpy.ndarray"
+    __array_ufunc__ = None
 
     def __init__(
         self,
@@ -484,6 +485,20 @@ class TensorWrappedPhiTensorPointer(Pointer):
         """
         return TensorWrappedPhiTensorPointer._apply_op(self, other, "__add__")
 
+    def __radd__(
+        self,
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
+        """Apply the "radd" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__radd__")
+
     def __sub__(
         self,
         other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
@@ -737,7 +752,6 @@ class TensorWrappedPhiTensorPointer(Pointer):
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
         return TensorWrappedPhiTensorPointer._apply_op(self, other, "__rtruediv__")
-
 
     def __floordiv__(
         self,
@@ -2742,6 +2756,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         else:
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
+
+    def __radd__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
+        return self.__add__(other)
 
     def __sub__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
