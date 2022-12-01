@@ -107,3 +107,15 @@ def test_nans() -> None:
     assert has_nans_inf(min_val=good_minv, max_val=bad_maxv) is True
     assert has_nans_inf(min_val=bad_minv, max_val=good_maxv) is True
     assert has_nans_inf(min_val=bad_minv, max_val=bad_maxv) is True
+
+
+def test_infs() -> None:
+    shape = (5, 5)
+    good_minv = lazyrepeatarray(1, shape)
+    bad_minv = lazyrepeatarray(np.inf, shape)
+    good_maxv = lazyrepeatarray(1000, shape)
+    bad_maxv = lazyrepeatarray(np.inf, shape)
+    assert has_nans_inf(min_val=good_minv, max_val=good_maxv) is False
+    assert has_nans_inf(min_val=good_minv, max_val=bad_maxv) is True
+    assert has_nans_inf(min_val=bad_minv, max_val=good_maxv) is True
+    assert has_nans_inf(min_val=bad_minv, max_val=bad_maxv) is True
