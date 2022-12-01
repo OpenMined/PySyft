@@ -163,8 +163,6 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
 
     result = ca_data + it_data
 
-    result.block_with_timeout(40)
-
     """
     Cutter: The second act is called "The Turn". The mathemagician takes the ordinary
     something and makes it do something extraordinary. Now you're looking for the
@@ -183,9 +181,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     # the prestige 🎩
     print("running the prestige 🎩")
 
-    public_result.block_with_timeout(40)
-
-    sycure_result = public_result.get()
+    sycure_result = public_result.get(timeout_secs=40)
 
     print("sycure_result", sycure_result)
     print("after ca", ca.privacy_budget)

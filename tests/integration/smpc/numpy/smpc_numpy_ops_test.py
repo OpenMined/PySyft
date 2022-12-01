@@ -18,7 +18,7 @@ def test_repeat(get_clients) -> None:
     mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(2, 2))
 
     res = mpc_tensor.repeat(3)
-    res.block_with_timeout(secs=20)
+
     res = res.reconstruct()
 
     exp_res = value.repeat(3)
@@ -36,10 +36,10 @@ def test_copy(get_clients) -> None:
     mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(2, 2))
 
     res = mpc_tensor.copy()
-    res.block_with_timeout(secs=20)
-    res = res.reconstruct()
 
-    exp_res = mpc_tensor.reconstruct()
+    res = res.reconstruct(timeout_secs=20)
+
+    exp_res = mpc_tensor.reconstruct(timeout_secs=20)
 
     # we cannot check id for copy as the values are in different locations
     assert (res == exp_res).all()
@@ -55,8 +55,8 @@ def test_diagonal(get_clients) -> None:
     mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(2, 2))
 
     res = mpc_tensor.diagonal()
-    res.block_with_timeout(secs=20)
-    res = res.reconstruct()
+
+    res = res.reconstruct(timeout_secs=20)
 
     exp_res = value.diagonal()
 
@@ -77,8 +77,8 @@ def test_flatten(get_clients) -> None:
     mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(3, 3))
 
     res = mpc_tensor.flatten()
-    res.block_with_timeout(secs=20)
-    res = res.reconstruct()
+
+    res = res.reconstruct(timeout_secs=20)
 
     exp_res = value.flatten()
 
@@ -99,8 +99,8 @@ def test_transpose(get_clients) -> None:
     mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(3, 3))
 
     res = mpc_tensor.transpose()
-    res.block_with_timeout(secs=20)
-    res = res.reconstruct()
+
+    res = res.reconstruct(timeout_secs=20)
 
     exp_res = value.transpose()
 
@@ -119,8 +119,8 @@ def test_resize(get_clients) -> None:
     mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(3, 2))
 
     res = mpc_tensor.resize((2, 3))
-    res.block_with_timeout(secs=20)
-    res = res.reconstruct()
+
+    res = res.reconstruct(timeout_secs=20)
 
     exp_res = value.resize((2, 3))
 
@@ -139,8 +139,8 @@ def test_ravel(get_clients) -> None:
     mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(3, 3))
 
     res = mpc_tensor.ravel()
-    res.block_with_timeout(secs=20)
-    res = res.reconstruct()
+
+    res = res.reconstruct(timeout_secs=20)
 
     exp_res = value.ravel()
 
@@ -157,8 +157,8 @@ def test_compress(get_clients) -> None:
     mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(3, 2))
 
     res = mpc_tensor.compress([0, 1], axis=0)
-    res.block_with_timeout(secs=20)
-    res = res.reconstruct()
+
+    res = res.reconstruct(timeout_secs=20)
 
     exp_res = value.compress([0, 1], axis=0)
 
@@ -175,8 +175,8 @@ def test_reshape(get_clients) -> None:
     mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(3, 2))
 
     res = mpc_tensor.reshape((2, 3))
-    res.block_with_timeout(secs=20)
-    res = res.reconstruct()
+
+    res = res.reconstruct(timeout_secs=20)
 
     exp_res = value.reshape((2, 3))
 
@@ -193,8 +193,8 @@ def test_squeeze(get_clients) -> None:
     mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(3, 1))
 
     res = mpc_tensor.squeeze()
-    res.block_with_timeout(secs=20)
-    res = res.reconstruct()
+
+    res = res.reconstruct(timeout_secs=20)
 
     exp_res = value.squeeze()
 
@@ -213,8 +213,8 @@ def test_swapaxes(get_clients) -> None:
     mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(2, 3))
 
     res = mpc_tensor.swapaxes(0, 1)
-    res.block_with_timeout(secs=20)
-    res = res.reconstruct()
+
+    res = res.reconstruct(timeout_secs=20)
 
     exp_res = value.swapaxes(0, 1)
 
@@ -231,8 +231,8 @@ def test_pos(get_clients) -> None:
     mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(2, 2))
 
     res = mpc_tensor.__pos__()
-    res.block_with_timeout(secs=20)
-    res = res.reconstruct()
+
+    res = res.reconstruct(timeout_secs=20)
 
     exp_res = value.__pos__()
 
@@ -249,8 +249,8 @@ def test_put(get_clients) -> None:
     mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(2, 2))
 
     res = mpc_tensor.put([0, 1], 7)
-    res.block_with_timeout(secs=20)
-    res = res.reconstruct()
+
+    res = res.reconstruct(timeout_secs=20)
 
     value.put([0, 1], 7)
     exp_res = value  # inplace ops
@@ -268,8 +268,8 @@ def test_neg(get_clients) -> None:
     mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(2, 2))
 
     res = -mpc_tensor
-    res.block_with_timeout(secs=20)
-    res = res.reconstruct()
+
+    res = res.reconstruct(timeout_secs=20)
 
     exp_res = -value
 
@@ -286,8 +286,8 @@ def test_take(get_clients) -> None:
     mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(7,))
 
     res = mpc_tensor.take([5, 1, 6])
-    res.block_with_timeout(secs=20)
-    res = res.reconstruct()
+
+    res = res.reconstruct(timeout_secs=20)
 
     exp_res = value.take([5, 1, 6])
 
@@ -306,8 +306,8 @@ def test_abs(get_clients) -> None:
     mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(2, 3))
 
     res = mpc_tensor.__abs__()
-    res.block_with_timeout(secs=120)
-    res = res.reconstruct()
+
+    res = res.reconstruct(timeout_secs=20)
 
     exp_res = value.__abs__()
 
@@ -326,8 +326,8 @@ def test_sign(get_clients) -> None:
     mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(2, 3))
 
     res = mpc_tensor.sign()
-    res.block_with_timeout(secs=120)
-    res = res.reconstruct()
+
+    res = res.reconstruct(timeout_secs=20)
 
     exp_res = np.array([[-1, -1, 1], [1, -1, 1]], dtype=DEFAULT_INT_NUMPY_TYPE)
 
@@ -345,8 +345,8 @@ def test_pow(get_clients, power) -> None:
     mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(3,))
 
     res = mpc_tensor**power
-    res.block_with_timeout(secs=80)
-    res = res.reconstruct()
+
+    res = res.reconstruct(timeout_secs=20)
 
     exp_res = value**power
 
@@ -363,8 +363,8 @@ def test_cumsum(get_clients) -> None:
     mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(7,))
 
     res = mpc_tensor.cumsum()
-    res.block_with_timeout(secs=20)
-    res = res.reconstruct()
+
+    res = res.reconstruct(timeout_secs=20)
 
     exp_res = value.cumsum()
 
@@ -383,8 +383,8 @@ def test_trace(get_clients) -> None:
     mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(3, 3))
 
     res = mpc_tensor.trace()
-    res.block_with_timeout(secs=20)
-    res = res.reconstruct()
+
+    res = res.reconstruct(timeout_secs=20)
 
     exp_res = value.trace()
 
