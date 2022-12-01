@@ -40,7 +40,7 @@ You Will Learn ⬇️
 | :doc:`Part 1: Deploying your own Domain Server <data-owner/00-deploy-domain>`
 | :doc:`Part 2: Uploading Private Data to a Domain Server <data-owner/01-upload-data>`
 | :doc:`Part 3: Creating User Accounts on your Domain Server <data-owner/02-create-account-configure-pb>`
-| :doc:`Part 4: Joining a Network <03-join-network>`
+| :doc:`Part 4: Joining a Network <data-owner/03-join-network>`
 | :doc:`Part 5: Creating a Network <04-create-network>`
 | :doc:`Part 6: Configuring Privacy Budget on your Domain Server <05-configure-pb>`
 

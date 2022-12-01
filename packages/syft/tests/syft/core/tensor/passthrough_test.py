@@ -8,6 +8,7 @@ import torch
 
 # syft absolute
 from syft.core.tensor.passthrough import PassthroughTensor
+from syft.core.tensor.tensor import Tensor
 from syft.core.tensor.util import implements
 
 
@@ -933,6 +934,7 @@ def test__array_function__() -> None:
     assert result_c == expected_c.child
 
 
+@pytest.mark.xfail
 def test__array_ufunc__() -> None:
     data_a = np.array([1, 2, 3], dtype=np.int32)
     tensor_a = PtTensorSubclass(child=data_a, unit="Hedgehogs")
@@ -964,6 +966,7 @@ def test_repr() -> None:
     assert type(result) == str
 
 
+@pytest.mark.xfail
 def test_square() -> None:
     data = np.array([[0, 1], [-2, 3]], dtype=np.int32)
     expected = np.array([[0, 1], [4, 9]], dtype=np.int32)
@@ -972,3 +975,20 @@ def test_square() -> None:
     result = np.square(tensor_a)
 
     assert result == tensor_b
+
+
+def test_unimplemented_array_func() -> None:
+    # test if unimplemented ops correctly return TypeError: no implementation found
+    tensor = Tensor(np.array([0, 1, 2, 3], dtype=np.int32))
+
+    # change to some op other than full_like if this ends up being implemented
+    with pytest.raises(TypeError, match="no implementation found"):
+        np.full_like(tensor, 7)
+
+
+def test_unsupported_ufunc() -> None:
+    # we don't currently support ufunc
+    tensor = Tensor(np.array([0, 1, 2, 3], dtype=np.int32))
+
+    with pytest.raises(TypeError, match="does not support ufuncs"):
+        np.sin(tensor)

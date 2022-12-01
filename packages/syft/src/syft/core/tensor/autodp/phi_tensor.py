@@ -67,7 +67,7 @@ INPLACE_OPS = {"resize", "sort"}
 
 
 @serializable(recursive_serde=True)
-class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
+class TensorWrappedPhiTensorPointer(Pointer):
     __name__ = "TensorWrappedPhiTensorPointer"
     __module__ = "syft.core.tensor.autodp.phi_tensor"
     __attr_allowlist__ = [
@@ -93,6 +93,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
     }
     _exhausted = False
     is_enum = False
+    PUBLISH_POINTER_TYPE = "numpy.ndarray"
 
     def __init__(
         self,
@@ -254,6 +255,8 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         result.public_shape = result_public_shape
         result.public_dtype = result_public_dtype
 
+        result.client.processing_pointers[result.id_at_location] = True
+
         return result
 
     def _apply_self_tensor_op(self, op_str: str, *args: Any, **kwargs: Any) -> Any:
@@ -393,6 +396,8 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
         result.public_shape = dummy_res.shape
         result.public_dtype = dummy_res.dtype
+
+        result.client.processing_pointers[result.id_at_location] = True
 
         return result
 
