@@ -17,6 +17,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 # relative
+from ... import helper
 from ..adp.data_subject_ledger import DataSubjectLedger
 from ..adp.data_subject_list import DataSubjectArray
 from .config import DEFAULT_FLOAT_NUMPY_TYPE
@@ -503,11 +504,12 @@ class PhiTensorAncestor(TensorChainManager):
         You may join here: https://slack.openmined.org/
         """
 
-        print("Tensor annotated with DP Metadata!")
-        print(
-            "You can upload this Tensor to a domain node by calling `<domain_client>.load_dataset` "
-            "and passing in this tensor as an asset."
-        )
+        if helper is True:
+            print("Tensor annotated with DP Metadata!")
+            print(
+                "You can upload this Tensor to a domain node by calling `<domain_client>.load_dataset` "
+                "and passing in this tensor as an asset."
+            )
 
         return self.copy()._private(
             min_val=lower_bound,
