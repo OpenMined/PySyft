@@ -1799,7 +1799,8 @@ def create_launch_docker_cmd(
 
     if str(node_type.input) == "network":
         cmd += " --profile network"
-    else:
+
+    if str_to_bool(use_blob_storage):
         cmd += " --profile blob-storage"
 
     # network frontend disabled

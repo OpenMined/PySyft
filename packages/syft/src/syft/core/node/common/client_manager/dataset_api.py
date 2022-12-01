@@ -382,7 +382,9 @@ class Dataset:
         keys = list()
         for d in self.data:
             if d["name"] == key:
-                return self.client.store.get(d["id"])  # type: ignore
+                pointer = self.client.store.get(d["id"])  # type: ignore
+                self.client.processing_pointers[pointer.id_at_location] = True  # type: ignore
+                return pointer
             keys.append(d["name"])
 
         raise KeyError(
