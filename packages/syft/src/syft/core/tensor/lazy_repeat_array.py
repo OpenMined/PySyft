@@ -819,4 +819,4 @@ def compute_min_max(
             "future versions of PySyft."
         )
 
-    return (min_vals, max_vals)
+    return min_vals, max_vals
