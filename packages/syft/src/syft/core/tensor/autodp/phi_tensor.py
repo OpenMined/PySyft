@@ -513,6 +513,20 @@ class TensorWrappedPhiTensorPointer(Pointer):
         """
         return TensorWrappedPhiTensorPointer._apply_op(self, other, "__sub__")
 
+    def __rsub__(
+        self,
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
+        """Apply the "rsub" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__rsub__")
+
     def __mul__(
         self,
         other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
@@ -2825,6 +2839,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             min_vals=min_vals,
             max_vals=max_vals,
         )
+
+    def __rsub__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
+        return (self - other) * -1
 
     def __mul__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 

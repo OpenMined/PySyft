@@ -785,6 +785,13 @@ def compute_min_max(
 
         min_vals = lazyrepeatarray(data=_min_vals, shape=x_min_vals.shape)
         max_vals = lazyrepeatarray(data=_max_vals, shape=x_max_vals.shape)
+    elif op_str == "__rsub__":
+        x_min_vals, x_max_vals = compute_min_max(
+            x_min_vals=x_min_vals, x_max_vals=x_max_vals, other=other, op_str="__sub__"
+        )
+        return compute_min_max(
+            x_min_vals=x_min_vals, x_max_vals=x_max_vals, other=-1, op_str="__mul__"
+        )
 
     else:
         raise ValueError(f"Invaid Operation for LazyRepeatArray: {op_str}")

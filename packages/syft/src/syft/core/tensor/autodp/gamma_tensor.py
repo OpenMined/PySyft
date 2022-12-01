@@ -507,6 +507,22 @@ class TensorWrappedGammaTensorPointer(Pointer):
         """
         return TensorWrappedGammaTensorPointer._apply_op(self, other, "__sub__")
 
+    def __rsub__(
+        self,
+        other: Union[
+            TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the "rsub" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__rsub__")
+
     def __mul__(
         self,
         other: Union[
@@ -2197,6 +2213,9 @@ class GammaTensor:
             func_str=GAMMA_TENSOR_OP.SUBTRACT.value,
             sources=output_state,
         )
+
+    def __rsub__(self, other: Any) -> GammaTensor:
+        return (self - other) * -1
 
     def __mul__(self, other: Any) -> GammaTensor:
         # relative
