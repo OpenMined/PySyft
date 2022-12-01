@@ -795,6 +795,20 @@ class TensorWrappedPhiTensorPointer(Pointer):
         """
         return TensorWrappedPhiTensorPointer._apply_op(self, other, "__floordiv__")
 
+    def __rfloordiv__(
+        self,
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
+        """Apply the "rfloordiv" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__rfloordiv__")
+
     def __mod__(
         self,
         other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
@@ -3948,6 +3962,21 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             raise NotImplementedError(
                 f"floordiv not supported between PhiTensor & {type(other)}"
             )
+
+    def __rfloordiv__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
+        if is_acceptable_simple_type(other):
+            return PhiTensor(
+                child=(other // self.child),
+                min_vals=(other // self.min_vals),
+                max_vals=(other // self.max_vals),
+                data_subjects=self.data_subjects,
+            )
+
+        elif isinstance(other, GammaTensor):
+            return other // self.gamma
+        else:
+            print("Type is unsupported:" + str(type(other)))
+            raise NotImplementedError
 
     def trace(self, offset: int = 0, axis1: int = 0, axis2: int = 1) -> PhiTensor:
         """

@@ -256,9 +256,9 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         other: Union[Type[PassthroughTensor], AcceptableSimpleType],
     ) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
-            return self.__class__(other.__floordiv__(self.child))
+            return self.__class__(self.child.__rfloordiv__(other))
 
-        return self.__class__(other.child.__floordiv__(self.child))
+        return self.__class__(self.child.__rfloordiv__(other.child))
 
     def __lshift__(
         self,

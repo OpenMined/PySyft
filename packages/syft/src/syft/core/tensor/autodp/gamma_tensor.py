@@ -807,6 +807,22 @@ class TensorWrappedGammaTensorPointer(Pointer):
         """
         return TensorWrappedGammaTensorPointer._apply_op(self, other, "__floordiv__")
 
+    def __rfloordiv__(
+        self,
+        other: Union[
+            TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the "rfloordiv" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__rfloordiv__")
+
     def __divmod__(
         self,
         other: Union[
@@ -4065,6 +4081,19 @@ class GammaTensor:
             raise NotImplementedError(
                 f"floordiv not supported between GammaTensor & {type(other)}"
             )
+
+    def __rfloordiv__(self, other: SupportedChainType) -> GammaTensor:
+
+        if is_acceptable_simple_type(other):
+            return GammaTensor(
+                child=(other // self.child),
+                min_vals=(other // self.min_vals),
+                max_vals=(other // self.max_vals),
+                data_subjects=self.data_subjects,
+            )
+        else:
+            print("Type is unsupported:" + str(type(other)))
+            raise NotImplementedError
 
     def trace(self, offset: int = 0, axis1: int = 0, axis2: int = 1) -> GammaTensor:
         """

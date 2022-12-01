@@ -53,6 +53,7 @@ class lazyrepeatarray:
     """
 
     __attr_allowlist__ = ["data", "shape"]
+    __array_ufunc__ = None
 
     def __init__(self, data: np.ndarray, shape: Tuple[int, ...]) -> None:
         """
@@ -232,6 +233,10 @@ class lazyrepeatarray:
             )
         else:
             return self.__class__(data=self.data // other.data, shape=self.shape)
+
+    def __rfloordiv__(self, other: Any) -> lazyrepeatarray:
+        res = other // self.data
+        return lazyrepeatarray(data=res, shape=self.shape)
 
     def __rmatmul__(self, other: Any) -> lazyrepeatarray:
         """
@@ -446,6 +451,7 @@ def compute_min_max(
         "__truediv__",
         "__floordiv__",
         "__rtruediv__",
+        "__rfloordiv__",
     ]:
         if is_acceptable_simple_type(other):
             min_vals = getattr(x_min_vals, op_str)(other)
