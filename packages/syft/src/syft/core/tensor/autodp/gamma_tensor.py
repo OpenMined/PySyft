@@ -523,6 +523,22 @@ class TensorWrappedGammaTensorPointer(Pointer):
         """
         return TensorWrappedGammaTensorPointer._apply_op(self, other, "__mul__")
 
+    def __rmul__(
+        self,
+        other: Union[
+            TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the "rmul" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__rmul__")
+
     def __matmul__(
         self,
         other: Union[
@@ -2228,6 +2244,9 @@ class GammaTensor:
             func_str=GAMMA_TENSOR_OP.MULTIPLY.value,
             sources=output_state,
         )
+
+    def __rmul__(self, other: Any) -> GammaTensor:
+        return self.__mul__(other)
 
     def __truediv__(self, other: Any) -> GammaTensor:
         # relative

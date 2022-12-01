@@ -155,6 +155,9 @@ class lazyrepeatarray:
         else:
             return self.__class__(data=self.data * other.data, shape=self.shape)
 
+    def __rmul__(self, other: Any) -> lazyrepeatarray:
+        return self.__mul__(other)
+
     def __matmul__(self, other: Any) -> lazyrepeatarray:
         """
         THIS MIGHT LOOK LIKE COPY-PASTED CODE!
@@ -455,7 +458,7 @@ def compute_min_max(
                 f"Not supported type for lazy repeat array computation: {type(other)}"
             )
 
-    elif op_str in ["__sub__", "__mul__"]:
+    elif op_str in ["__sub__", "__mul__", "__rmul__"]:
         if is_acceptable_simple_type(other):
             min_vals = getattr(x_min_vals, op_str)(other)
             max_vals = getattr(x_max_vals, op_str)(other)

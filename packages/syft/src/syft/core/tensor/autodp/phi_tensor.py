@@ -527,6 +527,20 @@ class TensorWrappedPhiTensorPointer(Pointer):
         """
         return TensorWrappedPhiTensorPointer._apply_op(self, other, "__mul__")
 
+    def __rmul__(
+        self,
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
+        """Apply the "rmul" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__rmul__")
+
     def __matmul__(
         self,
         other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
@@ -2862,6 +2876,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         else:
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
+
+    def __rmul__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
+        return self.__mul__(other)
 
     def __truediv__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
         if isinstance(other, PhiTensor):
