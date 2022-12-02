@@ -84,6 +84,8 @@ from .lib import lib_ast  # noqa: F401
 from .lib import load  # noqa: F401
 from .lib import load_lib  # noqa: F401
 from .registry import NetworkRegistry  # noqa: F401
+from .user_settings import UserSettings  # noqa: F401
+from .user_settings import settings  # noqa: F401
 
 sys.path.append(str(Path(__file__)))
 
@@ -115,5 +117,6 @@ def _networks() -> NetworkRegistry:
     return NetworkRegistry()
 
 
-global helper
-helper = False
+@module_property
+def _settings() -> UserSettings:
+    return settings
