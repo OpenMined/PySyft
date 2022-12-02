@@ -1,7 +1,3 @@
-FROM python:3.9-alpine as network_frontend
-COPY network_simple_server.py network_simple_server.py
-CMD ["python", "network_simple_server.py"]
-
 FROM node:16-alpine as grid-ui-development
 ENV NEXT_PUBLIC_ENVIRONMENT development
 ENV NEXT_PUBLIC_API_URL /api/v1
@@ -27,6 +23,11 @@ ENV NEXT_PUBLIC_API_URL /api/v1
 ENV NODE_TYPE $NODE_TYPE
 ENV NEXT_TELEMETRY_DISABLED 1
 
+# copy generated html
 COPY --from=build-stage /app/out /usr/share/nginx/html
-COPY --from=build-stage /app/docker/nginx.conf /etc/nginx/conf.d/default.conf
+
+# copy nginx config
+COPY --from=build-stage /app/docker/default.conf.template /etc/nginx/templates/default.conf.template
+COPY --from=build-stage /app/docker/domain.conf /etc/nginx/conf.d/nodes/domain.conf
+COPY --from=build-stage /app/docker/network.conf /etc/nginx/conf.d/nodes/network.conf
 COPY --from=build-stage /app/docker/nginx-backend-not-found.conf /etc/nginx/extra-conf.d/backend-not-found

@@ -1641,13 +1641,11 @@ def pull_command(cmd: str, kwargs: TypeDict[str, Any]) -> TypeList[str]:
 def build_command(cmd: str) -> TypeList[str]:
     build_cmd = str(cmd)
     build_cmd += " --file docker-compose.build.yml"
-    build_cmd += " --file docker-compose.dev.yml"
     build_cmd += " build"
     return [build_cmd]
 
 
 def deploy_command(cmd: str, tail: bool, release_type: str) -> TypeList[str]:
-
     up_cmd = str(cmd)
     up_cmd += " --file docker-compose.dev.yml" if release_type == "development" else ""
     up_cmd += " up"
@@ -1746,9 +1744,7 @@ def create_launch_docker_cmd(
         "VERSION": version_string,
         "VERSION_HASH": version_hash,
         "USE_BLOB_STORAGE": use_blob_storage,
-        "NETWORK_FRONTEND": "network_frontend"
-        if str(node_type.input) == "network"
-        else "",
+        "FRONTEND_TARGET": "grid-ui-production",
         "STACK_API_KEY": str(
             generate_sec_random_password(length=48, special_chars=False)
         ),
@@ -1773,6 +1769,10 @@ def create_launch_docker_cmd(
 
     if kwargs.get("release", "") == "development":
         envs["RABBITMQ_MANAGEMENT"] = "-management"
+
+    # currently we only have a domain frontend for dev mode
+    if kwargs.get("release", "") == "development" and str(node_type.input) != "network":
+        envs["FRONTEND_TARGET"] = "grid-ui-development"
 
     if "release" in kwargs:
         envs["RELEASE"] = kwargs["release"]
@@ -1803,7 +1803,7 @@ def create_launch_docker_cmd(
     if str_to_bool(use_blob_storage):
         cmd += " --profile blob-storage"
 
-    # network frontend disabled
+    # no frontend container so expect bad gateway on the / route
     if kwargs["headless"] is False:
         cmd += " --profile frontend"
 
