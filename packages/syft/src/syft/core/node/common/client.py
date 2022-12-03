@@ -78,6 +78,7 @@ class Client(AbstractNodeClient):
 
         self.routes = routes
         self.default_route_index = 0
+        self.processing_pointers: Dict[UID, bool] = {}
 
         # gc_strategy_name = gc_get_default_strategy()
         # self.gc = GarbageCollection(gc_strategy_name)
@@ -223,6 +224,7 @@ class Client(AbstractNodeClient):
         timeout: Optional[float] = None,
         return_signed: bool = False,
         route_index: int = 0,
+        verbose: bool = False,
     ) -> Union[SyftMessage, SignedMessage]:
 
         # relative
@@ -255,7 +257,7 @@ class Client(AbstractNodeClient):
                 exception_msg = response.message
                 exception = exception_msg.exception_type(exception_msg.exception_msg)
                 error(str(exception))
-                traceback_and_raise(exception)
+                traceback_and_raise(exception, verbose=verbose)
             else:
                 if return_signed:
                     return response

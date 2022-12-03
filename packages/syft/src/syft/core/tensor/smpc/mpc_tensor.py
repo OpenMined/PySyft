@@ -6,6 +6,7 @@ import functools
 import itertools
 import operator
 import secrets
+import time
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -93,7 +94,7 @@ class MPCTensor(PassthroughTensor):
             raise ValueError("Shares should be a list or tuple")
 
         self.parties = parties
-        self.parties_info = MPCTensor.get_parties_info(parties)
+        self.parties_info: List[Tuple] = MPCTensor.get_parties_info(parties)
 
         if ring_size is not None:
             self.ring_size = ring_size
@@ -158,11 +159,11 @@ class MPCTensor(PassthroughTensor):
         return DEFAULT_RING_SIZE
 
     @staticmethod
-    def get_parties_info(parties: Iterable[Any]) -> List[GridURL]:
+    def get_parties_info(parties: Iterable[Any]) -> List[Tuple]:
         # relative
         from ....grid.client import GridHTTPConnection
 
-        parties_info: List[GridURL] = []
+        parties_info: List[Tuple] = []
         for party in parties:
             connection = party.routes[0].connection
             if not isinstance(connection, GridHTTPConnection):
@@ -193,7 +194,7 @@ class MPCTensor(PassthroughTensor):
                     # TODO : should modify to return same client if registered.
                     # print("Proxy Client already User Register", e)
             if base_url is not None:
-                parties_info.append(base_url)
+                parties_info.append((base_url, party.id, party.name))
             else:
                 raise Exception(
                     f"Failed to get GridURL from {base_url} for party {party}."
@@ -253,7 +254,7 @@ class MPCTensor(PassthroughTensor):
         secret: Any,
         parties: List[Any],
         shape: Tuple[int, ...],
-        parties_info: List[GridURL],
+        parties_info: List[Tuple],
         ring_size: int,
     ) -> Union[List[Tensor], List[TensorPointer]]:
         if utils.ispointer(secret):
@@ -279,7 +280,7 @@ class MPCTensor(PassthroughTensor):
         secret: Any,
         shape: Tuple[int, ...],
         parties: List[Any],
-        parties_info: List[GridURL],
+        parties_info: List[Tuple],
         ring_size: int,
     ) -> List[TensorPointer]:
         # stdlib
@@ -346,6 +347,7 @@ class MPCTensor(PassthroughTensor):
                     address=party.address,
                 )
                 party.send_immediate_msg_without_reply(msg=cmd)
+                party.processing_pointers[result_id_at_location] = True
 
             shares.append(result)
 
@@ -355,7 +357,7 @@ class MPCTensor(PassthroughTensor):
     def _get_shares_from_local_secret(
         secret: Any,
         shape: Tuple[int, ...],
-        parties_info: List[GridURL],
+        parties_info: List[Tuple],
         ring_size: int = DEFAULT_RING_SIZE,
     ) -> List[Tensor]:
 
@@ -444,7 +446,9 @@ class MPCTensor(PassthroughTensor):
 
         return self
 
-    def reconstruct(self, delete_obj: bool = True) -> np.ndarray:
+    def reconstruct(
+        self, delete_obj: bool = True, timeout_secs: int = 90
+    ) -> np.ndarray:
         # relative
         from ..fixed_precision_tensor import FixedPrecisionTensor
 
@@ -453,13 +457,38 @@ class MPCTensor(PassthroughTensor):
         if dtype is None:
             raise ValueError(f"Type for ring size {self.ring_size} was not found!")
 
+        start_time = time.time()
+
+        # relative
+        from ....core.node.common.client import GET_OBJECT_TIMEOUT
+
+        # make sure timeout_secs is valid
+        try:
+            timeout_secs = int(timeout_secs)
+            if timeout_secs < 0:
+                timeout_secs = GET_OBJECT_TIMEOUT
+        except Exception:
+            timeout_secs = GET_OBJECT_TIMEOUT
+
+        future_time = timeout_secs + start_time
+
         for share in self.child:
-            if not share.exists:
-                raise Exception(
-                    "One of the shares doesn't exist. This probably means the SMPC "
-                    "computation isn't yet complete. Try again in a moment or call .block.reconstruct()"
-                    "instead to block until the SMPC operation is complete which creates this variable."
-                )
+            # Check if share pointer is in processing stage
+            # If so, wait until it exists.
+            if share.client.processing_pointers.get(share.id_at_location, False):
+                while not share.exists and future_time > time.time():
+                    time.sleep(0.5)
+
+                # Then, delete it from the processing map.
+                del share.client.processing_pointers[share.id_at_location]
+            else:
+                # If it's not in processing stage, then it's because it doesn't exist there.
+                if not share.exists:
+                    raise Exception(
+                        "One of the shares doesn't exist. This probably means the SMPC "
+                        "computation isn't yet complete. Try again in a moment or call .block.reconstruct()"
+                        "instead to block until the SMPC operation is complete which creates this variable."
+                    )
 
         local_shares = []
         for share in self.child:
@@ -731,6 +760,10 @@ class MPCTensor(PassthroughTensor):
         y_shape = getattr(y, "shape", (1,))
         shape = utils.get_shape(op_str, self.shape, y_shape)
         ring_size = utils.get_ring_size(self.ring_size, y_ring_size)
+
+        if utils.ispointer(result[0]):
+            for share in result:
+                share.client.processing_pointers[share.id_at_location] = True
 
         result = MPCTensor(
             shares=result, shape=shape, ring_size=ring_size, parties=x.parties
