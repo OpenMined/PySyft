@@ -224,10 +224,20 @@ Let's grab the age data from the domain and define a simple query to calculate t
    The noise is selected randomly from a Gaussian distribution with sigma as the 
    standard deviation and zero mean.
 
-So, we want the noise to be picked randomly with a standard deviation of ``20``. 
+So the first thing we need to remember while setting ``sigma`` is that if we set a very low sigma 
+compared to the published value, it might not add enough noise, and the user would require a 
+large ``privacy budget`` to get the accurate result.
+
+Now we want the noise to be picked randomly with a standard deviation of ``20``. 
 Thus decreasing the value of ``sigma`` will result in more accurate results but at 
 the expense of a more privacy budget being spent and leaking more information 
 about private data.
+
+**Example:** let's assume the value being published is ``100000``, then adding a slight noise of ``20`` 
+will result in ``100020``, which isn't significant noise comparatively and thus would require a large 
+budget to be spent. Similarly, if the value being published is ``0.1`` and you add noise of ``20``, then 
+the result value is ``20.1`` which is way off from the actual result and thus affects the accuracy of 
+the result, although having spent low PB.
 
 C. Make a Query With 2e Privacy Budget As a Data Scientist
 #################################################################
