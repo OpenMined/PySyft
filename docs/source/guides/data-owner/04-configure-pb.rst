@@ -201,6 +201,10 @@ Now, as a Data Scientist, you can ``verify`` the privacy budget using the below 
    # run this cell
    print("Allotted PB: ", ds_domain_client.privacy_budget)
 
+   Out:
+
+   Allotted PB:  0.5
+
 Let's grab the age data from the domain and define a simple query to calculate the ``mean age``.
 
 ::
@@ -219,6 +223,10 @@ Let's grab the age data from the domain and define a simple query to calculate t
 
    print("Remaining PB: ", ds_domain_client.privacy_budget)
 
+   Out:
+
+   Remaining PB: 0.000120578321
+
 .. note:: 
    Remember, sigma represents how much noise the user wants added to the result. 
    The noise is selected randomly from a Gaussian distribution with sigma as the 
@@ -233,13 +241,13 @@ Thus decreasing the value of ``sigma`` will result in more accurate results but 
 the expense of a more privacy budget being spent and leaking more information 
 about private data.
 
-**Example:** let's assume the value being published is ``100000``, then adding a slight noise of ``20`` 
+**Example:** Let's assume the value being published is ``100000``, then adding a slight noise of ``20`` 
 will result in ``100020``, which isn't significant noise comparatively and thus would require a large 
 budget to be spent. Similarly, if the value being published is ``0.1`` and you add noise of ``20``, then 
 the result value is ``20.1`` which is way off from the actual result and thus affects the accuracy of 
 the result, although having spent low PB.
 
-C. Make a Query With 2e Privacy Budget As a Data Scientist
+C. Make a Query With 7.5e Privacy Budget As a Data Scientist
 #################################################################
 
 The privacy budget is cumulative and doesn't represent the actual spent value. Once something is 
@@ -247,9 +255,9 @@ known, you can't remove that knowledge. Let us ``increase`` the ``privacy budget
 the same query as above and compare the accuracy of the result and the privacy budget spent.
 
 .. WARNING::
-   You need to go to :ref:`Step 3.A <step3a>` and change the privacy budget to ``2e`` this time, as shown in the image.
+   You need to go to :ref:`Step 3.A <step3a>` and change the privacy budget to ``7.5e`` this time, as shown in the image.
 
-After you have changed the privacy budget to ``2e``, we will again make a ``query`` and then ``analyze`` the results.
+After you have changed the privacy budget to ``7.5e``, we will again make a ``query`` and then ``analyze`` the results.
 
 :: 
 
@@ -278,15 +286,40 @@ After you have changed the privacy budget to ``2e``, we will again make a ``quer
 
    print("Remaining PB: ", ds_domain_client.privacy_budget)
 
-D. Make a Query With 5e Privacy Budget As a Data Scientist
+   Out:
+
+   Allotted PB: 7.5
+   Remaining PB: 1.0740261245118496
+
+Now, if you try to view the variable `age_mean` in a new cell, you will notice three things about this pointer:
+
+#. **PointerID:** ID of the pointer
+#. **Status [Ready/ Processing]:** Tells if the results to the pointer have been calculated or not on the server side
+#. **Representation:** This shows synthetic data/ values that the pointer could represent.
+
+::
+
+   In:
+
+   print(age_mean)
+
+   Out: 
+
+   PointerId: da75693b1fd0439ab0a623dd183ff8ce
+   Status: Ready
+   Representation: array([64.31603086])
+
+   (The data printed above is synthetic - it is an imitation of the real data.)
+
+D. Make a Query With 10e Privacy Budget As a Data Scientist
 #################################################################
-For the last time, let us change the value of the ``privacy budget`` to ``5e``, perform again with the 
+For the last time, let us change the value of the ``privacy budget`` to ``10e``, perform again with the 
 same query as above, and compare the accuracy of the result and the privacy budget spent.
 
 .. WARNING::
-   You need to go to :ref:`Step 3.A <step3a>` and change the privacy budget to ``5e`` this time, as shown in the image.
+   You need to go to :ref:`Step 3.A <step3a>` and change the privacy budget to ``10e`` this time, as shown in the image.
 
-After you have changed the privacy budget to ``5e``, we will again make a ``query`` and then ``analyze`` the results.
+After you have changed the privacy budget to ``10e``, we will again make a ``query`` and then ``analyze`` the results.
 
 :: 
 
@@ -315,8 +348,13 @@ After you have changed the privacy budget to ``5e``, we will again make a ``quer
 
    print("Remaining PB: ", ds_domain_client.privacy_budget)
 
+   Out:
 
-------------------------------------------------------------------
+   Allocated PB: 10.0
+   Remaining PB: 3.5740261245118496
+
+Congratulations 👏 You have learned to configure your Privacy Budget on your Domain Server!!
+----------------------------------------------------------------------------------------------
 
 .. |04-configure-pb-00| image:: ../../_static/personas-image/data-owner/04-configure-pb-00.png
    :width: 95%
