@@ -203,7 +203,11 @@ class Pointer(AbstractPointer):
             )
 
     def _get(
-        self, delete_obj: bool = True, verbose: bool = False, proxy_only: bool = False
+        self,
+        delete_obj: bool = True,
+        verbose: bool = False,
+        proxy_only: bool = False,
+        timeout_secs: Optional[int] = None,
     ) -> StorableObject:
         """Method to download a remote object from a pointer object if you have the right
         permissions.
@@ -214,6 +218,7 @@ class Pointer(AbstractPointer):
 
         # relative
         from ...core.node.common.client import GET_OBJECT_TIMEOUT
+        from ..node.common.action.exception_action import UnknownPrivateException
 
         debug(
             f"> GetObjectAction for id_at_location={self.id_at_location} "
@@ -226,9 +231,42 @@ class Pointer(AbstractPointer):
             delete_obj=delete_obj,
         )
 
-        obj = self.client.send_immediate_msg_with_reply(
-            msg=obj_msg, timeout=GET_OBJECT_TIMEOUT
+        obj: Any = None
+        is_processing_pointer = self.client.processing_pointers.get(
+            self.id_at_location, False
         )
+
+        start_time = time.time()
+        future_time = (
+            float(timeout_secs if timeout_secs is not None else GET_OBJECT_TIMEOUT)
+            + start_time
+        )
+
+        # If pointer is one of the processing pointers and didn't timeout keep trying
+        while is_processing_pointer and future_time > time.time():
+            try:
+                obj = self.client.send_immediate_msg_with_reply(
+                    msg=obj_msg, timeout=timeout_secs, verbose=True
+                )
+
+                # If we reached here it's because we didn't have any failure,
+                # so we were able to retrieve the pointer successfully.
+                # So it isn't a processing pointer anymore and we can exit the while loop.
+                # without wait the timeout
+                is_processing_pointer = False
+            except UnknownPrivateException:
+                time.sleep(0.5)
+                pass
+
+        # If pointer was there, then we remove it from the processing_pointer list
+        self.client.processing_pointers.pop(self.id_at_location, None)
+
+        # if we didn't get the object try one last time
+        if not obj:
+            obj = self.client.send_immediate_msg_with_reply(
+                msg=obj_msg, timeout=timeout_secs
+            )
+
         if not proxy_only and obj.obj.is_proxy:
             presigned_url_path = obj.obj._data.url
             presigned_url = self.client.url_from_path(presigned_url_path)
@@ -371,14 +409,14 @@ class Pointer(AbstractPointer):
         )
         ptr.id_at_location = id_at_location
         ptr._pointable = True
-
+        ptr.client.processing_pointers[ptr.id_at_location] = True
         # return pointer
         return ptr
 
     def get(
         self,
         request_block: bool = False,
-        timeout_secs: int = 600,
+        timeout_secs: Optional[int] = None,
         reason: str = "",
         delete_obj: bool = True,
         verbose: bool = False,
@@ -406,9 +444,14 @@ class Pointer(AbstractPointer):
 
         if not request_block:
             result = self._get(
-                delete_obj=delete_obj, verbose=verbose, proxy_only=proxy_only
+                delete_obj=delete_obj,
+                verbose=verbose,
+                proxy_only=proxy_only,
+                timeout_secs=timeout_secs,
             )
         else:
+            if timeout_secs is None:
+                timeout_secs = 600  # old default
             response_status = self.request(
                 reason=reason,
                 block=True,
@@ -419,7 +462,9 @@ class Pointer(AbstractPointer):
                 response_status is not None
                 and response_status == RequestStatus.Accepted
             ):
-                result = self._get(delete_obj=delete_obj, verbose=verbose)
+                result = self._get(
+                    delete_obj=delete_obj, verbose=verbose, timeout_secs=timeout_secs
+                )
             else:
                 return None
 
@@ -743,6 +788,9 @@ class Pointer(AbstractPointer):
             # it is a serialized pointer that we receive from another client do nothing
             return
 
-        if self.gc_enabled:
-            # this is not being used in the node currenetly
-            self.client.gc.apply(self)
+        # Check/Remove it if this pointer is still in processing_pointers dict
+        self.client.processing_pointers.pop(self.id_at_location, None)
+
+        # if self.gc_enabled:
+        #     # this is not being used in the node currenetly
+        #     self.client.gc.apply(self)
