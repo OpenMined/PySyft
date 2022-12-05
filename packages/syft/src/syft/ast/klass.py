@@ -232,7 +232,7 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
             args=args,
             kwargs=kwargs,
         )
-
+        __self.client.processing_pointers[result_id_at_location] = True
         return result
 
     method_name = attr_path_and_name.rsplit(".", 1)[-1]
@@ -778,7 +778,13 @@ class Class(Callable):
                 # Step 7: send message
                 client.send_immediate_msg_without_reply(msg=obj_msg)
 
-                # Step 8: return pointer
+                # Setp 8: add it in the lit of processing pointers
+                # Add in client side a list of pointers that
+                # might be in the middle of some computation making it not
+                # available immediately.
+                client.processing_pointers[id_at_location] = True
+
+                # Step 9: return pointer
                 return ptr
             else:
                 return ptr, obj_msg

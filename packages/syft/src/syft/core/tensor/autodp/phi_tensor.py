@@ -255,6 +255,8 @@ class TensorWrappedPhiTensorPointer(Pointer):
         result.public_shape = result_public_shape
         result.public_dtype = result_public_dtype
 
+        result.client.processing_pointers[result.id_at_location] = True
+
         return result
 
     def _apply_self_tensor_op(self, op_str: str, *args: Any, **kwargs: Any) -> Any:
@@ -394,6 +396,8 @@ class TensorWrappedPhiTensorPointer(Pointer):
 
         result.public_shape = dummy_res.shape
         result.public_dtype = dummy_res.dtype
+
+        result.client.processing_pointers[result.id_at_location] = True
 
         return result
 

@@ -75,6 +75,7 @@ jobs:
           context: ./packages/grid/frontend
           file: ./packages/grid/frontend/frontend.dockerfile
           push: true
+          target: "grid-ui-production"
           tags: ${{ steps.meta_grid_frontend.outputs.tags }}
 
       - name: Docker meta for Grid-Headscale
