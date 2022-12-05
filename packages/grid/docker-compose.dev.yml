@@ -14,8 +14,6 @@ services:
       - "--api.insecure=true" # admin panel no password
 
   frontend:
-    build:
-      target: "grid-ui-development"
     volumes:
       - ${RELATIVE_PATH}./frontend/:/app
 
