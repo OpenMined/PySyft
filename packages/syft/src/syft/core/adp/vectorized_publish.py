@@ -92,8 +92,6 @@ def publish(
 
     # If the published value is a boolean then, first convert it to integer
     # and then proceed with the publish operation
-
-    print("Value Dtype: ", value.dtype)
     if value.dtype == bool:
         value = value.astype(DEFAULT_INT_NUMPY_TYPE)
 
