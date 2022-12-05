@@ -62,3 +62,25 @@ jobs:
         timeout-minutes: 30
         run: |
           HAGRID_FLAGS="--tag=latest --test" tox -e stack.test.integration
+
+      #Get Pull request url
+      - name: Get pull request url
+        id: pull_request
+        if: failure()
+        run: |
+          echo "::set-output name=url::$(echo ${{ github.event.pull_request.html_url }})"
+
+      - name: Job Report Status
+        # cant access secrets on forks
+        if: github.repository == 'OpenMined/PySyft' && failure()
+        uses: ravsamhq/notify-slack-action@v2
+        with:
+          status: ${{ job.status }}
+          notify_when: "failure"
+          notification_title: " {workflow} has {status_message}"
+          message_format: "${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}"
+          footer: "Find the PR here ${{ steps.pull_request.outputs.url }}"
+          mention_users: "U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0"
+          mention_users_when: "failure,warnings"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}

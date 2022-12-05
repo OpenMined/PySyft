@@ -5,7 +5,6 @@ struct ShareTensor {
   child @1 :List(Data);
   rank @2 :UInt32;
   partiesInfo @3 :Data;
-  seedPrzs @4 :UInt64;
-  ringSize @5 :Text;
-  isNumpy @6 :Bool;
+  ringSize @4 :Text;
+  isNumpy @5 :Bool;
 }
