@@ -20,8 +20,7 @@ env_path = os.path.join(root_path, ".env")
 load_dotenv(dotenv_path=env_path)
 
 # TODO: Add this to a file in ~/.syft and add some ENV overrides
-tutorial_mode = type(os.environ.get("SYFT_TUTORIAL_MODE", True))
-print(tutorial_mode)
+tutorial_mode = bool(os.environ.get("SYFT_TUTORIAL_MODE", False))
 
 
 @singleton
