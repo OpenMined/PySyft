@@ -68,7 +68,7 @@ def test_publish_with_bool_type_values(capfd) -> None:
     except Exception:
         pass
 
-    assert public_val.exists is True
+    assert public_val.exists
     assert result is not None
 
     # even though the published val is bool, the result is float cause
