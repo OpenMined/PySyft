@@ -262,7 +262,7 @@ class Int(int, PyPrimitive):
         res = super().bit_length()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def denominator(self) -> SyPrimitiveRet:
+    def denominator(self) -> SyPrimitiveRet:  # type: ignore[override]
         res = super().denominator
         return PrimitiveFactory.generate_primitive(value=res)
 
@@ -281,15 +281,15 @@ class Int(int, PyPrimitive):
         res = int.from_bytes(bytes, byteorder, signed=signed)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def imag(self) -> SyPrimitiveRet:
+    def imag(self) -> SyPrimitiveRet:  # type: ignore[override]
         res = super().imag
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def numerator(self) -> int:
+    def numerator(self) -> int:  # type: ignore[override]
         res = super().numerator
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def real(self) -> int:
+    def real(self) -> int:  # type: ignore[override]
         res = super().real
         return PrimitiveFactory.generate_primitive(value=res)
 
