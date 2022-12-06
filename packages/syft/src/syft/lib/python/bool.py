@@ -227,18 +227,18 @@ class Bool(int, PyPrimitive):
     def conjugate(self) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=self.value.conjugate())
 
-    def denominator(self) -> SyPrimitiveRet:
+    def denominator(self) -> SyPrimitiveRet:  # type: ignore[override]
         return PrimitiveFactory.generate_primitive(value=self.value.denominator)
 
     # TODO: add support for properties on these 4 functions
 
-    def imag(self) -> SyPrimitiveRet:
+    def imag(self) -> SyPrimitiveRet:  # type: ignore[override]
         return PrimitiveFactory.generate_primitive(value=self.value.imag)
 
-    def numerator(self) -> SyPrimitiveRet:
+    def numerator(self) -> SyPrimitiveRet:  # type: ignore[override]
         return PrimitiveFactory.generate_primitive(value=self.value.numerator)
 
-    def real(self) -> SyPrimitiveRet:
+    def real(self) -> SyPrimitiveRet:  # type: ignore[override]
         return PrimitiveFactory.generate_primitive(value=self.value.real)
 
     def _object2proto(self) -> Bool_PB:
