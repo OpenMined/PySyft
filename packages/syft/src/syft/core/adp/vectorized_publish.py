@@ -135,6 +135,8 @@ def publish(
 
     # if we dont return below we will terminate if the tensor gets replaced with zeros
     prev_tensor = None
+    print("VALUE: ", value)
+    print("Tensor: ", tensor.child)
 
     while can_reduce_further(value=value, zeros_like=zeros_like):
         if prev_tensor is None:
@@ -161,19 +163,24 @@ def publish(
         # Step 2: Calculate the epsilon spend for this query
 
         # rdp_constant = all terms in Theorem. 2.7 or 2.8 of https://arxiv.org/abs/2008.11193 EXCEPT alpha
-        rdp_constants = compute_rdp_constant(rdp_params, private=private)
+        if any(np.isnan(l2_norms)):
+            if any(np.isnan(l2_norm_bounds)) or any(np.isinf(l2_norm_bounds)):
+                raise Exception(
+                    "NaN or Inf values in bounds not allowed in PySyft for safety reasons."
+                    "Please contact the OpenMined support team for help."
+                    "\nFor that you can either:"
+                    "\n * describe your issue on our Slack #support channel. To join: https://openmined.slack.com/"
+                    "\n * send us an email describing your problem at support@openmined.org"
+                    "\n * leave us an issue here: https://github.com/OpenMined/PySyft/issues"
+                )
+            rdp_constants = compute_rdp_constant(rdp_params, private=False)
+        else:
+            rdp_constants = compute_rdp_constant(rdp_params, private=private)
+        print("Rdp constants", rdp_constants)
         if any(rdp_constants < 0):
             raise Exception(
                 "Negative budget spend not allowed in PySyft for safety reasons."
                 "Please contact the OpenMined support team for help."
-                "For that you can either:"
-                " * describe your issue on our Slack #support channel. To join: https://openmined.slack.com/"
-                " * send us an email describing your problem at support@openmined.org"
-                " * leave us an issue here: https://github.com/OpenMined/PySyft/issues"
-            )
-        if any(np.isnan(rdp_constants)) or any(np.isinf(rdp_constants)):
-            raise Exception(
-                "Invalid privacy budget spend. Please contact the OpenMined support team for help."
                 "For that you can either:"
                 " * describe your issue on our Slack #support channel. To join: https://openmined.slack.com/"
                 " * send us an email describing your problem at support@openmined.org"
@@ -186,10 +193,10 @@ def publish(
             raise Exception(
                 "Negative budget spend not allowed in PySyft for safety reasons."
                 "Please contact the OpenMined support team for help."
-                "For that you can either:"
-                " * describe your issue on our Slack #support channel. To join: https://openmined.slack.com/"
-                " * send us an email describing your problem at support@openmined.org"
-                " * leave us an issue here: https://github.com/OpenMined/PySyft/issues"
+                "\nFor that you can either:"
+                "\n * describe your issue on our Slack #support channel. To join: https://openmined.slack.com/"
+                "\n * send us an email describing your problem at support@openmined.org"
+                "\n * leave us an issue here: https://github.com/OpenMined/PySyft/issues"
             )
 
         epsilon_spend = max(
@@ -211,6 +218,8 @@ def publish(
 
         # Step 3: Check if the user has enough privacy budget for this query
         privacy_budget = get_budget_for_user(verify_key=ledger.user_key)
+        print(privacy_budget)
+        print(epsilon_spend)
         has_budget = epsilon_spend <= privacy_budget
 
         # if we see the same budget and spend twice in a row we have failed to reduce it

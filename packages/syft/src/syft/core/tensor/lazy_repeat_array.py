@@ -430,6 +430,27 @@ class lazyrepeatarray:
         return lazyrepeatarray(data=res, shape=res.shape)
 
 
+def has_nans_inf(min_val: lazyrepeatarray, max_val: lazyrepeatarray) -> bool:
+    """Helper function that detects if a LRA has NaNs or Inf, and raises exceptions.
+    This is so that we can raise Exceptions at the pointer level."""
+    raise_exception = False
+    if min_val.data.size == 1:
+        if np.isnan(min_val.data) or np.isinf(min_val.data):
+            raise_exception = True
+    else:
+        if np.isnan(min_val.data).any() or np.isnan(min_val.data).any():
+            raise_exception = True
+
+    if max_val.data.size == 1:
+        if np.isnan(max_val.data) or np.isinf(max_val.data):
+            raise_exception = True
+    else:
+        if np.isnan(max_val.data).any() or np.isinf(max_val.data).any():
+            raise_exception = True
+
+    return raise_exception
+
+
 # As the min and max values calculation is the same regardless of the tensor type,
 # We centralize this method as baseline for calculation for min/max values
 def compute_min_max(
@@ -802,4 +823,21 @@ def compute_min_max(
     else:
         raise ValueError(f"Invaid Operation for LazyRepeatArray: {op_str}")
 
-    return (min_vals, max_vals)
+    if has_nans_inf(min_vals, max_vals):
+        raise Exception(
+            "I'm sorry, but our DP Privacy Accountant can't yet handle NaNs or Infinite values."
+            "This was likely caused by dividing by zero. Please find a way to approximate your "
+            "computation without dividing by a private value which might be zero. "
+            "\n"
+            "This can usually be done by computing the function piecewise- by performing three "
+            "computations which are merged through masking & summing; one which addresses what happens"
+            "if the denominator is positive-definite, another if it is negative-definite, and finally"
+            "one which addresses what happens if the denominator is 0 exactly. Use comparison operators,"
+            "masking, and summing to accomplish this (not if statements- which don't work on private"
+            "values)."
+            "\n"
+            "Again, we apologize for the inconvenience and are working to extend support to this in "
+            "future versions of PySyft."
+        )
+
+    return min_vals, max_vals
