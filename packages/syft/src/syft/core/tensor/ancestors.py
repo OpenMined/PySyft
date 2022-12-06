@@ -60,36 +60,54 @@ def data_subject_creation_wizard(data: Any) -> List[Any]:
 
     welcome_msg = "Welcome to the Data Subject Annotation Wizard!!!"
 
-    description1 = """You've arrived here because you called Tensor.annotate_with_dp_metadata() without passing in any data_subjects!
-Since the purpose of .annotate_with_dp_metadata() is to add metadata for the support of automatic differential
-privacy budgeting, you need to describe which parts of your Tensor correspond to which
-real-world data subjects (data_subjects) whose privacy you want to protect. This is the only
-way the system knows, for example, that it costs twice as much privacy budget when twice
-as much of your data (say, 2 rows instead of 1 row) refer to the same data subject."""
+    description1 = (
+        "You've arrived here because you called Tensor.annotate_with_dp_metadata() "
+        "without passing in any data_subjects! Since the purpose of "
+        ".annotate_with_dp_metadata() is to add metadata for the support of automatic "
+        "differential privacy budgeting, you need to describe which parts of your "
+        "Tensor correspond to which real-world data subjects (data_subjects) whose "
+        "privacy you want to protect. This is the only way the system knows, "
+        "for example, that it costs twice as much privacy budget when twice as much of "
+        "your data (say, 2 rows instead of 1 row) refer to the same data subject."
+    )
 
-    description2 = """Entities can be people (such as a medical patient), places (such as a family's address), or
-even organizations (such as a business, state, or country). If you're not sure what kind of data subject
-to include, just ask yourself the question, "who am I trying to protect the privacy of?". If it's
-an organization, make one data subject per organization. If it's people, make one data subject per person.
-If it's a group of people who are somehow similar/linked to each other (such as a family),
-make each data subject a different group. For more information on differential privacy, see OpenMined's
-course on the subject: https://courses.openmined.org/"""
+    description2 = (
+        "Entities can be people (such as a medical patient), places (such as a family's "
+        "address), or even organizations (such as a business, state, or country). "
+        "If you're not sure what kind of data subject to include, just ask yourself "
+        'the question, "who am I trying to protect the privacy of?". If it\'s'
+        "an organization, make one data subject per organization. If it's people, "
+        "make one data subject per person. If it's a group of people who are somehow "
+        "similar/linked to each other (such as a family), make each data subject a "
+        "different group. For more information on differential privacy, see "
+        "OpenMined's course on the subject: https://courses.openmined.org/"
+    )
 
-    description3 = """Since you didn't pass in data_subjects into .annotate_with_dp_metadata() (or you did so incorrectly), this wizard is
-going to guide you through the process of annotating your data with data_subjects."""
+    description3 = (
+        "Since you didn't pass in data_subjects into .annotate_with_dp_metadata() "
+        "(or you did so incorrectly), this wizard is going to guide you through the "
+        "process of annotating your data with data_subjects."
+    )
 
-    description4 = """In this wizard, we're going to ask you for *unique identifiers* which refer to the data_subjects
-in your data. While the unique identifiers need not be personal data (they can be random strings of letters and numbers
-if you like). It is ESSENTIAL that you use the same identifier when referring to the same data subject in the
-data that you never accidentally refer to two data_subjects by the same identifier. Additionally, if you plan
-to do any kind of data JOIN with another dataset, it is ESSENTIAL that you are using the same unique
-identifiers for data_subjects as the data you're joining with. Since these unique identifiers may be personal
-information, PySyft might not be able to detect if two tensors are using different identifiers for the
-same person."""
+    description4 = (
+        "In this wizard, we're going to ask you for *unique identifiers* which refer "
+        "to the data_subjects in your data. While the unique identifiers need not be "
+        "personal data (they can be random strings of letters and numbers if you like). "
+        "It is ESSENTIAL that you use the same identifier when referring to the same "
+        "data subject in the data that you never accidentally refer to two "
+        "data_subjects by the same identifier. Additionally, if you plan to do any "
+        "kind of data JOIN with another dataset, it is ESSENTIAL that you are using "
+        "the same unique identifiers for data_subjects as the data you're joining with. "
+        "Since these unique identifiers may be personal information, PySyft might not "
+        "be able to detect if two tensors are using different identifiers for the same person."
+    )
 
-    description5 = """So, in this tutorial we're going to be asking you to specify Unique Identifiers (UIDs) for each
-data subject in your data. This could be an email, street address, or any other string that identifies someone
-uniquely in your data and in the data you intend to use with your data (if any)."""
+    description5 = (
+        "So, in this tutorial we're going to be asking you to specify Unique "
+        "Identifiers (UIDs) for each data subject in your data. This could be an email, "
+        "street address, or any other string that identifies someone uniquely in your "
+        "data and in the data you intend to use with your data (if any)."
+    )
 
     print("\t" + "=" * 69)
     print(w.fill(welcome_msg))
