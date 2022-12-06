@@ -53,6 +53,7 @@ class lazyrepeatarray:
     """
 
     __attr_allowlist__ = ["data", "shape"]
+    __array_ufunc__ = None
 
     def __init__(self, data: np.ndarray, shape: Tuple[int, ...]) -> None:
         """
@@ -117,6 +118,9 @@ class lazyrepeatarray:
         else:
             return self.__class__(data=self.data + other.data, shape=self.shape)
 
+    def __radd__(self, other: Any) -> lazyrepeatarray:
+        return self.__add__(other)
+
     def __sub__(self, other: Any) -> lazyrepeatarray:
         """
         THIS MIGHT LOOK LIKE COPY-PASTED CODE!
@@ -151,6 +155,9 @@ class lazyrepeatarray:
             )
         else:
             return self.__class__(data=self.data * other.data, shape=self.shape)
+
+    def __rmul__(self, other: Any) -> lazyrepeatarray:
+        return self.__mul__(other)
 
     def __matmul__(self, other: Any) -> lazyrepeatarray:
         """
@@ -226,6 +233,10 @@ class lazyrepeatarray:
             )
         else:
             return self.__class__(data=self.data // other.data, shape=self.shape)
+
+    def __rfloordiv__(self, other: Any) -> lazyrepeatarray:
+        res = other // self.data
+        return lazyrepeatarray(data=res, shape=self.shape)
 
     def __rmatmul__(self, other: Any) -> lazyrepeatarray:
         """
@@ -434,10 +445,13 @@ def compute_min_max(
 
     if op_str in [
         "__add__",
+        "__radd__",
         "__matmul__",
         "__rmatmul__",
         "__truediv__",
         "__floordiv__",
+        "__rtruediv__",
+        "__rfloordiv__",
     ]:
         if is_acceptable_simple_type(other):
             min_vals = getattr(x_min_vals, op_str)(other)
@@ -450,7 +464,7 @@ def compute_min_max(
                 f"Not supported type for lazy repeat array computation: {type(other)}"
             )
 
-    elif op_str in ["__sub__", "__mul__"]:
+    elif op_str in ["__sub__", "__mul__", "__rmul__"]:
         if is_acceptable_simple_type(other):
             min_vals = getattr(x_min_vals, op_str)(other)
             max_vals = getattr(x_max_vals, op_str)(other)
@@ -777,6 +791,13 @@ def compute_min_max(
 
         min_vals = lazyrepeatarray(data=_min_vals, shape=x_min_vals.shape)
         max_vals = lazyrepeatarray(data=_max_vals, shape=x_max_vals.shape)
+    elif op_str == "__rsub__":
+        x_min_vals, x_max_vals = compute_min_max(
+            x_min_vals=x_min_vals, x_max_vals=x_max_vals, other=other, op_str="__sub__"
+        )
+        return compute_min_max(
+            x_min_vals=x_min_vals, x_max_vals=x_max_vals, other=-1, op_str="__mul__"
+        )
 
     else:
         raise ValueError(f"Invaid Operation for LazyRepeatArray: {op_str}")

@@ -94,6 +94,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
     _exhausted = False
     is_enum = False
     PUBLISH_POINTER_TYPE = "numpy.ndarray"
+    __array_ufunc__ = None
 
     def __init__(
         self,
@@ -484,6 +485,20 @@ class TensorWrappedPhiTensorPointer(Pointer):
         """
         return TensorWrappedPhiTensorPointer._apply_op(self, other, "__add__")
 
+    def __radd__(
+        self,
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
+        """Apply the "radd" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__radd__")
+
     def __sub__(
         self,
         other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
@@ -498,6 +513,20 @@ class TensorWrappedPhiTensorPointer(Pointer):
         """
         return TensorWrappedPhiTensorPointer._apply_op(self, other, "__sub__")
 
+    def __rsub__(
+        self,
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
+        """Apply the "rsub" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__rsub__")
+
     def __mul__(
         self,
         other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
@@ -511,6 +540,20 @@ class TensorWrappedPhiTensorPointer(Pointer):
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
         return TensorWrappedPhiTensorPointer._apply_op(self, other, "__mul__")
+
+    def __rmul__(
+        self,
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
+        """Apply the "rmul" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__rmul__")
 
     def __matmul__(
         self,
@@ -724,6 +767,20 @@ class TensorWrappedPhiTensorPointer(Pointer):
         """
         return TensorWrappedPhiTensorPointer._apply_op(self, other, "__truediv__")
 
+    def __rtruediv__(
+        self,
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
+        """Apply the "rtruediv" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__rtruediv__")
+
     def __floordiv__(
         self,
         other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
@@ -737,6 +794,20 @@ class TensorWrappedPhiTensorPointer(Pointer):
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
         return TensorWrappedPhiTensorPointer._apply_op(self, other, "__floordiv__")
+
+    def __rfloordiv__(
+        self,
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
+        """Apply the "rfloordiv" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__rfloordiv__")
 
     def __mod__(
         self,
@@ -2728,6 +2799,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
 
+    def __radd__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
+        return self.__add__(other)
+
     def __sub__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         if isinstance(other, PhiTensor):
@@ -2780,6 +2854,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=max_vals,
         )
 
+    def __rsub__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
+        return (self - other) * -1
+
     def __mul__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         if isinstance(other, PhiTensor):
@@ -2831,6 +2908,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
 
+    def __rmul__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
+        return self.__mul__(other)
+
     def __truediv__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
         if isinstance(other, PhiTensor):
             if np.array(self.data_subjects != other.data_subjects).all():
@@ -2872,9 +2952,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         if is_acceptable_simple_type(other):
             return PhiTensor(
-                child=(1 / self.child) * other,
-                min_vals=(1 / self.min_vals) * other,
-                max_vals=(1 / self.max_vals) * other,
+                child=(other / self.child),
+                min_vals=(other / self.min_vals),
+                max_vals=(other / self.max_vals),
                 data_subjects=self.data_subjects,
             )
 
@@ -3882,6 +3962,21 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             raise NotImplementedError(
                 f"floordiv not supported between PhiTensor & {type(other)}"
             )
+
+    def __rfloordiv__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
+        if is_acceptable_simple_type(other):
+            return PhiTensor(
+                child=(other // self.child),
+                min_vals=(other // self.min_vals),
+                max_vals=(other // self.max_vals),
+                data_subjects=self.data_subjects,
+            )
+
+        elif isinstance(other, GammaTensor):
+            return other // self.gamma
+        else:
+            print("Type is unsupported:" + str(type(other)))
+            raise NotImplementedError
 
     def trace(self, offset: int = 0, axis1: int = 0, axis2: int = 1) -> PhiTensor:
         """
