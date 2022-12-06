@@ -113,7 +113,7 @@ class PrimitiveFactory(ABC):
                 # allow recursive primitive downcasting
                 new_list = []
                 if value is not None:
-                    for val in value:
+                    for val in value:  # type: ignore[union-attr]
                         if isprimitive(value=val):
                             new_list.append(
                                 PrimitiveFactory.generate_primitive(
