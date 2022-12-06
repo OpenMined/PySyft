@@ -380,7 +380,7 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
                 port = match_port.group().replace("HTTP_PORT=", "")
                 check_status("localhost" + ":" + port)
 
-            node_name = verb.get_named_term_type(name="node_name").raw_input
+            node_name = verb.get_named_term_type(name="node_name").snake_input
             rich.get_console().print(
                 rich.panel.Panel.fit(
                     f"✨ To view container logs run [bold green]hagrid logs {node_name}[/bold green]\t"
