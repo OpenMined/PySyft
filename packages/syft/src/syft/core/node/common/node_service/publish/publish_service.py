@@ -22,7 +22,7 @@ from .publish_messages import PublishScalarsAction  # type: ignore
 
 class PublishScalarsService(ImmediateNodeServiceWithoutReply):
     @staticmethod
-    def process(
+    def process(  # type: ignore[override]
         node: AbstractNode, msg: PublishScalarsAction, verify_key: VerifyKey
     ) -> None:
         # get scalar objects from store
