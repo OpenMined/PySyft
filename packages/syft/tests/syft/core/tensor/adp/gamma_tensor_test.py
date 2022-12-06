@@ -156,6 +156,22 @@ def test_gamma_publish(
     assert -10 + lower_bound.to_numpy().sum() < results
     print(ledger_store.kv_store)
 
+def test_lipschitz(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    """Test lipschitz bound for GammaTensor"""
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    tensor1 = GammaTensor(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    assert False
 
 def test_zeros_like(
     reference_data: np.ndarray,

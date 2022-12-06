@@ -4578,8 +4578,8 @@ class GammaTensor:
     def shape(self) -> Tuple[int, ...]:
         return self.child.shape
 
-    @property
-    def lipschitz_bound(self) -> float:
+    # @property
+    def lipschitz_bound(self, data_subject) -> float:
         # TODO: Check if there are any functions for which lipschitz bounds shouldn't be computed
         # if dis(self.func) == dis(no_op):
         #     raise Exception
@@ -4588,39 +4588,21 @@ class GammaTensor:
         # relative
         from .gamma_functions import GAMMA_FUNC_MAPPER
 
-        fn = jax.jit(GAMMA_FUNC_MAPPER[GAMMA_TENSOR_OP(self.func_str)])
+        # TODO: this must be composed out of the whole computation tree
+        fn = jax.jit(GAMMA_FUNC_MAPPER[GAMMA_TENSOR_OP(self.func_str)])#(dummy_gamma)
         print("Traced self.func with jax's jit, now calculating gradient")
         grad_fn = jax.grad(fn)
-        print("Obtained gradient, creating lookup tables")
-        i2k, k2i, i2v, i2s = create_new_lookup_tables(self.sources)
-
-        print("created lookup tables, now getting bounds")
-        i2minval = jnp.concatenate([x for x in i2v]).reshape(-1, 1)
-        i2maxval = jnp.concatenate([x for x in i2v]).reshape(-1, 1)
-        bounds = jnp.concatenate([i2minval, i2maxval], axis=1)
-        print("Obtained bounds")
-        # sample_input = i2minval.reshape(-1)
-        _ = i2minval.reshape(-1)
-        print("Obtained all inputs")
 
         def max_grad_fn(input_values: np.ndarray) -> float:
             vectors = {}
-            n = 0
-            for i, size_param in enumerate(i2s):
-                vectors[i2k[i]] = input_values[n : n + size_param]  # noqa: E203
-                n += size_param
+
 
             grad_pred = grad_fn(vectors)
 
-            m = 0
-            for value in grad_pred.values():
-                m = max(m, jnp.max(value))
-
-            # return negative because we want to maximize instead of minimize
-            return -m
+            return jnp.max(grad_fn)
 
         print("starting SHGO")
-        res = shgo(max_grad_fn, bounds, iters=1, constraints=tuple())
+        res = shgo(max_grad_fn, )
         print("Ran SHGO")
         # return negative because we flipped earlier
         return -float(res.fun)
