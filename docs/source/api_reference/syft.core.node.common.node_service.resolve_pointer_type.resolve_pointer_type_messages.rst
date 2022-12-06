@@ -17,6 +17,7 @@ syft.core.node.common.node\_service.resolve\_pointer\_type.resolve\_pointer\_typ
 
    .. autosummary::
    
+      ResolvePointerTypeAnswerMessage
       ResolvePointerTypeMessage
    
    
