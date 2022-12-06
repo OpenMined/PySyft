@@ -7,6 +7,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import shutil
 import socket
 import subprocess  # nosec
 from typing import List
@@ -17,12 +18,92 @@ from typing import Union
 # third party
 import git
 import requests
+import rich
+from rich import console
+from rich import progress
 from rich.table import Table
 
 # relative
 from .cache import DEFAULT_BRANCH
 from .mode import EDITABLE_MODE
 from .mode import hagrid_root
+
+
+class GitRemoteProgress(git.RemoteProgress):
+    # CREDITS: https://splunktool.com/python-progress-bar-for-git-clone
+    OP_CODES = [
+        "BEGIN",
+        "CHECKING_OUT",
+        "COMPRESSING",
+        "COUNTING",
+        "END",
+        "FINDING_SOURCES",
+        "RECEIVING",
+        "RESOLVING",
+        "WRITING",
+    ]
+    OP_CODE_MAP = {
+        getattr(git.RemoteProgress, _op_code): _op_code for _op_code in OP_CODES
+    }
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.progressbar = progress.Progress(
+            progress.SpinnerColumn(),
+            # *progress.Progress.get_default_columns(),
+            progress.TextColumn("[progress.description]{task.description}"),
+            progress.BarColumn(),
+            progress.TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+            "eta",
+            progress.TimeRemainingColumn(),
+            progress.TextColumn("{task.fields[message]}"),
+            console=console.Console(),
+            transient=False,
+        )
+        self.progressbar.start()
+        self.active_task = None
+
+    def __del__(self) -> None:
+        # logger.info("Destroying bar...")
+        self.progressbar.stop()
+
+    @classmethod
+    def get_curr_op(cls, op_code: int) -> str:
+        """Get OP name from OP code."""
+        # Remove BEGIN- and END-flag and get op name
+        op_code_masked = op_code & cls.OP_MASK
+        return cls.OP_CODE_MAP.get(op_code_masked, "?").title()
+
+    def update(
+        self,
+        op_code: int,
+        cur_count: Union[str, float],
+        max_count: Optional[Union[str, float]] = None,
+        message: Optional[str] = None,
+    ) -> None:
+        # Start new bar on each BEGIN-flag
+        if op_code & self.BEGIN:
+            self.curr_op = self.get_curr_op(op_code)
+            # logger.info("Next: %s", self.curr_op)
+            self.active_task = self.progressbar.add_task(
+                description=self.curr_op,
+                total=max_count,
+                message=message,
+            )
+
+        self.progressbar.update(
+            task_id=self.active_task,
+            completed=cur_count,
+            message=message,
+        )
+
+        # End progress monitoring on each END-flag
+        if op_code & self.END:
+            # logger.info("Done: %s", self.curr_op)
+            self.progressbar.update(
+                task_id=self.active_task,
+                message=f"[bright_black]{message}",
+            )
 
 
 class ProcessStatus(Enum):
@@ -50,11 +131,19 @@ def asset_path() -> os.PathLike:
     return Path(hagrid_root()) / "hagrid"
 
 
+def manifest_template_path() -> os.PathLike:
+    return Path(asset_path()) / "manifest_template.yml"
+
+
+def hagrid_cache_dir() -> os.PathLike:
+    return Path("~/.hagrid").expanduser()
+
+
 def repo_src_path() -> Path:
     if EDITABLE_MODE:
         return Path(os.path.abspath(Path(hagrid_root()) / "../../"))
     else:
-        return Path(hagrid_root()) / "hagrid" / "PySyft"
+        return Path(os.path.join(Path(hagrid_cache_dir()) / "PySyft"))
 
 
 def grid_src_path() -> str:
@@ -71,32 +160,68 @@ def check_is_git(path: Path) -> bool:
     return is_repo
 
 
+def is_gitpod() -> bool:
+    return bool(os.environ.get("GITPOD_WORKSPACE_URL", None))
+
+
+def gitpod_url(port: Optional[int] = None) -> str:
+    workspace_url = os.environ.get("GITPOD_WORKSPACE_URL", "")
+    if port:
+        workspace_url = workspace_url.replace("https://", f"https://{port}-")
+    return workspace_url
+
+
 def get_git_repo() -> git.Repo:
+    # relative
+    from .art import RichEmoji
+
+    OK_EMOJI = RichEmoji("white_heavy_check_mark").to_str()
+
     is_git = check_is_git(path=repo_src_path())
+    console = rich.get_console()
     if not EDITABLE_MODE and not is_git:
         github_repo = "OpenMined/PySyft.git"
         git_url = f"https://github.com/{github_repo}"
+
         print(f"Fetching Syft + Grid Source from {git_url} to {repo_src_path()}")
         try:
             repo_branch = DEFAULT_BRANCH
+            repo_path = repo_src_path()
+
+            if repo_path.exists():
+                shutil.rmtree(str(repo_path))
+
             git.Repo.clone_from(
-                git_url, repo_src_path(), single_branch=False, b=repo_branch
+                git_url,
+                str(repo_path),
+                single_branch=False,
+                b=repo_branch,
+                progress=GitRemoteProgress(),
             )
-        except Exception:  # nosec
-            print(f"Failed to clone {git_url} to {repo_src_path()}")
+            console.print(f"{OK_EMOJI} Fetched PySyft repo.")
+        except Exception as e:  # nosec
+            print(f"Failed to clone {git_url} to {repo_src_path()} with error: {e}")
     return git.Repo(repo_src_path())
 
 
 def update_repo(repo: git.Repo, branch: str) -> None:
+    # relative
+    from .art import RichEmoji
+
+    OK_EMOJI = RichEmoji("white_heavy_check_mark").to_str()
+    console = rich.get_console()
     if not EDITABLE_MODE:
-        print(f"Updating HAGrid from branch: {branch}")
-        try:
-            if repo.is_dirty():
-                repo.git.reset("--hard")
-            repo.git.checkout(branch)
-            repo.remotes.origin.pull()
-        except Exception as e:
-            print(f"Error checking out branch {branch}.", e)
+        with console.status("Updating hagrid") as console_status:
+
+            console_status.update(f"[bold blue]Updating HAGrid from branch: {branch}")
+            try:
+                if repo.is_dirty():
+                    repo.git.reset("--hard")
+                repo.git.checkout(branch)
+                repo.remotes.origin.pull()
+                console.print(f"{OK_EMOJI} Updated HAGrid from branch: {branch}")
+            except Exception as e:
+                print(f"Error checking out branch {branch}.", e)
 
 
 def commit_hash() -> str:
