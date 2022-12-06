@@ -252,7 +252,9 @@ class TensorWrappedPhiTensorPointer(Pointer):
                 )
 
         # calculate the dtype of the result based on the op_str
-        result_public_dtype = utils.get_dtype(op_str, self.public_shape, other_shape)
+        result_public_dtype = utils.get_dtype(
+            op_str, self.public_shape, other_shape, self.public_dtype, other_dtype
+        )
 
         result.public_shape = result_public_shape
         result.public_dtype = result_public_dtype

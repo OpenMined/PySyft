@@ -109,6 +109,8 @@ def get_dtype(
     op_str: str,
     x_shape: Tuple[int],
     y_shape: Tuple[int],
+    x_dtype: type = DEFAULT_INT_NUMPY_TYPE,
+    y_dtype: type = DEFAULT_INT_NUMPY_TYPE,
 ) -> np.dtype:
     """Get the shape of apply an operation on two values
 
@@ -120,8 +122,8 @@ def get_dtype(
     Returns:
         The dtype of the result
     """
-    dummy_x = np.empty(x_shape, dtype=DEFAULT_INT_NUMPY_TYPE)
-    dummy_y = np.empty(y_shape, dtype=DEFAULT_INT_NUMPY_TYPE)
+    dummy_x = np.empty(x_shape, dtype=x_dtype)
+    dummy_y = np.empty(y_shape, dtype=y_dtype)
     if op_str in OPERATOR_OPS:
         op = getattr(operator, op_str)
         res = op(dummy_x, dummy_y).dtype
