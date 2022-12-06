@@ -13,7 +13,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     node.vm.box_check_update = false
 
     node.vm.hostname = "node.openmined.grid"
-    node.vm.network :private_network, ip: "10.0.1.3"
+    node.vm.network :private_network, ip: "192.168.56.2",
+      virtualbox__intnet: true
+    node.vm.network "forwarded_port", guest: 80, host: 8080
 
     node.vm.provider "virtualbox" do |vb|
       vb.memory = "4096"

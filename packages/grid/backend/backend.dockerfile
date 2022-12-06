@@ -1,4 +1,6 @@
-FROM python:3.10.4-slim as build
+ARG PYTHON_VERSION='3.10.7'
+
+FROM python:3.10.7-slim as build
 
 # set UTC timezone
 ENV TZ=Etc/UTC
@@ -21,9 +23,8 @@ RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) = "x86_64" ]; then \
 COPY grid/backend/wheels /wheels
 # apple m1 build PyNaCl for aarch64
 RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) != "x86_64" ]; then \
-  # precompiled jaxlib, pycapnp and dm-tree
-  pip install --user /wheels/jaxlib-0.3.7-cp310-none-manylinux2014_aarch64.whl; \
-  # tar -xvf /wheels/pycapnp-1.1.0.tar.gz; \
+  # precompiled jaxlib and dm-tree
+  pip install --user /wheels/jaxlib-0.3.14-cp310-none-manylinux2014_aarch64.whl; \
   tar -xvf /wheels/dm-tree-0.1.7.tar.gz; \
   pip install --user pytest-xdist[psutil]; \
   pip install --user torch==1.11.0 -f https://download.pytorch.org/whl/torch_stable.html; \
@@ -31,10 +32,15 @@ RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) != "x86_64" ]; then 
   pip install --user dm-tree==0.1.7; \
   # fixes apple silicon in dev mode due to dependency from safety
   pip install --user ruamel.yaml==0.17.21; \
+  pip install --user /wheels/tensorstore-0.1.25-cp310-cp310-linux_aarch64.whl; \
+  # pip install --user tensorflow-aarch64==2.10.0; \
+  # pip install --user /wheels/tensorflow_compression-2.10.0-cp310-cp310-linux_aarch64.whl; \
   fi
 
-RUN --mount=type=cache,target=/root/.cache \
-  pip install --user pycapnp==1.1.1;
+# install custom built python 3.10 wheel
+RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) = "x86_64" ]; then \
+  pip install --user /wheels/tensorflow_federated-0.36.0-py2.py3-none-any.whl; \
+  fi
 
 WORKDIR /app
 COPY grid/backend/requirements.txt /app
@@ -43,7 +49,7 @@ RUN --mount=type=cache,target=/root/.cache \
   pip install --user -r requirements.txt
 
 # Backend
-FROM python:3.10.4-slim as backend
+FROM python:$PYTHON_VERSION-slim as backend
 COPY --from=build /root/.local /root/.local
 
 ENV PYTHONPATH=/app
@@ -81,6 +87,12 @@ COPY syft/MANIFEST.in /app/syft/MANIFEST.in
 COPY syft/src/syft/VERSION /app/syft/src/syft/VERSION
 COPY syft/src/syft/capnp /app/syft/src/syft/capnp
 COPY syft/src/syft/cache /app/syft/src/syft/cache
+
+
+# install tff
+RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) = "x86_64" ]; then \
+  pip install --user tensorflow-federated==0.38.0; \
+  fi
 
 # install syft
 RUN --mount=type=cache,target=/root/.cache \
