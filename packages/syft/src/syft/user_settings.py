@@ -4,23 +4,11 @@ from __future__ import annotations
 # stdlib
 import os
 
-# third party
-from dotenv import load_dotenv
-
 # relative
 from .core.common.decorators import singleton
 
-# Get root path of project
-root_path = os.path.dirname(os.path.abspath(__file__))
-
-# get the .env file path
-env_path = os.path.join(root_path, ".env")
-
-# load the .env file
-load_dotenv(dotenv_path=env_path)
-
 # TODO: Add this to a file in ~/.syft and add some ENV overrides
-tutorial_mode = bool(os.environ.get("SYFT_TUTORIAL_MODE", False))
+tutorial_mode = bool(os.environ.get("SYFT_TUTORIAL_MODE", True))
 
 
 @singleton
