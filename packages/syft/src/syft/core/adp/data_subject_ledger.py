@@ -117,7 +117,7 @@ def convert_dsa_to_index_array(
     data_subject_array: np.ndarray,
     rdp_constants: Dict[str, np.ndarray],
     constant: np.ndarray,
-) -> Tuple[np.ndarray, int]:
+) -> Dict[str, np.ndarray]:
     """Convert data subject array to data subject index array."""
 
     unique_data_subjects = get_unique_data_subjects(data_subject_array)
@@ -132,8 +132,6 @@ def convert_dsa_to_index_array(
             rdp_constants.get(data_subject_name, 0) + ds_constant_mask
         )
 
-    # {"Ionesio": [number, 0,0], "Rasswanth": [0,number, 0], "Madhava": [0,0,number]}
-    print("My New RDP dict: ", rdp_constants)
     return rdp_constants
 
 
@@ -207,7 +205,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
 
     def __init__(
         self,
-        constants: Dict[str, np.ndarray] = None,
+        constants: Optional[Dict[str, np.ndarray]] = None,
         update_number: int = 0,
         timestamp_of_last_update: Optional[float] = None,
     ) -> None:
@@ -226,7 +224,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         return (
             self._update_number == other._update_number
             and self._timestamp_of_last_update == other._timestamp_of_last_update
-            and all(self._rdp_constants == other._rdp_constants)
+            and self._rdp_constants == other._rdp_constants
         )
 
     @property
