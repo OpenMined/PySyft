@@ -89,7 +89,6 @@ RUN --mount=type=cache,target=/root/.cache \
 
 # install tff
 RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) = "x86_64" ]; then \
-  pip install --user tensorflow-probability==0.18.0; \
   pip install --user tensorflow-federated==0.38.0; \
   fi
 
