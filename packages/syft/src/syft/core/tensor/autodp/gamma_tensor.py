@@ -1943,6 +1943,8 @@ class GammaTensor:
         "max_vals",
         "is_linear",
         "id",
+        "func_str",
+        "sources",
     )
     """
     A differential privacy tensor that contains data belonging to atleast 2 or more unique data subjects.

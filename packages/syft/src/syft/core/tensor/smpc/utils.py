@@ -52,6 +52,28 @@ def get_nr_bits(ring_size: int) -> int:
     return (ring_size - 1).bit_length()
 
 
+NUMPY_OPS = {"concatenate"}
+OPERATOR_OPS = {
+    "add",
+    "sub",
+    "div",
+    "truediv",
+    "mul",
+    "eq",
+    "ne",
+    "gt",
+    "lt",
+    "ge",
+    "le",
+    "matmul",
+    "pos",
+    "pow",
+    "lshift",
+    "rshift",
+    "xor",
+}
+
+
 @lru_cache(maxsize=128)
 def get_shape(
     op_str: str,
@@ -68,13 +90,18 @@ def get_shape(
     Returns:
         The shape of the result
     """
-    if op_str[:2] != "__":
+    dummy_x = np.empty(x_shape, dtype=DEFAULT_INT_NUMPY_TYPE)
+    dummy_y = np.empty(y_shape, dtype=DEFAULT_INT_NUMPY_TYPE)
+    if op_str in OPERATOR_OPS:
         op = getattr(operator, op_str)
-        res = op(np.empty(x_shape), np.empty(y_shape)).shape
+        res = op(dummy_x, dummy_y).shape
+    elif op_str in NUMPY_OPS:
+        res = getattr(np, op_str)([dummy_x, dummy_y]).shape
     else:
-        res = (getattr(np.empty(x_shape), op_str)(np.empty(y_shape))).shape
+        res = getattr(dummy_x, op_str)(dummy_y).shape
+
     res = cast(Tuple[int], res)
-    return tuple(res)  # type: ignore
+    return res
 
 
 @lru_cache(maxsize=128)
