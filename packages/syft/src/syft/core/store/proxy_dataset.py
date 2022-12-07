@@ -59,7 +59,7 @@ class ProxyDataset:
         self,
         asset_name: str,
         dataset_name: str,
-        shape: Tuple[int, ...],
+        shape: Tuple[int, ...],  # Union[int, Tuple[int, ...]],
         dtype: str,
         fqn: str,
         node_id: UID,

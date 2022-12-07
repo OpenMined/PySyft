@@ -97,3 +97,4 @@ class Dataset:
 
     def __delitem__(self, _id: UID) -> None:
         self.data = [el for el in self.data if el.id != _id]
+
