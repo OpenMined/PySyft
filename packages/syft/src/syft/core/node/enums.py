@@ -7,6 +7,9 @@ from ..common.serde import recursive_serde_register
 from ..common.serde.recursive_primitives import deserialize_enum
 from ..common.serde.recursive_primitives import serialize_enum
 
+# relative
+from ...util import bcolors
+
 
 class PyGridClientEnums(str, Enum):
     ENCODING = "ISO-8859-1"
@@ -50,3 +53,8 @@ class ResponseObjectEnum(str, Enum):
     USER = "user"
     WORKER = "worker"
     DATA = "data"
+
+
+class PointerStatus(str, Enum):
+    READY = bcolors.green("Ready")
+    PROCESSING = bcolors.yellow("Processing")

@@ -48,6 +48,7 @@ class AbstractNode(Address):
     signing_key: Optional[SigningKey]
     verify_key: Optional[VerifyKey]
     root_verify_key: VerifyKey
+    guest_signing_key_registry: Set[SigningKey]
     guest_verify_key_registry: Set[VerifyKey]
     admin_verify_key_registry: Set[VerifyKey]
     cpl_ofcr_verify_key_registry: Set[VerifyKey]
