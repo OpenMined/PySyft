@@ -78,6 +78,10 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
+
+        # If if there's another object with the same ID.
+        node.store.check_collision(self.id_at_location)
+
         result_read_permissions: Union[None, Dict[VerifyKey, Optional[UID]]] = None
         result_write_permissions: Union[None, Dict[VerifyKey, Optional[UID]]] = {
             verify_key: None
@@ -193,3 +197,4 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         for k, v in self.kwargs.items():
             if v.id_at_location == current_input.id_at_location:
                 self.kwargs[k] = new_input
+

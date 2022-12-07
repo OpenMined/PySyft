@@ -105,3 +105,4 @@ class GetSetStaticAttributeAction(ImmediateActionWithoutReply):
             )
 
         node.store[self.id_at_location] = result
+

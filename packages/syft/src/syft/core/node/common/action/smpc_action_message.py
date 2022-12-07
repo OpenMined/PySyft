@@ -81,3 +81,4 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
         return res
 
     __repr__ = __str__
+
