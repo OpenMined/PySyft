@@ -24,12 +24,11 @@ class ListIterator(Iterator):
 
 
 class List(UserList, PyPrimitive):
-    __slots__ = ["_id", "_index"]
+    __slots__ = ["_index"]
 
     def __init__(
         self,
         value: Optional[Any] = None,
-        id: Optional[UID] = None,
         temporary_box: bool = False,
     ):
         if value is None:
@@ -38,7 +37,6 @@ class List(UserList, PyPrimitive):
         UserList.__init__(self, value)
         PyPrimitive.__init__(self, temporary_box=temporary_box)
 
-        self._id: UID = id if id else UID()
         self._index = 0
 
     def upcast(self) -> ListType:
@@ -64,11 +62,13 @@ class List(UserList, PyPrimitive):
 
     def __iadd__(self, other: Any) -> SyPrimitiveRet:
         res = super().__iadd__(other)
-        return PrimitiveFactory.generate_primitive(value=res, id=self.id)
+        return PrimitiveFactory.generate_primitive(value=res)
 
     def __imul__(self, other: Any) -> SyPrimitiveRet:
         res = super().__imul__(other)
-        return PrimitiveFactory.generate_primitive(value=res, id=self.id)
+        return PrimitiveFactory.generate_primitive(
+            value=res,
+        )
 
     def __add__(self, other: Any) -> SyPrimitiveRet:
         res = super().__add__(other)
@@ -125,7 +125,6 @@ class List(UserList, PyPrimitive):
 
     def copy(self) -> "List":
         res = super().copy()
-        res._id = UID()
         return res
 
     def append(self, item: Any) -> None:

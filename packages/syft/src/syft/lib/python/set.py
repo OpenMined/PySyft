@@ -1,11 +1,9 @@
 # stdlib
 from typing import Any
 from typing import Iterable
-from typing import Optional
 from typing import Set as TypeSet
 
 # relative
-from ...core.common.uid import UID
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
@@ -13,10 +11,8 @@ from .util import upcast
 
 
 class Set(set, PyPrimitive):
-    def __init__(self, iterable: Iterable, _id: Optional[UID] = None):
+    def __init__(self, iterable: Iterable):
         super().__init__(iterable)
-
-        self._id = UID() if _id is None else _id
 
     def upcast(self) -> TypeSet:
         # recursively upcast

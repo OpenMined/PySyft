@@ -57,11 +57,6 @@ class Dict(UserDict, PyPrimitive):
         if kwargs:
             self.update(kwargs)
 
-        # We cant add UID from kwargs or it could easily be overwritten by the dict
-        # that is being passed in for __init__
-        # If you want to update it use the _id setter after creation.
-        self._id = UID()
-
         temporary_box = kwargs["temporary_box"] if "temporary_box" in kwargs else False
         if temporary_box:
             PyPrimitive.__init__(
