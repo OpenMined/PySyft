@@ -9,7 +9,7 @@ services:
     build:
       context: ${RELATIVE_PATH}./frontend
       dockerfile: frontend.dockerfile
-      target: "grid-ui-production"
+      target: "${FRONTEND_TARGET:-grid-ui-production}"
 
   backend:
     build:

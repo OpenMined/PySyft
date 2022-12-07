@@ -20,6 +20,22 @@ def test_data_subject_ledger_serde() -> None:
     assert all(de._rdp_constants == rdp_constants)
 
 
+def test_cache_bypass() -> None:
+    """
+    Check that the cache is bypassed for gigantic RDP constants
+    """
+    gigantic_rdp_constant = np.array([1e8, 2e8])
+    dsl = DataSubjectLedger()
+    eps = dsl._get_epsilon_spend(gigantic_rdp_constant)
+    direct_eps = np.array(
+        [dsl._get_optimal_alpha_for_constant(i)[1] for i in gigantic_rdp_constant]
+    )
+    assert (
+        eps > dsl._cache_constant2epsilon[-1]
+    ).all(), "It seems the cache has been modified?"
+    assert (direct_eps == eps).all(), "It seems epsilon was incorrectly calculated."
+
+
 def test_cache_indexing_correctness() -> None:
     dsl = DataSubjectLedger()
     for i in [0.0001, 1, 50, 51, 100, 200_000]:

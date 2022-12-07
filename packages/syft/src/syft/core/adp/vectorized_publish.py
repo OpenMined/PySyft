@@ -19,6 +19,7 @@ from numpy.typing import ArrayLike
 # relative
 from ...core.node.common.node_manager.user_manager import RefreshBudgetException
 from ...core.tensor.autodp.gamma_tensor_ops import GAMMA_TENSOR_OP
+from ..tensor.config import DEFAULT_INT_NUMPY_TYPE
 from ..tensor.fixed_precision_tensor import FixedPrecisionTensor
 from ..tensor.lazy_repeat_array import lazyrepeatarray
 from ..tensor.passthrough import PassthroughTensor  # type: ignore
@@ -102,6 +103,106 @@ def publish(
         query_constants=rdp_constants, entity_ids_query=input_entities
     )
     ledger._write_ledger()
+    # # if we dont return below we will terminate if the tensor gets replaced with zeros
+    # prev_tensor = None
+    # print("VALUE: ", value)
+    # print("Tensor: ", tensor.child)
+
+    # while can_reduce_further(value=value, zeros_like=zeros_like):
+    #     if prev_tensor is None:
+    #         prev_tensor = value
+    #     else:
+    #         if (prev_tensor == value).all():  # type: ignore
+    #             raise Exception("Tensor has not changed and is not all zeros")
+    #         else:
+    #             prev_tensor = value
+
+    #     if is_linear:
+    #         lipschitz_bounds = coeffs.copy()
+    #     else:
+    #         lipschitz_bounds = tensor.lipschitz_bound
+
+    #     rdp_params = RDPParams(
+    #         sigmas=sigmas,
+    #         l2_norms=l2_norms,
+    #         l2_norm_bounds=l2_norm_bounds,
+    #         Ls=lipschitz_bounds,
+    #         coeffs=coeffs,
+    #     )
+
+    #     # Step 2: Calculate the epsilon spend for this query
+
+    #     # rdp_constant = all terms in Theorem. 2.7 or 2.8 of https://arxiv.org/abs/2008.11193 EXCEPT alpha
+    #     if any(np.isnan(l2_norms)):
+    #         if any(np.isnan(l2_norm_bounds)) or any(np.isinf(l2_norm_bounds)):
+    #             raise Exception(
+    #                 "NaN or Inf values in bounds not allowed in PySyft for safety reasons."
+    #                 "Please contact the OpenMined support team for help."
+    #                 "\nFor that you can either:"
+    #                 "\n * describe your issue on our Slack #support channel. To join: https://openmined.slack.com/"
+    #                 "\n * send us an email describing your problem at support@openmined.org"
+    #                 "\n * leave us an issue here: https://github.com/OpenMined/PySyft/issues"
+    #             )
+    #         rdp_constants = compute_rdp_constant(rdp_params, private=False)
+    #     else:
+    #         rdp_constants = compute_rdp_constant(rdp_params, private=private)
+    #     print("Rdp constants", rdp_constants)
+    #     if any(rdp_constants < 0):
+    #         raise Exception(
+    #             "Negative budget spend not allowed in PySyft for safety reasons."
+    #             "Please contact the OpenMined support team for help."
+    #             "For that you can either:"
+    #             " * describe your issue on our Slack #support channel. To join: https://openmined.slack.com/"
+    #             " * send us an email describing your problem at support@openmined.org"
+    #             " * leave us an issue here: https://github.com/OpenMined/PySyft/issues"
+    #         )
+    #     all_epsilons = ledger._get_epsilon_spend(
+    #         rdp_constants
+    #     )  # This is the epsilon spend for ALL data subjects
+    #     if any(all_epsilons < 0):
+    #         raise Exception(
+    #             "Negative budget spend not allowed in PySyft for safety reasons."
+    #             "Please contact the OpenMined support team for help."
+    #             "\nFor that you can either:"
+    #             "\n * describe your issue on our Slack #support channel. To join: https://openmined.slack.com/"
+    #             "\n * send us an email describing your problem at support@openmined.org"
+    #             "\n * leave us an issue here: https://github.com/OpenMined/PySyft/issues"
+    #         )
+
+    #     epsilon_spend = max(
+    #         all_epsilons
+    #     )  # This is the epsilon spend for the QUERY, a single float.
+
+    #     if not isinstance(epsilon_spend, float):
+    #         epsilon_spend = float(epsilon_spend)
+
+    #     if epsilon_spend < 0:
+    #         raise Exception(
+    #             "Negative budget spend not allowed in PySyft for safety reasons."
+    #             "Please contact the OpenMined support team for help."
+    #             "For that you can either:"
+    #             " * describe your issue on our Slack #support channel. To join: https://openmined.slack.com/"
+    #             " * send us an email describing your problem at support@openmined.org"
+    #             " * leave us an issue here: https://github.com/OpenMined/PySyft/issues"
+    #         )
+
+    #     # Step 3: Check if the user has enough privacy budget for this query
+    #     privacy_budget = get_budget_for_user(verify_key=ledger.user_key)
+    #     print(privacy_budget)
+    #     print(epsilon_spend)
+    #     has_budget = epsilon_spend <= privacy_budget
+
+    #     # if we see the same budget and spend twice in a row we have failed to reduce it
+    #     if (
+    #         privacy_budget == previous_budget
+    #         and epsilon_spend == previous_spend
+    #         and not has_budget
+    #     ):
+    #         raise Exception(
+    #             "Publish has failed to reduce spend. "
+    #             f"With Budget: {previous_budget} Spend: {epsilon_spend}. Aborting."
+    #         )
+
 
     # We sample noise from a cryptographically secure distribution
     # TODO(0.8): Replace with discrete gaussian distribution instead of regular

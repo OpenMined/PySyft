@@ -494,6 +494,12 @@ class DataSubjectArray:
         else:
             return DataSubjectArray(self.data_subjects)
 
+    def __rmul__(self, other: Union[DataSubjectArray, Any]) -> DataSubjectArray:
+        if isinstance(other, DataSubjectArray):
+            return DataSubjectArray(self.data_subjects.union(other.data_subjects))
+        else:
+            return DataSubjectArray(self.data_subjects)
+
     def __ge__(self, other: Union[DataSubjectArray, Any]) -> DataSubjectArray:
         if isinstance(other, DataSubjectArray):
             return DataSubjectArray(self.data_subjects.union(other.data_subjects))
