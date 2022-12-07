@@ -307,4 +307,3 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         for k, v in self.kwargs.items():
             if v.id_at_location == current_input.id_at_location:
                 self.kwargs[k] = new_input
-            

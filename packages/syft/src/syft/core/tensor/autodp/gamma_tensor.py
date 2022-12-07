@@ -2022,7 +2022,6 @@ class GammaTensor:
     @classmethod
     def serde_constructor(cls, kwargs: Dict[str, Any]) -> GammaTensor:
         return GammaTensor(**kwargs)
-    
 
     def __post_init__(
         self,

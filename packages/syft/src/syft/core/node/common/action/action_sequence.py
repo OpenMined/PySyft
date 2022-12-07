@@ -41,4 +41,3 @@ class ActionSequence(ImmediateActionWithoutReply):
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         for obj in self.obj_lst:
             obj.execute_action(node=node, verify_key=verify_key)
-

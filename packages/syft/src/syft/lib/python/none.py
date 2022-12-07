@@ -2,7 +2,6 @@
 from typing import Any
 
 # relative
-from ...core.common import UID
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet

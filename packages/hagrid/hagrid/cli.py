@@ -338,7 +338,6 @@ def clean(location: str) -> None:
     type=str,
     help="Optional: turn on or off auto health checks post node launch",
 )
-
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
     try:

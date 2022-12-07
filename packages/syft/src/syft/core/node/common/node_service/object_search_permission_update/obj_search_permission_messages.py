@@ -42,4 +42,3 @@ class ObjectSearchPermissionUpdateMessage(ImmediateSyftMessageWithoutReply):
         self.add_instead_of_remove = add_instead_of_remove
         self.target_verify_key = target_verify_key
         self.target_object_id = target_object_id
-

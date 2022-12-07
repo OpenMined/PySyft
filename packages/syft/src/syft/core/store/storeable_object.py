@@ -185,4 +185,3 @@ class StorableObject(AbstractStorableObject):
         return StorableObject(
             id=self.id, data=self.data, tags=self.tags, description=self.description
         )
-

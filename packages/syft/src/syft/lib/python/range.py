@@ -2,9 +2,6 @@
 from typing import Any
 from typing import Optional
 
-# third party
-from typing_extensions import SupportsIndex
-
 # relative
 from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory

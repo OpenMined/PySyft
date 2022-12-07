@@ -143,7 +143,7 @@ repos:
               packages/syft/tests/.*|
               packages/syft/src/syft/proto.*|
               packages/syft/tests/syft/lib/python.*|
-              packages/syft/src/syft/shylock.*
+              packages/syft/src/syft/shylock/.*
           )$
         args: [
             "--ignore-missing-imports",

@@ -10,7 +10,6 @@ from typing import Optional
 from typing import Union
 
 # relative
-from ...core.common import UID
 from ...logger import traceback_and_raise
 from ...logger import warning
 from .iterator import Iterator

@@ -51,4 +51,3 @@ class SaveObjectAction(ImmediateActionWithoutReply):
             verify_key: None,  # we dont have the passed in sender's UID
         }
         node.store[self.obj.id] = self.obj
-

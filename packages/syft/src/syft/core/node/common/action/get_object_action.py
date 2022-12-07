@@ -131,4 +131,3 @@ class GetObjectAction(ImmediateActionWithReply):
     @property
     def pprint(self) -> str:
         return f"GetObjectAction({self.id_at_location})"
-

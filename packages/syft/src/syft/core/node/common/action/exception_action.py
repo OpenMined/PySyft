@@ -39,4 +39,3 @@ class ExceptionMessage(ImmediateSyftMessageWithoutReply):
         self.msg_id_causing_exception = msg_id_causing_exception
         self.exception_type = exception_type
         self.exception_msg = exception_msg
-

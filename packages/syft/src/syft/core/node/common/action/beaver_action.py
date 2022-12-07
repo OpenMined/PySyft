@@ -83,4 +83,4 @@ class BeaverAction(ImmediateActionWithoutReply):
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         for value, location in zip(self.values, self.locations):
-            BeaverAction.beaver_populate(value, location, node) # type: ignore
+            BeaverAction.beaver_populate(value, location, node)  # type: ignore

@@ -9,7 +9,6 @@ from typing import Union
 from typing_extensions import SupportsIndex
 
 # relative
-from ...core.common import UID
 from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory
 from .primitive_factory import isprimitive

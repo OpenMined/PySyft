@@ -36,4 +36,3 @@ class GetReprReplyMessage(ImmediateSyftMessageWithoutReply):
     ):
         super().__init__(address=address, msg_id=msg_id)
         self.repr = repr
-

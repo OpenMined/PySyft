@@ -3,12 +3,10 @@ from enum import Enum
 import functools
 
 # relative
+from ...util import bcolors
 from ..common.serde import recursive_serde_register
 from ..common.serde.recursive_primitives import deserialize_enum
 from ..common.serde.recursive_primitives import serialize_enum
-
-# relative
-from ...util import bcolors
 
 
 class PyGridClientEnums(str, Enum):

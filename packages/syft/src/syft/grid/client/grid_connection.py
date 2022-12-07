@@ -9,8 +9,6 @@ from typing import Union
 from typing import cast
 
 # third party
-from nacl.encoding import HexEncoder
-from nacl.signing import SigningKey
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry

@@ -3,7 +3,6 @@ from typing import Any
 from typing import Optional
 
 # relative
-from ...core.common import UID
 from ...logger import traceback_and_raise
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive

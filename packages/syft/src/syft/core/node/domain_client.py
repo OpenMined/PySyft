@@ -233,7 +233,6 @@ class RequestHandlerQueueClient:
         from .common.node_service.request_handler.request_handler_messages import (
             GetAllRequestHandlersMessage,
         )
-        
 
         msg = GetAllRequestHandlersMessage(
             address=self.client.address, reply_to=self.client.address

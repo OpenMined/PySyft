@@ -25,9 +25,7 @@ from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedImmediateSyftMessageWithoutReply
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
-from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
-from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.route import Route
@@ -492,4 +490,3 @@ class StoreClient:
 
     def _repr_html_(self) -> str:
         return self.pandas._repr_html_()
-    

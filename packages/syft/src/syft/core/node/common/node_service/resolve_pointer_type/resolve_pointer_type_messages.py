@@ -36,4 +36,3 @@ class ResolvePointerTypeAnswerMessage(ImmediateSyftMessageWithoutReply):
     ):
         super().__init__(address=address, msg_id=msg_id)
         self.type_path = type_path
-

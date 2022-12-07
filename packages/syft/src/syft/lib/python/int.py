@@ -9,7 +9,6 @@ from typing_extensions import Literal
 from typing_extensions import SupportsIndex
 
 # relative
-from ...core.common import UID
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
