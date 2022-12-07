@@ -54,7 +54,7 @@ from .core.common.serde.deserialize import _deserialize as deserialize  # noqa: 
 from .core.common.serde.serialize import _serialize as serialize  # noqa: F401
 
 # TFF
-# from .core.node.common.node_service import tff  # noqa: F401
+from .core.node.common.node_service import tff  # noqa: F401
 from .core.node.common.node_service.testing_services.repr_service import (  # noqa: F401
     ReprMessage,
 )
