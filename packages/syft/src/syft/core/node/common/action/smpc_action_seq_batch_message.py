@@ -32,3 +32,4 @@ class SMPCActionSeqBatchMessage(ImmediateSyftMessageWithoutReply):
         return res
 
     __repr__ = __str__
+

@@ -8,9 +8,6 @@ from typing import Optional
 # third party
 from nacl.signing import VerifyKey
 
-# syft absolute
-import syft as sy
-
 # relative
 from ..... import lib
 from .....logger import traceback_and_raise
@@ -103,6 +100,9 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
 
+        # If if there's another object with the same ID.
+        node.store.check_collision(self.id_at_location)
+
         mutating_internal = False
         if (
             self.path.startswith("torch.Tensor")
@@ -170,9 +170,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     ValueError(f"Method {method} called, but self is None.")
                 )
 
-            resolved_self_previous_bytes = sy.serialize(
-                resolved_self.data, to_bytes=True
-            )
+            resolved_self_previous_bytes = serialize(resolved_self.data, to_bytes=True)  # type: ignore
             method_name = self.path.split(".")[-1]
 
             target_method = getattr(resolved_self.data, method_name, None)
@@ -226,7 +224,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             resolved_self_previous_bytes is not None
             and resolved_self is not None
             and resolved_self_previous_bytes
-            != sy.serialize(resolved_self.data, to_bytes=True)
+            != serialize(resolved_self.data, to_bytes=True)
         ):
             mutating_internal = True
 
@@ -308,3 +306,4 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         for k, v in self.kwargs.items():
             if v.id_at_location == current_input.id_at_location:
                 self.kwargs[k] = new_input
+            

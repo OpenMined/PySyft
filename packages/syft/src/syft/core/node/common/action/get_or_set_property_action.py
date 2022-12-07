@@ -197,3 +197,4 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
             return f"GetOrSetPropertyAction GET {self_name}.{attr_name}"
         else:
             return f"GetOrSetPropertyAction DEL {self_name}.{attr_name}"
+

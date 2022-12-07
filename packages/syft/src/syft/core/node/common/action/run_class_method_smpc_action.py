@@ -99,6 +99,9 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         # relative
         from ....tensor.smpc import context
 
+        # If if there's another object with the same ID.
+        node.store.check_collision(self.id_at_location)
+
         resolved_self = retrieve_object(node, self._self.id_at_location, self.path)
         result_read_permissions = resolved_self.read_permissions
 
@@ -191,6 +194,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         node.store[id_at_location] = result
 
 
+        
 # #### NOTE: DO NOT DELETE THIS CODE######
 # This code is part of the retrieable actions logic in SMPC
 # We might switch to this,if we make a switch to retriable actions instead of greeen threads.
