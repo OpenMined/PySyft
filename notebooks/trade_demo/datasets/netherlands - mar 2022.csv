@@ -1,0 +1,161 @@
+Classification,Year,Period,Period Desc.,Aggregate Level,Is Leaf Code,Trade Flow Code,Trade Flow,Reporter Code,Reporter,Reporter ISO,Partner Code,Partner,Partner ISO,Commodity Code,Commodity,Qty Unit Code,Qty Unit,Qty,Netweight (kg),Trade Value (US$),Flag
+HS,2022,202203,Mar-22,0,0,1,Imports,31,Azerbaijan,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,6538257,0
+HS,2022,202203,Mar-22,0,0,2,Exports,31,Azerbaijan,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,9202342,0
+HS,2022,202203,Mar-22,0,0,1,Imports,32,Argentina,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,130585334,0
+HS,2022,202203,Mar-22,0,0,2,Exports,32,Argentina,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,299141652,0
+HS,2022,202203,Mar-22,0,0,1,Imports,36,Australia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,223688171,0
+HS,2022,202203,Mar-22,0,0,2,Exports,36,Australia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,658062885,0
+HS,2022,202203,Mar-22,0,0,1,Imports,51,Armenia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,2897081,0
+HS,2022,202203,Mar-22,0,0,2,Exports,51,Armenia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,13750214,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,51,Armenia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,4553,0
+HS,2022,202203,Mar-22,0,0,1,Imports,52,Barbados,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,13053472,0
+HS,2022,202203,Mar-22,0,0,2,Exports,52,Barbados,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,90337,0
+HS,2022,202203,Mar-22,0,0,1,Imports,56,Belgium,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,8305812567,0
+HS,2022,202203,Mar-22,0,0,2,Exports,56,Belgium,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,5280840655,0
+HS,2022,202203,Mar-22,0,0,1,Imports,68,Bolivia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,18634092,0
+HS,2022,202203,Mar-22,0,0,2,Exports,68,Bolivia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,29801273,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,68,Bolivia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,9150,0
+HS,2022,202203,Mar-22,0,0,1,Imports,70,Bosnia Herzegovina,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,15829859,0
+HS,2022,202203,Mar-22,0,0,2,Exports,70,Bosnia Herzegovina,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,21669169,0
+HS,2022,202203,Mar-22,0,0,1,Imports,72,Botswana,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,343169,0
+HS,2022,202203,Mar-22,0,0,2,Exports,72,Botswana,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,24168,0
+HS,2022,202203,Mar-22,0,0,1,Imports,76,Brazil,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,205383862,0
+HS,2022,202203,Mar-22,0,0,2,Exports,76,Brazil,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,1097611431,0
+HS,2022,202203,Mar-22,0,0,1,Imports,84,Belize,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,1068257,0
+HS,2022,202203,Mar-22,0,0,2,Exports,84,Belize,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,91623,0
+HS,2022,202203,Mar-22,0,0,1,Imports,112,Belarus,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,10125500,0
+HS,2022,202203,Mar-22,0,0,2,Exports,112,Belarus,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,22931100,0
+HS,2022,202203,Mar-22,0,0,1,Imports,124,Canada,,528,Netherlands,,TOTAL,All Commodities,,,,,302787194,0
+HS,2022,202203,Mar-22,0,0,2,Exports,124,Canada,,528,Netherlands,,TOTAL,All Commodities,,,,,316033407,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,124,Canada,,528,Netherlands,,TOTAL,All Commodities,,,,,25801093,0
+HS,2022,202203,Mar-22,0,0,1,Imports,152,Chile,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,52147824,0
+HS,2022,202203,Mar-22,0,0,2,Exports,152,Chile,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,165895087,0
+HS,2022,202203,Mar-22,0,0,1,Imports,156,China,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,1144236454,0
+HS,2022,202203,Mar-22,0,0,2,Exports,156,China,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,9780583797,0
+HS,2022,202203,Mar-22,0,0,1,Imports,191,Croatia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,134171528,0
+HS,2022,202203,Mar-22,0,0,2,Exports,191,Croatia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,34264502,0
+HS,2022,202203,Mar-22,0,0,1,Imports,203,Czech Rep.,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,541953613,0
+HS,2022,202203,Mar-22,0,0,2,Exports,203,Czech Rep.,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,765000921,0
+HS,2022,202203,Mar-22,0,0,1,Imports,208,Denmark,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,1037017477,0
+HS,2022,202203,Mar-22,0,0,2,Exports,208,Denmark,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,659764456,0
+HS,2022,202203,Mar-22,0,0,1,Imports,222,El Salvador,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,3932667,0
+HS,2022,202203,Mar-22,0,0,2,Exports,222,El Salvador,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,2822090,0
+HS,2022,202203,Mar-22,0,0,1,Imports,233,Estonia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,80102121,0
+HS,2022,202203,Mar-22,0,0,2,Exports,233,Estonia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,105625020,0
+HS,2022,202203,Mar-22,0,0,1,Imports,242,Fiji,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,992923,0
+HS,2022,202203,Mar-22,0,0,2,Exports,242,Fiji,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,493414,0
+HS,2022,202203,Mar-22,0,0,1,Imports,246,Finland,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,477304240,0
+HS,2022,202203,Mar-22,0,0,2,Exports,246,Finland,,528,Netherlands,,TOTAL,All Commodities,,,,,563504052,0
+HS,2022,202203,Mar-22,0,0,1,Imports,268,Georgia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,14394123,0
+HS,2022,202203,Mar-22,0,0,2,Exports,268,Georgia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,1596023,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,268,Georgia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,280703,0
+HS,2022,202203,Mar-22,0,0,1,Imports,276,Germany,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,10539953577,0
+HS,2022,202203,Mar-22,0,0,2,Exports,276,Germany,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,10240878299,0
+HS,2022,202203,Mar-22,0,0,1,Imports,300,Greece,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,392056276,0
+HS,2022,202203,Mar-22,0,0,2,Exports,300,Greece,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,97947687,0
+HS,2022,202203,Mar-22,0,0,1,Imports,308,Grenada,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,431096,0
+HS,2022,202203,Mar-22,0,0,2,Exports,308,Grenada,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,27483,0
+HS,2022,202203,Mar-22,0,0,1,Imports,320,Guatemala,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,10156594,0
+HS,2022,202203,Mar-22,0,0,2,Exports,320,Guatemala,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,85277209,0
+HS,2022,202203,Mar-22,0,0,1,Imports,328,Guyana,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,4529204,0
+HS,2022,202203,Mar-22,0,0,2,Exports,328,Guyana,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,1716309,0
+HS,2022,202203,Mar-22,0,0,1,Imports,344,"China, Hong Kong SAR",,528,Netherlands,,TOTAL,All Commodities,,,,0.0,147079181,0
+HS,2022,202203,Mar-22,0,0,2,Exports,344,"China, Hong Kong SAR",,528,Netherlands,,TOTAL,All Commodities,,,,0.0,727211726,0
+HS,2022,202203,Mar-22,0,0,1,Imports,348,Hungary,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,736105938,0
+HS,2022,202203,Mar-22,0,0,2,Exports,348,Hungary,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,495910789,0
+HS,2022,202203,Mar-22,0,0,1,Imports,352,Iceland,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,50423592,0
+HS,2022,202203,Mar-22,0,0,2,Exports,352,Iceland,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,221304479,0
+HS,2022,202203,Mar-22,0,0,1,Imports,360,Indonesia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,78533153,0
+HS,2022,202203,Mar-22,0,0,2,Exports,360,Indonesia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,477011236,0
+HS,2022,202203,Mar-22,0,0,1,Imports,376,Israel,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,139160000,0
+HS,2022,202203,Mar-22,0,0,2,Exports,376,Israel,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,193494000,0
+HS,2022,202203,Mar-22,0,0,1,Imports,381,Italy,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,3586461241,0
+HS,2022,202203,Mar-22,0,0,2,Exports,381,Italy,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,1813618620,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,381,Italy,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,64331884,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,381,Italy,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,2413051,0
+HS,2022,202203,Mar-22,0,0,1,Imports,392,Japan,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,300969660,0
+HS,2022,202203,Mar-22,0,0,2,Exports,392,Japan,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,1247606666,0
+HS,2022,202203,Mar-22,0,0,1,Imports,417,Kyrgyzstan,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,1817816,0
+HS,2022,202203,Mar-22,0,0,2,Exports,417,Kyrgyzstan,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,1146716,0
+HS,2022,202203,Mar-22,0,0,1,Imports,428,Latvia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,89235053,0
+HS,2022,202203,Mar-22,0,0,2,Exports,428,Latvia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,68563314,0
+HS,2022,202203,Mar-22,0,0,1,Imports,440,Lithuania,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,226209288,0
+HS,2022,202203,Mar-22,0,0,2,Exports,440,Lithuania,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,213794427,0
+HS,2022,202203,Mar-22,0,0,1,Imports,442,Luxembourg,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,128002612,0
+HS,2022,202203,Mar-22,0,0,2,Exports,442,Luxembourg,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,105237348,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,442,Luxembourg,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,318403,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,442,Luxembourg,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,144550,0
+HS,2022,202203,Mar-22,0,0,1,Imports,446,"China, Macao SAR",,528,Netherlands,,TOTAL,All Commodities,,,,0.0,4885300,0
+HS,2022,202203,Mar-22,0,0,2,Exports,446,"China, Macao SAR",,528,Netherlands,,TOTAL,All Commodities,,,,0.0,219261,0
+HS,2022,202203,Mar-22,0,0,1,Imports,480,Mauritius,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,3117167,0
+HS,2022,202203,Mar-22,0,0,2,Exports,480,Mauritius,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,5408323,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,480,Mauritius,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,83958,0
+HS,2022,202203,Mar-22,0,0,1,Imports,484,Mexico,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,207437924,0
+HS,2022,202203,Mar-22,0,0,2,Exports,484,Mexico,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,181008518,0
+HS,2022,202203,Mar-22,0,0,1,Imports,498,Rep. of Moldova,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,10101166,0
+HS,2022,202203,Mar-22,0,0,2,Exports,498,Rep. of Moldova,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,6371593,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,498,Rep. of Moldova,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,4846670,0
+HS,2022,202203,Mar-22,0,0,1,Imports,516,Namibia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,1996523,0
+HS,2022,202203,Mar-22,0,0,2,Exports,516,Namibia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,4799466,0
+HS,2022,202203,Mar-22,0,0,1,Imports,554,New Zealand,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,46213882,0
+HS,2022,202203,Mar-22,0,0,2,Exports,554,New Zealand,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,69543607,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,554,New Zealand,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,2216435,0
+HS,2022,202203,Mar-22,0,0,1,Imports,566,Nigeria,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,246892323,0
+HS,2022,202203,Mar-22,0,0,2,Exports,566,Nigeria,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,671107291,0
+HS,2022,202203,Mar-22,0,0,1,Imports,579,Norway,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,339100010,0
+HS,2022,202203,Mar-22,0,0,2,Exports,579,Norway,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,2084795222,0
+HS,2022,202203,Mar-22,0,0,1,Imports,586,Pakistan,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,60982728,0
+HS,2022,202203,Mar-22,0,0,2,Exports,586,Pakistan,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,142618660,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,586,Pakistan,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,105541,0
+HS,2022,202203,Mar-22,0,0,4,Re-imports,586,Pakistan,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,6072,0
+HS,2022,202203,Mar-22,0,0,1,Imports,591,Panama,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,4235511,0
+HS,2022,202203,Mar-22,0,0,2,Exports,591,Panama,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,16669427,0
+HS,2022,202203,Mar-22,0,0,1,Imports,600,Paraguay,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,13220738,0
+HS,2022,202203,Mar-22,0,0,2,Exports,600,Paraguay,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,3638228,0
+HS,2022,202203,Mar-22,0,0,1,Imports,608,Philippines,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,53830175,0
+HS,2022,202203,Mar-22,0,0,2,Exports,608,Philippines,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,230869354,0
+HS,2022,202203,Mar-22,0,0,1,Imports,616,Poland,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,1312399629,0
+HS,2022,202203,Mar-22,0,0,2,Exports,616,Poland,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,1512733460,0
+HS,2022,202203,Mar-22,0,0,1,Imports,620,Portugal,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,487642362,0
+HS,2022,202203,Mar-22,0,0,2,Exports,620,Portugal,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,297868432,0
+HS,2022,202203,Mar-22,0,0,1,Imports,642,Romania,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,486815379,0
+HS,2022,202203,Mar-22,0,0,2,Exports,642,Romania,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,395897266,0
+HS,2022,202203,Mar-22,0,0,1,Imports,646,Rwanda,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,3019358,0
+HS,2022,202203,Mar-22,0,0,2,Exports,646,Rwanda,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,1683390,0
+HS,2022,202203,Mar-22,0,0,1,Imports,686,Senegal,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,51934359,0
+HS,2022,202203,Mar-22,0,0,2,Exports,686,Senegal,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,10644078,0
+HS,2022,202203,Mar-22,0,0,1,Imports,688,Serbia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,69489128,0
+HS,2022,202203,Mar-22,0,0,2,Exports,688,Serbia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,42746508,0
+HS,2022,202203,Mar-22,0,0,1,Imports,699,India,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,465783086,0
+HS,2022,202203,Mar-22,0,0,2,Exports,699,India,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,1851588868,0
+HS,2022,202203,Mar-22,0,0,1,Imports,703,Slovakia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,140375344,0
+HS,2022,202203,Mar-22,0,0,2,Exports,703,Slovakia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,196099736,0
+HS,2022,202203,Mar-22,0,0,1,Imports,705,Slovenia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,84160295,0
+HS,2022,202203,Mar-22,0,0,2,Exports,705,Slovenia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,85938026,0
+HS,2022,202203,Mar-22,0,0,1,Imports,724,Spain,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,1917432654,0
+HS,2022,202203,Mar-22,0,0,2,Exports,724,Spain,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,1438588827,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,724,Spain,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,1591,0
+HS,2022,202203,Mar-22,0,0,1,Imports,752,Sweden,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,1938022203,0
+HS,2022,202203,Mar-22,0,0,2,Exports,752,Sweden,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,950485379,0
+HS,2022,202203,Mar-22,0,0,1,Imports,757,Switzerland,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,539194841,0
+HS,2022,202203,Mar-22,0,0,2,Exports,757,Switzerland,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,699778736,0
+HS,2022,202203,Mar-22,0,0,1,Imports,768,Togo,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,8915982,0
+HS,2022,202203,Mar-22,0,0,2,Exports,768,Togo,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,281700,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,768,Togo,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,90904,0
+HS,2022,202203,Mar-22,0,0,1,Imports,792,Turkey,,528,Netherlands,,TOTAL,All Commodities,,,,,387514640,0
+HS,2022,202203,Mar-22,0,0,2,Exports,792,Turkey,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,867393968,0
+HS,2022,202203,Mar-22,0,0,1,Imports,804,Ukraine,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,22601105,0
+HS,2022,202203,Mar-22,0,0,2,Exports,804,Ukraine,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,67554102,0
+HS,2022,202203,Mar-22,0,0,1,Imports,807,TFYR of Macedonia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,15205062,0
+HS,2022,202203,Mar-22,0,0,2,Exports,807,TFYR of Macedonia,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,18356264,0
+HS,2022,202203,Mar-22,0,0,1,Imports,818,Egypt,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,58022472,0
+HS,2022,202203,Mar-22,0,0,2,Exports,818,Egypt,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,84510261,0
+HS,2022,202203,Mar-22,0,0,1,Imports,826,United Kingdom,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,6317900291,0
+HS,2022,202203,Mar-22,0,0,2,Exports,826,United Kingdom,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,3897255938,0
+HS,2022,202203,Mar-22,0,0,1,Imports,842,United States of America,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,3934975877,0
+HS,2022,202203,Mar-22,0,0,2,Exports,842,United States of America,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,6183881629,0
+HS,2022,202203,Mar-22,0,0,3,Re-exports,842,United States of America,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,853981624,0
+HS,2022,202203,Mar-22,0,0,1,Imports,854,Burkina Faso,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,23108477,0
+HS,2022,202203,Mar-22,0,0,2,Exports,854,Burkina Faso,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,1777399,0
+HS,2022,202203,Mar-22,0,0,1,Imports,860,Uzbekistan,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,7913493,0
+HS,2022,202203,Mar-22,0,0,2,Exports,860,Uzbekistan,,528,Netherlands,,TOTAL,All Commodities,,,,0.0,866336,0
