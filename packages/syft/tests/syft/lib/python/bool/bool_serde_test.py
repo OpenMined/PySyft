@@ -10,7 +10,6 @@ def test_serde() -> None:
     deserialized = sy.deserialize(serialized, from_bytes=True)
 
     assert isinstance(deserialized, Bool)
-    assert deserialized.id == syft_bool.id
     assert deserialized == syft_bool
 
 
@@ -23,3 +22,10 @@ def test_send(client: sy.VirtualMachineClient) -> None:
     # Check that we can get back the object
     res = ptr.get()
     assert res == syft_bool
+
+
+def test_bool_bytes() -> None:
+    # Testing if multiple serialization of the similar object results in same bytes
+    value_1 = Bool(True)
+    value_2 = Bool(True)
+    assert sy.serialize(value_1, to_bytes=True) == sy.serialize(value_2, to_bytes=True)

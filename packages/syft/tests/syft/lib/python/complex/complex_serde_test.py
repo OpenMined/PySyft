@@ -11,7 +11,6 @@ def test_serde() -> None:
     deserialized = sy.deserialize(serialized)
 
     assert isinstance(deserialized, Complex)
-    assert deserialized.id == syft_complex.id
     assert deserialized == syft_complex
 
 
@@ -24,3 +23,10 @@ def test_send(client: sy.VirtualMachineClient) -> None:
     # Check that we can get back the object
     res = ptr.get()
     assert res == syft_complex
+
+
+def test_complex_bytes() -> None:
+    # Testing if multiple serialization of the similar object results in same bytes
+    value_1 = Complex(5, 3)
+    value_2 = Complex(5, 3)
+    assert sy.serialize(value_1, to_bytes=True) == sy.serialize(value_2, to_bytes=True)
