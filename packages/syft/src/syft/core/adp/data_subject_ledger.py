@@ -56,7 +56,10 @@ def convert_constants_to_indices(rdp_constant_array: np.ndarray) -> np.ndarray:
     """
     # Find indices for all RDP constants <= 50
     sub50_mask = rdp_constant_array <= 50
-    sub50_indices = (((rdp_constant_array - 1) * sub50_mask) * 10_000).astype(int)
+    # np.maximum is to avoid negative indices when rdp_constant_array is < 1
+    sub50_indices = np.maximum(
+        ((rdp_constant_array * sub50_mask * 10_000) - 1), 0
+    ).astype(int)
 
     # Find indices for all RDP constants > 50
     gt50_mask = rdp_constant_array > 50
@@ -101,7 +104,7 @@ class RDPParams:
 
 
 def get_unique_data_subjects(data_subjects_query: np.ndarray) -> np.ndarray:
-    # This might look horribly wrong, but .sum() returns all the unique DS ~ Ishan
+    # This might look horribly wrong, but .sum() returns all the unique DS for a DataSubjectArray ~ Ishan
     return sorted(list(data_subjects_query.sum()))
 
 
@@ -191,7 +194,7 @@ def get_budgets_and_mask(
 @serializable(recursive_serde=True)
 class DataSubjectLedger(AbstractDataSubjectLedger):
     """for a particular data subject, this is the list
-    of all mechanisms releasing informationo about this
+    of all mechanisms releasing information about this
     particular subject, stored in a vectorized form"""
 
     __attr_allowlist__ = [
@@ -273,7 +276,6 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         rdp_constants = self._get_batch_rdp_constants(
             entity_ids_query=entity_ids_query, rdp_params=rdp_params, private=private
         )
-        print("rdp constants", rdp_constants)
 
         # here we iteratively attempt to calculate the overbudget mask and save
         # changes to the database
@@ -315,6 +317,31 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
             [self._cache_constant2epsilon, np.array(new_entries)]
         )
 
+    def _fetch_eps_spend_for_big_rdp(
+        self, big_rdp_constant: np.ndarray, indices: np.ndarray
+    ) -> np.ndarray:
+        """
+        We only use this when the RDP constant is large enough that extending the cache would take too long.
+        As of Nov 21, 2022, we decided the cutoff would be the current cache size + 150,000
+        """
+        # There may be a vectorized way of doing this using jnp.take() and cacheable as a boolean mask
+
+        eps_values = []
+        # filter values that are cache-able
+        cacheable = (
+            big_rdp_constant <= 700_050
+        )  # TODO: Replace this with a class variable
+        cacheable = cacheable.flatten()
+        rdp_constants = big_rdp_constant.flatten()
+
+        for is_cacheable, constant, index in zip(cacheable, rdp_constants, indices):
+            if is_cacheable:
+                eps = self._cache_constant2epsilon[index]
+            else:
+                _, eps = self._get_optimal_alpha_for_constant(constant)
+            eps_values.append(eps)
+        return jnp.array(eps_values).reshape(big_rdp_constant.shape)
+
     def _get_fake_rdp_func(self, constant: int) -> Callable:
         def func(alpha: float) -> float:
             return alpha * constant
@@ -349,35 +376,57 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
 
         return results.x, results.fun
 
+    def update_rdp_constants(
+        self, query_constants: jnp.DeviceArray, entity_ids_query: jnp.DeviceArray
+    ) -> None:
+        if self._rdp_constants.size == 0:
+            self._rdp_constants = np.zeros_like(
+                np.asarray(query_constants, query_constants.dtype)
+            )
+
+        self._rdp_constants = first_try_branch(
+            query_constants, self._rdp_constants, entity_ids_query=entity_ids_query
+        )
+        return None
+
     def _get_batch_rdp_constants(
         self, entity_ids_query: jnp.ndarray, rdp_params: RDPParams, private: bool = True
     ) -> jnp.ndarray:
-        constant = compute_rdp_constant(rdp_params, private)
-        if self._rdp_constants.size == 0:
-            self._rdp_constants = np.zeros_like(np.asarray(constant, constant.dtype))
-        # print("constant: ", constant)
-        # print("_rdp_constants: ", self._rdp_constants)
-        # print("entity ids query", entity_ids_query)
-        # print(jnp.max(entity_ids_query))
-        self._rdp_constants = first_try_branch(
-            constant, self._rdp_constants, entity_ids_query
+        query_constants = compute_rdp_constant(rdp_params, private)
+
+        self.update_rdp_constants(
+            query_constants=query_constants, entity_ids_query=entity_ids_query
         )
-        return constant
+        return query_constants
 
     def _get_epsilon_spend(self, rdp_constants: np.ndarray) -> np.ndarray:
-        # rdp_constants_lookup = (rdp_constants - 1).astype(np.int64)
         rdp_constants_lookup = convert_constants_to_indices(rdp_constants)
-        try:
-            # needed as np.int64 to use take
-            eps_spend = jax.jit(jnp.take)(
-                self._cache_constant2epsilon, rdp_constants_lookup
+        if rdp_constants_lookup.max() - len(self._cache_constant2epsilon) >= 150_000:
+            eps_spend = self._fetch_eps_spend_for_big_rdp(
+                rdp_constants, rdp_constants_lookup
             )
-        except IndexError:
-            print(f"Cache missed the value at {max(rdp_constants_lookup)}")
-            self._increase_max_cache(int(max(rdp_constants_lookup) * 1.1))
-            eps_spend = jax.jit(jnp.take)(
-                self._cache_constant2epsilon, rdp_constants_lookup
-            )
+        else:
+            try:
+                # needed as np.int64 to use take
+                eps_spend = jax.jit(jnp.take)(
+                    self._cache_constant2epsilon, rdp_constants_lookup
+                )
+
+                # take no longer wraps which was probably wrong:
+                # https://github.com/google/jax/commit/0b470361dac51fb4f5ab2f720f1cf35e442db005
+                # now we should expect NaN when the max rdp_constants_lookup is higher
+                # than the length of self._cache_constant2epsilon
+                # we could also check the max head of time if its faster than checking the
+                # output for NaNs
+                if jnp.isnan(eps_spend).any():
+                    raise ValueError("NaNs from RDP Lookup, we need to recalculate")
+
+            except (ValueError, IndexError):
+                print(f"Cache missed the value at {max(rdp_constants_lookup)}")
+                self._increase_max_cache(int(max(rdp_constants_lookup) * 1.1))
+                eps_spend = jax.jit(jnp.take)(
+                    self._cache_constant2epsilon, rdp_constants_lookup
+                )
         return eps_spend
 
     def _calculate_mask_for_current_budget(
@@ -393,12 +442,6 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         deduct_epsilon_for_user: Callable,
         rdp_constants: np.ndarray,
     ) -> Tuple[np.ndarray]:
-        """TODO:
-        In our current implementation, user_budget is obtained by querying the
-        Adversarial Accountant's entity2ledger with the Data Scientist's User Key.
-        When we replace the entity2ledger with something else, we could perhaps directly
-        add it into this method
-        """
         epsilon_spend = self._get_epsilon_spend(rdp_constants=rdp_constants)
 
         # try first time
@@ -455,6 +498,14 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         epsilon_spend: float,
         old_user_budget: float,
     ) -> float:
+
+        if epsilon_spend < 0:
+            raise Exception(
+                "Deducting a negative epsilon spend would result in potentially infinite PB. "
+                "Please contact the OpenMined support team."
+                "Thank you, and sorry for the inconvenience!"
+            )
+
         # get the budget
         print("got user budget", old_user_budget, "epsilon_spent", epsilon_spend)
         deduct_epsilon_for_user(
