@@ -145,7 +145,7 @@ def test_object_exists_on_domain(domain: sy.Domain) -> None:
     ptr = x.send(domain_client, id_at_location_override=uid)
     assert ptr.exists
 
-
+@pytest.mark.skip("To Re-enable after merge of https://github.com/OpenMined/PySyft/pull/6719")
 @pytest.mark.asyncio
 def test_create_user() -> None:
     domain = sy.Domain(
