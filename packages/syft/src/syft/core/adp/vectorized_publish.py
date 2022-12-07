@@ -18,6 +18,7 @@ from numpy.typing import ArrayLike
 # relative
 from ...core.node.common.node_manager.user_manager import RefreshBudgetException
 from ...core.tensor.autodp.gamma_tensor_ops import GAMMA_TENSOR_OP
+from ..tensor.config import DEFAULT_INT_NUMPY_TYPE
 from ..tensor.fixed_precision_tensor import FixedPrecisionTensor
 from ..tensor.lazy_repeat_array import lazyrepeatarray
 from ..tensor.passthrough import PassthroughTensor  # type: ignore
@@ -88,6 +89,11 @@ def publish(
         # ATTENTION: we do the same unboxing below with root_child
         # is this still needed to be done twice?
         value = value.child
+
+    # If the published value is a boolean then, first convert it to integer
+    # and then proceed with the publish operation
+    if value.dtype == bool:
+        value = value.astype(DEFAULT_INT_NUMPY_TYPE)
 
     # Step 1: We obtain all the parameters needed to calculate Epsilons
     if isinstance(tensor.min_vals, lazyrepeatarray):

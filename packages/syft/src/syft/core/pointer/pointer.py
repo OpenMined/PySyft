@@ -101,6 +101,7 @@ from ...logger import debug
 from ...logger import error
 from ...logger import warning
 from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
+from ...util import bcolors
 from ..common.pointer import AbstractPointer
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import serializable
@@ -402,6 +403,13 @@ class Pointer(AbstractPointer):
         if not hasattr(self, "PUBLISH_POINTER_TYPE"):
             raise TypeError(
                 f"Publish operation cannot be performed on pointer type: {self.__name__}"
+            )
+
+        public_dtype = str(getattr(self, "public_dtype", ""))
+        if public_dtype in ["bool"]:
+            print(
+                f"{bcolors.warning('Warning:')} Publishing values of `{public_dtype}` "
+                "dtype are not yet fully supported and may result in inconsistent results."
             )
 
         ptr = self.client.lib_ast.query(self.PUBLISH_POINTER_TYPE).pointer_type(  # type: ignore
