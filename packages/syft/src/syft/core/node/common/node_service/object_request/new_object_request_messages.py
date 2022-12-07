@@ -1,24 +1,24 @@
 # stdlib
+from enum import Enum
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
-from enum import Enum
 
 # third party
-from nacl.signing import VerifyKey
 from nacl.encoding import HexEncoder
+from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # relative
-from ...exceptions import InvalidParameterValueError
-from ...exceptions import RequestError
-from .....common.uid import UID
 from .....common.serde.serializable import serializable
+from .....common.uid import UID
 from ....domain_interface import DomainInterface
 from ....domain_msg_registry import DomainMessageRegistry
+from ...exceptions import InvalidParameterValueError
+from ...exceptions import RequestError
 from ...node_table.utils import model_to_json
 from ...permissions.permissions import BasePermission
 from ...permissions.user_permissions import UserCanTriageRequest
@@ -27,14 +27,17 @@ from ..generic_payload.syft_message import ReplyPayload
 from ..generic_payload.syft_message import RequestPayload
 from ..request_receiver.request_receiver_messages import RequestStatus
 
+
 class REQUEST_TYPES(Enum):
     DATA = "data"
     BUDGET = "budget"
+
 
 class REQUEST_STATUS(Enum):
     ACCEPTED = "accepted"
     DENIED = "denied"
     PENDING = "pending"
+
 
 @serializable(recursive_serde=True)
 @final
@@ -201,6 +204,7 @@ class NewUpdateRequestsMessage(SyftMessage, DomainMessageRegistry):
     # Pydantic Inner class to define expected reply payload fields.
     class Reply(ReplyPayload):
         """Payload fields and types used during a GetRequests Response."""
+
         request_id: str
         status: str
 
@@ -217,13 +221,18 @@ class NewUpdateRequestsMessage(SyftMessage, DomainMessageRegistry):
         _req = node.data_requests.first(id=self.payload.request_id)
 
         if not _req:
-            raise RequestError(message=f"Request ID: {self.payload.request_id} not found.")
+            raise RequestError(
+                message=f"Request ID: {self.payload.request_id} not found."
+            )
 
-        if self.payload.status not in [REQUEST_STATUS.ACCEPTED.value, REQUEST_STATUS.DENIED.value]:
+        if self.payload.status not in [
+            REQUEST_STATUS.ACCEPTED.value,
+            REQUEST_STATUS.DENIED.value,
+        ]:
             raise InvalidParameterValueError(
                 message='Request status should be either "accepted" or "denied"'
             )
-        
+
         if self.payload.status == REQUEST_STATUS.ACCEPTED.value:
             # Privacy Budget request
             if _req.request_type == REQUEST_TYPES.BUDGET.value:
@@ -234,12 +243,14 @@ class NewUpdateRequestsMessage(SyftMessage, DomainMessageRegistry):
                 )
             # Data Acess Request
             else:
-                tmp_obj = node.store.get(UID.from_string(_req.object_id), proxy_only=True)
+                tmp_obj = node.store.get(
+                    UID.from_string(_req.object_id), proxy_only=True
+                )
                 tmp_obj.read_permissions[
                     VerifyKey(_req.verify_key.encode("utf-8"), encoder=HexEncoder)
                 ] = _req.id
                 node.store[UID.from_string(_req.object_id)] = tmp_obj
-            
+
             # this should be an enum not a string
             node.data_requests.set(request_id=_req.id, status=self.payload.status)  # type: ignore
         # Denied
@@ -247,7 +258,9 @@ class NewUpdateRequestsMessage(SyftMessage, DomainMessageRegistry):
             # this should be an enum not a string
             node.data_requests.set(request_id=_req.id, status=REQUEST_STATUS.DENIED.value)  # type: ignore
 
-        return NewUpdateRequestsMessage.Reply(request_id=_req.id, status=self.payload.status)
+        return NewUpdateRequestsMessage.Reply(
+            request_id=_req.id, status=self.payload.status
+        )
 
     def get_permissions(self) -> List[Type[BasePermission]]:
         """Returns the list of permission classes."""
