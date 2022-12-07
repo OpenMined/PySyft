@@ -95,7 +95,7 @@ class RDPParams:
     l2_norms: jnp.array
     l2_norm_bounds: jnp.array
     Ls: jnp.array
-    coeffs: jnp.array
+    # coeffs: jnp.array
 
     def __repr__(self) -> str:
         res = "RDPParams:"
