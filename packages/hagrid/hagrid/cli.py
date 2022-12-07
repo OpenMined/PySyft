@@ -3419,8 +3419,7 @@ def add_intro_notebook(directory: str, reset: bool = False) -> str:
 @click.command(help="Walk the Path")
 @click.option(
     "--repo",
-    default=DEFAULT_REPO,
-    help="Choose a repo to fetch the notebook from or just use OpenMined/PySyft",
+    help="Obi-Wan will guide you to Dagobah",
 )
 @click.option(
     "--branch",
@@ -3432,11 +3431,12 @@ def add_intro_notebook(directory: str, reset: bool = False) -> str:
     help="Choose a specific commit to fetch the notebook from",
 )
 def dagobah(
-    repo: str = DEFAULT_REPO,
+    repo: str,
     branch: str = DEFAULT_BRANCH,
     commit: Optional[str] = None,
 ) -> None:
-    return run_quickstart(url="padawan", repo=repo, branch=branch, commit=commit)
+    raise Exception("Obi-Wan will guide you to Dagobah")
+    # return run_quickstart(url="padawan", repo=repo, branch=branch, commit=commit)
 
 
 cli.add_command(dagobah)
