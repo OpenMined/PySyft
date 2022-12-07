@@ -16,7 +16,7 @@ from ..types import SyPrimitiveRet
 from ..util import upcast
 
 
-class OrderedDict(PyOrderedDict, PyPrimitive):
+class SyOrderedDict(PyOrderedDict, PyPrimitive):
     def __init__(self, *args: Any, **kwds: Any):
         super().__init__(*args, **kwds)
 
