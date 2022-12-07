@@ -11,11 +11,9 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import pandas as pd
 
-# syft absolute
-import syft as sy
-
 # relative
 from ....grid import GridURL
+from ....lib import create_lib_ast
 from ....logger import critical
 from ....logger import debug
 from ....logger import error
@@ -27,12 +25,15 @@ from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedImmediateSyftMessageWithoutReply
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
+from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
+from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.route import Route
-from ...pointer.garbage_collection import GarbageCollection
-from ...pointer.garbage_collection import gc_get_default_strategy
+
+# from ...pointer.garbage_collection import GarbageCollection
+# from ...pointer.garbage_collection import gc_get_default_strategy
 from ...pointer.pointer import Pointer
 from ..abstract.node import AbstractNodeClient
 from ..common.client_manager.node_networking_api import NodeNetworkingAPI
@@ -78,9 +79,10 @@ class Client(AbstractNodeClient):
 
         self.routes = routes
         self.default_route_index = 0
+        self.processing_pointers: Dict[UID, bool] = {}
 
-        gc_strategy_name = gc_get_default_strategy()
-        self.gc = GarbageCollection(gc_strategy_name)
+        # gc_strategy_name = gc_get_default_strategy()
+        # self.gc = GarbageCollection(gc_strategy_name)
 
         # create a signing key if one isn't provided
         if signing_key is None:
@@ -124,7 +126,7 @@ class Client(AbstractNodeClient):
         return icon
 
     def install_supported_frameworks(self) -> None:
-        self.lib_ast = sy.lib.create_lib_ast(client=self)
+        self.lib_ast = create_lib_ast(client=self)
 
         # first time we want to register for future updates
         self.lib_ast.register_updates(self)
@@ -215,13 +217,17 @@ class Client(AbstractNodeClient):
         timeout: Optional[float] = None,
         return_signed: bool = False,
         route_index: int = 0,
+        verbose: bool = False,
     ) -> Union[SyftMessage, SignedMessage]:
 
         # relative
         from .node_service.simple.simple_messages import NodeRunnableMessageWithReply
+        from .node_service.tff.tff_messages import TFFMessageWithReply
 
         # TEMPORARY: if message is instance of NodeRunnableMessageWithReply then we need to wrap it in a SimpleMessage
-        if isinstance(msg, NodeRunnableMessageWithReply):
+        if isinstance(msg, NodeRunnableMessageWithReply) or isinstance(
+            msg, TFFMessageWithReply
+        ):
             msg = msg.prepare(address=self.address, reply_to=self.address)
 
         route_index = route_index or self.default_route_index
@@ -244,7 +250,7 @@ class Client(AbstractNodeClient):
                 exception_msg = response.message
                 exception = exception_msg.exception_type(exception_msg.exception_msg)
                 error(str(exception))
-                traceback_and_raise(exception)
+                traceback_and_raise(exception, verbose=verbose)
             else:
                 if return_signed:
                     return response
@@ -486,3 +492,4 @@ class StoreClient:
 
     def _repr_html_(self) -> str:
         return self.pandas._repr_html_()
+    
