@@ -1,21 +1,16 @@
 # syft absolute
 import syft as sy
 from syft.lib.python.tuple import Tuple
-from syft.proto.lib.python.tuple_pb2 import Tuple as Tuple_PB
 
 
 def test_tuple_serde() -> None:
     syft_tuple = Tuple((1, 2))
-
-    serialized = syft_tuple._object2proto()
-
-    assert isinstance(serialized, Tuple_PB)
-
-    deserialized = Tuple._proto2object(proto=serialized)
+    
+    serialized = sy.serialize(syft_tuple, to_bytes=True)
+    deserialized = sy.deserialize(serialized, from_bytes=True)
 
     assert isinstance(deserialized, Tuple)
-    for deserialized_el, original_el in zip(deserialized, syft_tuple):
-        assert deserialized_el == original_el
+    assert deserialized == syft_tuple
 
 
 def test_tuple_send(client: sy.VirtualMachineClient) -> None:
