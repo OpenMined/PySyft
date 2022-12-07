@@ -5,12 +5,17 @@ from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
+from enum import Enum
 
 # third party
 from nacl.signing import VerifyKey
+from nacl.encoding import HexEncoder
 from typing_extensions import final
 
 # relative
+from ...exceptions import InvalidParameterValueError
+from ...exceptions import RequestError
+from .....common.uid import UID
 from .....common.serde.serializable import serializable
 from ....domain_interface import DomainInterface
 from ....domain_msg_registry import DomainMessageRegistry
@@ -22,6 +27,14 @@ from ..generic_payload.syft_message import ReplyPayload
 from ..generic_payload.syft_message import RequestPayload
 from ..request_receiver.request_receiver_messages import RequestStatus
 
+class REQUEST_TYPES(Enum):
+    DATA = "data"
+    BUDGET = "budget"
+
+class REQUEST_STATUS(Enum):
+    ACCEPTED = "accepted"
+    DENIED = "denied"
+    PENDING = "pending"
 
 @serializable(recursive_serde=True)
 @final
@@ -107,7 +120,7 @@ class NewGetDataRequestsMessage(SyftMessage, DomainMessageRegistry):
     def run(  # type: ignore
         self, node: DomainInterface, verify_key: Optional[VerifyKey] = None
     ) -> ReplyPayload:  # type: ignore
-        requests = node.data_requests.query(request_type="data")
+        requests = node.data_requests.query(request_type=REQUEST_TYPES.DATA.value)
         response = list()
         for request in requests:
             # Get current state user
@@ -115,7 +128,7 @@ class NewGetDataRequestsMessage(SyftMessage, DomainMessageRegistry):
                 _user = node.users.first(id=request.user_id)
                 user = model_to_json(_user)
                 user["role"] = node.roles.first(id=_user.role).name
-                user["current_budget"] = user["budget"]
+                user["current_budget"] = user[REQUEST_TYPES.BUDGET.value]
             # Get History state user
             else:
                 user = node.data_requests.get_user_info(request_id=request.id)
@@ -153,14 +166,14 @@ class NewGetBudgetRequestsMessage(SyftMessage, DomainMessageRegistry):
         self, node: DomainInterface, verify_key: Optional[VerifyKey] = None
     ) -> ReplyPayload:  # type: ignore
         response = list()
-        requests = node.data_requests.query(request_type="budget")
+        requests = node.data_requests.query(request_type=REQUEST_TYPES.BUDGET.value)
         for request in requests:
             # Get current state user
             if node.data_requests.status(request.id) == RequestStatus.Pending:
                 _user = node.users.first(id=request.user_id)
                 user = model_to_json(_user)
                 user["role"] = node.roles.first(id=_user.role).name
-                user["current_budget"] = user["budget"]
+                user["current_budget"] = user[REQUEST_TYPES.BUDGET.value]
                 request = model_to_json(request)
             # Get History state user
             else:
@@ -188,8 +201,8 @@ class NewUpdateRequestsMessage(SyftMessage, DomainMessageRegistry):
     # Pydantic Inner class to define expected reply payload fields.
     class Reply(ReplyPayload):
         """Payload fields and types used during a GetRequests Response."""
-
-        requests: List[Dict[str, Any]] = []
+        request_id: str
+        status: str
 
     request_payload_type = (
         Request  # Converts generic syft dict into a CreateUserMessage.Request object.
@@ -201,22 +214,40 @@ class NewUpdateRequestsMessage(SyftMessage, DomainMessageRegistry):
     def run(  # type: ignore
         self, node: DomainInterface, verify_key: Optional[VerifyKey] = None
     ) -> ReplyPayload:  # type: ignore
-        response = list()
-        requests = node.data_requests.query(request_type="budget")
-        for request in requests:
-            # Get current state user
-            if node.data_requests.status(request.id) == RequestStatus.Pending:
-                _user = node.users.first(id=request.user_id)
-                user = model_to_json(_user)
-                user["role"] = node.roles.first(id=_user.role).name
-                user["current_budget"] = user["budget"]
-                request = model_to_json(request)
-            # Get History state user
+        _req = node.data_requests.first(id=self.payload.request_id)
+
+        if not _req:
+            raise RequestError(message=f"Request ID: {self.payload.request_id} not found.")
+
+        if self.payload.status not in [REQUEST_STATUS.ACCEPTED.value, REQUEST_STATUS.DENIED.value]:
+            raise InvalidParameterValueError(
+                message='Request status should be either "accepted" or "denied"'
+            )
+        
+        if self.payload.status == REQUEST_STATUS.ACCEPTED.value:
+            # Privacy Budget request
+            if _req.request_type == REQUEST_TYPES.BUDGET.value:
+                current_user = node.users.first(verify_key=_req.verify_key)
+                node.users.set(
+                    user_id=current_user.id,
+                    budget=current_user.budget + _req.requested_budget,
+                )
+            # Data Acess Request
             else:
-                user = node.data_requests.get_user_info(request_id=request.id)
-                request = node.data_requests.get_req_info(request_id=request.id)
-            response.append({"user": user, "req": request})
-        return NewGetBudgetRequestsMessage.Reply(requests=response)
+                tmp_obj = node.store.get(UID.from_string(_req.object_id), proxy_only=True)
+                tmp_obj.read_permissions[
+                    VerifyKey(_req.verify_key.encode("utf-8"), encoder=HexEncoder)
+                ] = _req.id
+                node.store[UID.from_string(_req.object_id)] = tmp_obj
+            
+            # this should be an enum not a string
+            node.data_requests.set(request_id=_req.id, status=self.payload.status)  # type: ignore
+        # Denied
+        else:
+            # this should be an enum not a string
+            node.data_requests.set(request_id=_req.id, status=REQUEST_STATUS.DENIED.value)  # type: ignore
+
+        return NewUpdateRequestsMessage.Reply(request_id=_req.id, status=self.payload.status)
 
     def get_permissions(self) -> List[Type[BasePermission]]:
         """Returns the list of permission classes."""
