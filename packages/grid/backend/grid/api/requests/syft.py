@@ -3,16 +3,16 @@ from typing import List
 
 # syft absolute
 from syft.core.node.common.node_service.object_request.new_object_request_messages import (
-    NewGetRequestMessage,
-)
-from syft.core.node.common.node_service.object_request.new_object_request_messages import (
-    NewUpdateRequestsMessage,
-)
-from syft.core.node.common.node_service.object_request.new_object_request_messages import (
     NewGetBudgetRequestsMessage,
 )
 from syft.core.node.common.node_service.object_request.new_object_request_messages import (
     NewGetDataRequestsMessage,
+)
+from syft.core.node.common.node_service.object_request.new_object_request_messages import (
+    NewGetRequestMessage,
+)
+from syft.core.node.common.node_service.object_request.new_object_request_messages import (
+    NewUpdateRequestsMessage,
 )
 
 # grid absolute
@@ -27,7 +27,8 @@ from .models import RequestUpdate
 
 def get_all_requests(current_user: UserPrivate) -> List[Request]:
     reply = send_message_with_reply(
-        signing_key=current_user.get_signing_key(), message_type=NewGetDataRequestsMessage
+        signing_key=current_user.get_signing_key(),
+        message_type=NewGetDataRequestsMessage,
     )
     return reply.requests  # upcast?
 
