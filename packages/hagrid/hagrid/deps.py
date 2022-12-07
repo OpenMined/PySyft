@@ -77,7 +77,10 @@ WARNING_MSG = f"\033[0;33mWARNING:{NO_COLOR}"
 
 
 def get_version_string() -> str:
-    return str(__version__) + "-dev" if EDITABLE_MODE else ""
+    version = str(__version__)
+    if EDITABLE_MODE:
+        version += "-dev"
+    return version
 
 
 @dataclass
