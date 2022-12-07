@@ -255,7 +255,7 @@ class DeleteUserMessage(SyftMessage, DomainMessageRegistry):
 
     def get_permissions(self) -> List[Union[Type[BasePermission], UnaryOperation]]:
         """Returns the list of permission classes applicable to this message."""
-        return [UserCanCreateUsers, ~UserIsOwner]
+        return [UserIsOwner]
 
 
 @serializable(recursive_serde=True)
@@ -306,11 +306,12 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
             or self.payload.name
             or self.payload.institution
             or self.payload.website
+            or self.payload.budget
         )
 
         if not _valid_parameters:
             raise MissingRequestKeyError(
-                "Missing json fields ( email,password,role,groups, name )"
+                "Missing json fields (email, password, role, groups, name or budget)"
             )
 
         if not node.users.contain(id_int=self.payload.user_id):

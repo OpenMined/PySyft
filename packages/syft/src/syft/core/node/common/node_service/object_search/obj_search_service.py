@@ -143,3 +143,4 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
     @staticmethod
     def message_handler_types() -> List[Type[ObjectSearchMessage]]:
         return [ObjectSearchMessage]
+

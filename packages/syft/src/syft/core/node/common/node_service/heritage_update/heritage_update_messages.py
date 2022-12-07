@@ -20,3 +20,4 @@ class HeritageUpdateMessage(ImmediateSyftMessageWithoutReply):
     ):
         super().__init__(address=address, msg_id=msg_id)
         self.new_ancestry_address = new_ancestry_address
+

@@ -22,3 +22,4 @@ class RegisterChildNodeMessage(ImmediateSyftMessageWithoutReply):
         super().__init__(address=address, msg_id=msg_id)
         self.lookup_id = lookup_id
         self.child_node_client_address = child_node_client_address
+    
