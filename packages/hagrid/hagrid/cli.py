@@ -1875,7 +1875,7 @@ def create_launch_docker_cmd(
         pass
 
     final_commands = {}
-    final_commands["Pulling"] = pull_command(cmd, kwargs)
+    # final_commands["Pulling"] = pull_command(cmd, kwargs)
 
     cmd += " --file docker-compose.yml"
     if "tls" in kwargs and kwargs["tls"] is True:
