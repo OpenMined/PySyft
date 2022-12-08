@@ -10,26 +10,26 @@ __version__ = "0.2.114"
 DATA_FILES = {"img": ["hagrid/img/*.png"], "hagrid": ["*.yml"]}
 
 packages = [
-    "ascii_magic==1.6",
-    "click==8.1.3",
-    "cryptography==38.0.4",
-    "gitpython==3.1.29",
-    "jinja2==3.1.2",
-    "names==0.3.0",
-    "packaging==22.0",
-    "paramiko==2.12.0",
-    "pyOpenSSL==22.1.0",
-    "requests==2.28.1",
-    "rich==11.1.0",
-    "setuptools==65.6.3",
-    "virtualenv-api==2.1.18",
-    "virtualenv==20.17.1",
-    "PyYAML==6.0",
-    "tqdm==4.64.1",
+    "ascii_magic",
+    "click",
+    "cryptography>=37.0.2",
+    "gitpython",
+    "jinja2",
+    "names",
+    "packaging>=21.3",
+    "paramiko",
+    "pyOpenSSL>=22.0.0",
+    "requests",
+    "rich",
+    "setuptools",
+    "virtualenv-api",
+    "virtualenv",
+    "PyYAML",
+    "tqdm",
 ]
 
 if platform.system().lower() != "windows":
-    packages.extend(["ansible==7.1.0", "ansible-core==2.14.1"])
+    packages.extend(["ansible", "ansible-core"])
 
 # Pillow binary wheels for Apple Silicon on Python 3.8 don't seem to work well
 # try using Python 3.9+ for HAGrid on Apple Silicon
