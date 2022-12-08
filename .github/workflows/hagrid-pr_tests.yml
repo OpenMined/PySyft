@@ -65,7 +65,8 @@ jobs:
       - name: Install Dependencies
         if: steps.changes.outputs.hagrid == 'true'
         run: |
-          pip install --upgrade bandit safety setuptools wheel twine tox
+          pip install --upgrade bandit safety setuptools wheel twine
+          pip install tox==3.27.1
           pip install -e .
 
       - name: Scan for security issues python 3.8+
