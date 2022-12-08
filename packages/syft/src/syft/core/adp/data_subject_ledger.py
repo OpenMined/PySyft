@@ -113,13 +113,12 @@ def get_unique_data_subjects(data_subjects_query: np.ndarray) -> np.ndarray:
     return sorted(list(data_subjects_query.sum()))
 
 
-def convert_dsa_to_index_array(
+def map_dsa_to_rdp_constants(
     data_subject_array: np.ndarray,
     rdp_constants: Dict[str, np.ndarray],
-    constant: np.ndarray,
+    query_constants: np.ndarray,
 ) -> Dict[str, np.ndarray]:
     """Convert data subject array to data subject index array."""
-
     unique_data_subjects = get_unique_data_subjects(data_subject_array)
 
     for data_subject_name in unique_data_subjects:
@@ -127,45 +126,12 @@ def convert_dsa_to_index_array(
         data_subject = DataSubjectArray([data_subject_name])
         ds_mask = np.isin(data_subject_array, data_subject)
 
-        ds_constant_mask = np.array(max(ds_mask * constant), copy=False)
+        ds_constant_mask = np.array(max(ds_mask * query_constants), copy=False)
         rdp_constants[data_subject_name] = (
             rdp_constants.get(data_subject_name, 0) + ds_constant_mask
         )
 
     return rdp_constants
-
-
-# @partial(jax.jit, static_argnums=3, donate_argnums=(1, 2))
-def first_try_branch(
-    constant: jax.numpy.DeviceArray,
-    rdp_constants: Dict[str, np.ndarray],
-    entity_ids_query: np.ndarray,
-) -> jax.numpy.DeviceArray:
-
-    """
-    if max_entity < len(rdp_constants):
-        # Take only the constants values where current data subject is present
-        summed_constant = constant.take(input_entities_indexes) + rdp_constants.take(
-            input_entities_indexes
-        )
-        print("Summed constant: ", summed_constant)
-        # Set rpd constants for given data subjects
-        rdp_constants[input_entities_indexes] = summed_constant
-    else:
-        pad_length = max_entity - len(rdp_constants) + 1
-        rdp_constants = jnp.concatenate([rdp_constants, jnp.zeros(shape=pad_length)])
-
-        # Take only the constants values where current data subject is present
-        summed_constant = constant.take(input_entities_indexes) + rdp_constants.take(
-            input_entities_indexes
-        )
-
-        # Set rpd constants for given data subjects
-        # jax.interpreters.xla._DeviceArray does not support item assignment
-        rdp_constants = rdp_constants.at[input_entities_indexes].set(summed_constant)
-    """
-
-    return convert_dsa_to_index_array(entity_ids_query, rdp_constants, constant)
 
 
 @partial(jax.jit, static_argnums=1)
@@ -375,8 +341,10 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
     def update_rdp_constants(
         self, query_constants: jnp.DeviceArray, entity_ids_query: jnp.DeviceArray
     ) -> None:
-        self._rdp_constants = first_try_branch(
-            query_constants, self._rdp_constants, entity_ids_query=entity_ids_query
+        self._rdp_constants = map_dsa_to_rdp_constants(
+            query_constants=query_constants,
+            rdp_constants=self._rdp_constants,
+            data_subject_array=entity_ids_query,
         )
         return None
 
