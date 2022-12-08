@@ -19,15 +19,6 @@ from .gamma_tensor_ops import GAMMA_TENSOR_OP
 
 
 def generate_ops() -> Dict[GAMMA_TENSOR_OP, Callable]:
-    # third party
-    from numpy.typing import ArrayLike
-
-    # relative
-    from . import gamma_tensor as GT
-    from ..passthrough import AcceptableSimpleType  # type: ignore
-
-    JaxableType = Union[GT.GammaTensor, ArrayLike, AcceptableSimpleType]
-
     def reconstruct_from_inputs(values: ValuesView[JaxableType]) -> List[JaxableType]:
         return [i.reconstruct() if isinstance(i, GT.GammaTensor) else i for i in values]
 
@@ -38,22 +29,6 @@ def generate_ops() -> Dict[GAMMA_TENSOR_OP, Callable]:
         return wrapped_jnp
 
     VALID_FLATTEN_TYPES = ["C", "F", "A", "K"]
-
-    def get_flatten_type(order: str) -> Callable:
-        if order.upper() not in VALID_FLATTEN_TYPES:
-            raise Exception(f"Invalid flatten order. {order}")
-
-        def flatten_op(value: JaxableType) -> Callable:
-            # TODO: figure out why JAX jnp.ndarray.flatten does nothing?
-            # perhaps replace with jnp.ravel
-            return np.array(value).flatten(order=order)
-
-        return flatten_op
-
-    # given an infix operation with left and right
-    # return a wrapper function which swaps the inputs before calling the original op
-    # l_infix_op(100, 1) = 100 / 1
-    # r_infix_op(100, 1) = 1 / 100
     def make_r_infix_op(l_infix_op: Callable) -> Callable:
         def r_infix_op(left: Any, right: Any) -> Any:
             return l_infix_op(right, left)

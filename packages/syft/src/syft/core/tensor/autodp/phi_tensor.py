@@ -59,7 +59,6 @@ from ..smpc import utils
 from ..smpc.mpc_tensor import MPCTensor
 from ..smpc.utils import TYPE_TO_RING_SIZE
 from ..util import implements
-from .adp_tensor import ADPTensor
 from .gamma_tensor import GammaTensor
 from .gamma_tensor import TensorWrappedGammaTensorPointer
 
@@ -1589,6 +1588,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
         """
         return self._apply_self_tensor_op("choose", *args, **kwargs)
 
+
     @property
     def T(self) -> TensorWrappedPhiTensorPointer:
         # We always maintain a Tensor hierarchy Tensor ---> PT--> Actual Data
@@ -1729,7 +1729,7 @@ def ones_like(
 
 
 @serializable(capnp_bytes=True)
-class PhiTensor(PassthroughTensor, ADPTensor):
+class PhiTensor(PassthroughTensor):
     PointerClassOverride = TensorWrappedPhiTensorPointer
     # __attr_allowlist__ = ["child", "min_vals", "max_vals", "data_subjects"]
     __slots__ = (
@@ -1765,6 +1765,11 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 f"DataSubjects shape: {numpy_data_subjects.shape} should match data shape: {self.shape}"
             )
 
+        self.id = str(UID())
+
+    def reconstruct(self, state):
+        return state[self.id]
+
     @property
     def proxy_public_kwargs(self) -> Dict[str, Any]:
         return {
@@ -1772,27 +1777,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             "max_vals": self.max_vals,
             "data_subjects": self.data_subjects,
         }
-
-    # def init_pointer(
-    #     self,
-    #     client: Any,
-    #     id_at_location: Optional[UID] = None,
-    #     object_type: str = "",
-    #     tags: Optional[List[str]] = None,
-    #     description: str = "",
-    # ) -> TensorWrappedPhiTensorPointer:
-    #     return TensorWrappedPhiTensorPointer(
-    #         # Arguments specifically for SEPhiTensor
-    #         data_subjects=self.data_subjects,
-    #         min_vals=self.min_vals,
-    #         max_vals=self.max_vals,
-    #         # Arguments required for a Pointer to work
-    #         client=client,
-    #         id_at_location=id_at_location,
-    #         object_type=object_type,
-    #         tags=tags,
-    #         description=description,
-    #     )
 
     @property
     def gamma(self) -> GammaTensor:

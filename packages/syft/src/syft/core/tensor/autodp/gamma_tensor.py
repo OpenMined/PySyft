@@ -466,7 +466,7 @@ class TensorWrappedGammaTensorPointer(Pointer):
         """Apply the "add" operation between "self" and "other"
 
         Args:
-            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+            (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
 
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
@@ -1910,7 +1910,6 @@ class GammaTensor:
 
 
 
-
     """
 
     PointerClassOverride = TensorWrappedGammaTensorPointer
@@ -2050,7 +2049,7 @@ class GammaTensor:
             data_subjects=output_ds,
             min_vals=min_val,
             max_vals=max_val,
-            func_str=GAMMA_TENSOR_OP.ADD.value,
+            func=lambda state: jnp.add(self.reconstruct(state), other.reconstruct(state)),
             sources=output_state,
         )
 
@@ -4578,17 +4577,10 @@ class GammaTensor:
     def shape(self) -> Tuple[int, ...]:
         return self.child.shape
 
-    # @property
-    def lipschitz_bound(self, data_subject) -> float:
-        # TODO: Check if there are any functions for which lipschitz bounds shouldn't be computed
-        # if dis(self.func) == dis(no_op):
-        #     raise Exception
-
-        print("Starting JAX JIT")
-        # relative
+    @property
+    def lipschitz_bound(self) -> float:
         from .gamma_functions import GAMMA_FUNC_MAPPER
 
-        # TODO: this must be composed out of the whole computation tree
         fn = jax.jit(GAMMA_FUNC_MAPPER[GAMMA_TENSOR_OP(self.func_str)])#(dummy_gamma)
         print("Traced self.func with jax's jit, now calculating gradient")
         grad_fn = jax.grad(fn)
