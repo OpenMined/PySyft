@@ -202,6 +202,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         "_update_number",
         "_timestamp_of_last_update",
     ]
+
     CONSTANT2EPSILSON_CACHE_FILENAME = "constant2epsilon_1200k.npy"
     _cache_constant2epsilon = load_cache(filename=CONSTANT2EPSILSON_CACHE_FILENAME)
 
@@ -384,8 +385,11 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
                 np.asarray(query_constants, query_constants.dtype)
             )
 
-        self._rdp_constants = first_try_branch(
-            query_constants, self._rdp_constants, entity_ids_query=entity_ids_query
+        self._rdp_constants = np.array(
+            first_try_branch(
+                query_constants, self._rdp_constants, entity_ids_query=entity_ids_query
+            ),
+            copy=False,
         )
         return None
 
