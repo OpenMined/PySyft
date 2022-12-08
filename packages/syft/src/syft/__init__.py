@@ -85,6 +85,8 @@ from .lib import load  # noqa: F401
 from .lib import load_lib  # noqa: F401
 from .registry import NetworkRegistry  # noqa: F401
 from .telemetry import instrument  # noqa: F401
+from .user_settings import UserSettings  # noqa: F401
+from .user_settings import settings  # noqa: F401
 
 sys.path.append(str(Path(__file__)))
 
@@ -114,3 +116,8 @@ def module_property(func: Any) -> None:
 @module_property
 def _networks() -> NetworkRegistry:
     return NetworkRegistry()
+
+
+@module_property
+def _settings() -> UserSettings:
+    return settings
