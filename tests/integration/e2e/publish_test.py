@@ -4,59 +4,73 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
 
 DOMAIN1_PORT = 9082
 
 
-def highest() -> int:
-    ii64 = np.iinfo(DEFAULT_INT_NUMPY_TYPE)
-    return ii64.max
-
-
-# TODO: this is only the basic flow, we need to identify a way to test
-# flows that are happening on the worker container
 @pytest.mark.e2e
-def test_publish():
+def test_publish_with_bool_type_values(capfd) -> None:
+
+    data_scientist = {
+        "name": "Joker",
+        "email": "joker@ace.com",
+        "password": "iknowbatman",
+        "budget": 10000,
+    }
 
     domain_client = sy.login(
         email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
     )
 
-    fred_nums = np.array([25, 35, 21, 19, 40, 55, 31, 18, 27, 33])
-    velma_nums = np.array([8, 11, 10, 50, 44, 32, 55, 29, 6, 1])
-    assert len(fred_nums) == len(velma_nums)
-    fred_tensor = sy.Tensor(fred_nums).private(
-        min_val=0, max_val=122, data_subjects="fred"
-    )
-    velma_tensor = sy.Tensor(velma_nums).private(
-        min_val=0, max_val=122, data_subjects="velma"
+    data_shape = (10000,)
+    data1 = np.random.randint(1, 1000, data_shape)
+
+    dataset1 = sy.Tensor(data1).annotate_with_dp_metadata(
+        -1, 10000, data_subjects="Jim"
     )
 
-    domain_client.create_user(
-        name="Scooby",
-        email="scooby@doo.org",
-        password="snacks",
-        budget=0,
+    data1_ptr = dataset1.send(domain_client)
+
+    domain_client.create_user(**data_scientist)
+
+    ds_client = sy.login(
+        email=data_scientist["email"],
+        password=data_scientist["password"],
+        port=DOMAIN1_PORT,
     )
 
-    domain_client.load_dataset(
-        assets={"fred_nums": fred_tensor},
-        name="Fred's Data",
-        description="This is Fred's private Data",
-    )
+    data1_ptr_ds = ds_client.store[data1_ptr.id_at_location]
 
-    domain_client.load_dataset(
-        assets={"velma_nums": velma_tensor},
-        name="Velma's Data",
-        description="This is Velma's private Data",
-    )
+    data_val_gt_100 = data1_ptr_ds > 100
 
-    ds_client = sy.login(email="scooby@doo.org", password="snacks", port=DOMAIN1_PORT)
+    assert data_val_gt_100.public_dtype == bool
+    assert data_val_gt_100.public_shape == data_shape
 
-    fred_nums_ptr = ds_client.datasets[0]["fred_nums"]
-    velma_nums_ptr = ds_client.datasets[1]["velma_nums"]
-    comb_ptr = fred_nums_ptr + velma_nums_ptr
-    op1 = comb_ptr * 2
-    op2 = op1.sum()
-    op2.publish(sigma=1.5)
+    mean_val = data1_ptr_ds.mean(keepdims=True)
+
+    mean_gt_than_zero = mean_val > 0
+
+    assert mean_gt_than_zero.public_dtype == bool
+    assert mean_gt_than_zero.public_shape == (1,)
+
+    # setting low sigma because True/False values are either 0 or 1.
+    public_val = mean_gt_than_zero.publish(sigma=0.5)
+    out, _ = capfd.readouterr()
+
+    assert "WARNING" in out and "bool" in out
+    TEST_TIMEOUT_SECS = 10
+
+    result = None
+
+    try:
+        # reset the pointer and processing flag
+        result = public_val.get(timeout_secs=TEST_TIMEOUT_SECS)
+    except Exception:
+        pass
+
+    assert public_val.exists
+    assert result is not None
+
+    # even though the published val is bool, the result is float cause
+    # of noise addition. We don't convert back to bool intentionally.
+    assert result.dtype == float

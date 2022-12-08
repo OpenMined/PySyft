@@ -28,6 +28,7 @@ jobs:
   call-stack-integration_tests:
     if: github.repository == 'OpenMined/PySyft' # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/stack-integration_tests.yml@dev
+    secrets: inherit
 
   call-syft-merge_torch_tests:
     if: github.repository == 'OpenMined/PySyft' # don't run on forks
@@ -53,6 +54,7 @@ jobs:
   call-stack-integration-public_tests:
     if: github.repository == 'OpenMined/PySyft' # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/stack-integration-public_tests.yml@dev
+    secrets: inherit
 
   stack-integration-tests-arm64:
     strategy:

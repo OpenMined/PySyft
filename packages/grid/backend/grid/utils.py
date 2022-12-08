@@ -26,7 +26,7 @@ def send_message_with_reply(
         address = node.address
     if not reply_to:
         reply_to = node.address
-    # if flags.USE_NEW_SERVICE:
+
     msg = message_type(address=address, reply_to=reply_to, kwargs=content).sign(
         signing_key=signing_key
     )

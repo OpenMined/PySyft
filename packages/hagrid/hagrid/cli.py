@@ -389,10 +389,10 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
                 port = match_port.group().replace("HTTP_PORT=", "")
                 check_status("localhost" + ":" + port)
 
-            node_name = verb.get_named_term_type(name="node_name").raw_input
+            node_name = verb.get_named_term_type(name="node_name").snake_input
             rich.get_console().print(
                 rich.panel.Panel.fit(
-                    f"🚨🚨🚨 To view container logs run [bold red] hagrid logs {node_name} [/bold red]\t"
+                    f"✨ To view container logs run [bold green]hagrid logs {node_name}[/bold green]\t"
                 )
             )
 
@@ -1641,13 +1641,11 @@ def pull_command(cmd: str, kwargs: TypeDict[str, Any]) -> TypeList[str]:
 def build_command(cmd: str) -> TypeList[str]:
     build_cmd = str(cmd)
     build_cmd += " --file docker-compose.build.yml"
-    build_cmd += " --file docker-compose.dev.yml"
     build_cmd += " build"
     return [build_cmd]
 
 
 def deploy_command(cmd: str, tail: bool, release_type: str) -> TypeList[str]:
-
     up_cmd = str(cmd)
     up_cmd += " --file docker-compose.dev.yml" if release_type == "development" else ""
     up_cmd += " up"
@@ -1746,6 +1744,7 @@ def create_launch_docker_cmd(
         "VERSION": version_string,
         "VERSION_HASH": version_hash,
         "USE_BLOB_STORAGE": use_blob_storage,
+        "FRONTEND_TARGET": "grid-ui-production",
         "STACK_API_KEY": str(
             generate_sec_random_password(length=48, special_chars=False)
         ),
@@ -1770,6 +1769,10 @@ def create_launch_docker_cmd(
 
     if kwargs.get("release", "") == "development":
         envs["RABBITMQ_MANAGEMENT"] = "-management"
+
+    # currently we only have a domain frontend for dev mode
+    if kwargs.get("release", "") == "development" and str(node_type.input) != "network":
+        envs["FRONTEND_TARGET"] = "grid-ui-development"
 
     if "release" in kwargs:
         envs["RELEASE"] = kwargs["release"]
@@ -1796,11 +1799,12 @@ def create_launch_docker_cmd(
 
     if str(node_type.input) == "network":
         cmd += " --profile network"
-    else:
+
+    if str_to_bool(use_blob_storage):
         cmd += " --profile blob-storage"
 
-    # network frontend disabled
-    if str(node_type.input) != "network" and kwargs["headless"] is False:
+    # no frontend container so expect bad gateway on the / route
+    if kwargs["headless"] is False:
         cmd += " --profile frontend"
 
     # new docker compose regression work around
@@ -3415,8 +3419,7 @@ def add_intro_notebook(directory: str, reset: bool = False) -> str:
 @click.command(help="Walk the Path")
 @click.option(
     "--repo",
-    default=DEFAULT_REPO,
-    help="Choose a repo to fetch the notebook from or just use OpenMined/PySyft",
+    help="Obi-Wan will guide you to Dagobah",
 )
 @click.option(
     "--branch",
@@ -3428,11 +3431,12 @@ def add_intro_notebook(directory: str, reset: bool = False) -> str:
     help="Choose a specific commit to fetch the notebook from",
 )
 def dagobah(
-    repo: str = DEFAULT_REPO,
+    repo: str,
     branch: str = DEFAULT_BRANCH,
     commit: Optional[str] = None,
 ) -> None:
-    return run_quickstart(url="padawan", repo=repo, branch=branch, commit=commit)
+    raise Exception("Obi-Wan will guide you to Dagobah")
+    # return run_quickstart(url="padawan", repo=repo, branch=branch, commit=commit)
 
 
 cli.add_command(dagobah)
