@@ -5,7 +5,7 @@ from syft.lib.python.tuple import Tuple
 
 def test_tuple_serde() -> None:
     syft_tuple = Tuple((1, 2))
-    
+
     serialized = sy.serialize(syft_tuple, to_bytes=True)
     deserialized = sy.deserialize(serialized, from_bytes=True)
 

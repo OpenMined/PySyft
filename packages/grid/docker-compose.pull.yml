@@ -20,6 +20,6 @@ services:
 
   mongo:
     image: mongo:latest
-    
+
   jaeger:
     image: jaegertracing/all-in-one:1.37

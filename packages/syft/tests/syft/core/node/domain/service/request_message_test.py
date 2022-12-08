@@ -78,7 +78,10 @@ def test_accept(method_name: str) -> None:
         assert mock_send_msg.call_args[1]["msg"].accept is True
         assert mock_send_msg.call_args[1]["msg"].request_id == request.id
 
-@pytest.mark.skip("To Re-enable after merge of https://github.com/OpenMined/PySyft/pull/6719")
+
+@pytest.mark.skip(
+    "To Re-enable after merge of https://github.com/OpenMined/PySyft/pull/6719"
+)
 @pytest.mark.asyncio
 def test_privacy_budget_and_obj_request():
     node = Domain(
