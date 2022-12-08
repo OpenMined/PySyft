@@ -42,7 +42,6 @@ from ..common.serde.serializable import serializable
 from ..common.serde.serialize import _serialize as serialize
 from .abstract_ledger_store import AbstractDataSubjectLedger
 from .abstract_ledger_store import AbstractLedgerStore
-from .data_subject_list import DataSubjectArray
 
 
 def convert_constants_to_indices(rdp_constant_array: np.ndarray) -> np.ndarray:
@@ -123,8 +122,11 @@ def map_dsa_to_rdp_constants(
 
     for data_subject_name in unique_data_subjects:
         # Create a mask where the current data subject is present
-        data_subject = DataSubjectArray([data_subject_name])
-        ds_mask = np.isin(data_subject_array, data_subject)
+
+        map_function = np.vectorize(lambda x: data_subject_name in x)
+        ds_mask = map_function(data_subject_array)
+        # TODO np.isin does not work on custom Data Subject Array's
+        # ds_mask = np.isin(data_subject_array, data_subject)
 
         ds_constant_mask = np.array(max(ds_mask * query_constants), copy=False)
         rdp_constants[data_subject_name] = (
