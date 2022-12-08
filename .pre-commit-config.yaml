@@ -136,15 +136,7 @@ repos:
       - id: mypy
         name: mypy-syft
         always_run: true
-        files: ^packages/syft
-        exclude: |
-          (?x)^(
-              packages/syft/examples/.*|
-              packages/syft/tests/.*|
-              packages/syft/src/syft/proto.*|
-              packages/syft/src/syft/shylock.*|
-              packages/syft/tests/syft/lib/python.*
-          )$
+        files: "^packages/syft(?!(/src/syft/shylock/|/tests/|._pb2\\.py$)).\\.py"
         args: [
             "--ignore-missing-imports",
             "--scripts-are-modules",

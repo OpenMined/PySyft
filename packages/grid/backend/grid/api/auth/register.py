@@ -7,8 +7,6 @@ from fastapi import Body
 from fastapi.responses import JSONResponse
 
 # syft absolute
-from syft.core.node.common.node_manager.role_manager import RoleManager
-from syft.core.node.common.node_manager.user_manager import UserManager
 from syft.core.node.common.node_service.user_manager.new_user_messages import (
     CreateUserMessage,
 )
