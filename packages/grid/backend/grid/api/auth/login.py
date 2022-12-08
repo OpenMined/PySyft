@@ -35,10 +35,8 @@ def auth_using_signing_key(
         expires_delta=access_token_expires,
     )
 
-    metadata = (
-        serialize(node.get_metadata_for_client())
-        .SerializeToString()
-        .decode("ISO-8859-1")
+    metadata = serialize(node.get_metadata_for_client(), to_bytes=True).decode(
+        "ISO-8859-1"
     )
 
     return {
@@ -57,10 +55,8 @@ def guest_user() -> Any:
         expires_delta=access_token_expires,
         guest=True,
     )
-    metadata = (
-        serialize(node.get_metadata_for_client())
-        .SerializeToString()
-        .decode("ISO-8859-1")
+    metadata = serialize(node.get_metadata_for_client(), to_bytes=True).decode(
+        "ISO-8859-1"
     )
     guest_signing_key = (
         SigningKey.generate()
