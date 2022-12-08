@@ -1917,23 +1917,6 @@ def create_new_lookup_tables(
     return index2key, key2index, index2values, index2size
 
 
-# def no_op(x: GammaTensor) -> GammaTensor:
-#     """A Private input will be initialized with this function.
-#     Whenever you manipulate a private input (i.e. add it to another private tensor),
-#     the result will have a different function. Thus we can check to see if the f
-#     """
-#     res = x
-#     if isinstance(x, GammaTensor) and isinstance(x.data_subjects, np.ndarray):
-#         res = GammaTensor(
-#             child=x.child,
-#             data_subjects=np.zeros_like(x.data_subjects, np.int64),
-#             min_vals=x.min_vals,
-#             max_vals=x.max_vals,
-#             func_str=x.func_str,
-#             sources=GammaTensor.convert_dsl(x.sources),
-#         )
-#     return res
-
 
 def jax2numpy(value: jnp.array, dtype: np.dtype) -> np.array:
     # are we incurring copying here?
@@ -2003,33 +1986,11 @@ class GammaTensor:
     __array_ufunc__ = None
 
     child: jnp.array
-    data_subjects: np.ndarray
-    min_vals: Union[lazyrepeatarray, np.ndarray] = flax.struct.field(pytree_node=False)
-    max_vals: Union[lazyrepeatarray, np.ndarray] = flax.struct.field(pytree_node=False)
+    # ASK ANDREW: why do we need data subjects in the gamma tensor
     is_linear: bool = True
-    func_str: str = flax.struct.field(
-        pytree_node=False, default_factory=lambda: GAMMA_TENSOR_OP.NOOP.value
-    )
-    id: str = flax.struct.field(
-        pytree_node=False, default_factory=lambda: str(randint(0, 2**31 - 1))
-    )  # TODO: Need to check if there are any scenarios where this is not secure
-    sources: dict = flax.struct.field(pytree_node=False, default_factory=dict)
-
-    def __post_init__(
-        self,
-    ) -> None:  # Might not serve any purpose anymore, since state trees are updated during ops
-        if (
-            self.sources
-            and len(self.sources) == 0
-            and self.func_str != GAMMA_TENSOR_OP.NOOP.value
-        ):
-            self.sources[self.id] = self
-
-        if isinstance(self.min_vals, lazyrepeatarray):
-            if self.min_vals.data.size != 1:
-                self.min_vals.data = self.min_vals.data.min()
-            if self.max_vals.data.size != 1:
-                self.max_vals.data = self.max_vals.data.max()
+    func: Callable = flax.struct.field(pytree_node=False)
+    id: str = flax.struct.field(pytree_node=False, default_factory=lambda: UID())
+    sources: dict = flax.struct.field(pytree_node=False)
 
     def decode(self) -> np.ndarray:
         if isinstance(self.child, FixedPrecisionTensor):
@@ -2045,40 +2006,15 @@ class GammaTensor:
             "data_subjects": self.data_subjects,
         }
 
-    def reconstruct(self, state: Optional[Dict] = None) -> GammaTensor:
-        if self.func_str == GAMMA_TENSOR_OP.NOOP.value:
-            # ATTENTION:
-            # during publish we attempt to remove nodes if the we exceed budget
-            # if we call swap_state on a terminal Tensor we need to replace the
-            # child with zeros not the current level tensors child which is
-            # not zeroed yet
-            if state is not None and len(state.keys()) == 1:
-                # return the swapped state child to replace
-                try:
-                    return list(state.values())[0].child
-                except Exception as e:
-                    print("Something bad has happened in reconstruct", state)
-                    raise e
-            else:
-                # ATTENTION:
-                # can we have a terminal no_op tensor with multiple state keys?
-                pass
-            return self.child
-        else:
-            # relative
-            from .gamma_functions import GAMMA_FUNC_MAPPER
-
-            jax_op = GAMMA_FUNC_MAPPER[GAMMA_TENSOR_OP(self.func_str)]
-            return jax_op(state if state is not None else self.sources)
+    def reconstruct(self, state: Dict) -> GammaTensor:
+        return self.func(state)
 
     def swap_state(self, state: dict) -> GammaTensor:
         return GammaTensor(
             child=self.reconstruct(state),
             data_subjects=self.data_subjects,
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
             sources=state,
-            func_str=self.func_str,
+            func=self.func,
             is_linear=self.is_linear,
         )
 
@@ -2098,46 +2034,27 @@ class GammaTensor:
 
         raise Exception(f"{type(self)} has no attribute size.")
 
-    # def all(self) -> bool:
-    #     if hasattr(self.child, "all"):
-    #         return self.child.all()
-    #     elif isinstance(self.child, Iterable):
-    #         return all(self.child)
-    #     return bool(self.child)
 
     def __add__(self, other: Any) -> GammaTensor:
-        # relative
         from .phi_tensor import PhiTensor
 
-        output_state = dict()
-        # Add this tensor to the chain
-        output_state[self.id] = self
-
+        output_state =  self.sources.copy()
+        # TODO: handle errors
         if isinstance(other, PhiTensor):
             other = other.gamma
 
         if isinstance(other, GammaTensor):
-            output_state[other.id] = other
-
             child = self.child + other.child
-            min_val = self.min_vals + other.min_vals
-            max_val = self.max_vals + other.max_vals
-            output_ds = self.data_subjects + other.data_subjects
+            output_state.update(other.sources)
+            func = lambda state: jnp.add(self.reconstruct(state), other.reconstruct(state))
 
-        else:
-            output_state[np.random.randint(low=0, high=2**31 - 1)] = other
-
+        if is_acceptable_simple_type(other):
             child = self.child + other
-            min_val = self.min_vals + other
-            max_val = self.max_vals + other
-            output_ds = self.data_subjects
+            func = lambda state: jnp.add(self.reconstruct(state), other)
 
         return GammaTensor(
             child=child,
-            data_subjects=output_ds,
-            min_vals=min_val,
-            max_vals=max_val,
-            func=lambda state: jnp.add(self.reconstruct(state), other.reconstruct(state)),
+            func=func,
             sources=output_state,
         )
 

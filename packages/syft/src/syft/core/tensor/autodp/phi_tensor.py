@@ -10,6 +10,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+import operator
 
 # third party
 import numpy as np
@@ -1806,6 +1807,38 @@ def ones_like(
 ) -> TensorWrappedPhiTensorPointer:
     return tensor.ones_like(*args, **kwargs)
 
+def dispatch_tensor(*tensors: Union[PhiTensor, GammaTensor, AcceptableSimpleType], child_func: Callable, min_func: Callable, max_func: Callable, original_func: Callable) -> Union[PhiTensor, GammaTensor]:
+    def cast_to_gamma(tensor):
+        if isinstance(tensor, PhiTensor):
+            return tensor.gamma
+        return tensor
+    def check_phi_or_constant(tensor):
+        return is_acceptable_simple_type(tensor) or isinstance(tensor, PhiTensor)
+
+    def extract_attribute_or_self(tensor, field):
+        if hasattr(tensor, field):
+            return getattr(tensor, field)
+        return tensor
+
+    childs = [extract_attribute_or_self(tensor, "child") for tensor in tensors]
+
+    if all(map(check_phi_or_constant, tensors)):
+        min_values = [extract_attribute_or_self(tensor, "min_vals") for tensor in tensors]
+        max_values = [extract_attribute_or_self(tensor, "max_vals") for tensor in tensors]
+        data_subjects = [extract_attribute_or_self(tensor, "data_subject") for tensor in tensors]
+
+        if len(set(data_subjects)) > 1:
+            return original_func(*[tensor.gamma for tensor in tensors])
+
+        return PhiTensor(
+            child=child_operator(childs),
+            min_vals=min_operator(min_values),
+            max_vals=max_operator(max_values),
+            data_subject=tensors[0].data_subject,
+        )
+
+    return original_func(*map(cast_to_gamma, tensors))
+
 
 @serializable(capnp_bytes=True)
 class PhiTensor(PassthroughTensor):
@@ -1815,18 +1848,16 @@ class PhiTensor(PassthroughTensor):
         "child",
         "min_vals",
         "max_vals",
-        "data_subjects",
+        "data_subject",
     )
 
     def __init__(
         self,
         child: Union[Sequence, NDArray],
-        data_subjects: Union[DataSubjectArray, NDArray],
+        data_subject: DataSubject,
         min_vals: Union[np.ndarray, lazyrepeatarray],
         max_vals: Union[np.ndarray, lazyrepeatarray],
     ) -> None:
-        # self.data_subjects: Union[DataSubjectList, np.ndarray]
-        # child = the actual private data
         super().__init__(child)
 
         # lazyrepeatarray matching the shape of child
@@ -1837,14 +1868,8 @@ class PhiTensor(PassthroughTensor):
         self.min_vals = min_vals
         self.max_vals = max_vals
 
-        numpy_data_subjects: np.ndarray = DataSubjectArray.from_objs(data_subjects)
-        self.data_subjects = numpy_data_subjects
-        if numpy_data_subjects.shape != self.shape:
-            raise ValueError(
-                f"DataSubjects shape: {numpy_data_subjects.shape} should match data shape: {self.shape}"
-            )
-
-        self.id = str(UID())
+        self.data_subject = data_subject
+        self.id = UID()
 
     def reconstruct(self, state):
         return state[self.id]
@@ -1869,7 +1894,7 @@ class PhiTensor(PassthroughTensor):
             child=self.child.copy(order=order),
             min_vals=self.min_vals.copy(order=order),
             max_vals=self.max_vals.copy(order=order),
-            data_subjects=self.data_subjects.copy(order=order),
+            data_subject=self.data_subject,
         )
 
     def take(
@@ -1885,9 +1910,7 @@ class PhiTensor(PassthroughTensor):
             child=out_child,
             min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
             max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
-            data_subjects=self.data_subjects.take(
-                indices, axis=axis, mode=mode, out=out
-            ),
+            data_subject=self.data_subject,
         )
 
     def put(
@@ -1909,7 +1932,7 @@ class PhiTensor(PassthroughTensor):
             child=out_child,
             min_vals=self.min_vals,
             max_vals=self.max_vals,
-            data_subjects=self.data_subjects,
+            data_subject=self.data_subject,
         )
 
     def ptp(
@@ -2756,92 +2779,27 @@ class PhiTensor(PassthroughTensor):
             )
 
     def __add__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
-
-        # if the tensor being added is also private
-        if isinstance(other, PhiTensor):
-            return self.gamma + other.gamma
-            # if self.data_subjects != other.data_subjects:
-            #     return self.gamma + other.gamma
-
-            # return PhiTensor(
-            #     child=self.child + other.child,
-            #     min_vals=self.min_vals + other.min_vals,
-            #     max_vals=self.max_vals + other.max_vals,
-            #     data_subjects=self.data_subjects,
-            #     # scalar_manager=self.scalar_manager,
-            # )
-
-        # if the tensor being added is a public tensor / int / float / etc.
-        elif is_acceptable_simple_type(other):
-
-            return PhiTensor(
-                child=self.child + other,
-                min_vals=self.min_vals + other,
-                max_vals=self.max_vals + other,
-                data_subjects=self.data_subjects,
-            )
-
-        elif isinstance(other, GammaTensor):
-            return self.gamma + other
-        else:
-            print("Type is unsupported:" + str(type(other)))
-            raise NotImplementedError
+        return dispatch_tensor(
+            self,
+            other,
+            child_func=operator.add,
+            min_func=operator.add,
+            max_func=operator.add,
+            original_func=operator.add
+        )
 
     def __radd__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
         return self.__add__(other)
 
     def __sub__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
-
-        if isinstance(other, PhiTensor):
-            return self.gamma - other.gamma
-            # diff_data_subjects = (
-            #     self.data_subjects.one_hot_lookup != other.data_subjects.one_hot_lookup
-            # )
-            # diff_data_subjects = (
-            #     diff_data_subjects
-            #     if isinstance(diff_data_subjects, bool)
-            #     else diff_data_subjects.any()
-            # )
-            # if diff_data_subjects:
-            #     return self.gamma - other.gamma
-            #     # raise NotImplementedError
-
-            # data = self.child - other.child
-            # min_min = self.min_vals.data - other.min_vals.data
-            # min_max = self.min_vals.data - other.max_vals.data
-            # max_min = self.max_vals.data - other.min_vals.data
-            # max_max = self.max_vals.data - other.max_vals.data
-            # _min_vals = np.minimum.reduce([min_min, min_max, max_min, max_max])
-            # _max_vals = np.maximum.reduce([min_min, min_max, max_min, max_max])
-            # min_vals = self.min_vals.copy()
-            # min_vals.data = _min_vals
-            # max_vals = self.max_vals.copy()
-            # max_vals.data = _max_vals
-
-            # data_subjects = self.data_subjects
-
-        elif is_acceptable_simple_type(other):
-            if isinstance(other, np.ndarray):
-                if not is_broadcastable(other.shape, self.child.shape):  # type: ignore
-                    raise Exception(
-                        f"Shapes do not match for subtraction: {self.child.shape} and {other.shape}"
-                    )
-            data = self.child - other
-            min_vals = self.min_vals - other
-            max_vals = self.max_vals - other
-            data_subjects = self.data_subjects
-        elif isinstance(other, GammaTensor):
-            return self.gamma - other
-        else:
-            print("Type is unsupported:" + str(type(other)))
-            raise NotImplementedError
-        return PhiTensor(
-            child=data,
-            data_subjects=data_subjects,
-            min_vals=min_vals,
-            max_vals=max_vals,
+        return dispatch_tensor(
+            self,
+            other,
+            child_func=operator.sub,
+            min_func=operator.sub,
+            max_func=operator.sub,
+            original_func=operator.sub
         )
-
     def __rsub__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
         return (self - other) * -1
 
@@ -3028,10 +2986,9 @@ class PhiTensor(PassthroughTensor):
                 irrespective of dimensionality.
         """
         result = self.child.argsort(axis)
-        out_ds = np.take_along_axis(self.data_subjects, result, axis=axis)
         return PhiTensor(
             child=result,
-            data_subjects=out_ds,
+            data_subjects=self.data_subject,
             min_vals=lazyrepeatarray(data=0, shape=self.shape),
             max_vals=lazyrepeatarray(data=self.child.size, shape=self.shape),
         )
