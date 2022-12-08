@@ -104,7 +104,7 @@ jobs:
 
       - name: Install tox
         run: |
-          pip install tox --upgrade
+          pip install tox==3.27.1
 
       - name: Install Docker Compose
         if: runner.os == 'Linux'
