@@ -20,14 +20,20 @@ from ....abstract.node import AbstractNode
 
 
 @serializable(recursive_serde=True)
-class TFFMessageWithReply:
-    __attr_allowlist__ = ["address", "params", "model_bytes"]
+class TFFMessageWithReply(ImmediateSyftMessageWithReply):
+    __attr_allowlist__ = ["id", "address", "params", "model_bytes"]
 
-    def __init__(self, params: Dict, model_bytes: bytes) -> None:
-        # self.stuff = stuff
-        # self.id_dataset = id_dataset
+    def __init__(
+        self,
+        params: Dict,
+        model_bytes: bytes,
+        address: Address,
+        reply_to: Address,
+        msg_id: Optional[UID] = None,
+    ) -> None:
         self.params = params
         self.model_bytes = model_bytes
+        super().__init__(address=address,reply_to=reply_to,msg_id=msg_id)
 
     def run(
         self, payload: str, node: AbstractNode, verify_key: Optional[VerifyKey] = None
