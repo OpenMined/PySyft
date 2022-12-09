@@ -1,5 +1,6 @@
 # stdlib
 import os
+from pathlib import Path
 import time
 from typing import Any
 from typing import Dict
@@ -14,6 +15,8 @@ import pytest
 import syft as sy
 from syft.core.adp.data_subject_list import DataSubjectArray
 from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
+from syft.util import download_file
+from syft.util import get_root_data_path
 
 sy.logger.remove()
 
@@ -24,8 +27,14 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
 print("ROOT_DIR", ROOT_DIR)
 
 
-def load_data(csv_file: str) -> pd.DataFrame:
-    return pd.read_csv(f"{ROOT_DIR}/notebooks/trade_demo/datasets/{csv_file}")[0:10]
+def download_trade_dataset(csv_file: str) -> Path:
+    BASE_URL = "https://raw.githubusercontent.com/openmined/datasets/main/trade_flow/"
+    folder_name = "trade_flow"
+    dataset_path = get_root_data_path() / folder_name
+    url = f"{BASE_URL}{csv_file}"
+    print(url)
+    path = download_file(url=url, full_path=dataset_path / csv_file)
+    return path
 
 
 def get_user_details(unique_email: str) -> Dict[str, Any]:
@@ -48,7 +57,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
 
     # Canada
     ca_root = sy.login(email="info@openmined.org", password="changethis", port=9082)
-    ca_data = load_data(csv_file="ca - feb 2021.csv")
+    ca_data = pd.read_csv(csv_file="ca - feb 2021.csv")
 
     canada_trade = (
         (np.array(list(ca_data["Trade Value (US$)"])) / 100000)[0:10]
@@ -84,7 +93,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
 
     # Italy
     it_root = sy.login(email="info@openmined.org", password="changethis", port=9083)
-    it_data = load_data(csv_file="it - feb 2021.csv")
+    it_data = pd.read_csv(csv_file="it - feb 2021.csv")
 
     italy_trade = (
         (np.array(list(it_data["Trade Value (US$)"])) / 100000)[0:10]
