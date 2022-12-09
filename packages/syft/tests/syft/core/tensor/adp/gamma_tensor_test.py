@@ -1,5 +1,6 @@
 # stdlib
 from typing import Any
+from typing import Dict
 
 # third party
 import numpy as np
@@ -154,7 +155,10 @@ def test_gamma_publish(
     assert results.dtype == np.float64
     assert results < upper_bound.to_numpy().sum() + 10
     assert -10 + lower_bound.to_numpy().sum() < results
-    print(ledger_store.kv_store)
+    assert isinstance(ledger._rdp_constants, Dict)
+    assert "eagle" in ledger._rdp_constants and ledger._rdp_constants["eagle"] > 0.0
+    assert "potato" in ledger._rdp_constants and ledger._rdp_constants["potato"] > 0.0
+    assert len(ledger._rdp_constants) == 2
 
 
 def test_zeros_like(

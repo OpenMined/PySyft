@@ -16,7 +16,6 @@ from typing import Union
 import names
 
 # relative
-from . import data_subject_list
 from ..common import UID
 from ..common.serde.serializable import serializable
 
@@ -73,15 +72,12 @@ class DataSubject:
         other: Union[
             DataSubject,
             DataSubjectGroup,
-            data_subject_list.DataSubjectArray,
             int,
             float,
         ],
     ) -> Union[DataSubjectGroup, DataSubject]:
         if isinstance(other, DataSubject):
             return DataSubjectGroup([self, other])
-        elif isinstance(other, data_subject_list.DataSubjectArray):
-            return DataSubjectGroup([self, *other.data_subjects])
         elif isinstance(other, DataSubjectGroup):
             other.entity_set.add(self)
             return other
@@ -163,7 +159,6 @@ class DataSubjectGroup:
         other: Union[
             DataSubjectGroup,
             DataSubject,
-            data_subject_list.DataSubjectArray,
             int,
             float,
         ],
@@ -172,8 +167,6 @@ class DataSubjectGroup:
             return DataSubjectGroup(self.entity_set.union({other}))
         elif isinstance(other, DataSubjectGroup):
             return DataSubjectGroup(self.entity_set.union(other.entity_set))
-        elif isinstance(other, data_subject_list.DataSubjectArray):
-            return DataSubjectGroup(self.entity_set.union(other.data_subjects))
         elif not other:  # type: ignore
             return self
         elif isinstance(other, (int, float)):
