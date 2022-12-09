@@ -33,7 +33,7 @@ class TFFMessageWithReply(ImmediateSyftMessageWithReply):
     ) -> None:
         self.params = params
         self.model_bytes = model_bytes
-        super().__init__(address=address,reply_to=reply_to,msg_id=msg_id)
+        super().__init__(address=address, reply_to=reply_to, msg_id=msg_id)
 
     def run(
         self, payload: str, node: AbstractNode, verify_key: Optional[VerifyKey] = None
