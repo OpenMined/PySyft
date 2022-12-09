@@ -57,7 +57,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
 
     # Canada
     ca_root = sy.login(email="info@openmined.org", password="changethis", port=9082)
-    ca_data = pd.read_csv(csv_file="ca - feb 2021.csv")
+    ca_data = pd.read_csv(download_trade_dataset(csv_file="ca - feb 2021.csv"))[0:10]
 
     canada_trade = (
         (np.array(list(ca_data["Trade Value (US$)"])) / 100000)[0:10]
@@ -93,7 +93,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
 
     # Italy
     it_root = sy.login(email="info@openmined.org", password="changethis", port=9083)
-    it_data = pd.read_csv(csv_file="it - feb 2021.csv")
+    it_data = pd.read_csv(download_trade_dataset(csv_file="it - feb 2021.csv"))[0:10]
 
     italy_trade = (
         (np.array(list(it_data["Trade Value (US$)"])) / 100000)[0:10]
