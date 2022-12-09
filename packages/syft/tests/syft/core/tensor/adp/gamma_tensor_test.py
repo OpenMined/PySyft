@@ -1,5 +1,6 @@
 # stdlib
 from typing import Any
+from typing import Dict
 
 # third party
 import numpy as np
@@ -154,7 +155,10 @@ def test_gamma_publish(
     assert results.dtype == np.float64
     assert results < upper_bound.to_numpy().sum() + 10
     assert -10 + lower_bound.to_numpy().sum() < results
-    print(ledger_store.kv_store)
+    assert isinstance(ledger._rdp_constants, Dict)
+    assert "eagle" in ledger._rdp_constants and ledger._rdp_constants["eagle"] > 0.0
+    assert "potato" in ledger._rdp_constants and ledger._rdp_constants["potato"] > 0.0
+    assert len(ledger._rdp_constants) == 2
 
 
 def test_zeros_like(
@@ -264,9 +268,154 @@ def test_add_public(
     output = reference_tensor + 5
     assert output.shape == reference_tensor.shape
     assert (output.child == reference_data + 5).all()
-    assert output.min_vals.data == reference_tensor.min_vals + 5
+    assert output.min_vals == reference_tensor.min_vals + 5
     assert output.min_vals.shape == reference_tensor.shape
-    assert output.max_vals.data == reference_tensor.max_vals + 5
+    assert output.max_vals == reference_tensor.max_vals + 5
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.arithmetic
+def test_radd(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    ).gamma
+    input_data = np.zeros_like(reference_data)
+    output = input_data + reference_tensor
+    assert output.shape == reference_tensor.shape
+    assert (output.child == input_data + reference_data).all()
+    assert (output.min_vals == input_data + reference_tensor.min_vals).all()
+    assert output.min_vals.shape == reference_tensor.shape
+    assert (output.max_vals == input_data + reference_tensor.max_vals).all()
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.arithmetic
+def test_rsub(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    ).gamma
+    input_data = np.zeros_like(reference_data)
+    output = input_data - reference_tensor
+    assert output.shape == reference_tensor.shape
+    assert (output.child == input_data - reference_data).all()
+    assert (output.min_vals.data <= output.max_vals.data).all()
+    assert output.min_vals.shape == reference_tensor.shape
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.arithmetic
+def test_rmul(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    ).gamma
+    input_data = np.zeros_like(reference_data)
+    output = input_data * reference_tensor
+    assert output.shape == reference_tensor.shape
+    assert (output.child == input_data * reference_data).all()
+    assert (output.min_vals.data <= output.max_vals.data).all()
+    assert output.min_vals.shape == reference_tensor.shape
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.arithmetic
+def test_rmatmul(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    ).gamma
+    input_data = np.zeros_like(reference_data)
+    output = input_data @ reference_tensor
+    assert output.shape == reference_tensor.shape
+    assert (output.child == input_data @ reference_data).all()
+    assert (output.min_vals.data <= output.max_vals.data).all()
+    assert output.min_vals.shape == reference_tensor.shape
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.arithmetic
+def test_rtruediv(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    ).gamma
+    input_data = np.ones_like(reference_data)
+    output = input_data / reference_tensor
+    assert output.shape == reference_tensor.shape
+    assert (output.child == input_data / reference_data).all()
+    assert (output.min_vals.data <= output.max_vals.data).all()
+    assert output.min_vals.shape == reference_tensor.shape
+    assert output.max_vals.shape == reference_tensor.shape
+    assert (output.data_subjects == reference_tensor.data_subjects).all()
+
+
+@pytest.mark.arithmetic
+def test_rfloordiv(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubjectArray,
+) -> None:
+    ishan = np.broadcast_to(ishan, reference_data.shape)
+    reference_tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    ).gamma
+    input_data = np.ones_like(reference_data)
+    output = input_data // reference_tensor
+    assert output.shape == reference_tensor.shape
+    assert (output.child == input_data // reference_data).all()
+    assert (output.min_vals.data <= output.max_vals.data).all()
+    assert output.min_vals.shape == reference_tensor.shape
     assert output.max_vals.shape == reference_tensor.shape
     assert (output.data_subjects == reference_tensor.data_subjects).all()
 
@@ -290,9 +439,9 @@ def test_sub_public(
     output = reference_tensor - 5
     assert output.shape == reference_tensor.shape
     assert (output.child == reference_data - 5).all()
-    assert output.min_vals.data == reference_tensor.min_vals - 5
+    assert output.min_vals == reference_tensor.min_vals - 5
     assert output.min_vals.shape == reference_tensor.shape
-    assert output.max_vals.data == reference_tensor.max_vals - 5
+    assert output.max_vals == reference_tensor.max_vals - 5
     assert output.max_vals.shape == reference_tensor.shape
     assert (output.data_subjects == reference_tensor.data_subjects).all()
 
@@ -1484,14 +1633,14 @@ def test_ptp(
     assert reference_tensor == result.sources[reference_tensor.id]
     assert result.child == reference_data.ptp()
     assert (result.data_subjects == ishan).any()
-    assert result.min_vals.data == 0
-    assert result.max_vals.data == upper_bound - lower_bound
+    assert (result.min_vals.data == 0).all()
+    assert result.max_vals == upper_bound - lower_bound
 
     result = reference_tensor.ptp(axis=0)
     assert (result.child == reference_data.ptp(axis=0, keepdims=True)).all()
     assert (result.data_subjects == ishan).any()
-    assert result.min_vals.data == 0
-    assert result.max_vals.data == upper_bound - lower_bound
+    assert (result.min_vals.data == 0).all()
+    assert result.max_vals == upper_bound - lower_bound
 
 
 def test_nonzero(
