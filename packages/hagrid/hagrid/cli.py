@@ -124,7 +124,8 @@ def cli() -> None:
 
 
 @click.command(
-    help="Restore some part of the hagrid installation or deployment to its initial/starting state."
+    help="Restore some part of the hagrid installation or deployment to its initial/starting state.",
+    context_settings={"show_default": True},
 )
 @click.argument("location", type=str, nargs=1)
 def clean(location: str) -> None:
@@ -145,7 +146,10 @@ def clean(location: str) -> None:
         subprocess.call("docker rmi $(docker images -q)", shell=True)  # nosec
 
 
-@click.command(help="Start a new PyGrid domain/network node!")
+@click.command(
+    help="Start a new PyGrid domain/network node!",
+    context_settings={"show_default": True},
+)
 @click.argument("args", type=str, nargs=-1)
 @click.option(
     "--username",
@@ -2540,7 +2544,10 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
     return cmd
 
 
-@click.command(help="Stop a running PyGrid domain/network node.")
+@click.command(
+    help="Stop a running PyGrid domain/network node.",
+    context_settings={"show_default": True},
+)
 @click.argument("args", type=str, nargs=-1)
 @click.option(
     "--cmd",
@@ -2632,7 +2639,9 @@ cli.add_command(land)
 cli.add_command(clean)
 
 
-@click.command(help="Show HAGrid debug information")
+@click.command(
+    help="Show HAGrid debug information", context_settings={"show_default": True}
+)
 @click.argument("args", type=str, nargs=-1)
 def debug(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     debug_info = gather_debug()
@@ -2841,7 +2850,10 @@ def get_syft_install_status(host_name: str) -> bool:
         return True
 
 
-@click.command(help="Check health of an IP address/addresses or a resource group")
+@click.command(
+    help="Check health of an IP address/addresses or a resource group",
+    context_settings={"show_default": True},
+)
 @click.argument("ip_addresses", type=str, nargs=-1)
 @click.option(
     "--timeout",
@@ -2980,7 +2992,7 @@ cli.add_command(check)
 
 
 # add Hagrid info to the cli
-@click.command(help="Show HAGrid info")
+@click.command(help="Show HAGrid info", context_settings={"show_default": True})
 def version() -> None:
     print(f"HAGRID_VERSION: {get_version_string()}")
     if EDITABLE_MODE:
@@ -3148,12 +3160,14 @@ def run_quickstart(
         raise e
 
 
-@click.command(help="Launch a Syft + Jupyter Session with a Notebook URL / Path")
+@click.command(
+    help="Launch a Syft + Jupyter Session with a Notebook URL / Path",
+    context_settings={"show_default": True},
+)
 @click.argument("url", type=str, required=False)
 @click.option(
     "--reset",
     is_flag=True,
-    show_default=True,
     default=False,
     help="Force hagrid quickstart to setup a fresh virtualenv",
 )
@@ -3370,7 +3384,7 @@ def add_intro_notebook(directory: str, reset: bool = False) -> str:
     return os.path.abspath(f"{directory}/{filename}")
 
 
-@click.command(help="Walk the Path")
+@click.command(help="Walk the Path", context_settings={"show_default": True})
 @click.option(
     "--repo",
     help="Obi-Wan will guide you to Dagobah",
@@ -3422,7 +3436,10 @@ def ssh_into_remote_machine(
         raise e
 
 
-@click.command(help="SSH into the IP address or a resource group")
+@click.command(
+    help="SSH into the IP address or a resource group",
+    context_settings={"show_default": True},
+)
 @click.argument("ip_address", type=str)
 @click.option(
     "--cmd",
@@ -3484,7 +3501,9 @@ cli.add_command(ssh)
 
 
 # Add hagrid logs command to the CLI
-@click.command(help="Get the logs of the HAGrid node")
+@click.command(
+    help="Get the logs of the HAGrid node", context_settings={"show_default": True}
+)
 @click.argument("domain_name", type=str)
 def logs(domain_name: str) -> None:  # nosec
 
