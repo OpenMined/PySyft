@@ -184,23 +184,17 @@ def clean(location: str) -> None:
 )
 @click.option(
     "--tail",
-    default="false",
-    required=False,
-    type=str,
+    is_flag=True,
     help="Optional: don't tail logs on launch",
 )
 @click.option(
     "--headless",
-    default="false",
-    required=False,
-    type=str,
+    is_flag=True,
     help="Optional: don't start the frontend container",
 )
 @click.option(
     "--cmd",
-    default="false",
-    required=False,
-    type=str,
+    is_flag=True,
     help="Optional: print the cmd without running it",
 )
 @click.option(
@@ -210,17 +204,13 @@ def clean(location: str) -> None:
 )
 @click.option(
     "--build",
-    default=None,
-    required=False,
-    type=str,
+    is_flag=True,
     help="Optional: enable or disable forcing re-build",
 )
 @click.option(
-    "--provision",
-    default="true",
-    required=False,
-    type=str,
-    help="Optional: enable or disable provisioning VMs",
+    "--no_provision",
+    is_flag=True,
+    help="Disable provisioning VMs",
 )
 @click.option(
     "--node_count",
@@ -271,11 +261,9 @@ def clean(location: str) -> None:
     help="Optional: local path to TLS private key to upload and store at --cert_store_path",
 )
 @click.option(
-    "--use_blob_storage",
-    default=None,
-    required=False,
-    type=str,
-    help="Optional: flag to use blob storage",
+    "--no_blob_storage",
+    is_flag=True,
+    help="Disable blob storage",
 )
 @click.option(
     "--image_name",
@@ -306,11 +294,9 @@ def clean(location: str) -> None:
     help="Optional: run docker with a different platform like linux/arm64",
 )
 @click.option(
-    "--vpn",
-    default="true",
-    required=False,
-    type=str,
-    help="Optional: turn tailscale vpn container on or off",
+    "--no_vpn",
+    is_flag=True,
+    help="Disable tailscale vpn container",
 )
 @click.option(
     "--silent",
@@ -319,16 +305,12 @@ def clean(location: str) -> None:
 )
 @click.option(
     "--from_template",
-    default="false",
-    required=False,
-    type=str,
+    is_flag=True,
     help="Optional: launch node using the manifest template",
 )
 @click.option(
-    "--health_checks",
-    default="true",
-    required=False,
-    type=str,
+    "--no_health_checks",
+    is_flag=True,
     help="Optional: turn on or off auto health checks post node launch",
 )
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
@@ -351,19 +333,15 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
         print(f"Error: {e}\n\n")
         return
 
-    dry_run = True
-    if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
-        dry_run = False
+    dry_run = bool(kwargs["cmd"])
 
-    health_checks = str_to_bool(cast(str, kwargs["health_checks"]))
+    health_checks = not bool(kwargs["no_health_checks"])
 
     try:
-        tail = False if "tail" in kwargs and not str_to_bool(kwargs["tail"]) else True
+        tail = bool(kwargs["tail"])
         silent = not tail
 
-        from_rendered_dir = (
-            str_to_bool(cast(str, kwargs["from_template"])) and EDITABLE_MODE
-        )
+        from_rendered_dir = bool(kwargs["from_template"]) and EDITABLE_MODE
 
         execute_commands(
             cmds, dry_run=dry_run, silent=silent, from_rendered_dir=from_rendered_dir
@@ -1054,20 +1032,13 @@ def create_launch_cmd(
     host = host_term.host
     auth: Optional[AuthCredentials] = None
 
-    tail = True
-    if "tail" in kwargs and not str_to_bool(kwargs["tail"]):
-        tail = False
+    tail = bool(kwargs["tail"])
 
     parsed_kwargs = {}
 
-    if "build" in kwargs and kwargs["build"] is not None:
-        parsed_kwargs["build"] = str_to_bool(cast(str, kwargs["build"]))
-    else:
-        parsed_kwargs["build"] = None
+    parsed_kwargs["build"] = bool(kwargs["build"])
 
-    parsed_kwargs["use_blob_storage"] = (
-        kwargs["use_blob_storage"] if "use_blob_storage" in kwargs else None
-    )
+    parsed_kwargs["use_blob_storage"] = not bool(kwargs["no_blob_storage"])
 
     parsed_kwargs["node_count"] = (
         int(kwargs["node_count"]) if "node_count" in kwargs else 1
@@ -1079,19 +1050,15 @@ def create_launch_cmd(
         # Default to detached mode if running more than one nodes
         tail = False if parsed_kwargs["node_count"] > 1 else tail
 
-    headless = False
-    if "headless" in kwargs and str_to_bool(cast(str, kwargs["headless"])):
-        headless = True
+    headless = bool(kwargs["headless"])
     parsed_kwargs["headless"] = headless
 
-    parsed_kwargs["tls"] = bool(kwargs["tls"]) if "tls" in kwargs else False
-    parsed_kwargs["test"] = bool(kwargs["test"]) if "test" in kwargs else False
-    parsed_kwargs["dev"] = bool(kwargs["dev"]) if "dev" in kwargs else False
+    parsed_kwargs["tls"] = bool(kwargs["tls"])
+    parsed_kwargs["test"] = bool(kwargs["test"])
+    parsed_kwargs["dev"] = bool(kwargs["dev"])
 
-    parsed_kwargs["silent"] = bool(kwargs["silent"]) if "silent" in kwargs else False
-    parsed_kwargs["from_template"] = (
-        str_to_bool(kwargs["from_template"]) if "from_template" in kwargs else False
-    )
+    parsed_kwargs["silent"] = bool(kwargs["silent"])
+    parsed_kwargs["from_template"] = bool(kwargs["from_template"])
 
     parsed_kwargs["release"] = "production"
     if "release" in kwargs and kwargs["release"] != "production":
@@ -1107,8 +1074,8 @@ def create_launch_cmd(
         parsed_kwargs["upload_tls_cert"] = kwargs["upload_tls_cert"]
     if "upload_tls_key" in kwargs:
         parsed_kwargs["upload_tls_key"] = kwargs["upload_tls_key"]
-    if "provision" in kwargs:
-        parsed_kwargs["provision"] = str_to_bool(cast(str, kwargs["provision"]))
+
+    parsed_kwargs["provision"] = not bool(kwargs["no_provision"])
 
     if "image_name" in kwargs and kwargs["image_name"] is not None:
         parsed_kwargs["image_name"] = kwargs["image_name"]
@@ -1125,13 +1092,12 @@ def create_launch_cmd(
     else:
         parsed_kwargs["jupyter"] = False
 
-    if "vpn" in kwargs and kwargs["vpn"] is not None:
-        parsed_kwargs["vpn"] = str_to_bool(cast(str, kwargs["vpn"]))
-    else:
-        parsed_kwargs["vpn"] = True
+    parsed_kwargs["vpn"] = not bool(kwargs["no_vpn"])
 
     # allows changing docker platform to other cpu architectures like arm64
     parsed_kwargs["platform"] = kwargs["platform"] if "platform" in kwargs else None
+
+    parsed_kwargs["tail"] = tail
 
     if parsed_kwargs["from_template"] and host is not None:
         # Setup the files from the manifest_template.yml
@@ -1693,14 +1659,11 @@ def create_launch_docker_cmd(
             version_string = GRID_SRC_VERSION[0]
         version_string += "-dev"
         version_hash = GRID_SRC_VERSION[1]
-        if build is None:
-            build = True
+        build = True
     else:
         # whereas if in production mode and tag == "local" use the local VERSION file
         # or if its not set somehow, which should never happen, use stable
         # otherwise use the kwargs["tag"] from above
-        if build is None:
-            build = False
 
         # during production the default would be stable
         if version_string == "local":
@@ -1725,11 +1688,9 @@ def create_launch_docker_cmd(
 
     print("\n")
 
-    use_blob_storage = "True"
-    if str(node_type.input) == "network":
-        use_blob_storage = "False"
-    elif "use_blob_storage" in kwargs and kwargs["use_blob_storage"] is not None:
-        use_blob_storage = str(str_to_bool(kwargs["use_blob_storage"]))
+    use_blob_storage = (
+        False if str(node_type.input) == "network" else bool(kwargs["use_blob_storage"])
+    )
 
     envs = {
         "RELEASE": "production",
@@ -1743,7 +1704,7 @@ def create_launch_docker_cmd(
         "TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL": "False",
         "VERSION": version_string,
         "VERSION_HASH": version_hash,
-        "USE_BLOB_STORAGE": use_blob_storage,
+        "USE_BLOB_STORAGE": str(use_blob_storage),
         "FRONTEND_TARGET": "grid-ui-production",
         "STACK_API_KEY": str(
             generate_sec_random_password(length=48, special_chars=False)
@@ -1794,17 +1755,17 @@ def create_launch_docker_cmd(
 
     cmd += " docker compose -p " + snake_name
 
-    if "vpn" in kwargs and kwargs["vpn"]:
+    if bool(kwargs["vpn"]):
         cmd += " --profile vpn"
 
     if str(node_type.input) == "network":
         cmd += " --profile network"
 
-    if str_to_bool(use_blob_storage):
+    if use_blob_storage:
         cmd += " --profile blob-storage"
 
     # no frontend container so expect bad gateway on the / route
-    if kwargs["headless"] is False:
+    if not bool(kwargs["headless"]):
         cmd += " --profile frontend"
 
     # new docker compose regression work around
@@ -2132,7 +2093,7 @@ def create_launch_gcp_cmd(
     if not host_up:
         raise Exception(f"Something went wrong launching the VM at IP: {host_ip}.")
 
-    if "provision" in kwargs and not kwargs["provision"]:
+    if not bool(kwargs["provision"]):
         print("Skipping automatic provisioning.")
         print("VM created with:")
         print(f"IP: {host_ip}")
@@ -2282,7 +2243,7 @@ def create_launch_azure_cmd(
         host_term.parse_input(host_ip)
         verb.set_named_term_type(name="host", new_term=host_term)
 
-        if "provision" in kwargs and not kwargs["provision"]:
+        if not bool(kwargs["provision"]):
             print("Skipping automatic provisioning.")
             print("VM created with:")
             print(f"Name: {snake_name}")
@@ -2583,9 +2544,7 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
 @click.argument("args", type=str, nargs=-1)
 @click.option(
     "--cmd",
-    default="false",
-    required=False,
-    type=str,
+    is_flag=True,
     help="Optional: print the cmd without running it",
 )
 @click.option(
@@ -2612,8 +2571,8 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
 )
 def land(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_land_verb()
-    silent = bool(kwargs["silent"]) if "silent" in kwargs else False
-    force = bool(kwargs["force"]) if "force" in kwargs else False
+    silent = bool(kwargs["silent"])
+    force = bool(kwargs["force"])
     try:
         grammar = parse_grammar(args=args, verb=verb)
         verb.load_grammar(grammar=grammar)
@@ -2645,7 +2604,7 @@ def land(args: TypeTuple[str], **kwargs: Any) -> None:
         )
 
     if force or _land_domain == "y":
-        if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
+        if not bool(kwargs["cmd"]):
             if not silent:
                 print("Running: \n", cmd)
             try:
@@ -2890,14 +2849,14 @@ def get_syft_install_status(host_name: str) -> bool:
     help="Timeout for hagrid check command,Default: 300 seconds",
 )
 @click.option(
-    "--silent",
-    default=True,
-    help="Optional: don't refresh output,Defaults True",
+    "--verbose",
+    is_flag=True,
+    help="Refresh output,Defaults True",
 )
 def check(
-    ip_addresses: TypeList[str], silent: bool = True, timeout: Union[int, str] = 300
+    ip_addresses: TypeList[str], verbose: bool = False, timeout: Union[int, str] = 300
 ) -> None:
-    check_status(ip_addresses=ip_addresses, silent=silent, timeout=timeout)
+    check_status(ip_addresses=ip_addresses, silent=not verbose, timeout=timeout)
 
 
 def _check_status(
@@ -3206,15 +3165,11 @@ def run_quickstart(
 @click.option(
     "--quiet",
     is_flag=True,
-    show_default=True,
-    default=False,
     help="Silence confirmation prompts",
 )
 @click.option(
     "--pre",
     is_flag=True,
-    show_default=True,
-    default=False,
     help="Install pre-release versions of syft",
 )
 @click.option(
@@ -3224,7 +3179,6 @@ def run_quickstart(
 )
 @click.option(
     "--test",
-    default=False,
     is_flag=True,
     help="CI Test Mode, don't hang on Jupyter",
 )
