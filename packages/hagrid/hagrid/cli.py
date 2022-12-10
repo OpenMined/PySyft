@@ -152,60 +152,60 @@ def clean(location: str) -> None:
     default=None,
     required=False,
     type=str,
-    help="Optional: the username for provisioning the remote host",
+    help="Username for provisioning the remote host",
 )
 @click.option(
     "--key_path",
     default=None,
     required=False,
     type=str,
-    help="Optional: the path to the key file for provisioning the remote host",
+    help="Path to the key file for provisioning the remote host",
 )
 @click.option(
     "--password",
     default=None,
     required=False,
     type=str,
-    help="Optional: the password for provisioning the remote host",
+    help="Password for provisioning the remote host",
 )
 @click.option(
     "--repo",
     default=None,
     required=False,
     type=str,
-    help="Optional: repo to fetch source from",
+    help="Repo to fetch source from",
 )
 @click.option(
     "--branch",
     default=None,
     required=False,
     type=str,
-    help="Optional: branch to monitor for updates",
+    help="Branch to monitor for updates",
 )
 @click.option(
     "--tail",
     is_flag=True,
-    help="Optional: tail logs on launch",
+    help="Tail logs on launch",
 )
 @click.option(
     "--headless",
     is_flag=True,
-    help="Optional: start the frontend container",
+    help="Start the frontend container",
 )
 @click.option(
     "--cmd",
     is_flag=True,
-    help="Optional: print the cmd without running it",
+    help="Print the cmd without running it",
 )
 @click.option(
     "--jupyter",
     is_flag=True,
-    help="Optional: enable Jupyter Notebooks",
+    help="Enable Jupyter Notebooks",
 )
 @click.option(
     "--build",
     is_flag=True,
-    help="Optional: enable or disable forcing re-build",
+    help="Disable forcing re-build",
 )
 @click.option(
     "--no_provision",
@@ -217,7 +217,7 @@ def clean(location: str) -> None:
     default=1,
     required=False,
     type=click.IntRange(1, 250),
-    help="Optional: number of independent nodes/VMs to launch",
+    help="Number of independent nodes/VMs to launch",
 )
 @click.option(
     "--auth_type",
@@ -237,28 +237,28 @@ def clean(location: str) -> None:
     default="production",
     required=False,
     type=click.Choice(["production", "development"], case_sensitive=False),
-    help="Optional: choose between production and development release",
+    help="Choose between production and development release",
 )
 @click.option(
     "--cert_store_path",
     default="/home/om/certs",
     required=False,
     type=str,
-    help="Optional: remote path to store and load TLS cert and key",
+    help="Remote path to store and load TLS cert and key",
 )
 @click.option(
     "--upload_tls_cert",
     default="",
     required=False,
     type=str,
-    help="Optional: local path to TLS cert to upload and store at --cert_store_path",
+    help="Local path to TLS cert to upload and store at --cert_store_path",
 )
 @click.option(
     "--upload_tls_key",
     default="",
     required=False,
     type=str,
-    help="Optional: local path to TLS private key to upload and store at --cert_store_path",
+    help="Local path to TLS private key to upload and store at --cert_store_path",
 )
 @click.option(
     "--no_blob_storage",
@@ -270,48 +270,48 @@ def clean(location: str) -> None:
     default=None,
     required=False,
     type=str,
-    help="Optional: image to use for the VM",
+    help="Image to use for the VM",
 )
 @click.option(
     "--tag",
     default=None,
     required=False,
     type=str,
-    help="Optional: container image tag to use",
+    help="Container image tag to use",
 )
 @click.option(
     "--build_src",
     default=DEFAULT_BRANCH,
     required=False,
     type=str,
-    help="Optional: git branch to use for launch / build operations",
+    help="Git branch to use for launch / build operations",
 )
 @click.option(
     "--platform",
     default=None,
     required=False,
     type=str,
-    help="Optional: run docker with a different platform like linux/arm64",
+    help="Run docker with a different platform like linux/arm64",
 )
 @click.option(
     "--no_vpn",
     is_flag=True,
-    help="Optional: disable tailscale vpn container",
+    help="Disable tailscale vpn container",
 )
 @click.option(
     "--silent",
     is_flag=True,
-    help="Optional: prevent lots of launch output",
+    help="Suppress extra launch outputs",
 )
 @click.option(
     "--from_template",
     is_flag=True,
-    help="Optional: launch node using the manifest template",
+    help="Launch node using the manifest template",
 )
 @click.option(
     "--no_health_checks",
     is_flag=True,
-    help="Optional: turn off auto health checks post node launch",
+    help="Turn off auto health checks post node launch",
 )
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
@@ -2545,7 +2545,7 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
 @click.option(
     "--cmd",
     is_flag=True,
-    help="Optional: print the cmd without running it",
+    help="Print the cmd without running it",
 )
 @click.option(
     "--ansible_extras",
@@ -2557,17 +2557,17 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
     default=DEFAULT_BRANCH,
     required=False,
     type=str,
-    help="Optional: git branch to use for launch / build operations",
+    help="Git branch to use for launch / build operations",
 )
 @click.option(
     "--silent",
     is_flag=True,
-    help="Optional: prevent lots of land output",
+    help="Suppress extra outputs",
 )
 @click.option(
     "--force",
     is_flag=True,
-    help="Optional: bypass the prompt during hagrid land ",
+    help="Bypass the prompt during hagrid land",
 )
 def land(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_land_verb()
@@ -2846,12 +2846,12 @@ def get_syft_install_status(host_name: str) -> bool:
 @click.option(
     "--timeout",
     default=300,
-    help="Timeout for hagrid check command,Default: 300 seconds",
+    help="Timeout for hagrid check command",
 )
 @click.option(
     "--verbose",
     is_flag=True,
-    help="Refresh output,Defaults True",
+    help="Refresh output",
 )
 def check(
     ip_addresses: TypeList[str], verbose: bool = False, timeout: Union[int, str] = 300
