@@ -185,12 +185,12 @@ def clean(location: str) -> None:
 @click.option(
     "--tail",
     is_flag=True,
-    help="Optional: don't tail logs on launch",
+    help="Optional: tail logs on launch",
 )
 @click.option(
     "--headless",
     is_flag=True,
-    help="Optional: don't start the frontend container",
+    help="Optional: start the frontend container",
 )
 @click.option(
     "--cmd",
@@ -296,7 +296,7 @@ def clean(location: str) -> None:
 @click.option(
     "--no_vpn",
     is_flag=True,
-    help="Disable tailscale vpn container",
+    help="Optional: disable tailscale vpn container",
 )
 @click.option(
     "--silent",
@@ -311,7 +311,7 @@ def clean(location: str) -> None:
 @click.option(
     "--no_health_checks",
     is_flag=True,
-    help="Optional: turn on or off auto health checks post node launch",
+    help="Optional: turn off auto health checks post node launch",
 )
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
