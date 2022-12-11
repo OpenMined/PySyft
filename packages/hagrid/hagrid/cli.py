@@ -839,7 +839,7 @@ def ask(question: Question, kwargs: TypeDict[str, str]) -> str:
         print(e)
         return ask(question=question, kwargs=kwargs)
     if question.cache:
-        setattr(arg_cache, question.var_name, value)
+        arg_cache[question.var_name] = value
 
     return value
 
@@ -1226,7 +1226,7 @@ def create_launch_cmd(
                 question=Question(
                     var_name="azure_resource_group",
                     question="What resource group name do you want to use (or create)?",
-                    default=arg_cache.azure_resource_group,
+                    default=arg_cache["azure_resource_group"],
                     kind="string",
                     cache=True,
                 ),
@@ -1237,7 +1237,7 @@ def create_launch_cmd(
                 question=Question(
                     var_name="azure_location",
                     question="If this is a new resource group what location?",
-                    default=arg_cache.azure_location,
+                    default=arg_cache["azure_location"],
                     kind="string",
                     cache=True,
                 ),
@@ -1248,7 +1248,7 @@ def create_launch_cmd(
                 question=Question(
                     var_name="azure_size",
                     question="What size machine?",
-                    default=arg_cache.azure_size,
+                    default=arg_cache["azure_size"],
                     kind="string",
                     cache=True,
                 ),
@@ -1259,7 +1259,7 @@ def create_launch_cmd(
                 question=Question(
                     var_name="azure_username",
                     question="What do you want the username for the VM to be?",
-                    default=arg_cache.azure_username,
+                    default=arg_cache["azure_username"],
                     kind="string",
                     cache=True,
                 ),
@@ -1270,7 +1270,7 @@ def create_launch_cmd(
                 question=Question(
                     var_name="auth_type",
                     question="Do you want to login with a key or password",
-                    default=arg_cache.auth_type,
+                    default=arg_cache["auth_type"],
                     kind="option",
                     options=["key", "password"],
                     cache=True,
@@ -1283,7 +1283,7 @@ def create_launch_cmd(
                 key_path_question = Question(
                     var_name="azure_key_path",
                     question=f"Absolute path of the private key to access {username}@{host}?",
-                    default=arg_cache.azure_key_path,
+                    default=arg_cache["azure_key_path"],
                     kind="path",
                     cache=True,
                 )
@@ -1337,7 +1337,7 @@ def create_launch_cmd(
                 Question(
                     var_name="azure_repo",
                     question="Repo to fetch source from?",
-                    default=arg_cache.azure_repo,
+                    default=arg_cache["azure_repo"],
                     kind="string",
                     cache=True,
                 ),
@@ -1347,7 +1347,7 @@ def create_launch_cmd(
                 Question(
                     var_name="azure_branch",
                     question="Branch to monitor for updates?",
-                    default=arg_cache.azure_branch,
+                    default=arg_cache["azure_branch"],
                     kind="string",
                     cache=True,
                 ),
@@ -1405,7 +1405,7 @@ def create_launch_cmd(
                 question=Question(
                     var_name="gcp_project_id",
                     question="What PROJECT ID do you want to use?",
-                    default=arg_cache.gcp_project_id,
+                    default=arg_cache["gcp_project_id"],
                     kind="string",
                     cache=True,
                 ),
@@ -1416,7 +1416,7 @@ def create_launch_cmd(
                 question=Question(
                     var_name="gcp_zone",
                     question="What zone do you want your VM in?",
-                    default=arg_cache.gcp_zone,
+                    default=arg_cache["gcp_zone"],
                     kind="string",
                     cache=True,
                 ),
@@ -1427,7 +1427,7 @@ def create_launch_cmd(
                 question=Question(
                     var_name="gcp_machine_type",
                     question="What size machine?",
-                    default=arg_cache.gcp_machine_type,
+                    default=arg_cache["gcp_machine_type"],
                     kind="string",
                     cache=True,
                 ),
@@ -1438,7 +1438,7 @@ def create_launch_cmd(
                 question=Question(
                     var_name="gcp_username",
                     question="What is your shell username?",
-                    default=arg_cache.gcp_username,
+                    default=arg_cache["gcp_username"],
                     kind="string",
                     cache=True,
                 ),
@@ -1448,7 +1448,7 @@ def create_launch_cmd(
             key_path_question = Question(
                 var_name="gcp_key_path",
                 question=f"Private key to access user@{host}?",
-                default=arg_cache.gcp_key_path,
+                default=arg_cache["gcp_key_path"],
                 kind="path",
                 cache=True,
             )
@@ -1482,7 +1482,7 @@ def create_launch_cmd(
                 Question(
                     var_name="gcp_repo",
                     question="Repo to fetch source from?",
-                    default=arg_cache.gcp_repo,
+                    default=arg_cache["gcp_repo"],
                     kind="string",
                     cache=True,
                 ),
@@ -1492,7 +1492,7 @@ def create_launch_cmd(
                 Question(
                     var_name="gcp_branch",
                     question="Branch to monitor for updates?",
-                    default=arg_cache.gcp_branch,
+                    default=arg_cache["gcp_branch"],
                     kind="string",
                     cache=True,
                 ),
@@ -1538,7 +1538,7 @@ def create_launch_cmd(
                     question=Question(
                         var_name="username",
                         question=f"Username for {host} with sudo privledges?",
-                        default=arg_cache.username,
+                        default=arg_cache["username"],
                         kind="string",
                         cache=True,
                     ),
@@ -1548,7 +1548,7 @@ def create_launch_cmd(
                     question=Question(
                         var_name="auth_type",
                         question="Do you want to login with a key or password",
-                        default=arg_cache.auth_type,
+                        default=arg_cache["auth_type"],
                         kind="option",
                         options=["key", "password"],
                         cache=True,
@@ -1560,7 +1560,7 @@ def create_launch_cmd(
                         question=Question(
                             var_name="key_path",
                             question=f"Private key to access {parsed_kwargs['username']}@{host}?",
-                            default=arg_cache.key_path,
+                            default=arg_cache["key_path"],
                             kind="path",
                             cache=True,
                         ),
@@ -1580,7 +1580,7 @@ def create_launch_cmd(
                 question=Question(
                     var_name="repo",
                     question="Repo to fetch source from?",
-                    default=arg_cache.repo,
+                    default=arg_cache["repo"],
                     kind="string",
                     cache=True,
                 ),
@@ -1591,7 +1591,7 @@ def create_launch_cmd(
                 Question(
                     var_name="branch",
                     question="Branch to monitor for updates?",
-                    default=arg_cache.branch,
+                    default=arg_cache["branch"],
                     kind="string",
                     cache=True,
                 ),
@@ -2497,7 +2497,7 @@ def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
                     question=Question(
                         var_name="username",
                         question=f"Username for {host} with sudo privledges?",
-                        default=arg_cache.username,
+                        default=arg_cache["username"],
                         kind="string",
                         cache=True,
                     ),
@@ -2507,7 +2507,7 @@ def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
                     question=Question(
                         var_name="auth_type",
                         question="Do you want to login with a key or password",
-                        default=arg_cache.auth_type,
+                        default=arg_cache["auth_type"],
                         kind="option",
                         options=["key", "password"],
                         cache=True,
@@ -2519,7 +2519,7 @@ def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
                         question=Question(
                             var_name="key_path",
                             question=f"Private key to access {parsed_kwargs['username']}@{host}?",
-                            default=arg_cache.key_path,
+                            default=arg_cache["key_path"],
                             kind="path",
                             cache=True,
                         ),
@@ -3409,7 +3409,7 @@ def add_intro_notebook(directory: str, reset: bool = False) -> str:
                 file_path, _, _ = quickstart_download_notebook(
                     url=url, directory=directory, reset=reset
                 )
-    if arg_cache.install_wizard_complete:
+    if arg_cache["install_wizard_complete"]:
         filename = filenames[0]
     else:
         filename = filenames[1]
@@ -3486,7 +3486,7 @@ def ssh(ip_address: str, cmd: str) -> None:
             question=Question(
                 var_name="azure_username",
                 question="What is the username for the VM?",
-                default=arg_cache.azure_username,
+                default=arg_cache["azure_username"],
                 kind="string",
                 cache=True,
             ),
@@ -3496,7 +3496,7 @@ def ssh(ip_address: str, cmd: str) -> None:
             question=Question(
                 var_name="auth_type",
                 question="Do you want to login with a key or password",
-                default=arg_cache.auth_type,
+                default=arg_cache["auth_type"],
                 kind="option",
                 options=["key", "password"],
                 cache=True,
@@ -3509,7 +3509,7 @@ def ssh(ip_address: str, cmd: str) -> None:
                 question=Question(
                     var_name="azure_key_path",
                     question="Absolute path to the private key of the VM?",
-                    default=arg_cache.azure_key_path,
+                    default=arg_cache["azure_key_path"],
                     kind="string",
                     cache=True,
                 ),
