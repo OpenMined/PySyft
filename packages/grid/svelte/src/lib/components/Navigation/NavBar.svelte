@@ -22,7 +22,9 @@
       </div>
       <div class="flex flex-col gap-y-2 pl-3">
         <h4 class="text-gray-200 text-sm font-roboto">Canada Domain</h4>
-        <Badge variant="blue">{parseBadgeForNav('ID#449f4f997a96467f90f7af8b396928f1')}</Badge>
+        <Badge variant="primary-dark"
+          >{parseBadgeForNav('ID#449f4f997a96467f90f7af8b396928f1')}</Badge
+        >
         <Link class="text-gray-200 font-roboto text-sm" to="/login">Logout</Link>
       </div>
       <div class="flex justify-center w-12 px-3 pt-1" style="color: #8F8AA8">

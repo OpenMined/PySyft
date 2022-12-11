@@ -10,7 +10,7 @@
 </script>
 
 <script lang="ts">
-  export let color: TagColor;
+  export let color: TagColor = tagColors.primary as TagColor;
   export let disabled: boolean = false;
 
   const tagColor = tagColors[color] || tagColors.primary;
