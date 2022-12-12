@@ -209,6 +209,20 @@ def publish_dataset(msg: PublishDatasetMessage,
     depl = cli.deployment_info(msg.deployment_id)
     if depl.is_deleted==True:
         raise OblvEnclaveError("User cannot connect to this deployment, as it is no longer available.")
+    # if depl.is_dev_env:
+    #         process = subprocess.Popen([
+    #             "/usr/local/bin/oblv", "connect",
+    #             "--private-key", private_file_name,
+    #             "--public-key", public_file_name,
+    #             "--url", depl.instance.service_url,
+    #             "--pcr0",depl.pcr_codes[0],
+    #             "--pcr1",depl.pcr_codes[1],
+    #             "--pcr2",depl.pcr_codes[2],
+    #             "--port","443",
+    #             "--lport","3030",
+    #             "--disable-pcr-check"
+    #         ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # else:
     process = subprocess.Popen([
         "/usr/local/bin/oblv", "connect",
         "--private-key", private_file_name,
@@ -237,8 +251,6 @@ def publish_dataset(msg: PublishDatasetMessage,
         })
     process.kill()
     process.wait(1) 
-    
-    debug(req.text)
     if req.status_code==401:
         raise OblvEnclaveUnAuthorizedError()
     elif req.status_code == 400:
@@ -285,6 +297,20 @@ def check_connection(msg: CheckEnclaveConnectionMessage,
         depl = cli.deployment_info(msg.deployment_id)
         if depl.is_deleted==True:
             raise OblvEnclaveError("User cannot connect to this deployment, as it is no longer available.")
+        # if depl.is_dev_env:
+        #         process = subprocess.Popen([
+        #             "/usr/local/bin/oblv", "connect",
+        #             "--private-key", private_file_name,
+        #             "--public-key", public_file_name,
+        #             "--url", depl.instance.service_url,
+        #             "--pcr0",depl.pcr_codes[0],
+        #             "--pcr1",depl.pcr_codes[1],
+        #             "--pcr2",depl.pcr_codes[2],
+        #             "--port","443",
+        #             "--lport","3030",
+        #             "--disable-pcr-check"
+        #         ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # else:
         process = subprocess.Popen([
             "/usr/local/bin/oblv", "connect",
             "--private-key", private_file_name,
@@ -300,15 +326,19 @@ def check_connection(msg: CheckEnclaveConnectionMessage,
             d = process.stderr.readline().decode()
             debug(d)
             if d.__contains__("Error:  Invalid PCR Values"):
+                process.kill()
+                process.wait(1)
                 raise OblvProxyConnectPCRError()
             elif d.__contains__("Error"):
+                process.kill()
+                process.wait(1)
                 raise OblvEnclaveError(message=d)
             elif d.__contains__("listening on"):
+                process.kill()
+                process.wait(1)
                 break
         
         debug("Found listening. Now ending the process")
-        process.kill()
-        process.wait(1)
         
            
         #To Do - Timeout, and process not found
@@ -351,6 +381,20 @@ def dataset_publish_budget(msg: PublishApprovalMessage,
     depl = cli.deployment_info(msg.deployment_id)
     if depl.is_deleted==True:
         raise OblvEnclaveError("User cannot connect to this deployment, as it is no longer available.")
+    # if depl.is_dev_env:
+    #         process = subprocess.Popen([
+    #             "/usr/local/bin/oblv", "connect",
+    #             "--private-key", private_file_name,
+    #             "--public-key", public_file_name,
+    #             "--url", depl.instance.service_url,
+    #             "--pcr0",depl.pcr_codes[0],
+    #             "--pcr1",depl.pcr_codes[1],
+    #             "--pcr2",depl.pcr_codes[2],
+    #             "--port","443",
+    #             "--lport","3030",
+    #             "--disable-pcr-check"
+    #         ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # else:
     process = subprocess.Popen([
         "/usr/local/bin/oblv", "connect",
         "--private-key", private_file_name,
@@ -360,7 +404,7 @@ def dataset_publish_budget(msg: PublishApprovalMessage,
         "--pcr1",depl.pcr_codes[1],
         "--pcr2",depl.pcr_codes[2],
         "--port","443",
-        "--lport","3031"
+        "--lport","3030"
     ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     while process.poll() is None:
         d = process.stderr.readline().decode()
@@ -377,7 +421,7 @@ def dataset_publish_budget(msg: PublishApprovalMessage,
         "publish_request_id": msg.result_id,
         "current_budget": current_budget,
         }
-    req = requests.post("http://127.0.0.1:3031/tensor/publish/current_budget", json=data_obj)
+    req = requests.post("http://127.0.0.1:3030/tensor/publish/current_budget", json=data_obj)
     process.kill()
     process.wait(1)       
     debug(req.text)
@@ -420,6 +464,20 @@ def dataset_publish_budget_deduction(msg: DeductBudgetMessage,
     depl = cli.deployment_info(msg.deployment_id)
     if depl.is_deleted==True:
         raise OblvEnclaveError("User cannot connect to this deployment, as it is no longer available.")
+    # if depl.is_dev_env:
+    #         process = subprocess.Popen([
+    #             "/usr/local/bin/oblv", "connect",
+    #             "--private-key", private_file_name,
+    #             "--public-key", public_file_name,
+    #             "--url", depl.instance.service_url,
+    #             "--pcr0",depl.pcr_codes[0],
+    #             "--pcr1",depl.pcr_codes[1],
+    #             "--pcr2",depl.pcr_codes[2],
+    #             "--port","443",
+    #             "--lport","3030",
+    #             "--disable-pcr-check"
+    #         ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # else:
     process = subprocess.Popen([
         "/usr/local/bin/oblv", "connect",
         "--private-key", private_file_name,
@@ -429,7 +487,7 @@ def dataset_publish_budget_deduction(msg: DeductBudgetMessage,
         "--pcr1",depl.pcr_codes[1],
         "--pcr2",depl.pcr_codes[2],
         "--port","443",
-        "--lport","3031"
+        "--lport","3030"
     ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     while process.poll() is None:
         d = process.stderr.readline().decode()
@@ -441,7 +499,7 @@ def dataset_publish_budget_deduction(msg: DeductBudgetMessage,
         elif d.__contains__("listening on"):
             break
     approval = node.users.deduct_epsilon_for_user(verify_key,node.users.get_budget_for_user(verify_key),msg.budget_to_deduct)
-    req = requests.post("http://127.0.0.1:3031/tensor/publish/budget_deducted", json={
+    req = requests.post("http://127.0.0.1:3030/tensor/publish/budget_deducted", json={
         "publish_request_id": msg.result_id,
         "budget_deducted": approval
         })

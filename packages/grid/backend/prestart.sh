@@ -21,10 +21,9 @@ then
     # Oblivious Proxy Client Installation
     apt-get update
     apt-get -y install wget
-    apt-get -y install unzip
     wget -O oblv-ccli-0.4.0-x86_64-unknown-linux-musl.tar.gz https://api.oblivious.ai/oblv-ccli/0.4.0/oblv-ccli-0.4.0-x86_64-unknown-linux-musl.tar.gz
-    mkdir oblv-ccli-0.4.0-x86_64-unknown-linux-musl
-    tar -xf oblv-ccli-0.4.0-x86_64-unknown-linux-musl.tar.gz --directory oblv-ccli-0.4.0-x86_64-unknown-linux-musl
+    mkdir -p oblv-ccli-0.4.0-x86_64-unknown-linux-musl
+    tar -xf oblv-ccli-0.4.0-x86_64-unknown-linux-musl.tar.gz -C oblv-ccli-0.4.0-x86_64-unknown-linux-musl
     chmod +x $(pwd)/oblv-ccli-0.4.0-x86_64-unknown-linux-musl/oblv
     ln -sf $(pwd)/oblv-ccli-0.4.0-x86_64-unknown-linux-musl/oblv /usr/local/bin/oblv  #-f is for force
 fi

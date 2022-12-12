@@ -55,8 +55,9 @@ class OblvAPI(RequestAPI):
                 raise Exception(f"{type(self)} has no response")
             return content
 
-    def check_connection(self, **kwargs: Any) -> Any:
-        response = self.perform_api_request(syft_msg=CheckEnclaveConnectionMessage, content=kwargs)
+    def check_connection(self, deployment: DeploymentClient,**kwargs: Any) -> Any:
+        content={"deployment_id":deployment.deployment_id,"client":SyftOblvClient.from_client(deployment.oblv_client)}
+        response = self.perform_api_request(syft_msg=CheckEnclaveConnectionMessage, content=content)
         if isinstance(response, ExceptionMessage):
             raise response.exception_type
         else:

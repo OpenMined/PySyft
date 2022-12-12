@@ -70,7 +70,21 @@ class DeploymentClient():
         if depl.is_deleted==True:
             raise Exception("User cannot connect to this deployment, as it is no longer available.")
         try:
-            process = subprocess.Popen([
+            if depl.is_dev_env:
+                process = subprocess.Popen([
+                    "oblv", "connect",
+                    "--private-key", private_file_name,
+                    "--public-key", public_file_name,
+                    "--url", depl.instance.service_url,
+                    "--pcr0",depl.pcr_codes[0],
+                    "--pcr1",depl.pcr_codes[1],
+                    "--pcr2",depl.pcr_codes[2],
+                    "--port","443",
+                    "--lport",str(connection_port),
+                    "--disable-pcr-check"
+                ], stdout=log_file, stderr=log_file)
+            else:
+                process = subprocess.Popen([
                 "oblv", "connect",
                 "--private-key", private_file_name,
                 "--public-key", public_file_name,
@@ -80,8 +94,6 @@ class DeploymentClient():
                 "--pcr2",depl.pcr_codes[2],
                 "--port","443",
                 "--lport",str(connection_port)
-                # ,
-                # "--disable-pcr-check"
             ], stdout=log_file, stderr=log_file)
             log_file_read = open(log_file_name,"r")
             while True:
@@ -98,7 +110,7 @@ class DeploymentClient():
             print("Could not connect to Proxy")
             raise e
         else:
-            print("Successfully connected to proxy on port {}. The logs ".format(connection_port))
+            print("Successfully connected to proxy on port {}. The logs can be found at {}".format(connection_port, log_file_name))
         self.__conn_string = "http://127.0.0.1:"+str(connection_port)
         self.__logs = log_file_name
         self.__process=process
@@ -114,7 +126,7 @@ class DeploymentClient():
         depl = self.oblv_client.deployment_info(self.deployment_id)
         if depl.is_deleted==True:
             raise Exception("User cannot connect to this deployment, as it is no longer available.")
-        req = requests.post(self.__conn_string + "/tensor/dataset/list")
+        req = requests.get(self.__conn_string + "/tensor/dataset/list")
         if req.status_code==401:
             raise OblvUnAuthorizedError()
         elif req.status_code == 400:
