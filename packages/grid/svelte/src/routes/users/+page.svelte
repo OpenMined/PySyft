@@ -39,7 +39,7 @@
         </div>
       </div>
       <div
-        class="flex flex-row justify-between items-center border-solid border-2 
+        class="flex flex-row justify-between items-center border-solid border-2
         border-gray-100 rounded space-x-4 w-fit privacy-budget-background"
       >
         <div class="flex flex-col p-4">
