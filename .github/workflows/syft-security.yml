@@ -73,7 +73,7 @@ jobs:
         run: |
           pip install importlib-metadata==4.13.0
           bandit -r src
-          safety check -i 51457
+          safety check
 
       - name: Generate requirements.txt for snyk
         if: steps.changes.outputs.syft == 'true'
