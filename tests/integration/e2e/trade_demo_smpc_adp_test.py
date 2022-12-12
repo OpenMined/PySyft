@@ -1,6 +1,5 @@
 # stdlib
 import os
-from pathlib import Path
 import time
 from typing import Any
 from typing import Dict
@@ -15,8 +14,6 @@ import pytest
 import syft as sy
 from syft.core.adp.data_subject_list import DataSubjectArray
 from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
-from syft.util import download_file
-from syft.util import get_root_data_path
 
 sy.logger.remove()
 
@@ -25,16 +22,6 @@ BUDGET_INCREASE = 200
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
 print("ROOT_DIR", ROOT_DIR)
-
-
-def download_trade_dataset(csv_file: str) -> Path:
-    BASE_URL = "https://raw.githubusercontent.com/openmined/datasets/main/trade_flow/"
-    folder_name = "trade_flow"
-    dataset_path = get_root_data_path() / folder_name
-    url = f"{BASE_URL}{csv_file}"
-    print(url)
-    path = download_file(url=url, full_path=dataset_path / csv_file)
-    return path
 
 
 def get_user_details(unique_email: str) -> Dict[str, Any]:
@@ -57,7 +44,8 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
 
     # Canada
     ca_root = sy.login(email="info@openmined.org", password="changethis", port=9082)
-    ca_data = pd.read_csv(download_trade_dataset(csv_file="ca - feb 2021.csv"))[0:10]
+    canada_dataset_url = "https://github.com/OpenMined/datasets/blob/main/trade_flow/ca%20-%20feb%202021.csv?raw=True"
+    ca_data = pd.read_csv(canada_dataset_url)[0:10]
 
     canada_trade = (
         (np.array(list(ca_data["Trade Value (US$)"])) / 100000)[0:10]
@@ -93,7 +81,9 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
 
     # Italy
     it_root = sy.login(email="info@openmined.org", password="changethis", port=9083)
-    it_data = pd.read_csv(download_trade_dataset(csv_file="it - feb 2021.csv"))[0:10]
+
+    italy_dataset_url = "https://github.com/OpenMined/datasets/blob/main/trade_flow/it%20-%20feb%202021.csv?raw=True"
+    it_data = pd.read_csv(italy_dataset_url)[0:10]
 
     italy_trade = (
         (np.array(list(it_data["Trade Value (US$)"])) / 100000)[0:10]
@@ -136,7 +126,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
 
     it.request_budget(eps=BUDGET_INCREASE, reason="increase budget!")
 
-    time.sleep(20)
+    time.sleep(10)
 
     # until we fix the code this just accepts all requests in case it gets the
     # wrong one
@@ -150,7 +140,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     # ca_root.requests[-1].accept()
     # it_root.requests[-1].accept()
 
-    time.sleep(20)
+    time.sleep(10)
 
     assert round(ca.privacy_budget) == PRIVACY_BUDGET + BUDGET_INCREASE
     assert round(it.privacy_budget) == PRIVACY_BUDGET + BUDGET_INCREASE
