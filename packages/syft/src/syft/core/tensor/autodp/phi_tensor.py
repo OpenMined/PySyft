@@ -21,7 +21,6 @@ from scipy.ndimage.interpolation import rotate
 # relative
 from .... import lib
 from ....ast.klass import pointerize_args_and_kwargs
-from ....core.adp.data_subject import DataSubject
 from ....core.adp.data_subject_ledger import DataSubjectLedger
 from ....core.adp.data_subject_list import DataSubjectArray
 from ....core.adp.data_subject_list import dslarraytonumpyutf8

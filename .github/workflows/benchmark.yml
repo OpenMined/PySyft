@@ -37,7 +37,7 @@ jobs:
 
       - name: Install tox
         run: |
-          pip install --upgrade tox
+          pip install tox==3.27.1
 
       - name: Install mongo tools
         run: |
