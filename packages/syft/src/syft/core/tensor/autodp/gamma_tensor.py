@@ -2719,7 +2719,7 @@ class GammaTensor:
                 self.child.all(axis=axis, keepdims=keepdims, where=where)
             )
             func = lambda state: jnp.all(
-                self.reconstruct(state), axis=axis, keepdims=keepdims, where=where
+                self.reconstruct(state), axis=axis, keepdims=keepdims, where=np.array(where)
             )
 
         return GammaTensor(
