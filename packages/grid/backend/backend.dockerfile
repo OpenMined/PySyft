@@ -37,10 +37,10 @@ RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) != "x86_64" ]; then 
   # pip install --user /wheels/tensorflow_compression-2.10.0-cp310-cp310-linux_aarch64.whl; \
   fi
 
-# # install custom built python 3.10 wheel
-# RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) = "x86_64" ]; then \
-#   pip install --user /wheels/tensorflow_federated-0.36.0-py2.py3-none-any.whl; \
-#   fi
+# install tff
+RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) = "x86_64" ]; then \
+  pip install --user tensorflow-federated==0.40.0; \
+  fi
 
 WORKDIR /app
 COPY grid/backend/requirements.txt /app
@@ -87,12 +87,6 @@ COPY syft/MANIFEST.in /app/syft/MANIFEST.in
 COPY syft/src/syft/VERSION /app/syft/src/syft/VERSION
 COPY syft/src/syft/capnp /app/syft/src/syft/capnp
 COPY syft/src/syft/cache /app/syft/src/syft/cache
-
-
-# install tff
-RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) = "x86_64" ]; then \
-  pip install --user tensorflow-federated==0.40.0; \
-  fi
 
 # install syft
 RUN --mount=type=cache,target=/root/.cache \
