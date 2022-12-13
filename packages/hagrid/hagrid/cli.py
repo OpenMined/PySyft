@@ -1648,7 +1648,7 @@ def pull_command(cmd: str, kwargs: TypeDict[str, Any]) -> TypeList[str]:
         pull_cmd += " --file docker-compose.yml"
     else:
         pull_cmd += " --file docker-compose.pull.yml"
-    pull_cmd += " pull"
+    pull_cmd += " pull --ignore-pull-failures"  # ignore missing svelte kit for now
     return [pull_cmd]
 
 
@@ -1875,7 +1875,7 @@ def create_launch_docker_cmd(
         pass
 
     final_commands = {}
-    # final_commands["Pulling"] = pull_command(cmd, kwargs)
+    final_commands["Pulling"] = pull_command(cmd, kwargs)
 
     cmd += " --file docker-compose.yml"
     if "tls" in kwargs and kwargs["tls"] is True:

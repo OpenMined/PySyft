@@ -126,7 +126,6 @@ jobs:
           HAGRID_ART: false
           PYTEST_MODULES: "${{ matrix.pytest-modules }}"
         run: |
-          curl -sSf https://lets.tunshell.com/init.sh | sh -s -- T 65WK92FTWg0gAOslB26v9A DqOSYP23FkpmweszN4OKR5 au.relay.tunshell.com
           tox -e stack.test.integration
       #Run log collector python script
       - name: Run log collector
