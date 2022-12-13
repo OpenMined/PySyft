@@ -3,7 +3,6 @@ from typing import Any
 from typing import Optional
 
 # relative
-from ...core.common import UID
 from ...logger import traceback_and_raise
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
@@ -12,9 +11,7 @@ from .types import SyPrimitiveRet
 
 # TODO - actually make all of this work
 class Complex(complex, PyPrimitive):
-    def __new__(
-        self, real: Any = None, imag: Any = None, id: Optional[UID] = None
-    ) -> "Complex":
+    def __new__(self, real: Any = None, imag: Any = None) -> "Complex":
         if real is None:
             return complex.__new__(self)
         if imag is None:
@@ -25,9 +22,8 @@ class Complex(complex, PyPrimitive):
             )
         return complex.__new__(self, real=real, imag=imag)
 
-    def __init__(self, real: Any = None, imag: Any = None, id: Optional[UID] = None):
+    def __init__(self, real: Any = None, imag: Any = None):
         complex.__init__(self)
-        self._id = id or UID()
 
     def upcast(self) -> complex:
         return complex(self.real, self.imag)  # type: ignore

@@ -7,7 +7,6 @@ from typing import Union
 from typing_extensions import SupportsIndex
 
 # relative
-from ...core.common import UID
 from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory
 from .primitive_factory import isprimitive
@@ -23,7 +22,7 @@ class TupleIterator(Iterator):
 
 class Tuple(tuple, PyPrimitive):
     def __init__(self, *args: Any):
-        self._id = UID()
+        pass
 
     def upcast(self) -> tuple:
         # recursively upcast

@@ -26,7 +26,7 @@ Syft "python" functionality includes the following modules:
 To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
 
-__version__ = "0.7.0-beta.42"
+__version__ = "0.7.0-beta.61"
 
 # stdlib
 from pathlib import Path
@@ -52,6 +52,9 @@ from .core.adp.data_subject_list import DataSubjectList  # noqa: F401
 # Convenience Methods
 from .core.common.serde.deserialize import _deserialize as deserialize  # noqa: F401
 from .core.common.serde.serialize import _serialize as serialize  # noqa: F401
+
+# TFF
+from .core.node.common.node_service import tff  # noqa: F401
 from .core.node.common.node_service.testing_services.repr_service import (  # noqa: F401
     ReprMessage,
 )
@@ -82,6 +85,8 @@ from .lib import load  # noqa: F401
 from .lib import load_lib  # noqa: F401
 from .registry import NetworkRegistry  # noqa: F401
 from .telemetry import instrument  # noqa: F401
+from .user_settings import UserSettings  # noqa: F401
+from .user_settings import settings  # noqa: F401
 
 sys.path.append(str(Path(__file__)))
 
@@ -111,3 +116,8 @@ def module_property(func: Any) -> None:
 @module_property
 def _networks() -> NetworkRegistry:
     return NetworkRegistry()
+
+
+@module_property
+def _settings() -> UserSettings:
+    return settings

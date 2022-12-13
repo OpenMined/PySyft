@@ -2,36 +2,21 @@
 from typing import List
 
 # syft absolute
-from syft import flags
-
-if flags.USE_NEW_SERVICE:
-    # syft absolute
-    from syft.core.node.common.node_service.user_manager.new_user_messages import (
-        CreateUserMessage,
-    )
-    from syft.core.node.common.node_service.user_manager.new_user_messages import (
-        DeleteUserMessage,
-    )
-    from syft.core.node.common.node_service.user_manager.new_user_messages import (
-        GetUserMessage,
-    )
-    from syft.core.node.common.node_service.user_manager.new_user_messages import (
-        GetUsersMessage,
-    )
-    from syft.core.node.common.node_service.user_manager.new_user_messages import (
-        UpdateUserMessage,
-    )
-else:
-    from syft.core.node.common.node_service.user_manager.user_manager_service import (
-        CreateUserMessage,
-        DeleteUserMessage,
-        GetUserMessage,
-        GetUsersMessage,
-        UpdateUserMessage,
-    )
-
-
-# syft absolute
+from syft.core.node.common.node_service.user_manager.new_user_messages import (
+    CreateUserMessage,
+)
+from syft.core.node.common.node_service.user_manager.new_user_messages import (
+    DeleteUserMessage,
+)
+from syft.core.node.common.node_service.user_manager.new_user_messages import (
+    GetUserMessage,
+)
+from syft.core.node.common.node_service.user_manager.new_user_messages import (
+    GetUsersMessage,
+)
+from syft.core.node.common.node_service.user_manager.new_user_messages import (
+    UpdateUserMessage,
+)
 from syft.core.node.common.node_service.user_manager.user_manager_service import (
     GetCandidatesMessage,
 )
@@ -54,9 +39,7 @@ def create_user(new_user: UserCreate, current_user: UserPrivate) -> str:
         message_type=CreateUserMessage,
         **dict(new_user)
     )
-    if flags.USE_NEW_SERVICE:
-        return reply.message
-    return reply.resp_msg
+    return reply.message
 
 
 def get_user_requests(current_user: UserPrivate) -> List[UserCandidate]:
@@ -82,10 +65,7 @@ def get_all_users(current_user: UserPrivate) -> List[User]:
     reply = send_message_with_reply(
         signing_key=current_user.get_signing_key(), message_type=GetUsersMessage
     )
-    if flags.USE_NEW_SERVICE:
-        reply = reply.users
-    else:
-        reply = [user for user in reply.content]
+    reply = reply.users
     return reply
 
 
@@ -95,10 +75,6 @@ def get_user(user_id: int, current_user: UserPrivate) -> User:
         message_type=GetUserMessage,
         user_id=user_id,
     )
-
-    if not flags.USE_NEW_SERVICE:
-        result = result.content
-
     return result
 
 
@@ -111,9 +87,8 @@ def update_user(
         user_id=user_id,
         **updated_user.dict(exclude_unset=True)
     )
-    if flags.USE_NEW_SERVICE:
-        return reply.message
-    return reply.resp_msg
+
+    return reply.message
 
 
 def delete_user(user_id: int, current_user: UserPrivate) -> str:
@@ -122,7 +97,4 @@ def delete_user(user_id: int, current_user: UserPrivate) -> str:
         message_type=DeleteUserMessage,
         user_id=user_id,
     )
-    if flags.USE_NEW_SERVICE:
-        return reply.message
-    # return reply.message - if the other one doesn't work try this one? ;)
-    return reply.resp_msg
+    return reply.message

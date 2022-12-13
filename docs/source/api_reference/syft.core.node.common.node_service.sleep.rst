@@ -1,26 +1,32 @@
-syft.core.node.common.node\_service.sleep package
-=================================================
+syft.core.node.common.node\_service.sleep
+=========================================
 
 .. automodule:: syft.core.node.common.node_service.sleep
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
-Submodules
-----------
+   
+   
+   
 
-syft.core.node.common.node\_service.sleep.sleep\_messages module
-----------------------------------------------------------------
+   
+   
+   
 
-.. automodule:: syft.core.node.common.node_service.sleep.sleep_messages
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   
+   
+   
 
-syft.core.node.common.node\_service.sleep.sleep\_service module
----------------------------------------------------------------
+   
+   
+   
 
-.. automodule:: syft.core.node.common.node_service.sleep.sleep_service
-   :members:
-   :undoc-members:
-   :show-inheritance:
+
+
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   syft.core.node.common.node_service.sleep.sleep_messages
+   syft.core.node.common.node_service.sleep.sleep_service
+

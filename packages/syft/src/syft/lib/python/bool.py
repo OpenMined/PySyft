@@ -3,7 +3,6 @@ from typing import Any
 from typing import Optional
 
 # relative
-from ...core.common import UID
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
@@ -16,14 +15,13 @@ def dispatch_other(obj: Any) -> bool:
 
 
 class Bool(int, PyPrimitive):
-    def __new__(cls, value: Any = None, id: Optional[UID] = None) -> "Bool":
+    def __new__(cls, value: Any = None) -> "Bool":
         value = bool(value)
         obj = int.__new__(cls, value)
         return obj
 
-    def __init__(self, value: Any = None, id: Optional[UID] = None):
+    def __init__(self, value: Any = None):
         self.value: bool = bool(value)
-        self._id: UID = id if id else UID()
         self.my_field: int = 0
 
     def upcast(self) -> bool:
@@ -223,16 +221,16 @@ class Bool(int, PyPrimitive):
     def conjugate(self) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=self.value.conjugate())
 
-    def denominator(self) -> SyPrimitiveRet:
+    def denominator(self) -> SyPrimitiveRet:  # type: ignore[override]
         return PrimitiveFactory.generate_primitive(value=self.value.denominator)
 
     # TODO: add support for properties on these 4 functions
 
-    def imag(self) -> SyPrimitiveRet:
+    def imag(self) -> SyPrimitiveRet:  # type: ignore[override]
         return PrimitiveFactory.generate_primitive(value=self.value.imag)
 
-    def numerator(self) -> SyPrimitiveRet:
+    def numerator(self) -> SyPrimitiveRet:  # type: ignore[override]
         return PrimitiveFactory.generate_primitive(value=self.value.numerator)
 
-    def real(self) -> SyPrimitiveRet:
+    def real(self) -> SyPrimitiveRet:  # type: ignore[override]
         return PrimitiveFactory.generate_primitive(value=self.value.real)

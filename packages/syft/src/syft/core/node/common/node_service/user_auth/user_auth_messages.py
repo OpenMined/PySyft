@@ -84,7 +84,7 @@ class UserLoginMessageWithReply(GenericPayloadMessageWithReply):
             #     settings=settings, subject=user.id, expires_delta=access_token_expires
             # )
             # metadata = (
-            #     sy.serialize(node.get_metadata_for_client())
+            #     serialize(node.get_metadata_for_client())
             #     .SerializeToString()
             #     .decode("ISO-8859-1")
             # )

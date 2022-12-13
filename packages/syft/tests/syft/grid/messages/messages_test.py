@@ -10,7 +10,6 @@ from syft.core.node.common.node_service.request_receiver import (
     request_receiver_messages,
 )
 from syft.core.node.common.node_service.role_manager import role_manager_messages
-from syft.core.node.common.node_service.tensor_manager import tensor_manager_messages
 
 messages = {
     # role_manager_messages
@@ -108,61 +107,6 @@ messages = {
                 },
             }
         },
-    },
-    # tensor_manager_messages
-    "CreateTensor": {
-        "module": tensor_manager_messages,
-        "request_content": {
-            "tensor": [1, 2, 3, 4, 5, 6],
-            "description": "Tensor Description",
-            "tags": ["#x", "#data-sample"],
-            "pointable": True,
-        },
-        "response_content": {"msg": "Tensor created succesfully!"},
-    },
-    "DeleteTensor": {
-        "module": tensor_manager_messages,
-        "request_content": {"tensor_id": "f2a6as5d16fasd"},
-        "response_content": {"msg": "Tensor deleted successfully!"},
-    },
-    "GetTensor": {
-        "module": tensor_manager_messages,
-        "request_content": {"tensor_id": "eqw9e4a5d846"},
-        "response_content": {
-            "description": "Tensor description",
-            "tags": ["#x", "#data-sample"],
-        },
-    },
-    "GetTensors": {
-        "module": tensor_manager_messages,
-        "request_content": {},
-        "response_content": {
-            "workers": {
-                "626sadaf631": {
-                    "tensor": [1, 2, 3, 4, 5, 6],
-                    "description": "Tensor description",
-                    "tags": ["#x", "#data-sample"],
-                    "pointable": True,
-                },
-                "a84ew64wq6e": {
-                    "tensor": [9, 8, 2, 3, 5, 6],
-                    "description": "Tensor sample description",
-                    "tags": ["#y", "#label-sample"],
-                    "pointable": True,
-                },
-            }
-        },
-    },
-    "UpdateTensor": {
-        "module": tensor_manager_messages,
-        "request_content": {
-            "tensor_id": "546a4d51",
-            "tensor": [1, 2, 3, 4, 5, 6],
-            "description": "Tensor description",
-            "tags": ["#x", "#data-sample"],
-            "pointable": True,
-        },
-        "response_content": {"msg": "Tensor updated successfully!"},
     },
     # request_receiver_messages
     "CreateRequest": {

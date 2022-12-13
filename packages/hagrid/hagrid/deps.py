@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from dataclasses import field
 from datetime import datetime
+import getpass
 import json
 import os
 import platform
@@ -31,11 +32,10 @@ from typing import Union
 from packaging import version
 from packaging.version import Version
 import requests
+from rich.console import Console
 
 # relative
 from .exceptions import MissingDependency
-from .lib import commit_hash
-from .lib import hagrid_root
 from .mode import EDITABLE_MODE
 from .nb_output import NBOutput
 from .version import __version__
@@ -67,6 +67,16 @@ SYFT_MINIMUM_PYTHON_VERSION = (3, 7)
 SYFT_MINIMUM_PYTHON_VERSION_STRING = "3.7"
 SYFT_MAXIMUM_PYTHON_VERSION = (3, 10, 999)
 SYFT_MAXIMUM_PYTHON_VERSION_STRING = "3.10"
+WHITE = "\033[0;37m"
+GREEN = "\033[0;32m"
+YELLOW = "\033[0;33m"
+BOLD = "\033[1m"
+NO_COLOR = "\033[0;0m"
+WARNING_MSG = f"\033[0;33mWARNING:{NO_COLOR}"
+
+
+def get_version_string() -> str:
+    return str(__version__) + "-dev" if EDITABLE_MODE else ""
 
 
 @dataclass
@@ -83,9 +93,10 @@ class Dependency:
     name: str = ""
     display: str = ""
     only_os: str = ""
-    version: Optional[Version] = None
+    version: Optional[Version] = version.parse("0.0")
     valid: bool = False
     issues: List[SetupIssue] = field(default_factory=list)
+    output_in_text: bool = False
 
     def check(self) -> None:
         pass
@@ -98,9 +109,10 @@ class DependencySyftOS(Dependency):
     def check(self) -> None:
         self.display = "✅ " + ENVIRONMENT["os"]
         if is_windows():
-            self.issues.append(windows_jaxlib())
+            if not get_pip_package("jaxlib"):
+                self.issues.append(windows_jaxlib())
         elif is_apple_silicon():
-            self.issues.append(macos_arm64_pycapnp())
+            pass
 
 
 @dataclass
@@ -130,7 +142,7 @@ class DependencyGridGit(Dependency):
         if binary_info.path and binary_info.version:
             self.display = "✅ Git " + str(binary_info.version)
         else:
-            self.issues.append(git_install())
+            self.issues.append(git_install(self.output_in_text))
             self.display = "❌ Git not installed"
 
 
@@ -165,8 +177,11 @@ class DependencyGridDockerCompose(Dependency):
         binary_info = BinaryInfo(
             binary="docker", version_cmd="docker compose version"
         ).get_binary_info()
-        if binary_info.path and binary_info.version > version.parse(
-            MINIMUM_DOCKER_COMPOSE_VERSION
+
+        if (
+            binary_info.path
+            and binary_info.version
+            and binary_info.version > version.parse(MINIMUM_DOCKER_COMPOSE_VERSION)
         ):
             self.display = "✅ Docker Compose " + str(binary_info.version)
         else:
@@ -276,9 +291,9 @@ def get_pip_package(package_name: str) -> Optional[Dict[str, str]]:
 
 def get_pip_packages() -> List[Dict[str, str]]:
     try:
-        cmd = "python -m pip list --format=json"
+        cmd = "python -m pip list --format=json --disable-pip-version-check"
         output = subprocess.check_output(cmd, shell=True)  # nosec
-        return json.loads(str(output.decode("utf-8")))
+        return json.loads(str(output.decode("utf-8")).strip())
     except Exception as e:
         print("failed to pip list", e)
         raise e
@@ -294,7 +309,7 @@ class BinaryInfo:
     version_cmd: str
     error: Optional[str] = None
     path: Optional[str] = None
-    version: Optional[Union[str, Version]] = None
+    version: Optional[Union[str, Version]] = version.parse("0.0")
     version_regex = (
         r"[^\d]*("
         + r"(0|[1-9][0-9]*)\.*(0|[1-9][0-9]*)\.*(0|[1-9][0-9]*)"
@@ -310,6 +325,9 @@ class BinaryInfo:
             if matches is not None:
                 self.version = matches.group(1)
                 try:
+                    if "-gitpod" in self.version:
+                        parts = self.version.split("-gitpod")
+                        self.version = parts[0]
                     self.version = version.parse(self.version)
                 except Exception:  # nosec
                     pass
@@ -322,11 +340,14 @@ class BinaryInfo:
             if returncode == 0:
                 self.extract_version(lines=lines)
             else:
-                self.error = lines[0]
+                if len(lines) > 0:
+                    self.error = lines[0]
+                else:
+                    self.error = f"Error, no output from {self.binary}"
         return self
 
 
-def get_cli_output(cmd: str) -> Tuple[int, List[str]]:
+def get_cli_output(cmd: str, timeout: Optional[float] = None) -> Tuple[int, List[str]]:
     try:
         proc = subprocess.Popen(  # nosec
             cmd.split(" "),
@@ -336,13 +357,21 @@ def get_cli_output(cmd: str) -> Tuple[int, List[str]]:
         lines = []
         if proc.stdout and hasattr(proc.stdout, "readlines"):
             lines = [line.decode("utf-8") for line in proc.stdout.readlines()]
-        proc.communicate()
+
+        if proc.stderr and hasattr(proc.stderr, "readlines"):
+            lines.extend([line.decode("utf-8") for line in proc.stderr.readlines()])
+
+        proc.communicate(timeout=timeout)
         return (int(proc.returncode), lines)
     except Exception as e:
         return (-1, [str(e)])
 
 
 def gather_debug() -> Dict[str, Any]:
+    # relative
+    from .lib import commit_hash
+    from .lib import hagrid_root
+
     now = datetime.now().astimezone()
     dt_string = now.strftime("%d/%m/%Y %H:%M:%S %Z")
     debug_info: Dict[str, Any] = {}
@@ -350,7 +379,7 @@ def gather_debug() -> Dict[str, Any]:
     debug_info["python_binary"] = sys.executable
     debug_info["dependencies"] = DEPENDENCIES
     debug_info["environment"] = ENVIRONMENT
-    debug_info["hagrid"] = __version__
+    debug_info["hagrid"] = get_version_string()
     debug_info["hagrid_dev"] = EDITABLE_MODE
     debug_info["hagrid_path"] = hagrid_root()
     debug_info["hagrid_repo_sha"] = commit_hash()
@@ -469,8 +498,105 @@ def check_docker_version() -> Optional[str]:
     return version
 
 
+def docker_running(timeout: Optional[float] = None) -> Tuple[bool, str]:
+
+    status, error_msg = False, ""
+
+    try:
+        cmd = "docker info"
+        returncode, msg = get_cli_output(cmd, timeout=timeout)
+        if returncode == 0:
+            status, error_msg = True, "✅ Docker service is running"
+        else:
+            error_msg = f"""❌ Docker service is either not installed or running.\n\n
+To install docker, execute the following steps:\n
+1 - Install docker on your machine by using the proper steps according to your OS.\n
+{WHITE}MacOS: {GREEN}brew install --cask docker
+{WHITE}Linux: {GREEN}curl -fsSL https://get.docker.com -o get-docker.sh && chmod +777 get-docker.sh && ./get-docker.sh
+{WHITE}Windows: {GREEN}choco install docker-desktop -y{NO_COLOR} \n
+2 - Run \'{GREEN}sudo usermod -a -G docker $USER\'{WHITE} to enable this user to execute docker.
+3 - log out and log back in so that your group membership is re-evaluated {NO_COLOR}.
+-------------------------------------------------------------------------------------------------------\n
+To start your docker service:\n
+1 - {WHITE}MacOS/Windows: One can start docker by clicking on the "Docker" icon in your Applications folder.{NO_COLOR}
+2 - {WHITE}Ubuntu: {GREEN}sudo service docker start {NO_COLOR}
+-------------------------------------------------------------------------------------------------------\n
+"""
+        error_msg += f"""{YELLOW}{BOLD}Std Output Logs{NO_COLOR}
+=================\n\n""" + "\n".join(
+            msg
+        )
+
+    except Exception as e:  # nosec
+        error_msg = str(e)
+
+    return status, error_msg
+
+
+def allowed_to_run_docker() -> Tuple[bool, str]:
+    bool_result, msg = True, ""
+    if platform.system().lower() == "linux":
+        _, line = get_cli_output("getent group docker")
+
+        # get user
+        user = getpass.getuser()
+
+        # Check if current user is root.
+        if os.geteuid() == 0:
+            bool_result = True
+
+        # Check if current user is member of docker group.
+        elif user not in "".join(line):
+            msg = f"""⚠️  User is not a member of docker group.
+{WHITE}You're currently not allowed to run docker, perform the following steps:\n
+    1 - Run \'{GREEN}sudo usermod -a -G docker $USER\'{WHITE} to add docker permissions.
+    2 - log out and log back in so that your group membership is re-evaluated {NO_COLOR}."""
+            # NOTE: For some reason, inside of CI pipeline the user (runner) isn't a member of
+            # docker group and doesn't have sudo priviledges, but can execute docker without
+            # permission issues. This is just a workaround to avoid raising an exeception
+            # in this scenario without reason.
+            if user == "runner":
+                bool_result = True
+            else:
+                bool_result = False
+
+    return bool_result, msg
+
+
+def check_docker_service_status(animated: bool = True) -> None:
+    """Check the status of the docker service.
+
+    Raises:
+        MissingDependency: If docker service is not running.
+    """
+
+    if not animated:
+        docker_installed, msg = docker_running(timeout=60)
+        user_allowed, permission_msg = allowed_to_run_docker()
+    else:
+        console = Console()
+        # putting \t at the end seems to prevent weird chars getting outputted
+        # during animations in the juypter notebook
+        with console.status("[bold blue]Checking for Docker Service[/bold blue]\t"):
+            docker_installed, msg = docker_running(timeout=60)
+            user_allowed, permission_msg = allowed_to_run_docker()
+
+    # Check if user is allowed to execute docker
+    if not user_allowed:
+        raise MissingDependency(permission_msg)
+
+    # If docker bin was not found.
+    if not docker_installed:
+        raise MissingDependency(msg)
+
+    print("✅ Docker service is running")
+
+
 def check_deps(
-    deps: Dict[str, Dependency], of: str = "", display: bool = True
+    deps: Dict[str, Dependency],
+    of: str = "",
+    display: bool = True,
+    output_in_text: bool = False,
 ) -> Union[Dict[str, Dependency], NBOutput]:
     output = ""
     if len(of) > 0:
@@ -479,34 +605,54 @@ def check_deps(
     issues = []
     for name, dep in deps.items():
         dep.check()
-        output += dep.display + "\n"
+        output += (dep.display + "\n") if display else ""
         issues += dep.issues
-    if len(issues) > 0:
-        output += "<h4>🚨 Some issues were found</h4>"
-        for issue in issues:
-            output += f"<h5><strong>Issue</strong>: {issue.description}</h5>"
-            if issue.solution != "":
-                output += f"<strong>Solution</strong>:\n{issue.solution}"
-            if issue.command != "":
-                output += (
-                    "<blockquote><strong>Command</strong>:\n "
-                    + f"<tt>[ ]</tt><code>!{issue.command}</code></blockquote>"
-                )
-            output += "\n"
 
-    return NBOutput(output).to_html()
+    if not output_in_text:
+        if len(issues) > 0:
+            output += "<h4>🚨 Some issues were found</h4>"
+            for issue in issues:
+                output += f"<h5><strong>Issue</strong>: {issue.description}</h5>"
+                if issue.solution != "":
+                    output += f"<strong>Solution</strong>:\n{issue.solution}"
+                if issue.command != "":
+                    output += (
+                        "<blockquote><strong>Command</strong>:\n "
+                        + f"<tt>[ ]</tt><code>!{issue.command}</code></blockquote>"
+                    )
+                output += "\n"
+
+        return NBOutput(output).to_html()
+    else:
+        if len(issues) > 0:
+            output += "🚨 Some issues were found\n"
+            for issue in issues:
+                output += f"\nIssue: {issue.description}\n"
+                if issue.solution != "":
+                    output += f"\nSolution:\n{issue.solution}\n"
+                if issue.command != "":
+                    output += "\nCommand:\n" + f"{issue.command} "
+                output += "\n"
+
+        if len(output) > 0:
+            print(output)
+        return None  # type: ignore
 
 
-def check_grid_docker(display: bool = True) -> Union[Dict[str, Dependency], NBOutput]:
+def check_grid_docker(
+    display: bool = True, output_in_text: bool = False
+) -> Union[Dict[str, Dependency], NBOutput]:
     try:
         deps: Dict[str, Dependency] = {}
         deps["git"] = DependencyGridGit(name="git")
         deps["docker"] = DependencyGridDocker(name="docker")
         deps["docker_compose"] = DependencyGridDockerCompose(name="docker compose")
-        return check_deps(of="Grid", deps=deps, display=display)
+        return check_deps(
+            of="Grid", deps=deps, display=display, output_in_text=output_in_text
+        )
     except Exception as e:
         try:
-            if display:
+            if display and not output_in_text:
                 return NBOutput(debug_exception(e=e)).to_html()
         except Exception:  # nosec
             pass
@@ -610,7 +756,7 @@ PACKAGE_MANAGER_COMMANDS = {
     "docker": {
         "macos": "brew install --cask docker",
         "windows": "choco install docker-desktop -y",
-        "linux": "curl -fsSL https://get.docker.com -o get-docker.sh",
+        "linux": "curl -fsSL https://get.docker.com -o get-docker.sh && chmod +777 get-docker.sh && ./get-docker.sh",
         "backup_url": "https://www.docker.com/products/docker-desktop/",
     },
     "docker_compose": {
@@ -636,10 +782,9 @@ PACKAGE_MANAGERS = {
 
 
 def os_package_manager_install_cmd(
-    package_name: str, package_display_name: str
+    package_name: str, package_display_name: str, output_in_text: bool = False
 ) -> Tuple[Optional[str], Optional[str]]:
     os = ENVIRONMENT["os"].lower()
-    os = "linux"
     cmd = None
     url = None
     package_manager = PACKAGE_MANAGERS[os]
@@ -655,14 +800,28 @@ def os_package_manager_install_cmd(
         url = PACKAGE_MANAGER_COMMANDS[package_name]["backup_url"]
 
     solution = ""
-    if cmd:
-        solution += f"- You can install {package_display_name} with <code>{package_manager}</code>\n"
-    if url:
+
+    if not output_in_text:
         if cmd:
-            solution += "- Alternatively, you "
-        else:
-            solution += "- You "
-        solution += f'can download and install {package_display_name} from <a href="{url}" target="_blank">{url}</a>'
+            solution += f"- You can install {package_display_name} with <code>{package_manager}</code>\n"
+        if url:
+            if cmd:
+                solution += "- Alternatively, you "
+            else:
+                solution += "- You "
+            solution += f"can download and install {package_display_name}"
+            solution += f'from <a href="{url}" target="_blank">{url}</a>'
+    else:
+        if cmd:
+            solution += (
+                f"- You can install {package_display_name} with {package_manager}\n"
+            )
+        if url:
+            if cmd:
+                solution += "- Alternatively, you "
+            else:
+                solution += "- You "
+            solution += f"can download and install {package_display_name} from {url}"
 
     return (cmd, solution)
 
@@ -691,9 +850,9 @@ def docker_install() -> SetupIssue:
     )
 
 
-def git_install() -> SetupIssue:
+def git_install(output_in_text: bool = False) -> SetupIssue:
     command, solution = os_package_manager_install_cmd(
-        package_name="git", package_display_name="Git"
+        package_name="git", package_display_name="Git", output_in_text=output_in_text
     )
     return SetupIssue(
         issue_name="git_install",
@@ -704,9 +863,10 @@ def git_install() -> SetupIssue:
 
 
 def syft_install(pre: bool = False) -> SetupIssue:
-    command = "pip install syft"
+    command = "pip install -U syft --pre"
     if pre:
-        command += " --pre"
+        # command += " --pre"
+        pass
     return SetupIssue(
         issue_name="syft_install",
         description="You have not installed Syft.",
@@ -736,7 +896,7 @@ def hagrid_update_available(
             "A new release of HAGrid is available: "
             + f"{str(current_version)} -> {str(new_version)}."
         ),
-        command=f"pip install hagrid=={new_version}",
+        command=f"pip install -U hagrid=={new_version}",
         solution="You can upgrade HAGrid with pip.",
     )
 
@@ -753,15 +913,6 @@ def python_version_unsupported() -> SetupIssue:
     )
 
 
-def macos_arm64_pycapnp() -> SetupIssue:
-    return SetupIssue(
-        issue_name="macos_arm64_pycapnp",
-        description="Apple Silicon Python Wheels for pycapnp are not available on PyPI yet",
-        command="brew install cmake",
-        solution="You must install cmake so Python can compile pycapnp",
-    )
-
-
 WINDOWS_JAXLIB_REPO = "https://whls.blob.core.windows.net/unstable/index.html"
 
 
@@ -769,6 +920,6 @@ def windows_jaxlib() -> SetupIssue:
     return SetupIssue(
         issue_name="windows_jaxlib",
         description="Windows Python Wheels for Jax are not available on PyPI yet",
-        command=f"pip install jaxlib==0.3.7 -f {WINDOWS_JAXLIB_REPO}",
+        command=f"pip install jaxlib==0.3.14 -f {WINDOWS_JAXLIB_REPO}",
         solution="Windows users must install jaxlib before syft",
     )

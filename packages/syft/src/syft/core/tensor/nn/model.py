@@ -39,6 +39,7 @@ class Model:
         get_budget_for_user: Callable,
         ledger: DataSubjectLedger,
         sigma: float,
+        private: bool,
     ) -> Dict:
         print("Publish Model Weights")
 
@@ -57,6 +58,7 @@ class Model:
                         get_budget_for_user=get_budget_for_user,
                         ledger=ledger,
                         sigma=sigma,
+                        private=private,
                     )
                     if isinstance(param, (GammaTensor))
                     else param

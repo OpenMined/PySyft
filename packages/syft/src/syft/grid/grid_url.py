@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 import copy
 import os
+import re
 from typing import Optional
 from typing import Sequence
 from typing import Union
@@ -63,14 +64,19 @@ class GridURL:
     ) -> None:
         # in case a preferred port is listed but its not clear if an alternative
         # port was included in the supplied host_or_ip:port combo passed in earlier
-        if ":" in host_or_ip:
+        match_port = re.search(":[0-9]{1,5}", host_or_ip)
+        if match_port:
             sub_grid_url: GridURL = GridURL.from_url(host_or_ip)
             host_or_ip = str(sub_grid_url.host_or_ip)  # type: ignore
             port = int(sub_grid_url.port)  # type: ignore
             protocol = str(sub_grid_url.protocol)  # type: ignore
             path = str(sub_grid_url.path)  # type: ignore
-        elif port is None:
-            port = 80
+
+        prtcl_pattrn = "://"
+        if prtcl_pattrn in host_or_ip:
+            protocol = host_or_ip[: host_or_ip.find(prtcl_pattrn)]
+            start_index = host_or_ip.find(prtcl_pattrn) + len(prtcl_pattrn)
+            host_or_ip = host_or_ip[start_index:]
 
         self.host_or_ip = host_or_ip
         self.path: str = path

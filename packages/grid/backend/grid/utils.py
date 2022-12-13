@@ -6,14 +6,13 @@ from typing import Optional
 from nacl.signing import SigningKey
 
 # syft absolute
-from syft import flags
 from syft.core.common.message import SyftMessage
 from syft.core.io.address import Address
 from syft.core.node.common.action.exception_action import ExceptionMessage
 from syft.lib.python.dict import Dict
 
 # grid absolute
-from grid.core.node import get_client
+from grid.core.node import node
 
 
 def send_message_with_reply(
@@ -23,24 +22,19 @@ def send_message_with_reply(
     reply_to: Optional[Address] = None,
     **content: Any
 ) -> Dict:
-    client = get_client(signing_key)
+    if not address:
+        address = node.address
+    if not reply_to:
+        reply_to = node.address
 
-    if address is None:
-        address = client.address
-    if reply_to is None:
-        reply_to = client.address
+    msg = message_type(address=address, reply_to=reply_to, kwargs=content).sign(
+        signing_key=signing_key
+    )
 
-    if flags.USE_NEW_SERVICE:
-        msg = message_type(address=address, reply_to=reply_to, kwargs=content).sign(
-            signing_key=signing_key
-        )
-        reply = client.send_immediate_msg_with_reply(msg=msg)
-        reply = reply.payload
-    else:
-        msg = message_type(address=address, reply_to=reply_to, **content)
-        reply = client.send_immediate_msg_with_reply(msg=msg)
-
+    reply = node.recv_immediate_msg_with_reply(msg=msg)
+    reply = reply.message
     check_if_syft_reply_is_exception(reply)
+    reply = reply.payload
     return reply
 
 
