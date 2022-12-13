@@ -17,7 +17,7 @@ try:
     # third party
     import tensorflow as tf
     import tensorflow_federated as tff
-    from tensorflow_federated.python.learning.model_utils import ModelWeights
+    from tensorflow_federated.python.learning.models import ModelWeights
 except Exception:  # nosec
     # no tff
     pass

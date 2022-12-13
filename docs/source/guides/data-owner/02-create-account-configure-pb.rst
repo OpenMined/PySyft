@@ -169,7 +169,6 @@ To create a Data Scientist account for someone within your team or organization,
       password="supersecurepassword",
       budget=0
    )
-   domain_client.submit_credentials(data_scientist_details)
 
    Out: 
 

@@ -14,13 +14,8 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-# syft absolute
-from syft.proto.core.common import (
-    common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
-)
-
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
-    b'\n\x1cproto/lib/python/slice.proto\x12\x0fsyft.lib.python\x1a%proto/core/common/common_object.proto"\x8c\x01\n\x05Slice\x12\r\n\x05start\x18\x01 \x01(\x03\x12\x0c\n\x04stop\x18\x02 \x01(\x03\x12\x0c\n\x04step\x18\x03 \x01(\x03\x12\x11\n\thas_start\x18\x04 \x01(\x08\x12\x10\n\x08has_stop\x18\x05 \x01(\x08\x12\x10\n\x08has_step\x18\x06 \x01(\x08\x12!\n\x02id\x18\x07 \x01(\x0b\x32\x15.syft.core.common.UIDb\x06proto3'
+    b'\n\x1cproto/lib/python/slice.proto\x12\x0fsyft.lib.python"i\n\x05Slice\x12\r\n\x05start\x18\x01 \x01(\x03\x12\x0c\n\x04stop\x18\x02 \x01(\x03\x12\x0c\n\x04step\x18\x03 \x01(\x03\x12\x11\n\thas_start\x18\x04 \x01(\x08\x12\x10\n\x08has_stop\x18\x05 \x01(\x08\x12\x10\n\x08has_step\x18\x06 \x01(\x08\x62\x06proto3'
 )
 
 
@@ -39,6 +34,6 @@ _sym_db.RegisterMessage(Slice)
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None
-    _SLICE._serialized_start = 89
-    _SLICE._serialized_end = 229
+    _SLICE._serialized_start = 49
+    _SLICE._serialized_end = 154
 # @@protoc_insertion_point(module_scope)

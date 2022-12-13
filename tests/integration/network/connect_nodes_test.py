@@ -132,6 +132,40 @@ def check_node_is_connected(email: str, password: str, port: int) -> None:
     return response
 
 
+@pytest.mark.network
+def test_check_settings_fields() -> None:
+    domain = sy.login(
+        email="info@openmined.org",
+        password="changethis",
+        port=DOMAIN1_PORT,
+    )
+
+    # Assert placeholder and service respone are the same
+    assert domain.settings == domain.get_setup().content
+
+    domain_settings_keys = list(domain.settings.keys())
+
+    expected_keys = [
+        "id",
+        "domain_name",
+        "description",
+        "contact",
+        "daa",
+        "node_id",
+        "daa_document",
+        "tags",
+        "deployed_on",
+        "use_blob_storage",
+    ]
+
+    # Be sure that there's any additional field than the expected ones.
+    assert len(expected_keys) == len(domain_settings_keys)
+
+    # Be sure that all the expected fields are there.
+    for key in expected_keys:
+        assert key in domain_settings_keys
+
+
 def disconnect_network() -> None:
     if CONTAINER_HOST == "docker":
         container = "test_network_1-tailscale-1"
