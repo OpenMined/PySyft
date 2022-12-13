@@ -1,9 +1,13 @@
+from .util import verify_git_installation  # noqa
+
 # stdlib
 import sys
 from typing import Any
 
 # relative
+from .cli import check_status as check  # noqa: F401
 from .quickstart_ui import QuickstartUI
+from .version import __version__  # noqa: F401
 from .wizard_ui import WizardUI
 
 

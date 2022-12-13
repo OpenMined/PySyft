@@ -8,7 +8,6 @@ Computer Science, pages 420–432. Springer, 1991.
 
 # stdlib
 from copy import deepcopy
-import secrets
 from typing import Any
 from typing import Dict
 from typing import List
@@ -44,7 +43,7 @@ def _get_triples(
     b_shape: Tuple[int],
     nr_instances: int = 1,
     ring_size: int = DEFAULT_RING_SIZE,
-    **kwargs: Dict[Any, Any],
+    **kwargs: Any,
 ) -> Tuple[Tuple[Tuple[ShareTensor, ShareTensor, ShareTensor]]]:
     """Get triples.
 
@@ -78,7 +77,6 @@ def _get_triples(
 
     triples = []
     for _ in range(nr_instances):
-        seed_przs = secrets.randbits(32)
         a_rand = Tensor(
             ttp_generator.integers(
                 low=min_value,
@@ -93,12 +91,10 @@ def _get_triples(
             secret=deepcopy(a_rand),
             parties_info=parties_info,  # type: ignore
             shape=a_shape,
-            seed_przs=seed_przs,
             ring_size=ring_size,
         )
         a_shares = get_child(a_shares)
 
-        seed_przs = secrets.randbits(32)
         b_rand = Tensor(
             ttp_generator.integers(
                 low=min_value,
@@ -113,11 +109,9 @@ def _get_triples(
             secret=deepcopy(b_rand),
             parties_info=parties_info,  # type: ignore
             shape=b_shape,
-            seed_przs=seed_przs,
             ring_size=ring_size,
         )
         b_shares = get_child(b_shares)
-        seed_przs = secrets.randbits(32)
         # TODO: bitwise and on passthrough tensor raises exception
         # hence we do it on numpy array itself.
         c_val = Tensor(cmd(a_rand.child, b_rand.child))
@@ -125,7 +119,6 @@ def _get_triples(
             secret=deepcopy(c_val),
             parties_info=parties_info,  # type: ignore
             shape=c_val.shape,  # type: ignore
-            seed_przs=seed_przs,
             ring_size=ring_size,
         )
         c_shares = get_child(c_shares)
@@ -159,7 +152,7 @@ def _get_triples(
 
 @register_primitive_generator("beaver_mul")
 def get_triples_mul(
-    *args: List[Any], **kwargs: Dict[Any, Any]
+    *args: Any, **kwargs: Any
 ) -> Tuple[Tuple[Tuple[ShareTensor, ShareTensor, ShareTensor]]]:
     """Get the beaver triples for the multiplication operation.
 
@@ -245,7 +238,7 @@ def mul_store_get(
 
 @register_primitive_generator("beaver_matmul")
 def get_triples_matmul(
-    *args: List[Any], **kwargs: Dict[Any, Any]
+    *args: Any, **kwargs: Any
 ) -> Tuple[List[ShareTensor], List[ShareTensor], List[ShareTensor]]:
     """Get the beaver triples for the matmul  operation.
 
@@ -369,7 +362,6 @@ def count_wraps_rand(
 
     for _ in range(nr_instances):
 
-        seed_przs = secrets.randbits(32)
         rand_val = Tensor(
             ttp_generator.integers(
                 low=min_value,
@@ -384,19 +376,16 @@ def count_wraps_rand(
             secret=deepcopy(rand_val),
             parties_info=parties_info,  # type: ignore
             shape=shape,
-            seed_przs=seed_przs,
             ring_size=ring_size,
         )
         r_shares = get_child(r_shares)
 
-        seed_przs = secrets.randbits(32)
         wraps = Tensor(count_wraps([share.child for share in r_shares]))
 
         theta_r_shares = MPCTensor._get_shares_from_local_secret(
             secret=deepcopy(wraps),
             parties_info=parties_info,  # type: ignore
             shape=shape,
-            seed_przs=seed_przs,
             ring_size=ring_size,
         )
         theta_r_shares = get_child(theta_r_shares)

@@ -9,7 +9,6 @@ import torch as th
 import syft as sy
 from syft import deserialize
 from syft import serialize
-from syft.core.common.uid import UID
 from syft.lib.python.collections.ordered_dict import SyOrderedDict
 from syft.lib.python.int import Int
 from syft.lib.python.string import String
@@ -18,16 +17,12 @@ from syft.lib.python.string import String
 def test_dict_creation() -> None:
     d1 = {String("t1"): 1, String("t2"): 2}
     dict1 = SyOrderedDict(d1)
-    assert type(getattr(dict1, "id", None)) is UID
 
     d2 = dict({"t1": 1, "t2": 2})
     dict2 = SyOrderedDict(d2)
-    dict2._id = UID()
-    assert type(getattr(dict2, "id", None)) is UID
 
     d3 = SyOrderedDict({"t1": 1, "t2": 2})
     dict3 = SyOrderedDict(d3)
-    assert type(getattr(dict3, "id", None)) is UID
 
     assert dict1.keys() == dict2.keys()
     assert dict1.keys() == dict3.keys()
@@ -38,7 +33,6 @@ def test_dict_serde() -> None:
     t2 = th.tensor([1, 3])
 
     syft_list = SyOrderedDict({Int(1): t1, Int(2): t2})
-    assert type(getattr(syft_list, "id", None)) is UID
 
     serialized = sy.serialize(syft_list)
 
@@ -47,7 +41,6 @@ def test_dict_serde() -> None:
     assert isinstance(deserialized, SyOrderedDict)
     assert isinstance(deserialized, PyOrderectDict)
 
-    assert deserialized.id == syft_list.id
     for deserialized_el, original_el in zip(deserialized, syft_list):
         assert deserialized_el == original_el
 
@@ -57,7 +50,6 @@ def test_dict_serde_bytes() -> None:
     t2 = th.tensor([1, 3])
 
     syft_list = SyOrderedDict({Int(1): t1, Int(2): t2})
-    assert type(getattr(syft_list, "id", None)) is UID
 
     serialized = serialize(syft_list, to_bytes=True)
 
@@ -68,7 +60,6 @@ def test_dict_serde_bytes() -> None:
     assert isinstance(deserialized, SyOrderedDict)
     assert isinstance(deserialized, PyOrderectDict)
 
-    assert deserialized.id == syft_list.id
     for deserialized_el, original_el in zip(deserialized, syft_list):
         assert deserialized_el == original_el
 
@@ -103,3 +94,11 @@ def test_iterator_methods(
     for itemptr, local_item in zip(itemsptr, getattr(d, method_name)()):
         get_item = itemptr.get()
         assert get_item == local_item
+
+
+def test_ordered_dict_bytes() -> None:
+    # Testing if multiple serialization of the similar object results in same bytes
+    d1 = {String("t1"): 1, String("t2"): 2}
+    dict1 = SyOrderedDict(d1)
+    dict2 = SyOrderedDict(d1)
+    assert sy.serialize(dict1, to_bytes=True) == sy.serialize(dict2, to_bytes=True)

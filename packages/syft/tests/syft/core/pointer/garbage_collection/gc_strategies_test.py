@@ -1,4 +1,3 @@
-# type: ignore
 # # third party
 # import torch
 
@@ -10,7 +9,7 @@
 # from syft.core.pointer.garbage_collection import gc_get_default_strategy
 # from syft.core.pointer.garbage_collection import gc_set_default_strategy
 
-# TODO: Re-enable when we add the service
+
 # def test_gc_simple_strategy() -> None:
 #     node = sy.VirtualMachine(name="alice")
 #     client = node.get_client()
@@ -75,6 +74,8 @@
 
 #     assert res
 
+#     # It should for the GCBatched to delete all the cached to-delete objs
+#     client.gc.gc_strategy = GCSimple()
 
 # def test_gc_batched_delete_at_change() -> None:
 #     node = sy.VirtualMachine(name="alice")

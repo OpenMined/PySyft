@@ -9,6 +9,12 @@ syft.core.common.serde.deserialize
 
    
    
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      deserialize_capnp
+   
    
 
    
@@ -16,6 +22,12 @@ syft.core.common.serde.deserialize
    
 
    
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      CapnpMagicBytesNotFound
    
    
 

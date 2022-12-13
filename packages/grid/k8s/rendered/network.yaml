@@ -2899,6 +2899,8 @@ spec:
               value: production
             - name: USE_BLOB_STORAGE
               value: "False"
+            - name: SERVICE_NAME
+              value: backend
           envFrom:
             null
           securityContext:

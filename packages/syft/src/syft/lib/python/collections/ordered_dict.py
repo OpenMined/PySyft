@@ -7,7 +7,6 @@ from typing import Any
 from typing import Optional
 
 # relative
-from ....core.common.uid import UID
 from ....logger import traceback_and_raise
 from ..iterator import Iterator
 from ..primitive_factory import PrimitiveFactory
@@ -18,9 +17,8 @@ from ..util import upcast
 
 
 class SyOrderedDict(PyOrderedDict, PyPrimitive):
-    def __init__(self, *args: Any, _id: UID = UID(), **kwds: Any):
+    def __init__(self, *args: Any, **kwds: Any):
         super().__init__(*args, **kwds)
-        self._id = _id
 
     def __contains__(self, other: Any) -> SyPrimitiveRet:
         res = super().__contains__(other)

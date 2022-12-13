@@ -65,6 +65,12 @@ def create_user_msg(
     budget = 0.0
     if msg.budget:
         budget = msg.budget
+
+    if budget < 0:
+        raise AuthorizationError(
+            f"You can't create a new User using a negative budget:{msg.budget}!"
+        )
+
     node.users.create_user(
         name=msg.name,
         email=msg.email,

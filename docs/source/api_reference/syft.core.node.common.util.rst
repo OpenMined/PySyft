@@ -13,7 +13,13 @@ syft.core.node.common.util
 
    .. autosummary::
    
+      abort_s3_object_upload
+      check_send_to_blob_storage
+      get_s3_client
       listify
+      read_chunks
+      upload_result_to_s3
+      upload_to_s3_using_presigned
    
    
 
