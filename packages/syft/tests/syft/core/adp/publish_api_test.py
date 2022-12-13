@@ -70,29 +70,30 @@ def test_privacy_budget_spend_on_publish():
         private=True,
     )
 
-    assert pub_result_fred is not None
+    # assert pub_result_fred is not None
 
-    eps_spend_for_fred = user_budget.current_spend
+    # eps_spend_for_fred = user_budget.current_spend
 
-    # Epsilon spend for sally should be equal to fred
-    # since they impact the same of values in the data independently
-    assert eps_spend_for_sally == eps_spend_for_fred
+    # # Epsilon spend for sally should be equal to fred
+    # # since they impact the same of values in the data independently
+    # assert eps_spend_for_sally == eps_spend_for_fred
 
-    pub_result_comb = result.publish(
-        get_budget_for_user=get_budget_for_user,
-        deduct_epsilon_for_user=deduct_epsilon_for_user,
-        ledger=ledger,
-        sigma=50,
-        private=True,
-    )
+    # pub_result_comb = result.publish(
+    #     get_budget_for_user=get_budget_for_user,
+    #     deduct_epsilon_for_user=deduct_epsilon_for_user,
+    #     ledger=ledger,
+    #     sigma=50,
+    #     private=True,
+    # )
 
-    assert pub_result_comb is not None
+    # assert pub_result_comb is not None
 
-    combined_eps_spend = user_budget.current_spend
+    # combined_eps_spend = user_budget.current_spend
 
     # TODO: Need to confirm if this ratio will always be less than 1
-    assert (eps_spend_for_fred + eps_spend_for_sally) / combined_eps_spend < 1
+    # assert (eps_spend_for_fred + eps_spend_for_sally) / combined_eps_spend < 1
 
+    assert False
     # TODO: Uncomment this once filtering is fixed.
 
     # user_budget.budget = eps_spend_for_fred + 1

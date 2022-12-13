@@ -78,7 +78,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
         "tags",
         "description",
         # phi_tensor attrs
-        "data_subjects",
+        "data_subject",
         "min_vals",
         "max_vals",
         "public_dtype",
@@ -88,7 +88,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
     __serde_overrides__ = {
         "client": [lambda x: x.address, lambda y: y],
         "public_shape": [lambda x: x, lambda y: upcast(y)],
-        "data_subjects": [dslarraytonumpyutf8, numpyutf8todslarray],
+        "data_subject": [dslarraytonumpyutf8, numpyutf8todslarray],
         "public_dtype": [lambda x: str(x), lambda y: np.dtype(y)],
     }
     _exhausted = False
@@ -98,7 +98,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
 
     def __init__(
         self,
-        data_subjects: np.ndarray,
+        data_subject: DataSubject,
         min_vals: np.typing.ArrayLike,
         max_vals: np.typing.ArrayLike,
         client: Any,
@@ -119,7 +119,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
 
         self.min_vals = min_vals
         self.max_vals = max_vals
-        self.data_subjects = data_subjects
+        self.data_subject = data_subject
         self.public_shape = public_shape
         self.public_dtype = public_dtype
 
@@ -181,7 +181,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
         )
 
         result = TensorWrappedPhiTensorPointer(
-            data_subjects=self.data_subjects,
+            data_subject=self.data_subject,
             min_vals=min_vals,
             max_vals=max_vals,
             client=self.client,
@@ -277,66 +277,67 @@ class TensorWrappedPhiTensorPointer(Pointer):
             self.min_vals, self.max_vals, None, op_str, *args, **kwargs
         )
 
-        if hasattr(self.data_subjects, op_str):
-            if op_str == "choose":
-                if kwargs == {}:
-                    mode = None
-                    for arg in args[1:]:
-                        if isinstance(arg, str):
-                            mode = arg
-                            break
-                    if mode is None:
-                        if isinstance(
-                            args[0],
-                            (
-                                TensorWrappedPhiTensorPointer,
-                                TensorWrappedGammaTensorPointer,
-                            ),
-                        ):
-                            data_subjects = np.array(
-                                np.choose(
-                                    np.ones(args[0].shape, dtype=np.int64),
-                                    self.data_subjects,
-                                )
-                            )
-                        else:
-                            data_subjects = np.array(
-                                np.choose(args[0], self.data_subjects)
-                            )
-                    else:
-                        if isinstance(
-                            args[0],
-                            (
-                                TensorWrappedPhiTensorPointer,
-                                TensorWrappedGammaTensorPointer,
-                            ),
-                        ):
-                            data_subjects = np.array(
-                                np.choose(
-                                    np.ones(args[0].shape, dtype=np.int64),
-                                    self.data_subjects,
-                                    mode=mode,
-                                )
-                            )
-                        else:
-                            data_subjects = np.array(
-                                np.choose(args[0], self.data_subjects, mode=mode)
-                            )
-                else:
-                    data_subjects = np.choose(
-                        kwargs["choices"], self.data_subjects, kwargs["mode"]
-                    )
-            else:
-                data_subjects = getattr(self.data_subjects, op_str)(*args, **kwargs)
-            if op_str in INPLACE_OPS:
-                data_subjects = self.data_subjects
-        elif op_str in ("ones_like", "zeros_like"):
-            data_subjects = self.data_subjects
-        else:
-            raise ValueError(f"Invalid Numpy Operation: {op_str} for DSA")
-
+        # TODO: fix this
+        # if hasattr(self.data_subject, op_str):
+        #     if op_str == "choose":
+        #         if kwargs == {}:
+        #             mode = None
+        #             for arg in args[1:]:
+        #                 if isinstance(arg, str):
+        #                     mode = arg
+        #                     break
+        #             if mode is None:
+        #                 if isinstance(
+        #                     args[0],
+        #                     (
+        #                         TensorWrappedPhiTensorPointer,
+        #                         TensorWrappedGammaTensorPointer,
+        #                     ),
+        #                 ):
+        #                     data_subject = np.array(
+        #                         np.choose(
+        #                             np.ones(args[0].shape, dtype=np.int64),
+        #                             self.data_subject,
+        #                         )
+        #                     )
+        #                 else:
+        #                     data_subject = np.array(
+        #                         np.choose(args[0], self.data_subject)
+        #                     )
+        #             else:
+        #                 if isinstance(
+        #                     args[0],
+        #                     (
+        #                         TensorWrappedPhiTensorPointer,
+        #                         TensorWrappedGammaTensorPointer,
+        #                     ),
+        #                 ):
+        #                     data_subject = np.array(
+        #                         np.choose(
+        #                             np.ones(args[0].shape, dtype=np.int64),
+        #                             self.data_subject,
+        #                             mode=mode,
+        #                         )
+        #                     )
+        #                 else:
+        #                     data_subject = np.array(
+        #                         np.choose(args[0], self.data_subject, mode=mode)
+        #                     )
+        #         else:
+        #             data_subject = np.choose(
+        #                 kwargs["choices"], self.data_subject, kwargs["mode"]
+        #             )
+        #     else:
+        #         data_subject = getattr(self.data_subject, op_str)(*args, **kwargs)
+        #     if op_str in INPLACE_OPS:
+        #         data_subject = self.data_subject
+        # elif op_str in ("ones_like", "zeros_like"):
+        #     data_subject = self.data_subject
+        # else:
+        #     raise ValueError(f"Invalid Numpy Operation: {op_str} for DSA")
+        data_subject = self.data_subject
         result = TensorWrappedPhiTensorPointer(
-            data_subjects=data_subjects,
+            data_subject=data_subject,
             min_vals=min_vals,
             max_vals=max_vals,
             client=self.client,
@@ -409,7 +410,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
     @property
     def gamma(self) -> TensorWrappedGammaTensorPointer:
         return TensorWrappedGammaTensorPointer(
-            data_subjects=self.data_subjects,
+            data_subject=self.data_subject,
             client=self.client,
             id_at_location=self.id_at_location,
             object_type=self.object_type,
@@ -445,7 +446,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
             Tuple[MPCTensor,Union[MPCTensor,int,float,np.ndarray]] : Result of the operation
         """
         if isinstance(other, TensorWrappedPhiTensorPointer):
-            if np.array(self.data_subjects != other.data_subjects).all():  # type: ignore
+            if self.data_subject != other.data_subject:  # type: ignore
                 return getattr(self.gamma, op_str)(other.gamma)
         elif isinstance(other, TensorWrappedGammaTensorPointer):
             return getattr(self.gamma, op_str)(other)
@@ -1232,13 +1233,14 @@ class TensorWrappedPhiTensorPointer(Pointer):
 
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.std"
         result: TensorWrappedPhiTensorPointer
-        data_subjects = np.array(self.data_subjects.std(*args, **kwargs))
+        # TODO: fix this
+        data_subject = np.array(self.data_subject.std(*args, **kwargs))
         result = TensorWrappedPhiTensorPointer(
-            data_subjects=self.data_subjects,
-            min_vals=lazyrepeatarray(data=0, shape=data_subjects.shape),
+            data_subject=self.data_subject,
+            min_vals=lazyrepeatarray(data=0, shape=data_subject.shape),
             max_vals=lazyrepeatarray(
                 data=(self.max_vals.data - self.min_vals.data) / 2,
-                shape=data_subjects.shape,
+                shape=data_subject.shape,
             ),
             client=self.client,
         )
@@ -1279,7 +1281,8 @@ class TensorWrappedPhiTensorPointer(Pointer):
             kwargs={},
         )
 
-        result.public_shape = data_subjects.shape
+        # TODO: fix this
+        result.public_shape = data_subject.shape
         result.public_dtype = self.public_dtype
         return result
 
@@ -1675,7 +1678,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.T"
 
         result = TensorWrappedPhiTensorPointer(
-            data_subjects=self.data_subjects,
+            data_subject=self.data_subject,
             min_vals=self.min_vals.transpose(),
             max_vals=self.max_vals.transpose(),
             client=self.client,
@@ -1736,8 +1739,8 @@ class TensorWrappedPhiTensorPointer(Pointer):
         public_dtype = getattr(self, "public_dtype", None)
         return Tensor(
             child=PhiTensor(
-                child=FixedPrecisionTensor(value=np.empty(self.data_subjects.shape)),
-                data_subjects=self.data_subjects,
+                child=FixedPrecisionTensor(value=np.empty(self.data_subject.shape)), # TODO 0.7: fix this
+                data_subject=self.data_subject,
                 min_vals=self.min_vals,  # type: ignore
                 max_vals=self.max_vals,  # type: ignore
             ),
@@ -1818,22 +1821,24 @@ def dispatch_tensor(*tensors: Union[PhiTensor, GammaTensor, AcceptableSimpleType
     def extract_attribute_or_self(tensor, field):
         if hasattr(tensor, field):
             return getattr(tensor, field)
-        return tensor
+        if field != "data_subject":
+            return tensor
 
     childs = [extract_attribute_or_self(tensor, "child") for tensor in tensors]
 
     if all(map(check_phi_or_constant, tensors)):
         min_values = [extract_attribute_or_self(tensor, "min_vals") for tensor in tensors]
         max_values = [extract_attribute_or_self(tensor, "max_vals") for tensor in tensors]
-        data_subjects = [extract_attribute_or_self(tensor, "data_subject") for tensor in tensors]
-
-        if len(set(data_subjects)) > 1:
-            return original_func(*[tensor.gamma for tensor in tensors])
+        data_subject = [extract_attribute_or_self(tensor, "data_subject") for tensor in tensors]
+        data_subject = [ds for ds in data_subject if ds is not None]
+        
+        if len(set(data_subject)) > 1:
+            return original_func(*map(cast_to_gamma, tensors))
 
         return PhiTensor(
-            child=child_operator(childs),
-            min_vals=min_operator(min_values),
-            max_vals=max_operator(max_values),
+            child=child_func(childs),
+            min_vals=min_func(min_values),
+            max_vals=max_func(max_values),
             data_subject=tensors[0].data_subject,
         )
 
@@ -1843,7 +1848,7 @@ def dispatch_tensor(*tensors: Union[PhiTensor, GammaTensor, AcceptableSimpleType
 @serializable(capnp_bytes=True)
 class PhiTensor(PassthroughTensor):
     PointerClassOverride = TensorWrappedPhiTensorPointer
-    # __attr_allowlist__ = ["child", "min_vals", "max_vals", "data_subjects"]
+    # __attr_allowlist__ = ["child", "min_vals", "max_vals", "data_subject"]
     __slots__ = (
         "child",
         "min_vals",
@@ -1879,7 +1884,7 @@ class PhiTensor(PassthroughTensor):
         return {
             "min_vals": self.min_vals,
             "max_vals": self.max_vals,
-            "data_subjects": self.data_subjects,
+            "data_subject": self.data_subject,
         }
 
     @property
@@ -2046,7 +2051,7 @@ class PhiTensor(PassthroughTensor):
             child=out_child,
             min_vals=lazyrepeatarray(data=0, shape=out_child.shape),
             max_vals=lazyrepeatarray(data=1, shape=out_child.shape),
-            data_subject=self.new_data_subject,
+            data_subject=self.data_subject,
         )
 
     def __and__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
@@ -2586,7 +2591,6 @@ class PhiTensor(PassthroughTensor):
             raise NotImplementedError
 
     def create_gamma(self) -> GammaTensor:
-        # TODO: add the PhiTensor id in sources (discuss with Tudor)
         """Return a new Gamma tensor based on this phi tensor"""
         gamma_tensor = GammaTensor(
             child=self.child,
@@ -2713,14 +2717,19 @@ class PhiTensor(PassthroughTensor):
             )
 
     def __add__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
-        return dispatch_tensor(
-            self,
-            other,
-            child_func=operator.add,
-            min_func=operator.add,
-            max_func=operator.add,
-            original_func=operator.add
-        )
+        try:
+            return dispatch_tensor(
+                self,
+                other,
+                child_func=lambda tensors: operator.add(*tensors),
+                min_func=lambda tensors: operator.add(*tensors),
+                max_func=lambda tensors: operator.add(*tensors),
+                original_func=lambda tensors: operator.add(*tensors)
+            )
+        except TypeError:
+            raise NotImplementedError(
+                f"__add__ not implemented for these types"
+            )
 
     def __radd__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
         return self.__add__(other)
@@ -2729,10 +2738,10 @@ class PhiTensor(PassthroughTensor):
         return dispatch_tensor(
             self,
             other,
-            child_func=operator.sub,
-            min_func=operator.sub,
-            max_func=operator.sub,
-            original_func=operator.sub
+            child_func=lambda tensors: operator.sub(*tensors),
+            min_func=lambda tensors: operator.sub(*tensors),
+            max_func=lambda tensors: operator.sub(*tensors),
+            original_func=lambda tensors: operator.sub(*tensors)
         )
     def __rsub__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
         return (self - other) * -1
@@ -2918,7 +2927,7 @@ class PhiTensor(PassthroughTensor):
         result = self.child.argsort(axis)
         return PhiTensor(
             child=result,
-            data_subjects=self.data_subject,
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(data=0, shape=self.shape),
             max_vals=lazyrepeatarray(data=self.child.size, shape=self.shape),
         )
@@ -3892,7 +3901,7 @@ class PhiTensor(PassthroughTensor):
         pt_msg.maxVals = serialize(self.max_vals, to_bytes=True)
         # TODO(Tudor): fix this 
         chunk_bytes(
-            capnp_serialize(dslarraytonumpyutf8(self.data_subjects), to_bytes=True),
+            capnp_serialize(dslarraytonumpyutf8(self.data_subject), to_bytes=True),
             "dataSubjects",
             pt_msg,
         )
@@ -3921,7 +3930,7 @@ class PhiTensor(PassthroughTensor):
         min_vals = deserialize(pt_msg.minVals, from_bytes=True)
         max_vals = deserialize(pt_msg.maxVals, from_bytes=True)
         # TODO(Tudor): fix this 
-        data_subjects = numpyutf8todslarray(
+        data_subject = numpyutf8todslarray(
             capnp_deserialize(combine_bytes(pt_msg.dataSubjects), from_bytes=True)
         )
 
@@ -3929,5 +3938,5 @@ class PhiTensor(PassthroughTensor):
             child=child,
             min_vals=min_vals,
             max_vals=max_vals,
-            data_subjects=data_subjects,
+            data_subject=data_subject,
         )
