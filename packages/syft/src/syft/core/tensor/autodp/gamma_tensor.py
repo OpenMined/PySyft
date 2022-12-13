@@ -2057,7 +2057,6 @@ class GammaTensor:
         from .phi_tensor import PhiTensor
 
         output_state =  self.sources.copy()
-        # TODO: handle errors
         if isinstance(other, PhiTensor):
             other = other.gamma
 
