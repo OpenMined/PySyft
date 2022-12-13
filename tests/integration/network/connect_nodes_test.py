@@ -146,13 +146,11 @@ def test_check_settings_fields() -> None:
     domain_settings_keys = list(domain.settings.keys())
 
     expected_keys = [
-        "id",
         "domain_name",
         "description",
         "contact",
         "daa",
-        "node_id",
-        "daa_document",
+        "node_uid",
         "tags",
         "deployed_on",
         "use_blob_storage",
