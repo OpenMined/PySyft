@@ -24,10 +24,6 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
 print("ROOT_DIR", ROOT_DIR)
 
 
-def load_data(csv_file: str) -> pd.DataFrame:
-    return pd.read_csv(f"{ROOT_DIR}/notebooks/trade_demo/datasets/{csv_file}")[0:10]
-
-
 def get_user_details(unique_email: str) -> Dict[str, Any]:
     return {
         "name": "Sheldon Cooper",
@@ -41,7 +37,6 @@ def get_user_details(unique_email: str) -> Dict[str, Any]:
 # Priavacy budget , Dramatically increased due to high budget spent with 64bit Values.
 
 
-@pytest.mark.skip(reason="SMPC Issues")
 @pytest.mark.e2e
 def test_end_to_end_smpc_adp_trade_demo() -> None:
     # make a unique email so we can run the test isolated
@@ -49,7 +44,8 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
 
     # Canada
     ca_root = sy.login(email="info@openmined.org", password="changethis", port=9082)
-    ca_data = load_data(csv_file="ca - feb 2021.csv")
+    canada_dataset_url = "https://github.com/OpenMined/datasets/blob/main/trade_flow/ca%20-%20feb%202021.csv?raw=True"
+    ca_data = pd.read_csv(canada_dataset_url)[0:10]
 
     canada_trade = (
         (np.array(list(ca_data["Trade Value (US$)"])) / 100000)[0:10]
@@ -58,10 +54,13 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
         np.array(DataSubjectArray(["Other Asia, nes"])), canada_trade.shape
     )
 
+    lower_bound = int(min(canada_trade)) - 1
+    upper_bound = int(max(canada_trade)) + 1
+
     sampled_canada_dataset = sy.Tensor(canada_trade)
     sampled_canada_dataset.public_shape = sampled_canada_dataset.shape
-    sampled_canada_dataset = sampled_canada_dataset.private(
-        0, 3, data_subjects=data_subjects_canada
+    sampled_canada_dataset = sampled_canada_dataset.annotate_with_dp_metadata(
+        lower_bound, upper_bound, data_subjects=data_subjects_canada
     ).tag("trade_flow")
 
     # load dataset
@@ -82,7 +81,9 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
 
     # Italy
     it_root = sy.login(email="info@openmined.org", password="changethis", port=9083)
-    it_data = load_data(csv_file="it - feb 2021.csv")
+
+    italy_dataset_url = "https://github.com/OpenMined/datasets/blob/main/trade_flow/it%20-%20feb%202021.csv?raw=True"
+    it_data = pd.read_csv(italy_dataset_url)[0:10]
 
     italy_trade = (
         (np.array(list(it_data["Trade Value (US$)"])) / 100000)[0:10]
@@ -94,8 +95,12 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     data_subjects_italy = np.broadcast_to(
         np.array(DataSubjectArray(["Other Asia, nes"])), italy_trade.shape
     )
-    sampled_italy_dataset = sampled_italy_dataset.private(
-        0, 3, data_subjects=data_subjects_italy
+
+    lower_bound = int(min(italy_trade)) - 1
+    upper_bound = int(max(italy_trade)) + 1
+
+    sampled_italy_dataset = sampled_italy_dataset.annotate_with_dp_metadata(
+        lower_bound, upper_bound, data_subjects=data_subjects_italy
     ).tag("trade_flow")
 
     it_root.load_dataset(
@@ -121,7 +126,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
 
     it.request_budget(eps=BUDGET_INCREASE, reason="increase budget!")
 
-    time.sleep(20)
+    time.sleep(10)
 
     # until we fix the code this just accepts all requests in case it gets the
     # wrong one
@@ -135,7 +140,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     # ca_root.requests[-1].accept()
     # it_root.requests[-1].accept()
 
-    time.sleep(20)
+    time.sleep(10)
 
     assert round(ca.privacy_budget) == PRIVACY_BUDGET + BUDGET_INCREASE
     assert round(it.privacy_budget) == PRIVACY_BUDGET + BUDGET_INCREASE
@@ -157,8 +162,6 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
 
     result = ca_data + it_data
 
-    result.block_with_timeout(40)
-
     """
     Cutter: The second act is called "The Turn". The mathemagician takes the ordinary
     something and makes it do something extraordinary. Now you're looking for the
@@ -177,9 +180,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     # the prestige 🎩
     print("running the prestige 🎩")
 
-    public_result.block_with_timeout(40)
-
-    sycure_result = public_result.get()
+    sycure_result = public_result.get(timeout_secs=40)
 
     print("sycure_result", sycure_result)
     print("after ca", ca.privacy_budget)
@@ -188,10 +189,11 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     assert len(sycure_result) == 10
     assert sum(sycure_result) > -6000
     assert sum(sycure_result) < 6000
+    assert public_result.child[0].path_and_name == "numpy.ndarray"
 
-    assert ca.privacy_budget < PRIVACY_BUDGET
+    assert ca.privacy_budget < PRIVACY_BUDGET + BUDGET_INCREASE
     assert ca.privacy_budget > 10
-    assert it.privacy_budget < PRIVACY_BUDGET
+    assert it.privacy_budget < PRIVACY_BUDGET + BUDGET_INCREASE
     assert it.privacy_budget > 10
     # Commenting it out , due to inconsistent budget spent due to 64 bit.
     # assert ca.privacy_budget == it.privacy_budget

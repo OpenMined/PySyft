@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from dataclasses import field
 from datetime import datetime
+import getpass
 import json
 import os
 import platform
@@ -35,6 +36,7 @@ from rich.console import Console
 
 # relative
 from .exceptions import MissingDependency
+from .lib import is_gitpod
 from .mode import EDITABLE_MODE
 from .nb_output import NBOutput
 from .version import __version__
@@ -66,6 +68,19 @@ SYFT_MINIMUM_PYTHON_VERSION = (3, 7)
 SYFT_MINIMUM_PYTHON_VERSION_STRING = "3.7"
 SYFT_MAXIMUM_PYTHON_VERSION = (3, 10, 999)
 SYFT_MAXIMUM_PYTHON_VERSION_STRING = "3.10"
+WHITE = "\033[0;37m"
+GREEN = "\033[0;32m"
+YELLOW = "\033[0;33m"
+BOLD = "\033[1m"
+NO_COLOR = "\033[0;0m"
+WARNING_MSG = f"\033[0;33mWARNING:{NO_COLOR}"
+
+
+def get_version_string() -> str:
+    version = str(__version__)
+    if EDITABLE_MODE:
+        version += "-dev"
+    return version
 
 
 @dataclass
@@ -82,7 +97,7 @@ class Dependency:
     name: str = ""
     display: str = ""
     only_os: str = ""
-    version: Optional[Version] = None
+    version: Optional[Version] = version.parse("0.0")
     valid: bool = False
     issues: List[SetupIssue] = field(default_factory=list)
     output_in_text: bool = False
@@ -98,7 +113,8 @@ class DependencySyftOS(Dependency):
     def check(self) -> None:
         self.display = "✅ " + ENVIRONMENT["os"]
         if is_windows():
-            self.issues.append(windows_jaxlib())
+            if not get_pip_package("jaxlib"):
+                self.issues.append(windows_jaxlib())
         elif is_apple_silicon():
             pass
 
@@ -165,8 +181,11 @@ class DependencyGridDockerCompose(Dependency):
         binary_info = BinaryInfo(
             binary="docker", version_cmd="docker compose version"
         ).get_binary_info()
-        if binary_info.path and binary_info.version > version.parse(
-            MINIMUM_DOCKER_COMPOSE_VERSION
+
+        if (
+            binary_info.path
+            and binary_info.version
+            and binary_info.version > version.parse(MINIMUM_DOCKER_COMPOSE_VERSION)
         ):
             self.display = "✅ Docker Compose " + str(binary_info.version)
         else:
@@ -294,7 +313,7 @@ class BinaryInfo:
     version_cmd: str
     error: Optional[str] = None
     path: Optional[str] = None
-    version: Optional[Union[str, Version]] = None
+    version: Optional[Union[str, Version]] = version.parse("0.0")
     version_regex = (
         r"[^\d]*("
         + r"(0|[1-9][0-9]*)\.*(0|[1-9][0-9]*)\.*(0|[1-9][0-9]*)"
@@ -325,11 +344,14 @@ class BinaryInfo:
             if returncode == 0:
                 self.extract_version(lines=lines)
             else:
-                self.error = lines[0]
+                if len(lines) > 0:
+                    self.error = lines[0]
+                else:
+                    self.error = f"Error, no output from {self.binary}"
         return self
 
 
-def get_cli_output(cmd: str) -> Tuple[int, List[str]]:
+def get_cli_output(cmd: str, timeout: Optional[float] = None) -> Tuple[int, List[str]]:
     try:
         proc = subprocess.Popen(  # nosec
             cmd.split(" "),
@@ -339,7 +361,11 @@ def get_cli_output(cmd: str) -> Tuple[int, List[str]]:
         lines = []
         if proc.stdout and hasattr(proc.stdout, "readlines"):
             lines = [line.decode("utf-8") for line in proc.stdout.readlines()]
-        proc.communicate()
+
+        if proc.stderr and hasattr(proc.stderr, "readlines"):
+            lines.extend([line.decode("utf-8") for line in proc.stderr.readlines()])
+
+        proc.communicate(timeout=timeout)
         return (int(proc.returncode), lines)
     except Exception as e:
         return (-1, [str(e)])
@@ -357,7 +383,7 @@ def gather_debug() -> Dict[str, Any]:
     debug_info["python_binary"] = sys.executable
     debug_info["dependencies"] = DEPENDENCIES
     debug_info["environment"] = ENVIRONMENT
-    debug_info["hagrid"] = __version__
+    debug_info["hagrid"] = get_version_string()
     debug_info["hagrid_dev"] = EDITABLE_MODE
     debug_info["hagrid_path"] = hagrid_root()
     debug_info["hagrid_repo_sha"] = commit_hash()
@@ -476,17 +502,69 @@ def check_docker_version() -> Optional[str]:
     return version
 
 
-def docker_running() -> bool:
+def docker_running(timeout: Optional[float] = None) -> Tuple[bool, str]:
+
+    status, error_msg = False, ""
+
     try:
         cmd = "docker info"
-        returncode, _ = get_cli_output(cmd)
+        returncode, msg = get_cli_output(cmd, timeout=timeout)
         if returncode == 0:
-            return True
+            status, error_msg = True, "✅ Docker service is running"
         else:
-            return False
-    except Exception:  # nosec
-        pass
-    return False
+            error_msg = f"""❌ Docker service is either not installed or running.\n\n
+To install docker, execute the following steps:\n
+1 - Install docker on your machine by using the proper steps according to your OS.\n
+{WHITE}MacOS: {GREEN}brew install --cask docker
+{WHITE}Linux: {GREEN}curl -fsSL https://get.docker.com -o get-docker.sh && chmod +777 get-docker.sh && ./get-docker.sh
+{WHITE}Windows: {GREEN}choco install docker-desktop -y{NO_COLOR} \n
+2 - Run \'{GREEN}sudo usermod -a -G docker $USER\'{WHITE} to enable this user to execute docker.
+3 - log out and log back in so that your group membership is re-evaluated {NO_COLOR}.
+-------------------------------------------------------------------------------------------------------\n
+To start your docker service:\n
+1 - {WHITE}MacOS/Windows: One can start docker by clicking on the "Docker" icon in your Applications folder.{NO_COLOR}
+2 - {WHITE}Ubuntu: {GREEN}sudo service docker start {NO_COLOR}
+-------------------------------------------------------------------------------------------------------\n
+"""
+        error_msg += f"""{YELLOW}{BOLD}Std Output Logs{NO_COLOR}
+=================\n\n""" + "\n".join(
+            msg
+        )
+
+    except Exception as e:  # nosec
+        error_msg = str(e)
+
+    return status, error_msg
+
+
+def allowed_to_run_docker() -> Tuple[bool, str]:
+    bool_result, msg = True, ""
+    if platform.system().lower() == "linux":
+        _, line = get_cli_output("getent group docker")
+
+        # get user
+        user = getpass.getuser()
+
+        # Check if current user is root.
+        if os.geteuid() == 0:
+            bool_result = True
+
+        # Check if current user is member of docker group.
+        elif not is_gitpod() and user not in "".join(line):
+            msg = f"""⚠️  User is not a member of docker group.
+{WHITE}You're currently not allowed to run docker, perform the following steps:\n
+    1 - Run \'{GREEN}sudo usermod -a -G docker $USER\'{WHITE} to add docker permissions.
+    2 - log out and log back in so that your group membership is re-evaluated {NO_COLOR}."""
+            # NOTE: For some reason, inside of CI pipeline the user (runner) isn't a member of
+            # docker group and doesn't have sudo priviledges, but can execute docker without
+            # permission issues. This is just a workaround to avoid raising an exeception
+            # in this scenario without reason.
+            if user == "runner":
+                bool_result = True
+            else:
+                bool_result = False
+
+    return bool_result, msg
 
 
 def check_docker_service_status(animated: bool = True) -> None:
@@ -497,16 +575,23 @@ def check_docker_service_status(animated: bool = True) -> None:
     """
 
     if not animated:
-        if not docker_running():
-            raise MissingDependency("❌ Docker service is not running.")
-
+        docker_installed, msg = docker_running(timeout=60)
+        user_allowed, permission_msg = allowed_to_run_docker()
     else:
         console = Console()
         # putting \t at the end seems to prevent weird chars getting outputted
         # during animations in the juypter notebook
         with console.status("[bold blue]Checking for Docker Service[/bold blue]\t"):
-            if not docker_running():
-                raise MissingDependency("❌ Docker service is not running.")
+            docker_installed, msg = docker_running(timeout=60)
+            user_allowed, permission_msg = allowed_to_run_docker()
+
+    # Check if user is allowed to execute docker
+    if not user_allowed:
+        raise MissingDependency(permission_msg)
+
+    # If docker bin was not found.
+    if not docker_installed:
+        raise MissingDependency(msg)
 
     print("✅ Docker service is running")
 
@@ -553,7 +638,8 @@ def check_deps(
                     output += "\nCommand:\n" + f"{issue.command} "
                 output += "\n"
 
-        print(output)
+        if len(output) > 0:
+            print(output)
         return None  # type: ignore
 
 
@@ -674,7 +760,7 @@ PACKAGE_MANAGER_COMMANDS = {
     "docker": {
         "macos": "brew install --cask docker",
         "windows": "choco install docker-desktop -y",
-        "linux": "curl -fsSL https://get.docker.com -o get-docker.sh",
+        "linux": "curl -fsSL https://get.docker.com -o get-docker.sh && chmod +777 get-docker.sh && ./get-docker.sh",
         "backup_url": "https://www.docker.com/products/docker-desktop/",
     },
     "docker_compose": {

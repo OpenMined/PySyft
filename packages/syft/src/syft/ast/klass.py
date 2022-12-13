@@ -39,6 +39,7 @@ from ..core.store.storeable_object import StorableObject
 from ..logger import traceback_and_raise
 from ..logger import warning
 from ..util import aggressive_set_attr
+from ..util import get_loaded_syft
 from ..util import inherit_tags
 from .callable import Callable
 
@@ -111,11 +112,7 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
     # relative
     from ..core.node.common.action import smpc_action_functions
 
-    def run_class_smpc_method(
-        __self: Any,
-        *args: Tuple[Any, ...],
-        **kwargs: Any,
-    ) -> object:
+    def run_class_smpc_method(__self: Any, *args: Any, **kwargs: Any) -> object:
         """Run remote class method on a SharePointer and get pointer to returned object.
 
         Args:
@@ -148,10 +145,9 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
         result.id_at_location = id_at_location
 
         # first downcast anything primitive which is not already PyPrimitive
-        (
-            downcast_args,
-            downcast_kwargs,
-        ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+        (downcast_args, downcast_kwargs) = lib.python.util.downcast_args_and_kwargs(
+            args=args, kwargs=kwargs
+        )
 
         # then we convert anything which isnt a pointer into a pointer
         pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
@@ -182,11 +178,7 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
 
         return result
 
-    def run_class_method(
-        __self: Any,
-        *args: Tuple[Any, ...],
-        **kwargs: Any,
-    ) -> object:
+    def run_class_method(__self: Any, *args: Any, **kwargs: Any) -> object:
         """Run remote class method and get pointer to returned object.
 
         Args:
@@ -211,10 +203,9 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
         result_id_at_location = getattr(result, "id_at_location", None)
         if result_id_at_location is not None:
             # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+            (downcast_args, downcast_kwargs) = lib.python.util.downcast_args_and_kwargs(
+                args=args, kwargs=kwargs
+            )
 
             # then we convert anything which isnt a pointer into a pointer
             pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
@@ -241,7 +232,7 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
             args=args,
             kwargs=kwargs,
         )
-
+        __self.client.processing_pointers[result_id_at_location] = True
         return result
 
     method_name = attr_path_and_name.rsplit(".", 1)[-1]
@@ -290,10 +281,9 @@ def generate_class_property_function(
         result_id_at_location = getattr(result, "id_at_location", None)
         if result_id_at_location is not None:
             # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+            (downcast_args, downcast_kwargs) = lib.python.util.downcast_args_and_kwargs(
+                args=args, kwargs=kwargs
+            )
 
             # then we convert anything which isnt a pointer into a pointer
             pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
@@ -334,11 +324,7 @@ def _get_request_config(self: Any) -> Dict[str, Any]:
     Returns:
         Config for request.
     """
-    return {
-        "request_block": True,
-        "timeout_secs": 25,
-        "delete_obj": False,
-    }
+    return {"request_block": True, "timeout_secs": 25, "delete_obj": False}
 
 
 def _set_request_config(self: Any, request_config: Dict[str, Any]) -> None:
@@ -646,10 +632,7 @@ class Class(Callable):
 
         module_type = type(sys)
 
-        # syft absolute
-        import syft
-
-        parent = syft
+        parent = get_loaded_syft()
         for part in parts[1:]:
             if part not in parent.__dict__:
                 parent.__dict__[part] = module_type(name=part)
@@ -661,7 +644,7 @@ class Class(Callable):
         Stores args and kwargs of outer_self init by wrapping the init method.
         """
 
-        def init_wrapper(self: Any, *args: List[Any], **kwargs: Dict[Any, Any]) -> None:
+        def init_wrapper(self: Any, *args: Any, **kwargs: Any) -> None:
             outer_self.object_ref._wrapped_init(self, *args, **kwargs)
             self._init_args = args
             self._init_kwargs = kwargs
@@ -682,10 +665,9 @@ class Class(Callable):
             description: str = "",
             tags: Optional[List[str]] = None,
             searchable: Optional[bool] = None,
-            id_at_location_override: Optional[UID] = None,
             chunk_size: Optional[int] = None,
             send_to_blob_storage: bool = True,
-            **kwargs: Dict[str, Any],
+            **kwargs: Any,
         ) -> Union[Pointer, Tuple[Pointer, SaveObjectAction]]:
 
             """Send obj to client and return pointer to the object.
@@ -706,10 +688,7 @@ class Class(Callable):
             if searchable is not None:
                 msg = "`searchable` is deprecated please use `pointable` in future"
                 warning(msg, print=True)
-                warnings.warn(
-                    msg,
-                    DeprecationWarning,
-                )
+                warnings.warn(msg, DeprecationWarning)
                 pointable = searchable
 
             chunk_size = chunk_size if chunk_size is not None else 536870912  # 500 MB
@@ -736,10 +715,7 @@ class Class(Callable):
                 attach_tags(self, tags)
                 attach_description(self, description)
 
-            if id_at_location_override is not None:
-                id_at_location = id_at_location_override
-            else:
-                id_at_location = UID()
+            id_at_location = UID()
 
             if hasattr(self, "init_pointer"):
                 constructor = self.init_pointer
@@ -802,7 +778,13 @@ class Class(Callable):
                 # Step 7: send message
                 client.send_immediate_msg_without_reply(msg=obj_msg)
 
-                # Step 8: return pointer
+                # Setp 8: add it in the lit of processing pointers
+                # Add in client side a list of pointers that
+                # might be in the middle of some computation making it not
+                # available immediately.
+                client.processing_pointers[id_at_location] = True
+
+                # Step 9: return pointer
                 return ptr
             else:
                 return ptr, obj_msg

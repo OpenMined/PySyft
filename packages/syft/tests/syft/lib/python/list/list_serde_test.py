@@ -21,7 +21,6 @@ def test_list_serde() -> None:
     deserialized = List._proto2object(proto=serialized)
 
     assert isinstance(deserialized, List)
-    assert deserialized.id == syft_list.id
     for deserialized_el, original_el in zip(deserialized, syft_list):
         assert (deserialized_el == original_el).all()
 
@@ -39,3 +38,10 @@ def test_list_send(client: sy.VirtualMachineClient) -> None:
     res = ptr.get()
     for res_el, original_el in zip(res, syft_list):
         assert (res_el == original_el).all()
+
+
+def test_list_bytes() -> None:
+    # Testing if multiple serialization of the similar object results in same bytes
+    value_1 = List([1, 2, 3])
+    value_2 = List([1, 2, 3])
+    assert sy.serialize(value_1, to_bytes=True) == sy.serialize(value_2, to_bytes=True)

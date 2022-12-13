@@ -14,8 +14,6 @@ services:
       - "--api.insecure=true" # admin panel no password
 
   frontend:
-    build:
-      target: "grid-ui-development"
     volumes:
       - ${RELATIVE_PATH}./frontend/:/app
 
@@ -30,8 +28,8 @@ services:
   queue:
     image: rabbitmq:3-management
     ports:
-      - "5672"
-      - "15672"
+      - "15672" # admin web port
+      # - "5672" # AMQP port
 
   backend:
     volumes:
@@ -89,6 +87,6 @@ services:
     # volumes:
     #   - ./data/seaweedfs:/data
     ports:
-      - "9333" # admin
-      - "8888" # filer
-      - "8333" # S3
+      - "9333" # admin web port
+      - "8888" # filer web port
+      # - "8333" # S3 API port

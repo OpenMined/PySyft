@@ -3,8 +3,6 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
-from typing import Dict
-from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
@@ -204,9 +202,7 @@ class FixedPrecisionTensor(PassthroughTensor):
             res.child = self.child / other
         return res
 
-    def transpose(
-        self, *args: List[Any], **kwargs: Dict[Any, Any]
-    ) -> FixedPrecisionTensor:
+    def transpose(self, *args: Any, **kwargs: Any) -> FixedPrecisionTensor:
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
         res.child = self.child.transpose(*args, **kwargs)
         return res
@@ -234,7 +230,7 @@ class FixedPrecisionTensor(PassthroughTensor):
         return res
 
     def concatenate(
-        self, other: FixedPrecisionTensor, *args: List[Any], **kwargs: Dict[str, Any]
+        self, other: FixedPrecisionTensor, *args: Any, **kwargs: Any
     ) -> FixedPrecisionTensor:
         if not isinstance(other, FixedPrecisionTensor):
             raise NotImplementedError

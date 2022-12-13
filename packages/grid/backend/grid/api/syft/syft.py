@@ -7,8 +7,10 @@ from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import Request
 from fastapi import Response
+from fastapi.responses import JSONResponse
 
 # syft absolute
+from syft import __version__
 from syft import deserialize
 from syft import serialize
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
@@ -31,6 +33,11 @@ tracer = get_tracer("API")
 
 async def get_body(request: Request) -> bytes:
     return await request.body()
+
+
+@router.get("/version")
+def syft_version() -> Response:
+    return JSONResponse(content={"version": __version__})
 
 
 @router.get("/metadata", response_model=str)
@@ -56,8 +63,9 @@ def delete(current_user: UserPrivate = Depends(get_current_user)) -> Response:
 
 
 @router.post("", response_model=str)
-def syft_route(data: bytes = Depends(get_body)) -> Any:
-    print("got a new incoming request")
+def syft_route(
+    data: bytes = Depends(get_body),
+) -> Any:
     with tracer.start_as_current_span("POST syft_route"):
         obj_msg = deserialize(blob=data, from_bytes=True)
         is_isr = isinstance(obj_msg, SignedImmediateSyftMessageWithReply) or isinstance(
@@ -78,7 +86,9 @@ def syft_route(data: bytes = Depends(get_body)) -> Any:
 
 
 @router.post("/stream", response_model=str)
-def syft_stream(data: bytes = Depends(get_body)) -> Any:
+def syft_stream(
+    data: bytes = Depends(get_body),
+) -> Any:
     with tracer.start_as_current_span("POST syft_route /stream"):
         if settings.STREAM_QUEUE:
             print("Queuing streaming message for processing on worker node")
