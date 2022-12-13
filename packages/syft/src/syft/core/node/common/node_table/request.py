@@ -2,7 +2,6 @@
 from sqlalchemy import Column
 from sqlalchemy import DateTime
 from sqlalchemy import Float
-from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import JSON
 from sqlalchemy import String
@@ -30,7 +29,7 @@ class Request(Base):
 
     id = Column(String(255), primary_key=True)
     date = Column(DateTime())
-    user_id = Column(Integer, ForeignKey("syft_user.id"))
+    user_id = Column(Integer())
     user_name = Column(String(255))
     user_email = Column(String(255))
     user_role = Column(String(255))

@@ -15,6 +15,7 @@ from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from pydantic import BaseSettings
+from pymongo import MongoClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base
 
@@ -26,6 +27,8 @@ from ....logger import debug
 from ....logger import error
 from ....logger import info
 from ....logger import traceback_and_raise
+from ....shylock import ShylockPymongoBackend
+from ....shylock import configure
 from ....telemetry import instrument
 from ....util import get_subclasses
 from ...common.message import ImmediateSyftMessageWithReply
@@ -46,7 +49,7 @@ from .action.exception_action import UnknownPrivateException
 from .client import Client
 from .metadata import Metadata
 from .node_manager.redis_store import RedisStore
-from .node_manager.setup_manager import SetupManager
+from .node_manager.setup_manager import NoSQLSetupManager
 from .node_service.auth import AuthorizationException
 from .node_service.child_node_lifecycle.child_node_lifecycle_service import (
     ChildNodeLifecycleService,
@@ -77,7 +80,7 @@ from .node_service.resolve_pointer_type.resolve_pointer_type_service import (
 from .node_service.testing_services.repr_service import ReprService
 from .node_service.vpn.vpn_messages import VPNRegisterMessage
 from .node_table import Base
-from .node_table.node import Node as NodeRow
+from .node_table.node import NoSQLNode
 
 # this generic type for Client bound by Client
 ClientT = TypeVar("ClientT", bound=Client)
@@ -120,6 +123,7 @@ class Node(AbstractNode):
         db_engine: Any = None,
         store_type: type = RedisStore,
         settings: Optional[BaseSettings] = None,
+        document_store: bool = False,
     ):
 
         # The node has a name - it exists purely to help the
@@ -143,6 +147,18 @@ class Node(AbstractNode):
             db_engine = create_engine("sqlite://", echo=False)
             Base.metadata.create_all(db_engine)  # type: ignore
 
+        # FIXME: Modify to use environment variable
+        self.nosql_db_engine = MongoClient(  # nosec
+            host="mongo",
+            port=27017,
+            username="root",
+            password="example",
+            uuidRepresentation="standard",
+        )
+        self.db_name = "app"
+        if document_store:
+            configure(ShylockPymongoBackend.create(self.nosql_db_engine, self.db_name))
+
         # cache these variables on self
         self.TableBase = TableBase
         self.db_engine = db_engine
@@ -161,7 +177,7 @@ class Node(AbstractNode):
         # self.store is the elastic memory.
 
         self.store = store_type(db=self.db_engine, settings=settings)
-        self.setup = SetupManager(database=self.db_engine)
+        self.setup = NoSQLSetupManager(self.nosql_db_engine, self.db_name)
 
         # We need to register all the services once a node is created
         # On the off chance someone forgot to do this (super unlikely)
@@ -280,11 +296,11 @@ class Node(AbstractNode):
         try:
             setup = self.setup.first()
             # if its empty it will be set during CreateInitialSetUpMessage
-            if setup.node_id != "":
+            if setup.node_uid != "":
                 try:
-                    node_id = UID.from_string(setup.node_id)
+                    node_id = UID.from_string(setup.node_uid)
                 except Exception as e:
-                    error(f"Invalid Node UID in Setup Table. {setup.node_id}")
+                    error(f"Invalid Node UID in Setup Table. {setup.node_uid}")
                     raise e
 
                 location = SpecificLocation(name=setup.domain_name, id=node_id)
@@ -356,9 +372,9 @@ class Node(AbstractNode):
             version=str(__version__),
         )
 
-    def add_peer_routes(self, peer: NodeRow) -> None:
+    def add_peer_routes(self, peer: NoSQLNode) -> None:
         try:
-            routes = self.node_route.query(node_id=peer.id)  # type: ignore
+            routes = peer.node_route
             for route in routes:
                 self.add_route(
                     node_id=UID.from_string(value=peer.node_uid),
