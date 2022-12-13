@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from collections.abc import Sequence
+import operator
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -10,7 +11,6 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
-import operator
 
 # third party
 import numpy as np
@@ -1670,7 +1670,6 @@ class TensorWrappedPhiTensorPointer(Pointer):
         """
         return self._apply_self_tensor_op("choose", *args, **kwargs)
 
-
     @property
     def T(self) -> TensorWrappedPhiTensorPointer:
         # We always maintain a Tensor hierarchy Tensor ---> PT--> Actual Data
@@ -1738,7 +1737,9 @@ class TensorWrappedPhiTensorPointer(Pointer):
         public_dtype = getattr(self, "public_dtype", None)
         return Tensor(
             child=PhiTensor(
-                child=FixedPrecisionTensor(value=np.empty(self.data_subject.shape)), # TODO 0.7: fix this
+                child=FixedPrecisionTensor(
+                    value=np.empty(self.data_subject.shape)
+                ),  # TODO 0.7: fix this
                 data_subject=self.data_subject,
                 min_vals=self.min_vals,  # type: ignore
                 max_vals=self.max_vals,  # type: ignore
@@ -1809,11 +1810,19 @@ def ones_like(
 ) -> TensorWrappedPhiTensorPointer:
     return tensor.ones_like(*args, **kwargs)
 
-def dispatch_tensor(*tensors: Union[PhiTensor, GammaTensor, AcceptableSimpleType], child_func: Callable, min_func: Callable, max_func: Callable, original_func: Callable) -> Union[PhiTensor, GammaTensor]:
+
+def dispatch_tensor(
+    *tensors: Union[PhiTensor, GammaTensor, AcceptableSimpleType],
+    child_func: Callable,
+    min_func: Callable,
+    max_func: Callable,
+    original_func: Callable,
+) -> Union[PhiTensor, GammaTensor]:
     def cast_to_gamma(tensor):
         if isinstance(tensor, PhiTensor):
             return tensor.gamma
         return tensor
+
     def check_phi_or_constant(tensor):
         return is_acceptable_simple_type(tensor) or isinstance(tensor, PhiTensor)
 
@@ -1826,11 +1835,17 @@ def dispatch_tensor(*tensors: Union[PhiTensor, GammaTensor, AcceptableSimpleType
     childs = [extract_attribute_or_self(tensor, "child") for tensor in tensors]
 
     if all(map(check_phi_or_constant, tensors)):
-        min_values = [extract_attribute_or_self(tensor, "min_vals") for tensor in tensors]
-        max_values = [extract_attribute_or_self(tensor, "max_vals") for tensor in tensors]
-        data_subject = [extract_attribute_or_self(tensor, "data_subject") for tensor in tensors]
+        min_values = [
+            extract_attribute_or_self(tensor, "min_vals") for tensor in tensors
+        ]
+        max_values = [
+            extract_attribute_or_self(tensor, "max_vals") for tensor in tensors
+        ]
+        data_subject = [
+            extract_attribute_or_self(tensor, "data_subject") for tensor in tensors
+        ]
         data_subject = [ds for ds in data_subject if ds is not None]
-        
+
         if len(set(data_subject)) > 1:
             return original_func(*map(cast_to_gamma, tensors))
 
@@ -2241,7 +2256,7 @@ class PhiTensor(PassthroughTensor):
             max_value = self.child.size - 1
         else:
             max_value = np.size(self.child, axis=axis) - 1
-            
+
         return PhiTensor(
             child=child,
             data_subject=self.data_subject,
@@ -2258,7 +2273,7 @@ class PhiTensor(PassthroughTensor):
             max_value = self.child.size - 1
         else:
             max_value = np.size(self.child, axis=axis) - 1
-            
+
         return PhiTensor(
             child=child,
             data_subject=self.data_subject,
@@ -2595,7 +2610,7 @@ class PhiTensor(PassthroughTensor):
             child=self.child,
             sources={self.id: self},
             func=lambda state: self.reconstruct(state),
-            is_linear=True
+            is_linear=True,
         )
 
         return gamma_tensor
@@ -2723,12 +2738,10 @@ class PhiTensor(PassthroughTensor):
                 child_func=lambda tensors: operator.add(*tensors),
                 min_func=lambda tensors: operator.add(*tensors),
                 max_func=lambda tensors: operator.add(*tensors),
-                original_func=lambda tensors: operator.add(*tensors)
+                original_func=lambda tensors: operator.add(*tensors),
             )
         except TypeError:
-            raise NotImplementedError(
-                f"__add__ not implemented for these types"
-            )
+            raise NotImplementedError(f"__add__ not implemented for these types")
 
     def __radd__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
         return self.__add__(other)
@@ -2740,8 +2753,9 @@ class PhiTensor(PassthroughTensor):
             child_func=lambda tensors: operator.sub(*tensors),
             min_func=lambda tensors: operator.sub(*tensors),
             max_func=lambda tensors: operator.sub(*tensors),
-            original_func=lambda tensors: operator.sub(*tensors)
+            original_func=lambda tensors: operator.sub(*tensors),
         )
+
     def __rsub__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
         return (self - other) * -1
 
@@ -2884,7 +2898,7 @@ class PhiTensor(PassthroughTensor):
                     data = self.child.__matmul__(other.child)
                     max_vals = self.max_vals.__matmul__(other.max_vals)
                     min_vals = lazyrepeatarray(data=minv, shape=data.shape)
-                    
+
             elif isinstance(other, GammaTensor):
                 return self.gamma @ other
             else:
@@ -3170,7 +3184,7 @@ class PhiTensor(PassthroughTensor):
 
     def transpose(self, *args: Any, **kwargs: Any) -> PhiTensor:
         """Transposes self.child, min_vals, and max_vals if these can be transposed, otherwise doesn't change them."""
-        
+
         output_data = self.child.transpose(*args, **kwargs)
         min_vals = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape)
         max_vals = lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape)
@@ -3254,7 +3268,7 @@ class PhiTensor(PassthroughTensor):
             data = self.child < other
             min_vals = self.min_vals * 0
             max_vals = (self.max_vals * 0) + 1
-            
+
             return PhiTensor(
                 child=data,
                 data_subject=self.data_subject,
@@ -3287,7 +3301,7 @@ class PhiTensor(PassthroughTensor):
             data = self.child <= other
             min_vals = self.min_vals * 0
             max_vals = (self.max_vals * 0) + 1
-            
+
             return PhiTensor(
                 child=data,
                 data_subject=self.data_subject,
@@ -3320,7 +3334,7 @@ class PhiTensor(PassthroughTensor):
             data = self.child > other
             min_vals = self.min_vals * 0
             max_vals = (self.max_vals * 0) + 1
-            
+
             return PhiTensor(
                 child=data,
                 data_subject=self.data_subject,
@@ -3352,7 +3366,7 @@ class PhiTensor(PassthroughTensor):
             data = self.child >= other
             min_vals = self.min_vals * 0
             max_vals = (self.max_vals * 0) + 1
-            
+
             return PhiTensor(
                 child=data,
                 data_subject=self.data_subject,
@@ -3898,7 +3912,7 @@ class PhiTensor(PassthroughTensor):
 
         pt_msg.minVals = serialize(self.min_vals, to_bytes=True)
         pt_msg.maxVals = serialize(self.max_vals, to_bytes=True)
-        # TODO(Tudor): fix this 
+        # TODO(Tudor): fix this
         chunk_bytes(
             capnp_serialize(dslarraytonumpyutf8(self.data_subject), to_bytes=True),
             "dataSubjects",
@@ -3928,7 +3942,7 @@ class PhiTensor(PassthroughTensor):
 
         min_vals = deserialize(pt_msg.minVals, from_bytes=True)
         max_vals = deserialize(pt_msg.maxVals, from_bytes=True)
-        # TODO(Tudor): fix this 
+        # TODO(Tudor): fix this
         data_subject = numpyutf8todslarray(
             capnp_deserialize(combine_bytes(pt_msg.dataSubjects), from_bytes=True)
         )

@@ -104,7 +104,7 @@ def test_eq(
     ishan: DataSubject,
 ) -> None:
     """Test equality between two identical PhiTensors"""
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -131,7 +131,7 @@ def test_zeros_like(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -142,7 +142,7 @@ def test_zeros_like(
     assert np.all(output.child == 0)
     assert output.min_vals.shape == reference_tensor.min_vals.shape
     assert output.max_vals.shape == reference_tensor.max_vals.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 def test_ones_like(
@@ -151,7 +151,7 @@ def test_ones_like(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -162,7 +162,7 @@ def test_ones_like(
     assert np.all(output.child == 1)
     assert output.min_vals.shape == reference_tensor.min_vals.shape
     assert output.max_vals.shape == reference_tensor.max_vals.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 def test_add_wrong_types(
@@ -172,7 +172,7 @@ def test_add_wrong_types(
     ishan: DataSubject,
 ) -> None:
     """Ensure that addition with incorrect types aren't supported"""
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -194,7 +194,7 @@ def test_add_tensor_types(
     dims: int,
 ) -> None:
     """Test addition of a PT with various other kinds of Tensors"""
-    
+
     # TODO: Add tests for GammaTensor, etc when those are built out.
     reference_tensor = PT(
         child=reference_data,
@@ -227,7 +227,7 @@ def test_add_single_data_subject(
     ishan: DataSubject,
 ) -> None:
     """Test the addition of PhiTensors"""
-    
+
     tensor1 = PT(
         child=reference_data,
         data_subject=ishan,
@@ -277,7 +277,7 @@ def test_serde(
     ishan: DataSubject,
 ) -> None:
     """Test basic serde for PT"""
-    
+
     tensor1 = PT(
         child=reference_data,
         data_subject=ishan,
@@ -292,7 +292,7 @@ def test_serde(
     assert (de.child == tensor1.child).all()
     assert (de.min_vals == tensor1.min_vals).all()
     assert (de.max_vals == tensor1.max_vals).all()
-    assert (de.data_subject == tensor1.data_subject)
+    assert de.data_subject == tensor1.data_subject
 
     assert np.shares_memory(tensor1.child, tensor1.child)
     assert not np.shares_memory(de.child, tensor1.child)
@@ -305,7 +305,7 @@ def test_copy(
     ishan: DataSubject,
 ) -> None:
     """Test copy for PT"""
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -329,7 +329,7 @@ def test_copy_with(
     ishan: DataSubject,
 ) -> None:
     """Test copy_with for PT"""
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -364,7 +364,7 @@ def test_sum(
     ishan: DataSubject,
     kwargs: Dict,
 ) -> None:
-    
+
     zeros_tensor = PT(
         child=reference_data * 0,
         data_subject=ishan,
@@ -410,7 +410,7 @@ def test_ne_vals(
 ) -> None:
     """Test inequality between two different PhiTensors"""
     # TODO: Add tests for GammaTensor when having same values but different entites.
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -437,7 +437,7 @@ def test_neg(
     ishan: DataSubject,
 ) -> None:
     """Test neg for PT"""
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -459,7 +459,7 @@ def test_flatten(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -482,9 +482,7 @@ def test_flatten(
     ), "Max vals changed incorrectly in flatten"
     assert flattened_array.min_vals.shape == target_shape
     assert flattened_array.max_vals.shape == target_shape
-    assert (
-        flattened_array.data_subject == ishan
-    ), "Data Subjects are different"
+    assert flattened_array.data_subject == ishan, "Data Subjects are different"
 
 
 @pytest.mark.arithmetic
@@ -495,7 +493,7 @@ def test_add_public(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -510,7 +508,7 @@ def test_add_public(
     assert output.min_vals.shape == reference_tensor.shape
     assert output.max_vals == reference_tensor.max_vals + 5
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.arithmetic
@@ -520,7 +518,7 @@ def test_radd(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -535,7 +533,7 @@ def test_radd(
     assert output.min_vals.shape == reference_tensor.shape
     assert (output.max_vals == input_data + reference_tensor.max_vals).all()
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.arithmetic
@@ -545,7 +543,7 @@ def test_rsub(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -559,7 +557,7 @@ def test_rsub(
     assert (output.min_vals.data <= output.max_vals.data).all()
     assert output.min_vals.shape == reference_tensor.shape
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.arithmetic
@@ -569,7 +567,7 @@ def test_rmul(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -583,7 +581,7 @@ def test_rmul(
     assert (output.min_vals.data <= output.max_vals.data).all()
     assert output.min_vals.shape == reference_tensor.shape
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.arithmetic
@@ -593,7 +591,7 @@ def test_rmatmul(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -607,7 +605,7 @@ def test_rmatmul(
     assert (output.min_vals.data <= output.max_vals.data).all()
     assert output.min_vals.shape == reference_tensor.shape
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.arithmetic
@@ -617,7 +615,7 @@ def test_rtruediv(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -631,7 +629,7 @@ def test_rtruediv(
     assert (output.min_vals.data <= output.max_vals.data).all()
     assert output.min_vals.shape == reference_tensor.shape
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.arithmetic
@@ -641,7 +639,7 @@ def test_rfloordiv(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -655,7 +653,7 @@ def test_rfloordiv(
     assert (output.min_vals.data <= output.max_vals.data).all()
     assert output.min_vals.shape == reference_tensor.shape
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.arithmetic
@@ -666,7 +664,7 @@ def test_sub_public(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -681,7 +679,7 @@ def test_sub_public(
     assert output.min_vals.shape == reference_tensor.shape
     assert output.max_vals == reference_tensor.max_vals - 5
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.arithmetic
@@ -692,7 +690,7 @@ def test_mul_public(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -707,7 +705,7 @@ def test_mul_public(
     assert output.min_vals.shape == reference_tensor.shape
     assert (output.max_vals.data == reference_tensor.max_vals.data * 5).all()
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.arithmetic
@@ -718,7 +716,7 @@ def test_truediv_public(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -733,7 +731,7 @@ def test_truediv_public(
     assert output.min_vals.shape == reference_tensor.shape
     assert (output.max_vals.data == reference_tensor.max_vals.data / 5).all()
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.arithmetic
@@ -744,7 +742,7 @@ def test_add_private(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -766,7 +764,7 @@ def test_add_private(
     assert output.min_vals.shape == reference_tensor.shape
     assert output.max_vals.data == reference_tensor.max_vals.data * 2
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.arithmetic
@@ -777,7 +775,7 @@ def test_sub_private(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -798,7 +796,7 @@ def test_sub_private(
     assert output.min_vals.data <= output.max_vals.data
     assert output.min_vals.shape == reference_tensor.shape
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.arithmetic
@@ -809,7 +807,7 @@ def test_mul_private(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -830,7 +828,7 @@ def test_mul_private(
     assert output.min_vals.data <= output.max_vals.data
     assert output.min_vals.shape == reference_tensor.shape
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.arithmetic
@@ -841,7 +839,7 @@ def test_truediv_private(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=np.ones_like(reference_data),
         data_subject=ishan,
@@ -862,7 +860,7 @@ def test_truediv_private(
     assert output.min_vals.data <= output.max_vals.data
     assert output.min_vals.shape == reference_tensor.shape
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.equality
@@ -873,7 +871,7 @@ def test_eq_public(
     lower_bound: lra,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=np.ones_like(reference_data),
         data_subject=ishan,
@@ -889,7 +887,7 @@ def test_eq_public(
     assert output.min_vals.shape == reference_tensor.shape
     assert (output.max_vals.data == 1).all()
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.equality
@@ -900,7 +898,7 @@ def test_ne_public(
     lower_bound: lra,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=np.ones_like(reference_data),
         data_subject=ishan,
@@ -915,7 +913,7 @@ def test_ne_public(
     assert output.min_vals.shape == reference_tensor.shape
     assert (output.max_vals.data == 1).all()
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.equality
@@ -926,7 +924,7 @@ def test_lt_public(
     lower_bound: lra,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=np.ones_like(reference_data),
         data_subject=ishan,
@@ -941,7 +939,7 @@ def test_lt_public(
     assert output.min_vals.shape == reference_tensor.shape
     assert (output.max_vals.data == 1).all()
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.equality
@@ -952,7 +950,7 @@ def test_gt_public(
     lower_bound: lra,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=np.ones_like(reference_data),
         data_subject=ishan,
@@ -967,7 +965,7 @@ def test_gt_public(
     assert output.min_vals.shape == reference_tensor.shape
     assert (output.max_vals.data == 1).all()
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.equality
@@ -978,7 +976,7 @@ def test_le_public(
     lower_bound: lra,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=np.ones_like(reference_data),
         data_subject=ishan,
@@ -993,7 +991,7 @@ def test_le_public(
     assert output.min_vals.shape == reference_tensor.shape
     assert (output.max_vals.data == 1).all()
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.equality
@@ -1004,7 +1002,7 @@ def test_ge_public(
     lower_bound: lra,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=np.ones_like(reference_data),
         data_subject=ishan,
@@ -1019,7 +1017,7 @@ def test_ge_public(
     assert output.min_vals.shape == reference_tensor.shape
     assert (output.max_vals.data == 1).all()
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.equality
@@ -1030,7 +1028,7 @@ def test_eq_private(
     lower_bound: lra,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=np.ones_like(reference_data),
         data_subject=ishan,
@@ -1046,7 +1044,7 @@ def test_eq_private(
     assert output.min_vals.shape == reference_tensor.shape
     assert (output.max_vals.data == 1).all()
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.equality
@@ -1057,7 +1055,7 @@ def test_ne_private(
     lower_bound: lra,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=np.ones_like(reference_data),
         data_subject=ishan,
@@ -1072,7 +1070,7 @@ def test_ne_private(
     assert output.min_vals.shape == reference_tensor.shape
     assert (output.max_vals.data == 1).all()
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.equality
@@ -1083,7 +1081,7 @@ def test_lt_private(
     lower_bound: lra,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=np.ones_like(reference_data),
         data_subject=ishan,
@@ -1098,7 +1096,7 @@ def test_lt_private(
     assert output.min_vals.shape == reference_tensor.shape
     assert (output.max_vals.data == 1).all()
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.equality
@@ -1109,7 +1107,7 @@ def test_gt_private(
     lower_bound: lra,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=np.ones_like(reference_data),
         data_subject=ishan,
@@ -1124,7 +1122,7 @@ def test_gt_private(
     assert output.min_vals.shape == reference_tensor.shape
     assert (output.max_vals.data == 1).all()
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.equality
@@ -1135,7 +1133,7 @@ def test_le_private(
     lower_bound: lra,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=np.ones_like(reference_data),
         data_subject=ishan,
@@ -1150,7 +1148,7 @@ def test_le_private(
     assert output.min_vals.shape == reference_tensor.shape
     assert (output.max_vals.data == 1).all()
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.equality
@@ -1161,7 +1159,7 @@ def test_ge_private(
     lower_bound: lra,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=np.ones_like(reference_data),
         data_subject=ishan,
@@ -1176,7 +1174,7 @@ def test_ge_private(
     assert output.min_vals.shape == reference_tensor.shape
     assert (output.max_vals.data == 1).all()
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 def test_resize(
@@ -1186,7 +1184,6 @@ def test_resize(
     ishan: DataSubject,
 ) -> None:
 
-    
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -1208,7 +1205,7 @@ def test_resize(
     data_subject_ref = reference_tensor.data_subject
     data_subject_res = resized_tensor.data_subject
 
-    assert (data_subject_ref == data_subject_res)
+    assert data_subject_ref == data_subject_res
 
 
 def test_compress(
@@ -1217,7 +1214,6 @@ def test_compress(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
 
     reference_tensor = PT(
         child=reference_data,
@@ -1245,10 +1241,7 @@ def test_compress(
             assert (
                 compressed_tensor.child[comp_ind, :] == reference_tensor.child[i, :]
             ).all()
-            assert (
-                compressed_tensor.data_subject
-                == reference_tensor.data_subject
-            )
+            assert compressed_tensor.data_subject == reference_tensor.data_subject
             comp_ind += 1
 
     assert compressed_tensor.min_vals.shape == new_shape
@@ -1261,7 +1254,7 @@ def test_squeeze(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=np.array([reference_data]),
         data_subject=ishan,
@@ -1272,7 +1265,7 @@ def test_squeeze(
     squeezed_tensor = reference_tensor.squeeze()
     assert squeezed_tensor.shape == reference_data.shape
     assert (squeezed_tensor.child == reference_data).all()
-    assert (squeezed_tensor.data_subject == ishan)
+    assert squeezed_tensor.data_subject == ishan
 
 
 def test_any(
@@ -1281,7 +1274,7 @@ def test_any(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -1291,19 +1284,19 @@ def test_any(
 
     result = (reference_tensor == reference_data).any()
     assert result.child
-    assert (result.data_subject == ishan)
+    assert result.data_subject == ishan
 
     result = (reference_tensor == reference_data).any(axis=0)
     assert result.shape == (reference_data.shape[0],)
-    assert (result.data_subject == ishan)
+    assert result.data_subject == ishan
 
     result = (reference_tensor == reference_data).any(keepdims=True)
     assert result.shape == (1, 1)
-    assert (result.data_subject == ishan)
+    assert result.data_subject == ishan
 
     result = (reference_tensor == reference_data).any(keepdims=True, axis=0)
     assert result.shape == (1, reference_tensor.shape[0])
-    assert (result.data_subject == ishan)
+    assert result.data_subject == ishan
 
     condition = list(
         np.random.choice(a=[False, True], size=(reference_data.shape[0] - 1))
@@ -1321,7 +1314,7 @@ def test_all(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=np.array(reference_data),
         data_subject=ishan,
@@ -1331,19 +1324,19 @@ def test_all(
 
     result = (reference_tensor == reference_data).all()
     assert result.child
-    assert (result.data_subject == ishan)
+    assert result.data_subject == ishan
 
     result = (reference_tensor == reference_data).all(axis=0)
     assert result.shape == (reference_data.shape[0],)
-    assert (result.data_subject == ishan)
+    assert result.data_subject == ishan
 
     result = (reference_tensor == reference_data).all(keepdims=True)
     assert result.shape == (1, 1)
-    assert (result.data_subject == ishan)
+    assert result.data_subject == ishan
 
     result = (reference_tensor == reference_data).all(keepdims=True, axis=0)
     assert result.shape == (1, reference_tensor.shape[0])
-    assert (result.data_subject == ishan)
+    assert result.data_subject == ishan
 
     condition = list(
         np.random.choice(a=[False, True], size=(reference_data.shape[0] - 1))
@@ -1353,7 +1346,6 @@ def test_all(
     assert (
         result.child
     )  # If condition = [False, False, False ... False], this test will fail
-   
 
 
 def test_and_wrong_types(
@@ -1363,7 +1355,7 @@ def test_and_wrong_types(
     ishan: DataSubject,
 ) -> None:
     """Ensure that and with incorrect types aren't supported"""
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -1384,7 +1376,7 @@ def test_and_tensor_types(
     dims: int,
 ) -> None:
     """Test and of a PT with various other kinds of Tensors"""
-    
+
     # TODO: Add tests for GammaTensor, etc when those are built out.
     reference_tensor = PT(
         child=reference_data,
@@ -1413,7 +1405,7 @@ def test_and_single_data_subject(
     ishan: DataSubject,
 ) -> None:
     """Test the mod of PhiTensors"""
-    
+
     tensor1 = PT(
         child=reference_data,
         data_subject=ishan,
@@ -1447,7 +1439,7 @@ def test_and_public(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -1462,7 +1454,7 @@ def test_and_public(
     assert output.min_vals.shape == reference_tensor.shape
     assert output.child.max() <= output.max_vals.data
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
     output = reference_tensor & -5
     assert output.shape == reference_tensor.shape
@@ -1471,7 +1463,7 @@ def test_and_public(
     assert output.min_vals.shape == reference_tensor.shape
     assert output.child.max() <= output.max_vals.data
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.arithmetic
@@ -1482,7 +1474,7 @@ def test_and_private(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -1508,7 +1500,7 @@ def test_and_private(
     assert output.min_vals.shape == reference_tensor.shape
     assert output.child.max() <= output.max_vals.data
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 def test_or_wrong_types(
@@ -1518,7 +1510,7 @@ def test_or_wrong_types(
     ishan: DataSubject,
 ) -> None:
     """Ensure that or with incorrect types aren't supported"""
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -1539,7 +1531,7 @@ def test_or_tensor_types(
     dims: int,
 ) -> None:
     """Test or of a PT with various other kinds of Tensors"""
-    
+
     # TODO: Add tests for GammaTensor, etc when those are built out.
     reference_tensor = PT(
         child=reference_data,
@@ -1568,7 +1560,7 @@ def test_or_single_data_subject(
     ishan: DataSubject,
 ) -> None:
     """Test the or of PhiTensors"""
-    
+
     tensor1 = PT(
         child=reference_data,
         data_subject=ishan,
@@ -1602,7 +1594,7 @@ def test_or_public(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -1617,7 +1609,7 @@ def test_or_public(
     assert output.min_vals.shape == reference_tensor.shape
     assert output.child.max() <= output.max_vals.data
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
     output = reference_tensor | -5
     assert output.shape == reference_tensor.shape
@@ -1626,7 +1618,7 @@ def test_or_public(
     assert output.min_vals.shape == reference_tensor.shape
     assert output.child.max() <= output.max_vals.data
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.arithmetic
@@ -1637,7 +1629,7 @@ def test_or_private(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -1663,7 +1655,7 @@ def test_or_private(
     assert output.min_vals.shape == reference_tensor.shape
     assert output.child.max() <= output.max_vals.data
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 def test_take(
@@ -1672,7 +1664,7 @@ def test_take(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=np.array(reference_data),
         data_subject=np.array(ishan),
@@ -1685,7 +1677,7 @@ def test_take(
     assert (result.child == reference_tensor.child[indices, :]).all()
     assert (result.min_vals == reference_tensor.min_vals[indices, :]).all()
     assert (result.max_vals == reference_tensor.max_vals[indices, :]).all()
-    assert (result.data_subject == reference_tensor.data_subject)
+    assert result.data_subject == reference_tensor.data_subject
 
 
 def test_put(
@@ -1694,7 +1686,7 @@ def test_put(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=np.array(reference_data),
         data_subject=ishan,
@@ -1718,7 +1710,7 @@ def test_abs(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=np.array(reference_data),
         data_subject=ishan,
@@ -1730,7 +1722,7 @@ def test_abs(
     assert (result.child == abs(reference_tensor.child)).all()
     assert (result.min_vals.data >= 0).all()
     assert (result.max_vals.data >= 0).all()
-    assert (result.data_subject == reference_tensor.data_subject)
+    assert result.data_subject == reference_tensor.data_subject
 
 
 def test_argmax(
@@ -1739,7 +1731,7 @@ def test_argmax(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=np.array(reference_data),
         data_subject=ishan,
@@ -1750,16 +1742,12 @@ def test_argmax(
     result = reference_tensor.argmax()
     reference_result = reference_tensor.child.argmax()
     assert (result.child == reference_result).all()
-    assert (
-        result.data_subject == reference_tensor.data_subject
-    )
+    assert result.data_subject == reference_tensor.data_subject
 
     result = reference_tensor.argmax(axis=0)
     reference_result = reference_tensor.child.argmax(axis=0)
     assert (result.child == reference_result).all()
-    assert (
-        result.data_subject == reference_tensor.data_subject
-    )
+    assert result.data_subject == reference_tensor.data_subject
 
 
 def test_swapaxes(
@@ -1768,7 +1756,7 @@ def test_swapaxes(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=np.array(reference_data),
         data_subject=ishan,
@@ -1778,7 +1766,7 @@ def test_swapaxes(
     result = reference_tensor.swapaxes(0, 1)
     reference_result = reference_tensor.child.swapaxes(0, 1)
     assert (result.child == reference_result).all()
-    assert (result.data_subject == reference_tensor.data_subject)
+    assert result.data_subject == reference_tensor.data_subject
     assert result.min_vals.shape == reference_result.shape
     assert result.max_vals.shape == reference_result.shape
 
@@ -1789,7 +1777,7 @@ def test_argmin(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=np.array(reference_data),
         data_subject=ishan,
@@ -1799,16 +1787,12 @@ def test_argmin(
     result = reference_tensor.argmin()
     reference_result = reference_tensor.child.argmin()
     assert (result.child == reference_result).all()
-    assert (
-        result.data_subject == reference_tensor.data_subject
-    )
+    assert result.data_subject == reference_tensor.data_subject
 
     result = reference_tensor.argmin(axis=0)
     reference_result = reference_tensor.child.argmin(axis=0)
     assert (result.child == reference_result).all()
-    assert (
-        result.data_subject == reference_tensor.data_subject
-    )
+    assert result.data_subject == reference_tensor.data_subject
 
 
 def test_ptp(
@@ -1817,7 +1801,7 @@ def test_ptp(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=np.array(reference_data),
         data_subject=ishan,
@@ -1827,13 +1811,13 @@ def test_ptp(
 
     result = reference_tensor.ptp()
     assert result.child == reference_data.ptp()
-    assert (result.data_subject == ishan)
+    assert result.data_subject == ishan
     assert (result.min_vals.data == 0).all()
     assert result.max_vals == upper_bound - lower_bound
 
     result = reference_tensor.ptp(axis=0)
     assert (result.child == reference_data.ptp(axis=0, keepdims=True)).all()
-    assert (result.data_subject == ishan)
+    assert result.data_subject == ishan
     assert (result.min_vals.data == 0).all()
     assert result.max_vals == upper_bound - lower_bound
 
@@ -1845,7 +1829,7 @@ def test_mod_wrong_types(
     ishan: DataSubject,
 ) -> None:
     """Ensure that mod with incorrect types aren't supported"""
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -1867,7 +1851,7 @@ def test_mod_tensor_types(
     dims: int,
 ) -> None:
     """Test mod of a PT with various other kinds of Tensors"""
-    
+
     # TODO: Add tests for GammaTensor, etc when those are built out.
     reference_tensor = PT(
         child=reference_data,
@@ -1898,7 +1882,7 @@ def test_mod_single_data_subject(
     ishan: DataSubject,
 ) -> None:
     """Test the mod of PhiTensors"""
-    
+
     tensor1 = PT(
         child=reference_data,
         data_subject=ishan,
@@ -1949,7 +1933,7 @@ def test_mod_public(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -1964,7 +1948,7 @@ def test_mod_public(
     assert output.min_vals.shape == reference_tensor.shape
     assert output.max_vals.data == 5
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
     output = reference_tensor % -5
     assert output.shape == reference_tensor.shape
@@ -1973,7 +1957,7 @@ def test_mod_public(
     assert output.min_vals.shape == reference_tensor.shape
     assert output.max_vals.data == 0
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 @pytest.mark.arithmetic
@@ -1984,7 +1968,7 @@ def test_mod_private(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -2010,7 +1994,7 @@ def test_mod_private(
     assert output.min_vals.shape == reference_tensor.shape
     assert output.max_vals.data >= max(0, reference_data.max())
     assert output.max_vals.shape == reference_tensor.shape
-    assert (output.data_subject == reference_tensor.data_subject)
+    assert output.data_subject == reference_tensor.data_subject
 
 
 def test_nonzero(
@@ -2019,7 +2003,7 @@ def test_nonzero(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=np.array(reference_data),
         data_subject=ishan,
@@ -2030,7 +2014,7 @@ def test_nonzero(
     result = reference_tensor.nonzero()
     reference_result = np.array(reference_tensor.child.nonzero())
     assert (result.child == reference_result).all()
-    assert (result.data_subject == reference_tensor.data_subject)
+    assert result.data_subject == reference_tensor.data_subject
     assert result.min_vals.shape == reference_result.shape
     assert result.max_vals.shape == reference_result.shape
 
@@ -2254,7 +2238,7 @@ def test_matmul(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=np.array([reference_data]),
         data_subject=ishan,
@@ -2273,7 +2257,7 @@ def test_xor(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    
+
     reference_tensor = PT(
         child=np.array([reference_data]),
         data_subject=ishan,

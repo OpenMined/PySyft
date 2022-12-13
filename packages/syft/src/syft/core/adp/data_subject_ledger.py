@@ -148,7 +148,7 @@ def compute_rdp_constant(rdp_params: RDPParams, private: bool) -> jax.numpy.Devi
         # bounds is computed on the metadata
         squared_l2 = rdp_params.l2_norm_bounds**2
 
-    return (squared_Ls * squared_l2 / (2 * squared_sigma))
+    return squared_Ls * squared_l2 / (2 * squared_sigma)
 
 
 @jax.jit

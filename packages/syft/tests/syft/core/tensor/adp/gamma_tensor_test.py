@@ -153,6 +153,7 @@ def test_gamma_serde(
 #     assert -10 + lower_bound.to_numpy().sum() < results
 #     print(ledger_store.kv_store)
 
+
 def test_lipschitz(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -169,6 +170,7 @@ def test_lipschitz(
     )
 
     assert False
+
 
 def test_zeros_like(
     reference_data: np.ndarray,
@@ -189,7 +191,8 @@ def test_zeros_like(
     state = {}
     for key in output.sources:
         state[key] = output.sources[key].child
-    assert (output.func(state) == output.child).all() 
+    assert (output.func(state) == output.child).all()
+
 
 def test_ones_like(
     reference_data: np.ndarray,
@@ -203,7 +206,7 @@ def test_ones_like(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    
+
     gamma_tensor = reference_tensor.gamma
     output = gamma_tensor.ones_like()
     assert np.all(output.child == 1)
@@ -212,6 +215,7 @@ def test_ones_like(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
+
 
 def test_sum(
     reference_data: np.ndarray,
@@ -230,15 +234,16 @@ def test_sum(
 
     result = gamma_tensor.sum()
     assert result.child == reference_data.sum()
-    
+
     output = gamma_tensor.sum(axis=1)
     assert (output.child == reference_data.sum(axis=1)).all()
-    
+
     assert list(output.sources.keys()) == [reference_tensor.id]
     state = {}
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
+
 
 def test_pow(
     reference_data: np.ndarray,
@@ -255,12 +260,13 @@ def test_pow(
     gamma_tensor = tensor.gamma
     output = gamma_tensor.__pow__(2)
     assert (output.child == (reference_data**2)).all()
-    
+
     assert list(output.sources.keys()) == [tensor.id]
     state = {}
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
+
 
 @pytest.mark.arithmetic
 @pytest.mark.public_op
@@ -289,6 +295,7 @@ def test_add_public(
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
 
+
 @pytest.mark.arithmetic
 def test_radd(
     reference_data: np.ndarray,
@@ -307,12 +314,13 @@ def test_radd(
     output = input_data + gamma_tensor
     assert output.shape == reference_tensor.shape
     assert (output.child == input_data + reference_data).all()
-    
+
     assert list(output.sources.keys()) == [reference_tensor.id]
     state = {}
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
+
 
 @pytest.mark.arithmetic
 def test_rsub(
@@ -338,6 +346,7 @@ def test_rsub(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
+
 
 @pytest.mark.arithmetic
 def test_rmul(
@@ -383,7 +392,7 @@ def test_rmatmul(
     output = input_data @ gamma_tensor
     assert output.shape == reference_tensor.shape
     assert (output.child == input_data @ reference_data).all()
-    
+
     assert list(output.sources.keys()) == [reference_tensor.id]
     state = {}
     for key in output.sources:
@@ -404,18 +413,18 @@ def test_rtruediv(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    gamma_tensor = reference_tensor.gamma + 10 # we add 10 to avoid 0 values
+    gamma_tensor = reference_tensor.gamma + 10  # we add 10 to avoid 0 values
     input_data = np.ones_like(reference_data)
     output = input_data / gamma_tensor
     assert output.shape == reference_tensor.shape
     assert (output.child == input_data / (reference_data + 10)).all()
-    
+
     assert list(output.sources.keys()) == [reference_tensor.id]
     state = {}
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-    
+
 
 @pytest.mark.arithmetic
 def test_rfloordiv(
@@ -436,12 +445,13 @@ def test_rfloordiv(
     output = input_data // gamma_tensor
     assert output.shape == reference_tensor.shape
     assert (output.child == input_data // (reference_data + 10)).all()
-    
+
     assert list(output.sources.keys()) == [reference_tensor.id]
     state = {}
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
+
 
 @pytest.mark.arithmetic
 @pytest.mark.public_op
@@ -458,7 +468,7 @@ def test_sub_public(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    
+
     gamma_tensor = reference_tensor.gamma
     output = gamma_tensor - 5
     assert output.shape == reference_tensor.shape
@@ -468,6 +478,7 @@ def test_sub_public(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
+
 
 @pytest.mark.arithmetic
 @pytest.mark.public_op
@@ -509,7 +520,7 @@ def test_truediv_public(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    
+
     gamma_tensor = reference_tensor.gamma
     output = gamma_tensor / 5
     assert output.shape == reference_tensor.shape
@@ -519,7 +530,6 @@ def test_truediv_public(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
 
 
 @pytest.mark.arithmetic
@@ -537,7 +547,7 @@ def test_mod_public(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    
+
     gamma_tensor = reference_tensor.gamma
 
     output = gamma_tensor % 5
@@ -599,7 +609,7 @@ def test_or_public(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    
+
     gamma_tensor = reference_tensor.gamma
 
     output = gamma_tensor | 5
@@ -644,6 +654,7 @@ def test_add_private(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
+
 
 @pytest.mark.arithmetic
 @pytest.mark.private_op
@@ -711,7 +722,7 @@ def test_mul_private(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-    
+
 
 @pytest.mark.arithmetic
 @pytest.mark.private_op
@@ -779,7 +790,7 @@ def test_mod_private(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-    
+
 
 @pytest.mark.arithmetic
 @pytest.mark.private_op
@@ -814,6 +825,7 @@ def test_and_private(
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
 
+
 @pytest.mark.arithmetic
 @pytest.mark.private_op
 def test_or_private(
@@ -847,6 +859,7 @@ def test_or_private(
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
 
+
 @pytest.mark.equality
 @pytest.mark.public_op
 def test_eq_public(
@@ -873,6 +886,7 @@ def test_eq_public(
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
 
+
 @pytest.mark.equality
 @pytest.mark.public_op
 def test_ne_public(
@@ -898,6 +912,7 @@ def test_ne_public(
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
 
+
 @pytest.mark.equality
 @pytest.mark.public_op
 def test_lt_public(
@@ -922,6 +937,7 @@ def test_lt_public(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
+
 
 @pytest.mark.equality
 @pytest.mark.public_op
@@ -949,6 +965,7 @@ def test_gt_public(
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
 
+
 @pytest.mark.equality
 @pytest.mark.public_op
 def test_le_public(
@@ -974,6 +991,7 @@ def test_le_public(
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
 
+
 @pytest.mark.equality
 @pytest.mark.public_op
 def test_ge_public(
@@ -998,7 +1016,7 @@ def test_ge_public(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-    
+
 
 @pytest.mark.equality
 @pytest.mark.private_op
@@ -1026,6 +1044,7 @@ def test_eq_private(
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
 
+
 @pytest.mark.equality
 @pytest.mark.private_op
 def test_ne_private(
@@ -1050,7 +1069,7 @@ def test_ne_private(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-    
+
 
 @pytest.mark.equality
 @pytest.mark.private_op
@@ -1077,6 +1096,7 @@ def test_lt_private(
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
 
+
 @pytest.mark.equality
 @pytest.mark.private_op
 def test_gt_private(
@@ -1100,6 +1120,7 @@ def test_gt_private(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
+
 
 @pytest.mark.equality
 @pytest.mark.private_op
@@ -1126,7 +1147,6 @@ def test_le_private(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
 
 
 @pytest.mark.equality
@@ -1222,7 +1242,7 @@ def test_floordiv(
         state[key] = output.sources[key].child
     print(output.child)
     print(output.func(state))
-    assert (output.func(state) == output.child).all() # TODO 0.7: fix this one
+    assert (output.func(state) == output.child).all()  # TODO 0.7: fix this one
 
     array = np.ones((dims, dims))
 
@@ -1323,7 +1343,6 @@ def test_squeeze(
     assert (output.func(state) == output.child).all()
 
 
-
 def test_pos(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1346,7 +1365,6 @@ def test_pos(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
 
 
 def test_neg(
@@ -1376,7 +1394,6 @@ def test_neg(
     assert (output.func(state) == output.child).all()
 
 
-
 def test_any(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1399,7 +1416,7 @@ def test_any(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
-    
+
     result = (gamma_tensor == reference_data).any(axis=0)
     assert result.shape == (reference_data.shape[0],)
     assert list(result.sources.keys()) == [reference_tensor.id]
@@ -1407,7 +1424,7 @@ def test_any(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
-    
+
     result = (gamma_tensor == reference_data).any(keepdims=True)
     assert result.shape == (1, 1)
     assert list(result.sources.keys()) == [reference_tensor.id]
@@ -1415,7 +1432,7 @@ def test_any(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
-    
+
     result = (gamma_tensor == reference_data).any(keepdims=True, axis=0)
     assert result.shape == (1, reference_tensor.shape[0])
     assert list(result.sources.keys()) == [reference_tensor.id]
@@ -1423,7 +1440,7 @@ def test_any(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
-    
+
     condition = list(
         np.random.choice(a=[False, True], size=(reference_data.shape[0] - 1))
     )
@@ -1438,8 +1455,8 @@ def test_any(
         state[key] = result.sources[key].child
     print(state)
     print(result.func(state))
-    assert (result.func(state) == result.child).all() # TODO 0.7: debug this
-    
+    assert (result.func(state) == result.child).all()  # TODO 0.7: debug this
+
 
 def test_all(
     reference_data: np.ndarray,
@@ -1463,7 +1480,7 @@ def test_all(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
-    
+
     result = (gamma_tensor == reference_data).all(axis=0)
     assert result.shape == (reference_data.shape[0],)
     assert list(result.sources.keys()) == [reference_tensor.id]
@@ -1471,7 +1488,7 @@ def test_all(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
-    
+
     result = (gamma_tensor == reference_data).all(keepdims=True)
     assert result.shape == (1, 1)
     assert list(result.sources.keys()) == [reference_tensor.id]
@@ -1479,7 +1496,7 @@ def test_all(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
-    
+
     result = (gamma_tensor == reference_data).all(keepdims=True, axis=0)
     assert result.shape == (1, reference_tensor.shape[0])
     assert list(result.sources.keys()) == [reference_tensor.id]
@@ -1487,7 +1504,7 @@ def test_all(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
-    
+
     condition = list(
         np.random.choice(a=[False, True], size=(reference_data.shape[0] - 1))
     )
@@ -1500,8 +1517,8 @@ def test_all(
     state = {}
     for key in result.sources:
         state[key] = result.sources[key].child
-    assert (result.func(state) == result.child).all() # TODO 0.7: debug this
-    
+    assert (result.func(state) == result.child).all()  # TODO 0.7: debug this
+
 
 def test_copy(
     reference_data: np.ndarray,
@@ -1519,7 +1536,7 @@ def test_copy(
     gamma_tensor = reference_tensor.gamma
 
     # Copy the tensor and check if it works
-    copy_tensor = gamma_tensor.copy(order='K') # jax implemented only 'K' order
+    copy_tensor = gamma_tensor.copy(order="K")  # jax implemented only 'K' order
 
     assert reference_tensor == copy_tensor.sources[reference_tensor.id]
     assert (
@@ -1530,6 +1547,7 @@ def test_copy(
     for key in copy_tensor.sources:
         state[key] = copy_tensor.sources[key].child
     assert (copy_tensor.func(state) == copy_tensor.child).all()
+
 
 def test_take(
     reference_data: np.ndarray,
@@ -1555,6 +1573,7 @@ def test_take(
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
 
+
 # Currently jax is not supporting put
 # def test_put(
 #     reference_data: np.ndarray,
@@ -1577,15 +1596,15 @@ def test_take(
 #     )[0]
 
 #     result = gamma_tensor.put(range(indices, indices + no_values), new_values)
-    # assert reference_tensor == result.sources[reference_tensor.id]
-    # assert (
-    #     result.child.flat[indices : indices + no_values] == new_values  # noqa: E203
-    # ).all()
-    # assert list(result.sources.keys()) == [reference_tensor.id]
-    # state = {}
-    # for key in result.sources:
-    #     state[key] = result.sources[key].child
-    # assert (result.func(state) == result.child).all()
+# assert reference_tensor == result.sources[reference_tensor.id]
+# assert (
+#     result.child.flat[indices : indices + no_values] == new_values  # noqa: E203
+# ).all()
+# assert list(result.sources.keys()) == [reference_tensor.id]
+# state = {}
+# for key in result.sources:
+#     state[key] = result.sources[key].child
+# assert (result.func(state) == result.child).all()
 
 
 def test_abs(
@@ -1600,18 +1619,19 @@ def test_abs(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    
+
     gamma_tensor = reference_tensor.gamma
 
     result = abs(gamma_tensor)
     assert reference_tensor == result.sources[reference_tensor.id]
     assert (result.child == abs(reference_tensor.child)).all()
-    
+
     assert list(result.sources.keys()) == [reference_tensor.id]
     state = {}
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
+
 
 def test_argmax(
     reference_data: np.ndarray,
@@ -1636,7 +1656,7 @@ def test_argmax(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
-    
+
     result = gamma_tensor.argmax(axis=0)
     reference_result = reference_tensor.child.argmax(axis=0)
     assert reference_tensor == result.sources[reference_tensor.id]
@@ -1671,7 +1691,7 @@ def test_argmin(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
-    
+
     result = gamma_tensor.argmin(axis=0)
     reference_result = reference_tensor.child.argmin(axis=0)
     assert reference_tensor == result.sources[reference_tensor.id]
@@ -1681,6 +1701,7 @@ def test_argmin(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
+
 
 def test_swapaxes(
     reference_data: np.ndarray,
@@ -1706,6 +1727,7 @@ def test_swapaxes(
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
 
+
 def test_ptp(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1728,7 +1750,7 @@ def test_ptp(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
-    
+
     result = gamma_tensor.ptp(axis=0)
     assert (result.child == reference_data.ptp(axis=0, keepdims=True)).all()
     assert list(result.sources.keys()) == [reference_tensor.id]
@@ -1736,6 +1758,7 @@ def test_ptp(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
+
 
 def test_nonzero(
     reference_data: np.ndarray,
@@ -1761,6 +1784,7 @@ def test_nonzero(
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
 
+
 def test_var(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1775,7 +1799,7 @@ def test_var(
         max_vals=upper_bound,
     )
     gamma_tensor = tensor.gamma
-    
+
     result = gamma_tensor.var()
     assert result.child == reference_data.var()
     assert list(result.sources.keys()) == [tensor.id]
@@ -1783,7 +1807,7 @@ def test_var(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
-    
+
     result = gamma_tensor.var(axis=1)
     assert (result.child == reference_data.var(axis=1)).all()
     assert list(result.sources.keys()) == [tensor.id]
@@ -1791,6 +1815,7 @@ def test_var(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
+
 
 def test_cumsum(
     reference_data: np.ndarray,
@@ -1822,6 +1847,7 @@ def test_cumsum(
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
 
+
 def test_std(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1836,7 +1862,7 @@ def test_std(
         max_vals=upper_bound,
     )
     gamma_tensor = tensor.gamma
-    
+
     result = gamma_tensor.std()
     assert result.child == reference_data.std()
     assert list(result.sources.keys()) == [tensor.id]
@@ -1853,6 +1879,7 @@ def test_std(
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
 
+
 def test_trace(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1866,7 +1893,7 @@ def test_trace(
         min_vals=lower_bound,
     )
     gamma_tensor = tensor.gamma
-    
+
     result = gamma_tensor.trace()
     assert result.child == reference_data.trace()
     assert list(result.sources.keys()) == [tensor.id]
@@ -1882,7 +1909,7 @@ def test_trace(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
-    
+
 
 def test_cumprod(
     reference_data: np.ndarray,
@@ -1898,7 +1925,7 @@ def test_cumprod(
         min_vals=lower_bound,
     )
     gamma_tensor = tensor.gamma
-    
+
     result = gamma_tensor.cumprod()
     assert (result.child == reference_data.cumprod()).all()
     assert list(result.sources.keys()) == [tensor.id]
@@ -1914,7 +1941,7 @@ def test_cumprod(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
-    
+
 
 def test_max(
     reference_data: np.ndarray,
@@ -1929,7 +1956,7 @@ def test_max(
         max_vals=upper_bound,
     )
     gamma_tensor = tensor.gamma
-    
+
     result = gamma_tensor.max()
     assert result.child == reference_data.max()
     assert list(result.sources.keys()) == [tensor.id]
@@ -1952,7 +1979,7 @@ def test_min(
         max_vals=upper_bound,
     )
     gamma_tensor = tensor.gamma
-    
+
     result = gamma_tensor.min()
     assert result.child == reference_data.min()
     assert list(result.sources.keys()) == [tensor.id]
@@ -1974,8 +2001,8 @@ def test_matmul(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    gamma_tensor = reference_tensor.gamma 
-    
+    gamma_tensor = reference_tensor.gamma
+
     result = gamma_tensor @ gamma_tensor
     assert (result.child == (reference_data @ reference_data)).all()
     assert list(result.sources.keys()) == [reference_tensor.id]
@@ -1998,7 +2025,7 @@ def test_lshift(
         max_vals=upper_bound,
     )
     gamma_tensor = tensor.gamma
-    
+
     result = gamma_tensor << 10
     assert (result.child == reference_data << 10).all()
     assert list(result.sources.keys()) == [tensor.id]
@@ -2021,7 +2048,7 @@ def test_rshift(
         max_vals=upper_bound,
     )
     gamma_tensor = tensor.gamma
-    
+
     result = gamma_tensor >> 10
     assert (result.child == reference_data >> 10).all()
     assert list(result.sources.keys()) == [tensor.id]
@@ -2172,7 +2199,7 @@ def test_reshape(
         max_vals=upper_bound,
     )
     gamma_tensor = tensor.gamma
-    
+
     result = gamma_tensor.reshape((1, dims * dims))
     assert (result.child == reference_data.reshape((1, dims * dims))).all()
     assert list(result.sources.keys()) == [tensor.id]

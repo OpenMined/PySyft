@@ -28,6 +28,7 @@ from scipy.optimize import shgo
 # relative
 from .... import lib
 from ....ast.klass import pointerize_args_and_kwargs
+from ....core.adp.data_subject import DataSubject
 from ....core.node.common.action.get_or_set_property_action import (
     GetOrSetPropertyAction,
 )
@@ -40,8 +41,6 @@ from ...adp.data_subject_ledger import DataSubjectLedger
 
 # from ...adp.data_subject_list import DataSubjectList
 from ...adp.data_subject_list import DataSubjectArray
-from ....core.adp.data_subject import DataSubject
-
 from ...adp.data_subject_list import dslarraytonumpyutf8
 from ...adp.data_subject_list import numpyutf8todslarray
 from ...adp.vectorized_publish import publish
@@ -69,6 +68,7 @@ from ..smpc import utils
 from ..smpc.mpc_tensor import MPCTensor
 from ..smpc.utils import TYPE_TO_RING_SIZE
 from ..util import implements
+
 # from .gamma_tensor_ops import GAMMA_TENSOR_OP
 
 if TYPE_CHECKING:
@@ -1919,7 +1919,6 @@ def create_new_lookup_tables(
     return index2key, key2index, index2values, index2size
 
 
-
 def jax2numpy(value: jnp.array, dtype: np.dtype) -> np.array:
     # are we incurring copying here?
     return np.asarray(value, dtype=dtype)
@@ -1990,9 +1989,8 @@ class GammaTensor:
     child: jnp.array
     func: Callable = flax.struct.field(pytree_node=False)
     sources: dict = flax.struct.field(pytree_node=False)
-    is_linear: bool = True
+    is_linear: bool = False
     id: str = flax.struct.field(pytree_node=False, default_factory=lambda: UID())
-
 
     # def __init__(
     #     self,
@@ -2009,8 +2007,7 @@ class GammaTensor:
     #     self.sources.update({phi_tensor.id: phi_tensor})
     #     self.is_linear = True
     #     self.func = lambda state: phi_tensor.reconstruct(state)
-        
-        
+
     def decode(self) -> np.ndarray:
         if isinstance(self.child, FixedPrecisionTensor):
             return self.child.decode()
@@ -2052,28 +2049,26 @@ class GammaTensor:
 
         raise Exception(f"{type(self)} has no attribute size.")
 
-
     def __add__(self, other: Any) -> GammaTensor:
+        # relative
         from .phi_tensor import PhiTensor
 
-        output_state =  self.sources.copy()
+        output_state = self.sources.copy()
         if isinstance(other, PhiTensor):
             other = other.gamma
 
         if isinstance(other, GammaTensor):
             child = self.child + other.child
             output_state.update(other.sources)
-            func = lambda state: jnp.add(self.reconstruct(state), other.reconstruct(state))
+            func = lambda state: jnp.add(
+                self.reconstruct(state), other.reconstruct(state)
+            )
 
         if is_acceptable_simple_type(other):
             child = self.child + other
             func = lambda state: jnp.add(self.reconstruct(state), other)
 
-        return GammaTensor(
-            child=child,
-            func=func,
-            sources=output_state,
-        )
+        return GammaTensor(child=child, func=func, sources=output_state, is_linear=True)
 
     def __radd__(self, other: Any) -> GammaTensor:
         return self.__add__(other)
@@ -2082,7 +2077,7 @@ class GammaTensor:
         # relative
         from .phi_tensor import PhiTensor
 
-        output_state =  self.sources.copy() 
+        output_state = self.sources.copy()
 
         if isinstance(other, PhiTensor):
             other = other.gamma
@@ -2090,12 +2085,14 @@ class GammaTensor:
         if isinstance(other, GammaTensor):
             output_state.update(other.sources)
             child = self.child % other.child
-            func = lambda state: jnp.mod(self.reconstruct(state), other.reconstruct(state))
-            
+            func = lambda state: jnp.mod(
+                self.reconstruct(state), other.reconstruct(state)
+            )
+
         elif is_acceptable_simple_type(other):
             child = self.child % other
             func = lambda state: jnp.mod(self.reconstruct(state), other)
-            
+
         else:
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
@@ -2107,31 +2104,34 @@ class GammaTensor:
         )
 
     def __rtruediv__(self, other: SupportedChainType) -> GammaTensor:
-        output_state =  self.sources.copy() 
+        output_state = self.sources.copy()
 
+        # relative
         from .phi_tensor import PhiTensor
 
         if isinstance(other, PhiTensor):
             other = other.gamma
-            
+
         if isinstance(other, GammaTensor):
             output_state.update(other.sources)
-            child=other.child / self.child
-            func = lambda state: jnp.true_divide(other.reconstruct(state), self.reconstruct(state))
-        
+            child = other.child / self.child
+            func = lambda state: jnp.true_divide(
+                other.reconstruct(state), self.reconstruct(state)
+            )
+
         elif is_acceptable_simple_type(other):
-            child=other / self.child
-            func=lambda state: jnp.true_divide(other, self.reconstruct(state))
+            linear = True
+            child = other / self.child
+            func = lambda state: jnp.true_divide(other, self.reconstruct(state))
         else:
+            linear = False
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
 
         return GammaTensor(
-            child=child,
-            func=func,
-            sources=output_state,
+            child=child, func=func, sources=output_state, is_linear=linear
         )
-        
+
     def __sub__(self, other: Any) -> GammaTensor:
         # relative
         from .phi_tensor import PhiTensor
@@ -2145,16 +2145,14 @@ class GammaTensor:
             output_state.update(other.sources)
 
             child = self.child - other.child
-            func = lambda state: jnp.subtract(self.reconstruct(state), other.reconstruct(state))
+            func = lambda state: jnp.subtract(
+                self.reconstruct(state), other.reconstruct(state)
+            )
         else:
             child = self.child - other
             func = lambda state: jnp.subtract(self.reconstruct(state), other)
-            
-        return GammaTensor(
-            child=child,
-            func=func,
-            sources=output_state,
-        )
+
+        return GammaTensor(child=child, func=func, sources=output_state, is_linear=True)
 
     def __rsub__(self, other: Any) -> GammaTensor:
         return (self - other) * -1
@@ -2171,11 +2169,13 @@ class GammaTensor:
         if isinstance(other, GammaTensor):
             output_state.update(other.sources)
             child = self.child * other.child
-            func = lambda state: jnp.multiply(self.reconstruct(state), other.reconstruct(state))
+            func = lambda state: jnp.multiply(
+                self.reconstruct(state), other.reconstruct(state)
+            )
         else:
             child = self.child * other
             func = lambda state: jnp.multiply(self.reconstruct(state), other)
-            
+
         return GammaTensor(
             child=child,
             func=func,
@@ -2195,23 +2195,27 @@ class GammaTensor:
             other = other.gamma
 
         if isinstance(other, GammaTensor):
+            linear = False
             output_state.update(other.sources)
             child = self.child / other.child
-            func = lambda state: jnp.true_divide(self.reconstruct(state), other.reconstruct(state))
+            func = lambda state: jnp.true_divide(
+                self.reconstruct(state), other.reconstruct(state)
+            )
         else:
+            linear = True
             child = self.child / other
             func = lambda state: jnp.true_divide(self.reconstruct(state), other)
-            
+
         return GammaTensor(
-            child=child,
-            func=func,
-            sources=output_state,
+            child=child, func=func, sources=output_state, is_linear=linear
         )
 
     def __divmod__(self, other: Any) -> Tuple[GammaTensor, GammaTensor]:
+        # Not sure if our Service can support this since it returns 2 tensor pointers
         return self // other, self % other
 
     def divmod(self, other: Any) -> Tuple[GammaTensor, GammaTensor]:
+        # Not sure if our Service can support this since it returns 2 tensor pointers
         return self.__divmod__(other)
 
     def __matmul__(self, other: Any) -> GammaTensor:
@@ -2226,11 +2230,13 @@ class GammaTensor:
         if isinstance(other, GammaTensor):
             output_state.update(other.sources)
             child = self.child @ other.child
-            func = lambda state: jnp.matmul(self.reconstruct(state), other.reconstruct(state))
+            func = lambda state: jnp.matmul(
+                self.reconstruct(state), other.reconstruct(state)
+            )
         else:
             child = self.child @ other
             func = lambda state: jnp.matmul(self.reconstruct(state), other)
-            
+
         return GammaTensor(
             child=child,
             func=func,
@@ -2252,7 +2258,9 @@ class GammaTensor:
         if isinstance(other, GammaTensor):
             output_state.update(other.sources)
             child = self.child.__rmatmul__(other.child)
-            func = lambda state: jnp.matmul(other.reconstruct(state), self.reconstruct(state))
+            func = lambda state: jnp.matmul(
+                other.reconstruct(state), self.reconstruct(state)
+            )
         else:
             child = self.child.__rmatmul__(other)
             func = lambda state: jnp.matmul(other, self.reconstruct(state))
@@ -2275,7 +2283,9 @@ class GammaTensor:
         if isinstance(other, GammaTensor):
             output_state.update(other.sources)
             child = self.child.__gt__(other.child)
-            func = lambda state: jnp.greater(self.reconstruct(state), other.reconstruct(state))
+            func = lambda state: jnp.greater(
+                self.reconstruct(state), other.reconstruct(state)
+            )
         else:
             func = lambda state: jnp.greater(self.reconstruct(state), other)
             child = self.child.__gt__(other)
@@ -2291,18 +2301,20 @@ class GammaTensor:
         from .phi_tensor import PhiTensor
 
         output_state = self.sources.copy()
-        
+
         if isinstance(other, PhiTensor):
             other = other.gamma
 
         if isinstance(other, GammaTensor):
             output_state.update(other.sources)
             child = self.child.__ge__(other.child)
-            func = lambda state: jnp.greater_equal(self.reconstruct(state), other.reconstruct(state))
+            func = lambda state: jnp.greater_equal(
+                self.reconstruct(state), other.reconstruct(state)
+            )
         else:
             child = self.child.__ge__(other)
             func = lambda state: jnp.greater_equal(self.reconstruct(state), other)
-        
+
         return GammaTensor(
             child=child,
             func=func,
@@ -2314,18 +2326,20 @@ class GammaTensor:
         from .phi_tensor import PhiTensor
 
         output_state = self.sources.copy()
-        
+
         if isinstance(other, PhiTensor):
             other = other.gamma
 
         if isinstance(other, GammaTensor):
             output_state.update(other.sources)
             child = self.child.__eq__(other.child)
-            func = lambda state: jnp.equal(self.reconstruct(state), other.reconstruct(state))
+            func = lambda state: jnp.equal(
+                self.reconstruct(state), other.reconstruct(state)
+            )
         else:
             child = self.child.__eq__(other)
             func = lambda state: jnp.equal(self.reconstruct(state), other)
-        
+
         return GammaTensor(
             child=child,
             func=func,
@@ -2337,18 +2351,20 @@ class GammaTensor:
         from .phi_tensor import PhiTensor
 
         output_state = self.sources.copy()
-        
+
         if isinstance(other, PhiTensor):
             other = other.gamma
 
         if isinstance(other, GammaTensor):
             output_state.update(other.sources)
             child = self.child.__ne__(other.child)
-            func = lambda state: jnp.not_equal(self.reconstruct(state), other.reconstruct(state))
+            func = lambda state: jnp.not_equal(
+                self.reconstruct(state), other.reconstruct(state)
+            )
         else:
             child = self.child.__ne__(other)
             func = lambda state: jnp.not_equal(self.reconstruct(state), other)
-        
+
         return GammaTensor(
             child=child,
             func=func,
@@ -2360,18 +2376,20 @@ class GammaTensor:
         from .phi_tensor import PhiTensor
 
         output_state = self.sources.copy()
-        
+
         if isinstance(other, PhiTensor):
             other = other.gamma
 
         if isinstance(other, GammaTensor):
             output_state.update(other.sources)
             child = self.child.__lt__(other.child)
-            func = lambda state: jnp.less(self.reconstruct(state), other.reconstruct(state))
+            func = lambda state: jnp.less(
+                self.reconstruct(state), other.reconstruct(state)
+            )
         else:
             child = self.child.__lt__(other)
             func = lambda state: jnp.less(self.reconstruct(state), other)
-        
+
         return GammaTensor(
             child=child,
             func=func,
@@ -2389,12 +2407,14 @@ class GammaTensor:
         if isinstance(other, GammaTensor):
             output_state.update(other.sources)
             child = self.child.__le__(other.child)
-            func = lambda state: jnp.less_equal(self.reconstruct(state), other.reconstruct(state))
-        
+            func = lambda state: jnp.less_equal(
+                self.reconstruct(state), other.reconstruct(state)
+            )
+
         else:
             child = self.child.__le__(other)
             func = lambda state: jnp.less_equal(self.reconstruct(state), other)
-        
+
         return GammaTensor(
             child=child,
             func=func,
@@ -2406,7 +2426,7 @@ class GammaTensor:
         output_state = self.sources.copy()
         child = self.child.__abs__()
         func = lambda state: jnp.abs(self.reconstruct(state))
-        
+
         return GammaTensor(
             child=child,
             func=func,
@@ -2421,7 +2441,7 @@ class GammaTensor:
         output_state = self.sources.copy()
         child = self.child.argmax(axis=axis)
         func = lambda state: jnp.argmax(self.reconstruct(state), axis=axis)
-        
+
         return GammaTensor(
             child=child,
             func=func,
@@ -2435,7 +2455,7 @@ class GammaTensor:
         output_state = self.sources.copy()
         child = self.child.argmin(axis=axis)
         func = lambda state: jnp.argmin(self.reconstruct(state), axis=axis)
-        
+
         return GammaTensor(
             child=child,
             func=func,
@@ -2445,7 +2465,7 @@ class GammaTensor:
     def log(self) -> GammaTensor:
         output_state = self.sources.copy()
         func = lambda state: jnp.log(self.reconstruct(state))
-        
+
         return GammaTensor(
             child=np.log(self.child),
             func=func,
@@ -2484,9 +2504,7 @@ class GammaTensor:
         output_data = self.child.transpose(*args, **kwargs)
         func = lambda state: jnp.transpose(self.reconstruct(state), *args, **kwargs)
         return GammaTensor(
-            child=output_data,
-            func=func,
-            sources=output_state,
+            child=output_data, func=func, sources=output_state, is_linear=True
         )
 
     @property
@@ -2524,27 +2542,27 @@ class GammaTensor:
         sources = self.sources.copy()
         if where is None:
             result = np.array(self.child.sum(axis=axis, keepdims=keepdims))
-            func = lambda state: jnp.sum(self.reconstruct(state), axis=axis, keepdims=keepdims)
+            func = lambda state: jnp.sum(
+                self.reconstruct(state), axis=axis, keepdims=keepdims
+            )
         else:
             result = self.child.sum(axis=axis, keepdims=keepdims, where=where)
-            func = lambda state: jnp.sum(self.reconstruct(state), axis=axis, keepdims=keepdims, where=where)
-        
+            func = lambda state: jnp.sum(
+                self.reconstruct(state), axis=axis, keepdims=keepdims, where=where
+            )
+
         if not isinstance(result, np.ndarray):
             result = np.array(result)
 
-        return GammaTensor(
-            child=result,
-            func=func,
-            sources=sources,
-        )
+        return GammaTensor(child=result, func=func, sources=sources, is_linear=True)
 
     def __pow__(
-        self, power: Union[float, int]#, modulo: Optional[int] = None
+        self, power: Union[float, int]  # , modulo: Optional[int] = None
     ) -> GammaTensor:
-        sources = self.sources.copy() 
-        
+        sources = self.sources.copy()
+
         # if modulo is None:
-            
+
         return GammaTensor(
             child=self.child**power,
             func=lambda state: jnp.power(self.reconstruct(state), power),
@@ -2559,7 +2577,7 @@ class GammaTensor:
 
     def ones_like(self, *args: Any, **kwargs: Any) -> GammaTensor:
         output_state = self.sources.copy()
-        
+
         child = (
             np.ones_like(self.child, *args, **kwargs)
             if isinstance(self.child, np.ndarray)
@@ -2570,6 +2588,7 @@ class GammaTensor:
             child=child,
             func=lambda state: jnp.ones_like(self.reconstruct(state, *args, **kwargs)),
             sources=output_state,
+            is_linear=True,
         )
 
     def zeros_like(self, *args: Any, **kwargs: Any) -> GammaTensor:
@@ -2585,6 +2604,7 @@ class GammaTensor:
             child=child,
             func=lambda state: jnp.zeros_like(self.reconstruct(state, *args, **kwargs)),
             sources=output_state,
+            is_linear=True,
         )
 
     def filtered(self) -> GammaTensor:
@@ -2592,7 +2612,7 @@ class GammaTensor:
         return GammaTensor(
             child=jnp.zeros_like(self.child),
             func=lambda state: self.reconstruct(state),
-            sources=self.sources.copy()
+            sources=self.sources.copy(),
         )
 
     def ravel(self, order: Optional[str] = "C") -> GammaTensor:
@@ -2604,19 +2624,19 @@ class GammaTensor:
             child=output_data,
             func=lambda state: jnp.ravel(self.reconstruct(state), order=order),
             sources=output_state,
+            is_linear=True,
         )
 
-    def resize(
-        self, new_shape: Union[int, Tuple[int, ...]]
-    ) -> GammaTensor:
+    def resize(self, new_shape: Union[int, Tuple[int, ...]]) -> GammaTensor:
         output_state = self.sources.copy()
-        
-        output = self.child .copy() 
+
+        output = self.child.copy()
         output.resize(new_shape, refcheck=False)
         return GammaTensor(
             child=output,
             func=lambda state: jnp.resize(self.reconstruct(state), new_shape),
             sources=output_state,
+            is_linear=True,
         )
 
     def compress(
@@ -2630,8 +2650,11 @@ class GammaTensor:
             raise NotImplementedError
         return GammaTensor(
             child=output_data,
-            func=lambda state: jnp.compress(np.array(condition), self.reconstruct(state), axis=axis),
+            func=lambda state: jnp.compress(
+                np.array(condition), self.reconstruct(state), axis=axis
+            ),
             sources=output_state,
+            is_linear=True,
         )
 
     def squeeze(
@@ -2645,6 +2668,7 @@ class GammaTensor:
             child=output_data,
             func=lambda state: jnp.squeeze(self.reconstruct(state), axis=axis),
             sources=output_state,
+            is_linear=True,
         )
 
     def any(
@@ -2654,15 +2678,19 @@ class GammaTensor:
         where: Optional[ArrayLike] = None,
     ) -> GammaTensor:
         output_state = self.sources.copy()
-        
+
         if where is None:
             out_child = np.array(self.child.any(axis=axis, keepdims=keepdims))
-            func = lambda state: jnp.any(self.reconstruct(state), axis=axis, keepdims=keepdims)
+            func = lambda state: jnp.any(
+                self.reconstruct(state), axis=axis, keepdims=keepdims
+            )
         else:
             out_child = np.array(
                 self.child.any(axis=axis, keepdims=keepdims, where=where)
             )
-            func = lambda state: jnp.any(self.reconstruct(state), axis=axis, keepdims=keepdims, where=where)
+            func = lambda state: jnp.any(
+                self.reconstruct(state), axis=axis, keepdims=keepdims, where=where
+            )
 
         return GammaTensor(
             child=out_child,
@@ -2677,16 +2705,20 @@ class GammaTensor:
         where: Optional[ArrayLike] = None,
     ) -> GammaTensor:
         output_state = self.sources.copy()
-        
+
         if where is None:
             out_child = np.array(self.child.all(axis=axis, keepdims=keepdims))
-            func = lambda state: jnp.all(self.reconstruct(state), axis=axis, keepdims=keepdims)
+            func = lambda state: jnp.all(
+                self.reconstruct(state), axis=axis, keepdims=keepdims
+            )
         else:
             out_child = np.array(
                 self.child.all(axis=axis, keepdims=keepdims, where=where)
             )
-            func = lambda state: jnp.all(self.reconstruct(state), axis=axis, keepdims=keepdims, where=where)
-            
+            func = lambda state: jnp.all(
+                self.reconstruct(state), axis=axis, keepdims=keepdims, where=where
+            )
+
         return GammaTensor(
             child=out_child,
             func=func,
@@ -2698,14 +2730,16 @@ class GammaTensor:
         from .phi_tensor import PhiTensor
 
         output_state = self.sources.copy()
-        
+
         if isinstance(other, PhiTensor):
             other = other.gamma
 
         if isinstance(other, GammaTensor):
             output_state.update(other.sources)
             child = self.child & other.child
-            func = lambda state: jnp.bitwise_and(self.reconstruct(state), other.reconstruct(state))
+            func = lambda state: jnp.bitwise_and(
+                self.reconstruct(state), other.reconstruct(state)
+            )
         elif is_acceptable_simple_type(other):
             child = self.child & other
             func = lambda state: jnp.bitwise_and(self.reconstruct(state), other)
@@ -2731,7 +2765,9 @@ class GammaTensor:
         if isinstance(other, GammaTensor):
             output_state.update(other.sources)
             child = self.child | other.child
-            func = lambda state: jnp.bitwise_or(self.reconstruct(state), other.reconstruct(state))
+            func = lambda state: jnp.bitwise_or(
+                self.reconstruct(state), other.reconstruct(state)
+            )
         elif is_acceptable_simple_type(other):
             child = self.child | other
             func = lambda state: jnp.bitwise_or(self.reconstruct(state), other)
@@ -2750,6 +2786,7 @@ class GammaTensor:
             child=self.child,
             func=lambda state: jnp.positive(self.reconstruct(state)),
             sources=output_state,
+            is_linear=True,
         )
 
     def __neg__(self) -> GammaTensor:
@@ -2758,6 +2795,7 @@ class GammaTensor:
             child=self.child * -1,
             func=lambda state: jnp.negative(self.reconstruct(state)),
             sources=output_state,
+            is_linear=True,
         )
 
     def reshape(self, shape: Tuple[int, ...]) -> GammaTensor:
@@ -2767,6 +2805,7 @@ class GammaTensor:
             child=output_data,
             func=lambda state: jnp.reshape(self.reconstruct(state), shape),
             sources=sources,
+            is_linear=True,
         )
 
     def _argmax(self, axis: Optional[int]) -> np.ndarray:
@@ -2782,6 +2821,7 @@ class GammaTensor:
             child=result,
             sources=output_state,
             func=lambda state: jnp.mean(self.reconstruct(state), axis=axis, **kwargs),
+            is_linear=True,
         )
 
     def expand_dims(self, axis: Optional[int] = None) -> GammaTensor:
@@ -2843,6 +2883,7 @@ class GammaTensor:
             child=result,
             sources=output_state,
             func=lambda state: jnp.std(self.reconstruct(state), axis=axis, **kwargs),
+            is_linear=True,
         )
 
     def var(
@@ -2883,12 +2924,13 @@ class GammaTensor:
             child=result,
             sources=output_state,
             func=lambda state: jnp.var(self.reconstruct(state), axis=axis, **kwargs),
+            is_linear=True,
         )
 
     def dot(self, other: Union[np.ndarray, GammaTensor]) -> GammaTensor:
         # TODO this could be implemented for PhiTensor as well
         output_state = self.sources.copy()
-  
+
         if isinstance(other, np.ndarray):
             raise NotImplementedError
             # result = jnp.dot(self.child, other)
@@ -2933,7 +2975,9 @@ class GammaTensor:
 
             return GammaTensor(
                 child=result,
-                func=lambda state: jnp.dot(self.reconstruct(state), other.reconstruct(state)),
+                func=lambda state: jnp.dot(
+                    self.reconstruct(state), other.reconstruct(state)
+                ),
                 sources=output_state,
             )
         else:
@@ -2974,7 +3018,7 @@ class GammaTensor:
         output_state = self.sources.copy()
 
         out_child = np.array(np.nonzero(self.child))
-        
+
         return GammaTensor(
             child=out_child,
             func=lambda state: jnp.nonzero(self.reconstruct(state)),
@@ -2988,6 +3032,7 @@ class GammaTensor:
             child=out_child,
             func=lambda state: jnp.swapaxes(self.reconstruct(state), axis1, axis2),
             sources=output_state,
+            is_linear=True,
         )
 
     @staticmethod
@@ -3061,7 +3106,7 @@ class GammaTensor:
 
         if isinstance(item, PassthroughTensor):
             # data = self.child[item.child]
-            
+
             # if self.shape == self.data_subjects.shape:
             #     return GammaTensor(
             #         child=data,
@@ -3074,8 +3119,10 @@ class GammaTensor:
             #     raise Exception(
             #         f"Incompatible shapes: {self.shape}, {self.data_subjects.shape}"
             #     )
-            raise NotImplementedError("__getitem__ is not supported for items of type PassthroughTensor")
-            
+            raise NotImplementedError(
+                "__getitem__ is not supported for items of type PassthroughTensor"
+            )
+
         else:
             data = self.child[item]
 
@@ -3083,6 +3130,7 @@ class GammaTensor:
                 child=data,
                 func=lambda state: self.reconstruct(state).child[item],
                 sources=output_state,
+                is_linear=True,
             )
 
     def __setitem__(
@@ -3094,7 +3142,7 @@ class GammaTensor:
         # TODO: fix this
         if isinstance(value, (PhiTensor, GammaTensor)):
             self.child[key] = value.child
-            
+
             # output_dsl = DataSubjectList.insert(
             #     dsl1=self.data_subjects, dsl2=value.data_subjects, index=key
             # )
@@ -3127,6 +3175,7 @@ class GammaTensor:
             child=self.child.copy(order),
             func=lambda state: jnp.copy(self.reconstruct(state), order=order),
             sources=output_state,
+            is_linear=True,
         )
 
     def ptp(
@@ -3139,6 +3188,7 @@ class GammaTensor:
             child=out_child,
             func=lambda state: jnp.ptp(self.reconstruct(state), axis=axis),
             sources=output_state,
+            is_linear=True,
         )
 
     def take(
@@ -3153,8 +3203,11 @@ class GammaTensor:
 
         return GammaTensor(
             child=out_child,
-            func=lambda state:jnp.take(self.reconstruct(state), np.array(indices), axis=axis, mode=mode),
+            func=lambda state: jnp.take(
+                self.reconstruct(state), np.array(indices), axis=axis, mode=mode
+            ),
             sources=output_state,
+            is_linear=True,
         )
 
     def put(
@@ -3168,7 +3221,7 @@ class GammaTensor:
         #     a.flat[ind] = v
         # """
         # output_state = self.sources.copy()
-        
+
         # out_child = self.child.copy()
         # out_child.put(ind, v, mode=mode)
 
@@ -3177,8 +3230,7 @@ class GammaTensor:
         #     func=lambda state: jnp.put(self.reconstruct(state), ind, v, mode=mode),
         #     sources=output_state,
         # )
-        raise NotImplementedError("Jax is not supporting put")        
-
+        raise NotImplementedError("Jax is not supporting put")
 
     def repeat(
         self, repeats: Union[int, Tuple[int, ...]], axis: Optional[int] = None
@@ -3207,8 +3259,11 @@ class GammaTensor:
         result = self.child.repeat(repeats, axis)
         return GammaTensor(
             child=result,
-            func=lambda state: jnp.repeat(self.reconstruct(state), repeats=repeats, axis=axis),
+            func=lambda state: jnp.repeat(
+                self.reconstruct(state), repeats=repeats, axis=axis
+            ),
             sources=sources,
+            is_linear=True,
         )
 
     def cumsum(
@@ -3259,7 +3314,6 @@ class GammaTensor:
             sources=sources,
         )
 
-
     def prod(self, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> GammaTensor:
         """
         Return the product of array elements over a given axis.
@@ -3302,16 +3356,18 @@ class GammaTensor:
         from .phi_tensor import PhiTensor
 
         sources = self.sources.copy()
-        
+
         if isinstance(other, PhiTensor):
             other = other.gamma
-        
+
         if isinstance(other, GammaTensor):
             sources.update(other.sources)
 
             return GammaTensor(
                 child=self.child // other.child,
-                func=lambda state: jnp.floor_divide(self.reconstruct(state), other.reconstruct(state)),
+                func=lambda state: jnp.floor_divide(
+                    self.reconstruct(state), other.reconstruct(state)
+                ),
                 sources=sources,
             )
         elif is_acceptable_simple_type(other):
@@ -3319,6 +3375,7 @@ class GammaTensor:
                 child=self.child // other,
                 func=lambda state: jnp.floor_divide(self.reconstruct(state), other),
                 sources=sources,
+                is_linear=True,
             )
         else:
             raise NotImplementedError(
@@ -3326,19 +3383,22 @@ class GammaTensor:
             )
 
     def __rfloordiv__(self, other: SupportedChainType) -> GammaTensor:
+        # relative
         from .phi_tensor import PhiTensor
 
         sources = self.sources.copy()
-        
+
         if isinstance(other, PhiTensor):
             other = other.gamma
-        
+
         if isinstance(other, GammaTensor):
             sources.update(other.sources)
 
             return GammaTensor(
                 child=other.child // self.child,
-                func=lambda state: jnp.floor_divide(other.reconstruct(state), self.reconstruct(state)),
+                func=lambda state: jnp.floor_divide(
+                    other.reconstruct(state), self.reconstruct(state)
+                ),
                 sources=sources,
             )
         elif is_acceptable_simple_type(other):
@@ -3346,6 +3406,7 @@ class GammaTensor:
                 child=other // self.child,
                 func=lambda state: jnp.floor_divide(other, self.reconstruct(state)),
                 sources=sources,
+                is_linear=True,
             )
         else:
             raise NotImplementedError(
@@ -3385,6 +3446,7 @@ class GammaTensor:
             child=result,
             func=lambda state: jnp.trace(self.reconstruct(state), offset, axis1, axis2),
             sources=sources,
+            is_linear=True,
         )
 
     def diagonal(self, offset: int = 0, axis1: int = 0, axis2: int = 1) -> GammaTensor:
@@ -3424,6 +3486,7 @@ class GammaTensor:
             child=result,
             func=lambda state: jnp.diag(self.reconstruct(state), offset, axis1, axis2),
             sources=sources,
+            is_linear=True,
         )
 
     def min(
@@ -3464,11 +3527,17 @@ class GammaTensor:
         sources = self.sources.copy()
         if where is None:
             result = np.amin(self.child, axis=axis, keepdims=keepdims, initial=initial)
-            
+
             return GammaTensor(
                 child=result,
-                func=lambda state: jnp.min(self.reconstruct(state), axis=axis, keepdims=keepdims, initial=initial),
+                func=lambda state: jnp.min(
+                    self.reconstruct(state),
+                    axis=axis,
+                    keepdims=keepdims,
+                    initial=initial,
+                ),
                 sources=sources,
+                is_linear=True,
             )
         else:
             if initial is None:
@@ -3486,8 +3555,15 @@ class GammaTensor:
                 )
                 return GammaTensor(
                     child=result,
-                    func=lambda state: jnp.min(self.reconstruct(state), axis=axis, keepdims=keepdims, initial=initial, where=where),
+                    func=lambda state: jnp.min(
+                        self.reconstruct(state),
+                        axis=axis,
+                        keepdims=keepdims,
+                        initial=initial,
+                        where=where,
+                    ),
                     sources=sources,
+                    is_linear=True,
                 )
 
     def max(
@@ -3531,8 +3607,14 @@ class GammaTensor:
             result = np.amax(self.child, axis=axis, keepdims=keepdims, initial=initial)
             return GammaTensor(
                 child=result,
-                func=lambda state: jnp.max(self.reconstruct(state), axis=axis, keepdims=keepdims, initial=initial),
+                func=lambda state: jnp.max(
+                    self.reconstruct(state),
+                    axis=axis,
+                    keepdims=keepdims,
+                    initial=initial,
+                ),
                 sources=sources,
+                is_linear=True,
             )
         else:
             if initial is None:
@@ -3550,8 +3632,15 @@ class GammaTensor:
                 )
                 return GammaTensor(
                     child=result,
-                    func=lambda state: jnp.max(self.reconstruct(state), where=where, axis=axis, keepdims=keepdims, initial=initial),
+                    func=lambda state: jnp.max(
+                        self.reconstruct(state),
+                        where=where,
+                        axis=axis,
+                        keepdims=keepdims,
+                        initial=initial,
+                    ),
                     sources=sources,
+                    is_linear=True,
                 )
 
     def __lshift__(self, other: Any) -> GammaTensor:
@@ -3559,14 +3648,16 @@ class GammaTensor:
         from .phi_tensor import PhiTensor
 
         sources = self.sources.copy()
-        
+
         if isinstance(other, PhiTensor):
             other = other.gamma
-        
+
         if isinstance(other, GammaTensor):
             sources.update(other.sources)
             child = self.child << other.child
-            func = lambda state: jnp.left_shift(self.reconstruct(state), other.reconstruct(state))
+            func = lambda state: jnp.left_shift(
+                self.reconstruct(state), other.reconstruct(state)
+            )
         elif is_acceptable_simple_type(other):
             child = self.child << other
             func = lambda state: jnp.left_shift(self.reconstruct(state), other)
@@ -3574,7 +3665,7 @@ class GammaTensor:
             raise NotImplementedError(
                 f"lshift is not implemented for type: {type(other)}"
             )
-        
+
         return GammaTensor(
             child=child,
             func=func,
@@ -3586,14 +3677,16 @@ class GammaTensor:
         from .phi_tensor import PhiTensor
 
         sources = self.sources.copy()
-        
+
         if isinstance(other, PhiTensor):
             other = other.gamma
-        
+
         if isinstance(other, GammaTensor):
             sources.update(other.sources)
             child = self.child >> other.child
-            func = lambda state: jnp.right_shift(self.reconstruct(state), other.reconstruct(state))
+            func = lambda state: jnp.right_shift(
+                self.reconstruct(state), other.reconstruct(state)
+            )
         elif is_acceptable_simple_type(other):
             child = self.child >> other
             func = lambda state: jnp.right_shift(self.reconstruct(state), other)
@@ -3601,7 +3694,7 @@ class GammaTensor:
             raise NotImplementedError(
                 f"rshift is not implemented for type: {type(other)}"
             )
-        
+
         return GammaTensor(
             child=child,
             func=func,
@@ -3613,22 +3706,22 @@ class GammaTensor:
         from .phi_tensor import PhiTensor
 
         sources = self.sources.copy()
-        
+
         if isinstance(other, PhiTensor):
             other = other.gamma
-        
+
         if isinstance(other, GammaTensor):
             sources.update(other.sources)
             child = self.child ^ other.child
-            func = lambda state: jnp.bitwise_xor(self.reconstruct(state), other.reconstruct(state))
+            func = lambda state: jnp.bitwise_xor(
+                self.reconstruct(state), other.reconstruct(state)
+            )
         elif is_acceptable_simple_type(other):
             child = self.child ^ other
             func = lambda state: jnp.bitwise_xor(self.reconstruct(state), other)
         else:
-            raise NotImplementedError(
-                f"xor is not implemented for type: {type(other)}"
-            )
-        
+            raise NotImplementedError(f"xor is not implemented for type: {type(other)}")
+
         return GammaTensor(
             child=child,
             func=func,
@@ -3792,7 +3885,9 @@ class GammaTensor:
         if isinstance(choices, GammaTensor):
             sources.update(choices.sources)
             result = np.choose(self.child, choices.child, mode=mode)
-            func = lambda state: jnp.choose(self.reconstruct(state), choices.reconstruct(state), mode=mode)
+            func = lambda state: jnp.choose(
+                self.reconstruct(state), choices.reconstruct(state), mode=mode
+            )
         else:
             raise NotImplementedError(
                 f"Object type: {type(choices)} This leads to a data leak or side channel attack"
