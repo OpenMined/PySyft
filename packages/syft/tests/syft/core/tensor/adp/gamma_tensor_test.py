@@ -1453,8 +1453,9 @@ def test_any(
     state = {}
     for key in result.sources:
         state[key] = result.sources[key].child
-    print(state)
-    print(result.func(state))
+    # print(state)
+    # print(result.func(state))
+    assert result.func(state).shape == result.child.shape
     assert (result.func(state) == result.child).all()  # TODO 0.7: debug this
 
 
