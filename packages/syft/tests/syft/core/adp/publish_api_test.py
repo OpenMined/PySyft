@@ -35,11 +35,11 @@ def test_privacy_budget_spend_on_publish():
     sally_nums = np.array([8, 11, 10, 50, 44, 32, 55, 29, 6, 1])
 
     fred_tensor = sy.Tensor(fred_nums).annotate_with_dp_metadata(
-        lower_bound=0, upper_bound=122, data_subjects="fred"
+        lower_bound=0, upper_bound=122, data_subject="fred"
     )
 
     sally_tensor = sy.Tensor(sally_nums).annotate_with_dp_metadata(
-        lower_bound=0, upper_bound=122, data_subjects="sally"
+        lower_bound=0, upper_bound=122, data_subject="sally"
     )
 
     result = fred_tensor + sally_tensor

@@ -113,13 +113,13 @@ def get_unique_data_subjects(data_subjects_query: np.ndarray) -> np.ndarray:
 
 
 def map_dsa_to_rdp_constants(
-    data_subject_array: np.ndarray,
+    unique_data_subjects: np.ndarray,
     rdp_constants: Dict[str, np.ndarray],
     query_constants: np.ndarray,
 ) -> Dict[str, np.ndarray]:
     """Convert data subject array to data subject index array."""
-    unique_data_subjects = get_unique_data_subjects(data_subject_array)
-
+    # unique_data_subjects = get_unique_data_subjects(data_subject_array)
+    # TODO 0.7 fix this
     for data_subject_name in unique_data_subjects:
         # Create a mask where the current data subject is present
 
@@ -346,7 +346,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         self._rdp_constants = map_dsa_to_rdp_constants(
             query_constants=query_constants,
             rdp_constants=self._rdp_constants,
-            data_subject_array=entity_ids_query,
+            unique_data_subjects=entity_ids_query,
         )
         return None
 

@@ -61,18 +61,18 @@ def publish(
     is_linear: bool = True,
     private: bool = True,
 ) -> np.ndarray:
-    if isinstance(tensor.data_subjects, np.ndarray):
-        root_child = None
-        while isinstance(tensor, PassthroughTensor):
-            root_child = tensor.child
-            tensor = root_child
-        input_entities = tensor.data_subjects
-
+    root_child = None
+    while isinstance(tensor, PassthroughTensor):
+        root_child = tensor.child
+        tensor = root_child
+        
     privacy_budget = get_budget_for_user(verify_key=ledger.user_key)
 
     tensor, epsilon_spend, rdp_constants, phi_tensors = compute_epsilon(
         tensor, privacy_budget, is_linear, sigma, private, ledger
     )
+    
+    # TODO 0.7: add NaNs checks
 
     original_output = tensor.child
 
@@ -101,6 +101,7 @@ def publish(
     # TODO(0.7): review the ledger code for 0.7
     # The RDP constants are adjusted to account for the amount of exposure every
     # data subject's data has had.
+    input_entities = [phi.data_subject for phi in phi_tensors]
     print(input_entities)
     ledger.update_rdp_constants(
         query_constants=rdp_constants, entity_ids_query=input_entities
@@ -194,10 +195,10 @@ def compute_epsilon(tensor, privacy_budget, is_linear, sigma, private, ledger):
     tensor_copy = deepcopy(tensor)
 
     # traverse the computation tree to get the phi_tensors
-    phi_tensors = get_leaves_from_gamma_tensor_tree(tensor_copy)
-
-    # For each PhiTensor we either need the lipschitz bound or we can use
-    # one to keep the same formula for the linear queries
+    phi_tensors = tensor_copy.sources.values()
+    
+    # For each PhiTensor we either need the lipschitz bound or we can use 
+    # one to keep the same formula for the linear queries 
     # TODO(0.7): replace this with a list with a different lipschitz for each PhiTensor
     lipschitz_bound = 1 if is_linear else tensor.lipschitz_bound  # this probably breaks
 

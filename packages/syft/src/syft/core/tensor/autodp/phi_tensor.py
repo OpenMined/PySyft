@@ -1845,8 +1845,9 @@ def dispatch_tensor(
             extract_attribute_or_self(tensor, "data_subject") for tensor in tensors
         ]
         data_subject = [ds for ds in data_subject if ds is not None]
-
-        if len(set(data_subject)) > 1:
+        
+        reducer = [ds == data_subject[0] for ds in data_subject]
+        if np.all(reducer):
             return original_func(*map(cast_to_gamma, tensors))
 
         return PhiTensor(
@@ -2731,17 +2732,20 @@ class PhiTensor(PassthroughTensor):
             )
 
     def __add__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
-        try:
-            return dispatch_tensor(
-                self,
-                other,
-                child_func=lambda tensors: operator.add(*tensors),
-                min_func=lambda tensors: operator.add(*tensors),
-                max_func=lambda tensors: operator.add(*tensors),
-                original_func=lambda tensors: operator.add(*tensors),
-            )
-        except TypeError:
-            raise NotImplementedError(f"__add__ not implemented for these types")
+        print(type(other))
+        # try:
+        return dispatch_tensor(
+            self,
+            other,
+            child_func=lambda tensors: operator.add(*tensors),
+            min_func=lambda tensors: operator.add(*tensors),
+            max_func=lambda tensors: operator.add(*tensors),
+            original_func=lambda tensors: operator.add(*tensors)
+        )
+        # except TypeError:
+        #     raise NotImplementedError(
+        #         f"__add__ not implemented for these types"
+        #     )
 
     def __radd__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
         return self.__add__(other)
