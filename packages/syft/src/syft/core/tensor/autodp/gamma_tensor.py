@@ -1992,21 +1992,6 @@ class GammaTensor:
     is_linear: bool = False
     id: str = flax.struct.field(pytree_node=False, default_factory=lambda: UID())
 
-    # def __init__(
-    #     self,
-    #     child: Union[Sequence, NDArray],
-    #     data_subject: DataSubject,
-    #     min_vals: Union[np.ndarray, lazyrepeatarray],
-    #     max_vals: Union[np.ndarray, lazyrepeatarray],
-    # ) -> None:
-    #     # super().__init__(child)
-    #     from .phi_tensor import PhiTensor
-
-    #     phi_tensor = PhiTensor(child=child, data_subject=data_subject, min_vals=min_vals, max_vals=max_vals)
-    #     self.sources = {}
-    #     self.sources.update({phi_tensor.id: phi_tensor})
-    #     self.is_linear = True
-    #     self.func = lambda state: phi_tensor.reconstruct(state)
 
     def decode(self) -> np.ndarray:
         if isinstance(self.child, FixedPrecisionTensor):
@@ -3316,6 +3301,39 @@ class GammaTensor:
             func=lambda state: jnp.cumprod(self.reconstruct(state), axis=axis),
             sources=sources,
         )
+
+    @property
+    def lipschitz_bound(self):
+        from math import prod
+
+        def convert_array_to_dict_state(array_state, input_sizes):
+            start_id = 0
+            state = {}
+
+            for id, shape in input_sizes.items():
+                total_size = prod(shape)
+                state[id] = np.reshape(array_state[start_id:start_id + total_size], shape)
+                start_id += total_size
+
+            return state
+
+        def convert_state_to_bounds(input_sizes, input_states):
+            bounds = []
+            for id in input_sizes:
+                bounds.extend(list(zip(input_states[id].min_vals.flatten(), input_states[id].max_vals.flatten())))
+            return bounds
+
+        grad_fn = jax.grad(jax.jit(lambda state: jnp.sum(self.func(state))))
+
+        input_sizes = {tensor.id: tensor.shape for tensor in self.sources.values()}
+        bounds = convert_state_to_bounds(input_sizes, self.sources)
+
+        def search(array_state):
+            dict_state = convert_array_to_dict_state(array_state, input_sizes)
+            grads = grad_fn(dict_state)
+            return -jnp.max(jnp.array(list(grads.values())))
+
+        return -shgo(search, bounds=bounds, sampling_method="simplicial").fun
 
     def prod(self, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> GammaTensor:
         """
