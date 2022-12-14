@@ -4,6 +4,8 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Type
+from typing import Union
+from uuid import UUID
 
 # third party
 from pymongo.collection import Collection
@@ -13,6 +15,7 @@ from sqlalchemy.orm import sessionmaker
 
 # relative
 from .....telemetry import instrument
+from ....common.uid import UID
 from ..exceptions import ObjectNotFoundError
 from ..node_table import Base
 from ..node_table.syft_object import SyftObject
@@ -114,6 +117,27 @@ class DatabaseManager:
         local_session.close()
 
 
+def convert_to_uuid(value: Union[str, UID, UUID]) -> UUID:
+    if isinstance(value, str):
+        return UUID(value)
+    if isinstance(value, UID):
+        return value.value
+    elif isinstance(value, UUID):
+        return value
+    else:
+        # Ask @Madhava , can we check for  invalid types , even though type annotation is specified.
+        return ValueError(  # type: ignore
+            f"Invalid value,type:{value,type(value)} for Conversion UUID expected Union[str,UID,UUID]"
+        )
+
+
+def convert_to_mongo_id(fields: Dict[Any, Any]) -> Dict:
+    if "id" in fields:
+        fields["_id"] = convert_to_uuid(fields["id"])
+        del fields["id"]
+    return fields
+
+
 class NoSQLDatabaseManager:
     _collection_name: str
     _collection: Collection
@@ -131,11 +155,13 @@ class NoSQLDatabaseManager:
         self._collection.drop()
 
     def delete(self, **search_params: Any) -> None:
+        search_params = convert_to_mongo_id(search_params)
         self._collection.delete_many(search_params)
 
     def update(
         self, search_params: Dict[str, Any], updated_args: Dict[str, Any]
     ) -> None:
+        search_params = convert_to_mongo_id(search_params)
         obj = self.first(**search_params)
         attributes: Dict[str, Any] = {}
         for k, v in updated_args.items():
@@ -146,10 +172,11 @@ class NoSQLDatabaseManager:
             if k in obj.__attr_searchable__:  # type: ignore
                 attributes[k] = v
         attributes["__blob__"] = obj.to_bytes()  # type: ignore
-
+        attributes = convert_to_mongo_id(attributes)
         self.update_one(query=search_params, values=attributes)
 
     def find(self, search_params: Dict[str, Any]) -> List[SyftObject]:
+        search_params = convert_to_mongo_id(search_params)
         results = []
         res = self._collection.find(search_params)
         for d in res:
@@ -157,12 +184,14 @@ class NoSQLDatabaseManager:
         return results
 
     def find_one(self, search_params: Dict[str, Any]) -> Optional[SyftObject]:
+        search_params = convert_to_mongo_id(search_params)
         d = self._collection.find_one(search_params)
         if d is None:
             return d
         return SyftObject.from_mongo(d)
 
-    def first(self, **search_params: Dict[str, Any]) -> Optional[SyftObject]:
+    def first(self, **search_params: Any) -> Optional[SyftObject]:
+        search_params = convert_to_mongo_id(search_params)
         d = self._collection.find_one(search_params)
         if d is None:
             raise ObjectNotFoundError
@@ -177,11 +206,14 @@ class NoSQLDatabaseManager:
         Args:
             parameters : List of parameters used to filter.
         """
+        search_params = convert_to_mongo_id(search_params)
         cursor = self._collection.find(search_params)
         objects = [SyftObject.from_mongo(obj) for obj in list(cursor)]
         return objects
 
     def update_one(self, query: dict, values: dict) -> None:
+        query = convert_to_mongo_id(query)
+        values = convert_to_mongo_id(values)
         values = {"$set": values}
         self._collection.update_one(query, values)
 
