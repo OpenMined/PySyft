@@ -11,7 +11,6 @@ done
 if [ "${RELEASE}" = "development" ]
 then
     echo "Installing Syft"
-    pip install --user -e /app/oblv-package
     pip install --user -e /app/syft[dev]
 fi
 
