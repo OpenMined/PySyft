@@ -65,9 +65,9 @@ frontend:
   - "**.mako"
   - "**.lock"
   - "**.json"
-  - packages/grid/backend/**/*.eslintrc
-  - packages/grid/backend/**/*.js
-  - packages/grid/backend/**/*.json
-  - packages/grid/backend/**/*.lock
-  - packages/grid/backend/**/*.ts
-  - packages/grid/backend/**/*.tsx
+  - packages/grid/frontend/**/*.eslintrc
+  - packages/grid/frontend/**/*.js
+  - packages/grid/frontend/**/*.json
+  - packages/grid/frontend/**/*.lock
+  - packages/grid/frontend/**/*.ts
+  - packages/grid/frontend/**/*.tsx

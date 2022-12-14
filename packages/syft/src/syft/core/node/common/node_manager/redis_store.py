@@ -13,10 +13,10 @@ import redis
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
 
-# syft absolute
-import syft
-
 # relative
+from .....lib.python.dict import Dict as SyftDict
+from ....common.serde.deserialize import _deserialize as deserialize
+from ....common.serde.serialize import _serialize as serialize
 from ....common.uid import UID
 from ....store import ObjectStore
 from ....store.proxy_dataset import ProxyDataset
@@ -60,6 +60,13 @@ class RedisStore(ObjectStore):
             return self.get(key, proxy_only)
         except KeyError:
             return None
+
+    def check_collision(self, key: UID) -> None:
+        # Check ID collision with pointer's result.
+        if self.get_or_none(key=key, proxy_only=True):
+            raise Exception(
+                "You're not allowed to perform this operation using this ID."
+            )
 
     def get_objects_of_type(self, obj_type: type) -> Iterable[StorableObject]:
         # TODO: remove this kind of operation which pulls all the data out in one go
@@ -109,7 +116,7 @@ class RedisStore(ObjectStore):
         if obj is None or obj_metadata is None:
             raise KeyError(f"Object not found! for UID: {key_str}")
 
-        obj = syft.deserialize(obj, from_bytes=True)
+        obj = deserialize(obj, from_bytes=True)
         if proxy_only is False and isinstance(obj, ProxyDataset):
             obj = self.resolve_proxy_object(obj=obj)
 
@@ -119,17 +126,17 @@ class RedisStore(ObjectStore):
             description=obj_metadata.description,
             tags=obj_metadata.tags,
             read_permissions=dict(
-                syft.deserialize(
+                deserialize(
                     bytes.fromhex(obj_metadata.read_permissions), from_bytes=True
                 )
             ),
             search_permissions=dict(
-                syft.deserialize(
+                deserialize(
                     bytes.fromhex(obj_metadata.search_permissions), from_bytes=True
                 )
             ),
             write_permissions=dict(
-                syft.deserialize(
+                deserialize(
                     bytes.fromhex(obj_metadata.write_permissions), from_bytes=True
                 )
             ),
@@ -154,30 +161,24 @@ class RedisStore(ObjectStore):
 
         is_proxy_dataset = False
         if isinstance(value._data, ProxyDataset):
-            bin = syft.serialize(value._data, to_bytes=True)
+            bin = serialize(value._data, to_bytes=True)
             is_proxy_dataset = True
         else:
-            bin = syft.serialize(value.data, to_bytes=True)
-        self.redis.set(key_str, bin)
+            bin = serialize(value.data, to_bytes=True)
+        self.redis.set(key_str, bin)  # type: ignore
 
         if not self.obj_metadata_manager.contain(obj=key_str):
             read_permissions = cast(
                 bytes,
-                syft.serialize(
-                    syft.lib.python.Dict(value.read_permissions), to_bytes=True
-                ),
+                serialize(SyftDict(value.read_permissions), to_bytes=True),
             ).hex()
             search_permissions = cast(
                 bytes,
-                syft.serialize(
-                    syft.lib.python.Dict(value.search_permissions), to_bytes=True
-                ),
+                serialize(SyftDict(value.search_permissions), to_bytes=True),
             ).hex()
             write_permissions = cast(
                 bytes,
-                syft.serialize(
-                    syft.lib.python.Dict(value.write_permissions), to_bytes=True
-                ),
+                serialize(SyftDict(value.write_permissions), to_bytes=True),
             ).hex()
 
             self.obj_metadata_manager.create_metadata(

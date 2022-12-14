@@ -37,5 +37,6 @@ module.exports = {
   ...buildColor('orange', 20, 85, 50),
   ...buildColor('purple', 255, 65, 50),
   ...buildColor('red', 350, 75, 50),
-  ...buildColor('violet', 280, 64, 43)
+  ...buildColor('violet', 280, 64, 43),
+  ...buildColor('green', 120, 54, 43)
 };

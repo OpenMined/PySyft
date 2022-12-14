@@ -46,8 +46,6 @@ class DatasetManager(DatabaseManager):
         name = str(kwargs.get("name", ""))
         description = str(kwargs.get("description", ""))
 
-        print("All the dataset arguments:")
-        print(kwargs)
         blob_metadata = {}
         str_metadata = {}
         for key, value in kwargs.items():

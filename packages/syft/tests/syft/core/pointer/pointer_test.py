@@ -10,8 +10,14 @@ import torch as th
 
 # syft absolute
 import syft as sy
+from syft.core.common.group import VERIFYALL
+from syft.core.node.common.action.save_object_action import SaveObjectAction
 from syft.core.node.common.client import AbstractNodeClient
+from syft.core.node.common.node_service.object_delete.object_delete_message import (
+    ObjectDeleteMessage,
+)
 from syft.core.pointer.pointer import Pointer
+from syft.core.store.storeable_object import StorableObject
 
 
 def validate_output(data: Any, data_ptr: Pointer) -> None:
@@ -55,6 +61,45 @@ def test_make_pointable(
     assert len(client.store) == 1
 
 
+def test_overwrite_tensor(
+    client: sy.VirtualMachineClient,
+    root_client: sy.VirtualMachineClient,
+):
+    ten = sy.Tensor(th.tensor([1, 2, 3, 4]))
+    ten.send(root_client)
+
+    # Get pointer as a regular user
+    tensor_ptr = root_client.store[0]
+
+    # Assert that there's only one object in the store
+    assert len(root_client.store) == len(client.store)
+    assert len(client.store) == 1
+
+    new_tensor = th.tensor([5, 4, 3, 2, 1])
+    # Step 6: create message which contains object to send
+    storable = StorableObject(
+        id=tensor_ptr.id_at_location,
+        data=new_tensor,
+        tags=["testing"],
+        description="Duplicate ID tensor",
+        search_permissions={VERIFYALL: None},
+    )
+
+    obj_msg = SaveObjectAction(obj=storable, address=client.address)
+
+    # ID collision exception
+    with pytest.raises(Exception) as exc_info:
+        client.send_immediate_msg_without_reply(msg=obj_msg)
+
+    assert (
+        str(exc_info.value)
+        == "You're not allowed to perform this operation using this ID."
+    )
+
+    # Check if tensor remains the same
+    assert tensor_ptr.get_copy() == ten
+
+
 @pytest.mark.slow
 @pytest.mark.parametrize("with_verify_key", [True, False])
 def test_make_unpointable(
@@ -78,6 +123,33 @@ def test_make_unpointable(
         ptr.update_searchability(pointable=False)
 
     assert len(client.store) == 0
+
+
+@pytest.mark.slow
+def test_deleting_pointer_without_permission(
+    client: sy.VirtualMachineClient,
+    root_client: sy.VirtualMachineClient,
+) -> None:
+    ten = sy.Tensor(th.tensor([1, 2, 3, 4]))
+    ptr = ten.send(root_client)
+
+    # Get pointer as a regular user
+    ds_ptr = client.store[0]
+
+    # Assert that there's only one object in the store
+    assert len(root_client.store) == len(client.store)
+    assert len(client.store) == 1
+
+    obj_del_msg = ObjectDeleteMessage(
+        address=client.address,
+        reply_to=client.address,
+        kwargs={"id_at_location": ds_ptr.id_at_location.to_string()},
+    ).sign(signing_key=client.signing_key)
+
+    client.send_immediate_msg_with_reply(msg=obj_del_msg)
+
+    # DO Pointer is still there
+    assert ptr.get_copy() == ten
 
 
 @pytest.mark.slow

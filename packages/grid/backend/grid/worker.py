@@ -19,11 +19,10 @@ from grid.core.config import settings  # noqa: F401
 from grid.core.node import node
 from grid.periodic_tasks import cleanup_incomplete_uploads_from_blob_store
 
+
 # TODO : Should be modified to use exponential backoff (for efficiency)
 # Initially we have set 0.1 as the retry time.
-# We have set max retries =(1200) 120 seconds
-
-
+# We have set max retries=(1200) 120 seconds
 @celery_app.task(bind=True, acks_late=True)
 def msg_without_reply(self, obj_msg: Any) -> None:  # type: ignore
     if isinstance(obj_msg, SignedImmediateSyftMessageWithoutReply):

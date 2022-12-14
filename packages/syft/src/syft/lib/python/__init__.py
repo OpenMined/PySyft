@@ -57,17 +57,14 @@ SyTypes = [
 
 
 def serialize(x: AnyAny) -> bytes:
-    new_id = getattr(x, "id", None)
     if hasattr(x, "upcast"):
         x = x.upcast()
-    return cast(bytes, _serialize((x, new_id), to_bytes=True))
+    return cast(bytes, _serialize(x, to_bytes=True))
 
 
 def deserialize(x: bytes) -> AnyAny:
-    up_obj, old_id = _deserialize(x, from_bytes=True)
+    up_obj = _deserialize(x, from_bytes=True)
     new_obj = downcast(up_obj)
-    if old_id:
-        new_obj._id = old_id
     return new_obj
 
 

@@ -99,10 +99,6 @@ def skip(
         return False
     if name == "__eq__":
         return False
-    if name == "_proto2object":
-        return False
-    if name == "_object2proto":
-        return False
     if name == "_serialize":
         return False
     if name == "_deserialize":

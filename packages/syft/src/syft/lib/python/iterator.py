@@ -3,7 +3,6 @@ from typing import Any
 from typing import Optional
 
 # relative
-from ...core.common.uid import UID
 from ...logger import traceback_and_raise
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
@@ -15,7 +14,6 @@ class Iterator(PyPrimitive):
         super().__init__()
         self._obj_ref = _ref
         self._index = 0
-        self._id = UID()
         self.max_len = max_len
         self.exhausted = False
 

@@ -133,6 +133,9 @@ def get_setup(
     # TODO: Make this a little more defensive so we dont accidentally spill secrets
     # from node.settings. Perhaps we should add a public settings interface
     _setup["use_blob_storage"] = getattr(node.settings, "USE_BLOB_STORAGE", False)
+    # Remove it before sending setup's response
+    del _setup["signing_key"]
+
     if node.network:
         _setup["domains"] = len(node.node.all())
     return GetSetUpResponse(

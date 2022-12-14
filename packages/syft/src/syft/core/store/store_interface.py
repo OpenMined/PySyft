@@ -142,6 +142,9 @@ class ObjectStore(ABC):
     ) -> Optional[StorableObject]:
         traceback_and_raise(NotImplementedError)
 
+    def check_collision(self, key: UID) -> None:
+        traceback_and_raise(NotImplementedError)
+
     def get(self, key: StoreKey, proxy_only: bool = False) -> StorableObject:
         traceback_and_raise(NotImplementedError)
 
