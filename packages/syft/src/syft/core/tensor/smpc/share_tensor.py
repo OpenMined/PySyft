@@ -6,6 +6,7 @@ from copy import deepcopy
 import functools
 from functools import lru_cache
 import operator
+import secrets
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -14,28 +15,19 @@ from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Union
+from uuid import UUID
 
 # third party
+import gevent
 import numpy as np
 import torch
-
-# syft absolute
-import syft as sy
 
 # relative
 from . import utils
 from .... import logger
-from ....grid import GridURL
-from ...common.serde.capnp import CapnpModule
-from ...common.serde.capnp import capnp_deserialize
-from ...common.serde.capnp import capnp_serialize
-from ...common.serde.capnp import chunk_bytes
-from ...common.serde.capnp import combine_bytes
-from ...common.serde.capnp import get_capnp_schema
-from ...common.serde.capnp import serde_magic_header
-from ...common.serde.deserialize import _deserialize as deserialize
+from ...common import UID
 from ...common.serde.serializable import serializable
-from ...common.serde.serialize import _serialize as serialize
+from ...node.common.action.greenlets_switch import przs_retrieve_object
 from ...smpc.store.crypto_store import CryptoStore
 from ..config import DEFAULT_RING_SIZE
 from ..fixed_precision_tensor import FixedPrecisionTensor
@@ -108,16 +100,19 @@ RING_SIZE_TO_OP = {
 }
 
 CACHE_CLIENTS: Dict[str, Any] = {}
+GEVENT_LOGIN: bool = False  # prevent race conditions due to gevent monkey patching
 
 
-def populate_store(*args: List[Any], **kwargs: Dict[Any, Any]) -> None:
+def populate_store(*args: Any, **kwargs: Any) -> None:
     ShareTensor.crypto_store.populate_store(*args, **kwargs)  # type: ignore
     return None
 
 
-@serializable(capnp_bytes=True)
+@serializable(recursive_serde=True)
 class ShareTensor(PassthroughTensor):
     crypto_store = CryptoStore()
+
+    __attr_allowlist__ = ["child", "rank", "parties_info", "ring_size"]
 
     __slots__ = (
         "rank",
@@ -125,19 +120,22 @@ class ShareTensor(PassthroughTensor):
         "clients",  # clients connections
         "min_value",
         "max_value",
-        "generator_przs",
-        # Only ShareTensors with seed_przs could be sent over the wire
-        "seed_przs",
         "parties_info",
         "nr_parties",
     )
 
+    @classmethod
+    def serde_constructor(cls, kwargs: Dict[str, Any]) -> ShareTensor:
+        child = kwargs.pop("child")
+        tensor = ShareTensor(**kwargs)
+        tensor.child = child
+        return tensor
+
     def __init__(
         self,
         rank: int,
-        parties_info: List[GridURL],
+        parties_info: List[Tuple],
         ring_size: int,
-        seed_przs: int = 42,
         clients: Optional[List[Any]] = None,
         value: Optional[Any] = None,
         init_clients: bool = False,
@@ -157,26 +155,32 @@ class ShareTensor(PassthroughTensor):
             self.ring_size
         )
 
-        # This should be set only in the deserializer
-        self.generator_przs = None
-        self.seed_przs = seed_przs
         super().__init__(value)
 
     @staticmethod
-    def login_clients(parties_info: List[GridURL]) -> Any:
+    def login_clients(parties_info: List[Tuple]) -> Any:
+        # relative
+        from ....grid.client.client import login
+        from ....grid.client.proxy_client import ProxyClient
+
+        global GEVENT_LOGIN
+        while GEVENT_LOGIN:
+            gevent.sleep(0)
+        GEVENT_LOGIN = True
+
         clients = []
         for party_info in parties_info:
             # if its localhost change it to a host that resolves outside the container
-            external_host_info = party_info.as_container_host()
+            external_host_info = party_info[0].as_container_host()
             client = CACHE_CLIENTS.get(str(external_host_info), None)
 
             if client is None:
-                # default cache to true, here to prevent multiple logins
-                # due to gevent monkey patching, context switch is done during
-                # during socket connection initialization.
-                CACHE_CLIENTS[str(external_host_info)] = True
+                # # default cache to true, here to prevent multiple logins
+                # # due to gevent monkey patching, context switch is done during
+                # # during socket connection initialization.
+                # CACHE_CLIENTS[str(external_host_info)] = True
                 # TODO: refactor to use a guest account
-                client = sy.login(  # nosec
+                client = login(  # nosec
                     url=external_host_info,
                     email="info@openmined.org",
                     password="changethis",
@@ -184,8 +188,22 @@ class ShareTensor(PassthroughTensor):
                     verbose=False,
                 )
                 CACHE_CLIENTS[str(external_host_info)] = client
+
+            if client.id != party_info[1]:
+                client = ProxyClient.create(client, party_info[1], party_info[2])
             clients.append(client)
+        GEVENT_LOGIN = False
         return clients
+
+    @staticmethod
+    def get_id_rank_mapping(clients: List[Any]) -> Dict:
+        client_uids = [client.id.no_dash for client in clients]
+        client_uids.sort()
+        ID_RANK_MAP = {}
+        for idx, client_uid in enumerate(client_uids):
+            ID_RANK_MAP[idx] = client_uid
+            ID_RANK_MAP[client_uid] = idx
+        return ID_RANK_MAP
 
     def __getitem__(self, item: Union[str, int, slice]) -> ShareTensor:
         return ShareTensor(
@@ -202,7 +220,6 @@ class ShareTensor(PassthroughTensor):
             rank=self.rank,
             parties_info=self.parties_info,
             ring_size=self.ring_size,
-            seed_przs=self.seed_przs,
             clients=self.clients,
         )
 
@@ -289,18 +306,58 @@ class ShareTensor(PassthroughTensor):
     def generate_przs(
         value: Any,
         shape: Tuple[int, ...],
-        rank: int,
-        parties_info: List[GridURL],
+        parties_info: List[Tuple],
         ring_size: Union[int, str] = DEFAULT_RING_SIZE,
-        seed_przs: Optional[int] = None,
-        generator_przs: Optional[Any] = None,
         init_clients: bool = True,
     ) -> Tensor:
         # relative
+        from ...node.common.action.beaver_action import BeaverAction
+        from ...tensor.smpc import context
         from ..tensor import Tensor
 
+        seed_id_locations = context.SMPC_CONTEXT.get("seed_id_locations", None)
+        node = context.SMPC_CONTEXT.get("node", None)
+        if seed_id_locations is None:
+            raise ValueError(
+                f"seed_id_locations:{seed_id_locations}  input should be a valid integer for PRZS generation"
+            )
+        if node is None:
+            raise ValueError(
+                f"Node:{seed_id_locations} input should be a valid Node Object"
+            )
         ring_size = int(ring_size)
         nr_parties = len(parties_info)
+
+        clients = ShareTensor.login_clients(parties_info=parties_info)
+
+        id_rank_map = ShareTensor.get_id_rank_mapping(clients)
+
+        rank = id_rank_map[node.id.no_dash]  # rank of the current party
+        przs_client_id = id_rank_map[
+            (rank + 1) % nr_parties
+        ]  # get the client id of the next party
+        self_generator_seed = secrets.randbits(64)
+        generator = np.random.default_rng(seed_id_locations)
+        przs_location = UID(UUID(bytes=generator.bytes(16)))
+
+        for client in clients:
+            if client.id.no_dash == przs_client_id:
+                beaver_action = BeaverAction(
+                    values=[str(self_generator_seed)],
+                    locations=[przs_location],
+                    address=client.address,
+                )
+                client.send_immediate_msg_without_reply(msg=beaver_action)
+        other_generator_seed = przs_retrieve_object(node, przs_location).data
+
+        if len(other_generator_seed) > 1:
+            raise ValueError(
+                f"PRZS should receive only one seed from peer client,got: {len(other_generator_seed)}"
+            )
+        other_generator_seed = int(other_generator_seed[0])
+
+        self_generator = np.random.default_rng(self_generator_seed)
+        other_generator = np.random.default_rng(other_generator_seed)
 
         # Try:
         # 1. First get numpy type if secret is numpy and obtain ring size from there
@@ -325,21 +382,8 @@ class ShareTensor(PassthroughTensor):
         if numpy_type is None:
             raise ValueError(f"Ring size {ring_size} not known how to be treated")
 
-        if (seed_przs is None) == (generator_przs is None):
-            raise ValueError("Only seed_przs or generator should be populated")
-
         if value is None:
             value = Tensor(np.zeros(shape, dtype=numpy_type))
-
-        # TODO: Sending the seed and having each party generate the shares is not safe
-        # Since the parties would know some of the other parties shares (this might not impose a risk
-        # when shares are not sent between parties -- like private addition/subtraction, but it might
-        # impose for multiplication
-        # The secret holder should generate the shares and send them to the other parties
-        if generator_przs:
-            generator_shares = generator_przs
-        else:
-            generator_shares = np.random.default_rng(seed_przs)
 
         if isinstance(value.child, (ShareTensor, FixedPrecisionTensor)):
             value = value.child
@@ -348,25 +392,27 @@ class ShareTensor(PassthroughTensor):
             value=value.child,
             rank=rank,
             parties_info=parties_info,
-            seed_przs=seed_przs,  # type: ignore #TODO:Inspect as we could pass none.
             init_clients=init_clients,
             ring_size=ring_size_final,  # type: ignore
         )
 
-        share.generator_przs = generator_shares
-        shares = [
-            generator_shares.integers(
-                low=share.min_value,
-                high=share.max_value,
-                size=shape,
-                endpoint=True,
-                dtype=numpy_type,
-            )
-            for _ in range(nr_parties)
-        ]
-
+        self_generator_share = self_generator.integers(
+            low=share.min_value,
+            high=share.max_value,
+            size=shape,
+            endpoint=True,
+            dtype=numpy_type,
+        )
+        other_generator_share = other_generator.integers(
+            low=share.min_value,
+            high=share.max_value,
+            size=shape,
+            endpoint=True,
+            dtype=numpy_type,
+        )
         op = ShareTensor.get_op(ring_size_final, "sub")
-        przs_share = op(shares[rank], shares[(rank + 1) % nr_parties])
+        # przs_share = op(shares[rank], shares[(rank + 1) % nr_parties])
+        przs_share = op(self_generator_share, other_generator_share)
         share.child = op(share.child, przs_share)
         res = Tensor(share)
 
@@ -376,32 +422,43 @@ class ShareTensor(PassthroughTensor):
     def generate_przs_on_dp_tensor(
         value: Optional[Any],
         shape: Tuple[int],
-        rank: int,
-        parties_info: List[GridURL],
-        seed_przs: int,
+        parties_info: List[Tuple],
         share_wrapper: Any,
         ring_size: Union[int, str] = DEFAULT_RING_SIZE,
     ) -> PassthroughTensor:
+        # relative
+        from ..autodp.gamma_tensor import GammaTensor
+
         ring_size = int(ring_size)
-        if hasattr(value, "child"):
-            value.child.child = FixedPrecisionTensor(value.child.child)  # type: ignore
+        if value and hasattr(value, "child"):
+            if isinstance(value.child, GammaTensor):
+                # We do this, since GammaTensor is a FrozenInstance, which prevents us from modifying child values.
+                gt: GammaTensor = value.child
+                new_gamma = GammaTensor(
+                    child=FixedPrecisionTensor(value.child.child),
+                    data_subjects=gt.data_subjects,
+                    min_vals=gt.min_vals,
+                    max_vals=gt.max_vals,
+                    func_str=gt.func_str,
+                    sources=gt.sources,
+                )
+                value.child = new_gamma
+
+            else:
+                value.child.child = FixedPrecisionTensor(value.child.child)  # type: ignore
 
         if value is not None:
             share = ShareTensor.generate_przs(
                 value=value.child,
                 shape=shape,
-                rank=rank,
                 parties_info=parties_info,
-                seed_przs=seed_przs,
                 ring_size=ring_size,
             )
         else:
             share = ShareTensor.generate_przs(
                 value=value,
                 shape=shape,
-                rank=rank,
                 parties_info=parties_info,
-                seed_przs=seed_przs,
                 ring_size=ring_size,
             )
         # relative
@@ -734,6 +791,10 @@ class ShareTensor(PassthroughTensor):
 
         # return True
 
+        # ATTENTION: Why are we getting here now when we never did before?
+        if not hasattr(other, "child"):
+            return self.child == other
+
         return self.child == other.child
 
     # TRASK: commenting out because ShareTEnsor doesn't appear to have .session_uuid or .config
@@ -786,9 +847,7 @@ class ShareTensor(PassthroughTensor):
         share.child = value
         return share
 
-    def concatenate(
-        self, other: ShareTensor, *args: List[Any], **kwargs: Dict[str, Any]
-    ) -> ShareTensor:
+    def concatenate(self, other: ShareTensor, *args: Any, **kwargs: Any) -> ShareTensor:
         res = self.copy()
         res.child = np.concatenate((self.child, other.child), *args, **kwargs)
         return res
@@ -804,14 +863,16 @@ class ShareTensor(PassthroughTensor):
             A hooked method
         """
 
-        def method_all_shares(
-            _self: ShareTensor, *args: List[Any], **kwargs: Dict[Any, Any]
-        ) -> Any:
+        def method_all_shares(_self: ShareTensor, *args: Any, **kwargs: Any) -> Any:
 
             share = _self.child
 
             method = getattr(share, method_name)
-            new_share = method(*args, **kwargs)
+            if method_name not in INPLACE_OPS:
+                new_share = method(*args, **kwargs)
+            else:
+                method(*args, **kwargs)
+                new_share = share
 
             res = _self.copy_tensor()
             res.child = np.array(new_share)
@@ -825,56 +886,6 @@ class ShareTensor(PassthroughTensor):
             return ShareTensor.hook_method(self, attr_name)
 
         return object.__getattribute__(self, attr_name)
-
-    def _object2bytes(self) -> bytes:
-        schema = get_capnp_schema(schema_file="share_tensor.capnp")
-
-        st_struct: CapnpModule = schema.ShareTensor  # type: ignore
-        st_msg = st_struct.new_message()  # type: ignore
-        # this is how we dispatch correct deserialization of bytes
-        st_msg.magicHeader = serde_magic_header(type(self))
-
-        # child of Share tensor could either be Python Scalar or np.ndarray
-        if isinstance(self.child, np.ndarray) or np.isscalar(self.child):
-            chunk_bytes(
-                capnp_serialize(np.array(self.child), to_bytes=True), "child", st_msg
-            )
-            st_msg.isNumpy = True
-        else:
-            chunk_bytes(serialize(self.child, to_bytes=True), "child", st_msg)  # type: ignore
-            st_msg.isNumpy = False
-
-        st_msg.rank = self.rank
-        st_msg.partiesInfo = serialize(self.parties_info, to_bytes=True)
-        st_msg.seedPrzs = self.seed_przs
-        st_msg.ringSize = str(self.ring_size)
-
-        return st_msg.to_bytes()
-
-    @staticmethod
-    def _bytes2object(buf: bytes) -> ShareTensor:
-        schema = get_capnp_schema(schema_file="share_tensor.capnp")
-        st_struct: CapnpModule = schema.ShareTensor  # type: ignore
-        # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
-        MAX_TRAVERSAL_LIMIT = 2**64 - 1
-
-        with st_struct.from_bytes(  # type: ignore
-            buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        ) as msg:
-            st_msg = msg
-
-        if st_msg.isNumpy:
-            child = capnp_deserialize(combine_bytes(st_msg.child), from_bytes=True)
-        else:
-            child = deserialize(combine_bytes(st_msg.child), from_bytes=True)
-
-        return ShareTensor(
-            value=child,
-            rank=st_msg.rank,
-            parties_info=deserialize(st_msg.partiesInfo, from_bytes=True),
-            seed_przs=st_msg.seedPrzs,
-            ring_size=int(st_msg.ringSize),
-        )
 
     __add__ = add
     __radd__ = add

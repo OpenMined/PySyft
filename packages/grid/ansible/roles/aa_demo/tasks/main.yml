@@ -15,7 +15,7 @@
   when: aa_demo is defined and aa_demo == "true"
 
 - name: Install Syft
-  shell: "runuser -l {{ om_user }} -c 'pip install --pre syft'"
+  shell: "runuser -l {{ om_user }} -c 'pip install -U syft --pre'"
   become: yes
   when: aa_demo is defined and aa_demo == "true"
 

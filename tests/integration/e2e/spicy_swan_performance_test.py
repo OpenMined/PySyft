@@ -22,7 +22,7 @@ from syft.core.node.common.node_service.user_manager.user_messages import (
 )
 from syft.core.node.common.util import MIN_BLOB_UPLOAD_SIZE_MB
 from syft.core.store.proxy_dataset import ProxyDataset
-from syft.core.tensor.autodp.phi_tensor import PhiTensor as PT
+from syft.core.tensor.autodp.gamma_tensor import GammaTensor
 from syft.util import download_file
 from syft.util import get_root_data_path
 from syft.util import size_mb
@@ -65,11 +65,11 @@ def upload_subset(
 
     entities = DataSubjectArray.from_objs(user_id)
 
-    tweets_data = sy.Tensor(impressions).private(
-        min_val=0, max_val=30, data_subjects=entities
+    tweets_data = sy.Tensor(impressions).annotate_with_dp_metadata(
+        lower_bound=0, upper_bound=30, data_subjects=entities
     )
 
-    assert isinstance(tweets_data.child, PT)
+    assert isinstance(tweets_data.child, GammaTensor)
 
     tweets_data_size_mb = size_mb(tweets_data)
 
@@ -135,8 +135,10 @@ def time_dataset_download(domain: Domain, dataset_index: int, asset_name: str):
     return total_time
 
 
-# TODO: This test is flapping, we should fix it
-@pytest.mark.xfail
+@pytest.mark.skip(
+    reason="Far too unreliable, and is actively "
+    "hurting progress. https://martinfowler.com/articles/nonDeterminism.html."
+)
 @pytest.mark.e2e
 def test_benchmark_datasets() -> None:
 
@@ -208,9 +210,8 @@ def test_benchmark_datasets() -> None:
             assert isinstance(sum_proxy, ProxyDataset)
 
         start_time = time.time()
-        publish_ptr = sum_ptr.publish(sigma=0.5)
-        publish_ptr.block_with_timeout(timeout)
-        result = publish_ptr.get()
+        publish_ptr = sum_ptr.publish(sigma=500_000)
+        result = publish_ptr.get(timeout_secs=timeout)
         print("result", result)
 
         benchmark_report[size_name]["publish_secs"] = time.time() - start_time

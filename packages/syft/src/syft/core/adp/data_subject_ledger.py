@@ -8,7 +8,7 @@ from pathlib import Path
 import time
 from typing import Any
 from typing import Callable
-from typing import List
+from typing import Dict
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Tuple
@@ -34,15 +34,9 @@ from scipy.optimize import minimize_scalar
 
 # relative
 from ...core.node.common.node_manager.user_manager import RefreshBudgetException
-from ..common.serde.capnp import CapnpModule
-from ..common.serde.capnp import capnp_deserialize
-from ..common.serde.capnp import capnp_serialize
-from ..common.serde.capnp import get_capnp_schema
-from ..common.serde.capnp import serde_magic_header
 from ..common.serde.serializable import serializable
 from .abstract_ledger_store import AbstractDataSubjectLedger
 from .abstract_ledger_store import AbstractLedgerStore
-from .data_subject_list import DataSubjectArray
 
 
 def convert_constants_to_indices(rdp_constant_array: np.ndarray) -> np.ndarray:
@@ -61,7 +55,10 @@ def convert_constants_to_indices(rdp_constant_array: np.ndarray) -> np.ndarray:
     """
     # Find indices for all RDP constants <= 50
     sub50_mask = rdp_constant_array <= 50
-    sub50_indices = (((rdp_constant_array - 1) * sub50_mask) * 10_000).astype(int)
+    # np.maximum is to avoid negative indices when rdp_constant_array is < 1
+    sub50_indices = np.maximum(
+        ((rdp_constant_array * sub50_mask * 10_000) - 1), 0
+    ).astype(int)
 
     # Find indices for all RDP constants > 50
     gt50_mask = rdp_constant_array > 50
@@ -106,63 +103,30 @@ class RDPParams:
 
 
 def get_unique_data_subjects(data_subjects_query: np.ndarray) -> np.ndarray:
-    # This might look horribly wrong, but .sum() returns all the unique DS ~ Ishan
+    # This might look horribly wrong, but .sum() returns all the unique DS for a DataSubjectArray ~ Ishan
     return sorted(list(data_subjects_query.sum()))
 
 
-def convert_dsa_to_index_array(
+def map_dsa_to_rdp_constants(
     data_subject_array: np.ndarray,
-) -> Tuple[np.ndarray, int]:
+    rdp_constants: Dict[str, np.ndarray],
+    query_constants: np.ndarray,
+) -> Dict[str, np.ndarray]:
     """Convert data subject array to data subject index array."""
-
     unique_data_subjects = get_unique_data_subjects(data_subject_array)
-    max_entity = len(unique_data_subjects)
 
-    input_entities_indexes_list: List[np.ndarray] = []
-
-    for data_subject_idx, data_subject in enumerate(unique_data_subjects):
+    for data_subject_name in unique_data_subjects:
         # Create a mask where the current data subject is present
-        data_subject = DataSubjectArray([data_subject])
-        ds_mask = np.isin(data_subject_array, data_subject)
-        input_entity_indexes = ds_mask * (
-            np.ones_like(data_subject_array, np.int64) * (data_subject_idx + 1)
+
+        map_function = np.vectorize(lambda x: data_subject_name in x)
+        ds_mask = map_function(data_subject_array)
+        # TODO np.isin does not work on custom Data Subject Array's
+        # ds_mask = np.isin(data_subject_array, data_subject)
+
+        ds_constant_mask = np.array(max(ds_mask * query_constants), copy=False)
+        rdp_constants[data_subject_name] = (
+            rdp_constants.get(data_subject_name, 0) + ds_constant_mask
         )
-        input_entities_indexes_list.append(input_entity_indexes)
-
-    input_entities_indexes: np.ndarray = np.stack(input_entities_indexes_list)
-
-    return input_entities_indexes, max_entity
-
-
-# @partial(jax.jit, static_argnums=3, donate_argnums=(1, 2))
-def first_try_branch(
-    constant: jax.numpy.DeviceArray,
-    rdp_constants: np.ndarray,
-    entity_ids_query: np.ndarray,
-) -> jax.numpy.DeviceArray:
-
-    input_entities_indexes, max_entity = convert_dsa_to_index_array(entity_ids_query)
-
-    if max_entity < len(rdp_constants):
-        # Take only the constants values where current data subject is present
-        summed_constant = constant.take(input_entities_indexes) + rdp_constants.take(
-            input_entities_indexes
-        )
-
-        # Set rpd constants for given data subjects
-        rdp_constants[input_entities_indexes] = summed_constant
-    else:
-        pad_length = max_entity - len(rdp_constants) + 1
-        rdp_constants = jnp.concatenate([rdp_constants, jnp.zeros(shape=pad_length)])
-
-        # Take only the constants values where current data subject is present
-        summed_constant = constant.take(input_entities_indexes) + rdp_constants.take(
-            input_entities_indexes
-        )
-
-        # Set rpd constants for given data subjects
-        # jax.interpreters.xla._DeviceArray does not support item assignment
-        rdp_constants = rdp_constants.at[input_entities_indexes].set(summed_constant)
 
     return rdp_constants
 
@@ -193,24 +157,28 @@ def get_budgets_and_mask(
     return (highest_possible_spend, user_budget, mask)
 
 
-@serializable(capnp_bytes=True)
+@serializable(recursive_serde=True)
 class DataSubjectLedger(AbstractDataSubjectLedger):
     """for a particular data subject, this is the list
-    of all mechanisms releasing informationo about this
+    of all mechanisms releasing information about this
     particular subject, stored in a vectorized form"""
+
+    __attr_allowlist__ = [
+        "_rdp_constants",
+        "_update_number",
+        "_timestamp_of_last_update",
+    ]
 
     CONSTANT2EPSILSON_CACHE_FILENAME = "constant2epsilon_1200k.npy"
     _cache_constant2epsilon = load_cache(filename=CONSTANT2EPSILSON_CACHE_FILENAME)
 
     def __init__(
         self,
-        constants: Optional[np.ndarray] = None,
+        constants: Optional[Dict[str, np.ndarray]] = None,
         update_number: int = 0,
         timestamp_of_last_update: Optional[float] = None,
     ) -> None:
-        self._rdp_constants = (
-            constants if constants is not None else np.array([], dtype=np.float64)
-        )
+        self._rdp_constants = constants if constants else dict()
         self._update_number = update_number
         self._timestamp_of_last_update = (
             timestamp_of_last_update
@@ -225,7 +193,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         return (
             self._update_number == other._update_number
             and self._timestamp_of_last_update == other._timestamp_of_last_update
-            and all(self._rdp_constants == other._rdp_constants)
+            and self._rdp_constants == other._rdp_constants
         )
 
     @property
@@ -273,7 +241,6 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         rdp_constants = self._get_batch_rdp_constants(
             entity_ids_query=entity_ids_query, rdp_params=rdp_params, private=private
         )
-        print("rdp constants", rdp_constants)
 
         # here we iteratively attempt to calculate the overbudget mask and save
         # changes to the database
@@ -315,6 +282,31 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
             [self._cache_constant2epsilon, np.array(new_entries)]
         )
 
+    def _fetch_eps_spend_for_big_rdp(
+        self, big_rdp_constant: np.ndarray, indices: np.ndarray
+    ) -> np.ndarray:
+        """
+        We only use this when the RDP constant is large enough that extending the cache would take too long.
+        As of Nov 21, 2022, we decided the cutoff would be the current cache size + 150,000
+        """
+        # There may be a vectorized way of doing this using jnp.take() and cacheable as a boolean mask
+
+        eps_values = []
+        # filter values that are cache-able
+        cacheable = (
+            big_rdp_constant <= 700_050
+        )  # TODO: Replace this with a class variable
+        cacheable = cacheable.flatten()
+        rdp_constants = big_rdp_constant.flatten()
+
+        for is_cacheable, constant, index in zip(cacheable, rdp_constants, indices):
+            if is_cacheable:
+                eps = self._cache_constant2epsilon[index]
+            else:
+                _, eps = self._get_optimal_alpha_for_constant(constant)
+            eps_values.append(eps)
+        return jnp.array(eps_values).reshape(big_rdp_constant.shape)
+
     def _get_fake_rdp_func(self, constant: int) -> Callable:
         def func(alpha: float) -> float:
             return alpha * constant
@@ -349,35 +341,54 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
 
         return results.x, results.fun
 
+    def update_rdp_constants(
+        self, query_constants: jnp.DeviceArray, entity_ids_query: jnp.DeviceArray
+    ) -> None:
+        self._rdp_constants = map_dsa_to_rdp_constants(
+            query_constants=query_constants,
+            rdp_constants=self._rdp_constants,
+            data_subject_array=entity_ids_query,
+        )
+        return None
+
     def _get_batch_rdp_constants(
         self, entity_ids_query: jnp.ndarray, rdp_params: RDPParams, private: bool = True
     ) -> jnp.ndarray:
-        constant = compute_rdp_constant(rdp_params, private)
-        if self._rdp_constants.size == 0:
-            self._rdp_constants = np.zeros_like(np.asarray(constant, constant.dtype))
-        # print("constant: ", constant)
-        # print("_rdp_constants: ", self._rdp_constants)
-        # print("entity ids query", entity_ids_query)
-        # print(jnp.max(entity_ids_query))
-        self._rdp_constants = first_try_branch(
-            constant, self._rdp_constants, entity_ids_query
+        query_constants = compute_rdp_constant(rdp_params, private)
+
+        self.update_rdp_constants(
+            query_constants=query_constants, entity_ids_query=entity_ids_query
         )
-        return constant
+        return query_constants
 
     def _get_epsilon_spend(self, rdp_constants: np.ndarray) -> np.ndarray:
-        # rdp_constants_lookup = (rdp_constants - 1).astype(np.int64)
         rdp_constants_lookup = convert_constants_to_indices(rdp_constants)
-        try:
-            # needed as np.int64 to use take
-            eps_spend = jax.jit(jnp.take)(
-                self._cache_constant2epsilon, rdp_constants_lookup
+        if rdp_constants_lookup.max() - len(self._cache_constant2epsilon) >= 150_000:
+            eps_spend = self._fetch_eps_spend_for_big_rdp(
+                rdp_constants, rdp_constants_lookup
             )
-        except IndexError:
-            print(f"Cache missed the value at {max(rdp_constants_lookup)}")
-            self._increase_max_cache(int(max(rdp_constants_lookup) * 1.1))
-            eps_spend = jax.jit(jnp.take)(
-                self._cache_constant2epsilon, rdp_constants_lookup
-            )
+        else:
+            try:
+                # needed as np.int64 to use take
+                eps_spend = jax.jit(jnp.take)(
+                    self._cache_constant2epsilon, rdp_constants_lookup
+                )
+
+                # take no longer wraps which was probably wrong:
+                # https://github.com/google/jax/commit/0b470361dac51fb4f5ab2f720f1cf35e442db005
+                # now we should expect NaN when the max rdp_constants_lookup is higher
+                # than the length of self._cache_constant2epsilon
+                # we could also check the max head of time if its faster than checking the
+                # output for NaNs
+                if jnp.isnan(eps_spend).any():
+                    raise ValueError("NaNs from RDP Lookup, we need to recalculate")
+
+            except (ValueError, IndexError):
+                print(f"Cache missed the value at {max(rdp_constants_lookup)}")
+                self._increase_max_cache(int(max(rdp_constants_lookup) * 1.1))
+                eps_spend = jax.jit(jnp.take)(
+                    self._cache_constant2epsilon, rdp_constants_lookup
+                )
         return eps_spend
 
     def _calculate_mask_for_current_budget(
@@ -393,12 +404,6 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         deduct_epsilon_for_user: Callable,
         rdp_constants: np.ndarray,
     ) -> Tuple[np.ndarray]:
-        """TODO:
-        In our current implementation, user_budget is obtained by querying the
-        Adversarial Accountant's entity2ledger with the Data Scientist's User Key.
-        When we replace the entity2ledger with something else, we could perhaps directly
-        add it into this method
-        """
         epsilon_spend = self._get_epsilon_spend(rdp_constants=rdp_constants)
 
         # try first time
@@ -455,6 +460,14 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         epsilon_spend: float,
         old_user_budget: float,
     ) -> float:
+
+        if epsilon_spend < 0:
+            raise Exception(
+                "Deducting a negative epsilon spend would result in potentially infinite PB. "
+                "Please contact the OpenMined support team."
+                "Thank you, and sorry for the inconvenience!"
+            )
+
         # get the budget
         print("got user budget", old_user_budget, "epsilon_spent", epsilon_spend)
         deduct_epsilon_for_user(
@@ -464,40 +477,3 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         )
         # return the budget we used
         return old_user_budget
-
-    def _object2bytes(self) -> bytes:
-        schema = get_capnp_schema(schema_file="data_subject_ledger.capnp")
-
-        dsl_struct: CapnpModule = schema.DataSubjectLedger  # type: ignore
-        dsl_msg = dsl_struct.new_message()  # type: ignore
-        # this is how we dispatch correct deserialization of bytes
-        dsl_msg.magicHeader = serde_magic_header(type(self))
-        self._rdp_constants = np.array(self._rdp_constants, copy=False)
-
-        dsl_msg.constants = capnp_serialize(self._rdp_constants)
-        dsl_msg.updateNumber = self._update_number
-        dsl_msg.timestamp = self._timestamp_of_last_update
-
-        return dsl_msg.to_bytes()
-
-    @staticmethod
-    def _bytes2object(buf: bytes) -> DataSubjectLedger:
-        schema = get_capnp_schema(schema_file="data_subject_ledger.capnp")
-        dsl_struct: CapnpModule = schema.DataSubjectLedger  # type: ignore
-        # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
-        MAX_TRAVERSAL_LIMIT = 2**64 - 1
-        # to pack or not to pack?
-        with dsl_struct.from_bytes(  # type: ignore
-            buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        ) as msg:
-            dsl_msg = msg
-
-        constants = capnp_deserialize(dsl_msg.constants)
-        update_number = dsl_msg.updateNumber
-        timestamp_of_last_update = dsl_msg.timestamp
-
-        return DataSubjectLedger(
-            constants=constants,
-            update_number=update_number,
-            timestamp_of_last_update=timestamp_of_last_update,
-        )

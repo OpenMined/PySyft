@@ -166,7 +166,7 @@ def root_client(node: sy.VirtualMachine) -> sy.VirtualMachineClient:
 
 
 @pytest.fixture(scope="session")
-def faker():
+def faker() -> Faker:
     return Faker()
 
 

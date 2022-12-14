@@ -14,13 +14,14 @@ from .....io.address import Address  # type: ignore
 @serializable(recursive_serde=True)
 @final
 class PublishScalarsAction(ImmediateSyftMessageWithoutReply):
-    __attr_allowlist__ = [
+    __attr_allowlist__ = (
         "id_at_location",
-        "address",
         "publish_ids_at_location",
         "sigma",
+        "private",
+        "address",
         "_id",
-    ]
+    )
 
     def __init__(
         self,
@@ -28,8 +29,10 @@ class PublishScalarsAction(ImmediateSyftMessageWithoutReply):
         address: Address,
         publish_ids_at_location: TypeList[UID],
         sigma: float,
+        private: bool,
     ):
         super().__init__(address=address)
         self.id_at_location = id_at_location
         self.publish_ids_at_location = publish_ids_at_location
         self.sigma = sigma
+        self.private = private

@@ -38,6 +38,10 @@ class SaveObjectAction(ImmediateActionWithoutReply):
         return f"SaveObjectAction {obj_str}"
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
+
+        # If if there's another object with the same ID.
+        node.store.check_collision(self.obj.id)
+
         self.obj.read_permissions = {
             node.verify_key: node.id,
             verify_key: None,  # we dont have the passed in sender's UID

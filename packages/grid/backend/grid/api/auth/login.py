@@ -8,6 +8,8 @@ from fastapi import Body
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 from loguru import logger
+from nacl.encoding import HexEncoder
+from nacl.signing import SigningKey
 
 # syft absolute
 from syft import serialize  # type: ignore
@@ -19,6 +21,55 @@ from grid.core.config import settings
 from grid.core.node import node
 
 router = APIRouter()
+
+
+@router.post("/key", name="key", status_code=200, response_class=JSONResponse)
+def auth_using_signing_key(
+    signing_key: str = Body(..., embed=True),
+) -> Any:
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    user = node.users.first(private_key=signing_key)
+
+    access_token = security.create_access_token(
+        user.id,
+        expires_delta=access_token_expires,
+    )
+
+    metadata = serialize(node.get_metadata_for_client(), to_bytes=True).decode(
+        "ISO-8859-1"
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "metadata": metadata,
+    }
+
+
+@router.post("/guest", name="guest", status_code=200, response_class=JSONResponse)
+def guest_user() -> Any:
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    active_guests = len(node.guest_signing_key_registry)
+    access_token = security.create_access_token(
+        active_guests + 1,
+        expires_delta=access_token_expires,
+        guest=True,
+    )
+    metadata = serialize(node.get_metadata_for_client(), to_bytes=True).decode(
+        "ISO-8859-1"
+    )
+    guest_signing_key = (
+        SigningKey.generate()
+    )  # .encode(encoder=HexEncoder).decode("utf-8")
+    node.guest_signing_key_registry.add(guest_signing_key)
+    node.guest_verify_key_registry.add(guest_signing_key.verify_key)
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "metadata": metadata,
+        "key": guest_signing_key.encode(encoder=HexEncoder).decode("utf-8"),
+    }
 
 
 @router.post("/login", name="login", status_code=200, response_class=JSONResponse)
@@ -40,10 +91,8 @@ def login_access_token(
     access_token = security.create_access_token(
         user.id_int, expires_delta=access_token_expires
     )
-    metadata = (
-        serialize(node.get_metadata_for_client())
-        .SerializeToString()
-        .decode("ISO-8859-1")
+    metadata = serialize(node.get_metadata_for_client(), to_bytes=True).decode(
+        "ISO-8859-1"
     )
 
     return {
