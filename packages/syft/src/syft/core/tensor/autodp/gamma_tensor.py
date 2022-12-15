@@ -3,7 +3,6 @@ from __future__ import annotations
 
 # stdlib
 from collections import deque
-from dataclasses import replace
 from typing import Any
 from typing import Callable
 from typing import Deque
@@ -11,6 +10,8 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Sequence
+
+# from dataclasses import replace
 from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Union
@@ -20,16 +21,19 @@ import flax
 import jax
 from jax import numpy as jnp
 import numpy as np
-from numpy.random import randint
+
+# from numpy.random import randint
 from numpy.typing import ArrayLike
 from numpy.typing import NDArray
-from scipy import optimize
+
+# from scipy import optimize
 from scipy.optimize import shgo
 
 # relative
 from .... import lib
 from ....ast.klass import pointerize_args_and_kwargs
-from ....core.adp.data_subject import DataSubject
+
+# from ....core.adp.data_subject import DataSubject
 from ....core.node.common.action.get_or_set_property_action import (
     GetOrSetPropertyAction,
 )
@@ -3330,7 +3334,7 @@ class GammaTensor:
             for id, shape in input_sizes.items():
                 total_size = prod(shape)
                 state[id] = np.reshape(
-                    array_state[start_id : start_id + total_size], shape
+                    array_state[start_id: start_id + total_size], shape
                 )
                 start_id += total_size
 
@@ -3817,7 +3821,7 @@ class GammaTensor:
         """
 
         # Must do argsort before we change self.child by calling sort
-        indices = self.child.argsort(axis, kind)
+        # indices = self.child.argsort(axis, kind)
         self.child.sort(axis, kind)
         sources = self.sources.copy()
         return GammaTensor(

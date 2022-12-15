@@ -437,10 +437,10 @@ class ShareTensor(PassthroughTensor):
                 gt: GammaTensor = value.child
                 new_gamma = GammaTensor(
                     child=FixedPrecisionTensor(value.child.child),
-                    data_subjects=gt.data_subjects,
-                    min_vals=gt.min_vals,
-                    max_vals=gt.max_vals,
-                    func_str=gt.func_str,
+                    # data_subjects=gt.data_subjects,
+                    # min_vals=gt.min_vals,
+                    # max_vals=gt.max_vals,
+                    func=gt.func,
                     sources=gt.sources,
                 )
                 value.child = new_gamma

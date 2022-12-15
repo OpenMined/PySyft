@@ -113,7 +113,7 @@ def get_unique_data_subjects(data_subjects_query: np.ndarray) -> np.ndarray:
 
 
 def map_dsa_to_rdp_constants(
-    data_subject_rdp_constants,
+    data_subject_rdp_constants: Dict[str, np.ndarray],
     rdp_constants: Dict[str, np.ndarray],
 ) -> Dict[str, np.ndarray]:
     """Convert data subject array to data subject index array."""
@@ -214,35 +214,35 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
 
         return ledger
 
-    def get_entity_overbudget_mask_for_epsilon_and_append(
-        self,
-        unique_entity_ids_query: np.ndarray,
-        rdp_params: RDPParams,
-        get_budget_for_user: Callable,
-        deduct_epsilon_for_user: Callable,
-        private: bool = True,
-    ) -> np.ndarray:
-        # coerce to np.int64
-        entity_ids_query: np.ndarray = (
-            unique_entity_ids_query  # = unique_entity_ids_query.astype(np.int64)
-        )
-        # calculate constants
-        rdp_constants = self._get_batch_rdp_constants(
-            entity_ids_query=entity_ids_query, rdp_params=rdp_params, private=private
-        )
-
-        # here we iteratively attempt to calculate the overbudget mask and save
-        # changes to the database
-        mask = self._get_overbudgeted_entities(
-            get_budget_for_user=get_budget_for_user,
-            deduct_epsilon_for_user=deduct_epsilon_for_user,
-            rdp_constants=rdp_constants,
-        )
-
-        # at this point we are confident that the database budget field has been updated
-        # so now we should flush the _rdp_constants that we have calculated to storage
-        if self._write_ledger():
-            return mask
+    # def get_entity_overbudget_mask_for_epsilon_and_append(
+    #     self,
+    #     unique_entity_ids_query: np.ndarray,
+    #     rdp_params: RDPParams,
+    #     get_budget_for_user: Callable,
+    #     deduct_epsilon_for_user: Callable,
+    #     private: bool = True,
+    # ) -> np.ndarray:
+    #     # coerce to np.int64
+    #     entity_ids_query: np.ndarray = (
+    #         unique_entity_ids_query  # = unique_entity_ids_query.astype(np.int64)
+    #     )
+    #     # calculate constants
+    #     rdp_constants = self._get_batch_rdp_constants(
+    #         entity_ids_query=entity_ids_query, rdp_params=rdp_params, private=private
+    #     )
+    #
+    #     # here we iteratively attempt to calculate the overbudget mask and save
+    #     # changes to the database
+    #     mask = self._get_overbudgeted_entities(
+    #         get_budget_for_user=get_budget_for_user,
+    #         deduct_epsilon_for_user=deduct_epsilon_for_user,
+    #         rdp_constants=rdp_constants,
+    #     )
+    #
+    #     # at this point we are confident that the database budget field has been updated
+    #     # so now we should flush the _rdp_constants that we have calculated to storage
+    #     if self._write_ledger():
+    #         return mask
 
     def _write_ledger(self) -> bool:
 
@@ -330,22 +330,22 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
 
         return results.x, results.fun
 
-    def update_rdp_constants(self, data_subject_rdp_constants) -> None:
+    def update_rdp_constants(self, data_subject_rdp_constants: Dict) -> None:
         self._rdp_constants = map_dsa_to_rdp_constants(
             data_subject_rdp_constants=data_subject_rdp_constants,
             rdp_constants=self._rdp_constants,
         )
         return None
 
-    def _get_batch_rdp_constants(
-        self, entity_ids_query: jnp.ndarray, rdp_params: RDPParams, private: bool = True
-    ) -> jnp.ndarray:
-        query_constants = compute_rdp_constant(rdp_params, private)
-
-        self.update_rdp_constants(
-            query_constants=query_constants, entity_ids_query=entity_ids_query
-        )
-        return query_constants
+    # def _get_batch_rdp_constants(
+    #     self, entity_ids_query: jnp.ndarray, rdp_params: RDPParams, private: bool = True
+    # ) -> jnp.ndarray:
+    #     query_constants = compute_rdp_constant(rdp_params, private)
+    #
+    #     self.update_rdp_constants(
+    #         query_constants=query_constants, entity_ids_query=entity_ids_query
+    #     )
+    #     return query_constants
 
     def _get_epsilon_spend(self, rdp_constants: np.ndarray) -> np.ndarray:
         rdp_constants_lookup = convert_constants_to_indices(rdp_constants)
