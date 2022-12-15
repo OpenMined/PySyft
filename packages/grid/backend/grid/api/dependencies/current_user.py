@@ -43,7 +43,6 @@ def get_current_user(token: str = Depends(reusable_oauth2)) -> UserPrivate:
                 .encode(encoder=HexEncoder)
                 .decode("utf-8")
             )
-
             current_user = GuestUser(
                 **{"id": int(token_data.sub), "private_key": guest_key}
             )
@@ -51,8 +50,14 @@ def get_current_user(token: str = Depends(reusable_oauth2)) -> UserPrivate:
             # TODO: Fix jwt.
             # TODO: Send a secure message with the token instead of fetching the user
             #       directly through node
-            current_user = node.users.first(id_int=int(token_data.sub))
+            user = node.users.first(id_int=int(token_data.sub))
+            user_dict = user.to_dict()
+            user_dict["id"] = user.id_int
+            user_dict["role"] = user.role["name"]
+            current_user = UserPrivate(**user_dict)
+
         return current_user
+
     except Exception:
         # TODO: Improve error handling
         raise HTTPException(

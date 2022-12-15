@@ -217,6 +217,8 @@ def get_user_msg(
         # Remove private key
         del _msg["private_key"]
 
+        _msg["id"] = _msg["id_int"]
+
         # Get budget spent
         _msg["budget_spent"] = node.users.get_budget_for_user(
             verify_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder)  # type: ignore
@@ -250,7 +252,7 @@ def get_all_users_msg(
 
             # Remove private key
             del _user_json["private_key"]
-
+            _user_json["id"] = _user_json["id_int"]
             # Remaining Budget
             # TODO:
             # Rename it from budget_spent to remaining budget
@@ -308,7 +310,7 @@ def del_user_msg(
         and _not_owner  # Target user isn't the node owner
     )
     if _allowed:
-        node.users.delete(id=msg.user_id)
+        node.users.delete(id_int=msg.user_id)
     else:
         raise AuthorizationError("You're not allowed to delete this user information!")
 

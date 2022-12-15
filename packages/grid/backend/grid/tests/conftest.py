@@ -12,6 +12,7 @@ from faker import Faker
 from fastapi import FastAPI
 from httpx import AsyncClient
 from loguru import logger
+from pymongo_inmemory import MongoClient
 import pytest
 import pytest_asyncio
 
@@ -23,10 +24,19 @@ from grid.logger.handler import get_log_handler
 
 log_handler = get_log_handler()
 
+db_instance = None
+
 
 @pytest.fixture(scope="session")
 def db() -> Generator:
-    yield get_db_session()
+    if not db_instance:
+        MongoClient(uuidRepresentation="standard")
+    yield db_instance
+
+
+@pytest.fixture
+def db_name() -> str:
+    return "app"
 
 
 @pytest.fixture
