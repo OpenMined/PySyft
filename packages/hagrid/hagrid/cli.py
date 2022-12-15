@@ -1195,24 +1195,6 @@ def create_launch_cmd(
                 silent=parsed_kwargs["silent"],
             )
 
-    elif host in ["vm"]:
-        if (
-            DEPENDENCIES["vagrant"]
-            and DEPENDENCIES["virtualbox"]
-            and DEPENDENCIES["ansible-playbook"]
-        ):
-            return create_launch_vagrant_cmd(verb=verb)
-        else:
-            errors = []
-            if not DEPENDENCIES["vagrant"]:
-                errors.append("vagrant")
-            if not DEPENDENCIES["virtualbox"]:
-                errors.append("virtualbox")
-            if not DEPENDENCIES["ansible-playbook"]:
-                errors.append("ansible-playbook")
-            raise MissingDependency(
-                f"Launching a VM locally requires: {' '.join(errors)}"
-            )
     elif host in ["azure"]:
         check_azure_cli_installed()
 
