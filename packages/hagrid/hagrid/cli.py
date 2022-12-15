@@ -3746,13 +3746,13 @@ def create() -> None:
     help="Name of the container registry to create",
 )
 @click.option(
-    "--registry_port",
+    "--registry-port",
     type=str,
     required=False,
     help="Port of the container registry",
 )
 @click.option(
-    "--registry_volume",
+    "--registry-volume",
     required=False,
     type=click.Path(path_type=Path),
     help="Location to persist the registry",
