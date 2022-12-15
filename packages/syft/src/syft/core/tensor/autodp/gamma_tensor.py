@@ -3045,7 +3045,7 @@ class GammaTensor:
                 if isinstance(tensor.data_subjects, np.ndarray):
                     new_tensor = GammaTensor(
                         child=tensor.child,
-                        func_str=tensor.func_str,
+                        func=tensor.func,
                         sources=GammaTensor.convert_dsl(tensor.sources, {}),
                     )
                     # for idx, row in enumerate(tensor.data_subjects):
@@ -3316,14 +3316,14 @@ class GammaTensor:
         )
 
     @property
-    def lipschitz_bound(self):
+    def lipschitz_bound(self) -> float:
         if self.is_linear:
             return 1.0
 
         # stdlib
         from math import prod
 
-        def convert_array_to_dict_state(array_state, input_sizes):
+        def convert_array_to_dict_state(array_state: Dict, input_sizes: Dict) -> Dict:
             start_id = 0
             state = {}
 
@@ -3336,7 +3336,7 @@ class GammaTensor:
 
             return state
 
-        def convert_state_to_bounds(input_sizes, input_states):
+        def convert_state_to_bounds(input_sizes: Dict, input_states: Dict) -> List:
             bounds = []
             for id in input_sizes:
                 bounds.extend(
@@ -3354,7 +3354,7 @@ class GammaTensor:
         input_sizes = {tensor.id: tensor.shape for tensor in self.sources.values()}
         bounds = convert_state_to_bounds(input_sizes, self.sources)
 
-        def search(array_state):
+        def search(array_state: Dict) -> jnp.DeviceArray:
             dict_state = convert_array_to_dict_state(array_state, input_sizes)
             grads = grad_fn(dict_state)
             return -jnp.max(jnp.array(list(grads.values())))
@@ -4024,25 +4024,22 @@ class GammaTensor:
 
             state = deserialize(gamma_msg.sources, from_bytes=True)
 
-            data_subjects = numpyutf8todslarray(
-                capnp_deserialize(
-                    combine_bytes(gamma_msg.dataSubjects), from_bytes=True
-                )
-            )
+            # data_subjects = numpyutf8todslarray(
+            #     capnp_deserialize(
+            #         combine_bytes(gamma_msg.dataSubjects), from_bytes=True
+            #     )
+            # )
 
-            min_val = deserialize(gamma_msg.minVal, from_bytes=True)
-            max_val = deserialize(gamma_msg.maxVal, from_bytes=True)
+            # min_val = deserialize(gamma_msg.minVal, from_bytes=True)
+            # max_val = deserialize(gamma_msg.maxVal, from_bytes=True)
             is_linear = gamma_msg.isLinear
             id_str = gamma_msg.id
-            func_str = gamma_msg.funcStr
+            func = gamma_msg.func
 
             return GammaTensor(
                 child=child,
-                data_subjects=data_subjects,
-                min_vals=min_val,
-                max_vals=max_val,
                 is_linear=is_linear,
                 sources=state,
                 id=id_str,
-                func_str=func_str,
+                func=func,
             )

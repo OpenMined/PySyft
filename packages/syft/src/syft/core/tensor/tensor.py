@@ -563,7 +563,7 @@ class Tensor(
 
         if isinstance(self.child, PhiTensor):
             return TensorWrappedPhiTensorPointer(
-                data_subjects=self.child.data_subjects,
+                data_subject=self.child.data_subject,
                 client=client,
                 id_at_location=id_at_location,
                 object_type=object_type,
