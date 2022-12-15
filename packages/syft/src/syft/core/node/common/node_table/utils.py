@@ -10,26 +10,8 @@ from .user import SyftObject
 datetime_cols = ["date", "created_at", "destroyed_at", "deployed_on", "updated_on"]
 
 
-def model_to_json(model: Any) -> Dict[str, Any]:
-    """
-    Returns a JSON representation of an SQLAlchemy-backed object.
-
-    Args:
-        model: SQLAlchemy-backed object to be represented as a JSON data structure.
-    Returns:
-        Dict: Python dictionary representing the SQLAlchemy object.
-    """
-    json = {}
-    for col in model.__mapper__.attrs.keys():  # type: ignore
-        if col != "hashed_password" and col != "salt":
-            if col in datetime_cols:
-                # Cast datetime object to string
-                json[col] = str(getattr(model, col))
-            else:
-                json[col] = getattr(model, col)
-    return json
-
-
+# TODO: Team-Yellow - Re-evaluate if this explicit conversion is required or should be covered in the
+# to_dict method of the Syft Object which can be override to exclude different keys at different objects
 def syft_object_to_json(obj: SyftObject) -> Dict[str, Any]:
     """
     Returns a JSON representation of an NoSQL-backed object.
