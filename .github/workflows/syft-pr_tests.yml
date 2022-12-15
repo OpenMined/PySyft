@@ -25,7 +25,8 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        # os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest] # issues with windows and pymongo_inmemory
         python-version: ["3.10"]
         torch-version: [1.11.0]
         include:
