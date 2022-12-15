@@ -3,8 +3,6 @@ version: v1beta11
 vars:
   - name: CONTAINER_REGISTRY
     value: ""
-  - name: DOCKER_IMAGE_DB
-    value: postgres:12
   - name: DOCKER_IMAGE_QUEUE
     value: rabbitmq:3
   - name: SERVICE_NAME_DB
@@ -335,33 +333,6 @@ deployments:
           ports:
             - port: 8333
 
-  - name: db
-    helm:
-      componentChart: true
-      values:
-        containers:
-          - image: ${DOCKER_IMAGE_DB}
-            env:
-              - name: POSTGRES_DB
-                value: ${POSTGRES_DB}
-              - name: POSTGRES_USER
-                value: ${POSTGRES_USER}
-              - name: POSTGRES_PASSWORD
-                value: ${POSTGRES_PASSWORD}
-            volumeMounts:
-              - containerPath: /var/lib/postgresql/data
-                volume:
-                  name: app-db-data
-                  subPath: /pgdata
-                  readOnly: false
-        volumes:
-          - name: app-db-data
-            size: "5Gi"
-        service:
-          name: ${SERVICE_NAME_DB}
-          ports:
-            - port: 5432
-
   - name: mongo
     helm:
       componentChart: true
@@ -418,14 +389,6 @@ deployments:
             env:
               - name: DOMAIN_NAME
                 value: ${DOMAIN_NAME}
-              - name: POSTGRES_SERVER
-                value: ${SERVICE_NAME_DB}
-              - name: POSTGRES_DB
-                value: ${POSTGRES_DB}
-              - name: POSTGRES_USER
-                value: ${POSTGRES_USER}
-              - name: POSTGRES_PASSWORD
-                value: ${POSTGRES_PASSWORD}
               - name: VERSION
                 value: ${VERSION}
               - name: VERSION_HASH
@@ -516,16 +479,8 @@ deployments:
             env:
               - name: DOMAIN_NAME
                 value: ${DOMAIN_NAME}
-              - name: POSTGRES_SERVER
-                value: ${SERVICE_NAME_DB}
-              - name: POSTGRES_DB
-                value: ${POSTGRES_DB}
               - name: SERVICE_NAME
                 value: ${SERVICE_NAME_BACKEND_STREAM}
-              - name: POSTGRES_USER
-                value: ${POSTGRES_USER}
-              - name: POSTGRES_PASSWORD
-                value: ${POSTGRES_PASSWORD}
               - name: VERSION
                 value: ${VERSION}
               - name: VERSION_HASH
@@ -600,14 +555,6 @@ deployments:
             env:
               - name: DOMAIN_NAME
                 value: ${DOMAIN_NAME}
-              - name: POSTGRES_SERVER
-                value: ${SERVICE_NAME_DB}
-              - name: POSTGRES_DB
-                value: ${POSTGRES_DB}
-              - name: POSTGRES_USER
-                value: ${POSTGRES_USER}
-              - name: POSTGRES_PASSWORD
-                value: ${POSTGRES_PASSWORD}
               - name: VERSION
                 value: ${VERSION}
               - name: VERSION_HASH
