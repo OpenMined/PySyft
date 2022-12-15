@@ -436,7 +436,7 @@ def is_windows() -> bool:
     return False
 
 
-allowed_hosts = ["docker", "vm", "azure", "aws", "gcp"]
+allowed_hosts = ["docker", "azure", "aws", "gcp"]
 commands = ["docker", "git", "ansible-playbook"]
 
 if is_windows():

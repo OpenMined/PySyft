@@ -15,7 +15,7 @@ hagrid land all
 echo "Launching Domain .. hahaha >:)";
 
 # re-launch domain
-hagrid launch ${DOMAIN_NAME} to docker:80  --tail=false --dev --build_src="model_training_tests"
+hagrid launch ${DOMAIN_NAME} to docker:80 --dev --build_src="model_training_tests"
 
 # wait for domain to be up
 hagrid check --timeout=120
