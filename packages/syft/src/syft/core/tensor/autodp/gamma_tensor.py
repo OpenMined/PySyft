@@ -2053,7 +2053,7 @@ class GammaTensor:
             child = self.child + other
             func = lambda state: jnp.add(self.reconstruct(state), other)
 
-        return GammaTensor(child=child, func=func, sources=output_state, is_linear=True)
+        return GammaTensor(child=child, func=func, sources=output_state, is_linear=self.is_linear)
 
     def __radd__(self, other: Any) -> GammaTensor:
         return self.__add__(other)
@@ -2137,7 +2137,7 @@ class GammaTensor:
             child = self.child - other
             func = lambda state: jnp.subtract(self.reconstruct(state), other)
 
-        return GammaTensor(child=child, func=func, sources=output_state, is_linear=True)
+        return GammaTensor(child=child, func=func, sources=output_state, is_linear=self.is_linear)
 
     def __rsub__(self, other: Any) -> GammaTensor:
         return (self - other) * -1
@@ -2479,7 +2479,7 @@ class GammaTensor:
         func = lambda state: jnp.flatten(self.reconstruct(state), order=order)
         return GammaTensor(
             child=result,
-            is_linear=True,
+            is_linear=self.is_linear,
             func=func,
             sources=output_sources,
         )
@@ -2489,7 +2489,7 @@ class GammaTensor:
         output_data = self.child.transpose(*args, **kwargs)
         func = lambda state: jnp.transpose(self.reconstruct(state), *args, **kwargs)
         return GammaTensor(
-            child=output_data, func=func, sources=output_state, is_linear=True
+            child=output_data, func=func, sources=output_state, is_linear=self.is_linear
         )
 
     @property
@@ -2539,7 +2539,7 @@ class GammaTensor:
         if not isinstance(result, np.ndarray):
             result = np.array(result)
 
-        return GammaTensor(child=result, func=func, sources=sources, is_linear=True)
+        return GammaTensor(child=result, func=func, sources=sources, is_linear=self.is_linear)
 
     def __pow__(
         self, power: Union[float, int]  # , modulo: Optional[int] = None
@@ -2609,7 +2609,7 @@ class GammaTensor:
             child=output_data,
             func=lambda state: jnp.ravel(self.reconstruct(state), order=order),
             sources=output_state,
-            is_linear=True,
+            is_linear=self.is_linear,
         )
 
     def resize(self, new_shape: Union[int, Tuple[int, ...]]) -> GammaTensor:
@@ -2621,7 +2621,7 @@ class GammaTensor:
             child=output,
             func=lambda state: jnp.resize(self.reconstruct(state), new_shape),
             sources=output_state,
-            is_linear=True,
+            is_linear=self.is_linear,
         )
 
     def compress(
@@ -2639,7 +2639,7 @@ class GammaTensor:
                 np.array(condition), self.reconstruct(state), axis=axis
             ),
             sources=output_state,
-            is_linear=True,
+            is_linear=self.is_linear,
         )
 
     def squeeze(
@@ -2653,7 +2653,7 @@ class GammaTensor:
             child=output_data,
             func=lambda state: jnp.squeeze(self.reconstruct(state), axis=axis),
             sources=output_state,
-            is_linear=True,
+            is_linear=self.is_linear,
         )
 
     def any(
@@ -2774,7 +2774,7 @@ class GammaTensor:
             child=self.child,
             func=lambda state: jnp.positive(self.reconstruct(state)),
             sources=output_state,
-            is_linear=True,
+            is_linear=self.is_linear,
         )
 
     def __neg__(self) -> GammaTensor:
@@ -2783,7 +2783,7 @@ class GammaTensor:
             child=self.child * -1,
             func=lambda state: jnp.negative(self.reconstruct(state)),
             sources=output_state,
-            is_linear=True,
+            is_linear=self.is_linear,
         )
 
     def reshape(self, shape: Tuple[int, ...]) -> GammaTensor:
@@ -2793,7 +2793,7 @@ class GammaTensor:
             child=output_data,
             func=lambda state: jnp.reshape(self.reconstruct(state), shape),
             sources=sources,
-            is_linear=True,
+            is_linear=self.is_linear,
         )
 
     def _argmax(self, axis: Optional[int]) -> np.ndarray:
@@ -2809,7 +2809,7 @@ class GammaTensor:
             child=result,
             sources=output_state,
             func=lambda state: jnp.mean(self.reconstruct(state), axis=axis, **kwargs),
-            is_linear=True,
+            is_linear=self.is_linear,
         )
 
     def expand_dims(self, axis: Optional[int] = None) -> GammaTensor:
@@ -2871,7 +2871,7 @@ class GammaTensor:
             child=result,
             sources=output_state,
             func=lambda state: jnp.std(self.reconstruct(state), axis=axis, **kwargs),
-            is_linear=True,
+            is_linear=self.is_linear,
         )
 
     def var(
@@ -2912,7 +2912,7 @@ class GammaTensor:
             child=result,
             sources=output_state,
             func=lambda state: jnp.var(self.reconstruct(state), axis=axis, **kwargs),
-            is_linear=True,
+            is_linear=self.is_linear,
         )
 
     def dot(self, other: Union[np.ndarray, GammaTensor]) -> GammaTensor:
@@ -3020,7 +3020,7 @@ class GammaTensor:
             child=out_child,
             func=lambda state: jnp.swapaxes(self.reconstruct(state), axis1, axis2),
             sources=output_state,
-            is_linear=True,
+            is_linear=self.is_linear,
         )
 
     @staticmethod
@@ -3118,7 +3118,7 @@ class GammaTensor:
                 child=data,
                 func=lambda state: self.reconstruct(state).child[item],
                 sources=output_state,
-                is_linear=True,
+                is_linear=self.is_linear,
             )
 
     def __setitem__(
@@ -3163,7 +3163,7 @@ class GammaTensor:
             child=self.child.copy(order),
             func=lambda state: jnp.copy(self.reconstruct(state), order=order),
             sources=output_state,
-            is_linear=True,
+            is_linear=self.is_linear,
         )
 
     def ptp(
@@ -3176,7 +3176,7 @@ class GammaTensor:
             child=out_child,
             func=lambda state: jnp.ptp(self.reconstruct(state), axis=axis),
             sources=output_state,
-            is_linear=True,
+            is_linear=self.is_linear,
         )
 
     def take(
@@ -3195,7 +3195,7 @@ class GammaTensor:
                 self.reconstruct(state), np.array(indices), axis=axis, mode=mode
             ),
             sources=output_state,
-            is_linear=True,
+            is_linear=self.is_linear,
         )
 
     def put(
@@ -3251,7 +3251,7 @@ class GammaTensor:
                 self.reconstruct(state), repeats=repeats, axis=axis
             ),
             sources=sources,
-            is_linear=True,
+            is_linear=self.is_linear,
         )
 
     def cumsum(
@@ -3304,6 +3304,9 @@ class GammaTensor:
 
     @property
     def lipschitz_bound(self):
+        if self.is_linear:
+            return 1.0
+        
         from math import prod
 
         def convert_array_to_dict_state(array_state, input_sizes):
@@ -3320,7 +3323,7 @@ class GammaTensor:
         def convert_state_to_bounds(input_sizes, input_states):
             bounds = []
             for id in input_sizes:
-                bounds.extend(list(zip(input_states[id].min_vals.flatten(), input_states[id].max_vals.flatten())))
+                bounds.extend(list(zip(input_states[id].min_vals.to_numpy().flatten(), input_states[id].max_vals.to_numpy().flatten())))
             return bounds
 
         grad_fn = jax.grad(jax.jit(lambda state: jnp.sum(self.func(state))))
@@ -3396,7 +3399,7 @@ class GammaTensor:
                 child=self.child // other,
                 func=lambda state: jnp.floor_divide(self.reconstruct(state), other),
                 sources=sources,
-                is_linear=True,
+                is_linear=self.is_linear,
             )
         else:
             raise NotImplementedError(
@@ -3427,7 +3430,7 @@ class GammaTensor:
                 child=other // self.child,
                 func=lambda state: jnp.floor_divide(other, self.reconstruct(state)),
                 sources=sources,
-                is_linear=True,
+                is_linear=self.is_linear,
             )
         else:
             raise NotImplementedError(
@@ -3467,7 +3470,7 @@ class GammaTensor:
             child=result,
             func=lambda state: jnp.trace(self.reconstruct(state), offset, axis1, axis2),
             sources=sources,
-            is_linear=True,
+            is_linear=self.is_linear,
         )
 
     def diagonal(self, offset: int = 0, axis1: int = 0, axis2: int = 1) -> GammaTensor:
@@ -3507,7 +3510,7 @@ class GammaTensor:
             child=result,
             func=lambda state: jnp.diag(self.reconstruct(state), offset, axis1, axis2),
             sources=sources,
-            is_linear=True,
+            is_linear=self.is_linear,
         )
 
     def min(
@@ -3558,7 +3561,7 @@ class GammaTensor:
                     initial=initial,
                 ),
                 sources=sources,
-                is_linear=True,
+                is_linear=self.is_linear,
             )
         else:
             if initial is None:
@@ -3584,7 +3587,7 @@ class GammaTensor:
                         where=where,
                     ),
                     sources=sources,
-                    is_linear=True,
+                    is_linear=self.is_linear,
                 )
 
     def max(
@@ -3635,7 +3638,7 @@ class GammaTensor:
                     initial=initial,
                 ),
                 sources=sources,
-                is_linear=True,
+                is_linear=self.is_linear,
             )
         else:
             if initial is None:
@@ -3661,7 +3664,7 @@ class GammaTensor:
                         initial=initial,
                     ),
                     sources=sources,
-                    is_linear=True,
+                    is_linear=self.is_linear,
                 )
 
     def __lshift__(self, other: Any) -> GammaTensor:
