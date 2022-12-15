@@ -1845,7 +1845,7 @@ def dispatch_tensor(
             extract_attribute_or_self(tensor, "data_subject") for tensor in tensors
         ]
         data_subject = [ds for ds in data_subject if ds is not None]
-        
+
         reducer = [ds == data_subject[0] for ds in data_subject]
         if np.all(reducer):
             return original_func(*map(cast_to_gamma, tensors))
@@ -2732,7 +2732,7 @@ class PhiTensor(PassthroughTensor):
             child_func=lambda tensors: operator.add(*tensors),
             min_func=lambda tensors: operator.add(*tensors),
             max_func=lambda tensors: operator.add(*tensors),
-            original_func=lambda tensors: operator.add(*tensors)
+            original_func=lambda tensors: operator.add(*tensors),
         )
         # except TypeError:
         #     raise NotImplementedError(

@@ -167,7 +167,7 @@ def test_lipschitz(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    
+
     gamma_tensor = tensor1.gamma + 2
     assert gamma_tensor.is_linear
     assert gamma_tensor.lipschitz_bound == 1
@@ -175,7 +175,7 @@ def test_lipschitz(
     gamma_tensor = tensor1[0].gamma * 2
     print(gamma_tensor.child)
     gamma_tensor = gamma_tensor
-    
+
     assert gamma_tensor.lipschitz_bound == 2
 
 

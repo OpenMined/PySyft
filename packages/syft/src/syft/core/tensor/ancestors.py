@@ -18,9 +18,9 @@ from numpy.typing import ArrayLike
 
 # relative
 from ...user_settings import settings
+from ..adp.data_subject import DataSubject
 from ..adp.data_subject_ledger import DataSubjectLedger
 from ..adp.data_subject_list import DataSubjectArray
-from ..adp.data_subject import DataSubject
 from .config import DEFAULT_FLOAT_NUMPY_TYPE
 from .config import DEFAULT_INT_NUMPY_TYPE
 from .lazy_repeat_array import lazyrepeatarray

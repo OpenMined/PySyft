@@ -1993,7 +1993,6 @@ class GammaTensor:
     is_linear: bool = False
     id: str = flax.struct.field(pytree_node=False, default_factory=lambda: UID())
 
-
     def decode(self) -> np.ndarray:
         if isinstance(self.child, FixedPrecisionTensor):
             return self.child.decode()
@@ -2056,7 +2055,9 @@ class GammaTensor:
             func = lambda state: jnp.add(self.reconstruct(state), other)
             is_linear = self.is_linear
 
-        return GammaTensor(child=child, func=func, sources=output_state, is_linear=is_linear)
+        return GammaTensor(
+            child=child, func=func, sources=output_state, is_linear=is_linear
+        )
 
     def __radd__(self, other: Any) -> GammaTensor:
         return self.__add__(other)
@@ -2142,7 +2143,9 @@ class GammaTensor:
             func = lambda state: jnp.subtract(self.reconstruct(state), other)
             is_linear = self.is_linear
 
-        return GammaTensor(child=child, func=func, sources=output_state, is_linear=is_linear)
+        return GammaTensor(
+            child=child, func=func, sources=output_state, is_linear=is_linear
+        )
 
     def __rsub__(self, other: Any) -> GammaTensor:
         return (self - other) * -1
@@ -2544,7 +2547,9 @@ class GammaTensor:
         if not isinstance(result, np.ndarray):
             result = np.array(result)
 
-        return GammaTensor(child=result, func=func, sources=sources, is_linear=self.is_linear)
+        return GammaTensor(
+            child=result, func=func, sources=sources, is_linear=self.is_linear
+        )
 
     def __pow__(
         self, power: Union[float, int]  # , modulo: Optional[int] = None
@@ -2709,7 +2714,10 @@ class GammaTensor:
                 self.child.all(axis=axis, keepdims=keepdims, where=where)
             )
             func = lambda state: jnp.all(
-                self.reconstruct(state), axis=axis, keepdims=keepdims, where=np.array(where)
+                self.reconstruct(state),
+                axis=axis,
+                keepdims=keepdims,
+                where=np.array(where),
             )
 
         return GammaTensor(
@@ -3311,7 +3319,8 @@ class GammaTensor:
     def lipschitz_bound(self):
         if self.is_linear:
             return 1.0
-        
+
+        # stdlib
         from math import prod
 
         def convert_array_to_dict_state(array_state, input_sizes):
@@ -3320,7 +3329,9 @@ class GammaTensor:
 
             for id, shape in input_sizes.items():
                 total_size = prod(shape)
-                state[id] = np.reshape(array_state[start_id:start_id + total_size], shape)
+                state[id] = np.reshape(
+                    array_state[start_id : start_id + total_size], shape
+                )
                 start_id += total_size
 
             return state
@@ -3328,7 +3339,14 @@ class GammaTensor:
         def convert_state_to_bounds(input_sizes, input_states):
             bounds = []
             for id in input_sizes:
-                bounds.extend(list(zip(input_states[id].min_vals.to_numpy().flatten(), input_states[id].max_vals.to_numpy().flatten())))
+                bounds.extend(
+                    list(
+                        zip(
+                            input_states[id].min_vals.to_numpy().flatten(),
+                            input_states[id].max_vals.to_numpy().flatten(),
+                        )
+                    )
+                )
             return bounds
 
         grad_fn = jax.grad(jax.jit(lambda state: jnp.sum(self.func(state))))

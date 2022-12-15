@@ -330,9 +330,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
 
         return results.x, results.fun
 
-    def update_rdp_constants(
-        self, data_subject_rdp_constants
-    ) -> None:
+    def update_rdp_constants(self, data_subject_rdp_constants) -> None:
         self._rdp_constants = map_dsa_to_rdp_constants(
             data_subject_rdp_constants=data_subject_rdp_constants,
             rdp_constants=self._rdp_constants,
