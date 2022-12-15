@@ -109,7 +109,6 @@ services:
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
     depends_on:
       - proxy
-      - db
     env_file:
       - .env
     environment:
@@ -137,7 +136,6 @@ services:
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
     depends_on:
       - proxy
-      - db
     env_file:
       - .env
     environment:
@@ -166,7 +164,6 @@ services:
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
     depends_on:
       - proxy
-      - db
       - queue
     env_file:
       - .env
