@@ -113,24 +113,14 @@ def get_unique_data_subjects(data_subjects_query: np.ndarray) -> np.ndarray:
 
 
 def map_dsa_to_rdp_constants(
-    unique_data_subjects: np.ndarray,
+    data_subject_rdp_constants,
     rdp_constants: Dict[str, np.ndarray],
-    query_constants: np.ndarray,
 ) -> Dict[str, np.ndarray]:
     """Convert data subject array to data subject index array."""
-    # unique_data_subjects = get_unique_data_subjects(data_subject_array)
     # TODO 0.7 fix this
-    for data_subject_name in unique_data_subjects:
-        # Create a mask where the current data subject is present
-
-        map_function = np.vectorize(lambda x: data_subject_name in x)
-        ds_mask = map_function(data_subject_array)
-        # TODO np.isin does not work on custom Data Subject Array's
-        # ds_mask = np.isin(data_subject_array, data_subject)
-
-        ds_constant_mask = np.array(max(ds_mask * query_constants), copy=False)
+    for data_subject_name, rdp_constant in data_subject_rdp_constants.items():
         rdp_constants[data_subject_name] = (
-            rdp_constants.get(data_subject_name, 0) + ds_constant_mask
+            rdp_constants.get(data_subject_name, 0) + rdp_constant
         )
 
     return rdp_constants
@@ -341,12 +331,11 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         return results.x, results.fun
 
     def update_rdp_constants(
-        self, query_constants: jnp.DeviceArray, entity_ids_query: jnp.DeviceArray
+        self, data_subject_rdp_constants
     ) -> None:
         self._rdp_constants = map_dsa_to_rdp_constants(
-            query_constants=query_constants,
+            data_subject_rdp_constants=data_subject_rdp_constants,
             rdp_constants=self._rdp_constants,
-            unique_data_subjects=entity_ids_query,
         )
         return None
 

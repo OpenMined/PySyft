@@ -37,19 +37,15 @@ if TYPE_CHECKING:
 @jax.jit
 def calculate_bounds_for_mechanism(
     value_array: jnp.ndarray,
-    min_val_array: jnp.ndarray,
-    max_val_array: jnp.ndarray,
-    sigma: float,
+    # min_val_array: jnp.ndarray,
+    # max_val_array: jnp.ndarray,
 ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.array, jnp.array]:
-    ones_like = jnp.ones_like(value_array)
-    one_dim = jnp.reshape(ones_like, -1)
+    # worst_case_l2_norm = jnp.sqrt(
+    #     jnp.sum(jnp.square(max_val_array - min_val_array))
+    # ) 
 
-    worst_case_l2_norm = jnp.sqrt(
-        jnp.sum(jnp.square(max_val_array - min_val_array))
-    )  # * one_dim
-
-    l2_norm = jnp.sqrt(jnp.sum(jnp.square(value_array)))  # * one_dim
-    return l2_norm, worst_case_l2_norm  # , one_dim * sigma, one_dim
+    l2_norm = jnp.sqrt(jnp.sum(jnp.square(value_array))) 
+    return l2_norm#, worst_case_l2_norm
 
 
 def publish(
@@ -68,14 +64,11 @@ def publish(
         
     privacy_budget = get_budget_for_user(verify_key=ledger.user_key)
 
-    tensor, epsilon_spend, rdp_constants, phi_tensors = compute_epsilon(
+    original_output, epsilon_spend, rdp_constants = compute_epsilon(
         tensor, privacy_budget, is_linear, sigma, private, ledger
     )
     
     # TODO 0.7: add NaNs checks
-
-    original_output = tensor.child
-
     # The user spends their privacy budget before getting the result
     attempts = 0
     while attempts < 5:
@@ -101,10 +94,15 @@ def publish(
     # TODO(0.7): review the ledger code for 0.7
     # The RDP constants are adjusted to account for the amount of exposure every
     # data subject's data has had.
-    input_entities = [phi.data_subject for phi in phi_tensors]
-    print(input_entities)
+    data_subject_rdp_constants = {}
+    for tensor_id in rdp_constants:
+        data_subject = tensor.sources[tensor_id].data_subject.to_string()
+        data_subject_rdp_constants[data_subject] = max(
+            data_subject_rdp_constants.get(data_subject, np.inf), rdp_constants[tensor_id]
+        )
+    
     ledger.update_rdp_constants(
-        query_constants=rdp_constants, entity_ids_query=input_entities
+        data_subject_rdp_constants=data_subject_rdp_constants
     )
     ledger._write_ledger()
 
@@ -195,77 +193,43 @@ def compute_epsilon(tensor, privacy_budget, is_linear, sigma, private, ledger):
     tensor_copy = deepcopy(tensor)
 
     # traverse the computation tree to get the phi_tensors
-    phi_tensors = tensor_copy.sources.values()
+    phi_tensors = tensor_copy.sources
     
     # For each PhiTensor we either need the lipschitz bound or we can use 
     # one to keep the same formula for the linear queries 
-    # TODO(0.7): replace this with a list with a different lipschitz for each PhiTensor
-    lipschitz_bound = 1 if is_linear else tensor.lipschitz_bound  # this probably breaks
-
-    # Compute the norms and bounds norms for each phi tensor
-    phi_tensors_params = [
-        calculate_bounds_for_mechanism(
-            tensor.child, tensor.min_vals.to_numpy(), tensor.max_vals.to_numpy(), sigma
-        )
-        for tensor in phi_tensors
-    ]
-
-    # with the norms for earlier we can create RDPparams to compute the constant
-    # TODO(0.8): maybe we can remove this step as we only need the norms
-    rdp_params = [
-        RDPParams(
-            sigmas=sigma,
-            l2_norms=phi_tensor_param[0],
-            l2_norm_bounds=phi_tensor_param[1],
-            Ls=lipschitz_bound,
-            # coeffs=phi_tensor_param[3]
-        )
-        for phi_tensor_param in phi_tensors_params
-    ]
-
-    print("RPD PARAMS:", rdp_params)
+    lipschitz_bound = 1 if is_linear else tensor.lipschitz_bound 
 
     # compute the rdp constant for each phi tensor
-    rdp_constants = [
-        compute_rdp_constant(rdp_params=param, private=private) for param in rdp_params
-    ]
-
-    print("RDP constants:", rdp_constants)
+    rdp_constants = {} 
+    for phi_tensor_id in phi_tensors: 
+        # TODO 0.8: figure a way to iterate over data_subjects and group phi_tensors when computing
+        # the Lipschitz bound
+        # TODO 0.8 optimize the computation of l2_norm_bounds
+        l2_norms = calculate_bounds_for_mechanism(tensor.child)#, tensor.min_vals.to_numpy(), tensor.max_vals.to_numpy())
+        param = RDPParams(
+            sigmas=sigma,
+            l2_norms=l2_norms,
+            l2_norm_bounds=0,
+            Ls=lipschitz_bound 
+        )
+        rdp_constants[phi_tensor_id] = compute_rdp_constant(rdp_params=param, private=private)
 
     # get epsilon for each tensor based on the rdp constant
-    epsilons = [
-        ledger._get_epsilon_spend(rdp_constant) for rdp_constant in rdp_constants
-    ]
+    new_state = {}
+    epsilons = {phi_tensor_id: ledger._get_epsilon_spend(rdp_constants[phi_tensor_id]) for phi_tensor_id in phi_tensors}
 
-    print("Epsilons:", epsilons)
-
-    # compute a mask over the epsilones to see which PhiTensor can we afford
-    filtered_tensor_mask = [esp > privacy_budget for esp in epsilons]
-
-    print("Filtered Mask:", filtered_tensor_mask)
-
-    # compute the maximum possible budget spent
-    epsilon_spend = max(
-        [epsilons[i] * (not filtered_tensor_mask[i]) for i in range(len(epsilons))]
-    )
-
-    print("Max epsilon:", epsilon_spend)
-
-    # filter the PhiTensor based on the mask computed earlier
-    # TODO(0.8): this maybe can be improved for jax
-    # TODO(0.8): replace the zeroing with operation specific values
-    for i in range(len(phi_tensors)):
-        if filtered_tensor_mask[i]:
-            phi_tensors[i].inplace_filtered()
-
+    filtered = {eps: epsilons[eps] <= privacy_budget for eps in epsilons}
+    epsilon_spend = max([epsilons[eps_id] * filtered[eps_id] for eps_id in epsilons])
+    print(epsilons.values())
+    new_state = {phi_tensor_id: phi_tensor if filtered[phi_tensor_id] else jnp.zeros_like(phi_tensors[phi_tensor_id].child) for phi_tensor_id, phi_tensor in phi_tensors.items()}    
+    
     # compute the new output based on the filtered values
-    # print("OLD TENSOR:", tensor.child)
-    if np.any(filtered_tensor_mask):
-        print("OLD TENSOR:", tensor.child)
-        tensor = tensor.swap_state(tensor_copy.sources)
-        print("NEW TENSOR:", tensor.child)
+    if False in filtered.values():
+        original_output = tensor.reconstruct(new_state)
+    else:
+        original_output = tensor.child
 
-    return tensor, epsilon_spend, rdp_constants, phi_tensors
+    return original_output, epsilon_spend, rdp_constants
 
 
 def old_publish(

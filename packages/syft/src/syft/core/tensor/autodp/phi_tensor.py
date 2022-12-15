@@ -2635,12 +2635,7 @@ class PhiTensor(PassthroughTensor):
         sigma: float,
         private: bool,
     ) -> AcceptableSimpleType:
-        print("PUBLISHING TO GAMMA:")
-        print(self.child)
-
         gamma = self.gamma
-        # gamma.func = lambda x: x
-        # gamma.sources[gamma.id] = gamma
 
         res = gamma.publish(
             get_budget_for_user=get_budget_for_user,
@@ -2649,9 +2644,6 @@ class PhiTensor(PassthroughTensor):
             sigma=sigma,
             private=private,
         )
-
-        print("Final Values", res)
-
         return res
 
     @property

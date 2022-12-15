@@ -23,6 +23,7 @@ import numpy as np
 from numpy.random import randint
 from numpy.typing import ArrayLike
 from numpy.typing import NDArray
+from scipy import optimize
 from scipy.optimize import shgo
 
 # relative
@@ -2048,12 +2049,14 @@ class GammaTensor:
             func = lambda state: jnp.add(
                 self.reconstruct(state), other.reconstruct(state)
             )
+            is_linear = self.is_linear and other.is_linear
 
-        if is_acceptable_simple_type(other):
+        elif is_acceptable_simple_type(other):
             child = self.child + other
             func = lambda state: jnp.add(self.reconstruct(state), other)
+            is_linear = self.is_linear
 
-        return GammaTensor(child=child, func=func, sources=output_state, is_linear=self.is_linear)
+        return GammaTensor(child=child, func=func, sources=output_state, is_linear=is_linear)
 
     def __radd__(self, other: Any) -> GammaTensor:
         return self.__add__(other)
@@ -2133,11 +2136,13 @@ class GammaTensor:
             func = lambda state: jnp.subtract(
                 self.reconstruct(state), other.reconstruct(state)
             )
+            is_linear = self.is_linear and other.is_linear
         else:
             child = self.child - other
             func = lambda state: jnp.subtract(self.reconstruct(state), other)
+            is_linear = self.is_linear
 
-        return GammaTensor(child=child, func=func, sources=output_state, is_linear=self.is_linear)
+        return GammaTensor(child=child, func=func, sources=output_state, is_linear=is_linear)
 
     def __rsub__(self, other: Any) -> GammaTensor:
         return (self - other) * -1
@@ -3116,7 +3121,7 @@ class GammaTensor:
 
             return GammaTensor(
                 child=data,
-                func=lambda state: self.reconstruct(state).child[item],
+                func=lambda state: self.reconstruct(state)[item],
                 sources=output_state,
                 is_linear=self.is_linear,
             )

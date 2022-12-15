@@ -45,7 +45,6 @@ def dims() -> int:
     if dims < 2:
         dims += 3
     assert dims > 1, "Tensor not large enough for several tests."
-    return 2
     return dims
 
 
@@ -162,18 +161,22 @@ def test_lipschitz(
     ishan: DataSubject,
 ) -> None:
     """Test lipschitz bound for GammaTensor"""
-    ishan = np.broadcast_to(ishan, reference_data.shape)
     tensor1 = PT(
         child=reference_data,
         data_subject=ishan,
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
+    
+    gamma_tensor = tensor1.gamma + 2
+    assert gamma_tensor.is_linear
+    assert gamma_tensor.lipschitz_bound == 1
 
-    gamma_tensor = tensor1.gamma
-    print(gamma_tensor.lipschitz_bound)
-
-    assert False
+    gamma_tensor = tensor1[0].gamma * 2
+    print(gamma_tensor.child)
+    gamma_tensor = gamma_tensor
+    
+    assert gamma_tensor.lipschitz_bound == 2
 
 
 def test_zeros_like(
