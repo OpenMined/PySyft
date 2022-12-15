@@ -57,8 +57,11 @@ def create_deployment(client: OblvClient, domain_clients: list, deployment_name:
         region = input("Provide region from one of the following - {}".format(",".join(SUPPORTED_REGION_LIST)))
     try:
         user_public_key = get_oblv_public_key(key_name)
+        print("passed ",user_public_key)
     except FileNotFoundError:
+        print("creating new one")
         user_public_key = create_oblv_key_pair(key_name)
+        print(user_public_key)
     except Exception as e:
         raise Exception(e)
     build_args = {
@@ -87,7 +90,7 @@ def create_deployment(client: OblvClient, domain_clients: list, deployment_name:
     users = [{"user_name": profile.oblivious_login, "public key": user_public_key}]
     build_args["users"]["user"]=users
     depl_input = CreateDeploymentInput(REPO_OWNER, REPO_NAME, VCS,
-                                  REF, region, deployment_name, VISIBILITY, False, [], build_args)
+                                  REF, region, deployment_name, VISIBILITY, True, [], build_args)
     #By default the deployment is in PROD mode
     res = client.create_deployment(depl_input)
     result = DeploymentClient(deployment_id=res.deployment_id, oblv_client = client, domain_clients=domain_clients,user_key_name=key_name)
