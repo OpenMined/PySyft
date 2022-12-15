@@ -158,7 +158,6 @@ class Node(AbstractNode):
 
         # cache these variables on self
         self.TableBase = TableBase
-        self.db_engine = db_engine
         # self.db = db
         # self.session = db
 
@@ -174,7 +173,6 @@ class Node(AbstractNode):
         # self.store is the elastic memory.
 
         self.store = store_type(
-            db=self.db_engine,
             settings=settings,
             nosql_db_engine=self.nosql_db_engine,
             db_name=self.db_name,
