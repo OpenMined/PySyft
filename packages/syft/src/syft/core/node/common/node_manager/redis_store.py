@@ -10,8 +10,6 @@ from typing import cast
 from pydantic import BaseSettings
 from pymongo import MongoClient
 import redis
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm.session import Session
 
 # relative
 from .....lib.python.dict import Dict as SyftDict
@@ -22,20 +20,16 @@ from ....store import ObjectStore
 from ....store.proxy_dataset import ProxyDataset
 from ....store.store_interface import StoreKey
 from ....store.storeable_object import StorableObject
-from ..node_table.bin_obj_metadata import ObjectMetadata
-from .dataset_manager import NoSQLDatasetManager
 from .obj_metadata_manager import NoSQLObjectMetadataManager
 
 
 class RedisStore(ObjectStore):
     def __init__(
         self,
-        db: Session,
         nosql_db_engine: MongoClient,
         db_name: str,
         settings: Optional[BaseSettings] = None,
     ) -> None:
-        self.db = db
         if settings is None:
             raise Exception("RedisStore requires Settings")
         self.settings = settings
@@ -45,7 +39,6 @@ class RedisStore(ObjectStore):
                 port=self.settings.REDIS_PORT,
                 db=self.settings.REDIS_STORE_DB_ID,
             )
-            self.dataset_manager = NoSQLDatasetManager(nosql_db_engine, db_name)
             self.obj_metadata_manager = NoSQLObjectMetadataManager(
                 nosql_db_engine, db_name
             )
@@ -108,7 +101,6 @@ class RedisStore(ObjectStore):
 
     def get(self, key: StoreKey, proxy_only: bool = False) -> StorableObject:
         key_str, key_uid = self.key_to_str_and_uid(key=key)
-        local_session = sessionmaker(bind=self.db)()
 
         obj = self.redis.get(key_str)
         obj_metadata = self.obj_metadata_manager.first(obj=key_str)
@@ -142,11 +134,7 @@ class RedisStore(ObjectStore):
             ),
             # name=obj_metadata.name,
         )
-        local_session.close()
         return obj
-
-    def is_dataset(self, key: UID) -> bool:
-        return self.dataset_manager.contain(id=key)
 
     def __getitem__(self, key: StoreKey) -> StorableObject:
         raise Exception("obj = store[key] not allowed because additional args required")
@@ -193,26 +181,17 @@ class RedisStore(ObjectStore):
 
     def delete(self, key: UID) -> None:
         try:
-            local_session = sessionmaker(bind=self.db)()
-            metadata_to_delete = (
-                local_session.query(ObjectMetadata)
-                .filter_by(obj=str(key.value))
-                .first()
-            )
-
-            self.dataset_manager.delete_bin_obj(bin_obj_id=key)
+            # Yellow Team: fix this, update to use: obj_metadata_manager?
+            # self.dataset_manager.delete_bin_obj(bin_obj_id=key)
             # Check if the uploaded data is a proxy dataset
-            if metadata_to_delete and metadata_to_delete.is_proxy_dataset:
-                # Retrieve proxy dataset from store
-                obj = self.get(key=key, proxy_only=True)
-                proxy_dataset = obj.data
-                if proxy_dataset:
-                    proxy_dataset.delete_s3_data(settings=self.settings)
+            # if metadata_to_delete and metadata_to_delete.is_proxy_dataset:
+            #     # Retrieve proxy dataset from store
+            #     obj = self.get(key=key, proxy_only=True)
+            #     proxy_dataset = obj.data
+            #     if proxy_dataset:
+            #         proxy_dataset.delete_s3_data(settings=self.settings)
 
             self.redis.delete(str(key.value))
-            local_session.delete(metadata_to_delete)
-            local_session.commit()
-            local_session.close()
         except Exception as e:
             print(f"{type(self)} Exception in __delitem__ error {key}. {e}")
 

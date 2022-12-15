@@ -82,7 +82,6 @@ from .common.node_service.user_manager.user_manager_service import UserManagerSe
 from .common.node_service.vpn.vpn_service import VPNConnectService
 from .common.node_service.vpn.vpn_service import VPNJoinService
 from .common.node_service.vpn.vpn_service import VPNStatusService
-from .common.node_table.utils import create_memory_db_engine
 from .device import Device
 from .device import DeviceClient
 from .domain_client import DomainClient
@@ -114,9 +113,6 @@ class Domain(Node):
         settings: Optional[BaseSettings] = None,
         document_store: bool = False,
     ):
-
-        if db_engine is None:
-            db_engine, _ = create_memory_db_engine()
 
         super().__init__(
             name=name,

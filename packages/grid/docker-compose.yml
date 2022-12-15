@@ -83,27 +83,6 @@ services:
     ports:
       - "3000"
 
-  db:
-    restart: always
-    image: postgres:12
-    volumes:
-      - app-db-data:/var/lib/postgresql/data
-    environment:
-      - SERVICE_NAME=db
-      - RELEASE=${RELEASE:-production}
-    env_file:
-      - .env
-    command:
-      - postgres
-      - --max_connections=1000 # default 100
-      # - --shared_buffers=8GB # 32 MB
-      # - --temp_buffers=8GB # default 8 MB
-      # - --work_mem=8GB # default 4 MB
-      # - --effective_io_concurrency=8 # default 1
-      # - --block_size=16384 # default 8192
-      # - --max_files_per_process=1000 # default 1000
-      # - --segment_size=8GB # default 1GB # cant change
-
   redis:
     restart: always
     image: redis:${REDIS_VERSION?Variable not set}
@@ -242,7 +221,6 @@ services:
       - ./seaweedfs/s3config.json:/etc/s3config.json
       - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml
 
-
   mongo:
     image: mongo:latest
     restart: always
@@ -274,7 +252,6 @@ services:
       # - "9411:9411"
 
 volumes:
-  app-db-data:
   tailscale-data:
   headscale-data:
   app-redis-data:

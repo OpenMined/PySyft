@@ -6,36 +6,28 @@ from typing import Dict
 from typing import Iterable
 from typing import List
 from typing import Optional
-from typing import cast
 
 # third party
 from pydantic import BaseSettings
 from pymongo import MongoClient
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm.session import Session
 
 # relative
-from .....lib.python.dict import Dict as SyftDict
 from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serialize import _serialize as serialize
 from ....common.uid import UID
-from ....node.common.node_table.bin_obj_dataset import BinObjDataset
 from ....store import ObjectStore
 from ....store.proxy_dataset import ProxyDataset
 from ....store.store_interface import StoreKey
 from ....store.storeable_object import StorableObject
-from ..node_table.bin_obj_metadata import ObjectMetadata
 
 
 class DictStore(ObjectStore):
     def __init__(
         self,
-        db: Session,
         settings: BaseSettings,
         nosql_db_engine: MongoClient,
         db_name: str,
     ) -> None:
-        self.db = db
         self.settings = settings
         self.kv_store: Dict[UID, Any] = {}
 
@@ -95,7 +87,6 @@ class DictStore(ObjectStore):
     def get(self, key: StoreKey, proxy_only: bool = False) -> StorableObject:
         key_str, key_uid = self.key_to_str_and_uid(key=key)
         try:
-            local_session = sessionmaker(bind=self.db)()
             store_obj = self.kv_store[key_uid]
 
             # serialized contents
@@ -120,55 +111,16 @@ class DictStore(ObjectStore):
             if isinstance(obj, ProxyDataset):
                 obj = self.resolve_proxy_object(obj=obj)
 
-            obj_metadata = (
-                local_session.query(ObjectMetadata).filter_by(obj=key_str).first()
-            )
-
-            if obj is None or obj_metadata is None:
-                raise KeyError(f"Object not found! for UID: {key_str}")
-
-            obj = StorableObject(
-                id=key_uid,
-                data=obj.data,
-                description=obj_metadata.description,
-                tags=obj_metadata.tags,
-                read_permissions=dict(
-                    deserialize(
-                        bytes.fromhex(obj_metadata.read_permissions), from_bytes=True
-                    )
-                ),
-                search_permissions=dict(
-                    deserialize(
-                        bytes.fromhex(obj_metadata.search_permissions), from_bytes=True
-                    )
-                ),
-                write_permissions=dict(
-                    deserialize(
-                        bytes.fromhex(obj_metadata.write_permissions), from_bytes=True
-                    )
-                ),
-            )
-            local_session.close()
             return obj
         except Exception as e:
             print(f"Cant get object {str(key_str)}", e)
             raise KeyError(f"Object not found! for UID: {str(key_str)}")
 
-    def is_dataset(self, key: StoreKey) -> bool:
-        key_str, _ = self.key_to_str_and_uid(key=key)
-        local_session = sessionmaker(bind=self.db)()
-        is_dataset_obj = (
-            local_session.query(BinObjDataset).filter_by(obj=key_str).exists()
-        )
-        is_dataset_obj = local_session.query(is_dataset_obj).scalar()
-        local_session.close()
-        return is_dataset_obj
-
     def __setitem__(self, key: StoreKey, value: StorableObject) -> None:
         self.set(key=key, value=value)
 
     def set(self, key: StoreKey, value: StorableObject) -> None:
-        key_str, key_uid = self.key_to_str_and_uid(key=key)
+        _, key_uid = self.key_to_str_and_uid(key=key)
         try:
             store_obj = deepcopy(value)
             self.kv_store[key_uid] = store_obj
@@ -187,60 +139,15 @@ class DictStore(ObjectStore):
             else:
                 raise Exception(f"Failed to save object {type(value)}. {e}")
 
-        create_metadata = True
-        local_session = sessionmaker(bind=self.db)()
-        try:
-            # use existing metadata row to prevent more than 1
-            metadata_obj = (
-                local_session.query(ObjectMetadata).filter_by(obj=key_str).all()[-1]
-            )
-            create_metadata = False
-        except Exception:
-            pass
-            # no metadata row exists lets insert one
-            metadata_obj = ObjectMetadata()
-
-        metadata_obj.obj = key_str
-        metadata_obj.tags = value.tags
-        metadata_obj.description = value.description
-        metadata_obj.read_permissions = cast(
-            bytes,
-            serialize(SyftDict(value.read_permissions), to_bytes=True),
-        ).hex()
-        metadata_obj.search_permissions = cast(
-            bytes,
-            serialize(SyftDict(value.search_permissions), to_bytes=True),
-        ).hex()
-        metadata_obj.write_permissions = cast(
-            bytes,
-            serialize(SyftDict(value.write_permissions), to_bytes=True),
-        ).hex()
-
-        if create_metadata:
-            local_session.add(metadata_obj)
-        local_session.commit()
-        local_session.close()
-
     def delete(self, key: UID) -> None:
         key_str, key_uid = self.key_to_str_and_uid(key=key)
         try:
             del self.kv_store[key_uid]
-            local_session = sessionmaker(bind=self.db)()
-            metadata_to_delete = (
-                local_session.query(ObjectMetadata).filter_by(obj=key_str).first()
-            )
-            local_session.delete(metadata_to_delete)
-            local_session.commit()
-            local_session.close()
         except Exception as e:
             print(f"{type(self)} Exception in __delitem__ error {key_str}. {e}")
 
     def clear(self) -> None:
         self.kv_store = {}
-        local_session = sessionmaker(bind=self.db)()
-        local_session.query(ObjectMetadata).delete()
-        local_session.commit()
-        local_session.close()
 
     def __repr__(self) -> str:
         return f"{type(self)}"

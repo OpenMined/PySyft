@@ -69,8 +69,9 @@ class ObjectDeleteMessage(SyftMessage, DomainMessageRegistry, VMMessageRegistry)
                         f"User does not have permission to delete the object at id: {id_at_location}"
                     )
 
-            if not node.store.is_dataset(key=id_at_location):  # type: ignore
-                node.store.delete(key=id_at_location)
+            # TODO: Change this to make dataset assets read only a different way
+            # if not node.store.is_dataset(key=id_at_location):  # type: ignore
+            node.store.delete(key=id_at_location)
         except Exception as e:
             log = f"> ObjectDeleteMessage delete exception {self.payload.id_at_location} {e}"
             critical(log)

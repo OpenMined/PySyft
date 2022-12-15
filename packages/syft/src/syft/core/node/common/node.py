@@ -15,8 +15,6 @@ from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from pydantic import BaseSettings
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base
 
 # relative
 from .... import __version__
@@ -78,7 +76,6 @@ from .node_service.resolve_pointer_type.resolve_pointer_type_service import (
 )
 from .node_service.testing_services.repr_service import ReprService
 from .node_service.vpn.vpn_messages import VPNRegisterMessage
-from .node_table import Base
 from .node_table.node import NoSQLNode
 
 # this generic type for Client bound by Client
@@ -134,17 +131,6 @@ class Node(AbstractNode):
         )
 
         self.settings = settings
-
-        # TableBase is the base class from which all ORM classes must inherit
-        # If one isn't provided then we can simply make one.
-        if TableBase is None:
-            TableBase = declarative_base()
-
-        # If not provided a session connecting us to the database, let's just
-        # initialize a database in memory
-        if db_engine is None:
-            db_engine = create_engine("sqlite://", echo=False)
-            Base.metadata.create_all(db_engine)  # type: ignore
 
         if self.settings and self.settings.MONGO_USERNAME:
             # third party

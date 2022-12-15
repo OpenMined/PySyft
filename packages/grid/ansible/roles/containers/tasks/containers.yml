@@ -1,12 +1,4 @@
 ---
-- name: Fix Bad DB
-  shell: ". ../packages/grid/.env && ./fix_db.sh $POSTGRES_PASSWORD d4867f3a4c0a"
-  args:
-    chdir: "{{ syft_dir }}/scripts"
-  become_user: "{{ om_user }}"
-  ignore_errors: yes
-  when: docker_volume_destroy is not defined and install == "true"
-
 - name: Build Docker Images
   shell: "docker compose build"
   args:
