@@ -61,9 +61,7 @@ class ObjectDeleteMessage(SyftMessage, DomainMessageRegistry, VMMessageRegistry)
             old_obj = node.store.get_or_none(key=id_at_location, proxy_only=True)
             if old_obj:
                 # Check if users' verify key is a subset of write_permissions set
-                has_write_permissions = (
-                    old_obj.write_permissions.get(verify_key, None) is not None
-                )
+                has_write_permissions = verify_key in old_obj.write_permissions
                 if not has_write_permissions:
                     raise Exception(
                         f"User does not have permission to delete the object at id: {id_at_location}"
