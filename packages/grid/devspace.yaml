@@ -93,6 +93,14 @@ vars:
     value: "60"
   - name: TEST_MODE
     value: "0"
+  - name: MONGO_USERNAME
+    value: root
+  - name: MONGO_PORT
+    value: "27017"
+  - name: MONGO_HOST
+    value: mongo
+  - name: MONGO_PASSWORD
+    value: example
 
 images:
   backend:
