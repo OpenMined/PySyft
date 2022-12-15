@@ -425,7 +425,7 @@ class PhiTensorAncestor(TensorChainManager):
         return self.annotate_with_dp_metadata(
             lower_bound=min_val,
             upper_bound=max_val,
-            data_subjects=data_subjects,
+            data_subject=data_subjects,
             skip_blocking_checks=skip_blocking_checks,
         )
 
@@ -457,7 +457,7 @@ class PhiTensorAncestor(TensorChainManager):
         return self.annotate_with_dp_metadata(
             lower_bound=min_val,
             upper_bound=max_val,
-            data_subjects=data_subjects,
+            data_subject=data_subjects,
             skip_blocking_checks=skip_blocking_checks,
         )
 

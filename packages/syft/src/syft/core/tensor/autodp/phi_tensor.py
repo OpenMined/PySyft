@@ -22,6 +22,7 @@ from scipy.ndimage.interpolation import rotate
 from .... import lib
 from ....ast.klass import pointerize_args_and_kwargs
 from ....core.adp.data_subject_ledger import DataSubjectLedger
+from ....core.adp.data_subject_list import DataSubject
 from ....core.adp.data_subject_list import DataSubjectArray
 from ....core.adp.data_subject_list import dslarraytonumpyutf8
 from ....core.adp.data_subject_list import numpyutf8todslarray
@@ -409,7 +410,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
     @property
     def gamma(self) -> TensorWrappedGammaTensorPointer:
         return TensorWrappedGammaTensorPointer(
-            data_subject=self.data_subject,
+            data_subjects=self.data_subject,
             client=self.client,
             id_at_location=self.id_at_location,
             object_type=self.object_type,
@@ -1818,19 +1819,23 @@ def dispatch_tensor(
     max_func: Callable,
     original_func: Callable,
 ) -> Union[PhiTensor, GammaTensor]:
-    def cast_to_gamma(tensor):
+    def cast_to_gamma(tensor: Union[PhiTensor, GammaTensor]) -> GammaTensor:
         if isinstance(tensor, PhiTensor):
             return tensor.gamma
         return tensor
 
-    def check_phi_or_constant(tensor):
+    def check_phi_or_constant(tensor: Union[PhiTensor, GammaTensor]) -> bool:
         return is_acceptable_simple_type(tensor) or isinstance(tensor, PhiTensor)
 
-    def extract_attribute_or_self(tensor, field):
+    def extract_attribute_or_self(
+        tensor: Union[PhiTensor, GammaTensor], field: str
+    ) -> Union[PhiTensor, GammaTensor, DataSubject]:
         if hasattr(tensor, field):
             return getattr(tensor, field)
         if field != "data_subject":
             return tensor
+        else:
+            raise NotImplementedError
 
     childs = [extract_attribute_or_self(tensor, "child") for tensor in tensors]
 
@@ -1854,7 +1859,7 @@ def dispatch_tensor(
             child=child_func(childs),
             min_vals=min_func(min_values),
             max_vals=max_func(max_values),
-            data_subject=tensors[0].data_subject,
+            data_subject=tensors[0].data_subject,  # type: ignore
         )
 
     return original_func(*map(cast_to_gamma, tensors))
@@ -1864,12 +1869,7 @@ def dispatch_tensor(
 class PhiTensor(PassthroughTensor):
     PointerClassOverride = TensorWrappedPhiTensorPointer
     # __attr_allowlist__ = ["child", "min_vals", "max_vals", "data_subject"]
-    __slots__ = (
-        "child",
-        "min_vals",
-        "max_vals",
-        "data_subject",
-    )
+    __slots__ = ("child", "min_vals", "max_vals", "data_subject", "id")
 
     def __init__(
         self,
@@ -1889,9 +1889,9 @@ class PhiTensor(PassthroughTensor):
         self.max_vals = max_vals
 
         self.data_subject = data_subject
-        self.id = UID()
+        self.id: UID = UID()
 
-    def reconstruct(self, state):
+    def reconstruct(self, state: Dict) -> PhiTensor:
         return state[self.id]
 
     @property
