@@ -3,6 +3,5 @@ echo "Domain Name: ${DOMAIN_NAME}"
 echo "Nuking  Domain ..  >:)";
 hagrid land all;
 echo "Launching Domain .. hahaha >:)";
-hagrid launch ${DOMAIN_NAME} to docker:80  --tail=false --dev
+hagrid launch ${DOMAIN_NAME} to docker:80 --dev
 echo "finished"
-
