@@ -210,3 +210,26 @@ def test_gamma(tensor: Tensor, low: int, high: int) -> None:
     assert isinstance(private.child.data_subjects, np.ndarray)
     assert private.child.data_subjects.shape == private.child.shape
     assert len(private.child.data_subjects.sum()) == 2
+
+
+def test_repeat_list_arg(tensor: Tensor, low: int, high: int) -> None:
+    # https://github.com/OpenMined/PySyft/issues/6940
+    original = tensor.annotate_with_dp_metadata(
+        lower_bound=low,
+        upper_bound=high,
+        data_subjects=np.random.choice(["Optimus Prime"], (5, 5)),
+    )
+
+    private = original.repeat([1] * 5, axis=1)
+
+    assert private.shape == original.shape
+
+    assert isinstance(private, Tensor)
+    assert isinstance(private.child, PT)
+    assert isinstance(private.child.min_vals, lra)
+    assert isinstance(private.child.max_vals, lra)
+    assert private.child.min_vals.shape == private.child.shape
+    assert private.child.max_vals.shape == private.child.shape
+    assert isinstance(private.child.data_subjects, np.ndarray)
+    assert private.child.data_subjects.shape == private.child.shape
+    assert len(private.child.data_subjects.sum()) == 1

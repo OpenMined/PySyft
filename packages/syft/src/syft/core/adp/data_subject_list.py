@@ -494,6 +494,12 @@ class DataSubjectArray:
         else:
             return DataSubjectArray(self.data_subjects)
 
+    def __rmul__(self, other: Union[DataSubjectArray, Any]) -> DataSubjectArray:
+        if isinstance(other, DataSubjectArray):
+            return DataSubjectArray(self.data_subjects.union(other.data_subjects))
+        else:
+            return DataSubjectArray(self.data_subjects)
+
     def __ge__(self, other: Union[DataSubjectArray, Any]) -> DataSubjectArray:
         if isinstance(other, DataSubjectArray):
             return DataSubjectArray(self.data_subjects.union(other.data_subjects))
@@ -629,16 +635,6 @@ class DataSubjectArray:
 
     def rint(self, *args: Any, **kwargs: Any) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)
-
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs) -> ArrayLike:  # type: ignore
-        method_name = ufunc.__name__
-        method = getattr(self, method_name, None)
-        if method is not None:
-            return method(*inputs, **kwargs)
-        else:
-            raise NotImplementedError(
-                f"Method: {method_name} not implemented in DataSubjectArray"
-            )
 
     @staticmethod
     def from_objs(input_subjects: Union[np.ndarray, list]) -> ArrayLike:

@@ -102,6 +102,7 @@ class TensorPointer(Pointer):
         *args: Any,
         **kwargs: Any,
     ) -> Any:
+
         # we want to get the return type which matches the attr_path_and_name
         # so we ask lib_ast for the return type name that matches out
         # attr_path_and_name and then use that to get the actual pointer klass
@@ -184,16 +185,13 @@ class TensorPointer(Pointer):
                 op_str, self.public_shape, other_shape
             )
 
-        if self.public_dtype is not None and other_dtype is not None:
-            if self.public_dtype != other_dtype:
-                raise ValueError(
-                    f"Type for self and other do not match ({self.public_dtype} vs {other_dtype})"
-                )
-            result_public_dtype = self.public_dtype
+        # calculate the dtype of the result based on the op_str
+        result_public_dtype = utils.get_dtype(
+            op_str, self.public_shape, other_shape, self.public_dtype, other_dtype
+        )
 
         result.public_shape = result_public_shape
         result.public_dtype = result_public_dtype
-
         return result
 
     @staticmethod
@@ -218,14 +216,25 @@ class TensorPointer(Pointer):
                 secret=other, shape=other.public_shape, parties=parties
             )
             func = getattr(self_mpc, op_str)
-            return func(other_mpc)
+            result = func(other_mpc)
+
+            # We check to avoid calling id_at_location for MPCTensors
+            # since they don't have this attribute.
+            if hasattr(result, "id_at_location"):
+                other.client.processing_pointers[result.id_at_location] = True
         elif isinstance(other, MPCTensor):
             # "self" should be secretly shared
             other_mpc, self_mpc = MPCTensor.sanity_checks(other, self)
             func = getattr(self_mpc, op_str)
-            return func(other_mpc)
+            result = func(other_mpc)
+        else:
+            result = self._apply_tensor_op(other=other, op_str=op_str, **kwargs)
 
-        return self._apply_tensor_op(other=other, op_str=op_str, **kwargs)
+        # We check to avoid calling id_at_location for MPCTensors
+        # since they don't have this attribute.
+        if hasattr(result, "id_at_location"):
+            self.client.processing_pointers[result.id_at_location] = True
+        return result
 
     def __add__(
         self,
