@@ -53,6 +53,7 @@ from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
 from ...node.abstract.node import AbstractNodeClient
 from ...node.common.action.run_class_method_action import RunClassMethodAction
+from ...node.enums import PointerStatus
 from ...pointer.pointer import Pointer
 from ..config import DEFAULT_INT_NUMPY_TYPE
 from ..fixed_precision_tensor import FixedPrecisionTensor
@@ -79,7 +80,7 @@ INPLACE_OPS = {"resize", "sort"}
 
 
 @serializable(recursive_serde=True)
-class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
+class TensorWrappedGammaTensorPointer(Pointer):
     __name__ = "TensorWrappedGammaTensorPointer"
     __module__ = "syft.core.tensor.autodp.gamma_tensor"
     __attr_allowlist__ = [
@@ -105,6 +106,8 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
     }
     _exhausted = False
     is_enum = False
+    PUBLISH_POINTER_TYPE = "numpy.ndarray"
+    __array_ufunc__ = None
 
     def __init__(
         self,
@@ -146,10 +149,17 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         ).astype(public_dtype_func())
 
     def __repr__(self) -> str:
-        return (
-            self.synthetic.__repr__()
-            + "\n\n (The data printed above is synthetic - it's an imitation of the real data.)"
-        )
+        repr_string = f"PointerId: {self.id_at_location.no_dash}"
+        if hasattr(self.client, "obj_exists"):
+            _ptr_status = (
+                PointerStatus.READY.value
+                if self.exists
+                else PointerStatus.PROCESSING.value
+            )
+            repr_string += f"\nStatus: {_ptr_status}"
+        repr_string += f"\nRepresentation: {self.synthetic.__repr__()}"
+        repr_string += "\n\n(The data printed above is synthetic - it's an imitation of the real data.)"
+        return repr_string
 
     def share(self, *parties: Tuple[AbstractNodeClient, ...]) -> MPCTensor:
         all_parties = list(parties) + [self.client]
@@ -252,10 +262,16 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
                 raise ValueError(
                     f"Dtype for self: {self.public_dtype} and other :{other_dtype} should not be None"
                 )
-        result_public_dtype = self.public_dtype
+
+        # calculate the dtype of the result based on the op_str
+        result_public_dtype = utils.get_dtype(
+            op_str, self.public_shape, other_shape, self.public_dtype, other_dtype
+        )
 
         result.public_shape = result_public_shape
         result.public_dtype = result_public_dtype
+
+        result.client.processing_pointers[result.id_at_location] = True
 
         return result
 
@@ -369,6 +385,8 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
                 data_subjects = getattr(self.data_subjects, op_str)(*args, **kwargs)
             if op_str in INPLACE_OPS:
                 data_subjects = self.data_subjects
+        elif op_str in ("ones_like", "zeros_like"):
+            data_subjects = self.data_subjects
         else:
             raise ValueError(f"Invalid Numpy Operation: {op_str} for DSA")
 
@@ -461,6 +479,22 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         """
         return TensorWrappedGammaTensorPointer._apply_op(self, other, "__add__")
 
+    def __radd__(
+        self,
+        other: Union[
+            TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the "radd" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__radd__")
+
     def __sub__(
         self,
         other: Union[
@@ -477,6 +511,22 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         """
         return TensorWrappedGammaTensorPointer._apply_op(self, other, "__sub__")
 
+    def __rsub__(
+        self,
+        other: Union[
+            TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the "rsub" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__rsub__")
+
     def __mul__(
         self,
         other: Union[
@@ -492,6 +542,22 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
         return TensorWrappedGammaTensorPointer._apply_op(self, other, "__mul__")
+
+    def __rmul__(
+        self,
+        other: Union[
+            TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the "rmul" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__rmul__")
 
     def __matmul__(
         self,
@@ -673,6 +739,22 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         """
         return TensorWrappedGammaTensorPointer._apply_op(self, other, "__truediv__")
 
+    def __rtruediv__(
+        self,
+        other: Union[
+            TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the "rtruediv" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__rtruediv__")
+
     def __mod__(
         self,
         other: Union[
@@ -728,6 +810,22 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
         return TensorWrappedGammaTensorPointer._apply_op(self, other, "__floordiv__")
+
+    def __rfloordiv__(
+        self,
+        other: Union[
+            TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the "rfloordiv" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__rfloordiv__")
 
     def __divmod__(
         self,
@@ -1374,12 +1472,27 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         """
         return self._apply_self_tensor_op("__getitem__", key)
 
+    def zeros_like(
+        self,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the "zeros_like" operation on "self"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return self._apply_self_tensor_op("zeros_like", *args, **kwargs)
+
     def ones_like(
         self,
         *args: Any,
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-        """Apply the "ones like" operation on self"
+        """Apply the "ones_like" operation on "self"
 
         Args:
             y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -1757,6 +1870,15 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         )
 
 
+@implements(TensorWrappedGammaTensorPointer, np.zeros_like)
+def zeros_like(
+    tensor: TensorWrappedGammaTensorPointer,
+    *args: Any,
+    **kwargs: Any,
+) -> TensorWrappedGammaTensorPointer:
+    return tensor.zeros_like(*args, **kwargs)
+
+
 @implements(TensorWrappedGammaTensorPointer, np.ones_like)
 def ones_like(
     tensor: TensorWrappedGammaTensorPointer,
@@ -1878,6 +2000,7 @@ class GammaTensor:
     """
 
     PointerClassOverride = TensorWrappedGammaTensorPointer
+    __array_ufunc__ = None
 
     child: jnp.array
     data_subjects: np.ndarray
@@ -2018,6 +2141,9 @@ class GammaTensor:
             sources=output_state,
         )
 
+    def __radd__(self, other: Any) -> GammaTensor:
+        return self.__add__(other)
+
     def __mod__(self, other: Any) -> GammaTensor:
         # relative
         from .phi_tensor import PhiTensor
@@ -2073,10 +2199,10 @@ class GammaTensor:
 
         if is_acceptable_simple_type(other):
             return GammaTensor(
-                child=(1 / self.child) * other,
-                min_vals=(1 / self.min_vals) * other,
-                max_vals=(1 / self.max_vals) * other,
-                data_subjects=(1 / self.data_subjects) * other,
+                child=(other / self.child),
+                min_vals=(other / self.min_vals),
+                max_vals=(other / self.max_vals),
+                data_subjects=self.data_subjects,
             )
         else:
             print("Type is unsupported:" + str(type(other)))
@@ -2124,6 +2250,9 @@ class GammaTensor:
             sources=output_state,
         )
 
+    def __rsub__(self, other: Any) -> GammaTensor:
+        return (self - other) * -1
+
     def __mul__(self, other: Any) -> GammaTensor:
         # relative
         from .phi_tensor import PhiTensor
@@ -2170,6 +2299,9 @@ class GammaTensor:
             func_str=GAMMA_TENSOR_OP.MULTIPLY.value,
             sources=output_state,
         )
+
+    def __rmul__(self, other: Any) -> GammaTensor:
+        return self.__mul__(other)
 
     def __truediv__(self, other: Any) -> GammaTensor:
         # relative
@@ -3953,6 +4085,19 @@ class GammaTensor:
             raise NotImplementedError(
                 f"floordiv not supported between GammaTensor & {type(other)}"
             )
+
+    def __rfloordiv__(self, other: SupportedChainType) -> GammaTensor:
+
+        if is_acceptable_simple_type(other):
+            return GammaTensor(
+                child=(other // self.child),
+                min_vals=(other // self.min_vals),
+                max_vals=(other // self.max_vals),
+                data_subjects=self.data_subjects,
+            )
+        else:
+            print("Type is unsupported:" + str(type(other)))
+            raise NotImplementedError
 
     def trace(self, offset: int = 0, axis1: int = 0, axis2: int = 1) -> GammaTensor:
         """

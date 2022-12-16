@@ -74,7 +74,7 @@ class SyftMessage(AbstractMessage):
         super().__init__(id=msg_id)
         self.post_init()
 
-    def sign(self, signing_key: SigningKey) -> SignedMessageT:
+    def sign(self, signing_key: SigningKey) -> SignedMessageT:  # type: ignore[type-var]
         """
         It's important for all messages to be able to prove who they were sent from.
         This method endows every message with the ability for someone to "sign" (with a hash of the message)
@@ -177,7 +177,7 @@ class SignedMessage(SyftMessage):
         )
 
     @staticmethod
-    def _proto2object(proto: SignedMessage_PB) -> SignedMessageT:
+    def _proto2object(proto: SignedMessage_PB) -> SignedMessageT:  # type: ignore[type-var]
         # TODO: horrible temp hack, need to rethink address on SignedMessage
         sub_message = validate_type(
             _deserialize(blob=proto.message, from_bytes=True), SyftMessage

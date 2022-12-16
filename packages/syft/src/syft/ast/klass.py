@@ -112,11 +112,7 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
     # relative
     from ..core.node.common.action import smpc_action_functions
 
-    def run_class_smpc_method(
-        __self: Any,
-        *args: Any,
-        **kwargs: Any,
-    ) -> object:
+    def run_class_smpc_method(__self: Any, *args: Any, **kwargs: Any) -> object:
         """Run remote class method on a SharePointer and get pointer to returned object.
 
         Args:
@@ -149,10 +145,9 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
         result.id_at_location = id_at_location
 
         # first downcast anything primitive which is not already PyPrimitive
-        (
-            downcast_args,
-            downcast_kwargs,
-        ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+        (downcast_args, downcast_kwargs) = lib.python.util.downcast_args_and_kwargs(
+            args=args, kwargs=kwargs
+        )
 
         # then we convert anything which isnt a pointer into a pointer
         pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
@@ -183,11 +178,7 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
 
         return result
 
-    def run_class_method(
-        __self: Any,
-        *args: Any,
-        **kwargs: Any,
-    ) -> object:
+    def run_class_method(__self: Any, *args: Any, **kwargs: Any) -> object:
         """Run remote class method and get pointer to returned object.
 
         Args:
@@ -212,10 +203,9 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
         result_id_at_location = getattr(result, "id_at_location", None)
         if result_id_at_location is not None:
             # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+            (downcast_args, downcast_kwargs) = lib.python.util.downcast_args_and_kwargs(
+                args=args, kwargs=kwargs
+            )
 
             # then we convert anything which isnt a pointer into a pointer
             pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
@@ -242,7 +232,7 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
             args=args,
             kwargs=kwargs,
         )
-
+        __self.client.processing_pointers[result_id_at_location] = True
         return result
 
     method_name = attr_path_and_name.rsplit(".", 1)[-1]
@@ -291,10 +281,9 @@ def generate_class_property_function(
         result_id_at_location = getattr(result, "id_at_location", None)
         if result_id_at_location is not None:
             # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+            (downcast_args, downcast_kwargs) = lib.python.util.downcast_args_and_kwargs(
+                args=args, kwargs=kwargs
+            )
 
             # then we convert anything which isnt a pointer into a pointer
             pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
@@ -335,11 +324,7 @@ def _get_request_config(self: Any) -> Dict[str, Any]:
     Returns:
         Config for request.
     """
-    return {
-        "request_block": True,
-        "timeout_secs": 25,
-        "delete_obj": False,
-    }
+    return {"request_block": True, "timeout_secs": 25, "delete_obj": False}
 
 
 def _set_request_config(self: Any, request_config: Dict[str, Any]) -> None:
@@ -703,10 +688,7 @@ class Class(Callable):
             if searchable is not None:
                 msg = "`searchable` is deprecated please use `pointable` in future"
                 warning(msg, print=True)
-                warnings.warn(
-                    msg,
-                    DeprecationWarning,
-                )
+                warnings.warn(msg, DeprecationWarning)
                 pointable = searchable
 
             chunk_size = chunk_size if chunk_size is not None else 536870912  # 500 MB
@@ -796,7 +778,13 @@ class Class(Callable):
                 # Step 7: send message
                 client.send_immediate_msg_without_reply(msg=obj_msg)
 
-                # Step 8: return pointer
+                # Setp 8: add it in the lit of processing pointers
+                # Add in client side a list of pointers that
+                # might be in the middle of some computation making it not
+                # available immediately.
+                client.processing_pointers[id_at_location] = True
+
+                # Step 9: return pointer
                 return ptr
             else:
                 return ptr, obj_msg

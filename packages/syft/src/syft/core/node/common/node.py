@@ -278,6 +278,7 @@ class Node(AbstractNode):
             Node.set_keys(node=self, signing_key=signing_key)
 
         # PERMISSION REGISTRY:
+        self.guest_signing_key_registry = set()
         self.guest_verify_key_registry = set()
         self.admin_verify_key_registry = set()
         self.cpl_ofcr_verify_key_registry = set()
@@ -333,7 +334,7 @@ class Node(AbstractNode):
         self,
         routes: Optional[List[Route]] = None,
         signing_key: Optional[SigningKey] = None,
-    ) -> ClientT:
+    ) -> Client:
         if not routes:
             conn_client = create_virtual_connection(node=self)
             solo = SoloRoute(destination=self.target_id, connection=conn_client)
@@ -356,7 +357,7 @@ class Node(AbstractNode):
             verify_key=None,  # DO NOT PASS IN A VERIFY KEY!!! The client generates one.
         )
 
-    def get_root_client(self, routes: Optional[List[Route]] = None) -> ClientT:
+    def get_root_client(self, routes: Optional[List[Route]] = None) -> Client:
         client: ClientT = self.get_client(routes=routes)
         client.verify_key = self.verify_key
         client.signing_key = self.signing_key

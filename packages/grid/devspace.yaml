@@ -19,6 +19,8 @@ vars:
     value: backend-worker
   - name: SERVICE_NAME_FRONTEND
     value: frontend
+  - name: FRONTEND_TARGET
+    value: grid-ui-production
   - name: SERVICE_NAME_HEADSCALE
     value: headscale
   - name: SERVICE_NAME_TAILSCALE
@@ -97,7 +99,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.57"
+      - "0.7.0-beta.62"
     createPullSecret: true
     dockerfile: ./backend/backend.dockerfile
     context: ../
@@ -109,26 +111,23 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.57"
+      - "0.7.0-beta.62"
     createPullSecret: true
     dockerfile: ./frontend/frontend.dockerfile
     context: ./frontend
     build:
       docker:
         options:
-          target: "grid-ui-development"
-          buildArgs:
-            NODE_TYPE: ${NODE_TYPE}
-            FRONTEND_ENV: development
+          target: "grid-ui-production"
       buildKit:
-        args: ["--target", "grid-ui-development"]
+        args: ["--target", "grid-ui-production"]
   headscale:
     image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_HEADSCALE}
     # rebuildStrategy: ignoreContextChanges
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.57"
+      - "0.7.0-beta.62"
     createPullSecret: true
     dockerfile: ./vpn/headscale.dockerfile
     context: ./vpn
@@ -140,7 +139,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.57"
+      - "0.7.0-beta.62"
     createPullSecret: true
     dockerfile: ./vpn/tailscale.dockerfile
     context: ./vpn
@@ -152,7 +151,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.57"
+      - "0.7.0-beta.62"
     createPullSecret: true
     dockerfile: ./vpn/iptables.dockerfile
     context: ./vpn
@@ -833,8 +832,9 @@ profiles:
         path: deployments.name=seaweedfs
       - op: remove
         path: deployments.name=grid-blob-storage-ingress
-      - op: remove
-        path: deployments.name=frontend
+      - op: replace
+        path: vars.name=FRONTEND_TARGET.value
+        value: grid-ui-production
       - op: replace
         path: vars.name=TRAEFIK_CONFIG_FILE.value
         value: traefik-network.yaml

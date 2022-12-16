@@ -60,6 +60,11 @@ class User(BaseUser):
     created_at: Union[Optional[str], Optional[datetime]]
 
 
+class GuestUser(BaseModel):
+    id: int
+    private_key: str
+
+
 class UserPrivate(User):
     private_key: str
 

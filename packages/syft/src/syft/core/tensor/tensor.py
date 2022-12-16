@@ -56,6 +56,7 @@ class TensorPointer(Pointer):
     # the fact that klass.Class tries to override them (unsuccessfully)
     __name__ = "TensorPointer"
     __module__ = "syft.core.tensor.tensor"
+    PUBLISH_POINTER_TYPE = "numpy.ndarray"
 
     def __init__(
         self,
@@ -101,6 +102,7 @@ class TensorPointer(Pointer):
         *args: Any,
         **kwargs: Any,
     ) -> Any:
+
         # we want to get the return type which matches the attr_path_and_name
         # so we ask lib_ast for the return type name that matches out
         # attr_path_and_name and then use that to get the actual pointer klass
@@ -167,7 +169,7 @@ class TensorPointer(Pointer):
             other_dtype = other.public_dtype
         elif isinstance(other, (int, float)):
             other_shape = (1,)
-            other_dtype = np.int32
+            other_dtype = DEFAULT_INT_NUMPY_TYPE
         elif isinstance(other, bool):
             other_shape = (1,)
             other_dtype = np.dtype("bool")
@@ -183,16 +185,13 @@ class TensorPointer(Pointer):
                 op_str, self.public_shape, other_shape
             )
 
-        if self.public_dtype is not None and other_dtype is not None:
-            if self.public_dtype != other_dtype:
-                raise ValueError(
-                    f"Type for self and other do not match ({self.public_dtype} vs {other_dtype})"
-                )
-            result_public_dtype = self.public_dtype
+        # calculate the dtype of the result based on the op_str
+        result_public_dtype = utils.get_dtype(
+            op_str, self.public_shape, other_shape, self.public_dtype, other_dtype
+        )
 
         result.public_shape = result_public_shape
         result.public_dtype = result_public_dtype
-
         return result
 
     @staticmethod
@@ -217,14 +216,25 @@ class TensorPointer(Pointer):
                 secret=other, shape=other.public_shape, parties=parties
             )
             func = getattr(self_mpc, op_str)
-            return func(other_mpc)
+            result = func(other_mpc)
+
+            # We check to avoid calling id_at_location for MPCTensors
+            # since they don't have this attribute.
+            if hasattr(result, "id_at_location"):
+                other.client.processing_pointers[result.id_at_location] = True
         elif isinstance(other, MPCTensor):
             # "self" should be secretly shared
             other_mpc, self_mpc = MPCTensor.sanity_checks(other, self)
             func = getattr(self_mpc, op_str)
-            return func(other_mpc)
+            result = func(other_mpc)
+        else:
+            result = self._apply_tensor_op(other=other, op_str=op_str, **kwargs)
 
-        return self._apply_tensor_op(other=other, op_str=op_str, **kwargs)
+        # We check to avoid calling id_at_location for MPCTensors
+        # since they don't have this attribute.
+        if hasattr(result, "id_at_location"):
+            self.client.processing_pointers[result.id_at_location] = True
+        return result
 
     def __add__(
         self,
@@ -515,6 +525,13 @@ class Tensor(
         self.tag_name: str = ""
         self.public_shape = public_shape
         self.public_dtype = public_dtype
+
+        # TODO: re-enable this in a way that doesnt happen when internal methods
+        # call the constructor so it doesn't spam the output of notebooks and ci
+        # print(
+        #     "Tensor created! You can activate Differential Privacy protection by calling"
+        #     ".private() or .annotate_with_dp_metadata()."
+        # )
 
     def tag(self, name: str) -> Tensor:
         self.tag_name = name

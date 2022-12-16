@@ -46,7 +46,7 @@
 
 - name: Start Docker Containers
   shell:
-    cmd: runuser -l {{ om_user }} -c 'hagrid launch domain to docker:80 --tag=latest --tail=false'
+    cmd: runuser -l {{ om_user }} -c 'hagrid launch domain to docker:80 --tag=latest'
   become: yes
   when: aa_demo is defined and aa_demo == "true"
 

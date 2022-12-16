@@ -27,7 +27,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows]
         python-version: ["3.10"]
-        pytest-modules: ["frontend network security", "e2e"]
+        pytest-modules: ["frontend network security redis", "e2e"]
       fail-fast: false
 
     runs-on: ${{matrix.os}}
@@ -72,7 +72,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install tox --upgrade
+          pip install tox==3.27.1
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
@@ -144,6 +144,7 @@ jobs:
       - name: Get current date
         id: date
         if: failure()
+        shell: bash
         run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
 
       - name: Upload logs to GitHub
@@ -171,7 +172,8 @@ jobs:
 
 
       - name: Job Report Status
-        if: failure()
+        # cant access secrets on forks
+        if: github.repository == 'OpenMined/PySyft' && failure()
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
@@ -190,7 +192,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.10"]
-        pytest-modules: ["frontend network security", "e2e"]
+        pytest-modules: ["frontend network security redis", "e2e"]
       fail-fast: false
 
     runs-on: ${{matrix.os}}
@@ -235,7 +237,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install tox --upgrade
+          pip install tox==3.27.1
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
@@ -317,6 +319,7 @@ jobs:
       - name: Get current date
         id: date
         if: failure()
+        shell: bash
         run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
 
       - name: Upload logs to GitHub
@@ -343,7 +346,8 @@ jobs:
 
 
       - name: Job Report Status
-        if: failure()
+        # cant access secrets on forks
+        if: github.repository == 'OpenMined/PySyft' && failure()
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
@@ -407,7 +411,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install tox --upgrade
+          pip install tox==3.27.1
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
@@ -485,6 +489,7 @@ jobs:
       - name: Get current date
         id: date
         if: failure()
+        shell: bash
         run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
 
       - name: Upload logs to GitHub
@@ -511,7 +516,8 @@ jobs:
 
 
       - name: Job Report Status
-        if: failure()
+        # cant access secrets on forks
+        if: github.repository == 'OpenMined/PySyft' && failure()
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
@@ -580,7 +586,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install tox --upgrade
+          pip install tox==3.27.1
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
@@ -654,6 +660,7 @@ jobs:
       - name: Get current date
         id: date
         if: failure()
+        shell: bash
         run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
 
       - name: Upload logs to GitHub
@@ -671,7 +678,7 @@ jobs:
           docker rm `docker ps -aq` --force || true
           docker volume prune -f || true
 
-    #Get Pull request url
+      #Get Pull request url
       - name: Get pull request url
         id: pull_request
         if: failure()
@@ -680,7 +687,8 @@ jobs:
 
 
       - name: Job Report Status
-        if: failure()
+        # cant access secrets on forks
+        if: github.repository == 'OpenMined/PySyft' && failure()
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
@@ -746,7 +754,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install tox --upgrade
+          pip install tox==3.27.1
 
       - name: Install kubectl
         if: steps.changes.outputs.stack == 'true'
@@ -818,6 +826,7 @@ jobs:
       - name: Get current date
         id: date
         if: failure()
+        shell: bash
         run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
 
       - name: Upload logs to GitHub
@@ -842,9 +851,9 @@ jobs:
         run: |
           echo "::set-output name=url::$(echo ${{ github.event.pull_request.html_url }})"
 
-
       - name: Job Report Status
-        if: failure()
+        # cant access secrets on forks
+        if: github.repository == 'OpenMined/PySyft' && failure()
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
@@ -909,7 +918,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install tox --upgrade
+          pip install tox==3.27.1
 
       - name: docker cache
         uses: actions/cache@v3
@@ -956,6 +965,7 @@ jobs:
       - name: Get current date
         id: date
         if: failure()
+        shell: bash
         run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
 
       - name: Upload logs to GitHub
@@ -982,7 +992,8 @@ jobs:
 
 
       - name: Job Report Status
-        if: failure()
+        # cant access secrets on forks
+        if: github.repository == 'OpenMined/PySyft' && failure()
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
