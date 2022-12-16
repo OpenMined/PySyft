@@ -18,7 +18,6 @@ import pytest_asyncio
 
 # grid absolute
 from grid.core.config import settings
-from grid.db.session import get_db_session
 from grid.initial_data import init_db
 from grid.logger.handler import get_log_handler
 
@@ -46,8 +45,7 @@ def faker() -> Faker:
 
 @pytest_asyncio.fixture
 async def app() -> FastAPI:
-    session = get_db_session()
-    init_db(db=session)
+    init_db()
 
     # grid absolute
     from grid.main import app

@@ -21,10 +21,6 @@ services:
   #   volumes:
   #     - ./svelte:/app
 
-  db:
-    ports:
-      - "5432"
-
   redis:
     ports:
       - "6379"
@@ -38,7 +34,6 @@ services:
   backend:
     volumes:
       - ${RELATIVE_PATH}./backend/grid:/app/grid
-      - ${RELATIVE_PATH}./backend/alembic:/app/alembic
       - ${RELATIVE_PATH}../syft:/app/syft
       - ${RELATIVE_PATH}./data/package-cache:/root/.cache
       # - ./profile:/tmp/profile
@@ -47,7 +42,6 @@ services:
   backend_stream:
     volumes:
       - ${RELATIVE_PATH}./backend/grid:/app/grid
-      - ${RELATIVE_PATH}./backend/alembic:/app/alembic
       - ${RELATIVE_PATH}../syft:/app/syft
       - ${RELATIVE_PATH}./data/package-cache:/root/.cache
       # - ./profile:/tmp/profile
@@ -56,7 +50,6 @@ services:
   celeryworker:
     volumes:
       - ${RELATIVE_PATH}./backend/grid:/app/grid
-      - ${RELATIVE_PATH}./backend/alembic:/app/alembic
       - ${RELATIVE_PATH}../syft/:/app/syft
       - ${RELATIVE_PATH}./data/package-cache:/root/.cache
       # - ./profile:/tmp/profile

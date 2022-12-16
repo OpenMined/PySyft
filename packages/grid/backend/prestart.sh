@@ -14,11 +14,5 @@ then
     pip install --user -e /app/syft[dev]
 fi
 
-# Let the DB start
-python /app/grid/backend_prestart.py
-
-# Run migrations
-cd /app && alembic upgrade head
-
 # Create initial data in DB
 python /app/grid/initial_data.py

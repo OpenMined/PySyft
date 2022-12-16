@@ -19,7 +19,7 @@ from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import RequestError
 from ...exceptions import RoleNotFoundError
-from ...node_table.utils import model_to_json
+from ...node_table.utils import syft_object_to_json
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
 from ..success_resp_message import SuccessResponseMessage
@@ -188,7 +188,7 @@ def get_role_msg(
 
     if _allowed:
         role = node.roles.first(id=msg.role_id)  # type: ignore
-        _msg = model_to_json(role)
+        _msg = syft_object_to_json(role)
     else:
         raise AuthorizationError(
             "get_role_msg You're not allowed to get User information!"
@@ -222,7 +222,7 @@ def get_all_roles_msg(
     if _allowed:
         roles = node.roles.all()  # type: ignore
 
-        _msg = [model_to_json(role) for role in roles if role.name != "Owner"]
+        _msg = [syft_object_to_json(role) for role in roles if role.name != "Owner"]
     else:
         raise AuthorizationError("You're not allowed to get Role information!")
 

@@ -1,8 +1,5 @@
 version: "3.8"
 services:
-  db:
-    image: postgres:12
-
   redis:
     image: redis:${REDIS_VERSION?Variable not set}
 
