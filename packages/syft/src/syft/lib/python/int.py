@@ -9,11 +9,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import Literal
 from typing_extensions import SupportsIndex
 
-# syft absolute
-import syft as sy
-
 # relative
-from ...core.common import UID
 from ...core.common.serde.serializable import serializable
 from ...proto.lib.python.int_pb2 import Int as Int_PB
 from .primitive_factory import PrimitiveFactory
@@ -23,9 +19,7 @@ from .types import SyPrimitiveRet
 
 @serializable()
 class Int(int, PyPrimitive):
-    def __new__(
-        cls, value: Any = None, base: Any = 10, id: Optional[UID] = None
-    ) -> "Int":
+    def __new__(cls, value: Any = None, base: Any = 10) -> "Int":
         if value is None:
             value = 0
 
@@ -34,24 +28,11 @@ class Int(int, PyPrimitive):
 
         return int.__new__(cls, value)
 
-    def __init__(self, value: Any = None, base: Any = 10, id: Optional[UID] = None):
+    def __init__(self, value: Any = None, base: Any = 10):
         if value is None:
             value = 0
 
         int.__init__(value)
-
-        self._id: UID = id if id else UID()
-
-    @property
-    def id(self) -> UID:
-        """We reveal PyPrimitive.id as a property to discourage users and
-        developers of Syft from modifying .id attributes after an object
-        has been initialized.
-
-        :return: returns the unique id of the object
-        :rtype: UID
-        """
-        return self._id
 
     def upcast(self) -> int:
         return int(self)
@@ -218,43 +199,27 @@ class Int(int, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     def __iadd__(self, other: Any) -> SyPrimitiveRet:
-        return PrimitiveFactory.generate_primitive(
-            value=super().__add__(other), id=self.id
-        )
+        return PrimitiveFactory.generate_primitive(value=super().__add__(other))
 
     def __isub__(self, other: Any) -> SyPrimitiveRet:
-        return PrimitiveFactory.generate_primitive(
-            value=super().__sub__(other), id=self.id
-        )
+        return PrimitiveFactory.generate_primitive(value=super().__sub__(other))
 
     def __imul__(self, other: Any) -> SyPrimitiveRet:
-        return PrimitiveFactory.generate_primitive(
-            value=super().__mul__(other), id=self.id
-        )
+        return PrimitiveFactory.generate_primitive(value=super().__mul__(other))
 
     def __ifloordiv__(self, other: Any) -> SyPrimitiveRet:
-        return PrimitiveFactory.generate_primitive(
-            value=super().__floordiv__(other), id=self.id
-        )
+        return PrimitiveFactory.generate_primitive(value=super().__floordiv__(other))
 
     def __itruediv__(self, other: Any) -> SyPrimitiveRet:
-        return PrimitiveFactory.generate_primitive(
-            value=super().__truediv__(other), id=self.id
-        )
+        return PrimitiveFactory.generate_primitive(value=super().__truediv__(other))
 
     def __imod__(self, other: Any) -> SyPrimitiveRet:
-        return PrimitiveFactory.generate_primitive(
-            value=super().__mod__(other), id=self.id
-        )
+        return PrimitiveFactory.generate_primitive(value=super().__mod__(other))
 
     def __ipow__(self, other: Any, modulo: Optional[Any] = None) -> SyPrimitiveRet:
         if modulo:
-            PrimitiveFactory.generate_primitive(
-                value=super().__pow__(other, modulo), id=self.id
-            )
-        return PrimitiveFactory.generate_primitive(
-            value=super().__pow__(other), id=self.id
-        )
+            PrimitiveFactory.generate_primitive(value=super().__pow__(other, modulo))
+        return PrimitiveFactory.generate_primitive(value=super().__pow__(other))
 
     def __ne__(self, other: Any) -> SyPrimitiveRet:
         res = super().__ne__(other)
@@ -274,15 +239,11 @@ class Int(int, PyPrimitive):
     def _object2proto(self) -> Int_PB:
         int_pb = Int_PB()
         int_pb.data = self
-        int_pb.id.CopyFrom(sy.serialize(obj=self.id))
         return int_pb
 
     @staticmethod
     def _proto2object(proto: Int_PB) -> "Int":
-        int_id: UID = sy.deserialize(blob=proto.id)
-
         de_int = Int(value=proto.data)
-        de_int._id = int_id  # can't use uid=int_id for some reason
 
         return de_int
 
@@ -301,7 +262,7 @@ class Int(int, PyPrimitive):
         res = super().bit_length()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def denominator(self) -> SyPrimitiveRet:
+    def denominator(self) -> SyPrimitiveRet:  # type: ignore[override]
         res = super().denominator
         return PrimitiveFactory.generate_primitive(value=res)
 
@@ -320,15 +281,15 @@ class Int(int, PyPrimitive):
         res = int.from_bytes(bytes, byteorder, signed=signed)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def imag(self) -> SyPrimitiveRet:
+    def imag(self) -> SyPrimitiveRet:  # type: ignore[override]
         res = super().imag
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def numerator(self) -> int:
+    def numerator(self) -> int:  # type: ignore[override]
         res = super().numerator
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def real(self) -> int:
+    def real(self) -> int:  # type: ignore[override]
         res = super().real
         return PrimitiveFactory.generate_primitive(value=res)
 

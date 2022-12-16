@@ -36,6 +36,7 @@ from rich.console import Console
 
 # relative
 from .exceptions import MissingDependency
+from .lib import is_gitpod
 from .mode import EDITABLE_MODE
 from .nb_output import NBOutput
 from .version import __version__
@@ -75,6 +76,13 @@ NO_COLOR = "\033[0;0m"
 WARNING_MSG = f"\033[0;33mWARNING:{NO_COLOR}"
 
 
+def get_version_string() -> str:
+    version = str(__version__)
+    if EDITABLE_MODE:
+        version += "-dev"
+    return version
+
+
 @dataclass
 class SetupIssue:
     issue_name: str
@@ -89,7 +97,7 @@ class Dependency:
     name: str = ""
     display: str = ""
     only_os: str = ""
-    version: Optional[Version] = version.parse("None")
+    version: Optional[Version] = version.parse("0.0")
     valid: bool = False
     issues: List[SetupIssue] = field(default_factory=list)
     output_in_text: bool = False
@@ -305,7 +313,7 @@ class BinaryInfo:
     version_cmd: str
     error: Optional[str] = None
     path: Optional[str] = None
-    version: Optional[Union[str, Version]] = version.parse("None")
+    version: Optional[Union[str, Version]] = version.parse("0.0")
     version_regex = (
         r"[^\d]*("
         + r"(0|[1-9][0-9]*)\.*(0|[1-9][0-9]*)\.*(0|[1-9][0-9]*)"
@@ -375,7 +383,7 @@ def gather_debug() -> Dict[str, Any]:
     debug_info["python_binary"] = sys.executable
     debug_info["dependencies"] = DEPENDENCIES
     debug_info["environment"] = ENVIRONMENT
-    debug_info["hagrid"] = __version__
+    debug_info["hagrid"] = get_version_string()
     debug_info["hagrid_dev"] = EDITABLE_MODE
     debug_info["hagrid_path"] = hagrid_root()
     debug_info["hagrid_repo_sha"] = commit_hash()
@@ -428,7 +436,7 @@ def is_windows() -> bool:
     return False
 
 
-allowed_hosts = ["docker", "vm", "azure", "aws", "gcp"]
+allowed_hosts = ["docker", "azure", "aws", "gcp"]
 commands = ["docker", "git", "ansible-playbook"]
 
 if is_windows():
@@ -542,7 +550,7 @@ def allowed_to_run_docker() -> Tuple[bool, str]:
             bool_result = True
 
         # Check if current user is member of docker group.
-        elif user not in "".join(line):
+        elif not is_gitpod() and user not in "".join(line):
             msg = f"""⚠️  User is not a member of docker group.
 {WHITE}You're currently not allowed to run docker, perform the following steps:\n
     1 - Run \'{GREEN}sudo usermod -a -G docker $USER\'{WHITE} to add docker permissions.
@@ -630,7 +638,8 @@ def check_deps(
                     output += "\nCommand:\n" + f"{issue.command} "
                 output += "\n"
 
-        print(output)
+        if len(output) > 0:
+            print(output)
         return None  # type: ignore
 
 

@@ -5,11 +5,7 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft absolute
-import syft as sy
-
 # relative
-from ...core.common import UID
 from ...core.common.serde.serializable import serializable
 from ...proto.lib.python.float_pb2 import Float as Float_PB
 from .primitive_factory import PrimitiveFactory
@@ -19,29 +15,16 @@ from .types import SyPrimitiveRet
 
 @serializable()
 class Float(float, PyPrimitive):
-    def __new__(cls, value: Any = None, id: Optional[UID] = None) -> "Float":
+    def __new__(cls, value: Any = None) -> "Float":
         if value is None:
             value = 0.0
         return float.__new__(cls, value)
 
-    def __init__(self, value: Any = None, id: Optional[UID] = None):
+    def __init__(self, value: Any = None):
         if value is None:
             value = 0.0
 
         float.__init__(value)
-
-        self._id: UID = id if id else UID()
-
-    @property
-    def id(self) -> UID:
-        """We reveal PyPrimitive.id as a property to discourage users and
-        developers of Syft from modifying .id attributes after an object
-        has been initialized.
-
-        :return: returns the unique id of the object
-        :rtype: UID
-        """
-        return self._id
 
     def upcast(self) -> float:
         return float(self)
@@ -169,43 +152,29 @@ class Float(float, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=super().__rpow__(other))
 
     def __iadd__(self, other: Any) -> SyPrimitiveRet:
-        return PrimitiveFactory.generate_primitive(
-            value=super().__add__(other), id=self.id
-        )
+        return PrimitiveFactory.generate_primitive(value=super().__add__(other))
 
     def __isub__(self, other: Any) -> SyPrimitiveRet:
-        return PrimitiveFactory.generate_primitive(
-            value=super().__sub__(other), id=self.id
-        )
+        return PrimitiveFactory.generate_primitive(value=super().__sub__(other))
 
     def __imul__(self, other: Any) -> SyPrimitiveRet:
-        return PrimitiveFactory.generate_primitive(
-            value=super().__mul__(other), id=self.id
-        )
+        return PrimitiveFactory.generate_primitive(value=super().__mul__(other))
 
     def __ifloordiv__(self, other: Any) -> SyPrimitiveRet:
-        return PrimitiveFactory.generate_primitive(
-            value=super().__floordiv__(other), id=self.id
-        )
+        return PrimitiveFactory.generate_primitive(value=super().__floordiv__(other))
 
     def __itruediv__(self, other: Any) -> SyPrimitiveRet:
-        return PrimitiveFactory.generate_primitive(
-            value=super().__truediv__(other), id=self.id
-        )
+        return PrimitiveFactory.generate_primitive(value=super().__truediv__(other))
 
     def __imod__(self, other: Any) -> SyPrimitiveRet:
-        return PrimitiveFactory.generate_primitive(
-            value=super().__mod__(other), id=self.id
-        )
+        return PrimitiveFactory.generate_primitive(value=super().__mod__(other))
 
     def __ipow__(self, other: Any, modulo: Optional[Any] = None) -> SyPrimitiveRet:
         if modulo:
             return PrimitiveFactory.generate_primitive(
-                value=super().__pow__(other, modulo), id=self.id
+                value=super().__pow__(other, modulo)
             )
-        return PrimitiveFactory.generate_primitive(
-            value=super().__pow__(other), id=self.id
-        )
+        return PrimitiveFactory.generate_primitive(value=super().__pow__(other))
 
     @property
     def real(self) -> SyPrimitiveRet:
@@ -226,13 +195,12 @@ class Float(float, PyPrimitive):
 
     def _object2proto(self) -> Float_PB:
         return Float_PB(
-            id=sy.serialize(obj=self.id),
             data=self,
         )
 
     @staticmethod
     def _proto2object(proto: Float_PB) -> "Float":
-        return Float(value=proto.data, id=sy.deserialize(blob=proto.id))
+        return Float(value=proto.data)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

@@ -123,6 +123,42 @@ class DatasetRequestAPI(RequestAPI):
     def create_syft(self, **kwargs: Any) -> None:
         super().create(**kwargs)
 
+    def delete(self, dataset_id: str, skip_checks: bool = False) -> None:  # type: ignore
+
+        if not skip_checks:
+            pref = input(
+                f"You are about to delete the dataset with id `{dataset_id}`? 🚨 \n"
+                "All information related to this dataset will be permanently deleted.\n"
+                "Please enter y/n to proceed: "
+            )
+            while pref != "y" and pref != "n":
+                pref = input(f"Invalid input '{pref}', please specify 'y' or 'n'.")
+            if pref == "n":
+                print("Dataset deletion is cancelled.")
+                return
+
+        super().delete(dataset_id=dataset_id)
+        print("Dataset is successfully deleted. ✅")
+
+    def del_asset(
+        self, dataset_id: str, asset_id: str, skip_checks: bool = False
+    ) -> None:
+
+        if not skip_checks:
+            pref = input(
+                f"You are about to delete asset with id: {asset_id} in the dataset with id `{dataset_id}`? 🚨 \n"
+                "All information related to this asset will be permanently deleted.\n"
+                "Please enter y/n to proceed: "
+            )
+            while pref != "y" and pref != "n":
+                pref = input(f"Invalid input '{pref}', please specify 'y' or 'n'.")
+            if pref == "n":
+                sys.stdout.write("Asset deletion is cancelled.")
+                return
+
+        super().delete(dataset_id=dataset_id, bin_object_id=asset_id)
+        print("Asset is successfully deleted. ✅")
+
     def create_grid_ui(self, path: str, **kwargs) -> Dict[str, str]:  # type: ignore
         response = self.node.conn.send_files(  # type: ignore
             "/datasets", path, form_name="metadata", form_values=kwargs
@@ -178,7 +214,7 @@ class DatasetRequestAPI(RequestAPI):
         if not skip_check:
             pref = input(
                 "You are about to delete all datasets ? 🚨 \n"
-                "All information will be permanantely deleted.\n"
+                "All information will be permanently deleted.\n"
                 "Please enter y/n to proceed: "
             )
             while pref != "y" and pref != "n":
@@ -188,7 +224,7 @@ class DatasetRequestAPI(RequestAPI):
                 return None
 
         for dataset in self.all():
-            self.delete(dataset_id=dataset.get("id"))
+            self.delete(dataset_id=dataset.get("id"), skip_checks=True)
 
     def __len__(self) -> int:
         return len(self.all())
@@ -204,16 +240,17 @@ class DatasetRequestAPI(RequestAPI):
         dataset_name = dataset.get("name", "")
 
         pref = input(
-            f"You are about to delete the `{dataset_name}` ? 🚨 \n"
-            "All information related to this dataset will be permanantely deleted.\n"
+            f"You are about to delete the `{dataset_name}` dataset? 🚨 \n"
+            "All information related to this dataset will be permanently deleted.\n"
             "Please enter y/n to proceed: "
         )
         while pref != "y" and pref != "n":
             pref = input("Invalid input '" + pref + "', please specify 'y' or 'n'.")
         if pref == "n":
-            raise Exception("Dataset deletion is cancelled.")
+            sys.stdout.write("Dataset deletion is cancelled.")
+            return
 
-        self.delete(dataset_id=dataset_id)
+        super().delete(dataset_id=dataset_id)
         sys.stdout.write(f"Dataset: `{dataset_name}` is successfully deleted.")
 
         return True
@@ -345,7 +382,9 @@ class Dataset:
         keys = list()
         for d in self.data:
             if d["name"] == key:
-                return self.client.store.get(d["id"])  # type: ignore
+                pointer = self.client.store.get(d["id"])  # type: ignore
+                self.client.processing_pointers[pointer.id_at_location] = True  # type: ignore
+                return pointer
             keys.append(d["name"])
 
         raise KeyError(
@@ -416,7 +455,7 @@ class Dataset:
                     "ERROR: all private assets must be NumPy ndarray.int32 assets "
                     + "with proper Differential Privacy metadata applied.\n"
                     + "\n"
-                    + "Example: syft.Tensor(np.ndarray([1,2,3,4]).astype(np.int32)).private()\n\n"
+                    + "Example: syft.Tensor(np.ndarray([1,2,3,4]).astype(np.int32)).annotate_with_dp_metadata()\n\n"
                     + "and then follow the wizard. 🧙"
                 )
                 # print(
@@ -428,7 +467,8 @@ class Dataset:
                 #     + "This means you'll need to manually approve any requests which "
                 #     + "leverage this data. If this is ok with you, proceed. If you'd like to use "
                 #     + "automatic differential privacy budgeting, please pass in a DP-compatible tensor type "
-                #     + "such as by calling .private() on a sy.Tensor with a np.int32 or np.float32 inside."
+                #     + "such as by calling .annotate_with_dp_metadata() "
+                #     + "on a sy.Tensor with a np.int32 or np.float32 inside."
                 # )
                 #
                 # pref = input("Are you sure you want to proceed? (y/n)")
@@ -486,8 +526,10 @@ class Dataset:
                 sys.stdout.write("Asset deletion cancelled.")
                 return False
 
-        DatasetRequestAPI(self.client).delete(
-            dataset_id=self.id, bin_object_id=asset_id
+        dataset_id = self.id.to_string() if isinstance(self.id, UID) else self.id
+
+        DatasetRequestAPI(self.client).del_asset(
+            dataset_id=dataset_id, asset_id=asset_id, skip_checks=True
         )
         self.refresh()
 
