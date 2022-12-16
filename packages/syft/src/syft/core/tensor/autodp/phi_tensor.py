@@ -1812,57 +1812,57 @@ def ones_like(
     return tensor.ones_like(*args, **kwargs)
 
 
-def dispatch_tensor(
-    *tensors: Union[PhiTensor, GammaTensor, AcceptableSimpleType],
-    child_func: Callable,
-    min_func: Callable,
-    max_func: Callable,
-    original_func: Callable,
-) -> Union[PhiTensor, GammaTensor]:
-    def cast_to_gamma(tensor: Union[PhiTensor, GammaTensor]) -> GammaTensor:
-        if isinstance(tensor, PhiTensor):
-            return tensor.gamma
-        return tensor
+# def dispatch_tensor(
+#     *tensors: Union[PhiTensor, GammaTensor, AcceptableSimpleType],
+#     child_func: Callable,
+#     min_func: Callable,
+#     max_func: Callable,
+#     original_func: Callable,
+# ) -> Union[PhiTensor, GammaTensor]:
+#     def cast_to_gamma(tensor: Union[PhiTensor, GammaTensor]) -> GammaTensor:
+#         if isinstance(tensor, PhiTensor):
+#             return tensor.gamma
+#         return tensor
 
-    def check_phi_or_constant(tensor: Union[PhiTensor, GammaTensor]) -> bool:
-        return is_acceptable_simple_type(tensor) or isinstance(tensor, PhiTensor)
+#     def check_phi_or_constant(tensor: Union[PhiTensor, GammaTensor]) -> bool:
+#         return is_acceptable_simple_type(tensor) or isinstance(tensor, PhiTensor)
 
-    def extract_attribute_or_self(
-        tensor: Union[PhiTensor, GammaTensor], field: str
-    ) -> Union[PhiTensor, GammaTensor, DataSubject]:
-        if hasattr(tensor, field):
-            return getattr(tensor, field)
-        if field != "data_subject":
-            return tensor
-        else:
-            raise NotImplementedError
+#     def extract_attribute_or_self(
+#         tensor: Union[PhiTensor, GammaTensor], field: str
+#     ) -> Union[PhiTensor, GammaTensor, DataSubject]:
+#         if hasattr(tensor, field):
+#             return getattr(tensor, field)
+#         if field != "data_subject":
+#             return tensor
+#         else:
+#             raise NotImplementedError
 
-    childs = [extract_attribute_or_self(tensor, "child") for tensor in tensors]
+#     childs = [extract_attribute_or_self(tensor, "child") for tensor in tensors]
 
-    if all(map(check_phi_or_constant, tensors)):
-        min_values = [
-            extract_attribute_or_self(tensor, "min_vals") for tensor in tensors
-        ]
-        max_values = [
-            extract_attribute_or_self(tensor, "max_vals") for tensor in tensors
-        ]
-        data_subject = [
-            extract_attribute_or_self(tensor, "data_subject") for tensor in tensors
-        ]
-        data_subject = [ds for ds in data_subject if ds is not None]
+#     if all(map(check_phi_or_constant, tensors)):
+#         min_values = [
+#             extract_attribute_or_self(tensor, "min_vals") for tensor in tensors
+#         ]
+#         max_values = [
+#             extract_attribute_or_self(tensor, "max_vals") for tensor in tensors
+#         ]
+#         data_subject = [
+#             extract_attribute_or_self(tensor, "data_subject") for tensor in tensors
+#         ]
+#         data_subject = [ds for ds in data_subject if ds is not None]
 
-        reducer = [ds == data_subject[0] for ds in data_subject]
-        if np.all(reducer):
-            return original_func(*map(cast_to_gamma, tensors))
+#         reducer = [ds == data_subject[0] for ds in data_subject]
+#         if np.all(reducer):
+#             return original_func(*map(cast_to_gamma, tensors))
 
-        return PhiTensor(
-            child=child_func(childs),
-            min_vals=min_func(min_values),
-            max_vals=max_func(max_values),
-            data_subject=tensors[0].data_subject,  # type: ignore
-        )
+#         return PhiTensor(
+#             child=child_func(childs),
+#             min_vals=min_func(min_values),
+#             max_vals=max_func(max_values),
+#             data_subject=tensors[0].data_subject,  # type: ignore
+#         )
 
-    return original_func(*map(cast_to_gamma, tensors))
+#     return original_func(*map(cast_to_gamma, tensors))
 
 
 @serializable(capnp_bytes=True)
@@ -2724,16 +2724,43 @@ class PhiTensor(PassthroughTensor):
             )
 
     def __add__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
-        print(type(other))
+
+        # if the tensor being added is also private
+        if isinstance(other, PhiTensor):
+            if self.data_subject != other.data_subject:
+                return self.gamma + other.gamma
+
+            return PhiTensor(
+                child=self.child + other.child,
+                min_vals=self.min_vals + other.min_vals,
+                max_vals=self.max_vals + other.max_vals,
+                data_subject=self.data_subject,
+            )
+
+        # if the tensor being added is a public tensor / int / float / etc.
+        elif is_acceptable_simple_type(other):
+
+            return PhiTensor(
+                child=self.child + other,
+                min_vals=self.min_vals + other,
+                max_vals=self.max_vals + other,
+                data_subject=self.data_subject,
+            )
+
+        elif isinstance(other, GammaTensor):
+            return self.gamma + other
+        else:
+            print("Type is unsupported:" + str(type(other)))
+            raise NotImplementedError
         # try:
-        return dispatch_tensor(
-            self,
-            other,
-            child_func=lambda tensors: operator.add(*tensors),
-            min_func=lambda tensors: operator.add(*tensors),
-            max_func=lambda tensors: operator.add(*tensors),
-            original_func=lambda tensors: operator.add(*tensors),
-        )
+            # return dispatch_tensor(
+            #     self,
+            #     other,
+            #     child_func=lambda tensors: operator.add(*tensors),
+            #     min_func=lambda tensors: operator.add(*tensors),
+            #     max_func=lambda tensors: operator.add(*tensors),
+            #     original_func=lambda tensors: operator.add(*tensors),
+            # )
         # except TypeError:
         #     raise NotImplementedError(
         #         f"__add__ not implemented for these types"
@@ -2743,14 +2770,42 @@ class PhiTensor(PassthroughTensor):
         return self.__add__(other)
 
     def __sub__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
-        return dispatch_tensor(
-            self,
-            other,
-            child_func=lambda tensors: operator.sub(*tensors),
-            min_func=lambda tensors: operator.sub(*tensors),
-            max_func=lambda tensors: operator.sub(*tensors),
-            original_func=lambda tensors: operator.sub(*tensors),
-        )
+        
+        # if the tensor being added is also private
+        if isinstance(other, PhiTensor):
+            if self.data_subject != other.data_subject:
+                return self.gamma - other.gamma
+
+            return PhiTensor(
+                child=self.child - other.child,
+                min_vals=self.min_vals - other.min_vals,
+                max_vals=self.max_vals - other.max_vals,
+                data_subject=self.data_subject,
+            )
+
+        # if the tensor being added is a public tensor / int / float / etc.
+        elif is_acceptable_simple_type(other):
+
+            return PhiTensor(
+                child=self.child - other,
+                min_vals=self.min_vals - other,
+                max_vals=self.max_vals - other,
+                data_subject=self.data_subject,
+            )
+
+        elif isinstance(other, GammaTensor):
+            return self.gamma - other
+        else:
+            print("Type is unsupported:" + str(type(other)))
+            raise NotImplementedError
+        # return dispatch_tensor(
+        #     self,
+        #     other,
+        #     child_func=lambda tensors: operator.sub(*tensors),
+        #     min_func=lambda tensors: operator.sub(*tensors),
+        #     max_func=lambda tensors: operator.sub(*tensors),
+        #     original_func=lambda tensors: operator.sub(*tensors),
+        # )
 
     def __rsub__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
         return (self - other) * -1

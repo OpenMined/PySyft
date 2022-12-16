@@ -207,6 +207,7 @@ def compute_epsilon(
     # For each PhiTensor we either need the lipschitz bound or we can use
     # one to keep the same formula for the linear queries
     lipschitz_bound = 1 if is_linear else tensor.lipschitz_bound
+    print(lipschitz_bound)
 
     # compute the rdp constant for each phi tensor
     rdp_constants = {}
@@ -215,7 +216,7 @@ def compute_epsilon(
         # the Lipschitz bound
         # TODO 0.8 optimize the computation of l2_norm_bounds
         l2_norms = calculate_bounds_for_mechanism(
-            tensor.child
+            phi_tensors[phi_tensor_id].child
         )  # , tensor.min_vals.to_numpy(), tensor.max_vals.to_numpy())
         param = RDPParams(
             sigmas=sigma, l2_norms=l2_norms, l2_norm_bounds=0, Ls=lipschitz_bound
@@ -233,7 +234,10 @@ def compute_epsilon(
 
     filtered = {eps: epsilons[eps] <= privacy_budget for eps in epsilons}
     epsilon_spend = max([epsilons[eps_id] * filtered[eps_id] for eps_id in epsilons])
-    print(epsilons.values())
+    print(rdp_constants)
+    print(filtered)
+    print(epsilons)
+    print(privacy_budget)
     new_state = {
         phi_tensor_id: phi_tensor
         if filtered[phi_tensor_id]

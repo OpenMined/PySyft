@@ -172,12 +172,8 @@ def test_lipschitz(
     assert gamma_tensor.is_linear
     assert gamma_tensor.lipschitz_bound == 1
 
-    gamma_tensor = tensor1[0].gamma * 2
-    print(gamma_tensor.child)
-    gamma_tensor = gamma_tensor
-
-    assert gamma_tensor.lipschitz_bound == 2
-
+    gamma_tensor = tensor1[0][:3].gamma * tensor1[1][:3].gamma
+    assert gamma_tensor.lipschitz_bound == 2 # no of dim - 1
 
 def test_zeros_like(
     reference_data: np.ndarray,

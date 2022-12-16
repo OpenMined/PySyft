@@ -3347,7 +3347,7 @@ class GammaTensor:
                     list(
                         zip(
                             input_states[id].min_vals.to_numpy().flatten(),
-                            input_states[id].max_vals.to_numpy().flatten(),
+                            input_states[id].max_vals.to_numpy().flatten()
                         )
                     )
                 )

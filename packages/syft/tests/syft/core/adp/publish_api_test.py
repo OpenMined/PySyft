@@ -31,8 +31,8 @@ def deduct_epsilon_for_user(
 
 
 def test_privacy_budget_spend_on_publish():
-    fred_nums = np.array([25, 35, 21, 19, 40, 55, 31, 18, 27, 33])
-    sally_nums = np.array([8, 11, 10, 50, 44, 32, 55, 29, 6, 1])
+    fred_nums = np.array([25, 35, 21])
+    sally_nums = np.array([8, 11, 10])
 
     fred_tensor = sy.Tensor(fred_nums).annotate_with_dp_metadata(
         lower_bound=0, upper_bound=122, data_subject="fred"
@@ -50,64 +50,85 @@ def test_privacy_budget_spend_on_publish():
 
     ledger = DataSubjectLedger.get_or_create(store=ledger_store, user_key=user_key)
 
-    pub_result_sally = sally_tensor.publish(
-        get_budget_for_user=get_budget_for_user,
-        deduct_epsilon_for_user=deduct_epsilon_for_user,
-        ledger=ledger,
-        sigma=50,
-        private=True,
-    )
+    # pub_result_sally = sally_tensor.publish(
+    #     get_budget_for_user=get_budget_for_user,
+    #     deduct_epsilon_for_user=deduct_epsilon_for_user,
+    #     ledger=ledger,
+    #     sigma=50,
+    #     private=True,
+    # )
 
-    assert pub_result_sally is not None
+    # assert pub_result_sally is not None
 
-    eps_spend_for_sally = user_budget.current_spend
+    # eps_spend_for_sally = user_budget.current_spend
 
-    pub_result_fred = sally_tensor.publish(
-        get_budget_for_user=get_budget_for_user,
-        deduct_epsilon_for_user=deduct_epsilon_for_user,
-        ledger=ledger,
-        sigma=50,
-        private=True,
-    )
+    # pub_result_fred = sally_tensor.publish(
+    #     get_budget_for_user=get_budget_for_user,
+    #     deduct_epsilon_for_user=deduct_epsilon_for_user,
+    #     ledger=ledger,
+    #     sigma=50,
+    #     private=True,
+    # )
 
-    assert pub_result_fred is not None
+    # assert pub_result_fred is not None
 
-    eps_spend_for_fred = user_budget.current_spend
+    # eps_spend_for_fred = user_budget.current_spend
 
-    # Epsilon spend for sally should be equal to fred
-    # since they impact the same of values in the data independently
-    assert eps_spend_for_sally == eps_spend_for_fred
+    # # Epsilon spend for sally should be equal to fred
+    # # since they impact the same of values in the data independently
+    # assert eps_spend_for_sally == eps_spend_for_fred
 
-    pub_result_comb = result.publish(
-        get_budget_for_user=get_budget_for_user,
-        deduct_epsilon_for_user=deduct_epsilon_for_user,
-        ledger=ledger,
-        sigma=50,
-        private=True,
-    )
+    # pub_result_comb = result.publish(
+    #     get_budget_for_user=get_budget_for_user,
+    #     deduct_epsilon_for_user=deduct_epsilon_for_user,
+    #     ledger=ledger,
+    #     sigma=50,
+    #     private=True,
+    # )
 
-    assert pub_result_comb is not None
+    # assert pub_result_comb is not None
 
-    combined_eps_spend = user_budget.current_spend
+    # combined_eps_spend = user_budget.current_spend
 
-    # TODO: Need to confirm if this ratio will always be less than 1
-    assert (eps_spend_for_fred + eps_spend_for_sally) / combined_eps_spend < 1
+    # # TODO: Need to confirm if this ratio will always be less than 1
+    # # assert (eps_spend_for_fred + eps_spend_for_sally) / combined_eps_spend < 1
 
-    # TODO: Uncomment this once filtering is fixed.
+    # # This should only filter out values of fred or sally
+    # pub_result_comb2 = result.publish(
+    #     get_budget_for_user=get_budget_for_user,
+    #     deduct_epsilon_for_user=deduct_epsilon_for_user,
+    #     ledger=ledger,
+    #     sigma=50,
+    #     private=True,
+    # )
+    # assert pub_result_comb2 is not None
+    # # assert user_budget.current_spend == 0.0
+    # # TODO: Do we need caching?
 
-    user_budget.budget = eps_spend_for_fred + 1
-
+    # user_budget.budget = eps_spend_for_fred + 1
+    mul_tensor = fred_tensor * 2 + sally_tensor * 2
+    
+    print(mul_tensor.child.lipschitz_bound)
     # This should only filter out values of fred or sally
-    pub_result_comb2 = result.publish(
+    pub_result_comb3 = mul_tensor.publish(
         get_budget_for_user=get_budget_for_user,
         deduct_epsilon_for_user=deduct_epsilon_for_user,
         ledger=ledger,
         sigma=50,
         private=True,
     )
-    assert pub_result_comb2 is not None
+    assert pub_result_comb3 is not None
+    
+    mul_tensor = (fred_tensor + sally_tensor) * 2
 
-    # current privacy spend should be equal to eps spend for data subject fred
-    # Therefore the output should only be calculated with input values from data subject `fred`.
-
-    assert user_budget.current_spend == eps_spend_for_fred
+    print(mul_tensor.child.lipschitz_bound)
+    # This should only filter out values of fred or sally
+    pub_result_comb4 = mul_tensor.publish(
+        get_budget_for_user=get_budget_for_user,
+        deduct_epsilon_for_user=deduct_epsilon_for_user,
+        ledger=ledger,
+        sigma=50,
+        private=True,
+    )
+    assert pub_result_comb4 is not None
+    assert False
