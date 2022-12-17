@@ -41,7 +41,7 @@ Steps to Connect to a Domain Server
 
 #. **Obtain** Login Credentials
 #. **Login** to the Domain as a Data Scientist
-#. **Exploring** a Domain Server
+#. **Explore** some useful starting commands
 
 
 .. note::
@@ -105,10 +105,25 @@ Then you can provide your login credentials by typing:
    domain = sy.login(email="____", password="____", url="____",port=8081)
 
 
-Step 3: Explore the User HomePage
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Step 3: Explore some useful starting commands
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+As a Data Scientist, you can ``explore`` the Domain Server using the Python ``Syft`` library. 
 
+.. note::
+   We will explore more about each command in the next series of tutorials.
 
+::
+
+   In:
+
+   # name of the domain
+   domain.name
+
+   # View datasets on the domain
+   domain.datasets
+
+   # View store on the domain
+   domain.store
 
 Awesome 👏 You have now successfully connected to a Domain Node !! 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
