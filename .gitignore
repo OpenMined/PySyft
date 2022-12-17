@@ -57,3 +57,9 @@ k3d-registry
 
 .envfile
 packages/hagrid/.envfile
+
+# temporarily ignore sveltekit
+packages/grid/svelte
+
+# rendered template dir
+packages/grid/rendered

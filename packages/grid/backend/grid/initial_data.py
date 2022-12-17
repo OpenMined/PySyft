@@ -1,17 +1,21 @@
 # stdlib
 import logging
+import os
 
 # grid absolute
 from grid.db.init_db import init_db
-from grid.db.session import get_db_session
+from grid.db.init_db import load_db
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
 def init() -> None:
-    db = get_db_session()
-    init_db(db)
+    service_name = os.getenv("SERVICE_NAME", "")
+    if service_name == "backend":
+        init_db()
+    else:
+        load_db()
 
 
 def main() -> None:

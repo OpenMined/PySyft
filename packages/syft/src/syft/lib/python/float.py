@@ -3,25 +3,22 @@ from typing import Any
 from typing import Optional
 
 # relative
-from ...core.common import UID
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
 
 
 class Float(float, PyPrimitive):
-    def __new__(cls, value: Any = None, id: Optional[UID] = None) -> "Float":
+    def __new__(cls, value: Any = None) -> "Float":
         if value is None:
             value = 0.0
         return float.__new__(cls, value)
 
-    def __init__(self, value: Any = None, id: Optional[UID] = None):
+    def __init__(self, value: Any = None):
         if value is None:
             value = 0.0
 
         float.__init__(value)
-
-        self._id: UID = id if id else UID()
 
     def upcast(self) -> float:
         return float(self)
@@ -149,43 +146,29 @@ class Float(float, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=super().__rpow__(other))
 
     def __iadd__(self, other: Any) -> SyPrimitiveRet:
-        return PrimitiveFactory.generate_primitive(
-            value=super().__add__(other), id=self.id
-        )
+        return PrimitiveFactory.generate_primitive(value=super().__add__(other))
 
     def __isub__(self, other: Any) -> SyPrimitiveRet:
-        return PrimitiveFactory.generate_primitive(
-            value=super().__sub__(other), id=self.id
-        )
+        return PrimitiveFactory.generate_primitive(value=super().__sub__(other))
 
     def __imul__(self, other: Any) -> SyPrimitiveRet:
-        return PrimitiveFactory.generate_primitive(
-            value=super().__mul__(other), id=self.id
-        )
+        return PrimitiveFactory.generate_primitive(value=super().__mul__(other))
 
     def __ifloordiv__(self, other: Any) -> SyPrimitiveRet:
-        return PrimitiveFactory.generate_primitive(
-            value=super().__floordiv__(other), id=self.id
-        )
+        return PrimitiveFactory.generate_primitive(value=super().__floordiv__(other))
 
     def __itruediv__(self, other: Any) -> SyPrimitiveRet:
-        return PrimitiveFactory.generate_primitive(
-            value=super().__truediv__(other), id=self.id
-        )
+        return PrimitiveFactory.generate_primitive(value=super().__truediv__(other))
 
     def __imod__(self, other: Any) -> SyPrimitiveRet:
-        return PrimitiveFactory.generate_primitive(
-            value=super().__mod__(other), id=self.id
-        )
+        return PrimitiveFactory.generate_primitive(value=super().__mod__(other))
 
     def __ipow__(self, other: Any, modulo: Optional[Any] = None) -> SyPrimitiveRet:
         if modulo:
             return PrimitiveFactory.generate_primitive(
-                value=super().__pow__(other, modulo), id=self.id
+                value=super().__pow__(other, modulo)
             )
-        return PrimitiveFactory.generate_primitive(
-            value=super().__pow__(other), id=self.id
-        )
+        return PrimitiveFactory.generate_primitive(value=super().__pow__(other))
 
     @property
     def real(self) -> SyPrimitiveRet:

@@ -11,7 +11,6 @@ def test_range_serde() -> None:
     deserialized = sy.deserialize(serialized)
 
     assert isinstance(deserialized, Range)
-    assert deserialized.id == syft_range.id
     for deserialized_el, original_el in zip(deserialized, syft_range):
         assert deserialized_el == original_el
 
@@ -25,3 +24,10 @@ def test_range_send(client: sy.VirtualMachineClient) -> None:
     res = ptr.get()
     for res_el, original_el in zip(res, syft_range):
         assert res_el == original_el
+
+
+def test_range_bytes() -> None:
+    # Testing if multiple serialization of the similar object results in same bytes
+    value_1 = Range(7)
+    value_2 = Range(7)
+    assert sy.serialize(value_1, to_bytes=True) == sy.serialize(value_2, to_bytes=True)

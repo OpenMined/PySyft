@@ -1,3 +1,6 @@
+# stdlib
+from typing import Optional
+
 # third party
 from pydantic import BaseModel
 
@@ -9,4 +12,5 @@ class Token(BaseModel):
 
 
 class TokenPayload(BaseModel):
-    sub: int
+    sub: Optional[int] = None
+    guest: bool = False

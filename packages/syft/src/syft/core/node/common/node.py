@@ -15,19 +15,17 @@ from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from pydantic import BaseSettings
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base
-
-# syft absolute
-import syft as sy
 
 # relative
+from .... import __version__
 from ....grid import GridURL
 from ....lib import lib_ast
 from ....logger import debug
 from ....logger import error
 from ....logger import info
 from ....logger import traceback_and_raise
+from ....shylock import ShylockPymongoBackend
+from ....shylock import configure
 from ....telemetry import instrument
 from ....util import get_subclasses
 from ...common.message import ImmediateSyftMessageWithReply
@@ -48,7 +46,7 @@ from .action.exception_action import UnknownPrivateException
 from .client import Client
 from .metadata import Metadata
 from .node_manager.redis_store import RedisStore
-from .node_manager.setup_manager import SetupManager
+from .node_manager.setup_manager import NoSQLSetupManager
 from .node_service.auth import AuthorizationException
 from .node_service.child_node_lifecycle.child_node_lifecycle_service import (
     ChildNodeLifecycleService,
@@ -78,8 +76,7 @@ from .node_service.resolve_pointer_type.resolve_pointer_type_service import (
 )
 from .node_service.testing_services.repr_service import ReprService
 from .node_service.vpn.vpn_messages import VPNRegisterMessage
-from .node_table import Base
-from .node_table.node import Node as NodeRow
+from .node_table.node import NoSQLNode
 
 # this generic type for Client bound by Client
 ClientT = TypeVar("ClientT", bound=Client)
@@ -122,6 +119,7 @@ class Node(AbstractNode):
         db_engine: Any = None,
         store_type: type = RedisStore,
         settings: Optional[BaseSettings] = None,
+        document_store: bool = False,
     ):
 
         # The node has a name - it exists purely to help the
@@ -134,20 +132,32 @@ class Node(AbstractNode):
 
         self.settings = settings
 
-        # TableBase is the base class from which all ORM classes must inherit
-        # If one isn't provided then we can simply make one.
-        if TableBase is None:
-            TableBase = declarative_base()
+        if self.settings and self.settings.MONGO_USERNAME:
+            # third party
+            from pymongo import MongoClient
 
-        # If not provided a session connecting us to the database, let's just
-        # initialize a database in memory
-        if db_engine is None:
-            db_engine = create_engine("sqlite://", echo=False)
-            Base.metadata.create_all(db_engine)  # type: ignore
+            # FIXME: Modify to use environment variable
+            self.nosql_db_engine = MongoClient(  # nosec
+                host=self.settings.MONGO_HOST,
+                port=self.settings.MONGO_PORT,
+                username=self.settings.MONGO_USERNAME,
+                password=self.settings.MONGO_PASSWORD,
+                uuidRepresentation="standard",
+            )
+        else:
+            # third party
+            from pymongo_inmemory import MongoClient
+
+            self.nosql_db_engine = MongoClient(
+                port=27017, uuidRepresentation="standard"
+            )
+
+        self.db_name = "app"
+        if document_store:
+            configure(ShylockPymongoBackend.create(self.nosql_db_engine, self.db_name))
 
         # cache these variables on self
         self.TableBase = TableBase
-        self.db_engine = db_engine
         # self.db = db
         # self.session = db
 
@@ -162,8 +172,12 @@ class Node(AbstractNode):
         # become quite numerous (or otherwise fill up RAM).
         # self.store is the elastic memory.
 
-        self.store = store_type(db=self.db_engine, settings=settings)
-        self.setup = SetupManager(database=self.db_engine)
+        self.store = store_type(
+            settings=settings,
+            nosql_db_engine=self.nosql_db_engine,
+            db_name=self.db_name,
+        )
+        self.setup = NoSQLSetupManager(self.nosql_db_engine, self.db_name)
 
         # We need to register all the services once a node is created
         # On the off chance someone forgot to do this (super unlikely)
@@ -264,6 +278,7 @@ class Node(AbstractNode):
             Node.set_keys(node=self, signing_key=signing_key)
 
         # PERMISSION REGISTRY:
+        self.guest_signing_key_registry = set()
         self.guest_verify_key_registry = set()
         self.admin_verify_key_registry = set()
         self.cpl_ofcr_verify_key_registry = set()
@@ -281,11 +296,11 @@ class Node(AbstractNode):
         try:
             setup = self.setup.first()
             # if its empty it will be set during CreateInitialSetUpMessage
-            if setup.node_id != "":
+            if setup.node_uid != "":
                 try:
-                    node_id = UID.from_string(setup.node_id)
+                    node_id = UID.from_string(setup.node_uid)
                 except Exception as e:
-                    error(f"Invalid Node UID in Setup Table. {setup.node_id}")
+                    error(f"Invalid Node UID in Setup Table. {setup.node_uid}")
                     raise e
 
                 location = SpecificLocation(name=setup.domain_name, id=node_id)
@@ -319,7 +334,7 @@ class Node(AbstractNode):
         self,
         routes: Optional[List[Route]] = None,
         signing_key: Optional[SigningKey] = None,
-    ) -> ClientT:
+    ) -> Client:
         if not routes:
             conn_client = create_virtual_connection(node=self)
             solo = SoloRoute(destination=self.target_id, connection=conn_client)
@@ -342,9 +357,10 @@ class Node(AbstractNode):
             verify_key=None,  # DO NOT PASS IN A VERIFY KEY!!! The client generates one.
         )
 
-    def get_root_client(self, routes: Optional[List[Route]] = None) -> ClientT:
+    def get_root_client(self, routes: Optional[List[Route]] = None) -> Client:
         client: ClientT = self.get_client(routes=routes)
-        self.root_verify_key = client.verify_key
+        client.verify_key = self.verify_key
+        client.signing_key = self.signing_key
         return client
 
     def get_metadata_for_client(self) -> Metadata:
@@ -353,12 +369,12 @@ class Node(AbstractNode):
             id=self.id,
             node=self.target_id,
             node_type=str(type(self).__name__),
-            version=str(sy.__version__),
+            version=str(__version__),
         )
 
-    def add_peer_routes(self, peer: NodeRow) -> None:
+    def add_peer_routes(self, peer: NoSQLNode) -> None:
         try:
-            routes = self.node_route.query(node_id=peer.id)  # type: ignore
+            routes = peer.node_route
             for route in routes:
                 self.add_route(
                     node_id=UID.from_string(value=peer.node_uid),
@@ -400,6 +416,9 @@ class Node(AbstractNode):
         port: int,
         protocol: str,
     ) -> None:
+        # relative
+        from ....grid.client.client import connect
+
         debug(
             f"Adding route {node_id}, {node_name}, "
             + f"{protocol}://{host_or_ip}:{port}, vpn: {is_vpn}, private: {private}"
@@ -420,7 +439,7 @@ class Node(AbstractNode):
 
             if grid_url.base_url not in node_id_dict[security_key]:
                 # connect and save the client
-                client = sy.connect(url=grid_url.with_path("/api/v1"), timeout=0.3)
+                client = connect(url=grid_url.with_path("/api/v1"), timeout=0.3)
                 node_id_dict[security_key][grid_url.base_url] = client
 
             self.peer_route_clients[node_id] = node_id_dict
@@ -580,6 +599,7 @@ class Node(AbstractNode):
     def process_message(
         self, msg: SignedMessage, router: dict
     ) -> Union[SyftMessage, None]:
+
         self.message_counter += 1
         try:
             contents = getattr(

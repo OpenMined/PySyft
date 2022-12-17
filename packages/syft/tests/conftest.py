@@ -9,6 +9,7 @@ from typing import List as TypeList
 # third party
 import _pytest
 from faker import Faker
+from pymongo_inmemory import MongoClient
 import pytest
 
 # syft absolute
@@ -134,6 +135,9 @@ def node() -> sy.VirtualMachine:
     return sy.VirtualMachine(name="Bob")
 
 
+_db = MongoClient(port=27017, uuidRepresentation="standard")
+
+
 @pytest.fixture(scope="session")
 def domain() -> sy.VirtualMachine:
     return sy.Domain(
@@ -162,7 +166,7 @@ def root_client(node: sy.VirtualMachine) -> sy.VirtualMachineClient:
 
 
 @pytest.fixture(scope="session")
-def faker():
+def faker() -> Faker:
     return Faker()
 
 

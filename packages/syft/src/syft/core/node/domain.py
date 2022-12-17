@@ -17,7 +17,6 @@ import ascii_magic
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from pydantic import BaseSettings
-from pymongo import MongoClient
 
 # relative
 from ...lib.python import String
@@ -25,8 +24,6 @@ from ...logger import critical
 from ...logger import debug
 from ...logger import info
 from ...logger import traceback
-from ...shylock import ShylockPymongoBackend
-from ...shylock import configure
 from ...telemetry import instrument
 from ..adp.ledger_store import RedisLedgerStore
 from ..common.message import SignedImmediateSyftMessageWithReply
@@ -38,13 +35,13 @@ from ..io.location import SpecificLocation
 from .common.action.get_object_action import GetObjectAction
 from .common.client import Client
 from .common.node import Node
-from .common.node_manager.association_request_manager import AssociationRequestManager
-from .common.node_manager.dataset_manager import DatasetManager
-from .common.node_manager.environment_manager import EnvironmentManager
-from .common.node_manager.node_manager import NodeManager
-from .common.node_manager.node_route_manager import NodeRouteManager
+from .common.node_manager.association_request_manager import (
+    NoSQLAssociationRequestManager,
+)
+from .common.node_manager.dataset_manager import NoSQLDatasetManager
+from .common.node_manager.node_manager import NoSQLNodeManager
 from .common.node_manager.redis_store import RedisStore
-from .common.node_manager.request_manager import RequestManager
+from .common.node_manager.request_manager import NoSQLRequestManager
 from .common.node_manager.role_manager import NewRoleManager
 from .common.node_manager.user_manager import NoSQLUserManager
 from .common.node_service.association_request.association_request_service import (
@@ -79,12 +76,12 @@ from .common.node_service.request_receiver.request_receiver_messages import (
 from .common.node_service.role_manager.role_manager_service import RoleManagerService
 from .common.node_service.simple.simple_service import SimpleService
 from .common.node_service.sleep.sleep_service import SleepService
+from .common.node_service.tff.tff_service import TFFService
 from .common.node_service.user_auth.user_auth_service import UserLoginService
 from .common.node_service.user_manager.user_manager_service import UserManagerService
 from .common.node_service.vpn.vpn_service import VPNConnectService
 from .common.node_service.vpn.vpn_service import VPNJoinService
 from .common.node_service.vpn.vpn_service import VPNStatusService
-from .common.node_table.utils import create_memory_db_engine
 from .device import Device
 from .device import DeviceClient
 from .domain_client import DomainClient
@@ -117,9 +114,6 @@ class Domain(Node):
         document_store: bool = False,
     ):
 
-        if db_engine is None:
-            db_engine, _ = create_memory_db_engine()
-
         super().__init__(
             name=name,
             network=network,
@@ -131,6 +125,7 @@ class Domain(Node):
             db_engine=db_engine,
             store_type=store_type,
             settings=settings,
+            document_store=document_store,
         )
 
         # share settings with the FastAPI application level
@@ -140,27 +135,15 @@ class Domain(Node):
         self.domain = SpecificLocation(name=self.name)
         self.root_key = root_key
 
-        # FIXME: Modify to use environment variable
-        nosql_db_engine = MongoClient(  # nosec
-            host="mongo",
-            port=27017,
-            username="root",
-            password="example",
-            uuidRepresentation="standard",
-        )
-        db_name = "app"
-        if document_store:
-            configure(ShylockPymongoBackend.create(nosql_db_engine, db_name))
-
         # Database Management Instances
-        self.users = NoSQLUserManager(nosql_db_engine, db_name)
+        self.users = NoSQLUserManager(self.nosql_db_engine, self.db_name)
         self.roles = NewRoleManager()
-        self.environments = EnvironmentManager(db_engine)
-        self.association_requests = AssociationRequestManager(db_engine)
-        self.data_requests = RequestManager(db_engine)
-        self.datasets = DatasetManager(db_engine)
-        self.node = NodeManager(db_engine)
-        self.node_route = NodeRouteManager(db_engine)
+        self.association_requests = NoSQLAssociationRequestManager(
+            self.nosql_db_engine, self.db_name
+        )
+        self.data_requests = NoSQLRequestManager(self.nosql_db_engine, self.db_name)
+        self.datasets = NoSQLDatasetManager(self.nosql_db_engine, self.db_name)
+        self.node = NoSQLNodeManager(self.nosql_db_engine, self.db_name)
         self.ledger_store = ledger_store_type(settings=settings)
 
         # self.immediate_services_without_reply.append(RequestReceiverService)
@@ -172,9 +155,9 @@ class Domain(Node):
 
         # Grid Domain Services
         self.immediate_services_with_reply.append(AssociationRequestService)
-        # self.immediate_services_with_reply.append(DomainInfrastructureService)
         self.immediate_services_with_reply.append(GetRemainingBudgetService)
         self.immediate_services_with_reply.append(SimpleService)
+        self.immediate_services_with_reply.append(TFFService)
         self.immediate_services_with_reply.append(PingService)
         self.immediate_services_with_reply.append(VPNConnectService)
         self.immediate_services_with_reply.append(VPNJoinService)
@@ -255,7 +238,7 @@ class Domain(Node):
     def loud_print(self) -> None:
         try:
             install_path = os.path.abspath(
-                os.path.join(os.path.realpath(__file__), "../../../../img/")
+                os.path.join(os.path.realpath(__file__), "../../../img/")
             )
             ascii_magic.to_terminal(
                 ascii_magic.from_image_file(
@@ -478,7 +461,6 @@ class Domain(Node):
             self.store.clear()
             self.data_requests.clear()
             self.users.clear()
-            self.environments.clear()
             self.association_requests.clear()
             self.datasets.clear()
             self.initial_setup(signing_key=self.signing_key)
