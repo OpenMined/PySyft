@@ -8,6 +8,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Tuple
 from typing import Union
 
@@ -21,14 +22,7 @@ from ... import lib
 from ...ast.klass import pointerize_args_and_kwargs
 from ...core.adp.data_subject_ledger import DataSubjectLedger
 from ...util import inherit_tags
-from ..common.serde.capnp import CapnpModule
-from ..common.serde.capnp import chunk_bytes
-from ..common.serde.capnp import combine_bytes
-from ..common.serde.capnp import get_capnp_schema
-from ..common.serde.capnp import serde_magic_header
-from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import serializable
-from ..common.serde.serialize import _serialize as serialize
 from ..common.uid import UID
 from ..node.abstract.node import AbstractNodeClient
 from ..node.common.action import smpc_action_functions
@@ -446,7 +440,7 @@ def to32bit(np_array: np.ndarray, verbose: bool = True) -> np.ndarray:
     return out
 
 
-@serializable(capnp_bytes=True)
+@serializable(recursive_serde=True)
 class Tensor(
     PassthroughTensor,
     PhiTensorAncestor,
@@ -454,7 +448,10 @@ class Tensor(
     # MPCTensorAncestor,
 ):
 
-    # __attr_allowlist__ = ["child", "tag_name", "public_shape", "public_dtype"]
+    __attr_allowlist__ = ["child", "tag_name", "public_shape", "public_dtype"]
+    __serde_overrides__: Dict[str, Sequence[Callable]] = {
+        "public_dtype": ((lambda x: str(x), lambda x: np.dtype(x)))
+    }
 
     PointerClassOverride = TensorPointer
 
@@ -624,42 +621,6 @@ class Tensor(
 
         return None
 
-    def _object2bytes(self) -> bytes:
-        schema = get_capnp_schema(schema_file="tensor.capnp")
-        tensor_struct: CapnpModule = schema.Tensor  # type: ignore
-        tensor_msg = tensor_struct.new_message()
-
-        # this is how we dispatch correct deserialization of bytes
-        tensor_msg.magicHeader = serde_magic_header(type(self))
-
-        chunk_bytes(serialize(self.child, to_bytes=True), "child", tensor_msg)  # type: ignore
-
-        tensor_msg.publicShape = serialize(self.public_shape, to_bytes=True)
-
-        # upcast the String class before setting to capnp
-        public_dtype_func = getattr(
-            self.public_dtype, "upcast", lambda: self.public_dtype
-        )
-        tensor_msg.publicDtype = str(public_dtype_func())
-        tensor_msg.tagName = self.tag_name
-
-        return tensor_msg.to_bytes_packed()
-
-    @staticmethod
-    def _bytes2object(buf: bytes) -> Tensor:
-        schema = get_capnp_schema(schema_file="tensor.capnp")
-        tensor_struct: CapnpModule = schema.Tensor  # type: ignore
-        # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
-        MAX_TRAVERSAL_LIMIT = 2**64 - 1
-        tensor_msg = tensor_struct.from_bytes_packed(
-            buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        )
-
-        tensor = Tensor(
-            child=deserialize(combine_bytes(tensor_msg.child), from_bytes=True),
-            public_shape=deserialize(tensor_msg.publicShape, from_bytes=True),
-            public_dtype=np.dtype(tensor_msg.publicDtype),
-        )
-        tensor.tag_name = tensor_msg.tagName
-
-        return tensor
+    def mpc_swap(self, other: Tensor) -> Tensor:
+        self.child.child = other.child.child
+        return self

@@ -15,8 +15,6 @@ from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from pydantic import BaseSettings
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base
 
 # relative
 from .... import __version__
@@ -26,11 +24,12 @@ from ....logger import debug
 from ....logger import error
 from ....logger import info
 from ....logger import traceback_and_raise
+from ....shylock import ShylockPymongoBackend
+from ....shylock import configure
+from ....telemetry import instrument
 from ....util import get_subclasses
-from ...common.message import EventualSyftMessageWithoutReply
 from ...common.message import ImmediateSyftMessageWithReply
 from ...common.message import ImmediateSyftMessageWithoutReply
-from ...common.message import SignedEventualSyftMessageWithoutReply
 from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedImmediateSyftMessageWithoutReply
 from ...common.message import SignedMessage
@@ -51,7 +50,7 @@ from .action.exception_action import UnknownPrivateException
 from .client import Client
 from .metadata import Metadata
 from .node_manager.redis_store import RedisStore
-from .node_manager.setup_manager import SetupManager
+from .node_manager.setup_manager import NoSQLSetupManager
 from .node_service.auth import AuthorizationException
 from .node_service.child_node_lifecycle.child_node_lifecycle_service import (
     ChildNodeLifecycleService,
@@ -65,11 +64,7 @@ from .node_service.msg_forwarding.msg_forwarding_service import (
     SignedMessageWithoutReplyForwardingService,
 )
 from .node_service.node_credential.node_credential_messages import NodeCredentials
-from .node_service.node_service import EventualNodeServiceWithoutReply
 from .node_service.node_service import ImmediateNodeServiceWithReply
-from .node_service.object_action.obj_action_service import (
-    EventualObjectActionServiceWithoutReply,
-)
 from .node_service.object_action.obj_action_service import (
     ImmediateObjectActionServiceWithReply,
 )
@@ -85,8 +80,7 @@ from .node_service.resolve_pointer_type.resolve_pointer_type_service import (
 )
 from .node_service.testing_services.repr_service import ReprService
 from .node_service.vpn.vpn_messages import VPNRegisterMessage
-from .node_table import Base
-from .node_table.node import Node as NodeRow
+from .node_table.node import NoSQLNode
 
 # this generic type for Client bound by Client
 ClientT = TypeVar("ClientT", bound=Client)
@@ -97,6 +91,7 @@ class DuplicateRequestException(Exception):
     pass
 
 
+@instrument
 class Node(AbstractNode):
 
     """
@@ -128,6 +123,7 @@ class Node(AbstractNode):
         db_engine: Any = None,
         store_type: type = RedisStore,
         settings: Optional[BaseSettings] = None,
+        document_store: bool = False,
     ):
 
         # The node has a name - it exists purely to help the
@@ -140,20 +136,32 @@ class Node(AbstractNode):
 
         self.settings = settings
 
-        # TableBase is the base class from which all ORM classes must inherit
-        # If one isn't provided then we can simply make one.
-        if TableBase is None:
-            TableBase = declarative_base()
+        if self.settings and self.settings.MONGO_USERNAME:
+            # third party
+            from pymongo import MongoClient
 
-        # If not provided a session connecting us to the database, let's just
-        # initialize a database in memory
-        if db_engine is None:
-            db_engine = create_engine("sqlite://", echo=False)
-            Base.metadata.create_all(db_engine)  # type: ignore
+            # FIXME: Modify to use environment variable
+            self.nosql_db_engine = MongoClient(  # nosec
+                host=self.settings.MONGO_HOST,
+                port=self.settings.MONGO_PORT,
+                username=self.settings.MONGO_USERNAME,
+                password=self.settings.MONGO_PASSWORD,
+                uuidRepresentation="standard",
+            )
+        else:
+            # third party
+            from pymongo_inmemory import MongoClient
+
+            self.nosql_db_engine = MongoClient(
+                port=27017, uuidRepresentation="standard"
+            )
+
+        self.db_name = "app"
+        if document_store:
+            configure(ShylockPymongoBackend.create(self.nosql_db_engine, self.db_name))
 
         # cache these variables on self
         self.TableBase = TableBase
-        self.db_engine = db_engine
         # self.db = db
         # self.session = db
 
@@ -168,8 +176,12 @@ class Node(AbstractNode):
         # become quite numerous (or otherwise fill up RAM).
         # self.store is the elastic memory.
 
-        self.store = store_type(db=self.db_engine, settings=settings)
-        self.setup = SetupManager(database=self.db_engine)
+        self.store = store_type(
+            settings=settings,
+            nosql_db_engine=self.nosql_db_engine,
+            db_name=self.db_name,
+        )
+        self.setup = NoSQLSetupManager(self.nosql_db_engine, self.db_name)
 
         # We need to register all the services once a node is created
         # On the off chance someone forgot to do this (super unlikely)
@@ -214,12 +226,6 @@ class Node(AbstractNode):
             Type[ImmediateSyftMessageWithoutReply], Any
         ] = {}
 
-        # for messages which don't need to be run right now
-        # and will not generate a reply.
-        self.eventual_msg_without_reply_router: Dict[
-            Type[EventualSyftMessageWithoutReply], EventualNodeServiceWithoutReply
-        ] = {}
-
         # This is the list of services which all node support.
         # You can read more about them by reading their respective
         # class documentation.
@@ -244,12 +250,6 @@ class Node(AbstractNode):
         self.immediate_services_with_reply.append(ImmediateObjectSearchService)
         self.immediate_services_with_reply.append(GetReprService)
         self.immediate_services_with_reply.append(ResolvePointerTypeService)
-
-        # for services which can run at a later time and do not return a reply
-        self.eventual_services_without_reply = list()
-        self.eventual_services_without_reply.append(
-            EventualObjectActionServiceWithoutReply
-        )
 
         # This is a special service which cannot be listed in any
         # of the other services because it handles messages of all types.
@@ -300,11 +300,11 @@ class Node(AbstractNode):
         try:
             setup = self.setup.first()
             # if its empty it will be set during CreateInitialSetUpMessage
-            if setup.node_id != "":
+            if setup.node_uid != "":
                 try:
-                    node_id = UID.from_string(setup.node_id)
+                    node_id = UID.from_string(setup.node_uid)
                 except Exception as e:
-                    error(f"Invalid Node UID in Setup Table. {setup.node_id}")
+                    error(f"Invalid Node UID in Setup Table. {setup.node_uid}")
                     raise e
 
                 location = SpecificLocation(name=setup.domain_name, id=node_id)
@@ -376,9 +376,9 @@ class Node(AbstractNode):
             version=str(__version__),
         )
 
-    def add_peer_routes(self, peer: NodeRow) -> None:
+    def add_peer_routes(self, peer: NoSQLNode) -> None:
         try:
-            routes = self.node_route.query(node_id=peer.id)  # type: ignore
+            routes = peer.node_route
             for route in routes:
                 self.add_route(
                     node_id=UID.from_string(value=peer.node_uid),
@@ -503,7 +503,7 @@ class Node(AbstractNode):
             debug(
                 f"> Received with Reply updated message {contents.pprint} {contents.id} @ {self.pprint}"
             )
-            # try to process message
+
             response = self.process_message(
                 msg=msg, router=self.immediate_msg_with_reply_router
             )
@@ -520,7 +520,9 @@ class Node(AbstractNode):
                 public_exception = e
             else:
                 private_log_msg = f"An {type(e)} has been triggered"  # dont send
-                public_exception = UnknownPrivateException(str(e))
+                public_exception = UnknownPrivateException(
+                    "UnknownPrivateException has been triggered."
+                )
             try:
                 # try printing a useful message
                 private_log_msg += f" by {type(contents)} "
@@ -541,13 +543,7 @@ class Node(AbstractNode):
 
         # maybe I shouldn't have created process_message because it screws up
         # all the type inference.
-        res_msg = response.sign(signing_key=self.signing_key)  # type: ignore
-        output = (
-            f"> {self.pprint} Signing {res_msg.pprint} with "
-            + f"{self.key_emoji(key=self.signing_key.verify_key)}"  # type: ignore
-        )
-        debug(output)
-        return res_msg
+        return response.sign(signing_key=self.signing_key)  # type: ignore
 
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
@@ -559,6 +555,7 @@ class Node(AbstractNode):
             )
 
         self.process_message(msg=msg, router=self.immediate_msg_without_reply_router)
+
         try:
             pass
         except Exception as e:
@@ -606,15 +603,10 @@ class Node(AbstractNode):
             #     )
         return None
 
-    def recv_eventual_msg_without_reply(
-        self, msg: SignedEventualSyftMessageWithoutReply
-    ) -> None:
-        self.process_message(msg=msg, router=self.eventual_msg_without_reply_router)
-
-    # TODO: Add SignedEventualSyftMessageWithoutReply and others
     def process_message(
         self, msg: SignedMessage, router: dict
     ) -> Union[SyftMessage, None]:
+
         self.message_counter += 1
         try:
             contents = getattr(
@@ -723,22 +715,6 @@ class Node(AbstractNode):
                     self.immediate_msg_without_reply_router[
                         handler_type_subclass
                     ] = iswr_instance
-
-        for eswr in self.eventual_services_without_reply:
-            # Create a single instance of the service to cache in the router corresponding
-            # to one or more message types.
-            eswr_instance = eswr()
-            for handler_type in eswr.message_handler_types():
-
-                # for each explicitly supported type, add it to the router
-                self.eventual_msg_without_reply_router[handler_type] = eswr_instance
-
-                # for all sub-classes of the explicitly supported type, add them
-                # to the router as well.
-                for handler_type_subclass in get_subclasses(obj_type=handler_type):
-                    self.eventual_msg_without_reply_router[
-                        handler_type_subclass
-                    ] = eswr_instance
 
         # Set the services_registered flag to true so that we know that all services
         # have been properly registered. This mostly exists because someone might

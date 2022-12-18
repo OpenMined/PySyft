@@ -144,7 +144,7 @@ class ProxyDataset:
         if public_url:
             grid_url = GridURL.from_url(url=download_url)
             # add /blob to path
-            grid_url.path = f"/blob{grid_url.path}"
+            grid_url.path = f"/blob{str(grid_url.path)}"
             download_url = grid_url.url_path
 
         self.url = download_url

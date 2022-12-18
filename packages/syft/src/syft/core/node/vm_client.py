@@ -8,6 +8,7 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # relative
+from ..common.serde.serializable import serializable
 from ..common.uid import UID
 from ..io.location import Location
 from ..io.location.specific import SpecificLocation
@@ -16,7 +17,16 @@ from .common.client import Client
 
 
 @final
+@serializable(recursive_serde=True)
 class VirtualMachineClient(Client):
+    __attr_allowlist__ = [
+        "name",
+        "routes",
+        "network",
+        "domain",
+        "device",
+        "vm",
+    ]
 
     vm: SpecificLocation  # redefine the type of self.vm to not be optional
 
@@ -47,6 +57,10 @@ class VirtualMachineClient(Client):
     @property
     def id(self) -> UID:
         return self.vm.id
+
+    @id.setter
+    def id(self, new_id: UID) -> None:
+        self.vm.id = new_id
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__}: {self.name}>"

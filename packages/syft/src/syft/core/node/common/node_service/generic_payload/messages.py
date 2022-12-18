@@ -18,7 +18,7 @@ from ....abstract.node_service_interface import NodeServiceInterface
 
 
 class GenericPayloadMessage(ImmediateSyftMessageWithReply):
-    __attr_allowlist__ = ["id", "payload", "address", "reply_to", "msg_id"]
+    __attr_allowlist__ = ["id", "payload", "address", "reply_to", "id"]
 
     def __init__(
         self,
@@ -32,7 +32,7 @@ class GenericPayloadMessage(ImmediateSyftMessageWithReply):
 
 
 class GenericPayloadReplyMessage(ImmediateSyftMessageWithoutReply):
-    __attr_allowlist__ = ["id", "payload", "address", "msg_id"]
+    __attr_allowlist__ = ["id", "payload", "address", "id"]
 
     def __init__(
         self,
@@ -50,8 +50,6 @@ class GenericPayloadMessageWithReply:
     message_reply_type = GenericPayloadReplyMessage
 
     def __init__(self, kwargs: Optional[Dict[str, Any]] = None) -> None:
-        if hasattr(kwargs, "upcast"):
-            kwargs = kwargs.upcast()  # type: ignore
         self.kwargs: Dict[str, Any] = kwargs if kwargs is not None else {}
 
     def run(

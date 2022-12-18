@@ -1,7 +1,7 @@
 # third party
 
 # stdlib
-from typing import Tuple
+from typing import Sequence
 from typing import Union
 
 # third party
@@ -21,7 +21,7 @@ class Loss(object):
 
     """
 
-    __attr_allowlist__: Tuple[str, ...] = ()
+    __attr_allowlist__: Sequence[str] = ()
 
     def forward(
         self,

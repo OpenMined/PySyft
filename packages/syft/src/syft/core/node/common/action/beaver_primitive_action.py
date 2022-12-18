@@ -38,7 +38,7 @@ class BeaverPrimitiveAction(ImmediateActionWithoutReply):
         "kwargs",
         "id_at_location",
         "address",
-        "msg_id",
+        "id",
         "_id",
     ]
 

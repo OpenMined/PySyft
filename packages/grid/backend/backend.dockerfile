@@ -37,9 +37,9 @@ RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) != "x86_64" ]; then 
   # pip install --user /wheels/tensorflow_compression-2.10.0-cp310-cp310-linux_aarch64.whl; \
   fi
 
-# install custom built python 3.10 wheel
+# install tff
 RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) = "x86_64" ]; then \
-  pip install --user /wheels/tensorflow_federated-0.36.0-py2.py3-none-any.whl; \
+  pip install --user tensorflow-federated==0.40.0; \
   fi
 
 WORKDIR /app
@@ -79,22 +79,21 @@ WORKDIR /app
 # copy grid
 COPY grid/backend /app/
 
-# copy syft
-# until we have stable releases make sure to install syft
+# copy skeleton to do package install
 COPY syft/setup.py /app/syft/setup.py
 COPY syft/setup.cfg /app/syft/setup.cfg
-COPY syft/src /app/syft/src
-RUN --mount=type=cache,target=/root/.cache \
-  pip install --user -r requirements.txt
-
-# install tff
-RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) = "x86_64" ]; then \
-  pip install --user tensorflow-federated==0.38.0; \
-  fi
+COPY syft/pyproject.toml /app/syft/pyproject.toml
+COPY syft/MANIFEST.in /app/syft/MANIFEST.in
+COPY syft/src/syft/VERSION /app/syft/src/syft/VERSION
+COPY syft/src/syft/capnp /app/syft/src/syft/capnp
+COPY syft/src/syft/cache /app/syft/src/syft/cache
 
 # install syft
 RUN --mount=type=cache,target=/root/.cache \
   pip install --user -e /app/syft
+
+# copy any changed source
+COPY syft/src /app/syft/src
 
 # change to worker-start.sh or start-reload.sh as needed
 CMD ["bash", "start.sh"]

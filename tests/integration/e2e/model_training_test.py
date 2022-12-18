@@ -109,6 +109,7 @@ def initialize_model(input_shape) -> nn.Model:
     return model
 
 
+# TODO: Renable this. I think this test is not just flapping its causing the stack to crash
 # @pytest.mark.e2e
 # def test_model_training():
 #     """Remotely train on the list of domains."""

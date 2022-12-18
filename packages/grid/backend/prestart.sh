@@ -27,11 +27,6 @@ then
     ln -sf $(pwd)/oblv-ccli-0.4.0-x86_64-unknown-linux-musl/oblv /usr/local/bin/oblv  #-f is for force
 fi
 
-# Let the DB start
-python /app/grid/backend_prestart.py
-
-# Run migrations
-cd /app && alembic upgrade head
 
 # Create initial data in DB
 python /app/grid/initial_data.py

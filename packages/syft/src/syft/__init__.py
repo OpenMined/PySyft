@@ -91,6 +91,7 @@ from .oblv import get_oblv_public_key
 from .oblv import install_oblv_proxy
 from .oblv import login as oblv_login
 from .registry import NetworkRegistry  # noqa: F401
+from .telemetry import instrument  # noqa: F401
 from .user_settings import UserSettings  # noqa: F401
 from .user_settings import settings  # noqa: F401
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from collections import deque
+from types import MappingProxyType
 from typing import Any
 from typing import Callable
 from typing import Deque
@@ -31,8 +32,6 @@ from ....core.node.common.action.get_or_set_property_action import (
     GetOrSetPropertyAction,
 )
 from ....core.node.common.action.get_or_set_property_action import PropertyActions
-from ....lib.numpy.array import capnp_deserialize
-from ....lib.numpy.array import capnp_serialize
 from ....lib.python.util import upcast
 from ....util import inherit_tags
 from ...adp.data_subject_ledger import DataSubjectLedger
@@ -42,14 +41,7 @@ from ...adp.data_subject_list import DataSubjectArray
 from ...adp.data_subject_list import dslarraytonumpyutf8
 from ...adp.data_subject_list import numpyutf8todslarray
 from ...adp.vectorized_publish import publish
-from ...common.serde.capnp import CapnpModule
-from ...common.serde.capnp import chunk_bytes
-from ...common.serde.capnp import combine_bytes
-from ...common.serde.capnp import get_capnp_schema
-from ...common.serde.capnp import serde_magic_header
-from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
-from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
 from ...node.abstract.node import AbstractNodeClient
 from ...node.common.action.run_class_method_action import RunClassMethodAction
@@ -98,7 +90,7 @@ class TensorWrappedGammaTensorPointer(Pointer):
         "public_shape",
     ]
 
-    __serde_overrides__ = {
+    __serde_overrides__: Dict[str, Sequence[Callable]] = {
         "client": [lambda x: x.address, lambda y: y],
         "public_shape": [lambda x: x, lambda y: upcast(y)],
         "data_subjects": [dslarraytonumpyutf8, numpyutf8todslarray],
@@ -1946,8 +1938,18 @@ def numpy2jax(value: np.array, dtype: np.dtype) -> jnp.array:
 # ATTENTION: Shouldn't this be a subclass of some kind of base tensor so all the numpy
 # methods and properties don't need to be re-implemented on it?
 @dataclass
-@serializable(capnp_bytes=True)
+@serializable(recursive_serde=True)
 class GammaTensor:
+    __attr_allowlist__ = (
+        "child",
+        "data_subjects",
+        "min_vals",
+        "max_vals",
+        "is_linear",
+        "id",
+        "func_str",
+        "sources",
+    )
     """
     A differential privacy tensor that contains data belonging to atleast 2 or more unique data subjects.
 
@@ -2013,7 +2015,17 @@ class GammaTensor:
     id: str = flax.struct.field(
         pytree_node=False, default_factory=lambda: str(randint(0, 2**31 - 1))
     )  # TODO: Need to check if there are any scenarios where this is not secure
+    state: dict = flax.struct.field(pytree_node=False, default_factory=dict)
+    __serde_overrides__: MappingProxyType[str, Sequence[Callable]] = MappingProxyType(
+        {
+            "data_subjects": [dslarraytonumpyutf8, numpyutf8todslarray],
+        }
+    )
     sources: dict = flax.struct.field(pytree_node=False, default_factory=dict)
+
+    @classmethod
+    def serde_constructor(cls, kwargs: Dict[str, Any]) -> GammaTensor:
+        return GammaTensor(**kwargs)
 
     def __post_init__(
         self,
@@ -4741,91 +4753,3 @@ class GammaTensor:
             else:
                 input_tensors += GammaTensor.get_input_tensors(tensor.sources)
         return input_tensors
-
-    def _object2bytes(self) -> bytes:
-        schema = get_capnp_schema(schema_file="gamma_tensor.capnp")
-
-        gamma_tensor_struct: CapnpModule = schema.GammaTensor  # type: ignore
-        gamma_msg = gamma_tensor_struct.new_message()
-        # this is how we dispatch correct deserialization of bytes
-        gamma_msg.magicHeader = serde_magic_header(type(self))
-
-        # do we need to serde func? if so how?
-        # what about the state dict?
-
-        if isinstance(self.child, np.ndarray) or np.isscalar(self.child):
-            chunk_bytes(capnp_serialize(np.array(self.child), to_bytes=True), "child", gamma_msg)  # type: ignore
-            gamma_msg.isNumpy = True
-        elif isinstance(self.child, jnp.ndarray):
-            chunk_bytes(
-                capnp_serialize(jax2numpy(self.child, self.child.dtype), to_bytes=True),
-                "child",
-                gamma_msg,
-            )
-            gamma_msg.isNumpy = True
-        else:
-            chunk_bytes(serialize(self.child, to_bytes=True), "child", gamma_msg)  # type: ignore
-            gamma_msg.isNumpy = False
-
-        gamma_msg.sources = serialize(self.sources, to_bytes=True)
-        chunk_bytes(
-            capnp_serialize(dslarraytonumpyutf8(self.data_subjects), to_bytes=True),
-            "dataSubjects",
-            gamma_msg,
-        )
-
-        # Explicity convert lazyrepeatarray data to ndarray
-        self.min_vals.data = np.array(self.min_vals.data)
-        self.max_vals.data = np.array(self.max_vals.data)
-
-        gamma_msg.minVal = serialize(self.min_vals, to_bytes=True)
-        gamma_msg.maxVal = serialize(self.max_vals, to_bytes=True)
-        gamma_msg.isLinear = self.is_linear
-        gamma_msg.id = self.id
-        gamma_msg.funcStr = self.func_str
-
-        # return gamma_msg.to_bytes_packed()
-        return gamma_msg.to_bytes()
-
-    @staticmethod
-    def _bytes2object(buf: bytes) -> GammaTensor:
-        schema = get_capnp_schema(schema_file="gamma_tensor.capnp")
-        gamma_struct: CapnpModule = schema.GammaTensor  # type: ignore
-        # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
-        MAX_TRAVERSAL_LIMIT = 2**64 - 1
-        # capnp from_bytes is now a context
-        with gamma_struct.from_bytes(
-            buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        ) as gamma_msg:
-
-            if gamma_msg.isNumpy:
-                child = capnp_deserialize(
-                    combine_bytes(gamma_msg.child), from_bytes=True
-                )
-            else:
-                child = deserialize(combine_bytes(gamma_msg.child), from_bytes=True)
-
-            state = deserialize(gamma_msg.sources, from_bytes=True)
-
-            data_subjects = numpyutf8todslarray(
-                capnp_deserialize(
-                    combine_bytes(gamma_msg.dataSubjects), from_bytes=True
-                )
-            )
-
-            min_val = deserialize(gamma_msg.minVal, from_bytes=True)
-            max_val = deserialize(gamma_msg.maxVal, from_bytes=True)
-            is_linear = gamma_msg.isLinear
-            id_str = gamma_msg.id
-            func_str = gamma_msg.funcStr
-
-            return GammaTensor(
-                child=child,
-                data_subjects=data_subjects,
-                min_vals=min_val,
-                max_vals=max_val,
-                is_linear=is_linear,
-                sources=state,
-                id=id_str,
-                func_str=func_str,
-            )

@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-package syft.lib.python;
-
-message Range {
-  int64 start = 1;
-  int64 stop = 2;
-  int64 step = 3;
-}

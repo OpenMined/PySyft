@@ -1,6 +1,3 @@
-# third party
-import pytest
-
 # syft absolute
 import syft as sy
 from syft import VirtualMachine
@@ -8,17 +5,12 @@ from syft import deserialize
 from syft import serialize
 
 
-@pytest.mark.asyncio
-async def test_client_from_metadata(domain: sy.Domain) -> None:
+def test_client_from_metadata(domain: sy.Domain) -> None:
     client_metadata = domain.get_metadata_for_client()
 
-    spec_location, name, id = sy.DomainClient.deserialize_client_metadata_from_node(
-        metadata=serialize(client_metadata)
-    )
-
-    assert domain.domain == spec_location
-    assert name == "Alice"
-    assert id == domain.id
+    assert domain.domain == client_metadata.node
+    assert "Alice" == client_metadata.name
+    assert domain.id == client_metadata.id
 
 
 def test_client_serde() -> None:

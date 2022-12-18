@@ -149,7 +149,7 @@ def get_specific_dataset_metadata_route(
     if isinstance(reply, ExceptionMessage):
         return {"error": reply.exception_msg}
     else:
-        return reply.metadatas.upcast()
+        return reply.metadatas
 
 
 @router.put("/{dataset_id}", status_code=200, response_class=JSONResponse)

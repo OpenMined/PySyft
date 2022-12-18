@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-package syft.lib.python;
-
-message Float {
-  double data = 1;
-}

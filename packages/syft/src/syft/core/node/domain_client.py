@@ -18,6 +18,7 @@ import pandas as pd
 # relative
 from ... import __version__
 from ...logger import traceback_and_raise
+from ...telemetry import instrument
 from ...util import bcolors
 from ...util import print_dynamic_log
 from ...util import validate_field
@@ -214,7 +215,7 @@ class RequestQueueClient(AbstractNodeClient):
 
     def _update_handler(self, request_handler: Dict[str, Any], keep: bool) -> None:
         # relative
-        from ..common.node_service.request_handler.request_handler_messages import (
+        from .common.node_service.request_handler.request_handler_messages import (
             UpdateRequestHandlerMessage,
         )
 
@@ -231,7 +232,7 @@ class RequestHandlerQueueClient:
     @property
     def handlers(self) -> List[Dict]:
         # relative
-        from ..common.node_service.request_handler.request_handler_messages import (
+        from .common.node_service.request_handler.request_handler_messages import (
             GetAllRequestHandlersMessage,
         )
 
@@ -295,6 +296,7 @@ class RequestHandlerQueueClient:
         return pd.DataFrame(handler_lines)
 
 
+@instrument
 class DomainClient(Client):
 
     domain: SpecificLocation
@@ -325,7 +327,6 @@ class DomainClient(Client):
         )
 
         self.requests = RequestQueueClient(client=self)
-
         self.post_init()
 
         self.users = UserRequestAPI(client=self)
@@ -378,9 +379,9 @@ class DomainClient(Client):
         self, obj_ptr: Type[Pointer], address: Address, pointable: bool = False
     ) -> None:
         content = {
-            RequestAPIFields.ADDRESS: serialize(address)
-            .SerializeToString()  # type: ignore
-            .decode(PyGridClientEnums.ENCODING),
+            RequestAPIFields.ADDRESS: serialize(address, to_bytes=True).decode(
+                PyGridClientEnums.ENCODING
+            ),
             RequestAPIFields.UID: str(obj_ptr.id_at_location.value),
             RequestAPIFields.POINTABLE: pointable,
         }
@@ -583,7 +584,7 @@ class DomainClient(Client):
         skip_checks: bool = False,
         chunk_size: int = 536870912,  # 500 MB
         use_blob_storage: bool = True,
-        **metadata: Dict,
+        **metadata: Any,
     ) -> None:
         # relative
         from ..tensor.autodp.gamma_tensor import GammaTensor
@@ -698,13 +699,11 @@ class DomainClient(Client):
                     # if pref == "n":
                     #     raise Exception("Dataset loading cancelled.")
 
-        # serialize metadata
-        metadata["name"] = bytes(name, "utf-8")  # type: ignore
-        metadata["description"] = bytes(description, "utf-8")  # type: ignore
+        metadata["name"] = name
+        metadata["description"] = description
 
         for k, v in metadata.items():
-            if isinstance(v, str):  # type: ignore
-                metadata[k] = bytes(v, "utf-8")  # type: ignore
+            metadata[k] = v
 
         # blob storage can only be used if domain node has blob storage enabled.
         if not self.settings.get("use_blob_storage", False):

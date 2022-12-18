@@ -4,19 +4,15 @@ from typing import Optional
 from typing import Union
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # relative
 from ...logger import debug
 from ...logger import traceback_and_raise
-from ...proto.core.io.address_pb2 import Address as Address_PB
 from ...util import key_emoji as key_emoji_util
 from ...util import random_name
-from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import serializable
-from ..common.serde.serialize import _serialize as serialize
 from ..common.uid import UID
 from .location import Location
 
@@ -26,8 +22,9 @@ class Unspecified(object):
         return "Unspecified"
 
 
-@serializable()
+@serializable(recursive_serde=True)
 class Address:
+    __attr_allowlist__ = ["name", "network", "domain", "device", "vm"]
     name: Optional[str]
 
     def __init__(
@@ -126,75 +123,6 @@ class Address:
         )
 
         return address
-
-    def _object2proto(self) -> Address_PB:
-        """Returns a protobuf serialization of self.
-
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms the current object into the corresponding
-        Protobuf object so that it can be further serialized.
-
-        :return: returns a protobuf object
-        :rtype: Address_PB
-
-        .. note::
-            This method is purely an internal method. Please use serialize(object) or one of
-            the other public serialization methods if you wish to serialize an
-            object.
-        """
-        return Address_PB(
-            name=self.name,
-            has_network=self.network is not None,
-            network=serialize(self.network) if self.network is not None else None,
-            has_domain=self.domain is not None,
-            domain=serialize(self.domain) if self.domain is not None else None,
-            has_device=self.device is not None,
-            device=serialize(self.device) if self.device is not None else None,
-            has_vm=self.vm is not None,
-            vm=serialize(self.vm) if self.vm is not None else None,
-        )
-
-    @staticmethod
-    def _proto2object(proto: Address_PB) -> "Address":
-        """Creates a ObjectWithID from a protobuf
-
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms a protobuf object into an instance of this class.
-
-        :return: returns an instance of ObjectWithID
-        :rtype: ObjectWithID
-
-        .. note::
-            This method is purely an internal method. Please use syft.deserialize()
-            if you wish to deserialize an object.
-        """
-        return Address(
-            name=proto.name,
-            network=_deserialize(blob=proto.network) if proto.has_network else None,
-            domain=_deserialize(blob=proto.domain) if proto.has_domain else None,
-            device=_deserialize(blob=proto.device) if proto.has_device else None,
-            vm=_deserialize(blob=proto.vm) if proto.has_vm else None,
-        )
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Return the type of protobuf object which stores a class of this type
-
-        As a part of serialization and deserialization, we need the ability to
-        lookup the protobuf object type directly from the object type. This
-        static method allows us to do this.
-
-        Importantly, this method is also used to create the reverse lookup ability within
-        the metaclass of Serializable. In the metaclass, it calls this method and then
-        it takes whatever type is returned from this method and adds an attribute to it
-        with the type of this class attached to it. See the MetaSerializable class for details.
-
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
-
-        """
-
-        return Address_PB
 
     @property
     def network(self) -> Optional[Location]:

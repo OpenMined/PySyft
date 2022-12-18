@@ -5,17 +5,11 @@ from typing import Optional
 from typing import Union
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
 # relative
 from .....lib.python.list import List as SyftList
-from .....proto.core.node.common.action.beaver_action_pb2 import (
-    BeaverAction as BeaverAction_PB,
-)
-from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serializable import serializable
-from ....common.serde.serialize import _serialize as serialize
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
@@ -26,8 +20,10 @@ from .common import ImmediateActionWithoutReply
 BEAVER_CACHE: Dict[UID, StorableObject] = {}  # Global cache for spdz mask values
 
 
-@serializable()
+@serializable(recursive_serde=True)
 class BeaverAction(ImmediateActionWithoutReply):
+    __attr_allowlist__ = ["id", "values", "locations", "address"]
+
     def __init__(
         self,
         values: Union[List[ShareTensor], List[str]],
@@ -88,20 +84,3 @@ class BeaverAction(ImmediateActionWithoutReply):
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         for value, location in zip(self.values, self.locations):
             BeaverAction.beaver_populate(value, location, node)  # type: ignore
-
-    def _object2proto(self) -> BeaverAction_PB:
-        values = [serialize(value, to_bytes=True) for value in self.values]
-        locations = [serialize(location) for location in self.locations]
-        addr = serialize(self.address)
-        return BeaverAction_PB(values=values, locations=locations, address=addr)
-
-    @staticmethod
-    def _proto2object(proto: BeaverAction_PB) -> "BeaverAction":
-        values = [deserialize(value, from_bytes=True) for value in proto.values]
-        locations = [deserialize(location) for location in proto.locations]
-        addr = deserialize(blob=proto.address)
-        return BeaverAction(values=values, locations=locations, address=addr)
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return BeaverAction_PB

@@ -12,7 +12,6 @@ from typing import Union
 import pandas as pd
 
 # relative
-from ..... import deserialize
 from .....core.tensor.autodp.adp_tensor import ADPTensor
 from .....core.tensor.tensor import Tensor
 from ....common import UID
@@ -178,7 +177,7 @@ class DatasetRequestAPI(RequestAPI):
             new_dataset = {}
             for k, v_blob in dataset.items():
                 if k not in ["str_metadata", "blob_metadata", "manifest"]:
-                    new_dataset[k] = deserialize(v_blob, from_bytes=True)
+                    new_dataset[k] = v_blob
             new_all.append(new_dataset)
 
         return new_all
@@ -341,7 +340,7 @@ class DatasetRequestAPI(RequestAPI):
                 + assets
                 + """</td>
             <td>"""
-                + d.id
+                + d.id.to_string()
                 + """</td>
           </tr>"""
             )

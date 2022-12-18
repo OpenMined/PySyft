@@ -3,21 +3,12 @@ from typing import Any
 from typing import Optional
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # relative
-from ...... import serialize
-from ......proto.core.node.common.service.simple_service_pb2 import (
-    SimpleMessage as SimpleMessage_PB,
-)
-from ......proto.core.node.common.service.simple_service_pb2 import (
-    SimpleReplyMessage as SimpleReplyMessage_PB,
-)
 from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
-from .....common.serde.deserialize import _deserialize
 from .....common.serde.serializable import serializable
 from .....common.uid import UID
 from .....io.address import Address
@@ -41,9 +32,11 @@ class NodeRunnableMessageWithReply:
         return SimpleMessage(address=address, reply_to=reply_to, payload=self)
 
 
-@serializable()
+@serializable(recursive_serde=True)
 @final
 class SimpleMessage(ImmediateSyftMessageWithReply):
+    __attr_allowlist__ = ["id", "payload", "address", "reply_to"]
+
     def __init__(
         self,
         payload: NodeRunnableMessageWithReply,
@@ -54,30 +47,11 @@ class SimpleMessage(ImmediateSyftMessageWithReply):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.payload = payload
 
-    def _object2proto(self) -> SimpleMessage_PB:
-        return SimpleMessage_PB(
-            payload=serialize(self.payload, to_bytes=True),
-            msg_id=serialize(self.id),
-            address=serialize(self.address),
-            reply_to=serialize(self.reply_to),
-        )
 
-    @staticmethod
-    def _proto2object(proto: SimpleMessage_PB) -> "SimpleMessage":
-        return SimpleMessage(
-            payload=_deserialize(blob=proto.payload, from_bytes=True),
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
-            reply_to=_deserialize(blob=proto.reply_to),
-        )
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return SimpleMessage_PB
-
-
-@serializable()
+@serializable(recursive_serde=True)
 class SimpleReplyMessage(ImmediateSyftMessageWithoutReply):
+    __attr_allowlist__ = ["id", "address", "payload"]
+
     def __init__(
         self,
         payload: NodeRunnableMessageWithReply,
@@ -86,22 +60,3 @@ class SimpleReplyMessage(ImmediateSyftMessageWithoutReply):
     ):
         super().__init__(address=address, msg_id=msg_id)
         self.payload = payload
-
-    def _object2proto(self) -> SimpleReplyMessage_PB:
-        return SimpleReplyMessage_PB(
-            payload=serialize(self.payload, to_bytes=True),
-            msg_id=serialize(self.id),
-            address=serialize(self.address),
-        )
-
-    @staticmethod
-    def _proto2object(proto: SimpleReplyMessage_PB) -> "SimpleReplyMessage":
-        return SimpleReplyMessage(
-            payload=_deserialize(proto.payload, from_bytes=True),
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
-        )
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return SimpleReplyMessage_PB

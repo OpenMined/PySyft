@@ -36,7 +36,6 @@ from rich.console import Console
 
 # relative
 from .exceptions import MissingDependency
-from .lib import is_gitpod
 from .mode import EDITABLE_MODE
 from .nb_output import NBOutput
 from .version import __version__
@@ -77,10 +76,7 @@ WARNING_MSG = f"\033[0;33mWARNING:{NO_COLOR}"
 
 
 def get_version_string() -> str:
-    version = str(__version__)
-    if EDITABLE_MODE:
-        version += "-dev"
-    return version
+    return str(__version__) + "-dev" if EDITABLE_MODE else ""
 
 
 @dataclass
@@ -436,7 +432,7 @@ def is_windows() -> bool:
     return False
 
 
-allowed_hosts = ["docker", "vm", "azure", "aws", "gcp"]
+allowed_hosts = ["docker", "azure", "aws", "gcp"]
 commands = ["docker", "git", "ansible-playbook"]
 
 if is_windows():
@@ -550,7 +546,7 @@ def allowed_to_run_docker() -> Tuple[bool, str]:
             bool_result = True
 
         # Check if current user is member of docker group.
-        elif not is_gitpod() and user not in "".join(line):
+        elif user not in "".join(line):
             msg = f"""⚠️  User is not a member of docker group.
 {WHITE}You're currently not allowed to run docker, perform the following steps:\n
     1 - Run \'{GREEN}sudo usermod -a -G docker $USER\'{WHITE} to add docker permissions.

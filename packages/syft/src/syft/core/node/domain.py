@@ -24,6 +24,7 @@ from ...logger import critical
 from ...logger import debug
 from ...logger import info
 from ...logger import traceback
+from ...telemetry import instrument
 from ..adp.ledger_store import RedisLedgerStore
 from ..common.message import SignedImmediateSyftMessageWithReply
 from ..common.message import SignedMessage
@@ -34,16 +35,16 @@ from ..io.location import SpecificLocation
 from .common.action.get_object_action import GetObjectAction
 from .common.client import Client
 from .common.node import Node
-from .common.node_manager.association_request_manager import AssociationRequestManager
-from .common.node_manager.dataset_manager import DatasetManager
-from .common.node_manager.environment_manager import EnvironmentManager
-from .common.node_manager.node_manager import NodeManager
-from .common.node_manager.node_route_manager import NodeRouteManager
+from .common.node_manager.association_request_manager import (
+    NoSQLAssociationRequestManager,
+)
+from .common.node_manager.dataset_manager import NoSQLDatasetManager
+from .common.node_manager.node_manager import NoSQLNodeManager
 from .common.node_manager.oblv_key_manager import OblvKeyManager
 from .common.node_manager.redis_store import RedisStore
-from .common.node_manager.request_manager import RequestManager
-from .common.node_manager.role_manager import RoleManager
-from .common.node_manager.user_manager import UserManager
+from .common.node_manager.request_manager import NoSQLRequestManager
+from .common.node_manager.role_manager import NewRoleManager
+from .common.node_manager.user_manager import NoSQLUserManager
 from .common.node_service.association_request.association_request_service import (
     AssociationRequestService,
 )
@@ -85,13 +86,13 @@ from .common.node_service.user_manager.user_manager_service import UserManagerSe
 from .common.node_service.vpn.vpn_service import VPNConnectService
 from .common.node_service.vpn.vpn_service import VPNJoinService
 from .common.node_service.vpn.vpn_service import VPNStatusService
-from .common.node_table.utils import create_memory_db_engine
 from .device import Device
 from .device import DeviceClient
 from .domain_client import DomainClient
 from .domain_service import DomainServiceClass
 
 
+@instrument
 class Domain(Node):
     domain: SpecificLocation
     root_key: Optional[VerifyKey]
@@ -114,10 +115,8 @@ class Domain(Node):
         store_type: type = RedisStore,
         ledger_store_type: type = RedisLedgerStore,
         settings: Optional[BaseSettings] = None,
+        document_store: bool = False,
     ):
-
-        if db_engine is None:
-            db_engine, _ = create_memory_db_engine()
 
         super().__init__(
             name=name,
@@ -130,6 +129,7 @@ class Domain(Node):
             db_engine=db_engine,
             store_type=store_type,
             settings=settings,
+            document_store=document_store,
         )
 
         # share settings with the FastAPI application level
@@ -140,14 +140,14 @@ class Domain(Node):
         self.root_key = root_key
 
         # Database Management Instances
-        self.users = UserManager(db_engine)
-        self.roles = RoleManager(db_engine)
-        self.environments = EnvironmentManager(db_engine)
-        self.association_requests = AssociationRequestManager(db_engine)
-        self.data_requests = RequestManager(db_engine)
-        self.datasets = DatasetManager(db_engine)
-        self.node = NodeManager(db_engine)
-        self.node_route = NodeRouteManager(db_engine)
+        self.users = NoSQLUserManager(self.nosql_db_engine, self.db_name)
+        self.roles = NewRoleManager()
+        self.association_requests = NoSQLAssociationRequestManager(
+            self.nosql_db_engine, self.db_name
+        )
+        self.data_requests = NoSQLRequestManager(self.nosql_db_engine, self.db_name)
+        self.datasets = NoSQLDatasetManager(self.nosql_db_engine, self.db_name)
+        self.node = NoSQLNodeManager(self.nosql_db_engine, self.db_name)
         self.ledger_store = ledger_store_type(settings=settings)
         self.oblv_keys = OblvKeyManager(db_engine)
 
@@ -447,7 +447,7 @@ class Domain(Node):
             self.handled_requests[request.id] = time.time()
         return handled
 
-    def clean_up_handlers(self) -> None:
+    def _clean_up_handlers(self) -> None:
         # this makes sure handlers with timeout expire
         now = time.time()
         alive_handlers = []
@@ -463,11 +463,11 @@ class Domain(Node):
 
     def clear(self, user_role: int) -> bool:
         # Cleanup database tables
-        if user_role == self.roles.owner_role.id:
+        # FIXME: modify to use role manager.
+        if user_role == self.roles.owner_role.id:  # type: ignore
             self.store.clear()
             self.data_requests.clear()
             self.users.clear()
-            self.environments.clear()
             self.association_requests.clear()
             self.datasets.clear()
             self.initial_setup(signing_key=self.signing_key)
@@ -475,7 +475,7 @@ class Domain(Node):
 
         return False
 
-    def clean_up_requests(self) -> None:
+    def _clean_up_requests(self) -> None:
         # this allows a request to be re-handled if the handler somehow failed
         now = time.time()
         processing_wait_secs = 5
@@ -506,8 +506,8 @@ class Domain(Node):
         while True:
             await asyncio.sleep(0.01)
             try:
-                self.clean_up_handlers()
-                self.clean_up_requests()
+                self._clean_up_handlers()
+                self._clean_up_requests()
                 if len(self.request_handlers) > 0:
                     for request in self.requests:
                         # check if we have previously already handled this in an earlier iter

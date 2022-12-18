@@ -1,4 +1,5 @@
 # stdlib
+from typing import Sequence
 from typing import Tuple
 
 # third party
@@ -11,7 +12,7 @@ from ...common.serde.serializable import serializable
 
 @serializable(recursive_serde=True)
 class Initializer(object):
-    __attr_allowlist__: Tuple[str] = ()  # type: ignore
+    __attr_allowlist__: Sequence[str] = ()
     """Base class for parameter weight initializers.
 
     The :class:`Initializer` class represents a weight initializer used
@@ -64,7 +65,7 @@ def decompose_size(size: Tuple[int, ...]) -> Tuple[int, int]:
 
 @serializable(recursive_serde=True)
 class XavierInitialization(Initializer):
-    __attr_allowlist__: Tuple[str] = ()  # type: ignore
+    __attr_allowlist__: Sequence[str] = ()
 
     def call(self, size: Tuple[int, ...]) -> NDArray:
         fan_in, fan_out = decompose_size(size)
