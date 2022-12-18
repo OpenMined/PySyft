@@ -62,8 +62,7 @@ def create_keys_from_db(node):
     file_path = os.getenv("OBLV_KEY_PATH", "/app/content")
     file_name = os.getenv("OBLV_KEY_NAME", "oblv_key")
     keys = node.oblv_keys.get()
-    if keys == None:
-        raise OblvKeyNotFoundError()
+    
     #Creating directory if not exist
     os.makedirs(os.path.dirname(file_path+"/"+file_name+"_private.der"), exist_ok=True)
     f_private = open(file_path+"/"+file_name+"_private.der","w+b")
@@ -116,7 +115,7 @@ def create_key_pair_msg(
         f_public.close()
         debug(type(node))
         node.oblv_keys.remove()
-        node.oblv_keys.add(public,private)
+        node.oblv_keys.add_keys(public,private)
         debug(node.oblv_keys.get())
         # return result.stdout.decode('utf-8')
     else:
@@ -156,8 +155,6 @@ def get_public_key_msg(msg: GetPublicKeyMessage,
         file_path = os.getenv("OBLV_KEY_PATH", "/app/content")
         file_name = os.getenv("OBLV_KEY_NAME", "oblv_key")
         keys = node.oblv_keys.get()
-        if keys == None:
-            raise OblvKeyNotFoundError()
         #Creating directory if not exist
         os.makedirs(os.path.dirname(file_path+"/"+file_name+"_private.der"), exist_ok=True)
         f_private = open(file_path+"/"+file_name+"_private.der","w+b")

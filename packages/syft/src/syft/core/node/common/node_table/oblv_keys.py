@@ -1,15 +1,20 @@
-# third party
-from sqlalchemy import Column
-from sqlalchemy import LargeBinary
-from sqlalchemy import String
-
 # relative
-from . import Base
+from .syft_object import SyftObject
 
 
-class OblvKeys(Base):
-    __tablename__ = "oblv_keys"
+class NoSQLOblvKeys(SyftObject):
+    # version
+    __canonical_name__ = "OblvKeys"
+    __version__ = 1
 
-    id = Column(String(256), primary_key=True)
-    public_key = Column(LargeBinary(3072))
-    private_key = Column(LargeBinary(3072))
+    # fields
+    public_key: bytes
+    private_key: bytes
+
+    # serde / storage rules
+    __attr_state__ = [
+        "public_key",
+        "private_key"
+    ]
+    __attr_searchable__ = []
+    __attr_unique__ = ["private_key"]

@@ -40,7 +40,7 @@ from .common.node_manager.association_request_manager import (
 )
 from .common.node_manager.dataset_manager import NoSQLDatasetManager
 from .common.node_manager.node_manager import NoSQLNodeManager
-from .common.node_manager.oblv_key_manager import OblvKeyManager
+from .common.node_manager.oblv_key_manager import NoSQLOblvKeyManager
 from .common.node_manager.redis_store import RedisStore
 from .common.node_manager.request_manager import NoSQLRequestManager
 from .common.node_manager.role_manager import NewRoleManager
@@ -149,7 +149,7 @@ class Domain(Node):
         self.datasets = NoSQLDatasetManager(self.nosql_db_engine, self.db_name)
         self.node = NoSQLNodeManager(self.nosql_db_engine, self.db_name)
         self.ledger_store = ledger_store_type(settings=settings)
-        self.oblv_keys = OblvKeyManager(db_engine)
+        self.oblv_keys = NoSQLOblvKeyManager(self.nosql_db_engine, self.db_name)
 
         # self.immediate_services_without_reply.append(RequestReceiverService)
         # self.immediate_services_without_reply.append(AcceptOrDenyRequestService)
