@@ -20,10 +20,10 @@ class NoSQLOblvKeyManager(NoSQLDatabaseManager):
         self.add(key_obj)
 
     def get(self) -> NoSQLOblvKeys:
-        result = super().find_one()
+        result = super().all()
         if not result:
             raise OblvKeyNotFoundError
-        return result
+        return result[0]
         
     def remove(self) -> None:
         super().clear()
