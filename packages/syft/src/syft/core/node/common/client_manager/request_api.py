@@ -12,8 +12,6 @@ from typing import Type
 # third party
 from pandas import DataFrame
 
-from .....logger import debug
-
 # relative
 from .....experimental_flags import flags
 from .....telemetry import instrument
