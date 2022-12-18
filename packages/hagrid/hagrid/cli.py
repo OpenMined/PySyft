@@ -159,7 +159,7 @@ def clean(location: str) -> None:
     help="Username for provisioning the remote host",
 )
 @click.option(
-    "--key_path",
+    "--key-path",
     default=None,
     required=False,
     type=str,
@@ -212,24 +212,24 @@ def clean(location: str) -> None:
     help="Disable forcing re-build",
 )
 @click.option(
-    "--no_provision",
+    "--no-provision",
     is_flag=True,
     help="Disable provisioning VMs",
 )
 @click.option(
-    "--node_count",
+    "--node-count",
     default=1,
     required=False,
     type=click.IntRange(1, 250),
     help="Number of independent nodes/VMs to launch",
 )
 @click.option(
-    "--auth_type",
+    "--auth-type",
     default=None,
     type=click.Choice(["key", "password"], case_sensitive=False),
 )
 @click.option(
-    "--ansible_extras",
+    "--ansible-extras",
     default="",
     type=str,
 )
@@ -244,33 +244,33 @@ def clean(location: str) -> None:
     help="Choose between production and development release",
 )
 @click.option(
-    "--cert_store_path",
+    "--cert-store-path",
     default="/home/om/certs",
     required=False,
     type=str,
     help="Remote path to store and load TLS cert and key",
 )
 @click.option(
-    "--upload_tls_cert",
+    "--upload-tls-cert",
     default="",
     required=False,
     type=str,
-    help="Local path to TLS cert to upload and store at --cert_store_path",
+    help="Local path to TLS cert to upload and store at --cert-store-path",
 )
 @click.option(
-    "--upload_tls_key",
+    "--upload-tls-key",
     default="",
     required=False,
     type=str,
-    help="Local path to TLS private key to upload and store at --cert_store_path",
+    help="Local path to TLS private key to upload and store at --cert-store-path",
 )
 @click.option(
-    "--no_blob_storage",
+    "--no-blob-storage",
     is_flag=True,
     help="Disable blob storage",
 )
 @click.option(
-    "--image_name",
+    "--image-name",
     default=None,
     required=False,
     type=str,
@@ -284,7 +284,7 @@ def clean(location: str) -> None:
     help="Container image tag to use",
 )
 @click.option(
-    "--build_src",
+    "--build-src",
     default=DEFAULT_BRANCH,
     required=False,
     type=str,
@@ -298,7 +298,7 @@ def clean(location: str) -> None:
     help="Run docker with a different platform like linux/arm64",
 )
 @click.option(
-    "--no_vpn",
+    "--no-vpn",
     is_flag=True,
     help="Disable tailscale vpn container",
 )
@@ -308,12 +308,12 @@ def clean(location: str) -> None:
     help="Suppress extra launch outputs",
 )
 @click.option(
-    "--from_template",
+    "--from-template",
     is_flag=True,
     help="Launch node using the manifest template",
 )
 @click.option(
-    "--no_health_checks",
+    "--no-health-checks",
     is_flag=True,
     help="Turn off auto health checks post node launch",
 )
@@ -2537,12 +2537,12 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
     help="Print the cmd without running it",
 )
 @click.option(
-    "--ansible_extras",
+    "--ansible-extras",
     default="",
     type=str,
 )
 @click.option(
-    "--build_src",
+    "--build-src",
     default=DEFAULT_BRANCH,
     required=False,
     type=str,
