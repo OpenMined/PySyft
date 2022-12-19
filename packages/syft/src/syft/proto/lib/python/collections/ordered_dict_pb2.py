@@ -14,13 +14,8 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-# syft absolute
-from syft.proto.core.common import (
-    common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
-)
-
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
-    b'\n/proto/lib/python/collections/ordered_dict.proto\x12\x1bsyft.lib.python.collections\x1a%proto/core/common/common_object.proto"N\n\x0bOrderedDict\x12\x0c\n\x04keys\x18\x01 \x03(\x0c\x12\x0e\n\x06values\x18\x02 \x03(\x0c\x12!\n\x02id\x18\x03 \x01(\x0b\x32\x15.syft.core.common.UIDb\x06proto3'
+    b'\n/proto/lib/python/collections/ordered_dict.proto\x12\x1bsyft.lib.python.collections"+\n\x0bOrderedDict\x12\x0c\n\x04keys\x18\x01 \x03(\x0c\x12\x0e\n\x06values\x18\x02 \x03(\x0c\x62\x06proto3'
 )
 
 
@@ -39,6 +34,6 @@ _sym_db.RegisterMessage(OrderedDict)
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None
-    _ORDEREDDICT._serialized_start = 119
-    _ORDEREDDICT._serialized_end = 197
+    _ORDEREDDICT._serialized_start = 80
+    _ORDEREDDICT._serialized_end = 123
 # @@protoc_insertion_point(module_scope)

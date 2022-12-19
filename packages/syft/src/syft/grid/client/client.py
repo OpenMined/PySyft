@@ -14,16 +14,15 @@ from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 import requests
 
-# syft absolute
-import syft as sy
-
 # relative
 from .. import GridURL
+from ... import __version__
 from ...core.io.connection import ClientConnection
 from ...core.io.route import SoloRoute
 from ...core.node.common.client import Client
 from ...core.node.domain_client import DomainClient
 from ...core.node.network_client import NetworkClient
+from ...util import bcolors
 from ...util import verify_tls
 from .grid_connection import GridHTTPConnection
 
@@ -40,23 +39,18 @@ def connect(
 ) -> Client:
     # Use Server metadata
     # to build client route
-    credentials = credentials if credentials else {}
     conn = conn_type(url=GridURL.from_url(url))  # type: ignore
 
     # get metadata and check for https redirect so that login is sent over TLS
     metadata = conn._get_metadata(timeout=timeout)  # type: ignore
 
-    credentials = credentials if credentials is not None else {}
-
-    if credentials:
+    if not user_key:
+        credentials = credentials if credentials is not None else {}
         metadata, _user_key = conn.login(credentials=credentials)  # type: ignore
         _user_key = SigningKey(_user_key.encode(), encoder=HexEncoder)
     else:
-
-        if not user_key:
-            _user_key = SigningKey.generate()
-        else:
-            _user_key = user_key
+        # metadata = conn.auth_using_key(user_key=user_key)  # type: ignore
+        _user_key = user_key
 
     # Check node client type based on metadata response
     client_type: Union[Type[DomainClient], Type[NetworkClient]]
@@ -112,12 +106,14 @@ def login(
 
         if email == "info@openmined.org":
             print(
-                "WARNING: CHANGE YOUR USERNAME AND PASSWORD!!! \n\nAnyone can login as an admin to your node"
+                f"{bcolors.YELLOW}WARNING:{bcolors.ENDC} CHANGE YOUR USERNAME AND PASSWORD!!! \n\n"
+                + "Anyone can login as an admin to your node"
                 + " right now because your password is still the default PySyft username and password!!!\n"
             )
         else:
             print(
-                "WARNING: CHANGE YOUR PASSWORD!!! \n\nAnyone can login into your account"
+                f"{bcolors.YELLOW}WARNING:{bcolors.ENDC} CHANGE YOUR PASSWORD!!! \n\n"
+                + "Anyone can login into your account"
                 + " right now because your password is the default PySyft password!!!\n"
             )
 
@@ -167,14 +163,23 @@ def login(
                 conn_type=conn_type,
                 timeout=timeout,
             )
-        except requests.ConnectTimeout:
-            raise requests.ConnectTimeout(
-                f"Connection to node with: {url} timed out. Please try again !!!"
+        except requests.ReadTimeout:
+            print(
+                f"\n{bcolors.BOLD}{bcolors.RED}ReadTimeout:{bcolors.ENDC}\n"
+                f"\tConnection to node with url: {grid_url.host_or_ip}:{grid_url.port} "
+                f"timed out after {timeout} seconds.\n"
+                "\tPlease try the following options:\n"
+                "\t- Please try increasing the timeout by passing it as an argument to the login method.\n"
+                "\te.g. `sy.login(email='my@email.com', password='password', url='localhost', timeout=30)`\n"
+                "\t- The domain/network node you're trying to connect could be offline "
+                "at the current moment. Please try again later.\t"
             )
+            return  # type: ignore
+
         except requests.ConnectionError as e:
             if retry_attempt <= retry:
                 print(
-                    f"\nConnectionError: Retrying again.... Attempt: {retry_attempt}",
+                    f"\r{bcolors.BOLD}ConnectionError{bcolors.ENDC}: Retrying again.... Attempt: {retry_attempt}",
                     end="\r",
                 )
                 time.sleep(timeout_btw_retries)
@@ -183,12 +188,22 @@ def login(
         retry_attempt += 1
 
     if node is None:
-        raise requests.ConnectionError(
-            f"Failed to connect to node with: {url}. Please try again !!!"
+        print(
+            f"\n{bcolors.BOLD}{bcolors.RED}ConnectionError:{bcolors.ENDC}\n"
+            f"\tOops !!! We can't seem to connect to the node: '{grid_url.host_or_ip}:{grid_url.port}'\n"
+            "\tPlease try the following options:\n"
+            f"\t- Are you sure the server at '{grid_url.host_or_ip}:{grid_url.port}' is running? "
+            "Please check the `url`/`port` you entered are correct.\n"
+            f"\t- Are you sure you can connect to the server at '{grid_url.host_or_ip}:{grid_url.port}'? "
+            "Perhaps there's a firewall between you and the server?\n"
+            "\t- The domain/network node you're trying to connect could be offline "
+            "at the current moment. Please try again later.\n"
         )
+        return  # type: ignore
 
     if verbose:
         # bit of fanciness
+        sys.stdout.write("\rConnecting to " + str(grid_url.host_or_ip) + "...")
         sys.stdout.write(" done! \t Logging into")
         sys.stdout.write(" " + str(node.name) + "... ")
         if email is None or password is None:
@@ -196,14 +211,14 @@ def login(
         time.sleep(1)  # ok maybe too fancy... but c'mon don't you want to be fancy?
         print("done!")
     else:
-        print("Logging into: ...", str(node.name), " Done...")
+        print("Logging into", str(node.name), "... done!")
 
-    if sy.__version__ != node.version:
+    if __version__ != node.version:
         print(
             "\n**Warning**: The syft version on your system and the node are different."
         )
         print(
-            f"Version on your system: {sy.__version__}\nVersion on the node: {node.version}"
+            f"Version on your system: {__version__}\nVersion on the node: {node.version}"
         )
         print()
 

@@ -81,3 +81,24 @@ def crypto_store_retrieve_object(  # type: ignore
             # Implicit context switch between greenlets.
             gevent.sleep(0)
             ctr += 1
+
+
+def przs_retrieve_object(node: AbstractNode, id_at_location: UID) -> StorableObject:
+    # relative
+    from .beaver_action import BEAVER_CACHE
+
+    # A hard time limit is set on celery worker which prevents infinite execution.
+    ctr = 0
+    while True:
+        store_obj = BEAVER_CACHE.get(id_at_location, None)  # type: ignore
+        if store_obj is None:
+            if ctr % 150_000 == 0:
+                critical(
+                    "PRZS Retrieval failed  due to missing object"
+                    + f" at: {id_at_location} values: {store_obj}"
+                )
+            # Implicit context switch between greenlets.
+            gevent.sleep(0)
+            ctr += 1
+        else:
+            return store_obj

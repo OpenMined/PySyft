@@ -18,6 +18,7 @@ from numpy.typing import ArrayLike
 # relative
 from ...core.node.common.node_manager.user_manager import RefreshBudgetException
 from ...core.tensor.autodp.gamma_tensor_ops import GAMMA_TENSOR_OP
+from ..tensor.config import DEFAULT_INT_NUMPY_TYPE
 from ..tensor.fixed_precision_tensor import FixedPrecisionTensor
 from ..tensor.lazy_repeat_array import lazyrepeatarray
 from ..tensor.passthrough import PassthroughTensor  # type: ignore
@@ -56,6 +57,7 @@ def publish(
     deduct_epsilon_for_user: Callable,
     sigma: float,
     is_linear: bool = True,
+    private: bool = True,
 ) -> np.ndarray:
     """
     This method applies Individual Differential Privacy (IDP) as defined in
@@ -75,7 +77,6 @@ def publish(
         - The privacy budget spent by a query equals the maximum epsilon increase of any
           data subject in the dataset.
     """
-
     # Step 0: Ensure our Tensor's private data is in a form that is usable.
     if isinstance(tensor.child, FixedPrecisionTensor):
         # Incase SMPC is involved, there will be an FPT in the chain to account for
@@ -88,6 +89,11 @@ def publish(
         # ATTENTION: we do the same unboxing below with root_child
         # is this still needed to be done twice?
         value = value.child
+
+    # If the published value is a boolean then, first convert it to integer
+    # and then proceed with the publish operation
+    if value.dtype == bool:
+        value = value.astype(DEFAULT_INT_NUMPY_TYPE)
 
     # Step 1: We obtain all the parameters needed to calculate Epsilons
     if isinstance(tensor.min_vals, lazyrepeatarray):
@@ -121,7 +127,7 @@ def publish(
     )
 
     # its important that its the same type so that eq comparisons below dont break
-    zeros_like = jnp.zeros_like(tensor.child)
+    zeros_like = jnp.zeros_like(value)
 
     # this prevents us from running in an infinite loop
     previous_budget = None
@@ -129,15 +135,17 @@ def publish(
 
     # if we dont return below we will terminate if the tensor gets replaced with zeros
     prev_tensor = None
+    print("VALUE: ", value)
+    print("Tensor: ", tensor.child)
 
-    while can_reduce_further(value=tensor.child, zeros_like=zeros_like):
+    while can_reduce_further(value=value, zeros_like=zeros_like):
         if prev_tensor is None:
-            prev_tensor = tensor.child
+            prev_tensor = value
         else:
-            if (prev_tensor == tensor.child).all():  # type: ignore
+            if (prev_tensor == value).all():  # type: ignore
                 raise Exception("Tensor has not changed and is not all zeros")
             else:
-                prev_tensor = tensor.child
+                prev_tensor = value
 
         if is_linear:
             lipschitz_bounds = coeffs.copy()
@@ -155,7 +163,29 @@ def publish(
         # Step 2: Calculate the epsilon spend for this query
 
         # rdp_constant = all terms in Theorem. 2.7 or 2.8 of https://arxiv.org/abs/2008.11193 EXCEPT alpha
-        rdp_constants = compute_rdp_constant(rdp_params, private=True)
+        if any(np.isnan(l2_norms)):
+            if any(np.isnan(l2_norm_bounds)) or any(np.isinf(l2_norm_bounds)):
+                raise Exception(
+                    "NaN or Inf values in bounds not allowed in PySyft for safety reasons."
+                    "Please contact the OpenMined support team for help."
+                    "\nFor that you can either:"
+                    "\n * describe your issue on our Slack #support channel. To join: https://openmined.slack.com/"
+                    "\n * send us an email describing your problem at support@openmined.org"
+                    "\n * leave us an issue here: https://github.com/OpenMined/PySyft/issues"
+                )
+            rdp_constants = compute_rdp_constant(rdp_params, private=False)
+        else:
+            rdp_constants = compute_rdp_constant(rdp_params, private=private)
+        print("Rdp constants", rdp_constants)
+        if any(rdp_constants < 0):
+            raise Exception(
+                "Negative budget spend not allowed in PySyft for safety reasons."
+                "Please contact the OpenMined support team for help."
+                "For that you can either:"
+                " * describe your issue on our Slack #support channel. To join: https://openmined.slack.com/"
+                " * send us an email describing your problem at support@openmined.org"
+                " * leave us an issue here: https://github.com/OpenMined/PySyft/issues"
+            )
         all_epsilons = ledger._get_epsilon_spend(
             rdp_constants
         )  # This is the epsilon spend for ALL data subjects
@@ -163,6 +193,10 @@ def publish(
             raise Exception(
                 "Negative budget spend not allowed in PySyft for safety reasons."
                 "Please contact the OpenMined support team for help."
+                "\nFor that you can either:"
+                "\n * describe your issue on our Slack #support channel. To join: https://openmined.slack.com/"
+                "\n * send us an email describing your problem at support@openmined.org"
+                "\n * leave us an issue here: https://github.com/OpenMined/PySyft/issues"
             )
 
         epsilon_spend = max(
@@ -176,10 +210,16 @@ def publish(
             raise Exception(
                 "Negative budget spend not allowed in PySyft for safety reasons."
                 "Please contact the OpenMined support team for help."
+                "For that you can either:"
+                " * describe your issue on our Slack #support channel. To join: https://openmined.slack.com/"
+                " * send us an email describing your problem at support@openmined.org"
+                " * leave us an issue here: https://github.com/OpenMined/PySyft/issues"
             )
 
         # Step 3: Check if the user has enough privacy budget for this query
         privacy_budget = get_budget_for_user(verify_key=ledger.user_key)
+        print(privacy_budget)
+        print(epsilon_spend)
         has_budget = epsilon_spend <= privacy_budget
 
         # if we see the same budget and spend twice in a row we have failed to reduce it
@@ -202,7 +242,7 @@ def publish(
         # Step 4: Path 1 - If the User has enough Privacy Budget, we just add noise,
         # deduct budget, and return the result.
         if has_budget:
-            original_output = tensor.child
+            original_output = value
 
             # We sample noise from a cryptographically secure distribution
             # TODO: Replace with discrete gaussian distribution instead of regular
@@ -294,7 +334,7 @@ def publish(
                         epsilon = max(
                             ledger._get_epsilon_spend(
                                 np.asarray(
-                                    compute_rdp_constant(rdp_params, private=True)
+                                    compute_rdp_constant(rdp_params, private=private)
                                 )
                             )
                         )

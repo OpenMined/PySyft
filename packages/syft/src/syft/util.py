@@ -6,11 +6,19 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 import functools
 from itertools import repeat
+import multiprocessing
 import multiprocessing as mp
+from multiprocessing import set_start_method
+from multiprocessing.synchronize import Event as EventClass
+from multiprocessing.synchronize import Lock as LockBase
 import operator
 import os
 from pathlib import Path
+import platform
 from secrets import randbelow
+import sys
+import time
+from types import ModuleType
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -18,6 +26,7 @@ from typing import Iterator
 from typing import List
 from typing import Optional
 from typing import Sequence
+from typing import Tuple
 from typing import Type
 from typing import Union
 
@@ -27,9 +36,6 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from pympler.asizeof import asizeof
 import requests
-
-# syft absolute
-import syft
 
 # relative
 from .logger import critical
@@ -45,6 +51,10 @@ def validate_type(_object: object, _type: type, optional: bool = False) -> Any:
     traceback_and_raise(
         f"Object {_object} should've been of type {_type}, not {_object}."
     )
+
+
+def get_loaded_syft() -> ModuleType:
+    return sys.modules[__name__.split(".")[0]]
 
 
 def validate_field(_object: object, _field: str) -> Any:
@@ -128,7 +138,10 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
 
     # we deal with VerifyAll differently, because we don't it be imported and used by users
     if attr_list[-1] == "VerifyAll":
-        return type(syft.core.common.group.VERIFYALL)
+        # relative
+        from .core.common.group import VERIFYALL
+
+        return type(VERIFYALL)
 
     if attr_list[0] != "syft":
         raise ReferenceError(f"Reference don't match: {attr_list[0]}")
@@ -142,7 +155,7 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
     ):
         raise ReferenceError(f"Reference don't match: {attr_list[1]}")
 
-    return index_modules(a_dict=globals()["syft"], keys=attr_list[1:])
+    return index_modules(a_dict=get_loaded_syft(), keys=attr_list[1:])
 
 
 def get_fully_qualified_name(obj: object) -> str:
@@ -201,7 +214,7 @@ def obj2pointer_type(obj: Optional[object] = None, fqn: Optional[str] = None) ->
             fqn = "syft.lib.python._SyNone"
 
     try:
-        ref = syft.lib_ast.query(fqn, obj_type=type(obj))
+        ref = get_loaded_syft().lib_ast.query(fqn, obj_type=type(obj))
     except Exception as e:
         log = f"Cannot find {type(obj)} {fqn} in lib_ast. {e}"
         critical(log)
@@ -653,3 +666,109 @@ def concurrency_override(count: int = 1) -> Iterator:
 
 def size_mb(obj: Any) -> int:
     return asizeof(obj) / (1024 * 1024)  # MBs
+
+
+class bcolors:
+    HEADER = "\033[95m"
+    BLUE = "\033[94m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    RED = "\033[91m"
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
+
+    @staticmethod
+    def green(message: str) -> str:
+        return bcolors.GREEN + message + bcolors.ENDC
+
+    @staticmethod
+    def red(message: str) -> str:
+        return bcolors.RED + message + bcolors.ENDC
+
+    @staticmethod
+    def yellow(message: str) -> str:
+        return bcolors.YELLOW + message + bcolors.ENDC
+
+    @staticmethod
+    def bold(message: str, end_color: bool = False) -> str:
+        msg = bcolors.BOLD + message
+        if end_color:
+            msg += bcolors.ENDC
+        return msg
+
+    @staticmethod
+    def underline(message: str, end_color: bool = False) -> str:
+        msg = bcolors.UNDERLINE + message
+        if end_color:
+            msg += bcolors.ENDC
+        return msg
+
+    @staticmethod
+    def warning(message: str) -> str:
+        return bcolors.bold(bcolors.yellow(message))
+
+    @staticmethod
+    def success(message: str) -> str:
+        return bcolors.green(message)
+
+    @staticmethod
+    def failure(message: str) -> str:
+        return bcolors.red(message)
+
+
+def print_process(  # type: ignore
+    message: str,
+    finish: EventClass,
+    success: EventClass,
+    lock: LockBase,
+    refresh_rate=0.1,
+) -> None:
+    with lock:
+        while not finish.is_set():  # type: ignore
+            print(f"{bcolors.bold(message)} .", end="\r")
+            time.sleep(refresh_rate)
+            sys.stdout.flush()
+            print(f"{bcolors.bold(message)} ..", end="\r")
+            time.sleep(refresh_rate)
+            sys.stdout.flush()
+            print(f"{bcolors.bold(message)} ...", end="\r")
+            time.sleep(refresh_rate)
+            sys.stdout.flush()
+        if success.is_set():  # type: ignore
+            print(f"{bcolors.success(message)}" + (" " * len(message)), end="\n")
+        else:
+            print(f"{bcolors.failure(message)}" + (" " * len(message)), end="\n")
+        sys.stdout.flush()
+
+
+def os_name() -> str:
+    os_name = platform.system()
+    if os_name.lower() == "darwin":
+        return "macOS"
+    else:
+        return os_name
+
+
+def print_dynamic_log(
+    message: str,
+) -> Tuple[EventClass, EventClass]:
+    """
+    Prints a dynamic log message that will change its color (to green or red) when some process is done.
+
+    message: str = Message to be printed.
+
+    return: tuple of events that can control the log print from the outside of this method.
+    """
+    finish = multiprocessing.Event()
+    success = multiprocessing.Event()
+    lock = multiprocessing.Lock()
+
+    if os_name() == "macOS":
+        # set start method to fork in case of MacOS
+        set_start_method("fork", force=True)
+
+    multiprocessing.Process(
+        target=print_process, args=(message, finish, success, lock)
+    ).start()
+    return (finish, success)

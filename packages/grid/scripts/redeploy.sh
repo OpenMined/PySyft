@@ -35,10 +35,10 @@ rm -rf ${8}
 cp -r ${1} ${8}
 chown -R ${4}:${5} ${8}
 /usr/sbin/runuser -l ${4} -c "pip install -e ${8}/packages/hagrid"
-# /usr/sbin/runuser -l ${4} -c "hagrid launch ${7} ${6} to localhost --repo=${2} --branch=${3} --ansible_extras='docker_volume_destroy=true'"
+# /usr/sbin/runuser -l ${4} -c "hagrid launch ${7} ${6} to localhost --repo=${2} --branch=${3} --ansible-extras='docker_volume_destroy=true'"
 if [[ "${9}" = "true" ]]; then
     echo "Starting Grid with TLS"
-    HAGRID_CMD="hagrid launch ${7} ${6} to localhost --repo=${2} --branch=${3} --release=${RELEASE} --tag=${DOCKER_TAG} --tls --cert_store_path=${10}"
+    HAGRID_CMD="hagrid launch ${7} ${6} to localhost --repo=${2} --branch=${3} --release=${RELEASE} --tag=${DOCKER_TAG} --tls --cert-store-path=${10}"
     echo $HAGRID_CMD
     /usr/sbin/runuser -l ${4} -c "$HAGRID_CMD"
 else

@@ -7,6 +7,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Union
 
 # third party
@@ -14,11 +15,13 @@ import pandas as pd
 import requests
 
 # relative
-from . import login
-from .core.node.common.client import Client
 from .grid import GridURL
 from .logger import error
 from .logger import warning
+
+if TYPE_CHECKING:
+    # relative
+    from .core.node.common.client import Client
 
 NETWORK_REGISTRY_URL = (
     "https://raw.githubusercontent.com/OpenMined/NetworkRegistry/main/networks.json"
@@ -28,7 +31,7 @@ NETWORK_REGISTRY_REPO = "https://github.com/OpenMined/NetworkRegistry"
 
 class NetworkRegistry:
     def __init__(self) -> None:
-        self.networks: List[Dict] = []
+        self.all_networks: List[Dict] = []
         try:
             response = requests.get(NETWORK_REGISTRY_URL)
             network_json = response.json()
@@ -54,13 +57,27 @@ class NetworkRegistry:
             # networks without frontend have a /ping route in 0.7.0
             if not online:
                 try:
-                    url += "ping"
-                    res = requests.get(url, timeout=0.5)
+                    ping_url = url + "ping"
+                    res = requests.get(ping_url, timeout=0.5)
                     online = res.status_code == 200
                 except Exception:
                     online = False
 
             if online:
+                version = network.get("version", None)
+                # Check if syft version was described in NetworkRegistry
+                # If it's unknown, try to update it to an available version.
+                if not version or version == "unknown":
+                    # If not defined, try to ask in /syft/version endpoint (supported by 0.7.0)
+                    try:
+                        version_url = url + "api/v1/syft/version"
+                        res = requests.get(version_url, timeout=0.5)
+                        if res.status_code == 200:
+                            network["version"] = res.json()["version"]
+                        else:
+                            network["version"] = "unknown"
+                    except Exception:
+                        network["version"] = "unknown"
                 return network
             return None
 
@@ -89,7 +106,10 @@ class NetworkRegistry:
             return "(no networks online - try syft.networks.all_networks to see offline networks)"
         return pd.DataFrame(on).to_string()
 
-    def create_client(self, network: Dict[str, Any]) -> Client:
+    def create_client(self, network: Dict[str, Any]) -> Client:  # type: ignore
+        # relative
+        from .grid.client.client import login
+
         try:
             port = int(network["port"])
             protocol = network["protocol"]
@@ -100,7 +120,7 @@ class NetworkRegistry:
             error(f"Failed to login with: {network}. {e}")
             raise e
 
-    def __getitem__(self, key: Union[str, int]) -> Client:
+    def __getitem__(self, key: Union[str, int]) -> Client:  # type: ignore
         if isinstance(key, int):
             return self.create_client(network=self.online_networks[key])
         else:

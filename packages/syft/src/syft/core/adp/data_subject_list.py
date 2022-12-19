@@ -9,6 +9,7 @@ from typing import Optional
 from typing import Set
 from typing import Tuple
 from typing import Union
+from warnings import warn
 
 # third party
 import numpy as np
@@ -63,6 +64,9 @@ def liststrtonumpyutf8(string_list: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
 
 @serializable(recursive_serde=True)
 class DataSubjectList:
+    """[DEPRECATED] This class has been deprecated in v0.7.0 and will be removed in future versions.
+    Instead use the class `sy.DataSubjectArray` to define data subjects for your dataset."""
+
     __attr_allowlist__ = ("one_hot_lookup", "data_subjects_indexed")
     __slots__ = ("one_hot_lookup", "data_subjects_indexed")
 
@@ -76,13 +80,26 @@ class DataSubjectList:
         one_hot_lookup: np.ndarray[Union[DataSubject, str, np.integer]],
         data_subjects_indexed: np.ndaray,
     ) -> None:
+        deprec_msg = (
+            f"{self.__class__.__name__} has been deprecated in v0.7.0 and will be removed in future versions. "
+            "Using this class may throw errors as it is no longer supported for calculation of Auto DP. "
+            "Instead use the class `sy.DataSubjectArray.from_objs` to define data subjects for your dataset."
+        )
+        warn(deprec_msg, DeprecationWarning, stacklevel=2)
         self.one_hot_lookup = one_hot_lookup
         self.data_subjects_indexed = data_subjects_indexed
 
     @staticmethod
     def from_series(entities_dataframe_slice: pd.Series) -> DataSubjectList:
-        """Given a Pandas Series object (such as from
+        """[DEPRECATED] Given a Pandas Series object (such as from
         getting a column from a pandas DataFrame, return an DataSubjectList"""
+
+        deprec_msg = (
+            "DataSubjectList has been deprecated in v0.7.0 and will be removed in future versions. "
+            "Using this class may throw errors as it is no longer supported for calculation of Auto DP. "
+            "Instead use the class `sy.DataSubjectArray.from_objs` to define data subjects for your dataset."
+        )
+        warn(deprec_msg, DeprecationWarning, stacklevel=2)
 
         # This will be the equivalent of the DataSubjectList.data_subjects_indexed
         if not isinstance(entities_dataframe_slice, np.ndarray):
@@ -109,6 +126,13 @@ class DataSubjectList:
 
     @staticmethod
     def from_objs(entities: Union[np.ndarray, list]) -> DataSubjectList:
+
+        deprec_msg = (
+            "DataSubjectList has been deprecated in v0.7.0 and will be removed in future versions. "
+            "Using this class may throw errors as it is no longer supported for calculation of Auto DP. "
+            "Instead use the class `sy.DataSubjectArray.from_objs` to define data subjects for your dataset."
+        )
+        warn(deprec_msg, DeprecationWarning, stacklevel=2)
 
         entities = np.array(entities, copy=False)
         one_hot_lookup, entities_indexed = np.unique(entities, return_inverse=True)
@@ -400,8 +424,8 @@ def dslarraytonumpyutf8(string_list: np.ndarray) -> ArrayLike:
         Tuple[np.ndarray, np.ndarray]: utf-8 encoded int Numpy array
     """
     # print("dsl list before", string_list)
-    array_shape = string_list.shape
-    string_list = string_list.flatten()
+    array_shape = np.array(string_list).shape
+    string_list = np.array(string_list).flatten()
     bytes_list = []
     indexes = []
     offset = 0
@@ -470,6 +494,12 @@ class DataSubjectArray:
         else:
             return DataSubjectArray(self.data_subjects)
 
+    def __rmul__(self, other: Union[DataSubjectArray, Any]) -> DataSubjectArray:
+        if isinstance(other, DataSubjectArray):
+            return DataSubjectArray(self.data_subjects.union(other.data_subjects))
+        else:
+            return DataSubjectArray(self.data_subjects)
+
     def __ge__(self, other: Union[DataSubjectArray, Any]) -> DataSubjectArray:
         if isinstance(other, DataSubjectArray):
             return DataSubjectArray(self.data_subjects.union(other.data_subjects))
@@ -528,6 +558,13 @@ class DataSubjectArray:
         else:
             return self.data_subjects.isdisjoint(set(item))
 
+    def __pow__(self, power: int) -> DataSubjectArray:
+        if not isinstance(power, int):
+            raise ValueError(
+                f"Expected type: int for DataSubjectArray pow function, received: {type(power)} "
+            )
+        return DataSubjectArray(self.data_subjects)
+
     def conjugate(self, *args: Any, **kwargs: Any) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)
 
@@ -578,6 +615,15 @@ class DataSubjectArray:
     def log(self) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)
 
+    def __round__(self, n: Optional[int] = None) -> DataSubjectArray:
+        return DataSubjectArray(self.data_subjects)
+
+    def __abs__(self) -> DataSubjectArray:
+        return DataSubjectArray(self.data_subjects)
+
+    def round(self, n: Optional[int] = None) -> DataSubjectArray:
+        return DataSubjectArray(self.data_subjects)
+
     def real(self) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)
 
@@ -587,16 +633,8 @@ class DataSubjectArray:
     def sqrt(self, *args: Any, **kwargs: Any) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)
 
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs) -> ArrayLike:  # type: ignore
-        method_name = ufunc.__name__
-        print("method_name", method_name)
-        method = getattr(self, method_name, None)
-        if method is not None:
-            return method(*inputs, **kwargs)
-        else:
-            raise NotImplementedError(
-                f"Method: {method_name} not implemented in DataSubjectArray"
-            )
+    def rint(self, *args: Any, **kwargs: Any) -> DataSubjectArray:
+        return DataSubjectArray(self.data_subjects)
 
     @staticmethod
     def from_objs(input_subjects: Union[np.ndarray, list]) -> ArrayLike:
@@ -605,7 +643,7 @@ class DataSubjectArray:
         # per data point, we should make sure that we implement in such a way we expand
         # the datasubjects automatically for row to data point mapping.
         if not isinstance(input_subjects, np.ndarray):
-            input_subjects = np.array(input_subjects)
+            input_subjects = np.array(input_subjects, dtype=DataSubjectArray)
 
         data_map = (
             lambda x: DataSubjectArray([str(x)])
