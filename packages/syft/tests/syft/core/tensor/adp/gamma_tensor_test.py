@@ -132,8 +132,8 @@ def test_lipschitz(
     assert gamma_tensor.is_linear
     assert gamma_tensor.lipschitz_bound == 1
 
-    gamma_tensor = tensor1[0][:3].gamma * tensor1[1][:3].gamma
-    assert gamma_tensor.lipschitz_bound == 2 # no of dim - 1
+    gamma_tensor = tensor1[0].gamma ** 2 
+    assert gamma_tensor.lipschitz_bound == 2 * max(tensor1[0].child)
 
 def test_zeros_like(
     reference_data: np.ndarray,
@@ -350,7 +350,6 @@ def test_rmatmul(
         min_vals=lower_bound,
     )
     gamma_tensor = reference_tensor.gamma
-    # TODO 0.7: this seems like it does nothing, we should use non zeros values
     input_data = np.zeros_like(reference_data)
     output = input_data @ gamma_tensor
     assert output.shape == reference_tensor.shape
@@ -1416,10 +1415,8 @@ def test_any(
     state = {}
     for key in result.sources:
         state[key] = result.sources[key].child
-    # print(state)
-    # print(result.func(state))
     assert result.func(state).shape == result.child.shape
-    assert (result.func(state) == result.child).all()  # TODO 0.7: debug this
+    assert (result.func(state) == result.child).all()  
 
 
 def test_all(
@@ -1481,7 +1478,7 @@ def test_all(
     state = {}
     for key in result.sources:
         state[key] = result.sources[key].child
-    assert (result.func(state) == result.child).all()  # TODO 0.7: debug this
+    assert (result.func(state) == result.child).all()
 
 
 def test_copy(
@@ -1755,7 +1752,6 @@ def test_var(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    # TODO 0.7: fix precision error
     tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -1765,7 +1761,7 @@ def test_var(
     gamma_tensor = tensor.gamma
 
     result = gamma_tensor.var()
-    assert result.child == reference_data.var()
+    assert result.child == jnp.var(reference_data)
     assert list(result.sources.keys()) == [tensor.id]
     state = {}
     for key in result.sources:
@@ -1773,7 +1769,7 @@ def test_var(
     assert (result.func(state) == result.child).all()
 
     result = gamma_tensor.var(axis=1)
-    assert (result.child == reference_data.var(axis=1)).all()
+    assert (result.child == jnp.var(reference_data,axis=1)).all()
     assert list(result.sources.keys()) == [tensor.id]
     state = {}
     for key in result.sources:
@@ -1818,7 +1814,6 @@ def test_std(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    # TODO 0.7: fix error due to precision
     tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -1828,7 +1823,7 @@ def test_std(
     gamma_tensor = tensor.gamma
 
     result = gamma_tensor.std()
-    assert result.child == reference_data.std()
+    assert result.child == jnp.std(reference_data)
     assert list(result.sources.keys()) == [tensor.id]
     state = {}
     for key in result.sources:
@@ -1836,7 +1831,7 @@ def test_std(
     assert (result.func(state) == result.child).all()
 
     result = gamma_tensor.std(axis=1)
-    assert (result.child == reference_data.std(axis=1)).all()
+    assert (result.child == jnp.std(reference_data,axis=1)).all()
     assert list(result.sources.keys()) == [tensor.id]
     state = {}
     for key in result.sources:

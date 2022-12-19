@@ -3009,7 +3009,7 @@ class GammaTensor:
         """
         output_state = self.sources.copy()
 
-        result = self.child.std(axis, **kwargs)
+        result = jnp.std(self.child, axis, **kwargs)
         def _std(state):
             return jnp.std(self.reconstruct(state), axis=axis, **kwargs)
         func = _std
@@ -3053,7 +3053,7 @@ class GammaTensor:
 
         output_state = self.sources.copy()
 
-        result = self.child.var(axis, **kwargs)
+        result = jnp.var(self.child, axis, **kwargs)
         def _var(state):
             return jnp.var(self.reconstruct(state), axis=axis, **kwargs)
         func = _var
