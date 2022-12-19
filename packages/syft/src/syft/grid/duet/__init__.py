@@ -24,6 +24,8 @@ from .om_signaling_client import register
 from .ui import LOGO_URL
 from .webrtc_duet import Duet as WebRTCDuet  # noqa: F811
 
+signaling_client = None
+
 if is_jupyter:
     # third party
     from IPython.core.display import Image
@@ -148,6 +150,33 @@ def begin_duet_logger(my_domain: Domain) -> None:
     if hasattr(sys.stdout, "parent_header"):
         counterThread().start()
 
+def registerNetwork(network_url: str = "" ):
+    global signaling_client
+
+    if not network_url:
+        network_url = get_available_network()
+    info("♫♫♫ > Punching through firewall to OpenGrid Network Node at:", print=True)
+    info("♫♫♫ > " + str(network_url), print=True)
+    info("♫♫♫ >", print=True)
+    info("♫♫♫ > ...waiting for response from OpenGrid Network... ", print=True)
+
+    signaling_client = register(url=network_url)
+    return signaling_client 
+
+def getDuetId(network_url: str = ""):
+    global signaling_client
+    print('Initiating signaling_client')
+    # signaling_client = None
+    if not network_url:
+        network_url = get_available_network()
+
+    if signaling_client is None:
+        signaling_client = registerNetwork(network_url) #register(url=network_url)
+    
+    # client = signaling_client
+    print('Duet Id : ', signaling_client.duet_id)
+    return signaling_client.duet_id
+
 
 def duet(
     target_id: Optional[str] = None,
@@ -172,7 +201,10 @@ def launch_duet(
     loopback: bool = False,
     credential_exchanger: DuetCredentialExchanger = OpenGridTokenManualInputExchanger(),
     db_path: Optional[str] = None,
+    client_id: str = ''
 ) -> Client:
+    global signaling_client
+
     if os.path.isfile(LOGO_URL) and is_jupyter:
         display(
             Image(
@@ -181,6 +213,7 @@ def launch_duet(
                 unconfined=True,
             )
         )
+    
     info("🎤  🎸  ♪♪♪ Starting Duet ♫♫♫  🎻  🎹\n", print=True)
     info(
         "♫♫♫ >\033[93m"
@@ -196,14 +229,14 @@ def launch_duet(
 
     info(bcolors.BOLD + DUET_DONATE_MSG + bcolors.BOLD + "\n", print=True)
 
-    if not network_url:
-        network_url = get_available_network()
-    info("♫♫♫ > Punching through firewall to OpenGrid Network Node at:", print=True)
-    info("♫♫♫ > " + str(network_url), print=True)
-    info("♫♫♫ >", print=True)
-    info("♫♫♫ > ...waiting for response from OpenGrid Network... ", print=True)
-
-    signaling_client = register(url=network_url)
+    # if not network_url:
+    #     network_url = get_available_network()
+    # info("♫♫♫ > Punching through firewall to OpenGrid Network Node at:", print=True)
+    # info("♫♫♫ > " + str(network_url), print=True)
+    # info("♫♫♫ >", print=True)
+    # info("♫♫♫ > ...waiting for response from OpenGrid Network... ", print=True)
+    if signaling_client is None:
+        signaling_client = registerNetwork(network_url) #register(url=network_url)
 
     info("♫♫♫ > " + bcolors.OKGREEN + "DONE!" + bcolors.ENDC, print=True)
 
@@ -211,7 +244,10 @@ def launch_duet(
 
     if loopback:
         credential_exchanger = OpenGridTokenFileExchanger()
-    target_id = credential_exchanger.run(credential=signaling_client.duet_id)
+    if len(client_id) == 32:
+        target_id = credential_exchanger.run(credential=signaling_client.duet_id, client_id= client_id)
+    else:
+        target_id = credential_exchanger.run(credential=signaling_client.duet_id)
 
     info("♫♫♫ > Connecting...", print=True)
 
@@ -239,6 +275,8 @@ def join_duet(
     loopback: bool = False,
     credential_exchanger: DuetCredentialExchanger = OpenGridTokenManualInputExchanger(),
 ) -> WebRTCDuet:
+    global signaling_client
+
     if os.path.isfile(LOGO_URL) and is_jupyter:
         display(
             Image(
@@ -262,14 +300,15 @@ def join_duet(
 
     info(bcolors.BOLD + DUET_DONATE_MSG + bcolors.BOLD + "\n", print=True)
 
-    if not network_url:
-        network_url = get_available_network()
-    info("♫♫♫ > Punching through firewall to OpenGrid Network Node at:", print=True)
-    info("♫♫♫ > " + str(network_url), print=True)
-    info("♫♫♫ >", print=True)
-    info("♫♫♫ > ...waiting for response from OpenGrid Network... ", print=True)
+    # if not network_url:
+    #     network_url = get_available_network()
+    # info("♫♫♫ > Punching through firewall to OpenGrid Network Node at:", print=True)
+    # info("♫♫♫ > " + str(network_url), print=True)
+    # info("♫♫♫ >", print=True)
+    # info("♫♫♫ > ...waiting for response from OpenGrid Network... ", print=True)
 
-    signaling_client = register(url=network_url)
+    if signaling_client is None:
+        signaling_client = registerNetwork(network_url) #register(url=network_url)
 
     info("♫♫♫ > " + bcolors.OKGREEN + "DONE!" + bcolors.ENDC, print=True)
 

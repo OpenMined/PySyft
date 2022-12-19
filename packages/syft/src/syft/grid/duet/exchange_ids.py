@@ -31,15 +31,17 @@ class DuetCredentialExchanger:
 
 
 class OpenGridTokenManualInputExchanger(DuetCredentialExchanger):
-    def run(self, credential: str) -> str:
+    def run(self, credential: str, client_id: str = '', server_id: str = '') -> str:
         self.credential = credential
+        self.client_id = client_id
+        self.server_id = server_id
         if self.join:
-            self._client_exchange(credential=self.credential)
+            self._client_exchange(credential=self.credential, )
             return self.responder_id
         else:
-            return self._server_exchange(credential=self.credential)
+            return self._server_exchange(credential=self.credential, client_id= self.client_id)
 
-    def _server_exchange(self, credential: str) -> str:
+    def _server_exchange(self, credential: str, client_id: str) -> str:
         # send Server ID
         info(
             "♫♫♫ > Duet Server ID: " + bcolors.BOLD + credential + bcolors.ENDC,
@@ -71,7 +73,10 @@ class OpenGridTokenManualInputExchanger(DuetCredentialExchanger):
             print=True,
         )
         while True:
-            client_id = input("♫♫♫ > Duet Partner's Client ID: ")  # nosec
+            if len(client_id) == 32 :
+                client_id = client_id  # nosec
+            else:
+                client_id = input("♫♫♫ > Duet Partner's Client ID: ")  # nosec
             if len(client_id) == 32:
                 break
             else:
@@ -79,7 +84,7 @@ class OpenGridTokenManualInputExchanger(DuetCredentialExchanger):
         info(print=True)
         return client_id
 
-    def _client_exchange(self, credential: str) -> None:
+    def _client_exchange(self, credential: str, server_id: str = '') -> None:
         # send client ID
         info(print=True)
         info(
