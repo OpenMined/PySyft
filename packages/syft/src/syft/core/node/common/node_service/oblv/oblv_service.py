@@ -39,6 +39,7 @@ from .oblv_messages import GetPublicKeyResponse
 from .oblv_messages import PublishApprovalMessage
 from .oblv_messages import PublishDatasetMessage
 from .oblv_messages import PublishDatasetResponse
+from .....common.serde.serialize import _serialize as serialize
 
 USER_INPUT_MESSAGES = Union[
     GetPublicKeyMessage,
@@ -233,7 +234,7 @@ def publish_dataset(msg: PublishDatasetMessage,
             break
         
     obj = node.store.get(UID.from_string(msg.dataset_id))
-    obj_bytes = obj.data._object2bytes()
+    obj_bytes = serialize(obj.data,to_bytes=True)
     req = requests.post("http://127.0.0.1:3030/tensor/dataset/add", files={'input': obj_bytes}, data={
         "dataset_id": msg.dataset_id
         })

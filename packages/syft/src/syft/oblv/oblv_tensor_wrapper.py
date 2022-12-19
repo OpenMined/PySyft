@@ -25,6 +25,7 @@ from .constants import ENCODE_BLACK
 from .constants import ENCODE_BOLD
 from .constants import ENCODE_NO_STYLE
 from .constants import ENCODE_RED
+from ..core.common.serde.serialize import _serialize as serialize
 
 
 class OblvTensorWrapper():
@@ -72,7 +73,7 @@ class OblvTensorWrapper():
             t = Tensor(other)
             arg = {
                 "type": "tensor",
-                "value": t._object2bytes()
+                "value": serialize(t,to_bytes=True)
             }
         elif type_name==OblvTensorWrapper:
             arg = {
