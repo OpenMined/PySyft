@@ -3572,7 +3572,7 @@ class GammaTensor:
             func = _floor_divide
             
             return GammaTensor(
-                child=self.child // other.child,
+                child=jnp.floor_divide(self.child,other.child),
                 func=func,
                 sources=sources,
             )
@@ -3581,7 +3581,7 @@ class GammaTensor:
                 return jnp.floor_divide(self.reconstruct(state), other)
             func = _floor_divide
             return GammaTensor(
-                child=self.child // other,
+                child=jnp.floor_divide(self.child, other),
                 func=func,
                 sources=sources,
                 is_linear=self.is_linear,

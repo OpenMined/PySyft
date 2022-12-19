@@ -15,6 +15,7 @@ from syft.core.adp.ledger_store import DictLedgerStore
 from syft.core.tensor.autodp.gamma_tensor import GammaTensor
 from syft.core.tensor.autodp.phi_tensor import PhiTensor as PT
 from syft.core.tensor.lazy_repeat_array import lazyrepeatarray as lra
+from jax import numpy as jnp
 
 
 @pytest.fixture
@@ -1190,21 +1191,21 @@ def test_floordiv(
     assert (output.func(state) == output.child).all()
 
     tensor2 = PT(
-        child=reference_data + 1,
+        child=reference_data,
         data_subject=ishan,
-        min_vals=lower_bound + 1,
-        max_vals=upper_bound + 1,
+        min_vals=lower_bound,
+        max_vals=upper_bound,
     )
 
     output = gamma_tensor // tensor2
-    assert (output.child == (reference_data // (reference_data + 1))).all()
+    assert (output.child == jnp.floor_divide(reference_data, reference_data)).all()
     assert list(output.sources.keys()) == [tensor.id, tensor2.id]
     state = {}
     for key in output.sources:
         state[key] = output.sources[key].child
     print(output.child)
     print(output.func(state))
-    assert (output.func(state) == output.child).all()  # TODO 0.7: fix this one
+    assert (output.func(state) == output.child).all()
 
     array = np.ones((dims, dims))
 
