@@ -13,13 +13,11 @@ from typing import Type
 from typing import Union
 
 # third party
-from cryptography import x509
 from nacl.signing import VerifyKey
 from oblv import OblvClient
 import requests
 
 # relative
-from ......grid import GridURL
 from ......logger import debug
 from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
