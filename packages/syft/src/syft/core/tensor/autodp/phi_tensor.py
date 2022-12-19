@@ -88,7 +88,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
     __serde_overrides__ = {
         "client": [lambda x: x.address, lambda y: y],
         "public_shape": [lambda x: x, lambda y: upcast(y)],
-        "data_subject": [dslarraytonumpyutf8, numpyutf8todslarray],
+        # "data_subject": [dslarraytonumpyutf8, numpyutf8todslarray],
         "public_dtype": [lambda x: str(x), lambda y: np.dtype(y)],
     }
     _exhausted = False
@@ -1877,6 +1877,7 @@ class PhiTensor(PassthroughTensor):
         data_subject: DataSubject,
         min_vals: Union[np.ndarray, lazyrepeatarray],
         max_vals: Union[np.ndarray, lazyrepeatarray],
+        id: str = None,
     ) -> None:
         super().__init__(child)
 
@@ -1889,7 +1890,9 @@ class PhiTensor(PassthroughTensor):
         self.max_vals = max_vals
 
         self.data_subject = data_subject
-        self.id: UID = UID()
+        if id is None:
+            id = UID()
+        self.id = id
 
     def reconstruct(self, state: Dict) -> PhiTensor:
         return state[self.id]
@@ -2607,10 +2610,14 @@ class PhiTensor(PassthroughTensor):
 
     def create_gamma(self) -> GammaTensor:
         """Return a new Gamma tensor based on this phi tensor"""
+        def _create_gamma(state):
+            return self.reconstruct(state)
+        func = _create_gamma
+        
         gamma_tensor = GammaTensor(
             child=self.child,
             sources={self.id: self},
-            func=lambda state: self.reconstruct(state),
+            func=func,
             is_linear=True,
         )
 
@@ -3963,12 +3970,8 @@ class PhiTensor(PassthroughTensor):
 
         pt_msg.minVals = serialize(self.min_vals, to_bytes=True)
         pt_msg.maxVals = serialize(self.max_vals, to_bytes=True)
-        # TODO(Tudor): fix this
-        chunk_bytes(
-            capnp_serialize(dslarraytonumpyutf8(self.data_subject), to_bytes=True),
-            "dataSubjects",
-            pt_msg,
-        )
+        pt_msg.dataSubject = serialize(self.data_subject, to_bytes=True)
+        pt_msg.id = self.id.to_string()
         # to pack or not to pack?
         # to_bytes = pt_msg.to_bytes()
 
@@ -3993,14 +3996,12 @@ class PhiTensor(PassthroughTensor):
 
         min_vals = deserialize(pt_msg.minVals, from_bytes=True)
         max_vals = deserialize(pt_msg.maxVals, from_bytes=True)
-        # TODO(Tudor): fix this
-        data_subject = numpyutf8todslarray(
-            capnp_deserialize(combine_bytes(pt_msg.dataSubjects), from_bytes=True)
-        )
-
+        data_subject = deserialize(pt_msg.dataSubject, from_bytes=True)
+        id_str = UID.from_string(pt_msg.id)
         return PhiTensor(
             child=child,
             min_vals=min_vals,
             max_vals=max_vals,
             data_subject=data_subject,
+            id=id_str,
         )

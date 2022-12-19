@@ -117,7 +117,6 @@ def map_dsa_to_rdp_constants(
     rdp_constants: Dict[str, np.ndarray],
 ) -> Dict[str, np.ndarray]:
     """Convert data subject array to data subject index array."""
-    # TODO 0.7 fix this
     for data_subject_name, rdp_constant in data_subject_rdp_constants.items():
         rdp_constants[data_subject_name] = (
             rdp_constants.get(data_subject_name, 0) + rdp_constant

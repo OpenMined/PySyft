@@ -40,15 +40,15 @@ if TYPE_CHECKING:
 @jax.jit
 def calculate_bounds_for_mechanism(
     value_array: jnp.ndarray,
-    # min_val_array: jnp.ndarray,
-    # max_val_array: jnp.ndarray,
+    min_val_array: jnp.ndarray,
+    max_val_array: jnp.ndarray,
 ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.array, jnp.array]:
-    # worst_case_l2_norm = jnp.sqrt(
-    #     jnp.sum(jnp.square(max_val_array - min_val_array))
-    # )
+    worst_case_l2_norm = jnp.sqrt(
+        jnp.sum(jnp.square(max_val_array - min_val_array))
+    )
 
     l2_norm = jnp.sqrt(jnp.sum(jnp.square(value_array)))
-    return l2_norm  # , worst_case_l2_norm
+    return l2_norm, worst_case_l2_norm
 
 
 def publish(
@@ -102,7 +102,7 @@ def publish(
         data_subject = tensor.sources[tensor_id].data_subject.to_string()
         data_subject_rdp_constants[data_subject] = max(
             data_subject_rdp_constants.get(data_subject, np.inf),
-            rdp_constants[tensor_id],
+            rdp_constants[tensor_id]
         )
 
     ledger.update_rdp_constants(data_subject_rdp_constants=data_subject_rdp_constants)
@@ -215,11 +215,13 @@ def compute_epsilon(
         # TODO 0.8: figure a way to iterate over data_subjects and group phi_tensors when computing
         # the Lipschitz bound
         # TODO 0.8 optimize the computation of l2_norm_bounds
-        l2_norms = calculate_bounds_for_mechanism(
-            phi_tensors[phi_tensor_id].child
+        l2_norms, l2_norm_bounds = calculate_bounds_for_mechanism(
+            phi_tensors[phi_tensor_id].child,
+            phi_tensors[phi_tensor_id].min_vals.to_numpy(),
+            phi_tensors[phi_tensor_id].max_vals.to_numpy(),
         )  # , tensor.min_vals.to_numpy(), tensor.max_vals.to_numpy())
         param = RDPParams(
-            sigmas=sigma, l2_norms=l2_norms, l2_norm_bounds=0, Ls=lipschitz_bound
+            sigmas=sigma, l2_norms=l2_norms, l2_norm_bounds=l2_norm_bounds, Ls=lipschitz_bound
         )
         rdp_constants[phi_tensor_id] = compute_rdp_constant(
             rdp_params=param, private=private
@@ -234,10 +236,7 @@ def compute_epsilon(
 
     filtered = {eps: epsilons[eps] <= privacy_budget for eps in epsilons}
     epsilon_spend = max([epsilons[eps_id] * filtered[eps_id] for eps_id in epsilons])
-    print(rdp_constants)
-    print(filtered)
-    print(epsilons)
-    print(privacy_budget)
+
     new_state = {
         phi_tensor_id: phi_tensor
         if filtered[phi_tensor_id]

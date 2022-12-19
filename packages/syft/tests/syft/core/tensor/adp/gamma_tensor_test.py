@@ -81,16 +81,13 @@ def test_gamma_serde(
     lower_bound: np.ndarray,
 ) -> None:
     """Test basic serde for GammaTensor"""
-    data_subject = np.broadcast_to(
-        np.array(DataSubject(["eagle"])), reference_data.shape
-    )
+    data_subject = DataSubject(["eagle"])
     tensor1 = PT(
         child=reference_data,
         data_subject=data_subject,
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    assert tensor1.data_subject.shape == tensor1.child.shape
     gamma_tensor1 = tensor1.gamma
 
     print("gamma tensor", gamma_tensor1)
@@ -103,56 +100,18 @@ def test_gamma_serde(
 
     assert (de.child == gamma_tensor1.child).all()
     assert de.is_linear == gamma_tensor1.is_linear
-    assert de.func == gamma_tensor1.func
+    
+    de_state = {}
+    for key in de.sources:
+        de_state[key] = de.sources[key].child
+    gamma_tensor1_state = {}
+    for key in de.sources:
+        gamma_tensor1_state[key] = de.sources[key].child
+    
+    assert (de.func(de_state) == gamma_tensor1.func(gamma_tensor1_state)).all()
     assert de.id == gamma_tensor1.id
     assert de.sources.keys() == gamma_tensor1.sources.keys()
-
-
-# def test_gamma_publish(
-#     reference_data: np.ndarray,
-#     upper_bound: np.ndarray,
-#     lower_bound: np.ndarray,
-# ) -> None:
-#     """Test basic publish for GammaTensor"""
-#     data_subject = np.broadcast_to(
-#         np.array(DataSubject(["eagle", "potato"])), reference_data.shape
-#     )
-#     tensor1 = GammaTensor(
-#         child=reference_data,
-#         data_subject=data_subject,
-#         max_vals=upper_bound,
-#         min_vals=lower_bound,
-#     )
-#     assert tensor1.data_subject.shape == tensor1.child.shape
-#     gamma_tensor1 = tensor1.sum()
-#     assert isinstance(gamma_tensor1, GammaTensor)
-#     # Gamma Tensor Does not have FPT Values
-#     assert tensor1.child.sum() == gamma_tensor1.child
-
-#     ledger_store = DictLedgerStore()
-#     print("kv_Store: ", ledger_store.kv_store)
-#     user_key = b"1231"
-#     ledger = DataSubjectLedger.get_or_create(store=ledger_store, user_key=user_key)
-
-#     def get_budget_for_user(*args: Any, **kwargs: Any) -> float:
-#         return 999999
-
-#     def deduct_epsilon_for_user(*args: Any, **kwargs: Any) -> bool:
-#         return True
-
-#     results = gamma_tensor1.publish(
-#         get_budget_for_user=get_budget_for_user,
-#         deduct_epsilon_for_user=deduct_epsilon_for_user,
-#         ledger=ledger,
-#         sigma=0.5,
-#         private=True,
-#     )
-
-#     assert results.dtype == np.float64
-#     assert results < upper_bound.to_numpy().sum() + 10
-#     assert -10 + lower_bound.to_numpy().sum() < results
-#     print(ledger_store.kv_store)
-
+    
 
 def test_lipschitz(
     reference_data: np.ndarray,
