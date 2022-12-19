@@ -1,9 +1,9 @@
 # syft absolute
 from syft.core.common.uid import UID
 from syft.core.node.new.action_store import ActionStore
-from syft.core.node.new.action_store import SIGNING_KEY_FOR
-from syft.core.node.new.action_store import SyftSigningKey
-from syft.core.node.new.action_store import SyftVerifyKey
+from syft.core.node.new.credentials import SIGNING_KEY_FOR
+from syft.core.node.new.credentials import SyftSigningKey
+from syft.core.node.new.credentials import SyftVerifyKey
 
 # from syft.core.node.new.service_store import ServiceStore
 from syft.core.node.worker import TestObject

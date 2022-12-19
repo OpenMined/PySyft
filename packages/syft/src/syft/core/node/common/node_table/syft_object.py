@@ -63,6 +63,7 @@ class SyftObject(BaseModel, SyftObjectRegistry):
     __serde_overrides__: Dict[
         str, Sequence[Callable]
     ] = {}  # List of attributes names which require a serde override.
+    __owner__: str
 
     def to_mongo(self) -> Dict[str, Any]:
         d = {}
