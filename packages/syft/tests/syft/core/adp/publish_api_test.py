@@ -10,7 +10,7 @@ import pytest
 
 import syft as sy
 from syft.core.adp.data_subject_ledger import DataSubjectLedger
-from syft.core.adp.data_subject_ledger import convert_constants_to_indices
+from syft.core.tensor.autodp.gamma_tensor import GammaTensor
 from syft.core.adp.ledger_store import DictLedgerStore
 
 
@@ -37,6 +37,11 @@ def deduct_epsilon_for_user(
 @pytest.fixture
 def dataset() -> np.ndarray:
     return np.random.randint(low=1, high=8, size=(5, 5))
+
+
+@pytest.fixture
+def huge_dataset() -> np.ndarray:
+    return np.random.randint(low=800_000, high=810_000, size=(5, 5))
 
 
 def test_privacy_budget_spend_on_publish():
@@ -145,6 +150,9 @@ def test_publish_phi_tensor(dataset: np.ndarray) -> None:
     print(ledger._rdp_constants)
     assert ledger._rdp_constants is not None
     assert user_budget.current_spend > 0
+    rdp_constant = list(ledger._rdp_constants.values())[0]
+    assert not np.isinf(rdp_constant)
+    assert not np.isnan(rdp_constant)
 
 
 def test_publish_new_subjects(dataset: np.ndarray) -> None:
@@ -189,6 +197,8 @@ def test_publish_new_subjects(dataset: np.ndarray) -> None:
 
     rdp1, rdp2 = list(ledger._rdp_constants.values())
     assert rdp1 == rdp2
+    assert not any(np.isinf([rdp1, rdp2]))
+    assert not any(np.isnan([rdp1, rdp2]))
 
 
 def test_publish_unchanged_pb(dataset: np.ndarray) -> None:
@@ -237,6 +247,8 @@ def test_publish_unchanged_pb(dataset: np.ndarray) -> None:
     rdp1, rdp2 = list(ledger._rdp_constants.values())
     assert rdp1 == rdp2
     assert eps2 == eps1
+    assert not any(np.isinf([rdp1, rdp2]))
+    assert not any(np.isnan([rdp1, rdp2]))
 
 
 def test_publish_existing_subjects(dataset: np.ndarray) -> None:
@@ -279,8 +291,40 @@ def test_publish_existing_subjects(dataset: np.ndarray) -> None:
     rdp2 = list(ledger._rdp_constants.values())[0]
     print("rdp constants: ", rdp1, rdp2)
     print(ledger._rdp_constants)
+    assert not any(np.isinf([rdp1, rdp2]))
+    assert not any(np.isnan([rdp1, rdp2]))
 
     assert rdp2 > rdp1, "Was no epsilon spent during the second query?"
+
+
+def test_filtering(dataset: np.ndarray, huge_dataset: np.ndarray) -> None:
+    """ Test filtering occurs properly"""
+    tensor1 = sy.Tensor(dataset).annotate_with_dp_metadata(
+        lower_bound=0, upper_bound=10, data_subject="Mr Potato"
+    )
+
+    tensor2 = sy.Tensor(huge_dataset).annotate_with_dp_metadata(
+        lower_bound=0, upper_bound=10, data_subject="Mrs Potato"
+    )
+
+    ledger_store = DictLedgerStore()
+    user_key = b"7649"
+    ledger = DataSubjectLedger.get_or_create(store=ledger_store, user_key=user_key)
+
+    tensor = tensor2 + tensor1
+    assert isinstance(tensor.child, GammaTensor)
+    assert tensor.child.sources is not None
+
+    result = tensor.publish(
+        get_budget_for_user=get_budget_for_user,
+        deduct_epsilon_for_user=deduct_epsilon_for_user,
+        ledger=ledger,
+        sigma=3,
+        private=True,
+    )
+    
+    # Tensor 2 should be filtered out because of its gigantic L2 norm compared to Tensor1, plus the low sigma value.
+    assert (result < tensor2).all()
 
 
 def test_publish_sigma_affects_pb() -> None:
