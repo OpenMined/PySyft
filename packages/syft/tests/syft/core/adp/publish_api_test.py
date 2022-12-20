@@ -147,65 +147,49 @@ def test_publish_phi_tensor(dataset: np.ndarray) -> None:
     assert user_budget.current_spend > 0
 
 
-def test_publish_new_subjects() -> None:
+def test_publish_new_subjects(dataset: np.ndarray) -> None:
     """Test that the ledger updates correctly when data of new data subjects are published"""
-    fred_nums = np.array([25, 35, 21])
-    sally_nums = np.array([8, 11, 10])
-
-    fred_tensor = sy.Tensor(fred_nums).annotate_with_dp_metadata(
-        lower_bound=0, upper_bound=122, data_subject="fred"
+    tensor1 = sy.Tensor(dataset).annotate_with_dp_metadata(
+        lower_bound=0, upper_bound=10, data_subject="Mr Potato"
     )
 
-    sally_tensor = sy.Tensor(sally_nums).annotate_with_dp_metadata(
-        lower_bound=0, upper_bound=122, data_subject="sally"
+    tensor2 = sy.Tensor(dataset).annotate_with_dp_metadata(
+        lower_bound=0, upper_bound=10, data_subject="Mrs Potato"
     )
-
-    result = fred_tensor + sally_tensor
 
     ledger_store = DictLedgerStore()
-
-    user_key = b"1231"
-
+    user_key = b"1642"
     ledger = DataSubjectLedger.get_or_create(store=ledger_store, user_key=user_key)
 
-    pub_result_sally = sally_tensor.publish(
+    result1 = tensor1.publish(
         get_budget_for_user=get_budget_for_user,
         deduct_epsilon_for_user=deduct_epsilon_for_user,
         ledger=ledger,
-        sigma=50,
+        sigma=5,
         private=True,
     )
 
-    assert pub_result_sally is not None
+    assert result1 is not None
+    assert isinstance(result1, (np.ndarray, DeviceArray))
+    assert result1.shape == dataset.shape
+    assert len(ledger._rdp_constants) == 1
+    eps_spend_query1 = user_budget.current_spend
 
-    eps_spend_for_sally = user_budget.current_spend
-
-    pub_result_fred = sally_tensor.publish(
+    result2 = tensor2.publish(
         get_budget_for_user=get_budget_for_user,
         deduct_epsilon_for_user=deduct_epsilon_for_user,
         ledger=ledger,
-        sigma=50,
+        sigma=5,
         private=True,
     )
 
-    assert pub_result_fred is not None
+    assert result2 is not None
+    assert isinstance(result2, (np.ndarray, DeviceArray))
+    assert result2.shape == dataset.shape
+    assert len(ledger._rdp_constants) == 2
+    eps_spend_query2 = user_budget.current_spend
 
-    eps_spend_for_fred = user_budget.current_spend
-
-    # Epsilon spend for sally should be equal to fred
-    # since they impact the same of values in the data independently
-    assert eps_spend_for_sally == eps_spend_for_fred
-
-    pub_result_comb = result.publish(
-        get_budget_for_user=get_budget_for_user,
-        deduct_epsilon_for_user=deduct_epsilon_for_user,
-        ledger=ledger,
-        sigma=50,
-        private=True,
-    )
-
-    assert pub_result_comb is not None
-    pass
+    assert eps_spend_query2 < eps_spend_query1
 
 
 def test_publish_unchanged_pb() -> None:
