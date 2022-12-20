@@ -61,7 +61,7 @@ def publish(
     )
 
     print("Rdp constants", rdp_constants)
-    if any(rdp_constants < 0):
+    if np.any(list(rdp_constants.values()) < [0]):
         raise Exception(
             "Negative budget spend not allowed in PySyft for safety reasons."
             "Please contact the OpenMined support team for help."
