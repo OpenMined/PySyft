@@ -60,8 +60,9 @@ def publish(
         tensor, privacy_budget, is_linear, sigma, private, ledger
     )
 
-    print("Rdp constants", rdp_constants)
-    if np.any(list(rdp_constants.values()) < [0]):
+    raw_rdp_constants = np.array(list(rdp_constants.values()))
+
+    if np.any(raw_rdp_constants < 0):
         raise Exception(
             "Negative budget spend not allowed in PySyft for safety reasons."
             "Please contact the OpenMined support team for help."
@@ -70,6 +71,15 @@ def publish(
             " * send us an email describing your problem at support@openmined.org"
             " * leave us an issue here: https://github.com/OpenMined/PySyft/issues"
         )
+            
+    if jnp.isnan(epsilon_spend):
+        raise Exception("Epsilon is NaN")
+    
+    if jnp.any(jnp.isnan(raw_rdp_constants)):
+        raise Exception("RDP constant in NaN")
+
+    if jnp.any(jnp.isinf(raw_rdp_constants)):
+        raise Exception("RDP constant in inf")
     
     if epsilon_spend < 0:
         raise Exception(
@@ -109,7 +119,7 @@ def publish(
     for tensor_id in rdp_constants:
         data_subject = tensor.sources[tensor_id].data_subject.to_string()
         data_subject_rdp_constants[data_subject] = max(
-            data_subject_rdp_constants.get(data_subject, np.inf),
+            data_subject_rdp_constants.get(data_subject, -np.inf),
             rdp_constants[tensor_id],
         )
 
@@ -144,7 +154,6 @@ def compute_epsilon(
     # For each PhiTensor we either need the lipschitz bound or we can use
     # one to keep the same formula for the linear queries
     lipschitz_bound = 1 if is_linear else tensor.lipschitz_bound
-    print(lipschitz_bound)
 
     # compute the rdp constant for each phi tensor
     rdp_constants = {}
