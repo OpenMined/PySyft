@@ -146,6 +146,9 @@ def test_linear_rdp_calculation(dataset: np.ndarray) -> None:
         Ls=1
     )
     assert rdp == compute_rdp_constant(rdp_params=params, private=True)
+    public_rdp = np.square(np.sqrt(np.sum(np.square(10-0))))/(2 * sigma_sq)
+    assert public_rdp == compute_rdp_constant(rdp_params=params, private=False)
+
 
 
 def test_publish_phi_tensor(dataset: np.ndarray) -> None:
