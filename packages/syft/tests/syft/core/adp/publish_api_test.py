@@ -142,7 +142,7 @@ def test_publish_phi_tensor(dataset: np.ndarray) -> None:
         get_budget_for_user=get_budget_for_user,
         deduct_epsilon_for_user=deduct_epsilon_for_user,
         ledger=ledger,
-        sigma=2,
+        sigma=4,
         private=True,
     )
     assert result is not None
