@@ -1736,8 +1736,8 @@ class TensorWrappedPhiTensorPointer(Pointer):
         return Tensor(
             child=PhiTensor(
                 child=FixedPrecisionTensor(
-                    value=np.empty(self.client.shape)
-                ),  # TODO 0.7: fix this
+                    value=np.empty(self.min_vals.shape)
+                ),
                 data_subject=self.data_subject,
                 min_vals=self.min_vals,  # type: ignore
                 max_vals=self.max_vals,  # type: ignore

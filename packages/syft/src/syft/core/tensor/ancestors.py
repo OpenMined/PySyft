@@ -56,6 +56,7 @@ def _GammaTensor() -> Type[GammaTensor]:
 
 
 # TODO 0.7: fix the wizard
+# There are a lot of instances of data_subjects but now he have only one data_subject
 def data_subject_creation_wizard(data: Any) -> List[Any]:
 
     w = textwrap.TextWrapper(initial_indent="\t", subsequent_indent="\t")
@@ -595,6 +596,7 @@ class PhiTensorAncestor(TensorChainManager):
 
 
 # TODO 0.7: decide what to do with this
+# Do we keep the other types or only str?
 def check_data_subjects(
     data: np.ndarray, data_subject: Optional[Any], skip_blocking_checks: bool
 ) -> np.ndarray:

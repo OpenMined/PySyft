@@ -1778,6 +1778,9 @@ class TensorWrappedGammaTensorPointer(Pointer):
         return Tensor(
             child=GammaTensor(
                 child=FixedPrecisionTensor(value=None),  # TODO 0.7 fix this
+                sources={},
+                func=None,
+                is_linear=False,
             ),
             public_shape=public_shape,
             public_dtype=public_dtype,
