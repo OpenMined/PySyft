@@ -976,9 +976,11 @@ def generate_aws_key_at_path(key_path: str, key_name: str) -> str:
     else:
         # TODO check if key_path ends with .pem, and otherwise append '.pem' to file path?
         # TODO try a dry run first?
+
         # TODO we need to do differently for powershell.
         # Ex: aws ec2 create-key-pair --key-name MyKeyPair --query 'KeyMaterial'
         # --output text | out-file -encoding ascii -filepath MyKeyPair.pem
+
         print(f"Creating AWS key pair with name {key_name} at path {key_path}..")
         cmd = f"aws ec2 create-key-pair --key-name {key_name} --query 'KeyMaterial' --output text > {key_path}"
         try:
@@ -2218,7 +2220,7 @@ def get_host_ips_given_instance_ids(
     checks = int(timeout / wait_time)  # 10 minutes in 10 second chunks
     instance_ids_str = " ".join(instance_ids)
     cmd = f"aws ec2 describe-instances --instance-ids {instance_ids_str}"
-    cmd += " --query 'Reservations[*].Instances[*].{{StateName:State.Name,PublicIpAddress:PublicIpAddress}}'"
+    cmd += " --query 'Reservations[*].Instances[*].{StateName:State.Name,PublicIpAddress:PublicIpAddress}'"
     cmd += " --output json"
     while checks > 0:
         checks -= 1
@@ -2226,7 +2228,6 @@ def get_host_ips_given_instance_ids(
             f"Inside get_host_ips_given_instance_ids, waiting for {wait_time} seconds"
         )
         time.sleep(wait_time)
-        print(f"Running EC2 desc command: {cmd}")  # TODO remove
         desc_ec2_output = subprocess.check_output(cmd, shell=True)  # nosec
         instances_output_json = json.loads(desc_ec2_output.decode("utf-8"))
         print(f"instances_output_json: {instances_output_json}")  # TODO remove
@@ -2239,9 +2240,9 @@ def get_host_ips_given_instance_ids(
                     break
                 else:
                     host_ips.append(instance_metadata["PublicIpAddress"])
-        print(f"all_instances_running: {all_instances_running}")
+        print(f"all_instances_running: {all_instances_running}")  # TODO remove
         if all_instances_running:
-            print(f"Returning host_ips: {host_ips}")
+            print(f"Returning host_ips: {host_ips}")  # TODO remove
             return host_ips
         # else, wait another wait_time seconds and try again
 
@@ -2350,7 +2351,7 @@ def create_launch_aws_cmd(
         if not bool(kwargs["provision"]):
             print("Skipping automatic provisioning.")
             print("VM created with:")
-            # print(f"Name: {snake_name}") # TODO get instance ID and print here?
+            # print(f"Name: {snake_name}") # TODO print the corresponding instance_id?
             print(f"IP: {host_ip}")
             print(f"Key: {key_path}")
             print("\nConnect with:")
