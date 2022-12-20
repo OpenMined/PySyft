@@ -135,8 +135,9 @@ def test_publish_phi_tensor(dataset: np.ndarray) -> None:
     """ Test that you can still publish PhiTensors"""
     tensor = sy.Tensor(dataset).annotate_with_dp_metadata(lower_bound=0, upper_bound=10, data_subject="Mr. Potato")
     ledger_store = DictLedgerStore()
-    user_key = b"6874"
+    user_key = b"687465"
     ledger = DataSubjectLedger.get_or_create(store=ledger_store, user_key=user_key)
+    assert ledger._rdp_constants == {}
     result = tensor.publish(
         get_budget_for_user=get_budget_for_user,
         deduct_epsilon_for_user=deduct_epsilon_for_user,
@@ -168,6 +169,7 @@ def test_publish_new_subjects(dataset: np.ndarray) -> None:
     ledger_store = DictLedgerStore()
     user_key = b"1642"
     ledger = DataSubjectLedger.get_or_create(store=ledger_store, user_key=user_key)
+    assert ledger._rdp_constants == {}
 
     result1 = tensor1.publish(
         get_budget_for_user=get_budget_for_user,
@@ -215,6 +217,7 @@ def test_publish_unchanged_pb(dataset: np.ndarray) -> None:
     ledger_store = DictLedgerStore()
     user_key = b"1649"
     ledger = DataSubjectLedger.get_or_create(store=ledger_store, user_key=user_key)
+    assert ledger._rdp_constants == {}
 
     result1 = tensor1.publish(
         get_budget_for_user=get_budget_for_user,
@@ -322,7 +325,7 @@ def test_filtering(dataset: np.ndarray, huge_dataset: np.ndarray) -> None:
         sigma=3,
         private=True,
     )
-    
+
     # Tensor 2 should be filtered out because of its gigantic L2 norm compared to Tensor1, plus the low sigma value.
     # print(type(result))
     assert (result < tensor2.child.child).all()
