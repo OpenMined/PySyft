@@ -99,9 +99,6 @@ class TensorWrappedGammaTensorPointer(Pointer):
         "tags",
         "description",
         # phi_tensor attrs
-        "data_subjects",
-        "min_vals",
-        "max_vals",
         "public_dtype",
         "public_shape",
     ]
@@ -109,7 +106,7 @@ class TensorWrappedGammaTensorPointer(Pointer):
     __serde_overrides__ = {
         "client": [lambda x: x.address, lambda y: y],
         "public_shape": [lambda x: x, lambda y: upcast(y)],
-        "data_subjects": [dslarraytonumpyutf8, numpyutf8todslarray],
+        # "data_subjects": [dslarraytonumpyutf8, numpyutf8todslarray],
         "public_dtype": [lambda x: str(x), lambda y: np.dtype(y)],
     }
     _exhausted = False
@@ -119,9 +116,6 @@ class TensorWrappedGammaTensorPointer(Pointer):
 
     def __init__(
         self,
-        data_subjects: DataSubjectArray,
-        min_vals: np.typing.ArrayLike,
-        max_vals: np.typing.ArrayLike,
         client: Any,
         id_at_location: Optional[UID] = None,
         object_type: str = "",
@@ -137,10 +131,6 @@ class TensorWrappedGammaTensorPointer(Pointer):
             tags=tags,
             description=description,
         )
-
-        self.min_vals = min_vals
-        self.max_vals = max_vals
-        self.data_subjects = data_subjects
         self.public_shape = public_shape
         self.public_dtype = public_dtype
 
@@ -195,13 +185,7 @@ class TensorWrappedGammaTensorPointer(Pointer):
         # We always maintain a Tensor hierarchy Tensor ---> PT--> Actual Data
         attr_path_and_name = f"syft.core.tensor.tensor.Tensor.{op_str}"
 
-        min_vals, max_vals = compute_min_max(
-            self.min_vals, self.max_vals, other, op_str
-        )
         result = TensorWrappedGammaTensorPointer(
-            data_subjects=self.data_subjects,
-            min_vals=min_vals,
-            max_vals=max_vals,
             client=self.client,
         )
 
@@ -333,75 +317,7 @@ class TensorWrappedGammaTensorPointer(Pointer):
 
         # We always maintain a Tensor hierarchy Tensor ---> PT--> Actual Data
         attr_path_and_name = f"syft.core.tensor.tensor.Tensor.{op_str}"
-
-        min_vals, max_vals = compute_min_max(
-            self.min_vals, self.max_vals, None, op_str, *args, **kwargs
-        )
-
-        if hasattr(self.data_subjects, op_str):
-            if op_str == "choose":
-                # relative
-                from .phi_tensor import TensorWrappedPhiTensorPointer
-
-                if kwargs == {}:
-                    mode = None
-                    for arg in args[1:]:
-                        if isinstance(arg, str):
-                            mode = arg
-                            break
-                    if mode is None:
-                        if isinstance(
-                            args[0],
-                            (
-                                TensorWrappedGammaTensorPointer,
-                                TensorWrappedPhiTensorPointer,
-                            ),
-                        ):
-                            data_subjects = np.array(
-                                np.choose(
-                                    np.ones(args[0].shape, dtype=np.int64),
-                                    self.data_subjects,
-                                )
-                            )
-                        else:
-                            data_subjects = np.array(
-                                np.choose(args[0], self.data_subjects)
-                            )
-                    else:
-                        if isinstance(
-                            args[0],
-                            (
-                                TensorWrappedGammaTensorPointer,
-                                TensorWrappedPhiTensorPointer,
-                            ),
-                        ):
-                            data_subjects = np.array(
-                                np.choose(
-                                    np.ones(args[0].shape, dtype=np.int64),
-                                    self.data_subjects,
-                                )
-                            )
-                        else:
-                            data_subjects = np.array(
-                                np.choose(args[0], self.data_subjects, mode=mode)
-                            )
-                else:
-                    data_subjects = np.choose(
-                        kwargs["choices"], self.data_subjects, kwargs["mode"]
-                    )
-            else:
-                data_subjects = getattr(self.data_subjects, op_str)(*args, **kwargs)
-            if op_str in INPLACE_OPS:
-                data_subjects = self.data_subjects
-        elif op_str in ("ones_like", "zeros_like"):
-            data_subjects = self.data_subjects
-        else:
-            raise ValueError(f"Invalid Numpy Operation: {op_str} for DSA")
-
         result = TensorWrappedGammaTensorPointer(
-            data_subjects=data_subjects,
-            min_vals=min_vals,
-            max_vals=max_vals,
             client=self.client,
         )
 
@@ -440,6 +356,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
             args=args,
             kwargs=kwargs,
         )
+
+        from ..autodp.phi_tensor import TensorWrappedPhiTensorPointer
 
         if op_str == "choose":
             dummy_res = np.ones(self.public_shape, dtype=np.int64)
@@ -1241,14 +1159,7 @@ class TensorWrappedGammaTensorPointer(Pointer):
             standard_deviation: PhiTensor
         """
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.std"
-        data_subjects = np.array(self.data_subjects).std(*args, **kwargs)  # type: ignore
         result = TensorWrappedGammaTensorPointer(
-            data_subjects=data_subjects,
-            min_vals=lazyrepeatarray(data=0, shape=data_subjects.shape),
-            max_vals=lazyrepeatarray(
-                data=(self.max_vals.data - self.min_vals.data) / 2,
-                shape=data_subjects.shape,
-            ),
             client=self.client,
         )
 
@@ -1287,7 +1198,7 @@ class TensorWrappedGammaTensorPointer(Pointer):
             args=[],
             kwargs={},
         )
-        result.public_shape = data_subjects.shape
+        result.public_shape = self.client.shape # data_subjects.shape
         result.public_dtype = self.public_dtype
 
         return result
@@ -1807,9 +1718,6 @@ class TensorWrappedGammaTensorPointer(Pointer):
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.T"
 
         result = TensorWrappedGammaTensorPointer(
-            data_subjects=self.data_subjects,
-            min_vals=self.min_vals.transpose(),
-            max_vals=self.max_vals.transpose(),
             client=self.client,
         )
 
@@ -1868,10 +1776,7 @@ class TensorWrappedGammaTensorPointer(Pointer):
         public_dtype = getattr(self, "public_dtype", None)
         return Tensor(
             child=GammaTensor(
-                child=FixedPrecisionTensor(value=None),
-                data_subjects=self.data_subjects,
-                min_vals=self.min_vals,  # type: ignore
-                max_vals=self.max_vals,  # type: ignore
+                child=FixedPrecisionTensor(value=None), # TODO 0.7 fix this
             ),
             public_shape=public_shape,
             public_dtype=public_dtype,
@@ -2009,7 +1914,7 @@ class GammaTensor:
             "min_vals": self.min_vals,
             "max_vals": self.max_vals,
             "data_subjects": self.data_subjects,
-        }
+        } # TODO 0.7: maybe this is obsolete now?
 
     def reconstruct(self, state: Dict) -> GammaTensor:
         return self.func(state)
@@ -2957,19 +2862,7 @@ class GammaTensor:
 
     def expand_dims(self, axis: Optional[int] = None) -> GammaTensor:
         raise NotImplementedError
-        # result = np.expand_dims(self.child, axis)
-
-        # target_shape_dsl = list(self.data_subjects.shape)
-        # if axis:
-        #     target_shape_dsl.insert(axis + 1, 1)
-
-        # return GammaTensor(
-        #     child=result,
-        #     data_subjects=np.expand_dims(self.data_subjects, axis),
-        #     min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
-        #     max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
-        # )
-
+    
     def std(
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs: Any
     ) -> GammaTensor:
@@ -3163,7 +3056,7 @@ class GammaTensor:
         )
 
     @staticmethod
-    def convert_dsl(state: dict, new_state: Optional[dict] = None) -> Dict:
+    def convert_dsl(state: dict, new_state: Optional[dict] = None) -> Dict: # TODO 0.7: maybe this is not required?
         if new_state is None:
             new_state = dict()
         if state:
@@ -3174,8 +3067,6 @@ class GammaTensor:
                         func=tensor.func,
                         sources=GammaTensor.convert_dsl(tensor.sources, {}),
                     )
-                    # for idx, row in enumerate(tensor.data_subjects):
-                    #     tensor.data_subjects[idx] = jnp.zeros_like(np.zeros_like(row), jnp.int64)
                 else:
 
                     new_tensor = tensor
@@ -3202,22 +3093,6 @@ class GammaTensor:
             private=private,
         )
 
-    # def expand_dims(self, axis: int) -> GammaTensor:
-    #     def _expand_dims(state: dict) -> jax.numpy.DeviceArray:
-    #         return jnp.expand_dims(self.run(state), axis)
-    #
-    #     state = dict()
-    #     state.update(self.state)
-    #
-    #     return GammaTensor(
-    #         child=jnp.expand_dims(self.child, axis),
-    #         data_subjects=self.data_subjects,
-    #         min_vals=self.min_vals,
-    #         max_vals=self.max_vals,
-    #         func=_expand_dims,
-    #         sources=state,
-    #     )
-
     def __len__(self) -> int:
         if not hasattr(self.child, "__len__"):
             if self.child is None:
@@ -3232,20 +3107,6 @@ class GammaTensor:
         output_state = self.sources.copy()
 
         if isinstance(item, PassthroughTensor):
-            # data = self.child[item.child]
-
-            # if self.shape == self.data_subjects.shape:
-            #     return GammaTensor(
-            #         child=data,
-            #     )
-            # elif len(self.shape) < len(self.data_subjects.shape):
-            #     return GammaTensor(
-            #         child=data,
-            #     )
-            # else:
-            #     raise Exception(
-            #         f"Incompatible shapes: {self.shape}, {self.data_subjects.shape}"
-            #     )
             raise NotImplementedError(
                 "__getitem__ is not supported for items of type PassthroughTensor"
             )
@@ -3272,13 +3133,6 @@ class GammaTensor:
         # TODO: fix this
         if isinstance(value, (PhiTensor, GammaTensor)):
             self.child[key] = value.child
-
-            # output_dsl = DataSubjectList.insert(
-            #     dsl1=self.data_subjects, dsl2=value.data_subjects, index=key
-            # )
-            # self.data_subjects.one_hot_lookup = output_dsl.one_hot_lookup
-            # self.data_subjects.data_subjects_indexed = output_dsl.data_subjects_indexed
-
         elif isinstance(value, np.ndarray):
             self.child[key] = value
         else:

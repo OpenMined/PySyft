@@ -26,7 +26,7 @@ def test_publish_with_bool_type_values(capfd) -> None:
     data1 = np.random.randint(1, 1000, data_shape)
 
     dataset1 = sy.Tensor(data1).annotate_with_dp_metadata(
-        -1, 10000, data_subjects="Jim"
+        -1, 10000, data_subject="Jim"
     )
 
     data1_ptr = dataset1.send(domain_client)

@@ -410,14 +410,11 @@ class TensorWrappedPhiTensorPointer(Pointer):
     @property
     def gamma(self) -> TensorWrappedGammaTensorPointer:
         return TensorWrappedGammaTensorPointer(
-            data_subjects=self.data_subject,
             client=self.client,
             id_at_location=self.id_at_location,
             object_type=self.object_type,
             tags=self.tags,
             description=self.description,
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
             public_shape=getattr(self, "public_shape", None),
             public_dtype=getattr(self, "public_dtype", None),
         )

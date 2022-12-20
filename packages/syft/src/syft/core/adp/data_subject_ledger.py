@@ -107,9 +107,9 @@ class RDPParams:
         return res
 
 
-def get_unique_data_subjects(data_subjects_query: np.ndarray) -> np.ndarray:
-    # This might look horribly wrong, but .sum() returns all the unique DS for a DataSubjectArray ~ Ishan
-    return sorted(list(data_subjects_query.sum()))
+# def get_unique_data_subjects(data_subjects_query: np.ndarray) -> np.ndarray:
+#     # This might look horribly wrong, but .sum() returns all the unique DS for a DataSubjectArray ~ Ishan
+#     return sorted(list(data_subjects_query.sum()))
 
 
 def map_dsa_to_rdp_constants(

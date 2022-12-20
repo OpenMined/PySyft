@@ -54,7 +54,7 @@ def _GammaTensor() -> Type[GammaTensor]:
         _GammaTensorRef = GammaTensor
     return _GammaTensorRef
 
-
+# TODO 0.7: fix the wizard
 def data_subject_creation_wizard(data: Any) -> List[Any]:
 
     w = textwrap.TextWrapper(initial_indent="\t", subsequent_indent="\t")
@@ -403,7 +403,7 @@ class PhiTensorAncestor(TensorChainManager):
         self,
         min_val: ArrayLike,
         max_val: ArrayLike,
-        data_subjects: Optional[Any] = None,
+        data_subject: Optional[Any] = None,
         skip_blocking_checks: bool = False,
     ) -> PhiTensorAncestor:
         """[DEPRECATED] This method will annotate your Tensor with metadata (an upper bound
@@ -425,7 +425,7 @@ class PhiTensorAncestor(TensorChainManager):
         return self.annotate_with_dp_metadata(
             lower_bound=min_val,
             upper_bound=max_val,
-            data_subject=data_subjects,
+            data_subject=data_subject,
             skip_blocking_checks=skip_blocking_checks,
         )
 
@@ -433,7 +433,7 @@ class PhiTensorAncestor(TensorChainManager):
         self,
         min_val: ArrayLike,
         max_val: ArrayLike,
-        data_subjects: Optional[Any] = None,
+        data_subject: Optional[Any] = None,
         skip_blocking_checks: bool = False,
     ) -> PhiTensorAncestor:
         """[DEPRECATED] This method will annotate your Tensor with metadata (an upper bound
@@ -457,7 +457,7 @@ class PhiTensorAncestor(TensorChainManager):
         return self.annotate_with_dp_metadata(
             lower_bound=min_val,
             upper_bound=max_val,
-            data_subject=data_subjects,
+            data_subject=data_subject,
             skip_blocking_checks=skip_blocking_checks,
         )
 
@@ -592,7 +592,7 @@ class PhiTensorAncestor(TensorChainManager):
 
         return self
 
-
+# TODO 0.7: decide what to do with this
 def check_data_subjects(
     data: np.ndarray, data_subject: Optional[Any], skip_blocking_checks: bool
 ) -> np.ndarray:
