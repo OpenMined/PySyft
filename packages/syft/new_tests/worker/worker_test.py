@@ -5,6 +5,7 @@ from syft.core.node.new.credentials import SIGNING_KEY_FOR
 from syft.core.node.new.credentials import SyftSigningKey
 from syft.core.node.new.credentials import SyftVerifyKey
 from syft.core.node.new.user import User
+from syft.core.node.new.user import UserCollection
 from syft.core.node.new.user import UserUpdate
 from syft.core.node.worker import TestObject
 
@@ -110,10 +111,36 @@ def test_user_transform() -> None:
     assert not hasattr(edit_user, "verify_key")
 
 
-# def test_service_store() -> None:
-#     test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
-#     user_collection = UserCollection()
-#     user = User(email="alice@test.com", name="Alice")
-#     user_view = user_collection.create(credentials=test_signing_key, user=user)
-#     print("got user view", user_view)
-#     assert False
+def test_user_collection() -> None:
+    test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
+    user_collection = UserCollection()
+
+    # create a user
+    new_user = UserUpdate(
+        email="alice@bob.com",
+        name="Alice",
+        password="letmein",
+        password_verify="letmein",
+    )
+
+    # call the create function
+    user_view_result = user_collection.create(
+        credentials=test_signing_key, user_update=new_user
+    )
+
+    # get the result
+    assert user_view_result.is_ok()
+    user_view = user_view_result.ok()
+
+    # we have a UID
+    assert user_view.id is not None
+
+    # we can query the same user again
+    user_view_2_result = user_collection.view(
+        uid=user_view.id, credentials=test_signing_key
+    )
+
+    # the object matches
+    assert user_view_2_result.is_ok()
+    user_view_2 = user_view_2_result.ok()
+    assert user_view == user_view_2

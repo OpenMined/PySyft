@@ -11,7 +11,6 @@ from typing import Tuple
 # third party
 from bcrypt import gensalt
 from bcrypt import hashpw
-from pydantic import BaseModel
 from result import Err
 from result import Ok
 from result import Result
@@ -19,6 +18,7 @@ from result import Result
 # relative
 from ....core.node.common.node_table.syft_object import SyftObject
 from ....core.node.common.node_table.syft_object import transform
+from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .credentials import SyftCredentials
 from .credentials import SyftSigningKey
@@ -41,7 +41,8 @@ class ServiceRoleCapability(Enum):
     CAN_EDIT_DOMAIN_SETTINGS = 512
 
 
-class ServiceRole(BaseModel):
+@serializable(recursive_serde=True)
+class ServiceRole(Enum):
     GUEST = 1
 
 
@@ -121,14 +122,14 @@ def user_update_to_user() -> List[Callable]:
     return [
         hash_password,
         generate_key,
-        default_role(ServiceRole()),
+        default_role(ServiceRole.GUEST),
         drop(["password", "password_verify"]),
     ]
 
 
 @transform(User, UserUpdate)
 def user_to_update_user() -> List[Callable]:
-    return [keep(["uid", "email", "name", "role"])]
+    return [keep(["id", "email", "name", "role"])]
 
 
 class UserCollection:
@@ -137,23 +138,33 @@ class UserCollection:
         self.primary_keys = {}
 
     def create(
-        self, credentials: SyftCredentials, user_form: UserUpdate
-    ) -> Result[SyftObject, str]:
-        if user_form.uid is None:
-            user_form.uid = UID()
-        user = User(user_form.transform_to())
-        self.set(credentials=credentials, syft_object=user)
+        self, credentials: SyftCredentials, user_update: UserUpdate
+    ) -> Result[UserUpdate, str]:
+        if user_update.id is None:
+            user_update.id = UID()
+        user = user_update.to(User)
 
-    def view(self, uid: UID, credentials: SyftCredentials) -> Result[SyftObject, str]:
-        user = self.get(uid=uid, credentials=credentials)
-        user
+        result = self.set(uid=user.id, credentials=credentials, syft_object=user)
+        if result.is_ok():
+            return Ok(user.to(UserUpdate))
+        else:
+            return Err("Failed to create User.")
+
+    def view(self, uid: UID, credentials: SyftCredentials) -> Result[UserUpdate, str]:
+        user_result = self.get(uid=uid, credentials=credentials)
+        if user_result.is_ok():
+            return Ok(user_result.ok().to(UserUpdate))
+        else:
+            return Err(f"Failed to get User for UID: {uid}")
 
     def set(
         self, uid: UID, credentials: SyftCredentials, syft_object: SyftObject
     ) -> Result[bool, str]:
         self.data[uid] = syft_object.to_mongo()
+        return Ok(True)
 
     def get(self, uid: UID, credentials: SyftCredentials) -> Result[SyftObject, str]:
         if uid not in self.data:
             return Err(f"UID: {uid} not in {type(self)} store.")
-        return Ok(self.data[uid])
+        syft_object = SyftObject.from_mongo(self.data[uid])
+        return Ok(syft_object)

@@ -1,4 +1,5 @@
 # stdlib
+from enum import Enum
 import sys
 from typing import Any
 from typing import Callable
@@ -40,6 +41,11 @@ def recursive_serde_register(
 
     attribute_list = getattr(cls, "__attr_allowlist__", None)
     serde_overrides = getattr(cls, "__serde_overrides__", {})
+
+    if issubclass(cls, Enum):
+        if attribute_list is None:
+            attribute_list = []
+        attribute_list += ["value"]
 
     # without fqn duplicate class names overwrite
     fqn = f"{cls.__module__}.{cls.__name__}"
@@ -149,8 +155,11 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
     if hasattr(class_type, "serde_constructor"):
         return getattr(class_type, "serde_constructor")(kwargs)
 
-    obj = class_type.__new__(class_type)  # type: ignore
-    for attr_name, attr_value in kwargs.items():
-        setattr(obj, attr_name, attr_value)
+    if issubclass(class_type, Enum) and "value" in kwargs:
+        obj = class_type.__new__(class_type, kwargs["value"])  # type: ignore
+    else:
+        obj = class_type.__new__(class_type)  # type: ignore
+        for attr_name, attr_value in kwargs.items():
+            setattr(obj, attr_name, attr_value)
 
     return obj
