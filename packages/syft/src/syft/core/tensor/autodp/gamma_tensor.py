@@ -4052,7 +4052,6 @@ class GammaTensor:
         gamma_msg.sources = serialize(self.sources, to_bytes=True)
         gamma_msg.isLinear = self.is_linear
         gamma_msg.id = self.id.to_string()
-        # gamma_msg.func = self.func_str # TODO 0.7 pickle
 
         import dill # nosec
         gamma_msg.func = dill.dumps(self.func) # nosec
