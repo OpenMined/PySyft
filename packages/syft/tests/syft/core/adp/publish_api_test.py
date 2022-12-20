@@ -324,7 +324,8 @@ def test_filtering(dataset: np.ndarray, huge_dataset: np.ndarray) -> None:
     )
     
     # Tensor 2 should be filtered out because of its gigantic L2 norm compared to Tensor1, plus the low sigma value.
-    assert (result < tensor2).all()
+    # print(type(result))
+    assert (result < tensor2.child.child).all()
 
 
 def test_publish_sigma_affects_pb() -> None:

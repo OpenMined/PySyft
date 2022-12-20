@@ -178,8 +178,9 @@ def compute_epsilon(
 
     # get epsilon for each tensor based on the rdp constant
     new_state = {}
+    print(phi_tensors)
     epsilons = {
-        phi_tensor_id: ledger._get_epsilon_spend(rdp_constants[phi_tensor_id])
+        phi_tensor_id: ledger._get_epsilon_spend(np.array([rdp_constants[phi_tensor_id]])) # this is kinda dumb
         for phi_tensor_id in phi_tensors
     }
 
@@ -187,7 +188,7 @@ def compute_epsilon(
     epsilon_spend = max([epsilons[eps_id] * filtered[eps_id] for eps_id in epsilons])
 
     new_state = {
-        phi_tensor_id: phi_tensor
+        phi_tensor_id: phi_tensor.child
         if filtered[phi_tensor_id]
         else jnp.zeros_like(phi_tensors[phi_tensor_id].child)
         for phi_tensor_id, phi_tensor in phi_tensors.items()
