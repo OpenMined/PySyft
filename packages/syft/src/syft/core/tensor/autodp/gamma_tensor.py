@@ -3326,14 +3326,15 @@ class GammaTensor:
             return 1.0
 
         # stdlib
-        from math import prod
 
         def convert_array_to_dict_state(array_state: Dict, input_sizes: Dict) -> Dict:
             start_id = 0
             state = {}
 
             for id, shape in input_sizes.items():
-                total_size = prod(shape)
+                total_size = 1
+                for size in shape:
+                    total_size *= size
                 state[id] = np.reshape(
                     array_state[start_id: start_id + total_size], shape
                 )
