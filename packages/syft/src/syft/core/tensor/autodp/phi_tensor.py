@@ -3,7 +3,6 @@ from __future__ import annotations
 
 # stdlib
 from collections.abc import Sequence
-import operator
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -23,9 +22,10 @@ from .... import lib
 from ....ast.klass import pointerize_args_and_kwargs
 from ....core.adp.data_subject_ledger import DataSubjectLedger
 from ....core.adp.data_subject_list import DataSubject
-from ....core.adp.data_subject_list import DataSubjectArray
-from ....core.adp.data_subject_list import dslarraytonumpyutf8
-from ....core.adp.data_subject_list import numpyutf8todslarray
+
+# from ....core.adp.data_subject_list import DataSubjectArray
+# from ....core.adp.data_subject_list import dslarraytonumpyutf8
+# from ....core.adp.data_subject_list import numpyutf8todslarray
 from ....core.node.common.action.get_or_set_property_action import (
     GetOrSetPropertyAction,
 )
@@ -47,7 +47,8 @@ from ...node.abstract.node import AbstractNodeClient
 from ...node.common.action.run_class_method_action import RunClassMethodAction
 from ...node.enums import PointerStatus
 from ...pointer.pointer import Pointer
-from ..broadcastable import is_broadcastable
+
+# from ..broadcastable import is_broadcastable
 from ..config import DEFAULT_INT_NUMPY_TYPE
 from ..fixed_precision_tensor import FixedPrecisionTensor
 from ..lazy_repeat_array import compute_min_max
@@ -1874,7 +1875,7 @@ class PhiTensor(PassthroughTensor):
         data_subject: DataSubject,
         min_vals: Union[np.ndarray, lazyrepeatarray],
         max_vals: Union[np.ndarray, lazyrepeatarray],
-        id: str = None,
+        id: Optional[UID] = None,
     ) -> None:
         super().__init__(child)
 
@@ -1960,16 +1961,6 @@ class PhiTensor(PassthroughTensor):
         axis: Optional[Union[int, Tuple[int, ...]]] = None,
     ) -> PhiTensor:
         out_child = self.child.ptp(axis=axis)
-
-        argmin = self.child.argmin(axis=axis)
-        argmax = self.child.argmax(axis=axis)
-
-        if axis is None:
-            max_indices = np.unravel_index(argmax, shape=self.child.shape)
-            min_indices = np.unravel_index(argmin, shape=self.child.shape)
-        else:
-            max_indices = np.array([argmax])
-            min_indices = np.array([argmin])
 
         return PhiTensor(
             child=out_child,
@@ -2608,7 +2599,7 @@ class PhiTensor(PassthroughTensor):
     def create_gamma(self) -> GammaTensor:
         """Return a new Gamma tensor based on this phi tensor"""
 
-        def _create_gamma(state):
+        def _create_gamma(state: Dict) -> PhiTensor:
             return self.reconstruct(state)
 
         func = _create_gamma

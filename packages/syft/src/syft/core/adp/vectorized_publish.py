@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 # stdlib
-from collections.abc import Iterable
 from copy import deepcopy
 import secrets
 from typing import Callable
@@ -16,7 +15,6 @@ from typing import Tuple
 import jax
 from jax import numpy as jnp
 import numpy as np
-from numpy.typing import ArrayLike
 
 # relative
 from ...core.node.common.node_manager.user_manager import RefreshBudgetException
@@ -29,16 +27,18 @@ if TYPE_CHECKING:
     # relative
     from ..tensor.autodp.gamma_tensor import GammaTensor
 
+
 @jax.jit
 def calculate_bounds_for_mechanism(
     value_array: jnp.ndarray,
     min_val_array: jnp.ndarray,
     max_val_array: jnp.ndarray,
-) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.array, jnp.array]:
+) -> Tuple[jnp.array, jnp.array]:
     worst_case_l2_norm = jnp.sqrt(jnp.sum(jnp.square(max_val_array - min_val_array)))
 
     l2_norm = jnp.sqrt(jnp.sum(jnp.square(value_array)))
     return l2_norm, worst_case_l2_norm
+
 
 def publish(
     tensor: GammaTensor,
@@ -71,16 +71,16 @@ def publish(
             " * send us an email describing your problem at support@openmined.org"
             " * leave us an issue here: https://github.com/OpenMined/PySyft/issues"
         )
-            
+
     if jnp.isnan(epsilon_spend):
         raise Exception("Epsilon is NaN")
-    
+
     if jnp.any(jnp.isnan(raw_rdp_constants)):
         raise Exception("RDP constant in NaN")
 
     if jnp.any(jnp.isinf(raw_rdp_constants)):
         raise Exception("RDP constant in inf")
-    
+
     if epsilon_spend < 0:
         raise Exception(
             "Negative budget spend not allowed in PySyft for safety reasons."
@@ -177,10 +177,10 @@ def compute_epsilon(
         )
 
     # get epsilon for each tensor based on the rdp constant
-    new_state = {}
-    print(phi_tensors)
     epsilons = {
-        phi_tensor_id: ledger._get_epsilon_spend(np.array([rdp_constants[phi_tensor_id]])) # this is kinda dumb
+        phi_tensor_id: ledger._get_epsilon_spend(
+            np.array([rdp_constants[phi_tensor_id]])
+        )  # this is kinda dumb
         for phi_tensor_id in phi_tensors
     }
 
@@ -199,5 +199,4 @@ def compute_epsilon(
         original_output = tensor.reconstruct(new_state)
     else:
         original_output = tensor.child
-
     return original_output, epsilon_spend, rdp_constants
