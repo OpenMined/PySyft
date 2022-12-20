@@ -4053,8 +4053,8 @@ class GammaTensor:
         gamma_msg.id = self.id.to_string()
         # gamma_msg.func = self.func_str # TODO 0.7 pickle
 
-        import dill
-        gamma_msg.func = dill.dumps(self.func)
+        import dill # nosec
+        gamma_msg.func = dill.dumps(self.func) # nosec
 
         # return gamma_msg.to_bytes_packed()
         return gamma_msg.to_bytes()
@@ -4081,8 +4081,8 @@ class GammaTensor:
             state = deserialize(gamma_msg.sources, from_bytes=True)
             is_linear = gamma_msg.isLinear
             id_str = UID.from_string(gamma_msg.id)
-            import dill 
-            func = dill.loads(gamma_msg.func)
+            import dill # nosec
+            func = dill.loads(gamma_msg.func) # nosec
 
             return GammaTensor(
                 child=child,
