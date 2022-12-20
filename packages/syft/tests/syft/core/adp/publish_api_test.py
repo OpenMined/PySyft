@@ -145,6 +145,9 @@ def test_publish_phi_tensor(dataset: np.ndarray) -> None:
     print(ledger._rdp_constants)
     assert ledger._rdp_constants is not None
     assert user_budget.current_spend > 0
+    rdp_constant = list(ledger._rdp_constants.values())[0]
+    assert not np.isinf(rdp_constant)
+    assert not np.isnan(rdp_constant)
 
 
 def test_publish_new_subjects(dataset: np.ndarray) -> None:
@@ -189,6 +192,8 @@ def test_publish_new_subjects(dataset: np.ndarray) -> None:
 
     rdp1, rdp2 = list(ledger._rdp_constants.values())
     assert rdp1 == rdp2
+    assert not any(np.isinf([rdp1, rdp2]))
+    assert not any(np.isnan([rdp1, rdp2]))
 
 
 def test_publish_unchanged_pb(dataset: np.ndarray) -> None:
@@ -237,6 +242,8 @@ def test_publish_unchanged_pb(dataset: np.ndarray) -> None:
     rdp1, rdp2 = list(ledger._rdp_constants.values())
     assert rdp1 == rdp2
     assert eps2 == eps1
+    assert not any(np.isinf([rdp1, rdp2]))
+    assert not any(np.isnan([rdp1, rdp2]))
 
 
 def test_publish_existing_subjects(dataset: np.ndarray) -> None:
@@ -279,6 +286,8 @@ def test_publish_existing_subjects(dataset: np.ndarray) -> None:
     rdp2 = list(ledger._rdp_constants.values())[0]
     print("rdp constants: ", rdp1, rdp2)
     print(ledger._rdp_constants)
+    assert not any(np.isinf([rdp1, rdp2]))
+    assert not any(np.isnan([rdp1, rdp2]))
 
     assert rdp2 > rdp1, "Was no epsilon spent during the second query?"
 
