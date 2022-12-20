@@ -30,7 +30,6 @@ def load_dataset(domain):
     train_data = np.random.randint(256, size=(1, 100))
     label_data = np.array([0])
 
-
     train_image_data = sy.Tensor(train_data).annotate_with_dp_metadata(
         lower_bound=0, upper_bound=255, data_subject=data_subject
     )

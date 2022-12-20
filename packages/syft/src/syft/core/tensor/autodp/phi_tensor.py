@@ -2607,10 +2607,12 @@ class PhiTensor(PassthroughTensor):
 
     def create_gamma(self) -> GammaTensor:
         """Return a new Gamma tensor based on this phi tensor"""
+
         def _create_gamma(state):
             return self.reconstruct(state)
+
         func = _create_gamma
-        
+
         gamma_tensor = GammaTensor(
             child=self.child,
             sources={self.id: self},
@@ -2757,14 +2759,14 @@ class PhiTensor(PassthroughTensor):
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
         # try:
-            # return dispatch_tensor(
-            #     self,
-            #     other,
-            #     child_func=lambda tensors: operator.add(*tensors),
-            #     min_func=lambda tensors: operator.add(*tensors),
-            #     max_func=lambda tensors: operator.add(*tensors),
-            #     original_func=lambda tensors: operator.add(*tensors),
-            # )
+        # return dispatch_tensor(
+        #     self,
+        #     other,
+        #     child_func=lambda tensors: operator.add(*tensors),
+        #     min_func=lambda tensors: operator.add(*tensors),
+        #     max_func=lambda tensors: operator.add(*tensors),
+        #     original_func=lambda tensors: operator.add(*tensors),
+        # )
         # except TypeError:
         #     raise NotImplementedError(
         #         f"__add__ not implemented for these types"
@@ -2774,7 +2776,7 @@ class PhiTensor(PassthroughTensor):
         return self.__add__(other)
 
     def __sub__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
-        
+
         # if the tensor being added is also private
         if isinstance(other, PhiTensor):
             if self.data_subject != other.data_subject:

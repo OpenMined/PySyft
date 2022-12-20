@@ -137,7 +137,6 @@ class UID:
         except Exception:
             return False
 
-
     def __lt__(self, other):
         try:
             return self.value < other.value
