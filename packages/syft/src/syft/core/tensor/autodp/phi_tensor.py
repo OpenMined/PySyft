@@ -1875,7 +1875,7 @@ class PhiTensor(PassthroughTensor):
         data_subject: DataSubject,
         min_vals: Union[np.ndarray, lazyrepeatarray],
         max_vals: Union[np.ndarray, lazyrepeatarray],
-        id: Optional[str] = None,
+        id: Optional[UID] = None,
     ) -> None:
         super().__init__(child)
 
