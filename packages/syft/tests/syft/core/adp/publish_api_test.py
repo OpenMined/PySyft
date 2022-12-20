@@ -203,6 +203,7 @@ def test_publish_new_subjects(dataset: np.ndarray) -> None:
     assert not any(np.isnan([rdp1, rdp2]))
 
 
+@pytest.mark.skip(reason="This is better implemented as an e2e test")
 def test_publish_unchanged_pb(dataset: np.ndarray) -> None:
     """ When publishing two queries with different data subjects but identical data and sigma, no PB should be spent."""
     # TODO: Re-implement this as an integration test to do comparisons against domain_node.privacy_budget
@@ -331,6 +332,50 @@ def test_filtering(dataset: np.ndarray, huge_dataset: np.ndarray) -> None:
     assert (result < tensor2.child.child).all()
 
 
-def test_publish_sigma_affects_pb() -> None:
+def test_publish_sigma_affects_pb(dataset: np.ndarray) -> None:
     """ Test that increasing sigma decreases the privacy budget spent. """
-    pass
+    tensor1 = sy.Tensor(dataset).annotate_with_dp_metadata(
+        lower_bound=0, upper_bound=10, data_subject="Mr Potato"
+    )
+
+    ledger_store = DictLedgerStore()
+    user_key = b"1665"
+    ledger = DataSubjectLedger.get_or_create(store=ledger_store, user_key=user_key)
+
+    result1 = tensor1.publish(
+        get_budget_for_user=get_budget_for_user,
+        deduct_epsilon_for_user=deduct_epsilon_for_user,
+        ledger=ledger,
+        sigma=600,
+        private=True,
+    )
+
+    assert result1 is not None
+    assert isinstance(result1, (np.ndarray, DeviceArray))
+    assert result1.shape == dataset.shape
+    assert len(ledger._rdp_constants) == 1
+    rdp1 = list(ledger._rdp_constants.values())[0]
+    print(ledger._rdp_constants)
+    eps1 = user_budget.current_spend
+
+    result2 = tensor1.publish(
+        get_budget_for_user=get_budget_for_user,
+        deduct_epsilon_for_user=deduct_epsilon_for_user,
+        ledger=ledger,
+        sigma=60,
+        private=True,
+    )
+
+    assert result2 is not None
+    assert isinstance(result2, (np.ndarray, DeviceArray))
+    assert result2.shape == dataset.shape
+    assert len(ledger._rdp_constants) == 1
+    rdp2 = list(ledger._rdp_constants.values())[0]
+    print("rdp constants: ", rdp1, rdp2)
+    print(ledger._rdp_constants)
+    assert not any(np.isinf([rdp1, rdp2]))
+    assert not any(np.isnan([rdp1, rdp2]))
+    eps2 = user_budget.current_spend
+    assert eps2 > eps1, "Decreasing sigma did not increase the epsilon for this query"
+
+    assert rdp2 > rdp1, "Was no epsilon spent during the second query?"
