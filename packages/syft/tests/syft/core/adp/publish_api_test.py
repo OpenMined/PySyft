@@ -2,19 +2,18 @@
 from typing import Any
 
 # third party
-import numpy as np
 from jax.numpy import DeviceArray
-
-# syft absolute
+import numpy as np
 import pytest
 
+# syft absolute
 import syft as sy
 from syft.core.adp.data_subject_ledger import DataSubjectLedger
 from syft.core.adp.data_subject_ledger import RDPParams
 from syft.core.adp.data_subject_ledger import compute_rdp_constant
+from syft.core.adp.ledger_store import DictLedgerStore
 from syft.core.adp.vectorized_publish import calculate_bounds_for_mechanism
 from syft.core.tensor.autodp.gamma_tensor import GammaTensor
-from syft.core.adp.ledger_store import DictLedgerStore
 
 
 class UserBudget:
@@ -135,25 +134,22 @@ def test_privacy_budget_spend_on_publish():
 
 
 def test_linear_rdp_calculation(dataset: np.ndarray) -> None:
-    """ Test that the rdp_constants are being computed accurately """
+    """Test that the rdp_constants are being computed accurately"""
     l2_norm_sq = np.square(np.sqrt(np.sum(np.square(dataset))))
     sigma_sq = np.square(10)
-    rdp = l2_norm_sq/(2*sigma_sq)
+    rdp = l2_norm_sq / (2 * sigma_sq)
     l2, l2_bounds = calculate_bounds_for_mechanism(dataset, 0, 10)
-    params = RDPParams(
-        l2_norms=l2,
-        l2_norm_bounds=l2_bounds,
-        sigmas=10,
-        Ls=1
-    )
+    params = RDPParams(l2_norms=l2, l2_norm_bounds=l2_bounds, sigmas=10, Ls=1)
     assert rdp == compute_rdp_constant(rdp_params=params, private=True)
-    public_rdp = np.square(np.sqrt(np.sum(np.square(10-0))))/(2 * sigma_sq)
+    public_rdp = np.square(np.sqrt(np.sum(np.square(10 - 0)))) / (2 * sigma_sq)
     assert public_rdp == compute_rdp_constant(rdp_params=params, private=False)
 
 
 def test_ledger_rdp_calculation(dataset: np.ndarray) -> None:
-    """ Test that the values being put into the ledgers are correct"""
-    tensor = sy.Tensor(dataset).annotate_with_dp_metadata(lower_bound=0, upper_bound=10, data_subject="Mr. Potato")
+    """Test that the values being put into the ledgers are correct"""
+    tensor = sy.Tensor(dataset).annotate_with_dp_metadata(
+        lower_bound=0, upper_bound=10, data_subject="Mr. Potato"
+    )
     ledger_store = DictLedgerStore()
     user_key = b"8975967"
     ledger = DataSubjectLedger.get_or_create(store=ledger_store, user_key=user_key)
@@ -167,12 +163,16 @@ def test_ledger_rdp_calculation(dataset: np.ndarray) -> None:
     )
     assert isinstance(result, (np.ndarray, DeviceArray))
     assert result.shape == dataset.shape
-    assert list(ledger._rdp_constants.values())[0] == np.square(np.sqrt(np.sum(np.square(dataset))))/(2 * (10 ** 2))
+    assert list(ledger._rdp_constants.values())[0] == np.square(
+        np.sqrt(np.sum(np.square(dataset)))
+    ) / (2 * (10**2))
 
 
 def test_publish_phi_tensor(dataset: np.ndarray) -> None:
-    """ Test that you can still publish PhiTensors"""
-    tensor = sy.Tensor(dataset).annotate_with_dp_metadata(lower_bound=0, upper_bound=10, data_subject="Mr. Potato")
+    """Test that you can still publish PhiTensors"""
+    tensor = sy.Tensor(dataset).annotate_with_dp_metadata(
+        lower_bound=0, upper_bound=10, data_subject="Mr. Potato"
+    )
     ledger_store = DictLedgerStore()
     user_key = b"687465"
     ledger = DataSubjectLedger.get_or_create(store=ledger_store, user_key=user_key)
@@ -244,7 +244,7 @@ def test_publish_new_subjects(dataset: np.ndarray) -> None:
 
 @pytest.mark.skip(reason="This is better implemented as an e2e test")
 def test_publish_unchanged_pb(dataset: np.ndarray) -> None:
-    """ When publishing two queries with different data subjects but identical data and sigma, no PB should be spent."""
+    """When publishing two queries with different data subjects but identical data and sigma, no PB should be spent."""
     # TODO: Re-implement this as an integration test to do comparisons against domain_node.privacy_budget
     tensor1 = sy.Tensor(dataset).annotate_with_dp_metadata(
         lower_bound=0, upper_bound=10, data_subject="Mr Potato"
@@ -341,7 +341,7 @@ def test_publish_existing_subjects(dataset: np.ndarray) -> None:
 
 
 def test_filtering(dataset: np.ndarray, huge_dataset: np.ndarray) -> None:
-    """ Test filtering occurs properly"""
+    """Test filtering occurs properly"""
     tensor1 = sy.Tensor(dataset).annotate_with_dp_metadata(
         lower_bound=0, upper_bound=10, data_subject="Mr Potato"
     )
@@ -372,7 +372,7 @@ def test_filtering(dataset: np.ndarray, huge_dataset: np.ndarray) -> None:
 
 
 def test_publish_sigma_affects_pb(dataset: np.ndarray) -> None:
-    """ Test that increasing sigma decreases the privacy budget spent. """
+    """Test that increasing sigma decreases the privacy budget spent."""
     tensor1 = sy.Tensor(dataset).annotate_with_dp_metadata(
         lower_bound=0, upper_bound=10, data_subject="Mr Potato"
     )

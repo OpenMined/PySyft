@@ -45,9 +45,9 @@ from ....util import inherit_tags
 from ...adp.data_subject_ledger import DataSubjectLedger
 
 # from ...adp.data_subject_list import DataSubjectList
-from ...adp.data_subject_list import DataSubjectArray
-from ...adp.data_subject_list import dslarraytonumpyutf8
-from ...adp.data_subject_list import numpyutf8todslarray
+# from ...adp.data_subject_list import DataSubjectArray
+# from ...adp.data_subject_list import dslarraytonumpyutf8
+# from ...adp.data_subject_list import numpyutf8todslarray
 from ...adp.vectorized_publish import publish
 from ...common.serde.capnp import CapnpModule
 from ...common.serde.capnp import chunk_bytes
@@ -64,8 +64,9 @@ from ...node.enums import PointerStatus
 from ...pointer.pointer import Pointer
 from ..config import DEFAULT_INT_NUMPY_TYPE
 from ..fixed_precision_tensor import FixedPrecisionTensor
-from ..lazy_repeat_array import compute_min_max
-from ..lazy_repeat_array import lazyrepeatarray
+
+# from ..lazy_repeat_array import compute_min_max
+# from ..lazy_repeat_array import lazyrepeatarray
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import SupportedChainType  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
@@ -2663,7 +2664,7 @@ class GammaTensor:
         func = _ravel
         return GammaTensor(
             child=output_data,
-            func=ravel,
+            func=func,
             sources=output_state,
             is_linear=self.is_linear,
         )
@@ -2703,7 +2704,7 @@ class GammaTensor:
 
         return GammaTensor(
             child=output_data,
-            func=_compress,
+            func=func,
             sources=output_state,
             is_linear=self.is_linear,
         )
@@ -3441,7 +3442,7 @@ class GammaTensor:
                 for size in shape:
                     total_size *= size
                 state[id] = np.reshape(
-                    array_state[start_id : start_id + total_size], shape
+                    array_state[start_id : start_id + total_size], shape  # type: ignore
                 )
                 start_id += total_size
 
@@ -4196,8 +4197,10 @@ class GammaTensor:
         gamma_msg.isLinear = self.is_linear
         gamma_msg.id = self.id.to_string()
 
-        import dill # nosec
-        gamma_msg.func = dill.dumps(self.func) # nosec
+        # third party
+        import dill  # nosec
+
+        gamma_msg.func = dill.dumps(self.func)  # nosec
 
         # return gamma_msg.to_bytes_packed()
         return gamma_msg.to_bytes()
@@ -4225,8 +4228,10 @@ class GammaTensor:
             is_linear = gamma_msg.isLinear
             id_str = UID.from_string(gamma_msg.id)
 
-            import dill # nosec
-            func = dill.loads(gamma_msg.func) # nosec
+            # third party
+            import dill  # nosec
+
+            func = dill.loads(gamma_msg.func)  # nosec
 
             return GammaTensor(
                 child=child,
