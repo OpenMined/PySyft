@@ -10,6 +10,9 @@ import pytest
 
 import syft as sy
 from syft.core.adp.data_subject_ledger import DataSubjectLedger
+from syft.core.adp.data_subject_ledger import RDPParams
+from syft.core.adp.data_subject_ledger import compute_rdp_constant
+from syft.core.adp.vectorized_publish import calculate_bounds_for_mechanism
 from syft.core.tensor.autodp.gamma_tensor import GammaTensor
 from syft.core.adp.ledger_store import DictLedgerStore
 
@@ -129,6 +132,20 @@ def test_privacy_budget_spend_on_publish():
         private=True,
     )
     assert pub_result_comb4 is not None
+
+
+def test_linear_rdp_calculation(dataset: np.ndarray) -> None:
+    l2_norm_sq = np.square(np.sqrt(np.sum(np.square(dataset))))
+    sigma_sq = np.square(10)
+    rdp = l2_norm_sq/(2*sigma_sq)
+    l2, l2_bounds = calculate_bounds_for_mechanism(dataset, 0, 10)
+    params = RDPParams(
+        l2_norms=l2,
+        l2_norm_bounds=l2_bounds,
+        sigmas=10,
+        Ls=1
+    )
+    assert rdp == compute_rdp_constant(rdp_params=params, private=True)
 
 
 def test_publish_phi_tensor(dataset: np.ndarray) -> None:
