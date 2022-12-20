@@ -36,7 +36,7 @@ def deduct_epsilon_for_user(
 
 @pytest.fixture
 def dataset() -> np.ndarray:
-    return np.random.randint(low=1, high=8, size=(5, 5))
+    return np.ones((5, 5)) * 9
 
 
 @pytest.fixture
@@ -142,7 +142,7 @@ def test_publish_phi_tensor(dataset: np.ndarray) -> None:
         get_budget_for_user=get_budget_for_user,
         deduct_epsilon_for_user=deduct_epsilon_for_user,
         ledger=ledger,
-        sigma=4,
+        sigma=10,
         private=True,
     )
     assert result is not None
@@ -262,7 +262,7 @@ def test_publish_existing_subjects(dataset: np.ndarray) -> None:
     )
 
     ledger_store = DictLedgerStore()
-    user_key = b"1665"
+    user_key = b"16655"
     ledger = DataSubjectLedger.get_or_create(store=ledger_store, user_key=user_key)
 
     result1 = tensor1.publish(

@@ -183,9 +183,12 @@ def compute_epsilon(
         phi_tensor_id: ledger._get_epsilon_spend(np.array([rdp_constants[phi_tensor_id]])) # this is kinda dumb
         for phi_tensor_id in phi_tensors
     }
+    print("epsilons before filtering: ", epsilons)
+    print("Privacy budget we're filtering against: ", privacy_budget)
 
     filtered = {eps: epsilons[eps] <= privacy_budget for eps in epsilons}
     epsilon_spend = max([epsilons[eps_id] * filtered[eps_id] for eps_id in epsilons])
+    print("epsilons after filtering: ", epsilon_spend)
 
     new_state = {
         phi_tensor_id: phi_tensor.child
@@ -199,5 +202,6 @@ def compute_epsilon(
         original_output = tensor.reconstruct(new_state)
     else:
         original_output = tensor.child
-
+    print("rdp: ", rdp_constants)
+    print("epsilon_spend: ", epsilon_spend)
     return original_output, epsilon_spend, rdp_constants
