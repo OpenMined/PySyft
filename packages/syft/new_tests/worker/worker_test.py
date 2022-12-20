@@ -4,8 +4,8 @@ from syft.core.node.new.action_store import ActionStore
 from syft.core.node.new.credentials import SIGNING_KEY_FOR
 from syft.core.node.new.credentials import SyftSigningKey
 from syft.core.node.new.credentials import SyftVerifyKey
-
-# from syft.core.node.new.service_store import ServiceStore
+from syft.core.node.new.user import User
+from syft.core.node.new.user import UserUpdate
 from syft.core.node.worker import TestObject
 
 # from syft.core.node.worker import Worker
@@ -77,15 +77,43 @@ def test_action_store() -> None:
     assert "denied" in test_object_result_fail.err()
 
 
+def test_user_transform() -> None:
+    new_user = UserUpdate(
+        email="alice@bob.com",
+        name="Alice",
+        password="letmein",
+        password_verify="letmein",
+    )
+
+    assert new_user.id is None
+    assert new_user.email == "alice@bob.com"
+    assert new_user.name == "Alice"
+    assert new_user.password == "letmein"
+    assert new_user.password_verify == "letmein"
+    print("new user", new_user)
+
+    user = new_user.to(User)
+    print("got a user", user)
+    # assert user.id is not None # need to insert / update first
+    assert user.email == "alice@bob.com"
+    assert user.name == "Alice"
+    assert user.hashed_password is not None
+    assert user.salt is not None
+
+    edit_user = user.to(UserUpdate)
+    # assert edit_user.id is not None # need to insert / update first
+    assert edit_user.email == "alice@bob.com"
+    assert edit_user.name == "Alice"
+    assert edit_user.password is None
+    assert edit_user.password_verify is None
+    assert not hasattr(edit_user, "signing_key")
+    assert not hasattr(edit_user, "verify_key")
+
+
 # def test_service_store() -> None:
 #     test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
-#     service_store = ServiceStore()
-
-
-# def test_worker()
-# worker = Worker(
-#     signing_key=test_signing_key,
-#     action_store=action_store,
-#     service_store=service_store,
-# )
-# assert False
+#     user_collection = UserCollection()
+#     user = User(email="alice@test.com", name="Alice")
+#     user_view = user_collection.create(credentials=test_signing_key, user=user)
+#     print("got user view", user_view)
+#     assert False
