@@ -96,7 +96,9 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     # data_subjects_italy = np.broadcast_to(
     #     np.array(DataSubjectArray(["Other Asia, nes"])), italy_trade.shape
     # )
-    data_subject_italy = "Other Asia, nes" # TODO 0.7: should this be the same as the one above?
+    data_subject_italy = (
+        "Other Asia, nes"  # TODO 0.7: should this be the same as the one above?
+    )
 
     lower_bound = int(min(italy_trade)) - 1
     upper_bound = int(max(italy_trade)) + 1

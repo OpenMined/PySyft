@@ -7,6 +7,7 @@ import numpy as np
 # syft absolute
 import syft as sy
 from syft.core.adp.data_subject_ledger import DataSubjectLedger
+from syft.core.adp.data_subject_ledger import convert_constants_to_indices
 from syft.core.adp.ledger_store import DictLedgerStore
 
 
@@ -102,7 +103,7 @@ def test_privacy_budget_spend_on_publish():
     assert pub_result_comb2 is not None
     # assert user_budget.current_spend == 0.0
     # TODO: Do we need caching?
-    
+
     mul_tensor = (fred_tensor + sally_tensor) * 2
 
     print(mul_tensor.child.lipschitz_bound)
@@ -115,3 +116,14 @@ def test_privacy_budget_spend_on_publish():
         private=True,
     )
     assert pub_result_comb4 is not None
+
+
+def test_publish_new_subjects() -> None:
+    """Test that publishing works when data of new data subjects are published, i.e. ledger expands, PB unchanged if
+    new data subjects have the same epsilon, etc"""
+    pass
+
+
+def test_publish_existing_subjects() -> None:
+    """Test the ledger is updated correctly when existing data subjects have more data published"""
+    pass

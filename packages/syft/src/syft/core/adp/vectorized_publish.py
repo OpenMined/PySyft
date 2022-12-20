@@ -43,9 +43,7 @@ def calculate_bounds_for_mechanism(
     min_val_array: jnp.ndarray,
     max_val_array: jnp.ndarray,
 ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.array, jnp.array]:
-    worst_case_l2_norm = jnp.sqrt(
-        jnp.sum(jnp.square(max_val_array - min_val_array))
-    )
+    worst_case_l2_norm = jnp.sqrt(jnp.sum(jnp.square(max_val_array - min_val_array)))
 
     l2_norm = jnp.sqrt(jnp.sum(jnp.square(value_array)))
     return l2_norm, worst_case_l2_norm
@@ -102,7 +100,7 @@ def publish(
         data_subject = tensor.sources[tensor_id].data_subject.to_string()
         data_subject_rdp_constants[data_subject] = max(
             data_subject_rdp_constants.get(data_subject, np.inf),
-            rdp_constants[tensor_id]
+            rdp_constants[tensor_id],
         )
 
     ledger.update_rdp_constants(data_subject_rdp_constants=data_subject_rdp_constants)
@@ -221,7 +219,10 @@ def compute_epsilon(
             phi_tensors[phi_tensor_id].max_vals.to_numpy(),
         )  # , tensor.min_vals.to_numpy(), tensor.max_vals.to_numpy())
         param = RDPParams(
-            sigmas=sigma, l2_norms=l2_norms, l2_norm_bounds=l2_norm_bounds, Ls=lipschitz_bound
+            sigmas=sigma,
+            l2_norms=l2_norms,
+            l2_norm_bounds=l2_norm_bounds,
+            Ls=lipschitz_bound,
         )
         rdp_constants[phi_tensor_id] = compute_rdp_constant(
             rdp_params=param, private=private

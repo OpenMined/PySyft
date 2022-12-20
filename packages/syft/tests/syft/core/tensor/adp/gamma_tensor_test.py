@@ -3,6 +3,7 @@ from typing import Any
 from typing import Dict
 
 # third party
+from jax import numpy as jnp
 import numpy as np
 from numpy.typing import ArrayLike
 import pytest
@@ -15,7 +16,6 @@ from syft.core.adp.ledger_store import DictLedgerStore
 from syft.core.tensor.autodp.gamma_tensor import GammaTensor
 from syft.core.tensor.autodp.phi_tensor import PhiTensor as PT
 from syft.core.tensor.lazy_repeat_array import lazyrepeatarray as lra
-from jax import numpy as jnp
 
 
 @pytest.fixture
@@ -101,18 +101,18 @@ def test_gamma_serde(
 
     assert (de.child == gamma_tensor1.child).all()
     assert de.is_linear == gamma_tensor1.is_linear
-    
+
     de_state = {}
     for key in de.sources:
         de_state[key] = de.sources[key].child
     gamma_tensor1_state = {}
     for key in de.sources:
         gamma_tensor1_state[key] = de.sources[key].child
-    
+
     assert (de.func(de_state) == gamma_tensor1.func(gamma_tensor1_state)).all()
     assert de.id == gamma_tensor1.id
     assert de.sources.keys() == gamma_tensor1.sources.keys()
-    
+
 
 def test_lipschitz(
     reference_data: np.ndarray,
@@ -132,8 +132,9 @@ def test_lipschitz(
     assert gamma_tensor.is_linear
     assert gamma_tensor.lipschitz_bound == 1
 
-    gamma_tensor = tensor1[0].gamma ** 2 
+    gamma_tensor = tensor1[0].gamma ** 2
     assert gamma_tensor.lipschitz_bound == 2 * max(tensor1[0].child)
+
 
 def test_zeros_like(
     reference_data: np.ndarray,
@@ -1416,7 +1417,7 @@ def test_any(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert result.func(state).shape == result.child.shape
-    assert (result.func(state) == result.child).all()  
+    assert (result.func(state) == result.child).all()
 
 
 def test_all(
@@ -1769,7 +1770,7 @@ def test_var(
     assert (result.func(state) == result.child).all()
 
     result = gamma_tensor.var(axis=1)
-    assert (result.child == jnp.var(reference_data,axis=1)).all()
+    assert (result.child == jnp.var(reference_data, axis=1)).all()
     assert list(result.sources.keys()) == [tensor.id]
     state = {}
     for key in result.sources:
@@ -1831,7 +1832,7 @@ def test_std(
     assert (result.func(state) == result.child).all()
 
     result = gamma_tensor.std(axis=1)
-    assert (result.child == jnp.std(reference_data,axis=1)).all()
+    assert (result.child == jnp.std(reference_data, axis=1)).all()
     assert list(result.sources.keys()) == [tensor.id]
     state = {}
     for key in result.sources:

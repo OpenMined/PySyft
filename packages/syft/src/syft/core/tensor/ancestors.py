@@ -54,6 +54,7 @@ def _GammaTensor() -> Type[GammaTensor]:
         _GammaTensorRef = GammaTensor
     return _GammaTensorRef
 
+
 # TODO 0.7: fix the wizard
 def data_subject_creation_wizard(data: Any) -> List[Any]:
 
@@ -591,6 +592,7 @@ class PhiTensorAncestor(TensorChainManager):
         )  # type: ignore
 
         return self
+
 
 # TODO 0.7: decide what to do with this
 def check_data_subjects(
