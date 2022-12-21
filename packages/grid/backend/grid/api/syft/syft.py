@@ -51,6 +51,14 @@ def syft_metadata() -> Response:
     )
 
 
+@router.get("/new_api", response_model=str)
+def syft_new_api() -> Response:
+    return Response(
+        serialize(node.get_api(), to_bytes=True),
+        media_type="application/octet-stream",
+    )
+
+
 @router.delete("", response_model=str)
 def delete(current_user: UserPrivate = Depends(get_current_user)) -> Response:
     # If current user is the node owner ...

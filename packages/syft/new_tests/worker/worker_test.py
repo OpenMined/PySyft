@@ -144,3 +144,20 @@ def test_user_collection() -> None:
     assert user_view_2_result.is_ok()
     user_view_2 = user_view_2_result.ok()
     assert user_view == user_view_2
+
+
+def test_syft_object_serde() -> None:
+    # create a user
+    new_user = UserUpdate(
+        email="alice@bob.com",
+        name="Alice",
+        password="letmein",
+        password_verify="letmein",
+    )
+    # syft absolute
+    import syft as sy
+
+    ser = sy.serialize(new_user, to_bytes=True)
+    de = sy.deserialize(ser, from_bytes=True)
+
+    assert new_user == de

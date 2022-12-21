@@ -13,7 +13,6 @@ from typing import Union
 from pydantic import BaseModel
 
 # relative
-from .....lib.python import Dict as SyDict
 from ....common import UID
 from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serialize import _serialize as serialize
@@ -88,28 +87,13 @@ class SyftObject(BaseModel, SyftObjectRegistry):
         d = {}
         for k in self.__attr_searchable__:
             d[k] = getattr(self, k)
-        blob = self.to_bytes()
+        blob = serialize(dict(self), to_bytes=True)
         d["_id"] = self.id.value  # type: ignore
         d["__canonical_name__"] = self.__canonical_name__
         d["__version__"] = self.__version__
         d["__blob__"] = blob
 
         return d
-
-    def to_dict(self) -> Dict[Any, Any]:
-        attr_dict = dict(**self)
-        return attr_dict
-
-    def to_bytes(self) -> bytes:
-        d = SyDict(**self)
-        for attr, funcs in self.__serde_overrides__.items():
-            if attr in d:
-                d[attr] = funcs[0](d[attr])
-        return serialize(d, to_bytes=True)  # type: ignore
-
-    @staticmethod
-    def from_bytes(blob: bytes) -> "SyftObject":
-        return deserialize(blob, from_bytes=True)
 
     @staticmethod
     def from_mongo(bson: Any) -> "SyftObject":
@@ -120,7 +104,7 @@ class SyftObject(BaseModel, SyftObjectRegistry):
             raise ValueError(
                 "Versioned class should not be None for initialization of SyftObject."
             )
-        de = deserialize(bson["__blob__"], from_bytes=True).upcast()
+        de = deserialize(bson["__blob__"], from_bytes=True)
         for attr, funcs in constructor.__serde_overrides__.items():
             if attr in de:
                 de[attr] = funcs[1](de[attr])

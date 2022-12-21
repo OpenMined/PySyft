@@ -9,6 +9,7 @@ from typing import Union
 
 # third party
 from capnp.lib.capnp import _DynamicStructBuilder
+from pydantic import BaseModel
 
 # syft absolute
 import syft as sy
@@ -40,6 +41,8 @@ def recursive_serde_register(
     _deserialize = deserialize if nonrecursive else rs_proto2object
 
     attribute_list = getattr(cls, "__attr_allowlist__", None)
+    if attribute_list is None:
+        attribute_list = getattr(cls, "__attr_state__", None)
     serde_overrides = getattr(cls, "__serde_overrides__", {})
 
     if issubclass(cls, Enum):
@@ -157,6 +160,10 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
 
     if issubclass(class_type, Enum) and "value" in kwargs:
         obj = class_type.__new__(class_type, kwargs["value"])  # type: ignore
+    elif issubclass(class_type, BaseModel):
+        # if we skip the __new__ flow of BaseModel we get the error
+        # AttributeError: object has no attribute '__fields_set__'
+        obj = class_type(**kwargs)
     else:
         obj = class_type.__new__(class_type)  # type: ignore
         for attr_name, attr_value in kwargs.items():
