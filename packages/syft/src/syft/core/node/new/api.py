@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 import inspect
+from inspect import signature
 import types
 from typing import Dict
 from typing import Optional
@@ -12,7 +13,6 @@ from typing import Union
 from ....core.node.common.node_table.syft_object import SyftObject
 from ...common.serde.serializable import serializable
 from .signature import Signature
-from .signature import signature
 
 
 @serializable(recursive_serde=True)
@@ -29,8 +29,8 @@ def generate_remote_function(signature: Signature):
         def __call__(self, *args, **kwargs):
             print("got signature", signature)
             # need real Signature object
-            # params = signature.bind(*args, **kwargs)
-            # print("params", params)
+            params = signature.bind(*args, **kwargs)
+            print("params", params)
             print("args, kwargs", args, kwargs)
             # TODO: add validation based on signature and input types
             # TODO: make message to send Action to service with data
@@ -69,7 +69,7 @@ class SyftAPI(SyftObject):
                 name="create",
                 description="Create User",
                 doc_string=UserCollection.create.__doc__,
-                signature=str(sig),
+                signature=sig,
             )
         }
         return SyftAPI(endpoints=endpoints)
@@ -148,9 +148,9 @@ def _getdef(self, obj, oname="") -> Union[str, None]:
 def monkey_patch_getdef(self, obj, oname="") -> Union[str, None]:
     try:
         if hasattr(obj, "__ipython_inspector_signature_override__"):
-            # return _render_signature(getattr(obj, "__ipython_inspector_signature_override__"), oname)
-            # TODO: change to use _render_signature when its a real inspect.Signature
-            return getattr(obj, "__ipython_inspector_signature_override__", None)
+            return _render_signature(
+                getattr(obj, "__ipython_inspector_signature_override__"), oname
+            )
         return _getdef(self, obj, oname)
     except Exception:
         return None
