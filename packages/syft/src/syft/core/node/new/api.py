@@ -3,8 +3,6 @@ from __future__ import annotations
 
 # stdlib
 import inspect
-from inspect import Signature
-from inspect import signature
 import types
 from typing import Dict
 from typing import Optional
@@ -13,8 +11,8 @@ from typing import Union
 # relative
 from ....core.node.common.node_table.syft_object import SyftObject
 from ...common.serde.serializable import serializable
-
-# TODO: make arbitrary objects like inspect.Signature serdeable again
+from .signature import Signature
+from .signature import signature
 
 
 @serializable(recursive_serde=True)
@@ -23,7 +21,7 @@ class APIEndpoint(SyftObject):
     name: str
     description: str
     doc_string: str
-    signature: str  # TODO replace with real signature
+    signature: Signature  # TODO replace with real signature
 
 
 def generate_remote_function(signature: Signature):

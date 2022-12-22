@@ -3,6 +3,7 @@ from enum import Enum
 import sys
 from typing import Any
 from typing import Callable
+from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
@@ -28,6 +29,7 @@ def recursive_serde_register(
     cls: Union[object, type],
     serialize: Optional[Callable] = None,
     deserialize: Optional[Callable] = None,
+    attr_allowlist: Optional[List] = None,
 ) -> None:
     if not isinstance(cls, type):
         cls = type(cls)
@@ -40,9 +42,12 @@ def recursive_serde_register(
     _serialize = serialize if nonrecursive else rs_object2proto
     _deserialize = deserialize if nonrecursive else rs_proto2object
 
-    attribute_list = getattr(cls, "__attr_allowlist__", None)
-    if attribute_list is None:
-        attribute_list = getattr(cls, "__attr_state__", None)
+    if attr_allowlist is not None:
+        attribute_list = attr_allowlist
+    else:
+        attribute_list = getattr(cls, "__attr_allowlist__", None)
+        if attribute_list is None:
+            attribute_list = getattr(cls, "__attr_state__", None)
     serde_overrides = getattr(cls, "__serde_overrides__", {})
 
     if issubclass(cls, Enum):
@@ -64,7 +69,6 @@ def recursive_serde_register(
 def rs_object2proto(self: Any) -> _DynamicStructBuilder:
     msg = recursive_scheme.new_message()
     fqn = get_fully_qualified_name(self)
-
     if fqn not in TYPE_BANK:
         raise Exception(f"{fqn} not in TYPE_BANK")
 
