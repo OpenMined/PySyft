@@ -8,6 +8,8 @@ from typing import Collection
 from typing import Mapping
 from typing import Union
 from typing import _GenericAlias
+from typing import _SpecialForm
+from typing import _UnionGenericAlias
 from typing import cast
 
 # relative
@@ -261,3 +263,9 @@ def recursive_serde_register_type(t: type) -> None:
         recursive_serde_register(
             t, serialize=serialize_type, deserialize=deserialize_type
         )
+
+
+recursive_serde_register_type(_SpecialForm)
+recursive_serde_register_type(_UnionGenericAlias)
+recursive_serde_register_type(_GenericAlias)
+recursive_serde_register_type(Union)

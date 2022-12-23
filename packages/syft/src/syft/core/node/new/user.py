@@ -1,6 +1,3 @@
-# future
-from __future__ import annotations
-
 # stdlib
 from enum import Enum
 from typing import Any
@@ -23,7 +20,6 @@ from ....core.node.common.node_table.syft_object import SyftObject
 from ....core.node.common.node_table.syft_object import transform
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
-from .credentials import SyftCredentials
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .transforms import drop
@@ -200,39 +196,40 @@ class SyftServiceRegistry:
 
 
 class UserCollection:
-    def __init__(self) -> None:
+    def __init__(self, node_uid: Optional[UID]) -> None:
+        self.node_uid = node_uid
         self.data = {}
         self.primary_keys = {}
 
-    # @service
+    # @service(path="services.happy.maybe_create", name="create_user")
     def create(
-        self, credentials: SyftCredentials, user_update: UserUpdate
+        self, credentials: SyftVerifyKey, user_update: UserUpdate
     ) -> Result[UserUpdate, str]:
         """TEST MY DOCS"""
         if user_update.id is None:
             user_update.id = UID()
         user = user_update.to(User)
 
-        result = self.set(uid=user.id, credentials=credentials, syft_object=user)
+        result = self.set(credentials=credentials, uid=user.id, syft_object=user)
         if result.is_ok():
             return Ok(user.to(UserUpdate))
         else:
             return Err("Failed to create User.")
 
-    def view(self, uid: UID, credentials: SyftCredentials) -> Result[UserUpdate, str]:
-        user_result = self.get(uid=uid, credentials=credentials)
+    def view(self, credentials: SyftVerifyKey, uid: UID) -> Result[UserUpdate, str]:
+        user_result = self.get(credentials=credentials, uid=uid)
         if user_result.is_ok():
             return Ok(user_result.ok().to(UserUpdate))
         else:
             return Err(f"Failed to get User for UID: {uid}")
 
     def set(
-        self, uid: UID, credentials: SyftCredentials, syft_object: SyftObject
+        self, credentials: SyftVerifyKey, uid: UID, syft_object: SyftObject
     ) -> Result[bool, str]:
         self.data[uid] = syft_object.to_mongo()
         return Ok(True)
 
-    def get(self, uid: UID, credentials: SyftCredentials) -> Result[SyftObject, str]:
+    def get(self, credentials: SyftVerifyKey, uid: UID) -> Result[SyftObject, str]:
         if uid not in self.data:
             return Err(f"UID: {uid} not in {type(self)} store.")
         syft_object = SyftObject.from_mongo(self.data[uid])

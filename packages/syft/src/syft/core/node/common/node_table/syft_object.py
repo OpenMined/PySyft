@@ -136,6 +136,13 @@ class SyftObject(BaseModel, SyftObjectRegistry):
         transform = SyftObjectRegistry.get_transform(type(self), projection)
         return transform(self)
 
+    def __post_init__(self) -> None:
+        pass
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.__post_init__()
+
 
 # def transform_from(klass_from: str, version_from: int) -> Callable:
 #     def decorator(function: Callable):

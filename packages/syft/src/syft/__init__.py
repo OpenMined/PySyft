@@ -64,10 +64,14 @@ from .core.node.domain import Domain  # noqa: F401
 from .core.node.domain import DomainClient  # noqa: F401
 from .core.node.network import Network  # noqa: F401
 from .core.node.network_client import NetworkClient  # noqa: F401
+from .core.node.new.user import UserCollection  # noqa: F401
 
 # Convenience Constructors
 from .core.node.vm import VirtualMachine  # noqa: F401
 from .core.node.vm_client import VirtualMachineClient  # noqa: F401
+
+# new code
+from .core.node.worker import Worker  # noqa: F401
 from .core.tensor import autodp  # noqa: F401
 from .core.tensor import nn  # noqa: F401
 from .core.tensor.autodp.gamma_tensor import GammaTensor  # noqa: F401

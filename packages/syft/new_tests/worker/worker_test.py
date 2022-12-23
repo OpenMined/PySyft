@@ -8,6 +8,7 @@ from syft.core.node.new.user import User
 from syft.core.node.new.user import UserCollection
 from syft.core.node.new.user import UserUpdate
 from syft.core.node.worker import TestObject
+from syft.core.node.worker import Worker
 
 # from syft.core.node.worker import Worker
 
@@ -63,7 +64,7 @@ def test_action_store() -> None:
     test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
     action_store = ActionStore()
     uid = UID()
-    test_object = TestObject(name="alice")
+    test_object = TestObject(id=uid, name="alice")
     set_result = action_store.set(
         uid=uid, credentials=test_signing_key, syft_object=test_object
     )
@@ -161,3 +162,8 @@ def test_syft_object_serde() -> None:
     de = sy.deserialize(ser, from_bytes=True)
 
     assert new_user == de
+
+
+def test_worker() -> None:
+    worker = Worker()
+    assert worker
