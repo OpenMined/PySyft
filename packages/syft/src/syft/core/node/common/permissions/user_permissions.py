@@ -98,9 +98,12 @@ class UserIsOwner(BasePermission):
         user_id = msg_kwargs.get("user_id")
 
         if not user_id:
-            return False
-
-        _target_user = node.users.first(id_int=user_id)
+            if node.users.get_user(verify_key=verify_key):
+                user_id = node.users.get_user(verify_key=verify_key).id  # type: ignore
+            else:
+                return False
+        
+        _target_user = node.users.first(id=user_id)
         request_user = (
             node.users.get_user(verify_key=verify_key) if verify_key else None
         )
