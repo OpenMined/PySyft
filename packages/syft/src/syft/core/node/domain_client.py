@@ -55,6 +55,9 @@ from .common.node_service.request_receiver.request_receiver_messages import (
     RequestMessage,
 )
 from .common.node_service.simple.obj_exists import DoesObjectExistMessage
+from .common.node_service.task_submission.task_submission import CreateTask
+from .common.node_service.task_submission.task_submission import GetTasks
+from .common.node_service.task_submission.task_submission import ReviewTask
 from .common.util import check_send_to_blob_storage
 from .common.util import upload_to_s3_using_presigned
 from .enums import PyGridClientEnums
@@ -341,6 +344,30 @@ class DomainClient(Client):
     def privacy_budget(self) -> float:
         msg = GetRemainingBudgetMessage(address=self.address, reply_to=self.address)
         return self.send_immediate_msg_with_reply(msg=msg).budget  # type: ignore
+
+    @property
+    def tasks(self) -> List[Dict[str, str]]:
+        msg = GetTasks(address=self.address, reply_to=self.address, kwargs={}).sign(  # type: ignore
+            signing_key=self.signing_key
+        )
+        return self.send_immediate_msg_with_reply(msg=msg).kwargs
+
+    def create_task(self, code: str) -> None:
+        msg = CreateTask(address=self.address, reply_to=self.address, kwargs={"code": code}).sign(  # type: ignore
+            signing_key=self.signing_key
+        )
+        self.send_immediate_msg_with_reply(msg=msg)
+
+    def review(self, task_id: str, approve: True, reason: str) -> None:
+        status = "accepted" if approve else "denied"
+        msg = ReviewTask(
+            address=self.address,
+            reply_to=self.address,
+            kwargs={"task_id": task_id, "status": status, "reason": reason},
+        ).sign(  # type: ignore
+            signing_key=self.signing_key
+        )
+        self.send_immediate_msg_with_reply(msg=msg)
 
     def request_budget(
         self,
