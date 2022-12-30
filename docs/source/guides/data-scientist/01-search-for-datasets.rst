@@ -55,13 +55,12 @@ Let's import Syft by running the below cell:
 ::
 
    In:
-
    # run this cell
-    try:
-        import syft as sy
-        print("Syft is imported")
-    except:
-        print("Syft is not installed. Please use the 🧙🏽‍♂️ Install Wizard above.")
+
+   import syft as sy
+   print("Syft is imported")
+
+   # If Syft is not installed. Please use the 🧙🏽‍♂️ Install Wizard above
 
    Out: Syft is imported
 
@@ -85,14 +84,13 @@ In this case, it will take the form of:
 
    In:
 
-    try:
-        domain_client = sy.login(
-        port=8081,
-        email="jane@email.com",
-        password="supersecurepassword"
-        )
-    except Exception as e:
-        print("Unable to login. Please check your crendentials and the domain with your domain owner")
+   # Modify the port, email, and password accordingly! We are using the ones that will be generated for those who followed the Data-Owner tutorials and are now here.
+   domain_client = sy.login(
+      url="localhost",
+      port=8081,
+      email="jane@email.com",
+      password="supersecurepassword"
+   )
 
    Out:
     Connecting to <IP-Address>... done! Logging into <domain-name>... done!
@@ -110,6 +108,9 @@ on this domain with the following command:
 
    In:
    domain_client.datasets
+
+
+|01-upload-data-01-datasets|
 
 
 This should show you all the available datasets 
@@ -130,6 +131,9 @@ called family_age_dataset) to refer to it easily afterwords.
 
     family_age_dataset=domain_client.datasets[0]
     family_age_dataset
+
+
+|01-upload-data-02-pointer-to-dataset|
 
 .. note::
     Note: We are assuming that you are following the 
@@ -156,4 +160,10 @@ can perfrom on it.
    a dataset securely.
 
 .. |01-upload-data-00| image:: ../../_static/personas-image/data-scientist/01-search-for-datasets-00.png
+  :width: 95%
+
+.. |01-upload-data-01-datasets| image:: ../../_static/personas-image/data-scientist/01-search-for-datasets-01-datasets.png
+  :width: 95%
+
+.. |01-upload-data-02-pointer-to-dataset| image:: ../../_static/personas-image/data-scientist/01-search-for-datasets-02-pointer-to-dataset.png
   :width: 95%
