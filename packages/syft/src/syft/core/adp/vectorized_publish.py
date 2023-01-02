@@ -18,6 +18,7 @@ import numpy as np
 
 # relative
 from ...core.node.common.node_manager.user_manager import RefreshBudgetException
+from ...core.tensor.fixed_precision_tensor import FixedPrecisionTensor
 from ..tensor.passthrough import PassthroughTensor  # type: ignore
 from .data_subject_ledger import DataSubjectLedger
 from .data_subject_ledger import RDPParams
@@ -118,9 +119,12 @@ def publish(
     data_subject_rdp_constants: Dict[str, np.ndarray] = {}
     for tensor_id in rdp_constants:
         data_subject = tensor.sources[tensor_id].data_subject.to_string()
-        data_subject_rdp_constants[data_subject] = max(
-            data_subject_rdp_constants.get(data_subject, -np.inf),
-            rdp_constants[tensor_id],
+        # convert back to numpy for serde
+        data_subject_rdp_constants[data_subject] = np.array(
+            max(
+                data_subject_rdp_constants.get(data_subject, -np.inf),
+                rdp_constants[tensor_id],
+            )
         )
 
     ledger.update_rdp_constants(data_subject_rdp_constants=data_subject_rdp_constants)
@@ -161,10 +165,24 @@ def compute_epsilon(
         # TODO 0.8: figure a way to iterate over data_subjects and group phi_tensors when computing
         # the Lipschitz bound
         # TODO 0.8 optimize the computation of l2_norm_bounds
+        phi_tensor = phi_tensors[phi_tensor_id]
+
+        # handle bools
+        if str(phi_tensor.dtype) == "bool":
+            phi_tensor = deepcopy(phi_tensor.astype("float"))
+
+        child = phi_tensor.child
+        min_vals = phi_tensor.min_vals.to_numpy()
+        max_vals = phi_tensor.max_vals.to_numpy()
+
+        # handle FixedPrecisionTensor
+        if isinstance(child, FixedPrecisionTensor):
+            child = child.decode()
+
         l2_norms, l2_norm_bounds = calculate_bounds_for_mechanism(
-            phi_tensors[phi_tensor_id].child,
-            phi_tensors[phi_tensor_id].min_vals.to_numpy(),
-            phi_tensors[phi_tensor_id].max_vals.to_numpy(),
+            child,
+            min_vals,
+            max_vals,
         )  # , tensor.min_vals.to_numpy(), tensor.max_vals.to_numpy())
         param = RDPParams(
             sigmas=sigma,

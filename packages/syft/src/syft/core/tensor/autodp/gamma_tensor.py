@@ -1932,6 +1932,15 @@ class GammaTensor:
             is_linear=self.is_linear,
         )
 
+    def astype(self, new_type: str) -> GammaTensor:
+        return GammaTensor(
+            child=self.child.astype(new_type),
+            func=self.func,
+            sources=self.sources,
+            is_linear=self.is_linear,
+            id=self.id,
+        )
+
     @property
     def size(self) -> int:
         if (
