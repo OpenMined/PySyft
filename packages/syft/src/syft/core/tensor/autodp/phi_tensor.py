@@ -1736,9 +1736,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
         public_dtype = getattr(self, "public_dtype", None)
         return Tensor(
             child=PhiTensor(
-                child=FixedPrecisionTensor(
-                    value=np.empty(self.min_vals.shape)
-                ),
+                child=FixedPrecisionTensor(value=np.empty(self.min_vals.shape)),
                 data_subject=self.data_subject,
                 min_vals=self.min_vals,  # type: ignore
                 max_vals=self.max_vals,  # type: ignore
