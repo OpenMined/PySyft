@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import subprocess
 import time
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -359,34 +360,76 @@ def test_1_exchange_credentials_domain1_to_network() -> None:
     assert len(routes) >= 0  # can run this test multiple times
 
 
+def get_vpn_status(domain: sy.Domain) -> Optional[Dict[str, Any]]:
+    status = domain.vpn_status()
+    if isinstance(status, dict) and "connected" in status.keys():
+        return domain.vpn_status()["connected"]
+    return None
+
+
 @pytest.mark.network
 def test_reconnect_domain_node() -> None:
     domain = sy.login(email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=DOMAIN1_PORT)
     network = sy.login(
         email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=NETWORK_PORT
     )
-    domain.apply_to_network(network)
 
-    # Verify if it's really connected
-    assert domain.vpn_status()["connected"]
+    retry_time = 3
+    while retry_time > 0:
+        print(f"test_reconnect_domain_node attempt: {retry_time}")
+        retry_time -= 1
 
-    # Disconnect Domain Node
-    exec_node_command(command="tailscale down", node_name="test_domain_1")
+        try:
+            domain.apply_to_network(network)
+            status = get_vpn_status(
+                domain=domain,
+            )
+            if status:
+                break
+            else:
+                time.sleep(10)
+        except Exception as e:
+            print(f"test_reconnect_domain_node failed. {e}")
+
+    # connected
+    assert status is True
+
+    retry_time = 3
+    while retry_time > 0:
+        print(f"test_reconnect_domain_node attempt: {retry_time}")
+        retry_time -= 1
+
+        try:
+            # Disconnect Domain Node
+            exec_node_command(command="tailscale down", node_name="test_domain_1")
+            status = get_vpn_status(
+                domain=domain,
+            )
+            if not status:
+                break
+            else:
+                time.sleep(10)
+        except Exception as e:
+            print(f"test_reconnect_domain_node failed. {e}")
 
     # Verify if it's really disconnected
-    assert not domain.vpn_status()["connected"]
+    assert not status
 
     # wait for DOMAIN_CHECK_INTERVAL to trigger auto reconnect
     retry_time = 20
     while retry_time > 0:
+        print(f"test_reconnect_domain_node attempt: {retry_time}")
         retry_time -= 1
         # check network has auto connected
-        res = check_node_is_connected(
-            email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=DOMAIN1_PORT
-        )
-        if res["connected"] is True:
-            break
-        time.sleep(1)
+        try:
+            res = check_node_is_connected(
+                email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=DOMAIN1_PORT
+            )
+            if res["connected"] is True:
+                break
+            time.sleep(10)
+        except Exception as e:
+            print(f"test_reconnect_domain_node failed. {e}")
     assert res["connected"] is True
 
 

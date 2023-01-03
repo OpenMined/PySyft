@@ -129,6 +129,7 @@ services:
       - HTTPS_PORT=${HTTPS_PORT}
       - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
       - CONTAINER_HOST=${CONTAINER_HOST}
+      - ASSOCIATION_TIMEOUT=${ASSOCIATION_TIMEOUT}
     command: /start.sh
     network_mode: service:proxy
 

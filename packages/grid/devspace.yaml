@@ -89,6 +89,8 @@ vars:
     value: "60"
   - name: DOMAIN_CHECK_INTERVAL
     value: "60"
+  - name: ASSOCIATION_TIMEOUT
+    value: "10"
   - name: TEST_MODE
     value: "0"
 
@@ -437,6 +439,9 @@ deployments:
                 value: ${USE_BLOB_STORAGE}
               - name: TEST_MODE
                 value: $!{TEST_MODE}
+              - name: ASSOCIATION_TIMEOUT
+                value: $!{ASSOCIATION_TIMEOUT}
+
         service:
           name: ${SERVICE_NAME_BACKEND}
           ports:
