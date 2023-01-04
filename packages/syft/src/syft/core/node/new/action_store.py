@@ -4,16 +4,9 @@ from __future__ import annotations
 # stdlib
 from collections import defaultdict
 from enum import Enum
-from typing import Any
-from typing import ClassVar
-from typing import Dict
 from typing import List
-from typing import Optional
-from typing import Type
-from typing import Union
 
 # third party
-import pydantic
 from result import Err
 from result import Ok
 from result import Result
@@ -82,124 +75,6 @@ class ActionObjectEXECUTE(ActionObjectPermission):
 class ActionStorePermissionUpdate:
     def __init__(self) -> None:
         pass
-
-
-@serializable(recursive_serde=True)
-class Action(SyftObject):
-    __attr_searchable__: List[str] = []
-
-    parent_id: Optional[UID]
-
-    path: str
-    op: str
-    remote_self: Optional[UID]
-    args: List[UID]
-    kwargs: Dict[str, UID]
-    result_id: Optional[UID]
-
-    @pydantic.validator("id", pre=True, always=True)
-    def make_id(cls, v: Optional[UID]) -> UID:
-        return v if isinstance(v, UID) else UID()
-
-    @pydantic.validator("result_id", pre=True, always=True)
-    def make_result_id(cls, v: Optional[UID]) -> UID:
-        return v if isinstance(v, UID) else UID()
-
-    @property
-    def full_path(self) -> str:
-        return f"{self.path}.{self.op}"
-
-
-class ActionObjectPointer(SyftObject, extra=pydantic.Extra.allow):
-    __canonical_name__ = "ActionObjectPointer"
-    __version__ = 1
-
-    __attr_state__ = ["id", "node_uid", "parent_id"]
-
-    node_uid: Optional[UID]
-    parent_id: Optional[UID]
-
-    def execute_action(self, action: Action, sync: bool = True) -> ActionObjectPointer:
-        # 🟡 TODO: Add async by generating pointer and returning without result
-        if self.node_uid is None:
-            raise Exception("Pointers can't execute without a node_uid.")
-        # relative
-        from .api import APIRegistry
-        from .api import SyftAPICall
-
-        api = APIRegistry.api_for(node_uid=self.node_uid)
-
-        kwargs = {"action": action}
-        api_call = SyftAPICall(path="services.action.execute", args=[], kwargs=kwargs)
-        return api.make_call(api_call)
-
-    def make_action(
-        self,
-        path: str,
-        op: str,
-        remote_self: Optional[UID] = None,
-        args: Optional[List[Union[UID, ActionObjectPointer]]] = None,
-        kwargs: Optional[Dict[str, Union[UID, ActionObjectPointer]]] = None,
-    ) -> Action:
-        if args is None:
-            args = []
-        if kwargs is None:
-            kwargs = {}
-        arg_ids = [uid if isinstance(uid, UID) else uid.id for uid in args]
-        kwarg_ids = {
-            k: uid if isinstance(uid, UID) else uid.id for k, uid in kwargs.items()
-        }
-        return Action(
-            parent_id=self.id,
-            path=path,
-            op=op,
-            remote_self=remote_self,
-            args=arg_ids,
-            kwargs=kwarg_ids,
-        )
-
-    def make_method_action(
-        self,
-        op: str,
-        args: Optional[List[Union[UID, ActionObjectPointer]]] = None,
-        kwargs: Optional[Dict[str, Union[UID, ActionObjectPointer]]] = None,
-    ) -> Action:
-        path = self.get_path()
-        return self.make_action(
-            path=path, op=op, remote_self=self.id, args=args, kwargs=kwargs
-        )
-
-    def get_path(self) -> str:
-        return f"{type(self).__name__}"
-
-    def remote_method(
-        self,
-        op: str,
-    ) -> Action:
-        def wrapper(
-            *args: Optional[List[Union[UID, ActionObjectPointer]]],
-            **kwargs: Optional[Dict[str, Union[UID, ActionObjectPointer]]],
-        ) -> Action:
-            return self.make_method_action(op=op, args=args, kwargs=kwargs)
-
-        return wrapper
-
-
-class ActionObject(SyftObject):
-    __attr_searchable__: List[str] = []
-    parent_id: Optional[UID]
-    data: Any
-
-    pointer_type: ClassVar[Type[ActionObjectPointer]]
-
-    @pydantic.validator("id", pre=True, always=True)
-    def make_id(cls, v: Optional[UID]) -> UID:
-        return v if isinstance(v, UID) else UID()
-
-    def to_pointer(self, node_uid: UID) -> pointer_type:
-        pointer = self.to(self.pointer_type)
-        pointer.node_uid = node_uid
-        return pointer
 
 
 class ActionStore:

@@ -16,9 +16,9 @@ from typing_extensions import Self
 from ....core.node.common.node_table.syft_object import transform
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
-from .action_store import Action
-from .action_store import ActionObject
-from .action_store import ActionObjectPointer
+from .action_object import Action
+from .action_object import ActionObject
+from .action_object import ActionObjectPointer
 from .action_store import ActionStore
 from .credentials import SyftVerifyKey
 

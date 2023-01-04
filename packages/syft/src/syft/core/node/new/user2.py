@@ -1,15 +1,20 @@
-from typing import Optional
-from ..common.node_table.syft_object import SyftObject
-from .credentials import SyftSigningKey, SyftVerifyKey
-from pydantic import EmailStr
+# stdlib
 import datetime
-import pytz
-import pydantic
-import os
-import hashlib
 from enum import Enum
-from pydantic.fields import Field
+import hashlib
+import os
+from typing import Optional
 
+# third party
+import pydantic
+from pydantic import EmailStr
+from pydantic.fields import Field
+import pytz
+
+# relative
+from ..common.node_table.syft_object import SyftObject
+from .credentials import SyftSigningKey
+from .credentials import SyftVerifyKey
 
 
 class ServiceRole(Enum):
@@ -59,25 +64,31 @@ class UserCreate(User):
     def hash_password(cls, v: Optional[bytes], values) -> Optional[bytes]:
         if v:
             salt = values["salt"]
-            values["hashed_password"] = hashlib.pbkdf2_hmac('sha256', v.encode(), salt, 10000)
+            values["hashed_password"] = hashlib.pbkdf2_hmac(
+                "sha256", v.encode(), salt, 10000
+            )
         return v
 
     @property
     def hashed_password(self):
         if self.salt and self.password:
-            return hashlib.pbkdf2_hmac('sha256', self.password.encode(), self.salt, 10000)
+            return hashlib.pbkdf2_hmac(
+                "sha256", self.password.encode(), self.salt, 10000
+            )
+
 
 user = UserCreate(name="Shubham", email="email@email.com", password="Hello")
 user.dict()
-'''
-{'id': None,
- 'email': 'email@email.com',
- 'name': 'Shubham',
- 'hashed_password': b'*\xd3\xe2\x8a\x11\x08\x0e#\xd3 \xdb\xfb=\x88\x04\xb9\xe6\x80>\x98\xab\xcaJ\xcc\xc9\xcdK\x1b`g\xc9\x8f',
- 'salt': b"\xab\xa5\xbb\rnTC\xbd\x03L?\x11 \xb0\xeb\xa8g\x9a\xa2$}\xce\xc3S\xd6e'\xf0\x0c^S2",
- 'signing_key': None,
- 'verify_key': None,
- 'role': 1,
- 'created_at': datetime.datetime(2022, 12, 22, 8, 46, 44, 233793, tzinfo=<UTC>),
- 'password': 'Hello'}
-'''
+# """
+# {'id': None,
+#  'email': 'email@email.com',
+#  'name': 'Shubham',
+#  'hashed_password':
+#  b'*\xd3\xe2\x8a\x11\x08\x0e#\xd3 \xdb\xfb=\x88\x04\xb9\xe6\x80>\x98\xab\xcaJ\xcc\xc9\xcdK\x1b`g\xc9\x8f',
+#  'salt': b"\xab\xa5\xbb\rnTC\xbd\x03L?\x11 \xb0\xeb\xa8g\x9a\xa2$}\xce\xc3S\xd6e'\xf0\x0c^S2",
+#  'signing_key': None,
+#  'verify_key': None,
+#  'role': 1,
+#  'created_at': datetime.datetime(2022, 12, 22, 8, 46, 44, 233793, tzinfo=<UTC>),
+#  'password': 'Hello'}
+# """
