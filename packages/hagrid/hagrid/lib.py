@@ -381,8 +381,9 @@ def generate_user_table(username: str, password: str) -> Union[Table, str]:
     table = Table(title="Virtual Machine Credentials")
     table.add_column("Username")
     table.add_column("Password")
+    masked_password = ''.join(['*' for _ in password])
 
-    table.add_row(f"[green]{username}", f"[green]{password}")
+    table.add_row(f"[green]{username}", f"[green]{masked_password}")
 
     return table
 
