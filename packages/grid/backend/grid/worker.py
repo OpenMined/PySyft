@@ -1,8 +1,16 @@
 # stdlib
+from io import StringIO
+import sys
 from typing import Any
+from typing import Dict
+
+# third party
+from celery.utils.log import get_task_logger
 
 # syft absolute
+from syft.core.common.group import VERIFYALL
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
+from syft.core.common.uid import UID
 from syft.core.node.common.node_service.vpn.vpn_messages import (
     VPNJoinSelfMessageWithReply,
 )
@@ -12,13 +20,16 @@ from syft.core.node.common.node_service.vpn.vpn_messages import (
 from syft.core.node.common.node_service.vpn.vpn_messages import TAILSCALE_URL
 from syft.core.node.common.node_service.vpn.vpn_messages import connect_with_key
 from syft.core.node.common.node_service.vpn.vpn_messages import get_network_url
+from syft.core.store.storeable_object import StorableObject
 
 # grid absolute
 from grid.core.celery_app import celery_app
 from grid.core.config import settings  # noqa: F401
 from grid.core.node import node
+from grid.periodic_tasks import check_tasks_to_be_executed
 from grid.periodic_tasks import cleanup_incomplete_uploads_from_blob_store
 
+logger = get_task_logger(__name__)
 
 # TODO : Should be modified to use exponential backoff (for efficiency)
 # Initially we have set 0.1 as the retry time.
@@ -34,6 +45,63 @@ def msg_without_reply(self, obj_msg: Any) -> None:  # type: ignore
         raise Exception(
             f"This worker can only handle SignedImmediateSyftMessageWithoutReply. {obj_msg}"
         )
+
+
+@celery_app.task
+def execute_task(
+    task_uid: str, code: str, load_vars: Dict[str, str], save_vars: Dict[str, str]
+) -> None:
+    node.tasks.update(
+        search_params={"uid": task_uid},
+        updated_args={"execution": {"status": "executing"}},
+    )
+
+    local_vars = vars()
+    for key, value in load_vars.items():
+        local_vars[key] = node.store.get(value, proxy_only=True).data
+
+    # create file-like string to capture output
+    codeOut = StringIO()
+    codeErr = StringIO()
+
+    sys.stdout = codeOut
+    sys.stderr = codeErr
+
+    exec(code)
+
+    # restore stdout and stderr
+    sys.stdout = sys.__stdout__
+    sys.stderr = sys.__stderr__
+
+    logger.info("Error: " + str(codeErr.getvalue()))
+    logger.info("Std Output: " + str(codeOut.getvalue()))
+
+    _save_vars = {}
+    logger.info(save_vars)
+    for var in save_vars.keys():
+        new_id = UID()
+        node.store.check_collision(new_id)
+
+        obj = StorableObject(
+            id=new_id,
+            data=local_vars[var],
+            search_permissions={VERIFYALL: None},
+        )
+        obj.read_permissions = {
+            node.verify_key: node.id,
+        }
+        obj.write_permissions = {
+            node.verify_key: node.id,
+        }
+        node.store[new_id] = obj
+
+        _save_vars[var] = new_id.to_string()
+        logger.info(_save_vars)
+
+    node.tasks.update(
+        search_params={"uid": task_uid},
+        updated_args={"execution": {"status": "done"}, "saved_vars": _save_vars},
+    )
 
 
 @celery_app.task
@@ -93,6 +161,17 @@ def add_cleanup_blob_store_periodic_task(sender, **kwargs) -> None:  # type: ign
         3600,  # Run every hour
         cleanup_incomplete_uploads_from_blob_store.s(),
         name="Clean incomplete uploads in Seaweed",
+        queue="main-queue",
+        options={"queue": "main-queue"},
+    )
+
+
+@celery_app.on_after_configure.connect
+def check_ready_tasks(sender, **kwargs) -> None:  # type: ignore
+    celery_app.add_periodic_task(
+        3,  # Run every hour
+        check_tasks_to_be_executed.s(),
+        name="Check tasks that are ready to be executed ...",
         queue="main-queue",
         options={"queue": "main-queue"},
     )
