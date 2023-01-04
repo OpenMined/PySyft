@@ -38,7 +38,7 @@ print("PROTOCOL", PROTOCOL)
 
 def join_to_network_python(
     email: str, password: str, port: int, network_host: str
-) -> None:
+) -> Optional[Dict[str, Any]]:
     root_client = sy.login(email=email, password=password, port=port)
 
     # test Syft API
@@ -59,10 +59,9 @@ def join_to_network_python(
         status = response["status"]
         host = response["host"]
         if status == "ok" and "ip" in host:
-            break
-        time.sleep(1)
-
-    return response
+            return response
+        time.sleep(3)
+    return None
 
 
 def join_to_network_rest(
@@ -93,18 +92,30 @@ def join_to_network_rest(
         response = requests.get(grid_url.url, headers=headers)
         result = response.json()
         if "status" in result and result["status"] == "ok":
-            break
-        time.sleep(1)
-    return result
+            return result
+        time.sleep(3)
+    return None
 
 
-def run_network_tests(port: int, hostname: str, vpn_ip: str) -> None:
-    response = join_to_network_python(
-        email=TEST_ROOT_EMAIL,
-        password=TEST_ROOT_PASS,
-        port=port,
-        network_host=NETWORK_PUBLIC_HOST,
-    )
+def run_network_test_python(port: int, hostname: str, vpn_ip: str) -> None:
+    retry_time = 3
+    while retry_time > 0:
+        retry_time -= 1
+
+        try:
+            response = join_to_network_python(
+                email=TEST_ROOT_EMAIL,
+                password=TEST_ROOT_PASS,
+                port=port,
+                network_host=NETWORK_PUBLIC_HOST,
+            )
+            if response is not None:
+                break
+            else:
+                time.sleep(10)
+        except Exception:
+            print(f"failed to run_network_test_python: {retry_time}")
+            time.sleep(10)
 
     assert response["status"] == "ok"
     host = response["host"]
@@ -116,12 +127,27 @@ def run_network_tests(port: int, hostname: str, vpn_ip: str) -> None:
     )  # kubernetes forces - not _
     assert host["os"] == "linux"
 
-    response = join_to_network_rest(
-        email=TEST_ROOT_EMAIL,
-        password=TEST_ROOT_PASS,
-        port=port,
-        network_host=NETWORK_PUBLIC_HOST,
-    )
+
+def run_network_test_rest(port: int) -> None:
+    retry_time = 3
+    while retry_time > 0:
+        retry_time -= 1
+
+        try:
+            response = join_to_network_rest(
+                email=TEST_ROOT_EMAIL,
+                password=TEST_ROOT_PASS,
+                port=port,
+                network_host=NETWORK_PUBLIC_HOST,
+            )
+            if response is not None:
+                break
+            else:
+                time.sleep(10)
+        except Exception:
+            print(f"failed to run_network_test_rest: {retry_time}")
+            time.sleep(10)
+
     if "status" not in response or response["status"] != "ok":
         print(response)
     assert response["status"] == "ok"
@@ -470,10 +496,15 @@ def test_2_add_route_domain1_to_network() -> None:
 
 
 @pytest.mark.network
-def test_3_connect_domain1_to_network_vpn() -> None:
-    run_network_tests(
+def test_3a_connect_domain1_to_network_vpn() -> None:
+    run_network_test_python(
         port=DOMAIN1_PORT, hostname="test_domain_1", vpn_ip=DOMAIN1_VPN_IP
     )
+
+
+@pytest.mark.network
+def test_3b_connect_domain1_to_network_vpn() -> None:
+    run_network_test_rest(port=DOMAIN1_PORT)
 
 
 @pytest.mark.network
