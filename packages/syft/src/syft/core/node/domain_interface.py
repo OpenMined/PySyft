@@ -9,6 +9,7 @@ from .common.node_manager.association_request_manager import (
 from .common.node_manager.dataset_manager import NoSQLDatasetManager
 from .common.node_manager.role_manager import NewRoleManager
 from .common.node_manager.setup_manager import NoSQLSetupManager
+from .common.node_manager.task_manager import NoSQLTaskManager
 from .common.node_manager.user_manager import NoSQLUserManager
 
 
@@ -19,3 +20,4 @@ class DomainInterface(NodeServiceInterface):
     datasets: NoSQLDatasetManager
     setup: NoSQLSetupManager
     settings: BaseSettings
+    tasks: NoSQLTaskManager
