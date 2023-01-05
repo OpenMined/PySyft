@@ -10,6 +10,5 @@
   <Route path="login" component={Login} />
   <Route path="signup" component={Signup} />
   <Route path="users" component={Users} />
-
   <Route path="/" component={Home} />
 </div>
