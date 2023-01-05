@@ -23,7 +23,7 @@ from .constants import ENCODE_BLACK
 from .constants import ENCODE_BOLD
 from .constants import ENCODE_NO_STYLE
 from .constants import ENCODE_RED
-from .constants import LOCAL_MODE
+from .constants import LOCAL_MODE, DOMAIN_CONNECTION_PORT
 from .oblv_proxy import check_oblv_proxy_installation_status
 
 
@@ -74,8 +74,8 @@ class DeploymentClient:
     ):
         header = {}
         if LOCAL_MODE:
-            header["x_oblv_user_name"] = "enclave_test"
-            header["x_oblv_user_role"] = "user"
+            header["x-oblv-user-name"] = "enclave_test"
+            header["x-oblv-user-role"] = "user"
         else:
             depl = self.oblv_client.deployment_info(self.deployment_id)
             if depl.is_deleted == True:
@@ -94,7 +94,7 @@ class DeploymentClient:
     def set_conn_string(self, URL):
         self.__conn_string = URL
 
-    def initiate_connection(self, connection_port: int = 3032):
+    def initiate_connection(self, connection_port: int = DOMAIN_CONNECTION_PORT):
         if LOCAL_MODE:
             self.__conn_string = "http://127.0.0.1:" + str(connection_port)
             return

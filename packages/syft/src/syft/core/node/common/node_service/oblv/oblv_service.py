@@ -164,10 +164,9 @@ def make_request_to_enclave(
         process.wait(1)
         return req
     else:
-        headers = {"x_oblv_user_name": node.name, "x_oblv_user_role": "domain"}
-
+        headers = {"x-oblv-user-name": node.name, "x-oblv-user-role": "domain"}
         return request_method(
-            connection_string,
+            connection_string.replace("127.0.0.1","host.docker.internal"),
             headers=headers,
             params=params,
             files=files,
