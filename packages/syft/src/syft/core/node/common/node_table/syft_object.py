@@ -11,6 +11,8 @@ from typing import Union
 
 # third party
 from pydantic import BaseModel
+from pydantic.fields import Undefined
+from typeguard import check_type
 
 # relative
 from ....common import UID
@@ -139,8 +141,24 @@ class SyftObject(BaseModel, SyftObjectRegistry):
     def __post_init__(self) -> None:
         pass
 
+    def _syft_set_validate_private_attrs_(self, **kwargs):
+        # Validate and set private attributes
+        # https://github.com/pydantic/pydantic/issues/2105
+        for attr, decl in self.__private_attributes__.items():
+            value = kwargs.get(attr, decl.get_default())
+            if value is not Undefined:
+                if decl.default_factory:
+                    # If the value is defined via PrivateAttr with default factory
+                    value = decl.default_factory(value)
+                else:
+                    # Otherwise validate value against the variable annotation
+                    var_annotation = self.__annotations__.get(attr)
+                    check_type(attr, value, var_annotation)
+                setattr(self, attr, value)
+
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
+        self._syft_set_validate_private_attrs_(**kwargs)
         self.__post_init__()
 
 

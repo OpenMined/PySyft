@@ -13,6 +13,7 @@ from typing import Union
 
 # third party
 import pydantic
+from pydantic import PrivateAttr
 
 # relative
 from ....core.node.common.node_table.syft_object import SyftObject
@@ -124,6 +125,7 @@ passthrough_attrs = [
     "__dict__",  # python
     "__class__",  # python
     "__repr_name__",  # python
+    "__annotations__",  # python
     "_init_private_attributes",  # pydantic
     "__private_attributes__",  # pydantic
     "__config__",  # pydantic
@@ -173,7 +175,9 @@ class ActionObject(SyftObject):
         pointer.node_uid = node_uid
         return pointer
 
-    syft_action_data: Any  # 🔵 TODO 6: Make special ActionObject attrs _syft if possible
+    _syft_action_data: Any = (
+        PrivateAttr()
+    )  # 🔵 TODO 6: Make special ActionObject attrs _syft if possible
     syft_pre_hooks__: Dict[str, Any] = {}
     syft_post_hooks__: Dict[str, Any] = {}
 
@@ -215,7 +219,7 @@ class ActionObject(SyftObject):
     def _syft_output_action_object(self, result) -> Any:
         # can check types here
         if not isinstance(result, ActionObject):
-            result = ActionObject(syft_action_data=result)
+            result = ActionObject(_syft_action_data=result)
         return result
 
     def __getattribute__(self, name):
@@ -227,14 +231,14 @@ class ActionObject(SyftObject):
         ):
             return object.__getattribute__(self, name)
 
-        defined_on_self = name in self.__dict__
+        defined_on_self = name in self.__dict__ or name in self.__private_attributes__
         if show_print:
             print(">> ", name, ", defined_on_self = ", defined_on_self)
 
         # use the custom definied version
         context_self = self
         if not defined_on_self:
-            context_self = self.syft_action_data
+            context_self = self._syft_action_data
 
         if is_property(context_self, name):
             _ = self._syft_run_pre_hooks__(name, (), {})
@@ -247,7 +251,7 @@ class ActionObject(SyftObject):
             return result
 
         # check for other types that aren't methods, functions etc
-        original_func = getattr(self.syft_action_data, name)
+        original_func = getattr(self._syft_action_data, name)
         if show_print:
             debug_original_func(name, original_func)
         if inspect.ismethod(original_func) or inspect.ismethoddescriptor(original_func):
