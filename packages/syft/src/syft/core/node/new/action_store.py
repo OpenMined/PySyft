@@ -109,7 +109,11 @@ class ActionStore:
             can_write = True if ownership_result.is_ok() else False
 
         if can_write:
-            self.data[uid] = syft_object.to_mongo()  # TODO: create interface instead
+            self.data[
+                uid
+            ] = (
+                syft_object.to_mongo()
+            )  # 🟡 TODO 13: Create to_storage interface with Mongo first
             if uid not in self.permissions:
                 # create default permissions
                 self.permissions[uid] = set()
@@ -158,7 +162,7 @@ class ActionStore:
         ):
             return True
 
-        # TODO: add ALL_READ, ALL_EXECUTE etc
+        # 🟡 TODO 14: add ALL_READ, ALL_EXECUTE etc
         if permission.permission == ActionPermission.OWNER:
             pass
         elif permission.permission == ActionPermission.READ:

@@ -53,7 +53,7 @@ class APIEndpoint(SyftObject):
     name: str
     description: str
     doc_string: str
-    signature: Signature  # TODO replace with real signature
+    signature: Signature
     has_self: bool = False
 
 
@@ -139,7 +139,7 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
         # need real Signature object
         # params = signature.bind(*args, **kwargs)
         if len(kwargs) == 0:
-            # 🟡 TODO: map all the args and kwargs stuff properly
+            # 🟡 TODO 15: Rewrite wrapper API functions to handle, args and kwargs properly
             raise Exception("Please use kwargs")
         for key, value in kwargs.items():
             if key not in signature.parameters:
@@ -159,7 +159,6 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
             if msg:
                 raise Exception(msg)
 
-        # TODO: make message to send Action to service with data
         api_call = SyftAPICall(path=path, args=[], kwargs=kwargs)
         result = make_call(api_call=api_call)
         return result
@@ -189,15 +188,17 @@ class SyftAPI(SyftObject):
     __attr_state__ = ["endpoints"]
 
     def __post_init__(self) -> None:
-        self.signing_key = SyftSigningKey.generate()  # 🟡 TODO: get from API and cache
+        # 🟡 TODO 16: Write user login and key retrieval / local caching
+        self.signing_key = SyftSigningKey.generate()
 
     @staticmethod
     def for_user(node_uid: UID) -> SyftAPI:
-        # TODO: get user key and filter
+        # 🟡 TODO 1: Filter SyftAPI with User VerifyKey
         # relative
 
         endpoints = {
-            "services_user_create": APIEndpoint(  # TODO change to . syntax and build a tree of modules
+            # 🟡 TODO 2: Change endpoint keys to use . syntax and build a tree of modules
+            "services_user_create": APIEndpoint(
                 path="services.user.create",
                 name="create",
                 description="Create User",
@@ -205,7 +206,7 @@ class SyftAPI(SyftObject):
                 signature=signature(UserCollection.create),
                 has_self=False,
             ),
-            "action_store_send": APIEndpoint(  # TODO change to . syntax and build a tree of modules
+            "action_store_send": APIEndpoint(
                 path="services.action.set",
                 name="send",
                 description="Send Action Objects",

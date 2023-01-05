@@ -251,7 +251,7 @@ def deserialize_generic_alias(type_blob: bytes) -> type:
     return type_constructor(**obj_dict)
 
 
-# 🟡 TODO: add tests and all typing options for signatures
+# 🟡 TODO 5: add tests and all typing options for signatures
 def recursive_serde_register_type(t: type) -> None:
     if isinstance(t, type) and issubclass(t, _GenericAlias):
         recursive_serde_register(

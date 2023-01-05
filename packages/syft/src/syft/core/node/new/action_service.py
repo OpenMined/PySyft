@@ -28,10 +28,10 @@ class NumpyArrayObjectPointer(ActionObjectPointer):
     __canonical_name__ = "NumpyArrayObjectPointer"
     __version__ = 1
 
-    public_dtype: Optional[str]  # 🟡 TODO: add numpy dtype types to serde
+    public_dtype: Optional[str]
     public_shape: Optional[tuple]
 
-    # 🟡 TODO: add state / allowlist inheritance and ignore methods by default
+    # 🟡 TODO 17: add state / allowlist inheritance to SyftObject and ignore methods by default
     __attr_state__ = ["id", "node_uid", "parent_id", "public_dtype", "public_shape"]
 
     def __post_init__(self) -> None:
@@ -49,7 +49,7 @@ class NumpyArrayObjectPointer(ActionObjectPointer):
     def __make_infix_op__(self, op: str) -> Callable:
         def infix_op(_self, other: ActionObjectPointer) -> Self:
             if not isinstance(other, ActionObjectPointer):
-                print("TODO: pointerize")
+                print("🔵 TODO: pointerize")
                 raise Exception("We need to pointerize first")
             action = self.make_method_action(op=op, args=[other])
             action_result = self.execute_action(action, sync=True)
@@ -69,19 +69,20 @@ def numpy_like_eq(left: Any, right: Any) -> bool:
     return bool(result)
 
 
-# 🟡 TODO: Map numpy type to these classes for bi-directional lookup
+# 🔵 TODO 7: Map TPActionObjects and their 3rd Party types like numpy type to these
+# classes for bi-directional lookup.
 @serializable(recursive_serde=True)
 class NumpyArrayObject(ActionObject):
     __canonical_name__ = "NumpyArrayObject"
     __version__ = 1
 
-    dtype: str  # 🟡 TODO: add numpy dtype types to serde
+    dtype: str
     shape: tuple
 
     pointer_type = NumpyArrayObjectPointer
 
     def __eq__(self, other: Any) -> bool:
-        # 🟡 TODO: move to a Data / Serdeable type interface on ActionObject
+        # 🟡 TODO 8: move __eq__ to a Data / Serdeable type interface on ActionObject
         if isinstance(other, NumpyArrayObject):
             return (
                 numpy_like_eq(self.data, other.data)
@@ -123,7 +124,7 @@ class ActionService:
     ) -> Result[ActionObjectPointer, str]:
         """Save an object to the action store"""
 
-        # 🟡 TODO: Create some kind of type checking / protocol for is_serializable???
+        # 🟡 TODO 9: Create some kind of type checking / protocol for SyftSerializable
         result = self.store.set(
             uid=action_object.id,
             credentials=credentials,
@@ -165,7 +166,7 @@ class ActionService:
                     return kwarg_value.err()
                 kwargs[key] = kwarg_value.ok().data
 
-        # 🟡 TODO: GET PROPER CODE FROM OLD RUNCLASSMETHODACTION to ensure the function
+        # 🔵 TODO 10: Get proper code From old RunClassMethodAction to ensure the function
         # is not bound to the original object or mutated
         target_method = getattr(resolved_self, action.op, None)
         result = None
@@ -176,8 +177,7 @@ class ActionService:
             print("what is this exception", e)
             return Err(e)
 
-        # 🟡 TODO: Figure out how we want to store action object results
-        # add a mapping between types and their synthesized ActionObjects
+        # 🟡 TODO 11: Figure out how we want to store action object results
 
         if isinstance(result, np.ndarray):
             result_action_object = NumpyArrayObject(
@@ -188,7 +188,7 @@ class ActionService:
                 shape=result.shape,
             )
         else:
-            # 🟡 TODO: we need an Any Pointer?
+            # 🔵 TODO 12: Create an AnyPointer to handle unexpected results
             result_action_object = ActionObject(
                 id=action.result_id, parent_id=action.id, data=result
             )

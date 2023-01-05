@@ -17,7 +17,8 @@ recursive_serde_register(
 
 
 # def serialize_parameter(obj: Parameter) -> bytes:
-#     # 🟡 TODO: Perhaps we can keep this as a type not a string
+#     # 🟡 TODO 3: Solve issue of Signature Parameter types being converted to String depending
+#                  on import path
 #     # currently types arent always being sent correctly maybe due to the path?
 #     # instead we can send the fqn and recover it in the type checker on the client side
 #     annotation = obj.annotation

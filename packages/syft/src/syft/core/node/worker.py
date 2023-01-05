@@ -99,7 +99,7 @@ class Worker:
         credentials = api_call.credentials
         api_call = api_call.message
 
-        # 🟡 TODO: Replace with the @service decorator binding
+        # 🔵 TODO 4: Add @service decorator to autobind services into the SyftAPI
 
         if api_call.path == "services.user.create":
             result = self.user_collection.create(

@@ -56,7 +56,6 @@ class ActionObjectPointer(SyftObject, extra=pydantic.Extra.allow):
     parent_id: Optional[UID]
 
     def execute_action(self, action: Action, sync: bool = True) -> ActionObjectPointer:
-        # 🟡 TODO: Add async by generating pointer and returning without result
         if self.node_uid is None:
             raise Exception("Pointers can't execute without a node_uid.")
         # relative
@@ -174,7 +173,7 @@ class ActionObject(SyftObject):
         pointer.node_uid = node_uid
         return pointer
 
-    syft_action_data: Any  # 🟡 TODO: Make these _syft if possible
+    syft_action_data: Any  # 🔵 TODO 6: Make special ActionObject attrs _syft if possible
     syft_pre_hooks__: Dict[str, Any] = {}
     syft_post_hooks__: Dict[str, Any] = {}
 
