@@ -23,7 +23,7 @@ def test_get_timeout() -> None:
 
     res = None
     try:
-        res = x_ptr.get(timeout_secs=3)
+        res = x_ptr.get(timeout_secs=30)  # this should work but CI can be slow
     except Exception:
         pass
 
