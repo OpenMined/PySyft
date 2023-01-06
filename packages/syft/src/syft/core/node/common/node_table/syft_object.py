@@ -146,15 +146,22 @@ class SyftObject(BaseModel, SyftObjectRegistry):
         # https://github.com/pydantic/pydantic/issues/2105
         for attr, decl in self.__private_attributes__.items():
             value = kwargs.get(attr, decl.get_default())
+            var_annotation = self.__annotations__.get(attr)
             if value is not Undefined:
                 if decl.default_factory:
                     # If the value is defined via PrivateAttr with default factory
                     value = decl.default_factory(value)
                 else:
                     # Otherwise validate value against the variable annotation
-                    var_annotation = self.__annotations__.get(attr)
                     check_type(attr, value, var_annotation)
                 setattr(self, attr, value)
+            else:
+                # check if the private is optional
+                is_optional_attr = type(None) in getattr(var_annotation, "__args__", [])
+                if not is_optional_attr:
+                    raise ValueError(
+                        f"{attr}\n field required (type=value_error.missing)"
+                    )
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
