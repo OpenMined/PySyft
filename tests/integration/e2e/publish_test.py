@@ -58,7 +58,7 @@ def test_publish_with_bool_type_values(capfd) -> None:
     out, _ = capfd.readouterr()
 
     assert "WARNING" in out and "bool" in out
-    TEST_TIMEOUT_SECS = 10
+    TEST_TIMEOUT_SECS = 30  # increased timeout for arm64 tests in CI
 
     result = None
 
