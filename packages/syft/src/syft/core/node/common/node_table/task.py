@@ -13,7 +13,7 @@ class NoSQLTask(SyftObject):
     # fields
     uid: str
     user: str
-    load_vars: Dict[str, str]
+    inputs: Dict[str, str]
     owner: Dict[str, str]
     code: str
     status: str
@@ -21,7 +21,7 @@ class NoSQLTask(SyftObject):
     updated_at: str
     reviewed_by: str
     execution: Dict[str, str]
-    saved_vars: Dict[str, str]
+    outputs: Dict[str, str]
     reason: str = ""
 
     # serde / storage rules
@@ -30,8 +30,8 @@ class NoSQLTask(SyftObject):
         "code",
         "user",
         "status",
-        "load_vars",
-        "saved_vars",
+        "inputs",
+        "outputs",
         "created_at",
         "updated_at",
         "reviewed_by",

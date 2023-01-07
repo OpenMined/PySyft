@@ -19,7 +19,7 @@ def check_tasks_to_be_executed() -> None:
         if task.execution["status"] == "enqueued":
             celery_app.send_task(
                 "grid.worker.execute_task",
-                args=[task.uid, task.code, task.load_vars, task.saved_vars],
+                args=[task.uid, task.code, task.inputs, task.outputs],
             )
 
 

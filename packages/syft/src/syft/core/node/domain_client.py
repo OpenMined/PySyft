@@ -1,4 +1,5 @@
 # stdlib
+import inspect
 import logging
 import sys
 import time
@@ -352,18 +353,34 @@ class DomainClient(Client):
         )
         return self.send_immediate_msg_with_reply(msg=msg).kwargs
 
-    def create_task(self, code: str) -> None:
-        msg = CreateTask(address=self.address, reply_to=self.address, kwargs={"code": code}).sign(  # type: ignore
+    def create_task(
+        self, code: str, inputs: Dict[str, Any], outputs: List[str]
+    ) -> None:
+        if not inspect.isfunction(code):
+            raise Exception("This code isn't a function ...")
+
+        code_str = inspect.getsource(code)
+
+        for key, value in inputs.items():
+            if not isinstance(value, str):
+                inputs[key] = value.id_at_location.to_string()
+
+        msg = CreateTask(
+            address=self.address,
+            reply_to=self.address,
+            kwargs={"code": code_str, "inputs": inputs, "outputs": outputs},
+        ).sign(  # type: ignore
             signing_key=self.signing_key
         )
+
         self.send_immediate_msg_with_reply(msg=msg)
 
-    def review(self, task_id: str, approve: True, reason: str) -> None:
+    def review(self, task_uid: str, approve: True, reason: str) -> None:
         status = "accepted" if approve else "denied"
         msg = ReviewTask(
             address=self.address,
             reply_to=self.address,
-            kwargs={"task_id": task_id, "status": status, "reason": reason},
+            kwargs={"task_uid": task_uid, "status": status, "reason": reason},
         ).sign(  # type: ignore
             signing_key=self.signing_key
         )

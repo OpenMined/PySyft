@@ -49,58 +49,84 @@ def msg_without_reply(self, obj_msg: Any) -> None:  # type: ignore
 
 @celery_app.task
 def execute_task(
-    task_uid: str, code: str, load_vars: Dict[str, str], save_vars: Dict[str, str]
+    task_uid: str, code: str, inputs: Dict[str, str], outputs: Dict[str, str]
 ) -> None:
     node.tasks.update(
         search_params={"uid": task_uid},
         updated_args={"execution": {"status": "executing"}},
     )
 
-    local_vars = vars()
-    for key, value in load_vars.items():
+    # Check overlap between inputs and vars
+    global_input_inter = set(globals().keys()).intersection(set(inputs.keys()))
+    local_input_inter = set(vars().keys()).intersection(set(inputs.keys()))
+
+    # If there's some intersection between global variables and input
+    if global_input_inter or local_input_inter:
+        stderr_message = " You can't use variable name: "
+        stderr_message += ",".join(list(global_input_inter))
+        stderr_message += ",".join(list(local_input_inter))
+
+        node.tasks.update(
+            search_params={"uid": task_uid},
+            updated_args={"execution": {"status": "failed", "stderr": stderr_message}},
+        )
+        return None
+
+    local_vars = {}
+    for key, value in inputs.items():
         local_vars[key] = node.store.get(value, proxy_only=True).data
 
-    # create file-like string to capture output
+    # create file-like string to capture ouputs
     codeOut = StringIO()
     codeErr = StringIO()
 
     sys.stdout = codeOut
     sys.stderr = codeErr
 
+    old_env = set(vars().keys())
+
     exec(code)
+    method_name = list(
+        set([key for key in vars().keys() if key != "old_env"]) - old_env
+    )[0]
+    outputs = vars()[method_name](**local_vars)
 
     # restore stdout and stderr
     sys.stdout = sys.__stdout__
     sys.stderr = sys.__stderr__
 
+    logger.info(outputs)
+
     logger.info("Error: " + str(codeErr.getvalue()))
-    logger.info("Std Output: " + str(codeOut.getvalue()))
+    logger.info("Std ouputs: " + str(codeOut.getvalue()))
 
-    _save_vars = {}
-    logger.info(save_vars)
-    for var in save_vars.keys():
-        new_id = UID()
-        node.store.check_collision(new_id)
+    # _save_vars = {}
+    # for var in outputs.keys():
+    new_id = UID()
+    node.store.check_collision(new_id)
 
-        obj = StorableObject(
-            id=new_id,
-            data=local_vars[var],
-            search_permissions={VERIFYALL: None},
-        )
-        obj.read_permissions = {
-            node.verify_key: node.id,
-        }
-        obj.write_permissions = {
-            node.verify_key: node.id,
-        }
-        node.store[new_id] = obj
+    obj = StorableObject(
+        id=new_id,
+        data=outputs,
+        search_permissions={VERIFYALL: None},
+    )
 
-        _save_vars[var] = new_id.to_string()
-        logger.info(_save_vars)
+    obj.read_permissions = {
+        node.verify_key: node.id,
+    }
+
+    obj.write_permissions = {
+        node.verify_key: node.id,
+    }
+
+    node.store[new_id] = obj
 
     node.tasks.update(
         search_params={"uid": task_uid},
-        updated_args={"execution": {"status": "done"}, "saved_vars": _save_vars},
+        updated_args={
+            "execution": {"status": "done"},
+            "outputs": {"output": new_id.to_string()},
+        },
     )
 
 

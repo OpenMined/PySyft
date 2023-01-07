@@ -36,9 +36,9 @@ class CreateTask(SyftMessage, DomainMessageRegistry):
     class Request(RequestPayload):
         """Payload fields and types used during a User Creation Request."""
 
-        load_vars: Dict[str, str]
+        inputs: Dict[str, str]
         code: str
-        save_vars: List[str]
+        outputs: List[str]
 
     # Pydantic Inner class to define expected reply payload fields.
     class Reply(ReplyPayload):
@@ -61,8 +61,8 @@ class CreateTask(SyftMessage, DomainMessageRegistry):
         task = NoSQLTask(
             uid=UID().to_string(),
             user=user.id.to_string(),
-            load_vars=self.payload.load_vars,
-            saved_vars={var: " -- " for var in self.payload.save_vars},
+            inputs=self.payload.inputs,
+            outputs={var: " -- " for var in self.payload.outputs},
             owner={"name": user.name, "role": user.role["name"], "email": user.email},
             code=self.payload.code,
             status=TASK_SERVICE_STATUS.PENDING.value,
@@ -137,8 +137,8 @@ class GetTask(SyftMessage, DomainMessageRegistry):
         execution: Dict[str, str]
         uid: str
         reason: str
-        load_vars: Dict[str, str] = {}
-        saved_vars: Dict[str, str] = {}
+        inputs: Dict[str, str] = {}
+        outputs: Dict[str, str] = {}
 
     request_payload_type = (
         Request  # Converts generic syft dict into a CreateUserMessage.Request object.

@@ -9,8 +9,8 @@ from pydantic import BaseModel
 
 class CreateTaskModel(BaseModel):
     code: str
-    load_vars: Dict[str, str] = {}
-    save_vars: List[str] = []
+    inputs: Dict[str, str] = {}
+    outputs: List[str] = []
 
 
 class ReviewTaskModel(BaseModel):
@@ -29,8 +29,8 @@ class Task(BaseModel):
     status: str
     execution: Dict[str, str]
     reason: Optional[str]
-    load_vars: Dict[str, str] = {}
-    saved_vars: Dict[str, str] = {}
+    inputs: Dict[str, str] = {}
+    outputs: Dict[str, str] = {}
 
 
 class GetTasks(BaseModel):

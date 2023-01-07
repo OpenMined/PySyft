@@ -102,7 +102,7 @@ class UserIsOwner(BasePermission):
                 user_id = node.users.get_user(verify_key=verify_key).id  # type: ignore
             else:
                 return False
-        
+
         _target_user = node.users.first(id=user_id)
         request_user = (
             node.users.get_user(verify_key=verify_key) if verify_key else None
