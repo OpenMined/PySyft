@@ -11,7 +11,6 @@ from typing import Any
 from typing import Dict
 from typing import Optional
 from typing import Union
-from typing import Tuple
 
 # third party
 import names
@@ -21,6 +20,7 @@ from numpy.typing import ArrayLike
 # relative
 from ..common import UID
 from ..common.serde.serializable import serializable
+
 
 @serializable(recursive_serde=True)
 class DataSubject:
@@ -186,11 +186,13 @@ class DataSubjectGroup:
     def __repr__(self) -> str:
         return f"DSG{[i.__repr__() for i in self.entity_set]}"
 
+
 def numpyutf8tods(np_bytes: np.ndarray) -> DataSubject:
     output_bytes = np_bytes.astype(np.uint8).tobytes()
     name = output_bytes.decode("utf-8")
     data_subject = DataSubject(name)
     return data_subject
+
 
 def dstonumpyutf8(data_subject: DataSubject) -> ArrayLike:
     name_bytes = data_subject.to_string().encode("utf-8")

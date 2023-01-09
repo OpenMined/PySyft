@@ -10,8 +10,8 @@ from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Type
-from warnings import warn
 from typing import Union
+from warnings import warn
 
 # third party
 import numpy as np
@@ -619,9 +619,9 @@ def check_data_subjects(
         # )
         # data_subject = data_subject.reshape(data.shape)
         data_subject = DataSubject(data_subject)
-        
+
     elif isinstance(data_subject, DataSubject):
-        pass # TODO 0.8: this would need some refactoring given the changes from 0.7
+        pass  # TODO 0.8: this would need some refactoring given the changes from 0.7
     elif isinstance(data_subject, DataSubjectArray):
         # if data.size == 1, data_subjects will be a DSA instead of a np array
         data_subject = np.array(data_subject)

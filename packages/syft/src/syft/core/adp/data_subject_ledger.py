@@ -324,7 +324,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         f = self._get_fake_rdp_func(constant=constant)
         f2 = self._get_alpha_search_function(rdp_compose_func=f)
         results = minimize_scalar(
-            f2, method="Brent", bracket=(1, 2)#, bounds=[1, np.inf]
+            f2, method="Brent", bracket=(1, 2)  # , bounds=[1, np.inf]
         )
 
         return results.x, results.fun
