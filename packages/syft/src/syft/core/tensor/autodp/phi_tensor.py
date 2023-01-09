@@ -24,8 +24,8 @@ from ....core.adp.data_subject_ledger import DataSubjectLedger
 from ....core.adp.data_subject_list import DataSubject
 
 # from ....core.adp.data_subject_list import DataSubjectArray
-# from ....core.adp.data_subject_list import dslarraytonumpyutf8
-# from ....core.adp.data_subject_list import numpyutf8todslarray
+from ....core.adp.data_subject import dstonumpyutf8
+from ....core.adp.data_subject import numpyutf8tods
 from ....core.node.common.action.get_or_set_property_action import (
     GetOrSetPropertyAction,
 )
@@ -89,7 +89,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
     __serde_overrides__ = {
         "client": [lambda x: x.address, lambda y: y],
         "public_shape": [lambda x: x, lambda y: upcast(y)],
-        # "data_subject": [dslarraytonumpyutf8, numpyutf8todslarray],
+        "data_subject": [dstonumpyutf8, numpyutf8tods],
         "public_dtype": [lambda x: str(x), lambda y: np.dtype(y)],
     }
     _exhausted = False
@@ -3958,7 +3958,7 @@ class PhiTensor(PassthroughTensor):
 
         pt_msg.minVals = serialize(self.min_vals, to_bytes=True)
         pt_msg.maxVals = serialize(self.max_vals, to_bytes=True)
-        pt_msg.dataSubject = serialize(self.data_subject, to_bytes=True)
+        pt_msg.dataSubject = serialize(dstonumpyutf8(self.data_subject), to_bytes=True)
         pt_msg.id = self.id.to_string()
         # to pack or not to pack?
         # to_bytes = pt_msg.to_bytes()
@@ -3984,7 +3984,7 @@ class PhiTensor(PassthroughTensor):
 
         min_vals = deserialize(pt_msg.minVals, from_bytes=True)
         max_vals = deserialize(pt_msg.maxVals, from_bytes=True)
-        data_subject = deserialize(pt_msg.dataSubject, from_bytes=True)
+        data_subject = numpyutf8tods(deserialize(pt_msg.dataSubject, from_bytes=True))
         id_str = UID.from_string(pt_msg.id)
         return PhiTensor(
             child=child,

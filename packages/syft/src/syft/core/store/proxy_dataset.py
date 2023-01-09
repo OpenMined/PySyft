@@ -17,24 +17,24 @@ from ...grid import GridURL
 
 def _dsl_to_numpy(input_kwargs: Dict) -> Dict:
     # relative
-    from ..adp.data_subject_list import dslarraytonumpyutf8
+    from ..adp.data_subject import dstonumpyutf8
 
-    data_subjects = input_kwargs.get("data_subjects", None)
+    data_subject = input_kwargs.get("data_subject", None)
 
-    if data_subjects is not None:
-        input_kwargs["data_subjects"] = dslarraytonumpyutf8(data_subjects)
+    if data_subject is not None:
+        input_kwargs["data_subject"] = dstonumpyutf8(data_subject)
 
     return input_kwargs
 
 
 def _numpy_to_dsl(input_kwargs: Dict) -> Dict:
     # relative
-    from ..adp.data_subject_list import numpyutf8todslarray
+    from ..adp.data_subject import numpyutf8tods
 
-    data_subjects = input_kwargs.get("data_subjects", None)
+    data_subject = input_kwargs.get("data_subject", None)
 
-    if data_subjects is not None:
-        input_kwargs["data_subjects"] = numpyutf8todslarray(data_subjects)
+    if data_subject is not None:
+        input_kwargs["data_subject"] = numpyutf8tods(data_subject)
     return input_kwargs
 
 
