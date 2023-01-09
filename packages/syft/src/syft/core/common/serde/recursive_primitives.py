@@ -9,7 +9,14 @@ from typing import Mapping
 from typing import Union
 from typing import _GenericAlias
 from typing import _SpecialForm
-from typing import _UnionGenericAlias
+
+try:
+    # stdlib
+    from typing import _UnionGenericAlias
+except Exception:
+    _UnionGenericAlias = None
+
+# stdlib
 from typing import cast
 
 # relative
@@ -266,6 +273,7 @@ def recursive_serde_register_type(t: type) -> None:
 
 
 recursive_serde_register_type(_SpecialForm)
-recursive_serde_register_type(_UnionGenericAlias)
+if _UnionGenericAlias is not None:
+    recursive_serde_register_type(_UnionGenericAlias)
 recursive_serde_register_type(_GenericAlias)
 recursive_serde_register_type(Union)
