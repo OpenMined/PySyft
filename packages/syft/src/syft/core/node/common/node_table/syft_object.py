@@ -10,6 +10,7 @@ from typing import Type
 from typing import Union
 
 # third party
+import pydantic
 from pydantic import BaseModel
 from pydantic.fields import Undefined
 from typeguard import check_type
@@ -69,9 +70,9 @@ class SyftObject(BaseModel, SyftObjectRegistry):
     id: Optional[UID] = None  # consistent and persistent uuid across systems
 
     # move this to transforms
-    # @pydantic.validator("id", pre=True, always=True)
-    # def make_id(cls, v: Optional[UID]) -> UID:
-    #     return v if isinstance(v, UID) else UID()
+    @pydantic.validator("id", pre=True, always=True)
+    def make_id(cls, v: Optional[UID]) -> UID:
+        return v if isinstance(v, UID) else UID()
 
     __canonical_name__: str  # the name which doesn't change even when there are multiple classes
     __version__: int  # data is always versioned
