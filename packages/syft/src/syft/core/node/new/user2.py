@@ -77,8 +77,8 @@ class UserCreate(User):
             )
 
 
-user = UserCreate(name="Shubham", email="email@email.com", password="Hello")
-user.dict()
+# user = UserCreate(name="Shubham", email="email@email.com", password="Hello")
+# user.dict()
 # """
 # {'id': None,
 #  'email': 'email@email.com',
