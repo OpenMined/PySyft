@@ -8,9 +8,7 @@ class NoSQLOblvKeyManager(NoSQLDatabaseManager):
     _collection_name = "oblv_keys"
     __canonical_object_name__ = "OblvKeys"
 
-    def add_keys(
-        self, public_key: bytes, private_key: bytes
-    ) -> None:
+    def add_keys(self, public_key: bytes, private_key: bytes) -> None:
 
         key_obj = NoSQLOblvKeys(
             public_key=public_key,
@@ -24,6 +22,6 @@ class NoSQLOblvKeyManager(NoSQLDatabaseManager):
         if not result:
             raise OblvKeyNotFoundError
         return result[0]
-        
+
     def remove(self) -> None:
         super().clear()
