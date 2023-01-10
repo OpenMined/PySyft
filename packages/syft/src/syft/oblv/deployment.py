@@ -10,7 +10,9 @@ import yaml
 from ..core.node.common.exceptions import OblvKeyNotFoundError
 from ..util import bcolors
 from .auth import login
+from .constants import INFRA
 from .constants import REF
+from .constants import REGION
 from .constants import REPO_NAME
 from .constants import REPO_OWNER
 from .constants import VCS
@@ -29,8 +31,8 @@ def create_deployment(
     deployment_name: Optional[str] = None,
     key_name: str = "",
     oblv_client: Optional[OblvClient] = None,
-    infra: str = "m5.2xlarge",
-    region: str = "us-east-1",
+    infra: str = INFRA,
+    region: str = REGION,
 ) -> str:
     """Creates a new deployment with predefined codebase
     Args:
