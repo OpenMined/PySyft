@@ -1,4 +1,5 @@
 # stdlib
+from typing import Dict
 from typing import Optional
 from typing import Union
 
@@ -40,10 +41,10 @@ class SyftOblvClient:
 
     def __init__(
         self,
+        cookies: Dict,
+        headers: Dict,
         token: Optional[str] = None,
         oblivious_user_id: Optional[str] = None,
-        cookies: Optional[dict] = {},
-        headers: Optional[dict] = {},
         timeout: float = 20,
         verify_ssl: bool = True,
     ):

@@ -1,45 +1,32 @@
 # stdlib
-import base64
-from copy import deepcopy
-import functools
-from functools import lru_cache
-import operator
 import sys
 from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Union
-from uuid import uuid4
 
 # third party
 import numpy as np
 import torch
 
 # relative
+from ..core.common.serde.serialize import _serialize as serialize
 from ..core.tensor import Tensor
 from .constants import ENCODE_BLACK
 from .constants import ENCODE_BOLD
 from .constants import ENCODE_NO_STYLE
 from .constants import ENCODE_RED
-from ..core.common.serde.serialize import _serialize as serialize
 
 
-class OblvTensorWrapper():
-    
-
-    def __init__(self, id,deployment_client):
+class OblvTensorWrapper:
+    def __init__(self, id, deployment_client):
         self.id = id
-        self.deployment_client=deployment_client
+        self.deployment_client = deployment_client
 
-    def request_publish(self,sigma = 0.5):
-        return self.deployment_client.request_publish(self.id,sigma)
+    def request_publish(self, sigma=0.5):
+        return self.deployment_client.request_publish(self.id, sigma)
 
-
-    def _apply_op(self,
+    def _apply_op(
+        self,
         other: Union[int, float, torch.Tensor, np.ndarray, "OblvTensorWrapper"],
         op_str: str,
     ):
@@ -53,55 +40,46 @@ class OblvTensorWrapper():
         Returns:
             OblvTensorWrapper: Result of the operation.
         """
-        arguments = [{
-            "type": "wrapper",
-            "value": self.id
-        }]
-        ##Adding the other argument
+        arguments = [{"type": "wrapper", "value": self.id}]
+        # Adding the other argument
         type_name = type(other)
-        if type_name==int:
-            arg = {
-                "type": "int",
-                "value": other
-            }
-        elif type_name==float:
-            arg = {
-                "type": "float",
-                "value": other
-            }
-        elif type_name==torch.Tensor or type_name==np.ndarray:
+        if type_name == int:
+            arg = {"type": "int", "value": other}
+        elif type_name == float:
+            arg = {"type": "float", "value": other}
+        elif type_name == torch.Tensor or type_name == np.ndarray:
             t = Tensor(other)
-            arg = {
-                "type": "tensor",
-                "value": serialize(t,to_bytes=True)
-            }
-        elif type_name==OblvTensorWrapper:
-            arg = {
-                "type": "wrapper",
-                "value": other.id
-            }
+            arg = {"type": "tensor", "value": serialize(t, to_bytes=True)}
+        elif type_name == OblvTensorWrapper:
+            arg = {"type": "wrapper", "value": other.id}
         else:
-            print(ENCODE_RED+ENCODE_BOLD+"Exception"+ENCODE_BLACK+ENCODE_NO_STYLE+": "+"Argument of invalid type",file=sys.stderr)
+            print(
+                ENCODE_RED
+                + ENCODE_BOLD
+                + "Exception"
+                + ENCODE_BLACK
+                + ENCODE_NO_STYLE
+                + ": "
+                + "Argument of invalid type",
+                file=sys.stderr,
+            )
             return
         arguments.append(arg)
-        new_id = self.deployment_client.publish_action(op_str,arguments)
+        new_id = self.deployment_client.publish_action(op_str, arguments)
         result = OblvTensorWrapper(id=new_id, deployment_client=self.deployment_client)
         return result
 
     def _apply_self_tensor_op(self, op_str: str, *args: Any, **kwargs: Any):
-        arguments = [{
-            "type": "wrapper",
-            "value": self.id
-        }]
-        new_id = self.deployment_client.publish_action(op_str,arguments, *args, **kwargs)
+        arguments = [{"type": "wrapper", "value": self.id}]
+        new_id = self.deployment_client.publish_action(
+            op_str, arguments, *args, **kwargs
+        )
         result = OblvTensorWrapper(id=new_id, deployment_client=self.deployment_client)
         return result
-    
+
     def __add__(
         self,
-        other: Union[
-            "OblvTensorWrapper", int, float, np.ndarray
-        ],
+        other: Union["OblvTensorWrapper", int, float, np.ndarray],
     ) -> "OblvTensorWrapper":
         """Apply the "add" operation between "self" and "other"
 
@@ -115,9 +93,7 @@ class OblvTensorWrapper():
 
     def __sub__(
         self,
-        other: Union[
-            "OblvTensorWrapper", int, float, np.ndarray
-        ],
+        other: Union["OblvTensorWrapper", int, float, np.ndarray],
     ) -> "OblvTensorWrapper":
         """Apply the "sub" operation between "self" and "other"
 
@@ -131,9 +107,7 @@ class OblvTensorWrapper():
 
     def __mul__(
         self,
-        other: Union[
-            "OblvTensorWrapper", int, float, np.ndarray
-        ],
+        other: Union["OblvTensorWrapper", int, float, np.ndarray],
     ) -> "OblvTensorWrapper":
         """Apply the "mul" operation between "self" and "other"
 
@@ -147,9 +121,7 @@ class OblvTensorWrapper():
 
     def __matmul__(
         self,
-        other: Union[
-            "OblvTensorWrapper", int, float, np.ndarray
-        ],
+        other: Union["OblvTensorWrapper", int, float, np.ndarray],
     ) -> "OblvTensorWrapper":
         """Apply the "matmul" operation between "self" and "other"
 
@@ -163,9 +135,7 @@ class OblvTensorWrapper():
 
     def __rmatmul__(
         self,
-        other: Union[
-            "OblvTensorWrapper", int, float, np.ndarray
-        ],
+        other: Union["OblvTensorWrapper", int, float, np.ndarray],
     ) -> "OblvTensorWrapper":
         """Apply the "rmatmul" operation between "self" and "other"
 
@@ -179,9 +149,7 @@ class OblvTensorWrapper():
 
     def __lt__(
         self,
-        other: Union[
-            "OblvTensorWrapper", int, float, np.ndarray
-        ],
+        other: Union["OblvTensorWrapper", int, float, np.ndarray],
     ) -> "OblvTensorWrapper":
         """Apply the "lt" operation between "self" and "other"
 
@@ -195,9 +163,7 @@ class OblvTensorWrapper():
 
     def __gt__(
         self,
-        other: Union[
-            "OblvTensorWrapper", int, float, np.ndarray
-        ],
+        other: Union["OblvTensorWrapper", int, float, np.ndarray],
     ) -> "OblvTensorWrapper":
         """Apply the "gt" operation between "self" and "other"
 
@@ -211,9 +177,7 @@ class OblvTensorWrapper():
 
     def __ge__(
         self,
-        other: Union[
-            "OblvTensorWrapper", int, float, np.ndarray
-        ],
+        other: Union["OblvTensorWrapper", int, float, np.ndarray],
     ) -> "OblvTensorWrapper":
         """Apply the "ge" operation between "self" and "other"
 
@@ -227,9 +191,7 @@ class OblvTensorWrapper():
 
     def __le__(
         self,
-        other: Union[
-            "OblvTensorWrapper", int, float, np.ndarray
-        ],
+        other: Union["OblvTensorWrapper", int, float, np.ndarray],
     ) -> "OblvTensorWrapper":
         """Apply the "le" operation between "self" and "other"
 
@@ -243,9 +205,7 @@ class OblvTensorWrapper():
 
     def __eq__(  # type: ignore
         self,
-        other: Union[
-            "OblvTensorWrapper", int, float, np.ndarray
-        ],
+        other: Union["OblvTensorWrapper", int, float, np.ndarray],
     ) -> "OblvTensorWrapper":
         """Apply the "eq" operation between "self" and "other"
 
@@ -259,9 +219,7 @@ class OblvTensorWrapper():
 
     def __ne__(  # type: ignore
         self,
-        other: Union[
-            "OblvTensorWrapper", int, float, np.ndarray
-        ],
+        other: Union["OblvTensorWrapper", int, float, np.ndarray],
     ) -> "OblvTensorWrapper":
         """Apply the "ne" operation between "self" and "other"
 
@@ -273,7 +231,7 @@ class OblvTensorWrapper():
         """
         return OblvTensorWrapper._apply_op(self, other, "__ne__")
 
-    ##Concatenate only available for MPC tensor, need to implement for Gamma Tensor
+    # Concatenate only available for MPC tensor, need to implement for Gamma Tensor
     # def concatenate(
     #     self,
     #     other: "OblvTensorWrapper",
@@ -305,9 +263,7 @@ class OblvTensorWrapper():
 
     def __truediv__(
         self,
-        other: Union[
-            "OblvTensorWrapper", int, float, np.ndarray
-        ],
+        other: Union["OblvTensorWrapper", int, float, np.ndarray],
     ) -> "OblvTensorWrapper":
         """Apply the "truediv" operation between "self" and "other"
 
@@ -321,17 +277,13 @@ class OblvTensorWrapper():
 
     def __mod__(
         self,
-        other: Union[
-            "OblvTensorWrapper", int, float, np.ndarray
-        ],
+        other: Union["OblvTensorWrapper", int, float, np.ndarray],
     ) -> "OblvTensorWrapper":
         return OblvTensorWrapper._apply_op(self, other, "__mod__")
 
     def __and__(
         self,
-        other: Union[
-            "OblvTensorWrapper", int, float, np.ndarray
-        ],
+        other: Union["OblvTensorWrapper", int, float, np.ndarray],
     ) -> "OblvTensorWrapper":
         """Apply the "and" operation between "self" and "other"
 
@@ -345,9 +297,7 @@ class OblvTensorWrapper():
 
     def __or__(
         self,
-        other: Union[
-            "OblvTensorWrapper", int, float, np.ndarray
-        ],
+        other: Union["OblvTensorWrapper", int, float, np.ndarray],
     ) -> "OblvTensorWrapper":
         """Apply the "or" operation between "self" and "other"
 
@@ -361,9 +311,7 @@ class OblvTensorWrapper():
 
     def __floordiv__(
         self,
-        other: Union[
-            "OblvTensorWrapper", int, float, np.ndarray
-        ],
+        other: Union["OblvTensorWrapper", int, float, np.ndarray],
     ) -> "OblvTensorWrapper":
         """Apply the "floordiv" operation between "self" and "other"
 
@@ -377,13 +325,8 @@ class OblvTensorWrapper():
 
     def __divmod__(
         self,
-        other: Union[
-            "OblvTensorWrapper", int, float, np.ndarray
-        ],
-    ) -> Tuple[
-        "OblvTensorWrapper",
-        "OblvTensorWrapper",
-    ]:
+        other: Union["OblvTensorWrapper", int, float, np.ndarray],
+    ) -> Tuple["OblvTensorWrapper", "OblvTensorWrapper",]:
         """Apply the "divmod" operation between "self" and "other"
 
         Args:
@@ -396,13 +339,8 @@ class OblvTensorWrapper():
 
     def divmod(
         self,
-        other: Union[
-            "OblvTensorWrapper", int, float, np.ndarray
-        ],
-    ) -> Tuple[
-        "OblvTensorWrapper",
-        "OblvTensorWrapper",
-    ]:
+        other: Union["OblvTensorWrapper", int, float, np.ndarray],
+    ) -> Tuple["OblvTensorWrapper", "OblvTensorWrapper",]:
         """Apply the "divmod" operation between "self" and "other"
 
         Args:
@@ -460,9 +398,7 @@ class OblvTensorWrapper():
 
     def __lshift__(
         self,
-        other: Union[
-            "OblvTensorWrapper", int, float, np.ndarray
-        ],
+        other: Union["OblvTensorWrapper", int, float, np.ndarray],
     ) -> "OblvTensorWrapper":
         """Apply the "lshift" operation between "self" and "other"
 
@@ -491,9 +427,7 @@ class OblvTensorWrapper():
 
     def __rshift__(
         self,
-        other: Union[
-            "OblvTensorWrapper", int, float, np.ndarray
-        ],
+        other: Union["OblvTensorWrapper", int, float, np.ndarray],
     ) -> "OblvTensorWrapper":
         """Apply the "rshift" operation between "self" and "other"
 
@@ -679,9 +613,7 @@ class OblvTensorWrapper():
 
     def __xor__(
         self,
-        other: Union[
-            "OblvTensorWrapper", int, float, np.ndarray
-        ],
+        other: Union["OblvTensorWrapper", int, float, np.ndarray],
     ) -> "OblvTensorWrapper":
         """Apply the "xor" operation between "self" and "other"
 
@@ -916,9 +848,7 @@ class OblvTensorWrapper():
         """
         return self._apply_self_tensor_op("max", *args, **kwargs)
 
-    def compress(
-        self, *args: Any, **kwargs: Any
-    ) -> "OblvTensorWrapper":
+    def compress(self, *args: Any, **kwargs: Any) -> "OblvTensorWrapper":
         """
         Return selected slices of an array along given axis.
 
@@ -939,9 +869,7 @@ class OblvTensorWrapper():
         """
         return self._apply_self_tensor_op("compress", *args, **kwargs)
 
-    def squeeze(
-        self, *args: Any, **kwargs: Any
-    ) -> "OblvTensorWrapper":
+    def squeeze(self, *args: Any, **kwargs: Any) -> "OblvTensorWrapper":
         """
         Remove axes of length one from a.
 
@@ -958,9 +886,7 @@ class OblvTensorWrapper():
         """
         return self._apply_self_tensor_op("squeeze", *args, **kwargs)
 
-    def __getitem__(
-        self, key: Union[int, bool, slice]
-    ) -> "OblvTensorWrapper":
+    def __getitem__(self, key: Union[int, bool, slice]) -> "OblvTensorWrapper":
         """Return self[key].
         Args:
             y (Union[int,bool,slice]) : second operand.
@@ -1093,9 +1019,7 @@ class OblvTensorWrapper():
         """
         return self._apply_self_tensor_op("diagonal", *args, **kwargs)
 
-    def flatten(
-        self, *args: Any, **kwargs: Any
-    ) -> "OblvTensorWrapper":
+    def flatten(self, *args: Any, **kwargs: Any) -> "OblvTensorWrapper":
         """
         Return a copy of the array collapsed into one dimension.
 
@@ -1112,9 +1036,7 @@ class OblvTensorWrapper():
         """
         return self._apply_self_tensor_op("flatten", *args, **kwargs)
 
-    def ravel(
-        self, *args: Any, **kwargs: Any
-    ) -> "OblvTensorWrapper":
+    def ravel(self, *args: Any, **kwargs: Any) -> "OblvTensorWrapper":
         """
         Return a contiguous flattened array.
 
@@ -1145,9 +1067,7 @@ class OblvTensorWrapper():
         """
         return self._apply_self_tensor_op("ravel", *args, **kwargs)
 
-    def take(
-        self, *args: Any, **kwargs: Any
-    ) -> "OblvTensorWrapper":
+    def take(self, *args: Any, **kwargs: Any) -> "OblvTensorWrapper":
         """
         Take elements from an array along an axis.
 

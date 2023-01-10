@@ -515,7 +515,12 @@ class Node(AbstractNode):
             if isinstance(e, AuthorizationException):
                 private_log_msg = "An AuthorizationException has been triggered"
                 public_exception = e
-            elif isinstance(e, OblvKeyNotFoundError) or isinstance(e, OblvProxyConnectPCRError) or isinstance(e, OblvEnclaveUnAuthorizedError) or isinstance(e, OblvEnclaveError):
+            elif (
+                isinstance(e, OblvKeyNotFoundError)
+                or isinstance(e, OblvProxyConnectPCRError)
+                or isinstance(e, OblvEnclaveUnAuthorizedError)
+                or isinstance(e, OblvEnclaveError)
+            ):
                 private_log_msg = "An OblvException has been triggered"
                 public_exception = e
             else:

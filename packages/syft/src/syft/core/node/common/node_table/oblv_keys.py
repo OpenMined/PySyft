@@ -12,9 +12,6 @@ class NoSQLOblvKeys(SyftObject):
     private_key: bytes
 
     # serde / storage rules
-    __attr_state__ = [
-        "public_key",
-        "private_key"
-    ]
+    __attr_state__ = ["public_key", "private_key"]
     __attr_searchable__ = []
     __attr_unique__ = ["private_key"]
