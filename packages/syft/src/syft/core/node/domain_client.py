@@ -458,7 +458,7 @@ class DomainClient(Client):
             success.set()
             finish.set()
 
-            timeout = 30
+            timeout = 60
             connected = False
             network_vpn_ip = ""
             domain_vpn_ip = ""
@@ -506,6 +506,7 @@ class DomainClient(Client):
                 target=network_vpn_ip,
                 metadata=metadata,
                 retry=retry,
+                timeout=timeout,
             )
 
             success.set()
