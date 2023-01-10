@@ -12,6 +12,7 @@ from pymongo.mongo_client import MongoClient
 
 # relative
 from .....telemetry import instrument
+from ....common.serde.serialize import _serialize
 from ....common.uid import UID
 from ..exceptions import ObjectNotFoundError
 from ..node_table.syft_object import SyftObject
@@ -72,7 +73,7 @@ class NoSQLDatabaseManager:
                 setattr(obj, k, v)
             if k in obj.__attr_searchable__:  # type: ignore
                 attributes[k] = v
-        attributes["__blob__"] = obj.to_bytes()  # type: ignore
+        attributes["__blob__"] = _serialize(obj, to_bytes=True)  # type: ignore
         attributes = convert_to_mongo_id(attributes)
         self.update_one(query=search_params, values=attributes)
 

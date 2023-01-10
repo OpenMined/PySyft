@@ -136,8 +136,13 @@ class SyftObject(BaseModel, SyftObjectRegistry):
 
     # transform from one supported type to another
     def to(self, projection: type) -> Any:
+        # 🟡 TODO 19: Could we do an mro style inheritence conversion? Risky?
         transform = SyftObjectRegistry.get_transform(type(self), projection)
         return transform(self)
+
+    def to_dict(self) -> Dict[str, Any]:
+        # 🟡 TODO 18: Remove to_dict and replace usage with transforms etc
+        return dict(self)
 
     def __post_init__(self) -> None:
         pass

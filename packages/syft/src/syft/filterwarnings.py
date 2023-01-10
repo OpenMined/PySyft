@@ -9,3 +9,12 @@ warnings.filterwarnings(
     ".*The value of the smallest subnormal for.*",
     category=UserWarning,
 )
+
+# DeprecationWarning: 'urllib3.contrib.pyopenssl' module is deprecated and will be
+# removed in a future release of urllib3 2.x.
+# Read more in this issue: https://github.com/urllib3/urllib3/issues/2680
+warnings.filterwarnings(
+    "ignore",
+    ".*urllib3.contrib.pyopenssl.*",
+    category=DeprecationWarning,
+)

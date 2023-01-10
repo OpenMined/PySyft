@@ -1,15 +1,13 @@
 # stdlib
-from typing import Callable
-from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Sequence
 
 # relative
-from .....lib.python import Dict as SyDict
+from ....common.serde.serializable import serializable
 from .syft_object import SyftObject
 
 
+@serializable(recursive_serde=True)
 class NoSQLNodeRoute(SyftObject):
     # version
     __canonical_name__ = "NodeRoute"
@@ -39,6 +37,7 @@ class NoSQLNodeRoute(SyftObject):
     __attr_unique__ = ["host_or_ip"]
 
 
+@serializable(recursive_serde=True)
 class NoSQLNode(SyftObject):
     # version
     __canonical_name__ = "Node"
@@ -64,9 +63,3 @@ class NoSQLNode(SyftObject):
 
     __attr_searchable__ = ["node_uid", "verify_key"]
     __attr_unique__ = ["node_uid"]
-    __serde_overrides__: Dict[str, Sequence[Callable]] = {
-        "node_route": [
-            lambda routes_list: [SyDict(**route) for route in routes_list],
-            lambda routes_list: [NoSQLNodeRoute(**route) for route in routes_list],
-        ]
-    }

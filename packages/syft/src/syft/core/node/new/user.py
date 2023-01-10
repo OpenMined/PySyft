@@ -45,6 +45,7 @@ class ServiceRole(Enum):
     GUEST = 1
 
 
+@serializable(recursive_serde=True)
 class User(SyftObject):
     # version
     __canonical_name__ = "User"
