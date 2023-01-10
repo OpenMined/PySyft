@@ -167,6 +167,7 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
     return wrapper
 
 
+@serializable(recursive_serde=True)
 class APIModule:
     pass
 
@@ -198,7 +199,7 @@ class SyftAPI(SyftObject):
 
         endpoints = {
             # 🟡 TODO 2: Change endpoint keys to use . syntax and build a tree of modules
-            "services_user_create": APIEndpoint(
+            "user_create": APIEndpoint(
                 path="services.user.create",
                 name="create",
                 description="Create User",
@@ -254,6 +255,20 @@ class SyftAPI(SyftObject):
                 return result.err()
         return result
 
+    @staticmethod
+    def _add_route(api_module: APIModule, path: str, endpoint: Callable):
+        """Recursively create a module path to the route endpoint."""
+        _modules = path.split("_")
+
+        _self = api_module
+        _last_module = _modules.pop()
+        while _modules:
+            module = _modules.pop(0)
+            if not hasattr(_self, module):
+                setattr(_self, module, APIModule())
+            _self = getattr(_self, module)
+        setattr(_self, _last_module, endpoint)
+
     def generate_endpoints(self) -> None:
         api_module = APIModule()
         for k, v in self.endpoints.items():
@@ -265,7 +280,8 @@ class SyftAPI(SyftObject):
                 signature, v.path, self.make_call
             )
             endpoint_function.__doc__ = v.doc_string
-            setattr(api_module, k, endpoint_function)
+            self._add_route(api_module, k, endpoint_function)
+            # setattr(api_module, k, endpoint_function)
         self.api_module = api_module
 
     @property
