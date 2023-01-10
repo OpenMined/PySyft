@@ -13,7 +13,6 @@ from .constants import REPO_NAME
 from .constants import REPO_OWNER
 from .constants import VCS
 from .constants import VISIBILITY
-from .model import Client
 from .model import DeploymentClient
 from .oblv_proxy import create_oblv_key_pair
 from .oblv_proxy import get_oblv_public_key
@@ -88,7 +87,6 @@ def create_deployment(
         "runtime_args": "",
     }
     users = []
-    result_client = []
     runtime_args = []
     for k in domain_clients:
         try:
@@ -96,7 +94,6 @@ def create_deployment(
         except OblvKeyNotFoundError:
             print("Oblv public key not found for {}".format(k.name))
             return
-        result_client.append(Client(login=k, datasets=[]))
     build_args["runtime_args"] = yaml.dump({"outbound": runtime_args})
     build_args["users"]["domain"] = users
     profile = client.user_profile()
