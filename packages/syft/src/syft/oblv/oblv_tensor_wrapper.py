@@ -11,10 +11,7 @@ import torch
 # relative
 from ..core.common.serde.serialize import _serialize as serialize
 from ..core.tensor import Tensor
-from .constants import ENCODE_BLACK
-from .constants import ENCODE_BOLD
-from .constants import ENCODE_NO_STYLE
-from .constants import ENCODE_RED
+from ..util import bcolors
 
 
 class OblvTensorWrapper:
@@ -54,11 +51,11 @@ class OblvTensorWrapper:
             arg = {"type": "wrapper", "value": other.id}
         else:
             print(
-                ENCODE_RED
-                + ENCODE_BOLD
+                bcolors.RED
+                + bcolors.BOLD
                 + "Exception"
-                + ENCODE_BLACK
-                + ENCODE_NO_STYLE
+                + bcolors.BLACK
+                + bcolors.ENDC
                 + ": "
                 + "Argument of invalid type",
                 file=sys.stderr,

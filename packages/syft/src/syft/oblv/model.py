@@ -16,10 +16,7 @@ import requests
 # relative
 from ..core.node.common.exceptions import OblvEnclaveError
 from ..core.node.common.exceptions import OblvUnAuthorizedError
-from .constants import ENCODE_BLACK
-from .constants import ENCODE_BOLD
-from .constants import ENCODE_NO_STYLE
-from .constants import ENCODE_RED
+from ..util import bcolors
 from .oblv_proxy import check_oblv_proxy_installation_status
 
 
@@ -418,11 +415,11 @@ class DeploymentClient:
         """
         if self.__logs is None:
             print(
-                ENCODE_RED
-                + ENCODE_BOLD
+                bcolors.RED
+                + bcolors.BOLD
                 + "Exception"
-                + ENCODE_BLACK
-                + ENCODE_NO_STYLE
+                + bcolors.BLACK
+                + bcolors.ENDC
                 + ": Logs not initiated",
                 file=sys.stderr,
             )

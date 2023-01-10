@@ -11,10 +11,7 @@ import zipfile
 import requests
 
 # relative
-from .constants import ENCODE_BLACK
-from .constants import ENCODE_BOLD
-from .constants import ENCODE_NO_STYLE
-from .constants import ENCODE_RED
+from ..util import bcolors
 
 # from ..logger import debug
 
@@ -44,11 +41,11 @@ def check_oblv_proxy_installation_status():
             # exp.__cause__ = None
             # raise exp
             print(
-                ENCODE_RED
-                + ENCODE_BOLD
+                bcolors.RED
+                + bcolors.BOLD
                 + "Exception"
-                + ENCODE_BLACK
-                + ENCODE_NO_STYLE
+                + bcolors.BLACK
+                + bcolors.ENDC
                 + ": "
                 + result,
                 file=sys.stderr,
@@ -97,11 +94,11 @@ def windows_proxy_installation(with_package: bool = False):
             )
     except Exception as e:
         print(
-            ENCODE_RED
-            + ENCODE_BOLD
+            bcolors.RED
+            + bcolors.BOLD
             + "Exception"
-            + ENCODE_BLACK
-            + ENCODE_NO_STYLE
+            + bcolors.BLACK
+            + bcolors.ENDC
             + ": "
             + e.__cause__,
             file=sys.stderr,
@@ -139,11 +136,11 @@ def linux_proxy_installation(with_package: bool = False):
             )
     except Exception as e:
         print(
-            ENCODE_RED
-            + ENCODE_BOLD
+            bcolors.RED
+            + bcolors.BOLD
             + "Exception"
-            + ENCODE_BLACK
-            + ENCODE_NO_STYLE
+            + bcolors.BLACK
+            + bcolors.ENDC
             + ": "
             + e.__cause__,
             file=sys.stderr,
@@ -200,14 +197,15 @@ def get_oblv_public_key(key_name):
         return public_key
     except FileNotFoundError:
         print(
-            ENCODE_RED
-            + ENCODE_BOLD
+            bcolors.RED
+            + bcolors.BOLD
             + "Exception"
-            + ENCODE_BLACK
-            + ENCODE_NO_STYLE
+            + bcolors.BLACK
+            + bcolors.ENDC
             + ": "
             + "No key found with given name",
             file=sys.stderr,
         )
+        raise FileNotFoundError
     except Exception as e:
         raise Exception(e)
