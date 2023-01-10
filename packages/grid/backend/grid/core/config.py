@@ -110,6 +110,7 @@ class Settings(BaseSettings):
     TEST_MODE: bool = (
         True if os.getenv("TEST_MODE", "false").lower() == "true" else False
     )
+    ASSOCIATION_TIMEOUT: int = 10
 
     class Config:
         case_sensitive = True
