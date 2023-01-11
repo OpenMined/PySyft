@@ -17,6 +17,8 @@ import pandas as pd
 
 # relative
 from ... import __version__
+from ...core.node.new.api import APIRegistry
+from ...core.node.new.api import SyftAPI
 from ...logger import traceback_and_raise
 from ...telemetry import instrument
 from ...util import bcolors
@@ -766,3 +768,12 @@ class DomainClient(Client):
             return response
         except Exception as e:
             raise e
+
+    @property
+    def api(self) -> SyftAPI:
+        if hasattr(self, "_api"):
+            return self._api
+        api = self.routes[0].connection._get_api()
+        APIRegistry.set_api_for(node_uid=self.id, api=api)
+        self._api = api
+        return api

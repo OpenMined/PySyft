@@ -18,6 +18,7 @@ from pydantic import BaseSettings
 
 # relative
 from .... import __version__
+from ....core.node.new.api import SyftAPI
 from ....grid import GridURL
 from ....lib import lib_ast
 from ....logger import debug
@@ -375,6 +376,9 @@ class Node(AbstractNode):
             node_type=str(type(self).__name__),
             version=str(__version__),
         )
+
+    def get_api(self) -> SyftAPI:
+        return SyftAPI.for_user(node_uid=self.id)
 
     def add_peer_routes(self, peer: NoSQLNode) -> None:
         try:

@@ -15,7 +15,7 @@ from typing import Union
 import numpy as np
 from numpy.typing import ArrayLike
 from numpy.typing import NDArray
-from scipy.ndimage.interpolation import rotate
+from scipy.ndimage import rotate
 
 # relative
 from .... import lib

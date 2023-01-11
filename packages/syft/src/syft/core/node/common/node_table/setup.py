@@ -4,9 +4,11 @@ from typing import Dict
 from typing import List
 
 # relative
+from ....common.serde.serializable import serializable
 from .syft_object import SyftObject
 
 
+@serializable(recursive_serde=True)
 class NoSQLSetup(SyftObject):
     # version
     __canonical_name__ = "Setup"

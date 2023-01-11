@@ -5,9 +5,11 @@ from __future__ import annotations
 from typing import Optional
 
 # relative
+from ....common.serde.serializable import serializable
 from .syft_object import SyftObject
 
 
+@serializable(recursive_serde=True)
 class NoSQLSyftUser(SyftObject):
     # version
     __canonical_name__ = "SyftUser"
@@ -46,10 +48,11 @@ class NoSQLSyftUser(SyftObject):
         "created_at",
         "id_int",
     ]
-    __attr_searchable__ = ["email", "verify_key", "id_int"]
+    __attr_searchable__ = ["email", "verify_key", "id_int", "budget"]
     __attr_unique__ = ["email"]
 
 
+@serializable(recursive_serde=True)
 class NoSQLUserApplication(SyftObject):
     # version
     __canonical_name__ = "UserApplication"
