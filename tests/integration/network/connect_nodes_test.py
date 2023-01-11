@@ -318,7 +318,7 @@ def add_route(
     network_host: str,
     source_node_url: str,
     private: bool = False,
-    autodetect: bool = False,
+    autodetect: bool = False,  # 🟡 TODO 20: Change this back to True after building it
 ) -> None:
     root_client = sy.login(email=email, password=password, port=port)
 

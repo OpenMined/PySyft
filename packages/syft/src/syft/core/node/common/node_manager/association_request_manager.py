@@ -4,6 +4,7 @@ from typing import Any
 from typing import Dict
 
 # relative
+from ....common.serde.serialize import _serialize
 from ...enums import RequestAPIFields
 from ..exceptions import AssociationRequestError
 from ..node_table.association_request import NoSQLAssociationRequest
@@ -61,7 +62,7 @@ class NoSQLAssociationRequestManager(NoSQLDatabaseManager):
         association_request.status = response
         association_request.processed_date = str(datetime.now().strftime("%m/%d/%Y"))
         attributes: Dict[str, Any] = {}
-        attributes["__blob__"] = association_request.to_bytes()
+        attributes["__blob__"] = _serialize(association_request, to_bytes=True)
 
         self.update_one(
             query={"source": source, "target": target},

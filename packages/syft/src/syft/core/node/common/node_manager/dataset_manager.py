@@ -9,6 +9,7 @@ from uuid import UUID
 
 # relative
 from ..... import serialize
+from ....common.serde.serialize import _serialize
 from ....common.uid import UID
 from ..node_table.dataset import NoSQLBinObjDataset
 from ..node_table.dataset import NoSQLDataset
@@ -93,7 +94,9 @@ class NoSQLDatasetManager(NoSQLDatabaseManager):
         )
         dataset.bin_obj_dataset.append(obj_dataset_relation)
 
-        self.update_one({"id": dataset_uid}, {"__blob__": dataset.to_bytes()})
+        self.update_one(
+            {"id": dataset_uid}, {"__blob__": _serialize(dataset, to_bytes=True)}
+        )
 
     def get(
         self, dataset_id: Union[UUID, UID, str]
@@ -115,7 +118,9 @@ class NoSQLDatasetManager(NoSQLDatabaseManager):
                     break
             if _flag:
                 del dataset.bin_obj_dataset[bin_obj_index]
-                self.update_one({"id": dataset.id}, {"__blob__": dataset.to_bytes()})
+                self.update_one(
+                    {"id": dataset.id}, {"__blob__": _serialize(dataset, to_bytes=True)}
+                )
                 break
 
     def set(self, dataset_id: str, metadata: Dict) -> None:

@@ -5,9 +5,11 @@ from typing import List
 from typing import Optional
 
 # relative
+from ....common.serde.serializable import serializable
 from .syft_object import SyftObject
 
 
+@serializable(recursive_serde=True)
 class NoSQLAssociationRequest(SyftObject):
     # version
     __canonical_name__ = "AssociationRequest"

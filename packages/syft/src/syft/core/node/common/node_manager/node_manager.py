@@ -9,6 +9,7 @@ from nacl.signing import VerifyKey
 
 # relative
 from .....grid import GridURL
+from ....common.serde.serialize import _serialize
 from ..node_service.node_credential.node_credentials import NodeCredentials
 from ..node_service.node_route.route_update import RouteUpdate
 from ..node_table.node import NoSQLNode
@@ -83,7 +84,7 @@ class NoSQLNodeManager(NoSQLDatabaseManager):
                 )
                 node.node_route.append(new_route)
 
-            attributes["__blob__"] = node.to_bytes()
+            attributes["__blob__"] = _serialize(node, to_bytes=True)
 
             self.update_one(
                 query={"node_uid": node_uid},
@@ -185,7 +186,7 @@ class NoSQLNodeManager(NoSQLDatabaseManager):
                 curr_node.node_route[route_index] = new_route
 
             attributes = {}
-            attributes["__blob__"] = curr_node.to_bytes()
+            attributes["__blob__"] = _serialize(curr_node, to_bytes=True)
 
             self.update_one(
                 query={
