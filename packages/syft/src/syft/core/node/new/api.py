@@ -117,7 +117,7 @@ class SyftAPICall(SyftObject):
 
     # fields
     path: str
-    args: List[SyftObject]
+    args: List
     kwargs: Dict[str, Any]
 
     # serde / storage rules
@@ -137,9 +137,11 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
     def wrapper(*args, **kwargs):
         # need real Signature object
         # params = signature.bind(*args, **kwargs)
-        if len(kwargs) == 0:
-            # 🟡 TODO 15: Rewrite wrapper API functions to handle, args and kwargs properly
-            raise Exception("Please use kwargs")
+        # 🟡 TODO 15: Rewrite wrapper API functions to handle, args and kwargs properly
+        # raise Exception("Please use kwargs")
+
+        _valid_kwargs = {}
+
         for key, value in kwargs.items():
             if key not in signature.parameters:
                 raise Exception("Wrong key", key, "for sig", signature)
@@ -148,7 +150,6 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
                 t = index_syft_by_module_name(param.annotation)
             else:
                 t = param.annotation
-
             msg = None
             try:
                 check_type(key, value, t)
@@ -158,7 +159,22 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
             if msg:
                 raise Exception(msg)
 
-        api_call = SyftAPICall(path=path, args=[], kwargs=kwargs)
+            _valid_kwargs[key] = value
+
+        # signature.parameters is an OrderedDict, therefore,
+        # its fair to assume that order of args
+        # and the signature.parameters should always match
+        for (param_key, param), arg in zip(signature.parameters.items(), args):
+            if param_key in _valid_kwargs:
+                continue
+            if type(arg) != param.annotation:
+                raise Exception(
+                    f"Arg: `{arg}` is not valid with signature `{param_key}` of type: `{param.annotation}`"
+                )
+            else:
+                _valid_kwargs[param_key] = arg
+
+        api_call = SyftAPICall(path=path, args=(), kwargs=_valid_kwargs)
         result = make_call(api_call=api_call)
         return result
 
