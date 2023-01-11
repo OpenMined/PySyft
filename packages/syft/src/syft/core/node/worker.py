@@ -3,7 +3,10 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
+from typing import Callable
+from typing import List
 from typing import Optional
+from typing import Type
 from typing import Union
 
 # third party
@@ -18,6 +21,8 @@ from ..common.uid import UID
 from .new.action_service import ActionService
 from .new.api import SignedSyftAPICall
 from .new.api import SyftAPICall
+from .new.service import AbstractService
+from .new.service import ServiceConfigRegistry
 from .new.user import UserCollection
 
 
@@ -47,8 +52,8 @@ class Worker:
         *,  # Trasterisk
         name: Optional[str] = None,
         id: Optional[UID] = None,
+        services: Optional[List[Type[AbstractService]]] = None,
         signing_key: Optional[SigningKey] = None,
-        action_service: Optional[ActionService] = None,
         user_collection: Optional[UserCollection] = None,
     ):
         if id is None:
@@ -56,17 +61,30 @@ class Worker:
         self.id = id
         self.name = name
         self.signing_key = signing_key
-        if action_service is None:
-            action_service = ActionService(node_uid=self.id)
-        self.action_service = action_service
-        if user_collection is None:
-            user_collection = UserCollection(node_uid=self.id)
         self.user_collection = user_collection
+        services = [ActionService] if services is None else services
+        self.services = services
+        self.service_config = ServiceConfigRegistry.get_registered_configs()
+        self._construct_services()
         self.post_init()
 
     def post_init(self) -> None:
         pass
         # super().post_init()
+
+    def _construct_services(self):
+        self.service_path_map = {}
+        for service_klass in self.services:
+            self.service_path_map[service_klass.__name__] = service_klass(self)
+
+    def _get_service_method_from_path(self, path: str) -> Callable:
+
+        path_list = path.split(".")
+        method_name = path_list.pop()
+        service_name = path_list.pop()
+        service_obj = self.service_path_map[service_name]
+
+        return getattr(service_obj, method_name)
 
     @property
     def icon(self) -> str:
@@ -100,22 +118,29 @@ class Worker:
         api_call = api_call.message
 
         # 🔵 TODO 4: Add @service decorator to autobind services into the SyftAPI
+        if api_call.path not in self.service_config:
+            return Err(f"API call not in registered services: {api_call.path}")
 
-        if api_call.path == "services.user.create":
-            result = self.user_collection.create(
-                credentials=credentials, **api_call.kwargs
-            )
-            return result
-        elif api_call.path == "services.action.set":
-            result = self.action_service.set(credentials=credentials, **api_call.kwargs)
-            return result
-        elif api_call.path == "services.action.get":
-            result = self.action_service.get(credentials=credentials, **api_call.kwargs)
-            return result
-        elif api_call.path == "services.action.execute":
-            result = self.action_service.execute(
-                credentials=credentials, **api_call.kwargs
-            )
-            return result
+        _private_api_path = ServiceConfigRegistry.private_path_for(api_call.path)
 
-        return Err("Wrong path")
+        method = self._get_service_method_from_path(_private_api_path)
+        result = method(credentials=credentials, **api_call.kwargs)
+        return result
+
+        # if api_call.path == "services.user.create":
+        #     result = self.user_collection.create(
+        #         credentials=credentials, **api_call.kwargs
+        #     )
+        #     return result
+        # elif api_call.path == "services.action.set":
+        #     result = self.action_service.set(credentials=credentials, **api_call.kwargs)
+        #     return result
+        # elif api_call.path == "services.action.get":
+        #     result = self.action_service.get(credentials=credentials, **api_call.kwargs)
+        #     return result
+        # elif api_call.path == "services.action.execute":
+        #     result = self.action_service.execute(
+        #         credentials=credentials, **api_call.kwargs
+        #     )
+        #     return result
+        # return Err("Wrong path")

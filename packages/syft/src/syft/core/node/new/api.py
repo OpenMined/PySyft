@@ -28,11 +28,10 @@ from ...common.serde.deserialize import _deserialize
 from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize
 from ...common.uid import UID
-from .action_service import ActionService
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
+from .service import ServiceConfigRegistry
 from .signature import Signature
-from .user import UserCollection
 
 
 class APIRegistry:
@@ -196,42 +195,19 @@ class SyftAPI(SyftObject):
     def for_user(node_uid: UID) -> SyftAPI:
         # 🟡 TODO 1: Filter SyftAPI with User VerifyKey
         # relative
-
-        endpoints = {
-            # 🟡 TODO 2: Change endpoint keys to use . syntax and build a tree of modules
-            "user_create": APIEndpoint(
-                path="services.user.create",
-                name="create",
-                description="Create User",
-                doc_string=UserCollection.create.__doc__,
-                signature=signature(UserCollection.create),
+        # TODO: Maybe there is a possibility of merging ServiceConfig and APIEndpoint
+        _registered_service_configs = ServiceConfigRegistry.get_registered_configs()
+        endpoints = {}
+        for path, service_config in _registered_service_configs.items():
+            endpoint = APIEndpoint(
+                path=path,
+                name=service_config.public_name,
+                description="",
+                doc_string=service_config.doc_string,
+                signature=service_config.signature,
                 has_self=False,
-            ),
-            "action_store_send": APIEndpoint(
-                path="services.action.set",
-                name="send",
-                description="Send Action Objects",
-                doc_string=ActionService.set.__doc__,
-                signature=signature(ActionService.set),
-                has_self=False,
-            ),
-            "action_store_get": APIEndpoint(
-                path="services.action.get",
-                name="get",
-                description="Get Action Objects",
-                doc_string=ActionService.get.__doc__,
-                signature=signature(ActionService.get),
-                has_self=False,
-            ),
-            "action_store_execute": APIEndpoint(
-                path="services.action.execute",
-                name="execute",
-                description="Execute Actions",
-                doc_string=ActionService.execute.__doc__,
-                signature=signature(ActionService.execute),
-                has_self=False,
-            ),
-        }
+            )
+            endpoints[path] = endpoint
         return SyftAPI(node_uid=node_uid, endpoints=endpoints)
 
     def make_call(self, api_call: SyftAPICall) -> None:
@@ -256,9 +232,12 @@ class SyftAPI(SyftObject):
         return result
 
     @staticmethod
-    def _add_route(api_module: APIModule, path: str, endpoint: Callable):
+    def _add_route(
+        api_module: APIModule, endpoint: APIEndpoint, endpoint_method: Callable
+    ):
         """Recursively create a module path to the route endpoint."""
-        _modules = path.split("_")
+
+        _modules = endpoint.path.split(".")[:-1] + [endpoint.name]
 
         _self = api_module
         _last_module = _modules.pop()
@@ -267,7 +246,7 @@ class SyftAPI(SyftObject):
             if not hasattr(_self, module):
                 setattr(_self, module, APIModule())
             _self = getattr(_self, module)
-        setattr(_self, _last_module, endpoint)
+        setattr(_self, _last_module, endpoint_method)
 
     def generate_endpoints(self) -> None:
         api_module = APIModule()
@@ -280,8 +259,7 @@ class SyftAPI(SyftObject):
                 signature, v.path, self.make_call
             )
             endpoint_function.__doc__ = v.doc_string
-            self._add_route(api_module, k, endpoint_function)
-            # setattr(api_module, k, endpoint_function)
+            self._add_route(api_module, v, endpoint_function)
         self.api_module = api_module
 
     @property

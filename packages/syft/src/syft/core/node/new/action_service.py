@@ -21,6 +21,9 @@ from .action_object import ActionObject
 from .action_object import ActionObjectPointer
 from .action_store import ActionStore
 from .credentials import SyftVerifyKey
+from .service import AbstractNode
+from .service import AbstractService
+from .service import service_method
 
 
 @serializable(recursive_serde=True)
@@ -113,12 +116,13 @@ def np_array_to_pointer() -> List[Callable]:
     ]
 
 
-class ActionService:
-    def __init__(self, node_uid: UID, store: ActionStore = ActionStore()) -> None:
-        self.node_uid = node_uid
+class ActionService(AbstractService):
+    def __init__(self, node: AbstractNode, store: ActionStore = ActionStore()) -> None:
+        self.node = node
+        self.node_uid = node.id
         self.store = store
 
-    # @service(path="services.happy.maybe_create", name="create_user")
+    @service_method(path="action.set")
     def set(
         self, credentials: SyftVerifyKey, action_object: ActionObject
     ) -> Result[ActionObjectPointer, str]:
@@ -134,6 +138,7 @@ class ActionService:
             return Ok(action_object.to_pointer(self.node_uid))
         return result.err()
 
+    @service_method(path="action.get")
     def get(self, credentials: SyftVerifyKey, uid: UID) -> Result[ActionObject, str]:
         """Get an object from the action store"""
         result = self.store.get(uid=uid, credentials=credentials)
@@ -141,6 +146,7 @@ class ActionService:
             return Ok(result.ok())
         return Err(result.err())
 
+    @service_method(path="action.execute")
     def execute(
         self, credentials: SyftVerifyKey, action: Action
     ) -> Result[ActionObjectPointer, Err]:
