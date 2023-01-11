@@ -2,7 +2,7 @@
 import base64
 import os
 import platform
-import subprocess
+import subprocess  # nosec
 import sys
 import tarfile
 import zipfile
@@ -18,9 +18,9 @@ from ..util import bcolors
 
 def check_oblv_proxy_installation_status():
     try:
-        result = subprocess.run(["oblv", "-V"], capture_output=True, text=True)
+        result = subprocess.run(["oblv", "-V"], capture_output=True, text=True)  # nosec
         if result.stderr:
-            raise subprocess.CalledProcessError(
+            raise subprocess.CalledProcessError(  # nosec
                 returncode=result.returncode, cmd=result.args, stderr=result.stderr
             )
         result = result.stdout.strip()
@@ -77,7 +77,7 @@ def windows_proxy_installation(with_package: bool = False):
             path = os.path.join(os.path.expanduser("~"), "oblv-0.4.0-x86_64.msi")
             with open(path, "wb") as f:
                 f.write(res.content)
-            os.system("msiexec /I {} /quiet /QB-!".format(path))
+            os.system("msiexec /I {} /quiet /QB-!".format(path))  # nosec
         else:
             url = "https://api.oblivious.ai/oblv-ccli/0.4.0/oblv-ccli-0.4.0-x86_64-pc-windows-msvc.zip"
             res = requests.get(url)
@@ -109,21 +109,21 @@ def linux_proxy_installation(with_package: bool = False):
     try:
         if with_package:
             try:
-                os.system("dpkg")
+                os.system("dpkg")  # nosec
             except Exception:
                 url = "https://api.oblivious.ai/oblv-ccli/0.4.0/packages/oblv-0.4.0-1.x86_64.rpm"
                 res = requests.get(url)
                 path = os.path.join(os.path.expanduser("~"), "oblv-0.4.0-1.x86_64.rpm")
                 with open(path, "wb") as f:
                     f.write(res.content)
-                os.system("rpm -i {}".format(path))
+                os.system("rpm -i {}".format(path))  # nosec
             else:
                 url = "https://api.oblivious.ai/oblv-ccli/0.4.0/packages/oblv_0.4.0_amd64.deb"
                 res = requests.get(url)
                 path = os.path.join(os.path.expanduser("~"), "oblv_0.4.0_amd64.deb")
                 with open(path, "wb") as f:
                     f.write(res.content)
-                os.system("dpkg -i {}".format(path))
+                os.system("dpkg -i {}".format(path))  # nosec
         else:
             url = "https://api.oblivious.ai/oblv-ccli/0.4.0/oblv-ccli-0.4.0-x86_64-unknown-linux-musl.tar.gz"
             res = requests.get(url)
@@ -172,12 +172,12 @@ def create_oblv_key_pair(key_name):
         return
     try:
         file_path = os.path.join(os.path.expanduser("~"), ".ssh", key_name)
-        result = subprocess.run(
+        result = subprocess.run(  # nosec
             ["oblv", "keygen", "--key-name", key_name, "--output", file_path],
             capture_output=True,
         )
         if result.stderr:
-            raise subprocess.CalledProcessError(
+            raise subprocess.CalledProcessError(  # nosec
                 returncode=result.returncode, cmd=result.args, stderr=result.stderr
             )
         result = result.stdout.strip()

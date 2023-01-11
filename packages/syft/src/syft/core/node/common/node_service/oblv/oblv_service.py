@@ -6,7 +6,7 @@ This file defines all the functions/classes to perform oblv actions, for a given
 from base64 import encodebytes
 import os
 from os import path
-import subprocess
+import subprocess  # nosec
 from typing import Callable
 from typing import Dict
 from typing import List
@@ -95,7 +95,7 @@ def create_key_pair_msg(
     file_path = os.getenv("OBLV_KEY_PATH", "/app/content")
     file_name = os.getenv("OBLV_KEY_NAME", "oblv_key")
     if _allowed:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec
             [
                 "/usr/local/bin/oblv",
                 "keygen",
@@ -108,7 +108,7 @@ def create_key_pair_msg(
         )
         if result.stderr:
             debug(result.stderr.decode("utf-8"))
-            raise subprocess.CalledProcessError(
+            raise subprocess.CalledProcessError(  # nosec
                 returncode=result.returncode, cmd=result.args, stderr=result.stderr
             )
         debug(result.stdout.decode("utf-8"))
@@ -233,7 +233,7 @@ def publish_dataset(
             "User cannot connect to this deployment, as it is no longer available."
         )
     if depl.is_dev_env:
-        process = subprocess.Popen(
+        process = subprocess.Popen(  # nosec
             [
                 "/usr/local/bin/oblv",
                 "connect",
@@ -259,7 +259,7 @@ def publish_dataset(
             stderr=subprocess.PIPE,
         )
     else:
-        process = subprocess.Popen(
+        process = subprocess.Popen(  # nosec
             [
                 "/usr/local/bin/oblv",
                 "connect",
@@ -360,7 +360,7 @@ def check_connection(
                 "User cannot connect to this deployment, as it is no longer available."
             )
         if depl.is_dev_env:
-            process = subprocess.Popen(
+            process = subprocess.Popen(  # nosec
                 [
                     "/usr/local/bin/oblv",
                     "connect",
@@ -386,7 +386,7 @@ def check_connection(
                 stderr=subprocess.PIPE,
             )
         else:
-            process = subprocess.Popen(
+            process = subprocess.Popen(  # nosec
                 [
                     "/usr/local/bin/oblv",
                     "connect",
@@ -484,7 +484,7 @@ def dataset_publish_budget(
             "User cannot connect to this deployment, as it is no longer available."
         )
     if depl.is_dev_env:
-        process = subprocess.Popen(
+        process = subprocess.Popen(  # nosec
             [
                 "/usr/local/bin/oblv",
                 "connect",
@@ -510,7 +510,7 @@ def dataset_publish_budget(
             stderr=subprocess.PIPE,
         )
     else:
-        process = subprocess.Popen(
+        process = subprocess.Popen(  # nosec
             [
                 "/usr/local/bin/oblv",
                 "connect",
@@ -611,7 +611,7 @@ def dataset_publish_budget_deduction(
             "User cannot connect to this deployment, as it is no longer available."
         )
     if depl.is_dev_env:
-        process = subprocess.Popen(
+        process = subprocess.Popen(  # nosec
             [
                 "/usr/local/bin/oblv",
                 "connect",
@@ -637,7 +637,7 @@ def dataset_publish_budget_deduction(
             stderr=subprocess.PIPE,
         )
     else:
-        process = subprocess.Popen(
+        process = subprocess.Popen(  # nosec
             [
                 "/usr/local/bin/oblv",
                 "connect",

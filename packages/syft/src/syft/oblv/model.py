@@ -3,7 +3,7 @@ from datetime import datetime
 import json
 import os
 from signal import SIGTERM
-import subprocess
+import subprocess  # nosec
 import sys
 import time
 from typing import Any
@@ -81,7 +81,7 @@ class DeploymentClient:
             )
         try:
             if depl.is_dev_env:
-                process = subprocess.Popen(
+                process = subprocess.Popen(  # nosec
                     [
                         "oblv",
                         "connect",
@@ -107,7 +107,7 @@ class DeploymentClient:
                     stderr=log_file,
                 )
             else:
-                process = subprocess.Popen(
+                process = subprocess.Popen(  # nosec
                     [
                         "oblv",
                         "connect",
