@@ -41,8 +41,8 @@ class SyftOblvClient:
 
     def __init__(
         self,
-        cookies: Dict,
-        headers: Dict,
+        cookies: Optional[Dict] = None,
+        headers: Optional[Dict] = None,
         token: Optional[str] = None,
         oblivious_user_id: Optional[str] = None,
         timeout: float = 20,

@@ -206,7 +206,7 @@ def publish_dataset(
         SuccessResponseMessage: Success message on key pair generation.
     """
 
-    if not path.exist(
+    if not path.exists(
         os.getenv("OBLV_KEY_PATH", "/app/content")
         + "/"
         + os.getenv("OBLV_KEY_NAME", "oblv_key")
@@ -458,7 +458,7 @@ def dataset_publish_budget(
     Returns:
         SuccessResponseMessage: Success message on key pair generation.
     """
-    if not path.exist(
+    if not path.exists(
         os.getenv("OBLV_KEY_PATH", "/app/content")
         + "/"
         + os.getenv("OBLV_KEY_NAME", "oblv_key")
@@ -584,7 +584,7 @@ def dataset_publish_budget_deduction(
     Returns:
         SuccessResponseMessage: Success message on key pair generation.
     """
-    if not path.exist(
+    if not path.exists(
         os.getenv("OBLV_KEY_PATH", "/app/content")
         + "/"
         + os.getenv("OBLV_KEY_NAME", "oblv_key")
