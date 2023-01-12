@@ -20,7 +20,6 @@ from ..node_service.oblv.oblv_messages import DeductBudgetMessage
 from ..node_service.oblv.oblv_messages import GetPublicKeyMessage
 from ..node_service.oblv.oblv_messages import PublishApprovalMessage
 from ..node_service.oblv.oblv_messages import PublishDatasetMessage
-from ..node_service.oblv.oblv_messages import SyftOblvClient
 from .request_api import RequestAPI
 
 
@@ -58,7 +57,7 @@ class OblvAPI(RequestAPI):
     def check_connection(self, deployment: DeploymentClient, **kwargs: Any) -> Any:
         content = {
             "deployment_id": deployment.deployment_id,
-            "client": SyftOblvClient.from_client(deployment.oblv_client),
+            "oblv_client": deployment.oblv_client,
         }
         response = self.perform_api_request(
             syft_msg=CheckEnclaveConnectionMessage, content=content
@@ -79,7 +78,7 @@ class OblvAPI(RequestAPI):
     ) -> Any:
         content = {
             "deployment_id": deployment.deployment_id,
-            "client": SyftOblvClient.from_client(deployment.oblv_client),
+            "oblv_client": deployment.oblv_client,
         }
         dataset_id = (
             dataset if type(dataset) == "str" else dataset.id_at_location.to_string()
@@ -101,7 +100,7 @@ class OblvAPI(RequestAPI):
             syft_msg=PublishApprovalMessage,
             content={
                 "result_id": publish_request_id,
-                "client": SyftOblvClient.from_client(client),
+                "oblv_client": client,
                 "deployment_id": deployment_id,
             },
         )
@@ -115,7 +114,7 @@ class OblvAPI(RequestAPI):
             syft_msg=DeductBudgetMessage,
             content={
                 "result_id": publish_request_id,
-                "client": SyftOblvClient.from_client(client),
+                "oblv_client": client,
                 "budget_to_deduct": budget_to_deduct,
                 "deployment_id": deployment_id,
             },

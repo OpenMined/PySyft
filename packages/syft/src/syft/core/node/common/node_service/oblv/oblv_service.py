@@ -15,7 +15,6 @@ from typing import Union
 
 # third party
 from nacl.signing import VerifyKey
-from oblv import OblvClient
 import requests
 
 # relative
@@ -214,7 +213,7 @@ def publish_dataset(
     ):
         create_keys_from_db(node)
 
-    cli = OblvClient(msg.client.token, msg.client.oblivious_user_id)
+    cli = msg.oblv_client
     public_file_name = (
         os.getenv("OBLV_KEY_PATH", "/app/content")
         + "/"
@@ -340,7 +339,7 @@ def check_connection(
     _allowed = True
 
     if _allowed:
-        cli = OblvClient(msg.client.token, msg.client.oblivious_user_id)
+        cli = msg.oblv_client
         debug("URL = " + cli.deployment_info(msg.deployment_id).instance.service_url)
         public_file_name = (
             os.getenv("OBLV_KEY_PATH", "/app/content")
@@ -465,7 +464,7 @@ def dataset_publish_budget(
         + "_public.der"
     ):
         create_keys_from_db(node)
-    cli = OblvClient(msg.client.token, msg.client.oblivious_user_id)
+    cli = msg.oblv_client
     public_file_name = (
         os.getenv("OBLV_KEY_PATH", "/app/content")
         + "/"
@@ -592,7 +591,7 @@ def dataset_publish_budget_deduction(
     ):
         create_keys_from_db(node)
 
-    cli = OblvClient(msg.client.token, msg.client.oblivious_user_id)
+    cli = msg.oblv_client
     public_file_name = (
         os.getenv("OBLV_KEY_PATH", "/app/content")
         + "/"
