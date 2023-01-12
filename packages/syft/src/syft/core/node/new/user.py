@@ -22,6 +22,9 @@ from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
+from .service import AbstractNode
+from .service import AbstractService
+from .service import service_method
 from .transforms import drop
 from .transforms import keep
 from .transforms import make_set_default
@@ -196,13 +199,15 @@ class SyftServiceRegistry:
 #     return decorator
 
 
-class UserCollection:
-    def __init__(self, node_uid: Optional[UID]) -> None:
-        self.node_uid = node_uid
+class UserCollection(AbstractService):
+    def __init__(self, node: AbstractNode) -> None:
+        self.node = node
+        self.node_uid = node.id
         self.data = {}
         self.primary_keys = {}
 
     # @service(path="services.happy.maybe_create", name="create_user")
+    @service_method(path="user.create", name="create")
     def create(
         self, credentials: SyftVerifyKey, user_update: UserUpdate
     ) -> Result[UserUpdate, str]:

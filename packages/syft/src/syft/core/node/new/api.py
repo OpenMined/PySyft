@@ -152,7 +152,8 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
                 if not issubclass(t, inspect._empty):
                     check_type(key, value, t)  # raises Exception
             except TypeError:
-                msg = f"{key} must be {t.__name__} not {type(value).__name__}"
+                _type_str = getattr(t, "__name__", str(t))
+                msg = f"{key} must be {_type_str} not {type(value).__name__}"
 
             if msg:
                 raise Exception(msg)
@@ -171,15 +172,17 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
             try:
                 if not issubclass(t, inspect._empty):
                     check_type(param_key, arg, t)  # raises Exception
-                _valid_args.append(arg)
-                if msg:
-                    raise Exception(msg)
-            except Exception:
-                raise Exception(
-                    f"Arg: `{arg}` is not valid with signature `{param_key}` of type: `{param.annotation}`"
+            except TypeError:
+                _type_str = getattr(t, "__name__", str(t))
+                msg = (
+                    f"Arg: `{arg}` must be `{_type_str}` and not `{type(arg).__name__}`"
                 )
+            if msg:
+                raise Exception(msg)
 
-        api_call = SyftAPICall(path=path, args=(), kwargs=_valid_kwargs)
+            _valid_args.append(arg)
+
+        api_call = SyftAPICall(path=path, args=_valid_args, kwargs=_valid_kwargs)
         result = make_call(api_call=api_call)
         return result
 

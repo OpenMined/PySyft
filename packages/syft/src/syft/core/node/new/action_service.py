@@ -122,7 +122,7 @@ class ActionService(AbstractService):
         self.node_uid = node.id
         self.store = store
 
-    @service_method(path="action.set")
+    @service_method(path="action.set", name="set")
     def set(
         self, credentials: SyftVerifyKey, action_object: ActionObject
     ) -> Result[ActionObjectPointer, str]:
@@ -138,7 +138,7 @@ class ActionService(AbstractService):
             return Ok(action_object.to_pointer(self.node_uid))
         return result.err()
 
-    @service_method(path="action.get")
+    @service_method(path="action.get", name="get")
     def get(self, credentials: SyftVerifyKey, uid: UID) -> Result[ActionObject, str]:
         """Get an object from the action store"""
         result = self.store.get(uid=uid, credentials=credentials)
@@ -146,7 +146,7 @@ class ActionService(AbstractService):
             return Ok(result.ok())
         return Err(result.err())
 
-    @service_method(path="action.execute")
+    @service_method(path="action.execute", name="execute")
     def execute(
         self, credentials: SyftVerifyKey, action: Action
     ) -> Result[ActionObjectPointer, Err]:

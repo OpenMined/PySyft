@@ -121,8 +121,8 @@ def test_user_transform() -> None:
 
 def test_user_collection() -> None:
     test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
-    uid = UID()
-    user_collection = UserCollection(node_uid=uid)
+    worker = Worker()
+    user_collection = UserCollection(worker)
 
     # create a user
     new_user = UserUpdate(

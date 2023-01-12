@@ -61,8 +61,7 @@ class Worker:
         self.id = id
         self.name = name
         self.signing_key = signing_key
-        self.user_collection = user_collection
-        services = [ActionService] if services is None else services
+        services = [UserCollection, ActionService] if services is None else services
         self.services = services
         self.service_config = ServiceConfigRegistry.get_registered_configs()
         self._construct_services()
@@ -124,7 +123,7 @@ class Worker:
         _private_api_path = ServiceConfigRegistry.private_path_for(api_call.path)
 
         method = self._get_service_method_from_path(_private_api_path)
-        result = method(credentials=credentials, **api_call.kwargs)
+        result = method(credentials, *api_call.args, **api_call.kwargs)
         return result
 
         # if api_call.path == "services.user.create":
