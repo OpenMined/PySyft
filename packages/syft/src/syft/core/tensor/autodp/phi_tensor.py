@@ -63,6 +63,7 @@ from ..smpc.utils import TYPE_TO_RING_SIZE
 from ..util import implements
 from .gamma_tensor import GammaTensor
 from .gamma_tensor import TensorWrappedGammaTensorPointer
+from .jax_ops import SyftTerminalNoop
 
 INPLACE_OPS = {"resize", "sort"}
 
@@ -2596,16 +2597,10 @@ class PhiTensor(PassthroughTensor):
 
     def create_gamma(self) -> GammaTensor:
         """Return a new Gamma tensor based on this phi tensor"""
-
-        def _create_gamma(state: Dict) -> PhiTensor:
-            return self.reconstruct(state)
-
-        func = _create_gamma
-
         gamma_tensor = GammaTensor(
             child=self.child,
             sources={self.id: self},
-            func=func,
+            jax_op=SyftTerminalNoop(phi_id=self.id),
             is_linear=True,
         )
 

@@ -8,5 +8,5 @@ struct GammaTensor {
   isLinear @3 :Bool;
   id @4 :Text;
   isNumpy @5 :Bool;
-  func @6 :Data;
+  jaxOp @6 :Data;
 }

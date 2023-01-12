@@ -23,22 +23,14 @@ import torch
 from .util import implements
 from .util import query_implementation
 
-AcceptableSimpleType = Union[int, bool, float, np.ndarray]
+AcceptableSimpleType = Union[
+    int, bool, float, np.ndarray, torch.Tensor, jaxlib.xla_extension.DeviceArrayBase
+]
 SupportedChainType = Union["PassthroughTensor", AcceptableSimpleType]
 
 
 def is_acceptable_simple_type(obj):
-    return isinstance(
-        obj,
-        (
-            int,
-            bool,
-            float,
-            np.ndarray,
-            torch.Tensor,
-            jaxlib.xla_extension.DeviceArrayBase,
-        ),
-    )
+    return isinstance(obj, AcceptableSimpleType)
 
 
 class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
