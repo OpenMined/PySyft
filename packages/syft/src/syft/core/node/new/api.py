@@ -135,11 +135,6 @@ class SyftAPICall(SyftObject):
 
 def generate_remote_function(signature: Signature, path: str, make_call: Callable):
     def wrapper(*args, **kwargs):
-        # need real Signature object
-        # params = signature.bind(*args, **kwargs)
-        # 🟡 TODO 15: Rewrite wrapper API functions to handle, args and kwargs properly
-        # raise Exception("Please use kwargs")
-
         _valid_kwargs = {}
 
         for key, value in kwargs.items():
@@ -147,12 +142,15 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
                 raise Exception("Wrong key", key, "for sig", signature)
             param = signature.parameters[key]
             if isinstance(param.annotation, str):
+                # 🟡 TODO 21: make this work for weird string type situations
+                # happens when from __future__ import annotations in a class file
                 t = index_syft_by_module_name(param.annotation)
             else:
                 t = param.annotation
             msg = None
             try:
-                check_type(key, value, t)
+                if not issubclass(t, inspect._empty):
+                    check_type(key, value, t)  # raises Exception
             except TypeError:
                 msg = f"{key} must be {t.__name__} not {type(value).__name__}"
 
@@ -164,15 +162,22 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
         # signature.parameters is an OrderedDict, therefore,
         # its fair to assume that order of args
         # and the signature.parameters should always match
+        _valid_args = []
         for (param_key, param), arg in zip(signature.parameters.items(), args):
             if param_key in _valid_kwargs:
                 continue
-            if type(arg) != param.annotation:
+            t = param.annotation
+            msg = None
+            try:
+                if not issubclass(t, inspect._empty):
+                    check_type(param_key, arg, t)  # raises Exception
+                _valid_args.append(arg)
+                if msg:
+                    raise Exception(msg)
+            except Exception:
                 raise Exception(
                     f"Arg: `{arg}` is not valid with signature `{param_key}` of type: `{param.annotation}`"
                 )
-            else:
-                _valid_kwargs[param_key] = arg
 
         api_call = SyftAPICall(path=path, args=(), kwargs=_valid_kwargs)
         result = make_call(api_call=api_call)
