@@ -9,6 +9,6 @@
   become: yes
   when: vagrant is defined and install == "true"
 
-- name: Upgrade click
-  shell: "runuser -l {{ om_user }} -c 'pip install --upgrade click'"
-  become: yes
+# - name: Upgrade click
+#   shell: "runuser -l {{ om_user }} -c 'pip install --upgrade click'"
+#   become: yes
