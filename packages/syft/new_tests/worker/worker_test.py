@@ -14,7 +14,6 @@ from syft.core.node.new.credentials import SyftVerifyKey
 from syft.core.node.new.user import User
 from syft.core.node.new.user import UserCollection
 from syft.core.node.new.user import UserUpdate
-from syft.core.node.worker import TestObject
 from syft.core.node.worker import Worker
 
 # from syft.core.node.worker import Worker
@@ -71,7 +70,8 @@ def test_action_store() -> None:
     test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
     action_store = ActionStore()
     uid = UID()
-    test_object = TestObject(id=uid, name="alice")
+    raw_data = np.array([1, 2, 3])
+    test_object = ActionObject(_syft_action_data=raw_data)
     set_result = action_store.set(
         uid=uid, credentials=test_signing_key, syft_object=test_object
     )

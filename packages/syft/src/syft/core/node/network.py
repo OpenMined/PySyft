@@ -12,7 +12,6 @@ from typing import Union
 # third party
 import ascii_magic
 from nacl.signing import SigningKey
-from nacl.signing import VerifyKey
 from pydantic import BaseSettings
 
 # relative
@@ -80,8 +79,6 @@ class Network(Node):
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
         signing_key: Optional[SigningKey] = None,
-        verify_key: Optional[VerifyKey] = None,
-        root_key: Optional[VerifyKey] = None,
         db_engine: Any = None,
         settings: Optional[BaseSettings] = None,
         document_store: bool = False,
@@ -93,7 +90,6 @@ class Network(Node):
             device=device,
             vm=vm,
             signing_key=signing_key,
-            verify_key=verify_key,
             db_engine=db_engine,
             settings=settings,
             document_store=document_store,
@@ -104,7 +100,6 @@ class Network(Node):
 
         # specific location with name
         self.network = SpecificLocation(name=self.name)
-        self.root_key = root_key
 
         # Database Management Instances
         self.users = NoSQLUserManager(self.nosql_db_engine, self.db_name)
@@ -150,7 +145,6 @@ class Network(Node):
 
     def post_init(self) -> None:
         super().post_init()
-        self.set_node_uid()
 
     def initial_setup(  # nosec
         self,

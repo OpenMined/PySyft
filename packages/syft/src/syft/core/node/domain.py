@@ -15,7 +15,6 @@ from typing import Union
 # third party
 import ascii_magic
 from nacl.signing import SigningKey
-from nacl.signing import VerifyKey
 from pydantic import BaseSettings
 
 # relative
@@ -91,7 +90,6 @@ from .domain_service import DomainServiceClass
 @instrument
 class Domain(Node):
     domain: SpecificLocation
-    root_key: Optional[VerifyKey]
 
     child_type = Device
     client_type = DomainClient
@@ -105,15 +103,12 @@ class Domain(Node):
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
         signing_key: Optional[SigningKey] = None,
-        verify_key: Optional[VerifyKey] = None,
-        root_key: Optional[VerifyKey] = None,
         db_engine: Any = None,
         store_type: type = RedisStore,
         ledger_store_type: type = RedisLedgerStore,
         settings: Optional[BaseSettings] = None,
         document_store: bool = False,
     ):
-
         super().__init__(
             name=name,
             network=network,
@@ -121,7 +116,6 @@ class Domain(Node):
             device=device,
             vm=vm,
             signing_key=signing_key,
-            verify_key=verify_key,
             db_engine=db_engine,
             store_type=store_type,
             settings=settings,
@@ -133,7 +127,6 @@ class Domain(Node):
 
         # specific location with name
         self.domain = SpecificLocation(name=self.name)
-        self.root_key = root_key
 
         # Database Management Instances
         self.users = NoSQLUserManager(self.nosql_db_engine, self.db_name)
@@ -203,9 +196,6 @@ class Domain(Node):
 
     def post_init(self) -> None:
         super().post_init()
-        self.set_node_uid()
-        if not hasattr(self, "signing_key"):
-            Node.set_keys(node=self)
 
     def initial_setup(  # nosec
         self,

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+import os
 from typing import Any
 from typing import Dict
 from typing import List
@@ -13,7 +14,6 @@ from typing import Union
 # third party
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
-from nacl.signing import VerifyKey
 from pydantic import BaseSettings
 
 # relative
@@ -88,6 +88,26 @@ class DuplicateRequestException(Exception):
     pass
 
 
+NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
+NODE_UID = "NODE_UID"
+
+
+def get_private_key_env() -> Optional[str]:
+    return get_env(NODE_PRIVATE_KEY)
+
+
+def get_node_uid_env() -> Optional[str]:
+    return get_env(NODE_UID)
+
+
+def get_env(key: str) -> Optional[str]:
+    return str(os.environ.get(key, None))
+
+
+signing_key_env = get_private_key_env()
+node_uid_env = get_node_uid_env()
+
+
 @instrument
 class Node(AbstractNode):
 
@@ -104,24 +124,41 @@ class Node(AbstractNode):
     ChildT = TypeVar("ChildT", bound="Node")
     child_type = ChildT
 
-    signing_key: Optional[SigningKey]
-    verify_key: Optional[VerifyKey]
-
     def __init__(
         self,
+        node_uid: Optional[str] = None,
+        signing_key: Optional[str] = None,
         name: Optional[str] = None,
         network: Optional[Location] = None,
         domain: Optional[Location] = None,
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
-        signing_key: Optional[SigningKey] = None,
-        verify_key: Optional[VerifyKey] = None,
         TableBase: Any = None,
         db_engine: Any = None,
         store_type: type = RedisStore,
         settings: Optional[BaseSettings] = None,
         document_store: bool = False,
     ):
+        self.node_uid = (
+            node_uid_env if node_uid_env is not None else UID.from_string(node_uid)
+        )
+        if self.node_uid is None:
+            raise Exception("self.node_uid is None")
+
+        self.signing_key = (
+            SigningKey(bytes.fromhex(signing_key_env))
+            if signing_key_env is not None
+            else SigningKey(bytes.fromhex(signing_key))
+        )
+        if self.signing_key is None:
+            raise Exception("self.signing_key is None")
+
+        self.verify_key = self.signing_key.verify_key
+        print(
+            "============> Starting Node with:",
+            self.node_uid,
+            self.signing_key.encode(encoder=HexEncoder).decode("utf-8"),
+        )
 
         # The node has a name - it exists purely to help the
         # end user have some idea about what this node is in a human
@@ -275,8 +312,8 @@ class Node(AbstractNode):
         # for itself to sign and verify with.
 
         # update keys
-        if signing_key:
-            Node.set_keys(node=self, signing_key=signing_key)
+        # if signing_key:
+        #     Node.set_keys(node=self, signing_key=signing_key)
 
         # PERMISSION REGISTRY:
         self.guest_signing_key_registry = set()
@@ -487,7 +524,7 @@ class Node(AbstractNode):
 
     @property
     def id(self) -> UID:
-        traceback_and_raise(NotImplementedError)
+        return self.node_uid
 
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
         traceback_and_raise(NotImplementedError)

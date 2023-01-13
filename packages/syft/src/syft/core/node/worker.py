@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+import os
 from typing import Any
 from typing import Callable
 from typing import List
@@ -21,25 +22,29 @@ from ..common.uid import UID
 from .new.action_service import ActionService
 from .new.api import SignedSyftAPICall
 from .new.api import SyftAPICall
+from .new.credentials import SyftSigningKey
 from .new.service import AbstractService
 from .new.service import ServiceConfigRegistry
 from .new.user import UserCollection
 
+NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
+NODE_UID = "NODE_UID"
 
-class TestObject(SyftObject):
-    # version
-    __canonical_name__ = "TestObject"
-    __version__ = 1
 
-    # fields
-    name: str
+def get_private_key_env() -> Optional[str]:
+    return get_env(NODE_PRIVATE_KEY)
 
-    # serde / storage rules
-    __attr_state__ = [
-        "name",
-    ]
-    __attr_searchable__ = ["name"]
-    __attr_unique__ = ["name"]
+
+def get_node_uid_env() -> Optional[str]:
+    return get_env(NODE_UID)
+
+
+def get_env(key: str) -> Optional[str]:
+    return str(os.environ.get(key, None))
+
+
+signing_key_env = get_private_key_env()
+node_uid_env = get_node_uid_env()
 
 
 @serializable(recursive_serde=True)
@@ -56,11 +61,18 @@ class Worker:
         signing_key: Optional[SigningKey] = None,
         user_collection: Optional[UserCollection] = None,
     ):
-        if id is None:
-            id = UID()
-        self.id = id
+        # 🟡 TODO 22: change our ENV variable format and default init args to make this
+        # less horrible or add some convenience functions
+        self.id = UID.from_string(node_uid_env) if node_uid_env is not None else id
+        self.signing_key = (
+            SyftSigningKey(SigningKey(bytes.fromhex(signing_key_env)))
+            if signing_key_env is not None
+            else SyftSigningKey(signing_key)
+        )
+
+        print("============> Starting Worker with:", self.id, self.signing_key)
+
         self.name = name
-        self.signing_key = signing_key
         services = [UserCollection, ActionService] if services is None else services
         self.services = services
         self.service_config = ServiceConfigRegistry.get_registered_configs()
