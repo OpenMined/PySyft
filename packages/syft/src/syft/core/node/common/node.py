@@ -18,6 +18,7 @@ from pydantic import BaseSettings
 
 # relative
 from .... import __version__
+from ....core.node.new.api import SyftAPI
 from ....grid import GridURL
 from ....lib import lib_ast
 from ....logger import debug
@@ -376,6 +377,9 @@ class Node(AbstractNode):
             version=str(__version__),
         )
 
+    def get_api(self) -> SyftAPI:
+        return SyftAPI.for_user(node_uid=self.id)
+
     def add_peer_routes(self, peer: NoSQLNode) -> None:
         try:
             routes = peer.node_route
@@ -515,7 +519,12 @@ class Node(AbstractNode):
             if isinstance(e, AuthorizationException):
                 private_log_msg = "An AuthorizationException has been triggered"
                 public_exception = e
-            elif isinstance(e, OblvKeyNotFoundError) or isinstance(e, OblvProxyConnectPCRError) or isinstance(e, OblvEnclaveUnAuthorizedError) or isinstance(e, OblvEnclaveError):
+            elif (
+                isinstance(e, OblvKeyNotFoundError)
+                or isinstance(e, OblvProxyConnectPCRError)
+                or isinstance(e, OblvEnclaveUnAuthorizedError)
+                or isinstance(e, OblvEnclaveError)
+            ):
                 private_log_msg = "An OblvException has been triggered"
                 public_exception = e
             else:

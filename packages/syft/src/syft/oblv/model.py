@@ -1,16 +1,19 @@
-# stdlib
+# future
 from __future__ import annotations
+
+# stdlib
 from datetime import datetime
 import json
 import os
 from signal import SIGTERM
-import subprocess
+import subprocess  # nosec
 import sys
 import time
 from typing import Any
+from typing import Callable
+from typing import Dict
 from typing import List
-from typing import Callable, Dict, Optional
-
+from typing import Optional
 
 # third party
 from oblv import OblvClient
@@ -19,26 +22,13 @@ import requests
 # relative
 from ..core.node.common.exceptions import OblvEnclaveError
 from ..core.node.common.exceptions import OblvUnAuthorizedError
-from .constants import ENCODE_BLACK
-from .constants import ENCODE_BOLD
-from .constants import ENCODE_NO_STYLE
-from .constants import ENCODE_RED
-from .constants import LOCAL_MODE, DOMAIN_CONNECTION_PORT
+from ..util import bcolors
+from .constants import DOMAIN_CONNECTION_PORT
+from .constants import LOCAL_MODE
 from .oblv_proxy import check_oblv_proxy_installation_status
 
 
-class Client:
-    login: Any  # Will use this for DomainClient
-    datasets: list = []
-
-    def __init__(self, login: Any = None, datasets=[]):
-        self.login = (login,)
-        self.datasets = datasets
-
-
 class DeploymentClient:
-
-    # __attr_allowlist__ = ["deployment_id", "user_key_name", "client", "oblv_client"]
 
     deployment_id: str
     user_key_name: str
@@ -50,10 +40,10 @@ class DeploymentClient:
 
     def __init__(
         self,
-        deployment_id: str = None,
-        oblv_client: OblvClient = None,
-        domain_clients: List[Any] = [],
-        user_key_name="",
+        domain_clients: List[Any],
+        deployment_id: Optional[str] = None,
+        oblv_client: Optional[OblvClient] = None,
+        user_key_name: Optional[str] = None,
     ):
         self.deployment_id = deployment_id
         self.user_key_name = user_key_name
@@ -67,10 +57,10 @@ class DeploymentClient:
         self,
         request_method: Callable,
         connection_string: str,
-        params: Dict = {},
-        files: Dict = {},
-        data: Dict = {},
-        json: Dict = {},
+        params: Optional[Dict] = None,
+        files: Optional[Dict] = None,
+        data: Optional[Dict] = None,
+        json: Optional[Dict] = None,
     ):
         header = {}
         if LOCAL_MODE:
@@ -78,7 +68,7 @@ class DeploymentClient:
             header["x-oblv-user-role"] = "user"
         else:
             depl = self.oblv_client.deployment_info(self.deployment_id)
-            if depl.is_deleted == True:
+            if depl.is_deleted:
                 raise Exception(
                     "User cannot connect to this deployment, as it is no longer available."
                 )
@@ -91,15 +81,14 @@ class DeploymentClient:
             json=json,
         )
 
-    def set_conn_string(self, URL):
-        self.__conn_string = URL
+    def set_conn_string(self, url: str):
+        self.__conn_string = url
 
     def initiate_connection(self, connection_port: int = DOMAIN_CONNECTION_PORT):
         if LOCAL_MODE:
             self.__conn_string = "http://127.0.0.1:" + str(connection_port)
             return
-        if check_oblv_proxy_installation_status() == None:
-            return
+        check_oblv_proxy_installation_status()
         self.close_connection()  # To close any existing connections
         public_file_name = os.path.join(
             os.path.expanduser("~"),
@@ -122,13 +111,13 @@ class DeploymentClient:
         os.makedirs(os.path.dirname(log_file_name), exist_ok=True)
         log_file = open(log_file_name, "wb")
         depl = self.oblv_client.deployment_info(self.deployment_id)
-        if depl.is_deleted == True:
+        if depl.is_deleted:
             raise Exception(
                 "User cannot connect to this deployment, as it is no longer available."
             )
         try:
             if depl.is_dev_env:
-                process = subprocess.Popen(
+                process = subprocess.Popen(  # nosec
                     [
                         "oblv",
                         "connect",
@@ -154,7 +143,7 @@ class DeploymentClient:
                     stderr=log_file,
                 )
             else:
-                process = subprocess.Popen(
+                process = subprocess.Popen(  # nosec
                     [
                         "oblv",
                         "connect",
@@ -185,7 +174,8 @@ class DeploymentClient:
                     raise Exception("PCR Validation Failed")
                 if d.__contains__("Only one usage of each socket address"):
                     raise Exception(
-                        "Another oblv proxy instance running. Either close that connection or change the *connection_port*"
+                        "Another oblv proxy instance running. Either close that connection"
+                        + "or change the *connection_port*"
                     )
                 elif d.lower().__contains__("error"):
                     raise Exception(d)
@@ -196,9 +186,7 @@ class DeploymentClient:
             raise e
         else:
             print(
-                "Successfully connected to proxy on port {}. The logs can be found at {}".format(
-                    connection_port, log_file_name
-                )
+                f"Successfully connected to proxy on port {connection_port}. The logs can be found at {log_file_name}"
             )
         self.__conn_string = "http://127.0.0.1:" + str(connection_port)
         self.__logs = log_file_name
@@ -210,13 +198,14 @@ class DeploymentClient:
             raise Exception(
                 "No Domain Clients added. Set the propert *client* with the list of your domain logins"
             )
-        if self.__conn_string == None:
+        if self.__conn_string is None:
             raise Exception(
                 "proxy not running. Use the method connect_oblv_proxy to start the proxy."
             )
         elif self.__conn_string == "":
             raise Exception(
-                "Either proxy not running or not initiated using syft. Run the method initiate_connection to initiate the proxy connection"
+                "Either proxy not running or not initiated using syft."
+                + " Run the method initiate_connection to initiate the proxy connection"
             )
 
         req = self.make_request_to_enclave(
@@ -236,16 +225,17 @@ class DeploymentClient:
                     req.status_code
                 )
             )
-        return req.json()  ##This is the publish_request_id
+        return req.json()  # This is the publish_request_id
 
     def publish_action(self, action: str, arguments, *args, **kwargs):
-        if self.__conn_string == None:
+        if self.__conn_string is None:
             raise Exception(
                 "proxy not running. Use the method connect_oblv_proxy to start the proxy."
             )
         elif self.__conn_string == "":
             raise Exception(
-                "Either proxy not running or not initiated using syft. Run the method initiate_connection to initiate the proxy connection"
+                "Either proxy not running or not initiated using syft. Run the method initiate_connection"
+                + "to initiate the proxy connection"
             )
         file = None
         if len(arguments) == 2 and arguments[1]["type"] == "tensor":
@@ -265,7 +255,7 @@ class DeploymentClient:
             files={"file": file},
         )
         # req = requests.post(self.__conn_string + "/tensor/action?op={}".format(action)
-        #                     , data=body, files={"file": file},headers={"x-oblv-user-name": "vinal", "x-oblv-user-role": "user"})
+        # , data=body, files={"file": file},headers={"x-oblv-user-name": "vinal", "x-oblv-user-role": "user"})
         if req.status_code == 401:
             raise OblvUnAuthorizedError()
         elif req.status_code == 400:
@@ -284,7 +274,7 @@ class DeploymentClient:
             # Status code 200
             # TODO - Remove this after oblv proxy is resolved
             data = req.json()
-            if type(data) == dict and data.get("detail") != None:
+            if type(data) == dict and data.get("detail") is not None:
                 raise OblvEnclaveError(data["detail"])
             return data
         # #return req.json()
@@ -294,13 +284,14 @@ class DeploymentClient:
             raise Exception(
                 "No Domain Clients added. Set the propert *client* with the list of your domain logins"
             )
-        if self.__conn_string == None:
+        if self.__conn_string is None:
             raise Exception(
                 "proxy not running. Use the method connect_oblv_proxy to start the proxy."
             )
         elif self.__conn_string == "":
             raise Exception(
-                "Either proxy not running or not initiated using syft. Run the method initiate_connection to initiate the proxy connection"
+                "Either proxy not running or not initiated using syft. Run the method initiate_connection"
+                + "to initiate the proxy connection"
             )
 
         req = self.make_request_to_enclave(
@@ -327,7 +318,7 @@ class DeploymentClient:
             # TODO - Remove this after oblv proxy is resolved
 
             data = req.json()
-            if type(data) == dict and data.get("detail") != None:
+            if type(data) == dict and data.get("detail") is not None:
                 raise OblvEnclaveError(data["detail"])
             # Here data is publish_request_id
             for o in self.client:
@@ -339,13 +330,14 @@ class DeploymentClient:
             return data
 
     def check_publish_request_status(self, publish_request_id):
-        if self.__conn_string == None:
+        if self.__conn_string is None:
             raise Exception(
                 "proxy not running. Use the method connect_oblv_proxy to start the proxy."
             )
         elif self.__conn_string == "":
             raise Exception(
-                "Either proxy not running or not initiated using syft. Run the method initiate_connection to initiate the proxy connection"
+                "Either proxy not running or not initiated using syft. Run the method initiate_connection"
+                + "to initiate the proxy connection"
             )
 
         req = self.make_request_to_enclave(
@@ -381,26 +373,28 @@ class DeploymentClient:
                         client=self.oblv_client,
                         budget_to_deduct=result,
                     )
-                print("Result is ready")  ##This is the publish_request_id
+                print("Result is ready")  # This is the publish_request_id
             else:
                 # TODO - Remove this after oblv proxy is resolved
-                if result.get("detail") != None:
+                if result.get("detail") is not None:
                     raise OblvEnclaveError(result["detail"])
 
     def fetch_result(self, publish_request_id):
-        if self.__conn_string == None:
+        if self.__conn_string is None:
             raise Exception(
                 "proxy not running. Use the method connect_oblv_proxy to start the proxy."
             )
         elif self.__conn_string == "":
             raise Exception(
-                "Either proxy not running or not initiated using syft. Run the method initiate_connection to initiate the proxy connection"
+                "Either proxy not running or not initiated using syft. Run the method initiate_connection"
+                + "to initiate the proxy connection"
             )
-
 
         req = self.make_request_to_enclave(
             requests.get,
-            connection_string = self.__conn_string + "/tensor/publish/result?request_id="+ publish_request_id
+            connection_string=self.__conn_string
+            + "/tensor/publish/result?request_id="
+            + publish_request_id,
         )
         if req.status_code == 401:
             raise OblvUnAuthorizedError()
@@ -425,8 +419,8 @@ class DeploymentClient:
             return "No Proxy Connection Running"
 
     def check_proxy_running(self):
-        if self.__process != None:
-            if self.__process.poll() != None:
+        if self.__process is not None:
+            if self.__process.poll() is not None:
                 return False
             else:
                 return True
@@ -437,15 +431,16 @@ class DeploymentClient:
 
         Args:
             follow (bool, optional): To follow the logs as they grow. Defaults to False.
-            tail (bool, optional): Only show the new generated logs. To be used only when follow is True. Defaults to False.
+            tail (bool, optional): Only show the new generated logs.
+                To be used only when follow is True. Defaults to False.
         """
-        if self.__logs == None:
+        if self.__logs is None:
             print(
-                ENCODE_RED
-                + ENCODE_BOLD
+                bcolors.RED
+                + bcolors.BOLD
                 + "Exception"
-                + ENCODE_BLACK
-                + ENCODE_NO_STYLE
+                + bcolors.BLACK
+                + bcolors.ENDC
                 + ": Logs not initiated",
                 file=sys.stderr,
             )

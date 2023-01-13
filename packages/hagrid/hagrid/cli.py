@@ -3,6 +3,7 @@ from collections import namedtuple
 import json
 import os
 from pathlib import Path
+import platform
 from queue import Queue
 import re
 import shutil
@@ -1674,8 +1675,17 @@ def create_launch_docker_cmd(
         elif version_string is None:
             version_string = "latest"
 
+    if platform.uname().machine == "x86_64":
+        docker_platform = "linux/amd64"
+    else:
+        docker_platform = "linux/arm64"
+
+    if "platform" in kwargs and kwargs["platform"] is not None:
+        docker_platform = kwargs["platform"]
+
     print("  - NAME: " + str(snake_name))
     print("  - RELEASE: " + kwargs["release"])
+    print("  - ARCH: " + docker_platform)
     print("  - TYPE: " + str(node_type.input))
     print("  - DOCKER_TAG: " + version_string)
     if version_hash != "dockerhub":
@@ -1719,7 +1729,7 @@ def create_launch_docker_cmd(
         )
 
     if "platform" in kwargs and kwargs["platform"] is not None:
-        envs["DOCKER_DEFAULT_PLATFORM"] = kwargs["platform"]
+        envs["DOCKER_DEFAULT_PLATFORM"] = docker_platform
 
     if "tls" in kwargs and kwargs["tls"] is True and len(kwargs["cert_store_path"]) > 0:
         envs["TRAEFIK_TLS_CERTS"] = kwargs["cert_store_path"]

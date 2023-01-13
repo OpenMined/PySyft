@@ -5,22 +5,26 @@ This file defines all the functions/classes to perform oblv actions, for a given
 # stdlib
 from base64 import encodebytes
 import os
-import subprocess
+from os import path
+import subprocess  # nosec
 from typing import Callable
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Type
 from typing import Union
 
 # third party
 from nacl.signing import VerifyKey
-from oblv import OblvClient
 import requests
 
 # relative
 from ......logger import debug
+from ......oblv.constants import DOMAIN_CONNECTION_PORT
+from ......oblv.constants import LOCAL_MODE
 from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
+from .....common.serde.serialize import _serialize as serialize
 from .....common.uid import UID
 from ....domain_interface import DomainInterface
 from ...exceptions import AuthorizationError
@@ -39,8 +43,6 @@ from .oblv_messages import GetPublicKeyResponse
 from .oblv_messages import PublishApprovalMessage
 from .oblv_messages import PublishDatasetMessage
 from .oblv_messages import PublishDatasetResponse
-from .....common.serde.serialize import _serialize as serialize
-from ......oblv.constants import LOCAL_MODE,DOMAIN_CONNECTION_PORT
 
 USER_INPUT_MESSAGES = Union[
     GetPublicKeyMessage,
@@ -57,24 +59,20 @@ def make_request_to_enclave(
     msg,
     request_method: Callable,
     connection_string: str,
-    params: Dict = {},
-    files: Dict = {},
-    data: Dict = {},
-    json: Dict = {},
+    params: Optional[Dict] = None,
+    files: Optional[Dict] = None,
+    data: Optional[Dict] = None,
+    json: Optional[Dict] = None,
 ):
     if not LOCAL_MODE:
-        try:
-            with open(
-                os.getenv("OBLV_KEY_PATH", "/app/content")
-                + "/"
-                + os.getenv("OBLV_KEY_NAME", "oblv_key")
-                + "_public.der",
-                "rb",
-            ) as f:
-                data = f.read()
-        except FileNotFoundError:
+        if not path.exists(
+            os.getenv("OBLV_KEY_PATH", "/app/content")
+            + "/"
+            + os.getenv("OBLV_KEY_NAME", "oblv_key")
+            + "_public.der"
+        ):
             create_keys_from_db(node)
-        cli = OblvClient(msg.client.token, msg.client.oblivious_user_id)
+        cli = msg.oblv_client
         public_file_name = (
             os.getenv("OBLV_KEY_PATH", "/app/content")
             + "/"
@@ -88,7 +86,7 @@ def make_request_to_enclave(
             + "_private.der"
         )
         depl = cli.deployment_info(msg.deployment_id)
-        if depl.is_deleted == True:
+        if depl.is_deleted:
             raise OblvEnclaveError(
                 "User cannot connect to this deployment, as it is no longer available."
             )
@@ -154,7 +152,6 @@ def make_request_to_enclave(
                 break
         req = request_method(
             connection_string,
-            headers=headers,
             params=params,
             files=files,
             data=data,
@@ -166,7 +163,7 @@ def make_request_to_enclave(
     else:
         headers = {"x-oblv-user-name": node.name, "x-oblv-user-role": "domain"}
         return request_method(
-            connection_string.replace("127.0.0.1","host.docker.internal"),
+            connection_string.replace("127.0.0.1", "host.docker.internal"),
             headers=headers,
             params=params,
             files=files,
@@ -218,7 +215,7 @@ def create_key_pair_msg(
     file_path = os.getenv("OBLV_KEY_PATH", "/app/content")
     file_name = os.getenv("OBLV_KEY_NAME", "oblv_key")
     if _allowed:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec
             [
                 "/usr/local/bin/oblv",
                 "keygen",
@@ -231,7 +228,7 @@ def create_key_pair_msg(
         )
         if result.stderr:
             debug(result.stderr.decode("utf-8"))
-            raise subprocess.CalledProcessError(
+            raise subprocess.CalledProcessError(  # nosec
                 returncode=result.returncode, cmd=result.args, stderr=result.stderr
             )
         debug(result.stdout.decode("utf-8"))
@@ -378,7 +375,7 @@ def check_connection(
     _allowed = True
 
     if _allowed:
-        cli = OblvClient(msg.client.token, msg.client.oblivious_user_id)
+        cli = msg.oblv_client
         debug("URL = " + cli.deployment_info(msg.deployment_id).instance.service_url)
         public_file_name = (
             os.getenv("OBLV_KEY_PATH", "/app/content")
@@ -393,12 +390,12 @@ def check_connection(
             + "_private.der"
         )
         depl = cli.deployment_info(msg.deployment_id)
-        if depl.is_deleted == True:
+        if depl.is_deleted:
             raise OblvEnclaveError(
                 "User cannot connect to this deployment, as it is no longer available."
             )
         if depl.is_dev_env:
-            process = subprocess.Popen(
+            process = subprocess.Popen(  # nosec
                 [
                     "/usr/local/bin/oblv",
                     "connect",
@@ -424,7 +421,7 @@ def check_connection(
                 stderr=subprocess.PIPE,
             )
         else:
-            process = subprocess.Popen(
+            process = subprocess.Popen(  # nosec
                 [
                     "/usr/local/bin/oblv",
                     "connect",
@@ -496,8 +493,6 @@ def dataset_publish_budget(
     Returns:
         SuccessResponseMessage: Success message on key pair generation.
     """
-    
-
     current_budget = node.users.get_budget_for_user(verify_key)
     data_obj = {
         "publish_request_id": msg.result_id,
@@ -508,7 +503,7 @@ def dataset_publish_budget(
         msg,
         requests.post,
         connection_string=f"http://127.0.0.1:{DOMAIN_CONNECTION_PORT}/tensor/publish/current_budget",
-        json=data_obj
+        json=data_obj,
     )
 
     debug(req.text)
@@ -549,7 +544,7 @@ def dataset_publish_budget_deduction(
         msg,
         requests.post,
         connection_string=f"http://127.0.0.1:{DOMAIN_CONNECTION_PORT}/tensor/publish/budget_deducted",
-        json={"publish_request_id": msg.result_id, "budget_deducted": approval}
+        json={"publish_request_id": msg.result_id, "budget_deducted": approval},
     )
     if req.status_code == 401:
         raise OblvEnclaveUnAuthorizedError()

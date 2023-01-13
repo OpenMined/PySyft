@@ -1,5 +1,4 @@
 # stdlib
-import json
 from typing import Optional
 
 # third party
@@ -9,20 +8,32 @@ import yaml
 
 # relative
 from ..core.node.common.exceptions import OblvKeyNotFoundError
-from .constants import *
-from .model import Client
+from ..util import bcolors
+from .auth import login
+from .constants import INFRA
+from .constants import REF
+from .constants import REGION
+from .constants import REPO_NAME
+from .constants import REPO_OWNER
+from .constants import VCS
+from .constants import VISIBILITY
 from .model import DeploymentClient
 from .oblv_proxy import create_oblv_key_pair
 from .oblv_proxy import get_oblv_public_key
 
-SUPPORTED_REGION_LIST = ["us-east-1",
-    "us-west-2",
-    "eu-central-1",
-    "eu-west-2"]
+SUPPORTED_REGION_LIST = ["us-east-1", "us-west-2", "eu-central-1", "eu-west-2"]
 
-SUPPORTED_INFRA = ["c5.xlarge","m5.xlarge","r5.xlarge","c5.2xlarge","m5.2xlarge"]
+SUPPORTED_INFRA = ["c5.xlarge", "m5.xlarge", "r5.xlarge", "c5.2xlarge", "m5.2xlarge"]
 
-def create_deployment(client: OblvClient, domain_clients: list, deployment_name: Optional[str] = None, key_name: str = "", infra: str = "m5.2xlarge", region: str = "us-east-1") -> str:
+
+def create_deployment(
+    domain_clients: list,
+    deployment_name: Optional[str] = None,
+    key_name: Optional[str] = None,
+    oblv_client: Optional[OblvClient] = None,
+    infra: str = INFRA,
+    region: str = REGION,
+) -> str:
     """Creates a new deployment with predefined codebase
     Args:
         client : Oblivious Client.
@@ -41,57 +52,80 @@ def create_deployment(client: OblvClient, domain_clients: list, deployment_name:
                 - "us-west-2" : "US West (Oregon)",\n
                 - "eu-central-1" : "Europe (Frankfurt)",\n
                 - "eu-west-2" : "Europe (London)"
-            
+
     Returns:
         resp: Deployment Client Object
     """
-    
-    if deployment_name == None:
+    if not oblv_client:
+        oblv_client = login()
+    if deployment_name is None:
         deployment_name = input("Kindly provide deployment name")
-    if key_name == "":
+    if key_name is None:
         key_name = input("Please provide your key name")
-        
+
     while not SUPPORTED_INFRA.__contains__(infra):
-        infra = input("Provide infra from one of the following - {}".format(",".join(SUPPORTED_INFRA)))
+        infra = input(f"Provide infra from one of the following - {SUPPORTED_INFRA}")
+
     while not SUPPORTED_REGION_LIST.__contains__(region):
-        region = input("Provide region from one of the following - {}".format(",".join(SUPPORTED_REGION_LIST)))
+        region = input(
+            f"Provide region from one of the following - {SUPPORTED_REGION_LIST}"
+        )
+
     try:
         user_public_key = get_oblv_public_key(key_name)
-        print("passed ",user_public_key)
     except FileNotFoundError:
-        print("creating new one")
         user_public_key = create_oblv_key_pair(key_name)
-        print(user_public_key)
+        print(
+            bcolors.green(bcolors.bold("Created"))
+            + f" a new public/private key pair with key_name: {key_name}"
+        )
     except Exception as e:
         raise Exception(e)
     build_args = {
         "auth": {},
-        "users": {
-            "domain": [],
-            "user": []
-        },
+        "users": {"domain": [], "user": []},
         "additional_args": {},
         "infra_reqs": infra,
-        "runtime_args": ""
+        "runtime_args": "",
     }
     users = []
-    result_client=[]
     runtime_args = []
-    for k in domain_clients:
+    for domain_client in domain_clients:
         try:
-            users.append({"user_name": k.name, "public key": k.oblv.get_key()})
+            users.append(
+                {
+                    "user_name": domain_client.name,
+                    "public key": domain_client.oblv.get_key(),
+                }
+            )
         except OblvKeyNotFoundError:
-            print("Oblv public key not found for {}".format(k.name))
-            return
-        result_client.append(Client(login=k,datasets=[]))
-    build_args["runtime_args"] = yaml.dump({"outbound" : runtime_args})
-    build_args["users"]["domain"]=users
-    profile = client.user_profile()
+            raise OblvKeyNotFoundError(
+                f"Oblv Public Key not found for {domain_client.name}"
+            )
+
+    build_args["runtime_args"] = yaml.dump({"outbound": runtime_args})
+    build_args["users"]["domain"] = users
+    profile = oblv_client.user_profile()
     users = [{"user_name": profile.oblivious_login, "public key": user_public_key}]
-    build_args["users"]["user"]=users
-    depl_input = CreateDeploymentInput(REPO_OWNER, REPO_NAME, VCS,
-                                  REF, region, deployment_name, VISIBILITY, True, [], build_args)
-    #By default the deployment is in PROD mode
-    res = client.create_deployment(depl_input)
-    result = DeploymentClient(deployment_id=res.deployment_id, oblv_client = client, domain_clients=domain_clients,user_key_name=key_name)
+    build_args["users"]["user"] = users
+    depl_input = CreateDeploymentInput(
+        REPO_OWNER,
+        REPO_NAME,
+        VCS,
+        REF,
+        region,
+        deployment_name,
+        VISIBILITY,
+        True,
+        [],
+        build_args,
+    )
+    # By default the deployment is in PROD mode
+    res = oblv_client.create_deployment(depl_input)
+    result = DeploymentClient(
+        deployment_id=res.deployment_id,
+        oblv_client=oblv_client,
+        domain_clients=domain_clients,
+        user_key_name=key_name,
+    )
     return result

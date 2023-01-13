@@ -17,6 +17,7 @@ from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.common.message import SignedMessage
 from syft.core.node.enums import RequestAPIFields
+from syft.core.node.worker import Worker
 from syft.telemetry import TRACE_MODE
 
 # grid absolute
@@ -33,6 +34,8 @@ if TRACE_MODE:
 
 router = APIRouter()
 
+worker = Worker(id=node.id)
+
 
 async def get_body(request: Request) -> bytes:
     return await request.body()
@@ -47,6 +50,24 @@ def syft_version() -> Response:
 def syft_metadata() -> Response:
     return Response(
         serialize(node.get_metadata_for_client(), to_bytes=True),
+        media_type="application/octet-stream",
+    )
+
+
+@router.get("/new_api", response_model=str)
+def syft_new_api() -> Response:
+    return Response(
+        serialize(node.get_api(), to_bytes=True),
+        media_type="application/octet-stream",
+    )
+
+
+@router.post("/new_api_call", response_model=str)
+def syft_new_api_call(request: Request, data: bytes = Depends(get_body)) -> Any:
+    obj_msg = deserialize(blob=data, from_bytes=True)
+    result = worker.handle_api_call(api_call=obj_msg)
+    return Response(
+        serialize(result, to_bytes=True),
         media_type="application/octet-stream",
     )
 

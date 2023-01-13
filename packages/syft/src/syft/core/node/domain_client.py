@@ -17,6 +17,8 @@ import pandas as pd
 
 # relative
 from ... import __version__
+from ...core.node.new.api import APIRegistry
+from ...core.node.new.api import SyftAPI
 from ...logger import traceback_and_raise
 from ...telemetry import instrument
 from ...util import bcolors
@@ -38,8 +40,8 @@ from .common.action.exception_action import ExceptionMessage
 from .common.client import Client
 from .common.client_manager.association_api import AssociationRequestAPI
 from .common.client_manager.dataset_api import DatasetRequestAPI
-from .common.client_manager.role_api import RoleRequestAPI
 from .common.client_manager.oblv_api import OblvAPI
+from .common.client_manager.role_api import RoleRequestAPI
 from .common.client_manager.user_api import UserRequestAPI
 from .common.client_manager.vpn_api import VPNAPI
 from .common.node_service.get_remaining_budget.get_remaining_budget_messages import (
@@ -766,3 +768,12 @@ class DomainClient(Client):
             return response
         except Exception as e:
             raise e
+
+    @property
+    def api(self) -> SyftAPI:
+        if hasattr(self, "_api"):
+            return self._api
+        api = self.routes[0].connection._get_api()
+        APIRegistry.set_api_for(node_uid=self.id, api=api)
+        self._api = api
+        return api

@@ -20,7 +20,6 @@ from ..node_service.oblv.oblv_messages import DeductBudgetMessage
 from ..node_service.oblv.oblv_messages import GetPublicKeyMessage
 from ..node_service.oblv.oblv_messages import PublishApprovalMessage
 from ..node_service.oblv.oblv_messages import PublishDatasetMessage
-from ..node_service.oblv.oblv_messages import SyftOblvClient
 from .request_api import RequestAPI
 
 
@@ -32,62 +31,94 @@ class OblvAPI(RequestAPI):
         )
 
     def get_key(self, **kwargs: Any) -> Any:
-        response = self.perform_api_request(syft_msg=GetPublicKeyMessage, content=kwargs)
+        response = self.perform_api_request(
+            syft_msg=GetPublicKeyMessage, content=kwargs
+        )
         if isinstance(response, ExceptionMessage):
             raise response.exception_type
         else:
-            content = getattr(
-                response, "response"
-            )
+            content = getattr(response, "response")
             if content is None:
                 raise Exception(f"{type(self)} has no response")
             return content
 
     def create_key(self, **kwargs: Any) -> Any:
-        response = self.perform_api_request(syft_msg=CreateKeyPairMessage, content=kwargs)
+        response = self.perform_api_request(
+            syft_msg=CreateKeyPairMessage, content=kwargs
+        )
         if isinstance(response, ExceptionMessage):
             raise response.exception_type
         else:
-            content = getattr(
-                response, "resp_msg"
-            )
+            content = getattr(response, "resp_msg")
             if content is None:
                 raise Exception(f"{type(self)} has no response")
             return content
 
-    def check_connection(self, deployment: DeploymentClient,**kwargs: Any) -> Any:
-        content={"deployment_id":deployment.deployment_id,"client":SyftOblvClient.from_client(deployment.oblv_client)}
-        response = self.perform_api_request(syft_msg=CheckEnclaveConnectionMessage, content=content)
+    def check_connection(self, deployment: DeploymentClient, **kwargs: Any) -> Any:
+        content = {
+            "deployment_id": deployment.deployment_id,
+            "oblv_client": deployment.oblv_client,
+        }
+        response = self.perform_api_request(
+            syft_msg=CheckEnclaveConnectionMessage, content=content
+        )
         if isinstance(response, ExceptionMessage):
             raise response.exception_type
         else:
-            content = getattr(
-                response, "resp_msg"
-            )
+            content = getattr(response, "resp_msg")
             if content is None:
                 raise Exception(f"{type(self)} has no response")
             return content
 
-    def send_dataset(self, deployment: DeploymentClient, dataset: Union[str,TensorWrappedPhiTensorPointer],**kwargs: Any) -> Any:
-        content={"deployment_id":deployment.deployment_id,"client":SyftOblvClient.from_client(deployment.oblv_client)}
-        dataset_id = dataset if type(dataset)=='str' else dataset.id_at_location.to_string()
-        content.update({"dataset_id":dataset_id})
-        response = self.perform_api_request(syft_msg=PublishDatasetMessage, content=content)
+    def send_dataset(
+        self,
+        deployment: DeploymentClient,
+        dataset: Union[str, TensorWrappedPhiTensorPointer],
+        **kwargs: Any,
+    ) -> Any:
+        content = {
+            "deployment_id": deployment.deployment_id,
+            "oblv_client": deployment.oblv_client,
+        }
+        dataset_id = (
+            dataset if type(dataset) == "str" else dataset.id_at_location.to_string()
+        )
+        content.update({"dataset_id": dataset_id})
+        response = self.perform_api_request(
+            syft_msg=PublishDatasetMessage, content=content
+        )
         if isinstance(response, ExceptionMessage):
             raise response.exception_type
         else:
-            dataset_id = getattr(
-                response, "dataset_id"
-            )
+            dataset_id = getattr(response, "dataset_id")
             return OblvTensorWrapper(id=dataset_id, deployment_client=deployment)
-        
-    def publish_budget(self, deployment_id, publish_request_id, client,**kwargs: Any) -> Any:
-        response = self.oblv_perform_api_request_without_reply(syft_msg=PublishApprovalMessage, content={"result_id":publish_request_id,"client":SyftOblvClient.from_client(client),"deployment_id":deployment_id})
+
+    def publish_budget(
+        self, deployment_id, publish_request_id, client, **kwargs: Any
+    ) -> Any:
+        response = self.oblv_perform_api_request_without_reply(
+            syft_msg=PublishApprovalMessage,
+            content={
+                "result_id": publish_request_id,
+                "oblv_client": client,
+                "deployment_id": deployment_id,
+            },
+        )
         if isinstance(response, ExceptionMessage):
             raise response.exception_type
-        
-    def publish_request_budget_deduction(self, deployment_id, publish_request_id, budget_to_deduct, client,**kwargs: Any) -> Any:
-        response = self.oblv_perform_api_request_without_reply(syft_msg=DeductBudgetMessage, content={"result_id":publish_request_id,"client":SyftOblvClient.from_client(client), "budget_to_deduct": budget_to_deduct, "deployment_id": deployment_id})
+
+    def publish_request_budget_deduction(
+        self, deployment_id, publish_request_id, budget_to_deduct, client, **kwargs: Any
+    ) -> Any:
+        response = self.oblv_perform_api_request_without_reply(
+            syft_msg=DeductBudgetMessage,
+            content={
+                "result_id": publish_request_id,
+                "oblv_client": client,
+                "budget_to_deduct": budget_to_deduct,
+                "deployment_id": deployment_id,
+            },
+        )
         if isinstance(response, ExceptionMessage):
             raise response.exception_type
 

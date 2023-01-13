@@ -1,13 +1,16 @@
 # stdlib
+from enum import Enum
 import sys
 from typing import Any
 from typing import Callable
+from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
 
 # third party
 from capnp.lib.capnp import _DynamicStructBuilder
+from pydantic import BaseModel
 
 # syft absolute
 import syft as sy
@@ -26,6 +29,7 @@ def recursive_serde_register(
     cls: Union[object, type],
     serialize: Optional[Callable] = None,
     deserialize: Optional[Callable] = None,
+    attr_allowlist: Optional[List] = None,
 ) -> None:
     if not isinstance(cls, type):
         cls = type(cls)
@@ -38,8 +42,18 @@ def recursive_serde_register(
     _serialize = serialize if nonrecursive else rs_object2proto
     _deserialize = deserialize if nonrecursive else rs_proto2object
 
-    attribute_list = getattr(cls, "__attr_allowlist__", None)
+    if attr_allowlist is not None:
+        attribute_list = attr_allowlist
+    else:
+        attribute_list = getattr(cls, "__attr_allowlist__", None)
+        if attribute_list is None:
+            attribute_list = getattr(cls, "__attr_state__", None)
     serde_overrides = getattr(cls, "__serde_overrides__", {})
+
+    if issubclass(cls, Enum):
+        if attribute_list is None:
+            attribute_list = []
+        attribute_list += ["value"]
 
     # without fqn duplicate class names overwrite
     fqn = f"{cls.__module__}.{cls.__name__}"
@@ -55,7 +69,6 @@ def recursive_serde_register(
 def rs_object2proto(self: Any) -> _DynamicStructBuilder:
     msg = recursive_scheme.new_message()
     fqn = get_fully_qualified_name(self)
-
     if fqn not in TYPE_BANK:
         raise Exception(f"{fqn} not in TYPE_BANK")
 
@@ -149,8 +162,15 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
     if hasattr(class_type, "serde_constructor"):
         return getattr(class_type, "serde_constructor")(kwargs)
 
-    obj = class_type.__new__(class_type)  # type: ignore
-    for attr_name, attr_value in kwargs.items():
-        setattr(obj, attr_name, attr_value)
+    if issubclass(class_type, Enum) and "value" in kwargs:
+        obj = class_type.__new__(class_type, kwargs["value"])  # type: ignore
+    elif issubclass(class_type, BaseModel):
+        # if we skip the __new__ flow of BaseModel we get the error
+        # AttributeError: object has no attribute '__fields_set__'
+        obj = class_type(**kwargs)
+    else:
+        obj = class_type.__new__(class_type)  # type: ignore
+        for attr_name, attr_value in kwargs.items():
+            setattr(obj, attr_name, attr_value)
 
     return obj

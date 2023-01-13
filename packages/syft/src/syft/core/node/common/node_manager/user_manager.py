@@ -18,6 +18,7 @@ from nacl.signing import VerifyKey
 from pymongo import MongoClient
 
 # relative
+from ....common.serde.serialize import _serialize
 from ..exceptions import InvalidCredentialsError
 from ..exceptions import UserNotFoundError
 from ..node_manager.role_manager import NewRoleManager
@@ -366,7 +367,7 @@ class NoSQLUserManager(NoSQLDatabaseManager):
         else:
             raise Exception
 
-        attributes["__blob__"] = user.to_bytes()
+        attributes["__blob__"] = _serialize(user, to_bytes=True)
 
         self.update_one(query={"id_int": user_id}, values=attributes)
 
@@ -382,7 +383,8 @@ class NoSQLUserManager(NoSQLDatabaseManager):
             user.salt = new_salt
             user.hashed_password = new_hashed
             self.update_one(
-                query={"id_int": int(user_id)}, values={"__blob__": user.to_bytes()}
+                query={"id_int": int(user_id)},
+                values={"__blob__": _serialize(user, to_bytes=True)},
             )
         else:
             # Should it warn the user about his wrong current password input?
@@ -500,6 +502,9 @@ class NoSQLUserManager(NoSQLDatabaseManager):
             )
 
         user.budget = user.budget - epsilon_spend
-        self.update_one(query={"_id": user.id.value}, values={"__blob__": user.to_bytes()})  # type: ignore
+        self.update_one(
+            query={"id_int": int(user.id_int)},
+            values={"__blob__": _serialize(user, to_bytes=True)},
+        )  # type: ignore
 
         return True

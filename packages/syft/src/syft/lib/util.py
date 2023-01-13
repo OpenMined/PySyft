@@ -44,6 +44,8 @@ def generic_update_ast(
 
 def full_name_with_qualname(klass: type) -> str:
     """Returns the klass module name + klass qualname."""
+    if not hasattr(klass, "__module__"):
+        return f"builtins.{klass.__qualname__}"
     return f"{klass.__module__}.{klass.__qualname__}"
 
 

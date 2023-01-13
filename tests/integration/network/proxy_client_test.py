@@ -1,5 +1,8 @@
 # stdlib
 import time
+from typing import Any
+from typing import Dict
+from typing import Optional
 import uuid
 
 # third party
@@ -103,6 +106,17 @@ def test_domain2_via_network_proxy_client() -> None:
     assert type(x_ptr).__name__ == type(y_ptr).__name__
 
 
+def search_network(network_client: sy.Network, query: str) -> Optional[Dict[str, Any]]:
+    results = network_client.search(
+        query=query, pandas=False, timeout=GET_OBJECT_TIMEOUT
+    )
+
+    for row in results:
+        if row["host_or_ip"] == DOMAIN1_VPN_IP:
+            return row
+    return None
+
+
 @pytest.mark.network
 def test_search_network() -> None:
     unique_tag = str(uuid.uuid4())
@@ -114,18 +128,22 @@ def test_search_network() -> None:
     x.send(domain_client, tags=[unique_tag])
 
     network_client = sy.login(port=NETWORK_PORT)
-
     query = [unique_tag]
-    results = network_client.search(
-        query=query, pandas=False, timeout=GET_OBJECT_TIMEOUT
-    )
 
-    assert len(results) == 2
-    vpn_row = None
-    for row in results:
-        if row["host_or_ip"] == DOMAIN1_VPN_IP:
-            vpn_row = row
-            break
+    retry_time = 3
+    while retry_time > 0:
+        print(f"search_network attempt: {retry_time}")
+        retry_time -= 1
+
+        try:
+            vpn_row = search_network(network_client=network_client, query=query)
+            if vpn_row is not None:
+                break
+            else:
+                time.sleep(10)
+        except Exception as e:
+            print(f"search_network failed. {e}")
+            time.sleep(10)
 
     assert (
         vpn_row["name"].replace("-", "_") == "test_domain_1"

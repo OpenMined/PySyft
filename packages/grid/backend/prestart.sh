@@ -14,17 +14,16 @@ then
     pip install --user -e /app/syft[dev]
 fi
 
-if [ "${INSTALL_OBLV_PROXY}"="true" ]
-then
-    echo "Allowed to install Oblv Proxy"
+if [[ "${INSTALL_OBLV_PROXY}" == "true"  &&  ("${SERVICE_NAME}" == "backend"  ||  "${SERVICE_NAME}" == "celeryworker" ) ]]; then
+    echo "Allowed to install Oblv CLI"
     # Oblivious Proxy Client Installation
-    apt-get update
-    apt-get -y install wget
-    wget -O oblv-ccli-0.4.0-x86_64-unknown-linux-musl.tar.gz https://api.oblivious.ai/oblv-ccli/0.4.0/oblv-ccli-0.4.0-x86_64-unknown-linux-musl.tar.gz
     mkdir -p oblv-ccli-0.4.0-x86_64-unknown-linux-musl
-    tar -xf oblv-ccli-0.4.0-x86_64-unknown-linux-musl.tar.gz -C oblv-ccli-0.4.0-x86_64-unknown-linux-musl
+    tar -xf /app/wheels/oblv-ccli-0.4.0-x86_64-unknown-linux-musl.tar.gz -C oblv-ccli-0.4.0-x86_64-unknown-linux-musl
     chmod +x $(pwd)/oblv-ccli-0.4.0-x86_64-unknown-linux-musl/oblv
     ln -sf $(pwd)/oblv-ccli-0.4.0-x86_64-unknown-linux-musl/oblv /usr/local/bin/oblv  #-f is for force
+    echo "Installed Oblivious CLI: $(/usr/local/bin/oblv --version)"
+else
+    echo "Oblivious CLI not installed INSTALL_OBLV_PROXY:${INSTALL_OBLV_PROXY} , SERVICE_NAME:${SERVICE_NAME} "
 fi
 
 
