@@ -81,7 +81,7 @@ class OblvAPI(RequestAPI):
             "oblv_client": deployment.oblv_client,
         }
         dataset_id = (
-            dataset if type(dataset) == "str" else dataset.id_at_location.to_string()
+            dataset if isinstance(dataset, str) else dataset.id_at_location.to_string()
         )
         content.update({"dataset_id": dataset_id})
         response = self.perform_api_request(
@@ -127,7 +127,7 @@ class OblvAPI(RequestAPI):
 
     def oblv_perform_api_request_without_reply(
         self,
-        syft_msg: Optional[Type[SyftMessage]],
+        syft_msg: Type[SyftMessage],
         content: Optional[Dict[Any, Any]] = None,
         timeout: Optional[int] = None,
     ) -> Any:

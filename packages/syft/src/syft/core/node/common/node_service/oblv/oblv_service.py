@@ -446,17 +446,16 @@ def check_connection(
                 stderr=subprocess.PIPE,
             )
         while process.poll() is None:
-            d = process.stderr.readline().decode()
-            debug(d)
-            if d.__contains__("Error:  Invalid PCR Values"):
+            log_line = process.stderr.readline().decode()
+            if "Error:  Invalid PCR Values" in log_line:
                 process.kill()
                 process.wait(1)
                 raise OblvProxyConnectPCRError()
-            elif d.__contains__("Error"):
+            elif "error" in log_line.lower():
                 process.kill()
                 process.wait(1)
-                raise OblvEnclaveError(message=d)
-            elif d.__contains__("listening on"):
+                raise OblvEnclaveError(message=log_line)
+            elif "listening on" in log_line:
                 process.kill()
                 process.wait(1)
                 break
