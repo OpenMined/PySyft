@@ -8,10 +8,6 @@ from oblv import authenticate
 
 def login(apikey: Optional[str] = None):
     if apikey is None:
-        apikey = getpass("Please provide your oblv apikey to login:")
-    try:
-        return authenticate(apikey)
-    except Exception as e:
-        print("Failed to Authenticate with message : ")
-        print(e)
-        raise (e)
+        apikey = getpass("Please provide your oblv API_KEY to login:")
+
+    return authenticate(apikey)

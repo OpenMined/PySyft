@@ -29,7 +29,7 @@ SUPPORTED_INFRA = ["c5.xlarge", "m5.xlarge", "r5.xlarge", "c5.2xlarge", "m5.2xla
 def create_deployment(
     domain_clients: list,
     deployment_name: Optional[str] = None,
-    key_name: str = "",
+    key_name: Optional[str] = None,
     oblv_client: Optional[OblvClient] = None,
     infra: str = INFRA,
     region: str = REGION,
@@ -60,21 +60,17 @@ def create_deployment(
         oblv_client = login()
     if deployment_name is None:
         deployment_name = input("Kindly provide deployment name")
-    if key_name == "":
+    if key_name is None:
         key_name = input("Please provide your key name")
 
     while not SUPPORTED_INFRA.__contains__(infra):
-        infra = input(
-            "Provide infra from one of the following - {}".format(
-                ",".join(SUPPORTED_INFRA)
-            )
-        )
+        infra = input(f"Provide infra from one of the following - {SUPPORTED_INFRA}")
+
     while not SUPPORTED_REGION_LIST.__contains__(region):
         region = input(
-            "Provide region from one of the following - {}".format(
-                ",".join(SUPPORTED_REGION_LIST)
-            )
+            f"Provide region from one of the following - {SUPPORTED_REGION_LIST}"
         )
+
     try:
         user_public_key = get_oblv_public_key(key_name)
     except FileNotFoundError:
@@ -94,12 +90,19 @@ def create_deployment(
     }
     users = []
     runtime_args = []
-    for k in domain_clients:
+    for domain_client in domain_clients:
         try:
-            users.append({"user_name": k.name, "public key": k.oblv.get_key()})
+            users.append(
+                {
+                    "user_name": domain_client.name,
+                    "public key": domain_client.oblv.get_key(),
+                }
+            )
         except OblvKeyNotFoundError:
-            print("Oblv public key not found for {}".format(k.name))
-            return
+            raise OblvKeyNotFoundError(
+                f"Oblv Public Key not found for {domain_client.name}"
+            )
+
     build_args["runtime_args"] = yaml.dump({"outbound": runtime_args})
     build_args["users"]["domain"] = users
     profile = oblv_client.user_profile()
