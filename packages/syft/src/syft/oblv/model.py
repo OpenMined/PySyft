@@ -86,7 +86,7 @@ class DeploymentClient:
 
     def initiate_connection(self, connection_port: int = DOMAIN_CONNECTION_PORT):
         if LOCAL_MODE:
-            self.__conn_string = "http://127.0.0.1:" + str(connection_port)
+            self.__conn_string = f"http://127.0.0.1:{connection_port}"
             return
         check_oblv_proxy_installation_status()
         self.close_connection()  # To close any existing connections
@@ -169,17 +169,17 @@ class DeploymentClient:
                 )
             log_file_read = open(log_file_name, "r")
             while True:
-                d = log_file_read.readline()
-                if d.__contains__("Error:  Invalid PCR Values"):
+                log_line = log_file_read.readline()
+                if "Error:  Invalid PCR Values" in log_line:
                     raise Exception("PCR Validation Failed")
-                if d.__contains__("Only one usage of each socket address"):
+                if "Only one usage of each socket address" in log_line:
                     raise Exception(
                         "Another oblv proxy instance running. Either close that connection"
                         + "or change the *connection_port*"
                     )
-                elif d.lower().__contains__("error"):
-                    raise Exception(d)
-                elif d.__contains__("listening on"):
+                elif "error" in log_line.lower():
+                    raise Exception(log_line)
+                elif "listening on" in log_line:
                     break
         except Exception as e:
             print("Could not connect to Proxy")
@@ -188,12 +188,12 @@ class DeploymentClient:
             print(
                 f"Successfully connected to proxy on port {connection_port}. The logs can be found at {log_file_name}"
             )
-        self.__conn_string = "http://127.0.0.1:" + str(connection_port)
+        self.__conn_string = f"http://127.0.0.1:{connection_port}"
         self.__logs = log_file_name
         self.__process = process
         return
 
-    def get_uploaded_datasets(self):
+    def get_uploaded_datasets(self) -> Dict:
         if len(self.client) == 0:
             raise Exception(
                 "No Domain Clients added. Set the propert *client* with the list of your domain logins"
@@ -221,9 +221,7 @@ class DeploymentClient:
             return "Failed"
         elif req.status_code != 200:
             raise OblvEnclaveError(
-                "Request to publish dataset failed with status {}".format(
-                    req.status_code
-                )
+                f"Request to publish dataset failed with status {req.status_code}"
             )
         return req.json()  # This is the publish_request_id
 
@@ -249,13 +247,11 @@ class DeploymentClient:
 
         req = self.make_request_to_enclave(
             requests.post,
-            connection_string=self.__conn_string
-            + "/tensor/action?op={}".format(action),
+            connection_string=self.__conn_string + f"/tensor/action?op={action}",
             data=body,
             files={"file": file},
         )
-        # req = requests.post(self.__conn_string + "/tensor/action?op={}".format(action)
-        # , data=body, files={"file": file},headers={"x-oblv-user-name": "vinal", "x-oblv-user-role": "user"})
+
         if req.status_code == 401:
             raise OblvUnAuthorizedError()
         elif req.status_code == 400:
@@ -274,7 +270,7 @@ class DeploymentClient:
             # Status code 200
             # TODO - Remove this after oblv proxy is resolved
             data = req.json()
-            if type(data) == dict and data.get("detail") is not None:
+            if isinstance(data, dict) and data.get("detail") is not None:
                 raise OblvEnclaveError(data["detail"])
             return data
         # #return req.json()
@@ -321,8 +317,8 @@ class DeploymentClient:
             if type(data) == dict and data.get("detail") is not None:
                 raise OblvEnclaveError(data["detail"])
             # Here data is publish_request_id
-            for o in self.client:
-                o.oblv.publish_budget(
+            for domain_client in self.client:
+                domain_client.oblv.publish_budget(
                     deployment_id=self.deployment_id,
                     publish_request_id=data,
                     client=self.oblv_client,
