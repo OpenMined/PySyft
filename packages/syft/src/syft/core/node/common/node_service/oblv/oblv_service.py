@@ -283,13 +283,12 @@ def publish_dataset(
             stderr=subprocess.PIPE,
         )
     while process.poll() is None:
-        d = process.stderr.readline().decode()
-        debug(d)
-        if d.__contains__("Error:  Invalid PCR Values"):
+        log_line = process.stderr.readline().decode()
+        if "Error:  Invalid PCR Values" in log_line:
             raise OblvProxyConnectPCRError()
-        elif d.lower().__contains__("error"):
-            raise OblvEnclaveError(message=d)
-        elif d.__contains__("listening on"):
+        elif "error" in log_line.lower():
+            raise OblvEnclaveError(message=log_line)
+        elif "listening on" in log_line:
             break
 
     obj = node.store.get(UID.from_string(msg.dataset_id))
@@ -410,17 +409,16 @@ def check_connection(
                 stderr=subprocess.PIPE,
             )
         while process.poll() is None:
-            d = process.stderr.readline().decode()
-            debug(d)
-            if d.__contains__("Error:  Invalid PCR Values"):
+            log_line = process.stderr.readline().decode()
+            if "Error:  Invalid PCR Values" in log_line:
                 process.kill()
                 process.wait(1)
                 raise OblvProxyConnectPCRError()
-            elif d.__contains__("Error"):
+            elif "error" in log_line.lower():
                 process.kill()
                 process.wait(1)
-                raise OblvEnclaveError(message=d)
-            elif d.__contains__("listening on"):
+                raise OblvEnclaveError(message=log_line)
+            elif "listening on" in log_line:
                 process.kill()
                 process.wait(1)
                 break
@@ -534,13 +532,12 @@ def dataset_publish_budget(
             stderr=subprocess.PIPE,
         )
     while process.poll() is None:
-        d = process.stderr.readline().decode()
-        debug(d)
-        if d.__contains__("Error:  Invalid PCR Values"):
+        log_line = process.stderr.readline().decode()
+        if "Error:  Invalid PCR Values" in log_line:
             raise OblvProxyConnectPCRError()
-        elif d.lower().__contains__("error"):
-            raise OblvEnclaveError(message=d)
-        elif d.__contains__("listening on"):
+        elif "error" in log_line.lower():
+            raise OblvEnclaveError(message=log_line)
+        elif "listening on" in log_line:
             break
 
     current_budget = node.users.get_budget_for_user(verify_key)
@@ -661,13 +658,12 @@ def dataset_publish_budget_deduction(
             stderr=subprocess.PIPE,
         )
     while process.poll() is None:
-        d = process.stderr.readline().decode()
-        debug(d)
-        if d.__contains__("Error:  Invalid PCR Values"):
+        log_line = process.stderr.readline().decode()
+        if "Error:  Invalid PCR Values" in log_line:
             raise OblvProxyConnectPCRError()
-        elif d.lower().__contains__("error"):
-            raise OblvEnclaveError(message=d)
-        elif d.__contains__("listening on"):
+        elif "error" in log_line.lower():
+            raise OblvEnclaveError(message=log_line)
+        elif "listening on" in log_line:
             break
     approval = node.users.deduct_epsilon_for_user(
         verify_key, node.users.get_budget_for_user(verify_key), msg.budget_to_deduct
