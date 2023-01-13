@@ -101,7 +101,8 @@ def get_node_uid_env() -> Optional[str]:
 
 
 def get_env(key: str) -> Optional[str]:
-    return str(os.environ.get(key, None))
+    value = os.environ.get(key, None)
+    return str(value) if value is not None else value
 
 
 signing_key_env = get_private_key_env()
