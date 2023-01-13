@@ -27,8 +27,8 @@ And that's it! It'll start installing all the dependencies and getting things in
 If you run into any issues here, please refer to `this link <https://docs.microsoft.com/en-us/windows/wsl/troubleshooting#installation-issues>`_, which covers common WSL installation issues.
 
 .. Specifying an alternate way to install wsl along with distro from microsoft store start
-## **Alternate way**
-====================
+**Alternate way**
+=================
 
 **Install WSL from Microsoft Store**
 If the command line has you feeling confused, fear not! There's a more user-friendly approach to installing WSL on Windows. We can bypass the command line altogether and download a package of all the components from the Microsoft Store. Not only that, but this method runs WSL isolated from Windows 11 and updates will be available through the Microsoft Store, so you won't have to wait for the next version of the operating system to install the newest version.
@@ -36,28 +36,32 @@ If the command line has you feeling confused, fear not! There's a more user-frie
 To install WSL from the Microsoft Store, use these steps:
 
 
-## 1. Enable Virtual Machine Platform
+1. Enable Virtual Machine Platform
+==================================
 
- 1. Open **Start**
- 2. Search for **Turn Windows Features on or off** and click the top result to open the app 
- 3. Check the **Virtual Machine Platform**
- 4. Click the **OK** button 
- 5. Click the **Restart button**
+ - Open **Start**
+ - Search for **Turn Windows Features on or off** and click the  
+   top result to open the app 
+ - Check the **Virtual Machine Platform**
+ - Click the **OK** button 
+ - Click the **Restart button**
 
 After completing these steps, you can download the app from the Microsoft Store.
 
-## 2. Install Windows Subsystem for Linux app
+ 2. Install Windows Subsystem for Linux app
+ ==========================================
 
-1. Open the **[Windows Subsystem for Linux Store Page](https://www.microsoft.com/en-us/p/windows-subsystem-for-linux-preview/9p9tqf7mrm4r?activetab=pivot:overviewtab)**
-2. Click the **Get** button 
-3. Click the **Open** button 
-4. Click the **Get** button again
+- Open the `Windows Subsystem for Linux Store Page<https://www.microsoft.com/en-us/p/windows-subsystem-for-linux-preview/9p9tqf7mrm4r?activetab=pivot:overviewtab>`_
+- Click the **Get** button 
+- Click the **Open** button 
+- Click the **Get** button again
 
-## 3. Install Linux Distro
-1. Open **Microsoft Store** app.
-2. Search for Linux distro. For example, **[Ubuntu](https://apps.microsoft.com/store/detail/ubuntu-22041-lts/9PN20MSR04DW)**
-3. Click the **Get** button.
-4. Click the **Open** button.
+ 3. Install Linux Distro
+ =======================
+- Open **Microsoft Store** app.
+- Search for Linux distro. For example `Ubuntu https://apps.microsoft.com/store/detail/ubuntu-22041-lts/9PN20MSR04DW`_`
+- Click the **Get** button.
+- Click the **Open** button.
 
 *Congratulations! Once you complete the steps, WSL will install on Windows 11, including the support for Linux GUI apps and the Linux distribution.*
 
