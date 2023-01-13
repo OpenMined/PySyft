@@ -27,6 +27,6 @@ export NODE_UID=$NODE_UID
 export NODE_PRIVATE_KEY=$NODE_PRIVATE_KEY
 
 # initialize data
-python app/grid/db/init_db.py
+python grid/db/init_db.py
 
 exec uvicorn $RELOAD --host $HOST --port $PORT --log-level $LOG_LEVEL "$APP_MODULE"

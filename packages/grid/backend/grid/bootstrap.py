@@ -135,7 +135,7 @@ def get_credential(
     elif file_credential is not None and validation_func(file_credential):
         return file_credential
 
-    raise Exception(f"Failed to get or generate Private Key")
+    raise Exception("Failed to get or generate Private Key")
 
 
 def get_private_key() -> str:
