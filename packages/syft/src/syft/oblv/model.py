@@ -8,6 +8,7 @@ import sys
 import time
 from typing import Any
 from typing import List
+from typing import Optional
 
 # third party
 from oblv import OblvClient
@@ -22,8 +23,6 @@ from .oblv_proxy import check_oblv_proxy_installation_status
 
 class DeploymentClient:
 
-    # __attr_allowlist__ = ["deployment_id", "user_key_name", "client", "oblv_client"]
-
     deployment_id: str
     user_key_name: str
     client: List[Any] = []  # List of domain client objects
@@ -35,9 +34,9 @@ class DeploymentClient:
     def __init__(
         self,
         domain_clients: List[Any],
-        deployment_id: str = None,
-        oblv_client: OblvClient = None,
-        user_key_name: str = "",
+        deployment_id: Optional[str] = None,
+        oblv_client: Optional[OblvClient] = None,
+        user_key_name: Optional[str] = None,
     ):
         self.deployment_id = deployment_id
         self.user_key_name = user_key_name
@@ -47,12 +46,11 @@ class DeploymentClient:
         self.__process = None
         self.__logs = None
 
-    def set_conn_string(self, URL):
-        self.__conn_string = URL
+    def set_conn_string(self, url: str):
+        self.__conn_string = url
 
     def initiate_connection(self, connection_port: int = 3032):
-        if check_oblv_proxy_installation_status() is None:
-            return
+        check_oblv_proxy_installation_status()
         self.close_connection()  # To close any existing connections
         public_file_name = os.path.join(
             os.path.expanduser("~"),
@@ -150,9 +148,7 @@ class DeploymentClient:
             raise e
         else:
             print(
-                "Successfully connected to proxy on port {}. The logs can be found at {}".format(
-                    connection_port, log_file_name
-                )
+                f"Successfully connected to proxy on port {connection_port}. The logs can be found at {log_file_name}"
             )
         self.__conn_string = "http://127.0.0.1:" + str(connection_port)
         self.__logs = log_file_name
