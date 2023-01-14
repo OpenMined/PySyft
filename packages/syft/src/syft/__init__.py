@@ -87,7 +87,7 @@ from .grid.client.client import register  # noqa: F401
 from .lib import lib_ast  # noqa: F401
 from .lib import load  # noqa: F401
 from .lib import load_lib  # noqa: F401
-from .oblv import OblvTensorWrapper  # noqa: F401
+from .oblv import OblvEnclavePointer  # noqa: F401
 from .oblv import check_oblv_proxy_installation_status  # noqa: F401
 from .oblv import create_deployment  # noqa: F401
 from .oblv import create_oblv_key_pair  # noqa: F401

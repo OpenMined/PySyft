@@ -7,7 +7,7 @@ from typing import Union
 
 # relative
 from .....oblv.model import DeploymentClient
-from .....oblv.oblv_tensor_wrapper import OblvTensorWrapper
+from .....oblv.oblv_enclave_pointer import OblvEnclavePointer
 from ....common.message import SyftMessage  # type: ignore
 from ....tensor.autodp.phi_tensor import TensorWrappedPhiTensorPointer
 from ...abstract.node import AbstractNodeClient
@@ -91,7 +91,7 @@ class OblvAPI(RequestAPI):
             raise response.exception_type
         else:
             dataset_id = getattr(response, "dataset_id")
-            return OblvTensorWrapper(id=dataset_id, deployment_client=deployment)
+            return OblvEnclavePointer(id=dataset_id, deployment_client=deployment)
 
     def publish_budget(
         self, deployment_id, publish_request_id, client, **kwargs: Any
