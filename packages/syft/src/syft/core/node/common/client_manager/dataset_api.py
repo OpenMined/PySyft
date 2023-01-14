@@ -131,7 +131,7 @@ class DatasetRequestAPI(RequestAPI):
                 "Please enter y/n to proceed: "
             )
             while pref != "y" and pref != "n":
-                pref = input(f"Invalid input '{pref}', please specify 'y' or 'n'.")
+                pref = input(f"Invalid input {pref!r}, please specify 'y' or 'n'.")
             if pref == "n":
                 print("Dataset deletion is cancelled.")
                 return
@@ -150,7 +150,7 @@ class DatasetRequestAPI(RequestAPI):
                 "Please enter y/n to proceed: "
             )
             while pref != "y" and pref != "n":
-                pref = input(f"Invalid input '{pref}', please specify 'y' or 'n'.")
+                pref = input(f"Invalid input {pref!r}, please specify 'y' or 'n'.")
             if pref == "n":
                 sys.stdout.write("Asset deletion is cancelled.")
                 return
