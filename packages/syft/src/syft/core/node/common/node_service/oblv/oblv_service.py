@@ -41,12 +41,12 @@ from .oblv_messages import DeductBudgetMessage
 from .oblv_messages import GetPublicKeyMessage
 from .oblv_messages import GetPublicKeyResponse
 from .oblv_messages import PublishApprovalMessage
-from .oblv_messages import PublishDatasetMessage
-from .oblv_messages import PublishDatasetResponse
+from .oblv_messages import TransferDatasetMessage
+from .oblv_messages import TransferDatasetResponse
 
 USER_INPUT_MESSAGES = Union[
     GetPublicKeyMessage,
-    PublishDatasetMessage,
+    TransferDatasetMessage,
     CheckEnclaveConnectionMessage,
     CreateKeyPairMessage,
 ]
@@ -275,13 +275,12 @@ def get_public_key_msg(
     return GetPublicKeyResponse(address=msg.reply_to, response=public_key_str)
 
 
-def publish_dataset(
-    msg: PublishDatasetMessage,
+def transfer_dataset(
+    msg: TransferDatasetMessage,
     node: DomainInterface,
     verify_key: VerifyKey,
-) -> SuccessResponseMessage:
-
-    """Publish dataset to enclave
+) -> TransferDatasetResponse:
+    """Transfer dataset to enclave
 
     Args:
         msg (PublishDatasetMessage): stores msg address.
@@ -289,12 +288,11 @@ def publish_dataset(
         verify_key (VerifyKey): public digital signature/key of the user.
 
     Raises:
-        AuthorizationError: If user does not have permissions to create new role.
         OblvKeyNotFoundError: If no key found.
         OblvProxyConnectPCRError: If unauthorized deployment code used
 
     Returns:
-        SuccessResponseMessage: Success message on key pair generation.
+        TransferDatasetResponse: Response Message after transfer of dataset.
     """
     obj = node.store.get(UID.from_string(msg.dataset_id))
     obj_bytes = serialize(obj.data, to_bytes=True)
@@ -320,7 +318,7 @@ def publish_dataset(
         )
     debug("API Called. Now closing")
 
-    return PublishDatasetResponse(address=msg.reply_to, dataset_id=msg.dataset_id)
+    return TransferDatasetResponse(address=msg.reply_to, dataset_id=msg.dataset_id)
 
 
 def check_connection(
@@ -560,7 +558,7 @@ class OblvRequestUserService(ImmediateNodeServiceWithReply):
 
     msg_handler_map: Dict[type, Callable] = {
         GetPublicKeyMessage: get_public_key_msg,
-        PublishDatasetMessage: publish_dataset,
+        TransferDatasetMessage: transfer_dataset,
         CheckEnclaveConnectionMessage: check_connection,
     }
 
@@ -579,7 +577,7 @@ class OblvRequestUserService(ImmediateNodeServiceWithReply):
     def message_handler_types() -> List[Type[ImmediateSyftMessageWithReply]]:
         return [
             GetPublicKeyMessage,
-            PublishDatasetMessage,
+            TransferDatasetMessage,
             CheckEnclaveConnectionMessage,
         ]
 
