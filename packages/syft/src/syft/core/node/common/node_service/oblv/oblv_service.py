@@ -125,7 +125,7 @@ def create_key_pair_msg(
 
     return SuccessResponseMessage(
         address=msg.reply_to,
-        resp_msg=f"Successfully created new public/private key pair on the domain node: {node.name}",
+        resp_msg=f"Successfully created a new public/private key pair on the domain node: {node.name}",
     )
 
 

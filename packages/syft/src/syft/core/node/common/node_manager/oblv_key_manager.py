@@ -11,7 +11,7 @@ class NoSQLOblvKeyManager(NoSQLDatabaseManager):
 
     def add_keys(self, public_key: bytes, private_key: bytes) -> None:
 
-        if len(self) > 0:
+        if not len(self):
             key_obj = NoSQLOblvKeys(
                 public_key=public_key,
                 private_key=private_key,
