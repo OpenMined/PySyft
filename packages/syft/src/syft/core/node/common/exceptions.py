@@ -214,7 +214,7 @@ class InvalidNodeCredentials(Exception):
 class OblvKeyNotFoundError(Exception):
     def __init__(self, message: str = "") -> None:
         if not message:
-            message = "Oblivious public key not found. Request admin to create one."
+            message = "Oblivious public key not found. Kindly request admin to create a new one"
         super().__init__(message)
 
 
@@ -248,4 +248,11 @@ class OblvUnAuthorizedError(Exception):
     def __init__(self, message: str = "") -> None:
         if not message:
             message = "User unauthorized to perform this action in enclave"
+        super().__init__(message)
+
+
+class OblvKeyAlreadyExistsError(Exception):
+    def __init__(self, message: str = "") -> None:
+        if not message:
+            message = "Currently each domain node could have only one oblv public/private key pair"
         super().__init__(message)

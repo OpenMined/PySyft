@@ -194,9 +194,8 @@ def create_key_pair_msg(
     node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
-
     """
-    Creates a new role in the database.
+    Creates a public/private key to be used for Secure Enclave Authentication.
 
     Args:
         msg (CreateKeyPairMessage): stores msg address.
@@ -209,8 +208,7 @@ def create_key_pair_msg(
     Returns:
         SuccessResponseMessage: Success message on key pair generation.
     """
-
-    # Check if user has permissions to create new roles
+    # Check if user has permissions to create new public/private key pair
     _allowed = node.users.can_manage_infrastructure(verify_key=verify_key)
     file_path = os.getenv("OBLV_KEY_PATH", "/app/content")
     file_name = os.getenv("OBLV_KEY_NAME", "oblv_key")
@@ -233,14 +231,14 @@ def create_key_pair_msg(
             )
         debug(result.stdout.decode("utf-8"))
         f_private = open(file_path + "/" + file_name + "_private.der", "rb")
-        private = f_private.read()
+        private_key = f_private.read()
         f_private.close()
         f_public = open(file_path + "/" + file_name + "_public.der", "rb")
-        public = f_public.read()
+        public_key = f_public.read()
         f_public.close()
         debug(type(node))
         node.oblv_keys.remove()
-        node.oblv_keys.add_keys(public, private)
+        node.oblv_keys.add_keys(public_key=public_key, private_key=private_key)
         debug(node.oblv_keys.get())
         # return result.stdout.decode('utf-8')
     else:
@@ -248,7 +246,7 @@ def create_key_pair_msg(
 
     return SuccessResponseMessage(
         address=msg.reply_to,
-        resp_msg="Success",
+        resp_msg=f"Successfully created new public/private key pair on the domain node: {node.name}",
     )
 
 
@@ -256,9 +254,9 @@ def get_public_key_msg(
     msg: GetPublicKeyMessage,
     node: DomainInterface,
     verify_key: VerifyKey,
-) -> SuccessResponseMessage:
+) -> GetPublicKeyResponse:
 
-    """Creates a new role in the database.
+    """Retrieves the oblv public_key from the database.
 
     Args:
         msg (CreateKeyPairMessage): stores msg address.
@@ -266,42 +264,15 @@ def get_public_key_msg(
         verify_key (VerifyKey): public digital signature/key of the user.
 
     Raises:
-        AuthorizationError: If user does not have permissions to create new role.
         OblvKeyNotFoundError: If no key found.
 
     Returns:
-        SuccessResponseMessage: Success message on key pair generation.
+        GetPublicKeyResponse: Public Key response message.
     """
-    file_name = (
-        os.getenv("OBLV_KEY_PATH", "/app/content")
-        + "/"
-        + os.getenv("OBLV_KEY_NAME", "oblv_key")
-        + "_public.der"
-    )
-    debug("File name : " + file_name)
-    try:
-        with open(file_name, "rb") as f:
-            data = f.read()
-        data = encodebytes(data).decode("UTF-8").replace("\n", "")
-    except FileNotFoundError:
-        file_path = os.getenv("OBLV_KEY_PATH", "/app/content")
-        file_name = os.getenv("OBLV_KEY_NAME", "oblv_key")
-        keys = node.oblv_keys.get()
-        # Creating directory if not exist
-        os.makedirs(
-            os.path.dirname(file_path + "/" + file_name + "_private.der"), exist_ok=True
-        )
-        f_private = open(file_path + "/" + file_name + "_private.der", "w+b")
-        f_private.write(keys.private_key)
-        f_private.close()
-        f_public = open(file_path + "/" + file_name + "_public.der", "w+b")
-        f_public.write(keys.public_key)
-        f_public.close()
-        data = encodebytes(keys.public_key).decode("UTF-8").replace("\n", "")
-    except Exception as e:
-        print(e)
-        raise Exception(e)
-    return GetPublicKeyResponse(address=msg.reply_to, response=data)
+    keys = node.oblv_keys.get()
+    public_key_str = encodebytes(keys.public_key).decode("UTF-8").replace("\n", "")
+
+    return GetPublicKeyResponse(address=msg.reply_to, response=public_key_str)
 
 
 def publish_dataset(
