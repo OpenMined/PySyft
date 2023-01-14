@@ -51,6 +51,7 @@ class ResponseObjectEnum(str, Enum):
     USER = "user"
     WORKER = "worker"
     DATA = "data"
+    OBLV = "oblv"
 
 
 class PointerStatus(str, Enum):

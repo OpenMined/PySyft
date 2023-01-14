@@ -40,6 +40,7 @@ from .common.node_manager.association_request_manager import (
 )
 from .common.node_manager.dataset_manager import NoSQLDatasetManager
 from .common.node_manager.node_manager import NoSQLNodeManager
+from .common.node_manager.oblv_key_manager import NoSQLOblvKeyManager
 from .common.node_manager.redis_store import RedisStore
 from .common.node_manager.request_manager import NoSQLRequestManager
 from .common.node_manager.role_manager import NewRoleManager
@@ -64,6 +65,9 @@ from .common.node_service.object_request.object_request_service import (
     ObjectRequestServiceWithoutReply,
 )
 from .common.node_service.object_request.object_request_service import RequestService
+from .common.node_service.oblv.oblv_service import OblvBackgroundService
+from .common.node_service.oblv.oblv_service import OblvRequestAdminService
+from .common.node_service.oblv.oblv_service import OblvRequestUserService
 from .common.node_service.ping.ping_service import PingService
 from .common.node_service.publish.publish_service import PublishScalarsService
 from .common.node_service.request_answer.request_answer_messages import RequestStatus
@@ -145,6 +149,7 @@ class Domain(Node):
         self.datasets = NoSQLDatasetManager(self.nosql_db_engine, self.db_name)
         self.node = NoSQLNodeManager(self.nosql_db_engine, self.db_name)
         self.ledger_store = ledger_store_type(settings=settings)
+        self.oblv_keys = NoSQLOblvKeyManager(self.nosql_db_engine, self.db_name)
 
         # self.immediate_services_without_reply.append(RequestReceiverService)
         # self.immediate_services_without_reply.append(AcceptOrDenyRequestService)
@@ -168,8 +173,10 @@ class Domain(Node):
         self.immediate_services_with_reply.append(DatasetManagerService)
         self.immediate_services_with_reply.append(RequestService)
         self.immediate_services_with_reply.append(UserLoginService)
-
+        self.immediate_services_with_reply.append(OblvRequestAdminService)
+        self.immediate_services_with_reply.append(OblvRequestUserService)
         self.immediate_services_without_reply.append(ObjectRequestServiceWithoutReply)
+        self.immediate_services_without_reply.append(OblvBackgroundService)
         self.immediate_services_without_reply.append(
             AssociationRequestWithoutReplyService
         )
