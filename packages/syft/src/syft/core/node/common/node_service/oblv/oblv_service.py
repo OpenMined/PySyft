@@ -5,7 +5,6 @@ This file defines all the functions/classes to perform oblv actions, for a given
 # stdlib
 from base64 import encodebytes
 import os
-from os import path
 import subprocess  # nosec
 from typing import Callable
 from typing import Dict
@@ -60,13 +59,9 @@ USER_OUTPUT_MESSAGES = Union[SuccessResponseMessage, GetPublicKeyResponse]
 def connect_to_enclave(
     node: AbstractNode, oblv_client: OblvClient, deployment_id: str
 ) -> subprocess.Popen:
-    if not path.exists(
-        os.getenv("OBLV_KEY_PATH", "/app/content")
-        + "/"
-        + os.getenv("OBLV_KEY_NAME", "oblv_key")
-        + "_public.der"
-    ):
-        create_keys_from_db(node)
+
+    # Always create key file each time, which ensures consistency when there is key change in database
+    create_keys_from_db(node)
     cli = oblv_client
     public_file_name = (
         os.getenv("OBLV_KEY_PATH", "/app/content")
@@ -184,7 +179,7 @@ def make_request_to_enclave(
         )
 
 
-def create_keys_from_db(node):
+def create_keys_from_db(node: AbstractNode):
     file_path = os.getenv("OBLV_KEY_PATH", "/app/content")
     file_name = os.getenv("OBLV_KEY_NAME", "oblv_key")
     keys = node.oblv_keys.get()
