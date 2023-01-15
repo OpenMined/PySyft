@@ -143,7 +143,6 @@ def make_request_to_enclave(
             )
         while process.poll() is None:
             d = process.stderr.readline().decode()
-            debug(d)
             if d.__contains__("Error:  Invalid PCR Values"):
                 raise OblvProxyConnectPCRError()
             elif d.lower().__contains__("error"):
@@ -225,22 +224,19 @@ def create_key_pair_msg(
             capture_output=True,
         )
         if result.stderr:
-            debug(result.stderr.decode("utf-8"))
             raise subprocess.CalledProcessError(  # nosec
                 returncode=result.returncode, cmd=result.args, stderr=result.stderr
             )
-        debug(result.stdout.decode("utf-8"))
+
         f_private = open(file_path + "/" + file_name + "_private.der", "rb")
         private_key = f_private.read()
         f_private.close()
         f_public = open(file_path + "/" + file_name + "_public.der", "rb")
         public_key = f_public.read()
         f_public.close()
-        debug(type(node))
+
         node.oblv_keys.remove()
         node.oblv_keys.add_keys(public_key=public_key, private_key=private_key)
-        debug(node.oblv_keys.get())
-        # return result.stdout.decode('utf-8')
     else:
         raise AuthorizationError("You're not allowed to create a new key pair!")
 
@@ -316,7 +312,6 @@ def transfer_dataset(
         raise OblvEnclaveError(
             "Request to publish dataset failed with status {}".format(req.status_code)
         )
-    debug("API Called. Now closing")
 
     return TransferDatasetResponse(address=msg.reply_to, dataset_id=msg.dataset_id)
 
@@ -341,7 +336,6 @@ def check_connection(
         SuccessResponseMessage: Success message on key pair generation.
     """
     cli = msg.oblv_client
-    debug("URL = " + cli.deployment_info(msg.deployment_id).instance.service_url)
     public_file_name = (
         os.getenv("OBLV_KEY_PATH", "/app/content")
         + "/"
@@ -425,8 +419,6 @@ def check_connection(
             process.wait(1)
             break
 
-    debug("Found listening. Now ending the process")
-
     # To Do - Timeout, and process not found
 
     return SuccessResponseMessage(
@@ -467,7 +459,6 @@ def dataset_publish_budget(
         json=data_obj,
     )
 
-    debug(req.text)
     if req.status_code == 401:
         raise OblvEnclaveUnAuthorizedError()
     elif req.status_code == 400:

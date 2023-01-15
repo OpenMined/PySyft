@@ -182,7 +182,6 @@ class DeploymentClient:
                 elif "listening on" in log_line:
                     break
         except Exception as e:
-            print("Could not connect to Proxy")
             raise e
         else:
             print(
