@@ -51,7 +51,7 @@ After completing these steps, you can download the app from the Microsoft Store.
  2. Install Windows Subsystem for Linux app
  ==========================================
 
-- Open the `Windows Subsystem for Linux Store Page<https://www.microsoft.com/en-us/p/windows-subsystem-for-linux-preview/9p9tqf7mrm4r?activetab=pivot:overviewtab>`_
+- Open the `Windows Subsystem for Linux Store Page <https://www.microsoft.com/en-us/p/windows-subsystem-for-linux-preview/9p9tqf7mrm4r?activetab=pivot:overviewtab>`_
 - Click the **Get** button 
 - Click the **Open** button 
 - Click the **Get** button again
@@ -59,7 +59,7 @@ After completing these steps, you can download the app from the Microsoft Store.
  3. Install Linux Distro
  =======================
 - Open **Microsoft Store** app.
-- Search for Linux distro. For example `Ubuntu https://apps.microsoft.com/store/detail/ubuntu-22041-lts/9PN20MSR04DW`_`
+- Search for Linux distro. For example `Ubuntu <https://apps.microsoft.com/store/detail/ubuntu-22041-lts/9PN20MSR04DW>`_`
 - Click the **Get** button.
 - Click the **Open** button.
 
