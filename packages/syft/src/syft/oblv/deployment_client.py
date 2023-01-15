@@ -197,7 +197,7 @@ class DeploymentClient:
         return
 
     def check_connection_string(self) -> None:
-        if self.__conn_string is None or self.__conn_string == "":
+        if not self.__conn_string:
             raise Exception(
                 "Either proxy not running or not initiated using syft."
                 + " Run the method initiate_connection to initiate the proxy connection"
