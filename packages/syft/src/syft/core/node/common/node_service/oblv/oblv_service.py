@@ -91,7 +91,7 @@ def make_request_to_enclave(
                 "User cannot connect to this deployment, as it is no longer available."
             )
         if depl.is_dev_env:
-            process = subprocess.Popen(
+            process = subprocess.Popen(  # nosec
                 [
                     "/usr/local/bin/oblv",
                     "connect",
@@ -117,7 +117,7 @@ def make_request_to_enclave(
                 stderr=subprocess.PIPE,
             )
         else:
-            process = subprocess.Popen(
+            process = subprocess.Popen(  # nosec
                 [
                     "/usr/local/bin/oblv",
                     "connect",
