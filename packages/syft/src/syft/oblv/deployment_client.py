@@ -32,7 +32,7 @@ class DeploymentClient:
 
     deployment_id: str
     user_key_name: str
-    client: List[Any] = []  # List of domain client objects
+    domain_clients: List[Any] = []  # List of domain client objects
     oblv_client: OblvClient = None
     __conn_string: str
     __logs: Any
@@ -45,10 +45,14 @@ class DeploymentClient:
         oblv_client: Optional[OblvClient] = None,
         user_key_name: Optional[str] = None,
     ):
+        if not domain_clients:
+            raise Exception(
+                "domain_clients should be populated with valid domain nodes"
+            )
         self.deployment_id = deployment_id
         self.user_key_name = user_key_name
         self.oblv_client = oblv_client
-        self.client = domain_clients
+        self.domain_clients = domain_clients
         self.__conn_string = ""
         self.__process = None
         self.__logs = None
@@ -192,24 +196,14 @@ class DeploymentClient:
         self.__process = process
         return
 
-    def get_uploaded_datasets(self) -> Dict:
-        if len(self.client) == 0:
-            raise Exception(
-                "No Domain Clients added. Set the propert *client* with the list of your domain logins"
-            )
-        if self.__conn_string is None:
-            raise Exception(
-                "proxy not running. Use the method connect_oblv_proxy to start the proxy."
-            )
-        elif self.__conn_string == "":
+    def check_connection_string(self) -> None:
+        if self.__conn_string is None or self.__conn_string == "":
             raise Exception(
                 "Either proxy not running or not initiated using syft."
                 + " Run the method initiate_connection to initiate the proxy connection"
             )
 
-        req = self.make_request_to_enclave(
-            requests.get, connection_string=self.__conn_string + "/tensor/dataset/list"
-        )
+    def sanity_check_oblv_response(self, req: requests.Response):
         if req.status_code == 401:
             raise OblvUnAuthorizedError()
         elif req.status_code == 400:
@@ -220,20 +214,20 @@ class DeploymentClient:
             return "Failed"
         elif req.status_code != 200:
             raise OblvEnclaveError(
-                f"Request to publish dataset failed with status {req.status_code}"
+                f"Failed to perform the operation  with status {req.status_code}"
             )
+
+    def get_uploaded_datasets(self) -> Dict:
+        self.check_connection_string()
+
+        req = self.make_request_to_enclave(
+            requests.get, connection_string=self.__conn_string + "/tensor/dataset/list"
+        )
+        self.sanity_check_oblv_response(req)
         return req.json()  # This is the publish_request_id
 
     def publish_action(self, action: str, arguments, *args, **kwargs):
-        if self.__conn_string is None:
-            raise Exception(
-                "proxy not running. Use the method connect_oblv_proxy to start the proxy."
-            )
-        elif self.__conn_string == "":
-            raise Exception(
-                "Either proxy not running or not initiated using syft. Run the method initiate_connection"
-                + "to initiate the proxy connection"
-            )
+        self.check_connection_string()
         file = None
         if len(arguments) == 2 and arguments[1]["type"] == "tensor":
             file = arguments[1]["value"]
@@ -251,89 +245,42 @@ class DeploymentClient:
             files={"file": file},
         )
 
-        if req.status_code == 401:
-            raise OblvUnAuthorizedError()
-        elif req.status_code == 400:
-            raise OblvEnclaveError(req.json()["detail"])
-        elif req.status_code == 422:
-            print(req.text)
-            # ToDo - Update here
-            return "Failed"
-        elif req.status_code != 200:
-            raise OblvEnclaveError(
-                "Request to publish dataset failed with status {}".format(
-                    req.status_code
-                )
-            )
-        else:
-            # Status code 200
-            # TODO - Remove this after oblv proxy is resolved
-            data = req.json()
-            if isinstance(data, dict) and data.get("detail") is not None:
-                raise OblvEnclaveError(data["detail"])
-            return data
-        # #return req.json()
+        self.sanity_check_oblv_response(req)
+
+        # Status code 200
+        # TODO - Remove this after oblv proxy is resolved
+        data = req.json()
+        if isinstance(data, dict) and data.get("detail") is not None:
+            raise OblvEnclaveError(data["detail"])
+        return data
 
     def request_publish(self, dataset_id, sigma=0.5):
-        if len(self.client) == 0:
-            raise Exception(
-                "No Domain Clients added. Set the propert *client* with the list of your domain logins"
-            )
-        if self.__conn_string is None:
-            raise Exception(
-                "proxy not running. Use the method connect_oblv_proxy to start the proxy."
-            )
-        elif self.__conn_string == "":
-            raise Exception(
-                "Either proxy not running or not initiated using syft. Run the method initiate_connection"
-                + "to initiate the proxy connection"
-            )
+        self.check_connection_string()
 
         req = self.make_request_to_enclave(
             requests.post,
             connection_string=self.__conn_string + "/tensor/publish/request",
             json={"dataset_id": dataset_id, "sigma": sigma},
         )
-        if req.status_code == 401:
-            raise OblvUnAuthorizedError()
-        elif req.status_code == 400:
-            raise OblvEnclaveError(req.json()["detail"])
-        elif req.status_code == 422:
-            print(req.text)
-            # ToDo - Update here
-            return "Failed"
-        elif req.status_code != 200:
-            raise OblvEnclaveError(
-                "Request to publish dataset failed with status {}".format(
-                    req.status_code
-                )
-            )
-        else:
-            # Status code 200
-            # TODO - Remove this after oblv proxy is resolved
+        self.sanity_check_oblv_response(req)
 
-            data = req.json()
-            if type(data) == dict and data.get("detail") is not None:
-                raise OblvEnclaveError(data["detail"])
-            # Here data is publish_request_id
-            for domain_client in self.client:
-                domain_client.oblv.publish_budget(
-                    deployment_id=self.deployment_id,
-                    publish_request_id=data,
-                    client=self.oblv_client,
-                )
-            return data
+        # Status code 200
+        # TODO - Remove this after oblv proxy is resolved
+
+        data = req.json()
+        if type(data) == dict and data.get("detail") is not None:
+            raise OblvEnclaveError(data["detail"])
+        # Here data is publish_request_id
+        for domain_client in self.domain_clients:
+            domain_client.oblv.publish_budget(
+                deployment_id=self.deployment_id,
+                publish_request_id=data,
+                client=self.oblv_client,
+            )
+        return data
 
     def check_publish_request_status(self, publish_request_id):
-        if self.__conn_string is None:
-            raise Exception(
-                "proxy not running. Use the method connect_oblv_proxy to start the proxy."
-            )
-        elif self.__conn_string == "":
-            raise Exception(
-                "Either proxy not running or not initiated using syft. Run the method initiate_connection"
-                + "to initiate the proxy connection"
-            )
+        self.check_connection_string()
 
         req = self.make_request_to_enclave(
             requests.get,
@@ -342,48 +289,27 @@ class DeploymentClient:
             + publish_request_id,
         )
 
-        if req.status_code == 401:
-            raise OblvUnAuthorizedError()
-        elif req.status_code == 400:
-            raise OblvEnclaveError(req.json()["detail"])
-        elif req.status_code == 422:
-            print(req.text)
-            # ToDo - Update here
-            return "Failed"
-        elif req.status_code != 200:
-            raise OblvEnclaveError(
-                "Request to publish dataset failed with status {}".format(
-                    req.status_code
+        self.sanity_check_oblv_response(req)
+
+        result = req.json()
+        if isinstance(result, str):
+            print("Not yet Ready")
+        elif not isinstance(result, dict):
+            for domain_client in self.domain_clients:
+                domain_client.oblv.publish_request_budget_deduction(
+                    deployment_id=self.deployment_id,
+                    publish_request_id=publish_request_id,
+                    client=self.oblv_client,
+                    budget_to_deduct=result,
                 )
-            )
+            print("Result is ready")  # This is the publish_request_id
         else:
-            result = req.json()
-            if type(result) == str:
-                print("Not yet Ready")
-            elif type(result) != dict:
-                for o in self.client:
-                    o.oblv.publish_request_budget_deduction(
-                        deployment_id=self.deployment_id,
-                        publish_request_id=publish_request_id,
-                        client=self.oblv_client,
-                        budget_to_deduct=result,
-                    )
-                print("Result is ready")  # This is the publish_request_id
-            else:
-                # TODO - Remove this after oblv proxy is resolved
-                if result.get("detail") is not None:
-                    raise OblvEnclaveError(result["detail"])
+            # TODO - Remove this after oblv proxy is resolved
+            if result.get("detail") is not None:
+                raise OblvEnclaveError(result["detail"])
 
     def fetch_result(self, publish_request_id):
-        if self.__conn_string is None:
-            raise Exception(
-                "proxy not running. Use the method connect_oblv_proxy to start the proxy."
-            )
-        elif self.__conn_string == "":
-            raise Exception(
-                "Either proxy not running or not initiated using syft. Run the method initiate_connection"
-                + "to initiate the proxy connection"
-            )
+        self.check_connection_string()
 
         req = self.make_request_to_enclave(
             requests.get,
@@ -391,20 +317,7 @@ class DeploymentClient:
             + "/tensor/publish/result?request_id="
             + publish_request_id,
         )
-        if req.status_code == 401:
-            raise OblvUnAuthorizedError()
-        elif req.status_code == 400:
-            raise OblvEnclaveError(req.json()["detail"])
-        elif req.status_code == 422:
-            print(req.text)
-            # ToDo - Update here
-            return "Failed"
-        elif req.status_code != 200:
-            raise OblvEnclaveError(
-                "Request to publish dataset failed with status {}".format(
-                    req.status_code
-                )
-            )
+        self.sanity_check_oblv_response(req)
         return req.json()
 
     def close_connection(self):
@@ -422,7 +335,7 @@ class DeploymentClient:
         return False
 
     def fetch_current_proxy_logs(self, follow=False, tail=False):
-        """_summary_
+        """Returns the logs of the running enclave instance
 
         Args:
             follow (bool, optional): To follow the logs as they grow. Defaults to False.
