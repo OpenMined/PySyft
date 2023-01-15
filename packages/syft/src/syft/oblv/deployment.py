@@ -17,7 +17,7 @@ from .constants import REPO_NAME
 from .constants import REPO_OWNER
 from .constants import VCS
 from .constants import VISIBILITY
-from .model import DeploymentClient
+from .deployment_client import DeploymentClient
 from .oblv_proxy import create_oblv_key_pair
 from .oblv_proxy import get_oblv_public_key
 

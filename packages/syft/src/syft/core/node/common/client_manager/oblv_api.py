@@ -7,7 +7,7 @@ from typing import Union
 
 # relative
 from .....core.pointer.pointer import Pointer
-from .....oblv.model import DeploymentClient
+from .....oblv.deployment_client import DeploymentClient
 from .....oblv.oblv_enclave_pointer import OblvEnclavePointer
 from ....common.message import SyftMessage  # type: ignore
 from ...abstract.node import AbstractNodeClient
