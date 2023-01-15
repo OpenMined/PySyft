@@ -256,3 +256,12 @@ class OblvKeyAlreadyExistsError(Exception):
         if not message:
             message = "Currently each domain node could have only one oblv public/private key pair"
         super().__init__(message)
+
+
+class OblvLocalEnclaveError(Exception):
+    def __init__(self, message: str = "") -> None:
+        if not message:
+            message = (
+                "Failed to connect to locally deployed FastAPI based enclave services."
+            )
+        super().__init__(message)

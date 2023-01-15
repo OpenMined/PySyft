@@ -16,6 +16,7 @@ from typing import Union
 
 # third party
 from nacl.signing import VerifyKey
+from oblv.oblv_client import OblvClient
 import requests
 
 # relative
@@ -26,10 +27,12 @@ from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.serialize import _serialize as serialize
 from .....common.uid import UID
+from ....abstract.node import AbstractNode
 from ....domain_interface import DomainInterface
 from ...exceptions import AuthorizationError
 from ...exceptions import OblvEnclaveError
 from ...exceptions import OblvEnclaveUnAuthorizedError
+from ...exceptions import OblvLocalEnclaveError
 from ...exceptions import OblvProxyConnectPCRError
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
@@ -54,6 +57,97 @@ USER_INPUT_MESSAGES = Union[
 USER_OUTPUT_MESSAGES = Union[SuccessResponseMessage, GetPublicKeyResponse]
 
 
+def connect_to_enclave(
+    node: AbstractNode, oblv_client: OblvClient, deployment_id: str
+) -> subprocess.Popen:
+    if not path.exists(
+        os.getenv("OBLV_KEY_PATH", "/app/content")
+        + "/"
+        + os.getenv("OBLV_KEY_NAME", "oblv_key")
+        + "_public.der"
+    ):
+        create_keys_from_db(node)
+    cli = oblv_client
+    public_file_name = (
+        os.getenv("OBLV_KEY_PATH", "/app/content")
+        + "/"
+        + os.getenv("OBLV_KEY_NAME", "oblv_key")
+        + "_public.der"
+    )
+    private_file_name = (
+        os.getenv("OBLV_KEY_PATH", "/app/content")
+        + "/"
+        + os.getenv("OBLV_KEY_NAME", "oblv_key")
+        + "_private.der"
+    )
+    depl = cli.deployment_info(deployment_id)
+    if depl.is_deleted:
+        raise OblvEnclaveError(
+            "User cannot connect to this deployment, as it is no longer available."
+        )
+    if depl.is_dev_env:
+        process = subprocess.Popen(  # nosec
+            [
+                "/usr/local/bin/oblv",
+                "connect",
+                "--private-key",
+                private_file_name,
+                "--public-key",
+                public_file_name,
+                "--url",
+                depl.instance.service_url,
+                "--pcr0",
+                depl.pcr_codes[0],
+                "--pcr1",
+                depl.pcr_codes[1],
+                "--pcr2",
+                depl.pcr_codes[2],
+                "--port",
+                "443",
+                "--lport",
+                DOMAIN_CONNECTION_PORT,
+                "--disable-pcr-check",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+    else:
+        process = subprocess.Popen(  # nosec
+            [
+                "/usr/local/bin/oblv",
+                "connect",
+                "--private-key",
+                private_file_name,
+                "--public-key",
+                public_file_name,
+                "--url",
+                depl.instance.service_url,
+                "--pcr0",
+                depl.pcr_codes[0],
+                "--pcr1",
+                depl.pcr_codes[1],
+                "--pcr2",
+                depl.pcr_codes[2],
+                "--port",
+                "443",
+                "--lport",
+                DOMAIN_CONNECTION_PORT,
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+    while process.poll() is None:
+        log_line = process.stderr.readline().decode()
+        if log_line.__contains__("Error:  Invalid PCR Values"):
+            raise OblvProxyConnectPCRError()
+        elif log_line.lower().__contains__("error"):
+            raise OblvEnclaveError(message=log_line)
+        elif log_line.__contains__("listening on"):
+            break
+
+    return process
+
+
 def make_request_to_enclave(
     node,
     msg,
@@ -65,90 +159,9 @@ def make_request_to_enclave(
     json: Optional[Dict] = None,
 ):
     if not LOCAL_MODE:
-        if not path.exists(
-            os.getenv("OBLV_KEY_PATH", "/app/content")
-            + "/"
-            + os.getenv("OBLV_KEY_NAME", "oblv_key")
-            + "_public.der"
-        ):
-            create_keys_from_db(node)
-        cli = msg.oblv_client
-        public_file_name = (
-            os.getenv("OBLV_KEY_PATH", "/app/content")
-            + "/"
-            + os.getenv("OBLV_KEY_NAME", "oblv_key")
-            + "_public.der"
+        process = connect_to_enclave(
+            node=node, oblv_client=msg.oblv_client, deployment_id=msg.deployment_id
         )
-        private_file_name = (
-            os.getenv("OBLV_KEY_PATH", "/app/content")
-            + "/"
-            + os.getenv("OBLV_KEY_NAME", "oblv_key")
-            + "_private.der"
-        )
-        depl = cli.deployment_info(msg.deployment_id)
-        if depl.is_deleted:
-            raise OblvEnclaveError(
-                "User cannot connect to this deployment, as it is no longer available."
-            )
-        if depl.is_dev_env:
-            process = subprocess.Popen(  # nosec
-                [
-                    "/usr/local/bin/oblv",
-                    "connect",
-                    "--private-key",
-                    private_file_name,
-                    "--public-key",
-                    public_file_name,
-                    "--url",
-                    depl.instance.service_url,
-                    "--pcr0",
-                    depl.pcr_codes[0],
-                    "--pcr1",
-                    depl.pcr_codes[1],
-                    "--pcr2",
-                    depl.pcr_codes[2],
-                    "--port",
-                    "443",
-                    "--lport",
-                    DOMAIN_CONNECTION_PORT,
-                    "--disable-pcr-check",
-                ],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-        else:
-            process = subprocess.Popen(  # nosec
-                [
-                    "/usr/local/bin/oblv",
-                    "connect",
-                    "--private-key",
-                    private_file_name,
-                    "--public-key",
-                    public_file_name,
-                    "--url",
-                    depl.instance.service_url,
-                    "--pcr0",
-                    depl.pcr_codes[0],
-                    "--pcr1",
-                    depl.pcr_codes[1],
-                    "--pcr2",
-                    depl.pcr_codes[2],
-                    "--port",
-                    "443",
-                    "--lport",
-                    DOMAIN_CONNECTION_PORT,
-                ],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-        while process.poll() is None:
-            d = process.stderr.readline().decode()
-            if d.__contains__("Error:  Invalid PCR Values"):
-                raise OblvProxyConnectPCRError()
-            elif d.lower().__contains__("error"):
-                raise OblvEnclaveError(message=d)
-            elif d.__contains__("listening on"):
-                break
         req = request_method(
             connection_string,
             params=params,
@@ -335,89 +348,17 @@ def check_connection(
     Returns:
         SuccessResponseMessage: Success message on key pair generation.
     """
-    cli = msg.oblv_client
-    public_file_name = (
-        os.getenv("OBLV_KEY_PATH", "/app/content")
-        + "/"
-        + os.getenv("OBLV_KEY_NAME", "oblv_key")
-        + "_public.der"
-    )
-    private_file_name = (
-        os.getenv("OBLV_KEY_PATH", "/app/content")
-        + "/"
-        + os.getenv("OBLV_KEY_NAME", "oblv_key")
-        + "_private.der"
-    )
-    depl = cli.deployment_info(msg.deployment_id)
-    if depl.is_deleted:
-        raise OblvEnclaveError(
-            "User cannot connect to this deployment, as it is no longer available."
+    if not LOCAL_MODE:
+        process = connect_to_enclave(
+            node=node, oblv_client=msg.oblv_client, deployment_id=msg.deployment_id
         )
-    if depl.is_dev_env:
-        process = subprocess.Popen(  # nosec
-            [
-                "/usr/local/bin/oblv",
-                "connect",
-                "--private-key",
-                private_file_name,
-                "--public-key",
-                public_file_name,
-                "--url",
-                depl.instance.service_url,
-                "--pcr0",
-                depl.pcr_codes[0],
-                "--pcr1",
-                depl.pcr_codes[1],
-                "--pcr2",
-                depl.pcr_codes[2],
-                "--port",
-                "443",
-                "--lport",
-                "3030",
-                "--disable-pcr-check",
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
+
+        process.kill()
+        process.wait(1)
     else:
-        process = subprocess.Popen(  # nosec
-            [
-                "/usr/local/bin/oblv",
-                "connect",
-                "--private-key",
-                private_file_name,
-                "--public-key",
-                public_file_name,
-                "--url",
-                depl.instance.service_url,
-                "--pcr0",
-                depl.pcr_codes[0],
-                "--pcr1",
-                depl.pcr_codes[1],
-                "--pcr2",
-                depl.pcr_codes[2],
-                "--port",
-                "443",
-                "--lport",
-                "3030",
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-    while process.poll() is None:
-        log_line = process.stderr.readline().decode()
-        if "Error:  Invalid PCR Values" in log_line:
-            process.kill()
-            process.wait(1)
-            raise OblvProxyConnectPCRError()
-        elif "error" in log_line.lower():
-            process.kill()
-            process.wait(1)
-            raise OblvEnclaveError(message=log_line)
-        elif "listening on" in log_line:
-            process.kill()
-            process.wait(1)
-            break
+        res = requests.get(f"http://host.docker.internal:{DOMAIN_CONNECTION_PORT}/")
+        if res.status_code != 200:
+            raise OblvLocalEnclaveError
 
     # To Do - Timeout, and process not found
 
