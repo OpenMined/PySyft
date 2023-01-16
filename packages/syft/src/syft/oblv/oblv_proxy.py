@@ -13,8 +13,6 @@ import requests
 # relative
 from ..util import bcolors
 
-# from ..logger import debug
-
 
 def check_oblv_proxy_installation_status():
     try:
@@ -35,11 +33,7 @@ def check_oblv_proxy_installation_status():
             elif system_name == "Linux":
                 result += "to install the proxy globally. If you already have the proxy installed,"
                 +" create a link to the installation as /usr/local/bin/oblv"
-            # exp = Exception(result)
-            # exp.__suppress_context__ = True
-            # exp.__traceback__=None
-            # exp.__cause__ = None
-            # raise exp
+
             print(
                 bcolors.RED
                 + bcolors.BOLD
@@ -55,7 +49,7 @@ def check_oblv_proxy_installation_status():
 
 
 def install_oblv_proxy(with_package: bool = False):
-    """_summary_
+    """Oblivious Proxy Installation
 
     Args:
         with_package (bool, optional): Only available for .msi, .deb, .rpm. Defaults to False.
@@ -126,13 +120,21 @@ def linux_proxy_installation(with_package: bool = False):
                 os.system("dpkg -i {}".format(path))  # nosec
         else:
             url = "https://api.oblivious.ai/oblv-ccli/0.4.0/oblv-ccli-0.4.0-x86_64-unknown-linux-musl.tar.gz"
-            res = requests.get(url)
+            file_name = "oblv-ccli-0.4.0-x86_64-unknown-linux-musl.tar.gz"
+            res = requests.get(url, stream=True)
+            if res.status_code == 200:
+                with open(file_name, "wb") as f:
+                    f.write(res.raw.read())
             path = os.getcwd() + "/oblv-ccli-0.4.0-x86_64-unknown-linux-musl"
-            file = tarfile.open(fileobj=res.content)
+            file = tarfile.open(file_name)
             file.extractall(path)
+
             os.symlink(
                 "/usr/local/bin/oblv",
                 os.getcwd() + "/oblv-ccli-0.4.0-x86_64-unknown-linux-musl/oblv",
+            )
+            print(
+                bcolors.green(bcolors.bold("Successfully")) + " installed Oblivous CLI"
             )
     except Exception as e:
         print(
@@ -145,26 +147,23 @@ def linux_proxy_installation(with_package: bool = False):
             + e.__cause__,
             file=sys.stderr,
         )
-    # with open(path,"wb") as f:
-    #     f.write(res.content)
-    # with  zipfile.ZipFile(path, 'r') as zipObj:
-    #     zipObj.extractall()
 
 
 def darwin_proxy_installation():
     url = "https://api.oblivious.ai/oblv-ccli/0.4.0/oblv-ccli-0.4.0-x86_64-apple-darwin.tar.gz"
-    res = requests.get(url)
+    file_name = "oblv-ccli-0.4.0-x86_64-apple-darwin.tar.gz"
+    res = requests.get(url, stream=True)
+    if res.status_code == 200:
+        with open(file_name, "wb") as f:
+            f.write(res.raw.read())
     path = os.getcwd() + "/oblv-ccli-0.4.0-x86_64-apple-darwin"
-    file = tarfile.open(fileobj=res.content)
+    file = tarfile.open(file_name)
     file.extractall(path)
-    # with open(path,"wb") as f:
-    #     f.write(res.content)
-    # with  zipfile.ZipFile(path, 'r') as zipObj:
-    # zipObj.extractall()
-    # Need to test this out
+
     os.symlink(
         "/usr/local/bin/oblv", os.getcwd() + "/oblv-ccli-0.4.0-x86_64-apple-darwin/oblv"
     )
+    print(bcolors.green(bcolors.bold("Successfully")) + " installed Oblivous CLI")
 
 
 def create_oblv_key_pair(key_name):

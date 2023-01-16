@@ -87,7 +87,7 @@ from .grid.client.client import register  # noqa: F401
 from .lib import lib_ast  # noqa: F401
 from .lib import load  # noqa: F401
 from .lib import load_lib  # noqa: F401
-from .oblv import OblvTensorWrapper  # noqa: F401
+from .oblv import OblvEnclavePointer  # noqa: F401
 from .oblv import check_oblv_proxy_installation_status  # noqa: F401
 from .oblv import create_deployment  # noqa: F401
 from .oblv import create_oblv_key_pair  # noqa: F401
@@ -110,7 +110,7 @@ def module_property(func: Any) -> None:
     module = sys.modules[func.__module__]
 
     def base_getattr(name: str) -> None:
-        raise AttributeError(f"module '{module.__name__}' has no attribute '{name}'")
+        raise AttributeError(f"module {module.__name__!r} has no attribute {name!r}")
 
     old_getattr = getattr(module, "__getattr__", base_getattr)
 

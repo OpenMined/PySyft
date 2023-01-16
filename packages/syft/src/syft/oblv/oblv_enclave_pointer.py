@@ -13,7 +13,7 @@ from ..core.tensor import Tensor
 from ..util import bcolors
 
 
-class OblvTensorWrapper:
+class OblvEnclavePointer:
     def __init__(self, id, deployment_client):
         self.id = id
         self.deployment_client = deployment_client
@@ -23,7 +23,7 @@ class OblvTensorWrapper:
 
     def _apply_op(
         self,
-        other: Union[int, float, torch.Tensor, np.ndarray, "OblvTensorWrapper"],
+        other: Union[int, float, torch.Tensor, np.ndarray, "OblvEnclavePointer"],
         op_str: str,
     ):
         """
@@ -31,10 +31,10 @@ class OblvTensorWrapper:
 
         Args:
             op_str (str): Operator.
-            *args (Union[int, float, torch.Tensor, np.ndarray, "OblvTensorWrapper"]): tensor to apply the operator.
+            *args (Union[int, float, torch.Tensor, np.ndarray, "OblvEnclavePointer"]): tensor to apply the operator.
 
         Returns:
-            OblvTensorWrapper: Result of the operation.
+            OblvEnclavePointer: Result of the operation.
         """
         arguments = [{"type": "wrapper", "value": self.id}]
         # Adding the other argument
@@ -46,7 +46,7 @@ class OblvTensorWrapper:
         elif type_name == torch.Tensor or type_name == np.ndarray:
             t = Tensor(other)
             arg = {"type": "tensor", "value": serialize(t, to_bytes=True)}
-        elif type_name == OblvTensorWrapper:
+        elif type_name == OblvEnclavePointer:
             arg = {"type": "wrapper", "value": other.id}
         else:
             print(
@@ -62,7 +62,7 @@ class OblvTensorWrapper:
             return
         arguments.append(arg)
         new_id = self.deployment_client.publish_action(op_str, arguments)
-        result = OblvTensorWrapper(id=new_id, deployment_client=self.deployment_client)
+        result = OblvEnclavePointer(id=new_id, deployment_client=self.deployment_client)
         return result
 
     def _apply_self_tensor_op(self, op_str: str, *args: Any, **kwargs: Any):
@@ -70,28 +70,28 @@ class OblvTensorWrapper:
         new_id = self.deployment_client.publish_action(
             op_str, arguments, *args, **kwargs
         )
-        result = OblvTensorWrapper(id=new_id, deployment_client=self.deployment_client)
+        result = OblvEnclavePointer(id=new_id, deployment_client=self.deployment_client)
         return result
 
     def __add__(
         self,
-        other: Union["OblvTensorWrapper", int, float, np.ndarray],
-    ) -> "OblvTensorWrapper":
+        other: Union["OblvEnclavePointer", int, float, np.ndarray],
+    ) -> "OblvEnclavePointer":
         """Apply the "add" operation between "self" and "other"
 
         Args:
-            y (Union["OblvTensorWrapper",int,float,np.ndarray]) : second operand.
+            y (Union["OblvEnclavePointer",int,float,np.ndarray]) : second operand.
 
         Returns:
-            OblvTensorWrapper : Result of the operation.
+            OblvEnclavePointer : Result of the operation.
         """
-        return OblvTensorWrapper._apply_op(self, other, "__add__")
+        return OblvEnclavePointer._apply_op(self, other, "__add__")
 
     def sum(
         self,
         *args: Any,
         **kwargs: Any,
-    ) -> "OblvTensorWrapper":
+    ) -> "OblvEnclavePointer":
         """
         Sum of array elements over a given axis.
 

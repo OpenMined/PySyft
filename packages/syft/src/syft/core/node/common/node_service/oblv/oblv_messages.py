@@ -7,12 +7,13 @@ from oblv import OblvClient
 from typing_extensions import final
 
 # relative
+from ......core.pointer.pointer import Pointer
 from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.serializable import serializable
 from .....common.uid import UID
 from .....io.address import Address
-from .....tensor.autodp.phi_tensor import TensorWrappedPhiTensorPointer
+from .....tensor.smpc.utils import ispointer
 
 
 @serializable(recursive_serde=True)
@@ -75,7 +76,7 @@ class GetPublicKeyResponse(ImmediateSyftMessageWithoutReply):
 
 @serializable(recursive_serde=True)
 @final
-class PublishDatasetMessage(ImmediateSyftMessageWithReply):
+class TransferDatasetMessage(ImmediateSyftMessageWithReply):
     __attr_allowlist__ = [
         "id",
         "address",
@@ -91,16 +92,31 @@ class PublishDatasetMessage(ImmediateSyftMessageWithReply):
         reply_to: Address,
         deployment_id: str,
         oblv_client: OblvClient,
-        dataset_id: Union[str, TensorWrappedPhiTensorPointer] = "",
+        dataset_id: Union[str, Pointer] = "",
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.deployment_id = deployment_id
         self.oblv_client = oblv_client
-        if type(dataset_id) == TensorWrappedPhiTensorPointer:
+        if ispointer(dataset_id):
             self.dataset_id = dataset_id.id_at_location.to_string()
         else:
             self.dataset_id = dataset_id
+
+
+@serializable(recursive_serde=True)
+@final
+class TransferDatasetResponse(ImmediateSyftMessageWithoutReply):
+    __attr_allowlist__ = ["id", "address", "dataset_id"]
+
+    def __init__(
+        self,
+        address: Address,
+        dataset_id: str = "",
+        msg_id: Optional[UID] = None,
+    ):
+        super().__init__(address=address, msg_id=msg_id)
+        self.dataset_id = dataset_id
 
 
 @serializable(recursive_serde=True)
@@ -119,21 +135,6 @@ class CheckEnclaveConnectionMessage(ImmediateSyftMessageWithReply):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.deployment_id = deployment_id
         self.oblv_client = oblv_client
-
-
-@serializable(recursive_serde=True)
-@final
-class PublishDatasetResponse(ImmediateSyftMessageWithoutReply):
-    __attr_allowlist__ = ["id", "address", "dataset_id"]
-
-    def __init__(
-        self,
-        address: Address,
-        dataset_id: str = "",
-        msg_id: Optional[UID] = None,
-    ):
-        super().__init__(address=address, msg_id=msg_id)
-        self.dataset_id = dataset_id
 
 
 @serializable(recursive_serde=True)
