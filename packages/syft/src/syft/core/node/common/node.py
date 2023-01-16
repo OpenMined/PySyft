@@ -23,7 +23,6 @@ from ....grid import GridURL
 from ....lib import lib_ast
 from ....logger import debug
 from ....logger import error
-from ....logger import info
 from ....logger import traceback_and_raise
 from ....shylock import ShylockPymongoBackend
 from ....shylock import configure
@@ -37,7 +36,6 @@ from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.uid import UID
 from ...io.location import Location
-from ...io.location import SpecificLocation
 from ...io.route import Route
 from ...io.route import SoloRoute
 from ...io.virtual import create_virtual_connection
@@ -312,10 +310,6 @@ class Node(AbstractNode):
         # comes from the node. In order to do that, the node needs to generate keys
         # for itself to sign and verify with.
 
-        # update keys
-        # if signing_key:
-        #     Node.set_keys(node=self, signing_key=signing_key)
-
         # PERMISSION REGISTRY:
         self.guest_signing_key_registry = set()
         self.guest_verify_key_registry = set()
@@ -330,40 +324,6 @@ class Node(AbstractNode):
 
     def post_init(self) -> None:
         debug(f"> Creating {self.pprint}")
-
-    def set_node_uid(self) -> None:
-        try:
-            setup = self.setup.first()
-            # if its empty it will be set during CreateInitialSetUpMessage
-            if setup.node_uid != "":
-                try:
-                    node_id = UID.from_string(setup.node_uid)
-                except Exception as e:
-                    error(f"Invalid Node UID in Setup Table. {setup.node_uid}")
-                    raise e
-
-                location = SpecificLocation(name=setup.domain_name, id=node_id)
-                # TODO: Fix with proper isinstance when the class will import
-                if type(self).__name__ == "Domain":
-                    self.domain = location
-                elif type(self).__name__ == "Network":
-                    self.network = location
-                info(f"Finished setting Node UID. {location}")
-            if setup.signing_key:
-                signing_key = SigningKey(setup.signing_key, encoder=HexEncoder)
-                Node.set_keys(node=self, signing_key=signing_key)
-        except Exception:
-            info("Setup hasnt run yet so ignoring set_node_uid")
-            pass
-
-    @staticmethod
-    def set_keys(node: Node, signing_key: Optional[SigningKey] = None) -> None:
-        if signing_key is None:
-            signing_key = SigningKey.generate()
-
-        node.signing_key = signing_key
-        node.verify_key = signing_key.verify_key
-        node.root_verify_key = node.verify_key  # TODO: CHANGE
 
     @property
     def icon(self) -> str:
