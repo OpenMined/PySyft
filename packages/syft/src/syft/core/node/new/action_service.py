@@ -3,7 +3,6 @@ import types
 from typing import Any
 from typing import Callable
 from typing import List
-from typing import Optional
 
 # third party
 import numpy as np
@@ -31,11 +30,12 @@ class NumpyArrayObjectPointer(ActionObjectPointer):
     __canonical_name__ = "NumpyArrayObjectPointer"
     __version__ = 1
 
-    public_dtype: Optional[str]
-    public_shape: Optional[tuple]
-
     # 🟡 TODO 17: add state / allowlist inheritance to SyftObject and ignore methods by default
-    __attr_state__ = ["id", "node_uid", "parent_id", "public_dtype", "public_shape"]
+    __attr_state__ = [
+        "id",
+        "node_uid",
+        "parent_id",
+    ]
 
     def __post_init__(self) -> None:
         self.setup_methods()
@@ -79,40 +79,35 @@ class NumpyArrayObject(ActionObject):
     __canonical_name__ = "NumpyArrayObject"
     __version__ = 1
 
-    dtype: str
-    shape: tuple
-
-    pointer_type = NumpyArrayObjectPointer
+    syft_pointer_type = NumpyArrayObjectPointer
 
     def __eq__(self, other: Any) -> bool:
         # 🟡 TODO 8: move __eq__ to a Data / Serdeable type interface on ActionObject
         if isinstance(other, NumpyArrayObject):
             return (
-                numpy_like_eq(self.data, other.data)
-                and self.dtype == other.dtype
-                and self.shape == other.shape
-                and self.pointer_type == other.pointer_type
+                numpy_like_eq(self.syft_action_data, other.syft_action_data)
+                and self.syft_pointer_type == other.syft_pointer_type
             )
         return self == other
 
 
-def expose_dtype(output: dict) -> dict:
-    output["public_dtype"] = output["dtype"]
-    del output["dtype"]
-    return output
+# def expose_dtype(output: dict) -> dict:
+#     output["public_dtype"] = output["dtype"]
+#     del output["dtype"]
+#     return output
 
 
-def expose_shape(output: dict) -> dict:
-    output["public_shape"] = output["shape"]
-    del output["shape"]
-    return output
+# def expose_shape(output: dict) -> dict:
+#     output["public_shape"] = output["shape"]
+#     del output["shape"]
+#     return output
 
 
 @transform(NumpyArrayObject, NumpyArrayObjectPointer)
 def np_array_to_pointer() -> List[Callable]:
     return [
-        expose_dtype,
-        expose_shape,
+        # expose_dtype,
+        # expose_shape,
     ]
 
 
@@ -127,7 +122,6 @@ class ActionService(AbstractService):
         self, credentials: SyftVerifyKey, action_object: ActionObject
     ) -> Result[ActionObjectPointer, str]:
         """Save an object to the action store"""
-
         # 🟡 TODO 9: Create some kind of type checking / protocol for SyftSerializable
         result = self.store.set(
             uid=action_object.id,
@@ -155,14 +149,14 @@ class ActionService(AbstractService):
         if resolved_self.is_err():
             return resolved_self.err()
         else:
-            resolved_self = resolved_self.ok().data
+            resolved_self = resolved_self.ok().syft_action_data
         args = []
         if action.args:
             for arg_id in action.args:
                 arg_value = self.get(credentials=credentials, uid=arg_id)
                 if arg_value.is_err():
                     return arg_value.err()
-                args.append(arg_value.ok().data)
+                args.append(arg_value.ok().syft_action_data)
 
         kwargs = {}
         if action.kwargs:
@@ -170,7 +164,7 @@ class ActionService(AbstractService):
                 kwarg_value = self.get(credentials=credentials, uid=arg_id)
                 if kwarg_value.is_err():
                     return kwarg_value.err()
-                kwargs[key] = kwarg_value.ok().data
+                kwargs[key] = kwarg_value.ok().syft_action_data
 
         # 🔵 TODO 10: Get proper code From old RunClassMethodAction to ensure the function
         # is not bound to the original object or mutated
@@ -184,19 +178,14 @@ class ActionService(AbstractService):
             return Err(e)
 
         # 🟡 TODO 11: Figure out how we want to store action object results
-
         if isinstance(result, np.ndarray):
             result_action_object = NumpyArrayObject(
-                id=action.result_id,
-                parent_id=action.id,
-                data=result,
-                dtype=str(result.dtype),
-                shape=result.shape,
+                id=action.result_id, parent_id=action.id, syft_action_data=result
             )
         else:
             # 🔵 TODO 12: Create an AnyPointer to handle unexpected results
             result_action_object = ActionObject(
-                id=action.result_id, parent_id=action.id, data=result
+                id=action.result_id, parent_id=action.id, syft_action_data=result
             )
 
         set_result = self.store.set(

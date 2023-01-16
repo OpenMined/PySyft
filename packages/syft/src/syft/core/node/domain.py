@@ -126,7 +126,7 @@ class Domain(Node):
         self.settings = settings
 
         # specific location with name
-        self.domain = SpecificLocation(name=self.name)
+        self.domain = SpecificLocation(id=self.id, name=self.name)
 
         # Database Management Instances
         self.users = NoSQLUserManager(self.nosql_db_engine, self.db_name)
@@ -206,7 +206,6 @@ class Domain(Node):
         first_superuser_budget: float = 5.55,
         domain_name: str = "BigHospital",
     ) -> Domain:
-        Node.set_keys(node=self, signing_key=signing_key)
 
         # Build Syft Message
         msg: SignedImmediateSyftMessageWithReply = CreateInitialSetUpMessage(
@@ -250,9 +249,9 @@ class Domain(Node):
     def icon(self) -> str:
         return "🏰"
 
-    @property
-    def id(self) -> UID:
-        return self.domain.id
+    # @property
+    # def id(self) -> UID:
+    #     return self.domain.id
 
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
 

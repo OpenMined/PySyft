@@ -139,7 +139,9 @@ class Node(AbstractNode):
         document_store: bool = False,
     ):
         self.node_uid = (
-            node_uid_env if node_uid_env is not None else UID.from_string(node_uid)
+            UID.from_string(node_uid_env)
+            if node_uid_env is not None
+            else UID.from_string(node_uid)
         )
         if self.node_uid is None:
             raise Exception("self.node_uid is None")

@@ -51,7 +51,7 @@ class APIEndpoint(SyftObject):
     path: str
     name: str
     description: str
-    doc_string: str
+    doc_string: Optional[str]
     signature: Signature
     has_self: bool = False
 

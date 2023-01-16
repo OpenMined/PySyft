@@ -40,7 +40,7 @@ def get_node_uid_env() -> Optional[str]:
 
 
 def get_env(key: str) -> Optional[str]:
-    return str(os.environ.get(key, None))
+    return os.environ.get(key, None)
 
 
 signing_key_env = get_private_key_env()
@@ -56,19 +56,24 @@ class Worker:
         self,
         *,  # Trasterisk
         name: Optional[str] = None,
-        id: Optional[UID] = None,
+        id: Optional[UID] = UID(),
         services: Optional[List[Type[AbstractService]]] = None,
-        signing_key: Optional[SigningKey] = None,
+        signing_key: Optional[SigningKey] = SigningKey.generate(),
         user_collection: Optional[UserCollection] = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
-        self.id = UID.from_string(node_uid_env) if node_uid_env is not None else id
-        self.signing_key = (
-            SyftSigningKey(SigningKey(bytes.fromhex(signing_key_env)))
-            if signing_key_env is not None
-            else SyftSigningKey(signing_key)
-        )
+        if node_uid_env is not None:
+            self.id = UID.from_string(node_uid_env)
+        else:
+            self.id = id
+
+        if signing_key_env is not None:
+            self.signing_key = SyftSigningKey(
+                SigningKey(bytes.fromhex(signing_key_env))
+            )
+        else:
+            self.signing_key = SyftSigningKey(signing_key)
 
         print("============> Starting Worker with:", self.id, self.signing_key)
 

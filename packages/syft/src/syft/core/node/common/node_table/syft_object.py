@@ -157,7 +157,7 @@ class SyftObject(BaseModel, SyftObjectRegistry):
                 if decl.default_factory:
                     # If the value is defined via PrivateAttr with default factory
                     value = decl.default_factory(value)
-                else:
+                elif var_annotation is not None:
                     # Otherwise validate value against the variable annotation
                     check_type(attr, value, var_annotation)
                 setattr(self, attr, value)

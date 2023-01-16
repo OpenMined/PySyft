@@ -26,7 +26,7 @@ class ServiceConfig(SyftObject):
     private_path: str
     public_name: str
     method_name: str
-    doc_string: str
+    doc_string: Optional[str]
     signature: Signature
     permissions: List
 
