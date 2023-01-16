@@ -15,7 +15,7 @@
   }
 
   .primary-light {
-    @apply bg-primary-100text-primary-600 px-1.5 py-0.5 rounded-sm items-center inline-flex font-bold font-roboto text-xs leading-normal w-fit;
+    @apply bg-primary-100 text-primary-600 px-1.5 py-0.5 rounded-sm items-center inline-flex font-bold font-roboto text-xs leading-normal w-fit;
   }
 
   .primary-dark {

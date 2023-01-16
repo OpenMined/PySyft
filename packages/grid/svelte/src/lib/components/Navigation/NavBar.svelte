@@ -39,6 +39,7 @@
     <div class="flex flex-col justify-between h-full">
       <div>
         {#each navItems as option}
+          <!-- svelte-ignore a11y-click-events-have-key-events -->
           <span
             class={activeRoute == option.slug
               ? 'flex items-center h-12 px-2 text-gray-50 hover:text-gray-100 bg-gray-800 nav-item-cursor'

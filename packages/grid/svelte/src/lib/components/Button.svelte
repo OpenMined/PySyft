@@ -32,20 +32,29 @@
     @apply opacity-40;
   }
   .solid-primary {
-    @apply bg-primary-500 text-white hover:bg-gradient-to-r hover:from-white/50 hover:to-white/0;
+    @apply bg-primary-500 text-white;
+  }
+
+  .solid-primary:hover {
+    @apply bg-gradient-to-r from-white/50 to-white/0;
   }
 
   .outlined-primary {
     @apply text-primary-500 border-solid border-2 border-primary-500 rounded;
   }
   .delete {
-    @apply bg-magenta-500 text-white hover:bg-gradient-to-r hover:from-white/50 hover:to-white/0;
+    @apply bg-magenta-500 text-white;
   }
+
+  .delete:hover {
+    @apply bg-gradient-to-r from-white/50 to-white/0;
+  }
+
   .md {
     @apply font-bold leading-normal px-3 py-2;
   }
   .margin-x-sm {
-    @apply mx-1 !important;
+    @apply mx-1; /* !important; */
   }
 
   .left {

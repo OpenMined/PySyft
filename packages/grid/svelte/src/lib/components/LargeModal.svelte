@@ -15,6 +15,7 @@
 
 <svelte:window on:keydown={handle_keydown} />
 
+<!-- svelte-ignore a11y-click-events-have-key-events -->
 <div class="topModal visible" on:click={() => close()}>
   <div class="modal" on:click|stopPropagation={() => {}}>
     <Close onClick={() => close()} />
