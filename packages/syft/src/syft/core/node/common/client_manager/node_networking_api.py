@@ -76,7 +76,7 @@ class NodeNetworkingAPI(NewRequestAPI):
         client: ClientLike,
         source_node_url: Optional[str] = None,
         private: bool = False,
-        autodetect: bool = True,
+        autodetect: bool = False,
     ) -> InitiateRouteUpdateToNodeMessage.Reply:
         # this should be run by a user on their node (probably a domain)
         target_url = self.get_client_url(client).base_url

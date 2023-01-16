@@ -20,14 +20,14 @@ steps["check_grid"] = False
 def complete_install_wizard(
     output: Union[Dict[str, Dependency], NBOutput]
 ) -> Union[Dict[str, Dependency], NBOutput]:
-    flipped = arg_cache.install_wizard_complete
+    flipped = arg_cache["install_wizard_complete"]
     if not flipped:
         for _, v in steps.items():
             if v is False:
                 return output
-    arg_cache.install_wizard_complete = True
+    arg_cache["install_wizard_complete"] = True
     if isinstance(output, NBOutput):
-        if flipped != arg_cache.install_wizard_complete:
+        if flipped != arg_cache["install_wizard_complete"]:
             output.raw_output += "\n\n✅ You have completed the Install Wizard"
     return output
 

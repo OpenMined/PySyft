@@ -17,6 +17,8 @@ import pandas as pd
 
 # relative
 from ... import __version__
+from ...core.node.new.api import APIRegistry
+from ...core.node.new.api import SyftAPI
 from ...logger import traceback_and_raise
 from ...telemetry import instrument
 from ...util import bcolors
@@ -38,6 +40,7 @@ from .common.action.exception_action import ExceptionMessage
 from .common.client import Client
 from .common.client_manager.association_api import AssociationRequestAPI
 from .common.client_manager.dataset_api import DatasetRequestAPI
+from .common.client_manager.oblv_api import OblvAPI
 from .common.client_manager.role_api import RoleRequestAPI
 from .common.client_manager.user_api import UserRequestAPI
 from .common.client_manager.vpn_api import VPNAPI
@@ -72,6 +75,7 @@ class RequestQueueClient(AbstractNodeClient):
         self.roles = RoleRequestAPI(client=self)
         self.association = AssociationRequestAPI(client=self)
         self.datasets = DatasetRequestAPI(client=self)
+        self.oblv = OblvAPI(client=self)
 
     @property
     def requests(self) -> List[RequestMessage]:
@@ -332,6 +336,7 @@ class DomainClient(Client):
         self.association = AssociationRequestAPI(client=self)
         self.datasets = DatasetRequestAPI(client=self)
         self.vpn = VPNAPI(client=self)
+        self.oblv = OblvAPI(client=self)
 
     def obj_exists(self, obj_id: UID) -> bool:
         msg = DoesObjectExistMessage(obj_id=obj_id)
@@ -763,3 +768,12 @@ class DomainClient(Client):
             return response
         except Exception as e:
             raise e
+
+    @property
+    def api(self) -> SyftAPI:
+        if hasattr(self, "_api"):
+            return self._api
+        api = self.routes[0].connection._get_api()
+        APIRegistry.set_api_for(node_uid=self.id, api=api)
+        self._api = api
+        return api

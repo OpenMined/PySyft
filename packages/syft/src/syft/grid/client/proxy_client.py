@@ -31,7 +31,7 @@ class ProxyClient(DomainClient):
             return super().__repr__()
         else:
             return (
-                f"(This is a logged out ProxyClient() object for a domain called '{self.name}'."
+                f"(This is a logged out ProxyClient() object for a domain called {self.name!r}."
                 f" Please call .login(email, password) to get a full client you can use for stuff.)"
             )
 

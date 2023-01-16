@@ -12,7 +12,7 @@ from typing import Union
 
 # third party
 import numpy as np
-from scipy.ndimage.interpolation import rotate
+from scipy.ndimage import rotate
 
 # relative
 from ..common.serde.serializable import serializable
