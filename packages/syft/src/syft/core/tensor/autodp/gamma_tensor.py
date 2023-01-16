@@ -117,10 +117,10 @@ def debox_phi(other: Any) -> Any:
 
 
 def update_state(state, other) -> Dict:
-    if not isinstance(other, GammaTensor):
-        return state
-    return state.update(other.sources)
-
+    if isinstance(other, GammaTensor):
+        state.update(other.sources)
+    return state
+    
 
 @serializable(recursive_serde=True)
 class TensorWrappedGammaTensorPointer(Pointer):
@@ -2004,7 +2004,7 @@ class GammaTensor:
         right = debox_phi(right)
         child = GAMMA_TENSOR_OP_FUNC[gamma_op](debox_child(left), debox_child(right))
         is_linear = debox_linear(left) and debox_linear(right)
-        jax_op = SyftJaxInfixOp(jax_op=GAMMA_TENSOR_OP.ADD, left=left, right=right)
+        jax_op = SyftJaxInfixOp(jax_op=gamma_op, left=left, right=right)
 
         return GammaTensor(
             child=child, jax_op=jax_op, sources=output_state, is_linear=is_linear
@@ -2104,6 +2104,9 @@ class GammaTensor:
 
     def __rmatmul__(self, other: Any) -> GammaTensor:
         return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.MATMUL)
+
+    def __divmod__(self, other: Any) -> GammaTensor:
+        return self._rinfix(other, gamma_op=)
 
     # def __divmod__(self, other: Any) -> Tuple[GammaTensor, GammaTensor]:
     #     # Not sure if our Service can support this since it returns 2 tensor pointers

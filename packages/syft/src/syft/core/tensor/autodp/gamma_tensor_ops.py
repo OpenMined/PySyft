@@ -13,7 +13,7 @@ class GAMMA_TENSOR_OP(Enum):
     ALL = "all"
     ANY = "any"
     ARGMAX = "argmax"
-    ARGMhi = "argmin"
+    ARGMIN = "argmin"
     ARGSORT = "argsort"
     BITWISE_AND = "bitwise_and"
     BITWISE_OR = "bitwise_or"
@@ -81,10 +81,24 @@ class GAMMA_TENSOR_OP(Enum):
 
 
 GAMMA_TENSOR_OP_FUNC = {
+    GAMMA_TENSOR_OP.ABS: operator.abs,
     GAMMA_TENSOR_OP.ADD: operator.add,
+    GAMMA_TENSOR_OP.ALL: jnp.all,
+    GAMMA_TENSOR_OP.ANY: jnp.any,
+    GAMMA_TENSOR_OP.ARGMAX: jnp.argmax,
+    GAMMA_TENSOR_OP.ARGMIN: jnp.argmin,
+    GAMMA_TENSOR_OP.ARGSORT: jnp.argsort,
     GAMMA_TENSOR_OP.BITWISE_AND: operator.and_,
     GAMMA_TENSOR_OP.BITWISE_OR: operator.or_,
     GAMMA_TENSOR_OP.BITWISE_XOR: operator.xor,
+    GAMMA_TENSOR_OP.CHOOSE: jnp.choose,
+    GAMMA_TENSOR_OP.CLIP: jnp.clip,
+    GAMMA_TENSOR_OP.COMPRESS: jnp.compress,
+    GAMMA_TENSOR_OP.COPY: jnp.copy,
+    GAMMA_TENSOR_OP.CUMPROD: jnp.cumprod,
+    GAMMA_TENSOR_OP.CUMSUM: jnp.cumsum,
+    GAMMA_TENSOR_OP.DIAGONAL: jnp.diag,
+    GAMMA_TENSOR_OP.DIVMOD: jnp.divmod,
     GAMMA_TENSOR_OP.DOT: jnp.dot,
     GAMMA_TENSOR_OP.EQUAL: operator.eq,
     GAMMA_TENSOR_OP.FLOOR_DIVIDE: operator.floordiv,
@@ -92,6 +106,8 @@ GAMMA_TENSOR_OP_FUNC = {
     GAMMA_TENSOR_OP.GREATER: operator.gt,
     GAMMA_TENSOR_OP.LESS_EQUAL: operator.le,
     GAMMA_TENSOR_OP.LESS: operator.lt,
+    GAMMA_TENSOR_OP.LOG: jnp.log,
+    GAMMA_TENSOR_OP.
     GAMMA_TENSOR_OP.LSHIFT: operator.lshift,
     GAMMA_TENSOR_OP.MATMUL: operator.matmul,
     GAMMA_TENSOR_OP.MOD: operator.mod,
