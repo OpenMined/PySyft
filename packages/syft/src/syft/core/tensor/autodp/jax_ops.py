@@ -3,6 +3,7 @@ from typing import Callable
 from typing import Dict
 from typing import TYPE_CHECKING
 from typing import Union
+from typing import Any
 
 # third party
 import jax.numpy as jnp
@@ -70,17 +71,17 @@ class SyftJaxInfixOp(SyftJaxOp):
     def func(self) -> Callable:
         def infix_closure(state: Dict) -> GammaInputType:
             jax_func = getattr(jnp, self.jax_op.value)
-            left = self.left.reconstruct(state) if self.chain_left else self.left
-            right = self.right.reconstruct(state) if self.chain_right else self.right
+            left = self.left.reconstruct(state) if self.chain_left else state[self.left.id]
+            right = self.right.reconstruct(state) if self.chain_right else state[self.right.id]
             if self.r_op:
                 left, right = right, left
 
             # TODO: remove this leaky abstraction
             # @Teo: how do we normally get past jax and our types "is not a valid JAX type."?
-            if hasattr(left, "child"):
-                left = left.child
-            if hasattr(right, "child"):
-                right = right.child
+            # if hasattr(left, "child"):
+            #     left = left.child
+            # if hasattr(right, "child"):
+            #     right = right.child
             return jax_func(left, right)
 
         return infix_closure
@@ -99,3 +100,28 @@ class SyftJaxInfixOp(SyftJaxOp):
         if self.r_op:
             left, right = right, left
         return f"{type(self).__name__}<jnp.{self.jax_op}({left}, {right})>"
+
+@serializable(recursive_serde=True)
+class SyftJaxUnaryOp(SyftJaxOp):
+    def __init__(
+        self,
+        jax_op: GAMMA_TENSOR_OP,
+        operand: GammaInputType,
+        args: Any,
+        kwargs: Any,
+    ) -> None:
+        self.jax_op = jax_op
+        self.operand = operand
+        self.args = args
+        self.kwargs = kwargs
+
+    @property
+    def func(self) -> Callable:
+        def unary_closure(state: Dict) -> GammaInputType:
+            jax_func = getattr(jnp, self.jax_op.value)
+            operand = self.operand.reconstruct(state) if self.can_chain else state[self.operand.id]
+            # if hasattr(operand, "child"):
+            #     operand = operand.child
+            return jax_func(operand, *self.args, **self.kwargs)
+        return unary_closure
+

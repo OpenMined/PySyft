@@ -79,6 +79,7 @@ from .gamma_tensor_ops import GAMMA_TENSOR_OP
 from .gamma_tensor_ops import GAMMA_TENSOR_OP_FUNC
 from .jax_ops import SyftJaxInfixOp
 from .jax_ops import SyftJaxOp
+from .jax_ops import SyftJaxUnaryOp
 
 if TYPE_CHECKING:
     # stdlib
@@ -2003,7 +2004,7 @@ class GammaTensor:
         left = debox_phi(left)
         right = debox_phi(right)
         child = GAMMA_TENSOR_OP_FUNC[gamma_op](debox_child(left), debox_child(right))
-        is_linear = debox_linear(left) and debox_linear(right)
+        is_linear = debox_linear(left) and debox_linear(right) and gamma_op == GAMMA_TENSOR_OP.ADD
         jax_op = SyftJaxInfixOp(jax_op=gamma_op, left=left, right=right)
 
         return GammaTensor(
@@ -2020,6 +2021,20 @@ class GammaTensor:
         output_state = update_state(self.sources.copy(), other)
         return self._infix_func(
             left=self, right=other, output_state=output_state, gamma_op=gamma_op
+        )
+
+    def _unary_op(
+        self, 
+        gamma_op: GAMMA_TENSOR_OP, 
+        is_linear: bool, 
+        args: Optional[Any] = [], 
+        kwargs: Optional[Any] = {}
+    ) -> GammaTensor:
+        output_state = self.sources.copy()
+        child = GAMMA_TENSOR_OP_FUNC[gamma_op](self.child)#, *args, **kwargs)
+        jax_op = SyftJaxUnaryOp(jax_op=gamma_op, operand=self, args=args, kwargs=kwargs)
+        return GammaTensor(
+            child=child, jax_op=jax_op, sources=output_state, is_linear=is_linear
         )
 
     def __add__(self, other: Any) -> GammaTensor:
@@ -2106,49 +2121,13 @@ class GammaTensor:
         return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.MATMUL)
 
     def __divmod__(self, other: Any) -> GammaTensor:
-        return self._rinfix(other, gamma_op=)
+        return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.DIVMOD)
 
-    # def __divmod__(self, other: Any) -> Tuple[GammaTensor, GammaTensor]:
-    #     # Not sure if our Service can support this since it returns 2 tensor pointers
-    #     return self // other, self % other
-
-    # def divmod(self, other: Any) -> Tuple[GammaTensor, GammaTensor]:
-    #     # Not sure if our Service can support this since it returns 2 tensor pointers
-    #     return self.__divmod__(other)
-
-    # def searchsorted(self, v: Any) -> GammaTensor:
-    #     raise NotImplementedError
-
-    # def __rmatmul__(self, other: Any) -> GammaTensor:
-    #     # relative
-    #     from .phi_tensor import PhiTensor
-
-    #     output_state = self.sources.copy()
-
-    #     if isinstance(other, PhiTensor):
-    #         other = other.gamma
-
-    #     if isinstance(other, GammaTensor):
-    #         output_state.update(other.sources)
-    #         child = self.child.__rmatmul__(other.child)
-
-    #         def _mat_mul(state: Dict) -> GammaTensor:
-    #             return jnp.matmul(other.reconstruct(state), self.reconstruct(state))
-
-    #         func = _mat_mul
-    #     else:
-    #         child = self.child.__rmatmul__(other)
-
-    #         def _mat_mul(state: Dict) -> GammaTensor:
-    #             return jnp.matmul(other, self.reconstruct(state))
-
-    #         func = _mat_mul
-
-    #     return GammaTensor(
-    #         child=child,
-    #         func=func,
-    #         sources=output_state,
-    #     )
+    def divmod(self, other: Any) -> GammaTensor:
+        return self.divmod(other)
+    
+    def __abs__(self) -> GammaTensor:
+        return self._unary_op(gamma_op=GAMMA_TENSOR_OP.ABS, is_linear=True)
 
     # def __abs__(self) -> GammaTensor:
 

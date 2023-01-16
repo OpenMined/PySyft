@@ -74,10 +74,11 @@ class GAMMA_TENSOR_OP(Enum):
     ZEROS_LIKE = "zeros_like"
     # Our Methods
     RECIPROCAL = "reciprocal"
-    FLATTEN_C = "flatten_c"
-    FLATTEN_A = "flatten_a"
-    FLATTEN_F = "flatten_f"
-    FLATTEN_K = "flatten_k"
+    # FLATTEN_C = "flatten_c"
+    # FLATTEN_A = "flatten_a"
+    # FLATTEN_F = "flatten_f"
+    # FLATTEN_K = "flatten_k"
+    FLATTEN = "flatten"
 
 
 GAMMA_TENSOR_OP_FUNC = {
@@ -107,13 +108,43 @@ GAMMA_TENSOR_OP_FUNC = {
     GAMMA_TENSOR_OP.LESS_EQUAL: operator.le,
     GAMMA_TENSOR_OP.LESS: operator.lt,
     GAMMA_TENSOR_OP.LOG: jnp.log,
-    GAMMA_TENSOR_OP.
     GAMMA_TENSOR_OP.LSHIFT: operator.lshift,
     GAMMA_TENSOR_OP.MATMUL: operator.matmul,
+    GAMMA_TENSOR_OP.MAX: jnp.max,
+    GAMMA_TENSOR_OP.MEAN: jnp.mean,
+    GAMMA_TENSOR_OP.MIN: jnp.min,
     GAMMA_TENSOR_OP.MOD: operator.mod,
     GAMMA_TENSOR_OP.MULTIPLY: operator.mul,
+    GAMMA_TENSOR_OP.NEGATIVE: jnp.negative,
+    GAMMA_TENSOR_OP.NONZERO: jnp.nonzero,
+    GAMMA_TENSOR_OP.NOOP: lambda x: x,
     GAMMA_TENSOR_OP.NOT_EQUAL: operator.ne,
+    GAMMA_TENSOR_OP.ONES_LIKE: jnp.ones_like,
+    GAMMA_TENSOR_OP.POSITIVE:jnp.positive,
+    GAMMA_TENSOR_OP.POWER: jnp.power,
+    GAMMA_TENSOR_OP.PROD: jnp.prod,
+    GAMMA_TENSOR_OP.PTP: jnp.ptp,
+    GAMMA_TENSOR_OP.PUT: jnp.put,
+    GAMMA_TENSOR_OP.RAVEL: jnp.ravel,
+    GAMMA_TENSOR_OP.REPEAT: jnp.repeat,
+    GAMMA_TENSOR_OP.RESHAPE: jnp.reshape,
+    GAMMA_TENSOR_OP.RESIZE: jnp.resize,
+    GAMMA_TENSOR_OP.RMATMUL: lambda x,y: jnp.matmul(y,x),
+    GAMMA_TENSOR_OP.ROUND: jnp.round,
     GAMMA_TENSOR_OP.RSHIFT: operator.rshift,
+    GAMMA_TENSOR_OP.SORT: jnp.sort,
+    GAMMA_TENSOR_OP.SQRT: jnp.sqrt,
+    GAMMA_TENSOR_OP.SQUEEZE: jnp.squeeze,
+    GAMMA_TENSOR_OP.STD: jnp.std,
+    GAMMA_TENSOR_OP.SUM: jnp.sum,
+    GAMMA_TENSOR_OP.SWAPAXES: jnp.swapaxes,
     GAMMA_TENSOR_OP.SUBTRACT: operator.sub,
+    GAMMA_TENSOR_OP.TAKE: jnp.take,
+    GAMMA_TENSOR_OP.TRACE: jnp.trace,
+    GAMMA_TENSOR_OP.TRANSPOSE: jnp.transpose,
     GAMMA_TENSOR_OP.TRUE_DIVIDE: operator.truediv,
+    GAMMA_TENSOR_OP.VAR: jnp.var,
+    GAMMA_TENSOR_OP.ZEROS_LIKE: jnp.zeros_like,
+    # GAMMA_TENSOR_OP.RECIPROCAL: jnp.re
+    # GAMMA_TENSOR_OP.FLATTEN: jnp.flatten,
 }
