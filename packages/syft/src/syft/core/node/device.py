@@ -5,7 +5,6 @@ from typing import Union
 
 # third party
 from nacl.signing import SigningKey
-from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # relative
@@ -40,7 +39,6 @@ class Device(Node):
         vm: Optional[Location] = None,
         device_type: Any = None,
         signing_key: Optional[SigningKey] = None,
-        verify_key: Optional[VerifyKey] = None,
         store_type: type = DictStore,
     ):
         super().__init__(
@@ -50,7 +48,6 @@ class Device(Node):
             device=device,
             vm=vm,
             signing_key=signing_key,
-            verify_key=verify_key,
             store_type=store_type,
         )
 

@@ -5,7 +5,6 @@ from typing import Union
 
 # third party
 from nacl.signing import SigningKey
-from nacl.signing import VerifyKey
 from pydantic import BaseSettings
 from typing_extensions import final
 
@@ -30,7 +29,6 @@ class VirtualMachine(Node):
     client_type = VirtualMachineClient
     vm: SpecificLocation  # redefine the type of self.vm to not be optional
     signing_key: Optional[SigningKey]
-    verify_key: Optional[VerifyKey]
     child_type_client_type = None
 
     def __init__(
@@ -42,7 +40,6 @@ class VirtualMachine(Node):
         device: Optional[Location] = None,
         vm: SpecificLocation = SpecificLocation(),
         signing_key: Optional[SigningKey] = None,
-        verify_key: Optional[VerifyKey] = None,
         store_type: type = DictStore,
         settings: Optional[BaseSettings] = None,
     ):
@@ -53,7 +50,6 @@ class VirtualMachine(Node):
             device=device,
             vm=vm,
             signing_key=signing_key,
-            verify_key=verify_key,
             store_type=store_type,
         )
 
