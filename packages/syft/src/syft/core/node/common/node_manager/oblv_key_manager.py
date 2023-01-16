@@ -1,4 +1,5 @@
 # relative
+from ..exceptions import OblvKeyAlreadyExistsError
 from ..exceptions import OblvKeyNotFoundError
 from ..node_table.oblv_keys import NoSQLOblvKeys
 from .database_manager import NoSQLDatabaseManager
@@ -10,10 +11,13 @@ class NoSQLOblvKeyManager(NoSQLDatabaseManager):
 
     def add_keys(self, public_key: bytes, private_key: bytes) -> None:
 
-        key_obj = NoSQLOblvKeys(
-            public_key=public_key,
-            private_key=private_key,
-        )
+        if not len(self):
+            key_obj = NoSQLOblvKeys(
+                public_key=public_key,
+                private_key=private_key,
+            )
+        else:
+            raise OblvKeyAlreadyExistsError
 
         self.add(key_obj)
 

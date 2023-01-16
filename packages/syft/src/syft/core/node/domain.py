@@ -65,6 +65,7 @@ from .common.node_service.object_request.object_request_service import (
     ObjectRequestServiceWithoutReply,
 )
 from .common.node_service.object_request.object_request_service import RequestService
+from .common.node_service.oblv.oblv_messages import CreateKeyPairMessage
 from .common.node_service.oblv.oblv_service import OblvBackgroundService
 from .common.node_service.oblv.oblv_service import OblvRequestAdminService
 from .common.node_service.oblv.oblv_service import OblvRequestUserService
@@ -237,8 +238,15 @@ class Domain(Node):
             signing_key=signing_key,
         ).sign(signing_key=self.signing_key)
 
+        oblv_msg: SignedImmediateSyftMessageWithReply = CreateKeyPairMessage(
+            address=self.address, reply_to=self.address
+        ).sign(signing_key=self.signing_key)
+
         # Process syft message
         _ = self.recv_immediate_msg_with_reply(msg=msg).message
+
+        # process oblv message
+        _ = self.recv_immediate_msg_with_reply(msg=oblv_msg).message
 
         return self
 
