@@ -155,8 +155,6 @@ class Network(Node):
         first_superuser_budget: float = 5.55,
         domain_name: str = "BigHospital",
     ) -> Network:
-        Node.set_keys(node=self, signing_key=signing_key)
-
         # Build Syft Message
         msg: SignedImmediateSyftMessageWithReply = CreateInitialSetUpMessage(
             address=self.address,
