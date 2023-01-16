@@ -1994,198 +1994,116 @@ class GammaTensor:
     def func(self, state: Dict) -> Callable:
         return self.jax_op.func(state)
 
-    def _infix(self, other: Any, gamma_op: GAMMA_TENSOR_OP) -> GammaTensor:
-        output_state = self.sources.copy()
-        other = debox_phi(other)
-        child = GAMMA_TENSOR_OP_FUNC[gamma_op](self.child, debox_child(other))
-        is_linear = self.is_linear and debox_linear(other)
-        output_state = update_state(output_state, other)
-        jax_op = SyftJaxInfixOp(jax_op=GAMMA_TENSOR_OP.ADD, left=self, right=other)
+    # infix operations
+
+    @staticmethod
+    def _infix_func(
+        left: Any, right: Any, output_state: Dict, gamma_op: GAMMA_TENSOR_OP
+    ) -> GammaTensor:
+        left = debox_phi(left)
+        right = debox_phi(right)
+        child = GAMMA_TENSOR_OP_FUNC[gamma_op](debox_child(left), debox_child(right))
+        is_linear = debox_linear(left) and debox_linear(right)
+        jax_op = SyftJaxInfixOp(jax_op=GAMMA_TENSOR_OP.ADD, left=left, right=right)
 
         return GammaTensor(
             child=child, jax_op=jax_op, sources=output_state, is_linear=is_linear
         )
 
+    def _rinfix(self, other: Any, gamma_op: GAMMA_TENSOR_OP) -> GammaTensor:
+        output_state = update_state(self.sources.copy(), other)
+        return self._infix_func(
+            left=other, right=self, output_state=output_state, gamma_op=gamma_op
+        )
+
+    def _infix(self, other: Any, gamma_op: GAMMA_TENSOR_OP) -> GammaTensor:
+        output_state = update_state(self.sources.copy(), other)
+        return self._infix_func(
+            left=self, right=other, output_state=output_state, gamma_op=gamma_op
+        )
+
     def __add__(self, other: Any) -> GammaTensor:
         return self._infix(other, gamma_op=GAMMA_TENSOR_OP.ADD)
 
+    def __sub__(self, other: Any) -> GammaTensor:
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.SUBTRACT)
+
+    def __mod__(self, other: Any) -> GammaTensor:
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.MOD)
+
+    def __mul__(self, other: Any) -> GammaTensor:
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.MULTIPLY)
+
+    def __truediv__(self, other: Any) -> GammaTensor:
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.TRUE_DIVIDE)
+
+    def __floordiv__(self, other: Any) -> GammaTensor:
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.FLOOR_DIVIDE)
+
+    def __matmul__(self, other: Any) -> GammaTensor:
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.MATMUL)
+
+    def __gt__(self, other: Any) -> GammaTensor:
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.GREATER)
+
+    def __ge__(self, other: Any) -> GammaTensor:
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.GREATER_EQUAL)
+
+    def __lt__(self, other: Any) -> GammaTensor:
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.LESS)
+
+    def __le__(self, other: Any) -> GammaTensor:
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.LESS_EQUAL)
+
+    def __eq__(self, other: Any) -> GammaTensor:
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.EQUAL)
+
+    def __ne__(self, other: Any) -> GammaTensor:
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.NOT_EQUAL)
+
+    def __and__(self, other: Any) -> GammaTensor:
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.BITWISE_AND)
+
+    def __or__(self, other: Any) -> GammaTensor:
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.BITWISE_OR)
+
+    def __lshift__(self, other: Any) -> GammaTensor:
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.LSHIFT)
+
+    def __rshift__(self, other: Any) -> GammaTensor:
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.RSHIFT)
+
+    def __xor__(self, other: Any) -> GammaTensor:
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.XOR)
+
+    def dot(self, other: Union[np.ndarray, GammaTensor]) -> GammaTensor:
+        # QUESTION: is there a reason other can't be a non gamma tensor numpy array?
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.DOT)
+
+    #  __r*__ infix operations
+
     def __radd__(self, other: Any) -> GammaTensor:
-        return self.__add__(other)
+        # return self.__add__(other)
+        return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.ADD)
 
-    # def __mod__(self, other: Any) -> GammaTensor:
-    #     # relative
-    #     from .phi_tensor import PhiTensor
+    def __rsub__(self, other: Any) -> GammaTensor:
+        # return (self.__sub__(other)) * -1
+        return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.SUBTRACT)
 
-    #     output_state = self.sources.copy()
+    def __rmod__(self, other: Any) -> GammaTensor:
+        return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.MOD)
 
-    #     if isinstance(other, PhiTensor):
-    #         other = other.gamma
+    def __rmul__(self, other: Any) -> GammaTensor:
+        return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.MULTIPLY)
 
-    #     if isinstance(other, GammaTensor):
-    #         output_state.update(other.sources)
-    #         child = self.child % other.child
+    def __rtruediv__(self, other: Any) -> GammaTensor:
+        return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.TRUE_DIVIDE)
 
-    #         def _mod(state: Dict) -> GammaTensor:
-    #             return jnp.mod(self.reconstruct(state), other.reconstruct(state))
+    def __rfloordiv__(self, other: Any) -> GammaTensor:
+        return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.FLOOR_DIVIDE)
 
-    #         func = _mod
-
-    #     elif is_acceptable_simple_type(other):
-    #         child = self.child % other
-
-    #         def _mod(state: Dict) -> GammaTensor:
-    #             return jnp.mod(self.reconstruct(state), other)
-
-    #         func = _mod
-
-    #     else:
-    #         print("Type is unsupported:" + str(type(other)))
-    #         raise NotImplementedError
-
-    #     return GammaTensor(
-    #         child=child,
-    #         func=func,
-    #         sources=output_state,
-    #     )
-
-    # def __rtruediv__(self, other: SupportedChainType) -> GammaTensor:
-    #     output_state = self.sources.copy()
-
-    #     # relative
-    #     from .phi_tensor import PhiTensor
-
-    #     if isinstance(other, PhiTensor):
-    #         other = other.gamma
-
-    #     if isinstance(other, GammaTensor):
-    #         output_state.update(other.sources)
-    #         child = other.child / self.child
-
-    #         def _true_divide(state: Dict) -> GammaTensor:
-    #             return jnp.true_divide(
-    #                 other.reconstruct(state), self.reconstruct(state)
-    #             )
-
-    #         func = _true_divide
-
-    #     elif is_acceptable_simple_type(other):
-    #         linear = True
-    #         child = other / self.child
-
-    #         def _true_divide(state: Dict) -> GammaTensor:
-    #             return jnp.true_divide(other, self.reconstruct(state))
-
-    #         func = _true_divide
-    #     else:
-    #         linear = False
-    #         print("Type is unsupported:" + str(type(other)))
-    #         raise NotImplementedError
-
-    #     return GammaTensor(
-    #         child=child, func=func, sources=output_state, is_linear=linear
-    #     )
-
-    # def __sub__(self, other: Any) -> GammaTensor:
-    #     # relative
-    #     from .phi_tensor import PhiTensor
-
-    #     output_state = self.sources.copy()
-
-    #     if isinstance(other, PhiTensor):
-    #         other = other.gamma
-
-    #     if isinstance(other, GammaTensor):
-    #         output_state.update(other.sources)
-
-    #         child = self.child - other.child
-
-    #         def _sub(state: Dict) -> GammaTensor:
-    #             return jnp.subtract(self.reconstruct(state), other.reconstruct(state))
-
-    #         func = _sub
-    #         is_linear = self.is_linear and other.is_linear
-    #     else:
-    #         child = self.child - other
-
-    #         def _sub(state: Dict) -> GammaTensor:
-    #             return jnp.subtract(self.reconstruct(state), other)
-
-    #         func = _sub
-    #         is_linear = self.is_linear
-
-    #     return GammaTensor(
-    #         child=child, func=func, sources=output_state, is_linear=is_linear
-    #     )
-
-    # def __rsub__(self, other: Any) -> GammaTensor:
-    #     return (self - other) * -1
-
-    # def __mul__(self, other: Any) -> GammaTensor:
-    #     # relative
-    #     from .phi_tensor import PhiTensor
-
-    #     output_state = self.sources.copy()
-
-    #     if isinstance(other, PhiTensor):
-    #         other = other.gamma
-
-    #     if isinstance(other, GammaTensor):
-    #         output_state.update(other.sources)
-    #         child = self.child * other.child
-
-    #         def _mul(state: Dict) -> GammaTensor:
-    #             return jnp.multiply(self.reconstruct(state), other.reconstruct(state))
-
-    #         func = _mul
-    #     else:
-    #         child = self.child * other
-
-    #         def _mul(state: Dict) -> GammaTensor:
-    #             return jnp.multiply(self.reconstruct(state), other)
-
-    #         func = _mul
-
-    #     return GammaTensor(
-    #         child=child,
-    #         func=func,
-    #         sources=output_state,
-    #     )
-
-    # def __rmul__(self, other: Any) -> GammaTensor:
-    #     return self.__mul__(other)
-
-    # def __truediv__(self, other: Any) -> GammaTensor:
-    #     # relative
-    #     from .phi_tensor import PhiTensor
-
-    #     output_state = self.sources.copy()
-
-    #     if isinstance(other, PhiTensor):
-    #         other = other.gamma
-
-    #     if isinstance(other, GammaTensor):
-    #         linear = False
-    #         output_state.update(other.sources)
-    #         child = self.child / other.child
-
-    #         def _true_divide(state: Dict) -> GammaTensor:
-    #             return jnp.true_divide(
-    #                 self.reconstruct(state), other.reconstruct(state)
-    #             )
-
-    #         func = _true_divide
-    #     else:
-    #         linear = True
-    #         child = self.child / other
-
-    #         def _true_divide(state: Dict) -> GammaTensor:
-    #             return jnp.true_divide(self.reconstruct(state), other)
-
-    #         func = _true_divide
-
-    #     return GammaTensor(
-    #         child=child, func=func, sources=output_state, is_linear=linear
-    #     )
+    def __rmatmul__(self, other: Any) -> GammaTensor:
+        return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.MATMUL)
 
     # def __divmod__(self, other: Any) -> Tuple[GammaTensor, GammaTensor]:
     #     # Not sure if our Service can support this since it returns 2 tensor pointers
@@ -2194,37 +2112,6 @@ class GammaTensor:
     # def divmod(self, other: Any) -> Tuple[GammaTensor, GammaTensor]:
     #     # Not sure if our Service can support this since it returns 2 tensor pointers
     #     return self.__divmod__(other)
-
-    # def __matmul__(self, other: Any) -> GammaTensor:
-    #     # relative
-    #     from .phi_tensor import PhiTensor
-
-    #     output_state = self.sources.copy()
-
-    #     if isinstance(other, PhiTensor):
-    #         other = other.gamma
-
-    #     if isinstance(other, GammaTensor):
-    #         output_state.update(other.sources)
-    #         child = self.child @ other.child
-
-    #         def _mat_mul(state: Dict) -> GammaTensor:
-    #             return jnp.matmul(self.reconstruct(state), other.reconstruct(state))
-
-    #         func = _mat_mul
-    #     else:
-    #         child = self.child @ other
-
-    #         def _mat_mul(state: Dict) -> GammaTensor:
-    #             return jnp.matmul(self.reconstruct(state), other)
-
-    #         func = _mat_mul
-
-    #     return GammaTensor(
-    #         child=child,
-    #         func=func,
-    #         sources=output_state,
-    #     )
 
     # def searchsorted(self, v: Any) -> GammaTensor:
     #     raise NotImplementedError
@@ -2253,194 +2140,6 @@ class GammaTensor:
     #             return jnp.matmul(other, self.reconstruct(state))
 
     #         func = _mat_mul
-
-    #     return GammaTensor(
-    #         child=child,
-    #         func=func,
-    #         sources=output_state,
-    #     )
-
-    # def __gt__(self, other: Any) -> GammaTensor:
-    #     # relative
-    #     from .phi_tensor import PhiTensor
-
-    #     output_state = self.sources.copy()
-
-    #     if isinstance(other, PhiTensor):
-    #         other = other.gamma
-
-    #     if isinstance(other, GammaTensor):
-    #         output_state.update(other.sources)
-    #         child = self.child.__gt__(other.child)
-
-    #         def _greater(state: Dict) -> GammaTensor:
-    #             return jnp.greater(self.reconstruct(state), other.reconstruct(state))
-
-    #         func = _greater
-    #     else:
-
-    #         def _greater(state: Dict) -> GammaTensor:
-    #             return jnp.greater(self.reconstruct(state), other)
-
-    #         func = _greater
-    #         child = self.child.__gt__(other)
-
-    #     return GammaTensor(
-    #         child=child,
-    #         func=func,
-    #         sources=output_state,
-    #     )
-
-    # def __ge__(self, other: Any) -> GammaTensor:
-    #     # relative
-    #     from .phi_tensor import PhiTensor
-
-    #     output_state = self.sources.copy()
-
-    #     if isinstance(other, PhiTensor):
-    #         other = other.gamma
-
-    #     if isinstance(other, GammaTensor):
-    #         output_state.update(other.sources)
-    #         child = self.child.__ge__(other.child)
-
-    #         def _greater_equal(state: Dict) -> GammaTensor:
-    #             return jnp.greater_equal(
-    #                 self.reconstruct(state), other.reconstruct(state)
-    #             )
-
-    #         func = _greater_equal
-    #     else:
-    #         child = self.child.__ge__(other)
-
-    #         def _greater_equal(state: Dict) -> GammaTensor:
-    #             return jnp.greater_equal(self.reconstruct(state), other)
-
-    #         func = _greater_equal
-
-    #     return GammaTensor(
-    #         child=child,
-    #         func=func,
-    #         sources=output_state,
-    #     )
-
-    # def __eq__(self, other: Any) -> GammaTensor:  # type: ignore
-    #     # relative
-    #     from .phi_tensor import PhiTensor
-
-    #     output_state = self.sources.copy()
-
-    #     if isinstance(other, PhiTensor):
-    #         other = other.gamma
-
-    #     if isinstance(other, GammaTensor):
-    #         output_state.update(other.sources)
-    #         child = self.child.__eq__(other.child)
-
-    #         def _equal(state: Dict) -> GammaTensor:
-    #             return jnp.equal(self.reconstruct(state), other.reconstruct(state))
-
-    #         func = _equal
-    #     else:
-    #         child = self.child.__eq__(other)
-
-    #         def _equal(state: Dict) -> GammaTensor:
-    #             return jnp.equal(self.reconstruct(state), other)
-
-    #         func = _equal
-
-    #     return GammaTensor(
-    #         child=child,
-    #         func=func,
-    #         sources=output_state,
-    #     )
-
-    # def __ne__(self, other: Any) -> GammaTensor:  # type: ignore
-    #     # relative
-    #     from .phi_tensor import PhiTensor
-
-    #     output_state = self.sources.copy()
-
-    #     if isinstance(other, PhiTensor):
-    #         other = other.gamma
-
-    #     if isinstance(other, GammaTensor):
-    #         output_state.update(other.sources)
-    #         child = self.child.__ne__(other.child)
-
-    #         def _not_equal(state: Dict) -> GammaTensor:
-    #             return jnp.not_equal(self.reconstruct(state), other.reconstruct(state))
-
-    #         func = _not_equal
-    #     else:
-    #         child = self.child.__ne__(other)
-
-    #         def _not_equal(state: Dict) -> GammaTensor:
-    #             return jnp.not_equal(self.reconstruct(state), other)
-
-    #         func = _not_equal
-
-    #     return GammaTensor(
-    #         child=child,
-    #         func=func,
-    #         sources=output_state,
-    #     )
-
-    # def __lt__(self, other: Any) -> GammaTensor:
-    #     # relative
-    #     from .phi_tensor import PhiTensor
-
-    #     output_state = self.sources.copy()
-
-    #     if isinstance(other, PhiTensor):
-    #         other = other.gamma
-
-    #     if isinstance(other, GammaTensor):
-    #         output_state.update(other.sources)
-    #         child = self.child.__lt__(other.child)
-
-    #         def _less(state: Dict) -> GammaTensor:
-    #             return jnp.less(self.reconstruct(state), other.reconstruct(state))
-
-    #         func = _less
-    #     else:
-    #         child = self.child.__lt__(other)
-
-    #         def _less(state: Dict) -> GammaTensor:
-    #             return jnp.less(self.reconstruct(state), other)
-
-    #         func = _less
-
-    #     return GammaTensor(
-    #         child=child,
-    #         func=func,
-    #         sources=output_state,
-    #     )
-
-    # def __le__(self, other: Any) -> GammaTensor:
-    #     # relative
-    #     from .phi_tensor import PhiTensor
-
-    #     output_state = self.sources.copy()
-    #     if isinstance(other, PhiTensor):
-    #         other = other.gamma
-
-    #     if isinstance(other, GammaTensor):
-    #         output_state.update(other.sources)
-    #         child = self.child.__le__(other.child)
-
-    #         def _less_equal(state: Dict) -> GammaTensor:
-    #             return jnp.less_equal(self.reconstruct(state), other.reconstruct(state))
-
-    #         func = _less_equal
-
-    #     else:
-    #         child = self.child.__le__(other)
-
-    #         def _less_equal(state: Dict) -> GammaTensor:
-    #             return jnp.less_equal(self.reconstruct(state), other)
-
-    #         func = _less_equal
 
     #     return GammaTensor(
     #         child=child,
@@ -2834,75 +2533,6 @@ class GammaTensor:
     #         sources=output_state,
     #     )
 
-    # def __and__(self, other: Any) -> GammaTensor:
-    #     # relative
-    #     from .phi_tensor import PhiTensor
-
-    #     output_state = self.sources.copy()
-
-    #     if isinstance(other, PhiTensor):
-    #         other = other.gamma
-
-    #     if isinstance(other, GammaTensor):
-    #         output_state.update(other.sources)
-    #         child = self.child & other.child
-
-    #         def _bitwise_and(state: Dict) -> GammaTensor:
-    #             return jnp.bitwise_and(
-    #                 self.reconstruct(state), other.reconstruct(state)
-    #             )
-
-    #         func = _bitwise_and
-    #     elif is_acceptable_simple_type(other):
-    #         child = self.child & other
-
-    #         def _bitwise_and(state: Dict) -> GammaTensor:
-    #             return jnp.bitwise_and(self.reconstruct(state), other)
-
-    #         func = _bitwise_and
-    #     else:
-    #         print("Type is unsupported:" + str(type(other)))
-    #         raise NotImplementedError
-
-    #     return GammaTensor(
-    #         child=child,
-    #         func=func,
-    #         sources=output_state,
-    #     )
-
-    # def __or__(self, other: Any) -> GammaTensor:
-    #     # relative
-    #     from .phi_tensor import PhiTensor
-
-    #     output_state = self.sources.copy()
-
-    #     if isinstance(other, PhiTensor):
-    #         other = other.gamma
-
-    #     if isinstance(other, GammaTensor):
-    #         output_state.update(other.sources)
-    #         child = self.child | other.child
-
-    #         def _bitwise_or(state: Dict) -> GammaTensor:
-    #             return jnp.bitwise_or(self.reconstruct(state), other.reconstruct(state))
-
-    #         func = _bitwise_or
-    #     elif is_acceptable_simple_type(other):
-    #         child = self.child | other
-
-    #         def _bitwise_or(state: Dict) -> GammaTensor:
-    #             return jnp.bitwise_or(self.reconstruct(state), other)
-
-    #         func = _bitwise_or
-    #     else:
-    #         print("Type is unsupported:" + str(type(other)))
-    #         raise NotImplementedError
-    #     return GammaTensor(
-    #         child=child,
-    #         func=func,
-    #         sources=output_state,
-    #     )
-
     # def __pos__(self) -> GammaTensor:
     #     output_state = self.sources.copy()
 
@@ -3071,35 +2701,6 @@ class GammaTensor:
     #         func=func,
     #         is_linear=self.is_linear,
     #     )
-
-    # def dot(self, other: Union[np.ndarray, GammaTensor]) -> GammaTensor:
-    #     output_state = self.sources.copy()
-    #     # relative
-    #     from .phi_tensor import PhiTensor
-
-    #     if isinstance(other, PhiTensor):
-    #         other = other.gamma
-
-    #     if isinstance(other, np.ndarray):
-    #         raise NotImplementedError
-    #     elif isinstance(other, GammaTensor):
-    #         output_state.update(other.sources)
-    #         result = jnp.dot(self.child, other.child)
-
-    #         def _dot(state: Dict) -> GammaTensor:
-    #             return jnp.dot(self.reconstruct(state), other.reconstruct(state))
-
-    #         func = _dot
-
-    #         return GammaTensor(
-    #             child=result,
-    #             func=func,
-    #             sources=output_state,
-    #         )
-    #     else:
-    #         raise NotImplementedError(
-    #             f"Undefined behaviour for GT.dot with {type(other)}"
-    #         )
 
     # def sqrt(self) -> GammaTensor:
     #     state = self.sources.copy()
@@ -3546,50 +3147,6 @@ class GammaTensor:
     #         sources=sources,
     #     )
 
-    # def __floordiv__(self, other: Any) -> GammaTensor:
-    #     """
-    #     return self // value.
-    #     """
-    #     # relative
-    #     from .phi_tensor import PhiTensor
-
-    #     sources = self.sources.copy()
-
-    #     if isinstance(other, PhiTensor):
-    #         other = other.gamma
-
-    #     if isinstance(other, GammaTensor):
-    #         sources.update(other.sources)
-
-    #         def _floor_divide(state: Dict) -> GammaTensor:
-    #             return jnp.floor_divide(
-    #                 self.reconstruct(state), other.reconstruct(state)
-    #             )
-
-    #         func = _floor_divide
-
-    #         return GammaTensor(
-    #             child=jnp.floor_divide(self.child, other.child),
-    #             func=func,
-    #             sources=sources,
-    #         )
-    #     elif is_acceptable_simple_type(other):
-
-    #         def _floor_divide(state: Dict) -> GammaTensor:
-    #             return jnp.floor_divide(self.reconstruct(state), other)
-
-    #         func = _floor_divide
-    #         return GammaTensor(
-    #             child=jnp.floor_divide(self.child, other),
-    #             func=func,
-    #             sources=sources,
-    #             is_linear=self.is_linear,
-    #         )
-    #     else:
-    #         raise NotImplementedError(
-    #             f"floordiv not supported between GammaTensor & {type(other)}"
-    #         )
-
     # def __rfloordiv__(self, other: SupportedChainType) -> GammaTensor:
     #     # relative
     #     from .phi_tensor import PhiTensor
@@ -3890,113 +3447,6 @@ class GammaTensor:
     #                 sources=sources,
     #                 is_linear=self.is_linear,
     #             )
-
-    # def __lshift__(self, other: Any) -> GammaTensor:
-    #     # relative
-    #     from .phi_tensor import PhiTensor
-
-    #     sources = self.sources.copy()
-
-    #     if isinstance(other, PhiTensor):
-    #         other = other.gamma
-
-    #     if isinstance(other, GammaTensor):
-    #         sources.update(other.sources)
-    #         child = self.child << other.child
-
-    #         def _left_shift(state: Dict) -> GammaTensor:
-    #             return jnp.left_shift(self.reconstruct(state), other.reconstruct(state))
-
-    #         func = _left_shift
-    #     elif is_acceptable_simple_type(other):
-    #         child = self.child << other
-
-    #         def _left_shift(state: Dict) -> GammaTensor:
-    #             return jnp.left_shift(self.reconstruct(state), other)
-
-    #         func = _left_shift
-    #     else:
-    #         raise NotImplementedError(
-    #             f"lshift is not implemented for type: {type(other)}"
-    #         )
-
-    #     return GammaTensor(
-    #         child=child,
-    #         func=func,
-    #         sources=sources,
-    #     )
-
-    # def __rshift__(self, other: Any) -> GammaTensor:
-    #     # relative
-    #     from .phi_tensor import PhiTensor
-
-    #     sources = self.sources.copy()
-
-    #     if isinstance(other, PhiTensor):
-    #         other = other.gamma
-
-    #     if isinstance(other, GammaTensor):
-    #         sources.update(other.sources)
-    #         child = self.child >> other.child
-
-    #         def _right_shift(state: Dict) -> GammaTensor:
-    #             return jnp.right_shift(
-    #                 self.reconstruct(state), other.reconstruct(state)
-    #             )
-
-    #         func = _right_shift
-    #     elif is_acceptable_simple_type(other):
-    #         child = self.child >> other
-
-    #         def _right_shift(state: Dict) -> GammaTensor:
-    #             return jnp.right_shift(self.reconstruct(state), other)
-
-    #         func = _right_shift
-    #     else:
-    #         raise NotImplementedError(
-    #             f"rshift is not implemented for type: {type(other)}"
-    #         )
-
-    #     return GammaTensor(
-    #         child=child,
-    #         func=func,
-    #         sources=sources,
-    #     )
-
-    # def __xor__(self, other: Any) -> GammaTensor:
-    #     # relative
-    #     from .phi_tensor import PhiTensor
-
-    #     sources = self.sources.copy()
-
-    #     if isinstance(other, PhiTensor):
-    #         other = other.gamma
-
-    #     if isinstance(other, GammaTensor):
-    #         sources.update(other.sources)
-    #         child = self.child ^ other.child
-
-    #         def _bitwise_xor(state: Dict) -> GammaTensor:
-    #             return jnp.bitwise_xor(
-    #                 self.reconstruct(state), other.reconstruct(state)
-    #             )
-
-    #         func = _bitwise_xor
-    #     elif is_acceptable_simple_type(other):
-    #         child = self.child ^ other
-
-    #         def _bitwise_xor(state: Dict) -> GammaTensor:
-    #             return jnp.bitwise_xor(self.reconstruct(state), other)
-
-    #         func = _bitwise_xor
-    #     else:
-    #         raise NotImplementedError(f"xor is not implemented for type: {type(other)}")
-
-    #     return GammaTensor(
-    #         child=child,
-    #         func=func,
-    #         sources=sources,
-    #     )
 
     # def __round__(self, n: int = 0) -> GammaTensor:
     #     sources = self.sources.copy()
