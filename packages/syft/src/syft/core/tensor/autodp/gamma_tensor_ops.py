@@ -74,10 +74,6 @@ class GAMMA_TENSOR_OP(Enum):
     ZEROS_LIKE = "zeros_like"
     # Our Methods
     RECIPROCAL = "reciprocal"
-    # FLATTEN_C = "flatten_c"
-    # FLATTEN_A = "flatten_a"
-    # FLATTEN_F = "flatten_f"
-    # FLATTEN_K = "flatten_k"
     FLATTEN = "flatten"
 
 
@@ -145,6 +141,5 @@ GAMMA_TENSOR_OP_FUNC = {
     GAMMA_TENSOR_OP.TRUE_DIVIDE: operator.truediv,
     GAMMA_TENSOR_OP.VAR: jnp.var,
     GAMMA_TENSOR_OP.ZEROS_LIKE: jnp.zeros_like,
-    # GAMMA_TENSOR_OP.RECIPROCAL: jnp.re
     # GAMMA_TENSOR_OP.FLATTEN: jnp.flatten,
 }

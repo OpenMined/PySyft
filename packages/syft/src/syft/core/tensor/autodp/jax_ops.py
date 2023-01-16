@@ -71,17 +71,17 @@ class SyftJaxInfixOp(SyftJaxOp):
     def func(self) -> Callable:
         def infix_closure(state: Dict) -> GammaInputType:
             jax_func = getattr(jnp, self.jax_op.value)
-            left = self.left.reconstruct(state) if self.chain_left else state[self.left.id]
-            right = self.right.reconstruct(state) if self.chain_right else state[self.right.id]
+            left = self.left.reconstruct(state) if self.chain_left else self.left
+            right = self.right.reconstruct(state) if self.chain_right else self.right
             if self.r_op:
                 left, right = right, left
 
             # TODO: remove this leaky abstraction
             # @Teo: how do we normally get past jax and our types "is not a valid JAX type."?
-            # if hasattr(left, "child"):
-            #     left = left.child
-            # if hasattr(right, "child"):
-            #     right = right.child
+            if hasattr(left, "child"):
+                left = left.child
+            if hasattr(right, "child"):
+                right = right.child
             return jax_func(left, right)
 
         return infix_closure
@@ -119,9 +119,9 @@ class SyftJaxUnaryOp(SyftJaxOp):
     def func(self) -> Callable:
         def unary_closure(state: Dict) -> GammaInputType:
             jax_func = getattr(jnp, self.jax_op.value)
-            operand = self.operand.reconstruct(state) if self.can_chain else state[self.operand.id]
-            # if hasattr(operand, "child"):
-            #     operand = operand.child
+            operand = self.operand.reconstruct(state) if self.can_chain else self.operand
+            if hasattr(operand, "child"):
+                operand = operand.child
             return jax_func(operand, *self.args, **self.kwargs)
         return unary_closure
 
