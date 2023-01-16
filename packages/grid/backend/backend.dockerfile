@@ -59,8 +59,12 @@ ENV PATH=/root/.local/bin:$PATH
 COPY grid/backend/docker-scripts/start.sh /start.sh
 COPY grid/backend/worker-start.sh /worker-start.sh
 
+# 🟣 TODO: Remove install_oblivious.sh
+COPY grid/backend/install_oblivious.sh /install_oblivious.sh
+
 RUN chmod +x /start.sh
 RUN chmod +x /worker-start.sh
+RUN chmod +x /install_oblivious.sh
 
 RUN --mount=type=cache,target=/root/.cache \
   pip install -U pip

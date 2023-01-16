@@ -40,6 +40,10 @@ from ...io.route import Route
 from ...io.route import SoloRoute
 from ...io.virtual import create_virtual_connection
 from ..abstract.node import AbstractNode
+from ..common.exceptions import OblvEnclaveError
+from ..common.exceptions import OblvEnclaveUnAuthorizedError
+from ..common.exceptions import OblvKeyNotFoundError
+from ..common.exceptions import OblvProxyConnectPCRError
 from .action.exception_action import ExceptionMessage
 from .action.exception_action import UnknownPrivateException
 from .client import Client
@@ -153,7 +157,7 @@ class Node(AbstractNode):
         )
         if self.signing_key is None:
             raise Exception("self.signing_key is None")
-
+        self.root_verify_key = self.signing_key.verify_key
         self.verify_key = self.signing_key.verify_key
         print(
             "============> Starting Node with:",
@@ -514,6 +518,17 @@ class Node(AbstractNode):
             public_exception: Exception
             if isinstance(e, AuthorizationException):
                 private_log_msg = "An AuthorizationException has been triggered"
+                public_exception = e
+            elif isinstance(
+                e,
+                (
+                    OblvKeyNotFoundError,
+                    OblvProxyConnectPCRError,
+                    OblvEnclaveUnAuthorizedError,
+                    OblvEnclaveError,
+                ),
+            ):
+                private_log_msg = "An OblvException has been triggered"
                 public_exception = e
             else:
                 private_log_msg = f"An {type(e)} has been triggered"  # dont send

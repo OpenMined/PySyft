@@ -29,4 +29,7 @@ export NODE_PRIVATE_KEY=$NODE_PRIVATE_KEY
 # initialize data
 python grid/db/init_db.py
 
+# 🟣 TODO: Remove
+source install_oblivious.sh
+
 exec uvicorn $RELOAD --host $HOST --port $PORT --log-level $LOG_LEVEL "$APP_MODULE"

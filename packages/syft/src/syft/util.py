@@ -628,6 +628,7 @@ class bcolors:
     ENDC = "\033[0m"
     BOLD = "\033[1m"
     UNDERLINE = "\033[4m"
+    BLACK = "\033[99m"
 
     @staticmethod
     def green(message: str) -> str:
