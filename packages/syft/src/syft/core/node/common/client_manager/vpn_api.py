@@ -63,7 +63,7 @@ class VPNAPI:
             content = {}
         signed_msg = (
             syft_msg_constructor(kwargs=content)
-            .to(address=self.client.address, reply_to=self.client.address)
+            .to(address=self.client.node_uid, reply_to=self.client.node_uid)
             .sign(signing_key=self.client.signing_key)
         )  # type: ignore
         response = self.client.send_immediate_msg_with_reply(msg=signed_msg)

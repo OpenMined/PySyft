@@ -9,7 +9,6 @@ from nacl.signing import VerifyKey
 
 # relative
 from ...logger import debug
-from ...logger import traceback_and_raise
 from ...util import key_emoji as key_emoji_util
 from ...util import random_name
 from ..common.serde.serializable import serializable
@@ -95,7 +94,12 @@ class Address:
     def pprint(self) -> str:
         output = f"{self.icon} {self.name} ({str(self.__class__.__name__)})"
         if hasattr(self, "id"):
-            output += f"@{self.target_id.id.emoji()}"
+            _id = getattr(self.target_id, "id", None)
+            if _id is None:
+                _id = getattr(self, "node_uid", None)
+            emoji = getattr(_id, "emoji", None)
+            emoji_str = emoji() if emoji is not None else None
+            output += f"@{emoji_str}"
         return output
 
     def post_init(self) -> None:
@@ -251,7 +255,8 @@ class Address:
         elif self._network is not None:
             return self._network
 
-        traceback_and_raise(Exception("Address has no valid parts"))
+        # traceback_and_raise(Exception("Address has no valid parts"))
+        return None
 
     def __eq__(self, other: Any) -> bool:
         """Returns whether two Address objects refer to the same set of locations

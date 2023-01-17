@@ -16,8 +16,8 @@ from nacl.signing import VerifyKey
 # relative
 from ...logger import debug
 from ...logger import traceback_and_raise
+from ...util import key_emoji
 from ...util import validate_type
-from ..io.address import Address
 from .object import ObjectWithID
 from .serde.deserialize import _deserialize
 from .serde.serializable import serializable
@@ -69,7 +69,7 @@ class SyftMessage(AbstractMessage):
         address: the :class:`Address` to which the message needs to be delivered.
     """
 
-    def __init__(self, address: Address, msg_id: Optional[UID] = None) -> None:
+    def __init__(self, address: UID, msg_id: Optional[UID] = None) -> None:
         self.address = address
         super().__init__(id=msg_id)
         self.post_init()
@@ -87,7 +87,7 @@ class SyftMessage(AbstractMessage):
             A :class:`SignedMessage`
 
         """
-        debug(f"> Signing with {self.address.key_emoji(key=signing_key.verify_key)}")
+        debug(f"> Signing with {key_emoji(key=signing_key.verify_key)}")
         signed_message = signing_key.sign(serialize(self, to_bytes=True))
 
         # signed_type will be the final subclass callee's closest parent signed_type
@@ -129,7 +129,7 @@ class SignedMessage(SyftMessage):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         signature: bytes,
         verify_key: VerifyKey,
         message: bytes,
@@ -196,7 +196,7 @@ class ImmediateSyftMessage(SyftMessage):
 
 class SyftMessageWithReply(SyftMessage):
     def __init__(
-        self, reply_to: Address, address: Address, msg_id: Optional[UID] = None
+        self, reply_to: UID, address: UID, msg_id: Optional[UID] = None
     ) -> None:
         super().__init__(address=address, msg_id=msg_id)
         self.reply_to = reply_to

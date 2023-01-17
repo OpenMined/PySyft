@@ -26,6 +26,7 @@ class AbstractNodeClient(Address):
     in_memory_client_registry: Dict[Any, Any]
     signing_key: SigningKey
     verify_key: VerifyKey
+    node_uid: UID
     """"""
 
     @property

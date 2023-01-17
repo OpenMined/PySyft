@@ -70,8 +70,8 @@ def _resolve_pointer_type(self: Pointer) -> Pointer:
 
     cmd = ResolvePointerTypeMessage(
         id_at_location=id_at_location,
-        address=self.client.address,
-        reply_to=self.client.address,
+        address=self.client.node_uid,
+        reply_to=self.client.node_uid,
     )
 
     # the path to the underlying type. It has to live in the AST
@@ -165,7 +165,7 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
             kwargs=pointer_kwargs,
             id_at_location=result.id_at_location,
             seed_id_locations=seed_id_locations,
-            address=__self.client.address,
+            address=__self.client.node_uid,
         )
         __self.client.send_immediate_msg_without_reply(msg=cmd)
 
@@ -222,7 +222,7 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
                 args=pointer_args,
                 kwargs=pointer_kwargs,
                 id_at_location=result_id_at_location,
-                address=__self.client.address,
+                address=__self.client.node_uid,
             )
             __self.client.send_immediate_msg_without_reply(msg=cmd)
 
@@ -294,7 +294,7 @@ def generate_class_property_function(
             cmd = GetOrSetPropertyAction(
                 path=attr_path_and_name,
                 id_at_location=result_id_at_location,
-                address=__self.client.address,
+                address=__self.client.node_uid,
                 _self=__self,
                 args=pointer_args,
                 kwargs=pointer_kwargs,
@@ -773,7 +773,7 @@ class Class(Callable):
                 description=description,
                 search_permissions={VERIFYALL: None} if pointable else {},
             )
-            obj_msg = SaveObjectAction(obj=storable, address=client.address)
+            obj_msg = SaveObjectAction(obj=storable, address=client.node_uid)
 
             immediate = kwargs.get("immediate", True)
 
@@ -1017,7 +1017,7 @@ def pointerize_args_and_kwargs(
             pointer_kwargs[k] = arg
 
     if obj_lst:
-        msg = ActionSequence(obj_lst=obj_lst, address=client.address)
+        msg = ActionSequence(obj_lst=obj_lst, address=client.node_uid)
 
         # send message to client
         client.send_immediate_msg_without_reply(msg=msg)

@@ -56,7 +56,7 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         object_id: UID,
-        address: Address,
+        address: UID,
         requester_verify_key: VerifyKey,
         owner_address: Address,
         status: Optional[str] = "",

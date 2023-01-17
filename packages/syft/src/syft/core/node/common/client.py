@@ -56,10 +56,12 @@ class Client(AbstractNodeClient):
         "domain",
         "device",
         "vm",
+        "node_uid",
     ]
 
     def __init__(
         self,
+        node_uid: UID,
         name: Optional[str],
         routes: List[Route],
         network: Optional[Location] = None,
@@ -78,6 +80,7 @@ class Client(AbstractNodeClient):
         self.routes = routes
         self.default_route_index = 0
         self.processing_pointers: Dict[UID, bool] = {}
+        self.node_uid = node_uid
 
         # gc_strategy_name = gc_get_default_strategy()
         # self.gc = GarbageCollection(gc_strategy_name)
@@ -226,7 +229,7 @@ class Client(AbstractNodeClient):
         if isinstance(msg, NodeRunnableMessageWithReply) or isinstance(
             msg, TFFMessageWithReply
         ):
-            msg = msg.prepare(address=self.address, reply_to=self.address)
+            msg = msg.prepare(address=self.node_uid, reply_to=self.node_uid)
 
         route_index = route_index or self.default_route_index
 
@@ -277,7 +280,7 @@ class Client(AbstractNodeClient):
             )
             debug(output)
             msg = msg.sign(signing_key=self.signing_key)
-        debug(f"> Sending {msg.pprint} {self.pprint} ➡️  {msg.address.pprint}")
+        debug(f"> Sending {msg.pprint} {self.pprint} ➡️  {msg.address}")
         self.routes[route_index].send_immediate_msg_without_reply(
             msg=msg, timeout=timeout
         )
@@ -324,7 +327,7 @@ class StoreClient:
     @property
     def store(self) -> List[Pointer]:
         msg = ObjectSearchMessage(
-            address=self.client.address, reply_to=self.client.address
+            address=self.client.node_uid, reply_to=self.client.node_uid
         )
 
         results = getattr(
@@ -448,7 +451,7 @@ class StoreClient:
             return self.store[key]
         elif isinstance(key, UID):
             msg = ObjectSearchMessage(
-                address=self.client.address, reply_to=self.client.address, obj_id=key
+                address=self.client.node_uid, reply_to=self.client.node_uid, obj_id=key
             )
             results = getattr(
                 self.client.send_immediate_msg_with_reply(

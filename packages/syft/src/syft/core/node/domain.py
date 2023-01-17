@@ -26,8 +26,6 @@ from ...logger import traceback
 from ...telemetry import instrument
 from ..adp.ledger_store import RedisLedgerStore
 from ..common.message import SignedImmediateSyftMessageWithReply
-from ..common.message import SignedMessage
-from ..common.message import SyftMessage
 from ..common.uid import UID
 from ..io.location import Location
 from ..io.location import SpecificLocation
@@ -267,17 +265,6 @@ class Domain(Node):
     # @property
     # def id(self) -> UID:
     #     return self.domain.id
-
-    def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
-
-        # this needs to be defensive by checking domain_id NOT domain.id or it breaks
-        try:
-            return msg.address.domain_id == self.id and msg.address.device is None
-        except Exception as excp3:
-            critical(
-                f"Error checking if {msg.pprint} is for me on {self.pprint}. {excp3}"
-            )
-            return False
 
     def set_request_status(
         self, message_request_id: UID, status: RequestStatus, client: Client

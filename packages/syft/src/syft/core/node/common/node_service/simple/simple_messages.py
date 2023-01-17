@@ -28,7 +28,7 @@ class NodeRunnableMessageWithReply:
             "Nothing to see here..." + self.stuff
         )  # leaving this in for the test suite
 
-    def prepare(self, address: Address, reply_to: Address) -> "SimpleMessage":
+    def prepare(self, address: UID, reply_to: UID) -> "SimpleMessage":
         return SimpleMessage(address=address, reply_to=reply_to, payload=self)
 
 
@@ -55,7 +55,7 @@ class SimpleReplyMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         payload: NodeRunnableMessageWithReply,
-        address: Address,
+        address: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)

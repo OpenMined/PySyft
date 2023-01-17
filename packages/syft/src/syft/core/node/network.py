@@ -16,11 +16,7 @@ from pydantic import BaseSettings
 
 # relative
 from ...lib.python import String
-from ...logger import error
 from ..common.message import SignedImmediateSyftMessageWithReply
-from ..common.message import SignedMessage
-from ..common.message import SyftMessage
-from ..common.uid import UID
 from ..io.location import Location
 from ..io.location import SpecificLocation
 from .common.node import Node
@@ -196,14 +192,6 @@ class Network(Node):
     def icon(self) -> str:
         return "🔗"
 
-    @property
-    def id(self) -> UID:
-        return self.network.id
-
-    def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
-        # this needs to be defensive by checking network_id NOT network.id or it breaks
-        try:
-            return msg.address.network_id == self.id and msg.address.domain is None
-        except Exception as e:
-            error(f"Error checking if {msg.pprint} is for me on {self.pprint}. {e}")
-            return False
+    # @property
+    # def id(self) -> UID:
+    #     return self.node_uid

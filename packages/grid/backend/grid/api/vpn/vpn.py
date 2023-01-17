@@ -52,7 +52,7 @@ def connect(
                 "vpn_auth_key": vpn_auth_key,
             }
         )
-        .to(address=node.address, reply_to=node.address)
+        .to(address=node.node_uid, reply_to=node.node_uid)
         .sign(signing_key=user_key)
     )
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
@@ -77,7 +77,7 @@ def join(
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
     msg = (
         VPNJoinMessageWithReply(kwargs={"grid_url": GridURL.from_url(host_or_ip)})
-        .to(address=node.address, reply_to=node.address)
+        .to(address=node.node_uid, reply_to=node.node_uid)
         .sign(signing_key=user_key)
     )
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
@@ -101,7 +101,7 @@ def status(
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
     msg = (
         VPNStatusMessageWithReply(kwargs={})
-        .to(address=node.address, reply_to=node.address)
+        .to(address=node.node_uid, reply_to=node.node_uid)
         .sign(signing_key=user_key)
     )
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
@@ -123,7 +123,7 @@ if settings.NODE_TYPE.lower() == "network":
     def register() -> Dict[str, Any]:
         msg = (
             VPNRegisterMessageWithReply(kwargs={}).to(
-                address=node.address, reply_to=node.address
+                address=node.node_uid, reply_to=node.node_uid
             )
             # .sign(signing_key=user_key)
         )

@@ -21,6 +21,7 @@ from .... import __version__
 from ....core.node.new.api import SyftAPI
 from ....grid import GridURL
 from ....lib import lib_ast
+from ....logger import critical
 from ....logger import debug
 from ....logger import error
 from ....logger import traceback_and_raise
@@ -35,6 +36,7 @@ from ...common.message import SignedImmediateSyftMessageWithoutReply
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.uid import UID
+from ...io.address import Address
 from ...io.location import Location
 from ...io.route import Route
 from ...io.route import SoloRoute
@@ -372,7 +374,6 @@ class Node(AbstractNode):
         return Metadata(
             name=self.name if self.name else "",
             id=self.id,
-            node=self.target_id,
             node_type=str(type(self).__name__),
             version=str(__version__),
         )
@@ -494,7 +495,20 @@ class Node(AbstractNode):
         return self.node_uid
 
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
-        traceback_and_raise(NotImplementedError)
+
+        # this needs to be defensive by checking domain_id NOT domain.id or it breaks
+        try:
+            msg_address_id = (
+                msg.address.target_id.id
+                if isinstance(msg.address, Address)
+                else msg.address
+            )
+            return msg_address_id == self.id
+        except Exception as excp3:
+            critical(
+                f"Error checking if {msg.pprint} is for me on {self.pprint}. {excp3}"
+            )
+        return False
 
     def recv_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
@@ -626,9 +640,7 @@ class Node(AbstractNode):
             )  # in the event the message is unsigned
             debug(f"> Processing 📨 {msg.pprint} @ {self.pprint} {contents}")
             if self.message_is_for_me(msg=msg):
-                debug(
-                    f"> Recipient Found {msg.pprint}{msg.address.target_emoji()} == {self.pprint}"
-                )
+                debug(f"> Recipient Found {msg.pprint}{msg.address} == {self.pprint}")
 
                 # only a small number of messages are allowed to be unsigned otherwise
                 # they need to be valid
@@ -661,7 +673,7 @@ class Node(AbstractNode):
 
             else:
                 debug(
-                    f"> Recipient Not Found ↪️ {msg.pprint}{msg.address.target_emoji()} != {self.pprint}"
+                    f"> Recipient Not Found ↪️ {msg.pprint}{msg.address} != {self.pprint}"
                 )
                 # Forward message onwards
                 if issubclass(type(msg), SignedImmediateSyftMessageWithReply):
