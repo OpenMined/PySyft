@@ -2003,7 +2003,7 @@ class GammaTensor:
 
     @staticmethod
     def _infix_func(
-        left: Any, right: Any, gamma_op: GAMMA_TENSOR_OP
+        left: Any, right: Any, gamma_op: GAMMA_TENSOR_OP, is_linear_op: bool
     ) -> GammaTensor:
         left = debox_phi(left)
         right = debox_phi(right)
@@ -2013,7 +2013,7 @@ class GammaTensor:
         is_linear = (
             debox_linear(left)
             and debox_linear(right)
-            and gamma_op == GAMMA_TENSOR_OP.ADD
+            and is_linear_op
         )
         jax_op = SyftJaxInfixOp(jax_op=gamma_op, left=left, right=right)
 
@@ -2021,14 +2021,14 @@ class GammaTensor:
             child=child, jax_op=jax_op, sources=output_state, is_linear=is_linear
         )
 
-    def _rinfix(self, other: Any, gamma_op: GAMMA_TENSOR_OP) -> GammaTensor:
+    def _rinfix(self, other: Any, gamma_op: GAMMA_TENSOR_OP, is_linear_op: bool) -> GammaTensor:
         return self._infix_func(
-            left=other, right=self, gamma_op=gamma_op
+            left=other, right=self, gamma_op=gamma_op, is_linear_op=is_linear_op
         )
 
-    def _infix(self, other: Any, gamma_op: GAMMA_TENSOR_OP) -> GammaTensor:
+    def _infix(self, other: Any, gamma_op: GAMMA_TENSOR_OP, is_linear_op: bool) -> GammaTensor:
         return self._infix_func(
-            left=self, right=other, gamma_op=gamma_op
+            left=self, right=other, gamma_op=gamma_op, is_linear_op=is_linear_op
         )
 
     def _unary_op(
@@ -2055,90 +2055,90 @@ class GammaTensor:
         )
 
     def __add__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.ADD)
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.ADD, is_linear_op=True)
 
     def __sub__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.SUBTRACT)
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.SUBTRACT, is_linear_op=True)
 
     def __mod__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.MOD)
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.MOD, is_linear_op=False)
 
     def __mul__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.MULTIPLY)
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.MULTIPLY, is_linear_op=True)
 
     def __truediv__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.TRUE_DIVIDE)
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.TRUE_DIVIDE, is_linear_op=True)
 
     def __floordiv__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.FLOOR_DIVIDE)
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.FLOOR_DIVIDE, is_linear_op=True)
 
     def __matmul__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.MATMUL)
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.MATMUL, is_linear_op=False)
 
     def __gt__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.GREATER)
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.GREATER, is_linear_op=False)
 
     def __ge__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.GREATER_EQUAL)
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.GREATER_EQUAL, is_linear_op=False)
 
     def __lt__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.LESS)
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.LESS, is_linear_op=False)
 
     def __le__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.LESS_EQUAL)
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.LESS_EQUAL, is_linear_op=False)
 
     def __eq__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.EQUAL)
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.EQUAL, is_linear_op=False)
 
     def __ne__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.NOT_EQUAL)
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.NOT_EQUAL, is_linear_op=False)
 
     def __and__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.BITWISE_AND)
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.BITWISE_AND, is_linear_op=False)
 
     def __or__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.BITWISE_OR)
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.BITWISE_OR, is_linear_op=False)
 
     def __lshift__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.LSHIFT)
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.LSHIFT, is_linear_op=False)
 
     def __rshift__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.RSHIFT)
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.RSHIFT, is_linear_op=False)
 
     def __xor__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.BITWISE_XOR)
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.BITWISE_XOR, is_linear_op=False)
 
     def dot(self, other: Union[np.ndarray, GammaTensor]) -> GammaTensor:
         # QUESTION: is there a reason other can't be a non gamma tensor numpy array?
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.DOT)
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.DOT, is_linear_op=False)
 
     #  __r*__ infix operations
 
     def __radd__(self, other: Any) -> GammaTensor:
         # return self.__add__(other)
-        return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.ADD)
+        return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.ADD, is_linear_op=True)
 
     def __rsub__(self, other: Any) -> GammaTensor:
         # return (self.__sub__(other)) * -1
-        return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.SUBTRACT)
+        return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.SUBTRACT, is_linear_op=True)
 
     def __rmod__(self, other: Any) -> GammaTensor:
-        return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.MOD)
+        return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.MOD, is_linear_op=False)
 
     def __rmul__(self, other: Any) -> GammaTensor:
-        return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.MULTIPLY)
+        return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.MULTIPLY, is_linear_op=True)
 
     def __rtruediv__(self, other: Any) -> GammaTensor:
-        return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.TRUE_DIVIDE)
+        return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.TRUE_DIVIDE, is_linear_op=True)
 
     def __rfloordiv__(self, other: Any) -> GammaTensor:
-        return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.FLOOR_DIVIDE)
+        return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.FLOOR_DIVIDE, is_linear_op=True)
 
     def __rmatmul__(self, other: Any) -> GammaTensor:
-        return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.MATMUL)
+        return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.MATMUL, is_linear_op=False)
 
     def __divmod__(self, other: Any) -> GammaTensor:
-        return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.DIVMOD)
+        return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.DIVMOD, is_linear_op=False)
 
     def divmod(self, other: Any) -> GammaTensor:
         return self.__divmod__(other)
@@ -2146,16 +2146,16 @@ class GammaTensor:
     #  unary operations
 
     def __abs__(self) -> GammaTensor:
-        return self._unary_op(gamma_op=GAMMA_TENSOR_OP.ABS, is_linear=True)
+        return self._unary_op(gamma_op=GAMMA_TENSOR_OP.ABS, is_linear=False)
 
     def argmax(self, axis: Optional[int] = None) -> GammaTensor:
         return self._unary_op(
-            gamma_op=GAMMA_TENSOR_OP.ARGMAX, is_linear=True, args=[axis]
+            gamma_op=GAMMA_TENSOR_OP.ARGMAX, is_linear=False, args=[axis]
         )
 
     def argmin(self, axis: Optional[int] = None) -> GammaTensor:
         return self._unary_op(
-            gamma_op=GAMMA_TENSOR_OP.ARGMIN, is_linear=True, args=[axis]
+            gamma_op=GAMMA_TENSOR_OP.ARGMIN, is_linear=False, args=[axis]
         )
 
     def log(self) -> GammaTensor:  # TODO 0.7: this needs a test
@@ -2182,7 +2182,7 @@ class GammaTensor:
 
     def __pow__(self, *args: Any, **kwargs: Any):
         return self._unary_op(
-            gamma_op=GAMMA_TENSOR_OP.POWER, is_linear=True, args=args, kwargs=kwargs
+            gamma_op=GAMMA_TENSOR_OP.POWER, is_linear=False, args=args, kwargs=kwargs
         )
 
     def ones_like(self, *args: Any, **kwargs: Any):
@@ -2218,7 +2218,7 @@ class GammaTensor:
     #     )
 
     def __round__(self, n: int = 0) -> GammaTensor:
-        return self._unary_op(gamma_op=GAMMA_TENSOR_OP.ROUND, is_linear=True, args=[n])
+        return self._unary_op(gamma_op=GAMMA_TENSOR_OP.ROUND, is_linear=False, args=[n])
 
     def round(self, n: int = 0) -> GammaTensor:
         return self.__round__(n)
@@ -2268,7 +2268,7 @@ class GammaTensor:
     ) -> GammaTensor:
         return self._unary_op(
             gamma_op=GAMMA_TENSOR_OP.ANY,
-            is_linear=True,
+            is_linear=False,
             kwargs={"axis": axis, "keepdims": keepdims},
         )
 
@@ -2279,7 +2279,7 @@ class GammaTensor:
     ) -> GammaTensor:
         return self._unary_op(
             gamma_op=GAMMA_TENSOR_OP.ALL,
-            is_linear=True,
+            is_linear=False,
             kwargs={"axis": axis, "keepdims": keepdims},
         )
 
@@ -2344,7 +2344,7 @@ class GammaTensor:
     def sqrt(self, *args: Any, **kwargs: Any) -> GammaTensor:
         return self._unary_op(
             gamma_op=GAMMA_TENSOR_OP.SQRT,
-            is_linear=True,
+            is_linear=False,
             args=args,
             kwargs=kwargs,
         )
@@ -2352,7 +2352,7 @@ class GammaTensor:
     def abs(self, *args: Any, **kwargs: Any) -> GammaTensor:
         return self._unary_op(
             gamma_op=GAMMA_TENSOR_OP.ABS,
-            is_linear=True,
+            is_linear=False,
             args=args,
             kwargs=kwargs,
         )
@@ -2365,13 +2365,13 @@ class GammaTensor:
     ) -> GammaTensor:
         return self._unary_op(
             gamma_op=GAMMA_TENSOR_OP.CLIP,
-            is_linear=True,
+            is_linear=False,
             args=[a_min, a_max],
             kwargs=kwargs,
         )
 
     def nonzero(self) -> GammaTensor:
-        return self._unary_op(gamma_op=GAMMA_TENSOR_OP.NONZERO, is_linear=True)
+        return self._unary_op(gamma_op=GAMMA_TENSOR_OP.NONZERO, is_linear=False)
 
     def swapaxes(self, axis1: int, axis2: int) -> GammaTensor:
         return self._unary_op(
@@ -2418,7 +2418,7 @@ class GammaTensor:
         )
 
     def ptp(self, axis: OptionalAxisArg = None) -> GammaTensor:
-        return self._unary_op(gamma_op=GAMMA_TENSOR_OP.PTP, is_linear=True, args=[axis])
+        return self._unary_op(gamma_op=GAMMA_TENSOR_OP.PTP, is_linear=False, args=[axis])
 
     def take(
         self,
@@ -2461,7 +2461,7 @@ class GammaTensor:
     ) -> GammaTensor:
         return self._unary_op(
             gamma_op=GAMMA_TENSOR_OP.CUMSUM,
-            is_linear=True,
+            is_linear=False,
             kwargs={"axis": axis, "dtype": dtype},
         )
 
@@ -2470,61 +2470,59 @@ class GammaTensor:
     ) -> GammaTensor:
         return self._unary_op(
             gamma_op=GAMMA_TENSOR_OP.CUMPROD,
-            is_linear=True,
+            is_linear=False,
             kwargs={"axis": axis, "dtype": dtype},
         )
 
-    # @property
-    # def lipschitz_bound(self) -> float:
-    #     if self.is_linear:
-    #         return 1.0
+    @property
+    def lipschitz_bound(self) -> float:
+        if self.is_linear:
+            return 1.0
 
-    #     # stdlib
+        def convert_array_to_dict_state(array_state: Dict, input_sizes: Dict) -> Dict:
+            start_id = 0
+            state = {}
 
-    #     def convert_array_to_dict_state(array_state: Dict, input_sizes: Dict) -> Dict:
-    #         start_id = 0
-    #         state = {}
+            for id, shape in input_sizes.items():
+                total_size = 1
+                for size in shape:
+                    total_size *= size
+                state[id] = np.reshape(
+                    array_state[start_id : start_id + total_size], shape  # noqa: E203
+                )
+                start_id += total_size
 
-    #         for id, shape in input_sizes.items():
-    #             total_size = 1
-    #             for size in shape:
-    #                 total_size *= size
-    #             state[id] = np.reshape(
-    #                 array_state[start_id : start_id + total_size], shape  # noqa: E203
-    #             )
-    #             start_id += total_size
+            return state
 
-    #         return state
+        def convert_state_to_bounds(input_sizes: Dict, input_states: Dict) -> List:
+            bounds = []
+            for id in input_sizes:
+                bounds.extend(
+                    list(
+                        zip(
+                            input_states[id].min_vals.to_numpy().flatten(),
+                            input_states[id].max_vals.to_numpy().flatten(),
+                        )
+                    )
+                )
+            return bounds
 
-    #     def convert_state_to_bounds(input_sizes: Dict, input_states: Dict) -> List:
-    #         bounds = []
-    #         for id in input_sizes:
-    #             bounds.extend(
-    #                 list(
-    #                     zip(
-    #                         input_states[id].min_vals.to_numpy().flatten(),
-    #                         input_states[id].max_vals.to_numpy().flatten(),
-    #                     )
-    #                 )
-    #             )
-    #         return bounds
+        grad_fn = jax.grad(jax.jit(lambda state: jnp.sum(self.func(state))))
 
-    #     grad_fn = jax.grad(jax.jit(lambda state: jnp.sum(self.func(state))))
+        input_sizes = {tensor.id: tensor.shape for tensor in self.sources.values()}
+        bounds = convert_state_to_bounds(input_sizes, self.sources)
 
-    #     input_sizes = {tensor.id: tensor.shape for tensor in self.sources.values()}
-    #     bounds = convert_state_to_bounds(input_sizes, self.sources)
+        def search(array_state: Dict) -> jnp.DeviceArray:
+            dict_state = convert_array_to_dict_state(array_state, input_sizes)
+            grads = grad_fn(dict_state)
+            return -jnp.max(jnp.array(list(grads.values())))
 
-    #     def search(array_state: Dict) -> jnp.DeviceArray:
-    #         dict_state = convert_array_to_dict_state(array_state, input_sizes)
-    #         grads = grad_fn(dict_state)
-    #         return -jnp.max(jnp.array(list(grads.values())))
-
-    #     return -shgo(search, bounds=bounds, sampling_method="simplicial").fun
+        return -shgo(search, bounds=bounds, sampling_method="simplicial").fun
 
     def prod(self, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> GammaTensor:
         return self._unary_op(
             gamma_op=GAMMA_TENSOR_OP.PROD,
-            is_linear=True,
+            is_linear=False,
             kwargs={"axis": axis}
         )
 
@@ -2550,7 +2548,7 @@ class GammaTensor:
     ) -> GammaTensor:
         return self._unary_op(
             gamma_op=GAMMA_TENSOR_OP.MIN,
-            is_linear=True,
+            is_linear=False,
             kwargs={"axis": axis, "keepdims": keepdims, "initial": initial}
         )
     
@@ -2562,21 +2560,21 @@ class GammaTensor:
     ) -> GammaTensor:
         return self._unary_op(
             gamma_op=GAMMA_TENSOR_OP.MAX,
-            is_linear=True,
+            is_linear=False,
             kwargs={"axis": axis, "keepdims": keepdims, "initial": initial}
         )
     
     def sort(self, axis: int = -1, kind: Optional[str] = None) -> GammaTensor:
         return self._unary_op(
             gamma_op=GAMMA_TENSOR_OP.SORT,
-            is_linear=True,
+            is_linear=False,
             kwargs={"axis": axis, "kind": kind}
         )
     
     def argsort(self, axis: int = -1, kind: Optional[str] = None) -> GammaTensor:
         return self._unary_op(
             gamma_op=GAMMA_TENSOR_OP.ARGSORT,
-            is_linear=True,
+            is_linear=False,
             kwargs={"axis": axis, "kind": kind}
         )
 
