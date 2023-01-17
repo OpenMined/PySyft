@@ -153,7 +153,7 @@ class Network(Node):
     ) -> Network:
         # Build Syft Message
         msg: SignedImmediateSyftMessageWithReply = CreateInitialSetUpMessage(
-            address=self.address,
+            address=self.id,
             name=first_superuser_name,
             email=first_superuser_email,
             password=first_superuser_password,
