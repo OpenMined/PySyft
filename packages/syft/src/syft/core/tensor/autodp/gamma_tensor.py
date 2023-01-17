@@ -114,7 +114,7 @@ def debox_phi(other: Any) -> Any:
 
     if not isinstance(other, PhiTensor):
         return other
-    return debox_other(other, "gamma")
+    return other.gamma
 
 
 def update_state(state, other) -> Dict:
@@ -2003,10 +2003,12 @@ class GammaTensor:
 
     @staticmethod
     def _infix_func(
-        left: Any, right: Any, output_state: Dict, gamma_op: GAMMA_TENSOR_OP
+        left: Any, right: Any, gamma_op: GAMMA_TENSOR_OP
     ) -> GammaTensor:
         left = debox_phi(left)
         right = debox_phi(right)
+        state = left.sources.copy() if hasattr(left, "sources") else {}
+        output_state = update_state(state, right)
         child = GAMMA_TENSOR_OP_FUNC[gamma_op](debox_child(left), debox_child(right))
         is_linear = (
             debox_linear(left)
@@ -2020,15 +2022,13 @@ class GammaTensor:
         )
 
     def _rinfix(self, other: Any, gamma_op: GAMMA_TENSOR_OP) -> GammaTensor:
-        output_state = update_state(self.sources.copy(), other)
         return self._infix_func(
-            left=other, right=self, output_state=output_state, gamma_op=gamma_op
+            left=other, right=self, gamma_op=gamma_op
         )
 
     def _infix(self, other: Any, gamma_op: GAMMA_TENSOR_OP) -> GammaTensor:
-        output_state = update_state(self.sources.copy(), other)
         return self._infix_func(
-            left=self, right=other, output_state=output_state, gamma_op=gamma_op
+            left=self, right=other, gamma_op=gamma_op
         )
 
     def _unary_op(
