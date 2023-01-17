@@ -90,8 +90,7 @@ def test_gamma_serde(
         min_vals=lower_bound,
     )
     gamma_tensor1 = tensor1.gamma
-
-    print("gamma tensor", gamma_tensor1)
+    
     # Checks to ensure gamma tensor was properly created
     assert isinstance(gamma_tensor1, GammaTensor)
     assert (gamma_tensor1.child == tensor1.child).all()
@@ -1156,8 +1155,8 @@ def test_resize(
 
     new_shape = tuple(map(lambda x: x * 2, reference_data.shape))
     output = gamma_tensor.resize(new_shape)
-    reference_data.resize(new_shape, refcheck=False)
-    flatten_ref = reference_data.flatten()
+    ref_data = np.resize(reference_data, new_shape)
+    flatten_ref = ref_data.flatten()
     flatten_res = output.child.flatten()
 
     assert (flatten_ref == flatten_res).all()
@@ -1262,6 +1261,8 @@ def test_compress(
     # if we have all False compress throws an exception because the size of the slices is 0
     while not any(condition):
         condition = np.random.choice(a=[False, True], size=(reference_data.shape[0]))
+    
+    print(condition.ndim)
     compressed_tensor = gamma_tensor.compress(condition, axis=0)
 
     comp_ind = 0
@@ -1404,22 +1405,6 @@ def test_any(
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
 
-    condition = list(
-        np.random.choice(a=[False, True], size=(reference_data.shape[0] - 1))
-    )
-    condition.append(
-        True
-    )  # If condition = [False, False, False ... False], this test will fail
-    result = (gamma_tensor == reference_data).any(where=condition)
-    assert result.child
-    assert list(result.sources.keys()) == [reference_tensor.id]
-    state = {}
-    for key in result.sources:
-        state[key] = result.sources[key].child
-    assert result.func(state).shape == result.child.shape
-    assert (result.func(state) == result.child).all()
-
-
 def test_all(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1461,20 +1446,6 @@ def test_all(
 
     result = (gamma_tensor == reference_data).all(keepdims=True, axis=0)
     assert result.shape == (1, reference_tensor.shape[0])
-    assert list(result.sources.keys()) == [reference_tensor.id]
-    state = {}
-    for key in result.sources:
-        state[key] = result.sources[key].child
-    assert (result.func(state) == result.child).all()
-
-    condition = list(
-        np.random.choice(a=[False, True], size=(reference_data.shape[0] - 1))
-    )
-    condition.append(
-        True
-    )  # If condition = [False, False, False ... False], this test will fail
-    result = (gamma_tensor == reference_data).all(where=condition)
-    assert result.child
     assert list(result.sources.keys()) == [reference_tensor.id]
     state = {}
     for key in result.sources:
@@ -1525,7 +1496,7 @@ def test_take(
     )
     gamma_tensor = reference_tensor.gamma
 
-    indices = [2]
+    indices = np.array([2])
     result = gamma_tensor.take(indices, axis=0)
     assert reference_tensor == result.sources[reference_tensor.id]
     assert (result.child == reference_tensor.child[indices, :]).all()
@@ -1744,7 +1715,8 @@ def test_nonzero(
     state = {}
     for key in result.sources:
         state[key] = result.sources[key].child
-    assert (result.func(state) == result.child).all()
+    assert (result.func(state)[0] == result.child[0]).all()
+    assert (result.func(state)[1] == result.child[1]).all()
 
 
 def test_var(

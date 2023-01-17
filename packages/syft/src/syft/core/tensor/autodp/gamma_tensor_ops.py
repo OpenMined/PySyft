@@ -4,7 +4,7 @@ import operator
 
 # third party
 import jax.numpy as jnp
-
+import numpy as np
 
 class GAMMA_TENSOR_OP(Enum):
     # Numpy ArrayLike
@@ -91,7 +91,7 @@ GAMMA_TENSOR_OP_FUNC = {
     GAMMA_TENSOR_OP.BITWISE_XOR: operator.xor,
     GAMMA_TENSOR_OP.CHOOSE: jnp.choose,
     GAMMA_TENSOR_OP.CLIP: jnp.clip,
-    GAMMA_TENSOR_OP.COMPRESS: jnp.compress,
+    GAMMA_TENSOR_OP.COMPRESS: lambda x, y, axis: jnp.compress(y, x, axis=axis),
     GAMMA_TENSOR_OP.COPY: jnp.copy,
     GAMMA_TENSOR_OP.CUMPROD: jnp.cumprod,
     GAMMA_TENSOR_OP.CUMSUM: jnp.cumsum,

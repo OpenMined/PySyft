@@ -2106,7 +2106,7 @@ class GammaTensor:
         return self._infix(other, gamma_op=GAMMA_TENSOR_OP.RSHIFT)
 
     def __xor__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.XOR)
+        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.BITWISE_XOR)
 
     def dot(self, other: Union[np.ndarray, GammaTensor]) -> GammaTensor:
         # QUESTION: is there a reason other can't be a non gamma tensor numpy array?
@@ -2246,37 +2246,41 @@ class GammaTensor:
     def compress(
         self, condition: List[bool], axis: Optional[int] = None
     ) -> GammaTensor:
-        return self._unary_op(
-            gamma_op=GAMMA_TENSOR_OP.COMPRESS,
-            is_linear=True,
-            args=[condition],
-            kwargs={"axis": axis},
+        output_state = self.sources.copy()
+        child = jnp.compress(condition, self.child, axis=axis)
+        jax_op = SyftJaxUnaryOp(
+                    jax_op=GAMMA_TENSOR_OP.COMPRESS, 
+                    operand=self, 
+                    args=[condition], 
+                    kwargs={"axis":axis}
+                )
+        return GammaTensor(
+            child=child,
+            jax_op=jax_op,
+            sources=output_state,
+            is_linear=self.is_linear,
         )
 
     def any(
         self,
         axis: OptionalAxisArg = None,
         keepdims: Optional[bool] = None,
-        where: Optional[
-            ArrayLike
-        ] = None,  # QUESTION: do we remove these because where allows querying?
     ) -> GammaTensor:
         return self._unary_op(
             gamma_op=GAMMA_TENSOR_OP.ANY,
             is_linear=True,
-            kwargs={"axis": axis, "keepdims": keepdims, "where": where},
+            kwargs={"axis": axis, "keepdims": keepdims},
         )
 
     def all(
         self,
         axis: OptionalAxisArg = None,
         keepdims: Optional[bool] = None,
-        where: Optional[ArrayLike] = None,
     ) -> GammaTensor:
         return self._unary_op(
             gamma_op=GAMMA_TENSOR_OP.ALL,
             is_linear=True,
-            kwargs={"axis": axis, "keepdims": keepdims, "where": where},
+            kwargs={"axis": axis, "keepdims": keepdims},
         )
 
     def __pos__(self) -> GammaTensor:
@@ -2295,7 +2299,7 @@ class GammaTensor:
         self, newshape: SingleOrTupleInt, order: Optional[str] = "C"
     ) -> GammaTensor:
         return self._unary_op(
-            gamma_op=GAMMA_TENSOR_OP.NEGATIVE,
+            gamma_op=GAMMA_TENSOR_OP.RESHAPE,
             is_linear=True,
             args=[newshape],
             kwargs={"order": order},
@@ -2307,7 +2311,6 @@ class GammaTensor:
         dtype: Optional[np.dtype] = None,
         ddof: Optional[int] = 0,
         keepdims: Optional[bool] = None,
-        where: Optional[ArrayLike] = None,
     ) -> GammaTensor:
         return self._unary_op(
             gamma_op=GAMMA_TENSOR_OP.STD,
@@ -2317,7 +2320,6 @@ class GammaTensor:
                 "dtype": dtype,
                 "ddof": ddof,
                 "keepdims": keepdims,
-                "where": where,
             },
         )
 
@@ -2327,7 +2329,6 @@ class GammaTensor:
         dtype: Optional[np.dtype] = None,
         ddof: Optional[int] = 0,
         keepdims: Optional[bool] = None,
-        where: Optional[ArrayLike] = None,
     ) -> GammaTensor:
         return self._unary_op(
             gamma_op=GAMMA_TENSOR_OP.VAR,
@@ -2337,7 +2338,6 @@ class GammaTensor:
                 "dtype": dtype,
                 "ddof": ddof,
                 "keepdims": keepdims,
-                "where": where,
             },
         )
 
@@ -2364,14 +2364,14 @@ class GammaTensor:
         **kwargs,
     ) -> GammaTensor:
         return self._unary_op(
-            gamma_op=GAMMA_TENSOR_OP.ABS,
+            gamma_op=GAMMA_TENSOR_OP.CLIP,
             is_linear=True,
             args=[a_min, a_max],
             kwargs=kwargs,
         )
 
     def nonzero(self) -> GammaTensor:
-        return self._unary_op(gamma_op=GAMMA_TENSOR_OP.ABS, is_linear=True)
+        return self._unary_op(gamma_op=GAMMA_TENSOR_OP.NONZERO, is_linear=True)
 
     def swapaxes(self, axis1: int, axis2: int) -> GammaTensor:
         return self._unary_op(
@@ -2521,522 +2521,75 @@ class GammaTensor:
 
     #     return -shgo(search, bounds=bounds, sampling_method="simplicial").fun
 
-    # def prod(self, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> GammaTensor:
-    #     """
-    #     Return the product of array elements over a given axis.
-
-    #     Parameters
-    #         axis: None or int or tuple of ints, optional
-    #             Axis or axes along which a product is performed.
-    #             The default, axis=None, will calculate the product of all the elements in the input array.
-    #             If axis is negative it counts from the last to the first axis.
-
-    #             If axis is a tuple of ints, a product is performed on all of the axes specified in the tuple instead of
-    #             a single axis or all the axes as before.
-
-    #         keepdims: bool, optional
-    #             If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
-    #             With this option, the result will broadcast correctly against the input array.
-    #             If the default value is passed, then keepdims will not be passed through to the prod method of
-    #             sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
-    #             implement keepdims any exceptions will be raised.
-
-    #         initial: scalar, optional
-    #             The starting value for this product. See reduce for details.
-
-    #         where: array_like of bool, optional
-    #             Elements to include in the product. See reduce for details.
-    #     """
-    #     result = self.child.prod(axis=axis)
-    #     sources = self.sources.copy()
-
-    #     def _prod(state: Dict) -> GammaTensor:
-    #         return jnp.prod(self.reconstruct(state), axis=axis)
-
-    #     func = _prod
-
-    #     return GammaTensor(
-    #         child=result,
-    #         func=func,
-    #         sources=sources,
-    #     )
-
-    # def __rfloordiv__(self, other: SupportedChainType) -> GammaTensor:
-    #     # relative
-    #     from .phi_tensor import PhiTensor
-
-    #     sources = self.sources.copy()
-
-    #     if isinstance(other, PhiTensor):
-    #         other = other.gamma
-
-    #     if isinstance(other, GammaTensor):
-    #         sources.update(other.sources)
-
-    #         def _floor_divide(state: Dict) -> GammaTensor:
-    #             return jnp.floor_divide(
-    #                 other.reconstruct(state), self.reconstruct(state)
-    #             )
-
-    #         func = _floor_divide
-    #         return GammaTensor(
-    #             child=other.child // self.child,
-    #             func=func,
-    #             sources=sources,
-    #         )
-    #     elif is_acceptable_simple_type(other):
-
-    #         def _floor_divide(state: Dict) -> GammaTensor:
-    #             return jnp.floor_divide(other, self.reconstruct(state))
-
-    #         func = _floor_divide
-    #         return GammaTensor(
-    #             child=other // self.child,
-    #             func=func,
-    #             sources=sources,
-    #             is_linear=self.is_linear,
-    #         )
-    #     else:
-    #         raise NotImplementedError(
-    #             f"floordiv not supported between GammaTensor & {type(other)}"
-    #         )
-
-    # def trace(self, offset: int = 0, axis1: int = 0, axis2: int = 1) -> GammaTensor:
-    #     """
-    #     Return the sum along diagonals of the array.
-
-    #     If a is 2-D, the sum along its diagonal with the given offset is returned, i.e., the sum of elements
-    #     a[i,i+offset] for all i.
-
-    #     If a has more than two dimensions, then the axes specified by axis1 and axis2 are used to determine the 2-D
-    #     sub-arrays whose traces are returned. The shape of the resulting array is the same as that of a with axis1 and
-    #     axis2 removed.
-
-    #     Parameters
-
-    #         offset: int, optional
-    #             Offset of the diagonal from the main diagonal. Can be both positive and negative. Defaults to 0.
-
-    #         axis1, axis2: int, optional
-    #             Axes to be used as the first and second axis of the 2-D sub-arrays from which the diagonals should be
-    #             taken. Defaults are the first two axes of a.
-
-    #     Returns
-
-    #         sum_along_diagonals: GammaTensor
-    #             If a is 2-D, the sum along the diagonal is returned.
-    #             If a has larger dimensions, then an array of sums along diagonals is returned.
-    #     """
-
-    #     sources = self.sources.copy()
-    #     result = self.child.trace(offset, axis1, axis2)
-
-    #     def _trace(state: Dict) -> GammaTensor:
-    #         return jnp.trace(self.reconstruct(state), offset, axis1, axis2)
-
-    #     func = _trace
-
-    #     return GammaTensor(
-    #         child=result,
-    #         func=func,
-    #         sources=sources,
-    #         is_linear=self.is_linear,
-    #     )
-
-    # def diagonal(self, offset: int = 0, axis1: int = 0, axis2: int = 1) -> GammaTensor:
-    #     """
-    #     Return the sum along diagonals of the array.
-
-    #     Return specified diagonals.
-    #     If a is 2-D, returns the diagonal of a with the given offset, i.e., the collection of elements
-    #     of the form a[i, i+offset].
-
-    #     If a has more than two dimensions, then the axes specified by axis1 and axis are used to determine
-    #     the 2-D sub-array whose diagonal is returned.  The shape of the resulting array can be determined by
-    #     removing axis1 and axis2 and appending an index to the right equal to the size of the resulting diagonals.
-
-    #     Parameters
-
-    #         offset: int, optional
-    #             Offset of the diagonal from the main diagonal.  Can be positive or negative.
-    #             Defaults to main diagonal (0).
-    #         axis1, axis2: int, optional
-    #             Axis to be used as the first axis of the 2-D sub-arrays from which the diagonals should be taken.
-    #             Defaults are the first two axes of a.
-
-    #     Returns
-    #         array_of_diagonals : Union[TensorWrappedPhiTensorPointer,MPCTensor]
-    #             If a is 2-D, then a 1-D array containing the diagonal and of the same type as a is returned unless
-    #             a is a matrix, in which case
-    #             a 1-D array rather than a (2-D) matrix is returned in order to maintain backward compatibility.
-
-    #             If a.ndim > 2, then the dimensions specified by axis1 and axis2 are removed, and a new axis
-    #             inserted at the end corresponding to the diagonal.
-    #     """
-    #     sources = self.sources.copy()
-    #     result = self.child.diagonal(offset, axis1, axis2)
-
-    #     def _diag(state: Dict) -> GammaTensor:
-    #         return jnp.diag(self.reconstruct(state), offset, axis1, axis2)
-
-    #     func = _diag
-
-    #     return GammaTensor(
-    #         child=result,
-    #         func=func,
-    #         sources=sources,
-    #         is_linear=self.is_linear,
-    #     )
-
-    # def min(
-    #     self,
-    #     axis: Optional[int] = None,
-    #     keepdims: Optional[bool] = False,
-    #     initial: Optional[float] = None,
-    #     where: Optional[Union[List[bool], ArrayLike[bool]]] = None,
-    # ) -> GammaTensor:
-    #     """
-    #     Return the minimum of an array or minimum along an axis.
-
-    #     Parameters
-    #         axis: None or int or tuple of ints, optional
-    #             Axis or axes along which to operate. By default, flattened input is used.
-    #             If this is a tuple of ints, the minimum is selected over multiple axes,
-    #             instead of a single axis or all the axes as before.
-
-    #         keepdims: bool, optional
-    #             If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
-    #             With this option, the result will broadcast correctly against the input array.
-    #             If the default value is passed, then keepdims will not be passed through to the amin method of
-    #             sub-classes of ndarray, however any non-default value will be.
-    #             If the sub-class’ method does not implement keepdims any exceptions will be raised.
-    #         initial: scalar, optional
-    #             The maximum value of an output element. Must be present to allow computation on empty slice.
-    #             See reduce for details.
-
-    #         where: array_like of bool, optional
-    #             Elements to compare for the minimum. See reduce for details.
-
-    #     Returns
-    #         a_min: GammaTensor
-    #             Minimum of a.
-    #             If axis is None, the result is a scalar value.
-    #             If axis is given, the result is an array of dimension a.ndim - 1.
-    #     """
-    #     sources = self.sources.copy()
-    #     if where is None:
-    #         result = np.amin(self.child, axis=axis, keepdims=keepdims, initial=initial)
-
-    #         def _min(state: Dict) -> GammaTensor:
-    #             return jnp.min(
-    #                 self.reconstruct(state),
-    #                 axis=axis,
-    #                 keepdims=keepdims,
-    #                 initial=initial,
-    #             )
-
-    #         func = _min
-
-    #         return GammaTensor(
-    #             child=result,
-    #             func=func,
-    #             sources=sources,
-    #             is_linear=self.is_linear,
-    #         )
-    #     else:
-    #         if initial is None:
-    #             raise ValueError(
-    #                 "reduction operation 'minimum' does not have an identity, "
-    #                 "so to use a where mask one has to specify 'initial'"
-    #             )
-    #         else:
-    #             result = np.amin(
-    #                 self.child,
-    #                 axis=axis,
-    #                 keepdims=keepdims,
-    #                 initial=initial,
-    #                 where=where,
-    #             )
-
-    #             def _min(state: Dict) -> GammaTensor:
-    #                 return jnp.min(
-    #                     self.reconstruct(state),
-    #                     axis=axis,
-    #                     keepdims=keepdims,
-    #                     initial=initial,
-    #                     where=where,
-    #                 )
-
-    #             func = _min
-    #             return GammaTensor(
-    #                 child=result,
-    #                 func=func,
-    #                 sources=sources,
-    #                 is_linear=self.is_linear,
-    #             )
-
-    # def max(
-    #     self,
-    #     axis: Optional[int] = None,
-    #     keepdims: Optional[bool] = False,
-    #     initial: Optional[float] = None,
-    #     where: Optional[Union[List[bool], ArrayLike[bool]]] = None,
-    # ) -> GammaTensor:
-    #     """
-    #     Return the maximum of an array or minimum along an axis.
-
-    #     Parameters
-    #         axis: None or int or tuple of ints, optional
-    #             Axis or axes along which to operate. By default, flattened input is used.
-    #             If this is a tuple of ints, the minimum is selected over multiple axes,
-    #             instead of a single axis or all the axes as before.
-
-    #         keepdims: bool, optional
-    #             If this is set to True, the axes which are reduced are left in the result as dimensions with
-    #             size one.
-    #             With this option, the result will broadcast correctly against the input array.
-    #             If the default value is passed, then keepdims will not be passed through to the amax method of
-    #             sub-classes of ndarray, however any non-default value will be.
-    #             If the sub-class’ method does not implement keepdims any exceptions will be raised.
-    #         initial: scalar, optional
-    #             The minimum value of an output element. Must be present to allow computation on empty slice.
-    #             See reduce for details.
-
-    #         where: array_like of bool, optional
-    #             Elements to compare for the maximum. See reduce for details.
-
-    #     Returns
-    #         a_max: PhiTensor
-    #             Maximum of a.
-    #             If axis is None, the result is a scalar value.
-    #             If axis is given, the result is an array of dimension a.ndim - 1.
-    #     """
-    #     sources = self.sources.copy()
-    #     if where is None:
-    #         result = np.amax(self.child, axis=axis, keepdims=keepdims, initial=initial)
-
-    #         def _max(state: Dict) -> GammaTensor:
-    #             return jnp.max(
-    #                 self.reconstruct(state),
-    #                 axis=axis,
-    #                 keepdims=keepdims,
-    #                 initial=initial,
-    #             )
-
-    #         func = _max
-    #         return GammaTensor(
-    #             child=result,
-    #             func=func,
-    #             sources=sources,
-    #             is_linear=self.is_linear,
-    #         )
-    #     else:
-    #         if initial is None:
-    #             raise ValueError(
-    #                 "reduction operation 'minimum' does not have an identity, "
-    #                 "so to use a where mask one has to specify 'initial'"
-    #             )
-    #         else:
-    #             result = np.amax(
-    #                 self.child,
-    #                 axis=axis,
-    #                 keepdims=keepdims,
-    #                 initial=initial,
-    #                 where=where,
-    #             )
-
-    #             def _max(state: Dict) -> GammaTensor:
-    #                 return jnp.max(
-    #                     self.reconstruct(state),
-    #                     where=where,
-    #                     axis=axis,
-    #                     keepdims=keepdims,
-    #                     initial=initial,
-    #                 )
-
-    #             func = _max
-    #             return GammaTensor(
-    #                 child=result,
-    #                 func=func,
-    #                 sources=sources,
-    #                 is_linear=self.is_linear,
-    #             )
-
-    # def sort(self, axis: int = -1, kind: Optional[str] = None) -> GammaTensor:
-    #     """
-    #     Return a sorted copy of an array.
-
-    #     Parameters
-
-    #         a: array_like
-    #             Array to be sorted.
-
-    #         axis: int or None, optional
-    #             Axis along which to sort. If None, the array is flattened before sorting.
-    #             The default is -1, which sorts along the last axis.
-
-    #         kind{‘quicksort’, ‘mergesort’, ‘heapsort’, ‘stable’}, optional
-    #             Sorting algorithm. The default is ‘quicksort’.
-    #             Note that both ‘stable’ and ‘mergesort’ use timsort or radix sort under the covers and, in general,
-    #             the actual implementation will vary with data type. The ‘mergesort’ option is retained for backwards
-    #             compatibility.
-
-    #             Changed in version 1.15.0.: The ‘stable’ option was added.
-
-    #         order: str or list of str, optional
-    #             When a is an array with fields defined, this argument specifies which fields to compare first, second,
-    #             etc. A single field can be specified as a string, and not all fields need be specified, but unspecified
-    #              fields will still be used, in the order in which they come up in the dtype, to break ties.
-
-    #     Please see docs here: https://numpy.org/doc/stable/reference/generated/numpy.sort.html
-    #     """
-
-    #     # Must do argsort before we change self.child by calling sort
-    #     # indices = self.child.argsort(axis, kind)
-    #     self.child.sort(axis, kind)
-    #     sources = self.sources.copy()
-
-    #     def _sort(state: Dict) -> GammaTensor:
-    #         return jnp.sort(self.reconstruct(state), axis, kind=kind)
-
-    #     func = _sort
-    #     return GammaTensor(
-    #         child=self.child,
-    #         func=func,
-    #         sources=sources,
-    #     )
-
-    # def argsort(self, axis: Optional[int] = -1) -> GammaTensor:
-    #     """
-    #     Returns the indices that would sort an array.
-
-    #     Perform an indirect sort along the given axis using the algorithm specified by the kind keyword.
-    #     It returns an array of indices of the same shape as a that index data along the given axis in sorted order.
-
-    #     Parameters
-    #         axis: int or None, optional
-    #             Axis along which to sort. The default is -1 (the last axis). If None, the flattened array is used.
-    #         kind: {‘quicksort’, ‘mergesort’, ‘heapsort’, ‘stable’}, optional
-    #             Sorting algorithm. The default is ‘quicksort’. Note that both ‘stable’ and ‘mergesort’ use timsort
-    #             under the covers and, in general, the actual implementation will vary with data type. The ‘mergesort’
-    #             option is retained for backwards compatibility.
-    #         order: str or list of str, optional
-    #             When a is an array with fields defined, this argument specifies which fields to compare 1st, 2nd, etc.
-    #             A single field can be specified as a string, and not all fields need be specified, but unspecified
-    #             fields will still be used, in the order in which they come up in the dtype, to break ties.
-
-    #     Returns
-    #         index_array: ndarray, int
-    #             Array of indices that sort a along the specified axis. If a is one-dimensional, a[index_array] yields a
-    #             sorted a. More generally, np.take_along_axis(a, index_array, axis=axis) always yields the sorted a,
-    #             irrespective of dimensionality.
-    #     """
-    #     sources = self.sources.copy()
-    #     result = self.child.argsort(axis)
-
-    #     def _argsort(state: Dict) -> GammaTensor:
-    #         return jnp.argsort(self.reconstruct(state), axis)
-
-    #     func = _argsort
-    #     return GammaTensor(
-    #         child=result,
-    #         func=func,
-    #         sources=sources,
-    #     )
-
-    # def choose(
-    #     self,
-    #     choices: Union[Sequence, np.ndarray, PassthroughTensor],
-    #     mode: Optional[str] = "raise",
-    # ) -> GammaTensor:
-    #     """
-    #     Construct an array from an index array and a list of arrays to choose from.
-
-    #     First of all, if confused or uncertain, definitely look at the Examples - in its full generality,
-    #     this function is less simple than it might seem from the following code description
-    #     (below ndi = numpy.lib.index_tricks):
-
-    #     np.choose(a,c) == np.array([c[a[I]][I] for I in ndi.ndindex(a.shape)]).
-
-    #     But this omits some subtleties. Here is a fully general summary:
-
-    #     Given an “index” array (a) of integers and a sequence of n arrays (choices), a and each choice array are first
-    #     broadcast, as necessary, to arrays of a common shape; calling these Ba and Bchoices[i], i = 0,…,n-1 we have that
-    #      necessarily, Ba.shape == Bchoices[i].shape for each i. Then, a new array with shape Ba.shape is created
-    #      as follows:
-
-    #         if mode='raise' (the default), then, first of all, each element of a (and thus Ba) must be in the range
-    #         [0, n-1]; now, suppose that i (in that range) is the value at the (j0, j1, ..., jm) position in Ba -
-    #         then the value at the same position in the new array is the value in Bchoices[i] at that same position;
-
-    #         if mode='wrap', values in a (and thus Ba) may be any (signed) integer; modular arithmetic is used to map
-    #         integers outside the range [0, n-1] back into that range; and then the new array is constructed as above;
-
-    #         if mode='clip', values in a (and thus Ba) may be any (signed) integer; negative integers are mapped to 0;
-    #         values greater than n-1 are mapped to n-1; and then the new array is constructed as above.
-
-    #     Parameters
-
-    #         choices: sequence of arrays
-
-    #             Choice arrays. a and all of the choices must be broadcastable to the same shape. If choices is itself an
-    #              array (not recommended), then its outermost dimension (i.e., the one corresponding to choices.shape[0])
-    #               is taken as defining the “sequence”.
-
-    #         out: array, optional
-
-    #             If provided, the result will be inserted into this array. It should be of the appropriate shape and
-    #             dtype. Note that out is always buffered if mode='raise'; use other modes for better performance.
-
-    #         mode{‘raise’ (default), ‘wrap’, ‘clip’}, optional
-
-    #             Specifies how indices outside [0, n-1] will be treated:
-
-    #                     ‘raise’ : an exception is raised
-
-    #                     ‘wrap’ : value becomes value mod n
-
-    #                     ‘clip’ : values < 0 are mapped to 0, values > n-1 are mapped to n-1
-
-    #     Returns
-    #         merged_array: PhiTensor
-    #             The merged result.
-
-    #     Raises
-    #         ValueError: shape mismatch
-    #             If a and each choice array are not all broadcastable to the same shape.
-
-    #     """
-    #     # relative
-    #     from .phi_tensor import PhiTensor
-
-    #     sources = self.sources.copy()
-    #     if isinstance(choices, PhiTensor):
-    #         choices = choices.gamma
-
-    #     if isinstance(choices, GammaTensor):
-    #         sources.update(choices.sources)
-    #         result = np.choose(self.child, choices.child, mode=mode)
-
-    #         def _choose(state: Dict) -> GammaTensor:
-    #             return jnp.choose(
-    #                 self.reconstruct(state), choices.reconstruct(state), mode=mode  # type: ignore
-    #             )
-
-    #         func = _choose
-    #     else:
-    #         raise NotImplementedError(
-    #             f"Object type: {type(choices)} This leads to a data leak or side channel attack"
-    #         )
-
-    #     return GammaTensor(
-    #         child=result,
-    #         sources=sources,
-    #         func=func,
-    #     )
-
-    # def expand_dims(self, axis: Optional[int] = None) -> GammaTensor:
-    #     raise NotImplementedError
+    def prod(self, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.PROD,
+            is_linear=True,
+            kwargs={"axis": axis}
+        )
+
+    def trace(self, offset: int = 0, axis1: int = 0, axis2: int = 1) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.TRACE,
+            is_linear=True,
+            kwargs={"offset": offset, "axis1": axis1, "axis2": axis2}
+        )
+
+    def diagonal(self, offset: int = 0, axis1: int = 0, axis2: int = 1) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.DIAGONAL,
+            is_linear=True,
+            kwargs={"offset": offset, "axis1": axis1, "axis2": axis2}
+        )
+
+    def min(
+        self,
+        axis: Optional[int] = None,
+        keepdims: Optional[bool] = False,
+        initial: Optional[float] = None,
+    ) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.MIN,
+            is_linear=True,
+            kwargs={"axis": axis, "keepdims": keepdims, "initial": initial}
+        )
+    
+    def max(
+        self,
+        axis: Optional[int] = None,
+        keepdims: Optional[bool] = False,
+        initial: Optional[float] = None,
+    ) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.MAX,
+            is_linear=True,
+            kwargs={"axis": axis, "keepdims": keepdims, "initial": initial}
+        )
+    
+    def sort(self, axis: int = -1, kind: Optional[str] = None) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.SORT,
+            is_linear=True,
+            kwargs={"axis": axis, "kind": kind}
+        )
+    
+    def argsort(self, axis: int = -1, kind: Optional[str] = None) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.ARGSORT,
+            is_linear=True,
+            kwargs={"axis": axis, "kind": kind}
+        )
+
+    def choose(
+        self,
+        choices: Union[Sequence, np.ndarray, PassthroughTensor],
+        mode: Optional[str] = "raise",
+    ) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.CHOOSE,
+            is_linear=True,
+            kwargs={"choices": choices, "mode": mode}
+        )
 
     # @staticmethod
     # def convert_dsl(
@@ -3060,30 +2613,27 @@ class GammaTensor:
     #     else:
     #         return {}
 
-    # def publish(
-    #     self,
-    #     get_budget_for_user: Callable,
-    #     deduct_epsilon_for_user: Callable,
-    #     ledger: DataSubjectLedger,
-    #     sigma: float,
-    #     private: bool,
-    # ) -> np.ndarray:
-    #     return publish(
-    #         tensor=self,
-    #         ledger=ledger,
-    #         get_budget_for_user=get_budget_for_user,
-    #         deduct_epsilon_for_user=deduct_epsilon_for_user,
-    #         sigma=sigma,
-    #         is_linear=self.is_linear,
-    #         private=private,
-    #     )
+    def publish(
+        self,
+        get_budget_for_user: Callable,
+        deduct_epsilon_for_user: Callable,
+        ledger: DataSubjectLedger,
+        sigma: float,
+        private: bool,
+    ) -> np.ndarray:
+        return publish(
+            tensor=self,
+            ledger=ledger,
+            get_budget_for_user=get_budget_for_user,
+            deduct_epsilon_for_user=deduct_epsilon_for_user,
+            sigma=sigma,
+            is_linear=self.is_linear,
+            private=private,
+        )
 
     @property
     def shape(self) -> Tuple[int, ...]:
         return self.child.shape
-
-    # @property
-    # n -float(res.fun)
 
     @property
     def dtype(self) -> np.dtype:

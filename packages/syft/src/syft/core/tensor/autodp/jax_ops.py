@@ -7,6 +7,7 @@ from typing import Union
 
 # third party
 import jax.numpy as jnp
+from numpy.typing import ArrayLike
 
 # relative
 from ...common.serde.serializable import serializable
@@ -39,12 +40,14 @@ class SyftJaxOp:
 
 @serializable(recursive_serde=True)
 class SyftTerminalNoop(SyftJaxOp):
+    phi_id: UID
+    
     def __init__(self, phi_id: UID) -> None:
         self.phi_id = phi_id
 
     @property
     def func(self) -> Callable:
-        def reconstruct(state: Dict) -> PhiTensor:
+        def reconstruct(state: Dict) -> ArrayLike:
             return state[self.phi_id]
 
         return reconstruct
