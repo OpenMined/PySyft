@@ -121,7 +121,11 @@ def update_state(state, other) -> Dict:
     if isinstance(other, GammaTensor):
         state.update(other.sources)
     return state
-    
+
+
+SingleOrTupleInt = Union[int, Tuple[int, ...]]
+OptionalAxisArg = Optional[SingleOrTupleInt]
+
 
 @serializable(recursive_serde=True)
 class TensorWrappedGammaTensorPointer(Pointer):
@@ -2004,7 +2008,11 @@ class GammaTensor:
         left = debox_phi(left)
         right = debox_phi(right)
         child = GAMMA_TENSOR_OP_FUNC[gamma_op](debox_child(left), debox_child(right))
-        is_linear = debox_linear(left) and debox_linear(right) and gamma_op == GAMMA_TENSOR_OP.ADD
+        is_linear = (
+            debox_linear(left)
+            and debox_linear(right)
+            and gamma_op == GAMMA_TENSOR_OP.ADD
+        )
         jax_op = SyftJaxInfixOp(jax_op=gamma_op, left=left, right=right)
 
         return GammaTensor(
@@ -2024,17 +2032,26 @@ class GammaTensor:
         )
 
     def _unary_op(
-        self, 
-        gamma_op: GAMMA_TENSOR_OP, 
-        is_linear: bool = False, 
-        args: Optional[Any] = [], 
-        kwargs: Optional[Any] = {}
+        self,
+        gamma_op: GAMMA_TENSOR_OP,
+        is_linear: bool = False,
+        args: Optional[Any] = None,
+        kwargs: Optional[Any] = None,
     ) -> GammaTensor:
+        args = (
+            args if args is not None else []
+        )  # can't use collections in default params
+        kwargs = (
+            kwargs if kwargs is not None else {}
+        )  # can't use collections in default params
         output_state = self.sources.copy()
         child = GAMMA_TENSOR_OP_FUNC[gamma_op](self.child, *args, **kwargs)
         jax_op = SyftJaxUnaryOp(jax_op=gamma_op, operand=self, args=args, kwargs=kwargs)
         return GammaTensor(
-            child=child, jax_op=jax_op, sources=output_state, is_linear=is_linear and self.is_linear
+            child=child,
+            jax_op=jax_op,
+            sources=output_state,
+            is_linear=is_linear and self.is_linear,
         )
 
     def __add__(self, other: Any) -> GammaTensor:
@@ -2124,43 +2141,64 @@ class GammaTensor:
         return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.DIVMOD)
 
     def divmod(self, other: Any) -> GammaTensor:
-        return self.divmod(other)
-    
+        return self.__divmod__(other)
+
+    #  unary operations
+
     def __abs__(self) -> GammaTensor:
         return self._unary_op(gamma_op=GAMMA_TENSOR_OP.ABS, is_linear=True)
 
     def argmax(self, axis: Optional[int] = None) -> GammaTensor:
-        return self._unary_op(gamma_op=GAMMA_TENSOR_OP.ARGMAX, is_linear=True, args=[axis])
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.ARGMAX, is_linear=True, args=[axis]
+        )
 
     def argmin(self, axis: Optional[int] = None) -> GammaTensor:
-        return self._unary_op(gamma_op=GAMMA_TENSOR_OP.ARGMIN, is_linear=True, args=[axis])
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.ARGMIN, is_linear=True, args=[axis]
+        )
 
-    def log(self) -> GammaTensor: # TODO 0.7: this needs a test
+    def log(self) -> GammaTensor:  # TODO 0.7: this needs a test
         return self._unary_op(gamma_op=GAMMA_TENSOR_OP.LOG, is_linear=False)
 
-    def flatten(self, order: str = "C"): # TODO 0.7: this needs a test
-        return self._unary_op(gamma_op=GAMMA_TENSOR_OP.FLATTEN, is_linear=True, args=order)
+    def flatten(self, order: str = "C"):  # TODO 0.7: this needs a test
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.FLATTEN, is_linear=True, args=order
+        )
 
     def transpose(self, *args: Any, **kwargs: Any):
-        return self._unary_op(gamma_op=GAMMA_TENSOR_OP.TRANSPOSE, is_linear=True, args=args, kwargs=kwargs)
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.TRANSPOSE, is_linear=True, args=args, kwargs=kwargs
+        )
 
     @property
     def T(self) -> GammaTensor:
         return self.transpose()
 
     def sum(self, *args: Any, **kwargs: Any):
-        return self._unary_op(gamma_op=GAMMA_TENSOR_OP.SUM, is_linear=True, args=args, kwargs=kwargs)
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.SUM, is_linear=True, args=args, kwargs=kwargs
+        )
 
     def __pow__(self, *args: Any, **kwargs: Any):
-        return self._unary_op(gamma_op=GAMMA_TENSOR_OP.POWER, is_linear=True, args=args, kwargs=kwargs)
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.POWER, is_linear=True, args=args, kwargs=kwargs
+        )
 
     def ones_like(self, *args: Any, **kwargs: Any):
-        return self._unary_op(gamma_op=GAMMA_TENSOR_OP.ONES_LIKE, is_linear=True, args=args, kwargs=kwargs)
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.ONES_LIKE, is_linear=True, args=args, kwargs=kwargs
+        )
 
     def zeros_like(self, *args: Any, **kwargs: Any):
-        return self._unary_op(gamma_op=GAMMA_TENSOR_OP.ZEROS_LIKE, is_linear=True, args=args, kwargs=kwargs)
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.ZEROS_LIKE,
+            is_linear=True,
+            args=args,
+            kwargs=kwargs,
+        )
 
-    def filtered(self, *args: Any, **kwargs: Any): # TODO
+    def filtered(self, *args: Any, **kwargs: Any):  # TODO
         return None
         # return GammaTensor(
         #     child=jnp.zeros_like(self.child), jax_op=, sources=self.sources.copy()
@@ -2179,438 +2217,166 @@ class GammaTensor:
     #         sources=self.sources.copy(),
     #     )
 
-    # def ravel(self, order: Optional[str] = "C") -> GammaTensor:
-    #     output_state = self.sources.copy()
-
-    #     data = self.child
-    #     output_data = data.ravel(order=order)
-
-    #     def _ravel(state: Dict) -> GammaTensor:
-    #         return jnp.ravel(self.reconstruct(state), order=order)
-
-    #     func = _ravel
-    #     return GammaTensor(
-    #         child=output_data,
-    #         func=func,
-    #         sources=output_state,
-    #         is_linear=self.is_linear,
-    #     )
-
-    # def resize(self, new_shape: Union[int, Tuple[int, ...]]) -> GammaTensor:
-    #     output_state = self.sources.copy()
-
-    #     output = self.child.copy()
-    #     output.resize(new_shape, refcheck=False)
-
-    #     def _resize(state: Dict) -> GammaTensor:
-    #         return jnp.resize(self.reconstruct(state), new_shape)
-
-    #     func = _resize
-
-    #     return GammaTensor(
-    #         child=output,
-    #         func=func,
-    #         sources=output_state,
-    #         is_linear=self.is_linear,
-    #     )
-
-    # def compress(
-    #     self, condition: List[bool], axis: Optional[int] = None
-    # ) -> GammaTensor:
-    #     output_state = self.sources.copy()
-
-    #     data = self.child
-    #     output_data = data.compress(condition, axis)
-    #     if 0 in output_data.shape:
-    #         raise NotImplementedError
-
-    #     def _compress(state: Dict) -> GammaTensor:
-    #         return jnp.compress(np.array(condition), self.reconstruct(state), axis=axis)
-
-    #     func = _compress
-
-    #     return GammaTensor(
-    #         child=output_data,
-    #         func=func,
-    #         sources=output_state,
-    #         is_linear=self.is_linear,
-    #     )
-
-    # def squeeze(
-    #     self, axis: Optional[Union[int, Tuple[int, ...]]] = None
-    # ) -> GammaTensor:
-    #     output_state = self.sources.copy()
-
-    #     data = self.child
-    #     output_data = np.squeeze(data, axis)
-
-    #     def _squeeze(state: Dict) -> GammaTensor:
-    #         return jnp.squeeze(self.reconstruct(state), axis=axis)
-
-    #     func = _squeeze
-
-    #     return GammaTensor(
-    #         child=output_data,
-    #         func=func,
-    #         sources=output_state,
-    #         is_linear=self.is_linear,
-    #     )
-
-    # def any(
-    #     self,
-    #     axis: Optional[Union[int, Tuple[int, ...]]] = None,
-    #     keepdims: Optional[bool] = False,
-    #     where: Optional[ArrayLike] = None,
-    # ) -> GammaTensor:
-    #     output_state = self.sources.copy()
-
-    #     if where is None:
-    #         out_child = np.array(self.child.any(axis=axis, keepdims=keepdims))
-
-    #         def _any(state: Dict) -> GammaTensor:
-    #             return jnp.any(self.reconstruct(state), axis=axis, keepdims=keepdims)
-
-    #         func = _any
-    #     else:
-    #         out_child = np.array(
-    #             self.child.any(axis=axis, keepdims=keepdims, where=where)
-    #         )
-
-    #         def _any(state: Dict) -> GammaTensor:
-    #             return jnp.any(
-    #                 self.reconstruct(state),
-    #                 axis=axis,
-    #                 keepdims=keepdims,
-    #                 where=np.array(where),
-    #             )
-
-    #         func = _any
-
-    #     return GammaTensor(
-    #         child=out_child,
-    #         func=func,
-    #         sources=output_state,
-    #     )
-
-    # def all(
-    #     self,
-    #     axis: Optional[Union[int, Tuple[int, ...]]] = None,
-    #     keepdims: Optional[bool] = False,
-    #     where: Optional[ArrayLike] = None,
-    # ) -> GammaTensor:
-    #     output_state = self.sources.copy()
-
-    #     if where is None:
-    #         out_child = np.array(self.child.all(axis=axis, keepdims=keepdims))
-
-    #         def _all(state: Dict) -> GammaTensor:
-    #             return jnp.all(self.reconstruct(state), axis=axis, keepdims=keepdims)
-
-    #         func = _all
-    #     else:
-    #         out_child = np.array(
-    #             self.child.all(axis=axis, keepdims=keepdims, where=where)
-    #         )
-
-    #         def _all(state: Dict) -> GammaTensor:
-    #             return jnp.all(
-    #                 self.reconstruct(state),
-    #                 axis=axis,
-    #                 keepdims=keepdims,
-    #                 where=np.array(where),
-    #             )
-
-    #         func = _all
-
-    #     return GammaTensor(
-    #         child=out_child,
-    #         func=func,
-    #         sources=output_state,
-    #     )
-
-    # def __pos__(self) -> GammaTensor:
-    #     output_state = self.sources.copy()
-
-    #     def _positive(state: Dict) -> GammaTensor:
-    #         return jnp.positive(self.reconstruct(state))
-
-    #     func = _positive
-
-    #     return GammaTensor(
-    #         child=self.child,
-    #         func=func,
-    #         sources=output_state,
-    #         is_linear=self.is_linear,
-    #     )
-
-    # def __neg__(self) -> GammaTensor:
-    #     output_state = self.sources.copy()
-
-    #     def _negative(state: Dict) -> GammaTensor:
-    #         return jnp.negative(self.reconstruct(state))
-
-    #     func = _negative
-
-    #     return GammaTensor(
-    #         child=self.child * -1,
-    #         func=func,
-    #         sources=output_state,
-    #         is_linear=self.is_linear,
-    #     )
-
-    # def reshape(self, shape: Tuple[int, ...]) -> GammaTensor:
-    #     sources = self.sources.copy()
-    #     output_data = self.child.reshape(shape)
-
-    #     def _reshape(state: Dict) -> GammaTensor:
-    #         return jnp.reshape(self.reconstruct(state), shape)
-
-    #     func = _reshape
-
-    #     return GammaTensor(
-    #         child=output_data,
-    #         func=func,
-    #         sources=sources,
-    #         is_linear=self.is_linear,
-    #     )
-
-    # def mean(self, axis: Union[int, Tuple[int, ...]], **kwargs: Any) -> GammaTensor:
-    #     output_state = self.sources.copy()
-
-    #     result = self.child.mean(axis, **kwargs)
-
-    #     def _mean(state: Dict) -> GammaTensor:
-    #         return jnp.mean(self.reconstruct(state), axis=axis, **kwargs)
-
-    #     func = _mean
-
-    #     return GammaTensor(
-    #         child=result,
-    #         sources=output_state,
-    #         func=func,
-    #         is_linear=self.is_linear,
-    #     )
-
-    # def expand_dims(self, axis: Optional[int] = None) -> GammaTensor:
-    #     raise NotImplementedError
-
-    # def std(
-    #     self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs: Any
-    # ) -> GammaTensor:
-    #     """
-    #     Compute the standard deviation along the specified axis.
-    #     Returns the standard deviation, a measure of the spread of a distribution, of the array elements.
-    #     The standard deviation is computed for the flattened array by default, otherwise over the specified axis.
-
-    #     Parameters
-    #         axis: None or int or tuple of ints, optional
-    #             Axis or axes along which the standard deviation is computed.
-    #             The default is to compute the standard deviation of the flattened array.
-    #             If this is a tuple of ints, a standard deviation is performed over multiple axes, instead of a single
-    #             axis or all the axes as before.
-
-    #         out: ndarray, optional
-    #             Alternative output array in which to place the result. It must have the same shape as the expected
-    #             output but the type (of the calculated values) will be cast if necessary.
-
-    #         ddof: int, optional
-    #             ddof = Delta Degrees of Freedom. By default ddof is zero.
-    #             The divisor used in calculations is N - ddof, where N represents the number of elements.
-
-    #         keepdims: bool, optional
-    #             If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
-    #             With this option, the result will broadcast correctly against the input array.
-    #             If the default value is passed, then keepdims will not be passed through to the std method of
-    #             sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
-    #             implement keepdims any exceptions will be raised.
-
-    #         where: array_like of bool, optional
-    #             Elements to include in the standard deviation. See reduce for details.
-
-    #     Returns
-
-    #         standard_deviation: GammaTensor
-    #     """
-    #     output_state = self.sources.copy()
-
-    #     result = jnp.std(self.child, axis, **kwargs)
-
-    #     def _std(state: Dict) -> GammaTensor:
-    #         return jnp.std(self.reconstruct(state), axis=axis, **kwargs)
-
-    #     func = _std
-
-    #     return GammaTensor(
-    #         child=result,
-    #         sources=output_state,
-    #         func=func,
-    #         is_linear=self.is_linear,
-    #     )
-
-    # def var(
-    #     self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs: Any
-    # ) -> GammaTensor:
-    #     """
-    #     Compute the variance along the specified axis of the array elements, a measure of the spread of a distribution.
-    #     The variance is computed for the flattened array by default, otherwise over the specified axis.
-
-    #     Parameters
-
-    #         axis: None or int or tuple of ints, optional
-    #             Axis or axes along which the variance is computed.
-    #             The default is to compute the variance of the flattened array.
-    #             If this is a tuple of ints, a variance is performed over multiple axes, instead of a single axis or all
-    #             the axes as before.
-
-    #         ddof: int, optional
-    #             “Delta Degrees of Freedom”: the divisor used in the calculation is N - ddof, where N represents the
-    #             number of elements. By default ddof is zero.
-
-    #         keepdims: bool, optional
-    #             If this is set to True, the axes which are reduced are left in the result as dimensions with size one.
-    #             With this option, the result will broadcast correctly against the input array.
-    #             If the default value is passed, then keepdims will not be passed through to the var method of
-    #             sub-classes of ndarray, however any non-default value will be. If the sub-class’ method does not
-    #             implement keepdims any exceptions will be raised.
-
-    #         where: array_like of bool, optional
-    #             Elements to include in the variance. See reduce for details.
-    #     """
-
-    #     output_state = self.sources.copy()
-
-    #     result = jnp.var(self.child, axis, **kwargs)
-
-    #     def _var(state: Dict) -> GammaTensor:
-    #         return jnp.var(self.reconstruct(state), axis=axis, **kwargs)
-
-    #     func = _var
-
-    #     return GammaTensor(
-    #         child=result,
-    #         sources=output_state,
-    #         func=func,
-    #         is_linear=self.is_linear,
-    #     )
-
-    # def sqrt(self) -> GammaTensor:
-    #     state = self.sources.copy()
-    #     child = jnp.sqrt(self.child)
-
-    #     def _sqrt(state: Dict) -> GammaTensor:
-    #         return jnp.sqrt(self.reconstruct(state))
-
-    #     func = _sqrt
-
-    #     return GammaTensor(
-    #         child=child,
-    #         func=func,
-    #         sources=state,
-    #     )
-
-    # def abs(self) -> GammaTensor:
-    #     state = self.sources.copy()
-
-    #     data = self.child
-    #     output = np.abs(data)
-
-    #     def _abs(state: Dict) -> GammaTensor:
-    #         return jnp.abs(self.reconstruct(state))
-
-    #     func = _abs
-
-    #     return GammaTensor(
-    #         child=output,
-    #         func=func,
-    #         sources=state,
-    #     )
-
-    # def clip(self, a_min: float, a_max: float) -> GammaTensor:
-    #     state = self.sources.copy()
-    #     output_data = self.child.clip(a_min, a_max)
-
-    #     def _clip(state: Dict) -> GammaTensor:
-    #         return jnp.clip(self.reconstruct(state), a_min, a_max)
-
-    #     func = _clip
-
-    #     return GammaTensor(
-    #         child=output_data,
-    #         func=func,
-    #         sources=state,
-    #     )
-
-    # def nonzero(self) -> GammaTensor:
-    #     output_state = self.sources.copy()
-
-    #     out_child = np.array(np.nonzero(self.child))
-
-    #     def _nonzero(state: Dict) -> GammaTensor:
-    #         return jnp.nonzero(self.reconstruct(state))
-
-    #     func = _nonzero
-
-    #     return GammaTensor(
-    #         child=out_child,
-    #         func=func,
-    #         sources=output_state,
-    #     )
-
-    # def swapaxes(self, axis1: int, axis2: int) -> GammaTensor:
-    #     output_state = self.sources.copy()
-    #     out_child = np.swapaxes(self.child, axis1, axis2)
-
-    #     def _swapaxes(state: Dict) -> GammaTensor:
-    #         return jnp.swapaxes(self.reconstruct(state), axis1, axis2)
-
-    #     func = _swapaxes
-
-    #     return GammaTensor(
-    #         child=out_child,
-    #         func=func,
-    #         sources=output_state,
-    #         is_linear=self.is_linear,
-    #     )
-
-    # @staticmethod
-    # def convert_dsl(
-    #     state: dict, new_state: Optional[dict] = None
-    # ) -> Dict:  # TODO 0.7: maybe this is not required?
-    #     if new_state is None:
-    #         new_state = dict()
-    #     if state:
-    #         for tensor in list(state.values()):
-    #             if isinstance(tensor.data_subjects, np.ndarray):
-    #                 new_tensor = GammaTensor(
-    #                     child=tensor.child,
-    #                     func=tensor.func,
-    #                     sources=GammaTensor.convert_dsl(tensor.sources, {}),
-    #                 )
-    #             else:
-
-    #                 new_tensor = tensor
-    #             new_state[new_tensor.id] = new_tensor
-    #         return new_state
-    #     else:
-    #         return {}
-
-    # def publish(
-    #     self,
-    #     get_budget_for_user: Callable,
-    #     deduct_epsilon_for_user: Callable,
-    #     ledger: DataSubjectLedger,
-    #     sigma: float,
-    #     private: bool,
-    # ) -> np.ndarray:
-    #     return publish(
-    #         tensor=self,
-    #         ledger=ledger,
-    #         get_budget_for_user=get_budget_for_user,
-    #         deduct_epsilon_for_user=deduct_epsilon_for_user,
-    #         sigma=sigma,
-    #         is_linear=self.is_linear,
-    #         private=private,
-    #     )
+    def __round__(self, n: int = 0) -> GammaTensor:
+        return self._unary_op(gamma_op=GAMMA_TENSOR_OP.ROUND, is_linear=True, args=[n])
+
+    def round(self, n: int = 0) -> GammaTensor:
+        return self.__round__(n)
+
+    def squeeze(self, axis: OptionalAxisArg = None) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.SQUEEZE, is_linear=True, args=[axis]
+        )
+
+    def mean(self, axis: OptionalAxisArg = None, **kwargs: Any) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.MEAN, is_linear=True, args=[axis], kwargs=kwargs
+        )
+
+    def ravel(self, order: Optional[str] = "C") -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.RAVEL, is_linear=True, args=[order]
+        )
+
+    def resize(self, new_shape: SingleOrTupleInt) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.RESIZE, is_linear=True, args=[new_shape]
+        )
+
+    def compress(
+        self, condition: List[bool], axis: Optional[int] = None
+    ) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.COMPRESS,
+            is_linear=True,
+            args=[condition],
+            kwargs={"axis": axis},
+        )
+
+    def any(
+        self,
+        axis: OptionalAxisArg = None,
+        keepdims: Optional[bool] = None,
+        where: Optional[
+            ArrayLike
+        ] = None,  # QUESTION: do we remove these because where allows querying?
+    ) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.ANY,
+            is_linear=True,
+            kwargs={"axis": axis, "keepdims": keepdims, "where": where},
+        )
+
+    def all(
+        self,
+        axis: OptionalAxisArg = None,
+        keepdims: Optional[bool] = None,
+        where: Optional[ArrayLike] = None,
+    ) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.ALL,
+            is_linear=True,
+            kwargs={"axis": axis, "keepdims": keepdims, "where": where},
+        )
+
+    def __pos__(self) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.POSITIVE,
+            is_linear=True,
+        )
+
+    def __neg__(self) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.NEGATIVE,
+            is_linear=True,
+        )
+
+    def reshape(
+        self, newshape: SingleOrTupleInt, order: Optional[str] = "C"
+    ) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.NEGATIVE,
+            is_linear=True,
+            args=[newshape],
+            kwargs={"order": order},
+        )
+
+    def std(
+        self,
+        axis: OptionalAxisArg = None,
+        dtype: Optional[np.dtype] = None,
+        ddof: Optional[int] = 0,
+        keepdims: Optional[bool] = None,
+        where: Optional[ArrayLike] = None,
+    ) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.STD,
+            is_linear=True,
+            kwargs={
+                "axis": axis,
+                "dtype": dtype,
+                "ddof": ddof,
+                "keepdims": keepdims,
+                "where": where,
+            },
+        )
+
+    def var(
+        self,
+        axis: OptionalAxisArg = None,
+        dtype: Optional[np.dtype] = None,
+        ddof: Optional[int] = 0,
+        keepdims: Optional[bool] = None,
+        where: Optional[ArrayLike] = None,
+    ) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.VAR,
+            is_linear=True,
+            kwargs={
+                "axis": axis,
+                "dtype": dtype,
+                "ddof": ddof,
+                "keepdims": keepdims,
+                "where": where,
+            },
+        )
+
+    def sqrt(self, *args: Any, **kwargs: Any) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.SQRT,
+            is_linear=True,
+            args=args,
+            kwargs=kwargs,
+        )
+
+    def abs(self, *args: Any, **kwargs: Any) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.ABS,
+            is_linear=True,
+            args=args,
+            kwargs=kwargs,
+        )
+
+    def clip(
+        self,
+        a_min: Optional[ArrayLike] = None,
+        a_max: Optional[ArrayLike] = None,
+        **kwargs,
+    ) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.ABS,
+            is_linear=True,
+            args=[a_min, a_max],
+            kwargs=kwargs,
+        )
+
+    def nonzero(self) -> GammaTensor:
+        return self._unary_op(gamma_op=GAMMA_TENSOR_OP.ABS, is_linear=True)
+
+    def swapaxes(self, axis1: int, axis2: int) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.SWAPAXES, is_linear=True, args=[axis1, axis2]
+        )
 
     def __len__(self) -> int:
         if not hasattr(self.child, "__len__"):
@@ -2622,234 +2388,91 @@ class GammaTensor:
         except Exception:  # nosec
             return self.child.size
 
-    # def __getitem__(self, item: Union[int, slice, PassthroughTensor]) -> GammaTensor:
-    #     output_state = self.sources.copy()
+    def __getitem__(self, key: Union[int, slice, ArrayLike]) -> GammaTensor:
+        # TODO: I think we can move the mapping of the final getattr(jnp, "op") to be more general
+        # to also accommodate this kind of pattern where its a lambda or whever
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.PY_GETITEM, is_linear=True, args=[key]
+        )
 
-    #     if isinstance(item, PassthroughTensor):
-    #         raise NotImplementedError(
-    #             "__getitem__ is not supported for items of type PassthroughTensor"
-    #         )
+    def __setitem__(
+        self, key: Union[int, slice, ArrayLike], value: Union[GammaTensor, ArrayLike]
+    ) -> None:
+        raise NotImplementedError
+        # QUESTION: Is mutation allowed and if so how do we trace that in the graph?
+        # self._unary_op(gamma_op=GAMMA_TENSOR_OP.PY_GETITEM, is_linear=True, args=[key])
+        # # relative
+        # from .phi_tensor import PhiTensor
 
-    #     else:
-    #         data = self.child[item]
+        # # TODO: fix this
+        # if isinstance(value, (PhiTensor, GammaTensor)):
+        #     self.child[key] = value.child
+        # elif isinstance(value, np.ndarray):
+        #     self.child[key] = value
+        # else:
+        #     raise NotImplementedError
 
-    #         def _get_item(state: Dict) -> GammaTensor:
-    #             return self.reconstruct(state)[item]
+    def copy(self, order: str = "C") -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.COPY, is_linear=True, args=[order]
+        )
 
-    #         func = _get_item
+    def ptp(self, axis: OptionalAxisArg = None) -> GammaTensor:
+        return self._unary_op(gamma_op=GAMMA_TENSOR_OP.PTP, is_linear=True, args=[axis])
 
-    #         return GammaTensor(
-    #             child=data,
-    #             func=func,
-    #             sources=output_state,
-    #             is_linear=self.is_linear,
-    #         )
+    def take(
+        self,
+        indices: ArrayLike,
+        axis: Optional[int] = None,
+        mode: str = "clip",
+    ) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.TAKE,
+            is_linear=True,
+            args=[indices],
+            kwargs={"axis": axis, "mode": mode},
+        )
 
-    # def __setitem__(
-    #     self, key: Union[int, slice, NDArray], value: Union[GammaTensor, np.ndarray]
-    # ) -> None:
-    #     # relative
-    #     from .phi_tensor import PhiTensor
+    def put(
+        self,
+        ind: ArrayLike,
+        v: ArrayLike,
+        mode: str = "raise",
+    ) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.PUT,
+            is_linear=True,
+            args=[ind, v],
+            kwargs={"mode": mode},
+        )
 
-    #     # TODO: fix this
-    #     if isinstance(value, (PhiTensor, GammaTensor)):
-    #         self.child[key] = value.child
-    #     elif isinstance(value, np.ndarray):
-    #         self.child[key] = value
-    #     else:
-    #         raise NotImplementedError
+    def repeat(
+        self, repeats: SingleOrTupleInt, axis: Optional[int] = None
+    ) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.REPEAT,
+            is_linear=True,
+            args=[repeats],
+            kwargs={"axis": axis},
+        )
 
-    # def copy(self, order: str = "C") -> GammaTensor:
-    #     """
-    #     Return a copy of the array.
+    def cumsum(
+        self, axis: Optional[int] = None, dtype: Optional[np.dtype] = None
+    ) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.CUMSUM,
+            is_linear=True,
+            kwargs={"axis": axis, "dtype": dtype},
+        )
 
-    #     Parameters
-    #         order:  {‘C’, ‘F’, ‘A’, ‘K’}, optional
-
-    #     Controls the memory layout of the copy.
-    #     ‘C’ means C-order, ‘F’ means F-order,
-    #     ‘A’ means ‘F’ if a is Fortran contiguous,
-    #     ‘C’ otherwise.
-    #     ‘K’ means match the layout of a as closely as possible.
-    #     (Note that this function and numpy.copy are very similar but have different default values
-    #     for their order= arguments, and this function always passes sub-classes through.)
-    #     """
-    #     output_state = self.sources.copy()
-
-    #     def _copy(state: Dict) -> GammaTensor:
-    #         return jnp.copy(self.reconstruct(state), order=order)
-
-    #     func = _copy
-
-    #     return GammaTensor(
-    #         child=self.child.copy(order),
-    #         func=func,
-    #         sources=output_state,
-    #         is_linear=self.is_linear,
-    #     )
-
-    # def ptp(
-    #     self,
-    #     axis: Optional[Union[int, Tuple[int, ...]]] = None,
-    # ) -> GammaTensor:
-    #     output_state = self.sources.copy()
-    #     out_child = self.child.ptp(axis=axis)
-
-    #     def _ptp(state: Dict) -> GammaTensor:
-    #         return jnp.ptp(self.reconstruct(state), axis=axis)
-
-    #     func = _ptp
-
-    #     return GammaTensor(
-    #         child=out_child,
-    #         func=func,
-    #         sources=output_state,
-    #         is_linear=self.is_linear,
-    #     )
-
-    # def take(
-    #     self,
-    #     indices: ArrayLike,
-    #     axis: Optional[int] = None,
-    #     mode: str = "clip",
-    # ) -> GammaTensor:
-    #     """Take elements from an array along an axis."""
-    #     output_state = self.sources.copy()
-    #     out_child = self.child.take(indices, axis=axis, mode=mode)
-
-    #     def _take(state: Dict) -> GammaTensor:
-    #         return jnp.take(
-    #             self.reconstruct(state), np.array(indices), axis=axis, mode=mode
-    #         )
-
-    #     func = _take
-
-    #     return GammaTensor(
-    #         child=out_child,
-    #         func=func,
-    #         sources=output_state,
-    #         is_linear=self.is_linear,
-    #     )
-
-    # def put(
-    #     self,
-    #     ind: ArrayLike,
-    #     v: ArrayLike,
-    #     mode: str = "raise",
-    # ) -> GammaTensor:
-    #     # """Replaces specified elements of an array with given values.
-    #     # The indexing works on the flattened target array. put is roughly equivalent to:
-    #     #     a.flat[ind] = v
-    #     # """
-    #     # output_state = self.sources.copy()
-
-    #     # out_child = self.child.copy()
-    #     # out_child.put(ind, v, mode=mode)
-
-    #     # return GammaTensor(
-    #     #     child=out_child,
-    #     #     func=lambda state: jnp.put(self.reconstruct(state), ind, v, mode=mode),
-    #     #     sources=output_state,
-    #     # )
-    #     raise NotImplementedError("Jax is not supporting put")
-
-    # def repeat(
-    #     self, repeats: Union[int, Tuple[int, ...]], axis: Optional[int] = None
-    # ) -> GammaTensor:
-    #     """
-    #     Repeat elements of an array.
-
-    #     Parameters
-    #         repeats: int or array of ints
-
-    #             The number of repetitions for each element. repeats is broadcasted to fit the shape of the given axis.
-
-    #         axis: int, optional
-
-    #             The axis along which to repeat values. By default, use the flattened input array, and return a flat
-    #             output array.
-
-    #     Returns
-
-    #         repeated_array: PhiTensor
-
-    #             Output array which has the same shape as a, except along the given axis.
-
-    #     """
-    #     sources = self.sources.copy()
-    #     result = self.child.repeat(repeats, axis)
-
-    #     def _repeat(state: Dict) -> GammaTensor:
-    #         return jnp.repeat(self.reconstruct(state), repeats=repeats, axis=axis)
-
-    #     func = _repeat
-
-    #     return GammaTensor(
-    #         child=result,
-    #         func=func,
-    #         sources=sources,
-    #         is_linear=self.is_linear,
-    #     )
-
-    # def cumsum(
-    #     self,
-    #     axis: Optional[int] = None,
-    # ) -> GammaTensor:
-    #     """
-    #     Return the cumulative sum of the elements along a given axis.
-
-    #     Parameters
-    #         axis: int, optional
-    #             Axis along which the cumulative sum is computed. The default (None) is to compute the cumsum over the
-    #             flattened array.
-    #     Returns
-    #         cumsum_along_axis: GammaTensor
-    #             A new array holding the result is returned. The result has the same size as input, and the same shape as
-    #              a if axis is not None or a is 1-d.
-    #     """
-    #     result = self.child.cumsum(axis=axis)
-    #     sources = self.sources.copy()
-
-    #     def _cumsum(state: Dict) -> GammaTensor:
-    #         return jnp.cumsum(self.reconstruct(state), axis=axis)
-
-    #     func = _cumsum
-
-    #     return GammaTensor(
-    #         child=result,
-    #         func=func,
-    #         sources=sources,
-    #     )
-
-    # def cumprod(
-    #     self,
-    #     axis: Optional[int] = None,
-    # ) -> GammaTensor:
-    #     """
-    #     Return the cumulative product of the elements along a given axis.
-
-    #     Parameters
-    #         axis: int, optional
-    #             Axis along which the cumulative product is computed. The default (None) is to compute the cumprod over
-    #             the flattened array.
-    #     Returns
-    #         cumprod_along_axis: GammaTensor
-    #             A new array holding the result is returned. The result has the same size as input, and the same shape as
-    #              a if axis is not None or a is 1-d.
-    #     """
-    #     result = self.child.cumprod(axis=axis)
-    #     sources = self.sources.copy()
-
-    #     def _cumprod(state: Dict) -> GammaTensor:
-    #         return jnp.cumprod(self.reconstruct(state), axis=axis)
-
-    #     func = _cumprod
-
-    #     return GammaTensor(
-    #         child=result,
-    #         func=func,
-    #         sources=sources,
-    #     )
+    def cumprod(
+        self, axis: Optional[int] = None, dtype: Optional[np.dtype] = None
+    ) -> GammaTensor:
+        return self._unary_op(
+            gamma_op=GAMMA_TENSOR_OP.CUMPROD,
+            is_linear=True,
+            kwargs={"axis": axis, "dtype": dtype},
+        )
 
     # @property
     # def lipschitz_bound(self) -> float:
@@ -3239,24 +2862,6 @@ class GammaTensor:
     #                 is_linear=self.is_linear,
     #             )
 
-    # def __round__(self, n: int = 0) -> GammaTensor:
-    #     sources = self.sources.copy()
-    #     child = self.child.round(n)
-
-    #     def _round(state: Dict) -> GammaTensor:
-    #         return jnp.round(self.reconstruct(state), n)
-
-    #     func = _round
-
-    #     return GammaTensor(
-    #         child=child,
-    #         func=func,
-    #         sources=sources,
-    #     )
-
-    # def round(self, n: int = 0) -> GammaTensor:
-    #     return self.__round__(n)
-
     # def sort(self, axis: int = -1, kind: Optional[str] = None) -> GammaTensor:
     #     """
     #     Return a sorted copy of an array.
@@ -3428,6 +3033,49 @@ class GammaTensor:
     #         child=result,
     #         sources=sources,
     #         func=func,
+    #     )
+
+    # def expand_dims(self, axis: Optional[int] = None) -> GammaTensor:
+    #     raise NotImplementedError
+
+    # @staticmethod
+    # def convert_dsl(
+    #     state: dict, new_state: Optional[dict] = None
+    # ) -> Dict:  # TODO 0.7: maybe this is not required?
+    #     if new_state is None:
+    #         new_state = dict()
+    #     if state:
+    #         for tensor in list(state.values()):
+    #             if isinstance(tensor.data_subjects, np.ndarray):
+    #                 new_tensor = GammaTensor(
+    #                     child=tensor.child,
+    #                     func=tensor.func,
+    #                     sources=GammaTensor.convert_dsl(tensor.sources, {}),
+    #                 )
+    #             else:
+
+    #                 new_tensor = tensor
+    #             new_state[new_tensor.id] = new_tensor
+    #         return new_state
+    #     else:
+    #         return {}
+
+    # def publish(
+    #     self,
+    #     get_budget_for_user: Callable,
+    #     deduct_epsilon_for_user: Callable,
+    #     ledger: DataSubjectLedger,
+    #     sigma: float,
+    #     private: bool,
+    # ) -> np.ndarray:
+    #     return publish(
+    #         tensor=self,
+    #         ledger=ledger,
+    #         get_budget_for_user=get_budget_for_user,
+    #         deduct_epsilon_for_user=deduct_epsilon_for_user,
+    #         sigma=sigma,
+    #         is_linear=self.is_linear,
+    #         private=private,
     #     )
 
     @property

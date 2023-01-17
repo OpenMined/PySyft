@@ -75,6 +75,7 @@ class GAMMA_TENSOR_OP(Enum):
     # Our Methods
     RECIPROCAL = "reciprocal"
     FLATTEN = "flatten"
+    PY_GETITEM = "py_getitem"
 
 
 GAMMA_TENSOR_OP_FUNC = {
@@ -116,7 +117,7 @@ GAMMA_TENSOR_OP_FUNC = {
     GAMMA_TENSOR_OP.NOOP: lambda x: x,
     GAMMA_TENSOR_OP.NOT_EQUAL: operator.ne,
     GAMMA_TENSOR_OP.ONES_LIKE: jnp.ones_like,
-    GAMMA_TENSOR_OP.POSITIVE:jnp.positive,
+    GAMMA_TENSOR_OP.POSITIVE: jnp.positive,
     GAMMA_TENSOR_OP.POWER: jnp.power,
     GAMMA_TENSOR_OP.PROD: jnp.prod,
     GAMMA_TENSOR_OP.PTP: jnp.ptp,
@@ -125,7 +126,7 @@ GAMMA_TENSOR_OP_FUNC = {
     GAMMA_TENSOR_OP.REPEAT: jnp.repeat,
     GAMMA_TENSOR_OP.RESHAPE: jnp.reshape,
     GAMMA_TENSOR_OP.RESIZE: jnp.resize,
-    GAMMA_TENSOR_OP.RMATMUL: lambda x,y: jnp.matmul(y,x),
+    GAMMA_TENSOR_OP.RMATMUL: lambda x, y: jnp.matmul(y, x),
     GAMMA_TENSOR_OP.ROUND: jnp.round,
     GAMMA_TENSOR_OP.RSHIFT: operator.rshift,
     GAMMA_TENSOR_OP.SORT: jnp.sort,
@@ -142,4 +143,5 @@ GAMMA_TENSOR_OP_FUNC = {
     GAMMA_TENSOR_OP.VAR: jnp.var,
     GAMMA_TENSOR_OP.ZEROS_LIKE: jnp.zeros_like,
     # GAMMA_TENSOR_OP.FLATTEN: jnp.flatten,
+    GAMMA_TENSOR_OP.PY_GETITEM: lambda x, y: x.__getitem__(y),
 }

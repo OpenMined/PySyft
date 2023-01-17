@@ -1,9 +1,9 @@
 # stdlib
+from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import TYPE_CHECKING
 from typing import Union
-from typing import Any
 
 # third party
 import jax.numpy as jnp
@@ -101,6 +101,7 @@ class SyftJaxInfixOp(SyftJaxOp):
             left, right = right, left
         return f"{type(self).__name__}<jnp.{self.jax_op}({left}, {right})>"
 
+
 @serializable(recursive_serde=True)
 class SyftJaxUnaryOp(SyftJaxOp):
     def __init__(
@@ -119,9 +120,11 @@ class SyftJaxUnaryOp(SyftJaxOp):
     def func(self) -> Callable:
         def unary_closure(state: Dict) -> GammaInputType:
             jax_func = getattr(jnp, self.jax_op.value)
-            operand = self.operand.reconstruct(state) if self.can_chain else self.operand
+            operand = (
+                self.operand.reconstruct(state) if self.can_chain else self.operand
+            )
             if hasattr(operand, "child"):
                 operand = operand.child
             return jax_func(operand, *self.args, **self.kwargs)
-        return unary_closure
 
+        return unary_closure
