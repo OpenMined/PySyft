@@ -354,6 +354,7 @@ class Node(AbstractNode):
             routes = [solo]
 
         return self.client_type(  # type: ignore
+            node_uid=self.node_uid,
             name=self.name,
             routes=routes,
             network=self.network,

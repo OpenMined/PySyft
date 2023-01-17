@@ -1,7 +1,6 @@
 # stdlib
 from typing import Any
 from typing import Optional
-from typing import Union
 
 # third party
 from nacl.signing import SigningKey
@@ -9,12 +8,8 @@ from pydantic import BaseSettings
 from typing_extensions import final
 
 # relative
-from ...logger import critical
 from ...logger import traceback_and_raise
-from ..common.message import SignedMessage
-from ..common.message import SyftMessage
 from ..common.serde.serializable import serializable
-from ..common.uid import UID
 from ..io.location import Location
 from ..io.location import SpecificLocation
 from .common.node import Node
@@ -74,18 +69,6 @@ class VirtualMachine(Node):
     def icon(self) -> str:
         return "🍰"
 
-    @property
-    def id(self) -> UID:
-        return self.vm.id
-
-    def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
-        # this needs to be defensive by checking vm_id NOT vm.id or it breaks
-        try:
-            return msg.address.vm_id == self.id
-        except Exception as e:
-            critical(f"Error checking if {msg.pprint} is for me on {self.pprint}. {e}")
-            return False
-
     def _register_frameworks(self) -> None:
         traceback_and_raise(NotImplementedError)
         # TODO: it doesn't at the moment but it needs to in the future,
@@ -109,7 +92,7 @@ class VirtualMachine(Node):
         if not isinstance(other, VirtualMachine):
             return False
 
-        if self.vm.id != other.vm.id:
+        if self.node_uid != other.node_uid:
             return False
 
         return True
