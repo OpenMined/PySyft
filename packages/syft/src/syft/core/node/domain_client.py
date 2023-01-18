@@ -27,7 +27,6 @@ from ...util import validate_field
 from ..common.message import SyftMessage
 from ..common.serde.serialize import _serialize as serialize  # noqa: F401
 from ..common.uid import UID
-from ..io.address import Address
 from ..io.location import Location
 from ..io.location.specific import SpecificLocation
 from ..io.route import Route
@@ -380,7 +379,7 @@ class DomainClient(Client):
         )
 
     def load(
-        self, obj_ptr: Type[Pointer], address: Address, pointable: bool = False
+        self, obj_ptr: Type[Pointer], address: UID, pointable: bool = False
     ) -> None:
         content = {
             RequestAPIFields.ADDRESS: serialize(address, to_bytes=True).decode(

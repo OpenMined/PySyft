@@ -22,7 +22,6 @@ from ..common.serde import _serialize
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import serializable
 from ..common.uid import UID
-from ..io.address import Address
 from ..node.abstract.node import AbstractNode
 from ..node.common.action.get_object_action import GetObjectAction
 from ..node.common.exceptions import AuthorizationError
@@ -35,7 +34,7 @@ from ..node.enums import PointerStatus
 from ..store.storeable_object import StorableObject
 
 
-# TODO: Fix the Client, Address, Location confusion
+# TODO: Fix the Client, UID, Location confusion
 @serializable(recursive_serde=True)
 class Pointer(AbstractPointer):
     __attr_allowlist__ = [
@@ -64,7 +63,7 @@ class Pointer(AbstractPointer):
     module.
 
     :param location: The location where the data is being held.
-    :type location: Address
+    :type location: UID
     :param id_at_location: The UID of the object on the remote location.
     :type id_at_location: UID
     """
@@ -632,7 +631,7 @@ class Pointer(AbstractPointer):
         )
 
         msg = RequestAnswerMessage(
-            request_id=request_id, address=self.client.node_uid, reply_to=node.address
+            request_id=request_id, address=self.client.node_uid, reply_to=node.node_uid
         )
         response = self.client.send_immediate_msg_with_reply(msg=msg)
 
@@ -640,7 +639,7 @@ class Pointer(AbstractPointer):
 
     def __del__(self) -> None:
         _client_type = type(self.client)
-        if (_client_type == Address) or issubclass(_client_type, AbstractNode):
+        if issubclass(_client_type, AbstractNode):
             # it is a serialized pointer that we receive from another client do nothing
             return
 

@@ -11,7 +11,6 @@ from typing import Optional
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.serializable import serializable
 from .....common.uid import UID
-from .....io.address import Address
 
 
 @serializable(recursive_serde=True)
@@ -22,7 +21,7 @@ class AcceptOrDenyRequestMessage(ImmediateSyftMessageWithoutReply):
         self,
         accept: bool,
         request_id: UID,
-        address: Address,
+        address: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)

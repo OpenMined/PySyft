@@ -36,7 +36,6 @@ from ...common.message import SignedImmediateSyftMessageWithoutReply
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.uid import UID
-from ...io.address import Address
 from ...io.location import Location
 from ...io.route import Route
 from ...io.route import SoloRoute
@@ -344,7 +343,7 @@ class Node(AbstractNode):
     ) -> Client:
         if not routes:
             conn_client = create_virtual_connection(node=self)
-            solo = SoloRoute(destination=self.target_id, connection=conn_client)
+            solo = SoloRoute(destination=self.node_uid, connection=conn_client)
             # inject name
             setattr(
                 solo,
@@ -499,11 +498,7 @@ class Node(AbstractNode):
 
         # this needs to be defensive by checking domain_id NOT domain.id or it breaks
         try:
-            msg_address_id = (
-                msg.address.target_id.id
-                if isinstance(msg.address, Address)
-                else msg.address
-            )
+            msg_address_id = msg.address
             return msg_address_id == self.id
         except Exception as excp3:
             critical(

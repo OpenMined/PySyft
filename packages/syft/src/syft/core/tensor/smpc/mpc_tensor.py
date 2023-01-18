@@ -344,7 +344,7 @@ class MPCTensor(PassthroughTensor):
                     kwargs=kwargs,
                     id_at_location=result_id_at_location,
                     is_dp_tensor=is_dp_tensor,
-                    address=party.address,
+                    address=party.id,
                 )
                 party.send_immediate_msg_without_reply(msg=cmd)
                 party.processing_pointers[result_id_at_location] = True
@@ -639,7 +639,7 @@ class MPCTensor(PassthroughTensor):
                     kwargs=kwargs,
                     id_at_location=result_id_at_location,
                     is_dp_tensor=False,
-                    address=party.address,
+                    address=party.id,
                 )
                 party.send_immediate_msg_without_reply(msg=cmd)
 
