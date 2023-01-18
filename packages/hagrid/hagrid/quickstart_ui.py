@@ -126,7 +126,8 @@ def quickstart_extract_notebook(
     directory.mkdir(exist_ok=True)
     reset = overwrite_all
 
-    file_path = directory / os.path.basename(name)
+    base_name = os.path.basename(name)
+    file_path = directory / base_name
     file_name = file_path.name
     file_exists = file_path.exists()
 
@@ -150,7 +151,9 @@ def quickstart_extract_notebook(
     if not file_exists or file_exists and reset:
         print(f"Extracting notebook: {file_name}")
         with zipfile.ZipFile(zip_file, "r") as zf:
-            zf.extract(name, file_path)
+            zip_info = zf.getinfo(name)
+            zip_info.filename = base_name
+            zf.extract(zip_info, directory)
         extracted = True
     return str(file_path.absolute()), extracted, overwrite_all
 
