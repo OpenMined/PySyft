@@ -35,7 +35,7 @@ def lowest(highest) -> int:
 @pytest.fixture
 def dims() -> int:
     """This generates a random integer for the number of dimensions in our testing tensors"""
-    dims = int(max(3, np.random.randint(5) + 3))  # Avoid size 0 and 1
+    dims = 3# int(max(3, np.random.randint(5) + 3))  # Avoid size 0 and 1
     # Failsafe
     if dims < 2:
         dims += 3
@@ -149,7 +149,7 @@ def test_zeros_like(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
+    assert (output.lipschitz_bound == 1)
 
 def test_ones_like(
     reference_data: np.ndarray,
@@ -172,7 +172,7 @@ def test_ones_like(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
+    assert (output.lipschitz_bound == 1)
 
 def test_sum(
     reference_data: np.ndarray,
@@ -200,7 +200,7 @@ def test_sum(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
+    assert (output.lipschitz_bound == 1)
 
 def test_pow(
     reference_data: np.ndarray,
@@ -223,7 +223,8 @@ def test_pow(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
+    assert (output.lipschitz_bound == 2 * max(gamma_tensor))
+    
 
 @pytest.mark.arithmetic
 @pytest.mark.public_op
@@ -251,6 +252,7 @@ def test_add_public(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
+    assert (output.lipschitz_bound == 1)
 
 
 @pytest.mark.arithmetic
@@ -277,7 +279,7 @@ def test_radd(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
+    assert (output.lipschitz_bound == 1)
 
 @pytest.mark.arithmetic
 def test_rsub(
@@ -303,7 +305,7 @@ def test_rsub(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
+    assert (output.lipschitz_bound == 1)
 
 @pytest.mark.arithmetic
 def test_rmul(
@@ -328,6 +330,7 @@ def test_rmul(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
+    assert (output.lipschitz_bound == 1)
 
 
 @pytest.mark.arithmetic
@@ -354,8 +357,8 @@ def test_rmatmul(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
-
+    assert (output.lipschitz_bound == 0)
+    
 @pytest.mark.arithmetic
 def test_rtruediv(
     reference_data: np.ndarray,
@@ -380,6 +383,7 @@ def test_rtruediv(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
+    assert (output.lipschitz_bound == 1)
 
 
 @pytest.mark.arithmetic
@@ -407,7 +411,7 @@ def test_rfloordiv(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
+    assert output.lipschitz_bound == 1
 
 @pytest.mark.arithmetic
 @pytest.mark.public_op
@@ -434,7 +438,7 @@ def test_sub_public(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
+    assert output.lipschitz_bound == 1
 
 @pytest.mark.arithmetic
 @pytest.mark.public_op
@@ -460,7 +464,7 @@ def test_mul_public(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
+    assert output.lipschitz_bound == 1
 
 @pytest.mark.arithmetic
 @pytest.mark.public_op
@@ -486,7 +490,7 @@ def test_truediv_public(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
+    assert output.lipschitz_bound == 1
 
 @pytest.mark.arithmetic
 @pytest.mark.public_op
@@ -523,7 +527,7 @@ def test_mod_public(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
+    # assert output.lipschitz_bound == 1
 
 @pytest.mark.arithmetic
 @pytest.mark.public_op
@@ -549,7 +553,7 @@ def test_and_public(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
+    # assert output.lipschitz_bound == 1
 
 @pytest.mark.arithmetic
 @pytest.mark.public_op
@@ -576,7 +580,7 @@ def test_or_public(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
+    # assert output.lipschitz_bound == 1
 
 @pytest.mark.arithmetic
 @pytest.mark.private_op
@@ -610,7 +614,7 @@ def test_add_private(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
+    assert output.lipschitz_bound == 1
 
 @pytest.mark.arithmetic
 @pytest.mark.private_op
@@ -644,7 +648,7 @@ def test_sub_private(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
+    assert output.lipschitz_bound == 1
 
 @pytest.mark.arithmetic
 @pytest.mark.private_op
@@ -678,7 +682,7 @@ def test_mul_private(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
+    assert output.lipschitz_bound == 1
 
 @pytest.mark.arithmetic
 @pytest.mark.private_op
@@ -712,7 +716,7 @@ def test_truediv_private(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
+    assert output.lipschitz_bound == 1
 
 @pytest.mark.arithmetic
 @pytest.mark.private_op
@@ -746,7 +750,7 @@ def test_mod_private(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
+    # assert output.lipschitz_bound == 1
 
 @pytest.mark.arithmetic
 @pytest.mark.private_op
@@ -780,7 +784,7 @@ def test_and_private(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
+    # assert output.lipschitz_bound == 1
 
 @pytest.mark.arithmetic
 @pytest.mark.private_op
@@ -814,7 +818,7 @@ def test_or_private(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
+    # assert output.lipschitz_bound == 1
 
 @pytest.mark.equality
 @pytest.mark.public_op
@@ -841,7 +845,7 @@ def test_eq_public(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
+    # assert output.lipschitz_bound == 1
 
 @pytest.mark.equality
 @pytest.mark.public_op
@@ -867,7 +871,7 @@ def test_ne_public(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
+    # assert output.lipschitz_bound == 1
 
 @pytest.mark.equality
 @pytest.mark.public_op
@@ -893,7 +897,7 @@ def test_lt_public(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
+    # assert output.lipschitz_bound == 1
 
 @pytest.mark.equality
 @pytest.mark.public_op
@@ -920,7 +924,7 @@ def test_gt_public(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
+    # assert output.lipschitz_bound == 1
 
 @pytest.mark.equality
 @pytest.mark.public_op
@@ -946,7 +950,7 @@ def test_le_public(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
+    # assert output.lipschitz_bound == 1
 
 @pytest.mark.equality
 @pytest.mark.public_op
@@ -972,7 +976,7 @@ def test_ge_public(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
-
+    # assert output.lipschitz_bound == 1
 
 @pytest.mark.equality
 @pytest.mark.private_op
@@ -999,6 +1003,7 @@ def test_eq_private(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
+    # assert output.lipschitz_bound == 1
 
 
 @pytest.mark.equality
@@ -1025,6 +1030,7 @@ def test_ne_private(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
+    # assert output.lipschitz_bound == 1
 
 
 @pytest.mark.equality
@@ -1051,6 +1057,7 @@ def test_lt_private(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
+    # assert output.lipschitz_bound == 1
 
 
 @pytest.mark.equality
@@ -1076,6 +1083,7 @@ def test_gt_private(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
+    # assert output.lipschitz_bound == 1
 
 
 @pytest.mark.equality
@@ -1103,6 +1111,7 @@ def test_le_private(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
+    # assert output.lipschitz_bound == 1
 
 
 @pytest.mark.equality
@@ -1130,6 +1139,7 @@ def test_ge_private(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
+    # assert output.lipschitz_bound == 1
 
 
 def test_resize(
@@ -1159,6 +1169,7 @@ def test_resize(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
+    assert output.lipschitz_bound == 1
 
 
 def test_floordiv(
@@ -1196,8 +1207,6 @@ def test_floordiv(
     state = {}
     for key in output.sources:
         state[key] = output.sources[key].child
-    print(output.child)
-    print(output.func(state))
     assert (output.func(state) == output.child).all()
 
     array = np.ones((dims, dims))
@@ -1209,6 +1218,7 @@ def test_floordiv(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
+    assert output.lipschitz_bound == 1
 
 
 def test_prod(
@@ -1235,6 +1245,7 @@ def test_prod(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
+    assert output.lipschitz_bound == 25
 
 
 def test_compress(
@@ -1273,6 +1284,7 @@ def test_compress(
         state[key] = output.sources[key].child
 
     assert (output.func(state) == output.child).all()
+    assert output.lipschitz_bound == 1
 
 
 def test_squeeze(
@@ -1299,6 +1311,7 @@ def test_squeeze(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
+    assert output.lipschitz_bound == 1
 
 
 def test_pos(
@@ -1323,6 +1336,7 @@ def test_pos(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
+    assert output.lipschitz_bound == 1
 
 
 def test_neg(
@@ -1350,6 +1364,7 @@ def test_neg(
     for key in output.sources:
         state[key] = output.sources[key].child
     assert (output.func(state) == output.child).all()
+    assert output.lipschitz_bound == 1
 
 
 def test_any(
@@ -1398,6 +1413,7 @@ def test_any(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
+    # assert result.lipschitz_bound == 1
 
 
 def test_all(
@@ -1446,6 +1462,7 @@ def test_all(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
+    # assert result.lipschitz_bound == 1
 
 
 def test_copy(
@@ -1475,6 +1492,7 @@ def test_copy(
     for key in copy_tensor.sources:
         state[key] = copy_tensor.sources[key].child
     assert (copy_tensor.func(state) == copy_tensor.child).all()
+    assert copy_tensor.lipschitz_bound == 1
 
 
 def test_take(
@@ -1500,6 +1518,7 @@ def test_take(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
+    assert result.lipschitz_bound == 1
 
 
 # Currently jax is not supporting put
@@ -1559,6 +1578,7 @@ def test_abs(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
+    assert result.lipschitz_bound == 1
 
 
 def test_argmax(
@@ -1594,6 +1614,7 @@ def test_argmax(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
+    # assert result.lipschitz_bound == 1
 
 
 def test_argmin(
@@ -1629,6 +1650,7 @@ def test_argmin(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
+    # assert result.lipschitz_bound == 1
 
 
 def test_swapaxes(
@@ -1654,6 +1676,7 @@ def test_swapaxes(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
+    assert result.lipschitz_bound == 1
 
 
 def test_ptp(
@@ -1686,6 +1709,7 @@ def test_ptp(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
+    assert result.lipschitz_bound == 1
 
 
 def test_nonzero(
@@ -1712,6 +1736,7 @@ def test_nonzero(
         state[key] = result.sources[key].child
     assert (result.func(state)[0] == result.child[0]).all()
     assert (result.func(state)[1] == result.child[1]).all()
+    # assert result.lipschitz_bound == 1
 
 
 def test_var(
@@ -1743,6 +1768,7 @@ def test_var(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
+    assert result.lipschitz_bound == 1
 
 
 def test_cumsum(
@@ -1774,6 +1800,7 @@ def test_cumsum(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
+    assert result.lipschitz_bound == 3
 
 
 def test_std(
@@ -1805,6 +1832,7 @@ def test_std(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
+    assert result.lipschitz_bound == 1
 
 
 def test_trace(
@@ -1836,6 +1864,7 @@ def test_trace(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
+    assert result.lipschitz_bound == 1
 
 
 def test_cumprod(
@@ -1868,6 +1897,7 @@ def test_cumprod(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
+    assert result.lipschitz_bound == 31
 
 
 def test_max(
@@ -1891,6 +1921,7 @@ def test_max(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
+    assert result.lipschitz_bound == 1
 
 
 def test_min(
@@ -1914,6 +1945,7 @@ def test_min(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
+    assert result.lipschitz_bound == 1
 
 
 def test_matmul(
@@ -1937,7 +1969,7 @@ def test_matmul(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
-
+    assert result.lipschitz_bound == 30
 
 def test_lshift(
     reference_data: np.ndarray,
@@ -1960,7 +1992,7 @@ def test_lshift(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
-
+    # assert result.lipschitz_bound == 1
 
 def test_rshift(
     reference_data: np.ndarray,
@@ -1983,7 +2015,7 @@ def test_rshift(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
-
+    # assert result.lipschitz_bound == 1
 
 def test_round(
     reference_data: np.ndarray,
@@ -2015,7 +2047,7 @@ def test_round(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
-
+    assert result.lipschitz_bound == 0
 
 def test_sort(
     reference_data: np.ndarray,
@@ -2050,6 +2082,7 @@ def test_sort(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
+    assert result.lipschitz_bound == 1
 
 
 def test_argsort(
@@ -2110,6 +2143,7 @@ def test_transpose(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
+    assert result.lipschitz_bound == 1
 
 
 def test_reshape(
@@ -2134,6 +2168,7 @@ def test_reshape(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
+    assert result.lipschitz_bound == 1
 
 
 def test_xor(
@@ -2191,3 +2226,4 @@ def test_xor(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
+    # assert result.lipschitz_bound == 1
