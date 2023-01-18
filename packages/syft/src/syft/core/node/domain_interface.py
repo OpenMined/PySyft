@@ -23,4 +23,3 @@ class DomainInterface(NodeServiceInterface):
     settings: BaseSettings
     tasks: NoSQLTaskManager
     oblv_keys: NoSQLOblvKeyManager
-
