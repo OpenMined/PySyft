@@ -437,8 +437,9 @@ class ShareTensor(PassthroughTensor):
                 gt: GammaTensor = value.child
                 new_gamma = GammaTensor(
                     child=FixedPrecisionTensor(value.child.child),
-                    func=gt.func,
+                    jax_op=gt.jax_op,
                     sources=gt.sources,
+                    is_linear=gt.is_linear,
                 )
                 value.child = new_gamma
 

@@ -2597,10 +2597,11 @@ class PhiTensor(PassthroughTensor):
 
     def create_gamma(self) -> GammaTensor:
         """Return a new Gamma tensor based on this phi tensor"""
+        jax_op = SyftTerminalNoop(phi_id=self.id)
         gamma_tensor = GammaTensor(
             child=self.child,
             sources={self.id: self},
-            jax_op=SyftTerminalNoop(phi_id=self.id),
+            jax_op=jax_op,
             is_linear=True,
         )
 

@@ -1,11 +1,10 @@
 # stdlib
 from enum import Enum
-import operator
 
 # third party
 import jax
 import jax.numpy as jnp
-import numpy as np
+
 
 class GAMMA_TENSOR_OP(Enum):
     # Numpy ArrayLike

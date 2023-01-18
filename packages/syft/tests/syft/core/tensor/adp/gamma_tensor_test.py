@@ -90,7 +90,7 @@ def test_gamma_serde(
         min_vals=lower_bound,
     )
     gamma_tensor1 = tensor1.gamma
-    
+
     # Checks to ensure gamma tensor was properly created
     assert isinstance(gamma_tensor1, GammaTensor)
     assert (gamma_tensor1.child == tensor1.child).all()
@@ -1261,8 +1261,7 @@ def test_compress(
     # if we have all False compress throws an exception because the size of the slices is 0
     while not any(condition):
         condition = np.random.choice(a=[False, True], size=(reference_data.shape[0]))
-    
-    print(condition.ndim)
+
     compressed_tensor = gamma_tensor.compress(condition, axis=0)
 
     comp_ind = 0
@@ -1278,6 +1277,7 @@ def test_compress(
     state = {}
     for key in output.sources:
         state[key] = output.sources[key].child
+
     assert (output.func(state) == output.child).all()
 
 
@@ -1404,6 +1404,7 @@ def test_any(
     for key in result.sources:
         state[key] = result.sources[key].child
     assert (result.func(state) == result.child).all()
+
 
 def test_all(
     reference_data: np.ndarray,
