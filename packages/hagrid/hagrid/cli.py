@@ -3411,6 +3411,15 @@ def add_intro_notebook(directory: str, reset: bool = False) -> str:
 @click.command(help="Walk the Path", context_settings={"show_default": True})
 @click.argument("zip_file", type=str, default="padawan.zip", metavar="ZIPFILE")
 def dagobah(zip_file: str) -> None:
+    if not os.path.exists(zip_file):
+        for text in (
+            f"{zip_file} does not exists.",
+            "Please specify the path to the zip file containing the notebooks.",
+            "hagrid dagobah [ZIPFILE]",
+        ):
+            print(text, file=sys.stderr)
+        sys.exit(1)
+
     return run_quickstart(zip_file=zip_file)
 
 
