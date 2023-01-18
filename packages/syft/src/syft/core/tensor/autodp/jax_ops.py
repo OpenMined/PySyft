@@ -100,6 +100,9 @@ class SyftJaxInfixOp(SyftJaxOp):
 
 @serializable(recursive_serde=True)
 class SyftJaxUnaryOp(SyftJaxOp):
+
+    __attr_allowlist__ = ["jax_op", "operand", "args", "kwargs", "operand_before"]
+
     def __init__(
         self,
         jax_op: GAMMA_TENSOR_OP,

@@ -30,7 +30,17 @@ SupportedChainType = Union["PassthroughTensor", AcceptableSimpleType]
 
 
 def is_acceptable_simple_type(obj):
-    return isinstance(obj, AcceptableSimpleType)
+    return isinstance(
+        obj,
+        (
+            int,
+            bool,
+            float,
+            np.ndarray,
+            torch.Tensor,
+            jaxlib.xla_extension.DeviceArrayBase,
+        ),
+    )
 
 
 class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):

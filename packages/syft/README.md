@@ -61,7 +61,7 @@ The Syft ecosystem seeks to change this system, allowing you to write software w
 - HAGrid Requires: 🐍 `python` 🐙 `git` - Run: `pip install -U hagrid`
 - Interactive Install 🧙🏽‍♂️ Wizard<sup>BETA</sup> Requires 🛵 `hagrid`: - Run: `hagrid quickstart`  
   †`Windows` does not support `ansible`, preventing some remote deployment targets
-- PySyft Requires: 🐍 `python 3.7+` - Run: `pip install -U syft --pre`  
+- PySyft Requires: 🐍 `python 3.8+` - Run: `pip install -U syft --pre`  
   \*`macOS` Apple Silicon users need cmake: `brew install cmake`  
   ‡`Windows` users must run this first: `pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html`
 - PyGrid Requires: 🐳 `docker` / `k8s` or 🐧 `ubuntu` VM - Run: `hagrid launch ...`
