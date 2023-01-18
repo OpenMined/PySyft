@@ -163,7 +163,7 @@ class QuickstartUI:
 
     def _repr_html_(self) -> str:
         html = ""
-        if not arg_cache.install_wizard_complete:
+        if not arg_cache["install_wizard_complete"]:
             html += "<h3>Step 1b: Install 🧙🏽‍♂️ Wizard (Recommended)</h3>"
             html += (
                 "It looks like this might be your first time running Quickstart.<br />"

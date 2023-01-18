@@ -110,6 +110,14 @@ class Settings(BaseSettings):
     TEST_MODE: bool = (
         True if os.getenv("TEST_MODE", "false").lower() == "true" else False
     )
+    ASSOCIATION_TIMEOUT: int = 10
+
+    # Oblv
+    OBLV_KEY_NAME: str = str(os.getenv("OBLV_KEY_NAME", "oblv_key"))
+    OBLV_KEY_PATH: str = str(os.getenv("OBLV_KEY_NAME", "/app/content"))
+    INSTALL_OBLV_PROXY: bool = (
+        True if os.getenv("INSTALL_OBLV_PROXY", "false").lower() == "true" else False
+    )
 
     class Config:
         case_sensitive = True

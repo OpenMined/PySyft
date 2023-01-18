@@ -6,6 +6,17 @@ import sys
 from types import MappingProxyType
 from typing import Collection
 from typing import Mapping
+from typing import Union
+from typing import _GenericAlias
+from typing import _SpecialForm
+
+try:
+    # stdlib
+    from typing import _UnionGenericAlias
+except Exception:
+    _UnionGenericAlias = None
+
+# stdlib
 from typing import cast
 
 # relative
@@ -206,3 +217,63 @@ recursive_serde_register(
     serialize=serialze_kv,
     deserialize=functools.partial(deserialize_kv, MappingProxyType),
 )
+
+
+def serialize_generic_alias(serialized_type: _GenericAlias) -> bytes:
+    # relative
+    from ....lib.util import full_name_with_qualname
+    from .serialize import _serialize
+
+    fqn = full_name_with_qualname(klass=serialized_type)
+    module_parts = fqn.split(".")
+    _ = module_parts.pop()  # remove incorrect .type ending
+    module_parts.append(serialized_type.__name__)
+
+    obj_dict = {
+        "path": ".".join(module_parts),
+        "__origin__": serialized_type.__origin__,
+        "__args__": serialized_type.__args__,
+        "_paramspec_tvars": serialized_type._paramspec_tvars,
+    }
+    print("creating obj_dict", obj_dict)
+    return _serialize(obj_dict, to_bytes=True)
+
+
+def deserialize_generic_alias(type_blob: bytes) -> type:
+    # relative
+    from .deserialize import _deserialize
+
+    obj_dict = _deserialize(type_blob, from_bytes=True)
+    deserialized_type = obj_dict.pop("path")
+    module_parts = deserialized_type.split(".")
+    klass = module_parts.pop()
+    type_constructor = getattr(sys.modules[".".join(module_parts)], klass)
+    # does this apply to all _SpecialForm?
+    if type_constructor == Union:
+        # stay consistent python 😭
+        type_constructor = _GenericAlias
+        obj_dict["origin"] = obj_dict.pop("__origin__")
+        obj_dict["params"] = obj_dict.pop("__args__")
+
+    return type_constructor(**obj_dict)
+
+
+# 🟡 TODO 5: add tests and all typing options for signatures
+def recursive_serde_register_type(t: type) -> None:
+    if isinstance(t, type) and issubclass(t, _GenericAlias):
+        recursive_serde_register(
+            t,
+            serialize=serialize_generic_alias,
+            deserialize=deserialize_generic_alias,
+        )
+    else:
+        recursive_serde_register(
+            t, serialize=serialize_type, deserialize=deserialize_type
+        )
+
+
+recursive_serde_register_type(_SpecialForm)
+if _UnionGenericAlias is not None:
+    recursive_serde_register_type(_UnionGenericAlias)
+recursive_serde_register_type(_GenericAlias)
+recursive_serde_register_type(Union)

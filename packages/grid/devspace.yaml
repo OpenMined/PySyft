@@ -89,6 +89,8 @@ vars:
     value: "60"
   - name: DOMAIN_CHECK_INTERVAL
     value: "60"
+  - name: ASSOCIATION_TIMEOUT
+    value: "10"
   - name: TEST_MODE
     value: "0"
   - name: MONGO_USERNAME
@@ -443,6 +445,8 @@ deployments:
                 value: ${MONGO_HOST}
               - name: MONGO_PORT
                 value: ${MONGO_PORT}
+              - name: ASSOCIATION_TIMEOUT
+                value: $!{ASSOCIATION_TIMEOUT}
         service:
           name: ${SERVICE_NAME_BACKEND}
           ports:
