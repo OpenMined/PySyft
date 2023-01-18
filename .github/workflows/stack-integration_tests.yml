@@ -34,6 +34,7 @@ jobs:
 
     steps:
       - name: "clean .git/config"
+        if: matrix.os == 'windows'
         shell: bash
         run: |
           echo "deleting ${GITHUB_WORKSPACE}/.git/config"
@@ -168,7 +169,6 @@ jobs:
           docker rm `docker ps -aq` --force || true
           docker volume prune -f || true
 
-
       #Get Pull request url
       - name: Get pull request url
         id: pull_request
@@ -176,19 +176,18 @@ jobs:
         run: |
           echo "::set-output name=url::$(echo ${{ github.event.pull_request.html_url }})"
 
-
       - name: Job Report Status
         # cant access secrets on forks
         if: github.repository == 'OpenMined/PySyft' && failure()
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
-          notify_when: 'failure'
-          notification_title: ' {workflow} has {status_message}'
-          message_format: '${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}'
-          footer: 'Find the PR here ${{ steps.pull_request.outputs.url }}'
-          mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
-          mention_users_when: 'failure,warnings'
+          notify_when: "failure"
+          notification_title: " {workflow} has {status_message}"
+          message_format: "${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}"
+          footer: "Find the PR here ${{ steps.pull_request.outputs.url }}"
+          mention_users: "U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0"
+          mention_users_when: "failure,warnings"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
 
@@ -350,19 +349,18 @@ jobs:
         run: |
           echo "::set-output name=url::$(echo ${{ github.event.pull_request.html_url }})"
 
-
       - name: Job Report Status
         # cant access secrets on forks
         if: github.repository == 'OpenMined/PySyft' && failure()
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
-          notify_when: 'failure'
-          notification_title: ' {workflow} has {status_message}'
-          message_format: '${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}'
-          footer: 'Find the PR here ${{ steps.pull_request.outputs.url }}'
-          mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
-          mention_users_when: 'failure,warnings'
+          notify_when: "failure"
+          notification_title: " {workflow} has {status_message}"
+          message_format: "${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}"
+          footer: "Find the PR here ${{ steps.pull_request.outputs.url }}"
+          mention_users: "U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0"
+          mention_users_when: "failure,warnings"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
 
@@ -491,7 +489,6 @@ jobs:
           echo "::set-output name=job_name::$(echo ${{ github.job }})"
           echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
 
-
       - name: Get current date
         id: date
         if: failure()
@@ -520,19 +517,18 @@ jobs:
         run: |
           echo "::set-output name=url::$(echo ${{ github.event.pull_request.html_url }})"
 
-
       - name: Job Report Status
         # cant access secrets on forks
         if: github.repository == 'OpenMined/PySyft' && failure()
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
-          notify_when: 'failure'
-          notification_title: ' {workflow} has {status_message}'
-          message_format: '${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}'
-          footer: 'Find the PR here ${{ steps.pull_request.outputs.url }}'
-          mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
-          mention_users_when: 'failure,warnings'
+          notify_when: "failure"
+          notification_title: " {workflow} has {status_message}"
+          message_format: "${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}"
+          footer: "Find the PR here ${{ steps.pull_request.outputs.url }}"
+          mention_users: "U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0"
+          mention_users_when: "failure,warnings"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
 
@@ -549,6 +545,12 @@ jobs:
     runs-on: [self-hosted, linux]
 
     steps:
+      - name: "clean .git/config"
+        shell: bash
+        run: |
+          echo "deleting ${GITHUB_WORKSPACE}/.git/config"
+          rm ${GITHUB_WORKSPACE}/.git/config
+
       - name: set permissions on work folder for self-runners
         run: |
           sudo chown -R $USER:$USER ~/actions-runner/_work/
@@ -654,7 +656,6 @@ jobs:
         run: |
           python ./scripts/container_log_collector.py
 
-
       # Get Job name and url
       - name: Get job name and url
         id: job_name
@@ -691,19 +692,18 @@ jobs:
         run: |
           echo "::set-output name=url::$(echo ${{ github.event.pull_request.html_url }})"
 
-
       - name: Job Report Status
         # cant access secrets on forks
         if: github.repository == 'OpenMined/PySyft' && failure()
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
-          notify_when: 'failure'
-          notification_title: ' {workflow} has {status_message}'
-          message_format: '${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}'
-          footer: 'Find the PR here ${{ steps.pull_request.outputs.url }}'
-          mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
-          mention_users_when: 'failure,warnings'
+          notify_when: "failure"
+          notification_title: " {workflow} has {status_message}"
+          message_format: "${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}"
+          footer: "Find the PR here ${{ steps.pull_request.outputs.url }}"
+          mention_users: "U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0"
+          mention_users_when: "failure,warnings"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
 
@@ -717,6 +717,12 @@ jobs:
     runs-on: [self-hosted, linux]
 
     steps:
+      - name: "clean .git/config"
+        shell: bash
+        run: |
+          echo "deleting ${GITHUB_WORKSPACE}/.git/config"
+          rm ${GITHUB_WORKSPACE}/.git/config
+
       - name: set permissions on work folder for self-runners
         run: |
           sudo chown -R $USER:$USER ~/actions-runner/_work/
@@ -828,7 +834,6 @@ jobs:
           echo "::set-output name=job_name::$(echo ${{ github.job }})"
           echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
 
-
       - name: Get current date
         id: date
         if: failure()
@@ -863,12 +868,12 @@ jobs:
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
-          notify_when: 'failure'
-          notification_title: ' {workflow} has {status_message}'
-          message_format: '${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}'
-          footer: 'Find the PR here ${{ steps.pull_request.outputs.url }}'
-          mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
-          mention_users_when: 'failure,warnings'
+          notify_when: "failure"
+          notification_title: " {workflow} has {status_message}"
+          message_format: "${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}"
+          footer: "Find the PR here ${{ steps.pull_request.outputs.url }}"
+          mention_users: "U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0"
+          mention_users_when: "failure,warnings"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
 
@@ -952,7 +957,6 @@ jobs:
           docker rm `docker ps -aq` --force || true
           tox -e stack.test.course
 
-
       #Run log collector python script
       - name: Run log collector
         if: failure()
@@ -960,7 +964,7 @@ jobs:
         run: |
           python ./scripts/container_log_collector.py
 
-       # Get Job name and url
+        # Get Job name and url
       - name: Get job name and url
         id: job_name
         if: failure()
@@ -996,18 +1000,17 @@ jobs:
         run: |
           echo "::set-output name=url::$(echo ${{ github.event.pull_request.html_url }})"
 
-
       - name: Job Report Status
         # cant access secrets on forks
         if: github.repository == 'OpenMined/PySyft' && failure()
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
-          notify_when: 'failure'
-          notification_title: ' {workflow} has {status_message}'
-          message_format: '${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}'
-          footer: 'Find the PR here ${{ steps.pull_request.outputs.url }}'
-          mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
-          mention_users_when: 'failure,warnings'
+          notify_when: "failure"
+          notification_title: " {workflow} has {status_message}"
+          message_format: "${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}"
+          footer: "Find the PR here ${{ steps.pull_request.outputs.url }}"
+          mention_users: "U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0"
+          mention_users_when: "failure,warnings"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
