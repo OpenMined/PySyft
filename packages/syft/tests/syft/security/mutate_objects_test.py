@@ -32,12 +32,14 @@ def test_store_object_mutation(
     guest_y.id_at_location = UID.from_string(y_ptr.id_at_location.no_dash)
     guest_y.add_(guest_y)
 
-    # guest user should not be able to mutate objects that don't belong to them
+    # guest user should be able to mutate objects that don't belong to them
     x_result = x_ptr.get(delete_obj=False)
     assert all(x_result == x) is True
 
     y_result = y_ptr.get(delete_obj=False)
-    assert all(y_result == y) is True
+
+    # this assert should pass once the mutation checks have been removed
+    assert all(y_result == y) is False
 
     # guest creates object which gives it write permission
     g = th.tensor([1, 1, 1])
@@ -47,14 +49,14 @@ def test_store_object_mutation(
     xg_ptr = x_ptr + g_ptr
     result_before = xg_ptr.get(delete_obj=False)
 
-    # guest should not be able to mutate new destination
-    # which means that write permissions should not flow as a union of execution
+    # guest should be able to mutate new destination
+    # which means that write permissions should be able flow as a union of execution
     guest_xg = copy(guest_x)
     guest_xg.id_at_location = UID.from_string(xg_ptr.id_at_location.no_dash)
     guest_xg.add_(guest_xg)
 
     result_after = xg_ptr.get(delete_obj=False)
-    assert (result_before == result_after).all()
+    assert (result_before != result_after).all()
 
     # but root can
     xg_ptr.add_(xg_ptr)
@@ -72,6 +74,8 @@ def test_store_object_mutation(
     y_ptr.add_(y_ptr)
 
     new_result = y_ptr.get(delete_obj=False)
+
+    # this assert should pass once the mutation checks have been removed
     assert all(new_result == (y + y)) is True
 
 
@@ -97,7 +101,7 @@ def test_store_overwrite_key(
     guest_y.id_at_location = target_uid
     guest_y.add_(guest_y)
 
-    # guest should not be able to overwrite a destination with RunClassMethodAction
+    # guest should be able to overwrite a destination with RunClassMethodAction
     cmd = RunClassMethodAction(
         path="torch.Tensor.add_",
         _self=guest_y,
@@ -108,14 +112,9 @@ def test_store_overwrite_key(
     )
 
     # ID collision exception
-    with pytest.raises(Exception) as exc_info:
-        client.send_immediate_msg_without_reply(msg=cmd)
+    client.send_immediate_msg_without_reply(msg=cmd)
 
-    assert (
-        str(exc_info.value)
-        == "You're not allowed to perform this operation using this ID."
-    )
-
-    # y should not have changed
+    # y should have changed
+    # this assert should pass once the mutation checks have been removed
     y_result = y_ptr.get(delete_obj=False)
-    assert all(y_result == y) is True
+    assert all(y_result == y) is False

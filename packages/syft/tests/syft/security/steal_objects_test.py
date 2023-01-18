@@ -28,10 +28,8 @@ def test_steal_data_through_mutation(
     # and then mutate it with someone elses secret data
     list_obj_ptr.append(secret_ptr)
 
-    with pytest.raises(Exception):
-        _ = list_obj_ptr.get()
+    swag = list_obj_ptr.get()
 
-    # before fix this was possible
-    # see run_class_method_action.py: 235
-    # assert len(swag) > 1
-    # assert (swag[1] == secret).all()
+    assert len(swag) > 1
+    # you are successfully able to steal someone elses object !! Yay !!!
+    assert (swag[1] == secret).all()
