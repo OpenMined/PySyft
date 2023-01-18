@@ -145,9 +145,7 @@ async def update_user_grid(
         raise_generic_private_error()
 
 
-@router.delete(
-    "/{user_id}", name="users:delete", status_code=status.HTTP_200_OK
-)
+@router.delete("/{user_id}", name="users:delete", status_code=status.HTTP_200_OK)
 async def delete_user_grid(
     user_id: int, current_user: UserPrivate = Depends(get_current_user)
 ) -> None:
