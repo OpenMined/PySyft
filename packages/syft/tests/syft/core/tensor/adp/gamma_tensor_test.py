@@ -1,7 +1,3 @@
-# stdlib
-from typing import Any
-from typing import Dict
-
 # third party
 from jax import numpy as jnp
 import numpy as np
@@ -10,9 +6,7 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.adp.data_subject_ledger import DataSubjectLedger
 from syft.core.adp.data_subject_list import DataSubject
-from syft.core.adp.ledger_store import DictLedgerStore
 from syft.core.tensor.autodp.gamma_tensor import GammaTensor
 from syft.core.tensor.autodp.phi_tensor import PhiTensor as PT
 from syft.core.tensor.lazy_repeat_array import lazyrepeatarray as lra

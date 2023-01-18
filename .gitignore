@@ -65,3 +65,5 @@ packages/grid/svelte
 packages/grid/rendered
 
 js/node_modules
+
+tests/course/courses
