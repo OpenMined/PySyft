@@ -22,6 +22,7 @@ from ..common.serde import _serialize
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import serializable
 from ..common.uid import UID
+from ..io.address import Address
 from ..node.abstract.node import AbstractNode
 from ..node.common.action.get_object_action import GetObjectAction
 from ..node.common.exceptions import AuthorizationError
@@ -639,7 +640,7 @@ class Pointer(AbstractPointer):
 
     def __del__(self) -> None:
         _client_type = type(self.client)
-        if issubclass(_client_type, AbstractNode):
+        if (_client_type == Address) or issubclass(_client_type, AbstractNode):
             # it is a serialized pointer that we receive from another client do nothing
             return
 
