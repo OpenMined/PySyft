@@ -23,7 +23,9 @@ import torch
 from .util import implements
 from .util import query_implementation
 
-AcceptableSimpleType = Union[int, bool, float, np.ndarray]
+AcceptableSimpleType = Union[
+    int, bool, float, np.ndarray, torch.Tensor, jaxlib.xla_extension.DeviceArrayBase
+]
 SupportedChainType = Union["PassthroughTensor", AcceptableSimpleType]
 
 

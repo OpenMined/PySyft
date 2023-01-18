@@ -5,11 +5,8 @@ struct GammaTensor {
   magicHeader @0 :Data;
   child @1 :List(Data);
   sources @2 :Data;
-  dataSubjects @3 :List(Data);
-  minVal @4 :Data;
-  maxVal @5 :Data;
-  isLinear @6 :Bool;
-  id @7 :Text;
-  isNumpy @8 :Bool;
-  funcStr @9 :Text;
+  isLinear @3 :Bool;
+  id @4 :Text;
+  isNumpy @5 :Bool;
+  jaxOp @6 :Data;
 }

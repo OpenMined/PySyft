@@ -12,6 +12,7 @@ from typing import Union
 from bcrypt import checkpw
 from bcrypt import gensalt
 from bcrypt import hashpw
+import jax
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
@@ -440,6 +441,12 @@ class UserManager(DatabaseManager):
                 raise NotEnoughBudgetException(
                     f"The user does not have enough budget: {user.budget} for epsilon spend: {epsilon_spend}"
                 )
+
+            if (
+                isinstance(epsilon_spend, jax.numpy.DeviceArray)
+                and len(epsilon_spend) == 1
+            ):
+                epsilon_spend = float(epsilon_spend)
 
             user.budget = user.budget - epsilon_spend
             session_local.add(user)
