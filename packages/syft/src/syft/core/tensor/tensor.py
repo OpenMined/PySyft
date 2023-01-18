@@ -563,7 +563,7 @@ class Tensor(
 
         if isinstance(self.child, PhiTensor):
             return TensorWrappedPhiTensorPointer(
-                data_subjects=self.child.data_subjects,
+                data_subject=self.child.data_subject,
                 client=client,
                 id_at_location=id_at_location,
                 object_type=object_type,
@@ -576,14 +576,14 @@ class Tensor(
             )
         elif isinstance(self.child, GammaTensor):
             return TensorWrappedGammaTensorPointer(
-                data_subjects=self.child.data_subjects,
+                # data_subjects=self.child.data_subjects,
                 client=client,
                 id_at_location=id_at_location,
                 object_type=object_type,
                 tags=tags,
                 description=description,
-                min_vals=self.child.min_vals,
-                max_vals=self.child.max_vals,
+                # min_vals=self.child.min_vals,
+                # max_vals=self.child.max_vals,
                 public_shape=getattr(self, "public_shape", None),
                 public_dtype=getattr(self, "public_dtype", None),
             )

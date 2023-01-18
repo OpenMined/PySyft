@@ -61,12 +61,12 @@ def upload_subset(
     name = f"Tweets - {size_name} - {unique_key}"
     impressions = df["impressions"].to_numpy(dtype=np.int64)
 
-    user_id = df["user_id"]
+    user_id = str(df["user_id"])
 
-    entities = DataSubjectArray.from_objs(user_id)
+    # entities = DataSubjectArray.from_objs(user_id)
 
     tweets_data = sy.Tensor(impressions).annotate_with_dp_metadata(
-        lower_bound=0, upper_bound=30, data_subjects=entities
+        lower_bound=0, upper_bound=30, data_subject=user_id
     )
 
     assert isinstance(tweets_data.child, GammaTensor)
