@@ -11,7 +11,7 @@ DATA_FILES = {"img": ["hagrid/img/*.png"], "hagrid": ["*.yml"]}
 
 packages = [
     "ascii_magic",
-    "click>7.1",
+    "click>=7.1",
     "cryptography>=37.0.2",
     "gitpython",
     "jinja2",
