@@ -143,7 +143,7 @@ class TensorPointer(Pointer):
                 kwargs=pointer_kwargs,
                 id_at_location=result_id_at_location,
                 seed_id_locations=seed_id_locations,
-                address=self.client.address,
+                address=self.client.node_uid,
             )
             self.client.send_immediate_msg_without_reply(msg=cmd)
 

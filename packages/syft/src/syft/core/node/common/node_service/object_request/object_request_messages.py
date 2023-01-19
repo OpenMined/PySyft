@@ -12,7 +12,6 @@ from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.serializable import serializable
 from .....common.uid import UID
-from .....io.address import Address
 from ..request_receiver.request_receiver_messages import RequestMessage
 
 
@@ -23,9 +22,9 @@ class CreateRequestMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         content: Dict,
-        reply_to: Address,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -39,7 +38,7 @@ class CreateBudgetRequestMessage(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         budget: float,
         reason: str,
         msg_id: Optional[UID] = None,
@@ -56,7 +55,7 @@ class CreateRequestResponse(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         status_code: int,
         content: Dict,
         msg_id: Optional[UID] = None,
@@ -73,9 +72,9 @@ class GetRequestMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         request_id: str,
-        reply_to: Address,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -89,7 +88,7 @@ class GetRequestResponse(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         status_code: int,
         request_id: Dict[str, Any],
         msg_id: Optional[UID] = None,
@@ -106,8 +105,8 @@ class GetRequestsMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
-        reply_to: Address,
+        address: UID,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -120,7 +119,7 @@ class GetRequestsResponse(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         status_code: int,
         content: List[Dict],
         msg_id: Optional[UID] = None,
@@ -137,8 +136,8 @@ class GetBudgetRequestsMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
-        reply_to: Address,
+        address: UID,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -151,7 +150,7 @@ class GetBudgetRequestsResponse(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         content: List[Dict],
         msg_id: Optional[UID] = None,
     ):
@@ -166,10 +165,10 @@ class UpdateRequestMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         request_id: str,
         status: str,
-        reply_to: Address,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -184,7 +183,7 @@ class UpdateRequestResponse(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         status_code: int,
         status: str,
         request_id: str,
@@ -203,9 +202,9 @@ class DeleteRequestMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         request_id: str,
-        reply_to: Address,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -219,7 +218,7 @@ class DeleteRequestResponse(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         status_code: int,
         request_id: str,
         msg_id: Optional[UID] = None,
@@ -233,9 +232,7 @@ class DeleteRequestResponse(ImmediateSyftMessageWithoutReply):
 class GetAllRequestsMessage(ImmediateSyftMessageWithReply):
     __attr_allowlist__ = ["address", "id", "reply_to"]
 
-    def __init__(
-        self, address: Address, reply_to: Address, msg_id: Optional[UID] = None
-    ):
+    def __init__(self, address: UID, reply_to: UID, msg_id: Optional[UID] = None):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
 
 
@@ -246,7 +243,7 @@ class GetAllRequestsResponseMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         requests: List[RequestMessage],
-        address: Address,
+        address: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)

@@ -22,7 +22,6 @@ from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.serializable import serializable
 from .....common.uid import UID
-from .....io.address import Address
 from .....pointer.pointer import Pointer
 from .....store.proxy_dataset import ProxyDataset
 from ....abstract.node import AbstractNode
@@ -36,8 +35,8 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
-        reply_to: Address,
+        address: UID,
+        reply_to: UID,
         obj_id: Optional[UID] = None,
         msg_id: Optional[UID] = None,
     ):
@@ -58,7 +57,7 @@ class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         results: List[Pointer],
-        address: Address,
+        address: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)

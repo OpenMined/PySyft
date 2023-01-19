@@ -8,8 +8,6 @@ from nacl.signing import VerifyKey
 # syft absolute
 from syft import ReprMessage
 from syft.core.common.uid import UID
-from syft.core.io.address import Address
-from syft.core.io.location import SpecificLocation
 
 
 def get_signing_key() -> SigningKey:
@@ -20,8 +18,7 @@ def get_signing_key() -> SigningKey:
 
 def get_repr_message() -> ReprMessage:
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
-    addr = Address(name="alices_domain", domain=SpecificLocation(id=uid, name="alice"))
-    return ReprMessage(address=addr, msg_id=uid)
+    return ReprMessage(address=uid, msg_id=uid)
 
 
 def get_verify_key() -> VerifyKey:

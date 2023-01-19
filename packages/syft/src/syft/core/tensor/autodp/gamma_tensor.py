@@ -237,7 +237,7 @@ class TensorWrappedGammaTensorPointer(Pointer):
                 args=pointer_args,
                 kwargs=pointer_kwargs,
                 id_at_location=result_id_at_location,
-                address=self.client.address,
+                address=self.client.node_uid,
             )
             self.client.send_immediate_msg_without_reply(msg=cmd)
 
@@ -369,7 +369,7 @@ class TensorWrappedGammaTensorPointer(Pointer):
                 args=pointer_args,
                 kwargs=pointer_kwargs,
                 id_at_location=result_id_at_location,
-                address=self.client.address,
+                address=self.client.node_uid,
             )
             self.client.send_immediate_msg_without_reply(msg=cmd)
 
@@ -1212,7 +1212,7 @@ class TensorWrappedGammaTensorPointer(Pointer):
                 args=pointer_args,
                 kwargs=pointer_kwargs,
                 id_at_location=result_id_at_location,
-                address=self.client.address,
+                address=self.client.node_uid,
             )
             self.client.send_immediate_msg_without_reply(msg=cmd)
 
@@ -1767,7 +1767,7 @@ class TensorWrappedGammaTensorPointer(Pointer):
             cmd = GetOrSetPropertyAction(
                 path=attr_path_and_name,
                 id_at_location=result_id_at_location,
-                address=self.client.address,
+                address=self.client.node_uid,
                 _self=self,
                 args=pointer_args,
                 kwargs=pointer_kwargs,

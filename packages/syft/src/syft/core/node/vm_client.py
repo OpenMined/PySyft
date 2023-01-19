@@ -32,9 +32,10 @@ class VirtualMachineClient(Client):
 
     def __init__(
         self,
+        node_uid: UID,
         name: Optional[str],
         routes: List[Route],
-        vm: SpecificLocation,
+        vm: Optional[SpecificLocation] = None,
         network: Optional[Location] = None,
         domain: Optional[Location] = None,
         device: Optional[Location] = None,
@@ -50,17 +51,18 @@ class VirtualMachineClient(Client):
             vm=vm,
             signing_key=signing_key,
             verify_key=verify_key,
+            node_uid=node_uid,
         )
 
         self.post_init()
 
     @property
     def id(self) -> UID:
-        return self.vm.id
+        return self.node_uid
 
     @id.setter
     def id(self, new_id: UID) -> None:
-        self.vm.id = new_id
+        self.node_uid = new_id
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__}: {self.name}>"

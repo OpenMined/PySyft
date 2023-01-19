@@ -345,7 +345,7 @@ class ShareTensor(PassthroughTensor):
                 beaver_action = BeaverAction(
                     values=[str(self_generator_seed)],
                     locations=[przs_location],
-                    address=client.address,
+                    address=client.node_uid,
                 )
                 client.send_immediate_msg_without_reply(msg=beaver_action)
         other_generator_seed = przs_retrieve_object(node, przs_location).data

@@ -13,7 +13,6 @@ from nacl.signing import VerifyKey
 from ..... import lib
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
-from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
@@ -47,7 +46,7 @@ class GetSetStaticAttributeAction(ImmediateActionWithoutReply):
         self,
         path: str,
         id_at_location: UID,
-        address: Address,
+        address: UID,
         action: StaticAttributeAction,
         msg_id: Optional[UID] = None,
         set_arg: Optional[Any] = None,

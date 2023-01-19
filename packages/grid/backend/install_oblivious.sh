@@ -2,18 +2,6 @@
 
 echo "Running prestart.sh with RELEASE=${RELEASE}"
 
-while [ ! -f /app/syft/setup.py ]
-do
-    echo "Waiting for syft folder to sync"
-    sleep 1
-done
-
-if [ "${RELEASE}" = "development" ]
-then
-    echo "Installing Syft"
-    pip install --user -e /app/syft[dev]
-fi
-
 if [[ "${INSTALL_OBLV_PROXY}" == "true"  &&  ("${SERVICE_NAME}" == "backend"  ||  "${SERVICE_NAME}" == "celeryworker" ) ]]; then
     echo "Allowed to install Oblv CLI"
     # Oblivious Proxy Client Installation
@@ -25,7 +13,3 @@ if [[ "${INSTALL_OBLV_PROXY}" == "true"  &&  ("${SERVICE_NAME}" == "backend"  ||
 else
     echo "Oblivious CLI not installed INSTALL_OBLV_PROXY:${INSTALL_OBLV_PROXY} , SERVICE_NAME:${SERVICE_NAME} "
 fi
-
-
-# Create initial data in DB
-python /app/grid/initial_data.py

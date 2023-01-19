@@ -11,7 +11,6 @@ from typing import Optional
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
-from ....io.address import Address
 
 
 @serializable(recursive_serde=True)
@@ -34,7 +33,7 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
         args_id: List[UID],
         kwargs_id: Dict[str, UID],
         result_id: UID,
-        address: Address,
+        address: UID,
         kwargs: Optional[Dict[str, Any]] = None,
         ranks_to_run_action: Optional[List[int]] = None,
         msg_id: Optional[UID] = None,

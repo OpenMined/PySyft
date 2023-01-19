@@ -18,7 +18,6 @@ from ......logger import critical
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.serializable import serializable
 from .....common.uid import UID
-from .....io.address import Address
 from ....abstract.node import AbstractNode
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithoutReply
@@ -29,7 +28,7 @@ from ..node_service import ImmediateNodeServiceWithoutReply
 class ReprMessage(ImmediateSyftMessageWithoutReply):
     __attr_allowlist__ = ["id", "address"]
 
-    def __init__(self, address: Address, msg_id: Optional[UID] = None):
+    def __init__(self, address: UID, msg_id: Optional[UID] = None):
         super().__init__(address=address, msg_id=msg_id)
 
 

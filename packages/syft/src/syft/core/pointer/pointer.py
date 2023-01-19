@@ -35,7 +35,7 @@ from ..node.enums import PointerStatus
 from ..store.storeable_object import StorableObject
 
 
-# TODO: Fix the Client, Address, Location confusion
+# TODO: Fix the Client, UID, Location confusion
 @serializable(recursive_serde=True)
 class Pointer(AbstractPointer):
     __attr_allowlist__ = [
@@ -64,7 +64,7 @@ class Pointer(AbstractPointer):
     module.
 
     :param location: The location where the data is being held.
-    :type location: Address
+    :type location: UID
     :param id_at_location: The UID of the object on the remote location.
     :type id_at_location: UID
     """
@@ -160,8 +160,8 @@ class Pointer(AbstractPointer):
         )
         obj_msg = GetObjectAction(
             id_at_location=self.id_at_location,
-            address=self.client.address,
-            reply_to=self.client.address,
+            address=self.client.node_uid,
+            reply_to=self.client.node_uid,
             delete_obj=delete_obj,
         )
 
@@ -232,8 +232,8 @@ class Pointer(AbstractPointer):
             # TODO: Fix circular import
             # This deletes the data from both database and blob store
             obj_del_msg: NewSyftMessage = ObjectDeleteMessage(
-                address=self.client.address,
-                reply_to=self.client.address,
+                address=self.client.node_uid,
+                reply_to=self.client.node_uid,
                 kwargs={
                     "id_at_location": self.id_at_location.to_string(),
                 },
@@ -276,8 +276,8 @@ class Pointer(AbstractPointer):
         try:
             obj_msg = GetReprMessage(
                 id_at_location=self.id_at_location,
-                address=self.client.address,
-                reply_to=self.client.address,
+                address=self.client.node_uid,
+                reply_to=self.client.node_uid,
             )
 
             obj = self.client.send_immediate_msg_with_reply(msg=obj_msg).repr
@@ -324,7 +324,7 @@ class Pointer(AbstractPointer):
 
         obj_msg = PublishScalarsAction(
             id_at_location=id_at_location,
-            address=self.client.address,
+            address=self.client.node_uid,
             publish_ids_at_location=[self.id_at_location],
             sigma=sigma,
             private=private,
@@ -469,8 +469,8 @@ class Pointer(AbstractPointer):
 
         msg = RequestMessage(
             request_description=reason,
-            address=self.client.address,
-            owner_address=self.client.address,
+            address=self.client.node_uid,
+            owner_address=self.client.node_uid,
             object_id=self.id_at_location,
             object_type=self.object_type,
             requester_verify_key=self.client.verify_key,
@@ -525,8 +525,8 @@ class Pointer(AbstractPointer):
                         debug(f"> Sending another Request Message {now - start}")
                         status_msg = RequestAnswerMessage(
                             request_id=msg.id,
-                            address=self.client.address,
-                            reply_to=self.client.address,
+                            address=self.client.node_uid,
+                            reply_to=self.client.node_uid,
                         )
                         response = self.client.send_immediate_msg_with_reply(
                             msg=status_msg
@@ -608,7 +608,7 @@ class Pointer(AbstractPointer):
             add_instead_of_remove=pointable,
             target_verify_key=target_verify_key,
             target_object_id=self.id_at_location,
-            address=self.client.address,
+            address=self.client.node_uid,
         )
         self.client.send_immediate_msg_without_reply(msg=msg)
 
@@ -632,7 +632,7 @@ class Pointer(AbstractPointer):
         )
 
         msg = RequestAnswerMessage(
-            request_id=request_id, address=self.client.address, reply_to=node.address
+            request_id=request_id, address=self.client.node_uid, reply_to=node.node_uid
         )
         response = self.client.send_immediate_msg_with_reply(msg=msg)
 

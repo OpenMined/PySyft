@@ -95,8 +95,16 @@ class SyftObject(BaseModel, SyftObjectRegistry):
         d["__canonical_name__"] = self.__canonical_name__
         d["__version__"] = self.__version__
         d["__blob__"] = blob
+        d["__repr__"] = self.__repr__()
 
         return d
+
+    def __repr__(self) -> str:
+        _repr_str = f"{type(self)}\n"
+        for attr in self.__attr_state__:
+            value = getattr(self, attr, "Missing")
+            _repr_str += f"{attr}: {type(attr)} = {value}\n"
+        return _repr_str
 
     @staticmethod
     def from_mongo(bson: Any) -> "SyftObject":
@@ -157,7 +165,7 @@ class SyftObject(BaseModel, SyftObjectRegistry):
                 if decl.default_factory:
                     # If the value is defined via PrivateAttr with default factory
                     value = decl.default_factory(value)
-                else:
+                elif var_annotation is not None:
                     # Otherwise validate value against the variable annotation
                     check_type(attr, value, var_annotation)
                 setattr(self, attr, value)
