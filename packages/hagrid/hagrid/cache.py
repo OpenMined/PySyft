@@ -31,7 +31,7 @@ arg_defaults = {
     "install_wizard_complete": False,
     "aws_region": "us-east-1",
     "aws_security_group_name": "openmined_sg",
-    "aws_security_group_cidr": "0.0.0.0",
+    "aws_security_group_cidr": "0.0.0.0/0",
     "aws_image_id": "ami-0b0dcb5067f052a63",  # TODO comment exact AMI name here (Amazon linux 2)
     "aws_ec2_instance_type": "t2.micro",
     "aws_ec2_instance_username": "ec2-user",  # TODO for Amazon Linux 2, the default user name is ec2-user
