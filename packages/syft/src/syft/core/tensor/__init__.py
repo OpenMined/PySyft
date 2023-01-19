@@ -11,7 +11,8 @@ from ..node.abstract.node import AbstractNodeClient
 from .autodp.gamma_tensor import GammaTensor
 from .autodp.phi_tensor import PhiTensor
 from .fixed_precision_tensor import FixedPrecisionTensor
-from .nn import Model
+
+# from .nn import Model
 from .smpc.share_tensor import ShareTensor
 from .tensor import Tensor
 from .tensor import TensorPointer  # noqa: 401
@@ -31,7 +32,7 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         "syft.core.tensor.autodp",
         "syft.core.tensor.autodp.phi_tensor",
         "syft.core.tensor.autodp.gamma_tensor",
-        "syft.core.tensor.nn",
+        # "syft.core.tensor.nn",
     ]
     classes = [
         ("syft.core.tensor.tensor.Tensor", "syft.core.tensor.tensor.Tensor", Tensor),
@@ -55,11 +56,11 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.core.tensor.fixed_precision_tensor.FixedPrecisionTensor",
             FixedPrecisionTensor,
         ),
-        (
-            "syft.core.tensor.nn.Model",
-            "syft.core.tensor.nn.Model",
-            Model,
-        ),
+        # (
+        #     "syft.core.tensor.nn.Model",
+        #     "syft.core.tensor.nn.Model",
+        #     Model,
+        # ),
     ]
 
     methods = [
@@ -179,25 +180,8 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.core.tensor.tensor.Tensor.bit_decomposition",
             "syft.lib.python._SyNone",
         ),
-        ("syft.core.tensor.tensor.Tensor.mpc_swap", "syft.core.tensor.tensor.Tensor"),
         (
             "syft.core.tensor.tensor.Tensor.concatenate",
-            "syft.core.tensor.tensor.Tensor",
-        ),
-        (
-            "syft.core.tensor.tensor.Tensor.exp",
-            "syft.core.tensor.tensor.Tensor",
-        ),
-        (
-            "syft.core.tensor.tensor.Tensor.reciprocal",
-            "syft.core.tensor.tensor.Tensor",
-        ),
-        (
-            "syft.core.tensor.tensor.Tensor.softmax",
-            "syft.core.tensor.tensor.Tensor",
-        ),
-        (
-            "syft.core.tensor.tensor.Tensor.one_hot",
             "syft.core.tensor.tensor.Tensor",
         ),
         (
@@ -336,14 +320,14 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.lib.python._SyNone",
         ),
         # nn Modules
-        (
-            "syft.core.tensor.nn.Model.fit",
-            "syft.lib.python._SyNone",
-        ),
-        (
-            "syft.core.tensor.nn.Model.step",
-            "syft.lib.python._SyNone",
-        ),
+        # (
+        #     "syft.core.tensor.nn.Model.fit",
+        #     "syft.lib.python._SyNone",
+        # ),
+        # (
+        #     "syft.core.tensor.nn.Model.step",
+        #     "syft.lib.python._SyNone",
+        # ),
     ]
 
     add_modules(ast, modules)

@@ -114,6 +114,8 @@ class Callable(ast.attribute.Attribute):
                     args=args,
                     kwargs=kwargs,
                 )
+
+                self.client.processing_pointers[ptr.id_at_location] = True  # type: ignore
                 return ptr
 
         if "path" not in kwargs or "index" not in kwargs:

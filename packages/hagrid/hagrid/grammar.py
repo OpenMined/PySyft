@@ -12,6 +12,7 @@ from typing import Tuple as TypeTuple
 from typing import Union
 
 # relative
+from .deps import allowed_hosts
 from .lib import find_available_port
 
 
@@ -229,7 +230,7 @@ class HostGrammarTerm(GrammarTerm):
             else:
                 port = "80"  # default
 
-        if host not in ["docker", "vm", "aws", "azure", "gcp"]:
+        if host not in allowed_hosts:
             _ = self.validate_host(host_or_ip=host)
 
         _ = self.validate_port(port=port)

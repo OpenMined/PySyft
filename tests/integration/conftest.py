@@ -71,14 +71,14 @@ def domain_owner() -> Client:
 def cleanup_storage(domain_owner):
     # Delete any dataset remaining before the test
     for dataset in domain_owner.datasets.all():
-        domain_owner.datasets.delete(dataset_id=dataset.get("id"))
+        domain_owner.datasets.delete(dataset_id=dataset.get("id"), skip_checks=True)
 
     # Execute tests
     yield
 
     # Delete any dataset remaining after the test
     for dataset in domain_owner.datasets.all():
-        domain_owner.datasets.delete(dataset_id=dataset.get("id"))
+        domain_owner.datasets.delete(dataset_id=dataset.get("id"), skip_checks=True)
 
 
 e2e_clients = []  # clients for e2e test
@@ -88,8 +88,9 @@ def load_dataset() -> None:
     PARTIES = 2
 
     data = np.array([[1.2, 2.7], [3.4, 4.8]])
-    data_subjects = np.broadcast_to(np.array(DataSubjectArray(["Mars"])), data.shape)
-    data = sy.Tensor(data).private(0, 5, data_subjects)
+    # data_subjects = np.broadcast_to(np.array(DataSubjectArray(["Mars"])), data.shape)
+    data_subject = "Mars"
+    data = sy.Tensor(data).annotate_with_dp_metadata(0, 5, data_subject)
 
     for i in range(PARTIES):
         try:
@@ -134,3 +135,4 @@ def pytest_configure(config: _pytest.config.Config) -> None:
     config.addinivalue_line("markers", "e2e: end-to-end integration tests")
     config.addinivalue_line("markers", "security: security integration tests")
     config.addinivalue_line("markers", "tff: PySyTFF integration tests")
+    config.addinivalue_line("markers", "redis: Dataset tests")

@@ -254,7 +254,7 @@ def should_provision_remote(
     if username and password or username and key_path:
         return is_remote
     if is_remote:
-        raise Exception("--username requires either --password or --key_path")
+        raise Exception("--username requires either --password or --key-path")
     return is_remote
 
 

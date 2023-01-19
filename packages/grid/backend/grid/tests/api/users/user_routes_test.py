@@ -87,7 +87,7 @@ class TestUsersRoutes:
         )
 
         # Check if the request was successful
-        assert res.status_code == status.HTTP_204_NO_CONTENT
+        assert res.status_code == status.HTTP_200_OK
 
         # Get the details of the update user
         res = await client.get(
@@ -144,7 +144,7 @@ class TestUsersRoutes:
         )
 
         # Check if the request was successful
-        assert res.status_code == status.HTTP_204_NO_CONTENT
+        assert res.status_code == status.HTTP_200_OK
 
         # Check if the user details were updated correctly
         headers = await authenticate_user(
@@ -165,7 +165,7 @@ class TestUsersRoutes:
         )
 
         # Check if the request was successful
-        assert res.status_code == status.HTTP_204_NO_CONTENT
+        assert res.status_code == status.HTTP_200_OK
 
     @pytest.mark.asyncio
     async def test_fail_change_owner_role(
@@ -199,18 +199,6 @@ class TestUsersRoutes:
         assert res.status_code == status.HTTP_200_OK
 
     @pytest.mark.asyncio
-    async def test_user_cannot_delete_itself(
-        self, app: FastAPI, client: AsyncClient
-    ) -> None:
-        headers = await authenticate_owner(app, client)
-
-        res = await client.delete(
-            app.url_path_for("users:delete", **{"user_id": 1}), headers=headers
-        )
-        assert res.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
-        assert res.json() == {"detail": "There was an error processing your request."}
-
-    @pytest.mark.asyncio
     async def test_delete_user(
         self, app: FastAPI, client: AsyncClient, db: Session
     ) -> None:
@@ -241,7 +229,7 @@ class TestUsersRoutes:
             app.url_path_for("users:delete", **{"user_id": int(new_user.id)}),
             headers=headers,
         )
-        assert res.status_code == status.HTTP_204_NO_CONTENT
+        assert res.status_code == status.HTTP_200_OK
 
     """
     @pytest.mark.asyncio

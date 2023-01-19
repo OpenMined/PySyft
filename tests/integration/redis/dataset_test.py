@@ -10,13 +10,19 @@ from syft.core.adp.data_subject_list import DataSubjectArray
 def create_test_dataset(client, name: str = "TSTDataset"):
     data = np.array([1, 2, 3, 4, 5])
     data_subject_name = "testing"
-    entities = np.broadcast_to(
-        np.array(DataSubjectArray([data_subject_name])), data.shape
-    )
+    # entities = np.broadcast_to(
+    #     np.array(DataSubjectArray([data_subject_name])), data.shape
+    # )
 
-    train_data = sy.Tensor(data).private(min_val=0, max_val=255, data_subjects=entities)
-    test_data = sy.Tensor(data).private(min_val=0, max_val=255, data_subjects=entities)
-    val_data = sy.Tensor(data).private(min_val=0, max_val=255, data_subjects=entities)
+    train_data = sy.Tensor(data).annotate_with_dp_metadata(
+        lower_bound=0, upper_bound=255, data_subject=data_subject_name
+    )
+    test_data = sy.Tensor(data).annotate_with_dp_metadata(
+        lower_bound=0, upper_bound=255, data_subject=data_subject_name
+    )
+    val_data = sy.Tensor(data).annotate_with_dp_metadata(
+        lower_bound=0, upper_bound=255, data_subject=data_subject_name
+    )
     client.load_dataset(
         name=name,
         assets={
@@ -92,7 +98,9 @@ def test_delete_entire_dataset(domain_owner, cleanup_storage):
     assert domain_owner.datasets[0].name == "Dataset_1"
     assert domain_owner.datasets[1].name == "Dataset_2"
 
-    domain_owner.datasets.delete(dataset_id=domain_owner.datasets[0].id)
+    domain_owner.datasets.delete(
+        dataset_id=domain_owner.datasets[0].id, skip_checks=True
+    )
 
     # Check if the number of available datasets has been decreased
     assert len(domain_owner.datasets) == 1

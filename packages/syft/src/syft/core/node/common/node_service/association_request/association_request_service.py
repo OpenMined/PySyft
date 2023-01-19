@@ -1,4 +1,5 @@
 # stdlib
+import os
 from typing import Callable
 from typing import Dict
 from typing import List
@@ -11,11 +12,9 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import requests
 
-# syft absolute
-import syft as sy
-
 # relative
 from ......grid import GridURL
+from ......grid.client.client import connect
 from ......logger import error
 from ......logger import info
 from .....common.message import ImmediateSyftMessageWithReply
@@ -41,6 +40,8 @@ from .association_request_messages import GetAssociationRequestsResponse
 from .association_request_messages import ReceiveAssociationRequestMessage
 from .association_request_messages import RespondAssociationRequestMessage
 from .association_request_messages import SendAssociationRequestMessage
+
+ASSOCIATION_TIMEOUT = int(os.environ.get("ASSOCIATION_TIMEOUT", 10))
 
 
 def get_vpn_status_metadata(node: DomainInterface) -> Dict[str, str]:
@@ -121,7 +122,7 @@ def send_association_request_msg(
         try:
             # create a client to the target
             grid_url = GridURL.from_url(msg.target).with_path("/api/v1")
-            target_client = sy.connect(url=str(grid_url), timeout=10)
+            target_client = connect(url=str(grid_url), timeout=ASSOCIATION_TIMEOUT)
         except requests.exceptions.ConnectTimeout:
             return ErrorResponseMessage(
                 address=msg.reply_to,
@@ -276,7 +277,7 @@ def respond_association_request_msg(
         try:
             # create a client to the source
             grid_url = GridURL.from_url(msg.source).with_path("/api/v1")
-            source_client = sy.connect(url=str(grid_url), timeout=10)
+            source_client = connect(url=str(grid_url), timeout=10)
         except requests.exceptions.ConnectTimeout:
             return ErrorResponseMessage(
                 address=msg.reply_to,
@@ -299,7 +300,7 @@ def respond_association_request_msg(
                 f"Node {node} - respond_association_request_msg: sending ReceiveAssociationRequestMessage."
             )
 
-            source_client.send_immediate_msg_without_reply(msg=node_msg)
+            source_client.send_immediate_msg_without_reply(msg=node_msg)  # type: ignore
 
             info(
                 f"Node {node} - respond_association_request_msg: ReceiveAssociationRequestMessage got back."

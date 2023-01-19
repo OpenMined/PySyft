@@ -15,6 +15,7 @@ from tqdm import tqdm
 from ....grid import GridURL
 from ....util import get_fully_qualified_name
 from ....util import size_mb
+from ....util import verify_tls
 from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
 from ...store.proxy_dataset import ProxyDataset
@@ -97,7 +98,6 @@ def upload_result_to_s3(
     # Retrieve fully qualified name to  use for pointer creation.
     obj_public_kwargs = getattr(data, "proxy_public_kwargs", {})
     data_fqn = str(get_fully_qualified_name(data))
-    data_dtype = str(type(data))
 
     # relative
     from ...tensor import Tensor
@@ -115,7 +115,7 @@ def upload_result_to_s3(
         asset_name=asset_name,
         dataset_name=dataset_name,
         node_id=domain_id,
-        dtype=data_dtype,
+        dtype=data.__class__.__name__,
         fqn=data_fqn,
         shape=data.shape,
         obj_public_kwargs=obj_public_kwargs,
@@ -130,7 +130,7 @@ def abort_s3_object_upload(
 
     Args:
         client (boto3.client): boto3 client.
-        upload_id (str): upload id generated for mutlipart upload.
+        upload_id (str): upload id generated for multipart upload.
         asset_name (str): name of the data/asset.
     """
     # relative
@@ -216,7 +216,7 @@ def upload_to_s3_using_presigned(
             client_url = client.url_from_path(presigned_url)
             part["client_url"] = client_url
 
-            res = requests.put(client_url, data=data_chunk)
+            res = requests.put(client_url, data=data_chunk, verify=verify_tls())
 
             if not res.ok:  # raise an error if upload fails
                 error_message = (
@@ -231,7 +231,7 @@ def upload_to_s3_using_presigned(
             )  # maintain list of part no and ETag
 
         # Step 4 - Send a message to PyGrid informing about dataset upload complete!
-        upload_response = client.datasets.perform_request(
+        client.datasets.perform_request(
             syft_msg=UploadDataCompleteMessage,
             content={
                 "upload_id": upload_response.payload.upload_id,
@@ -244,7 +244,6 @@ def upload_to_s3_using_presigned(
         # Retrieve fully qualified name to  use for pointer creation.
         obj_public_kwargs = getattr(data, "proxy_public_kwargs", {})
         data_fqn = str(get_fully_qualified_name(data))
-        data_dtype = str(type(data))
 
         # relative
         from ...tensor import Tensor
@@ -258,13 +257,19 @@ def upload_to_s3_using_presigned(
             child_kwargs = getattr(data.child, "proxy_public_kwargs", {})
             obj_public_kwargs.update(child_kwargs)
 
+        data_shape = (0,)
+        if hasattr(data, "shape"):
+            data_shape = data.shape
+        elif hasattr(data, "__len__"):
+            data_shape = (len(data),)
+
         proxy_data = ProxyDataset(
             asset_name=asset_name,
             dataset_name=dataset_name,
             node_id=client.id,
-            dtype=data_dtype,
+            dtype=data.__class__.__name__,
             fqn=data_fqn,
-            shape=data.shape,
+            shape=data_shape,
             obj_public_kwargs=obj_public_kwargs,
         )
     except (Exception, KeyboardInterrupt) as e:

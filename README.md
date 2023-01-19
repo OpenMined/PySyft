@@ -38,7 +38,7 @@ Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 - HAGrid Requires: 🐍 `python` 🐙 `git` - Run: `pip install -U hagrid`
 - Interactive Install 🧙🏽‍♂️ Wizard<sup>BETA</sup> Requires 🛵 `hagrid`: - Run: `hagrid quickstart`  
   †`Windows` does not support `ansible`, preventing some remote deployment targets
-- PySyft Requires: 🐍 `python 3.7+` - Run: `pip install -U syft --pre`  
+- PySyft Requires: 🐍 `python 3.8+` - Run: `pip install -U syft`  
   \*`macOS` Apple Silicon users need cmake: `brew install cmake`  
   ‡`Windows` users must run this first: `pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html`
 - PyGrid Requires: 🐳 `docker` / `k8s` or 🐧 `ubuntu` VM - Run: `hagrid launch ...`
@@ -55,8 +55,6 @@ Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 PySyft and PyGrid use the same `version` and its best to match them up where possible. We release weekly betas which can be used in each context:
 PySyft: `pip install -U syft --pre`
 PyGrid: `hagrid launch ... tag=latest`
-
-<!-- Quickstart: `hagrid quickstart --pre` -->
 
 HAGrid is a cli / deployment tool so the latest version of `hagrid` is usually the best.
 
@@ -103,9 +101,9 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 
 - <a href="/notebooks/quickstart/data-owner/00-deploy-domain.ipynb">Deploy a Domain Server</a>
 - <a href="/notebooks/quickstart/data-owner/01-upload-data.ipynb">Upload Private Data</a>
-- Create Accounts</a>
+- <a href="/notebooks/quickstart/data-owner/02-create-account-configure-pb.ipynb">Create Accounts</a>
 - Manage Privacy Budget</a>
-- Join a Network</a>
+- <a href="/notebooks/quickstart/data-owner/03-join-network.ipynb">Join a Network</a>
 - Learn how PETs streamline Data Policies
 
 </td>
@@ -297,7 +295,7 @@ OpenMined and Syft appreciates all contributors, if you would like to fix a bug 
 
 # Open Collective
 
-`OpenMined` is a registered `501(c)(3)` in the USA. We are funded by our gracious supporters on <a href="https://opencollective.com/openmined">Open Collective</a>. <br /><br />
+`OpenMined` is a fiscally sponsored `501(c)(3)` in the USA. We are funded by our generous supporters on <a href="https://opencollective.com/openmined">Open Collective</a>. <br /><br />
 <img src="packages/syft/docs/img/opencollective_light.png#gh-light-mode-only" alt="Contributors" width="100%" />
 <img src="packages/syft/docs/img/opencollective_dark.png#gh-dark-mode-only" alt="Contributors" width="100%" />
 

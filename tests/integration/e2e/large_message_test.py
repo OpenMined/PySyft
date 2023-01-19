@@ -62,12 +62,17 @@ def test_large_blob_upload() -> None:
         )
 
         data_subject_name = "ϕhishan"
-        data_subjects = np.broadcast_to(
-            np.array(DataSubjectArray([data_subject_name])), reference_data.shape
-        )
+        # data_subjects = np.broadcast_to(
+        #     np.array(DataSubjectArray([data_subject_name])), reference_data.shape
+        # )
 
-        tweets_data = sy.Tensor(reference_data).private(
-            min_val=0, max_val=30, data_subjects=data_subjects
+        lower_bound = int(reference_data.min()) - 10
+        upper_bound = int(reference_data.max()) + 10
+
+        tweets_data = sy.Tensor(reference_data).annotate_with_dp_metadata(
+            lower_bound=lower_bound,
+            upper_bound=upper_bound,
+            data_subject=data_subject_name,
         )
 
         report[size_name]["tensor_type"] = type(tweets_data.child).__name__
@@ -103,22 +108,20 @@ def test_large_blob_upload() -> None:
 
         # create new tensor from remote Tensor constructor
         new_tensor_ptr = domain_client.syft.core.tensor.tensor.Tensor(child=asset_ptr)
-        new_tensor_ptr.block_with_timeout(
-            90 * multiplier
-        )  # wait for obj upload and proxy obj creation
 
         # make sure new object is also in blob storage
-        new_tensor_proxy = new_tensor_ptr.get(proxy_only=True)
+        new_tensor_proxy = new_tensor_ptr.get(
+            proxy_only=True, timeout_secs=90 * multiplier
+        )
         assert isinstance(new_tensor_proxy, ProxyDataset)
 
         # pointer addition
         add_res_prt = asset_ptr + asset_ptr
-        add_res_prt.block_with_timeout(
-            90 * multiplier
-        )  # wait for obj upload and proxy obj creation
 
         # make sure new object is also in blob storage
-        add_result_proxy = add_res_prt.get(delete_obj=False, proxy_only=True)
+        add_result_proxy = add_res_prt.get(
+            delete_obj=False, proxy_only=True, timeout_secs=90 * multiplier
+        )
         assert isinstance(add_result_proxy, ProxyDataset)
 
         # compare result to locally generated result

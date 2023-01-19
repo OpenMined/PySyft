@@ -61,12 +61,12 @@ def upload_subset(
     name = f"Tweets - {size_name} - {unique_key}"
     impressions = df["impressions"].to_numpy(dtype=np.int64)
 
-    user_id = df["user_id"]
+    user_id = str(df["user_id"])
 
-    entities = DataSubjectArray.from_objs(user_id)
+    # entities = DataSubjectArray.from_objs(user_id)
 
-    tweets_data = sy.Tensor(impressions).private(
-        min_val=0, max_val=30, data_subjects=entities
+    tweets_data = sy.Tensor(impressions).annotate_with_dp_metadata(
+        lower_bound=0, upper_bound=30, data_subject=user_id
     )
 
     assert isinstance(tweets_data.child, GammaTensor)
@@ -211,8 +211,7 @@ def test_benchmark_datasets() -> None:
 
         start_time = time.time()
         publish_ptr = sum_ptr.publish(sigma=500_000)
-        publish_ptr.block_with_timeout(timeout)
-        result = publish_ptr.get()
+        result = publish_ptr.get(timeout_secs=timeout)
         print("result", result)
 
         benchmark_report[size_name]["publish_secs"] = time.time() - start_time

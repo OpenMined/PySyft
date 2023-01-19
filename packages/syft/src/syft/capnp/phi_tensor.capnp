@@ -6,6 +6,7 @@ struct PT {
   child @1 :List(Data);
   minVals @2 :Data;
   maxVals @3 :Data;
-  dataSubjects @4 :List(Data);
+  dataSubject @4 :Data;
   isNumpy @5 :Bool;
+  id @6 :Text;
 }

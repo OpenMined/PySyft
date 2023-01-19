@@ -28,13 +28,9 @@ from ..io.address import Address
 from ..io.location import Location
 from ..io.location.specific import SpecificLocation
 from ..io.route import Route
-from ..node.common.node_service.network_search.network_search_messages import (
-    NetworkSearchMessage,
-)
+from ..io.virtual import VirtualClientConnection
 from ..pointer.pointer import Pointer
 from ..store.proxy_dataset import ProxyDataset
-from ..tensor.autodp.gamma_tensor import GammaTensor
-from ..tensor.autodp.phi_tensor import PhiTensor
 from ..tensor.tensor import Tensor
 from .abstract.node import AbstractNodeClient
 from .common.action.exception_action import ExceptionMessage
@@ -407,15 +403,6 @@ class DomainClient(Client):
         if response == "y":
             response = self.routes[0].connection.reset()  # type: ignore
 
-    def search(self, query: List, pandas: bool = False) -> Any:
-        response = self._perform_grid_request(
-            grid_msg=NetworkSearchMessage, content={RequestAPIFields.QUERY: query}
-        )
-        if pandas:
-            response = pd.DataFrame(response)
-
-        return response
-
     def _perform_grid_request(
         self, grid_msg: Any, content: Optional[Dict[Any, Any]] = None
     ) -> SyftMessage:
@@ -595,6 +582,10 @@ class DomainClient(Client):
         use_blob_storage: bool = True,
         **metadata: Dict,
     ) -> None:
+        # relative
+        from ..tensor.autodp.gamma_tensor import GammaTensor
+        from ..tensor.autodp.phi_tensor import PhiTensor
+
         sys.stdout.write("Loading dataset...")
         if assets is None or not isinstance(assets, dict):
             raise Exception(
@@ -607,7 +598,8 @@ class DomainClient(Client):
                 "Please pass in a dictionary where the key is the name of the asset and the value is "
                 "the private dataset object (tensor) itself. We recommend uploading assets which "
                 "are differential-privacy trackable objects, such as a syft.Tensor() wrapped "
-                "numpy.int32 or numpy.float32 object which you then call .private() on. \n\nOnce "
+                "numpy.int32 or numpy.float32 object which you "
+                "then call .annotate_with_dp_metadata() on. \n\nOnce "
                 "you have an assets dictionary call load_dataset(assets=<your dict of objects>)."
             )
         sys.stdout.write("\rLoading dataset... checking assets...")
@@ -678,7 +670,7 @@ class DomainClient(Client):
                         "ERROR: All private assets must have "
                         + "proper Differential Privacy metadata applied.\n"
                         + "\n"
-                        + "Example: syft.Tensor([1,2,3,4]).private()\n\n"
+                        + "Example: syft.Tensor([1,2,3,4]).annotate_with_dp_metadata()\n\n"
                         + "and then follow the wizard. 🧙"
                     )
                     # print(
@@ -690,7 +682,8 @@ class DomainClient(Client):
                     #     + "This means you'll need to manually approve any requests which "
                     #     + "leverage this data. If this is ok with you, proceed. If you'd like to use "
                     #     + "automatic differential privacy budgeting, please pass in a DP-compatible tensor type "
-                    #     + "such as by calling .private() on a sy.Tensor with a np.int32 or np.float32 inside."
+                    #     + "such as by calling .annotate_with_dp_metadata() "
+                    #     + "on a sy.Tensor with a np.int32 or np.float32 inside."
                     # )
                     #
                     # pref = input("Are you sure you want to proceed? (y/n)")
@@ -759,15 +752,15 @@ class DomainClient(Client):
             "\n\nRun `<your client variable>.datasets` to see your new dataset loaded into your machine!"
         )
 
-    def create_user(self, name: str, email: str, password: str, budget: int) -> dict:
+    def create_user(self, name: str, email: str, password: str, budget: float) -> dict:
+        if budget < 0:
+            raise ValueError(f"Budget should be a positive number, but got {budget}")
         try:
             self.users.create(name=name, email=email, password=password, budget=budget)
-            response = {
-                "name": name,
-                "email": email,
-                "password": password,
-                "url": self.routes[0].connection.base_url.host_or_ip,  # type: ignore
-            }
+            url = ""
+            if not isinstance(self.routes[0].connection, VirtualClientConnection):  # type: ignore
+                url = self.routes[0].connection.base_url.host_or_ip  # type: ignore
+            response = {"name": name, "email": email, "password": password, "url": url}
             return response
         except Exception as e:
             raise e

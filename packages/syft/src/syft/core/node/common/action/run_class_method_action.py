@@ -9,9 +9,6 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
-# syft absolute
-import syft as sy
-
 # relative
 # from . import context
 from ..... import lib
@@ -21,7 +18,9 @@ from .....proto.core.node.common.action.run_class_method_pb2 import (
     RunClassMethodAction as RunClassMethodAction_PB,
 )
 from .....util import inherit_tags
+from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serializable import serializable
+from ....common.serde.serialize import _serialize as serialize
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.proxy_dataset import ProxyDataset
@@ -98,6 +97,9 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
 
+        # If if there's another object with the same ID.
+        node.store.check_collision(self.id_at_location)
+
         mutating_internal = False
         if (
             self.path.startswith("torch.Tensor")
@@ -165,9 +167,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     ValueError(f"Method {method} called, but self is None.")
                 )
 
-            resolved_self_previous_bytes = sy.serialize(
-                resolved_self.data, to_bytes=True
-            )
+            resolved_self_previous_bytes = serialize(resolved_self.data, to_bytes=True)  # type: ignore
             method_name = self.path.split(".")[-1]
 
             target_method = getattr(resolved_self.data, method_name, None)
@@ -221,7 +221,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             resolved_self_previous_bytes is not None
             and resolved_self is not None
             and resolved_self_previous_bytes
-            != sy.serialize(resolved_self.data, to_bytes=True)
+            != serialize(resolved_self.data, to_bytes=True)
         ):
             mutating_internal = True
 
@@ -302,19 +302,19 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         :rtype: RunClassMethodAction_PB
 
         .. note::
-            This method is purely an internal method. Please use sy.serialize(object) or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
 
         return RunClassMethodAction_PB(
             path=self.path,
-            _self=sy.serialize(self._self, to_bytes=True),
-            args=list(map(lambda x: sy.serialize(x, to_bytes=True), self.args)),
-            kwargs={k: sy.serialize(v, to_bytes=True) for k, v in self.kwargs.items()},
-            id_at_location=sy.serialize(self.id_at_location),
-            address=sy.serialize(self.address),
-            msg_id=sy.serialize(self.id),
+            _self=serialize(self._self, to_bytes=True),
+            args=list(map(lambda x: serialize(x, to_bytes=True), self.args)),
+            kwargs={k: serialize(v, to_bytes=True) for k, v in self.kwargs.items()},
+            id_at_location=serialize(self.id_at_location),
+            address=serialize(self.address),
+            msg_id=serialize(self.id),
         )
 
     @staticmethod
@@ -334,17 +334,14 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
         return RunClassMethodAction(
             path=proto.path,
-            _self=sy.deserialize(blob=proto._self, from_bytes=True),
-            args=list(
-                map(lambda x: sy.deserialize(blob=x, from_bytes=True), proto.args)
-            ),
+            _self=deserialize(blob=proto._self, from_bytes=True),
+            args=list(map(lambda x: deserialize(blob=x, from_bytes=True), proto.args)),
             kwargs={
-                k: sy.deserialize(blob=v, from_bytes=True)
-                for k, v in proto.kwargs.items()
+                k: deserialize(blob=v, from_bytes=True) for k, v in proto.kwargs.items()
             },
-            id_at_location=sy.deserialize(blob=proto.id_at_location),
-            address=sy.deserialize(blob=proto.address),
-            msg_id=sy.deserialize(blob=proto.msg_id),
+            id_at_location=deserialize(blob=proto.id_at_location),
+            address=deserialize(blob=proto.address),
+            msg_id=deserialize(blob=proto.msg_id),
         )
 
     @staticmethod
