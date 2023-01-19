@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-echo "Running prestart.sh with RELEASE=${RELEASE}"
+echo "Running install_oblivious.sh with RELEASE=${RELEASE}"
 
 if [[ "${INSTALL_OBLV_PROXY}" == "true"  &&  ("${SERVICE_NAME}" == "backend"  ||  "${SERVICE_NAME}" == "celeryworker" ) ]]; then
     echo "Allowed to install Oblv CLI"
