@@ -38,7 +38,7 @@ Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 - HAGrid Requires: 🐍 `python` 🐙 `git` - Run: `pip install -U hagrid`
 - Interactive Install 🧙🏽‍♂️ Wizard<sup>BETA</sup> Requires 🛵 `hagrid`: - Run: `hagrid quickstart`  
   †`Windows` does not support `ansible`, preventing some remote deployment targets
-- PySyft Requires: 🐍 `python 3.8+` - Run: `pip install -U syft --pre`  
+- PySyft Requires: 🐍 `python 3.8+` - Run: `pip install -U syft`  
   \*`macOS` Apple Silicon users need cmake: `brew install cmake`  
   ‡`Windows` users must run this first: `pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html`
 - PyGrid Requires: 🐳 `docker` / `k8s` or 🐧 `ubuntu` VM - Run: `hagrid launch ...`
@@ -55,8 +55,6 @@ Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 PySyft and PyGrid use the same `version` and its best to match them up where possible. We release weekly betas which can be used in each context:
 PySyft: `pip install -U syft --pre`
 PyGrid: `hagrid launch ... tag=latest`
-
-<!-- Quickstart: `hagrid quickstart --pre` -->
 
 HAGrid is a cli / deployment tool so the latest version of `hagrid` is usually the best.
 
