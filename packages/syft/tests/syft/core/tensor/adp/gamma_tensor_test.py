@@ -1439,7 +1439,7 @@ def test_neg(
 #     for key in result.sources:
 #         state[key] = result.sources[key].child
 #     assert (result.func(state) == result.child).all()
-    # assert result.lipschitz_bound == 1
+# assert result.lipschitz_bound == 1
 
 
 # def test_all(

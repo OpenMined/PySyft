@@ -565,7 +565,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__lt__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__lt__")
 
     def __gt__(
         self,
@@ -581,7 +582,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__gt__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__gt__")
 
     def __ge__(
         self,
@@ -613,7 +615,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__le__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__le__")
 
     def __eq__(  # type: ignore
         self,
@@ -629,7 +632,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__eq__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__eq__")
 
     def __ne__(  # type: ignore
         self,
@@ -645,7 +649,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__ne__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__ne__")
 
     def concatenate(
         self,
@@ -721,7 +726,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
             TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
         ],
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__mod__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__mod__")
 
     def __and__(
         self,
@@ -737,7 +743,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__and__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__and__")
 
     def __or__(
         self,
@@ -753,7 +760,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__or__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__or__")
 
     def __floordiv__(
         self,
@@ -884,7 +892,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__lshift__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__lshift__")
 
     def argmax(
         self,
@@ -899,7 +908,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return self._apply_self_tensor_op("argmax", *args, **kwargs)
+        raise NotImplementedError
+        # return self._apply_self_tensor_op("argmax", *args, **kwargs)
 
     def __rshift__(
         self,
@@ -915,7 +925,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__rshift__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__rshift__")
 
     def argmin(
         self,
@@ -930,7 +941,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return self._apply_self_tensor_op("argmin", *args, **kwargs)
+        raise NotImplementedError
+        # return self._apply_self_tensor_op("argmin", *args, **kwargs)
 
     def __abs__(
         self,
@@ -960,7 +972,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return self._apply_self_tensor_op("all", *args, **kwargs)
+        raise NotImplementedError
+        # return self._apply_self_tensor_op("all", *args, **kwargs)
 
     def any(
         self,
@@ -975,7 +988,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return self._apply_self_tensor_op("any", *args, **kwargs)
+        raise NotImplementedError
+        # return self._apply_self_tensor_op("any", *args, **kwargs)
 
     def round(self, *args: Any, **kwargs: Any) -> TensorWrappedGammaTensorPointer:
         return self._apply_self_tensor_op("round", *args, **kwargs)
@@ -1103,7 +1117,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__xor__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__xor__")
 
     def __pow__(
         self,
@@ -1325,7 +1340,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
                 sorted a. More generally, np.take_along_axis(a, index_array, axis=axis) always yields the sorted a,
                 irrespective of dimensionality.
         """
-        return self._apply_self_tensor_op("argsort", *args, **kwargs)
+        raise NotImplementedError
+        # return self._apply_self_tensor_op("argsort", *args, **kwargs)
 
     def min(
         self,
