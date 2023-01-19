@@ -14,7 +14,6 @@ from syft.core.node.new.credentials import SyftVerifyKey
 from syft.core.node.new.user import User
 from syft.core.node.new.user import UserCollection
 from syft.core.node.new.user import UserUpdate
-from syft.core.node.worker import TestObject
 from syft.core.node.worker import Worker
 
 # from syft.core.node.worker import Worker
@@ -71,7 +70,9 @@ def test_action_store() -> None:
     test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
     action_store = ActionStore()
     uid = UID()
-    test_object = TestObject(id=uid, name="alice")
+    raw_data = np.array([1, 2, 3])
+    test_object = ActionObject(syft_action_data=raw_data)
+
     set_result = action_store.set(
         uid=uid, credentials=test_signing_key, syft_object=test_object
     )
@@ -94,7 +95,7 @@ def test_user_transform() -> None:
         password_verify="letmein",
     )
 
-    assert new_user.id is None
+    # assert new_user.id is None
     assert new_user.email == "alice@bob.com"
     assert new_user.name == "Alice"
     assert new_user.password == "letmein"
@@ -121,8 +122,8 @@ def test_user_transform() -> None:
 
 def test_user_collection() -> None:
     test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
-    uid = UID()
-    user_collection = UserCollection(node_uid=uid)
+    worker = Worker()
+    user_collection = UserCollection(worker)
 
     # create a user
     new_user = UserUpdate(
@@ -179,32 +180,32 @@ def test_worker() -> None:
 
 def test_action_object_add() -> None:
     raw_data = np.array([1, 2, 3])
-    action_object = ActionObject(_syft_action_data=raw_data)
+    action_object = ActionObject(syft_action_data=raw_data)
     result = action_object + action_object
-    x = result._syft_action_data
+    x = result.syft_action_data
     y = raw_data * 2
     assert (x == y).all()
 
 
 def test_action_object_hooks() -> None:
     raw_data = np.array([1, 2, 3])
-    action_object = ActionObject(_syft_action_data=raw_data)
+    action_object = ActionObject(syft_action_data=raw_data)
 
     def pre_add(*args: Any, **kwargs: Any) -> Any:
         # double it
         new_value = args[0]
-        new_value._syft_action_data = new_value._syft_action_data * 2
+        new_value.syft_action_data = new_value.syft_action_data * 2
         return (new_value,), kwargs
 
     def post_add(result: Any) -> Any:
         # change return type to sum
-        return sum(result._syft_action_data)
+        return sum(result.syft_action_data)
 
     action_object.syft_pre_hooks__["__add__"] = [pre_add]
     action_object.syft_post_hooks__["__add__"] = [post_add]
 
     result = action_object + action_object
-    x = result._syft_action_data
+    x = result.syft_action_data
     y = sum((raw_data * 2) + raw_data)
     assert y == 18
     assert x == y

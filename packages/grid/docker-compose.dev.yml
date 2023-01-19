@@ -36,24 +36,27 @@ services:
       - ${RELATIVE_PATH}./backend/grid:/app/grid
       - ${RELATIVE_PATH}../syft:/app/syft
       - ${RELATIVE_PATH}./data/package-cache:/root/.cache
-      # - ./profile:/tmp/profile
-    command: /start-reload.sh
+    environment:
+      - DEV_MODE=True
+    command: /start.sh
 
   backend_stream:
     volumes:
       - ${RELATIVE_PATH}./backend/grid:/app/grid
       - ${RELATIVE_PATH}../syft:/app/syft
       - ${RELATIVE_PATH}./data/package-cache:/root/.cache
-      # - ./profile:/tmp/profile
-    command: "/start-reload.sh"
+    environment:
+      - DEV_MODE=True
+    command: "/start.sh"
 
   celeryworker:
     volumes:
       - ${RELATIVE_PATH}./backend/grid:/app/grid
       - ${RELATIVE_PATH}../syft/:/app/syft
       - ${RELATIVE_PATH}./data/package-cache:/root/.cache
-      # - ./profile:/tmp/profile
-    command: "/worker-start-reload.sh"
+    environment:
+      - DEV_MODE=True
+    command: "/worker-start.sh"
 
   headscale:
     profiles:

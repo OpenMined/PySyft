@@ -1,6 +1,7 @@
 # stdlib
 from enum import Enum
 import sys
+import types
 from typing import Any
 from typing import Callable
 from typing import List
@@ -54,7 +55,6 @@ def recursive_serde_register(
         if attribute_list is None:
             attribute_list = []
         attribute_list += ["value"]
-
     # without fqn duplicate class names overwrite
     fqn = f"{cls.__module__}.{cls.__name__}"
     TYPE_BANK[fqn] = (
@@ -102,6 +102,9 @@ def rs_object2proto(self: Any) -> _DynamicStructBuilder:
 
         if transforms is not None:
             field_obj = transforms[0](field_obj)
+
+        if isinstance(field_obj, types.FunctionType):
+            continue
 
         serialized = sy.serialize(field_obj, to_bytes=True)
 

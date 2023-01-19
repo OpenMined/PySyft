@@ -138,11 +138,9 @@ class TestCreateUserMessageBenchmarking:
         }
 
         # Create user message
-        old_user_msg = CreateUserMessage(
-            address=domain.address, reply_to=domain.address, **user1
-        )
+        old_user_msg = CreateUserMessage(address=domain.id, reply_to=domain.id, **user1)
         new_user_msg = NewCreateUserMessage(
-            address=domain.address, reply_to=domain.address, kwargs=user2
+            address=domain.id, reply_to=domain.id, kwargs=user2
         )
 
         # Benchmark the serialization and de-serialization time
@@ -223,11 +221,11 @@ class TestGetUserMessageBenchmarking:
 
         # Create get user message
         old_user_msg = GetUserMessage(
-            address=domain.address, reply_to=domain.address, **{"user_id": do_user.id}
+            address=domain.id, reply_to=domain.id, **{"user_id": do_user.id}
         )
         new_user_msg = NewGetUserMessage(
-            address=domain.address,
-            reply_to=domain.address,
+            address=domain.id,
+            reply_to=domain.id,
             kwargs={"user_id": do_user.id},
         )
 
@@ -313,10 +311,8 @@ class TestGetUsersMessageBenchmarking:
         _, do_verify_key = self.do_users[0]
 
         # Create get user message
-        old_user_msg = GetUsersMessage(address=domain.address, reply_to=domain.address)
-        new_user_msg = NewGetUsersMessage(
-            address=domain.address, reply_to=domain.address
-        )
+        old_user_msg = GetUsersMessage(address=domain.id, reply_to=domain.id)
+        new_user_msg = NewGetUsersMessage(address=domain.id, reply_to=domain.id)
 
         # Benchmark the serialization and de-serialization time
         start = timeit.default_timer()
@@ -427,10 +423,10 @@ class TestUpdateUserMessageBenchmarking:
 
         # Create user update messages
         old_user_msg = UpdateUserMessage(
-            address=domain.address, reply_to=domain.address, **user1_updated_info
+            address=domain.id, reply_to=domain.id, **user1_updated_info
         )
         new_user_msg = NewUpdateUserMessage(
-            address=domain.address, reply_to=domain.address, kwargs=user2_updated_info
+            address=domain.id, reply_to=domain.id, kwargs=user2_updated_info
         )
 
         # Benchmark the serialization and de-serialization time
@@ -518,11 +514,11 @@ class TestDeleteUserMessageBenchmarking:
 
         # Create Old and New User Delete Messages
         old_user_msg = DeleteUserMessage(
-            address=domain.address, reply_to=domain.address, **{"user_id": ds_user1.id}
+            address=domain.id, reply_to=domain.id, **{"user_id": ds_user1.id}
         )
         new_user_msg = NewDeleteUserMessage(
-            address=domain.address,
-            reply_to=domain.address,
+            address=domain.id,
+            reply_to=domain.id,
             kwargs={"user_id": ds_user2.id},
         )
 

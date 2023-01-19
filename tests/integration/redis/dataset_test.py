@@ -10,18 +10,18 @@ from syft.core.adp.data_subject_list import DataSubjectArray
 def create_test_dataset(client, name: str = "TSTDataset"):
     data = np.array([1, 2, 3, 4, 5])
     data_subject_name = "testing"
-    entities = np.broadcast_to(
-        np.array(DataSubjectArray([data_subject_name])), data.shape
-    )
+    # entities = np.broadcast_to(
+    #     np.array(DataSubjectArray([data_subject_name])), data.shape
+    # )
 
     train_data = sy.Tensor(data).annotate_with_dp_metadata(
-        lower_bound=0, upper_bound=255, data_subjects=entities
+        lower_bound=0, upper_bound=255, data_subject=data_subject_name
     )
     test_data = sy.Tensor(data).annotate_with_dp_metadata(
-        lower_bound=0, upper_bound=255, data_subjects=entities
+        lower_bound=0, upper_bound=255, data_subject=data_subject_name
     )
     val_data = sy.Tensor(data).annotate_with_dp_metadata(
-        lower_bound=0, upper_bound=255, data_subjects=entities
+        lower_bound=0, upper_bound=255, data_subject=data_subject_name
     )
     client.load_dataset(
         name=name,

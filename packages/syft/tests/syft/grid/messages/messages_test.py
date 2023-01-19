@@ -4,7 +4,7 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.core.common.message import AbstractMessage
-from syft.core.io.address import Address
+from syft.core.common.uid import UID
 from syft.core.node.common.node_service.node_setup import node_setup_messages
 from syft.core.node.common.node_service.request_receiver import (
     request_receiver_messages,
@@ -172,7 +172,7 @@ def test_message(message_name: str, node: sy.VirtualMachine) -> None:
     lib = content["module"]
     request_content = content["request_content"]
     response_content = content["response_content"]
-    target = Address(name="Alice")
+    target = UID()
 
     msg_func = getattr(lib, message_name + "Message")
     msg = msg_func(content=request_content, address=target, reply_to=target.address)
@@ -188,7 +188,7 @@ def test_message(message_name: str, node: sy.VirtualMachine) -> None:
     message_integrity_test(msg, target)
 
 
-def message_integrity_test(msg: AbstractMessage, target: Address) -> None:
+def message_integrity_test(msg: AbstractMessage, target: UID) -> None:
     blob = sy.serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 

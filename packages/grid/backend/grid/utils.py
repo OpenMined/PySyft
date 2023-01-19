@@ -7,7 +7,7 @@ from nacl.signing import SigningKey
 
 # syft absolute
 from syft.core.common.message import SyftMessage
-from syft.core.io.address import Address
+from syft.core.common.uid import UID
 from syft.core.node.common.action.exception_action import ExceptionMessage
 from syft.lib.python.dict import Dict
 
@@ -18,14 +18,14 @@ from grid.core.node import node
 def send_message_with_reply(
     signing_key: SigningKey,
     message_type: SyftMessage,
-    address: Optional[Address] = None,
-    reply_to: Optional[Address] = None,
+    address: Optional[UID] = None,
+    reply_to: Optional[UID] = None,
     **content: Any
 ) -> Dict:
     if not address:
-        address = node.address
+        address = node.node_uid
     if not reply_to:
-        reply_to = node.address
+        reply_to = node.node_uid
 
     msg = message_type(address=address, reply_to=reply_to, kwargs=content).sign(
         signing_key=signing_key

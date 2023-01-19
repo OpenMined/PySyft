@@ -11,7 +11,6 @@ from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.serializable import serializable
 from .....common.uid import UID
-from .....io.address import Address
 
 
 @serializable(recursive_serde=True)
@@ -36,9 +35,9 @@ class CreateRoleMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         name: str,
-        reply_to: Address,
+        reply_to: UID,
         can_make_data_requests: bool = False,
         can_triage_data_requests: bool = False,
         can_manage_privacy_budget: bool = False,
@@ -73,9 +72,9 @@ class GetRoleMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         role_id: int,
-        reply_to: Address,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -89,7 +88,7 @@ class GetRoleResponse(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):
@@ -104,8 +103,8 @@ class GetRolesMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
-        reply_to: Address,
+        address: UID,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -118,7 +117,7 @@ class GetRolesResponse(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         content: List[Dict],
         msg_id: Optional[UID] = None,
     ):
@@ -149,10 +148,10 @@ class UpdateRoleMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         role_id: int,
         name: str,
-        reply_to: Address,
+        reply_to: UID,
         can_make_data_requests: bool = False,
         can_triage_data_requests: bool = False,
         can_manage_privacy_budget: bool = False,
@@ -187,9 +186,9 @@ class DeleteRoleMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         role_id: int,
-        reply_to: Address,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)

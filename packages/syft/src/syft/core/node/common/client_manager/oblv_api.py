@@ -140,7 +140,7 @@ class OblvAPI(RequestAPI):
 
         if content is None:
             content = {}
-        content[RequestAPIFields.ADDRESS] = self.client.address
+        content[RequestAPIFields.ADDRESS] = self.client.node_uid
 
         signed_msg = syft_msg_constructor(**content).sign(
             signing_key=self.client.signing_key
