@@ -8,7 +8,6 @@ from syft import serialize
 def test_client_from_metadata(domain: sy.Domain) -> None:
     client_metadata = domain.get_metadata_for_client()
 
-    assert domain.domain == client_metadata.node
     assert "Alice" == client_metadata.name
     assert domain.id == client_metadata.id
 

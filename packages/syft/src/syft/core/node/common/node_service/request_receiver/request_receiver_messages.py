@@ -14,7 +14,6 @@ from ......logger import traceback_and_raise
 from .....common import UID
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.serializable import serializable
-from .....io.address import Address
 from ...client import Client
 from ...node import Node
 from ..accept_or_deny_request.accept_or_deny_request_messages import (
@@ -56,9 +55,9 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         object_id: UID,
-        address: Address,
+        address: UID,
         requester_verify_key: VerifyKey,
-        owner_address: Address,
+        owner_address: UID,
         status: Optional[str] = "",
         request_type: Optional[str] = "",
         date: Optional[str] = "",
@@ -115,14 +114,14 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         action_name = "Accept" if accept else "Deny"
         if self.owner_client_if_available is not None:
             msg = AcceptOrDenyRequestMessage(
-                address=self.owner_client_if_available.address,
+                address=self.owner_client_if_available.id,
                 accept=accept,
                 request_id=self.id,
             )
             self.owner_client_if_available.send_immediate_msg_without_reply(msg=msg)
         elif self.destination_node_if_available is not None:
             msg = AcceptOrDenyRequestMessage(
-                address=self.destination_node_if_available.address,
+                address=self.destination_node_if_available.id,
                 accept=accept,
                 request_id=self.id,
             )

@@ -11,7 +11,6 @@ from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.serializable import serializable
 from .....common.uid import UID
-from .....io.address import Address
 
 
 @serializable(recursive_serde=True)
@@ -20,8 +19,8 @@ class GetSetUpMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
-        reply_to: Address,
+        address: UID,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -33,7 +32,7 @@ class GetSetUpResponse(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):
@@ -57,13 +56,13 @@ class CreateInitialSetUpMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         name: str,
         email: str,
         password: str,
         domain_name: str,
         budget: float,
-        reply_to: Address,
+        reply_to: UID,
         signing_key: SigningKey,
         msg_id: Optional[UID] = None,
     ):
@@ -92,12 +91,12 @@ class UpdateSetupMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         domain_name: str,
         description: str,
         daa: bool,
         contact: str,
-        reply_to: Address,
+        reply_to: UID,
         daa_document: Optional[bytes] = b"",
         tags: Optional[TypeList] = None,
         msg_id: Optional[UID] = None,
@@ -117,7 +116,7 @@ class UpdateSetupResponse(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):

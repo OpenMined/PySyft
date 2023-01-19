@@ -13,7 +13,6 @@ from typing import Union
 
 # third party
 import pydantic
-from pydantic import PrivateAttr
 
 # relative
 from ....core.node.common.node_table.syft_object import SyftObject
@@ -66,7 +65,7 @@ class ActionObjectPointer(SyftObject, extra=pydantic.Extra.allow):
         api = APIRegistry.api_for(node_uid=self.node_uid)
 
         kwargs = {"action": action}
-        api_call = SyftAPICall(path="services.action.execute", args=[], kwargs=kwargs)
+        api_call = SyftAPICall(path="action.execute", args=[], kwargs=kwargs)
         return api.make_call(api_call)
 
     def make_action(
@@ -134,6 +133,14 @@ passthrough_attrs = [
     "__repr_str__",  # pydantic
     "__repr_args__",  # pydantic
     "__post_init__",  # syft
+    "id",  # syft
+    "to_mongo",  # syft 🟡 TODO 23: Add composeable / inheritable object passthrough attrs
+    "__attr_searchable__",  # syft
+    "__canonical_name__",  # syft
+    "__version__",  # syft
+    "__args__",  # pydantic
+    "to_pointer",  # syft
+    "to",  # syft
 ]
 dont_wrap_output_attrs = ["__repr__", "__array_struct__", "__array_prepare__"]
 
@@ -162,6 +169,8 @@ def get_property(obj, method) -> Any:
 
 class ActionObject(SyftObject):
     __attr_searchable__: List[str] = []
+    __canonical_name__ = "ActionObject"
+    __version__ = 1
 
     syft_parent_id: Optional[UID]
     syft_pointer_type: ClassVar[Type[ActionObjectPointer]]
@@ -171,13 +180,14 @@ class ActionObject(SyftObject):
         return v if isinstance(v, UID) else UID()
 
     def to_pointer(self, node_uid: UID) -> syft_pointer_type:
-        pointer = self.to(self.pointer_type)
+        pointer = self.to(self.syft_pointer_type)
         pointer.node_uid = node_uid
         return pointer
 
-    _syft_action_data: Any = (
-        PrivateAttr()
-    )  # 🔵 TODO 6: Make special ActionObject attrs _syft if possible
+    syft_action_data: Any
+    #  = (
+    #     PrivateAttr()
+    # )  # 🔵 TODO 6: Make special ActionObject attrs _syft if possible
     syft_pre_hooks__: Dict[str, Any] = {}
     syft_post_hooks__: Dict[str, Any] = {}
 
@@ -195,6 +205,9 @@ class ActionObject(SyftObject):
 
     def __post_init__(self) -> None:
         pass
+
+    def __eq__(self, other: Any) -> bool:
+        return self.__add__(other)
 
     def _syft_run_pre_hooks__(self, name, args, kwargs):
         result_args, result_kwargs = args, kwargs
@@ -219,7 +232,7 @@ class ActionObject(SyftObject):
     def _syft_output_action_object(self, result) -> Any:
         # can check types here
         if not isinstance(result, ActionObject):
-            result = ActionObject(_syft_action_data=result)
+            result = ActionObject(syft_action_data=result)
         return result
 
     def __getattribute__(self, name):
@@ -238,7 +251,7 @@ class ActionObject(SyftObject):
         # use the custom definied version
         context_self = self
         if not defined_on_self:
-            context_self = self._syft_action_data
+            context_self = self.syft_action_data
 
         if is_property(context_self, name):
             _ = self._syft_run_pre_hooks__(name, (), {})
@@ -251,7 +264,7 @@ class ActionObject(SyftObject):
             return result
 
         # check for other types that aren't methods, functions etc
-        original_func = getattr(self._syft_action_data, name)
+        original_func = getattr(self.syft_action_data, name)
         if show_print:
             debug_original_func(name, original_func)
         if inspect.ismethod(original_func) or inspect.ismethoddescriptor(original_func):

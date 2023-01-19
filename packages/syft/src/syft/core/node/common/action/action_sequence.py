@@ -8,7 +8,6 @@ from nacl.signing import VerifyKey
 # relative
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
-from ....io.address import Address
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 from .save_object_action import SaveObjectAction
@@ -21,7 +20,7 @@ class ActionSequence(ImmediateActionWithoutReply):
     def __init__(
         self,
         obj_lst: List[SaveObjectAction],
-        address: Address,
+        address: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)

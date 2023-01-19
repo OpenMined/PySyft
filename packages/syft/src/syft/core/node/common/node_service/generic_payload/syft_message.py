@@ -15,7 +15,6 @@ from pydantic.error_wrappers import ValidationError as PydanticValidationError
 # relative
 from .....common.message import ImmediateSyftMessage
 from .....common.uid import UID
-from .....io.address import Address
 from ....abstract.node_service_interface import NodeServiceInterface
 from ....common.exceptions import AuthorizationError
 from ....common.exceptions import BadPayloadException
@@ -58,10 +57,10 @@ class NewSyftMessage(ImmediateSyftMessage):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         kwargs: Optional[Dict[str, Any]] = None,
         msg_id: Optional[UID] = None,
-        reply_to: Optional[Address] = None,
+        reply_to: Optional[UID] = None,
         reply: bool = False,
     ) -> None:
         super().__init__(address=address, msg_id=msg_id)

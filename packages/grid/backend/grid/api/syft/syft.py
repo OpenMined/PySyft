@@ -17,7 +17,6 @@ from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.common.message import SignedMessage
 from syft.core.node.enums import RequestAPIFields
-from syft.core.node.worker import Worker
 from syft.telemetry import TRACE_MODE
 
 # grid absolute
@@ -26,6 +25,7 @@ from grid.api.users.models import UserPrivate
 from grid.core.celery_app import celery_app
 from grid.core.config import settings
 from grid.core.node import node
+from grid.core.node import worker
 
 if TRACE_MODE:
     # third party
@@ -33,8 +33,6 @@ if TRACE_MODE:
     from opentelemetry.propagate import extract
 
 router = APIRouter()
-
-worker = Worker(id=node.id)
 
 
 async def get_body(request: Request) -> bytes:

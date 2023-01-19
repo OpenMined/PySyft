@@ -15,7 +15,6 @@ from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.serializable import serializable
 from .....common.uid import UID
-from .....io.address import Address
 from ....abstract.node import AbstractNode
 
 
@@ -27,8 +26,8 @@ class TFFMessageWithReply(ImmediateSyftMessageWithReply):
         self,
         params: Dict,
         model_bytes: bytes,
-        address: Address,
-        reply_to: Address,
+        address: UID,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ) -> None:
         self.params = params
@@ -40,7 +39,7 @@ class TFFMessageWithReply(ImmediateSyftMessageWithReply):
     ) -> Any:
         return payload  # leaving this in for the linting suite
 
-    def prepare(self, address: Address, reply_to: Address) -> "TFFMessage":
+    def prepare(self, address: UID, reply_to: UID) -> "TFFMessage":
         return TFFMessage(address=address, reply_to=reply_to, payload=self)
 
     @property
@@ -56,8 +55,8 @@ class TFFMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         payload: TFFMessageWithReply,
-        address: Address,
-        reply_to: Address,
+        address: UID,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -71,7 +70,7 @@ class TFFReplyMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         payload: TFFMessageWithReply,
-        address: Address,
+        address: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)

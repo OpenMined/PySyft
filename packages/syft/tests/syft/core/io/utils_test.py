@@ -10,8 +10,6 @@ from nacl.signing import VerifyKey
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.common.uid import UID
-from syft.core.io.address import Address
-from syft.core.io.location.specific import SpecificLocation
 from syft.core.node.common.node import Node
 from syft.core.node.common.node_manager.dict_store import DictStore
 
@@ -36,16 +34,6 @@ class MockNode(Node):
         return construct_dummy_message(SignedImmediateSyftMessageWithoutReply)
 
 
-def _construct_address() -> Address:
-    """Helper method to construct an Address"""
-    return Address(
-        network=SpecificLocation(id=UID()),
-        domain=SpecificLocation(id=UID()),
-        device=SpecificLocation(id=UID()),
-        vm=SpecificLocation(id=UID()),
-    )
-
-
 def construct_dummy_message(
     msg_class: Callable,
 ) -> Union[
@@ -57,7 +45,7 @@ def construct_dummy_message(
     - SignedImmediateSyftMessageWithReply
     - SignedImmediateSyftMessageWithoutReply
     """
-    address = _construct_address()
+    address = UID()
     key = VerifyKey(crypto_sign_keypair()[0])
 
     return msg_class(

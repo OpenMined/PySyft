@@ -62,9 +62,9 @@ def test_large_blob_upload() -> None:
         )
 
         data_subject_name = "ϕhishan"
-        data_subjects = np.broadcast_to(
-            np.array(DataSubjectArray([data_subject_name])), reference_data.shape
-        )
+        # data_subjects = np.broadcast_to(
+        #     np.array(DataSubjectArray([data_subject_name])), reference_data.shape
+        # )
 
         lower_bound = int(reference_data.min()) - 10
         upper_bound = int(reference_data.max()) + 10
@@ -72,7 +72,7 @@ def test_large_blob_upload() -> None:
         tweets_data = sy.Tensor(reference_data).annotate_with_dp_metadata(
             lower_bound=lower_bound,
             upper_bound=upper_bound,
-            data_subjects=data_subjects,
+            data_subject=data_subject_name,
         )
 
         report[size_name]["tensor_type"] = type(tweets_data.child).__name__

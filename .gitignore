@@ -63,3 +63,5 @@ packages/grid/svelte
 
 # rendered template dir
 packages/grid/rendered
+
+js/node_modules/*

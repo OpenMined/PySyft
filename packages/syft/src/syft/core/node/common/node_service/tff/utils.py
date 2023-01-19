@@ -67,8 +67,8 @@ def train_model(
     msg = TFFMessageWithReply(
         params=params,
         model_bytes=model_bytes,
-        address=domain.address,
-        reply_to=domain.address,
+        address=domain.node_uid,
+        reply_to=domain.node_uid,
     )
     reply_msg = domain.send_immediate_msg_with_reply(msg, timeout=timeout)
 

@@ -30,7 +30,7 @@ print("EMULATION", EMULATION)
 
 def send_msg(domain: DomainClient) -> SleepMessageWithReply:
     msg = SleepMessageWithReply(kwargs={"seconds": 0.5}).to(
-        address=domain.address, reply_to=domain.address
+        address=domain.node_uid, reply_to=domain.node_uid
     )
     return domain.send_immediate_msg_with_reply(msg=msg)
 

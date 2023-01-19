@@ -131,8 +131,8 @@ class RequestAPI:
 
         if content is None:
             content = {}
-        content[RequestAPIFields.ADDRESS] = self.client.address
-        content[RequestAPIFields.REPLY_TO] = self.client.address
+        content[RequestAPIFields.ADDRESS] = self.client.node_uid
+        content[RequestAPIFields.REPLY_TO] = self.client.node_uid
 
         signed_msg = syft_msg_constructor(**content).sign(
             signing_key=self.client.signing_key
@@ -165,7 +165,7 @@ class RequestAPI:
 
         if issubclass(syft_msg, NewSyftMessage):
             signed_msg = syft_msg_constructor(  # type: ignore
-                address=self.client.address, reply_to=self.client.address, kwargs=content  # type: ignore
+                address=self.client.node_uid, reply_to=self.client.node_uid, kwargs=content  # type: ignore
             ).sign(  # type: ignore
                 signing_key=self.client.signing_key
             )
@@ -176,7 +176,7 @@ class RequestAPI:
             signed_msg = (
                 syft_msg_constructor(kwargs=content)  # type: ignore
                 .to(  # type: ignore
-                    address=self.client.address, reply_to=self.client.address
+                    address=self.client.node_uid, reply_to=self.client.node_uid
                 )
                 .sign(signing_key=self.client.signing_key)
             )

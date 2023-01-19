@@ -28,11 +28,10 @@ from ...common.serde.deserialize import _deserialize
 from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize
 from ...common.uid import UID
-from .action_service import ActionService
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
+from .service import ServiceConfigRegistry
 from .signature import Signature
-from .user import UserCollection
 
 
 class APIRegistry:
@@ -52,7 +51,7 @@ class APIEndpoint(SyftObject):
     path: str
     name: str
     description: str
-    doc_string: str
+    doc_string: Optional[str]
     signature: Signature
     has_self: bool = False
 
@@ -118,7 +117,7 @@ class SyftAPICall(SyftObject):
 
     # fields
     path: str
-    args: List[SyftObject]
+    args: List
     kwargs: Dict[str, Any]
 
     # serde / storage rules
@@ -136,30 +135,54 @@ class SyftAPICall(SyftObject):
 
 def generate_remote_function(signature: Signature, path: str, make_call: Callable):
     def wrapper(*args, **kwargs):
-        # need real Signature object
-        # params = signature.bind(*args, **kwargs)
-        if len(kwargs) == 0:
-            # 🟡 TODO 15: Rewrite wrapper API functions to handle, args and kwargs properly
-            raise Exception("Please use kwargs")
+        _valid_kwargs = {}
+
         for key, value in kwargs.items():
             if key not in signature.parameters:
                 raise Exception("Wrong key", key, "for sig", signature)
             param = signature.parameters[key]
             if isinstance(param.annotation, str):
+                # 🟡 TODO 21: make this work for weird string type situations
+                # happens when from __future__ import annotations in a class file
                 t = index_syft_by_module_name(param.annotation)
             else:
                 t = param.annotation
-
             msg = None
             try:
-                check_type(key, value, t)
+                if not issubclass(t, inspect._empty):
+                    check_type(key, value, t)  # raises Exception
             except TypeError:
-                msg = f"{key} must be {t.__name__} not {type(value).__name__}"
+                _type_str = getattr(t, "__name__", str(t))
+                msg = f"{key} must be {_type_str} not {type(value).__name__}"
 
             if msg:
                 raise Exception(msg)
 
-        api_call = SyftAPICall(path=path, args=[], kwargs=kwargs)
+            _valid_kwargs[key] = value
+
+        # signature.parameters is an OrderedDict, therefore,
+        # its fair to assume that order of args
+        # and the signature.parameters should always match
+        _valid_args = []
+        for (param_key, param), arg in zip(signature.parameters.items(), args):
+            if param_key in _valid_kwargs:
+                continue
+            t = param.annotation
+            msg = None
+            try:
+                if not issubclass(t, inspect._empty):
+                    check_type(param_key, arg, t)  # raises Exception
+            except TypeError:
+                _type_str = getattr(t, "__name__", str(t))
+                msg = (
+                    f"Arg: `{arg}` must be `{_type_str}` and not `{type(arg).__name__}`"
+                )
+            if msg:
+                raise Exception(msg)
+
+            _valid_args.append(arg)
+
+        api_call = SyftAPICall(path=path, args=_valid_args, kwargs=_valid_kwargs)
         result = make_call(api_call=api_call)
         return result
 
@@ -167,6 +190,7 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
     return wrapper
 
 
+@serializable(recursive_serde=True)
 class APIModule:
     pass
 
@@ -195,42 +219,19 @@ class SyftAPI(SyftObject):
     def for_user(node_uid: UID) -> SyftAPI:
         # 🟡 TODO 1: Filter SyftAPI with User VerifyKey
         # relative
-
-        endpoints = {
-            # 🟡 TODO 2: Change endpoint keys to use . syntax and build a tree of modules
-            "services_user_create": APIEndpoint(
-                path="services.user.create",
-                name="create",
-                description="Create User",
-                doc_string=UserCollection.create.__doc__,
-                signature=signature(UserCollection.create),
+        # TODO: Maybe there is a possibility of merging ServiceConfig and APIEndpoint
+        _registered_service_configs = ServiceConfigRegistry.get_registered_configs()
+        endpoints = {}
+        for path, service_config in _registered_service_configs.items():
+            endpoint = APIEndpoint(
+                path=path,
+                name=service_config.public_name,
+                description="",
+                doc_string=service_config.doc_string,
+                signature=service_config.signature,
                 has_self=False,
-            ),
-            "action_store_send": APIEndpoint(
-                path="services.action.set",
-                name="send",
-                description="Send Action Objects",
-                doc_string=ActionService.set.__doc__,
-                signature=signature(ActionService.set),
-                has_self=False,
-            ),
-            "action_store_get": APIEndpoint(
-                path="services.action.get",
-                name="get",
-                description="Get Action Objects",
-                doc_string=ActionService.get.__doc__,
-                signature=signature(ActionService.get),
-                has_self=False,
-            ),
-            "action_store_execute": APIEndpoint(
-                path="services.action.execute",
-                name="execute",
-                description="Execute Actions",
-                doc_string=ActionService.execute.__doc__,
-                signature=signature(ActionService.execute),
-                has_self=False,
-            ),
-        }
+            )
+            endpoints[path] = endpoint
         return SyftAPI(node_uid=node_uid, endpoints=endpoints)
 
     def make_call(self, api_call: SyftAPICall) -> None:
@@ -254,6 +255,23 @@ class SyftAPI(SyftObject):
                 return result.err()
         return result
 
+    @staticmethod
+    def _add_route(
+        api_module: APIModule, endpoint: APIEndpoint, endpoint_method: Callable
+    ):
+        """Recursively create a module path to the route endpoint."""
+
+        _modules = endpoint.path.split(".")[:-1] + [endpoint.name]
+
+        _self = api_module
+        _last_module = _modules.pop()
+        while _modules:
+            module = _modules.pop(0)
+            if not hasattr(_self, module):
+                setattr(_self, module, APIModule())
+            _self = getattr(_self, module)
+        setattr(_self, _last_module, endpoint_method)
+
     def generate_endpoints(self) -> None:
         api_module = APIModule()
         for k, v in self.endpoints.items():
@@ -265,7 +283,7 @@ class SyftAPI(SyftObject):
                 signature, v.path, self.make_call
             )
             endpoint_function.__doc__ = v.doc_string
-            setattr(api_module, k, endpoint_function)
+            self._add_route(api_module, v, endpoint_function)
         self.api_module = api_module
 
     @property
