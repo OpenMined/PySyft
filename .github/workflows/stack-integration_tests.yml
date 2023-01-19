@@ -35,6 +35,7 @@ jobs:
     steps:
       - name: "clean .git/config"
         if: matrix.os == 'windows'
+        continue-on-error: true
         shell: bash
         run: |
           echo "deleting ${GITHUB_WORKSPACE}/.git/config"
@@ -546,6 +547,7 @@ jobs:
 
     steps:
       - name: "clean .git/config"
+        continue-on-error: true
         shell: bash
         run: |
           echo "deleting ${GITHUB_WORKSPACE}/.git/config"
@@ -718,6 +720,7 @@ jobs:
 
     steps:
       - name: "clean .git/config"
+        continue-on-error: true
         shell: bash
         run: |
           echo "deleting ${GITHUB_WORKSPACE}/.git/config"
