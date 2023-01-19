@@ -1871,31 +1871,35 @@ def numpy2jax(value: np.array, dtype: np.dtype) -> jnp.array:
 @dataclass
 @serializable(recursive_serde=True)
 class GammaTensor:
+    child: jnp.array
+    jax_op: SyftJaxOp = flax.struct.field(pytree_node=False)
+    sources: dict = flax.struct.field(pytree_node=False)
+    is_linear: bool = False
+    id: str = flax.struct.field(pytree_node=False, default_factory=lambda: UID())
+
     __attr_allowlist__ = (
         "child",
-        "data_subjects",
-        "min_vals",
-        "max_vals",
+        "jax_op",
+        "sources",
         "is_linear",
         "id",
-        "func_str",
-        "sources",
     )
+
+    @classmethod
+    def serde_constructor(cls, kwargs: Dict[str, Any]) -> GammaTensor:
+        return GammaTensor(**kwargs)
+
     """
     A differential privacy tensor that contains data belonging to atleast 2 or more unique data subjects.
 
     Attributes:
         child: jnp.array
             The private data itself.
-        data_subjects: DataSubjectArray
-            (DP Metadata) A custom NumPy class that keeps track of which data subjects contribute which datapoints in
-            this tensor.
         min_vals: lazyrepeatarray
             (DP Metadata) A custom class that keeps track of (data-independent) minimum values for this tensor.
         max_vals: lazyrepeatarray
             (DP Metadata) A custom class that keeps track of (data-independent) maximum values for this tensor.
-        func_str: str
-            A string that will determine which function was used to build the current tensor.
+        jax_op: SyftJaxOp
         is_linear: bool
             Whether the "func_str" for this tensor is a linear query or not. This impacts the epsilon calculations
             when publishing.
