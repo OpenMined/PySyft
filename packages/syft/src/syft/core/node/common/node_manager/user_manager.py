@@ -12,6 +12,7 @@ from typing import Tuple
 from bcrypt import checkpw
 from bcrypt import gensalt
 from bcrypt import hashpw
+import jax
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
@@ -487,6 +488,9 @@ class NoSQLUserManager(NoSQLDatabaseManager):
     def deduct_epsilon_for_user(
         self, verify_key: VerifyKey, old_budget: float, epsilon_spend: float
     ) -> bool:
+        if isinstance(epsilon_spend, jax.numpy.DeviceArray) and len(epsilon_spend) == 1:
+            epsilon_spend = float(epsilon_spend)
+
         user = self.get_user(verify_key=verify_key)
         if user.budget != old_budget:
             raise RefreshBudgetException(

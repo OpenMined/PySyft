@@ -51,6 +51,18 @@ def pytest_configure(config: _pytest.config.Config) -> None:
     config.addinivalue_line("markers", "benchmark: runs benchmark tests")
     config.addinivalue_line("markers", "torch: runs torch tests")
     config.addinivalue_line("markers", "grid: runs grid tests")
+    config.addinivalue_line(
+        "markers", "arithmetic: gamma tensor arithmetic tests"
+    )  # do we need these?
+    config.addinivalue_line(
+        "markers", "public_op: gamma tensor public op"
+    )  # do we need these?
+    config.addinivalue_line(
+        "markers", "private_op: gamma tensor private op"
+    )  # do we need these?
+    config.addinivalue_line(
+        "markers", "equality: gamma tensor equality"
+    )  # do we need these?
 
 
 def pytest_collection_modifyitems(

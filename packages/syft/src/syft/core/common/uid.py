@@ -142,6 +142,12 @@ class UID:
         except Exception:
             return False
 
+    def __lt__(self, other: Any) -> bool:
+        try:
+            return self.value < other.value
+        except Exception:
+            return False
+
     @staticmethod
     def is_valid_uuid(value: Any) -> bool:
         try:

@@ -33,6 +33,13 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
+      - name: "clean .git/config"
+        if: matrix.os == 'windows'
+        shell: bash
+        run: |
+          echo "deleting ${GITHUB_WORKSPACE}/.git/config"
+          rm ${GITHUB_WORKSPACE}/.git/config
+
       - uses: actions/checkout@v3
 
       - name: Check for file changes
@@ -533,6 +540,12 @@ jobs:
     runs-on: [self-hosted, linux]
 
     steps:
+      - name: "clean .git/config"
+        shell: bash
+        run: |
+          echo "deleting ${GITHUB_WORKSPACE}/.git/config"
+          rm ${GITHUB_WORKSPACE}/.git/config
+
       - name: set permissions on work folder for self-runners
         run: |
           sudo chown -R $USER:$USER ~/actions-runner/_work/
@@ -699,6 +712,12 @@ jobs:
     runs-on: [self-hosted, linux]
 
     steps:
+      - name: "clean .git/config"
+        shell: bash
+        run: |
+          echo "deleting ${GITHUB_WORKSPACE}/.git/config"
+          rm ${GITHUB_WORKSPACE}/.git/config
+
       - name: set permissions on work folder for self-runners
         run: |
           sudo chown -R $USER:$USER ~/actions-runner/_work/
