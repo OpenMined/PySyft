@@ -1853,10 +1853,10 @@ def ones_like(
 #     return original_func(*map(cast_to_gamma, tensors))
 
 
-@serializable(capnp_bytes=True)
+@serializable(recursive_serde=True)
 class PhiTensor(PassthroughTensor):
     PointerClassOverride = TensorWrappedPhiTensorPointer
-    # __attr_allowlist__ = ["child", "min_vals", "max_vals", "data_subject"]
+    __attr_allowlist__ = ["child", "min_vals", "max_vals", "data_subject", "id"]
     __slots__ = ("child", "min_vals", "max_vals", "data_subject", "id")
 
     def __init__(
