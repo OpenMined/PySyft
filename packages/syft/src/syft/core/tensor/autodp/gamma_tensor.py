@@ -565,7 +565,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__lt__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__lt__")
 
     def __gt__(
         self,
@@ -581,7 +582,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__gt__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__gt__")
 
     def __ge__(
         self,
@@ -613,7 +615,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__le__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__le__")
 
     def __eq__(  # type: ignore
         self,
@@ -629,7 +632,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__eq__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__eq__")
 
     def __ne__(  # type: ignore
         self,
@@ -645,7 +649,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__ne__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__ne__")
 
     def concatenate(
         self,
@@ -721,7 +726,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
             TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
         ],
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__mod__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__mod__")
 
     def __and__(
         self,
@@ -737,7 +743,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__and__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__and__")
 
     def __or__(
         self,
@@ -753,7 +760,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__or__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__or__")
 
     def __floordiv__(
         self,
@@ -884,7 +892,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__lshift__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__lshift__")
 
     def argmax(
         self,
@@ -899,7 +908,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return self._apply_self_tensor_op("argmax", *args, **kwargs)
+        raise NotImplementedError
+        # return self._apply_self_tensor_op("argmax", *args, **kwargs)
 
     def __rshift__(
         self,
@@ -915,7 +925,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__rshift__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__rshift__")
 
     def argmin(
         self,
@@ -930,7 +941,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return self._apply_self_tensor_op("argmin", *args, **kwargs)
+        raise NotImplementedError
+        # return self._apply_self_tensor_op("argmin", *args, **kwargs)
 
     def __abs__(
         self,
@@ -960,7 +972,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return self._apply_self_tensor_op("all", *args, **kwargs)
+        raise NotImplementedError
+        # return self._apply_self_tensor_op("all", *args, **kwargs)
 
     def any(
         self,
@@ -975,7 +988,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return self._apply_self_tensor_op("any", *args, **kwargs)
+        raise NotImplementedError
+        # return self._apply_self_tensor_op("any", *args, **kwargs)
 
     def round(self, *args: Any, **kwargs: Any) -> TensorWrappedGammaTensorPointer:
         return self._apply_self_tensor_op("round", *args, **kwargs)
@@ -1103,7 +1117,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__xor__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__xor__")
 
     def __pow__(
         self,
@@ -1325,7 +1340,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
                 sorted a. More generally, np.take_along_axis(a, index_array, axis=axis) always yields the sorted a,
                 irrespective of dimensionality.
         """
-        return self._apply_self_tensor_op("argsort", *args, **kwargs)
+        raise NotImplementedError
+        # return self._apply_self_tensor_op("argsort", *args, **kwargs)
 
     def min(
         self,
@@ -2054,7 +2070,8 @@ class GammaTensor:
         return self._infix(other, gamma_op=GAMMA_TENSOR_OP.SUBTRACT, is_linear_op=True)
 
     def __mod__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.MOD, is_linear_op=False)
+        raise NotImplementedError
+        # return self._infix(other, gamma_op=GAMMA_TENSOR_OP.MOD, is_linear_op=False)
 
     def __mul__(self, other: Any) -> GammaTensor:
         return self._infix(other, gamma_op=GAMMA_TENSOR_OP.MULTIPLY, is_linear_op=True)
@@ -2073,49 +2090,60 @@ class GammaTensor:
         return self._infix(other, gamma_op=GAMMA_TENSOR_OP.MATMUL, is_linear_op=False)
 
     def __gt__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.GREATER, is_linear_op=False)
+        raise NotImplementedError
+        # return self._infix(other, gamma_op=GAMMA_TENSOR_OP.GREATER, is_linear_op=False)
 
     def __ge__(self, other: Any) -> GammaTensor:
-        return self._infix(
-            other, gamma_op=GAMMA_TENSOR_OP.GREATER_EQUAL, is_linear_op=False
-        )
+        raise NotImplementedError
+        # return self._infix(
+        #     other, gamma_op=GAMMA_TENSOR_OP.GREATER_EQUAL, is_linear_op=False
+        # )
 
     def __lt__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.LESS, is_linear_op=False)
+        raise NotImplementedError
+        # return self._infix(other, gamma_op=GAMMA_TENSOR_OP.LESS, is_linear_op=False)
 
     def __le__(self, other: Any) -> GammaTensor:
-        return self._infix(
-            other, gamma_op=GAMMA_TENSOR_OP.LESS_EQUAL, is_linear_op=False
-        )
+        raise NotImplementedError
+        # return self._infix(
+        #     other, gamma_op=GAMMA_TENSOR_OP.LESS_EQUAL, is_linear_op=False
+        # )
 
     def __eq__(self, other: Any) -> GammaTensor:  # type: ignore
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.EQUAL, is_linear_op=False)
+        raise NotImplementedError
+        # return self._infix(other, gamma_op=GAMMA_TENSOR_OP.EQUAL, is_linear_op=False)
 
     def __ne__(self, other: Any) -> GammaTensor:  # type: ignore
-        return self._infix(
-            other, gamma_op=GAMMA_TENSOR_OP.NOT_EQUAL, is_linear_op=False
-        )
+        raise NotImplementedError
+        # return self._infix(
+        #     other, gamma_op=GAMMA_TENSOR_OP.NOT_EQUAL, is_linear_op=False
+        # )
 
     def __and__(self, other: Any) -> GammaTensor:
-        return self._infix(
-            other, gamma_op=GAMMA_TENSOR_OP.BITWISE_AND, is_linear_op=False
-        )
+        raise NotImplementedError
+        # return self._infix(
+        #     other, gamma_op=GAMMA_TENSOR_OP.BITWISE_AND, is_linear_op=False
+        # )
 
     def __or__(self, other: Any) -> GammaTensor:
-        return self._infix(
-            other, gamma_op=GAMMA_TENSOR_OP.BITWISE_OR, is_linear_op=False
-        )
+        raise NotImplementedError
+        # return self._infix(
+        #     other, gamma_op=GAMMA_TENSOR_OP.BITWISE_OR, is_linear_op=False
+        # )
 
     def __lshift__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.LSHIFT, is_linear_op=False)
+        raise NotImplementedError
+        # return self._infix(other, gamma_op=GAMMA_TENSOR_OP.LSHIFT, is_linear_op=False)
 
     def __rshift__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.RSHIFT, is_linear_op=False)
+        raise NotImplementedError
+        # return self._infix(other, gamma_op=GAMMA_TENSOR_OP.RSHIFT, is_linear_op=False)
 
     def __xor__(self, other: Any) -> GammaTensor:
-        return self._infix(
-            other, gamma_op=GAMMA_TENSOR_OP.BITWISE_XOR, is_linear_op=False
-        )
+        raise NotImplementedError
+        # return self._infix(
+        #     other, gamma_op=GAMMA_TENSOR_OP.BITWISE_XOR, is_linear_op=False
+        # )
 
     def dot(self, other: Union[np.ndarray, GammaTensor]) -> GammaTensor:
         # QUESTION: is there a reason other can't be a non gamma tensor numpy array?
@@ -2132,7 +2160,8 @@ class GammaTensor:
         return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.SUBTRACT, is_linear_op=True)
 
     def __rmod__(self, other: Any) -> GammaTensor:
-        return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.MOD, is_linear_op=False)
+        raise NotImplementedError
+        # return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.MOD, is_linear_op=False)
 
     def __rmul__(self, other: Any) -> GammaTensor:
         return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.MULTIPLY, is_linear_op=True)
@@ -2162,14 +2191,16 @@ class GammaTensor:
         return self._unary_op(gamma_op=GAMMA_TENSOR_OP.ABS, is_linear=False)
 
     def argmax(self, axis: Optional[int] = None) -> GammaTensor:
-        return self._unary_op(
-            gamma_op=GAMMA_TENSOR_OP.ARGMAX, is_linear=False, args=[axis]
-        )
+        raise NotImplementedError
+        # return self._unary_op(
+        #     gamma_op=GAMMA_TENSOR_OP.ARGMAX, is_linear=False, args=[axis]
+        # )
 
     def argmin(self, axis: Optional[int] = None) -> GammaTensor:
-        return self._unary_op(
-            gamma_op=GAMMA_TENSOR_OP.ARGMIN, is_linear=False, args=[axis]
-        )
+        raise NotImplementedError
+        # return self._unary_op(
+        #     gamma_op=GAMMA_TENSOR_OP.ARGMIN, is_linear=False, args=[axis]
+        # )
 
     def log(self) -> GammaTensor:  # TODO 0.7: this needs a test
         return self._unary_op(gamma_op=GAMMA_TENSOR_OP.LOG, is_linear=False)
@@ -2280,22 +2311,24 @@ class GammaTensor:
         axis: OptionalAxisArg = None,
         keepdims: Optional[bool] = None,
     ) -> GammaTensor:
-        return self._unary_op(
-            gamma_op=GAMMA_TENSOR_OP.ANY,
-            is_linear=False,
-            kwargs={"axis": axis, "keepdims": keepdims},
-        )
+        raise NotImplementedError
+        # return self._unary_op(
+        #     gamma_op=GAMMA_TENSOR_OP.ANY,
+        #     is_linear=False,
+        #     kwargs={"axis": axis, "keepdims": keepdims},
+        # )
 
     def all(
         self,
         axis: OptionalAxisArg = None,
         keepdims: Optional[bool] = None,
     ) -> GammaTensor:
-        return self._unary_op(
-            gamma_op=GAMMA_TENSOR_OP.ALL,
-            is_linear=False,
-            kwargs={"axis": axis, "keepdims": keepdims},
-        )
+        raise NotImplementedError
+        # return self._unary_op(
+        #     gamma_op=GAMMA_TENSOR_OP.ALL,
+        #     is_linear=False,
+        #     kwargs={"axis": axis, "keepdims": keepdims},
+        # )
 
     def __pos__(self) -> GammaTensor:
         return self._unary_op(
@@ -2385,7 +2418,8 @@ class GammaTensor:
         )
 
     def nonzero(self) -> GammaTensor:
-        return self._unary_op(gamma_op=GAMMA_TENSOR_OP.NONZERO, is_linear=False)
+        raise NotImplementedError
+        # return self._unary_op(gamma_op=GAMMA_TENSOR_OP.NONZERO, is_linear=False)
 
     def swapaxes(self, axis1: int, axis2: int) -> GammaTensor:
         return self._unary_op(
@@ -2586,11 +2620,12 @@ class GammaTensor:
         )
 
     def argsort(self, axis: int = -1, kind: Optional[str] = None) -> GammaTensor:
-        return self._unary_op(
-            gamma_op=GAMMA_TENSOR_OP.ARGSORT,
-            is_linear=False,
-            kwargs={"axis": axis, "kind": kind},
-        )
+        raise NotImplementedError
+        # return self._unary_op(
+        #     gamma_op=GAMMA_TENSOR_OP.ARGSORT,
+        #     is_linear=False,
+        #     kwargs={"axis": axis, "kind": kind},
+        # )
 
     def choose(
         self,
