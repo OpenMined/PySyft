@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+import os
 from typing import Any
 from typing import Dict
 from typing import List
@@ -13,7 +14,6 @@ from typing import Union
 # third party
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
-from nacl.signing import VerifyKey
 from pydantic import BaseSettings
 
 # relative
@@ -21,9 +21,9 @@ from .... import __version__
 from ....core.node.new.api import SyftAPI
 from ....grid import GridURL
 from ....lib import lib_ast
+from ....logger import critical
 from ....logger import debug
 from ....logger import error
-from ....logger import info
 from ....logger import traceback_and_raise
 from ....shylock import ShylockPymongoBackend
 from ....shylock import configure
@@ -37,7 +37,6 @@ from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.uid import UID
 from ...io.location import Location
-from ...io.location import SpecificLocation
 from ...io.route import Route
 from ...io.route import SoloRoute
 from ...io.virtual import create_virtual_connection
@@ -92,6 +91,27 @@ class DuplicateRequestException(Exception):
     pass
 
 
+NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
+NODE_UID = "NODE_UID"
+
+
+def get_private_key_env() -> Optional[str]:
+    return get_env(NODE_PRIVATE_KEY)
+
+
+def get_node_uid_env() -> Optional[str]:
+    return get_env(NODE_UID)
+
+
+def get_env(key: str) -> Optional[str]:
+    value = os.environ.get(key, None)
+    return str(value) if value is not None else value
+
+
+signing_key_env = get_private_key_env()
+node_uid_env = get_node_uid_env()
+
+
 @instrument
 class Node(AbstractNode):
 
@@ -108,24 +128,48 @@ class Node(AbstractNode):
     ChildT = TypeVar("ChildT", bound="Node")
     child_type = ChildT
 
-    signing_key: Optional[SigningKey]
-    verify_key: Optional[VerifyKey]
-
     def __init__(
         self,
+        node_uid: Optional[str] = None,
+        signing_key: Optional[str] = None,
         name: Optional[str] = None,
         network: Optional[Location] = None,
         domain: Optional[Location] = None,
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
-        signing_key: Optional[SigningKey] = None,
-        verify_key: Optional[VerifyKey] = None,
         TableBase: Any = None,
         db_engine: Any = None,
         store_type: type = RedisStore,
         settings: Optional[BaseSettings] = None,
         document_store: bool = False,
     ):
+
+        if node_uid_env is not None:
+            self.node_uid = UID.from_string(node_uid_env)
+        elif node_uid is not None:
+            self.node_uid = UID.from_string(node_uid)
+        else:
+            self.node_uid = UID()
+
+        if self.node_uid is None:
+            raise Exception("self.node_uid is None")
+
+        if signing_key_env is not None:
+            self.signing_key = SigningKey(bytes.fromhex(signing_key_env))
+        elif signing_key is not None:
+            self.signing_key = SigningKey(bytes.fromhex(signing_key))
+        else:
+            self.signing_key = SigningKey.generate()
+
+        if self.signing_key is None:
+            raise Exception("self.signing_key is None")
+        self.root_verify_key = self.signing_key.verify_key
+        self.verify_key = self.signing_key.verify_key
+        print(
+            "============> Starting Node with:",
+            self.node_uid,
+            self.signing_key.encode(encoder=HexEncoder).decode("utf-8"),
+        )
 
         # The node has a name - it exists purely to help the
         # end user have some idea about what this node is in a human
@@ -278,10 +322,6 @@ class Node(AbstractNode):
         # comes from the node. In order to do that, the node needs to generate keys
         # for itself to sign and verify with.
 
-        # update keys
-        if signing_key:
-            Node.set_keys(node=self, signing_key=signing_key)
-
         # PERMISSION REGISTRY:
         self.guest_signing_key_registry = set()
         self.guest_verify_key_registry = set()
@@ -297,40 +337,6 @@ class Node(AbstractNode):
     def post_init(self) -> None:
         debug(f"> Creating {self.pprint}")
 
-    def set_node_uid(self) -> None:
-        try:
-            setup = self.setup.first()
-            # if its empty it will be set during CreateInitialSetUpMessage
-            if setup.node_uid != "":
-                try:
-                    node_id = UID.from_string(setup.node_uid)
-                except Exception as e:
-                    error(f"Invalid Node UID in Setup Table. {setup.node_uid}")
-                    raise e
-
-                location = SpecificLocation(name=setup.domain_name, id=node_id)
-                # TODO: Fix with proper isinstance when the class will import
-                if type(self).__name__ == "Domain":
-                    self.domain = location
-                elif type(self).__name__ == "Network":
-                    self.network = location
-                info(f"Finished setting Node UID. {location}")
-            if setup.signing_key:
-                signing_key = SigningKey(setup.signing_key, encoder=HexEncoder)
-                Node.set_keys(node=self, signing_key=signing_key)
-        except Exception:
-            info("Setup hasnt run yet so ignoring set_node_uid")
-            pass
-
-    @staticmethod
-    def set_keys(node: Node, signing_key: Optional[SigningKey] = None) -> None:
-        if signing_key is None:
-            signing_key = SigningKey.generate()
-
-        node.signing_key = signing_key
-        node.verify_key = signing_key.verify_key
-        node.root_verify_key = node.verify_key  # TODO: CHANGE
-
     @property
     def icon(self) -> str:
         return "📍"
@@ -342,7 +348,7 @@ class Node(AbstractNode):
     ) -> Client:
         if not routes:
             conn_client = create_virtual_connection(node=self)
-            solo = SoloRoute(destination=self.target_id, connection=conn_client)
+            solo = SoloRoute(destination=self.node_uid, connection=conn_client)
             # inject name
             setattr(
                 solo,
@@ -352,6 +358,7 @@ class Node(AbstractNode):
             routes = [solo]
 
         return self.client_type(  # type: ignore
+            node_uid=self.node_uid,
             name=self.name,
             routes=routes,
             network=self.network,
@@ -372,7 +379,6 @@ class Node(AbstractNode):
         return Metadata(
             name=self.name if self.name else "",
             id=self.id,
-            node=self.target_id,
             node_type=str(type(self).__name__),
             version=str(__version__),
         )
@@ -491,10 +497,19 @@ class Node(AbstractNode):
 
     @property
     def id(self) -> UID:
-        traceback_and_raise(NotImplementedError)
+        return self.node_uid
 
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
-        traceback_and_raise(NotImplementedError)
+
+        # this needs to be defensive by checking domain_id NOT domain.id or it breaks
+        try:
+            msg_address_id = msg.address
+            return msg_address_id == self.id
+        except Exception as excp3:
+            critical(
+                f"Error checking if {msg.pprint} is for me on {self.pprint}. {excp3}"
+            )
+        return False
 
     def recv_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
@@ -626,9 +641,7 @@ class Node(AbstractNode):
             )  # in the event the message is unsigned
             debug(f"> Processing 📨 {msg.pprint} @ {self.pprint} {contents}")
             if self.message_is_for_me(msg=msg):
-                debug(
-                    f"> Recipient Found {msg.pprint}{msg.address.target_emoji()} == {self.pprint}"
-                )
+                debug(f"> Recipient Found {msg.pprint}{msg.address} == {self.pprint}")
 
                 # only a small number of messages are allowed to be unsigned otherwise
                 # they need to be valid
@@ -661,7 +674,7 @@ class Node(AbstractNode):
 
             else:
                 debug(
-                    f"> Recipient Not Found ↪️ {msg.pprint}{msg.address.target_emoji()} != {self.pprint}"
+                    f"> Recipient Not Found ↪️ {msg.pprint}{msg.address} != {self.pprint}"
                 )
                 # Forward message onwards
                 if issubclass(type(msg), SignedImmediateSyftMessageWithReply):

@@ -9,7 +9,6 @@ from typing_extensions import final
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
-from ....io.address import Address
 
 
 class UnknownPrivateException(Exception):
@@ -29,7 +28,7 @@ class ExceptionMessage(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         msg_id_causing_exception: UID,
         exception_type: Type,
         exception_msg: str,

@@ -35,8 +35,8 @@ class NodeNetworkingAPI(NewRequestAPI):
         # this should be run by a user on their node (probably a domain)
         target_url = self.get_client_url(client).base_url
         signed_msg = InitiateExchangeCredentialsWithNodeMessage(
-            address=self.client.address,
-            reply_to=self.client.address,
+            address=self.client.node_uid,
+            reply_to=self.client.node_uid,
             kwargs={"target_node_url": str(target_url)},
         ).sign(
             signing_key=self.client.signing_key
@@ -55,8 +55,8 @@ class NodeNetworkingAPI(NewRequestAPI):
         # in this case the self context will be a NetworkClient
 
         signed_msg = ExchangeCredentialsWithNodeMessage(
-            address=self.client.address,
-            reply_to=self.client.address,
+            address=self.client.node_uid,
+            reply_to=self.client.node_uid,
             kwargs={"credentials": {**credentials}},
         ).sign(
             signing_key=self.client.signing_key
@@ -91,8 +91,8 @@ class NodeNetworkingAPI(NewRequestAPI):
         route_update.validate()
 
         signed_msg = InitiateRouteUpdateToNodeMessage(
-            address=self.client.address,
-            reply_to=self.client.address,
+            address=self.client.node_uid,
+            reply_to=self.client.node_uid,
             kwargs={
                 "target_node_url": str(target_url),
                 "route_update": {**route_update},
@@ -113,8 +113,8 @@ class NodeNetworkingAPI(NewRequestAPI):
         # this should be run by a node (probably a domain) against a network
         # in this case the self context will be a NetworkClient
         signed_msg = NotifyNodeWithRouteUpdateMessage(
-            address=self.client.address,
-            reply_to=self.client.address,
+            address=self.client.node_uid,
+            reply_to=self.client.node_uid,
             kwargs={"route_update": {**route_update}},
         ).sign(
             signing_key=self.client.signing_key
@@ -134,8 +134,8 @@ class NodeNetworkingAPI(NewRequestAPI):
         # we return the SignedMessage so we can double check the Domain we reached
         # is the one we are hoping to reach
         signed_msg = VerifyRouteUpdateMessage(
-            address=self.client.address,
-            reply_to=self.client.address,
+            address=self.client.node_uid,
+            reply_to=self.client.node_uid,
             kwargs={},
         ).sign(
             signing_key=self.client.signing_key
@@ -156,8 +156,8 @@ class NodeNetworkingAPI(NewRequestAPI):
         # this should be run by a Domain owner against a network
         target_client = self.get_client(client)
         signed_msg = RoutesListMessage(
-            address=target_client.address,
-            reply_to=target_client.address,
+            address=target_client.node_uid,
+            reply_to=target_client.node_uid,
             kwargs={},
         ).sign(
             signing_key=target_client.signing_key

@@ -15,7 +15,6 @@ from typing import Union
 # third party
 import ascii_magic
 from nacl.signing import SigningKey
-from nacl.signing import VerifyKey
 from pydantic import BaseSettings
 
 # relative
@@ -27,8 +26,6 @@ from ...logger import traceback
 from ...telemetry import instrument
 from ..adp.ledger_store import RedisLedgerStore
 from ..common.message import SignedImmediateSyftMessageWithReply
-from ..common.message import SignedMessage
-from ..common.message import SyftMessage
 from ..common.uid import UID
 from ..io.location import Location
 from ..io.location import SpecificLocation
@@ -97,7 +94,6 @@ from .domain_service import DomainServiceClass
 @instrument
 class Domain(Node):
     domain: SpecificLocation
-    root_key: Optional[VerifyKey]
 
     child_type = Device
     client_type = DomainClient
@@ -111,15 +107,12 @@ class Domain(Node):
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
         signing_key: Optional[SigningKey] = None,
-        verify_key: Optional[VerifyKey] = None,
-        root_key: Optional[VerifyKey] = None,
         db_engine: Any = None,
         store_type: type = RedisStore,
         ledger_store_type: type = RedisLedgerStore,
         settings: Optional[BaseSettings] = None,
         document_store: bool = False,
     ):
-
         super().__init__(
             name=name,
             network=network,
@@ -127,7 +120,6 @@ class Domain(Node):
             device=device,
             vm=vm,
             signing_key=signing_key,
-            verify_key=verify_key,
             db_engine=db_engine,
             store_type=store_type,
             settings=settings,
@@ -138,8 +130,7 @@ class Domain(Node):
         self.settings = settings
 
         # specific location with name
-        self.domain = SpecificLocation(name=self.name)
-        self.root_key = root_key
+        self.domain = SpecificLocation(id=self.id, name=self.name)
 
         # Database Management Instances
         self.users = NoSQLUserManager(self.nosql_db_engine, self.db_name)
@@ -213,9 +204,6 @@ class Domain(Node):
 
     def post_init(self) -> None:
         super().post_init()
-        self.set_node_uid()
-        if not hasattr(self, "signing_key"):
-            Node.set_keys(node=self)
 
     def initial_setup(  # nosec
         self,
@@ -226,22 +214,21 @@ class Domain(Node):
         first_superuser_budget: float = 5.55,
         domain_name: str = "BigHospital",
     ) -> Domain:
-        Node.set_keys(node=self, signing_key=signing_key)
 
         # Build Syft Message
         msg: SignedImmediateSyftMessageWithReply = CreateInitialSetUpMessage(
-            address=self.address,
+            address=self.node_uid,
             name=first_superuser_name,
             email=first_superuser_email,
             password=first_superuser_password,
             domain_name=domain_name,
             budget=first_superuser_budget,
-            reply_to=self.address,
+            reply_to=self.node_uid,
             signing_key=signing_key,
         ).sign(signing_key=self.signing_key)
 
         oblv_msg: SignedImmediateSyftMessageWithReply = CreateKeyPairMessage(
-            address=self.address, reply_to=self.address
+            address=self.node_uid, reply_to=self.node_uid
         ).sign(signing_key=self.signing_key)
 
         # Process syft message
@@ -277,20 +264,9 @@ class Domain(Node):
     def icon(self) -> str:
         return "🏰"
 
-    @property
-    def id(self) -> UID:
-        return self.domain.id
-
-    def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
-
-        # this needs to be defensive by checking domain_id NOT domain.id or it breaks
-        try:
-            return msg.address.domain_id == self.id and msg.address.device is None
-        except Exception as excp3:
-            critical(
-                f"Error checking if {msg.pprint} is for me on {self.pprint}. {excp3}"
-            )
-            return False
+    # @property
+    # def id(self) -> UID:
+    #     return self.domain.id
 
     def set_request_status(
         self, message_request_id: UID, status: RequestStatus, client: Client
@@ -338,7 +314,7 @@ class Domain(Node):
             obj_msg = GetObjectAction(
                 id_at_location=request.object_id,
                 address=request.owner_address,
-                reply_to=self.address,
+                reply_to=self.node_uid,
                 delete_obj=False,
             )
 

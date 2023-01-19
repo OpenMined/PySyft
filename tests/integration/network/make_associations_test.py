@@ -22,7 +22,7 @@ def attempt_to_connect(network: sy.Network, domain: sy.Domain) -> str:
 
     associations = network.association.all()
     for association in associations:
-        if association["node_address"] == domain.target_id.id.no_dash:
+        if association["node_address"] == domain.node_uid.no_dash:
             request_id = int(association["association_id"])
 
     network.association[request_id].accept()

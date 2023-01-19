@@ -52,7 +52,7 @@ def get_vpn_status_metadata(node: DomainInterface) -> Dict[str, str]:
     try:
         vpn_status_msg = (
             VPNStatusMessageWithReply()
-            .to(address=node.address, reply_to=node.address)
+            .to(address=node.node_uid, reply_to=node.node_uid)
             .sign(signing_key=node.signing_key)
         )
 
@@ -70,7 +70,7 @@ def get_vpn_status_metadata(node: DomainInterface) -> Dict[str, str]:
     metadata = {
         "connected": str(bool(connected)).lower(),
         "host_or_ip": str(network_vpn_ip),
-        "node_id": str(node.target_id.id.no_dash),
+        "node_id": str(node.node_uid.no_dash),
         "node_name": str(node_name),
         "type": f"{str(type(node).__name__).lower()}",
     }
@@ -133,7 +133,7 @@ def send_association_request_msg(
 
         target_msg: SignedImmediateSyftMessageWithoutReply = (
             ReceiveAssociationRequestMessage(
-                address=target_client.address,
+                address=target_client.node_uid,
                 metadata=metadata,
                 source=vpn_metadata["host_or_ip"],
                 target=msg.target,
@@ -151,7 +151,7 @@ def send_association_request_msg(
             error(f"Failed to send ReceiveAssociationRequestMessage. {e}")
             error(f"Sending target message: {target_msg}")
             target_msg_args = {
-                "address": target_client.address,
+                "address": target_client.node_uid,
                 "metadata": metadata,
                 "source": vpn_metadata["host_or_ip"],
                 "target": "msg.target",
@@ -170,7 +170,7 @@ def send_association_request_msg(
         )
         node.association_requests.create_association_request(
             node_name=target_client.name,  # type: ignore
-            node_address=target_client.target_id.id.no_dash,  # type: ignore
+            node_address=target_client.node_uid.no_dash,  # type: ignore
             status=AssociationRequestResponses.PENDING,
             source=msg.source,
             target=msg.target,
@@ -295,7 +295,7 @@ def respond_association_request_msg(
             metadata["node_address"] = node.id.no_dash  # type:ignore
             node_msg: SignedImmediateSyftMessageWithReply = (
                 ReceiveAssociationRequestMessage(
-                    address=source_client.address,
+                    address=source_client.node_uid,
                     response=msg.response,
                     metadata=metadata,
                     source=msg.source,

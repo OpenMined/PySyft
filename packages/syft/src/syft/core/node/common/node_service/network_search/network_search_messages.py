@@ -10,7 +10,6 @@ from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.serializable import serializable
 from .....common.uid import UID
-from .....io.address import Address
 
 
 @serializable(recursive_serde=True)
@@ -20,9 +19,9 @@ class NetworkSearchMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         content: Dict,
-        reply_to: Address,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -36,7 +35,7 @@ class NetworkSearchResponse(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         status_code: int,
         content: Dict,
         msg_id: Optional[UID] = None,

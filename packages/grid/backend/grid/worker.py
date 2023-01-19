@@ -145,7 +145,7 @@ def domain_reconnect_network() -> None:
         network_vpn_endpoint = get_network_url().with_path("/api/v1/vpn/status")
         msg = (
             VPNStatusMessageWithReply(kwargs={})
-            .to(address=node.address, reply_to=node.address)
+            .to(address=node.node_uid, reply_to=node.node_uid)
             .sign(signing_key=node.signing_key)
         )
         reply = node.recv_immediate_msg_with_reply(msg=msg)
@@ -175,7 +175,7 @@ def network_connect_self() -> None:
     # TODO: refactor to be non blocking and in a different queue
     msg = (
         VPNJoinSelfMessageWithReply(kwargs={})
-        .to(address=node.address, reply_to=node.address)
+        .to(address=node.node_uid, reply_to=node.node_uid)
         .sign(signing_key=node.signing_key)
     )
     _ = node.recv_immediate_msg_with_reply(msg=msg).message

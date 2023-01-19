@@ -12,7 +12,6 @@ from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.serializable import serializable
 from .....common.uid import UID
-from .....io.address import Address
 from .....tensor.smpc.utils import ispointer
 
 
@@ -23,8 +22,8 @@ class CreateKeyPairMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
-        reply_to: Address,
+        address: UID,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -37,7 +36,7 @@ class CreateKeyPairResponse(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         response: str,
         msg_id: Optional[UID] = None,
     ):
@@ -52,8 +51,8 @@ class GetPublicKeyMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
-        reply_to: Address,
+        address: UID,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -66,7 +65,7 @@ class GetPublicKeyResponse(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         response: str = "",
         msg_id: Optional[UID] = None,
     ):
@@ -88,8 +87,8 @@ class TransferDatasetMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
-        reply_to: Address,
+        address: UID,
+        reply_to: UID,
         deployment_id: str,
         oblv_client: OblvClient,
         dataset_id: Union[str, Pointer] = "",
@@ -111,7 +110,7 @@ class TransferDatasetResponse(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         dataset_id: str = "",
         msg_id: Optional[UID] = None,
     ):
@@ -126,8 +125,8 @@ class CheckEnclaveConnectionMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
-        reply_to: Address,
+        address: UID,
+        reply_to: UID,
         deployment_id: str,
         oblv_client: OblvClient,
         msg_id: Optional[UID] = None,
@@ -144,7 +143,7 @@ class PublishApprovalMessage(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         deployment_id: str,
         result_id: str,
         oblv_client: OblvClient,
@@ -170,7 +169,7 @@ class DeductBudgetMessage(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         deployment_id: str,
         result_id: str,
         budget_to_deduct: float,

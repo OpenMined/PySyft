@@ -345,7 +345,7 @@ class ShareTensor(PassthroughTensor):
                 beaver_action = BeaverAction(
                     values=[str(self_generator_seed)],
                     locations=[przs_location],
-                    address=client.address,
+                    address=client.node_uid,
                 )
                 client.send_immediate_msg_without_reply(msg=beaver_action)
         other_generator_seed = przs_retrieve_object(node, przs_location).data
@@ -436,11 +436,9 @@ class ShareTensor(PassthroughTensor):
                 gt: GammaTensor = value.child
                 new_gamma = GammaTensor(
                     child=FixedPrecisionTensor(value.child.child),
-                    data_subjects=gt.data_subjects,
-                    min_vals=gt.min_vals,
-                    max_vals=gt.max_vals,
-                    func_str=gt.func_str,
+                    jax_op=gt.jax_op,
                     sources=gt.sources,
+                    is_linear=gt.is_linear,
                 )
                 value.child = new_gamma
 

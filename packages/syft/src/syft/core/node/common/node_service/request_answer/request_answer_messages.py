@@ -8,7 +8,6 @@ from .....common import UID
 from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.serializable import serializable
-from .....io.address import Address
 from ..request_receiver.request_receiver_messages import RequestStatus
 
 
@@ -17,7 +16,7 @@ class RequestAnswerMessage(ImmediateSyftMessageWithReply):
     __attr_allowlist__ = ["request_id", "address", "reply_to"]
     __slots__ = ["request_id"]
 
-    def __init__(self, request_id: UID, reply_to: Address, address: Address):
+    def __init__(self, request_id: UID, reply_to: UID, address: UID):
         super().__init__(reply_to, address)
         self.request_id = request_id
 
@@ -33,7 +32,7 @@ class RequestAnswerResponse(ImmediateSyftMessageWithoutReply):
         )
     }
 
-    def __init__(self, status: RequestStatus, request_id: UID, address: Address):
+    def __init__(self, status: RequestStatus, request_id: UID, address: UID):
         super().__init__(address)
         self.status = status
         self.request_id = request_id
