@@ -223,7 +223,7 @@ def divide_mask(
 
     for _, client in enumerate(clients):
         if client != curr_client:
-            beaver_action.address = client.address
+            beaver_action.address = client.node_uid
             client.send_immediate_msg_without_reply(msg=beaver_action)
 
 

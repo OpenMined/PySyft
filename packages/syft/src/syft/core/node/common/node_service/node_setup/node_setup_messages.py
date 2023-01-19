@@ -11,7 +11,6 @@ from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.serializable import serializable
 from .....common.uid import UID
-from .....io.address import Address
 
 
 @serializable(recursive_serde=True)
@@ -33,7 +32,7 @@ class GetSetUpResponse(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):

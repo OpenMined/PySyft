@@ -314,7 +314,10 @@ class Client(AbstractNodeClient):
         return keys
 
     def __hash__(self) -> Any:
-        return hash(self.id)
+        return hash(self.id.no_dash)
+
+    def __eq__(self, other: AbstractNodeClient) -> bool:
+        return self.node_uid == other.node_uid
 
 
 GET_OBJECT_TIMEOUT = 60  # seconds

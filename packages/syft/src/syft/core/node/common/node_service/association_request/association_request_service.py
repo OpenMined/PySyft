@@ -70,7 +70,7 @@ def get_vpn_status_metadata(node: DomainInterface) -> Dict[str, str]:
     metadata = {
         "connected": str(bool(connected)).lower(),
         "host_or_ip": str(network_vpn_ip),
-        "node_id": str(node.target_id.id.no_dash),
+        "node_id": str(node.node_uid.no_dash),
         "node_name": str(node_name),
         "type": f"{str(type(node).__name__).lower()}",
     }

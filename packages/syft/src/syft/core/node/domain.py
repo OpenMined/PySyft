@@ -215,18 +215,18 @@ class Domain(Node):
 
         # Build Syft Message
         msg: SignedImmediateSyftMessageWithReply = CreateInitialSetUpMessage(
-            address=self.address,
+            address=self.node_uid,
             name=first_superuser_name,
             email=first_superuser_email,
             password=first_superuser_password,
             domain_name=domain_name,
             budget=first_superuser_budget,
-            reply_to=self.address,
+            reply_to=self.node_uid,
             signing_key=signing_key,
         ).sign(signing_key=self.signing_key)
 
         oblv_msg: SignedImmediateSyftMessageWithReply = CreateKeyPairMessage(
-            address=self.address, reply_to=self.address
+            address=self.node_uid, reply_to=self.node_uid
         ).sign(signing_key=self.signing_key)
 
         # Process syft message
@@ -312,7 +312,7 @@ class Domain(Node):
             obj_msg = GetObjectAction(
                 id_at_location=request.object_id,
                 address=request.owner_address,
-                reply_to=self.address,
+                reply_to=self.node_uid,
                 delete_obj=False,
             )
 

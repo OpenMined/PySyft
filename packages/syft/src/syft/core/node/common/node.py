@@ -36,7 +36,6 @@ from ...common.message import SignedImmediateSyftMessageWithoutReply
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.uid import UID
-from ...io.address import Address
 from ...io.location import Location
 from ...io.route import Route
 from ...io.route import SoloRoute
@@ -144,19 +143,24 @@ class Node(AbstractNode):
         settings: Optional[BaseSettings] = None,
         document_store: bool = False,
     ):
-        self.node_uid = (
-            UID.from_string(node_uid_env)
-            if node_uid_env is not None
-            else UID.from_string(node_uid)
-        )
+
+        if node_uid_env is not None:
+            self.node_uid = UID.from_string(node_uid_env)
+        elif node_uid is not None:
+            self.node_uid = UID.from_string(node_uid)
+        else:
+            self.node_uid = UID()
+
         if self.node_uid is None:
             raise Exception("self.node_uid is None")
 
-        self.signing_key = (
-            SigningKey(bytes.fromhex(signing_key_env))
-            if signing_key_env is not None
-            else SigningKey(bytes.fromhex(signing_key))
-        )
+        if signing_key_env is not None:
+            self.signing_key = SigningKey(bytes.fromhex(signing_key_env))
+        elif signing_key is not None:
+            self.signing_key = SigningKey(bytes.fromhex(signing_key))
+        else:
+            self.signing_key = SigningKey.generate()
+
         if self.signing_key is None:
             raise Exception("self.signing_key is None")
         self.root_verify_key = self.signing_key.verify_key
@@ -344,7 +348,7 @@ class Node(AbstractNode):
     ) -> Client:
         if not routes:
             conn_client = create_virtual_connection(node=self)
-            solo = SoloRoute(destination=self.target_id, connection=conn_client)
+            solo = SoloRoute(destination=self.node_uid, connection=conn_client)
             # inject name
             setattr(
                 solo,
@@ -499,11 +503,7 @@ class Node(AbstractNode):
 
         # this needs to be defensive by checking domain_id NOT domain.id or it breaks
         try:
-            msg_address_id = (
-                msg.address.target_id.id
-                if isinstance(msg.address, Address)
-                else msg.address
-            )
+            msg_address_id = msg.address
             return msg_address_id == self.id
         except Exception as excp3:
             critical(

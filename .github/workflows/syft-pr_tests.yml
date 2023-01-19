@@ -30,7 +30,7 @@ jobs:
         python-version: ["3.10"]
         torch-version: [1.11.0]
         include:
-          - python-version: "3.7"
+          - python-version: "3.8"
             torch-version: 1.11.0
             os: "ubuntu-latest"
 
@@ -81,24 +81,12 @@ jobs:
           pip install -e .[dev] -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: Scan for security issues python 3.8+
-        if: steps.changes.outputs.syft == 'true' && matrix.python-version != '3.7'
+        if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install importlib-metadata==4.13.0
           bandit -r src
-          safety check
-
-      - name: Scan for security issues python 3.7
-        if: steps.changes.outputs.syft == 'true' && matrix.python-version == '3.7'
-        run: |
-          pip install importlib-metadata==4.13.0
-          bandit -r src
-          # we want to test python 3.7 for colab so we have to ignore these numpy issues
-          safety check -i 44717 -i 44716 -i 44715
+          safety check -i 51668 -i 51516 -i 51549
 
       - name: Run normal tests
         if: steps.changes.outputs.syft == 'true'
-        env:
-          NODE_PRIVATE_KEY: "669ddc7935dcc6863a27322c24740dc9d163b16040d0d1496b6405ba13fee050"
-          NODE_UID: "53ff251d-21f4-4532-91ba-382e7e056951"
         run: |
           pytest -s -m 'fast or slow' --cov syft --cov-fail-under 60 -n auto --durations=50

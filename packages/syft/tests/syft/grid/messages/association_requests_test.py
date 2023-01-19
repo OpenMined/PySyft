@@ -10,7 +10,7 @@ import pytest
 # syft absolute
 from syft import deserialize
 from syft import serialize
-from syft.core.io.address import Address
+from syft.core.common.uid import UID
 from syft.core.node.common.node_service.association_request.association_request_service import (
     DeleteAssociationRequestMessage,
 )
@@ -44,8 +44,8 @@ test_suite = [
         {
             "source": "127.0.0.1:8082",
             "target": "127.0.0.1:8081",
-            "address": Address(),
-            "reply_to": Address(),
+            "address": UID(),
+            "reply_to": UID(),
             "metadata": metadata,
         },
         ["source", "target", "metadata", "address", "reply_to"],
@@ -55,7 +55,7 @@ test_suite = [
         {
             "source": "127.0.0.1:8082",
             "target": "127.0.0.1:8081",
-            "address": Address(),
+            "address": UID(),
             "metadata": metadata,
             "response": "approved",
         },
@@ -66,21 +66,21 @@ test_suite = [
         {
             "source": "127.0.0.1:8082",
             "target": "127.0.0.1:8081",
-            "reply_to": Address(),
-            "address": Address(),
+            "reply_to": UID(),
+            "address": UID(),
             "response": "deny",
         },
         ["source", "target", "address", "reply_to", "response"],
     ),
     (
         GetAssociationRequestMessage,
-        {"reply_to": Address(), "address": Address(), "association_id": 1},
+        {"reply_to": UID(), "address": UID(), "association_id": 1},
         ["reply_to", "address", "association_id"],
     ),
     (
         GetAssociationRequestResponse,
         {
-            "address": Address(),
+            "address": UID(),
             "content": metadata,
             "source": "127.0.0.1:8082",
             "target": "127.0.0.1:8081",
@@ -89,17 +89,17 @@ test_suite = [
     ),
     (
         DeleteAssociationRequestMessage,
-        {"address": Address(), "association_id": 1, "reply_to": Address()},
+        {"address": UID(), "association_id": 1, "reply_to": UID()},
         ["address", "reply_to", "association_id"],
     ),
     (
         GetAssociationRequestsMessage,
-        {"address": Address(), "reply_to": Address()},
+        {"address": UID(), "reply_to": UID()},
         ["address", "reply_to"],
     ),
     (
         GetAssociationRequestsResponse,
-        {"address": Address(), "content": [metadata, metadata]},
+        {"address": UID(), "content": [metadata, metadata]},
         ["address", "content"],
     ),
 ]

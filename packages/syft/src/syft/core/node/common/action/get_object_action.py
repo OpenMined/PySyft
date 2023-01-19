@@ -13,7 +13,6 @@ from .....util import validate_type
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
-from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from ..node_service.auth import AuthorizationException
@@ -32,7 +31,7 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
     """
 
     def __init__(
-        self, obj: StorableObject, address: Address, msg_id: Optional[UID] = None
+        self, obj: StorableObject, address: UID, msg_id: Optional[UID] = None
     ) -> None:
         super().__init__(address=address, msg_id=msg_id)
         self.obj = obj
@@ -74,8 +73,8 @@ class GetObjectAction(ImmediateActionWithReply):
     def __init__(
         self,
         id_at_location: UID,
-        address: Address,
-        reply_to: Address,
+        address: UID,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
         delete_obj: bool = True,
     ):

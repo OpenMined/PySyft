@@ -35,7 +35,7 @@ from ..node.enums import PointerStatus
 from ..store.storeable_object import StorableObject
 
 
-# TODO: Fix the Client, Address, Location confusion
+# TODO: Fix the Client, UID, Location confusion
 @serializable(recursive_serde=True)
 class Pointer(AbstractPointer):
     __attr_allowlist__ = [
@@ -64,7 +64,7 @@ class Pointer(AbstractPointer):
     module.
 
     :param location: The location where the data is being held.
-    :type location: Address
+    :type location: UID
     :param id_at_location: The UID of the object on the remote location.
     :type id_at_location: UID
     """
@@ -632,7 +632,7 @@ class Pointer(AbstractPointer):
         )
 
         msg = RequestAnswerMessage(
-            request_id=request_id, address=self.client.node_uid, reply_to=node.address
+            request_id=request_id, address=self.client.node_uid, reply_to=node.node_uid
         )
         response = self.client.send_immediate_msg_with_reply(msg=msg)
 

@@ -159,7 +159,7 @@ class Network(Node):
             password=first_superuser_password,
             domain_name=domain_name,
             budget=first_superuser_budget,
-            reply_to=self.address,
+            reply_to=self.id,
             signing_key=signing_key,
         ).sign(signing_key=self.signing_key)
 

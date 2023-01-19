@@ -138,7 +138,7 @@ if settings.NODE_TYPE.lower() == "network":
             except Exception as e:
                 print(f"failed to get get_vpn_status_metadata. {e}")
                 result["host_or_ip"] = "100.64.0.1"
-            result["node_id"] = str(node.target_id.id.no_dash)
+            result["node_id"] = str(node.node_uid.no_dash)
             result["node_name"] = str(node.name)
             result["status"] = str(reply.payload.kwargs.get("status"))
             result["vpn_auth_key"] = str(reply.payload.kwargs.get("vpn_auth_key"))

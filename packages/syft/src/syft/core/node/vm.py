@@ -22,7 +22,6 @@ from .vm_client import VirtualMachineClient
 @final
 class VirtualMachine(Node):
     client_type = VirtualMachineClient
-    vm: SpecificLocation  # redefine the type of self.vm to not be optional
     signing_key: Optional[SigningKey]
     child_type_client_type = None
 

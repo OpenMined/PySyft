@@ -1,16 +1,12 @@
 # stdlib
 from typing import Any
 from typing import Optional
-from typing import Union
 
 # third party
 from nacl.signing import SigningKey
 from typing_extensions import final
 
 # relative
-from ...logger import critical
-from ..common.message import SignedMessage
-from ..common.message import SyftMessage
 from ..common.uid import UID
 from ..io.location import Location
 from ..io.location import SpecificLocation
@@ -69,12 +65,4 @@ class Device(Node):
 
     @property
     def id(self) -> UID:
-        return self.device.id
-
-    def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
-        # this needs to be defensive by checking device_id NOT device.id or it breaks
-        try:
-            return msg.address.device_id == self.id and msg.address.vm is None
-        except Exception as e:
-            critical(f"Error checking if {msg.pprint} is for me on {self.pprint}. {e}")
-            return False
+        return self.node_uid

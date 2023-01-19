@@ -27,21 +27,6 @@ ARGUMENTS = ["vm", "device", "domain", "network"]
 # --------------------- INITIALIZATION ---------------------
 
 
-def test_init_without_arguments() -> None:
-    """Test that Address have all attributes as None if none are given"""
-
-    # init works without arguments
-    addr = Address()
-
-    assert addr.network is None
-    assert addr.domain is None
-    assert addr.device is None
-    assert addr.vm is None
-
-    with pytest.raises(Exception):
-        assert addr.target_id is None
-
-
 def _gen_address_kwargs() -> list:
     """
     Helper method to generate pre-ordered arguments for initializing an Address instance.
