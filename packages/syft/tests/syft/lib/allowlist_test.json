@@ -8140,7 +8140,7 @@
             "reason": "no_cpu"
           },
           {
-            "data_types": ["bfloat16", "bool", "float16"],
+            "data_types": ["bfloat16", "bool", "float16", "int8"],
             "lte_version": "1.13.1",
             "gte_version": "1.8.0"
           }
@@ -8162,7 +8162,7 @@
             "reason": "no_cpu"
           },
           {
-            "data_types": ["float16", "bool", "bfloat16"],
+            "data_types": ["float16", "bool", "bfloat16", "int8"],
             "lte_version": "1.13.1",
             "gte_version": "1.8.0"
           }
@@ -8189,7 +8189,7 @@
             "reason": "no_cpu"
           },
           {
-            "data_types": ["bool", "float16"],
+            "data_types": ["bool", "float16", "int8"],
             "lte_version": "1.13.1",
             "gte_version": "1.8.0"
           }
@@ -8216,7 +8216,7 @@
             "reason": "no_cpu"
           },
           {
-            "data_types": ["bool", "float16"],
+            "data_types": ["bool", "float16", "int8"],
             "lte_version": "1.13.1",
             "gte_version": "1.8.0"
           }
