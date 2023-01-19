@@ -143,19 +143,24 @@ class Node(AbstractNode):
         settings: Optional[BaseSettings] = None,
         document_store: bool = False,
     ):
-        self.node_uid = (
-            UID.from_string(node_uid_env)
-            if node_uid_env is not None
-            else UID.from_string(node_uid)
-        )
+
+        if node_uid_env is not None:
+            self.node_uid = UID.from_string(node_uid_env)
+        elif node_uid is not None:
+            self.node_uid = UID.from_string(node_uid)
+        else:
+            self.node_uid = UID()
+
         if self.node_uid is None:
             raise Exception("self.node_uid is None")
 
-        self.signing_key = (
-            SigningKey(bytes.fromhex(signing_key_env))
-            if signing_key_env is not None
-            else SigningKey(bytes.fromhex(signing_key))
-        )
+        if signing_key_env is not None:
+            self.signing_key = SigningKey(bytes.fromhex(signing_key_env))
+        elif signing_key is not None:
+            self.signing_key = SigningKey(bytes.fromhex(signing_key))
+        else:
+            self.signing_key = SigningKey.generate()
+
         if self.signing_key is None:
             raise Exception("self.signing_key is None")
         self.root_verify_key = self.signing_key.verify_key

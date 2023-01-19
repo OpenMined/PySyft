@@ -97,8 +97,5 @@ jobs:
 
       - name: Run normal tests
         if: steps.changes.outputs.syft == 'true'
-        env:
-          NODE_PRIVATE_KEY: "669ddc7935dcc6863a27322c24740dc9d163b16040d0d1496b6405ba13fee050"
-          NODE_UID: "53ff251d-21f4-4532-91ba-382e7e056951"
         run: |
           pytest -s -m 'fast or slow' --cov syft --cov-fail-under 60 -n auto --durations=50
