@@ -101,7 +101,7 @@ class SyftObject(BaseModel, SyftObjectRegistry):
 
     def __repr__(self) -> str:
         _repr_str = f"{type(self)}\n"
-        for attr in self.__attr_state__:
+        for attr in getattr(self, "__attr_state__", []):
             value = getattr(self, attr, "Missing")
             _repr_str += f"{attr}: {type(attr)} = {value}\n"
         return _repr_str

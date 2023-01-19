@@ -222,6 +222,7 @@ class UserCollection(AbstractService):
         else:
             return Err("Failed to create User.")
 
+    @service_method(path="user.view", name="view")
     def view(self, credentials: SyftVerifyKey, uid: UID) -> Result[UserUpdate, str]:
         user_result = self.get(credentials=credentials, uid=uid)
         if user_result.is_ok():

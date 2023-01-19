@@ -14,11 +14,13 @@ from nacl.signing import SigningKey
 # syft absolute
 from syft import serialize  # type: ignore
 from syft.core.node.common.exceptions import InvalidCredentialsError
+from syft.core.node.new.credentials import SyftVerifyKey
 
 # grid absolute
 from grid.core import security
 from grid.core.config import settings
 from grid.core.node import node
+from grid.core.node import worker
 
 router = APIRouter()
 
@@ -100,4 +102,35 @@ def login_access_token(
         "token_type": "bearer",
         "metadata": metadata,
         "key": user.private_key,
+    }
+
+
+@router.post(
+    "/new_login", name="new_login", status_code=200, response_class=JSONResponse
+)
+def new_login(credentials: str = Body(..., example="info@openmined.org")) -> Any:
+    """
+    You must pass valid credentials to log in.
+    """
+
+    method = worker._get_service_method_from_path("UserCollection.view")
+    credentials = SyftVerifyKey.from_string(credentials)
+    result = method(credentials=credentials, uid=worker.id)
+    if result.is_err():
+        logger.bind(payload={"email": credentials}).error(result.err())
+        return {"Error": result.err()}
+
+    user = result.ok()
+
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = security.create_access_token(
+        user.id, expires_delta=access_token_expires
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "node_name": worker.name,
+        "node_uid": worker.id.no_dash,
+        "signing_key": user.private_key,
     }
