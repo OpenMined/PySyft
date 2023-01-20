@@ -326,6 +326,11 @@ def clean(location: str) -> None:
     is_flag=True,
     help="Turn off auto health checks post node launch",
 )
+@click.option(
+    "--oblv",
+    is_flag=True,
+    help="Installs Oblivious CLI tool",
+)
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
     try:
@@ -1066,6 +1071,8 @@ def create_launch_cmd(
     headless = bool(kwargs["headless"])
     parsed_kwargs["headless"] = headless
 
+    parsed_kwargs["oblv"] = bool(kwargs["oblv"])
+
     parsed_kwargs["tls"] = bool(kwargs["tls"])
     parsed_kwargs["test"] = bool(kwargs["test"])
     parsed_kwargs["dev"] = bool(kwargs["dev"])
@@ -1684,6 +1691,7 @@ def create_launch_docker_cmd(
     if "platform" in kwargs and kwargs["platform"] is not None:
         docker_platform = kwargs["platform"]
 
+    install_oblv_cli = bool(kwargs["oblv"])
     print("  - NAME: " + str(snake_name))
     print("  - RELEASE: " + kwargs["release"])
     print("  - ARCH: " + docker_platform)
@@ -1696,6 +1704,7 @@ def create_launch_docker_cmd(
         print("  - HAGRID_REPO_SHA: " + commit_hash())
     print("  - PORT: " + str(host_term.free_port))
     print("  - DOCKER COMPOSE: " + docker_version)
+    print("  - OBLV_CLI: ", install_oblv_cli)
 
     print("\n")
 
@@ -1720,6 +1729,7 @@ def create_launch_docker_cmd(
         "STACK_API_KEY": str(
             generate_sec_random_password(length=48, special_chars=False)
         ),
+        "INSTALL_OBLV_CLI": str(install_oblv_cli).lower(),
     }
 
     if "trace" in kwargs and kwargs["trace"] is True:
