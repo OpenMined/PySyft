@@ -40,14 +40,15 @@ jobs:
     secrets: inherit
 
   deploy-syft:
-    needs: [
+    needs:
+      [
         call-linting,
         call-syft_tests,
         call-grid-backend_test,
         call-syft-security,
         call-grid-frontend_test,
         call-syft-version_tests,
-        # call-stack-integration_tests,
+        call-stack-integration_tests,
       ]
     runs-on: ubuntu-latest
     steps:
@@ -63,15 +64,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install --upgrade setuptools wheel twine bump2version PyYAML
           pip install tox==3.27.1
-      # - name: Bump the Version
-      #   run: |
-      #     ls **/VERSION | xargs -I {} python {}
-      #     cat packages/grid/devspace.yaml | grep '0\.'
-      #     bump2version prenum --allow-dirty --no-commit
-      #     tox -e lint || true
-      #     ls **/VERSION | xargs -I {} python {}
-      #     cat packages/grid/devspace.yaml | grep '0\.'
-      #     python packages/hagrid/scripts/update_manifest.py $(python packages/grid/VERSION)
+      - name: Bump the Version
+        run: |
+          ls **/VERSION | xargs -I {} python {}
+          cat packages/grid/devspace.yaml | grep '0\.'
+          bump2version prenum --allow-dirty --no-commit
+          tox -e lint || true
+          ls **/VERSION | xargs -I {} python {}
+          cat packages/grid/devspace.yaml | grep '0\.'
+          python packages/hagrid/scripts/update_manifest.py $(python packages/grid/VERSION)
       - name: Commit changes
         uses: EndBug/add-and-commit@v7
         with:
