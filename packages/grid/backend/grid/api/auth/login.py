@@ -13,6 +13,7 @@ from nacl.signing import SigningKey
 
 # syft absolute
 from syft import serialize  # type: ignore
+from syft.core.common.uid import UID
 from syft.core.node.common.exceptions import InvalidCredentialsError
 from syft.core.node.new.credentials import SyftVerifyKey
 
@@ -108,16 +109,18 @@ def login_access_token(
 @router.post(
     "/new_login", name="new_login", status_code=200, response_class=JSONResponse
 )
-def new_login(credentials: str = Body(..., example="info@openmined.org")) -> Any:
+def new_login(
+    email: str = Body(..., example="info@openmined.org"),
+    password: str = Body(..., example="changethis"),
+) -> Any:
     """
     You must pass valid credentials to log in.
     """
 
-    method = worker._get_service_method_from_path("UserCollection.view")
-    credentials = SyftVerifyKey.from_string(credentials)
-    result = method(credentials=credentials, uid=worker.id)
+    method = worker._get_service_method_from_path("UserCollection.verify")
+    result = method(credentials=worker.signing_key, email=email, password=password)
     if result.is_err():
-        logger.bind(payload={"email": credentials}).error(result.err())
+        logger.bind(payload={"email": email}).error(result.err())
         return {"Error": result.err()}
 
     user = result.ok()
@@ -132,5 +135,6 @@ def new_login(credentials: str = Body(..., example="info@openmined.org")) -> Any
         "token_type": "bearer",
         "node_name": worker.name,
         "node_uid": worker.id.no_dash,
-        "signing_key": user.private_key,
+        "user_key": str(user.verify_key),
+        "user_id": str(user.id.no_dash),
     }

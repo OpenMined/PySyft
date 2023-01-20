@@ -103,10 +103,19 @@ def __salt_and_hash_password(password: str, rounds: int) -> Tuple[str, str]:
     salt = gensalt(rounds=rounds)
     salt_len = len(salt)
     hashed = hashpw(bytes_pass, salt)
-    hashed = hashed[salt_len:]
+    hashed = hashed[:salt_len]
     hashed = hashed.decode("UTF-8")
     salt = salt.decode("UTF-8")
     return salt, hashed
+
+
+def check_pwd(password: str, salt: str, hashed_password: str) -> bool:
+    bytes_pwd = password.encode("utf-8")
+    bytes_salt = salt.encode("utf-8")
+    salt_len = len(salt)
+
+    gen_pwd_hash = hashpw(bytes_pwd, bytes_salt)[:salt_len]
+    return gen_pwd_hash.decode("utf-8") == hashed_password
 
 
 @serializable(recursive_serde=True)
@@ -119,6 +128,7 @@ class UserUpdate(SyftObject):
     role: Optional[ServiceRole] = None  # make sure role cant be set without uid
     password: Optional[str] = None
     password_verify: Optional[str] = None
+    verify_key: Optional[SyftVerifyKey] = None
 
 
 @transform(UserUpdate, User)
@@ -133,7 +143,7 @@ def user_update_to_user() -> List[Callable]:
 
 @transform(User, UserUpdate)
 def user_to_update_user() -> List[Callable]:
-    return [keep(["id", "email", "name", "role"])]
+    return [keep(["id", "email", "name", "role", "verify_key"])]
 
 
 class SyftServiceRegistry:
@@ -176,29 +186,6 @@ class SyftServiceRegistry:
         return cls.__object_transform_registry__[mapping_string]
 
 
-# def service() -> Callable:
-#     def decorator(function: Callable):
-#         transforms = function()
-
-#         def wrapper(self: klass_from) -> klass_to:
-#             output = dict(self)
-#             for transform in transforms:
-#                 output = transform(output)
-#             return klass_to(**output)
-
-#         SyftObjectRegistry.add_transform(
-#             klass_from=klass_from_str,
-#             version_from=version_from,
-#             klass_to=klass_to_str,
-#             version_to=version_to,
-#             method=wrapper,
-#         )
-
-#         return function
-
-#     return decorator
-
-
 class UserCollection(AbstractService):
     def __init__(self, node: AbstractNode) -> None:
         self.node = node
@@ -236,7 +223,28 @@ class UserCollection(AbstractService):
         self.data[uid] = syft_object.to_mongo()
         return Ok(True)
 
+    def verify(
+        self, credentials: SyftVerifyKey, email: str, password: str
+    ) -> Result[UserUpdate, str]:
+        """Verify user
+        TODO: We might want to use a SyftObject instead
+        """
+        user_found = False
+        for _, user in self.data.items():
+            syft_object = SyftObject.from_mongo(user)
+            if (syft_object.email == email) and check_pwd(
+                password, syft_object.salt, syft_object.hashed_password
+            ):
+                user_found = True
+                break
+
+        if user_found:
+            return Ok(syft_object)
+
+        return Err(f"No user exists with {email} and {password}.")
+
     def get(self, credentials: SyftVerifyKey, uid: UID) -> Result[SyftObject, str]:
+        print("self.data", self.data.keys())
         if uid not in self.data:
             return Err(f"UID: {uid} not in {type(self)} store.")
         syft_object = SyftObject.from_mongo(self.data[uid])

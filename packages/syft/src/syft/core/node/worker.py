@@ -142,21 +142,3 @@ class Worker:
         method = self._get_service_method_from_path(_private_api_path)
         result = method(credentials, *api_call.args, **api_call.kwargs)
         return result
-
-        # if api_call.path == "services.user.create":
-        #     result = self.user_collection.create(
-        #         credentials=credentials, **api_call.kwargs
-        #     )
-        #     return result
-        # elif api_call.path == "services.action.set":
-        #     result = self.action_service.set(credentials=credentials, **api_call.kwargs)
-        #     return result
-        # elif api_call.path == "services.action.get":
-        #     result = self.action_service.get(credentials=credentials, **api_call.kwargs)
-        #     return result
-        # elif api_call.path == "services.action.execute":
-        #     result = self.action_service.execute(
-        #         credentials=credentials, **api_call.kwargs
-        #     )
-        #     return result
-        # return Err("Wrong path")
