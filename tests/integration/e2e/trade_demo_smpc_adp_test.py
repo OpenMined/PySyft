@@ -12,7 +12,6 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.adp.data_subject_list import DataSubjectArray
 from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
 
 sy.logger.remove()

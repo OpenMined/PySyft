@@ -9,7 +9,6 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.adp.data_subject_list import DataSubjectArray
 from syft.core.store.proxy_dataset import ProxyDataset
 from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
 from syft.util import size_mb
