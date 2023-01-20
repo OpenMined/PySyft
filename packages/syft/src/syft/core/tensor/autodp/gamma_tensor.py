@@ -37,8 +37,6 @@ from ....core.node.common.action.get_or_set_property_action import (
     GetOrSetPropertyAction,
 )
 from ....core.node.common.action.get_or_set_property_action import PropertyActions
-from ....lib.numpy.array import capnp_deserialize
-from ....lib.numpy.array import capnp_serialize
 from ....lib.python.util import upcast
 from ....util import inherit_tags
 from ...adp.data_subject_ledger import DataSubjectLedger
@@ -48,14 +46,7 @@ from ...adp.data_subject_ledger import DataSubjectLedger
 # from ...adp.data_subject_list import dslarraytonumpyutf8
 # from ...adp.data_subject_list import numpyutf8todslarray
 from ...adp.vectorized_publish import publish
-from ...common.serde.capnp import CapnpModule
-from ...common.serde.capnp import chunk_bytes
-from ...common.serde.capnp import combine_bytes
-from ...common.serde.capnp import get_capnp_schema
-from ...common.serde.capnp import serde_magic_header
-from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
-from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
 from ...node.abstract.node import AbstractNodeClient
 from ...node.common.action.run_class_method_action import RunClassMethodAction
@@ -136,7 +127,7 @@ class TensorWrappedGammaTensorPointer(Pointer):
         "public_shape",
     ]
 
-    __serde_overrides__ = {
+    __serde_overrides__: Dict[str, Sequence[Callable]] = {
         "client": [lambda x: x.address, lambda y: y],
         "public_shape": [lambda x: x, lambda y: upcast(y)],
         # "data_subjects": [dslarraytonumpyutf8, numpyutf8todslarray],
@@ -246,7 +237,7 @@ class TensorWrappedGammaTensorPointer(Pointer):
                 args=pointer_args,
                 kwargs=pointer_kwargs,
                 id_at_location=result_id_at_location,
-                address=self.client.address,
+                address=self.client.node_uid,
             )
             self.client.send_immediate_msg_without_reply(msg=cmd)
 
@@ -378,7 +369,7 @@ class TensorWrappedGammaTensorPointer(Pointer):
                 args=pointer_args,
                 kwargs=pointer_kwargs,
                 id_at_location=result_id_at_location,
-                address=self.client.address,
+                address=self.client.node_uid,
             )
             self.client.send_immediate_msg_without_reply(msg=cmd)
 
@@ -1236,7 +1227,7 @@ class TensorWrappedGammaTensorPointer(Pointer):
                 args=pointer_args,
                 kwargs=pointer_kwargs,
                 id_at_location=result_id_at_location,
-                address=self.client.address,
+                address=self.client.node_uid,
             )
             self.client.send_immediate_msg_without_reply(msg=cmd)
 
@@ -1792,7 +1783,7 @@ class TensorWrappedGammaTensorPointer(Pointer):
             cmd = GetOrSetPropertyAction(
                 path=attr_path_and_name,
                 id_at_location=result_id_at_location,
-                address=self.client.address,
+                address=self.client.node_uid,
                 _self=self,
                 args=pointer_args,
                 kwargs=pointer_kwargs,
@@ -1894,23 +1885,37 @@ def numpy2jax(value: np.array, dtype: np.dtype) -> jnp.array:
 # ATTENTION: Shouldn't this be a subclass of some kind of base tensor so all the numpy
 # methods and properties don't need to be re-implemented on it?
 @dataclass
-@serializable(capnp_bytes=True)
+@serializable(recursive_serde=True)
 class GammaTensor:
+    child: jnp.array
+    jax_op: SyftJaxOp = flax.struct.field(pytree_node=False)
+    sources: dict = flax.struct.field(pytree_node=False)
+    is_linear: bool = False
+    id: str = flax.struct.field(pytree_node=False, default_factory=lambda: UID())
+
+    __attr_allowlist__ = (
+        "child",
+        "jax_op",
+        "sources",
+        "is_linear",
+        "id",
+    )
+
+    @classmethod
+    def serde_constructor(cls, kwargs: Dict[str, Any]) -> GammaTensor:
+        return GammaTensor(**kwargs)
+
     """
     A differential privacy tensor that contains data belonging to atleast 2 or more unique data subjects.
 
     Attributes:
         child: jnp.array
             The private data itself.
-        data_subjects: DataSubjectArray
-            (DP Metadata) A custom NumPy class that keeps track of which data subjects contribute which datapoints in
-            this tensor.
         min_vals: lazyrepeatarray
             (DP Metadata) A custom class that keeps track of (data-independent) minimum values for this tensor.
         max_vals: lazyrepeatarray
             (DP Metadata) A custom class that keeps track of (data-independent) maximum values for this tensor.
-        func_str: str
-            A string that will determine which function was used to build the current tensor.
+        jax_op: SyftJaxOp
         is_linear: bool
             Whether the "func_str" for this tensor is a linear query or not. This impacts the epsilon calculations
             when publishing.
@@ -2686,68 +2691,68 @@ class GammaTensor:
     def dtype(self) -> np.dtype:
         return self.child.dtype
 
-    def _object2bytes(self) -> bytes:
-        # TODO Tudor: fix this
-        schema = get_capnp_schema(schema_file="gamma_tensor.capnp")
+    # def _object2bytes(self) -> bytes:
+    #     # TODO Tudor: fix this
+    #     schema = get_capnp_schema(schema_file="gamma_tensor.capnp")
 
-        gamma_tensor_struct: CapnpModule = schema.GammaTensor  # type: ignore
-        gamma_msg = gamma_tensor_struct.new_message()
-        # this is how we dispatch correct deserialization of bytes
-        gamma_msg.magicHeader = serde_magic_header(type(self))
+    #     gamma_tensor_struct: CapnpModule = schema.GammaTensor  # type: ignore
+    #     gamma_msg = gamma_tensor_struct.new_message()
+    #     # this is how we dispatch correct deserialization of bytes
+    #     gamma_msg.magicHeader = serde_magic_header(type(self))
 
-        # do we need to serde func? if so how?
-        # what about the state dict?
+    #     # do we need to serde func? if so how?
+    #     # what about the state dict?
 
-        if isinstance(self.child, np.ndarray) or np.isscalar(self.child):
-            chunk_bytes(capnp_serialize(np.array(self.child), to_bytes=True), "child", gamma_msg)  # type: ignore
-            gamma_msg.isNumpy = True
-        elif isinstance(self.child, jnp.ndarray):
-            chunk_bytes(
-                capnp_serialize(jax2numpy(self.child, self.child.dtype), to_bytes=True),
-                "child",
-                gamma_msg,
-            )
-            gamma_msg.isNumpy = True
-        else:
-            chunk_bytes(serialize(self.child, to_bytes=True), "child", gamma_msg)  # type: ignore
-            gamma_msg.isNumpy = False
+    #     if isinstance(self.child, np.ndarray) or np.isscalar(self.child):
+    #         chunk_bytes(capnp_serialize(np.array(self.child), to_bytes=True), "child", gamma_msg)  # type: ignore
+    #         gamma_msg.isNumpy = True
+    #     elif isinstance(self.child, jnp.ndarray):
+    #         chunk_bytes(
+    #             capnp_serialize(jax2numpy(self.child, self.child.dtype), to_bytes=True),
+    #             "child",
+    #             gamma_msg,
+    #         )
+    #         gamma_msg.isNumpy = True
+    #     else:
+    #         chunk_bytes(serialize(self.child, to_bytes=True), "child", gamma_msg)  # type: ignore
+    #         gamma_msg.isNumpy = False
 
-        gamma_msg.sources = serialize(self.sources, to_bytes=True)
-        gamma_msg.isLinear = self.is_linear
-        gamma_msg.id = self.id.to_string()
-        gamma_msg.jaxOp = serialize(self.jax_op, to_bytes=True)
+    #     gamma_msg.sources = serialize(self.sources, to_bytes=True)
+    #     gamma_msg.isLinear = self.is_linear
+    #     gamma_msg.id = self.id.to_string()
+    #     gamma_msg.jaxOp = serialize(self.jax_op, to_bytes=True)
 
-        # return gamma_msg.to_bytes_packed()
-        return gamma_msg.to_bytes()
+    #     # return gamma_msg.to_bytes_packed()
+    #     return gamma_msg.to_bytes()
 
-    @staticmethod
-    def _bytes2object(buf: bytes) -> GammaTensor:
-        # TODO Tudor: fix this
-        schema = get_capnp_schema(schema_file="gamma_tensor.capnp")
-        gamma_struct: CapnpModule = schema.GammaTensor  # type: ignore
-        # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
-        MAX_TRAVERSAL_LIMIT = 2**64 - 1
-        # capnp from_bytes is now a context
-        with gamma_struct.from_bytes(
-            buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        ) as gamma_msg:
+    # @staticmethod
+    # def _bytes2object(buf: bytes) -> GammaTensor:
+    #     # TODO Tudor: fix this
+    #     schema = get_capnp_schema(schema_file="gamma_tensor.capnp")
+    #     gamma_struct: CapnpModule = schema.GammaTensor  # type: ignore
+    #     # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
+    #     MAX_TRAVERSAL_LIMIT = 2**64 - 1
+    #     # capnp from_bytes is now a context
+    #     with gamma_struct.from_bytes(
+    #         buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
+    #     ) as gamma_msg:
 
-            if gamma_msg.isNumpy:
-                child = capnp_deserialize(
-                    combine_bytes(gamma_msg.child), from_bytes=True
-                )
-            else:
-                child = deserialize(combine_bytes(gamma_msg.child), from_bytes=True)
+    #         if gamma_msg.isNumpy:
+    #             child = capnp_deserialize(
+    #                 combine_bytes(gamma_msg.child), from_bytes=True
+    #             )
+    #         else:
+    #             child = deserialize(combine_bytes(gamma_msg.child), from_bytes=True)
 
-            state = deserialize(gamma_msg.sources, from_bytes=True)
-            is_linear = gamma_msg.isLinear
-            id_str = UID.from_string(gamma_msg.id)
-            jax_op = deserialize(gamma_msg.jaxOp, from_bytes=True)
+    #         state = deserialize(gamma_msg.sources, from_bytes=True)
+    #         is_linear = gamma_msg.isLinear
+    #         id_str = UID.from_string(gamma_msg.id)
+    #         jax_op = deserialize(gamma_msg.jaxOp, from_bytes=True)
 
-            return GammaTensor(
-                child=child,
-                is_linear=is_linear,
-                sources=state,
-                id=id_str,
-                jax_op=jax_op,
-            )
+    #         return GammaTensor(
+    #             child=child,
+    #             is_linear=is_linear,
+    #             sources=state,
+    #             id=id_str,
+    #             jax_op=jax_op,
+    #         )

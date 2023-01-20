@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-package syft.lib.python;
-
-message Int {
-  int64 data = 1;
-}

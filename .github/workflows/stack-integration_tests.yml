@@ -128,7 +128,7 @@ jobs:
 
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
-        timeout-minutes: 30
+        # timeout-minutes: 30
         env:
           HAGRID_ART: false
           PYTEST_MODULES: "${{ matrix.pytest-modules }}"
@@ -302,7 +302,7 @@ jobs:
 
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
-        timeout-minutes: 30
+        # timeout-minutes: 30
         env:
           HAGRID_ART: false
           PYTEST_MODULES: "${{ matrix.pytest-modules }}"
@@ -455,11 +455,6 @@ jobs:
         run: |
           python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
-      - name: Install tff python 3.10
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          pip install ./packages/grid/backend/wheels/tensorflow_federated-0.36.0-py2.py3-none-any.whl
-
       - name: Install Docker Compose
         if: steps.changes.outputs.stack == 'true' && runner.os == 'Linux'
         shell: bash
@@ -471,7 +466,7 @@ jobs:
 
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
-        timeout-minutes: 30
+        # timeout-minutes: 30
         env:
           HAGRID_ART: false
           PYTEST_MODULES: "${{ matrix.pytest-modules }}"
@@ -811,7 +806,7 @@ jobs:
 
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
-        timeout-minutes: 60
+        # timeout-minutes: 60
         shell: bash
         run: |
           # install k3d

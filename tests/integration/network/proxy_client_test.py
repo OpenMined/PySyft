@@ -40,9 +40,9 @@ def test_domain1_via_network_proxy_client() -> None:
 
     domain_list = network_client.domains.all(pandas=False)
     assert len(domain_list) > 0
-    proxy_client = network_client.domains[domain_client.address.target_id.id]
+    proxy_client = network_client.domains[domain_client.node_uid]
 
-    assert proxy_client.address == domain_client.address
+    assert proxy_client.node_uid == domain_client.node_uid
     assert proxy_client.name == domain_client.name
     assert proxy_client.routes[0] != domain_client.routes[0]
 
@@ -83,9 +83,9 @@ def test_domain2_via_network_proxy_client() -> None:
 
     domain_list = network_client.domains.all(pandas=False)
     assert len(domain_list) > 0
-    proxy_client = network_client.domains[domain_client.address.target_id.id]
+    proxy_client = network_client.domains[domain_client.node_uid]
 
-    assert proxy_client.address == domain_client.address
+    assert proxy_client.node_uid == domain_client.node_uid
     assert proxy_client.name == domain_client.name
     assert proxy_client.routes[0] != domain_client.routes[0]
 

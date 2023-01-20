@@ -2,12 +2,12 @@
 from __future__ import annotations
 
 # stdlib
-from collections.abc import Sequence
 from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Tuple
 from typing import Union
 
@@ -15,7 +15,7 @@ from typing import Union
 import numpy as np
 from numpy.typing import ArrayLike
 from numpy.typing import NDArray
-from scipy.ndimage.interpolation import rotate
+from scipy.ndimage import rotate
 
 # relative
 from .... import lib
@@ -30,18 +30,9 @@ from ....core.node.common.action.get_or_set_property_action import (
     GetOrSetPropertyAction,
 )
 from ....core.node.common.action.get_or_set_property_action import PropertyActions
-from ....lib.numpy.array import capnp_deserialize
-from ....lib.numpy.array import capnp_serialize
 from ....lib.python.util import upcast
 from ....util import inherit_tags
-from ...common.serde.capnp import CapnpModule
-from ...common.serde.capnp import chunk_bytes
-from ...common.serde.capnp import combine_bytes
-from ...common.serde.capnp import get_capnp_schema
-from ...common.serde.capnp import serde_magic_header
-from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
-from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
 from ...node.abstract.node import AbstractNodeClient
 from ...node.common.action.run_class_method_action import RunClassMethodAction
@@ -87,7 +78,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
         "public_shape",
     ]
 
-    __serde_overrides__ = {
+    __serde_overrides__: Dict[str, Sequence[Callable]] = {
         "client": [lambda x: x.address, lambda y: y],
         "public_shape": [lambda x: x, lambda y: upcast(y)],
         "data_subject": [dstonumpyutf8, numpyutf8tods],
@@ -213,7 +204,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
                 args=pointer_args,
                 kwargs=pointer_kwargs,
                 id_at_location=result_id_at_location,
-                address=self.client.address,
+                address=self.client.node_uid,
             )
             self.client.send_immediate_msg_without_reply(msg=cmd)
 
@@ -369,7 +360,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
                 args=pointer_args,
                 kwargs=pointer_kwargs,
                 id_at_location=result_id_at_location,
-                address=self.client.address,
+                address=self.client.node_uid,
             )
             self.client.send_immediate_msg_without_reply(msg=cmd)
 
@@ -1268,7 +1259,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
                 args=pointer_args,
                 kwargs=pointer_kwargs,
                 id_at_location=result_id_at_location,
-                address=self.client.address,
+                address=self.client.node_uid,
             )
             self.client.send_immediate_msg_without_reply(msg=cmd)
 
@@ -1703,7 +1694,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
             cmd = GetOrSetPropertyAction(
                 path=attr_path_and_name,
                 id_at_location=result_id_at_location,
-                address=self.client.address,
+                address=self.client.node_uid,
                 _self=self,
                 args=pointer_args,
                 kwargs=pointer_kwargs,
@@ -1862,10 +1853,10 @@ def ones_like(
 #     return original_func(*map(cast_to_gamma, tensors))
 
 
-@serializable(capnp_bytes=True)
+@serializable(recursive_serde=True)
 class PhiTensor(PassthroughTensor):
     PointerClassOverride = TensorWrappedPhiTensorPointer
-    # __attr_allowlist__ = ["child", "min_vals", "max_vals", "data_subject"]
+    __attr_allowlist__ = ["child", "min_vals", "max_vals", "data_subject", "id"]
     __slots__ = ("child", "min_vals", "max_vals", "data_subject", "id")
 
     def __init__(
@@ -3937,55 +3928,55 @@ class PhiTensor(PassthroughTensor):
             max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
         )
 
-    def _object2bytes(self) -> bytes:
-        schema = get_capnp_schema(schema_file="phi_tensor.capnp")
+    # def _object2bytes(self) -> bytes:
+    #     schema = get_capnp_schema(schema_file="phi_tensor.capnp")
 
-        pt_struct: CapnpModule = schema.PT  # type: ignore
-        pt_msg = pt_struct.new_message()
-        # this is how we dispatch correct deserialization of bytes
-        pt_msg.magicHeader = serde_magic_header(type(self))
+    #     pt_struct: CapnpModule = schema.PT  # type: ignore
+    #     pt_msg = pt_struct.new_message()
+    #     # this is how we dispatch correct deserialization of bytes
+    #     pt_msg.magicHeader = serde_magic_header(type(self))
 
-        if isinstance(self.child, np.ndarray) or np.isscalar(self.child):
-            chunk_bytes(capnp_serialize(np.array(self.child), to_bytes=True), "child", pt_msg)  # type: ignore
-            pt_msg.isNumpy = True
-        else:
-            chunk_bytes(serialize(self.child, to_bytes=True), "child", pt_msg)  # type: ignore
-            pt_msg.isNumpy = False
+    #     if isinstance(self.child, np.ndarray) or np.isscalar(self.child):
+    #         chunk_bytes(capnp_serialize(np.array(self.child), to_bytes=True), "child", pt_msg)  # type: ignore
+    #         pt_msg.isNumpy = True
+    #     else:
+    #         chunk_bytes(serialize(self.child, to_bytes=True), "child", pt_msg)  # type: ignore
+    #         pt_msg.isNumpy = False
 
-        pt_msg.minVals = serialize(self.min_vals, to_bytes=True)
-        pt_msg.maxVals = serialize(self.max_vals, to_bytes=True)
-        pt_msg.dataSubject = serialize(dstonumpyutf8(self.data_subject), to_bytes=True)
-        pt_msg.id = self.id.to_string()
-        # to pack or not to pack?
-        # to_bytes = pt_msg.to_bytes()
+    #     pt_msg.minVals = serialize(self.min_vals, to_bytes=True)
+    #     pt_msg.maxVals = serialize(self.max_vals, to_bytes=True)
+    #     pt_msg.dataSubject = serialize(dstonumpyutf8(self.data_subject), to_bytes=True)
+    #     pt_msg.id = self.id.to_string()
+    #     # to pack or not to pack?
+    #     # to_bytes = pt_msg.to_bytes()
 
-        return pt_msg.to_bytes_packed()
+    #     return pt_msg.to_bytes_packed()
 
-    @staticmethod
-    def _bytes2object(buf: bytes) -> PhiTensor:
-        schema = get_capnp_schema(schema_file="phi_tensor.capnp")
-        pt_struct: CapnpModule = schema.PT  # type: ignore
-        # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
-        MAX_TRAVERSAL_LIMIT = 2**64 - 1
-        # to pack or not to pack?
-        # pt_msg = pt_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
-        pt_msg = pt_struct.from_bytes_packed(
-            buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        )
+    # @staticmethod
+    # def _bytes2object(buf: bytes) -> PhiTensor:
+    #     schema = get_capnp_schema(schema_file="phi_tensor.capnp")
+    #     pt_struct: CapnpModule = schema.PT  # type: ignore
+    #     # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
+    #     MAX_TRAVERSAL_LIMIT = 2**64 - 1
+    #     # to pack or not to pack?
+    #     # pt_msg = pt_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
+    #     pt_msg = pt_struct.from_bytes_packed(
+    #         buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
+    #     )
 
-        if pt_msg.isNumpy:
-            child = capnp_deserialize(combine_bytes(pt_msg.child), from_bytes=True)
-        else:
-            child = deserialize(combine_bytes(pt_msg.child), from_bytes=True)
+    #     if pt_msg.isNumpy:
+    #         child = capnp_deserialize(combine_bytes(pt_msg.child), from_bytes=True)
+    #     else:
+    #         child = deserialize(combine_bytes(pt_msg.child), from_bytes=True)
 
-        min_vals = deserialize(pt_msg.minVals, from_bytes=True)
-        max_vals = deserialize(pt_msg.maxVals, from_bytes=True)
-        data_subject = numpyutf8tods(deserialize(pt_msg.dataSubject, from_bytes=True))
-        id_str = UID.from_string(pt_msg.id)
-        return PhiTensor(
-            child=child,
-            min_vals=min_vals,
-            max_vals=max_vals,
-            data_subject=data_subject,
-            id=id_str,
-        )
+    #     min_vals = deserialize(pt_msg.minVals, from_bytes=True)
+    #     max_vals = deserialize(pt_msg.maxVals, from_bytes=True)
+    #     data_subject = numpyutf8tods(deserialize(pt_msg.dataSubject, from_bytes=True))
+    #     id_str = UID.from_string(pt_msg.id)
+    #     return PhiTensor(
+    #         child=child,
+    #         min_vals=min_vals,
+    #         max_vals=max_vals,
+    #         data_subject=data_subject,
+    #         id=id_str,
+    #     )

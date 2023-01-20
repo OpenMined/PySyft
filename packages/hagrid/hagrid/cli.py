@@ -71,6 +71,7 @@ from .lib import check_jupyter_server
 from .lib import check_login_page
 from .lib import commit_hash
 from .lib import docker_desktop_memory
+from .lib import find_available_port
 from .lib import generate_process_status_table
 from .lib import generate_user_table
 from .lib import gitpod_url
@@ -309,6 +310,12 @@ def clean(location: str) -> None:
     help="Suppress extra launch outputs",
 )
 @click.option(
+    "--trace",
+    required=False,
+    type=str,
+    help="Optional: allow trace to be turned on or off",
+)
+@click.option(
     "--from-template",
     is_flag=True,
     help="Launch node using the manifest template",
@@ -372,10 +379,10 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
                 port = match_port.group().replace("HTTP_PORT=", "")
                 check_status("localhost" + ":" + port)
 
-            node_name = verb.get_named_term_type(name="node_name").snake_input
+            node_name = verb.get_named_term_type(name="node_name").raw_input
             rich.get_console().print(
                 rich.panel.Panel.fit(
-                    f"✨ To view container logs run [bold green]hagrid logs {node_name}[/bold green]\t"
+                    f"🚨🚨🚨 To view container logs run [bold red] hagrid logs {node_name} [/bold red]\t"
                 )
             )
 
@@ -1065,6 +1072,13 @@ def create_launch_cmd(
     parsed_kwargs["silent"] = bool(kwargs["silent"])
     parsed_kwargs["from_template"] = bool(kwargs["from_template"])
 
+    parsed_kwargs["trace"] = False
+    if ("trace" not in kwargs or kwargs["trace"] is None) and parsed_kwargs["dev"]:
+        # default to trace on in dev mode
+        parsed_kwargs["trace"] = True
+    elif "trace" in kwargs:
+        parsed_kwargs["trace"] = str_to_bool(cast(str, kwargs["trace"]))
+
     parsed_kwargs["release"] = "production"
     if "release" in kwargs and kwargs["release"] != "production":
         parsed_kwargs["release"] = kwargs["release"]
@@ -1587,7 +1601,7 @@ def pull_command(cmd: str, kwargs: TypeDict[str, Any]) -> TypeList[str]:
         pull_cmd += " --file docker-compose.yml"
     else:
         pull_cmd += " --file docker-compose.pull.yml"
-    pull_cmd += " pull"
+    pull_cmd += " pull --ignore-pull-failures"  # ignore missing svelte kit for now
     return [pull_cmd]
 
 
@@ -1707,6 +1721,13 @@ def create_launch_docker_cmd(
         ),
     }
 
+    if "trace" in kwargs and kwargs["trace"] is True:
+        envs["TRACE"] = "True"
+        envs["JAEGER_HOST"] = "docker-host"
+        envs["JAEGER_PORT"] = int(
+            find_available_port(host="localhost", port=14268, search=True)
+        )
+
     if "platform" in kwargs and kwargs["platform"] is not None:
         envs["DOCKER_DEFAULT_PLATFORM"] = docker_platform
 
@@ -1763,6 +1784,9 @@ def create_launch_docker_cmd(
     # no frontend container so expect bad gateway on the / route
     if not bool(kwargs["headless"]):
         cmd += " --profile frontend"
+
+    if "trace" in kwargs and kwargs["trace"]:
+        cmd += " --profile telemetry"
 
     # new docker compose regression work around
     # default_env = os.path.expanduser("~/.hagrid/app/.env")
@@ -3379,7 +3403,8 @@ def add_intro_notebook(directory: str, reset: bool = False) -> str:
 @click.command(help="Walk the Path", context_settings={"show_default": True})
 @click.option(
     "--repo",
-    help="Obi-Wan will guide you to Dagobah",
+    default=DEFAULT_REPO,
+    help="Choose a repo to fetch the notebook from or just use OpenMined/PySyft",
 )
 @click.option(
     "--branch",
@@ -3391,12 +3416,11 @@ def add_intro_notebook(directory: str, reset: bool = False) -> str:
     help="Choose a specific commit to fetch the notebook from",
 )
 def dagobah(
-    repo: str,
+    repo: str = DEFAULT_REPO,
     branch: str = DEFAULT_BRANCH,
     commit: Optional[str] = None,
 ) -> None:
-    raise Exception("Obi-Wan will guide you to Dagobah")
-    # return run_quickstart(url="padawan", repo=repo, branch=branch, commit=commit)
+    return run_quickstart(url="padawan", repo=repo, branch=branch, commit=commit)
 
 
 cli.add_command(dagobah)

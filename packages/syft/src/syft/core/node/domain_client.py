@@ -17,14 +17,16 @@ import pandas as pd
 
 # relative
 from ... import __version__
+from ...core.node.new.api import APIRegistry
+from ...core.node.new.api import SyftAPI
 from ...logger import traceback_and_raise
+from ...telemetry import instrument
 from ...util import bcolors
 from ...util import print_dynamic_log
 from ...util import validate_field
 from ..common.message import SyftMessage
 from ..common.serde.serialize import _serialize as serialize  # noqa: F401
 from ..common.uid import UID
-from ..io.address import Address
 from ..io.location import Location
 from ..io.location.specific import SpecificLocation
 from ..io.route import Route
@@ -37,6 +39,7 @@ from .common.action.exception_action import ExceptionMessage
 from .common.client import Client
 from .common.client_manager.association_api import AssociationRequestAPI
 from .common.client_manager.dataset_api import DatasetRequestAPI
+from .common.client_manager.oblv_api import OblvAPI
 from .common.client_manager.role_api import RoleRequestAPI
 from .common.client_manager.user_api import UserRequestAPI
 from .common.client_manager.vpn_api import VPNAPI
@@ -71,6 +74,7 @@ class RequestQueueClient(AbstractNodeClient):
         self.roles = RoleRequestAPI(client=self)
         self.association = AssociationRequestAPI(client=self)
         self.datasets = DatasetRequestAPI(client=self)
+        self.oblv = OblvAPI(client=self)
 
     @property
     def requests(self) -> List[RequestMessage]:
@@ -81,7 +85,7 @@ class RequestQueueClient(AbstractNodeClient):
         )
 
         msg = GetAllRequestsMessage(
-            address=self.client.address, reply_to=self.client.address
+            address=self.client.node_uid, reply_to=self.client.node_uid
         )
 
         requests = self.client.send_immediate_msg_with_reply(msg=msg).requests  # type: ignore
@@ -212,12 +216,12 @@ class RequestQueueClient(AbstractNodeClient):
 
     def _update_handler(self, request_handler: Dict[str, Any], keep: bool) -> None:
         # relative
-        from ..common.node_service.request_handler.request_handler_messages import (
+        from .common.node_service.request_handler.request_handler_messages import (
             UpdateRequestHandlerMessage,
         )
 
         msg = UpdateRequestHandlerMessage(
-            address=self.client.address, handler=request_handler, keep=keep
+            address=self.client.node_uid, handler=request_handler, keep=keep
         )
         self.client.send_immediate_msg_without_reply(msg=msg)
 
@@ -229,12 +233,12 @@ class RequestHandlerQueueClient:
     @property
     def handlers(self) -> List[Dict]:
         # relative
-        from ..common.node_service.request_handler.request_handler_messages import (
+        from .common.node_service.request_handler.request_handler_messages import (
             GetAllRequestHandlersMessage,
         )
 
         msg = GetAllRequestHandlersMessage(
-            address=self.client.address, reply_to=self.client.address
+            address=self.client.node_uid, reply_to=self.client.node_uid
         )
         return validate_field(
             self.client.send_immediate_msg_with_reply(msg=msg), "handlers"
@@ -293,6 +297,7 @@ class RequestHandlerQueueClient:
         return pd.DataFrame(handler_lines)
 
 
+@instrument
 class DomainClient(Client):
 
     domain: SpecificLocation
@@ -300,9 +305,10 @@ class DomainClient(Client):
 
     def __init__(
         self,
+        node_uid: UID,
         name: Optional[str],
         routes: List[Route],
-        domain: SpecificLocation,
+        domain: Optional[SpecificLocation] = None,
         network: Optional[Location] = None,
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
@@ -320,10 +326,10 @@ class DomainClient(Client):
             signing_key=signing_key,
             verify_key=verify_key,
             version=version,
+            node_uid=node_uid,
         )
 
         self.requests = RequestQueueClient(client=self)
-
         self.post_init()
 
         self.users = UserRequestAPI(client=self)
@@ -331,6 +337,7 @@ class DomainClient(Client):
         self.association = AssociationRequestAPI(client=self)
         self.datasets = DatasetRequestAPI(client=self)
         self.vpn = VPNAPI(client=self)
+        self.oblv = OblvAPI(client=self)
 
     def obj_exists(self, obj_id: UID) -> bool:
         msg = DoesObjectExistMessage(obj_id=obj_id)
@@ -338,7 +345,7 @@ class DomainClient(Client):
 
     @property
     def privacy_budget(self) -> float:
-        msg = GetRemainingBudgetMessage(address=self.address, reply_to=self.address)
+        msg = GetRemainingBudgetMessage(address=self.node_uid, reply_to=self.node_uid)
         return self.send_immediate_msg_with_reply(msg=msg).budget  # type: ignore
 
     def request_budget(
@@ -360,7 +367,7 @@ class DomainClient(Client):
         msg = CreateBudgetRequestMessage(
             reason=reason,
             budget=eps,
-            address=self.address,
+            address=self.node_uid,
         )
 
         self.send_immediate_msg_without_reply(msg=msg)
@@ -372,12 +379,12 @@ class DomainClient(Client):
         )
 
     def load(
-        self, obj_ptr: Type[Pointer], address: Address, pointable: bool = False
+        self, obj_ptr: Type[Pointer], address: UID, pointable: bool = False
     ) -> None:
         content = {
-            RequestAPIFields.ADDRESS: serialize(address)
-            .SerializeToString()  # type: ignore
-            .decode(PyGridClientEnums.ENCODING),
+            RequestAPIFields.ADDRESS: serialize(address, to_bytes=True).decode(
+                PyGridClientEnums.ENCODING
+            ),
             RequestAPIFields.UID: str(obj_ptr.id_at_location.value),
             RequestAPIFields.POINTABLE: pointable,
         }
@@ -409,8 +416,8 @@ class DomainClient(Client):
         if content is None:
             content = {}
         # Build Syft Message
-        content[RequestAPIFields.ADDRESS] = self.address
-        content[RequestAPIFields.REPLY_TO] = self.address
+        content[RequestAPIFields.ADDRESS] = self.node_uid
+        content[RequestAPIFields.REPLY_TO] = self.node_uid
         signed_msg = grid_msg(**content).sign(signing_key=self.signing_key)
         # Send to the dest
         response = self.send_immediate_msg_with_reply(msg=signed_msg)
@@ -513,7 +520,7 @@ class DomainClient(Client):
 
     @property
     def id(self) -> UID:
-        return self.domain.id
+        return self.node_uid
 
     @property
     def device(self) -> Optional[Location]:
@@ -580,7 +587,7 @@ class DomainClient(Client):
         skip_checks: bool = False,
         chunk_size: int = 536870912,  # 500 MB
         use_blob_storage: bool = True,
-        **metadata: Dict,
+        **metadata: Any,
     ) -> None:
         # relative
         from ..tensor.autodp.gamma_tensor import GammaTensor
@@ -695,13 +702,11 @@ class DomainClient(Client):
                     # if pref == "n":
                     #     raise Exception("Dataset loading cancelled.")
 
-        # serialize metadata
-        metadata["name"] = bytes(name, "utf-8")  # type: ignore
-        metadata["description"] = bytes(description, "utf-8")  # type: ignore
+        metadata["name"] = name
+        metadata["description"] = description
 
         for k, v in metadata.items():
-            if isinstance(v, str):  # type: ignore
-                metadata[k] = bytes(v, "utf-8")  # type: ignore
+            metadata[k] = v
 
         # blob storage can only be used if domain node has blob storage enabled.
         if not self.settings.get("use_blob_storage", False):
@@ -764,3 +769,12 @@ class DomainClient(Client):
             return response
         except Exception as e:
             raise e
+
+    @property
+    def api(self) -> SyftAPI:
+        if hasattr(self, "_api"):
+            return self._api
+        api = self.routes[0].connection._get_api()
+        APIRegistry.set_api_for(node_uid=self.id, api=api)
+        self._api = api
+        return api

@@ -15,7 +15,6 @@ import torch as th
 
 # relative
 from ...... import deserialize
-from ......util import get_tracer
 from .....common.group import VERIFYALL
 from .....common.message import ImmediateSyftMessageWithReply
 from .....common.uid import UID
@@ -23,7 +22,6 @@ from .....store.storeable_object import StorableObject
 from ....domain_interface import DomainInterface
 from ...exceptions import AuthorizationError
 from ...exceptions import DatasetNotFoundError
-from ...node_table.utils import model_to_json
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
 from ..success_resp_message import SuccessResponseMessage
@@ -36,8 +34,6 @@ from .dataset_manager_messages import GetDatasetsResponse
 from .dataset_manager_messages import UpdateDatasetMessage
 
 ENCODING = "UTF-8"
-
-tracer = get_tracer()
 
 
 def _handle_dataset_creation_grid_ui(
@@ -79,10 +75,10 @@ def _handle_dataset_creation_grid_ui(
             )
             node.store[storable.id] = storable
 
-            node.datasets.add(
+            node.datasets.add_obj(
                 name=item.name,
-                dataset_id=str(dataset_id),
-                obj_id=str(id_at_location.value),
+                dataset_id=dataset_id,
+                obj_id=id_at_location,
                 dtype=df.__class__.__name__,
                 shape=str(tuple(df.shape)),
             )
@@ -91,33 +87,33 @@ def _handle_dataset_creation_grid_ui(
 def _handle_dataset_creation_syft(
     msg: CreateDatasetMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> None:
-    with tracer.start_as_current_span("_handle_dataset_creation_syft"):
-        with tracer.start_as_current_span("deserialization"):
-            result = deserialize(msg.dataset, from_bytes=True)
-        dataset_id = msg.metadata.get("dataset_id")
-        if not dataset_id:
-            dataset_id = node.datasets.register(**msg.metadata)
+    result = deserialize(msg.dataset, from_bytes=True)
+    dataset_id = msg.metadata.get("dataset_id")
+    if not dataset_id:
+        dataset_uid = node.datasets.register(**msg.metadata)
+    else:
+        dataset_uid = UID._check_or_convert(dataset_id)
 
-        for table_name, table in result.items():
-            id_at_location = UID()
-            storable = StorableObject(
-                id=id_at_location,
-                data=table,
-                tags=[f"#{table_name}"],
-                search_permissions={VERIFYALL: None},
-                read_permissions={node.verify_key: node.id, verify_key: None},
-                write_permissions={node.verify_key: node.id, verify_key: None},
-            )
-            with tracer.start_as_current_span("save to DB"):
-                node.store[storable.id] = storable
+    for table_name, table in result.items():
+        id_at_location = UID()
+        storable = StorableObject(
+            id=id_at_location,
+            data=table,
+            tags=[f"#{table_name}"],
+            search_permissions={VERIFYALL: None},
+            read_permissions={node.verify_key: node.id, verify_key: None},
+            write_permissions={node.verify_key: node.id, verify_key: None},
+        )
 
-            node.datasets.add(
-                name=table_name,
-                dataset_id=str(dataset_id),
-                obj_id=str(id_at_location.value),
-                dtype=str(getattr(table, "dtype", type(table).__name__)),
-                shape=str(table.shape),
-            )
+        node.store[storable.id] = storable
+
+        node.datasets.add_obj(
+            name=table_name,
+            dataset_id=dataset_uid,
+            obj_id=id_at_location,
+            dtype=str(getattr(table, "dtype", type(table).__name__)),
+            shape=str(table.shape),
+        )
 
 
 def create_dataset_msg(
@@ -150,10 +146,10 @@ def get_dataset_metadata_msg(
     ds, objs = node.datasets.get(msg.dataset_id)
     if not ds:
         raise DatasetNotFoundError
-    dataset_json = model_to_json(ds)
+    dataset_json = ds.to_dict()
     # these types seem broken
     dataset_json["data"] = [
-        {"name": obj.name, "id": obj.obj, "dtype": obj.dtype, "shape": obj.shape}  # type: ignore
+        {"name": obj.name, "id": obj.obj_id.to_string(), "dtype": obj.dtype, "shape": obj.shape}  # type: ignore
         for obj in objs
     ]
     return GetDatasetResponse(
@@ -169,13 +165,13 @@ def get_all_datasets_metadata_msg(
 ) -> GetDatasetsResponse:
     datasets = []
     for dataset in node.datasets.all():
-        ds = model_to_json(dataset)
+        ds = dataset.to_dict()
         _, objs = node.datasets.get(dataset.id)
         # these types seem broken
         ds["data"] = [
             {
                 "name": obj.name,  # type: ignore
-                "id": obj.obj,  # type: ignore
+                "id": obj.obj_id.to_string(),  # type: ignore
                 "dtype": obj.dtype,  # type: ignore
                 "shape": obj.shape,  # type: ignore
             }
@@ -197,7 +193,7 @@ def update_dataset_msg(
     _allowed = node.users.can_upload_data(verify_key=verify_key)
     if _allowed:
         metadata = {
-            key: msg.metadata[key].upcast()
+            key: msg.metadata[key]
             for (key, value) in msg.metadata.items()
             if msg.metadata[key] is not None
         }
@@ -232,7 +228,7 @@ def delete_dataset_msg(
                 raise DatasetNotFoundError
             # Delete all the bin objects related to the dataset
             for obj in objs:
-                node.store.delete(UID(obj.obj))  # type: ignore
+                node.store.delete(obj.obj_id)  # type: ignore
 
             node.datasets.delete(id=msg.dataset_id)
     else:

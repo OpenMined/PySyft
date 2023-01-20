@@ -74,6 +74,8 @@
 
 #     assert res
 
+#     # It should for the GCBatched to delete all the cached to-delete objs
+#     client.gc.gc_strategy = GCSimple()
 
 # def test_gc_batched_delete_at_change() -> None:
 #     node = sy.VirtualMachine(name="alice")

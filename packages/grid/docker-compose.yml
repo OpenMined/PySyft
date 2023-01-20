@@ -65,26 +65,23 @@ services:
       - HTTP_PORT=${HTTP_PORT}
       - HTTPS_PORT=${HTTPS_PORT}
 
-  db:
+  svelte:
     restart: always
-    image: postgres:12
-    volumes:
-      - app-db-data:/var/lib/postgresql/data
+    image: "${DOCKER_IMAGE_SVELTE?Variable not set}:${VERSION-latest}"
+    profiles:
+      - frontend
+    depends_on:
+      - proxy
     environment:
-      - SERVICE_NAME=db
+      - SERVICE_NAME=frontend
       - RELEASE=${RELEASE:-production}
-    env_file:
-      - .env
-    command:
-      - postgres
-      - --max_connections=1000 # default 100
-      # - --shared_buffers=8GB # 32 MB
-      # - --temp_buffers=8GB # default 8 MB
-      # - --work_mem=8GB # default 4 MB
-      # - --effective_io_concurrency=8 # default 1
-      # - --block_size=16384 # default 8192
-      # - --max_files_per_process=1000 # default 1000
-      # - --segment_size=8GB # default 1GB # cant change
+      - NODE_TYPE=${NODE_TYPE?Variable not set}
+      - VERSION=${VERSION}
+      - VERSION_HASH=${VERSION_HASH}
+      - HTTP_PORT=${HTTP_PORT}
+      - HTTPS_PORT=${HTTPS_PORT}
+    ports:
+      - "3000"
 
   redis:
     restart: always
@@ -112,7 +109,6 @@ services:
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
     depends_on:
       - proxy
-      - db
     env_file:
       - .env
     environment:
@@ -129,16 +125,21 @@ services:
       - HTTPS_PORT=${HTTPS_PORT}
       - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
       - CONTAINER_HOST=${CONTAINER_HOST}
+      - TRACE=${TRACE}
+      - JAEGER_HOST=${JAEGER_HOST}
+      - JAEGER_PORT=${JAEGER_PORT}
       - ASSOCIATION_TIMEOUT=${ASSOCIATION_TIMEOUT}
+      - DEV_MODE=${DEV_MODE}
     command: /start.sh
     network_mode: service:proxy
+    volumes:
+      - credentials-data:/credentials
 
   backend_stream:
     restart: always
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
     depends_on:
       - proxy
-      - db
     env_file:
       - .env
     environment:
@@ -156,15 +157,20 @@ services:
       - HTTPS_PORT=${HTTPS_PORT}
       - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
       - CONTAINER_HOST=${CONTAINER_HOST}
+      - TRACE=${TRACE}
+      - JAEGER_HOST=${JAEGER_HOST}
+      - JAEGER_PORT=${JAEGER_PORT}
+      - DEV_MODE=${DEV_MODE}
     command: "/start.sh"
     network_mode: service:proxy
+    volumes:
+      - credentials-data:/credentials
 
   celeryworker:
     restart: always
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
     depends_on:
       - proxy
-      - db
       - queue
     env_file:
       - .env
@@ -184,8 +190,14 @@ services:
       - CONTAINER_HOST=${CONTAINER_HOST}
       - NETWORK_CHECK_INTERVAL=${NETWORK_CHECK_INTERVAL}
       - DOMAIN_CHECK_INTERVAL=${DOMAIN_CHECK_INTERVAL}
+      - TRACE=${TRACE}
+      - JAEGER_HOST=${JAEGER_HOST}
+      - JAEGER_PORT=${JAEGER_PORT}
+      - DEV_MODE=${DEV_MODE}
     command: "/worker-start.sh"
     network_mode: service:proxy
+    volumes:
+      - credentials-data:/credentials
 
   headscale:
     profiles:
@@ -216,12 +228,43 @@ services:
       - ./seaweedfs/s3config.json:/etc/s3config.json
       - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml
 
+  mongo:
+    image: mongo:latest
+    restart: always
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+    ports:
+      - "27017"
+    volumes:
+      - mongo-data:/data/db
+
+  jaeger:
+    profiles:
+      - telemetry
+    image: jaegertracing/all-in-one:1.37
+    environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=9411
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "${JAEGER_PORT}:14268" # http collector
+      - "16686" # ui
+      # - "6831:6831/udp"
+      # - "6832:6832/udp"
+      # - "5778:5778"
+      # - "4317:4317"
+      # - "4318:4318"
+      # - "14250:14250"
+      # - "14269:14269"
+      # - "9411:9411"
+
 volumes:
-  app-db-data:
+  credentials-data:
   tailscale-data:
   headscale-data:
   app-redis-data:
   seaweedfs-data:
+  mongo-data:
 
 networks:
   traefik-public:

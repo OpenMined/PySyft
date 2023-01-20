@@ -58,7 +58,7 @@ class NetworkSearchService(ImmediateNodeServiceWithReply):
             node_row = node.node.first(node_uid=node_id.no_dash)  # type: ignore
             if node_row:
                 peer_routes += node_id_to_peer_route_metadata(
-                    node=node, node_row=node_row  # type: ignore
+                    node_document=node_row  # type: ignore
                 )
 
         return NetworkSearchResponse(

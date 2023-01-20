@@ -196,8 +196,8 @@ def upload_to_s3_using_presigned(
             "filename": f"{dataset_name}/{asset_name}",
             "file_size": file_size,
             "chunk_size": chunk_size,
-            "address": client.address,
-            "reply_to": client.address,
+            "address": client.node_uid,
+            "reply_to": client.node_uid,
         },
     )
 
