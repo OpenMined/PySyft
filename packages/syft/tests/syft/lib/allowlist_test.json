@@ -2710,15 +2710,10 @@
       },
       "requires_grad_": {
         "profile": "default",
-        "inputs": [null, true, false],
-        "not_available": [
+        "skip": [
           {
-            "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
-            "lte_version": "1.13.1"
-          },
-          {
-            "data_types": ["float16"],
-            "lte_version": "1.5.1"
+            "lte_version": "1.13.1",
+            "reason": "serde issue"
           }
         ]
       },
@@ -3393,12 +3388,10 @@
       },
       "backward": {
         "profile": "default",
-        "inputs": ["self"],
-        "return_type": "syft.lib.python._SyNone",
-        "not_available": [
+        "skip": [
           {
-            "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
-            "lte_version": "1.13.1"
+            "lte_version": "1.13.1",
+            "reason": "serde issue"
           }
         ]
       },
@@ -5822,18 +5815,10 @@
       },
       "retain_grad": {
         "profile": "tensor_method_noinput",
-        "tensors": ["tensor_scalar"],
-        "return_type": "syft.lib.python._SyNone",
-        "not_available": [
+        "skip": [
           {
-            "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
-            "lte_version": "1.7.1",
-            "reason": "no_cpu"
-          },
-          {
-            "data_types": ["bool", "uint8", "int8", "int16", "int32", "int64"],
             "lte_version": "1.13.1",
-            "gte_version": "1.8.0"
+            "reason": "serde issue"
           }
         ]
       },

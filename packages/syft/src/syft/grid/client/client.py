@@ -88,7 +88,7 @@ def login(
 ) -> Client:
 
     retry = 5 if retry is None else retry  # Default to 5 retries
-    timeout = 10 if timeout is None else timeout  # Default to 10 seconds
+    timeout = 30 if timeout is None else timeout  # Default to 10 seconds
 
     if password == "changethis":  # nosec
 
