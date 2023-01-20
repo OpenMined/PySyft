@@ -129,6 +129,7 @@ jobs:
           EMULATION="true" HAGRID_FLAGS="--tag=local --test --platform linux/arm64" tox -e stack.test.integration
 
       - name: Run log collector
+        timeout-minutes: 5
         if: failure()
         shell: bash
         run: |
