@@ -9,7 +9,6 @@ from syft.core.io.route import RouteSchema
 from syft.core.io.route import SoloRoute
 from syft.core.io.virtual import VirtualClientConnection
 from syft.core.io.virtual import VirtualServerConnection
-from syft.core.node.common.node import Node
 
 # relative
 from .utils_test import MockNode
@@ -43,7 +42,7 @@ def test_solo_route_init() -> None:
     """
     # Test SoloRoute with VirtualClientConnection (ClientConnection) in constructor
     destination = SpecificLocation()
-    virtual_server = VirtualServerConnection(node=Node())
+    virtual_server = VirtualServerConnection(node=MockNode())
     virtual_client = VirtualClientConnection(server=virtual_server)
     h_solo = SoloRoute(destination=destination, connection=virtual_client)
 
@@ -57,7 +56,7 @@ def test_broadcast_route_init() -> None:
     ClientConnection passed into its constructor.
     """
     destination = SpecificLocation()
-    virtual_server = VirtualServerConnection(node=Node())
+    virtual_server = VirtualServerConnection(node=MockNode())
     virtual_client = VirtualClientConnection(server=virtual_server)
     b_route = BroadcastRoute(destination=destination, connection=virtual_client)
 
@@ -115,7 +114,7 @@ def test_solo_route_send_immediate_msg_with_reply() -> None:
 
     h_solo = SoloRoute(destination=destination, connection=connection)
     msg = construct_dummy_message(SignedImmediateSyftMessageWithReply)
-    ret = h_solo.send_immediate_msg_with_reply(msg)
+    ret = h_solo.send_immediate_msg_with_reply(msg=msg)
 
     assert isinstance(
         ret,

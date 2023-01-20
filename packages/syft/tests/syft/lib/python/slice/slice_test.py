@@ -102,6 +102,29 @@ class SliceTest(unittest.TestCase):
         self.assertNotEqual(s1.value, (1, 2, 3))
         self.assertNotEqual(s1, "")
 
+        # Check if PySyft's Slice object gives the same cmp results as python slice object.
+        # Check __lt__
+        assert (s1.value < s2.value) == (s1 < s2)
+
+        # Check __gt__
+        assert (s1.value > s2.value) == (s1 > s2)
+
+        # Check __ne__
+        assert (s1.value != s2.value) == (s1 != s2)
+
+        # Check __ge__
+        assert (s1.value >= s2.value) == (s1 >= s2)
+
+        # Check __le__
+        assert (s1.value <= s2.value) == (s1 <= s2)
+
+        # Check if Slice against slice can retrieve proper boolean return
+        std_slice = slice(1, 2, 3)
+
+        assert std_slice == s1
+
+        assert std_slice != s3
+
         class Exc(Exception):
             pass
 
@@ -123,6 +146,12 @@ class SliceTest(unittest.TestCase):
         s2 = Slice(1, 2, BadCmp())
         self.assertEqual(s1, s1)
         self.assertRaises(Exc, lambda: s1.value == s2.value)
+
+    def test_upcast(self):
+        python_s1 = slice(1, 2, 3)
+        pysyft_s1 = Slice(1, 2, 3)
+
+        assert pysyft_s1.upcast() == python_s1
 
     def test_members(self):
         s = Slice(1)
@@ -197,8 +226,8 @@ class SliceTest(unittest.TestCase):
         # values exceeding sys.maxsize (see issue #14794).
         vals = [
             None,
-            -(2 ** 100),
-            -(2 ** 30),
+            -(2**100),
+            -(2**30),
             -53,
             -7,
             -1,
@@ -206,10 +235,10 @@ class SliceTest(unittest.TestCase):
             1,
             7,
             53,
-            2 ** 30,
-            2 ** 100,
+            2**30,
+            2**100,
         ]
-        lengths = [0, 1, 7, 53, 2 ** 30, 2 ** 100]
+        lengths = [0, 1, 7, 53, 2**30, 2**100]
         for slice_args in itertools.product(vals, repeat=3):
             s = Slice(*slice_args)
             for length in lengths:

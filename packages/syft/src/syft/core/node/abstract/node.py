@@ -8,6 +8,7 @@ from typing import Set
 # third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+from pydantic import BaseSettings
 
 # relative
 from ....logger import traceback_and_raise
@@ -25,6 +26,7 @@ class AbstractNodeClient(Address):
     # TODO: remove hacky in_memory_client_registry
     in_memory_client_registry: Dict[Any, Any]
     signing_key: SigningKey
+    verify_key: VerifyKey
     """"""
 
     @property
@@ -35,7 +37,9 @@ class AbstractNodeClient(Address):
     def send_immediate_msg_without_reply(self, msg: Any) -> Any:
         raise NotImplementedError
 
-    def send_immediate_msg_with_reply(self, msg: Any) -> Any:
+    def send_immediate_msg_with_reply(
+        self, msg: Any, timeout: Optional[float] = None, return_signed: bool = False
+    ) -> Any:
         raise NotImplementedError
 
 
@@ -45,10 +49,12 @@ class AbstractNode(Address):
     signing_key: Optional[SigningKey]
     verify_key: Optional[VerifyKey]
     root_verify_key: VerifyKey
+    guest_signing_key_registry: Set[SigningKey]
     guest_verify_key_registry: Set[VerifyKey]
     admin_verify_key_registry: Set[VerifyKey]
     cpl_ofcr_verify_key_registry: Set[VerifyKey]
     acc: Optional[Any]
+    settings: BaseSettings
 
     # TODO: remove hacky in_memory_client_registry
     in_memory_client_registry: Dict[Any, Any]
@@ -62,10 +68,12 @@ class AbstractNode(Address):
         domain: Optional[Location] = None,
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
+        settings: Optional[BaseSettings] = None,
     ):
         super().__init__(
             name=name, network=network, domain=domain, device=device, vm=vm
         )
+        self.settings = settings
 
     store: ObjectStore
     requests: List

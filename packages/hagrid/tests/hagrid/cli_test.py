@@ -1,4 +1,5 @@
 # stdlib
+from collections import defaultdict
 from typing import List
 from typing import Tuple
 
@@ -18,10 +19,14 @@ def test_hagrid_launch() -> None:
     verb = cli.get_launch_verb()
     grammar = cli.parse_grammar(args=tuple(args), verb=verb)
     verb.load_grammar(grammar=grammar)
-    cmd = cli.create_launch_cmd(verb=verb, kwargs={}, ignore_docker_version_check=True)
+    cmd = cli.create_launch_cmd(
+        verb=verb, kwargs=defaultdict(lambda: None), ignore_docker_version_check=True
+    )
+
+    cmd = cmd["Launching"][0]  # type: ignore
 
     # check that it's a domain by default
-    assert "NODE_TYPE=domain" in cmd
+    assert "NODE_TYPE=domain" in cmd or "NODE_TYPE='domain'" in cmd
 
     # check that the node has a name
     assert "DOMAIN_NAME=" in cmd
@@ -54,10 +59,13 @@ def test_hagrid_launch_without_name_with_preposition() -> None:
     verb = cli.get_launch_verb()
     grammar = cli.parse_grammar(args=tuple(args), verb=verb)
     verb.load_grammar(grammar=grammar)
-    cmd = cli.create_launch_cmd(verb=verb, kwargs={}, ignore_docker_version_check=True)
+    cmd = cli.create_launch_cmd(
+        verb=verb, kwargs=defaultdict(lambda: None), ignore_docker_version_check=True
+    )
 
+    cmd = cmd["Launching"][0]  # type: ignore
     # check that it's a domain by default
-    assert "NODE_TYPE=domain" in cmd
+    assert "NODE_TYPE=domain" in cmd or "NODE_TYPE='domain'" in cmd
 
     # check that the node has a name
     assert "DOMAIN_NAME=" in cmd
@@ -90,15 +98,17 @@ def test_launch_with_multiword_domain_name() -> None:
     verb = cli.get_launch_verb()
     grammar = cli.parse_grammar(args=tuple(args), verb=verb)
     verb.load_grammar(grammar=grammar)
-    cmd = cli.create_launch_cmd(verb=verb, kwargs={}, ignore_docker_version_check=True)
+    cmd = cli.create_launch_cmd(
+        verb=verb, kwargs=defaultdict(lambda: None), ignore_docker_version_check=True
+    )
 
-    print(cmd)
+    cmd = cmd["Launching"][0]  # type: ignore
 
     # check that it's a domain by default
-    assert "NODE_TYPE=domain" in cmd
+    assert "NODE_TYPE=domain" in cmd or "NODE_TYPE='domain'" in cmd
 
     # check that the node has a name
-    assert 'DOMAIN_NAME="united_nations"' in cmd
+    assert "DOMAIN_NAME=united_nations" in cmd or "DOMAIN_NAME='united_nations'" in cmd
 
     # check that tail is on by default
     assert " -d " not in cmd
@@ -114,15 +124,20 @@ def test_launch_with_longer_multiword_domain_name() -> None:
     verb = cli.get_launch_verb()
     grammar = cli.parse_grammar(args=tuple(args), verb=verb)
     verb.load_grammar(grammar=grammar)
-    cmd = cli.create_launch_cmd(verb=verb, kwargs={}, ignore_docker_version_check=True)
+    cmd = cli.create_launch_cmd(
+        verb=verb, kwargs=defaultdict(lambda: None), ignore_docker_version_check=True
+    )
 
-    print(cmd)
+    cmd = cmd["Launching"][0]  # type: ignore
 
     # check that it's a domain by default
-    assert "NODE_TYPE=domain" in cmd
+    assert "NODE_TYPE=domain" in cmd or "NODE_TYPE='domain'" in cmd
 
     # check that the node has a name
-    assert 'DOMAIN_NAME="united_states_of_america"' in cmd
+    assert (
+        "DOMAIN_NAME=united_states_of_america" in cmd
+        or "DOMAIN_NAME='united_states_of_america'" in cmd
+    )
 
     # check that tail is on by default
     assert " -d " not in cmd
@@ -138,15 +153,17 @@ def test_launch_with_longer_multiword_domain_name_with_preposition() -> None:
     verb = cli.get_launch_verb()
     grammar = cli.parse_grammar(args=tuple(args), verb=verb)
     verb.load_grammar(grammar=grammar)
-    cmd = cli.create_launch_cmd(verb=verb, kwargs={}, ignore_docker_version_check=True)
+    cmd = cli.create_launch_cmd(
+        verb=verb, kwargs=defaultdict(lambda: None), ignore_docker_version_check=True
+    )
 
-    print(cmd)
+    cmd = cmd["Launching"][0]  # type: ignore
 
     # check that it's a domain by default
-    assert "NODE_TYPE=domain" in cmd
+    assert "NODE_TYPE=domain" in cmd or "NODE_TYPE='domain'" in cmd
 
     # check that the node has a name
-    assert 'DOMAIN_NAME="united_nations"' in cmd
+    assert "DOMAIN_NAME=united_nations" in cmd or "DOMAIN_NAME='united_nations'" in cmd
 
     # check that tail is on by default
     assert " -d " not in cmd

@@ -31,8 +31,8 @@ class GetRemainingBudgetService(ImmediateNodeServiceWithReply):
 
         try:
 
-            result = node.acc.get_remaining_budget(  # type: ignore
-                user_key=verify_key, returned_epsilon_is_private=False
+            result = node.users.get_budget_for_user(  # type: ignore
+                verify_key=verify_key
             )
 
             return GetRemainingBudgetReplyMessage(budget=result, address=msg.address)

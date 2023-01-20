@@ -19,7 +19,7 @@ if bind_env:
 else:
     use_bind = f"{host}:{port}"
 
-cores = multiprocessing.cpu_count()
+cores = min(multiprocessing.cpu_count(), 32)
 workers_per_core = float(workers_per_core_str)
 default_web_concurrency = workers_per_core * cores
 if web_concurrency_str:

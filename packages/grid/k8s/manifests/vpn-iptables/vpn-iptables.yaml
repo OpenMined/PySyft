@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: vpn-iptables
+  labels:
+    app: vpn-iptables
+    version: v1
+
+spec:
+  selector:
+    matchLabels:
+      name: vpn-iptables
+  template:
+    metadata:
+      labels:
+        name: vpn-iptables
+    spec:
+      hostNetwork: true
+      containers:
+        - name: vpn-iptables
+          securityContext:
+            privileged: true
+          # image: k3d-registry.localhost:12345/openmined/grid-vpn-iptables
+          image: openmined/grid-vpn-iptables
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c", "/iptables.sh"]
+          # command: ["sleep", "999999"]
+          resources:
+            requests:
+              cpu: 5m
+              memory: 10Mi

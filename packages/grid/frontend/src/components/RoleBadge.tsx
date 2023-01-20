@@ -1,6 +1,6 @@
-import {Badge} from '@/omui'
+import { Badge } from '@/omui'
 
-function RoleBadge({role}: {role: string}) {
+function RoleBadge({ role }: { role: string }) {
   return (
     <Badge variant="primary" type="subtle" className="self-center">
       {role}
@@ -8,4 +8,4 @@ function RoleBadge({role}: {role: string}) {
   )
 }
 
-export {RoleBadge}
+export { RoleBadge }

@@ -9,7 +9,12 @@ export default function Status() {
       </Head>
       <article className="pt-4 w-full flex justify-center flex-col items-center">
         <div className="center">
-          <img alt="PyGrid logo" src="/assets/logo.png" width={200} height={200} />
+          <img
+            alt="PyGrid logo"
+            src="/assets/logo.png"
+            width={200}
+            height={200}
+          />
         </div>
         <div className="my-8">
           <p className="capitalize">
@@ -19,7 +24,8 @@ export default function Status() {
             Version <strong>{process.env.NEXT_PUBLIC_VERSION}</strong>
           </p>
           <p>
-            Version (hash) <strong>{process.env.NEXT_PUBLIC_VERSION_HASH}</strong>
+            Version (hash){' '}
+            <strong>{process.env.NEXT_PUBLIC_VERSION_HASH}</strong>
           </p>
         </div>
       </article>

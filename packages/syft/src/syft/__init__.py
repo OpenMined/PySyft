@@ -26,6 +26,8 @@ Syft "python" functionality includes the following modules:
 To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
 
+__version__ = "0.7.0"
+
 # stdlib
 from pathlib import Path
 import sys
@@ -37,32 +39,40 @@ from pkg_resources import get_distribution  # noqa: F401
 
 # relative
 # Package Imports
+from . import filterwarnings  # noqa: F401
+from . import jax_settings  # noqa: F401
 from . import lib  # noqa: F401
 from . import logger  # noqa: F401
 
 # ASTRACT OBJECT IMPORTS
 from .core import common  # noqa: F401
+from .core.adp.data_subject_list import DataSubjectArray  # noqa: F401
+from .core.adp.data_subject_list import DataSubjectList  # noqa: F401
 
 # Convenience Methods
 from .core.common.serde.deserialize import _deserialize as deserialize  # noqa: F401
 from .core.common.serde.serialize import _serialize as serialize  # noqa: F401
+
+# TFF
+from .core.node.common.node_service import tff  # noqa: F401
 from .core.node.common.node_service.testing_services.repr_service import (  # noqa: F401
     ReprMessage,
 )
-from .core.node.device.device import Device  # noqa: F401
-from .core.node.device.device import DeviceClient  # noqa: F401
-from .core.node.domain.domain import Domain  # noqa: F401
-from .core.node.domain.domain import DomainClient  # noqa: F401
-from .core.node.network.network import Network  # noqa: F401
-from .core.node.network.network import NetworkClient  # noqa: F401
+from .core.node.device import Device  # noqa: F401
+from .core.node.device_client import DeviceClient  # noqa: F401
+from .core.node.domain import Domain  # noqa: F401
+from .core.node.domain import DomainClient  # noqa: F401
+from .core.node.network import Network  # noqa: F401
+from .core.node.network_client import NetworkClient  # noqa: F401
 
 # Convenience Constructors
-from .core.node.vm.vm import VirtualMachine  # noqa: F401
-from .core.node.vm.vm import VirtualMachineClient  # noqa: F401
+from .core.node.vm import VirtualMachine  # noqa: F401
+from .core.node.vm_client import VirtualMachineClient  # noqa: F401
 from .core.tensor import autodp  # noqa: F401
-from .core.tensor import autograd  # noqa: F401
-from .core.tensor.autodp import row_entity_phi  # noqa: F401
-from .core.tensor.autodp import single_entity_phi  # noqa: F401
+from .core.tensor import nn  # noqa: F401
+from .core.tensor.autodp.gamma_tensor import GammaTensor  # noqa: F401
+from .core.tensor.autodp.phi_tensor import PhiTensor  # noqa: F401
+from .core.tensor.lazy_repeat_array import lazyrepeatarray  # noqa: F401
 from .core.tensor.tensor import Tensor  # noqa: F401
 from .experimental_flags import flags  # noqa: F401
 from .grid.client.client import connect  # noqa: F401
@@ -74,32 +84,16 @@ from .lib import lib_ast  # noqa: F401
 from .lib import load  # noqa: F401
 from .lib import load_lib  # noqa: F401
 from .registry import NetworkRegistry  # noqa: F401
+from .user_settings import UserSettings  # noqa: F401
+from .user_settings import settings  # noqa: F401
+from .version_compare import make_requires
 
-if sys.version_info[:2] >= (3, 8):
-    # TODO: Import directly (no need for conditional) when `python_requires = >= 3.8`
-    # stdlib
-    from importlib.metadata import PackageNotFoundError  # pragma: no cover
-    from importlib.metadata import version
-else:
-    # third party
-    from importlib_metadata import PackageNotFoundError  # pragma: no cover
-    from importlib_metadata import version
-
-try:
-    # Change here if project is renamed and does not equal the package name
-    dist_name = __name__
-    __version__ = version(dist_name)
-except PackageNotFoundError:  # pragma: no cover
-    __version__ = "unknown"
-finally:
-    del version, PackageNotFoundError
+LATEST_STABLE_SYFT = "0.7"
+requires = make_requires(LATEST_STABLE_SYFT, __version__)
 
 sys.path.append(str(Path(__file__)))
 
-logger.add(sink=sys.stderr, level="CRITICAL")
-
-# TODO: https://github.com/OpenMined/PySyft/issues/5930
-flags._APACHE_ARROW_TENSOR_SERDE = False
+logger.start()
 
 
 def module_property(func: Any) -> None:
@@ -125,3 +119,8 @@ def module_property(func: Any) -> None:
 @module_property
 def _networks() -> NetworkRegistry:
     return NetworkRegistry()
+
+
+@module_property
+def _settings() -> UserSettings:
+    return settings

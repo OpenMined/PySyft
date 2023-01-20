@@ -13,13 +13,12 @@ import pandas as pd
 
 # relative
 from ..... import deserialize
-from .....core.tensor.autodp.adp_tensor import ADPTensor
 from .....core.tensor.tensor import Tensor
 from ....common import UID
 from ....common.serde.serialize import _serialize as serialize  # noqa: F401
 from ...abstract.node import AbstractNodeClient
-from ...domain.enums import RequestAPIFields
-from ...domain.enums import ResponseObjectEnum
+from ...enums import RequestAPIFields
+from ...enums import ResponseObjectEnum
 from ..node_service.dataset_manager.dataset_manager_messages import CreateDatasetMessage
 from ..node_service.dataset_manager.dataset_manager_messages import DeleteDatasetMessage
 from ..node_service.dataset_manager.dataset_manager_messages import GetDatasetMessage
@@ -123,6 +122,42 @@ class DatasetRequestAPI(RequestAPI):
     def create_syft(self, **kwargs: Any) -> None:
         super().create(**kwargs)
 
+    def delete(self, dataset_id: str, skip_checks: bool = False) -> None:  # type: ignore
+
+        if not skip_checks:
+            pref = input(
+                f"You are about to delete the dataset with id `{dataset_id}`? 🚨 \n"
+                "All information related to this dataset will be permanently deleted.\n"
+                "Please enter y/n to proceed: "
+            )
+            while pref != "y" and pref != "n":
+                pref = input(f"Invalid input '{pref}', please specify 'y' or 'n'.")
+            if pref == "n":
+                print("Dataset deletion is cancelled.")
+                return
+
+        super().delete(dataset_id=dataset_id)
+        print("Dataset is successfully deleted. ✅")
+
+    def del_asset(
+        self, dataset_id: str, asset_id: str, skip_checks: bool = False
+    ) -> None:
+
+        if not skip_checks:
+            pref = input(
+                f"You are about to delete asset with id: {asset_id} in the dataset with id `{dataset_id}`? 🚨 \n"
+                "All information related to this asset will be permanently deleted.\n"
+                "Please enter y/n to proceed: "
+            )
+            while pref != "y" and pref != "n":
+                pref = input(f"Invalid input '{pref}', please specify 'y' or 'n'.")
+            if pref == "n":
+                sys.stdout.write("Asset deletion is cancelled.")
+                return
+
+        super().delete(dataset_id=dataset_id, bin_object_id=asset_id)
+        print("Asset is successfully deleted. ✅")
+
     def create_grid_ui(self, path: str, **kwargs) -> Dict[str, str]:  # type: ignore
         response = self.node.conn.send_files(  # type: ignore
             "/datasets", path, form_name="metadata", form_values=kwargs
@@ -133,7 +168,7 @@ class DatasetRequestAPI(RequestAPI):
         result = [
             content
             for content in self.perform_api_request(
-                syft_msg=self._get_all_message
+                syft_msg=self._get_all_message, timeout=1
             ).metadatas
         ]
 
@@ -169,10 +204,26 @@ class DatasetRequestAPI(RequestAPI):
     def all_as_datasets(self) -> List[Any]:
         a = self.all()
         out = list()
-        for key, d in enumerate(a):
+        for key, _ in enumerate(a):
             raw = a[key : key + 1]  # noqa: E203
             out.append(Dataset(raw, self.client, key=key, **a[key]))
         return out
+
+    def purge(self, skip_check: bool = False) -> None:
+        if not skip_check:
+            pref = input(
+                "You are about to delete all datasets ? 🚨 \n"
+                "All information will be permanently deleted.\n"
+                "Please enter y/n to proceed: "
+            )
+            while pref != "y" and pref != "n":
+                pref = input("Invalid input '" + pref + "', please specify 'y' or 'n'.")
+            if pref == "n":
+                print("Datasets deletion is cancelled.")
+                return None
+
+        for dataset in self.all():
+            self.delete(dataset_id=dataset.get("id"), skip_checks=True)
 
     def __len__(self) -> int:
         return len(self.all())
@@ -188,16 +239,17 @@ class DatasetRequestAPI(RequestAPI):
         dataset_name = dataset.get("name", "")
 
         pref = input(
-            f"You are about to delete the `{dataset_name}` ? 🚨 \n"
-            "All information related to this dataset will be permanantely deleted.\n"
+            f"You are about to delete the `{dataset_name}` dataset? 🚨 \n"
+            "All information related to this dataset will be permanently deleted.\n"
             "Please enter y/n to proceed: "
         )
         while pref != "y" and pref != "n":
             pref = input("Invalid input '" + pref + "', please specify 'y' or 'n'.")
         if pref == "n":
-            raise Exception("Dataset deletion is cancelled.")
+            sys.stdout.write("Dataset deletion is cancelled.")
+            return
 
-        self.delete(dataset_id=dataset_id)
+        super().delete(dataset_id=dataset_id)
         sys.stdout.write(f"Dataset: `{dataset_name}` is successfully deleted.")
 
         return True
@@ -245,9 +297,7 @@ class DatasetRequestAPI(RequestAPI):
                 }
                 </style>
 
-                <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search for datasets..">
-
-                <table id="myTable">
+                <table id="myTable" style="width:1000px">
                   <tr class="header">
                     <th style="width:30px">Idx</th>
                     <th style="width:20%;">Name</th>
@@ -258,10 +308,20 @@ class DatasetRequestAPI(RequestAPI):
                 """
 
         rows = ""
-        for row_i, d in enumerate(dataset_iterable):
+        for _, d in enumerate(dataset_iterable):
+
+            data = d.data
+            truncated_assets = False
+            if len(data) > 3:
+                truncated_assets = True
+                data = data[:3]
+
             assets = ""
-            for i, a in enumerate(d.data):
+            for _, a in enumerate(data):
                 assets += '["' + a["name"] + '"] -> ' + a["dtype"] + "<br /><br />"
+
+            if truncated_assets:
+                assets += "...<br /><br />"
 
             rows += (
                 """
@@ -298,13 +358,13 @@ class Dataset:
         id: UID,
         key: int,
         data: Any,
-        tags: List[str] = [],
+        tags: Optional[List[str]] = None,
     ) -> None:
         self.raw = raw
         self.description = description
         self.name = name
         self.id = id
-        self.tags = tags
+        self.tags = tags if tags is not None else []
         self.data = data
         self.client = client
         self.key = key
@@ -313,11 +373,17 @@ class Dataset:
     def pandas(self) -> pd.DataFrame:
         return pd.DataFrame(self.raw)
 
+    @property
+    def assets(self) -> Any:
+        return self.data
+
     def __getitem__(self, key: str) -> Any:
         keys = list()
         for d in self.data:
             if d["name"] == key:
-                return self.client.store[d["id"].replace("-", "")]  # type: ignore
+                pointer = self.client.store.get(d["id"])  # type: ignore
+                self.client.processing_pointers[pointer.id_at_location] = True  # type: ignore
+                return pointer
             keys.append(d["name"])
 
         raise KeyError(
@@ -332,8 +398,19 @@ class Dataset:
 
         rows = ""
 
+        data = self.data
+
+        if len(data) > 15:
+            print(
+                "WARNING: Too many assets to print... truncating... You "
+                "may run \n\n assets = my_dataset.assets \n\nto view receive a "
+                "dictionary you can parse through using Python\n(as opposed to blowing up your notebook"
+                " with a massive printed table).\n"
+            )
+            data = data[0:15]
+
         assets = ""
-        for i, a in enumerate(self.data):
+        for _, a in enumerate(data):
             assets += '["' + a["name"] + '"] -> ' + a["dtype"] + "<br /><br />"
 
             rows += (
@@ -370,29 +447,35 @@ class Dataset:
         from .....lib.python.util import downcast
 
         if not skip_checks:
-            if not isinstance(value, Tensor) or not isinstance(
-                getattr(value, "child", None), ADPTensor
-            ):
-                print(
-                    "\n\nWARNING - Non-DP Asset: You just passed in a asset '"
-                    + name
-                    + "' which cannot be tracked with differential privacy because it is a "
-                    + str(type(value))
-                    + " object.\n\n"
-                    + "This means you'll need to manually approve any requests which "
-                    + "leverage this data. If this is ok with you, proceed. If you'd like to use "
-                    + "automatic differential privacy budgeting, please pass in a DP-compatible tensor type "
-                    + "such as by calling .private() on a sy.Tensor with a np.int32 or np.float32 inside."
+            if not isinstance(value, Tensor):
+                raise Exception(
+                    "ERROR: all private assets must be NumPy ndarray.int32 assets "
+                    + "with proper Differential Privacy metadata applied.\n"
+                    + "\n"
+                    + "Example: syft.Tensor(np.ndarray([1,2,3,4]).astype(np.int32)).annotate_with_dp_metadata()\n\n"
+                    + "and then follow the wizard. 🧙"
                 )
-
-                pref = input("Are you sure you want to proceed? (y/n)")
-
-                while pref != "y" and pref != "n":
-                    pref = input(
-                        "Invalid input '" + pref + "', please specify 'y' or 'n'."
-                    )
-                if pref == "n":
-                    raise Exception("Dataset loading cancelled.")
+                # print(
+                #     "\n\nWARNING - Non-DP Asset: You just passed in a asset '"
+                #     + name
+                #     + "' which cannot be tracked with differential privacy because it is a "
+                #     + str(type(value))
+                #     + " object.\n\n"
+                #     + "This means you'll need to manually approve any requests which "
+                #     + "leverage this data. If this is ok with you, proceed. If you'd like to use "
+                #     + "automatic differential privacy budgeting, please pass in a DP-compatible tensor type "
+                #     + "such as by calling .annotate_with_dp_metadata() "
+                #     + "on a sy.Tensor with a np.int32 or np.float32 inside."
+                # )
+                #
+                # pref = input("Are you sure you want to proceed? (y/n)")
+                #
+                # while pref != "y" and pref != "n":
+                #     pref = input(
+                #         "Invalid input '" + pref + "', please specify 'y' or 'n'."
+                #     )
+                # if pref == "n":
+                #     raise Exception("Dataset loading cancelled.")
 
             existing_asset_names = [d.get("name") for d in self.data]
             if name in existing_asset_names:
@@ -416,7 +499,7 @@ class Dataset:
             sys.stdout.write("\rLoading dataset... uploading... \nSUCCESS!")
             self.refresh()
 
-    def delete(self, name: str) -> bool:
+    def delete(self, name: str, skip_check: bool = False) -> bool:
         """Delete the asset with the given name."""
 
         asset_id = None
@@ -429,18 +512,21 @@ class Dataset:
         if asset_id is None:
             raise KeyError(f"The asset with name `{name}` does not exists.")
 
-        pref = input(
-            f"You are about to permanantely delete the asset `{name}` ? 🚨 \n"
-            "Please enter y/n to proceed: "
-        )
-        while pref != "y" and pref != "n":
-            pref = input("Invalid input '" + pref + "', please specify 'y' or 'n'.")
-        if pref == "n":
-            sys.stdout.write("Asset deletion cancelled.")
-            return False
+        if not skip_check:
+            pref = input(
+                f"You are about to permanantely delete the asset `{name}` ? 🚨 \n"
+                "Please enter y/n to proceed: "
+            )
+            while pref != "y" and pref != "n":
+                pref = input("Invalid input '" + pref + "', please specify 'y' or 'n'.")
+            if pref == "n":
+                sys.stdout.write("Asset deletion cancelled.")
+                return False
 
-        DatasetRequestAPI(self.client).delete(
-            dataset_id=self.id, bin_object_id=asset_id
+        dataset_id = self.id.to_string() if isinstance(self.id, UID) else self.id
+
+        DatasetRequestAPI(self.client).del_asset(
+            dataset_id=dataset_id, asset_id=asset_id, skip_checks=True
         )
         self.refresh()
 
@@ -461,4 +547,4 @@ class Dataset:
             asset_name = asset["name"]
             if asset_name not in exclude:
                 asset_id = asset["id"].replace("-", "")
-                yield self.client.store[asset_id]  # type: ignore
+                yield self.client.store.get(asset_id)  # type: ignore

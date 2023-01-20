@@ -1,6 +1,7 @@
 # stdlib
 import logging
 import os
+import sys
 from typing import Any
 from typing import Callable
 from typing import NoReturn
@@ -48,6 +49,14 @@ def add(
         )
 
 
+def start() -> None:
+    add(sink=sys.stderr, level="CRITICAL")
+
+
+def stop() -> None:
+    logger.stop()
+
+
 def traceback_and_raise(e: Any, verbose: bool = False) -> NoReturn:
     try:
         if verbose:
@@ -69,7 +78,7 @@ def create_log_and_print_function(level: str) -> Callable:
                 del kwargs["print"]
                 print(*args, **kwargs)
                 if "end" in kwargs:
-                    # clean up extra end for printing
+                    # clean up extra end for printinga
                     del kwargs["end"]
 
             if method is not None:

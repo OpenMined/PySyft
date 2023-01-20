@@ -7,13 +7,12 @@ from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-
-# syft absolute
-import syft as sy
+from typing_extensions import SupportsIndex
 
 # relative
-from ...core.common import UID
+from ...core.common.serde.deserialize import _deserialize as deserialize
 from ...core.common.serde.serializable import serializable
+from ...core.common.serde.serialize import _serialize as serialize
 from ...proto.lib.python.list_pb2 import List as List_PB
 from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory
@@ -31,12 +30,11 @@ class ListIterator(Iterator):
 
 @serializable()
 class List(UserList, PyPrimitive):
-    __slots__ = ["_id", "_index"]
+    __slots__ = ["_index"]
 
     def __init__(
         self,
         value: Optional[Any] = None,
-        id: Optional[UID] = None,
         temporary_box: bool = False,
     ):
         if value is None:
@@ -45,19 +43,7 @@ class List(UserList, PyPrimitive):
         UserList.__init__(self, value)
         PyPrimitive.__init__(self, temporary_box=temporary_box)
 
-        self._id: UID = id if id else UID()
         self._index = 0
-
-    @property
-    def id(self) -> UID:
-        """We reveal PyPrimitive.id as a property to discourage users and
-        developers of Syft from modifying .id attributes after an object
-        has been initialized.
-
-        :return: returns the unique id of the object
-        :rtype: UID
-        """
-        return self._id
 
     def upcast(self) -> ListType:
         # recursively upcast
@@ -82,11 +68,13 @@ class List(UserList, PyPrimitive):
 
     def __iadd__(self, other: Any) -> SyPrimitiveRet:
         res = super().__iadd__(other)
-        return PrimitiveFactory.generate_primitive(value=res, id=self.id)
+        return PrimitiveFactory.generate_primitive(value=res)
 
     def __imul__(self, other: Any) -> SyPrimitiveRet:
         res = super().__imul__(other)
-        return PrimitiveFactory.generate_primitive(value=res, id=self.id)
+        return PrimitiveFactory.generate_primitive(
+            value=res,
+        )
 
     def __add__(self, other: Any) -> SyPrimitiveRet:
         res = super().__add__(other)
@@ -128,7 +116,7 @@ class List(UserList, PyPrimitive):
         res = super().__len__()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def __getitem__(self, key: Union[int, str, slice, Slice]) -> Any:
+    def __getitem__(self, key: Union[int, str, slice, Slice, SupportsIndex]) -> Any:
         if isinstance(key, Slice):
             key = key.upcast()
         res = super().__getitem__(key)  # type: ignore
@@ -143,7 +131,6 @@ class List(UserList, PyPrimitive):
 
     def copy(self) -> "List":
         res = super().copy()
-        res._id = UID()
         return res
 
     def append(self, item: Any) -> None:
@@ -155,28 +142,24 @@ class List(UserList, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     def _object2proto(self) -> List_PB:
-        id_ = sy.serialize(obj=self.id)
         downcasted = [downcast(value=element) for element in self.data]
-        data = [sy.serialize(obj=element, to_bytes=True) for element in downcasted]
+        data = [serialize(obj=element, to_bytes=True) for element in downcasted]
         return List_PB(
-            id=id_,
             data=data,
             temporary_box=self.temporary_box,
         )
 
     @staticmethod
     def _proto2object(proto: List_PB) -> "List":
-        id_: UID = sy.deserialize(blob=proto.id)
         value = []
         # list comprehension doesn't work since it results in a
         # [generator()] which is not equal to an empty list
         for element in proto.data:
-            value.append(upcast(sy.deserialize(blob=element, from_bytes=True)))
+            value.append(upcast(deserialize(blob=element, from_bytes=True)))
         new_list = List(
             value=value,
             temporary_box=proto.temporary_box,
         )
-        new_list._id = id_
         return new_list
 
     @staticmethod

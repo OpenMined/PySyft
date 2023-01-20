@@ -4,6 +4,7 @@ import torch as th
 
 # syft absolute
 import syft as sy
+from syft.core.node.common.node_manager.dict_store import DictStore
 from syft.core.node.common.node_service.object_search_permission_update.obj_search_permission_messages import (
     ObjectSearchPermissionUpdateMessage,
 )
@@ -13,7 +14,7 @@ from syft.core.node.common.node_service.object_search_permission_update.obj_sear
 
 
 def test_object_search_permissons_update_message_serde() -> None:
-    bob_phone = sy.Device(name="Bob's iPhone")
+    bob_phone = sy.Device(name="Bob's iPhone", store_type=DictStore)
     bob_phone_client = bob_phone.get_client()
 
     ptr = th.tensor([1, 2, 3]).send(bob_phone_client)
@@ -36,7 +37,7 @@ def test_object_search_permissons_update_message_serde() -> None:
 
 
 def test_object_search_permissons_update_execute_add() -> None:
-    bob_phone = sy.Device(name="Bob's iPhone")
+    bob_phone = sy.Device(name="Bob's iPhone", store_type=DictStore)
     bob_phone_client = bob_phone.get_client()
 
     ptr = th.tensor([1, 2, 3]).send(bob_phone_client)
@@ -53,7 +54,7 @@ def test_object_search_permissons_update_execute_add() -> None:
     )
 
     assert (
-        bob_phone.store[ptr.id_at_location].search_permissions[
+        bob_phone.store.get(ptr.id_at_location).search_permissions[
             bob_phone_client.verify_key
         ]
         == msg.id
@@ -73,7 +74,9 @@ def test_object_search_permissons_update_execute_remove() -> None:
         address=bob_phone_client.address,
     )
 
-    bob_phone.store[ptr.id_at_location].search_permissions[bob_phone.verify_key] = None
+    bob_phone.store.get(ptr.id_at_location).search_permissions[
+        bob_phone.verify_key
+    ] = None
 
     ImmediateObjectSearchPermissionUpdateService.process(
         node=bob_phone, msg=msg, verify_key=bob_phone.verify_key
@@ -81,5 +84,5 @@ def test_object_search_permissons_update_execute_remove() -> None:
 
     assert (
         bob_phone_client.verify_key
-        not in bob_phone.store[ptr.id_at_location].search_permissions
+        not in bob_phone.store.get(ptr.id_at_location).search_permissions
     )

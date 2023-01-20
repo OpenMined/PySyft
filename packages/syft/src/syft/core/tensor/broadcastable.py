@@ -16,14 +16,3 @@ def is_broadcastable(shape1: Sequence, shape2: Sequence) -> bool:
         else:
             return False
     return True
-
-
-# def is_mat_multiplicable(shape1: Sequence, shape2: Sequence) -> bool:
-#     if len(shape1) >= 2:
-#         if shape1[-1] == shape2[-2]:
-#             return True
-#         return False
-#     else:
-#         if shape1[0] == shape2[-2]:
-#             return True
-#         return False

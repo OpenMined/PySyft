@@ -11,3 +11,9 @@ message SuccessResponseMessage {
   string resp_msg = 3;
   syft.core.io.Address address = 4;
 }
+
+message ErrorResponseMessage {
+  syft.core.common.UID msg_id = 1;
+  string resp_msg = 2;
+  syft.core.io.Address address = 3;
+}

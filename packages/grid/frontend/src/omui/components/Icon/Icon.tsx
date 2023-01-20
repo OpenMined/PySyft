@@ -1,6 +1,6 @@
 import React from 'react'
 import cn from 'classnames'
-import type {ElementType, ComponentPropsWithoutRef} from 'react'
+import type { ElementType, ComponentPropsWithoutRef } from 'react'
 
 export type IconSizeProp = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 export type IconVariantProp = 'gray' | 'solid' | 'subtle' | 'outline' | 'ghost'
@@ -51,12 +51,12 @@ type Variants = {
 const variants: Variants = {
   outline: [
     'bg-transparent shadow-icon-border',
-    'border-primary-500 border dark:border-primary-200 text-primary-500 dark:text-primary-200'
+    'border-primary-500 border dark:border-primary-200 text-primary-500 dark:text-primary-200',
   ],
   gray: 'bg-gray-800 text-primary-200',
   solid: 'bg-primary-500 text-white',
   subtle: 'bg-primary-200 text-primary-600',
-  ghost: 'text-current'
+  ghost: 'text-current',
 }
 
 type Sizes = {
@@ -71,15 +71,15 @@ const sizes: Sizes = {
     sm: 'w-8 h-8',
     md: 'w-9 h-9',
     lg: 'w-11 h-11',
-    xl: 'w-12 h-12'
+    xl: 'w-12 h-12',
   },
   icon: {
     xs: 'w-3 h-3',
     sm: 'w-3.5 h-3.5',
     md: 'w-4 h-4',
     lg: 'w-4.5 h-4.5',
-    xl: 'w-5 h-5'
-  }
+    xl: 'w-5 h-5',
+  },
 }
 
 type Borders = {
@@ -88,13 +88,22 @@ type Borders = {
 
 const borders: Borders = {
   round: 'rounded-full',
-  square: 'rounded-md'
+  square: 'rounded-md',
 }
 
 const defaultClasses = 'inline-flex items-center justify-center'
 
 const Icon = React.forwardRef<HTMLSpanElement, IconProps>(function Icon(
-  {size = 'md', variant = 'solid', container = 'round', icon: IconElement, className, containerProps, title, ...props},
+  {
+    size = 'md',
+    variant = 'solid',
+    container = 'round',
+    icon: IconElement,
+    className,
+    containerProps,
+    title,
+    ...props
+  },
   ref
 ) {
   const containerClasses = cn(
@@ -135,4 +144,4 @@ const Icon = React.forwardRef<HTMLSpanElement, IconProps>(function Icon(
   )
 })
 
-export {Icon}
+export { Icon }

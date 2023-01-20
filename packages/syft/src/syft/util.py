@@ -1,19 +1,41 @@
 # stdlib
+import asyncio
+from asyncio.selector_events import BaseSelectorEventLoop
+from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
+import functools
+from itertools import repeat
+import multiprocessing
+import multiprocessing as mp
+from multiprocessing import set_start_method
+from multiprocessing.synchronize import Event as EventClass
+from multiprocessing.synchronize import Lock as LockBase
+import operator
 import os
 from pathlib import Path
+import platform
 from secrets import randbelow
+import sys
+import time
+from types import ModuleType
 from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import Iterator
 from typing import List
 from typing import Optional
+from typing import Sequence
+from typing import Tuple
+from typing import Type
 from typing import Union
 
 # third party
 from forbiddenfruit import curse
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-
-# syft absolute
-import syft
+from pympler.asizeof import asizeof
+import requests
 
 # relative
 from .logger import critical
@@ -29,6 +51,10 @@ def validate_type(_object: object, _type: type, optional: bool = False) -> Any:
     traceback_and_raise(
         f"Object {_object} should've been of type {_type}, not {_object}."
     )
+
+
+def get_loaded_syft() -> ModuleType:
+    return sys.modules[__name__.split(".")[0]]
 
 
 def validate_field(_object: object, _field: str) -> Any:
@@ -112,7 +138,10 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
 
     # we deal with VerifyAll differently, because we don't it be imported and used by users
     if attr_list[-1] == "VerifyAll":
-        return type(syft.core.common.group.VERIFYALL)
+        # relative
+        from .core.common.group import VERIFYALL
+
+        return type(VERIFYALL)
 
     if attr_list[0] != "syft":
         raise ReferenceError(f"Reference don't match: {attr_list[0]}")
@@ -126,7 +155,7 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
     ):
         raise ReferenceError(f"Reference don't match: {attr_list[1]}")
 
-    return index_modules(a_dict=globals()["syft"], keys=attr_list[1:])
+    return index_modules(a_dict=get_loaded_syft(), keys=attr_list[1:])
 
 
 def get_fully_qualified_name(obj: object) -> str:
@@ -164,26 +193,28 @@ def aggressive_set_attr(obj: object, name: str, attr: object) -> None:
     """
     try:
         setattr(obj, name, attr)
-    except Exception:
+    except Exception:  # nosec
         curse(obj, name, attr)
 
 
-def obj2pointer_type(obj: object) -> type:
-    fqn = None
-    try:
-        fqn = get_fully_qualified_name(obj=obj)
-    except Exception as e:
-        # sometimes the object doesn't have a __module__ so you need to use the type
-        # like: collections.OrderedDict
-        debug(f"Unable to get get_fully_qualified_name of {type(obj)} trying type. {e}")
-        fqn = get_fully_qualified_name(obj=type(obj))
+def obj2pointer_type(obj: Optional[object] = None, fqn: Optional[str] = None) -> type:
+    if fqn is None:
+        try:
+            fqn = get_fully_qualified_name(obj=obj)
+        except Exception as e:
+            # sometimes the object doesn't have a __module__ so you need to use the type
+            # like: collections.OrderedDict
+            debug(
+                f"Unable to get get_fully_qualified_name of {type(obj)} trying type. {e}"
+            )
+            fqn = get_fully_qualified_name(obj=type(obj))
 
-    # TODO: fix for other types
-    if obj is None:
-        fqn = "syft.lib.python._SyNone"
+        # TODO: fix for other types
+        if obj is None:
+            fqn = "syft.lib.python._SyNone"
 
     try:
-        ref = syft.lib_ast.query(fqn, obj_type=type(obj))
+        ref = get_loaded_syft().lib_ast.query(fqn, obj_type=type(obj))
     except Exception as e:
         log = f"Cannot find {type(obj)} {fqn} in lib_ast. {e}"
         critical(log)
@@ -241,6 +272,7 @@ left_name = [
     "distracted",
     "dreamy",
     "eager",
+    "eagleman",
     "ecstatic",
     "elastic",
     "elated",
@@ -327,7 +359,7 @@ left_name = [
 right_name = [
     "altman",
     "bach",
-    "bengio",
+    "bengios",
     "bostrom",
     "botvinick",
     "brockman",
@@ -335,6 +367,8 @@ right_name = [
     "chollet",
     "chomsky",
     "dean",
+    "dolgov",
+    "eckersley",
     "fridman",
     "gardner",
     "goertzel",
@@ -346,6 +380,7 @@ right_name = [
     "hotz",
     "howard",
     "hutter",
+    "isbell",
     "kaliouby",
     "karp",
     "karpathy",
@@ -355,9 +390,11 @@ right_name = [
     "koller",
     "krizhevsky",
     "larochelle",
+    "lattner",
     "lecun",
     "li",
     "lim",
+    "littman",
     "malik",
     "mironov",
     "ng",
@@ -425,3 +462,313 @@ def get_root_data_path() -> Path:
 
     os.makedirs(data_dir, exist_ok=True)
     return data_dir
+
+
+def download_file(url: str, full_path: Union[str, Path]) -> Optional[Path]:
+    if not os.path.exists(full_path):
+        r = requests.get(url, allow_redirects=True, verify=verify_tls())  # nosec
+        if r.status_code < 199 or 299 < r.status_code:
+            print(f"Got {r.status_code} trying to download {url}")
+            return None
+        path = os.path.dirname(full_path)
+        os.makedirs(path, exist_ok=True)
+        with open(full_path, "wb") as f:
+            f.write(r.content)
+    return Path(full_path)
+
+
+def str_to_bool(bool_str: Optional[str]) -> bool:
+    result = False
+    bool_str = str(bool_str).lower()
+    if bool_str == "true" or bool_str == "1":
+        result = True
+    return result
+
+
+def verify_tls() -> bool:
+    return not str_to_bool(str(os.environ.get("IGNORE_TLS_ERRORS", "0")))
+
+
+def ssl_test() -> bool:
+    return len(os.environ.get("REQUESTS_CA_BUNDLE", "")) > 0
+
+
+_tracer = None
+
+
+def get_tracer(service_name: Optional[str] = None) -> Any:
+    global _tracer
+    if _tracer is not None:  # type: ignore
+        return _tracer  # type: ignore
+
+    PROFILE_MODE = str_to_bool(os.environ.get("PROFILE", "False"))
+    PROFILE_MODE = False
+    if not PROFILE_MODE:
+
+        class NoopTracer:
+            @contextmanager
+            def start_as_current_span(*args: Any, **kwargs: Any) -> Any:
+                yield None
+
+        _tracer = NoopTracer()
+        return _tracer
+
+    print("Profile mode with OpenTelemetry enabled")
+    if service_name is None:
+        service_name = os.environ.get("SERVICE_NAME", "client")
+
+    jaeger_host = os.environ.get("JAEGER_HOST", "localhost")
+    jaeger_port = int(os.environ.get("JAEGER_PORT", "6831"))
+
+    # third party
+    from opentelemetry import trace
+    from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+    from opentelemetry.sdk.resources import Resource
+    from opentelemetry.sdk.resources import SERVICE_NAME
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+    trace.set_tracer_provider(
+        TracerProvider(resource=Resource.create({SERVICE_NAME: service_name}))
+    )
+
+    jaeger_exporter = JaegerExporter(
+        agent_host_name=jaeger_host,
+        agent_port=jaeger_port,
+    )
+
+    trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(jaeger_exporter))
+
+    _tracer = trace.get_tracer(__name__)
+    return _tracer
+
+
+def initializer(event_loop: Optional[BaseSelectorEventLoop] = None) -> None:
+    """Set the same event loop to other threads/processes.
+    This is needed because there are new threads/processes started with
+    the Executor and they do not have have an event loop set
+    Args:
+        event_loop: The event loop.
+    """
+    if event_loop:
+        asyncio.set_event_loop(event_loop)
+
+
+# local scope functions cant be pickled so this needs to be global
+def parallel_execution(
+    fn: Callable[..., Any],
+    parties: Union[None, List[Any]] = None,
+    cpu_bound: bool = False,
+) -> Callable[..., List[Any]]:
+    """Wrap a function such that it can be run in parallel at multiple parties.
+    Args:
+        fn (Callable): The function to run.
+        parties (Union[None, List[Any]]): Clients from syft. If this is set, then the
+            function should be run remotely. Defaults to None.
+        cpu_bound (bool): Because of the GIL (global interpreter lock) sometimes
+            it makes more sense to use processes than threads if it is set then
+            processes should be used since they really run in parallel if not then
+            it makes sense to use threads since there is no bottleneck on the CPU side
+    Returns:
+        Callable[..., List[Any]]: A Callable that returns a list of results.
+    """
+
+    @functools.wraps(fn)
+    def wrapper(
+        args: List[List[Any]],
+        kwargs: Optional[Dict[Any, Dict[Any, Any]]] = None,
+    ) -> List[Any]:
+        """Wrap sanity checks and checks what executor should be used.
+        Args:
+            args (List[List[Any]]): Args.
+            kwargs (Optional[Dict[Any, Dict[Any, Any]]]): Kwargs. Default to None.
+        Returns:
+            List[Any]: Results from the parties
+        """
+        if args is None or len(args) == 0:
+            raise Exception("Parallel execution requires more than 0 args")
+
+        # _base.Executor
+        executor: Type
+        if cpu_bound:
+            executor = ProcessPoolExecutor
+            # asyncio objects cannot pickled and sent across processes
+            # AttributeError: Can't pickle local object 'WeakSet.__init__.<locals>._remove'
+            loop = None
+        else:
+            executor = ThreadPoolExecutor
+            loop = asyncio.get_event_loop()
+
+        # Each party has a list of args and a dictionary of kwargs
+        nr_parties = len(args)
+
+        if kwargs is None:
+            kwargs = {}
+
+        if parties:
+            func_name = f"{fn.__module__}.{fn.__qualname__}"
+            attr_getter = operator.attrgetter(func_name)
+            funcs = [attr_getter(party) for party in parties]
+        else:
+            funcs = list(repeat(fn, nr_parties))
+
+        futures = []
+
+        with executor(
+            max_workers=nr_parties, initializer=initializer, initargs=(loop,)
+        ) as executor:
+            for i in range(nr_parties):
+                _args = args[i]
+                _kwargs = kwargs
+                futures.append(executor.submit(funcs[i], *_args, **_kwargs))
+
+        local_shares = [f.result() for f in futures]
+
+        return local_shares
+
+    return wrapper
+
+
+def split_rows(rows: Sequence, cpu_count: int) -> List:
+    n = len(rows)
+    a, b = divmod(n, cpu_count)
+    start = 0
+    output = []
+    for i in range(cpu_count):
+        end = start + a + (1 if b - i - 1 >= 0 else 0)
+        output.append(rows[start:end])
+        start = end
+    return output
+
+
+def list_sum(*inp_lst: List[Any]) -> Any:
+    s = inp_lst[0]
+    for i in inp_lst[1:]:
+        s = s + i
+    return s
+
+
+def concurrency_count(factor: float = 0.8) -> int:
+    force_count = int(os.environ.get("FORCE_CONCURRENCY_COUNT", 0))
+    mp_count = force_count if force_count >= 1 else int(mp.cpu_count() * factor)
+    return mp_count
+
+
+@contextmanager
+def concurrency_override(count: int = 1) -> Iterator:
+    # this only effects local code so its best to use in unit tests
+    try:
+        os.environ["FORCE_CONCURRENCY_COUNT"] = f"{count}"
+        yield None
+    finally:
+        os.environ["FORCE_CONCURRENCY_COUNT"] = "0"
+
+
+def size_mb(obj: Any) -> int:
+    return asizeof(obj) / (1024 * 1024)  # MBs
+
+
+class bcolors:
+    HEADER = "\033[95m"
+    BLUE = "\033[94m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    RED = "\033[91m"
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
+
+    @staticmethod
+    def green(message: str) -> str:
+        return bcolors.GREEN + message + bcolors.ENDC
+
+    @staticmethod
+    def red(message: str) -> str:
+        return bcolors.RED + message + bcolors.ENDC
+
+    @staticmethod
+    def yellow(message: str) -> str:
+        return bcolors.YELLOW + message + bcolors.ENDC
+
+    @staticmethod
+    def bold(message: str, end_color: bool = False) -> str:
+        msg = bcolors.BOLD + message
+        if end_color:
+            msg += bcolors.ENDC
+        return msg
+
+    @staticmethod
+    def underline(message: str, end_color: bool = False) -> str:
+        msg = bcolors.UNDERLINE + message
+        if end_color:
+            msg += bcolors.ENDC
+        return msg
+
+    @staticmethod
+    def warning(message: str) -> str:
+        return bcolors.bold(bcolors.yellow(message))
+
+    @staticmethod
+    def success(message: str) -> str:
+        return bcolors.green(message)
+
+    @staticmethod
+    def failure(message: str) -> str:
+        return bcolors.red(message)
+
+
+def print_process(  # type: ignore
+    message: str,
+    finish: EventClass,
+    success: EventClass,
+    lock: LockBase,
+    refresh_rate=0.1,
+) -> None:
+    with lock:
+        while not finish.is_set():  # type: ignore
+            print(f"{bcolors.bold(message)} .", end="\r")
+            time.sleep(refresh_rate)
+            sys.stdout.flush()
+            print(f"{bcolors.bold(message)} ..", end="\r")
+            time.sleep(refresh_rate)
+            sys.stdout.flush()
+            print(f"{bcolors.bold(message)} ...", end="\r")
+            time.sleep(refresh_rate)
+            sys.stdout.flush()
+        if success.is_set():  # type: ignore
+            print(f"{bcolors.success(message)}" + (" " * len(message)), end="\n")
+        else:
+            print(f"{bcolors.failure(message)}" + (" " * len(message)), end="\n")
+        sys.stdout.flush()
+
+
+def os_name() -> str:
+    os_name = platform.system()
+    if os_name.lower() == "darwin":
+        return "macOS"
+    else:
+        return os_name
+
+
+def print_dynamic_log(
+    message: str,
+) -> Tuple[EventClass, EventClass]:
+    """
+    Prints a dynamic log message that will change its color (to green or red) when some process is done.
+
+    message: str = Message to be printed.
+
+    return: tuple of events that can control the log print from the outside of this method.
+    """
+    finish = multiprocessing.Event()
+    success = multiprocessing.Event()
+    lock = multiprocessing.Lock()
+
+    if os_name() == "macOS":
+        # set start method to fork in case of MacOS
+        set_start_method("fork", force=True)
+
+    multiprocessing.Process(
+        target=print_process, args=(message, finish, success, lock)
+    ).start()
+    return (finish, success)

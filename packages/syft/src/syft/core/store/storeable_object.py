@@ -5,9 +5,7 @@ from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-
-# syft absolute
-import syft as sy
+from pydantic import BaseSettings
 
 # relative
 from ...logger import traceback_and_raise
@@ -15,11 +13,15 @@ from ...proto.core.store.store_object_pb2 import StorableObject as StorableObjec
 from ...util import get_fully_qualified_name
 from ...util import index_syft_by_module_name
 from ...util import key_emoji
+from ..common.serde.deserialize import CapnpMagicBytesNotFound
 from ..common.serde.deserialize import _deserialize
+from ..common.serde.deserialize import _deserialize as deserialize
+from ..common.serde.deserialize import deserialize_capnp
 from ..common.serde.serializable import serializable
 from ..common.serde.serialize import _serialize
 from ..common.storeable_object import AbstractStorableObject
 from ..common.uid import UID
+from .proxy_dataset import ProxyDataset
 
 
 @serializable()
@@ -59,6 +61,7 @@ class StorableObject(AbstractStorableObject):
         tags: Optional[List[str]] = None,
         read_permissions: Optional[dict] = None,
         search_permissions: Optional[dict] = None,
+        write_permissions: Optional[dict] = None,
     ):
         self.id = id
         self.data = data
@@ -74,6 +77,7 @@ class StorableObject(AbstractStorableObject):
         # the value is the original request_id to allow lookup later
         # who are allowed to know that the tensor exists (via search or other means)
         self.search_permissions: dict = search_permissions if search_permissions else {}
+        self.write_permissions: dict = write_permissions if write_permissions else {}
 
     @property
     def object_type(self) -> str:
@@ -104,6 +108,10 @@ class StorableObject(AbstractStorableObject):
             self._data = value
 
     @property
+    def is_proxy(self) -> bool:
+        return isinstance(self._data, ProxyDataset)
+
+    @property
     def tags(self) -> Optional[List[str]]:
         return self._tags
 
@@ -120,17 +128,24 @@ class StorableObject(AbstractStorableObject):
         self._description = description if description else ""
 
     def _object2proto(self) -> StorableObject_PB:
+        # relative
+        from ...lib.python.bytes import Bytes
+        from ...lib.python.dict import Dict
+
         proto = StorableObject_PB()
 
         # Step 1: Serialize the id to protobuf and copy into protobuf
-        id = sy.serialize(self.id)
+        id = _serialize(self.id)
         proto.id.CopyFrom(id)
 
         # Step 2: Save the type of wrapper to use to deserialize
         proto.data_type = get_fully_qualified_name(obj=self._data)
 
         # Step 3: Serialize data to protobuf and pack into proto
-        if hasattr(self._data, "_object2proto"):
+        if hasattr(self._data, "_object2bytes"):
+            data = Bytes(self._data._object2bytes())._object2proto()
+            proto.data_type = get_fully_qualified_name(obj=Bytes())
+        elif hasattr(self._data, "_object2proto"):
             data = self._data._object2proto()
         else:
             # @Tudor this needs fixing during the serde refactor
@@ -152,22 +167,32 @@ class StorableObject(AbstractStorableObject):
 
         # Step 6: save read permissions
         if len(self.read_permissions) > 0:
-            permission_data = sy.lib.python.Dict()
+            permission_data = Dict()
             for k, v in self.read_permissions.items():
                 permission_data[k] = v
-            proto.read_permissions = sy.serialize(permission_data, to_bytes=True)
+            proto.read_permissions = _serialize(permission_data, to_bytes=True)
 
         # Step 7: save search permissions
         if len(self.search_permissions.keys()) > 0:
-            permission_data = sy.lib.python.Dict()
+            permission_data = Dict()
             for k, v in self.search_permissions.items():
                 permission_data[k] = v
-            proto.search_permissions = sy.serialize(permission_data, to_bytes=True)
+            proto.search_permissions = _serialize(permission_data, to_bytes=True)
+
+        # Step 8: save write permissions
+        if len(self.write_permissions.keys()) > 0:
+            permission_data = Dict()
+            for k, v in self.write_permissions.items():
+                permission_data[k] = v
+            proto.write_permissions = _serialize(permission_data, to_bytes=True)
 
         return proto
 
     @staticmethod
     def _proto2object(proto: StorableObject_PB) -> "StorableObject":
+        # relative
+        from ...lib.python.bytes import Bytes
+
         # Step 1: deserialize the ID
         id = _deserialize(blob=proto.id)
 
@@ -189,6 +214,14 @@ class StorableObject(AbstractStorableObject):
                 proto.data.Unpack(data)
             data = data_type._proto2object(proto=data)  # type: ignore
 
+        if isinstance(data, (Bytes, bytes)):
+            try:
+                data = deserialize_capnp(buf=data)
+            except CapnpMagicBytesNotFound:
+                data = deserialize(data, from_bytes=True)
+            except Exception as e:
+                traceback_and_raise(f"Failed to deserialize Bytes with capnp. {e}")
+
         # Step 5: get the description from proto
         description = proto.description if proto.description else ""
 
@@ -209,6 +242,13 @@ class StorableObject(AbstractStorableObject):
                 blob=proto.search_permissions, from_bytes=True
             )
 
+        # Step 9: get the write permissions
+        write_permissions = None
+        if proto.write_permissions is not None and len(proto.write_permissions) > 0:
+            write_permissions = _deserialize(
+                blob=proto.write_permissions, from_bytes=True
+            )
+
         result = StorableObject(
             id=id,
             data=data,
@@ -216,6 +256,7 @@ class StorableObject(AbstractStorableObject):
             tags=tags,
             read_permissions=read_permissions,
             search_permissions=search_permissions,
+            write_permissions=write_permissions,
         )
 
         return result
@@ -274,6 +315,11 @@ class StorableObject(AbstractStorableObject):
                 " can_search: "
                 + f"{[key_emoji(key=key) for key in self.search_permissions.keys()]}"
             )
+        if len(self.write_permissions.keys()) > 0:
+            output += (
+                " can_write: "
+                + f"{[key_emoji(key=key) for key in self.write_permissions.keys()]}"
+            )
 
         output += ")"
         return output
@@ -282,7 +328,7 @@ class StorableObject(AbstractStorableObject):
     def class_name(self) -> str:
         return str(self.__class__.__name__)
 
-    def clean_copy(self) -> "StorableObject":
+    def clean_copy(self, settings: BaseSettings) -> "StorableObject":
         """
         This method return a copy of self, but clean up the search_permissions and
         read_permissions attributes.

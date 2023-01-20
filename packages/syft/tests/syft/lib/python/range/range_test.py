@@ -141,30 +141,30 @@ class RangeTest(unittest.TestCase):
             Range(1, 2, 3, 4, 5, 6)
 
     def test_large_operands(self):
-        x = Range(10 ** 20, 10 ** 20 + 10, 3)
+        x = Range(10**20, 10**20 + 10, 3)
         self.assertEqual(len(x), 4)
         self.assertEqual(len(list(x)), 4)
 
-        x = Range(10 ** 20 + 10, 10 ** 20, 3)
+        x = Range(10**20 + 10, 10**20, 3)
         self.assertEqual(len(x), 0)
         self.assertEqual(len(list(x)), 0)
         # self.assertFalse(x)
         assert Bool(False) == x.__bool__()
 
-        x = Range(10 ** 20, 10 ** 20 + 10, -3)
+        x = Range(10**20, 10**20 + 10, -3)
         self.assertEqual(len(x), 0)
         self.assertEqual(len(list(x)), 0)
         # self.assertFalse(x)
         assert Bool(False) == x.__bool__()
 
-        x = Range(10 ** 20 + 10, 10 ** 20, -3)
+        x = Range(10**20 + 10, 10**20, -3)
         self.assertEqual(len(x), 4)
         self.assertEqual(len(list(x)), 4)
         # self.assertTrue(x)
         assert Bool(True) == x.__bool__()
 
         # Now test Range() with longs
-        for x in [Range(-(2 ** 100)), Range(0, -(2 ** 100)), Range(0, 2 ** 100, -1)]:
+        for x in [Range(-(2**100)), Range(0, -(2**100)), Range(0, 2**100, -1)]:
             self.assertEqual(list(x), [])
             # self.assertFalse(x)
             assert Bool(False) == x.__bool__()
@@ -246,7 +246,7 @@ class RangeTest(unittest.TestCase):
             x[expected_len]
 
         a = 0
-        b = sys.maxsize ** 10
+        b = sys.maxsize**10
         c = 2 * sys.maxsize
         expected_len = 1 + (b - a) // c
         x = Range(a, b, c)
@@ -264,7 +264,7 @@ class RangeTest(unittest.TestCase):
         with self.assertRaises(IndexError):
             x[expected_len]
 
-        a = sys.maxsize ** 10
+        a = sys.maxsize**10
         b = 0
         c = -2 * sys.maxsize
         expected_len = 1 + (b - a) // c
@@ -336,11 +336,11 @@ class RangeTest(unittest.TestCase):
         self.assertEqual(Range(1, 10, 3).index(4), 1)
         self.assertEqual(Range(1, -10, -3).index(-5), 2)
 
-        self.assertEqual(Range(10 ** 20).index(1), 1)
-        self.assertEqual(Range(10 ** 20).index(10 ** 20 - 1), 10 ** 20 - 1)
+        self.assertEqual(Range(10**20).index(1), 1)
+        self.assertEqual(Range(10**20).index(10**20 - 1), 10**20 - 1)
 
-        self.assertRaises(ValueError, Range(1, 2 ** 100, 2).index, 2 ** 87)
-        self.assertEqual(Range(1, 2 ** 100, 2).index(2 ** 87 + 1), 2 ** 86)
+        self.assertRaises(ValueError, Range(1, 2**100, 2).index, 2**87)
+        self.assertEqual(Range(1, 2**100, 2).index(2**87 + 1), 2**86)
 
         self.assertEqual(Range(10).index(ALWAYS_EQ), 0)
 
@@ -392,11 +392,11 @@ class RangeTest(unittest.TestCase):
         self.assertEqual(Range(3).count(3), 0)
         self.assertIs(type(Range(3).count(-1)), Int)
         self.assertIs(type(Range(3).count(1)), Int)
-        self.assertEqual(Range(10 ** 20).count(1), 1)
-        self.assertEqual(Range(10 ** 20).count(10 ** 20), 0)
+        self.assertEqual(Range(10**20).count(1), 1)
+        self.assertEqual(Range(10**20).count(10**20), 0)
         self.assertEqual(Range(3).index(1), 1)
-        self.assertEqual(Range(1, 2 ** 100, 2).count(2 ** 87), 0)
-        self.assertEqual(Range(1, 2 ** 100, 2).count(2 ** 87 + 1), 1)
+        self.assertEqual(Range(1, 2**100, 2).count(2**87), 0)
+        self.assertEqual(Range(1, 2**100, 2).count(2**87 + 1), 1)
 
         self.assertEqual(Range(10).count(ALWAYS_EQ), 10)
 
@@ -418,7 +418,7 @@ class RangeTest(unittest.TestCase):
             (20, 3, -1),
             (13, 21, 3),
             (-2, 2, 2),
-            (2 ** 65, 2 ** 65 + 2),
+            (2**65, 2**65 + 2),
         ]
         for proto in Range(pickle.HIGHEST_PROTOCOL + 1):
             for t in testcases:
@@ -437,7 +437,7 @@ class RangeTest(unittest.TestCase):
             (20, 3, -1),
             (13, 21, 3),
             (-2, 2, 2),
-            (2 ** 65, 2 ** 65 + 2),
+            (2**65, 2**65 + 2),
         ]
         for proto in Range(pickle.HIGHEST_PROTOCOL + 1):
             for t in testcases:
@@ -461,11 +461,11 @@ class RangeTest(unittest.TestCase):
     @pytest.mark.xfail
     def test_exhausted_iterator_pickling(self):
         for proto in Range(pickle.HIGHEST_PROTOCOL + 1):
-            r = Range(2 ** 65, 2 ** 65 + 2)
+            r = Range(2**65, 2**65 + 2)
             i = iter(r)
             while True:
                 r = next(i)
-                if r == 2 ** 65 + 1:
+                if r == 2**65 + 1:
                     break
             d = pickle.dumps(i, proto)
             i2 = pickle.loads(d)
@@ -559,7 +559,7 @@ class RangeTest(unittest.TestCase):
         # see issue 7298
         limits = [
             base + jiggle
-            for M in (2 ** 32, 2 ** 64)
+            for M in (2**32, 2**64)
             for base in (-M, -M // 2, 0, M // 2, M)
             for jiggle in (-2, -1, 0, 1, 2)
         ]
@@ -567,7 +567,7 @@ class RangeTest(unittest.TestCase):
             (start, end, step)
             for start in limits
             for end in limits
-            for step in (-(2 ** 63), -(2 ** 31), -2, -1, 1, 2)
+            for step in (-(2**63), -(2**31), -2, -1, 1, 2)
         ]
 
         for start, end, step in test_Ranges:
@@ -723,22 +723,22 @@ class RangeTest(unittest.TestCase):
         # Huge integers aren't a problem.
         # Due to different locations of range objects
         with pytest.raises(AssertionError):
-            self.assertEqual(Range(0, 2 ** 100 - 1, 2), Range(0, 2 ** 100, 2))
+            self.assertEqual(Range(0, 2**100 - 1, 2), Range(0, 2**100, 2))
             self.assertEqual(
-                hash(Range(0, 2 ** 100 - 1, 2)), hash(Range(0, 2 ** 100, 2))
+                hash(Range(0, 2**100 - 1, 2)), hash(Range(0, 2**100, 2))
             )
-            self.assertNotEqual(Range(0, 2 ** 100, 2), Range(0, 2 ** 100 + 1, 2))
+            self.assertNotEqual(Range(0, 2**100, 2), Range(0, 2**100 + 1, 2))
             self.assertEqual(
-                Range(2 ** 200, 2 ** 201 - 2 ** 99, 2 ** 100),
-                Range(2 ** 200, 2 ** 201, 2 ** 100),
+                Range(2**200, 2**201 - 2**99, 2**100),
+                Range(2**200, 2**201, 2**100),
             )
             self.assertEqual(
-                hash(Range(2 ** 200, 2 ** 201 - 2 ** 99, 2 ** 100)),
-                hash(Range(2 ** 200, 2 ** 201, 2 ** 100)),
+                hash(Range(2**200, 2**201 - 2**99, 2**100)),
+                hash(Range(2**200, 2**201, 2**100)),
             )
             self.assertNotEqual(
-                Range(2 ** 200, 2 ** 201, 2 ** 100),
-                Range(2 ** 200, 2 ** 201 + 1, 2 ** 100),
+                Range(2**200, 2**201, 2**100),
+                Range(2**200, 2**201 + 1, 2**100),
             )
 
         # Order comparisons are not implemented for Ranges.

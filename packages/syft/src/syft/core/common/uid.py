@@ -1,5 +1,7 @@
 # stdlib
 from typing import Any
+from typing import Generator
+from typing import List
 from typing import Optional
 import uuid
 from uuid import UUID as uuid_type
@@ -11,7 +13,27 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from ...logger import critical
 from ...logger import traceback_and_raise
 from ...proto.core.common.common_object_pb2 import UID as UID_PB
+from .decorators import singleton
 from .serde.serializable import serializable
+
+
+# TODO: Make sure to investigate any issues with taxing the /dev/urandom entropy
+@singleton
+class UIDValueGenerator:
+    def __init__(self, n_uids: int = 1000) -> None:
+        self.uid_store: List[uuid_type] = []
+        self.__prepopulate(n_uids)
+
+    def __prepopulate(self, n_uids: int) -> None:
+        for _ in range(n_uids):
+            self.uid_store.append(uuid.uuid4())
+
+    def get_uid(self) -> Generator:
+        for uid in self.uid_store:
+            yield uid
+
+
+uuid_value_generator = UIDValueGenerator().get_uid()
 
 
 @serializable()
@@ -32,6 +54,7 @@ class UID:
 
     """
 
+    __slots__ = "value"
     value: uuid_type
 
     def __init__(self, value: Optional[uuid_type] = None):
@@ -58,15 +81,10 @@ class UID:
         super().__init__()
 
         # if value is not set - create a novel and unique ID.
-        if value is None:
 
-            # for more info on how this UUID is generated:
-            # https://docs.python.org/3/library/uuid.html
-            value = uuid.uuid4()
-
-        # save the ID's value. Note that this saves the uuid value
-        # itself instead of saving the
-        self.value = value
+        self.value = (
+            next(uuid_value_generator, uuid.uuid4()) if value is None else value
+        )
 
     @staticmethod
     def from_string(value: str) -> "UID":
@@ -116,6 +134,20 @@ class UID:
 
         try:
             return self.value == other.value
+        except Exception:
+            return False
+
+    def __lt__(self, other: Any) -> bool:
+        try:
+            return self.value < other.value
+        except Exception:
+            return False
+
+    @staticmethod
+    def is_valid_uuid(value: Any) -> bool:
+        try:
+            UID(value=uuid.UUID(value))
+            return True
         except Exception:
             return False
 

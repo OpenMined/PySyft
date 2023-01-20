@@ -6,15 +6,14 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
-# syft absolute
-import syft as sy
-
 # relative
 from ..... import lib
 from .....proto.core.node.common.action.get_enum_attribute_pb2 import (
     GetEnumAttributeAction as GetEnumAttributeAction_PB,
 )
+from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serializable import serializable
+from ....common.serde.serialize import _serialize as serialize
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
@@ -37,8 +36,10 @@ class EnumAttributeAction(ImmediateActionWithoutReply):
         self.path = path
 
     def intersect_keys(
-        self, left: Dict[VerifyKey, UID], right: Dict[VerifyKey, UID]
-    ) -> Dict[VerifyKey, UID]:
+        self,
+        left: Dict[VerifyKey, Optional[UID]],
+        right: Dict[VerifyKey, Optional[UID]],
+    ) -> Dict[VerifyKey, Optional[UID]]:
         return RunClassMethodAction.intersect_keys(left, right)
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
@@ -70,9 +71,9 @@ class EnumAttributeAction(ImmediateActionWithoutReply):
 
         return GetEnumAttributeAction_PB(
             path=self.path,
-            id_at_location=sy.serialize(self.id_at_location),
-            address=sy.serialize(self.address),
-            msg_id=sy.serialize(self.id),
+            id_at_location=serialize(self.id_at_location),
+            address=serialize(self.address),
+            msg_id=serialize(self.id),
         )
 
     @staticmethod
@@ -90,9 +91,9 @@ class EnumAttributeAction(ImmediateActionWithoutReply):
         """
         return EnumAttributeAction(
             path=proto.path,
-            id_at_location=sy.deserialize(blob=proto.id_at_location),
-            address=sy.deserialize(blob=proto.address),
-            msg_id=sy.deserialize(blob=proto.msg_id),
+            id_at_location=deserialize(blob=proto.id_at_location),
+            address=deserialize(blob=proto.address),
+            msg_id=deserialize(blob=proto.msg_id),
         )
 
     @staticmethod

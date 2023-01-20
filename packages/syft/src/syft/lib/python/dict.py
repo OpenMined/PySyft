@@ -12,12 +12,10 @@ from typing import Union
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft absolute
-import syft as sy
-
 # relative
-from ...core.common import UID
+from ...core.common.serde.deserialize import _deserialize as deserialize
 from ...core.common.serde.serializable import serializable
+from ...core.common.serde.serialize import _serialize as serialize
 from ...logger import traceback_and_raise
 from ...logger import warning
 from ...proto.lib.python.dict_pb2 import Dict as Dict_PB
@@ -46,7 +44,7 @@ class Dict(UserDict, PyPrimitive):
         self, *args = args  # type: ignore
         if len(args) > 1:
             traceback_and_raise(
-                TypeError("expected at most 1 arguments, got %d" % len(args))
+                TypeError(f"expected at most 1 arguments, got {len(args)}")
             )
         if args:
             args_dict = args[0]
@@ -67,28 +65,12 @@ class Dict(UserDict, PyPrimitive):
         if kwargs:
             self.update(kwargs)
 
-        # We cant add UID from kwargs or it could easily be overwritten by the dict
-        # that is being passed in for __init__
-        # If you want to update it use the _id setter after creation.
-        self._id = UID()
-
         temporary_box = kwargs["temporary_box"] if "temporary_box" in kwargs else False
         if temporary_box:
             PyPrimitive.__init__(
                 self,
                 temporary_box=temporary_box,
             )
-
-    @property
-    def id(self) -> UID:
-        """We reveal PyPrimitive.id as a property to discourage users and
-        developers of Syft from modifying .id attributes after an object
-        has been initialized.
-
-        :return: returns the unique id of the object
-        :rtype: UID
-        """
-        return self._id
 
     def upcast(self) -> TypeDict:
         # recursively upcast
@@ -207,15 +189,13 @@ class Dict(UserDict, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=super().clear())
 
     def _object2proto(self) -> Dict_PB:
-        id_ = sy.serialize(obj=self.id)
-
         keys = [
-            sy.serialize(obj=downcast(value=element), to_bytes=True)
+            serialize(obj=downcast(value=element), to_bytes=True)
             for element in self.data.keys()
         ]
 
         values = [
-            sy.serialize(obj=downcast(value=element), to_bytes=True)
+            serialize(obj=downcast(value=element), to_bytes=True)
             for element in self.data.values()
         ]
 
@@ -225,7 +205,6 @@ class Dict(UserDict, PyPrimitive):
             temporary_box = False
 
         return Dict_PB(
-            id=id_,
             keys=keys,
             values=values,
             temporary_box=temporary_box,
@@ -233,20 +212,17 @@ class Dict(UserDict, PyPrimitive):
 
     @staticmethod
     def _proto2object(proto: Dict_PB) -> "Dict":
-        id_: UID = sy.deserialize(blob=proto.id)
-
         values = [
-            upcast(value=sy.deserialize(blob=element, from_bytes=True))
+            upcast(value=deserialize(blob=element, from_bytes=True))
             for element in proto.values
         ]
 
         keys = [
-            upcast(value=sy.deserialize(blob=element, from_bytes=True))
+            upcast(value=deserialize(blob=element, from_bytes=True))
             for element in proto.keys
         ]
         new_dict = Dict(dict(zip(keys, values)))
         new_dict.temporary_box = proto.temporary_box
-        new_dict._id = id_
         return new_dict
 
     @staticmethod

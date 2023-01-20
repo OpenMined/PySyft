@@ -94,27 +94,29 @@ import warnings
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
-
-# syft absolute
-import syft as sy
+import requests
 
 # relative
 from ...logger import debug
 from ...logger import error
 from ...logger import warning
 from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
-from ...util import obj2pointer_type
+from ...util import bcolors
 from ..common.pointer import AbstractPointer
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import serializable
+from ..common.serde.serialize import _serialize as serialize
 from ..common.uid import UID
 from ..io.address import Address
 from ..node.abstract.node import AbstractNode
 from ..node.common.action.get_object_action import GetObjectAction
+from ..node.common.exceptions import AuthorizationError
+from ..node.common.exceptions import DatasetDownloadError
 from ..node.common.node_service.get_repr.get_repr_service import GetReprMessage
 from ..node.common.node_service.object_search_permission_update.obj_search_permission_messages import (
     ObjectSearchPermissionUpdateMessage,
 )
+from ..node.enums import PointerStatus
 from ..store.storeable_object import StorableObject
 
 
@@ -162,7 +164,7 @@ class Pointer(AbstractPointer):
     @property
     def block(self) -> AbstractPointer:
         while not self.exists:
-            time.sleep(0.2)
+            time.sleep(0.1)
         return self
 
     def block_with_timeout(self, secs: int, secs_per_poll: int = 1) -> AbstractPointer:
@@ -189,15 +191,35 @@ class Pointer(AbstractPointer):
         return self.client.obj_exists(obj_id=self.id_at_location)
 
     def __repr__(self) -> str:
-        return f"<{self.__name__} -> {self.client.name}:{self.id_at_location.no_dash}>"
+        if hasattr(self.client, "obj_exists"):
+            _ptr_status = (
+                PointerStatus.READY.value
+                if self.exists
+                else PointerStatus.PROCESSING.value
+            )
+            return f"<{self.__name__} -> {self.client.name}:{self.id_at_location.no_dash}, status={_ptr_status}>"
+        else:
+            return (
+                f"<{self.__name__} -> {self.client.name}:{self.id_at_location.no_dash}>"
+            )
 
-    def _get(self, delete_obj: bool = True, verbose: bool = False) -> StorableObject:
+    def _get(
+        self,
+        delete_obj: bool = True,
+        verbose: bool = False,
+        proxy_only: bool = False,
+        timeout_secs: Optional[int] = None,
+    ) -> StorableObject:
         """Method to download a remote object from a pointer object if you have the right
         permissions.
 
         :return: returns the downloaded data
         :rtype: StorableObject
         """
+
+        # relative
+        from ...core.node.common.client import GET_OBJECT_TIMEOUT
+        from ..node.common.action.exception_action import UnknownPrivateException
 
         debug(
             f"> GetObjectAction for id_at_location={self.id_at_location} "
@@ -210,7 +232,85 @@ class Pointer(AbstractPointer):
             delete_obj=delete_obj,
         )
 
-        obj = self.client.send_immediate_msg_with_reply(msg=obj_msg).data
+        obj: Any = None
+        is_processing_pointer = self.client.processing_pointers.get(
+            self.id_at_location, False
+        )
+
+        start_time = time.time()
+        future_time = (
+            float(timeout_secs if timeout_secs is not None else GET_OBJECT_TIMEOUT)
+            + start_time
+        )
+
+        # If pointer is one of the processing pointers and didn't timeout keep trying
+        while is_processing_pointer and future_time > time.time():
+            try:
+                obj = self.client.send_immediate_msg_with_reply(
+                    msg=obj_msg, timeout=timeout_secs, verbose=True
+                )
+
+                # If we reached here it's because we didn't have any failure,
+                # so we were able to retrieve the pointer successfully.
+                # So it isn't a processing pointer anymore and we can exit the while loop.
+                # without wait the timeout
+                is_processing_pointer = False
+            except UnknownPrivateException:
+                time.sleep(0.5)
+                pass
+
+        # If pointer was there, then we remove it from the processing_pointer list
+        self.client.processing_pointers.pop(self.id_at_location, None)
+
+        # if we didn't get the object try one last time
+        if not obj:
+            obj = self.client.send_immediate_msg_with_reply(
+                msg=obj_msg, timeout=timeout_secs
+            )
+
+        if not proxy_only and obj.obj.is_proxy:
+            presigned_url_path = obj.obj._data.url
+            presigned_url = self.client.url_from_path(presigned_url_path)
+            response = requests.get(presigned_url)
+
+            if not response.ok:
+                error_msg = (
+                    f"\nFailed to get object {self.id_at_location} from store\n."
+                    + f"Status Code: {response.status_code} {response.reason}"
+                )
+                raise DatasetDownloadError(error_msg)
+            obj = _deserialize(response.content, from_bytes=True)
+        else:
+            if proxy_only:
+                print(
+                    "**Warning**: Proxy data class does not exist for this object. Fetching the real data."
+                )
+            obj = obj.data
+
+        if delete_obj:
+            # relative
+            from ..node.common.node_service.generic_payload.syft_message import (
+                NewSyftMessage,
+            )
+            from ..node.common.node_service.object_delete.object_delete_message import (
+                ObjectDeleteMessage,
+            )
+
+            # TODO: Fix circular import
+            # This deletes the data from both database and blob store
+            obj_del_msg: NewSyftMessage = ObjectDeleteMessage(
+                address=self.client.address,
+                reply_to=self.client.address,
+                kwargs={
+                    "id_at_location": self.id_at_location.to_string(),
+                },
+            ).sign(signing_key=self.client.signing_key)
+
+            try:
+                self.client.send_immediate_msg_with_reply(msg=obj_del_msg)
+            except AuthorizationError:
+                print("**Warning:** You don't have delete permissions to the object.")
+
         if self.is_enum:
             enum_class = self.client.lib_ast.query(self.path_and_name).object_ref
             return enum_class(obj)
@@ -280,10 +380,9 @@ class Pointer(AbstractPointer):
 
         return self
 
-    def publish(self, sigma: float = 1.5) -> Any:
+    def publish(self, sigma: float = 1.5, private: bool = True) -> Any:
 
         # relative
-        from ...lib.python import Float
         from ..node.common.node_service.publish.publish_service import (
             PublishScalarsAction,
         )
@@ -295,29 +394,41 @@ class Pointer(AbstractPointer):
             address=self.client.address,
             publish_ids_at_location=[self.id_at_location],
             sigma=sigma,
+            private=private,
         )
 
         self.client.send_immediate_msg_without_reply(msg=obj_msg)
         # create pointer which will point to float result
 
-        afloat = Float(0.0)
-        ptr_type = obj2pointer_type(obj=afloat)
-        ptr = ptr_type(
-            client=self.client,
-            id_at_location=id_at_location,
-        )
-        ptr._pointable = True
+        if not hasattr(self, "PUBLISH_POINTER_TYPE"):
+            raise TypeError(
+                f"Publish operation cannot be performed on pointer type: {self.__name__}"
+            )
 
+        public_dtype = str(getattr(self, "public_dtype", ""))
+        if public_dtype in ["bool"]:
+            print(
+                f"{bcolors.warning('Warning:')} Publishing values of `{public_dtype}` "
+                "dtype are not yet fully supported and may result in inconsistent results."
+            )
+
+        ptr = self.client.lib_ast.query(self.PUBLISH_POINTER_TYPE).pointer_type(  # type: ignore
+            client=self.client
+        )
+        ptr.id_at_location = id_at_location
+        ptr._pointable = True
+        ptr.client.processing_pointers[ptr.id_at_location] = True
         # return pointer
         return ptr
 
     def get(
         self,
         request_block: bool = False,
-        timeout_secs: int = 20,
+        timeout_secs: Optional[int] = None,
         reason: str = "",
         delete_obj: bool = True,
         verbose: bool = False,
+        proxy_only: bool = False,
     ) -> Optional[StorableObject]:
         """Method to download a remote object from a pointer object if you have the right
         permissions. Optionally can block while waiting for approval.
@@ -325,6 +436,9 @@ class Pointer(AbstractPointer):
         :return: returns the downloaded data
         :rtype: Optional[StorableObject]
         """
+        if proxy_only and delete_obj:
+            delete_obj = False
+            print("**Warning**: Fetching proxy_only will not delete the real object")
 
         # relative
         from ..node.common.node_service.request_receiver.request_receiver_messages import (
@@ -337,8 +451,15 @@ class Pointer(AbstractPointer):
             )
 
         if not request_block:
-            result = self._get(delete_obj=delete_obj, verbose=verbose)
+            result = self._get(
+                delete_obj=delete_obj,
+                verbose=verbose,
+                proxy_only=proxy_only,
+                timeout_secs=timeout_secs,
+            )
         else:
+            if timeout_secs is None:
+                timeout_secs = 600  # old default
             response_status = self.request(
                 reason=reason,
                 block=True,
@@ -349,7 +470,9 @@ class Pointer(AbstractPointer):
                 response_status is not None
                 and response_status == RequestStatus.Accepted
             ):
-                result = self._get(delete_obj=delete_obj, verbose=verbose)
+                result = self._get(
+                    delete_obj=delete_obj, verbose=verbose, timeout_secs=timeout_secs
+                )
             else:
                 return None
 
@@ -370,7 +493,7 @@ class Pointer(AbstractPointer):
         :rtype: Pointer_PB
 
         .. note::
-            This method is purely an internal method. Please use sy.serialize(object) or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
@@ -378,15 +501,13 @@ class Pointer(AbstractPointer):
         return Pointer_PB(
             points_to_object_with_path=self.path_and_name,
             pointer_name=type(self).__name__,
-            id_at_location=sy.serialize(self.id_at_location),
-            location=sy.serialize(self.client.address),
+            id_at_location=serialize(self.id_at_location),
+            location=serialize(self.client.address),
             tags=self.tags,
             description=self.description,
             object_type=self.object_type,
             attribute_name=getattr(self, "attribute_name", ""),
-            public_shape=sy.serialize(
-                getattr(self, "public_shape", None), to_bytes=True
-            ),
+            public_shape=serialize(getattr(self, "public_shape", None), to_bytes=True),
         )
 
     @staticmethod
@@ -403,15 +524,18 @@ class Pointer(AbstractPointer):
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
+        # relative
+        from ...lib import lib_ast
+
         # TODO: we need _proto2object to include a reference to the node doing the
         # deserialization so that we can convert location into a client object. At present
         # it is an address object which will cause things to break later.
-
-        points_to_type = sy.lib_ast.query(proto.points_to_object_with_path)
+        points_to_type = lib_ast.query(proto.points_to_object_with_path)
         pointer_type = getattr(points_to_type, proto.pointer_name)
 
         # WARNING: This is sending a serialized Address back to the constructor
         # which currently depends on a Client for send_immediate_msg_with_reply
+
         out = pointer_type(
             id_at_location=_deserialize(blob=proto.id_at_location),
             client=_deserialize(blob=proto.location),
@@ -420,8 +544,7 @@ class Pointer(AbstractPointer):
             object_type=proto.object_type,
         )
 
-        out.public_shape = sy.deserialize(proto.public_shape, from_bytes=True)
-
+        out.public_shape = _deserialize(proto.public_shape, from_bytes=True)
         return out
 
     @staticmethod
@@ -656,7 +779,9 @@ class Pointer(AbstractPointer):
         """
 
         # relative
-        from ..node.domain.service import RequestAnswerMessage
+        from ..node.common.node_service.request_answer.request_answer_messages import (
+            RequestAnswerMessage,
+        )
 
         msg = RequestAnswerMessage(
             request_id=request_id, address=self.client.address, reply_to=node.address
@@ -671,5 +796,9 @@ class Pointer(AbstractPointer):
             # it is a serialized pointer that we receive from another client do nothing
             return
 
-        if self.gc_enabled:
-            self.client.gc.apply(self)
+        # Check/Remove it if this pointer is still in processing_pointers dict
+        self.client.processing_pointers.pop(self.id_at_location, None)
+
+        # if self.gc_enabled:
+        #     # this is not being used in the node currenetly
+        #     self.client.gc.apply(self)

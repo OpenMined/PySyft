@@ -1,35 +1,45 @@
-import {XCircleIcon, CheckCircleIcon} from '@heroicons/react/solid'
+import { XCircleIcon, CheckCircleIcon } from '@heroicons/react/solid'
 import dayjs from 'dayjs'
-import {Badge, Accordion, Spinner} from '@/components'
-import {dateFromNow, statusColors, formatFullDate} from '@/utils'
-import {useRequests} from '@/lib/data'
-import type {MouseEventHandler} from 'react'
-import type {Request, RequestStatus} from '@/types/grid-types'
+import { Badge, Accordion, Spinner } from '@/components'
+import { dateFromNow, statusColors, formatFullDate } from '@/utils'
+import { useRequests } from '@/lib/data'
+import type { MouseEventHandler } from 'react'
+import type { Request, RequestStatus } from '@/types/grid-types'
 
 interface ListType {
   requests: Request[]
   listType: RequestStatus
 }
 
-export function RequestList({requests}: {requests: Request[]}) {
+export function RequestList({ requests }: { requests: Request[] }) {
   const types: RequestStatus[] = ['pending', 'accepted', 'denied']
   return (
     <div className="space-y-6">
-      {types.map(type => (
-        <RequestListType key={`${type}-request-list`} requests={requests} listType={type} />
+      {types.map((type) => (
+        <RequestListType
+          key={`${type}-request-list`}
+          requests={requests}
+          listType={type}
+        />
       ))}
     </div>
   )
 }
 
-function RequestListType({requests, listType}: ListType) {
-  const orderedRequests = requests.sort((a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf())
-  const list = orderedRequests.filter(request => request.status === listType)
+function RequestListType({ requests, listType }: ListType) {
+  const orderedRequests = requests.sort(
+    (a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf()
+  )
+  const list = orderedRequests.filter((request) => request.status === listType)
 
   return (
     <div className="space-y-2">
       <h2 className="flex items-center space-x-3">
-        <Badge bgColor="bg-white" textColor="text-gray-800" className="py-2 text-sm tracking-tight">
+        <Badge
+          bgColor="bg-white"
+          textColor="text-gray-800"
+          className="py-2 text-sm tracking-tight"
+        >
           {listType}
           {list.length >= 0 && (
             <div className="h-full px-2 rounded-md inline-block bg-yellow-400 text-gray-800 font-semibold text-xs py-0.5 ml-2">
@@ -39,7 +49,7 @@ function RequestListType({requests, listType}: ListType) {
         </Badge>
       </h2>
       <Accordion>
-        {list.map(item => (
+        {list.map((item) => (
           <Accordion.Item key={item.id}>
             <div className="flex items-center justify-between w-full">
               <RequestAccordionTitle {...item} />
@@ -56,13 +66,18 @@ function RequestListType({requests, listType}: ListType) {
 function RequestAccordionActions(request: Request) {
   return (
     <div className="flex items-center space-x-4">
-      {request.status === 'pending' && <AcceptOrDenyPermissionRequest {...request} />}
+      {request.status === 'pending' && (
+        <AcceptOrDenyPermissionRequest {...request} />
+      )}
       <RequestStatusAndDate {...request} />
     </div>
   )
 }
 
-function RequestStatusAndDate({status, date}: Pick<Request, 'status' | 'date'>) {
+function RequestStatusAndDate({
+  status,
+  date,
+}: Pick<Request, 'status' | 'date'>) {
   return (
     <div className="flex flex-col items-end justify-center flex-shrink-0 space-y-1 lg:flex-row lg:justify-start lg:items-center lg:space-x-2 lg:space-y-0 ">
       <div className="w-20">
@@ -70,7 +85,9 @@ function RequestStatusAndDate({status, date}: Pick<Request, 'status' | 'date'>) 
           {status}
         </Badge>
       </div>
-      <div className="flex-shrink-0 w-24 text-sm text-right text-gray-500">{dateFromNow(date)}</div>
+      <div className="flex-shrink-0 w-24 text-sm text-right text-gray-500">
+        {dateFromNow(date)}
+      </div>
     </div>
   )
 }
@@ -97,18 +114,18 @@ function RequestInfoPanel(request: Request) {
   )
 }
 
-function AcceptOrDenyPermissionRequest({id}: Pick<Request, 'id'>) {
-  const {update} = useRequests()
+function AcceptOrDenyPermissionRequest({ id }: Pick<Request, 'id'>) {
+  const { update } = useRequests()
   const mutation = update(id)
 
-  const handleAccept: MouseEventHandler<HTMLButtonElement> = e => {
+  const handleAccept: MouseEventHandler<HTMLButtonElement> = (e) => {
     e.stopPropagation()
-    mutation.mutate({status: 'accepted'})
+    mutation.mutate({ status: 'accepted' })
   }
 
-  const handleDeny: MouseEventHandler<HTMLButtonElement> = e => {
+  const handleDeny: MouseEventHandler<HTMLButtonElement> = (e) => {
     e.stopPropagation()
-    mutation.mutate({status: 'denied'})
+    mutation.mutate({ status: 'denied' })
   }
 
   if (mutation.isLoading) {
@@ -127,7 +144,11 @@ function AcceptOrDenyPermissionRequest({id}: Pick<Request, 'id'>) {
   )
 }
 
-function PermissionRequestInfo({userName, date, id}: Pick<Request, 'userName' | 'date' | 'id'>) {
+function PermissionRequestInfo({
+  userName,
+  date,
+  id,
+}: Pick<Request, 'userName' | 'date' | 'id'>) {
   return (
     <div className="space-y-1">
       <h3 className="mb-1 text-base font-medium">Permission request</h3>
@@ -139,7 +160,10 @@ function PermissionRequestInfo({userName, date, id}: Pick<Request, 'userName' | 
   )
 }
 
-function PermissionObjectInfo({objectId, objectType}: Pick<Request, 'objectId' | 'objectType'>) {
+function PermissionObjectInfo({
+  objectId,
+  objectType,
+}: Pick<Request, 'objectId' | 'objectType'>) {
   return (
     <div>
       <h3 className="mb-1 text-base font-medium">Object information</h3>
@@ -153,16 +177,18 @@ function PermissionObjectInfo({objectId, objectType}: Pick<Request, 'objectId' |
   )
 }
 
-function PermissionReason({reason}: Pick<Request, 'reason'>) {
+function PermissionReason({ reason }: Pick<Request, 'reason'>) {
   return (
     <div className="space-y-2">
       <h3 className="text-base font-medium">Reason</h3>
-      <p className="p-2 text-sm border-l-8 rounded-l-sm border-amber-400 bg-amber-100">{reason}</p>
+      <p className="p-2 text-sm border-l-8 rounded-l-sm border-amber-400 bg-amber-100">
+        {reason}
+      </p>
     </div>
   )
 }
 
-function PermissionTags({tags}: Pick<Request, 'tags'>) {
+function PermissionTags({ tags }: Pick<Request, 'tags'>) {
   return (
     <div className="space-y-2">
       <h3 className="text-base font-medium">Tags</h3>

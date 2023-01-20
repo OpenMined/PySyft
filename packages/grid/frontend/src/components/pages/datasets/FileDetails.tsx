@@ -1,7 +1,7 @@
-import {formatBytes} from '@/utils/common'
+import { formatBytes } from '@/utils/common'
 import dayjs from 'dayjs'
 
-export function FileDetails({file}) {
+export function FileDetails({ file }) {
   if (!file) {
     return null
   }

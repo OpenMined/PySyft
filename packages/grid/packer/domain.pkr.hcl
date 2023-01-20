@@ -16,7 +16,7 @@ build {
 
   provisioner "ansible" {
     playbook_file = "../ansible/site.yml"
-    extra_arguments = [ "-v", "-e", "packer=true", "-e", "repo_branch=0.6.0" ]
+    extra_arguments = [ "-v", "-e", "packer=true", "-e", "repo_branch=0.7.0" ]
   }
 
   provisioner "shell" {

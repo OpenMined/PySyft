@@ -7,6 +7,10 @@ from typing import Callable
 from typing import DefaultDict
 from typing import Dict
 from typing import List
+from typing import Optional
+
+# relative
+from ...common import UID
 
 
 class CryptoPrimitiveProvider:
@@ -22,11 +26,13 @@ class CryptoPrimitiveProvider:
     def generate_primitives(
         op_str: str,
         parties: List[Any],
-        g_kwargs: Dict[str, Any] = {},
-        p_kwargs: Dict[str, Any] = {},
+        g_kwargs: Optional[Dict[str, Any]] = None,
+        p_kwargs: Optional[Dict[str, Any]] = None,
         nr_instances: int = 1,
-        ring_size: int = 2 ** 32,
+        ring_size: int = 2**32,
     ) -> List[Any]:
+        g_kwargs = g_kwargs if g_kwargs is not None else {}
+        p_kwargs = p_kwargs if p_kwargs is not None else {}
         """Generate "op_str" primitives.
 
         Args:
@@ -66,8 +72,6 @@ class CryptoPrimitiveProvider:
                 ring_size=ring_size,
             )
 
-        # Since we do not have (YET!) the possiblity to return typed tuples from a remote
-        # execute function we are using this
         return primitives
 
     @staticmethod
@@ -78,6 +82,9 @@ class CryptoPrimitiveProvider:
         p_kwargs: Dict[str, Any],
         ring_size: int,
     ) -> None:
+        # relative
+        from ...node.common.action.beaver_primitive_action import BeaverPrimitiveAction
+
         if not isinstance(primitives, list):
             raise ValueError("Primitives should be a List")
 
@@ -86,12 +93,24 @@ class CryptoPrimitiveProvider:
                 f"Primitives length {len(primitives)} != Parties length {len(parties)}"
             )
 
-        for primitives_party, party in zip(primitives, parties):
-            print(primitives_party)
-            print("Ring size", ring_size)
-            party.syft.core.tensor.smpc.share_tensor.populate_store(
-                op_str, primitives_party, **p_kwargs, ring_size=ring_size
+        for primitives_party, client in zip(primitives, parties):
+
+            args: List[Any] = []
+            kwargs = {
+                "op_str": op_str,
+                "primitives": primitives_party,
+                **p_kwargs,
+                "ring_size": str(ring_size),
+            }
+            path = "syft.core.tensor.smpc.share_tensor.populate_store"
+            cmd = BeaverPrimitiveAction(
+                path=path,
+                args=args,
+                kwargs=kwargs,
+                id_at_location=UID(),
+                address=client.address,
             )
+            client.send_immediate_msg_without_reply(msg=cmd)
 
     @staticmethod
     def get_state() -> str:

@@ -31,8 +31,6 @@ from ..accept_or_deny_request.accept_or_deny_request_messages import (
     AcceptOrDenyRequestMessage,
 )
 from ..auth import service_auth
-from ..get_all_requests.get_all_requests_messages import GetAllRequestsMessage
-from ..get_all_requests.get_all_requests_messages import GetAllRequestsResponseMessage
 from ..node_service import ImmediateNodeServiceWithReply
 from ..node_service import ImmediateNodeServiceWithoutReply
 from ..request_answer.request_answer_messages import RequestAnswerMessage
@@ -49,6 +47,8 @@ from .object_request_messages import CreateRequestMessage
 from .object_request_messages import CreateRequestResponse
 from .object_request_messages import DeleteRequestMessage
 from .object_request_messages import DeleteRequestResponse
+from .object_request_messages import GetAllRequestsMessage
+from .object_request_messages import GetAllRequestsResponseMessage
 from .object_request_messages import GetBudgetRequestsMessage
 from .object_request_messages import GetBudgetRequestsResponse
 from .object_request_messages import GetRequestMessage
@@ -60,7 +60,7 @@ from .object_request_messages import UpdateRequestResponse
 
 if TYPE_CHECKING:
     # relative
-    from ....domain.domain import Domain
+    from ....domain import Domain
 
 
 def create_request_msg(
@@ -121,7 +121,7 @@ def create_request_msg(
         request_type=request_type,
         verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8"),
         object_type=object_type,
-        tags=node.store[object_uid]._tags,
+        tags=node.store.get(object_uid, proxy_only=True)._tags,
     )
     request_json = model_to_json(request_obj)
 
@@ -147,6 +147,7 @@ def create_budget_request_msg(
     _duplicate_request = node.data_requests.contain(
         verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8"),
         status="pending",
+        request_type="budget",
     )
 
     if _duplicate_request:
@@ -259,10 +260,9 @@ def get_all_budget_requests(
     users = node.users
 
     allowed = users.can_triage_requests(verify_key=verify_key)
-
+    response = list()
     if allowed:
         requests = node.data_requests.query(request_type="budget")
-        response = list()
         for request in requests:
             # Get current state user
             if node.data_requests.status(request.id) == RequestStatus.Pending:
@@ -304,7 +304,7 @@ def update_request_msg(
     _req = node.data_requests.first(id=request_id)
 
     if not _req:
-        raise RequestError
+        raise RequestError(message=f"Request ID: {request_id} not found.")
 
     if status not in ["accepted", "denied"]:
         raise InvalidParameterValueError(
@@ -327,7 +327,7 @@ def update_request_msg(
                 budget=current_user.budget + _req.requested_budget,
             )
         else:
-            tmp_obj = node.store[UID.from_string(_req.object_id)]
+            tmp_obj = node.store.get(UID.from_string(_req.object_id), proxy_only=True)
             tmp_obj.read_permissions[
                 VerifyKey(_req.verify_key.encode("utf-8"), encoder=HexEncoder)
             ] = _req.id
@@ -403,8 +403,6 @@ def get_all_requests(
 
     _can_triage_request = node.users.can_triage_requests(verify_key=verify_key)
 
-    _requests = node.data_requests.all()
-
     if _can_triage_request:
         _requests = node.data_requests.all()
     else:
@@ -414,6 +412,14 @@ def get_all_requests(
 
     data_requests = [
         RequestMessage(
+            status=req.status,
+            user_name=req.user_name,
+            user_email=req.user_email,
+            user_role=req.user_role,
+            requested_budget=req.requested_budget,
+            current_budget=req.user_budget,
+            date=str(req.date),
+            request_type=req.request_type,
             request_id=UID.from_string(req.id),
             request_description=req.reason,
             address=node.address,
@@ -428,7 +434,6 @@ def get_all_requests(
         )
         for req in _requests
     ]
-
     return GetAllRequestsResponseMessage(requests=data_requests, address=msg.reply_to)
 
 
@@ -572,7 +577,9 @@ def build_request_message(
         request_type="data",
         verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8"),
         object_type=msg.object_type,
-        tags=node.store[msg.object_id]._tags if "budget" not in msg.object_type else [],
+        tags=node.store.get(msg.object_id, proxy_only=True)._tags
+        if "budget" not in msg.object_type
+        else [],
     )
 
 
@@ -589,7 +596,9 @@ def accept_or_deny_request(
     current_user = node.users.first(
         verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
     )
-    _req = node.data_requests.first(id=str(_msg.request_id.value))
+    # Check if there is any pending request with this id.
+    _req = node.data_requests.first(id=str(_msg.request_id.value), status="pending")
+
     _can_triage_request = node.users.can_triage_requests(verify_key=verify_key)
     if _msg.accept:
         if _req and _can_triage_request:
@@ -600,10 +609,12 @@ def accept_or_deny_request(
                     budget=current_user.budget + _req.requested_budget,
                 )
             else:
-                tmp_obj = node.store[UID.from_string(_req.object_id)]
+                tmp_obj = node.store.get(
+                    UID.from_string(_req.object_id), proxy_only=True
+                )
                 tmp_obj.read_permissions[
                     VerifyKey(_req.verify_key.encode("utf-8"), encoder=HexEncoder)
-                ] = _req.id
+                ] = _req.user_id
                 node.store[UID.from_string(_req.object_id)] = tmp_obj
 
             # TODO: In the future we'll probably need to keep a request history

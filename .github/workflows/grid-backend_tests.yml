@@ -2,11 +2,16 @@
 name: Syft + Grid Backend Tests
 
 on:
+  workflow_call:
+
   pull_request:
     branches:
       - dev
       - main
       - "0.6.0"
+      - "0.7.0"
+      - "0.8"
+
 defaults:
   run:
     working-directory: ./packages/grid
@@ -17,22 +22,23 @@ jobs:
       max-parallel: 3
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.9]
+        python-version: ["3.10"]
 
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
         id: changes
         with:
+          base: ${{ github.ref }}
           token: ${{ github.token }}
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         if: steps.changes.outputs.backend == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -44,7 +50,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         if: steps.changes.outputs.backend == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -55,12 +61,12 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.backend == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Install tox
         if: steps.changes.outputs.backend == 'true'
         run: |
-          pip install tox --upgrade
+          pip install tox==3.27.1
 
       - name: Run Backend API tests
         shell: bash

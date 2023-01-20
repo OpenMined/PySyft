@@ -65,7 +65,7 @@ def update_ast_test(
             client=client, methods=methods, dynamic_objects=dynamic_objects
         )
         client.lib_ast.attrs["module_test"] = test_ast.attrs["module_test"]
-        setattr(client, "module_test", test_ast.attrs["module_test"])
+        client.module_test = test_ast.attrs["module_test"]
     else:
         raise ValueError(
             f"Expected param of type (Globals, AbstractNodeClient), but got {type(ast_or_client)}"

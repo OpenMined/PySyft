@@ -1,12 +1,17 @@
-import {useState, useEffect, useRef, ReactNode} from 'react'
-import {createPortal} from 'react-dom'
+import { useState, useEffect, useRef, ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import cn from 'classnames'
-import {Overlay} from '@/components/Overlay'
-import {Text} from '@/omui'
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
-import {faCheckCircle, faExclamationTriangle, faExpandAlt, faTimes} from '@fortawesome/free-solid-svg-icons'
+import { Overlay } from '@/components/Overlay'
+import { Text } from '@/omui'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  faCheckCircle,
+  faExclamationTriangle,
+  faExpandAlt,
+  faTimes,
+} from '@fortawesome/free-solid-svg-icons'
 
-function ModalRoot({children}) {
+function ModalRoot({ children }) {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -19,7 +24,9 @@ function ModalRoot({children}) {
     }
   }, [])
 
-  return mounted ? createPortal(children, document.getElementById('omui-modal-portal')) : null
+  return mounted
+    ? createPortal(children, document.getElementById('omui-modal-portal'))
+    : null
 }
 
 function useOutsideClick(ref, onClose) {
@@ -38,11 +45,19 @@ function useOutsideClick(ref, onClose) {
   }, [ref])
 }
 
-function CloseModalButton({onClose}) {
+function CloseModalButton({ onClose }) {
   return (
     <div className="w-full text-right">
-      <button onClick={onClose} className="w-6 h-6 text-center" aria-label="Close">
-        <FontAwesomeIcon icon={faTimes} title="Close" className="cursor-pointer text-sm text-gray-500" />
+      <button
+        onClick={onClose}
+        className="w-6 h-6 text-center"
+        aria-label="Close"
+      >
+        <FontAwesomeIcon
+          icon={faTimes}
+          title="Close"
+          className="cursor-pointer text-sm text-gray-500"
+        />
       </button>
     </div>
   )
@@ -54,7 +69,7 @@ export default function Modal({
   withScrim = false,
   withExpand = null,
   show = false,
-  onClose = () => {}
+  onClose = () => {},
 }: ModalProps) {
   const wrapper = useRef(null)
   useOutsideClick(wrapper, onClose)
@@ -67,13 +82,18 @@ export default function Modal({
         <div className="flex items-center justify-center py-10 h-full relative">
           <div
             ref={wrapper}
-            className={cn('z-50 overflow-auto max-h-full cursor-auto w-full', className)}
-            style={{marginLeft: 270}}>
+            className={cn(
+              'z-50 overflow-auto max-h-full cursor-auto w-full',
+              className
+            )}
+            style={{ marginLeft: 270 }}
+          >
             <div
               className={cn(
                 'grid grid-cols-12 px-6 py-4 shadow-modal rounded mx-auto sm:max-w-modal lg:max-w-mbig',
                 withScrim ? 'bg-scrim-white' : 'bg-white'
-              )}>
+              )}
+            >
               <div className="col-span-full flex space-x-3 justify-between">
                 {withExpand && (
                   <Text bold size="sm" className="text-gray-400 w-full">
@@ -101,29 +121,35 @@ interface ModalProps {
   withExpand?: any
 }
 
-function ModalWarning({children, ...props}: ModalProps) {
+function ModalWarning({ children, ...props }: ModalProps) {
   return (
     <Modal {...props}>
       <div className="col-span-full text-center">
-        <FontAwesomeIcon icon={faExclamationTriangle} className="text-warning-500 text-3xl" />
+        <FontAwesomeIcon
+          icon={faExclamationTriangle}
+          className="text-warning-500 text-3xl"
+        />
       </div>
       {children}
     </Modal>
   )
 }
 
-function ModalSuccess({children, ...props}: ModalProps) {
+function ModalSuccess({ children, ...props }: ModalProps) {
   return (
     <Modal {...props}>
       <div className="col-span-full text-center">
-        <FontAwesomeIcon icon={faCheckCircle} className="text-success-500 text-3xl" />
+        <FontAwesomeIcon
+          icon={faCheckCircle}
+          className="text-success-500 text-3xl"
+        />
       </div>
       {children}
     </Modal>
   )
 }
 
-function ModalGrid({children, ...props}: ModalProps) {
+function ModalGrid({ children, ...props }: ModalProps) {
   return (
     <Modal {...props}>
       <div className="grid grid-cols-12 w-full">
@@ -134,4 +160,8 @@ function ModalGrid({children, ...props}: ModalProps) {
   )
 }
 
-export const Modals = Object.assign(Modal, {Warning: ModalWarning, Success: ModalSuccess, Grid: ModalGrid})
+export const Modals = Object.assign(Modal, {
+  Warning: ModalWarning,
+  Success: ModalSuccess,
+  Grid: ModalGrid,
+})

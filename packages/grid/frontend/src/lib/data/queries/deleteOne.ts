@@ -6,7 +6,7 @@ export type DeleteOneArgs<T> = {
   queryKeys: string[]
 }
 
-export async function deleteOne<T>({id, queryKeys}: DeleteOneArgs<T>) {
+export async function deleteOne<T>({ id, queryKeys }: DeleteOneArgs<T>) {
   const [route] = queryKeys
   const res = (await api.delete(`${route}/${id}`).json()) as T
   return res

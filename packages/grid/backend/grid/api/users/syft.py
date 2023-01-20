@@ -2,26 +2,26 @@
 from typing import List
 
 # syft absolute
-from syft.core.node.common.node_service.user_manager.user_manager_service import (
+from syft.core.node.common.node_service.user_manager.new_user_messages import (
     CreateUserMessage,
 )
-from syft.core.node.common.node_service.user_manager.user_manager_service import (
+from syft.core.node.common.node_service.user_manager.new_user_messages import (
     DeleteUserMessage,
+)
+from syft.core.node.common.node_service.user_manager.new_user_messages import (
+    GetUserMessage,
+)
+from syft.core.node.common.node_service.user_manager.new_user_messages import (
+    GetUsersMessage,
+)
+from syft.core.node.common.node_service.user_manager.new_user_messages import (
+    UpdateUserMessage,
 )
 from syft.core.node.common.node_service.user_manager.user_manager_service import (
     GetCandidatesMessage,
 )
 from syft.core.node.common.node_service.user_manager.user_manager_service import (
-    GetUserMessage,
-)
-from syft.core.node.common.node_service.user_manager.user_manager_service import (
-    GetUsersMessage,
-)
-from syft.core.node.common.node_service.user_manager.user_manager_service import (
     ProcessUserCandidateMessage,
-)
-from syft.core.node.common.node_service.user_manager.user_manager_service import (
-    UpdateUserMessage,
 )
 
 # grid absolute
@@ -39,7 +39,7 @@ def create_user(new_user: UserCreate, current_user: UserPrivate) -> str:
         message_type=CreateUserMessage,
         **dict(new_user)
     )
-    return reply.resp_msg
+    return reply.message
 
 
 def get_user_requests(current_user: UserPrivate) -> List[UserCandidate]:
@@ -65,16 +65,17 @@ def get_all_users(current_user: UserPrivate) -> List[User]:
     reply = send_message_with_reply(
         signing_key=current_user.get_signing_key(), message_type=GetUsersMessage
     )
-    return [user.upcast() for user in reply.content]
+    reply = reply.users
+    return reply
 
 
 def get_user(user_id: int, current_user: UserPrivate) -> User:
-    reply = send_message_with_reply(
+    result = send_message_with_reply(
         signing_key=current_user.get_signing_key(),
         message_type=GetUserMessage,
         user_id=user_id,
     )
-    return reply.content.upcast()
+    return result
 
 
 def update_user(
@@ -84,9 +85,10 @@ def update_user(
         signing_key=current_user.get_signing_key(),
         message_type=UpdateUserMessage,
         user_id=user_id,
-        **dict(updated_user)
+        **updated_user.dict(exclude_unset=True)
     )
-    return reply.resp_msg
+
+    return reply.message
 
 
 def delete_user(user_id: int, current_user: UserPrivate) -> str:
@@ -95,6 +97,4 @@ def delete_user(user_id: int, current_user: UserPrivate) -> str:
         message_type=DeleteUserMessage,
         user_id=user_id,
     )
-
-    # return reply.message - if the other one doesn't work try this one? ;)
-    return reply.resp_msg
+    return reply.message

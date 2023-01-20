@@ -10,26 +10,26 @@ from typing import Union
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
-# syft absolute
-import syft as sy
-
 # relative
 from ..... import lib
-from .....logger import critical
 from .....logger import traceback_and_raise
 from .....proto.core.node.common.action.run_function_or_constructor_pb2 import (
     RunFunctionOrConstructorAction as RunFunctionOrConstructorAction_PB,
 )
 from .....util import inherit_tags
+from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serializable import serializable
+from ....common.serde.serialize import _serialize as serialize
 from ....common.uid import UID
 from ....io.address import Address
 from ....pointer.pointer import Pointer
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
+from ..util import check_send_to_blob_storage
 from ..util import listify
+from ..util import upload_result_to_s3
 from .common import ImmediateActionWithoutReply
-from .exceptions import ObjectNotInStore
+from .greenlets_switch import retrieve_object
 
 
 @serializable()
@@ -66,8 +66,9 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
 
     @staticmethod
     def intersect_keys(
-        left: Union[Dict[VerifyKey, UID], None], right: Dict[VerifyKey, UID]
-    ) -> Dict[VerifyKey, UID]:
+        left: Union[Dict[VerifyKey, Optional[UID]], None],
+        right: Dict[VerifyKey, Optional[UID]],
+    ) -> Dict[VerifyKey, Optional[UID]]:
         # TODO: duplicated in run_class_method_action.py
         # get the intersection of the dict keys, the value is the request_id
         # if the request_id is different for some reason we still want to keep it,
@@ -81,7 +82,14 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
-        result_read_permissions: Union[None, Dict[VerifyKey, UID]] = None
+
+        # If if there's another object with the same ID.
+        node.store.check_collision(self.id_at_location)
+
+        result_read_permissions: Union[None, Dict[VerifyKey, Optional[UID]]] = None
+        result_write_permissions: Union[None, Dict[VerifyKey, Optional[UID]]] = {
+            verify_key: None
+        }
 
         resolved_args = list()
         tag_args = []
@@ -93,16 +101,11 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
                         f"Got {arg} of type {type(arg)}"
                     )
                 )
-            r_arg = node.store.get_object(key=arg.id_at_location)
-            if r_arg is None:
-                critical(
-                    f"execute_action on {self.path} failed due to missing object"
-                    + f" at: {arg.id_at_location}"
-                )
-                raise ObjectNotInStore
+            r_arg = retrieve_object(node, arg.id_at_location, self.path)
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
+
             resolved_args.append(r_arg.data)
             tag_args.append(r_arg)
 
@@ -116,13 +119,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
                         f"Got {arg} of type {type(arg)}"
                     )
                 )
-            r_arg = node.store.get_object(key=arg.id_at_location)
-            if r_arg is None:
-                critical(
-                    f"execute_action on {self.path} failed due to missing object"
-                    + f" at: {arg.id_at_location}"
-                )
-                raise ObjectNotInStore
+            r_arg = retrieve_object(node, arg.id_at_location, self.path)
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
@@ -136,10 +133,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
 
         # execute the method with the newly upcasted args and kwargs
-        if "beaver_populate" not in self.path:
-            result = method(*upcasted_args, **upcasted_kwargs)
-        else:
-            result = method(*upcasted_args, **upcasted_kwargs, node=node)
+        result = method(*upcasted_args, **upcasted_kwargs)
 
         # to avoid circular imports
         if lib.python.primitive_factory.isprimitive(value=result):
@@ -155,11 +149,29 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         if result_read_permissions is None:
             result_read_permissions = {}
 
+        if result_write_permissions is None:
+            result_write_permissions = {}
+
+        # TODO: Upload object to seaweed store, instead of storing in redis
+        # create a proxy object class and store it here.
+        if check_send_to_blob_storage(
+            obj=result,
+            use_blob_storage=getattr(node.settings, "USE_BLOB_STORAGE", False),
+        ):
+            result = upload_result_to_s3(
+                asset_name=self.id_at_location.no_dash,
+                dataset_name="",
+                domain_id=node.id,
+                data=result,
+                settings=node.settings,
+            )
+
         if not isinstance(result, StorableObject):
             result = StorableObject(
                 id=self.id_at_location,
                 data=result,
                 read_permissions=result_read_permissions,
+                write_permissions=result_write_permissions,
             )
 
         inherit_tags(
@@ -178,7 +190,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         kwargs_names = ",".join(
             [f"{k}={v.__class__.__name__}" for k, v in self.kwargs.items()]
         )
-        return f"RunClassMethodAction {method_name}({arg_names}, {kwargs_names})"
+        return f"FunctionOrConstructorAction {method_name}({arg_names}, {kwargs_names})"
 
     def _object2proto(self) -> RunFunctionOrConstructorAction_PB:
         """Returns a protobuf serialization of self.
@@ -197,11 +209,11 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         """
         return RunFunctionOrConstructorAction_PB(
             path=self.path,
-            args=[sy.serialize(x, to_bytes=True) for x in self.args],
-            kwargs={k: sy.serialize(v, to_bytes=True) for k, v in self.kwargs.items()},
-            id_at_location=sy.serialize(self.id_at_location),
-            address=sy.serialize(self.address),
-            msg_id=sy.serialize(self.id),
+            args=[serialize(x, to_bytes=True) for x in self.args],
+            kwargs={k: serialize(v, to_bytes=True) for k, v in self.kwargs.items()},
+            id_at_location=serialize(self.id_at_location),
+            address=serialize(self.address),
+            msg_id=serialize(self.id),
         )
 
     @staticmethod
@@ -223,14 +235,13 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
 
         return RunFunctionOrConstructorAction(
             path=proto.path,
-            args=tuple(sy.deserialize(blob=x, from_bytes=True) for x in proto.args),
+            args=tuple(deserialize(blob=x, from_bytes=True) for x in proto.args),
             kwargs={
-                k: sy.deserialize(blob=v, from_bytes=True)
-                for k, v in proto.kwargs.items()
+                k: deserialize(blob=v, from_bytes=True) for k, v in proto.kwargs.items()
             },
-            id_at_location=sy.deserialize(blob=proto.id_at_location),
-            address=sy.deserialize(blob=proto.address),
-            msg_id=sy.deserialize(blob=proto.msg_id),
+            id_at_location=deserialize(blob=proto.id_at_location),
+            address=deserialize(blob=proto.address),
+            msg_id=deserialize(blob=proto.msg_id),
         )
 
     @staticmethod

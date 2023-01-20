@@ -9,25 +9,27 @@ from typing import Optional
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
-# syft absolute
-import syft as sy
-
 # relative
+# from . import context
 from ..... import lib
-from .....logger import critical
 from .....logger import traceback_and_raise
 from .....logger import warning
 from .....proto.core.node.common.action.run_class_method_pb2 import (
     RunClassMethodAction as RunClassMethodAction_PB,
 )
 from .....util import inherit_tags
+from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serializable import serializable
+from ....common.serde.serialize import _serialize as serialize
 from ....common.uid import UID
 from ....io.address import Address
+from ....store.proxy_dataset import ProxyDataset
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
+from ..util import check_send_to_blob_storage
+from ..util import upload_result_to_s3
 from .common import ImmediateActionWithoutReply
-from .exceptions import ObjectNotInStore
+from .greenlets_switch import retrieve_object
 
 
 @serializable()
@@ -69,8 +71,8 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
     @staticmethod
     def intersect_keys(
-        left: Dict[VerifyKey, UID], right: Dict[VerifyKey, UID]
-    ) -> Dict[VerifyKey, UID]:
+        left: Dict[VerifyKey, Optional[UID]], right: Dict[VerifyKey, Optional[UID]]
+    ) -> Dict[VerifyKey, Optional[UID]]:
         # get the intersection of the dict keys, the value is the request_id
         # if the request_id is different for some reason we still want to keep it,
         # so only intersect the keys and then copy those over from the main dict
@@ -95,6 +97,9 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
 
+        # If if there's another object with the same ID.
+        node.store.check_collision(self.id_at_location)
+
         mutating_internal = False
         if (
             self.path.startswith("torch.Tensor")
@@ -108,29 +113,30 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             mutating_internal = True
 
         resolved_self = None
+        is_proxy = False  # we need to know if its a proxy object when we save mutations
         if not self.is_static:
-            resolved_self = node.store.get_object(key=self._self.id_at_location)
-
-            if resolved_self is None:
-                critical(
-                    f"execute_action on {self.path} failed due to missing object"
-                    + f" at: {self._self.id_at_location}"
+            resolved_self = retrieve_object(
+                node=node,
+                id_at_location=self._self.id_at_location,
+                path=self.path,
+                proxy_only=True,
+            )
+            # check if its proxy and resolve
+            if isinstance(resolved_self.data, ProxyDataset):
+                is_proxy = True
+                resolved_self.data = resolved_self.data.get_s3_data(
+                    settings=node.settings
                 )
-                raise ObjectNotInStore
             result_read_permissions = resolved_self.read_permissions  # type: ignore
+            result_write_permissions = resolved_self.write_permissions  # type: ignore
         else:
             result_read_permissions = {}
+            result_write_permissions = {}
 
         resolved_args = list()
         tag_args = []
         for arg in self.args:
-            r_arg = node.store.get_object(key=arg.id_at_location)
-            if r_arg is None:
-                critical(
-                    f"execute_action on {self.path} failed due to missing object"
-                    + f" at: {arg.id_at_location}"
-                )
-                raise ObjectNotInStore
+            r_arg = retrieve_object(node, arg.id_at_location, self.path)
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions  # type: ignore
             )
@@ -140,13 +146,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         resolved_kwargs = {}
         tag_kwargs = {}
         for arg_name, arg in self.kwargs.items():
-            r_arg = node.store.get_object(key=arg.id_at_location)
-            if r_arg is None:
-                critical(
-                    f"execute_action on {self.path} failed due to missing object"
-                    + f" at: {arg.id_at_location}"
-                )
-                raise ObjectNotInStore
+            r_arg = retrieve_object(node, arg.id_at_location, self.path)
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions  # type: ignore
             )
@@ -167,9 +167,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     ValueError(f"Method {method} called, but self is None.")
                 )
 
-            resolved_self_previous_bytes = sy.serialize(
-                resolved_self.data, to_bytes=True
-            )
+            resolved_self_previous_bytes = serialize(resolved_self.data, to_bytes=True)  # type: ignore
             method_name = self.path.split(".")[-1]
 
             target_method = getattr(resolved_self.data, method_name, None)
@@ -214,25 +212,57 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     err = f"Unable to set id on result {type(result)}. {e}"
                     traceback_and_raise(Exception(err))
 
+        # TODO: Find a better way to do this, a serialization is compute intesive.
         # check if resolved_self has changed and if so mark as mutating_internal
         # this prevents someone from mutating an object they own with something they
         # do not own and the read_permissions not flowing backwards
+
         if (
             resolved_self_previous_bytes is not None
             and resolved_self is not None
             and resolved_self_previous_bytes
-            != sy.serialize(resolved_self.data, to_bytes=True)
+            != serialize(resolved_self.data, to_bytes=True)
         ):
             mutating_internal = True
+
+        if verify_key not in result_write_permissions:
+            # User does not have permission write permissions to this pointer.
+            # Therefore object mutation is not allowed.
+            mutating_internal = False
+            # TODO: Need to clarify with Madhava/Andrew if it should be allowed to
+            # create the result pointer and store it in the database.
+            # traceback_and_raise(
+            #     Exception("You don't have permissions to perform the write operation.")
+            # )
 
         if mutating_internal:
             if isinstance(resolved_self, StorableObject):
                 resolved_self.read_permissions = result_read_permissions
+                resolved_self.write_permissions = result_write_permissions
+
+        # in memory lookup for publish_service.py:40
+        # context.OBJ_CACHE[str(self.id_at_location.no_dash)] = result
+
+        # TODO: Upload object to seaweed store, instead of storing in redis
+        # create a proxy object class and store it here.
+        if check_send_to_blob_storage(
+            obj=result,
+            use_blob_storage=getattr(node.settings, "USE_BLOB_STORAGE", False),
+        ):
+            result = upload_result_to_s3(
+                asset_name=self.id_at_location.no_dash,
+                dataset_name="",
+                domain_id=node.id,
+                data=result,
+                settings=node.settings,
+            )
+
         if not isinstance(result, StorableObject):
             result = StorableObject(
                 id=self.id_at_location,
                 data=result,
                 read_permissions=result_read_permissions,
+                write_permissions=result_write_permissions,
             )
 
         inherit_tags(
@@ -248,6 +278,15 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         # but if the method was static then we might not have a _self
         if resolved_self is not None and mutating_internal:
             # write the original resolved_self back to _self.id_at_location
+            if is_proxy:
+                resolved_self_proxy = upload_result_to_s3(
+                    asset_name=self._self.id_at_location.no_dash,
+                    dataset_name="",
+                    domain_id=node.id,
+                    data=resolved_self.data,
+                    settings=node.settings,
+                )
+                resolved_self.data = resolved_self_proxy
             node.store[self._self.id_at_location] = resolved_self  # type: ignore
 
         node.store[self.id_at_location] = result
@@ -263,19 +302,19 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         :rtype: RunClassMethodAction_PB
 
         .. note::
-            This method is purely an internal method. Please use sy.serialize(object) or one of
+            This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
 
         return RunClassMethodAction_PB(
             path=self.path,
-            _self=sy.serialize(self._self, to_bytes=True),
-            args=list(map(lambda x: sy.serialize(x, to_bytes=True), self.args)),
-            kwargs={k: sy.serialize(v, to_bytes=True) for k, v in self.kwargs.items()},
-            id_at_location=sy.serialize(self.id_at_location),
-            address=sy.serialize(self.address),
-            msg_id=sy.serialize(self.id),
+            _self=serialize(self._self, to_bytes=True),
+            args=list(map(lambda x: serialize(x, to_bytes=True), self.args)),
+            kwargs={k: serialize(v, to_bytes=True) for k, v in self.kwargs.items()},
+            id_at_location=serialize(self.id_at_location),
+            address=serialize(self.address),
+            msg_id=serialize(self.id),
         )
 
     @staticmethod
@@ -295,17 +334,14 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
         return RunClassMethodAction(
             path=proto.path,
-            _self=sy.deserialize(blob=proto._self, from_bytes=True),
-            args=list(
-                map(lambda x: sy.deserialize(blob=x, from_bytes=True), proto.args)
-            ),
+            _self=deserialize(blob=proto._self, from_bytes=True),
+            args=list(map(lambda x: deserialize(blob=x, from_bytes=True), proto.args)),
             kwargs={
-                k: sy.deserialize(blob=v, from_bytes=True)
-                for k, v in proto.kwargs.items()
+                k: deserialize(blob=v, from_bytes=True) for k, v in proto.kwargs.items()
             },
-            id_at_location=sy.deserialize(blob=proto.id_at_location),
-            address=sy.deserialize(blob=proto.address),
-            msg_id=sy.deserialize(blob=proto.msg_id),
+            id_at_location=deserialize(blob=proto.id_at_location),
+            address=deserialize(blob=proto.address),
+            msg_id=deserialize(blob=proto.msg_id),
         )
 
     @staticmethod

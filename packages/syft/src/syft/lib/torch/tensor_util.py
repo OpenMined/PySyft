@@ -17,9 +17,9 @@ TORCH_DTYPE_STR = {
     th.float16: "float16",
     th.float32: "float32",
     th.float64: "float64",
-    th.complex32: "complex32",
-    th.complex64: "complex64",
-    th.complex128: "complex128",
+    # th.complex32: "complex32", # deprecated
+    # th.complex64: "complex64",
+    # th.complex128: "complex128",
     th.bool: "bool",
     th.qint8: "qint8",
     th.quint8: "quint8",

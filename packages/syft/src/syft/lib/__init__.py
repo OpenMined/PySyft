@@ -20,7 +20,6 @@ from packaging import version
 
 # relative
 from ..ast.globals import Globals
-from ..core.adp import create_adp_ast
 from ..core.node.abstract.node import AbstractNodeClient
 from ..core.node.common import create_client_ast
 from ..core.smpc import create_smpc_ast
@@ -113,9 +112,13 @@ def _add_lib(
 
 def _regenerate_unions(*, lib_ast: Globals, client: TypeAny = None) -> None:
     union_misc_ast = getattr(
-        getattr(create_union_ast(lib_ast=lib_ast, client=client), "syft"), "lib"
+        getattr(create_union_ast(lib_ast=lib_ast, client=client), "syft", None),
+        "lib",
+        None,
     )
-    if client is not None:
+    if union_misc_ast is None:
+        return
+    elif client is not None:
         client.syft.lib.add_attr(attr_name="misc", attr=union_misc_ast.attrs["misc"])
     else:
         lib_ast.syft.lib.add_attr(attr_name="misc", attr=union_misc_ast.attrs["misc"])
@@ -140,13 +143,18 @@ def _load_lib(*, lib: str, options: Optional[TypeDict[str, TypeAny]] = None) -> 
     _ = importlib.import_module(lib)
     vendor_ast = importlib.import_module(f"syft.lib.{lib}")
     PACKAGE_SUPPORT = getattr(vendor_ast, "PACKAGE_SUPPORT", None)
+    if PACKAGE_SUPPORT is None:
+        raise Exception(f"Unable to load package: {lib}. Missing PACKAGE_SUPPORT.")
     PACKAGE_SUPPORT.update(_options)
     if PACKAGE_SUPPORT is not None and vendor_requirements_available(
         vendor_requirements=PACKAGE_SUPPORT
     ):
         _add_lib(vendor_ast=vendor_ast, ast_or_client=lib_ast)
         # cache the constructor for future created clients
-        lib_ast.loaded_lib_constructors[lib] = getattr(vendor_ast, "update_ast", None)
+        update_ast_func = getattr(vendor_ast, "update_ast", None)
+        if update_ast_func is None:
+            raise Exception(f"Unable to load package: {lib}. Missing update_ast func")
+        lib_ast.loaded_lib_constructors[lib] = update_ast_func
         _regenerate_unions(lib_ast=lib_ast)
 
         for _, client in lib_ast.registered_clients.items():
@@ -156,7 +164,7 @@ def _load_lib(*, lib: str, options: Optional[TypeDict[str, TypeAny]] = None) -> 
 
 def load(
     *libs: TypeUnion[TypeList[str], TypeTuple[str], TypeSet[str], str],
-    options: TypeDict[str, TypeAny] = {},
+    options: Optional[TypeDict[str, TypeAny]] = None,
     ignore_warning: bool = False,
     **kwargs: str,
 ) -> None:
@@ -170,6 +178,7 @@ def load(
     """
     # For backward compatibility with calls like `syft.load(lib = "opacus")`
     # Note: syft.load(lib = "opacus") doesnot work as it iterates the string, syft.load('opacus') works
+    options = options if options is not None else {}
 
     if not ignore_warning:
         msg = "sy.load() is deprecated and not needed anymore"
@@ -179,7 +188,7 @@ def load(
     if "lib" in kwargs.keys():
         libs += tuple(kwargs["lib"])
 
-    if isinstance(libs[0], Iterable):
+    if len(libs) > 0 and isinstance(libs[0], Iterable):
         if not isinstance(libs[0], str):
             libs = tuple(libs[0])
         for lib in libs:
@@ -200,7 +209,7 @@ def load(
         )
 
 
-def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
+def load_lib(lib: str, options: Optional[TypeDict[str, TypeAny]] = None) -> None:
     """
     Load and Update Node with given library module
     _load_lib() is deprecated please use load() in the future
@@ -210,6 +219,7 @@ def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
         options: external requirements for loading library successfully
 
     """
+    options = options if options is not None else {}
     msg = "sy._load_lib() is deprecated and not needed anymore"
     warning(msg, print=True)
     warnings.warn(msg, DeprecationWarning)
@@ -231,7 +241,6 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     python_ast = create_python_ast(client=client)
     torch_ast = create_torch_ast(client=client)
     numpy_ast = create_ast(client=client)
-    adp_ast = create_adp_ast(client=client)
     client_ast = create_client_ast(client=client)
     tensor_ast = create_tensor_ast(client=client)
     smpc_ast = create_smpc_ast(client=client)
@@ -240,16 +249,18 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     lib_ast.add_attr(attr_name="syft", attr=python_ast.attrs["syft"])
     lib_ast.add_attr(attr_name="torch", attr=torch_ast.attrs["torch"])
     lib_ast.add_attr(attr_name="numpy", attr=numpy_ast.attrs["numpy"])
-    lib_ast.syft.add_attr("core", attr=adp_ast.syft.core)
+    lib_ast.syft.add_attr("core", attr=tensor_ast.syft.core)
     lib_ast.syft.core.add_attr("node", attr=client_ast.syft.core.node)
     lib_ast.syft.core.add_attr("common", attr=client_ast.syft.core.common)
-    lib_ast.syft.core.add_attr("tensor", attr=tensor_ast.syft.core.tensor)
     lib_ast.syft.core.add_attr("smpc", attr=smpc_ast.syft.core.smpc)
 
     # let the misc creation be always the last, as it needs the full ast solved
     # to properly generated unions
-    union_misc_ast = getattr(getattr(create_union_ast(lib_ast, client), "syft"), "lib")
-    lib_ast.syft.lib.add_attr(attr_name="misc", attr=union_misc_ast.attrs["misc"])
+    union_misc_ast = getattr(
+        getattr(create_union_ast(lib_ast, client), "syft", None), "lib", None
+    )
+    if union_misc_ast:
+        lib_ast.syft.lib.add_attr(attr_name="misc", attr=union_misc_ast.attrs["misc"])
 
     return lib_ast
 

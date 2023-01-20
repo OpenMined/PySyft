@@ -4,7 +4,7 @@ from typing import Any
 # relative
 from .fixed_precision_tensor import FixedPrecisionTensor
 from .manager import TensorChainManager
-from .types import SupportedChainType
+from .passthrough import SupportedChainType  # type: ignore
 
 
 class FixedPrecisionTensorAncestor(TensorChainManager):
@@ -14,9 +14,9 @@ class FixedPrecisionTensorAncestor(TensorChainManager):
         )
         return self
 
-    def decode(self) -> Any:
-        if not isinstance(self.child, FixedPrecisionTensor):
-            raise ValueError(f"self.child should be FPT but is {type(self.child)}")
+    # def decode(self) -> Any:
+    #     if not isinstance(self.child, FixedPrecisionTensor):
+    #         raise ValueError(f"self.child should be FPT but is {type(self.child)}")
 
-        res = self.child.decode()
-        return res
+    #     res = self.child.decode()
+    #     return res

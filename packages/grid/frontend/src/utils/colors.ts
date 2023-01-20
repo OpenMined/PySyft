@@ -4,13 +4,13 @@ export const entityColors = {
   requests: 'pink',
   users: 'sky',
   tensors: 'blueGray',
-  roles: 'sky'
+  roles: 'sky',
 }
 
 export const statusColors = {
   requests: {
     pending: 'coolGray',
     accepted: 'green',
-    denied: 'red'
-  }
+    denied: 'red',
+  },
 }

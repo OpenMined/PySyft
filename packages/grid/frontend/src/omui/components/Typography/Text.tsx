@@ -1,9 +1,19 @@
 import React from 'react'
 import cn from 'classnames'
-import type {PropsWithChildren} from 'react'
+import type { PropsWithChildren } from 'react'
 
 export type TextAsProp = 'p' | 'span' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
-export type TextSizeProp = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | '6xl'
+export type TextSizeProp =
+  | 'xs'
+  | 'sm'
+  | 'md'
+  | 'lg'
+  | 'xl'
+  | '2xl'
+  | '3xl'
+  | '4xl'
+  | '5xl'
+  | '6xl'
 
 interface Props {
   /**
@@ -64,34 +74,45 @@ export function Text({
   children,
   ...props
 }: TextProps) {
-  const isRoboto = React.useMemo(() => ['xs', 'sm', 'md', 'lg'].includes(size), [size])
+  const isRoboto = React.useMemo(
+    () => ['xs', 'sm', 'md', 'lg'].includes(size),
+    [size]
+  )
 
-  const underlined = {underline: underline && !mono}
-  const uppercased = {uppercase: uppercase || mono}
+  const underlined = { underline: underline && !mono }
+  const uppercased = { uppercase: uppercase || mono }
   const fontFamily = {
     'font-roboto': isRoboto && !mono,
     'font-rubik': !isRoboto && !mono,
-    'font-firacode': mono
+    'font-firacode': mono,
   }
   const fontWeight = {
     'font-normal': isRoboto && !bold,
     'font-medium': !isRoboto && !bold,
     'font-bold': (isRoboto && bold) || (mono && bold),
-    'font-black': !isRoboto && bold && !mono
+    'font-black': !isRoboto && bold && !mono,
   }
 
-  const uppercaseCustomRule = uppercase && ['4xl', '5xl', '6xl'].includes(size) && !mono
+  const uppercaseCustomRule =
+    uppercase && ['4xl', '5xl', '6xl'].includes(size) && !mono
   const monoCustomRule = mono && ['4xl', '5xl'].includes(size)
 
   const fontSize = {
     [`text-${size}`]: !uppercaseCustomRule && !monoCustomRule,
     [`text-${size}-upper`]: uppercaseCustomRule,
-    [`text-${size}-mono`]: monoCustomRule
+    [`text-${size}-mono`]: monoCustomRule,
   }
 
-  const classes = cn(fontFamily, fontWeight, fontSize, underlined, uppercased, className)
+  const classes = cn(
+    fontFamily,
+    fontWeight,
+    fontSize,
+    underlined,
+    uppercased,
+    className
+  )
 
-  return React.createElement(as, {className: classes, ...props}, children)
+  return React.createElement(as, { className: classes, ...props }, children)
 }
 
 export type HeadingProps = DefaultProps<Omit<Props, 'as' | 'size'>>

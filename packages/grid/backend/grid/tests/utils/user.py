@@ -13,6 +13,7 @@ def create_user(
     email: Optional[str] = random_email(),
     password: Optional[str] = random_lower_string(),
     name: Optional[str] = random_lower_string(),
+    institution: Optional[str] = random_lower_string(),
     role: Optional[str] = "Administrator",
     budget: Optional[float] = 0.0,
 ) -> UserCreate:
@@ -22,5 +23,6 @@ def create_user(
         "name": name,
         "role": role,
         "budget": budget,
+        "institution": institution,
     }
     return UserCreate(**user)

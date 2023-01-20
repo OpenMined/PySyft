@@ -1,5 +1,5 @@
-import {useMemo} from 'react'
-import type {Ref, MutableRefObject} from 'react'
+import { useMemo } from 'react'
+import type { Ref, MutableRefObject } from 'react'
 
 type ReactRef<T> = Ref<T> | MutableRefObject<T>
 
@@ -31,9 +31,9 @@ function assignValueToRef<T = any>(ref: ReactRef<T> | undefined, value: T) {
  */
 export function useMergeRefs<T>(...refs: (ReactRef<T> | undefined)[]) {
   return useMemo(() => {
-    if (refs.every(ref => ref == null)) return null
+    if (refs.every((ref) => ref == null)) return null
     return (node: T) => {
-      refs.forEach(ref => {
+      refs.forEach((ref) => {
         if (ref) assignValueToRef(ref, node)
       })
     }

@@ -6,7 +6,7 @@ from typing import Any
 from sqlalchemy.engine import Engine
 
 # relative
-from ...domain.enums import RequestAPIFields
+from ...enums import RequestAPIFields
 from ..exceptions import AssociationRequestError
 from ..node_table.association_request import AssociationRequest
 from .database_manager import DatabaseManager

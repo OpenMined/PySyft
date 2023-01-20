@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 import json
+import os
 import re
 import time
 from typing import Any
@@ -18,11 +19,37 @@ import requests
 from typing_extensions import final
 
 # relative
+from ......grid import GridURL
+from ......logger import critical
+from ......util import verify_tls
 from .....common.serde.serializable import serializable
 from ....abstract.node import AbstractNode
 from ..generic_payload.messages import GenericPayloadMessage
 from ..generic_payload.messages import GenericPayloadMessageWithReply
 from ..generic_payload.messages import GenericPayloadReplyMessage
+
+TAILSCALE_HOST = "proxy"
+TAILSCALE_PORT = 4000
+TAILSCALE_URL = f"http://{TAILSCALE_HOST}:{TAILSCALE_PORT}"
+
+HEADSCALE_HOST = "headscale"
+HEADSCALE_PORT = 4000
+HEADSCALE_URL = f"http://{HEADSCALE_HOST}:{HEADSCALE_PORT}"
+
+
+def grid_url_from_kwargs(kwargs: Dict[str, Any]) -> GridURL:
+    try:
+        if "host_or_ip" in kwargs:
+            # old way to send these messages was with host_or_ip
+            return GridURL.from_url(str(kwargs["host_or_ip"]))
+        elif "grid_url" in kwargs:
+            # new way is with grid_url
+            return kwargs["grid_url"]
+        else:
+            raise Exception("kwargs missing host_or_ip or grid_url")
+    except Exception as e:
+        print(f"Failed to get grid_url from kwargs: {kwargs}. {e}")
+        raise e
 
 
 @serializable(recursive_serde=True)
@@ -47,15 +74,17 @@ class VPNConnectMessageWithReply(GenericPayloadMessageWithReply):
         self, node: AbstractNode, verify_key: Optional[VerifyKey] = None
     ) -> Dict[str, Any]:
         try:
-            host_or_ip = str(self.kwargs["host_or_ip"])
-            if not host_or_ip.startswith("http"):
-                host_or_ip = f"http://{host_or_ip}/vpn"
-
+            grid_url = grid_url_from_kwargs(self.kwargs)
+            grid_url = grid_url.with_path("/vpn")
             vpn_auth_key = str(self.kwargs["vpn_auth_key"])
 
+            status, error = disconnect(tailscale_host=TAILSCALE_URL)
+            if not status:
+                print("Failed to run tailscale down first", error)
+
             status, error = connect_with_key(
-                tailscale_host="http://tailscale:4000",
-                headscale_host=host_or_ip,
+                tailscale_host=TAILSCALE_URL,
+                headscale_host=str(grid_url),
                 vpn_auth_key=vpn_auth_key,
             )
             if status:
@@ -68,30 +97,68 @@ class VPNConnectMessageWithReply(GenericPayloadMessageWithReply):
             return {"status": "error"}
 
 
+def disconnect(tailscale_host: str) -> Tuple[bool, str]:
+    try:
+        # we need --accept-dns=false because magicDNS replaces /etc/resolv.conf which
+        # breaks using tailscale in network_mode with docker compose because the
+        # /etc/resolv.conf has the mDNS ip nameserver 127.0.0.11
+        data = {
+            "args": [],
+            "timeout": 60,
+            "force_unique_key": True,
+        }
+
+        command_url = f"{tailscale_host}/commands/down"
+
+        headers = {"X-STACK-API-KEY": os.environ.get("STACK_API_KEY", "")}
+        resp = requests.post(command_url, json=data, headers=headers)
+        report = get_result(json=resp.json())
+        report_dict = json.loads(report)
+
+        if int(report_dict["returncode"]) == 0:
+            return (True, "")
+        else:
+            return (False, report_dict.get("report", ""))
+    except Exception as e:
+        critical(f"Failed to disconnect VPN. {e}")
+        raise e
+
+
 def connect_with_key(
     tailscale_host: str, headscale_host: str, vpn_auth_key: str
 ) -> Tuple[bool, str]:
-    data = {
-        "args": [
-            "-login-server",
-            f"{headscale_host}",
-            "--reset",
-            "--force-reauth",
-            "--authkey",
-            f"{vpn_auth_key}",
-        ],
-        "timeout": 60,
-    }
-    command_url = f"{tailscale_host}/commands/up"
+    try:
+        # we need --accept-dns=false because magicDNS replaces /etc/resolv.conf which
+        # breaks using tailscale in network_mode with docker compose because the
+        # /etc/resolv.conf has the mDNS ip nameserver 127.0.0.11
+        data = {
+            "args": [
+                "-login-server",
+                f"{headscale_host}",
+                "--reset",
+                "--force-reauth",
+                "--authkey",
+                f"{vpn_auth_key}",
+                "--accept-dns=false",
+            ],
+            "timeout": 60,
+            "force_unique_key": True,
+        }
 
-    resp = requests.post(command_url, json=data)
-    report = get_result(json=resp.json())
-    report_dict = json.loads(report)
+        command_url = f"{tailscale_host}/commands/up"
 
-    if int(report_dict["returncode"]) == 0:
-        return (True, "")
-    else:
-        return (False, report_dict.get("report", ""))
+        headers = {"X-STACK-API-KEY": os.environ.get("STACK_API_KEY", "")}
+        resp = requests.post(command_url, json=data, headers=headers)
+        report = get_result(json=resp.json())
+        report_dict = json.loads(report)
+
+        if int(report_dict["returncode"]) == 0:
+            return (True, "")
+        else:
+            return (False, report_dict.get("report", ""))
+    except Exception as e:
+        critical(f"Failed to connect to VPN. {e}")
+        raise e
 
 
 @serializable(recursive_serde=True)
@@ -116,39 +183,109 @@ class VPNJoinMessageWithReply(GenericPayloadMessageWithReply):
         self, node: AbstractNode, verify_key: Optional[VerifyKey] = None
     ) -> Dict[str, Any]:
         try:
-            host_or_ip = str(self.kwargs["host_or_ip"])
-            if not host_or_ip.startswith("http"):
-                host_or_ip = f"http://{host_or_ip}"
-
             # can't import Network due to circular imports
             if type(node).__name__ == "Network":
-                # we are already in the network and could be on the blocking backend api
-                msg = VPNRegisterMessageWithReply(kwargs={}).to(
-                    address=node.address, reply_to=node.address
+                # networks can't join other networks yet
+                raise Exception(
+                    "Network cant join another Network, try VPNJoinSelfMessageWithReply"
                 )
-                reply = node.recv_immediate_msg_with_reply(msg=msg).message
-                res_json = {}
-                try:
-                    res_json["vpn_auth_key"] = str(
-                        reply.payload.kwargs.get("vpn_auth_key")  # type: ignore
-                    )
-                except Exception:  # nosec
-                    pass
-            else:
-                res = requests.post(f"{host_or_ip}/api/v1/vpn/register")
-                res_json = res.json()
 
+            # we are running inside the container so we should change the host to
+            # what ever will suit the environment with as_container_host
+            grid_url = grid_url_from_kwargs(self.kwargs).as_container_host(
+                container_host=node.settings.CONTAINER_HOST
+            )
+            res = requests.post(
+                str(grid_url.with_path("/api/v1/vpn/register")), verify=verify_tls()
+            )
+            res_json = res.json()
             if "vpn_auth_key" not in res_json:
                 print("Registration failed", res)
                 return {"status": "error"}
 
+            status, error = disconnect(tailscale_host=TAILSCALE_URL)
+            if not status:
+                print("Failed to run tailscale down first", error)
+
             status, error = connect_with_key(
-                tailscale_host="http://tailscale:4000",
-                headscale_host=f"{host_or_ip}/vpn",
+                tailscale_host=TAILSCALE_URL,
+                headscale_host=str(grid_url.with_path("/vpn")),
                 vpn_auth_key=res_json["vpn_auth_key"],
             )
 
             if status:
+                node_id = node.node.create_or_get_node(  # type: ignore
+                    node_uid=res_json["node_id"],
+                    node_name=res_json["node_name"],
+                )
+                node.node_route.update_route_for_node(  # type: ignore
+                    node_id=node_id,
+                    host_or_ip=res_json["host_or_ip"],
+                    vpn_endpoint=str(grid_url.with_path("/vpn")),
+                    vpn_key=res_json["vpn_auth_key"],
+                )
+                return {"status": "ok"}
+            else:
+                print("connect with key failed", error)
+                return {"status": "error"}
+        except Exception as e:
+            print(f"Failed to run {type(self)}", self.kwargs, e)
+            return {"status": "error"}
+
+
+@serializable(recursive_serde=True)
+@final
+class VPNJoinSelfMessage(GenericPayloadMessage):
+    ...
+
+
+@serializable(recursive_serde=True)
+@final
+class VPNJoinSelfReplyMessage(GenericPayloadReplyMessage):
+    ...
+
+
+@serializable(recursive_serde=True)
+@final
+class VPNJoinSelfMessageWithReply(GenericPayloadMessageWithReply):
+    message_type = VPNJoinSelfMessage
+    message_reply_type = VPNJoinSelfReplyMessage
+
+    def run(
+        self, node: AbstractNode, verify_key: Optional[VerifyKey] = None
+    ) -> Dict[str, Any]:
+        try:
+            # can't import Domaiun due to circular imports
+            if type(node).__name__ == "Domain":
+                # networks can't join other networks yet
+                raise Exception(
+                    "Domains cant join themselves, try VPNJoinMessageWithReply"
+                )
+
+            # get status
+            up_status, _, _ = get_status(tailscale_host=TAILSCALE_URL)
+            if up_status:
+                print("Already connected!")
+                return {"status": "ok"}
+            print("Connecting...")
+
+            key_status, vpn_auth_key = generate_key(headscale_host=HEADSCALE_URL)
+
+            if not key_status:
+                raise Exception("Failed to generate key for joining VPN")
+
+            status, error = disconnect(tailscale_host=TAILSCALE_URL)
+            if not status:
+                print("Failed to run tailscale down first", error)
+
+            connect_status, error = connect_with_key(
+                tailscale_host=TAILSCALE_URL,
+                headscale_host=f"http://{HEADSCALE_HOST}:8080",
+                vpn_auth_key=vpn_auth_key,
+            )
+
+            if connect_status:
+                print("Connected successfully")
                 return {"status": "ok"}
             else:
                 print("connect with key failed", error)
@@ -178,7 +315,7 @@ class VPNRegisterMessageWithReply(GenericPayloadMessageWithReply):
 
     def run(self, node: AbstractNode, verify_key: Optional[VerifyKey] = None) -> Any:
         try:
-            status, vpn_auth_key = generate_key(headscale_host="http://headscale:4000")
+            status, vpn_auth_key = generate_key(headscale_host=HEADSCALE_URL)
 
             if status:
                 return {"status": "ok", "vpn_auth_key": vpn_auth_key}
@@ -199,13 +336,15 @@ def extract_nested_json(nested_json: str) -> Union[Dict, List]:
 
 
 def generate_key(headscale_host: str) -> Tuple[bool, str]:
-    data = {"timeout": 5}
+    data = {"timeout": 5, "force_unique_key": True}
+
     command_url = f"{headscale_host}/commands/generate_key"
     try:
-        resp = requests.post(command_url, json=data)
+        headers = {"X-STACK-API-KEY": os.environ.get("STACK_API_KEY", "")}
+        resp = requests.post(command_url, json=data, headers=headers)
         report = get_result(json=resp.json())
         result_dict = dict(extract_nested_json(report))
-        result = result_dict["Key"]
+        result = result_dict["key"]
 
         # check if we got a key
         if len(result) == 48:
@@ -238,7 +377,7 @@ class VPNStatusMessageWithReply(GenericPayloadMessageWithReply):
 
     def run(self, node: AbstractNode, verify_key: Optional[VerifyKey] = None) -> Any:
         try:
-            up, host, peers = get_status(tailscale_host="http://tailscale:4000")
+            up, host, peers = get_status(tailscale_host=TAILSCALE_URL)
             return {"status": "ok", "connected": up, "host": host, "peers": peers}
         except Exception as e:
             print(f"Failed to run {type(self)}", self.kwargs, e)
@@ -313,13 +452,14 @@ def clean_status_output(
 def get_status(
     tailscale_host: str,
 ) -> Tuple[bool, Dict[str, str], List[Dict[str, str]]]:
-    data = {"timeout": 5}
+    data = {"timeout": 5, "force_unique_key": True}
     command_url = f"{tailscale_host}/commands/status"
     host: Dict[str, str] = {}
     peers: List[Dict[str, str]] = []
     connected = False
     try:
-        resp = requests.post(command_url, json=data)
+        headers = {"X-STACK-API-KEY": os.environ.get("STACK_API_KEY", "")}
+        resp = requests.post(command_url, json=data, headers=headers)
         report = get_result(json=resp.json())
         cmd_output = json.loads(report)["report"]
         connected, host, peers = clean_status_output(input=cmd_output)
@@ -328,15 +468,32 @@ def get_status(
     return connected, host, peers
 
 
+def get_network_url(tailscale_host: str = TAILSCALE_URL) -> Union[None, GridURL]:
+    data = {"timeout": 5, "force_unique_key": True}
+    command_url = f"{tailscale_host}/commands/debug"
+    try:
+        headers = {"X-STACK-API-KEY": os.environ.get("STACK_API_KEY", "")}
+        resp = requests.post(command_url, json=data, headers=headers)
+        report = get_result(json=resp.json())
+        network_url = GridURL.from_url(
+            json.loads(json.loads(report)["report"])["ControlURL"][:-4]
+        )
+        return network_url
+    except Exception as e:
+        print("failed to make request", e)
+    return None
+
+
 def get_result(json: Dict) -> str:
     result_url = json.get("result_url", "")
+    headers = {"X-STACK-API-KEY": os.environ.get("STACK_API_KEY", "")}
     tries = 0
     limit = 5
     try:
         while True:
             print("Polling API Result", tries)
-            result = requests.get(result_url)
-            if "running" in result.text:
+            result = requests.get(result_url, headers=headers)
+            if '"status":"running"' in result.text:
                 time.sleep(1)
                 tries += 1
                 if tries > limit:

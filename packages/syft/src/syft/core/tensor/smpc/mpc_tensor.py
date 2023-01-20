@@ -4,13 +4,16 @@ from __future__ import annotations
 # stdlib
 import functools
 import itertools
+import operator
 import secrets
+import time
 from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import Iterable
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Union
 
@@ -19,19 +22,25 @@ import numpy as np
 import numpy.typing as npt
 import torch
 
-# syft absolute
-import syft as sy
-
 # relative
 from . import utils
 from .... import logger
-from ....ast.klass import get_run_class_method
+from ....grid import GridURL
+from ...node.common.action.przs_action import PRZSAction
+from ...smpc.approximations import APPROXIMATIONS
 from ...smpc.protocol.spdz import spdz
+from ...smpc.store import CryptoPrimitiveProvider
+from ..config import DEFAULT_RING_SIZE
+from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import SupportedChainType  # type: ignore
 from ..util import implements  # type: ignore
-from .party import Party
 from .share_tensor import ShareTensor
+
+if TYPE_CHECKING:
+    # relative
+    from ..tensor import Tensor
+    from ..tensor import TensorPointer
 
 METHODS_FORWARD_ALL_SHARES = {
     "repeat",
@@ -47,17 +56,22 @@ METHODS_FORWARD_ALL_SHARES = {
     "squeeze",
     "swapaxes",
     "sum",
+    "__pos__",
+    "__neg__",
+    "take",
+    "choose",
+    "cumsum",
+    "trace",
 }
 INPLACE_OPS = {
     "resize",
 }
 
-PARTIES_REGISTER_CACHE: Dict[Any, Party] = {}
+PARTIES_REGISTER_CACHE: Dict[Any, GridURL] = {}
 
 
 class MPCTensor(PassthroughTensor):
     __slots__ = (
-        "seed_przs",
         "mpc_shape",
         "parties",
         "parties_info",
@@ -68,9 +82,8 @@ class MPCTensor(PassthroughTensor):
         self,
         parties: List[Any],
         secret: Optional[Any] = None,
-        shares: Optional[List[ShareTensor]] = None,
+        shares: Optional[Union[List[Tensor], List[TensorPointer]]] = None,
         shape: Optional[Tuple[int, ...]] = None,
-        seed_przs: Optional[int] = None,
         ring_size: Optional[int] = None,
     ) -> None:
 
@@ -80,14 +93,8 @@ class MPCTensor(PassthroughTensor):
         if (shares is not None) and (not isinstance(shares, (tuple, list))):
             raise ValueError("Shares should be a list or tuple")
 
-        if seed_przs is None:
-            # Allow the user to specify if they want to use a specific seed when generating the shares
-            # ^This is unsecure and should be used with cautioness
-            seed_przs = secrets.randbits(32)
-
-        self.seed_przs = seed_przs
         self.parties = parties
-        self.parties_info = MPCTensor.get_parties_info(parties)
+        self.parties_info: List[Tuple] = MPCTensor.get_parties_info(parties)
 
         if ring_size is not None:
             self.ring_size = ring_size
@@ -107,7 +114,6 @@ class MPCTensor(PassthroughTensor):
                 parties=parties,
                 parties_info=self.parties_info,
                 shape=shape,
-                seed_przs=seed_przs,
                 ring_size=self.ring_size,
             )
 
@@ -133,28 +139,31 @@ class MPCTensor(PassthroughTensor):
     def get_ring_size_from_secret(
         secret: Optional[Any] = None, shares: Optional[List[Any]] = None
     ) -> int:
-        if secret is None:
-            value = shares[0]  # type: ignore
-        else:
-            value = secret
+        value = shares[0] if secret is None else secret  # type: ignore
+
         if utils.ispointer(value):
             dtype = getattr(value, "public_dtype", None)
         else:
             dtype = getattr(value, "dtype", None)
 
-        ring_size = utils.TYPE_TO_RING_SIZE.get(dtype, None)
+        ring_size: Optional[int] = (
+            value.ring_size
+            if isinstance(value, MPCTensor)
+            else utils.TYPE_TO_RING_SIZE.get(dtype, None)
+        )
+
         if ring_size is not None:
             return ring_size
 
-        logger.warning("Ring size was not found! Defaulting to 2**32.")
-        return 2 ** 32
+        logger.warning(f"Ring size was not found! Defaulting to {DEFAULT_RING_SIZE}.")
+        return DEFAULT_RING_SIZE
 
     @staticmethod
-    def get_parties_info(parties: Iterable[Any]) -> List[Party]:
+    def get_parties_info(parties: Iterable[Any]) -> List[Tuple]:
         # relative
         from ....grid.client import GridHTTPConnection
 
-        parties_info: List[Party] = []
+        parties_info: List[Tuple] = []
         for party in parties:
             connection = party.routes[0].connection
             if not isinstance(connection, GridHTTPConnection):
@@ -164,42 +173,50 @@ class MPCTensor(PassthroughTensor):
                     + "We apologize for the inconvenience"
                     + "We will add support for local python objects very soon."
                 )
-            party_info = PARTIES_REGISTER_CACHE.get(party, None)
+            base_url = PARTIES_REGISTER_CACHE.get(party, None)
 
-            if party_info is None:
+            if base_url is None:
                 base_url = connection.base_url
-                url = base_url.rsplit(":", 1)[0]
-                port = int(base_url.rsplit(":", 1)[1].split("/")[0])
-                party_info = Party(url, port)
-                PARTIES_REGISTER_CACHE[party] = party_info
+                PARTIES_REGISTER_CACHE[party] = base_url
                 try:
-                    sy.register(  # nosec
-                        name="Howard Wolowtiz",
-                        email="howard@mit.edu",
-                        password="astronaut",
-                        url=url,
-                        port=port,
-                        verbose=False,
-                    )
+                    pass
+                    # We do not use sy.register, should reenable after fixing.
+                    # sy.register(  # nosec
+                    #     name="Howard Wolowtiz",
+                    #     email="howard@mit.edu",
+                    #     password="astronaut",
+                    #     url=url,
+                    #     port=port,
+                    #     verbose=False,
+                    # )
                 except Exception:
                     """ """
                     # TODO : should modify to return same client if registered.
                     # print("Proxy Client already User Register", e)
-            parties_info.append(party_info)
+            if base_url is not None:
+                parties_info.append((base_url, party.id, party.name))
+            else:
+                raise Exception(
+                    f"Failed to get GridURL from {base_url} for party {party}."
+                )
 
         return parties_info
 
-    def publish(self, sigma: float) -> MPCTensor:
+    # Always publish on worst case bounds with SMPC
+    def publish(self, sigma: float, private: bool = False) -> MPCTensor:
         new_shares = []
+
         for share in self.child:
-            new_share = share.publish(sigma=sigma)
+            share.block
+
+        for share in self.child:
+            new_share = share.publish(sigma=sigma, private=private)
             new_shares.append(new_share)
 
         return MPCTensor(
             parties=self.parties,
             shares=new_shares,
             shape=self.mpc_shape,
-            seed_przs=self.seed_przs,
         )
 
     @property
@@ -208,26 +225,26 @@ class MPCTensor(PassthroughTensor):
 
     @staticmethod
     def _mpc_from_shares(
-        shares: List[ShareTensor],
+        shares: Union[List[Tensor], List[TensorPointer]],
         parties: Optional[List[Any]] = None,
-    ) -> List[ShareTensor]:
+    ) -> List[TensorPointer]:
         if not isinstance(shares, (list, tuple)):
             raise ValueError("_mpc_from_shares expected a list or tuple of shares")
 
         if utils.ispointer(shares[0]):
             # Remote shares
-            return shares
+            return shares  # type: ignore
         elif parties is None:
             raise ValueError(
                 "Parties should not be None if shares are not already sent to parties"
             )
         else:
-            return MPCTensor._mpc_from_local_shares(shares, parties)
+            return MPCTensor._mpc_from_local_shares(shares, parties)  # type: ignore
 
     @staticmethod
     def _mpc_from_local_shares(
-        shares: List[ShareTensor], parties: List[Any]
-    ) -> List[ShareTensor]:
+        shares: List[Tensor], parties: List[Any]
+    ) -> List[TensorPointer]:
         # TODO: ShareTensor needs to have serde serializer/deserializer
         shares_ptr = [share.send(party) for share, party in zip(shares, parties)]
         return shares_ptr
@@ -237,10 +254,9 @@ class MPCTensor(PassthroughTensor):
         secret: Any,
         parties: List[Any],
         shape: Tuple[int, ...],
-        seed_przs: int,
-        parties_info: List[Party],
+        parties_info: List[Tuple],
         ring_size: int,
-    ) -> List[ShareTensor]:
+    ) -> Union[List[Tensor], List[TensorPointer]]:
         if utils.ispointer(secret):
             if shape is None:
                 raise ValueError("Shape must be specified when the secret is remote")
@@ -248,14 +264,12 @@ class MPCTensor(PassthroughTensor):
                 secret=secret,
                 shape=shape,
                 parties=parties,
-                seed_przs=seed_przs,
                 parties_info=parties_info,
                 ring_size=ring_size,
             )
 
         return MPCTensor._get_shares_from_local_secret(
             secret=secret,
-            seed_przs=seed_przs,
             ring_size=ring_size,
             shape=shape,
             parties_info=parties_info,
@@ -266,10 +280,13 @@ class MPCTensor(PassthroughTensor):
         secret: Any,
         shape: Tuple[int, ...],
         parties: List[Any],
-        seed_przs: int,
-        parties_info: List[Party],
+        parties_info: List[Tuple],
         ring_size: int,
-    ) -> List[ShareTensor]:
+    ) -> List[TensorPointer]:
+        # stdlib
+        import secrets
+
+        seed_id_locations = secrets.randbits(64)
         shares = []
         for i, party in enumerate(parties):
             if secret is not None and party == secret.client:
@@ -278,38 +295,61 @@ class MPCTensor(PassthroughTensor):
                 value = None
 
             # relative
-            from ..autodp.single_entity_phi import (
-                TensorWrappedSingleEntityPhiTensorPointer,
-            )
+            from ..autodp.gamma_tensor import TensorWrappedGammaTensorPointer
+            from ..autodp.phi_tensor import TensorWrappedPhiTensorPointer
 
-            if isinstance(secret, TensorWrappedSingleEntityPhiTensorPointer):
+            is_dp_tensor = False
+            if isinstance(
+                secret, (TensorWrappedPhiTensorPointer, TensorWrappedGammaTensorPointer)
+            ):
 
                 share_wrapper = secret.to_local_object_without_private_data_child()
-                share_wrapper_pointer = share_wrapper.send(party)
 
-                remote_share = party.syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs_on_dp_tensor(
-                    rank=i,
-                    parties_info=parties_info,
-                    value=value,
-                    shape=shape,
-                    seed_przs=seed_przs,
-                    share_wrapper=share_wrapper_pointer,
-                    ring_size=ring_size,
-                )
+                kwargs = {
+                    "parties_info": parties_info,
+                    "value": value,
+                    "shape": shape,
+                    "share_wrapper": share_wrapper,
+                    "ring_size": str(ring_size),
+                }
+                is_dp_tensor = True
+                attr_path_and_name = "syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs_on_dp_tensor"
 
             else:
-                remote_share = (
-                    party.syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs(
-                        rank=i,
-                        parties_info=parties_info,
-                        value=value,
-                        shape=shape,
-                        seed_przs=seed_przs,
-                        ring_size=ring_size,
-                    )
+                kwargs = {
+                    "parties_info": parties_info,
+                    "value": value,
+                    "shape": shape,
+                    "ring_size": str(ring_size),
+                }
+                attr_path_and_name = (
+                    "syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs"
                 )
 
-            shares.append(remote_share)
+            args: List[Any] = []  # Currently we do not use any args in PRZS Action
+
+            return_type_name = party.lib_ast.query(attr_path_and_name).return_type_name
+            resolved_pointer_type = party.lib_ast.query(return_type_name)
+            result = resolved_pointer_type.pointer_type(client=party)
+
+            # TODO: Path in PRZS is not used due to attribute error syft ast for przs of ShareTensor,
+            # should be modified to use path.
+            # QUESTION can the id_at_location be None?
+            result_id_at_location = getattr(result, "id_at_location", None)
+            if result_id_at_location is not None:
+                cmd = PRZSAction(
+                    seed_id_locations=seed_id_locations,
+                    path=attr_path_and_name,
+                    args=args,
+                    kwargs=kwargs,
+                    id_at_location=result_id_at_location,
+                    is_dp_tensor=is_dp_tensor,
+                    address=party.address,
+                )
+                party.send_immediate_msg_without_reply(msg=cmd)
+                party.processing_pointers[result_id_at_location] = True
+
+            shares.append(result)
 
         return shares
 
@@ -317,29 +357,64 @@ class MPCTensor(PassthroughTensor):
     def _get_shares_from_local_secret(
         secret: Any,
         shape: Tuple[int, ...],
-        seed_przs: int,
-        parties_info: List[Party],
-        ring_size: int = 2 ** 32,
-    ) -> List[ShareTensor]:
-        shares = []
-        nr_parties = len(parties_info)
-        for i in range(nr_parties):
-            if i == nr_parties - 1:
-                value = secret
-            else:
-                value = None
+        parties_info: List[Tuple],
+        ring_size: int = DEFAULT_RING_SIZE,
+    ) -> List[Tensor]:
 
-            local_share = ShareTensor.generate_przs(
+        # relative
+        from ..tensor import Tensor
+
+        nr_parties = len(parties_info)
+        op = getattr(operator, "sub")
+
+        random_shares = []
+        random_seed = secrets.randbits(64)
+        generator = np.random.default_rng(random_seed)
+
+        numpy_type = secret.dtype
+        if numpy_type is None:
+            numpy_type = utils.RING_SIZE_TO_TYPE.get(ring_size, None)
+
+        if numpy_type is None:
+            raise ValueError(f"Ring size {ring_size} not known how to be treated")
+
+        min_value, max_value = ShareTensor.compute_min_max_from_ring(ring_size)
+        for i in range(nr_parties - 1):
+            rand_value = generator.integers(
+                low=min_value,
+                high=max_value,
+                size=shape,
+                endpoint=True,
+                dtype=numpy_type,
+            )
+            share = ShareTensor(
+                value=rand_value,
                 rank=i,
                 parties_info=parties_info,
-                value=value,
-                shape=shape,
-                seed_przs=seed_przs,
                 init_clients=False,
-                ring_size=ring_size,
+                ring_size=ring_size,  # type: ignore
             )
 
-            shares.append(local_share)
+            random_shares.append(share)
+
+        secret = ShareTensor(
+            value=secret.child if isinstance(secret, Tensor) else secret,
+            rank=i,
+            parties_info=parties_info,
+            init_clients=False,
+            ring_size=ring_size,  # type: ignore
+        )
+
+        shares = []
+        for i in range(nr_parties):
+            if i == 0:
+                share = random_shares[i]
+            elif i < nr_parties - 1:
+                share = op(random_shares[i], random_shares[i - 1])
+            else:
+                share = op(secret, random_shares[i - 1])
+
+            shares.append(Tensor(share))
 
         return shares
 
@@ -371,59 +446,83 @@ class MPCTensor(PassthroughTensor):
 
         return self
 
-    def reconstruct(self) -> np.ndarray:
-        # TODO: It might be that the resulted shares (if we run any computation) might
-        # not be available at this point. We need to have this fail well with a nice
-        # description as to which node wasn't able to be reconstructued.
-        # Captured: https://app.clubhouse.io/openmined/story/1128/tech-debt-for-adp-smpc-demo?\
-        # stories_sort_by=priority&stories_group_by=WORKFLOW_STATE
-
-        # for now we need to convert the values coming back to int32
-        # sometimes they are floats coming from DP
-        def convert_child_numpy_type(tensor: Any, np_type: type) -> Any:
-            if isinstance(tensor, np.ndarray):
-                return np.array(tensor, np_type)
-            if hasattr(tensor, "child"):
-                tensor.child = convert_child_numpy_type(
-                    tensor=tensor.child, np_type=np_type
-                )
-            return tensor
+    def reconstruct(
+        self, delete_obj: bool = True, timeout_secs: int = 90
+    ) -> np.ndarray:
+        # relative
+        from ..fixed_precision_tensor import FixedPrecisionTensor
 
         dtype = utils.RING_SIZE_TO_TYPE.get(self.ring_size, None)
 
         if dtype is None:
             raise ValueError(f"Type for ring size {self.ring_size} was not found!")
 
+        start_time = time.time()
+
+        # relative
+        from ....core.node.common.client import GET_OBJECT_TIMEOUT
+
+        # make sure timeout_secs is valid
+        try:
+            timeout_secs = int(timeout_secs)
+            if timeout_secs < 0:
+                timeout_secs = GET_OBJECT_TIMEOUT
+        except Exception:
+            timeout_secs = GET_OBJECT_TIMEOUT
+
+        future_time = timeout_secs + start_time
+
         for share in self.child:
-            if not share.exists:
-                raise Exception(
-                    "One of the shares doesn't exist. This probably means the SMPC "
-                    "computation isn't yet complete. Try again in a moment or call .block.reconstruct()"
-                    "instead to block until the SMPC operation is complete which creates this variable."
-                )
+            # Check if share pointer is in processing stage
+            # If so, wait until it exists.
+            if share.client.processing_pointers.get(share.id_at_location, False):
+                while not share.exists and future_time > time.time():
+                    time.sleep(0.5)
+
+                # Then, delete it from the processing map.
+                del share.client.processing_pointers[share.id_at_location]
+            else:
+                # If it's not in processing stage, then it's because it doesn't exist there.
+                if not share.exists:
+                    raise Exception(
+                        "One of the shares doesn't exist. This probably means the SMPC "
+                        "computation isn't yet complete. Try again in a moment or call .block.reconstruct()"
+                        "instead to block until the SMPC operation is complete which creates this variable."
+                    )
 
         local_shares = []
         for share in self.child:
-            res = share.get()
-            res = convert_child_numpy_type(res, dtype)
+            res = share.get() if delete_obj else share.get_copy()
             local_shares.append(res)
-
-        is_share_tensor = isinstance(local_shares[0], ShareTensor)
-
-        if is_share_tensor:
-            local_shares = [share.child for share in local_shares]
 
         result = local_shares[0]
         op = ShareTensor.get_op(self.ring_size, "add")
         for share in local_shares[1:]:
             result = op(result, share)
 
-        if hasattr(result, "child") and isinstance(result.child, ShareTensor):
-            return result.child.child
+        def check_fpt(value: Any) -> bool:
+            if isinstance(value, FixedPrecisionTensor):
+                return True
+            if hasattr(value, "child"):
+                return check_fpt(value.child)
+            else:
+                return False
 
-        return result
+        if check_fpt(result):
+            return result.decode()
+
+        def get_lowest_child(value: Any) -> AcceptableSimpleType:
+            if isinstance(value, PassthroughTensor):
+                return get_lowest_child(value.child)
+            else:
+                return value
+
+        return get_lowest_child(result)
 
     get = reconstruct
+
+    def get_copy(self) -> np.ndarray:
+        return self.reconstruct(delete_obj=False)
 
     @staticmethod
     def hook_method(__self: MPCTensor, method_name: str) -> Callable[..., Any]:
@@ -436,9 +535,7 @@ class MPCTensor(PassthroughTensor):
             A hooked method
         """
 
-        def method_all_shares(
-            _self: MPCTensor, *args: List[Any], **kwargs: Dict[Any, Any]
-        ) -> Any:
+        def method_all_shares(_self: MPCTensor, *args: Any, **kwargs: Any) -> Any:
 
             shares = []
 
@@ -447,13 +544,14 @@ class MPCTensor(PassthroughTensor):
                 new_share = method(*args, **kwargs)
                 shares.append(new_share)
 
-                dummy_res = np.empty(_self.mpc_shape)
+                # TODO: generalize type after fixed precision
+                dummy_res = np.random.randint(
+                    _self.mpc_shape[0], size=_self.mpc_shape, dtype=np.int32  # type: ignore
+                )
                 if method_name not in INPLACE_OPS:
-                    dummy_res = getattr(np.empty(_self.mpc_shape), method_name)(
-                        *args, **kwargs
-                    )
+                    dummy_res = getattr(dummy_res, method_name)(*args, **kwargs)
                 else:
-                    getattr(np.empty(_self.mpc_shape), method_name)(*args, **kwargs)
+                    getattr(dummy_res, method_name)(*args, **kwargs)
 
                 new_shape = dummy_res.shape
             res = MPCTensor(parties=_self.parties, shares=shares, shape=new_shape)
@@ -503,7 +601,6 @@ class MPCTensor(PassthroughTensor):
         mpc_parties = set(mpc_tensor.parties)
         parties = set(parties)
         shape = mpc_tensor.shape
-        seed_przs = mpc_tensor.seed_przs
         client_map = {share.client: share for share in mpc_tensor.child}
 
         if mpc_parties == parties:
@@ -512,17 +609,41 @@ class MPCTensor(PassthroughTensor):
             )
         parties_info = MPCTensor.get_parties_info(parties)
         shares = [client_map.get(party) for party in parties]
+        seed_id_locations = secrets.randbits(64)
         for i, party in enumerate(parties):
-            shares[
-                i
-            ] = party.syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs(
-                rank=i,
-                parties_info=parties_info,
-                value=shares[i],
-                shape=shape,
-                seed_przs=seed_przs,
-                ring_size=mpc_tensor.ring_size,
+            kwargs = {
+                "parties_info": parties_info,
+                "value": shares[i],
+                "shape": shape,
+                "ring_size": str(mpc_tensor.ring_size),
+            }
+            attr_path_and_name = (
+                "syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs"
             )
+
+            args: List[Any] = []  # Currently we do not use any args in PRZS Action
+
+            return_type_name = party.lib_ast.query(attr_path_and_name).return_type_name
+            resolved_pointer_type = party.lib_ast.query(return_type_name)
+            result = resolved_pointer_type.pointer_type(client=party)
+
+            # TODO: Path in PRZS is not used due to attribute error syft ast for przs of ShareTensor,
+            # should be modified to use path.
+            # QUESTION can the id_at_location be None?
+            result_id_at_location = getattr(result, "id_at_location", None)
+            if result_id_at_location is not None:
+                cmd = PRZSAction(
+                    seed_id_locations=seed_id_locations,
+                    path=attr_path_and_name,
+                    args=args,
+                    kwargs=kwargs,
+                    id_at_location=result_id_at_location,
+                    is_dp_tensor=False,
+                    address=party.address,
+                )
+                party.send_immediate_msg_without_reply(msg=cmd)
+
+            shares[i] = result
 
         res_mpc = MPCTensor(shares=shares, ring_size=mpc_tensor.ring_size, shape=shape, parties=parties)  # type: ignore
 
@@ -548,6 +669,8 @@ class MPCTensor(PassthroughTensor):
                 new_parties = [client]
                 new_parties += parties
                 mpc_tensor = MPCTensor.reshare(mpc_tensor, new_parties)
+            else:
+                new_parties = parties
 
             other = MPCTensor(secret=other, parties=new_parties, shape=public_shape)
 
@@ -570,10 +693,8 @@ class MPCTensor(PassthroughTensor):
         return mpc_tensor, other
 
     def __apply_private_op(
-        self, other: MPCTensor, op_str: str, **kwargs: Dict[Any, Any]
+        self, other: MPCTensor, op_str: str, **kwargs: Any
     ) -> List[ShareTensor]:
-        # relative
-        from ..tensor import TensorPointer
 
         op_method = f"__{op_str}__"
         if op_str in {"add", "sub"}:
@@ -582,41 +703,23 @@ class MPCTensor(PassthroughTensor):
                     "Zipping two different lengths will drop data. "
                     + f"{len(self.child)} vs {len(other.child)}"
                 )
-            if not isinstance(self.child[0], TensorPointer):
-                res_shares = [
-                    getattr(a, op_method)(a, b, **kwargs)
-                    for a, b in zip(self.child, other.child)
-                ]
-            else:
-                res_shares = []
-                attr_path_and_name = f"{self.child[0].path_and_name}.__{op_str}__"
-                op = get_run_class_method(attr_path_and_name, SMPC=True)
-                for x, y in zip(self.child, other.child):
-                    res_shares.append(op(x, x, y, **kwargs))
+            res_shares = [
+                getattr(a, op_method)(b, **kwargs)
+                for a, b in zip(self.child, other.child)
+            ]
 
         else:
             raise ValueError(f"MPCTensor Private {op_str} not supported")
         return res_shares
 
     def __apply_public_op(
-        self, y: Any, op_str: str, **kwargs: Dict[Any, Any]
+        self, y: Any, op_str: str, **kwargs: Any
     ) -> List[ShareTensor]:
-        # relative
-        from ..tensor import TensorPointer
-
         op_method = f"__{op_str}__"
         if op_str in {"mul", "matmul", "add", "sub"}:
-            if not isinstance(self.child[0], TensorPointer):
-                res_shares = [
-                    getattr(share, op_method)(share, y, **kwargs)
-                    for share in self.child
-                ]
-            else:
-                res_shares = []
-                attr_path_and_name = f"{self.child[0].path_and_name}.__{op_str}__"
-                op = get_run_class_method(attr_path_and_name, SMPC=True)
-                for share in self.child:
-                    res_shares.append(op(share, share, y, **kwargs))
+            res_shares = [
+                getattr(share, op_method)(y, **kwargs) for share in self.child
+            ]
 
         else:
             raise ValueError(f"MPCTensor Public {op_str} not supported")
@@ -642,23 +745,25 @@ class MPCTensor(PassthroughTensor):
 
         x, y = MPCTensor.sanity_checks(self, y)
         kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
-        if isinstance(y, MPCTensor):
-            result = x.__apply_private_op(y, op_str, **kwargs)
-            y_ring_size = y.ring_size
-        else:
-            result = x.__apply_public_op(y, op_str, **kwargs)
-            y_ring_size = MPCTensor.get_ring_size_from_secret(y)
 
+        y_ring_size = MPCTensor.get_ring_size_from_secret(y)
         if self.ring_size != y_ring_size:
             raise ValueError(
                 f"Ring size mismatch between self {self.ring_size} and other {y_ring_size}"
             )
 
+        if isinstance(y, MPCTensor):
+            result = x.__apply_private_op(y, op_str, **kwargs)
+        else:
+            result = x.__apply_public_op(y, op_str, **kwargs)
+
         y_shape = getattr(y, "shape", (1,))
-
         shape = utils.get_shape(op_str, self.shape, y_shape)
-
         ring_size = utils.get_ring_size(self.ring_size, y_ring_size)
+
+        if utils.ispointer(result[0]):
+            for share in result:
+                share.client.processing_pointers[share.id_at_location] = True
 
         result = MPCTensor(
             shares=result, shape=shape, ring_size=ring_size, parties=x.parties
@@ -692,29 +797,30 @@ class MPCTensor(PassthroughTensor):
     def mul(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
-        # relative
-        from ..tensor import TensorPointer
 
         self, y = MPCTensor.sanity_checks(self, y)
         kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
         op = "__mul__"
         res_shares: List[Any] = []
+        y_shape = getattr(y, "shape", (1,))
+        new_shape = utils.get_shape("mul", self.mpc_shape, y_shape)
         if isinstance(y, MPCTensor):
             res_shares = spdz.mul_master(self, y, "mul", **kwargs)
         else:
-            if not isinstance(self.child[0], TensorPointer):
-                res_shares = [
-                    getattr(a, op)(a, b, **kwargs) for a, b in zip(self.child, itertools.repeat(y))  # type: ignore
-                ]
-            else:
+            CryptoPrimitiveProvider.generate_primitives(
+                "beaver_wraps",
+                parties=self.parties,
+                g_kwargs={
+                    "shape": new_shape,
+                    "parties_info": self.parties_info,
+                },
+                p_kwargs={"shape": new_shape},
+                ring_size=self.ring_size,
+            )
+            res_shares = [
+                getattr(a, op)(b, **kwargs) for a, b in zip(self.child, itertools.repeat(y))  # type: ignore
+            ]
 
-                attr_path_and_name = f"{self.child[0].path_and_name}.__mul__"
-                tensor_op = get_run_class_method(attr_path_and_name, SMPC=True)
-                for share in self.child:
-                    res_shares.append(tensor_op(share, share, y, **kwargs))
-
-        y_shape = getattr(y, "shape", (1,))
-        new_shape = utils.get_shape("mul", self.mpc_shape, y_shape)
         res = MPCTensor(
             parties=self.parties,
             shares=res_shares,
@@ -724,44 +830,121 @@ class MPCTensor(PassthroughTensor):
 
         return res
 
-    def gt(
+    def matmul(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
         self, y = MPCTensor.sanity_checks(self, y)
-        mpc_res = spdz.gt_master(self, y, "mul")
+        kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
+        op = "__matmul__"
+        res_shares: List[Any] = []
+        y_shape = getattr(y, "shape", (1,))
+        new_shape = utils.get_shape("matmul", self.mpc_shape, y_shape)
+        if isinstance(y, MPCTensor):
+            res_shares = spdz.mul_master(self, y, "matmul", **kwargs)
+        else:
+            CryptoPrimitiveProvider.generate_primitives(
+                "beaver_wraps",
+                parties=self.parties,
+                g_kwargs={
+                    "shape": new_shape,
+                    "parties_info": self.parties_info,
+                },
+                p_kwargs={"shape": new_shape},
+                ring_size=self.ring_size,
+            )
+
+            res_shares = [
+                getattr(a, op)(b, **kwargs) for a, b in zip(self.child, itertools.repeat(y))  # type: ignore
+            ]
+
+        res = MPCTensor(
+            parties=self.parties,
+            shares=res_shares,
+            shape=new_shape,
+            ring_size=self.ring_size,
+        )
+
+        return res
+
+    def lt(
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
+        mpc_res = spdz.lt_master(self, y, "mul")  # type: ignore
 
         return mpc_res
 
-    def matmul(
-        self, y: Union[int, float, np.ndarray, torch.tensor, "MPCTensor"]
+    def gt(
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
-        """Apply the "matmul" operation between "self" and "y"
+        mpc_res = MPCTensor.lt(y, self)  # type: ignore
+
+        return mpc_res
+
+    def ge(
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
+
+        mpc_res = 1 - MPCTensor.lt(self, y)
+
+        return mpc_res  # type: ignore
+
+    def le(
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
+        mpc_res = 1 - MPCTensor.lt(y, self)  # type: ignore
+
+        return mpc_res  # type: ignore
+
+    def eq(
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
+        # TODO: Should make two comparisons parallel
+        mpc_res = MPCTensor.le(self, y) - MPCTensor.lt(self, y)
+
+        return mpc_res
+
+    def ne(
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
+        mpc_res = 1 - MPCTensor.eq(self, y)
+
+        return mpc_res  # type: ignore
+
+    def truediv(self, y: Union["MPCTensor", np.ndarray, float, int]) -> MPCTensor:
+        """Apply the "div" operation between "self" and "y".
+
         Args:
-            y (Union[int, float, np.ndarray, torch.tensor, "MPCTensor"]): self @ y
+            y (Union["MPCTensor", torch.Tensor, float, int]): Denominator.
+
         Returns:
-            MPCTensor: Result of the opeartion.
+            MPCTensor: Result of the operation.
+
+        Raises:
+            ValueError: If input denominator is float.
         """
-        if isinstance(y, ShareTensor):
-            raise ValueError("Private matmul not supported yet")
+        is_private = isinstance(y, MPCTensor)
 
-        res = self.__apply_op(y, "matmul")
-        return res
+        result: MPCTensor
+        if is_private:
+            reciprocal = APPROXIMATIONS["reciprocal"]
+            result = self.mul(reciprocal(y))  # type: ignore
+        else:
+            result = self * (1 / y)
 
-    def __str__(self) -> str:
-        res = "MPCTensor"
-        for share in self.child:
-            res = f"{res}\n\t{share}"
+        return result
 
-        return res
+    def rtruediv(self, y: Union[np.ndarray, float, int]) -> MPCTensor:
+        """Apply recriprocal of MPCTensor.
 
-    def __repr__(self) -> str:
-        out = "MPCTensor"
-        out += ".shape=" + str(self.shape) + "\n"
-        for i, child in enumerate(self.child):
-            out += f"\t .child[{i}] = " + child.__repr__() + "\n"
-        out = out[:-1] + ""
+        Args:
+            y (Union[torch.Tensor, float, int]): Numerator.
 
-        return out
+        Returns:
+            MPCTensor: Result of the operation.
+        """
+        reciprocal = APPROXIMATIONS["reciprocal"]
+        result: MPCTensor = reciprocal(self) * y  # type: ignore
+        return result
 
     def put(
         self,
@@ -787,6 +970,111 @@ class MPCTensor(PassthroughTensor):
         res = MPCTensor(shares=shares, parties=self.parties, shape=self.shape)
         return res
 
+    def concatenate(
+        self,
+        other: Union[MPCTensor, TensorPointer],
+        *args: Any,
+        **kwargs: Any,
+    ) -> MPCTensor:
+        self, other = MPCTensor.sanity_checks(self, other)
+
+        shares = []
+        for x, y in zip(self.child, other.child):  # type: ignore
+            shares.append(x.concatenate(y, *args, **kwargs))
+
+        dummy_res = np.concatenate(
+            (np.empty(self.shape), np.empty(other.shape)), *args, **kwargs  # type: ignore
+        )
+        res = MPCTensor(shares=shares, parties=self.parties, shape=dummy_res.shape)
+
+        return res
+
+    def sign(self) -> MPCTensor:
+        """Calculate sign of given tensor.
+
+        Returns:
+            MPCTensor: with computed sign.
+        """
+        res: MPCTensor = 2 * (self > 0) - 1  # type: ignore
+        return res
+
+    def __abs__(self) -> MPCTensor:
+        """Calculates absolute value of MPCTensor.
+
+        Returns:
+            MPCTensor: computed absolute values of underlying tensor.
+        """
+        return self * self.sign()
+
+    def __pow__(self, power: int) -> MPCTensor:
+        """Compute integer power of a number iteratively using mul.
+
+        - Divide power by 2 and multiply base to itself (if the power is even)
+        - Decrement power by 1 to make it even and then follow the first step
+
+        Args:
+            power (int): integer value to apply the
+
+        Returns:
+             MPCTensor: Result of the pow operation
+
+        Raises:
+            RuntimeError: if negative power is given
+        """
+        # TODO: Implement after we have reciprocal function.
+        if power < 0:
+            raise RuntimeError("Negative integer powers not supported yet.")
+
+        base = self
+
+        # TODO: should modify for general ring sizes.
+        result = np.ones(shape=self.shape, dtype=np.int32)
+
+        while power > 0:
+            # If power is odd
+            if power % 2 == 1:
+                result = base * result
+                result.block
+
+            # Divide the power by 2
+            power = power // 2
+            # Multiply base to itself
+            base = base * base
+            base.block
+
+        return result
+
+    def __str__(self) -> str:
+        res = "MPCTensor"
+        for share in self.child:
+            res = f"{res}\n\t{share}"
+
+        return res
+
+    @property
+    def synthetic(self) -> np.ndarray:
+        # TODO finish. max_vals and min_vals not available at present.
+        public_dtype_func = getattr(
+            self.public_dtype, "upcast", lambda: self.public_dtype
+        )
+        return (
+            np.random.rand(*list(self.shape)) * (self.max_vals - self.min_vals)  # type: ignore
+            + self.min_vals
+        ).astype(public_dtype_func())
+
+    def __repr__(self) -> str:
+
+        # out = self.synthetic.__repr__()
+        # out += "\n\n (The data printed above is synthetic - it's an imitation of the real data.)"
+        out = ""
+        out += "\n\nMPCTensor"
+        out += ".shape=" + str(self.shape) + "\n"
+        for i, child in enumerate(self.child):
+            out += f"\t .child[{i}] = " + child.__repr__() + "\n"
+        out = out[:-1] + ""
+
+        return out
+
     __add__ = add
     __radd__ = add
     __sub__ = sub
@@ -794,7 +1082,14 @@ class MPCTensor(PassthroughTensor):
     __mul__ = mul
     __rmul__ = mul
     __matmul__ = matmul
+    __lt__ = lt
     __gt__ = gt
+    __ge__ = ge
+    __le__ = le
+    __eq__ = eq
+    __ne__ = ne
+    __truediv__ = truediv
+    __rtruediv__ = rtruediv
 
 
 @implements(MPCTensor, np.add)

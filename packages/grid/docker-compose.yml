@@ -1,184 +1,227 @@
 version: "3.8"
 services:
+  docker-host:
+    image: qoomon/docker-host
+    cap_add:
+      - net_admin
+      - net_raw
+
   proxy:
     restart: always
-    image: traefik:v2.4
+    hostname: ${DOMAIN_NAME?Variable not set}
+    image: ${DOCKER_IMAGE_TRAEFIK?Variable not set}:${TRAEFIK_VERSION?Variable not set}
     networks:
       - "${TRAEFIK_PUBLIC_NETWORK?Variable not set}"
       - default
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    command:
-      # Enable Docker in Traefik, so that it reads labels from Docker services
-      - --providers.docker
-      # Add a constraint to only use services with the label for this stack
-      # from the env var TRAEFIK_TAG
-      - --providers.docker.constraints=Label(`traefik.constraint-label-stack`, `${TRAEFIK_TAG?Variable not set}`)
-      # Do not expose all Docker services, only the ones explicitly exposed
-      - --providers.docker.exposedbydefault=false
-      # Enable Docker Swarm mode
-      - --providers.docker.swarmmode
-      # Enable the access log, with HTTP requests
-      - --accesslog
-      # Enable the Traefik log, for configurations and errors
-      - --log
-      # Enable the Dashboard and API
-      - --api
-    deploy:
-      placement:
-        constraints:
-          - node.role == manager
-      labels:
-        # Enable Traefik for this service, to make it available in the public network
-        - traefik.enable=true
-        # Use the traefik-public network (declared below)
-        - traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK?Variable not set}
-        # Use the custom label "traefik.constraint-label=traefik-public"
-        # This public Traefik will only use services with this label
-        - traefik.constraint-label=${TRAEFIK_PUBLIC_TAG?Variable not set}
-        # traefik-http set up only to use the middleware to redirect to https
-        - traefik.http.middlewares.${STACK_NAME?Variable not set}-https-redirect.redirectscheme.scheme=https
-        - traefik.http.middlewares.${STACK_NAME?Variable not set}-https-redirect.redirectscheme.permanent=true
-        # Handle host with and without "www" to redirect to only one of them
-        # Uses environment variable DOMAIN
-        # To disable www redirection remove the Host() you want to discard, here and
-        # below for HTTPS
-        - traefik.http.routers.${STACK_NAME?Variable not set}-proxy-http.rule=Host(`${DOMAIN?Variable not set}`) || Host(`www.${DOMAIN?Variable not set}`)
-        - traefik.http.routers.${STACK_NAME?Variable not set}-proxy-http.entrypoints=http
-        # traefik-https the actual router using HTTPS
-        - traefik.http.routers.${STACK_NAME?Variable not set}-proxy-https.rule=Host(`${DOMAIN?Variable not set}`) || Host(`www.${DOMAIN?Variable not set}`)
-        - traefik.http.routers.${STACK_NAME?Variable not set}-proxy-https.entrypoints=https
-        - traefik.http.routers.${STACK_NAME?Variable not set}-proxy-https.tls=true
-        # Use the "le" (Let's Encrypt) resolver created below
-        - traefik.http.routers.${STACK_NAME?Variable not set}-proxy-https.tls.certresolver=le
-        # Define the port inside of the Docker service to use
-        - traefik.http.services.${STACK_NAME?Variable not set}-proxy.loadbalancer.server.port=80
-        # Handle domain with and without "www" to redirect to only one
-        # To disable www redirection remove the next line
-        - traefik.http.middlewares.${STACK_NAME?Variable not set}-www-redirect.redirectregex.regex=^https?://(www.)?(${DOMAIN?Variable not set})/(.*)
-        # Redirect a domain with www to non-www
-        # To disable it remove the next line
-        - traefik.http.middlewares.${STACK_NAME?Variable not set}-www-redirect.redirectregex.replacement=https://${DOMAIN?Variable not set}/$${3}
-        # Redirect a domain without www to www
-        # To enable it remove the previous line and uncomment the next
-        # - traefik.http.middlewares.${STACK_NAME}-www-redirect.redirectregex.replacement=https://www.${DOMAIN}/$${3}
-        # Middleware to redirect www, to disable it remove the next line
-        - traefik.http.routers.${STACK_NAME?Variable not set}-proxy-https.middlewares=${STACK_NAME?Variable not set}-www-redirect
-        # Middleware to redirect www, and redirect HTTP to HTTPS
-        # to disable www redirection remove the section: ${STACK_NAME?Variable not set}-www-redirect,
-        - traefik.http.routers.${STACK_NAME?Variable not set}-proxy-http.middlewares=${STACK_NAME?Variable not set}-www-redirect,${STACK_NAME?Variable not set}-https-redirect
+      - "./traefik/docker/traefik.yml:/etc/traefik/traefik.yml"
+      - "./traefik/docker/dynamic.yml:/etc/traefik/conf/dynamic.yml"
+    environment:
+      - SERVICE_NAME=proxy
+      - RELEASE=${RELEASE:-production}
+      - HOSTNAME=${DOMAIN_NAME?Variable not set}
+      - HTTP_PORT=${HTTP_PORT}
+      - HTTPS_PORT=${HTTPS_PORT}
+    ports:
+      - "${HTTP_PORT}:81"
+    depends_on:
+      - "docker-host"
+
+  tailscale:
+    profiles:
+      - vpn
+    image: "${DOCKER_IMAGE_TAILSCALE?Variable not set}:${VERSION-latest}"
+    environment:
+      - SERVICE_NAME=tailscale
+      - RELEASE=${RELEASE:-production}
+      - HOSTNAME=${DOMAIN_NAME?Variable not set}
+      - STACK_API_KEY=$STACK_API_KEY
+    volumes:
+      - tailscale-data:/var/lib/tailscale
+      - "/dev/net/tun:/dev/net/tun" # Required for tailscale to work
+    cap_add: # Required for tailscale to work
+      - net_admin
+      - sys_module
+    # ports:
+    #   - "41641/udp"
+    #   - "4000"
+    depends_on:
+      - proxy
+    network_mode: service:proxy
+
+  frontend:
+    restart: always
+    image: "${DOCKER_IMAGE_FRONTEND?Variable not set}:${VERSION-latest}"
+    profiles:
+      - frontend
+    depends_on:
+      - proxy
+    environment:
+      - SERVICE_NAME=frontend
+      - RELEASE=${RELEASE:-production}
+      - NODE_TYPE=${NODE_TYPE?Variable not set}
+      - VERSION=${VERSION}
+      - VERSION_HASH=${VERSION_HASH}
+      - HTTP_PORT=${HTTP_PORT}
+      - HTTPS_PORT=${HTTPS_PORT}
 
   db:
     restart: always
     image: postgres:12
     volumes:
       - app-db-data:/var/lib/postgresql/data
+    environment:
+      - SERVICE_NAME=db
+      - RELEASE=${RELEASE:-production}
     env_file:
       - .env
-    deploy:
-      placement:
-        constraints:
-          - node.labels.${STACK_NAME?Variable not set}.app-db-data == true
+    command:
+      - postgres
+      - --max_connections=1000 # default 100
+      # - --shared_buffers=8GB # 32 MB
+      # - --temp_buffers=8GB # default 8 MB
+      # - --work_mem=8GB # default 4 MB
+      # - --effective_io_concurrency=8 # default 1
+      # - --block_size=16384 # default 8192
+      # - --max_files_per_process=1000 # default 1000
+      # - --segment_size=8GB # default 1GB # cant change
+
+  redis:
+    restart: always
+    image: redis:${REDIS_VERSION?Variable not set}
+    volumes:
+      - app-redis-data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    environment:
+      - SERVICE_NAME=redis
+      - RELEASE=${RELEASE:-production}
+    env_file:
+      - .env
 
   queue:
     restart: always
     image: rabbitmq:3
-    # Using the below image instead is required to enable the "Broker" tab in the flower UI:
-    # image: rabbitmq:3-management
-    #
+    environment:
+      - SERVICE_NAME=queue
+      - RELEASE=${RELEASE:-production}
+    volumes:
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
 
   backend:
     restart: always
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
     depends_on:
+      - proxy
       - db
     env_file:
       - .env
     environment:
+      - SERVICE_NAME=backend
+      - RELEASE=${RELEASE:-production}
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
-      - SERVER_NAME=${DOMAIN?Variable not set}
-      - SERVER_HOST=https://${DOMAIN?Variable not set}
-      # Allow explicit env var override for tests
-      - SMTP_HOST=${SMTP_HOST}
-    build:
-      context: ../
-      dockerfile: ./grid/backend/backend.dockerfile
-      target: "backend"
-    deploy:
-      labels:
-        - traefik.enable=true
-        - traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}
-        - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.rule=PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`) # WARNING: this wont match /api/v1/syft/stream because of length
-        - traefik.http.services.${STACK_NAME?Variable not set}-backend.loadbalancer.server.port=80
+      - NODE_TYPE=${NODE_TYPE?Variable not set}
+      - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
+      - STACK_API_KEY=${STACK_API_KEY}
+      - PORT=8001
+      - IGNORE_TLS_ERRORS=${IGNORE_TLS_ERRORS?False}
+      - HTTP_PORT=${HTTP_PORT}
+      - HTTPS_PORT=${HTTPS_PORT}
+      - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
+      - CONTAINER_HOST=${CONTAINER_HOST}
+      - ASSOCIATION_TIMEOUT=${ASSOCIATION_TIMEOUT}
+    command: /start.sh
+    network_mode: service:proxy
 
   backend_stream:
     restart: always
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
     depends_on:
+      - proxy
       - db
-      - backend
     env_file:
       - .env
     environment:
+      - SERVICE_NAME=backend_stream
+      - RELEASE=${RELEASE:-production}
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
-      - SERVER_NAME=${DOMAIN?Variable not set}
-      - SERVER_HOST=https://${DOMAIN?Variable not set}
-      # Allow explicit env var override for tests
-      - SMTP_HOST=${SMTP_HOST}
-    command: "waitforit -address=http://backend:80/api/v1/syft/metadata -status=200 -timeout=600 -- /start.sh"
-    build:
-      context: ../
-      dockerfile: ./grid/backend/backend.dockerfile
-      target: "backend"
-    deploy:
-      labels:
-        - traefik.enable=true
-        - traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}
-        - traefik.http.routers.${STACK_NAME?Variable not set}-backend-stream-http.rule=PathPrefix(`/api`) && PathPrefix(`/api/v1/syft/stream`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`) # WARNING: this only matches /api/v1/syft/stream because of length
-        - traefik.http.services.${STACK_NAME?Variable not set}-backend-stream.loadbalancer.server.port=80
+      - NODE_TYPE=${NODE_TYPE?Variable not set}
+      - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
+      - STACK_API_KEY=${STACK_API_KEY}
+      - PORT=8011
+      - STREAM_QUEUE=1
+      - IGNORE_TLS_ERRORS=${IGNORE_TLS_ERRORS?False}
+      - HTTP_PORT=${HTTP_PORT}
+      - HTTPS_PORT=${HTTPS_PORT}
+      - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
+      - CONTAINER_HOST=${CONTAINER_HOST}
+    command: "/start.sh"
+    network_mode: service:proxy
 
   celeryworker:
     restart: always
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
     depends_on:
+      - proxy
       - db
       - queue
     env_file:
       - .env
     environment:
+      - SERVICE_NAME=celeryworker
+      - RELEASE=${RELEASE:-production}
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
-      - SERVER_NAME=${DOMAIN?Variable not set}
-      - SERVER_HOST=https://${DOMAIN?Variable not set}
-      # Allow explicit env var override for tests
-      - SMTP_HOST=${SMTP_HOST?Variable not set}
-      - CELERY_WORKER=true
-    build:
-      context: ../
-      dockerfile: ./grid/backend/backend.dockerfile
-      target: "backend"
+      - NODE_TYPE=${NODE_TYPE?Variable not set}
+      - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
+      - C_FORCE_ROOT=1
+      - STACK_API_KEY=${STACK_API_KEY}
+      - IGNORE_TLS_ERRORS=${IGNORE_TLS_ERRORS?False}
+      - HTTP_PORT=${HTTP_PORT}
+      - HTTPS_PORT=${HTTPS_PORT}
+      - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
+      - CONTAINER_HOST=${CONTAINER_HOST}
+      - NETWORK_CHECK_INTERVAL=${NETWORK_CHECK_INTERVAL}
+      - DOMAIN_CHECK_INTERVAL=${DOMAIN_CHECK_INTERVAL}
+    command: "/worker-start.sh"
+    network_mode: service:proxy
 
-  frontend:
-    restart: always
-    image: "${DOCKER_IMAGE_FRONTEND?Variable not set}:${VERSION-latest}"
-    build:
-      context: ./frontend
-      dockerfile: frontend.dockerfile
-      target: "grid-ui-${FRONTEND_ENV-development}"
+  headscale:
+    profiles:
+      - network
+    depends_on:
+      - proxy
+    hostname: headscale
+    image: "${DOCKER_IMAGE_HEADSCALE?Variable not set}:${VERSION-latest}"
+    volumes:
+      - headscale-data:/headscale/data
     environment:
-      - VERSION=${VERSION}
-      - VERSION_HASH=${VERSION_HASH}
-    deploy:
-      labels:
-        - traefik.enable=true
-        - traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}
-        - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.rule=PathPrefix(`/`)
-        - traefik.http.services.${STACK_NAME?Variable not set}-frontend.loadbalancer.server.port=80
+      - RELEASE=${RELEASE:-production}
+      - NETWORK_NAME=omnet
+      - STACK_API_KEY=$STACK_API_KEY
+
+  seaweedfs:
+    profiles:
+      - blob-storage
+    depends_on:
+      - proxy
+      - redis
+    image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}"
+    environment:
+      - S3_VOLUME_SIZE_MB=${S3_VOLUME_SIZE_MB:-1024}
+    command: "server -s3 -s3.config=/etc/s3config.json -master.volumeSizeLimitMB=${S3_VOLUME_SIZE_MB}"
+    volumes:
+      - seaweedfs-data:/data
+      - ./seaweedfs/s3config.json:/etc/s3config.json
+      - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml
 
 volumes:
   app-db-data:
+  tailscale-data:
+  headscale-data:
+  app-redis-data:
+  seaweedfs-data:
 
 networks:
   traefik-public:

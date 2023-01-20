@@ -20,7 +20,15 @@ import pytest
 import syft as sy
 from syft.core.common import ObjectWithID
 from syft.core.common import UID
+from syft.core.common.serde.deserialize import PROTOBUF_START_MAGIC_HEADER_BYTES
 from syft.util import get_subclasses
+
+blob_bytes = (
+    b"\n\t"
+    + PROTOBUF_START_MAGIC_HEADER_BYTES
+    + b"\x12$syft.core.common.object.ObjectWithID\x1a\x14\n\x12\n\x10\xfb\x1b"
+    + b"\xb0g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14"
+)
 
 # --------------------- INITIALIZATION ---------------------
 
@@ -138,24 +146,14 @@ def test_object_with_id_binary_serialization() -> None:
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     obj = ObjectWithID(id=uid)
 
-    blob = (
-        b"\n$syft.core.common.object.ObjectWithID\x12\x14\n\x12\n\x10\xfb\x1b\xb0"
-        + b"g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14"
-    )
-
-    assert sy.serialize(obj, to_bytes=True) == blob
-    assert sy.serialize(obj, to_bytes=True) == blob
-    assert sy.serialize(obj, to_bytes=True) == blob
+    print(sy.serialize(obj, to_bytes=True), "sy.serialize(obj, to_bytes=True)")
+    assert sy.serialize(obj, to_bytes=True) == blob_bytes
 
 
 def test_object_with_id_binary_deserialization() -> None:
     """Test that binary ObjectWithID deserialization works as expected"""
 
-    blob = (
-        b"\n$syft.core.common.object.ObjectWithID\x12\x14\n\x12\n\x10\xfb\x1b\xb0"
-        + b"g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14"
-    )
-    obj = sy.deserialize(blob=blob, from_bytes=True)
+    obj = sy.deserialize(blob=blob_bytes, from_bytes=True)
     assert obj == ObjectWithID(
         id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     )

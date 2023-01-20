@@ -6,4 +6,7 @@
   become: yes
   roles:
     - node
+    - jupyter
     - containers
+    - update
+    - aa_demo

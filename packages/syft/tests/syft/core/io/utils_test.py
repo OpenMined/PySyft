@@ -14,10 +14,17 @@ from syft.core.common.uid import UID
 from syft.core.io.address import Address
 from syft.core.io.location.specific import SpecificLocation
 from syft.core.node.common.node import Node
+from syft.core.node.common.node_manager.dict_store import DictStore
 
 
 class MockNode(Node):
     """Mock Node object for testing purposes."""
+
+    # use a dict store for these tests
+    def __init__(
+        self,
+    ):
+        super().__init__(store_type=DictStore)
 
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply

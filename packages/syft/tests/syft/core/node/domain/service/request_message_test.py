@@ -2,6 +2,7 @@
 from unittest.mock import patch
 
 # third party
+from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import pytest
@@ -9,10 +10,13 @@ from pytest import mark
 from pytest import raises
 
 # syft absolute
+from syft import Tensor
 from syft import deserialize
 from syft import serialize
+from syft.core.adp.ledger_store import DictLedgerStore
 from syft.core.common import UID
 from syft.core.io.address import Address
+from syft.core.node.common.node_manager.dict_store import DictStore
 from syft.core.node.common.node_service.request_receiver.request_receiver_messages import (
     RequestMessage,
 )
@@ -52,7 +56,9 @@ def test_request_message() -> None:
 @pytest.mark.asyncio
 @mark.parametrize("method_name", ["accept", "approve"])
 def test_accept(method_name: str) -> None:
-    node = Domain(name="remote domain")
+    node = Domain(
+        name="remote domain", store_type=DictStore, ledger_store_type=DictLedgerStore
+    )
     node_client = node.get_root_client()
 
     addr = Address()
@@ -74,9 +80,45 @@ def test_accept(method_name: str) -> None:
 
 
 @pytest.mark.asyncio
+def test_privacy_budget_and_obj_request():
+    node = Domain(
+        name="remote domain", store_type=DictStore, ledger_store_type=DictLedgerStore
+    )
+    root_client = node.get_root_client()
+
+    node.initial_setup(
+        signing_key=root_client.signing_key,
+        first_superuser_name="Jane Doe",
+        first_superuser_email="superuser@openmined.org",
+        first_superuser_password="pwd",
+        first_superuser_budget=5.55,
+        domain_name="remote domain",
+    )
+    user_id = node.users.create_user_application(
+        name="test", email="test@openmined.org", password="test", daa_pdf=b""
+    )
+    node.users.process_user_application(user_id, "accepted", root_client.verify_key)
+    ds_client = node.get_client()
+    ds_client.signing_key = SigningKey(
+        node.users.first(name="test").private_key.encode("utf-8"), HexEncoder
+    )
+    ds_client.verify_key = ds_client.signing_key.verify_key
+
+    Tensor([1, 2, 3, 4, 5]).send(root_client)
+
+    ds_client.store[0].request(reason="Data Request Test")
+    ds_client.request_budget(eps=1000, reason="Budget Request Test")
+
+    assert root_client.requests[0].request_type == "data"
+    assert root_client.requests[1].request_type == "budget"
+
+
+@pytest.mark.asyncio
 @mark.parametrize("method_name", ["deny", "reject", "withdraw"])
 def test_deny(method_name: str) -> None:
-    node = Domain(name="remote domain")
+    node = Domain(
+        name="remote domain", store_type=DictStore, ledger_store_type=DictLedgerStore
+    )
     node_client = node.get_root_client()
 
     addr = Address()

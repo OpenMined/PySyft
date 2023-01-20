@@ -1,9 +1,9 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: grid-stack-ingress
   annotations:
     ingress.kubernetes.io/rewrite-target: /
+  name: grid-stack-ingress
 spec:
   rules:
     - http:
@@ -12,20 +12,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: frontend
-                port:
-                  number: 80
-          - path: /api
-            pathType: Prefix
-            backend:
-              service:
-                name: backend
-                port:
-                  number: 80
-          - path: /api/v1/syft/stream
-            pathType: Prefix
-            backend:
-              service:
-                name: backend-stream
+                name: proxy
                 port:
                   number: 80

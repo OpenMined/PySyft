@@ -1,4 +1,5 @@
 # stdlib
+import os
 import secrets
 from typing import Any
 from typing import Dict
@@ -20,7 +21,6 @@ class Settings(BaseSettings):
     SECRET_KEY: str = secrets.token_urlsafe(32)
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
-    SERVER_NAME: str = "unconfigured"
     SERVER_HOST: str = "https://localhost"
     # BACKEND_CORS_ORIGINS is a JSON-formatted list of origins
     # e.g: '["http://localhost", "http://localhost:4200", "http://localhost:3000", \
@@ -36,6 +36,7 @@ class Settings(BaseSettings):
         raise ValueError(v)
 
     PROJECT_NAME: str = "grid"
+
     SENTRY_DSN: Optional[HttpUrl] = None
 
     @validator("SENTRY_DSN", pre=True)
@@ -46,7 +47,7 @@ class Settings(BaseSettings):
 
     POSTGRES_SERVER: str = "localhost"
     POSTGRES_USER: str = "user"
-    POSTGRES_PASSWORD: str = "pwd"
+    POSTGRES_PASSWORD: Optional[str] = None
     POSTGRES_DB: str = "db"
     SQLALCHEMY_DATABASE_URI: Optional[Union[PostgresDsn, str]] = None
 
@@ -88,16 +89,42 @@ class Settings(BaseSettings):
             and values.get("EMAILS_FROM_EMAIL")
         )
 
-    EMAIL_TEST_USER: EmailStr = EmailStr("test@example.com")
     FIRST_SUPERUSER: EmailStr = EmailStr("info@openmined.org")
     FIRST_SUPERUSER_PASSWORD: str = "changethis"
     USERS_OPEN_REGISTRATION: bool = False
 
-    DOMAIN_NAME: str = "grid_domain"
+    DOMAIN_NAME: str = "default_node_name"
     STREAM_QUEUE: bool = False
     NODE_TYPE: str = "Domain"
 
     OPEN_REGISTRATION: bool = True
+
+    DOMAIN_ASSOCIATION_REQUESTS_AUTOMATICALLY_ACCEPTED: bool = True
+    USE_BLOB_STORAGE: bool = (
+        True if os.getenv("USE_BLOB_STORAGE", "false").lower() == "true" else False
+    )
+    S3_ENDPOINT: str = os.getenv("S3_ENDPOINT", "seaweedfs")
+    S3_PORT: int = int(os.getenv("S3_PORT", 8333))
+    S3_ROOT_USER: str = os.getenv("S3_ROOT_USER", "admin")
+    S3_ROOT_PWD: Optional[str] = os.getenv("S3_ROOT_PWD", "admin")
+    S3_REGION: str = os.getenv("S3_REGION", "us-east-1")
+    S3_PRESIGNED_TIMEOUT_SECS: int = int(
+        os.getenv("S3_PRESIGNED_TIMEOUT_SECS", 1800)
+    )  # 30 minutes in seconds
+
+    REDIS_HOST: str = str(os.getenv("REDIS_HOST", "redis"))
+    REDIS_PORT: int = int(os.getenv("REDIS_PORT", 6379))
+    REDIS_STORE_DB_ID: int = int(os.getenv("REDIS_STORE_DB_ID", 0))
+    REDIS_LEDGER_DB_ID: int = int(os.getenv("REDIS_LEDGER_DB_ID", 1))
+    STORE_DB_ID: int = int(os.getenv("STORE_DB_ID", 0))
+    LEDGER_DB_ID: int = int(os.getenv("LEDGER_DB_ID", 1))
+    NETWORK_CHECK_INTERVAL: int = int(os.getenv("NETWORK_CHECK_INTERVAL", 60))
+    DOMAIN_CHECK_INTERVAL: int = int(os.getenv("DOMAIN_CHECK_INTERVAL", 60))
+    CONTAINER_HOST: str = str(os.getenv("CONTAINER_HOST", "docker"))
+    TEST_MODE: bool = (
+        True if os.getenv("TEST_MODE", "false").lower() == "true" else False
+    )
+    ASSOCIATION_TIMEOUT: int = 10
 
     class Config:
         case_sensitive = True

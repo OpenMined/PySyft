@@ -347,7 +347,7 @@ def test_Floatconversion():
 
         assert Float(MyIndex(42)) == 42.0
         with pytest.raises(OverflowError):
-            Float(MyIndex(2 ** 2000))
+            Float(MyIndex(2**2000))
 
     class MyInt:
         def __int__(self):
@@ -378,7 +378,7 @@ def test_Floatasratio():
     ]:
         assert f.as_integer_ratio() == ratio
 
-    for i in range(10000):
+    for _ in range(10000):
         f = random.random()
         f *= 10 ** random.randint(-100, 100)
         n, d = f.as_integer_ratio()
@@ -696,7 +696,7 @@ def test_inf_nan():
 
 
 def test_large_n():
-    for n in [324, 325, 400, 2 ** 31 - 1, 2 ** 31, 2 ** 32, 2 ** 100]:
+    for n in [324, 325, 400, 2**31 - 1, 2**31, 2**32, 2**100]:
         assert round(123.456, n) == 123.456
         assert round(-123.456, n) == -123.456
         assert round(1e300, n) == 1e300
@@ -709,7 +709,7 @@ def test_large_n():
 
 
 def test_small_n():
-    for n in [-308, -309, -400, 1 - 2 ** 31, -(2 ** 31), -(2 ** 31) - 1, -(2 ** 100)]:
+    for n in [-308, -309, -400, 1 - 2**31, -(2**31), -(2**31) - 1, -(2**100)]:
         assert round(123.456, n) == 0.0
         assert round(-123.456, n) == -0.0
         assert round(1e300, n) == 0.0
@@ -755,7 +755,7 @@ def test_matches_Float_format():
         assert Float(format(x, ".2f")) == round(x, 2)
         assert Float(format(x, ".3f")) == round(x, 3)
 
-    for i in range(500):
+    for _ in range(500):
         x = random.random()
         assert Float(format(x, ".0f")) == round(x, 0)
         assert Float(format(x, ".1f")) == round(x, 1)

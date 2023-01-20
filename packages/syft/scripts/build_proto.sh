@@ -18,6 +18,7 @@ if version_lt $VERSION 3.15.0; then
     exit 1
 fi
 
+echo "Protobuf Version: $(protoc --version)"
 rm -rf "${CLEAN}"
 find ${PROTO_IN} -name "*.proto" -print0 | xargs -0 protoc --python_out=${PYTHON_OUT}
 
@@ -31,4 +32,4 @@ else
     echo "Linux"
     find src/syft/proto -name "*_pb2.py" -print0 | xargs -0 sed -i 's/from \(proto.*\) import /from syft.\1 import /g'
 fi
-cd ../../ && isort . && black .
+cd ../../ && isort . && cd - && black .

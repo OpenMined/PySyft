@@ -14,7 +14,7 @@ class UserApplication(Base):
     __tablename__ = "syft_application"
 
     id = Column(Integer(), primary_key=True, autoincrement=True)
-    email = Column(String(255))
+    email = Column(String(255), unique=True)
     name = Column(String(255), default="")
     hashed_password = Column(String(512))
     salt = Column(String(255))
@@ -39,7 +39,6 @@ class SyftUser(Base):
     email = Column(String(255))
     name = Column(String(255), default="")
     budget = Column(Float(), default=0.0)
-    allocated_budget = Column(Float(), default=0.0)
     hashed_password = Column(String(512))
     salt = Column(String(255))
     private_key = Column(String(2048))

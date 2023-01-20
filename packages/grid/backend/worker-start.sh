@@ -1,14 +1,16 @@
 #! /usr/bin/env bash
+
+echo "Running worker-start.sh with RELEASE=${RELEASE}"
+
 set -e
 
-while [ ! -f /app/syft/setup.py ]
-do
-    echo "Waiting for syft folder to sync"
-    sleep 1
-done
+PRE_START_PATH=${PRE_START_PATH:-/app/prestart.sh}
+echo "Checking for script in $PRE_START_PATH"
+if [ -f $PRE_START_PATH ] ; then
+    echo "Running script $PRE_START_PATH"
+    . "$PRE_START_PATH"
+else
+    echo "There is no script $PRE_START_PATH"
+fi
 
-pip install --user -e /app/syft
-
-python /app/grid/backend_prestart.py
-
-watchmedo auto-restart --directory=/app --pattern=*.py --recursive -- celery worker -A grid.worker -l info -Q main-queue -c 1
+celery -A grid.worker beat -l info --detach && celery -A grid.worker worker -l info -Q main-queue --pool=gevent -c 500

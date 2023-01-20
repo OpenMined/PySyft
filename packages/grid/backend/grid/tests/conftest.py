@@ -1,3 +1,6 @@
+# future
+from __future__ import annotations
+
 # stdlib
 import logging
 from typing import Generator
@@ -5,10 +8,12 @@ from typing import Generator
 # third party
 from _pytest.logging import LogCaptureFixture
 from asgi_lifespan import LifespanManager
+from faker import Faker
 from fastapi import FastAPI
 from httpx import AsyncClient
 from loguru import logger
 import pytest
+import pytest_asyncio
 
 # grid absolute
 from grid.core.config import settings
@@ -25,6 +30,11 @@ def db() -> Generator:
 
 
 @pytest.fixture
+def faker() -> Faker:
+    return Faker()
+
+
+@pytest_asyncio.fixture
 async def app() -> FastAPI:
     session = get_db_session()
     init_db(db=session)
@@ -36,7 +46,7 @@ async def app() -> FastAPI:
         yield app
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def client(app: FastAPI) -> AsyncClient:
     async with AsyncClient(
         app=app,

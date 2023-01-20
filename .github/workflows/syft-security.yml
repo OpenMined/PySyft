@@ -1,12 +1,15 @@
 name: Security-check
 
 on:
+  workflow_call:
+
   pull_request:
     branches:
       - dev
       - main
       - "0.6.0"
-
+      - "0.7.0"
+      - "0.8"
 defaults:
   run:
     working-directory: ./packages/syft
@@ -17,22 +20,23 @@ jobs:
       max-parallel: 1
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.9]
-        torch-version: [1.8.1]
+        python-version: ["3.10"]
+        torch-version: ["1.13.1"]
 
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
         id: changes
         with:
+          base: ${{ github.ref }}
           token: ${{ github.token }}
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         if: steps.changes.outputs.syft == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -40,7 +44,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Get pip cache dir
         if: steps.changes.outputs.syft == 'true'
@@ -49,7 +53,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         if: steps.changes.outputs.syft == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -62,15 +66,14 @@ jobs:
         run: |
           pip install packaging wheel --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
-          grep -A 3 "torch_ecosystem" setup.cfg
           pip install -e .[dev] -f https://download.pytorch.org/whl/torch_stable.html
-          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
 
       - name: Scan for security issues
         if: steps.changes.outputs.syft == 'true'
         run: |
+          pip install importlib-metadata==4.13.0
           bandit -r src
-          safety check
+          safety check -i 51668
 
       - name: Generate requirements.txt for snyk
         if: steps.changes.outputs.syft == 'true'

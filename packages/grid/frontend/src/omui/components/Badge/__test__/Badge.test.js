@@ -1,13 +1,13 @@
-import {render, screen} from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import cases from 'jest-in-case'
 
-import {Badge} from '../Badge'
-import {Text} from '../../Typography/Text'
+import { Badge } from '../Badge'
+import { Text } from '../../Typography/Text'
 
 describe('Badge', () => {
   cases(
     'styles:classes',
-    ({params, result}) => {
+    ({ params, result }) => {
       render(
         <Badge data-testid="test-id" {...params}>
           OMui
@@ -21,43 +21,48 @@ describe('Badge', () => {
       {
         name: 'Should have colors based on default variant: primary',
         params: {},
-        result: 'border-primary-500 text-primary-600 dark:border-primary-200 dark:text-primary-200'
+        result:
+          'border-primary-500 text-primary-600 dark:border-primary-200 dark:text-primary-200',
       },
       {
         name: 'Should have colors based on variant gray',
-        params: {variant: 'gray'},
-        result: 'border-gray-500 text-gray-600 dark:border-gray-200 dark:text-gray-200'
+        params: { variant: 'gray' },
+        result:
+          'border-gray-500 text-gray-600 dark:border-gray-200 dark:text-gray-200',
       },
       {
         name: 'Should have colors based on variant primary',
-        params: {variant: 'primary'},
-        result: 'border-primary-500 text-primary-600 dark:border-primary-200 dark:text-primary-200'
+        params: { variant: 'primary' },
+        result:
+          'border-primary-500 text-primary-600 dark:border-primary-200 dark:text-primary-200',
       },
       {
         name: 'Should have colors based on variant danger',
-        params: {variant: 'danger'},
-        result: 'border-error-500 text-error-600 dark:border-error-200 dark:text-error-200'
+        params: { variant: 'danger' },
+        result:
+          'border-error-500 text-error-600 dark:border-error-200 dark:text-error-200',
       },
       {
         name: 'Should have classes based on default type: outline',
         params: {},
-        result: 'text-primary-600 dark:border-primary-200 dark:text-primary-200'
+        result:
+          'text-primary-600 dark:border-primary-200 dark:text-primary-200',
       },
       {
         name: 'Should have classes based on type subtle',
-        params: {type: 'subtle'},
-        result: 'bg-primary-100 text-primary-600'
+        params: { type: 'subtle' },
+        result: 'bg-primary-100 text-primary-600',
       },
       {
         name: 'Should have classes based on type solid',
-        params: {type: 'solid'},
-        result: 'bg-primary-500 text-white'
+        params: { type: 'solid' },
+        result: 'bg-primary-500 text-white',
       },
       {
         name: 'Should have classes based on type solid following gray custom rule',
-        params: {type: 'solid', variant: 'gray'},
-        result: 'bg-gray-800 text-primary-200'
-      }
+        params: { type: 'solid', variant: 'gray' },
+        result: 'bg-gray-800 text-primary-200',
+      },
     ]
   )
 
@@ -76,7 +81,9 @@ describe('Badge', () => {
         </Badge>
       )
 
-      const outerTextElement = screen.getByTestId('test-id').querySelector('span')
+      const outerTextElement = screen
+        .getByTestId('test-id')
+        .querySelector('span')
       expect(outerTextElement).toHaveClass('text-xs')
       const insideText = screen.getByText(/omui/i)
       expect(insideText).toHaveClass('text-lg')

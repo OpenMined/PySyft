@@ -7,8 +7,7 @@ import syft as sy
 
 
 def test_steal_data_through_mutation(
-    client: sy.VirtualMachineClient,
-    root_client: sy.VirtualMachineClient,
+    client: sy.VirtualMachineClient, root_client: sy.VirtualMachineClient
 ) -> None:
     secret = th.Tensor([1, 2, 3])
     secret.send(root_client, tags=["secret"])

@@ -1,12 +1,21 @@
-import {useQuery} from 'react-query'
-import {cacheKeys} from '@/utils'
-import {useCrudify} from '@/lib/data/useCrudify'
+import { useQuery } from 'react-query'
+import { cacheKeys } from '@/utils'
+import { useCrudify } from '@/lib/data/useCrudify'
 import api from '@/utils/api'
-import type {User, UserMe, Dataset, Request, Settings} from '@/types/grid-types'
-import type {Role} from '@/types/permissions'
+import type {
+  User,
+  UserMe,
+  Dataset,
+  Request,
+  Settings,
+} from '@/types/grid-types'
+import type { Role } from '@/types/permissions'
 
 export function useMe() {
-  return useQuery<UserMe>(cacheKeys.me, () => api.get(cacheKeys.me).json() as UserMe)
+  return useQuery<UserMe>(
+    cacheKeys.me,
+    () => api.get(cacheKeys.me).json() as UserMe
+  )
 }
 
 export function useAssociationRequest() {

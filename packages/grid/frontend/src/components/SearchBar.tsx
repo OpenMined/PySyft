@@ -1,6 +1,6 @@
-import {useEffect, useState} from 'react'
-import {Search} from '@/components'
-import type {Dispatch, SetStateAction} from 'react'
+import { useEffect, useState } from 'react'
+import { Search } from '@/components'
+import type { Dispatch, SetStateAction } from 'react'
 
 interface SearchProps<T> {
   data: T[]
@@ -8,7 +8,7 @@ interface SearchProps<T> {
   setData: Dispatch<SetStateAction<T[]>>
 }
 
-export function SearchBar<T>({data, searchFields, setData}: SearchProps<T>) {
+export function SearchBar<T>({ data, searchFields, setData }: SearchProps<T>) {
   const [search, setSearch] = useState<string>('')
 
   useEffect(() => {
@@ -19,10 +19,10 @@ export function SearchBar<T>({data, searchFields, setData}: SearchProps<T>) {
 
     if (Array.isArray(data)) {
       setData(
-        data.filter(entry => {
+        data.filter((entry) => {
           const searchString = new RegExp(search, 'i')
 
-          return searchFields.some(variable => {
+          return searchFields.some((variable) => {
             const variableType = typeof entry?.[variable]
 
             if (variableType === 'string') {

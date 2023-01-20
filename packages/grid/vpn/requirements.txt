@@ -1,2 +1,2 @@
-flask
-flask_shell2http
+flask==2.0.3
+flask_shell2http==1.9.0

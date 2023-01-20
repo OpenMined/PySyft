@@ -26,7 +26,9 @@ class RequestManager(DatabaseManager):
     def first(self, **kwargs: Any) -> Request:
         result = super().first(**kwargs)
         if not result:
-            raise RequestError
+            raise RequestError(
+                "Can't process AcceptOrDenyRequestService using this request ID."
+            )
 
         return result
 
@@ -74,7 +76,8 @@ class RequestManager(DatabaseManager):
                 "review": {
                     "name": request.reviewer_name,
                     "role": request.reviewer_role,
-                    "updated_on": str(request.updated_on),
+                    # TODO: fix datetime
+                    # "updated_on": str(request.updated_on),
                     "comment": request.reviewer_comment,
                 },
             }

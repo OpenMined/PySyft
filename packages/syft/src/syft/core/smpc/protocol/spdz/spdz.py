@@ -11,33 +11,21 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
-from typing import Dict
-from typing import Optional
 from typing import TYPE_CHECKING
 
-# syft absolute
-import syft as sy
-
 # relative
-from .....ast.klass import get_run_class_method
-from ....common.uid import UID
-from ....node.abstract.node import AbstractNode
-from ....node.common.client import Client
-from ....store.storeable_object import StorableObject
+from ....tensor.config import DEFAULT_RING_SIZE
 from ....tensor.smpc import utils
 from ...store import CryptoPrimitiveProvider
 
 EXPECTED_OPS = {"mul", "matmul"}
-cache_clients: Dict[Client, Client] = {}
 
 if TYPE_CHECKING:
     # relative
     from ....tensor.smpc.mpc_tensor import MPCTensor
 
 
-def mul_master(
-    x: MPCTensor, y: MPCTensor, op_str: str, **kwargs: Dict[Any, Any]
-) -> MPCTensor:
+def mul_master(x: MPCTensor, y: MPCTensor, op_str: str, **kwargs: Any) -> MPCTensor:
 
     """Function that is executed by the orchestrator to multiply two secret values.
 
@@ -53,17 +41,13 @@ def mul_master(
         MPCTensor: Result of the multiplication.
     """
 
-    # relative
-    from ....tensor.tensor import TensorPointer
-
     parties = x.parties
     parties_info = x.parties_info
 
+    ring_size = utils.get_ring_size(x.ring_size, y.ring_size)
     shape_x = tuple(x.shape)  # type: ignore
     shape_y = tuple(y.shape)  # type: ignore
-
-    ring_size = utils.get_ring_size(x.ring_size, y.ring_size)
-
+    result_shape = utils.get_shape(op_str, shape_x, shape_y)
     if ring_size != 2:
         # For ring_size 2 we generate those before hand
         CryptoPrimitiveProvider.generate_primitives(
@@ -77,24 +61,29 @@ def mul_master(
             p_kwargs={"a_shape": shape_x, "b_shape": shape_y},
             ring_size=ring_size,
         )
+        # TODO: Should input size after the computation of a dummy function
+        # This will not work for matmul
+        CryptoPrimitiveProvider.generate_primitives(
+            "beaver_wraps",
+            parties=parties,
+            g_kwargs={
+                "shape": result_shape,
+                "parties_info": parties_info,
+            },
+            p_kwargs={"shape": result_shape},
+            ring_size=ring_size,
+        )
 
     # TODO: Should modify to parallel execution.
-    if not isinstance(x.child[0], TensorPointer):
-        res_shares = [
-            getattr(a, "__mul__")(a, b, shape_x, shape_y, **kwargs)
-            for a, b in zip(x.child, y.child)
-        ]
-    else:
-        res_shares = []
-        attr_path_and_name = f"{x.child[0].path_and_name}.__{op_str}__"
-        op = get_run_class_method(attr_path_and_name, SMPC=True)
-        for a, b in zip(x.child, y.child):
-            res_shares.append(op(a, a, b, shape_x, shape_y, **kwargs))
+
+    res_shares = [
+        getattr(a, f"__{op_str}__")(b, **kwargs) for a, b in zip(x.child, y.child)
+    ]
 
     return res_shares  # type: ignore
 
 
-def gt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
+def lt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
     """Function that is executed by the orchestrator to multiply two secret values.
 
     Args:
@@ -108,13 +97,47 @@ def gt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
     Returns:
         MPCTensor: Result of the multiplication.
     """
+    # relative
+    # from ....tensor.smpc.mpc_tensor import MPCTensor
+    # from ....tensor.tensor import TensorPointer
+
     # diff = a - b
     # bit decomposition
     # sum carry adder
     # res = sign(diff)
-    res_shares = x - y
 
-    return MSB(res_shares)
+    res_shares = x - y
+    res_shares.block
+    # time.sleep(2)
+    msb = MSB(res_shares)
+
+    # This solves the high budget spent in DP operations,
+    # This code is to be removed when we move comparison to ShareTensor level.
+    # tensor_shares = []
+    # final_shares = []
+
+    # if isinstance(x, MPCTensor):
+    #     if isinstance(x.child[0], TensorPointer):
+    #         for t1, t2 in zip(x.child, y.child):
+    #             tensor_shares.append(t1.__lt__(t2))
+
+    #         for p1, p2 in zip(tensor_shares, msb.child):
+    #             p2.block
+    #             final_shares.append(p1.mpc_swap(p2))
+
+    #         msb.child = final_shares
+    # else:
+    #     if isinstance(y.child[0], TensorPointer):  # type: ignore
+    #         for t1 in y.child:
+    #             tensor_shares.append(t1.__lt__(x))
+
+    #         for p1, p2 in zip(tensor_shares, msb.child):
+    #             p2.block
+    #             final_shares.append(p1.mpc_swap(p2))
+
+    #         msb.child = final_shares
+
+    return msb
 
 
 def MSB(x: MPCTensor) -> MPCTensor:
@@ -129,41 +152,16 @@ def MSB(x: MPCTensor) -> MPCTensor:
     Returns:
         msb (MPCTensor): returns arithmetic shares of the MSB.
     """
-    ring_size = 2 ** 32  # TODO : Should extract ring_size elsewhere for generality.
+    ring_size = DEFAULT_RING_SIZE
     decomposed_shares = ABY3.bit_decomposition(x)
+    # return decomposed_shares
+
+    for share in decomposed_shares:
+        share.block
+
     msb_share = decomposed_shares[-1]
+    msb_share.block
+
     msb = ABY3.bit_injection(msb_share, ring_size)
 
     return msb
-
-
-def beaver_populate(
-    data: Any, id_at_location: UID, node: Optional[AbstractNode] = None
-) -> None:
-    """Populate the given input Tensor in the location specified.
-
-    Args:
-        data (Tensor): input Tensor to store in the node.
-        id_at_location (UID): the location to store the data in.
-        node Optional[AbstractNode] : The node on which the data is stored.
-    """
-    obj = node.store.get_object(key=id_at_location)  # type: ignore
-    if obj is None:
-        list_data = sy.lib.python.List([data])
-        result = StorableObject(
-            id=id_at_location,
-            data=list_data,
-            read_permissions={},
-        )
-        node.store[id_at_location] = result  # type: ignore
-    elif isinstance(obj.data, sy.lib.python.List):
-        obj = obj.data
-        obj.append(data)
-        result = StorableObject(
-            id=id_at_location,
-            data=obj,
-            read_permissions={},
-        )
-        node.store[id_at_location] = result  # type: ignore
-    else:
-        raise Exception(f"Object at {id_at_location} should be a List or None")

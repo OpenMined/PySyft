@@ -4,6 +4,7 @@
 """Generated protocol buffer code."""
 # third party
 from google.protobuf import descriptor as _descriptor
+from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
@@ -13,118 +14,13 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-DESCRIPTOR = _descriptor.FileDescriptor(
-    name="proto/lib/numpy/array.proto",
-    package="syft.lib.numpy",
-    syntax="proto3",
-    serialized_options=None,
-    create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1bproto/lib/numpy/array.proto\x12\x0esyft.lib.numpy"O\n\nNumpyProto\x12\x14\n\narrow_data\x18\x01 \x01(\x0cH\x00\x12\x14\n\nproto_data\x18\x02 \x01(\x0cH\x00\x12\r\n\x05\x64type\x18\x03 \x01(\tB\x06\n\x04\x64\x61tab\x06proto3',
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
+    b'\n\x1bproto/lib/numpy/array.proto\x12\x0esyft.lib.numpy"j\n\nNumpyProto\x12\x14\n\narrow_data\x18\x01 \x01(\x0cH\x00\x12\x14\n\nproto_data\x18\x02 \x01(\x0cH\x00\x12\r\n\x05\x64type\x18\x03 \x01(\t\x12\x19\n\x11\x64\x65\x63ompressed_size\x18\x04 \x01(\x03\x42\x06\n\x04\x64\x61ta"V\n\x0bNumpyScalar\x12\x10\n\x08obj_type\x18\x01 \x01(\t\x12\r\n\x03int\x18\x02 \x01(\x03H\x00\x12\x0f\n\x05\x66loat\x18\x03 \x01(\x01H\x00\x12\r\n\x05\x64type\x18\x04 \x01(\tB\x06\n\x04\x64\x61tab\x06proto3'
 )
 
 
-_NUMPYPROTO = _descriptor.Descriptor(
-    name="NumpyProto",
-    full_name="syft.lib.numpy.NumpyProto",
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    create_key=_descriptor._internal_create_key,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name="arrow_data",
-            full_name="syft.lib.numpy.NumpyProto.arrow_data",
-            index=0,
-            number=1,
-            type=12,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"",
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="proto_data",
-            full_name="syft.lib.numpy.NumpyProto.proto_data",
-            index=1,
-            number=2,
-            type=12,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"",
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
-            name="dtype",
-            full_name="syft.lib.numpy.NumpyProto.dtype",
-            index=2,
-            number=3,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=b"".decode("utf-8"),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax="proto3",
-    extension_ranges=[],
-    oneofs=[
-        _descriptor.OneofDescriptor(
-            name="data",
-            full_name="syft.lib.numpy.NumpyProto.data",
-            index=0,
-            containing_type=None,
-            create_key=_descriptor._internal_create_key,
-            fields=[],
-        ),
-    ],
-    serialized_start=47,
-    serialized_end=126,
-)
-
-_NUMPYPROTO.oneofs_by_name["data"].fields.append(
-    _NUMPYPROTO.fields_by_name["arrow_data"]
-)
-_NUMPYPROTO.fields_by_name["arrow_data"].containing_oneof = _NUMPYPROTO.oneofs_by_name[
-    "data"
-]
-_NUMPYPROTO.oneofs_by_name["data"].fields.append(
-    _NUMPYPROTO.fields_by_name["proto_data"]
-)
-_NUMPYPROTO.fields_by_name["proto_data"].containing_oneof = _NUMPYPROTO.oneofs_by_name[
-    "data"
-]
-DESCRIPTOR.message_types_by_name["NumpyProto"] = _NUMPYPROTO
-_sym_db.RegisterFileDescriptor(DESCRIPTOR)
-
+_NUMPYPROTO = DESCRIPTOR.message_types_by_name["NumpyProto"]
+_NUMPYSCALAR = DESCRIPTOR.message_types_by_name["NumpyScalar"]
 NumpyProto = _reflection.GeneratedProtocolMessageType(
     "NumpyProto",
     (_message.Message,),
@@ -136,5 +32,22 @@ NumpyProto = _reflection.GeneratedProtocolMessageType(
 )
 _sym_db.RegisterMessage(NumpyProto)
 
+NumpyScalar = _reflection.GeneratedProtocolMessageType(
+    "NumpyScalar",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _NUMPYSCALAR,
+        "__module__": "proto.lib.numpy.array_pb2"
+        # @@protoc_insertion_point(class_scope:syft.lib.numpy.NumpyScalar)
+    },
+)
+_sym_db.RegisterMessage(NumpyScalar)
 
+if _descriptor._USE_C_DESCRIPTORS == False:
+
+    DESCRIPTOR._options = None
+    _NUMPYPROTO._serialized_start = 47
+    _NUMPYPROTO._serialized_end = 153
+    _NUMPYSCALAR._serialized_start = 155
+    _NUMPYSCALAR._serialized_end = 241
 # @@protoc_insertion_point(module_scope)

@@ -18,13 +18,20 @@ VERSIONS_LUT: Dict[str, Dict[str, Any]] = {
     "1.7.1": dict(torchvision="0.8.2", torchcsprng="0.1.4"),
     "1.8.0": dict(torchvision="0.9.0", torchcsprng="0.2.0"),
     "1.8.1": dict(torchvision="0.9.1", torchcsprng="0.2.1"),
+    "1.9.0": dict(torchvision="0.10.0", torchcsprng="0.2.1"),
+    "1.9.1": dict(torchvision="0.10.1", torchcsprng="0.2.1"),
+    "1.10.2": dict(torchvision="0.11.3", torchcsprng="0.2.1"),
+    "1.11.0": dict(torchvision="0.12.0", torchcsprng="0.2.1"),
+    "1.12.0": dict(torchvision="0.13.0", torchcsprng="0.2.1"),
+    "1.12.1": dict(torchvision="0.13.1", torchcsprng="0.2.1"),
+    "1.13.0": dict(torchvision="0.14.0", torchcsprng="0.2.1"),
+    "1.13.1": dict(torchvision="0.14.1", torchcsprng="0.2.1"),
 }
 
 system = platform.system()
 
 
 def main(path_req: str, torch_version: str, gpu: str = "cpu") -> None:
-    print("got args", path_req, torch_version, gpu)
     with open(path_req, "r") as fp:
         req = fp.read()
 
@@ -42,10 +49,10 @@ def main(path_req: str, torch_version: str, gpu: str = "cpu") -> None:
 
         if (
             lib == "torchcsprng"
-            and sys.version_info >= (3, 9)
-            and lib_version < version.parse("0.2.0")
+            and sys.version_info >= (3, 10)
+            and lib_version <= version.parse("0.2.1")
         ):
-            replace = ""  # no torchcsprng < 0.2.0 for python 3.9
+            replace = ""  # no torchcsprng <= 0.2.1 for python 3.10
 
         req = re.sub(
             rf"{lib}[<>=].*\n",

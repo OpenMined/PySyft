@@ -16,7 +16,7 @@ from nacl.signing import VerifyKey
 from .....common import UID
 from .....common.message import ImmediateSyftMessageWithReply
 from .....io.location import SpecificLocation
-from ....domain.domain_interface import DomainInterface
+from ....domain_interface import DomainInterface
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import OwnerAlreadyExistsError
@@ -74,9 +74,11 @@ def create_initial_setup(
     node.name = msg.domain_name
 
     # 4 - Create Admin User
-    _node_private_key = node.signing_key.encode(encoder=HexEncoder).decode("utf-8")  # type: ignore
+    signing_key = msg.signing_key
 
-    _verify_key = node.signing_key.verify_key.encode(encoder=HexEncoder).decode("utf-8")  # type: ignore
+    # convert to hex
+    _node_private_key = signing_key.encode(encoder=HexEncoder).decode("utf-8")  # type: ignore
+    _verify_key = signing_key.verify_key.encode(encoder=HexEncoder).decode("utf-8")  # type: ignore
 
     _admin_role = node.roles.owner_role
 
@@ -93,10 +95,11 @@ def create_initial_setup(
     # 5 - Save Node SetUp Configs
     try:
         node_id = node.target_id.id
-        node.setup.register(
+        node.setup.register_once(
             domain_name=msg.domain_name,
             node_id=node_id.no_dash,
             deployed_on=datetime.now(),
+            signing_key=_node_private_key,
         )
     except Exception as e:
         print("Failed to save setup to database", e)
@@ -113,6 +116,12 @@ def get_setup(
 
     _setup = model_to_json(node.setup.first(domain_name=node.name))
     _setup["tags"] = loads(_setup["tags"])
+    # TODO: Make this a little more defensive so we dont accidentally spill secrets
+    # from node.settings. Perhaps we should add a public settings interface
+    _setup["use_blob_storage"] = getattr(node.settings, "USE_BLOB_STORAGE", False)
+    # Remove it before sending setup's response
+    del _setup["signing_key"]
+
     if node.network:
         _setup["domains"] = len(node.node.all())
     return GetSetUpResponse(

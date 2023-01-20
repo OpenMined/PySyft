@@ -1,12 +1,20 @@
+# stdlib
+import uuid
+
 # third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+import pytest
 
 # syft absolute
 import syft as sy
 from syft import ReprMessage
 from syft import serialize
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
+from syft.core.common.serde.deserialize import PROTOBUF_START_MAGIC_HEADER_BYTES
+from syft.core.common.uid import UID
+from syft.core.io.address import Address
+from syft.core.io.location import SpecificLocation
 from syft.util import get_fully_qualified_name
 
 
@@ -18,34 +26,45 @@ def get_signing_key() -> SigningKey:
 
 def get_signed_message_bytes() -> bytes:
     # return a signed message fixture containing the uid from get_uid
-    blob = (
-        b"\n?syft.core.common.message.SignedImmediateSyftMessageWithoutReply"
-        + b"\x12\xd5\x02\n\x12\n\x10o\xdeI!\x8eH@\xf7\x89xQ7\x8dWN\x8b\x12"
-        + b"Lsyft.core.node.common.node_service.testing_services.repr_service.ReprMessage"
-        + b"\x1a@\xfe\xc3\xc9\xe4\xb7a\xc1n\xa8t\xb9\xe6n\x0c\x89\xd4Om~c\xb4\xfe\xb5\x9e\xa5"
-        + b"\x19\xdeD\x18\xa8\x82zd\x11\xd9bZ<\xa6\xf4\xcb\xf6v\xc9P\xeb\x91`N\x8b\x13%\xd1\xc41"
-        + b'\xbe\x18\xa22\x81B\x8f\xc2\x04" \x81\xff\xcc\xfc7\xc4U.\x8a*\x1f"=0\x10\xc4\xef\x88\xc80'
-        + b"\x01\xf0}3\x0b\xd4\x97\xad/P\x8f\x0f*\x8c\x01"
-        + b"\nLsyft.core.node.common.node_service.testing_services.repr_service.ReprMessage"
-        + b"\x12<\n\x12\n\x10o\xdeI!\x8eH@\xf7\x89xQ7\x8dWN\x8b\x12&\n\x05alice(\x012\x1b\n\x12\n\x10"
-        + b'\x8b\x8cU\x94\xad@E\x95\x8f\x9a\x8c\x10#"\x12\xb7\x12\x05alice'
+    return (
+        b"\n\t"
+        + PROTOBUF_START_MAGIC_HEADER_BYTES
+        + b"\x12?syft.core.common.message.SignedImmediateSyftMessageWithoutReply"
+        + b"\x1a\xe8\x02\n\x12\n\x10\xfb\x1b\xb0g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14"
+        + b"\x12Lsyft.core.node.common.node_service.testing_services.repr_service."
+        + b"ReprMessage\x1a@9\x1c\x9d\xd5\xb8\xed\x02=\xac`\xb4\x7f\xb8}j\x11G%\xd1\xaa"
+        + b"\x1f\x07s\xaa\xc7z\xd2\xeb\x18\x18\xce\x1c\xfdS\x93\xb7\\\xdb\x89\xe1\x7f"
+        + b"\xe2\x9d\xa4\xdd#\xc5\x1c\x1ci\xb3\x1c\xba\xfd\xeeD\x19\xbc\xea\xcdh\xea"
+        + b'\xfc\x0c" \x81\xff\xcc\xfc7\xc4U.\x8a*\x1f"=0\x10\xc4\xef\x88\xc80\x01'
+        + b"\xf0}3\x0b\xd4\x97\xad/P\x8f\x0f*\x9f\x01\n\tprotobuf:\x12Lsyft.core.node."
+        + b"common.node_service.testing_services.repr_service.ReprMessage\x1aD\n\x12\n"
+        + b"\x10\xfb\x1b\xb0g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14\x12.\n\ralices_domain"
+        + b"(\x012\x1b\n\x12\n\x10\xfb\x1b\xb0g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14\x12"
+        + b"\x05alice"
     )
-    return blob
 
 
 def get_repr_message_bytes() -> bytes:
-    blob = (
-        b"\nLsyft.core.node.common.node_service.testing_services.repr_service.ReprMessage\x12<\n"
-        + b"\x12\n\x10o\xdeI!\x8eH@\xf7\x89xQ7\x8dWN\x8b\x12&\n\x05alice(\x012\x1b\n\x12\n\x10\x8b"
-        + b'\x8cU\x94\xad@E\x95\x8f\x9a\x8c\x10#"\x12\xb7\x12\x05alice'
+    return (
+        b"\n\t"
+        + PROTOBUF_START_MAGIC_HEADER_BYTES
+        + b"\x12Lsyft.core.node.common.node_service.testing_services.repr_service."
+        + b"ReprMessage\x1aD\n\x12\n\x10\xfb\x1b\xb0g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15"
+        + b"\x14\x12.\n\ralices_domain(\x012\x1b\n\x12\n\x10\xfb\x1b\xb0g[\xb7LI\xbe"
+        + b"\xce\xe7\x00\xab\n\x15\x14\x12\x05alice"
     )
-    return blob
 
 
 def get_repr_message() -> ReprMessage:
-    # return a repr message fixture
-    blob = get_repr_message_bytes()
-    return sy.deserialize(blob=blob, from_bytes=True)
+    uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
+    addr = Address(name="alices_domain", domain=SpecificLocation(id=uid, name="alice"))
+    return ReprMessage(address=addr, msg_id=uid)
+
+
+def test_repr_message() -> None:
+    msg = get_repr_message()
+    msg_bytes = sy.serialize(msg, to_bytes=True)
+    assert msg_bytes == get_repr_message_bytes()
 
 
 def get_verify_key() -> VerifyKey:
@@ -77,7 +96,6 @@ def test_create_signed_message() -> None:
 
 def test_deserialize_signed_message() -> None:
     """Tests that SignedMessage can be deserialized"""
-
     sig_msg_blob = get_signed_message_bytes()
     sig_msg = sy.deserialize(blob=sig_msg_blob, from_bytes=True)
 
@@ -170,7 +188,9 @@ def test_verify_message_fails_sig() -> None:
     assert sig_msg.is_valid is True
 
     # change signature
-    sig_msg.signature += b"a"
+    sig = list(sig_msg.signature)
+    sig[-1] = 0  # change last byte
+    sig_msg.signature = bytes(sig)
 
     # not so good
     assert sig_msg.is_valid is False
@@ -205,7 +225,8 @@ def test_verify_message_fails_empty() -> None:
     sig_msg.signature = b""
 
     # not so good
-    assert sig_msg.is_valid is False
+    with pytest.raises(ValueError):
+        assert sig_msg.is_valid is False
 
 
 def test_decode_message() -> None:

@@ -7,7 +7,7 @@ import rich
 
 # relative
 from .deps import DEPENDENCIES
-from .lib import is_editable_mode
+from .mode import EDITABLE_MODE
 
 
 class RichGroup(click.Group):
@@ -17,7 +17,7 @@ class RichGroup(click.Group):
         sio = io.StringIO()
         console = rich.get_console()
         mode = ""
-        if is_editable_mode():
+        if EDITABLE_MODE:
             mode = "[bold red]EDITABLE DEV MODE[/bold red] :police_car_light:"
         console.print(
             "[bold red]HA[/bold red][bold magenta]Grid[/bold magenta]!", ":mage:", mode
@@ -35,10 +35,6 @@ class RichGroup(click.Group):
                 dep_emoji = ":whale:"
             if dep == "git":
                 dep_emoji = ":file_folder:"
-            if dep == "virtualbox":
-                dep_emoji = ":ballot_box_with_ballot: "
-            if dep == "vagrant":
-                dep_emoji = ":person_mountain_biking:"
             if dep == "ansible-playbook":
                 dep_emoji = ":blue_book:"
             table.add_row(f"{dep_emoji} {dep}", installed_str)
