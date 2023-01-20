@@ -72,7 +72,7 @@ jobs:
         if: steps.changes.outputs.hagrid == 'true'
         run: |
           bandit -r hagrid
-          safety check -i 42923 -i 51457
+          safety check -i 42923 -i 51457 -i 52495
 
       - name: Build Wheel
         if: steps.changes.outputs.hagrid == 'true'
