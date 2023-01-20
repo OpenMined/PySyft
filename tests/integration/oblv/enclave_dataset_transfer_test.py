@@ -5,8 +5,8 @@ import pytest
 # syft absolute
 import syft as sy
 
-CANADA_DOMAIN_PORT = 8091
-ITALY_DOMAIN_PORT = 8092
+CANADA_DOMAIN_PORT = 9082
+ITALY_DOMAIN_PORT = 9083
 LOCAL_ENCLAVE_PORT = 8010
 
 
@@ -28,19 +28,15 @@ def test_dataset_upload_to_enclave() -> None:
     )
 
     data1 = np.array([1, 2, 3, 4, 5])
-    dataset1 = sy.Tensor(data1).private(
-        min_val=0, max_val=5, data_subject="test_data1"
-    )
+    dataset1 = sy.Tensor(data1).private(min_val=0, max_val=5, data_subject="test_data1")
     data2 = np.array([5, 4, 3, 2, 1])
-    dataset2 = sy.Tensor(data2).private(
-        min_val=0, max_val=5, data_subject="test_data2"
-    )
+    dataset2 = sy.Tensor(data2).private(min_val=0, max_val=5, data_subject="test_data2")
 
     canada_ptr = dataset1.send(ca_root)
     italy_ptr = dataset2.send(it_root)
 
-    # ca_root.create_user(**data_scientist)
-    # it_root.create_user(**data_scientist)
+    ca_root.create_user(**data_scientist)
+    it_root.create_user(**data_scientist)
 
     canada = sy.login(port=CANADA_DOMAIN_PORT, email="DS@om.com", password="enclave")
     italy = sy.login(port=ITALY_DOMAIN_PORT, email="DS@om.com", password="enclave")
@@ -55,12 +51,14 @@ def test_dataset_upload_to_enclave() -> None:
     depl.initiate_connection(LOCAL_ENCLAVE_PORT)
 
     assert depl.get_uploaded_datasets() == []
-    canada.oblv.transfer_dataset(deployment=depl, dataset=canada.store[-1])
-    italy.oblv.transfer_dataset(deployment=depl, dataset=italy.store[-1])
+    canada.oblv.transfer_dataset(
+        deployment=depl, dataset=canada_ptr.id_at_location.no_dash
+    )
+    italy.oblv.transfer_dataset(
+        deployment=depl, dataset=italy_ptr.id_at_location.no_dash
+    )
 
-    uploaded_datasets = depl.get_uploaded_datasets()
-    uploaded_datasets = [x["id"] for x in uploaded_datasets]
-    assert uploaded_datasets == 2
-    assert canada.store[-1].id_at_location in uploaded_datasets
-    assert italy.store[-1].id_at_location in uploaded_datasets
-    pass
+    uploaded_datasets = [x["id"] for x in depl.get_uploaded_datasets()]
+    assert len(uploaded_datasets) == 2
+    assert canada_ptr.id_at_location.no_dash in uploaded_datasets
+    assert italy_ptr.id_at_location.no_dash in uploaded_datasets
