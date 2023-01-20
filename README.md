@@ -2,20 +2,20 @@
 <a href="https://slack.openmined.org/"><img src="https://img.shields.io/badge/chat-on%20slack-purple?logo=slack" /></a> <a href="https://openmined.github.io/PySyft/"><img src="https://img.shields.io/badge/read-docs-yellow?logo=mdbook" /></a>
 <br /><br /></div>
 
-<img src="packages/syft/docs/img/title_syft_light.png#gh-light-mode-only" alt="Syft Logo" width="200px" />
-<img src="packages/syft/docs/img/title_syft_dark.png#gh-dark-mode-only" alt="Syft Logo" width="200px" />
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/title_syft_light.png#gh-light-mode-only" alt="Syft Logo" width="200px" />
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/title_syft_dark.png#gh-dark-mode-only" alt="Syft Logo" width="200px" />
 
 Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 
 <div align="left">
-<img src="packages/syft/docs/img/header.png#gh-light-mode-only" alt="Syft Overview" width="100%" />
-<img src="packages/syft/docs/img/header.png#gh-dark-mode-only" alt="Syft Overview" width="100%" />
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/header.png#gh-light-mode-only" alt="Syft Overview" width="100%" />
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/header.png#gh-dark-mode-only" alt="Syft Overview" width="100%" />
 </div>
 
 # Quickstart
 
 ✅ `Linux` ✅ `macOS`\* ✅ `Windows`†‡
-<img src="packages/syft/docs/img/terminalizer.gif" width="50%" align="right" />
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/terminalizer.gif" width="50%" align="right" />
 
 1. Install our handy 🛵 cli tool which makes deploying a Domain or Network server a one-liner:  
    `pip install -U hagrid`
@@ -38,7 +38,7 @@ Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 - HAGrid Requires: 🐍 `python` 🐙 `git` - Run: `pip install -U hagrid`
 - Interactive Install 🧙🏽‍♂️ Wizard<sup>BETA</sup> Requires 🛵 `hagrid`: - Run: `hagrid quickstart`  
   †`Windows` does not support `ansible`, preventing some remote deployment targets
-- PySyft Requires: 🐍 `python 3.8+` - Run: `pip install -U syft --pre`  
+- PySyft Requires: 🐍 `python 3.8+` - Run: `pip install -U syft`  
   \*`macOS` Apple Silicon users need cmake: `brew install cmake`  
   ‡`Windows` users must run this first: `pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html`
 - PyGrid Requires: 🐳 `docker` / `k8s` or 🐧 `ubuntu` VM - Run: `hagrid launch ...`
@@ -47,7 +47,7 @@ Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 
 <!-- `0.8.0 beta` - `dev` branch 👈🏽   -->
 
-`0.7.0 beta` - `dev` branch 👈🏽  
+`0.7.0` - <a href="https://github.com/OpenMined/courses/tree/introduction-to-remote-data-science-dev">Course 3 Updated</a>  
 `0.6.0` - <a href="https://github.com/OpenMined/courses/tree/introduction-to-remote-data-science">Course 3</a>  
 `0.5.1` - <a href="https://github.com/OpenMined/courses/tree/foundations-of-private-computation">Course 2</a> + M1 Hotfix  
 `0.2.0` - `0.5.0` Deprecated
@@ -55,8 +55,6 @@ Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 PySyft and PyGrid use the same `version` and its best to match them up where possible. We release weekly betas which can be used in each context:
 PySyft: `pip install -U syft --pre`
 PyGrid: `hagrid launch ... tag=latest`
-
-<!-- Quickstart: `hagrid quickstart --pre` -->
 
 HAGrid is a cli / deployment tool so the latest version of `hagrid` is usually the best.
 
@@ -81,19 +79,19 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 <th align="center">
 <img width="441" height="1">
 <div align="center">
-<img src="packages/syft/docs/img/personas_image/dataowner.png" alt="" width="100" height="100" align="center">
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/personas_image/dataowner.png" alt="" width="100" height="100" align="center">
 <p>Data Owner</p></div>
 </th>
 <th align="center">
 <img width="441" height="1">
-<div align="center"><img src="packages/syft/docs/img/personas_image/datascientist.png" alt="" width="100" height="100" align="center">
+<div align="center"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/personas_image/datascientist.png" alt="" width="100" height="100" align="center">
 <p>Data Scientist</p></div>
 
 </th>
 <th align="center">
 <img width="441" height="1">
 <div align="center">
-<img src="packages/syft/docs/img/personas_image/dataengineer.png" alt="" width="100" height="100" align="center">
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/personas_image/dataengineer.png" alt="" width="100" height="100" align="center">
 <p>Data Engineer</p>
 </div>
 </th>
@@ -101,11 +99,11 @@ No more cold calls to get `access` to a dataset. No more weeks of `wait times` t
 <tr>
 <td valign="top">
 
-- <a href="/notebooks/quickstart/data-owner/00-deploy-domain.ipynb">Deploy a Domain Server</a>
-- <a href="/notebooks/quickstart/data-owner/01-upload-data.ipynb">Upload Private Data</a>
-- <a href="/notebooks/quickstart/data-owner/02-create-account-configure-pb.ipynb">Create Accounts</a>
+- <a href="https://github.com/OpenMined/PySyft/blob/0.7.0/notebooks/quickstart/data-owner/00-deploy-domain.ipynb">Deploy a Domain Server</a>
+- <a href="https://github.com/OpenMined/PySyft/blob/0.7.0/notebooks/quickstart/data-owner/01-upload-data.ipynb">Upload Private Data</a>
+- <a href="https://github.com/OpenMined/PySyft/blob/0.7.0/notebooks/quickstart/data-owner/02-create-account-configure-pb.ipynb">Create Accounts</a>
 - Manage Privacy Budget</a>
-- <a href="/notebooks/quickstart/data-owner/03-join-network.ipynb">Join a Network</a>
+- <a href="https://github.com/OpenMined/PySyft/blob/0.7.0/notebooks/quickstart/data-owner/03-join-network.ipynb">Join a Network</a>
 - Learn how PETs streamline Data Policies
 
 </td>
@@ -191,18 +189,18 @@ Provides services to a group of `Data Owners` and `Data Scientists`, such as dat
 <th align="center" valign="top">
 <img width="441" height="1">
 <div align="center">
-<img src="packages/syft/docs/img/panel_slack_title_light.png#gh-light-mode-only" alt="" width="100%" align="center" />
-<img src="packages/syft/docs/img/panel_slack_title_dark.png#gh-dark-mode-only" alt="" width="100%" align="center" />
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/panel_slack_title_light.png#gh-light-mode-only" alt="" width="100%" align="center" />
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/panel_slack_title_dark.png#gh-dark-mode-only" alt="" width="100%" align="center" />
 
-<a href="https://slack.openmined.org/"><img src="packages/syft/docs/img/panel_slack.png" alt="" width="100%" align="center" /></a>
+<a href="https://slack.openmined.org/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/panel_slack.png" alt="" width="100%" align="center" /></a>
 
 </div>
 </th>
 <th align="center" valign="top">
 <img width="441" height="1">
 <div align="center">
-<img src="packages/syft/docs/img/panel_title_videos_papers_light.png#gh-light-mode-only" alt="" width="100%" align="center" />
-<img src="packages/syft/docs/img/panel_title_videos_papers.png#gh-dark-mode-only" alt="" width="100%" align="center" />
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/panel_title_videos_papers_light.png#gh-light-mode-only" alt="" width="100%" align="center" />
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/panel_title_videos_papers.png#gh-dark-mode-only" alt="" width="100%" align="center" />
 <p align="left"><sub><sup>
 🎥 <a href="https://www.youtube.com/watch?v=qVf0tPBzr2k">PETs: Remote Data Science Unleashed - R gov 2021</a><br />
 🎥 <a href="https://youtu.be/sCoDWKTbh3s?list=PL_lsbAsL_o2BQKXG7mkGFA8LSApCnhljL">Introduction to Remote Data Science - PyTorch 2021</a><br />
@@ -219,10 +217,10 @@ Provides services to a group of `Data Owners` and `Data Scientists`, such as dat
 <th align="center" valign="top">
 <img width="441" height="1">
 <div align="center">
-<img src="packages/syft/docs/img/panel_padawan_title_light.png#gh-light-mode-only" alt="" width="100%" align="center" />
-<img src="packages/syft/docs/img/panel_padawan_title_dark.png#gh-dark-mode-only" alt="" width="100%" align="center" />
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/panel_padawan_title_light.png#gh-light-mode-only" alt="" width="100%" align="center" />
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/panel_padawan_title_dark.png#gh-dark-mode-only" alt="" width="100%" align="center" />
 
-<a href="https://blog.openmined.org/work-on-ais-most-exciting-frontier-no-phd-required/"><img src="packages/syft/docs/img/panel_padawan.png" alt="" width="100%" align="center"></a>
+<a href="https://blog.openmined.org/work-on-ais-most-exciting-frontier-no-phd-required/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/panel_padawan.png" alt="" width="100%" align="center"></a>
 
 </div>
 </th>
@@ -236,18 +234,18 @@ Provides services to a group of `Data Owners` and `Data Scientists`, such as dat
 <th align="center">
 <img width="441" height="1">
 <div align="center">
-<a href="https://courses.openmined.org/courses/our-privacy-opportunity"><img src="packages/syft/docs/img/course_privacy.png" alt="" width="100%" align="center" /></a>
+<a href="https://courses.openmined.org/courses/our-privacy-opportunity"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/course_privacy.png" alt="" width="100%" align="center" /></a>
 </th>
 <th align="center">
 <img width="441" height="1">
 <div align="center">
-<a href="https://courses.openmined.org/courses/foundations-of-private-computation"><img src="packages/syft/docs/img/course_foundations.png" alt="" width="100%" align="center" /></a>
+<a href="https://courses.openmined.org/courses/foundations-of-private-computation"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/course_foundations.png" alt="" width="100%" align="center" /></a>
 </div>
 </th>
 <th align="center">
 <img width="441" height="1">
 <div align="center">
-<a href="https://courses.openmined.org/courses/introduction-to-remote-data-science"><img src="packages/syft/docs/img/course_introduction.png" alt="" width="100%" align="center"></a>
+<a href="https://courses.openmined.org/courses/introduction-to-remote-data-science"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/course_introduction.png" alt="" width="100%" align="center"></a>
 </div>
 </th>
 </tr>
@@ -256,41 +254,41 @@ Provides services to a group of `Data Owners` and `Data Scientists`, such as dat
 # Contributors
 
 OpenMined and Syft appreciates all contributors, if you would like to fix a bug or suggest a new feature, please see our [guidelines](https://openmined.github.io/PySyft/developer_guide/index.html).<br />  
-<img src="packages/syft/docs/img/contributors_light.jpg#gh-light-mode-only" alt="Contributors" width="100%" />
-<img src="packages/syft/docs/img/contributors_dark.jpg#gh-dark-mode-only" alt="Contributors" width="100%" />
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/contributors_light.jpg#gh-light-mode-only" alt="Contributors" width="100%" />
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/contributors_dark.jpg#gh-dark-mode-only" alt="Contributors" width="100%" />
 
 # Supporters
 
 <table border="0">
 <tr>
 <th align="center">
-<a href="https://sloan.org/"><img src="packages/syft/docs/img/logo_sloan.png" /></a>
+<a href="https://sloan.org/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/logo_sloan.png" /></a>
 </th>
 <th align="center">
-<a href="https://opensource.fb.com/"><img src="packages/syft/docs/img/logo_meta.png" /></a>
+<a href="https://opensource.fb.com/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/logo_meta.png" /></a>
 </th>
 <th align="center">
-<a href="https://pytorch.org/"><img src="packages/syft/docs/img/logo_torch.png" /></a>
+<a href="https://pytorch.org/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/logo_torch.png" /></a>
 </th>
 <th align="center">
-<a href="https://www.udacity.com/"><img src="packages/syft/docs/img/logo_udacity.png" /></a>
+<a href="https://www.udacity.com/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/logo_udacity.png" /></a>
 </th>
 <th align="center">
-<a href="https://summerofcode.withgoogle.com/"><img src="packages/syft/docs/img/logo_gsoc.png" /></a>
+<a href="https://summerofcode.withgoogle.com/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/logo_gsoc.png" /></a>
 </th>
 <th align="center">
-<a href="https://developers.google.com/season-of-docs"><img src="packages/syft/docs/img/logo_gsod.png" /></a>
+<a href="https://developers.google.com/season-of-docs"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/logo_gsod.png" /></a>
 </th>
 <th align="center">
-<img src="packages/syft/docs/img/logo_arkhn_light.png#gh-light-mode-only" />
-<img src="packages/syft/docs/img/logo_arkhn.png#gh-dark-mode-only" />
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/logo_arkhn_light.png#gh-light-mode-only" />
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/logo_arkhn.png#gh-dark-mode-only" />
 </th>
 <th align="center">
-<img src="packages/syft/docs/img/logo_cape_light.png#gh-light-mode-only" />
-<img src="packages/syft/docs/img/logo_cape.png#gh-dark-mode-only" />
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/logo_cape_light.png#gh-light-mode-only" />
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/logo_cape.png#gh-dark-mode-only" />
 </th>
 <th align="center">
-<a href="https://begin.ai/"><img src="packages/syft/docs/img/logo_begin.png" /></a>
+<a href="https://begin.ai/"><img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/logo_begin.png" /></a>
 </th>
 </tr>
 </table>
@@ -298,8 +296,8 @@ OpenMined and Syft appreciates all contributors, if you would like to fix a bug 
 # Open Collective
 
 `OpenMined` is a fiscally sponsored `501(c)(3)` in the USA. We are funded by our generous supporters on <a href="https://opencollective.com/openmined">Open Collective</a>. <br /><br />
-<img src="packages/syft/docs/img/opencollective_light.png#gh-light-mode-only" alt="Contributors" width="100%" />
-<img src="packages/syft/docs/img/opencollective_dark.png#gh-dark-mode-only" alt="Contributors" width="100%" />
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/opencollective_light.png#gh-light-mode-only" alt="Contributors" width="100%" />
+<img src="https://raw.githubusercontent.com/OpenMined/PySyft/0.7.0/packages/syft/docs/img/opencollective_dark.png#gh-dark-mode-only" alt="Contributors" width="100%" />
 
 # Disclaimer
 

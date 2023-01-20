@@ -136,6 +136,7 @@ jobs:
           tox -e stack.test.integration
       #Run log collector python script
       - name: Run log collector
+        timeout-minutes: 5
         if: failure()
         shell: bash
         run: |
@@ -309,6 +310,7 @@ jobs:
           tox -e stack.test.integration.tls
       #Run log collector python script
       - name: Run log collector
+        timeout-minutes: 5
         if: failure()
         shell: bash
         run: |
@@ -472,6 +474,7 @@ jobs:
           tox -e stack.test.integration.tff
       #Run log collector python script
       - name: Run log collector
+        timeout-minutes: 5
         if: failure()
         shell: bash
         run: |
@@ -648,6 +651,7 @@ jobs:
 
       #Run log collector python script
       - name: Run log collector
+        timeout-minutes: 5
         if: failure()
         shell: bash
         run: |
@@ -819,6 +823,7 @@ jobs:
 
         #Run log collector python script
       - name: Run log collector
+        timeout-minutes: 5
         if: failure()
         shell: bash
         run: |
@@ -957,6 +962,7 @@ jobs:
 
       #Run log collector python script
       - name: Run log collector
+        timeout-minutes: 5
         if: failure()
         shell: bash
         run: |
