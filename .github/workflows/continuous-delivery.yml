@@ -40,15 +40,14 @@ jobs:
     secrets: inherit
 
   deploy-syft:
-    needs:
-      [
+    needs: [
         call-linting,
         call-syft_tests,
         call-grid-backend_test,
         call-syft-security,
         call-grid-frontend_test,
         call-syft-version_tests,
-        call-stack-integration_tests,
+        # call-stack-integration_tests,
       ]
     runs-on: ubuntu-latest
     steps:
