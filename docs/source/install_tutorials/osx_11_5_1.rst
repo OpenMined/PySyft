@@ -209,7 +209,7 @@ Step 5: Install Necessary Python Packages
 
   .. code-block:: bash
   
-      pip install -U syft --pre
+      pip install -U syft
 
 
 Step 6: Install Docker
