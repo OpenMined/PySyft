@@ -80,7 +80,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install tox==3.27.1
+          pip install -U tox
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
@@ -244,7 +244,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install tox==3.27.1
+          pip install -U tox
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
@@ -418,7 +418,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install tox==3.27.1
+          pip install -U tox
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
@@ -599,7 +599,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install tox==3.27.1
+          pip install -U tox
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
@@ -773,7 +773,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install tox==3.27.1
+          pip install -U tox
 
       - name: Install kubectl
         if: steps.changes.outputs.stack == 'true'
@@ -937,7 +937,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install tox==3.27.1
+          pip install -U tox
 
       - name: docker cache
         uses: actions/cache@v3
