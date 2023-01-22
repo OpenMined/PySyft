@@ -27,7 +27,7 @@ jobs:
 
       - name: Install tox
         run: |
-          pip install tox --upgrade
+          pip install -U tox
 
       - name: Build the docs
         run: |

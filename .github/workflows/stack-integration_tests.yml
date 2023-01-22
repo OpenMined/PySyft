@@ -72,7 +72,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install tox --upgrade
+          pip install -U tox
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
@@ -212,7 +212,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install tox --upgrade
+          pip install -U tox
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
@@ -362,7 +362,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install tox --upgrade
+          pip install -U tox
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
@@ -435,7 +435,6 @@ jobs:
         run: |
           echo "::set-output name=job_name::$(echo ${{ github.job }})"
           echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
-
 
       - name: Get current date
         id: date
@@ -513,7 +512,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install tox --upgrade
+          pip install -U tox
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
@@ -574,7 +573,6 @@ jobs:
         shell: bash
         run: |
           python ./scripts/container_log_collector.py
-
 
       # Get Job name and url
       - name: Get job name and url
@@ -657,7 +655,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install tox --upgrade
+          pip install -U tox
 
       - name: Install kubectl
         if: steps.changes.outputs.stack == 'true'
@@ -724,7 +722,6 @@ jobs:
         run: |
           echo "::set-output name=job_name::$(echo ${{ github.job }})"
           echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
-
 
       - name: Get current date
         id: date
@@ -798,7 +795,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install tox --upgrade
+          pip install -U tox
 
       - name: docker cache
         uses: actions/cache@v3
@@ -826,7 +823,6 @@ jobs:
           docker rm `docker ps -aq` --force || true
           tox -e stack.test.course
 
-
       #Run log collector python script
       - name: Run log collector
         if: failure()
@@ -834,7 +830,7 @@ jobs:
         run: |
           python ./scripts/container_log_collector.py
 
-       # Get Job name and url
+        # Get Job name and url
       - name: Get job name and url
         id: job_name
         if: failure()
