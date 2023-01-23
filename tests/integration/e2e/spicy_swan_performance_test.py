@@ -16,7 +16,6 @@ import pytest
 # syft absolute
 import syft as sy
 from syft import Domain
-from syft.core.adp.data_subject_list import DataSubjectArray
 from syft.core.node.common.node_service.user_manager.user_messages import (
     UpdateUserMessage,
 )

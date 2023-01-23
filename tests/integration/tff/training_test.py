@@ -11,7 +11,6 @@ except Exception:
 
 # syft absolute
 import syft as sy
-from syft.core.adp.data_subject_list import DataSubjectArray
 
 
 def create_keras_model():

@@ -49,6 +49,9 @@ def create_s3_bucket(bucket_name: str, settings: Settings, attempt: int = 0) -> 
         if s3_client and not bucket_exists:
             resp = s3_client.create_bucket(Bucket=bucket_name)
             logging.info(f"Bucket Creation response: {resp}")
+    except s3_client.meta.client.exceptions.BucketAlreadyExists:
+        logging.info(f"Bucket {bucket_name} Already exists.")
+        pass
     except Exception as e:
         print(f"Failed to create bucket. {e}")
         raise e

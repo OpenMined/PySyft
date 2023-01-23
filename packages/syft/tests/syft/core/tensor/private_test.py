@@ -5,8 +5,6 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.core.adp.data_subject import DataSubject
-from syft.core.adp.data_subject_list import DataSubjectArray
-from syft.core.tensor.autodp.gamma_tensor import GammaTensor as GT
 from syft.core.tensor.autodp.phi_tensor import PhiTensor as PT
 from syft.core.tensor.lazy_repeat_array import lazyrepeatarray as lra
 from syft.core.tensor.tensor import Tensor
