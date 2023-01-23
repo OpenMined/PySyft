@@ -43,7 +43,13 @@ from ..util import aggressive_set_attr
 from ..util import get_loaded_syft
 from ..util import inherit_tags
 from .callable import Callable
+from ..core.node.new.action_service import NumpyArrayObject, NumpyArrayObjectPointer
+from ..core.node.new.action_object import ActionObjectPointer
 
+# third party
+from result import Err
+from result import Ok
+from result import Result
 
 def _resolve_pointer_type(self: Pointer) -> Pointer:
     """Resolve pointer of the object.
@@ -661,138 +667,161 @@ class Class(Callable):
     def create_send_method(outer_self: Any) -> None:
         """Add `send` method to `outer_self.object_ref`."""
 
-        def send(
+        # def send(
+        #     self: Any,
+        #     client: Any,
+        #     pointable: bool = True,
+        #     description: str = "",
+        #     tags: Optional[List[str]] = None,
+        #     searchable: Optional[bool] = None,
+        #     chunk_size: Optional[int] = None,
+        #     send_to_blob_storage: bool = True,
+        #     **kwargs: Any,
+        # ) -> Union[Pointer, Tuple[Pointer, SaveObjectAction]]:
+
+        #     """Send obj to client and return pointer to the object.
+
+        #     Args:
+        #         self: Object to be sent.
+        #         client: Client to send object to.
+        #         pointable:
+        #         description: Description for the object to send.
+        #         tags: Tags for the object to send.
+
+        #     Returns:
+        #         Pointer to sent object.
+
+        #     Note:
+        #         `searchable` is deprecated please use `pointable` in the future.
+        #     """
+        #     if searchable is not None:
+        #         msg = "`searchable` is deprecated please use `pointable` in future"
+        #         warning(msg, print=True)
+        #         warnings.warn(msg, DeprecationWarning)
+        #         pointable = searchable
+
+        #     chunk_size = chunk_size if chunk_size is not None else 536870912  # 500 MB
+
+        #     if not hasattr(self, "id"):
+        #         try:
+        #             self.id = UID()
+        #         except AttributeError:
+        #             pass
+
+        #     # if `tags` is passed in, use it; else, use obj_tags
+        #     obj_tags = getattr(self, "tags", [])
+        #     tags = tags if tags else []
+        #     tags = tags if tags else obj_tags
+
+        #     # if `description` is passed in, use it; else, use obj_description
+        #     obj_description = getattr(self, "description", "")
+        #     description = description if description else obj_description
+
+        #     # TODO: Allow Classes to opt out in the AST like Pandas where the properties
+        #     # would break their dict attr usage
+        #     # Issue: https://github.com/OpenMined/PySyft/issues/5322
+        #     if outer_self.pointer_name not in {"DataFramePointer", "SeriesPointer"}:
+        #         attach_tags(self, tags)
+        #         attach_description(self, description)
+
+        #     id_at_location = UID()
+
+        #     if hasattr(self, "init_pointer"):
+        #         constructor = self.init_pointer
+        #     else:
+        #         constructor = getattr(outer_self, outer_self.pointer_name)
+
+        #     # Step 1: create pointer which will point to result
+        #     ptr = constructor(
+        #         client=client,
+        #         id_at_location=id_at_location,
+        #         tags=tags,
+        #         description=description,
+        #     )
+
+        #     ptr._pointable = pointable
+
+        #     if pointable:
+        #         ptr.gc_enabled = False
+        #     else:
+        #         ptr.gc_enabled = True
+
+        #     # Check if the client has blob storage enabled
+        #     # blob storage can only be used if client node has blob storage enabled.
+        #     if not hasattr(client, "settings") or not client.settings.get(
+        #         "use_blob_storage", False
+        #     ):
+        #         sys.stdout.write(
+        #             "\n**Warning**: Blob Storage is disabled on this client node. Switching to database store.\n"
+        #         )
+        #         send_to_blob_storage = False
+
+        #     # Check if the obj satisfies the min requirements for it to be stored in blob store
+        #     store_obj_in_blob_store = check_send_to_blob_storage(
+        #         obj=self, use_blob_storage=send_to_blob_storage
+        #     )
+
+        #     if store_obj_in_blob_store:
+        #         store_data = upload_to_s3_using_presigned(
+        #             client=client,
+        #             data=self,
+        #             chunk_size=chunk_size,
+        #             asset_name=id_at_location.no_dash,
+        #         )
+        #     else:
+        #         store_data = self
+
+        #     # Step 6: create message which contains object to send
+        #     storable = StorableObject(
+        #         id=ptr.id_at_location,
+        #         data=store_data,
+        #         tags=tags,
+        #         description=description,
+        #         search_permissions={VERIFYALL: None} if pointable else {},
+        #     )
+        #     obj_msg = SaveObjectAction(obj=storable, address=client.node_uid)
+
+        #     immediate = kwargs.get("immediate", True)
+
+        #     if immediate:
+        #         # Step 7: send message
+        #         client.send_immediate_msg_without_reply(msg=obj_msg)
+
+        #         # Setp 8: add it in the lit of processing pointers
+        #         # Add in client side a list of pointers that
+        #         # might be in the middle of some computation making it not
+        #         # available immediately.
+        #         client.processing_pointers[id_at_location] = True
+
+        #         # Step 9: return pointer
+        #         return ptr
+        #     else:
+        #         return ptr, obj_msg
+
+        def new_send(
             self: Any,
             client: Any,
-            pointable: bool = True,
-            description: str = "",
-            tags: Optional[List[str]] = None,
-            searchable: Optional[bool] = None,
-            chunk_size: Optional[int] = None,
-            send_to_blob_storage: bool = True,
-            **kwargs: Any,
-        ) -> Union[Pointer, Tuple[Pointer, SaveObjectAction]]:
-
-            """Send obj to client and return pointer to the object.
-
-            Args:
-                self: Object to be sent.
-                client: Client to send object to.
-                pointable:
-                description: Description for the object to send.
-                tags: Tags for the object to send.
-
-            Returns:
-                Pointer to sent object.
-
-            Note:
-                `searchable` is deprecated please use `pointable` in the future.
-            """
-            if searchable is not None:
-                msg = "`searchable` is deprecated please use `pointable` in future"
-                warning(msg, print=True)
-                warnings.warn(msg, DeprecationWarning)
-                pointable = searchable
-
-            chunk_size = chunk_size if chunk_size is not None else 536870912  # 500 MB
-
-            if not hasattr(self, "id"):
-                try:
-                    self.id = UID()
-                except AttributeError:
-                    pass
-
-            # if `tags` is passed in, use it; else, use obj_tags
-            obj_tags = getattr(self, "tags", [])
-            tags = tags if tags else []
-            tags = tags if tags else obj_tags
-
-            # if `description` is passed in, use it; else, use obj_description
-            obj_description = getattr(self, "description", "")
-            description = description if description else obj_description
-
-            # TODO: Allow Classes to opt out in the AST like Pandas where the properties
-            # would break their dict attr usage
-            # Issue: https://github.com/OpenMined/PySyft/issues/5322
-            if outer_self.pointer_name not in {"DataFramePointer", "SeriesPointer"}:
-                attach_tags(self, tags)
-                attach_description(self, description)
-
-            id_at_location = UID()
-
-            if hasattr(self, "init_pointer"):
-                constructor = self.init_pointer
+            # pointable: bool = True,
+            # description: str = "",
+            # tags: Optional[List[str]] = None,
+            # searchable: Optional[bool] = None,
+            # chunk_size: Optional[int] = None,
+            # send_to_blob_storage: bool = True,
+            # **kwargs: Any,
+        ) -> ActionObjectPointer:
+            import numpy as np
+            if isinstance(self, np.ndarray):
+                obj = NumpyArrayObject(
+                        syft_action_data=self, 
+                        dtype=self.dtype, 
+                        shape=self.shape
+                        )
+                obj_pointer = client.api.services.action.set(obj)
+                return Ok(obj_pointer)
             else:
-                constructor = getattr(outer_self, outer_self.pointer_name)
-
-            # Step 1: create pointer which will point to result
-            ptr = constructor(
-                client=client,
-                id_at_location=id_at_location,
-                tags=tags,
-                description=description,
-            )
-
-            ptr._pointable = pointable
-
-            if pointable:
-                ptr.gc_enabled = False
-            else:
-                ptr.gc_enabled = True
-
-            # Check if the client has blob storage enabled
-            # blob storage can only be used if client node has blob storage enabled.
-            if not hasattr(client, "settings") or not client.settings.get(
-                "use_blob_storage", False
-            ):
-                sys.stdout.write(
-                    "\n**Warning**: Blob Storage is disabled on this client node. Switching to database store.\n"
-                )
-                send_to_blob_storage = False
-
-            # Check if the obj satisfies the min requirements for it to be stored in blob store
-            store_obj_in_blob_store = check_send_to_blob_storage(
-                obj=self, use_blob_storage=send_to_blob_storage
-            )
-
-            if store_obj_in_blob_store:
-                store_data = upload_to_s3_using_presigned(
-                    client=client,
-                    data=self,
-                    chunk_size=chunk_size,
-                    asset_name=id_at_location.no_dash,
-                )
-            else:
-                store_data = self
-
-            # Step 6: create message which contains object to send
-            storable = StorableObject(
-                id=ptr.id_at_location,
-                data=store_data,
-                tags=tags,
-                description=description,
-                search_permissions={VERIFYALL: None} if pointable else {},
-            )
-            obj_msg = SaveObjectAction(obj=storable, address=client.node_uid)
-
-            immediate = kwargs.get("immediate", True)
-
-            if immediate:
-                # Step 7: send message
-                client.send_immediate_msg_without_reply(msg=obj_msg)
-
-                # Setp 8: add it in the lit of processing pointers
-                # Add in client side a list of pointers that
-                # might be in the middle of some computation making it not
-                # available immediately.
-                client.processing_pointers[id_at_location] = True
-
-                # Step 9: return pointer
-                return ptr
-            else:
-                return ptr, obj_msg
-
-        aggressive_set_attr(obj=outer_self.object_ref, name="send", attr=send)
+                return Err("Not implemented")
+                
+        aggressive_set_attr(obj=outer_self.object_ref, name="send", attr=new_send)
 
     def create_storable_object_attr_convenience_methods(outer_self: Any) -> None:
         """Add methods to set tag and description to `outer_self.object_ref`."""

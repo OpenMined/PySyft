@@ -41,7 +41,7 @@ class NumpyArrayObjectPointer(ActionObjectPointer):
         self.setup_methods()
 
     def setup_methods(self) -> None:
-        infix_operations = ["__add__", "__sub__"]
+        infix_operations = ["__add__", "__sub__", "__eq__"]
         for op in infix_operations:
             setattr(
                 type(self),
@@ -50,10 +50,19 @@ class NumpyArrayObjectPointer(ActionObjectPointer):
             )
 
     def __make_infix_op__(self, op: str) -> Callable:
-        def infix_op(_self, other: ActionObjectPointer) -> Self:
+        def infix_op(_self, other: Any) -> Self:
             if not isinstance(other, ActionObjectPointer):
-                print("🔵 TODO: pointerize")
-                raise Exception("We need to pointerize first")
+                # if not isinstance(other, ActionObject):
+                #     if not isinstance(other, np.ndarray):
+                #         other = np.array(other)
+                #     other = NumpyArrayObject(
+                #                 syft_action_data=other,
+                #                 dtype=other.dtype,
+                #                 shape=other.shape
+                #             )    
+                other = other.to_pointer(self.node_uid)
+                # print("🔵 TODO: pointerize")
+                # raise Exception("We need to pointerize first")
             action = self.make_method_action(op=op, args=[other])
             action_result = self.execute_action(action, sync=True)
             return action_result
@@ -61,6 +70,8 @@ class NumpyArrayObjectPointer(ActionObjectPointer):
         infix_op.__name__ = op
         return infix_op
 
+    def get_from(self, domain_client) -> Any:
+        return domain_client.api.services.action.get(self.id).syft_action_data
 
 def numpy_like_eq(left: Any, right: Any) -> bool:
     result = left == right
@@ -90,6 +101,8 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
             )
         return self == other
 
+    def send_to(self, domain_node) -> NumpyArrayObjectPointer:
+        return domain_node.api.services.action.set(self)
     
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         inputs = tuple(np.array(x.syft_action_data, dtype=x.dtype.syft_action_data) 
@@ -97,7 +110,6 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
                        for x in inputs)
         
         result = getattr(ufunc, method)(*inputs, **kwargs)
-        
         if type(result) is tuple:
             return tuple(NumpyArrayObject(
                             syft_action_data=x, 
@@ -136,6 +148,11 @@ class ActionService(AbstractService):
         self.node_uid = node.id
         self.store = store
 
+    @service_method(path="action.peek", name="peek")
+    def peek(self, credentials: SyftVerifyKey) -> Any:
+        return Ok(self.store.data)
+
+
     @service_method(path="action.set", name="set")
     def set(
         self, credentials: SyftVerifyKey, action_object: ActionObject
@@ -164,7 +181,10 @@ class ActionService(AbstractService):
         self, credentials: SyftVerifyKey, action: Action
     ) -> Result[ActionObjectPointer, Err]:
         """Execute an operation on objects in the action store"""
-        resolved_self = self.get(credentials=credentials, uid=action.remote_self)
+        print(action.remote_self)
+        print(action.parent_id)
+        print(action.args)
+        resolved_self = self.get(credentials=credentials, uid=action.parent_id)
         if resolved_self.is_err():
             return resolved_self.err()
         else:
@@ -188,6 +208,8 @@ class ActionService(AbstractService):
         # 🔵 TODO 10: Get proper code From old RunClassMethodAction to ensure the function
         # is not bound to the original object or mutated
         target_method = getattr(resolved_self, action.op, None)
+        print(target_method)
+        print(resolved_self)
         result = None
         try:
             if target_method:
@@ -196,6 +218,7 @@ class ActionService(AbstractService):
             print("what is this exception", e)
             return Err(e)
 
+        print(result)
         # 🟡 TODO 11: Figure out how we want to store action object results
         if isinstance(result, np.ndarray):
             result_action_object = NumpyArrayObject(
@@ -215,4 +238,5 @@ class ActionService(AbstractService):
         if set_result.is_err():
             return set_result.err()
 
+        print(result_action_object)
         return Ok(result_action_object.to_pointer(self.node_uid))
