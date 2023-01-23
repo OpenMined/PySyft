@@ -17,13 +17,14 @@ import requests
 # relative
 from .. import GridURL
 from ... import __version__
-from ...core.common.uid import UID
 from ...core.io.connection import ClientConnection
 from ...core.io.route import SoloRoute
 from ...core.node.common.client import Client
 from ...core.node.domain_client import DomainClient
 from ...core.node.network_client import NetworkClient
 from ...core.node.new.client import SyftClient
+from ...core.node.new.client import SyftClientSessionCache
+from ...core.node.new.user import UserLoginCredentials
 from ...util import bcolors
 from ...util import verify_tls
 from .grid_connection import GridHTTPConnection
@@ -79,21 +80,26 @@ def connect(
 
 
 def new_connect(
+    email: str,
+    password: str,
     url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
-    conn_type: Type[ClientConnection] = GridHTTPConnection,
-    credentials: Optional[Dict] = None,
-    timeout: Optional[float] = None,
 ) -> SyftClient:
 
-    conn = conn_type(url=GridURL.from_url(url))  # type: ignore
-    conn_details = conn.new_login(credentials=credentials)  # type: ignore
-    route = SoloRoute(
-        destination=UID.from_string(conn_details["node_uid"]), connection=conn
+    login_credentials = UserLoginCredentials(email=email, password=password)
+
+    _client = SyftClientSessionCache.get_user_session(
+        login_credentials.email, login_credentials.password
     )
 
-    print("Connnect details", conn_details)
+    if _client is None:
+        _client = SyftClient.from_url(url)
+        _client.login(
+            email=login_credentials.email, password=login_credentials.password
+        )
 
-    return SyftClient(**conn_details, routes=[route])
+    print(f"Logged into {_client.node_name} as <{login_credentials.email}>")
+
+    return _client
 
 
 def login(
@@ -105,7 +111,7 @@ def login(
     verbose: Optional[bool] = True,
     timeout: Optional[float] = None,
     retry: Optional[int] = None,
-    new_client: Optional[bool] = None,
+    via_new_client: Optional[bool] = None,
 ) -> Union[Client, SyftClient]:
 
     retry = 5 if retry is None else retry  # Default to 5 retries
@@ -146,6 +152,9 @@ def login(
     else:
         grid_url = GridURL(host_or_ip=url, port=port)
 
+    if via_new_client:
+        return new_connect(email=email, password=password, url=grid_url.base_url)
+
     grid_url = grid_url.with_path("/api/v1")
 
     if verbose:
@@ -163,11 +172,6 @@ def login(
     node = None
     timeout_btw_retries = timeout
     retry_attempt = 1
-
-    if new_client:
-        return new_connect(
-            url=grid_url, credentials=credentials, conn_type=conn_type, timeout=timeout
-        )
 
     while node is None and retry_attempt <= retry:
         try:

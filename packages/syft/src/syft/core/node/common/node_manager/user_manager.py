@@ -284,6 +284,48 @@ class NoSQLUserManager(NoSQLDatabaseManager):
         institution: Optional[str] = "",
         website: Optional[str] = "",
     ) -> Optional[User]:
+        salt, hashed = self.__salt_and_hash_password(password, 12)
+        curr_len = len(self)
+        try:
+            row_exists = self.find_one({email: email})
+            if row_exists:
+                return None
+            else:
+                private_key = SigningKey(bytes.fromhex(node.setup.first().signing_key))
+                user = NoSQLSyftUser(
+                    name=name,
+                    email=email,
+                    role=role,
+                    budget=budget,
+                    private_key=private_key.encode(encoder=HexEncoder).decode("utf-8"),
+                    verify_key=private_key.verify_key.encode(encoder=HexEncoder).decode(
+                        "utf-8"
+                    ),
+                    hashed_password=hashed,
+                    salt=salt,
+                    created_at=str(datetime.now()),
+                    id_int=curr_len + 1,
+                    daa_pdf=daa_pdf,
+                    added_by=added_by,
+                    institution=institution,
+                    website=website,
+                )
+                self._collection.insert_one(user.to_mongo())
+                self.create_admin_new(
+                    name=name, email=f"new{email}", password=password, node=node
+                )
+
+                return user
+        except Exception as e:
+            print("create_admin failed", e)
+
+    def create_admin_new(
+        self,
+        name: str,
+        email: str,
+        password: str,
+        node: Any,
+    ) -> Optional[User]:
         try:
             row_exists = self.find_one({email: email})
             if row_exists:

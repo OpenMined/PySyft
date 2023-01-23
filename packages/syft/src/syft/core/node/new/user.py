@@ -231,9 +231,7 @@ class UserCollection(AbstractService):
             user_update.id = UID()
         user = user_update.to(User)
 
-        result = self.set(
-            credentials=context.credentials, uid=user.id, syft_object=user
-        )
+        result = self.set(context=context, uid=user.id, syft_object=user)
         if result.is_ok():
             return Ok(user.to(UserUpdate))
         else:
@@ -241,7 +239,7 @@ class UserCollection(AbstractService):
 
     @service_method(path="user.view", name="view")
     def view(self, context: AuthedServiceContext, uid: UID) -> Result[UserUpdate, str]:
-        user_result = self.get(credentials=context.credentials, uid=uid)
+        user_result = self.get(context=context, uid=uid)
         if user_result.is_ok():
             return Ok(user_result.ok().to(UserUpdate))
         else:

@@ -77,7 +77,7 @@ else:
     )
 
 
-root_user = node.users.find_one(search_params={"email": "info@openmined.org"})
+root_user = node.users.find_one(search_params={"email": "newinfo@openmined.org"})
 worker.root_user = root_user
 
 node.loud_print()

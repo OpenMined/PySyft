@@ -29,23 +29,6 @@ from .credentials import SyftSigningKey
 # HTTPConnection.proxies = {"http": "http://127.0.0.1:8080"}
 
 
-class SyftClientCache:
-    __credentials_store__: Dict = {}
-    __cache_key_format__ = "{username}-{password}"
-
-    def _get_key(self, username: str, password: str) -> str:
-        key = self.__cache_key_format__.format(username=username, password=password)
-        return hashlib.sha256(key.encode("utf-8")).hexdigest()
-
-    def add_user(self, username: str, password: str, verify_key: str):
-        hash_key = self._get_key(username, password)
-        self.__credentials_store__[hash_key] = verify_key
-
-    def get_user_key(self, username: str, password: str) -> Optional[SyftSigningKey]:
-        hash_key = self._get_key(username, password)
-        return self.__credentials_store__.get(hash_key, None)
-
-
 def upgrade_tls(url: GridURL, response: Response) -> GridURL:
     try:
         if response.url.startswith("https://") and url.protocol == "http":
@@ -71,13 +54,14 @@ class SyftClient:
     ROUTE_API_CALL = f"{API_PATH}/new_api_call"
     ROUTE_LOGIN = f"{API_PATH}/new_login"
     ROUTE_API = f"{API_PATH}/new_api"
-    _session: Session
+    METADATA_API = "/api/v1/syft/metadata"
+    _session: Optional[Session]
 
     def __init__(
         self,
         url: GridURL,
         node_name: str,
-        node_uid: str,
+        node_uid: UID,
         credentials: Optional[SyftSigningKey] = None,
     ) -> None:
         self.url = url
@@ -89,14 +73,16 @@ class SyftClient:
 
     @staticmethod
     def from_url(url: Union[str, GridURL]) -> Self:
-        return SyftClient(url=GridURL.from_url(url), node_name="", node_uid="")
+        return SyftClient(
+            url=GridURL.from_url(url), node_name="Anonymous", node_uid=UID()
+        )
 
     @property
     def icon(self) -> str:
         return "📡"
 
     def __hash__(self) -> int:
-        return hash(self.id)
+        return hash(self.node_uid)
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, SyftClient):
@@ -119,7 +105,7 @@ class SyftClient:
         return self._session
 
     def __repr__(self) -> str:
-        return f"<{type(self).__name__} - {self.name}: {self.node_uid.no_dash}>"
+        return f"<{type(self).__name__} - {self.node_name}: {self.node_uid.no_dash}>"
 
     def _make_get(self, path: str) -> bytes:
         url = self.url.with_path(path)
@@ -151,6 +137,12 @@ class SyftClient:
 
         return response.content
 
+    def _set_node_metadata(self) -> None:
+        response = self._make_get(self.METADATA_API)
+        metadata = _deserialize(response, from_bytes=True)
+        self.node_name = metadata.name
+        self.node_uid = metadata.id
+
     def _get_api(self) -> SyftAPI:
         content = self._make_get(self.ROUTE_API)
         obj = _deserialize(content, from_bytes=True)
@@ -159,18 +151,45 @@ class SyftClient:
 
     # public attributes
 
-    @property
-    def api(self) -> SyftAPI:
-        if self._api is not None:
-            return self._api
+    def _set_api(self):
         _api = self._get_api()
         APIRegistry.set_api_for(node_uid=self.node_uid, api=_api)
         self._api = _api
-        return _api
 
-    def login(self, email: str, password: str) -> Dict:
+    @property
+    def api(self) -> SyftAPI:
+        if self._api is None:
+            self._set_api()
+
+        return self._api
+
+    def login(self, email: str, password: str) -> None:
         credentials = {"email": email, "password": password}
         response = self._make_post(self.ROUTE_LOGIN, credentials)
         obj = _deserialize(response, from_bytes=True)
         self.credentials = obj.signing_key
-        self._get_api()
+        self._set_node_metadata()
+        self._set_api()
+        SyftClientSessionCache.add_user(
+            email=email, password=password, syft_client=self
+        )
+
+
+class SyftClientSessionCache:
+    __credentials_store__: Dict = {}
+    __cache_key_format__ = "{email}-{password}"
+
+    @classmethod
+    def _get_key(cls, email: str, password: str) -> str:
+        key = cls.__cache_key_format__.format(email=email, password=password)
+        return hashlib.sha256(key.encode("utf-8")).hexdigest()
+
+    @classmethod
+    def add_user(cls, email: str, password: str, syft_client: SyftClient):
+        hash_key = cls._get_key(email, password)
+        cls.__credentials_store__[hash_key] = syft_client
+
+    @classmethod
+    def get_user_session(cls, email: str, password: str) -> Optional[SyftClient]:
+        hash_key = cls._get_key(email, password)
+        return cls.__credentials_store__.get(hash_key, None)
