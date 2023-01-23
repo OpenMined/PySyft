@@ -91,8 +91,18 @@ def debox_other(other: Any, attr: str) -> Any:
     return getattr(other, attr)
 
 
+def debox_fpt(other: Any, attr: str) -> Any:
+    if not isinstance(other, FixedPrecisionTensor):
+        return other
+    return getattr(getattr(other, attr), attr)
+
+
 def debox_child(other: Any) -> Any:
-    return debox_other(other, "child")
+    child = debox_other(other, "child")
+    if not isinstance(child, FixedPrecisionTensor):
+        return child
+    else:
+        return debox_fpt(child, "child")
 
 
 def debox_linear(other: Any) -> Any:

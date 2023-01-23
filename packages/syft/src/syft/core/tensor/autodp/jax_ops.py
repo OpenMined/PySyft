@@ -56,6 +56,7 @@ class SyftTerminalNoop(SyftJaxOp):
 @serializable(recursive_serde=True)
 class SyftJaxInfixOp(SyftJaxOp):
     __attr_allowlist__ = ["jax_op", "left", "right"]
+    __serde_overrides__ = {"jax_op": [lambda x: x.value, lambda y: GAMMA_TENSOR_OP(y)]}
 
     def __init__(
         self,
