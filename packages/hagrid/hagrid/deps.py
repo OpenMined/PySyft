@@ -36,6 +36,7 @@ from rich.console import Console
 
 # relative
 from .exceptions import MissingDependency
+from .lib import is_gitpod
 from .mode import EDITABLE_MODE
 from .nb_output import NBOutput
 from .version import __version__
@@ -46,7 +47,7 @@ DOCKER_ERROR = """
 You are running an old version of docker, possibly on Linux. You need to install v2.
 At the time of writing this, if you are on linux you need to run the following:
 
-DOCKER_COMPOSE_VERSION=v2.7.0
+DOCKER_COMPOSE_VERSION=v2.15.1
 curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 \
      -o ~/.docker/cli-plugins/docker-compose
 chmod +x ~/.docker/cli-plugins/docker-compose
@@ -546,7 +547,7 @@ def allowed_to_run_docker() -> Tuple[bool, str]:
             bool_result = True
 
         # Check if current user is member of docker group.
-        elif user not in "".join(line):
+        elif not is_gitpod() and user not in "".join(line):
             msg = f"""⚠️  User is not a member of docker group.
 {WHITE}You're currently not allowed to run docker, perform the following steps:\n
     1 - Run \'{GREEN}sudo usermod -a -G docker $USER\'{WHITE} to add docker permissions.
@@ -764,7 +765,7 @@ PACKAGE_MANAGER_COMMANDS = {
         "windows": "choco install docker-desktop -y",
         "linux": (
             "mkdir -p ~/.docker/cli-plugins\n"
-            + "DOCKER_COMPOSE_VERSION=v2.7.0\n"
+            + "DOCKER_COMPOSE_VERSION=v2.15.1\n"
             + "curl -sSL https://github.com/docker/compose/releases/download/"
             + "${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 "
             + "-o ~/.docker/cli-plugins/docker-compose\n"
