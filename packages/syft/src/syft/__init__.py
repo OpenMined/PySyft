@@ -26,7 +26,7 @@ Syft "python" functionality includes the following modules:
 To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
 
-__version__ = "0.7.0-beta.62"
+__version__ = "0.8.0-beta.0"
 
 # stdlib
 from pathlib import Path
@@ -87,10 +87,21 @@ from .grid.client.client import register  # noqa: F401
 from .lib import lib_ast  # noqa: F401
 from .lib import load  # noqa: F401
 from .lib import load_lib  # noqa: F401
+from .oblv import OblvEnclavePointer  # noqa: F401
+from .oblv import check_oblv_proxy_installation_status  # noqa: F401
+from .oblv import create_deployment  # noqa: F401
+from .oblv import create_oblv_key_pair  # noqa: F401
+from .oblv import get_oblv_public_key  # noqa: F401
+from .oblv import install_oblv_proxy  # noqa: F401
+from .oblv import login as oblv_login  # noqa: F401
 from .registry import NetworkRegistry  # noqa: F401
 from .telemetry import instrument  # noqa: F401
 from .user_settings import UserSettings  # noqa: F401
 from .user_settings import settings  # noqa: F401
+from .version_compare import make_requires
+
+LATEST_STABLE_SYFT = "0.7"
+requires = make_requires(LATEST_STABLE_SYFT, __version__)
 
 sys.path.append(str(Path(__file__)))
 
@@ -103,7 +114,7 @@ def module_property(func: Any) -> None:
     module = sys.modules[func.__module__]
 
     def base_getattr(name: str) -> None:
-        raise AttributeError(f"module '{module.__name__}' has no attribute '{name}'")
+        raise AttributeError(f"module {module.__name__!r} has no attribute {name!r}")
 
     old_getattr = getattr(module, "__getattr__", base_getattr)
 

@@ -27,7 +27,6 @@ from ...util import validate_field
 from ..common.message import SyftMessage
 from ..common.serde.serialize import _serialize as serialize  # noqa: F401
 from ..common.uid import UID
-from ..io.address import Address
 from ..io.location import Location
 from ..io.location.specific import SpecificLocation
 from ..io.route import Route
@@ -40,6 +39,7 @@ from .common.action.exception_action import ExceptionMessage
 from .common.client import Client
 from .common.client_manager.association_api import AssociationRequestAPI
 from .common.client_manager.dataset_api import DatasetRequestAPI
+from .common.client_manager.oblv_api import OblvAPI
 from .common.client_manager.role_api import RoleRequestAPI
 from .common.client_manager.user_api import UserRequestAPI
 from .common.client_manager.vpn_api import VPNAPI
@@ -74,6 +74,7 @@ class RequestQueueClient(AbstractNodeClient):
         self.roles = RoleRequestAPI(client=self)
         self.association = AssociationRequestAPI(client=self)
         self.datasets = DatasetRequestAPI(client=self)
+        self.oblv = OblvAPI(client=self)
 
     @property
     def requests(self) -> List[RequestMessage]:
@@ -84,7 +85,7 @@ class RequestQueueClient(AbstractNodeClient):
         )
 
         msg = GetAllRequestsMessage(
-            address=self.client.address, reply_to=self.client.address
+            address=self.client.node_uid, reply_to=self.client.node_uid
         )
 
         requests = self.client.send_immediate_msg_with_reply(msg=msg).requests  # type: ignore
@@ -220,7 +221,7 @@ class RequestQueueClient(AbstractNodeClient):
         )
 
         msg = UpdateRequestHandlerMessage(
-            address=self.client.address, handler=request_handler, keep=keep
+            address=self.client.node_uid, handler=request_handler, keep=keep
         )
         self.client.send_immediate_msg_without_reply(msg=msg)
 
@@ -237,7 +238,7 @@ class RequestHandlerQueueClient:
         )
 
         msg = GetAllRequestHandlersMessage(
-            address=self.client.address, reply_to=self.client.address
+            address=self.client.node_uid, reply_to=self.client.node_uid
         )
         return validate_field(
             self.client.send_immediate_msg_with_reply(msg=msg), "handlers"
@@ -304,9 +305,10 @@ class DomainClient(Client):
 
     def __init__(
         self,
+        node_uid: UID,
         name: Optional[str],
         routes: List[Route],
-        domain: SpecificLocation,
+        domain: Optional[SpecificLocation] = None,
         network: Optional[Location] = None,
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
@@ -324,6 +326,7 @@ class DomainClient(Client):
             signing_key=signing_key,
             verify_key=verify_key,
             version=version,
+            node_uid=node_uid,
         )
 
         self.requests = RequestQueueClient(client=self)
@@ -334,6 +337,7 @@ class DomainClient(Client):
         self.association = AssociationRequestAPI(client=self)
         self.datasets = DatasetRequestAPI(client=self)
         self.vpn = VPNAPI(client=self)
+        self.oblv = OblvAPI(client=self)
 
     def obj_exists(self, obj_id: UID) -> bool:
         msg = DoesObjectExistMessage(obj_id=obj_id)
@@ -341,7 +345,7 @@ class DomainClient(Client):
 
     @property
     def privacy_budget(self) -> float:
-        msg = GetRemainingBudgetMessage(address=self.address, reply_to=self.address)
+        msg = GetRemainingBudgetMessage(address=self.node_uid, reply_to=self.node_uid)
         return self.send_immediate_msg_with_reply(msg=msg).budget  # type: ignore
 
     def request_budget(
@@ -363,7 +367,7 @@ class DomainClient(Client):
         msg = CreateBudgetRequestMessage(
             reason=reason,
             budget=eps,
-            address=self.address,
+            address=self.node_uid,
         )
 
         self.send_immediate_msg_without_reply(msg=msg)
@@ -375,7 +379,7 @@ class DomainClient(Client):
         )
 
     def load(
-        self, obj_ptr: Type[Pointer], address: Address, pointable: bool = False
+        self, obj_ptr: Type[Pointer], address: UID, pointable: bool = False
     ) -> None:
         content = {
             RequestAPIFields.ADDRESS: serialize(address, to_bytes=True).decode(
@@ -412,8 +416,8 @@ class DomainClient(Client):
         if content is None:
             content = {}
         # Build Syft Message
-        content[RequestAPIFields.ADDRESS] = self.address
-        content[RequestAPIFields.REPLY_TO] = self.address
+        content[RequestAPIFields.ADDRESS] = self.node_uid
+        content[RequestAPIFields.REPLY_TO] = self.node_uid
         signed_msg = grid_msg(**content).sign(signing_key=self.signing_key)
         # Send to the dest
         response = self.send_immediate_msg_with_reply(msg=signed_msg)
@@ -516,7 +520,7 @@ class DomainClient(Client):
 
     @property
     def id(self) -> UID:
-        return self.domain.id
+        return self.node_uid
 
     @property
     def device(self) -> Optional[Location]:

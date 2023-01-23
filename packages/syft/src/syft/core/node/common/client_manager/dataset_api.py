@@ -12,7 +12,6 @@ from typing import Union
 import pandas as pd
 
 # relative
-from .....core.tensor.autodp.adp_tensor import ADPTensor
 from .....core.tensor.tensor import Tensor
 from ....common import UID
 from ....common.serde.serialize import _serialize as serialize  # noqa: F401
@@ -131,7 +130,7 @@ class DatasetRequestAPI(RequestAPI):
                 "Please enter y/n to proceed: "
             )
             while pref != "y" and pref != "n":
-                pref = input(f"Invalid input '{pref}', please specify 'y' or 'n'.")
+                pref = input(f"Invalid input {pref!r}, please specify 'y' or 'n'.")
             if pref == "n":
                 print("Dataset deletion is cancelled.")
                 return
@@ -150,7 +149,7 @@ class DatasetRequestAPI(RequestAPI):
                 "Please enter y/n to proceed: "
             )
             while pref != "y" and pref != "n":
-                pref = input(f"Invalid input '{pref}', please specify 'y' or 'n'.")
+                pref = input(f"Invalid input {pref!r}, please specify 'y' or 'n'.")
             if pref == "n":
                 sys.stdout.write("Asset deletion is cancelled.")
                 return
@@ -447,9 +446,7 @@ class Dataset:
         from .....lib.python.util import downcast
 
         if not skip_checks:
-            if not isinstance(value, Tensor) or not isinstance(
-                getattr(value, "child", None), ADPTensor
-            ):
+            if not isinstance(value, Tensor):
                 raise Exception(
                     "ERROR: all private assets must be NumPy ndarray.int32 assets "
                     + "with proper Differential Privacy metadata applied.\n"

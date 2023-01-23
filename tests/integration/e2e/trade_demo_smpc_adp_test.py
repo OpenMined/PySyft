@@ -12,7 +12,6 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.adp.data_subject_list import DataSubjectArray
 from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
 
 sy.logger.remove()
@@ -50,9 +49,10 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     canada_trade = (
         (np.array(list(ca_data["Trade Value (US$)"])) / 100000)[0:10]
     ).astype(DEFAULT_INT_NUMPY_TYPE)
-    data_subjects_canada = np.broadcast_to(
-        np.array(DataSubjectArray(["Other Asia, nes"])), canada_trade.shape
-    )
+    # data_subjects_canada = np.broadcast_to(
+    #     np.array(DataSubjectArray(["Other Asia, nes"])), canada_trade.shape
+    # )
+    data_subject_canada = "Other Asia, nes"
 
     lower_bound = int(min(canada_trade)) - 1
     upper_bound = int(max(canada_trade)) + 1
@@ -60,7 +60,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     sampled_canada_dataset = sy.Tensor(canada_trade)
     sampled_canada_dataset.public_shape = sampled_canada_dataset.shape
     sampled_canada_dataset = sampled_canada_dataset.annotate_with_dp_metadata(
-        lower_bound, upper_bound, data_subjects=data_subjects_canada
+        lower_bound, upper_bound, data_subject=data_subject_canada
     ).tag("trade_flow")
 
     # load dataset
@@ -92,15 +92,18 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     # Upload a private dataset to the Domain object, as the root owner
     sampled_italy_dataset = sy.Tensor(italy_trade)
     sampled_italy_dataset.public_shape = sampled_italy_dataset.shape
-    data_subjects_italy = np.broadcast_to(
-        np.array(DataSubjectArray(["Other Asia, nes"])), italy_trade.shape
+    # data_subjects_italy = np.broadcast_to(
+    #     np.array(DataSubjectArray(["Other Asia, nes"])), italy_trade.shape
+    # )
+    data_subject_italy = (
+        "Other Asia, nes"  # TODO 0.7: should this be the same as the one above?
     )
 
     lower_bound = int(min(italy_trade)) - 1
     upper_bound = int(max(italy_trade)) + 1
 
     sampled_italy_dataset = sampled_italy_dataset.annotate_with_dp_metadata(
-        lower_bound, upper_bound, data_subjects=data_subjects_italy
+        lower_bound, upper_bound, data_subject=data_subject_italy
     ).tag("trade_flow")
 
     it_root.load_dataset(

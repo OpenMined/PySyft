@@ -18,7 +18,6 @@ from ..... import lib
 from .....util import inherit_tags
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
-from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
@@ -55,7 +54,7 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         path: str,
         _self: Any,
         id_at_location: UID,
-        address: Address,
+        address: UID,
         args: Union[Tuple[Any, ...], List[Any]],
         kwargs: Dict[Any, Any],
         action: PropertyActions,

@@ -101,7 +101,7 @@ class Callable(ast.attribute.Attribute):
                     args=pointer_args,
                     kwargs=pointer_kwargs,
                     id_at_location=ptr.id_at_location,
-                    address=self.client.address,
+                    address=self.client.node_uid,
                     is_static=self.is_static,
                 )
 

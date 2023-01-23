@@ -11,7 +11,6 @@ from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.serializable import serializable
 from .....common.uid import UID
-from .....io.address import Address
 
 
 @final
@@ -23,8 +22,8 @@ class SendAssociationRequestMessage(ImmediateSyftMessageWithReply):
         self,
         source: str,
         target: str,
-        address: Address,
-        reply_to: Address,
+        address: UID,
+        reply_to: UID,
         metadata: Dict[str, str],
         msg_id: Optional[UID] = None,
     ):
@@ -41,7 +40,7 @@ class ReceiveAssociationRequestMessage(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         source: str,
         target: str,
         metadata: Dict[str, str],
@@ -62,9 +61,9 @@ class RespondAssociationRequestMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         response: str,
-        reply_to: Address,
+        reply_to: UID,
         source: str,
         target: str,
         msg_id: Optional[UID] = None,
@@ -82,9 +81,9 @@ class GetAssociationRequestMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         association_id: int,
-        reply_to: Address,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -98,7 +97,7 @@ class GetAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         content: Dict,
         source: str,
         target: str,
@@ -117,8 +116,8 @@ class GetAssociationRequestsMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
-        reply_to: Address,
+        address: UID,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -131,7 +130,7 @@ class GetAssociationRequestsResponse(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         content: List[Dict],
         msg_id: Optional[UID] = None,
     ):
@@ -146,9 +145,9 @@ class DeleteAssociationRequestMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         association_id: int,
-        reply_to: Address,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)

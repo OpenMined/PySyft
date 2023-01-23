@@ -143,7 +143,7 @@ class TensorPointer(Pointer):
                 kwargs=pointer_kwargs,
                 id_at_location=result_id_at_location,
                 seed_id_locations=seed_id_locations,
-                address=self.client.address,
+                address=self.client.node_uid,
             )
             self.client.send_immediate_msg_without_reply(msg=cmd)
 
@@ -560,7 +560,7 @@ class Tensor(
 
         if isinstance(self.child, PhiTensor):
             return TensorWrappedPhiTensorPointer(
-                data_subjects=self.child.data_subjects,
+                data_subject=self.child.data_subject,
                 client=client,
                 id_at_location=id_at_location,
                 object_type=object_type,
@@ -573,14 +573,14 @@ class Tensor(
             )
         elif isinstance(self.child, GammaTensor):
             return TensorWrappedGammaTensorPointer(
-                data_subjects=self.child.data_subjects,
+                # data_subjects=self.child.data_subjects,
                 client=client,
                 id_at_location=id_at_location,
                 object_type=object_type,
                 tags=tags,
                 description=description,
-                min_vals=self.child.min_vals,
-                max_vals=self.child.max_vals,
+                # min_vals=self.child.min_vals,
+                # max_vals=self.child.max_vals,
                 public_shape=getattr(self, "public_shape", None),
                 public_dtype=getattr(self, "public_dtype", None),
             )

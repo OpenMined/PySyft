@@ -60,21 +60,15 @@ def connect(
         client_type = NetworkClient
 
     # Create a new Solo Route using the selected connection type
-    route = SoloRoute(destination=metadata.node, connection=conn)
+    route = SoloRoute(destination=metadata.id, connection=conn)
 
     kwargs = {
+        "node_uid": metadata.id,
         "name": metadata.name,
         "routes": [route],
         "signing_key": _user_key,
         "version": metadata.version,
     }
-
-    if client_type is NetworkClient:
-        kwargs["network"] = metadata.node
-    elif client_type is DomainClient:
-        kwargs["domain"] = metadata.node
-    else:
-        raise NotImplementedError
 
     # Create a new client using the selected client type
     node = client_type(**kwargs)
@@ -94,7 +88,7 @@ def login(
 ) -> Client:
 
     retry = 5 if retry is None else retry  # Default to 5 retries
-    timeout = 10 if timeout is None else timeout  # Default to 10 seconds
+    timeout = 30 if timeout is None else timeout  # Default to 10 seconds
 
     if password == "changethis":  # nosec
 

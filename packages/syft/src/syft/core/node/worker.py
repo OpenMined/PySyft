@@ -2,8 +2,12 @@
 from __future__ import annotations
 
 # stdlib
+import os
 from typing import Any
+from typing import Callable
+from typing import List
 from typing import Optional
+from typing import Type
 from typing import Union
 
 # third party
@@ -18,23 +22,29 @@ from ..common.uid import UID
 from .new.action_service import ActionService
 from .new.api import SignedSyftAPICall
 from .new.api import SyftAPICall
+from .new.credentials import SyftSigningKey
+from .new.service import AbstractService
+from .new.service import ServiceConfigRegistry
 from .new.user import UserCollection
 
+NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
+NODE_UID = "NODE_UID"
 
-class TestObject(SyftObject):
-    # version
-    __canonical_name__ = "TestObject"
-    __version__ = 1
 
-    # fields
-    name: str
+def get_private_key_env() -> Optional[str]:
+    return get_env(NODE_PRIVATE_KEY)
 
-    # serde / storage rules
-    __attr_state__ = [
-        "name",
-    ]
-    __attr_searchable__ = ["name"]
-    __attr_unique__ = ["name"]
+
+def get_node_uid_env() -> Optional[str]:
+    return get_env(NODE_UID)
+
+
+def get_env(key: str) -> Optional[str]:
+    return os.environ.get(key, None)
+
+
+signing_key_env = get_private_key_env()
+node_uid_env = get_node_uid_env()
 
 
 @serializable(recursive_serde=True)
@@ -46,27 +56,51 @@ class Worker:
         self,
         *,  # Trasterisk
         name: Optional[str] = None,
-        id: Optional[UID] = None,
-        signing_key: Optional[SigningKey] = None,
-        action_service: Optional[ActionService] = None,
+        id: Optional[UID] = UID(),
+        services: Optional[List[Type[AbstractService]]] = None,
+        signing_key: Optional[SigningKey] = SigningKey.generate(),
         user_collection: Optional[UserCollection] = None,
     ):
-        if id is None:
-            id = UID()
-        self.id = id
+        # 🟡 TODO 22: change our ENV variable format and default init args to make this
+        # less horrible or add some convenience functions
+        if node_uid_env is not None:
+            self.id = UID.from_string(node_uid_env)
+        else:
+            self.id = id
+
+        if signing_key_env is not None:
+            self.signing_key = SyftSigningKey(
+                SigningKey(bytes.fromhex(signing_key_env))
+            )
+        else:
+            self.signing_key = SyftSigningKey(signing_key)
+
+        print("============> Starting Worker with:", self.id, self.signing_key)
+
         self.name = name
-        self.signing_key = signing_key
-        if action_service is None:
-            action_service = ActionService(node_uid=self.id)
-        self.action_service = action_service
-        if user_collection is None:
-            user_collection = UserCollection(node_uid=self.id)
-        self.user_collection = user_collection
+        services = [UserCollection, ActionService] if services is None else services
+        self.services = services
+        self.service_config = ServiceConfigRegistry.get_registered_configs()
+        self._construct_services()
         self.post_init()
 
     def post_init(self) -> None:
         pass
         # super().post_init()
+
+    def _construct_services(self):
+        self.service_path_map = {}
+        for service_klass in self.services:
+            self.service_path_map[service_klass.__name__] = service_klass(self)
+
+    def _get_service_method_from_path(self, path: str) -> Callable:
+
+        path_list = path.split(".")
+        method_name = path_list.pop()
+        service_name = path_list.pop()
+        service_obj = self.service_path_map[service_name]
+
+        return getattr(service_obj, method_name)
 
     @property
     def icon(self) -> str:
@@ -100,22 +134,29 @@ class Worker:
         api_call = api_call.message
 
         # 🔵 TODO 4: Add @service decorator to autobind services into the SyftAPI
+        if api_call.path not in self.service_config:
+            return Err(f"API call not in registered services: {api_call.path}")
 
-        if api_call.path == "services.user.create":
-            result = self.user_collection.create(
-                credentials=credentials, **api_call.kwargs
-            )
-            return result
-        elif api_call.path == "services.action.set":
-            result = self.action_service.set(credentials=credentials, **api_call.kwargs)
-            return result
-        elif api_call.path == "services.action.get":
-            result = self.action_service.get(credentials=credentials, **api_call.kwargs)
-            return result
-        elif api_call.path == "services.action.execute":
-            result = self.action_service.execute(
-                credentials=credentials, **api_call.kwargs
-            )
-            return result
+        _private_api_path = ServiceConfigRegistry.private_path_for(api_call.path)
 
-        return Err("Wrong path")
+        method = self._get_service_method_from_path(_private_api_path)
+        result = method(credentials, *api_call.args, **api_call.kwargs)
+        return result
+
+        # if api_call.path == "services.user.create":
+        #     result = self.user_collection.create(
+        #         credentials=credentials, **api_call.kwargs
+        #     )
+        #     return result
+        # elif api_call.path == "services.action.set":
+        #     result = self.action_service.set(credentials=credentials, **api_call.kwargs)
+        #     return result
+        # elif api_call.path == "services.action.get":
+        #     result = self.action_service.get(credentials=credentials, **api_call.kwargs)
+        #     return result
+        # elif api_call.path == "services.action.execute":
+        #     result = self.action_service.execute(
+        #         credentials=credentials, **api_call.kwargs
+        #     )
+        #     return result
+        # return Err("Wrong path")

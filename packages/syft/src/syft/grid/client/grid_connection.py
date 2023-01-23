@@ -30,7 +30,7 @@ from ...logger import debug
 from ...util import verify_tls
 from ..connections.http_connection import HTTPConnection
 
-DEFAULT_TIMEOUT = 30  # seconds
+DEFAULT_TIMEOUT = 60  # seconds
 
 
 class TimeoutHTTPAdapter(HTTPAdapter):
