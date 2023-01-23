@@ -17,11 +17,13 @@ import requests
 # relative
 from .. import GridURL
 from ... import __version__
+from ...core.common.uid import UID
 from ...core.io.connection import ClientConnection
 from ...core.io.route import SoloRoute
 from ...core.node.common.client import Client
 from ...core.node.domain_client import DomainClient
 from ...core.node.network_client import NetworkClient
+from ...core.node.new.client import SyftClient
 from ...util import bcolors
 from ...util import verify_tls
 from .grid_connection import GridHTTPConnection
@@ -76,6 +78,24 @@ def connect(
     return node
 
 
+def new_connect(
+    url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
+    conn_type: Type[ClientConnection] = GridHTTPConnection,
+    credentials: Optional[Dict] = None,
+    timeout: Optional[float] = None,
+) -> SyftClient:
+
+    conn = conn_type(url=GridURL.from_url(url))  # type: ignore
+    conn_details = conn.new_login(credentials=credentials)  # type: ignore
+    route = SoloRoute(
+        destination=UID.from_string(conn_details["node_uid"]), connection=conn
+    )
+
+    print("Connnect details", conn_details)
+
+    return SyftClient(**conn_details, routes=[route])
+
+
 def login(
     url: Optional[Union[str, GridURL]] = None,
     port: Optional[int] = None,
@@ -85,7 +105,8 @@ def login(
     verbose: Optional[bool] = True,
     timeout: Optional[float] = None,
     retry: Optional[int] = None,
-) -> Client:
+    new_client: Optional[bool] = None,
+) -> Union[Client, SyftClient]:
 
     retry = 5 if retry is None else retry  # Default to 5 retries
     timeout = 30 if timeout is None else timeout  # Default to 10 seconds
@@ -142,6 +163,11 @@ def login(
     node = None
     timeout_btw_retries = timeout
     retry_attempt = 1
+
+    if new_client:
+        return new_connect(
+            url=grid_url, credentials=credentials, conn_type=conn_type, timeout=timeout
+        )
 
     while node is None and retry_attempt <= retry:
         try:

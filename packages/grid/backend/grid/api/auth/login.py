@@ -10,12 +10,14 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
+from pydantic import ValidationError
 
 # syft absolute
 from syft import serialize  # type: ignore
 from syft.core.common.uid import UID
 from syft.core.node.common.exceptions import InvalidCredentialsError
 from syft.core.node.new.credentials import SyftVerifyKey
+from syft.core.node.new.user import UserVerify
 
 # grid absolute
 from grid.core import security
@@ -117,8 +119,15 @@ def new_login(
     You must pass valid credentials to log in.
     """
 
+    try:
+        searched_user = UserVerify(email=email, password=password)
+    except ValidationError as e:
+        return {"Error": e.json()}
+
+    print("searched user", searched_user.email, searched_user.password)
+
     method = worker._get_service_method_from_path("UserCollection.verify")
-    result = method(credentials=worker.signing_key, email=email, password=password)
+    result = method(credentials=worker.signing_key, searched_user=searched_user)
     if result.is_err():
         logger.bind(payload={"email": email}).error(result.err())
         return {"Error": result.err()}
@@ -132,9 +141,7 @@ def new_login(
 
     return {
         "access_token": access_token,
-        "token_type": "bearer",
         "node_name": worker.name,
         "node_uid": worker.id.no_dash,
-        "user_key": str(user.verify_key),
-        "user_id": str(user.id.no_dash),
+        "verify_key": str(user.verify_key),
     }

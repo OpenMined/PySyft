@@ -146,6 +146,21 @@ def user_to_update_user() -> List[Callable]:
     return [keep(["id", "email", "name", "role", "verify_key"])]
 
 
+@serializable(recursive_serde=True)
+class UserVerify(SyftObject):
+    __canonical_name__ = "UserVerify"
+    __version__ = 1
+
+    email: str
+    password: Optional[str] = None
+    verify_key: Optional[SyftVerifyKey] = None
+
+
+@transform(User, UserVerify)
+def user_to_user_verify() -> List[Callable]:
+    return [keep(["email", "verify_key"])]
+
+
 class SyftServiceRegistry:
     __service_registry__: Dict[str, Callable] = {}
 
@@ -224,24 +239,26 @@ class UserCollection(AbstractService):
         return Ok(True)
 
     def verify(
-        self, credentials: SyftVerifyKey, email: str, password: str
+        self, credentials: SyftVerifyKey, searched_user: UserVerify
     ) -> Result[UserUpdate, str]:
         """Verify user
         TODO: We might want to use a SyftObject instead
         """
-        user_found = False
+        user_found = None
         for _, user in self.data.items():
-            syft_object = SyftObject.from_mongo(user)
-            if (syft_object.email == email) and check_pwd(
-                password, syft_object.salt, syft_object.hashed_password
+            syft_object: User = SyftObject.from_mongo(user)
+            if (syft_object.email == searched_user.email) and check_pwd(
+                searched_user.password, syft_object.salt, syft_object.hashed_password
             ):
-                user_found = True
+                user_found = syft_object
                 break
 
-        if user_found:
-            return Ok(syft_object)
+        if searched_user is not None:
+            return Ok(user_found.to(UserVerify))
 
-        return Err(f"No user exists with {email} and {password}.")
+        return Err(
+            f"No user exists with {searched_user.email} and {searched_user.password}."
+        )
 
     def get(self, credentials: SyftVerifyKey, uid: UID) -> Result[SyftObject, str]:
         print("self.data", self.data.keys())

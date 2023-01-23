@@ -59,7 +59,6 @@ class Worker:
         id: Optional[UID] = UID(),
         services: Optional[List[Type[AbstractService]]] = None,
         signing_key: Optional[SigningKey] = SigningKey.generate(),
-        user_collection: Optional[UserCollection] = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions

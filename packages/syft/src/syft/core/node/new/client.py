@@ -2,16 +2,15 @@
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Type
-
-# third party
-from nacl.signing import SigningKey
 
 # relative
 from ...common.uid import UID
 from ...io.route import Route
 from .api import APIRegistry
 from .api import SyftAPI
+from .credentials import SyftVerifyKey
 
 
 class SyftClientCache:
@@ -32,17 +31,26 @@ class SyftClientCache:
 
 
 class SyftClient:
-    credentials: SigningKey
+    name: str
+    credentials: SyftVerifyKey
     id: UID
     routes: List[Type[Route]]
+    access_token: str
 
     def __init__(
-        self, node_uid: str, signing_key: str, routes: List[Type[Route]]
+        self,
+        node_name: str,
+        node_uid: str,
+        verify_key: str,
+        routes: List[Type[Route]],
+        access_token: Optional[str] = None,
     ) -> None:
+        self.name = node_name
         self.id = UID.from_string(node_uid)
-        self.credentials = SigningKey(bytes.fromhex(signing_key))
+        self.credentials = SyftVerifyKey.from_string(verify_key)
         self.routes = routes
         self._api = None
+        self.access_token = access_token
 
     @property
     def api(self) -> SyftAPI:
@@ -68,3 +76,7 @@ class SyftClient:
             return False
 
         return True
+
+    def __repr__(self) -> str:
+        no_dash = str(self.id).replace("-", "")
+        return f"<{type(self).__name__} - {self.name}: {no_dash}>"

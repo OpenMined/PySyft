@@ -181,6 +181,8 @@ class GridHTTPConnection(HTTPConnection):
             timeout=2,
             proxies=HTTPConnection.proxies,
         )
+
+        print("Response", response.content)
         content = response.json()
         return content
 
