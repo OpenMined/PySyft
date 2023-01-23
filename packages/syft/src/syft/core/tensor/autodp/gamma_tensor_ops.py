@@ -5,8 +5,13 @@ from enum import Enum
 import jax
 import jax.numpy as jnp
 
+# relative
+from ...common.serde.serializable import serializable
 
+
+@serializable(recursive_serde=True)
 class GAMMA_TENSOR_OP(Enum):
+    __attr_allowlist__ = ["value"]
     # Numpy ArrayLike
     ABS = "abs"
     ADD = "add"

@@ -1,4 +1,5 @@
 # stdlib
+from enum import Enum
 from typing import Any
 
 # third party
@@ -37,23 +38,37 @@ def rs_object2proto(self: Any) -> RecursiveSerde_PB:
 
 def rs_proto2object(proto: RecursiveSerde_PB) -> Any:
     class_type = index_syft_by_module_name(proto.fully_qualified_name)
-    obj = class_type.__new__(class_type)  # type: ignore
-    for attr_name, attr_bytes in zip(proto.fields_name, proto.fields_data):
-        attr_value = deserialize(attr_bytes, from_bytes=True)
-        transforms = obj.__serde_overrides__.get(attr_name, None)
-        try:
-            if transforms is None:
-                setattr(obj, attr_name, attr_value)
-            else:
-                setattr(obj, attr_name, transforms[1](attr_value))
-        except AttributeError:
-            # if its an ID we need to set the _id instead
-            if attr_name == "id":
-                attr_name = "_id"
+
+    if issubclass(class_type, Enum):
+        if (
+            "value" not in proto.fields_name
+            or len(proto.fields_name) != 1
+            or len(proto.fields_data) != 1
+        ):
+            raise ValueError(
+                "Enum class deserilization should contain only one attribute: value"
+            )
+        attr_value = deserialize(proto.fields_data[0], from_bytes=True)
+        obj = class_type.__new__(class_type, value=attr_value)  # type: ignore
+
+    else:
+        obj = class_type.__new__(class_type)  # type: ignore
+        for attr_name, attr_bytes in zip(proto.fields_name, proto.fields_data):
+            attr_value = deserialize(attr_bytes, from_bytes=True)
+            transforms = obj.__serde_overrides__.get(attr_name, None)
+            try:
                 if transforms is None:
                     setattr(obj, attr_name, attr_value)
                 else:
                     setattr(obj, attr_name, transforms[1](attr_value))
+            except AttributeError:
+                # if its an ID we need to set the _id instead
+                if attr_name == "id":
+                    attr_name = "_id"
+                    if transforms is None:
+                        setattr(obj, attr_name, attr_value)
+                    else:
+                        setattr(obj, attr_name, transforms[1](attr_value))
 
     return obj
 
