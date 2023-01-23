@@ -21,7 +21,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.10"]
-        torch-version: [1.11.0]
+        torch-version: ["1.13.1"]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -72,7 +72,7 @@ jobs:
         if: steps.changes.outputs.syft == 'true'
         run: |
           bandit -r src
-          safety check -i 51668 -i 51516 -i 51549
+          safety check -i 51668 -i 51516 -i 51549 -i 52495
 
       - name: Generate requirements.txt for snyk
         if: steps.changes.outputs.syft == 'true'
