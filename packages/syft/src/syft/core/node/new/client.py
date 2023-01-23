@@ -3,6 +3,7 @@ import hashlib
 from typing import Any
 from typing import Dict
 from typing import Optional
+from typing import Union
 from typing import cast
 
 # third party
@@ -11,6 +12,7 @@ from requests import Response
 from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+from typing_extensions import Self
 
 # relative
 from ....core.common.serde.deserialize import _deserialize
@@ -56,15 +58,19 @@ def upgrade_tls(url: GridURL, response: Response) -> GridURL:
     return url
 
 
+API_PATH = "/api/v1/new"
+
+
 class SyftClient:
     proxies: Dict[str, str] = {}
     url: GridURL
     node_name: str
     node_uid: UID
     credentials: Optional[SyftSigningKey]
-    ROUTE_API_CALL = "/syft/new_api_call"
-    ROUTE_LOGIN = "/new_login"
-    ROUTE_API = "/syft/new_api"
+
+    ROUTE_API_CALL = f"{API_PATH}/new_api_call"
+    ROUTE_LOGIN = f"{API_PATH}/new_login"
+    ROUTE_API = f"{API_PATH}/new_api"
     _session: Session
 
     def __init__(
@@ -72,7 +78,7 @@ class SyftClient:
         url: GridURL,
         node_name: str,
         node_uid: str,
-        credentials: Optional[SyftSigningKey],
+        credentials: Optional[SyftSigningKey] = None,
     ) -> None:
         self.url = url
         self.node_name = node_name
@@ -80,6 +86,10 @@ class SyftClient:
         self.credentials: Optional[SyftSigningKey] = credentials
         self._api = None
         self._session = None
+
+    @staticmethod
+    def from_url(url: Union[str, GridURL]) -> Self:
+        return SyftClient(url=GridURL.from_url(url), node_name="", node_uid="")
 
     @property
     def icon(self) -> str:
@@ -97,6 +107,7 @@ class SyftClient:
             and self.credentials == other.credentials
         )
 
+    @property
     def session(self) -> Session:
         if self._session is None:
             session = requests.Session()
@@ -157,7 +168,9 @@ class SyftClient:
         self._api = _api
         return _api
 
-    def login(self, credentials: Dict) -> Dict:
+    def login(self, email: str, password: str) -> Dict:
+        credentials = {"email": email, "password": password}
         response = self._make_post(self.ROUTE_LOGIN, credentials)
-        print("response", response)
-        return response.json()
+        obj = _deserialize(response, from_bytes=True)
+        self.credentials = obj.signing_key
+        self._get_api()

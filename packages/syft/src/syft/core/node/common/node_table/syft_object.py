@@ -89,7 +89,9 @@ class SyftObject(BaseModel, SyftObjectRegistry):
     def to_mongo(self) -> Dict[str, Any]:
         d = {}
         for k in self.__attr_searchable__:
-            d[k] = getattr(self, k)
+            # 🟡 TODO 24: pass in storage abstraction and detect unsupported types
+            # if unsupported, convert to string
+            d[k] = str(getattr(self, k))
         blob = serialize(dict(self), to_bytes=True)
         d["_id"] = self.id.value  # type: ignore
         d["__canonical_name__"] = self.__canonical_name__

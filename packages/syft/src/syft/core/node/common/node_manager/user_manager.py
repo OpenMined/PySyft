@@ -20,6 +20,9 @@ from pymongo import MongoClient
 
 # relative
 from ....common.serde.serialize import _serialize
+from ...new.credentials import SyftSigningKey
+from ...new.user import User
+from ...new.user import UserUpdate
 from ..exceptions import InvalidCredentialsError
 from ..exceptions import UserNotFoundError
 from ..node_manager.role_manager import NewRoleManager
@@ -280,35 +283,25 @@ class NoSQLUserManager(NoSQLDatabaseManager):
         added_by: Optional[str] = "",
         institution: Optional[str] = "",
         website: Optional[str] = "",
-    ) -> Optional[NoSQLSyftUser]:
-        salt, hashed = self.__salt_and_hash_password(password, 12)
-        curr_len = len(self)
-
-        row_exists = self.find_one({email: email})
-        if row_exists:
-            return None
-        else:
-            private_key = SigningKey(bytes.fromhex(node.setup.first().signing_key))
-            user = NoSQLSyftUser(
-                name=name,
-                email=email,
-                role=role,
-                budget=budget,
-                private_key=private_key.encode(encoder=HexEncoder).decode("utf-8"),
-                verify_key=private_key.verify_key.encode(encoder=HexEncoder).decode(
-                    "utf-8"
-                ),
-                hashed_password=hashed,
-                salt=salt,
-                created_at=str(datetime.now()),
-                id_int=curr_len + 1,
-                daa_pdf=daa_pdf,
-                added_by=added_by,
-                institution=institution,
-                website=website,
-            )
-            self._collection.insert_one(user.to_mongo())
-            return user
+    ) -> Optional[User]:
+        try:
+            row_exists = self.find_one({email: email})
+            if row_exists:
+                return None
+            else:
+                create_user = UserUpdate(
+                    name=name, email=email, password=password, password_verify=password
+                )
+                user = create_user.to(User)
+                sk = node.setup.first().signing_key
+                signing_key = SyftSigningKey.from_string(sk)
+                user.signing_key = signing_key
+                user.verify_key = signing_key.verify_key
+                data = user.to_mongo()
+                self._collection.insert_one(data)
+                return user
+        except Exception as e:
+            print("create_admin failed", e)
 
     def first(self, **kwargs: Any) -> NoSQLSyftUser:
         result = super().find_one(kwargs)

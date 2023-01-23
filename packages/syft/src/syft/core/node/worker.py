@@ -23,6 +23,7 @@ from .new.action_service import ActionService
 from .new.api import SignedSyftAPICall
 from .new.api import SyftAPICall
 from .new.credentials import SyftSigningKey
+from .new.node import NewNode
 from .new.service import AbstractService
 from .new.service import ServiceConfigRegistry
 from .new.user import UserCollection
@@ -48,7 +49,7 @@ node_uid_env = get_node_uid_env()
 
 
 @serializable(recursive_serde=True)
-class Worker:
+class Worker(NewNode):
     signing_key: Optional[SigningKey]
     required_signed_calls: bool = True
 
@@ -69,10 +70,10 @@ class Worker:
 
         if signing_key_env is not None:
             self.signing_key = SyftSigningKey(
-                SigningKey(bytes.fromhex(signing_key_env))
+                signing_key=SigningKey(bytes.fromhex(signing_key_env))
             )
         else:
-            self.signing_key = SyftSigningKey(signing_key)
+            self.signing_key = SyftSigningKey(signing_key=signing_key)
 
         print("============> Starting Worker with:", self.id, self.signing_key)
 
@@ -92,8 +93,12 @@ class Worker:
         for service_klass in self.services:
             self.service_path_map[service_klass.__name__] = service_klass(self)
 
-    def _get_service_method_from_path(self, path: str) -> Callable:
+    def get_service_method(self, path_or_func: Union[str, Callable]) -> Callable:
+        if callable(path_or_func):
+            path_or_func = path_or_func.__qualname__
+        return self._get_service_method_from_path(path_or_func)
 
+    def _get_service_method_from_path(self, path: str) -> Callable:
         path_list = path.split(".")
         method_name = path_list.pop()
         service_name = path_list.pop()
@@ -138,6 +143,6 @@ class Worker:
 
         _private_api_path = ServiceConfigRegistry.private_path_for(api_call.path)
 
-        method = self._get_service_method_from_path(_private_api_path)
+        method = self.get_service_method(_private_api_path)
         result = method(credentials, *api_call.args, **api_call.kwargs)
         return result

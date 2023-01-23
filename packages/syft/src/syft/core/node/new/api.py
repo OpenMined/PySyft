@@ -58,7 +58,7 @@ class APIEndpoint(SyftObject):
 
 def signature_remove_self(signature: Signature) -> Signature:
     params = dict(signature.parameters)
-    params.pop("self")
+    params.pop("self", None)
     return Signature(
         list(params.values()), return_annotation=signature.return_annotation
     )
@@ -66,7 +66,7 @@ def signature_remove_self(signature: Signature) -> Signature:
 
 def signature_remove_credentials(signature: Signature) -> Signature:
     params = dict(signature.parameters)
-    params.pop("credentials")
+    params.pop("context", None)
     return Signature(
         list(params.values()), return_annotation=signature.return_annotation
     )
