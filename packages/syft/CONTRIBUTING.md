@@ -547,8 +547,6 @@ You can always check that manually with:
 $ pytest -m slow -n auto
 ```
 
-- build_proto.sh
-  This script will re-generate all of the protobuf files using the `protoc` protobuf compiler.
 - nb_test.sh
   This converts notebooks that have asserts into tests so they can be run with pytest.
 

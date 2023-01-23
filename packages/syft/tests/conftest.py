@@ -1,14 +1,19 @@
 # stdlib
 import logging
+import os
 from typing import Any as TypeAny
 from typing import Callable as TypeCallable
 from typing import Dict as TypeDict
 from typing import Generator
 from typing import List as TypeList
+import uuid
 
 # third party
 import _pytest
 from faker import Faker
+from nacl.encoding import HexEncoder
+from nacl.signing import SigningKey
+from pymongo_inmemory import MongoClient
 import pytest
 
 # syft absolute
@@ -141,13 +146,26 @@ def pytest_collection_modifyitems(
             item.add_marker(fast_tests)
 
 
+def set_env_vars() -> None:
+    uuid_str = str(uuid.uuid4())
+    os.environ.setdefault("NODE_UID", uuid_str)
+
+    private_key = SigningKey.generate().encode(encoder=HexEncoder).decode("utf-8")
+    os.environ.setdefault("NODE_PRIVATE_KEY", private_key)
+
+
 @pytest.fixture(scope="session")
 def node() -> sy.VirtualMachine:
+    set_env_vars()
     return sy.VirtualMachine(name="Bob")
+
+
+_db = MongoClient(port=27017, uuidRepresentation="standard")
 
 
 @pytest.fixture(scope="session")
 def domain() -> sy.VirtualMachine:
+    set_env_vars()
     return sy.Domain(
         name="Alice", store_type=DictStore, ledger_store_type=DictLedgerStore
     )

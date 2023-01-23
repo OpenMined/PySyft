@@ -45,9 +45,8 @@ Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 
 # Versions
 
-<!-- `0.8.0 beta` - `dev` branch 👈🏽   -->
-
-`0.7.0 beta` - `dev` branch 👈🏽  
+`0.8.0 beta` - `dev` branch 👈🏽  
+`0.7.0` - <a href="https://github.com/OpenMined/courses/tree/introduction-to-remote-data-science-dev">Course 3 Updated</a>  
 `0.6.0` - <a href="https://github.com/OpenMined/courses/tree/introduction-to-remote-data-science">Course 3</a>  
 `0.5.1` - <a href="https://github.com/OpenMined/courses/tree/foundations-of-private-computation">Course 2</a> + M1 Hotfix  
 `0.2.0` - `0.5.0` Deprecated

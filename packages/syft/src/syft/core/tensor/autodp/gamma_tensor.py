@@ -37,8 +37,6 @@ from ....core.node.common.action.get_or_set_property_action import (
     GetOrSetPropertyAction,
 )
 from ....core.node.common.action.get_or_set_property_action import PropertyActions
-from ....lib.numpy.array import capnp_deserialize
-from ....lib.numpy.array import capnp_serialize
 from ....lib.python.util import upcast
 from ....util import inherit_tags
 from ...adp.data_subject_ledger import DataSubjectLedger
@@ -48,14 +46,7 @@ from ...adp.data_subject_ledger import DataSubjectLedger
 # from ...adp.data_subject_list import dslarraytonumpyutf8
 # from ...adp.data_subject_list import numpyutf8todslarray
 from ...adp.vectorized_publish import publish
-from ...common.serde.capnp import CapnpModule
-from ...common.serde.capnp import chunk_bytes
-from ...common.serde.capnp import combine_bytes
-from ...common.serde.capnp import get_capnp_schema
-from ...common.serde.capnp import serde_magic_header
-from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
-from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
 from ...node.abstract.node import AbstractNodeClient
 from ...node.common.action.run_class_method_action import RunClassMethodAction
@@ -136,7 +127,7 @@ class TensorWrappedGammaTensorPointer(Pointer):
         "public_shape",
     ]
 
-    __serde_overrides__ = {
+    __serde_overrides__: Dict[str, Sequence[Callable]] = {
         "client": [lambda x: x.address, lambda y: y],
         "public_shape": [lambda x: x, lambda y: upcast(y)],
         # "data_subjects": [dslarraytonumpyutf8, numpyutf8todslarray],
@@ -246,7 +237,7 @@ class TensorWrappedGammaTensorPointer(Pointer):
                 args=pointer_args,
                 kwargs=pointer_kwargs,
                 id_at_location=result_id_at_location,
-                address=self.client.address,
+                address=self.client.node_uid,
             )
             self.client.send_immediate_msg_without_reply(msg=cmd)
 
@@ -378,7 +369,7 @@ class TensorWrappedGammaTensorPointer(Pointer):
                 args=pointer_args,
                 kwargs=pointer_kwargs,
                 id_at_location=result_id_at_location,
-                address=self.client.address,
+                address=self.client.node_uid,
             )
             self.client.send_immediate_msg_without_reply(msg=cmd)
 
@@ -565,7 +556,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__lt__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__lt__")
 
     def __gt__(
         self,
@@ -581,7 +573,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__gt__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__gt__")
 
     def __ge__(
         self,
@@ -613,7 +606,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__le__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__le__")
 
     def __eq__(  # type: ignore
         self,
@@ -629,7 +623,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__eq__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__eq__")
 
     def __ne__(  # type: ignore
         self,
@@ -645,7 +640,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__ne__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__ne__")
 
     def concatenate(
         self,
@@ -721,7 +717,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
             TensorWrappedGammaTensorPointer, MPCTensor, int, float, np.ndarray
         ],
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__mod__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__mod__")
 
     def __and__(
         self,
@@ -737,7 +734,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__and__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__and__")
 
     def __or__(
         self,
@@ -753,7 +751,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__or__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__or__")
 
     def __floordiv__(
         self,
@@ -884,7 +883,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__lshift__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__lshift__")
 
     def argmax(
         self,
@@ -899,7 +899,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return self._apply_self_tensor_op("argmax", *args, **kwargs)
+        raise NotImplementedError
+        # return self._apply_self_tensor_op("argmax", *args, **kwargs)
 
     def __rshift__(
         self,
@@ -915,7 +916,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__rshift__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__rshift__")
 
     def argmin(
         self,
@@ -930,7 +932,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return self._apply_self_tensor_op("argmin", *args, **kwargs)
+        raise NotImplementedError
+        # return self._apply_self_tensor_op("argmin", *args, **kwargs)
 
     def __abs__(
         self,
@@ -960,7 +963,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return self._apply_self_tensor_op("all", *args, **kwargs)
+        raise NotImplementedError
+        # return self._apply_self_tensor_op("all", *args, **kwargs)
 
     def any(
         self,
@@ -975,7 +979,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return self._apply_self_tensor_op("any", *args, **kwargs)
+        raise NotImplementedError
+        # return self._apply_self_tensor_op("any", *args, **kwargs)
 
     def round(self, *args: Any, **kwargs: Any) -> TensorWrappedGammaTensorPointer:
         return self._apply_self_tensor_op("round", *args, **kwargs)
@@ -1103,7 +1108,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedGammaTensorPointer._apply_op(self, other, "__xor__")
+        raise NotImplementedError
+        # return TensorWrappedGammaTensorPointer._apply_op(self, other, "__xor__")
 
     def __pow__(
         self,
@@ -1221,7 +1227,7 @@ class TensorWrappedGammaTensorPointer(Pointer):
                 args=pointer_args,
                 kwargs=pointer_kwargs,
                 id_at_location=result_id_at_location,
-                address=self.client.address,
+                address=self.client.node_uid,
             )
             self.client.send_immediate_msg_without_reply(msg=cmd)
 
@@ -1325,7 +1331,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
                 sorted a. More generally, np.take_along_axis(a, index_array, axis=axis) always yields the sorted a,
                 irrespective of dimensionality.
         """
-        return self._apply_self_tensor_op("argsort", *args, **kwargs)
+        raise NotImplementedError
+        # return self._apply_self_tensor_op("argsort", *args, **kwargs)
 
     def min(
         self,
@@ -1776,7 +1783,7 @@ class TensorWrappedGammaTensorPointer(Pointer):
             cmd = GetOrSetPropertyAction(
                 path=attr_path_and_name,
                 id_at_location=result_id_at_location,
-                address=self.client.address,
+                address=self.client.node_uid,
                 _self=self,
                 args=pointer_args,
                 kwargs=pointer_kwargs,
@@ -1878,23 +1885,37 @@ def numpy2jax(value: np.array, dtype: np.dtype) -> jnp.array:
 # ATTENTION: Shouldn't this be a subclass of some kind of base tensor so all the numpy
 # methods and properties don't need to be re-implemented on it?
 @dataclass
-@serializable(capnp_bytes=True)
+@serializable(recursive_serde=True)
 class GammaTensor:
+    child: jnp.array
+    jax_op: SyftJaxOp = flax.struct.field(pytree_node=False)
+    sources: dict = flax.struct.field(pytree_node=False)
+    is_linear: bool = False
+    id: str = flax.struct.field(pytree_node=False, default_factory=lambda: UID())
+
+    __attr_allowlist__ = (
+        "child",
+        "jax_op",
+        "sources",
+        "is_linear",
+        "id",
+    )
+
+    @classmethod
+    def serde_constructor(cls, kwargs: Dict[str, Any]) -> GammaTensor:
+        return GammaTensor(**kwargs)
+
     """
     A differential privacy tensor that contains data belonging to atleast 2 or more unique data subjects.
 
     Attributes:
         child: jnp.array
             The private data itself.
-        data_subjects: DataSubjectArray
-            (DP Metadata) A custom NumPy class that keeps track of which data subjects contribute which datapoints in
-            this tensor.
         min_vals: lazyrepeatarray
             (DP Metadata) A custom class that keeps track of (data-independent) minimum values for this tensor.
         max_vals: lazyrepeatarray
             (DP Metadata) A custom class that keeps track of (data-independent) maximum values for this tensor.
-        func_str: str
-            A string that will determine which function was used to build the current tensor.
+        jax_op: SyftJaxOp
         is_linear: bool
             Whether the "func_str" for this tensor is a linear query or not. This impacts the epsilon calculations
             when publishing.
@@ -2054,7 +2075,8 @@ class GammaTensor:
         return self._infix(other, gamma_op=GAMMA_TENSOR_OP.SUBTRACT, is_linear_op=True)
 
     def __mod__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.MOD, is_linear_op=False)
+        raise NotImplementedError
+        # return self._infix(other, gamma_op=GAMMA_TENSOR_OP.MOD, is_linear_op=False)
 
     def __mul__(self, other: Any) -> GammaTensor:
         return self._infix(other, gamma_op=GAMMA_TENSOR_OP.MULTIPLY, is_linear_op=True)
@@ -2073,49 +2095,60 @@ class GammaTensor:
         return self._infix(other, gamma_op=GAMMA_TENSOR_OP.MATMUL, is_linear_op=False)
 
     def __gt__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.GREATER, is_linear_op=False)
+        raise NotImplementedError
+        # return self._infix(other, gamma_op=GAMMA_TENSOR_OP.GREATER, is_linear_op=False)
 
     def __ge__(self, other: Any) -> GammaTensor:
-        return self._infix(
-            other, gamma_op=GAMMA_TENSOR_OP.GREATER_EQUAL, is_linear_op=False
-        )
+        raise NotImplementedError
+        # return self._infix(
+        #     other, gamma_op=GAMMA_TENSOR_OP.GREATER_EQUAL, is_linear_op=False
+        # )
 
     def __lt__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.LESS, is_linear_op=False)
+        raise NotImplementedError
+        # return self._infix(other, gamma_op=GAMMA_TENSOR_OP.LESS, is_linear_op=False)
 
     def __le__(self, other: Any) -> GammaTensor:
-        return self._infix(
-            other, gamma_op=GAMMA_TENSOR_OP.LESS_EQUAL, is_linear_op=False
-        )
+        raise NotImplementedError
+        # return self._infix(
+        #     other, gamma_op=GAMMA_TENSOR_OP.LESS_EQUAL, is_linear_op=False
+        # )
 
     def __eq__(self, other: Any) -> GammaTensor:  # type: ignore
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.EQUAL, is_linear_op=False)
+        raise NotImplementedError
+        # return self._infix(other, gamma_op=GAMMA_TENSOR_OP.EQUAL, is_linear_op=False)
 
     def __ne__(self, other: Any) -> GammaTensor:  # type: ignore
-        return self._infix(
-            other, gamma_op=GAMMA_TENSOR_OP.NOT_EQUAL, is_linear_op=False
-        )
+        raise NotImplementedError
+        # return self._infix(
+        #     other, gamma_op=GAMMA_TENSOR_OP.NOT_EQUAL, is_linear_op=False
+        # )
 
     def __and__(self, other: Any) -> GammaTensor:
-        return self._infix(
-            other, gamma_op=GAMMA_TENSOR_OP.BITWISE_AND, is_linear_op=False
-        )
+        raise NotImplementedError
+        # return self._infix(
+        #     other, gamma_op=GAMMA_TENSOR_OP.BITWISE_AND, is_linear_op=False
+        # )
 
     def __or__(self, other: Any) -> GammaTensor:
-        return self._infix(
-            other, gamma_op=GAMMA_TENSOR_OP.BITWISE_OR, is_linear_op=False
-        )
+        raise NotImplementedError
+        # return self._infix(
+        #     other, gamma_op=GAMMA_TENSOR_OP.BITWISE_OR, is_linear_op=False
+        # )
 
     def __lshift__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.LSHIFT, is_linear_op=False)
+        raise NotImplementedError
+        # return self._infix(other, gamma_op=GAMMA_TENSOR_OP.LSHIFT, is_linear_op=False)
 
     def __rshift__(self, other: Any) -> GammaTensor:
-        return self._infix(other, gamma_op=GAMMA_TENSOR_OP.RSHIFT, is_linear_op=False)
+        raise NotImplementedError
+        # return self._infix(other, gamma_op=GAMMA_TENSOR_OP.RSHIFT, is_linear_op=False)
 
     def __xor__(self, other: Any) -> GammaTensor:
-        return self._infix(
-            other, gamma_op=GAMMA_TENSOR_OP.BITWISE_XOR, is_linear_op=False
-        )
+        raise NotImplementedError
+        # return self._infix(
+        #     other, gamma_op=GAMMA_TENSOR_OP.BITWISE_XOR, is_linear_op=False
+        # )
 
     def dot(self, other: Union[np.ndarray, GammaTensor]) -> GammaTensor:
         # QUESTION: is there a reason other can't be a non gamma tensor numpy array?
@@ -2132,7 +2165,8 @@ class GammaTensor:
         return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.SUBTRACT, is_linear_op=True)
 
     def __rmod__(self, other: Any) -> GammaTensor:
-        return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.MOD, is_linear_op=False)
+        raise NotImplementedError
+        # return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.MOD, is_linear_op=False)
 
     def __rmul__(self, other: Any) -> GammaTensor:
         return self._rinfix(other, gamma_op=GAMMA_TENSOR_OP.MULTIPLY, is_linear_op=True)
@@ -2162,14 +2196,16 @@ class GammaTensor:
         return self._unary_op(gamma_op=GAMMA_TENSOR_OP.ABS, is_linear=False)
 
     def argmax(self, axis: Optional[int] = None) -> GammaTensor:
-        return self._unary_op(
-            gamma_op=GAMMA_TENSOR_OP.ARGMAX, is_linear=False, args=[axis]
-        )
+        raise NotImplementedError
+        # return self._unary_op(
+        #     gamma_op=GAMMA_TENSOR_OP.ARGMAX, is_linear=False, args=[axis]
+        # )
 
     def argmin(self, axis: Optional[int] = None) -> GammaTensor:
-        return self._unary_op(
-            gamma_op=GAMMA_TENSOR_OP.ARGMIN, is_linear=False, args=[axis]
-        )
+        raise NotImplementedError
+        # return self._unary_op(
+        #     gamma_op=GAMMA_TENSOR_OP.ARGMIN, is_linear=False, args=[axis]
+        # )
 
     def log(self) -> GammaTensor:  # TODO 0.7: this needs a test
         return self._unary_op(gamma_op=GAMMA_TENSOR_OP.LOG, is_linear=False)
@@ -2280,22 +2316,24 @@ class GammaTensor:
         axis: OptionalAxisArg = None,
         keepdims: Optional[bool] = None,
     ) -> GammaTensor:
-        return self._unary_op(
-            gamma_op=GAMMA_TENSOR_OP.ANY,
-            is_linear=False,
-            kwargs={"axis": axis, "keepdims": keepdims},
-        )
+        raise NotImplementedError
+        # return self._unary_op(
+        #     gamma_op=GAMMA_TENSOR_OP.ANY,
+        #     is_linear=False,
+        #     kwargs={"axis": axis, "keepdims": keepdims},
+        # )
 
     def all(
         self,
         axis: OptionalAxisArg = None,
         keepdims: Optional[bool] = None,
     ) -> GammaTensor:
-        return self._unary_op(
-            gamma_op=GAMMA_TENSOR_OP.ALL,
-            is_linear=False,
-            kwargs={"axis": axis, "keepdims": keepdims},
-        )
+        raise NotImplementedError
+        # return self._unary_op(
+        #     gamma_op=GAMMA_TENSOR_OP.ALL,
+        #     is_linear=False,
+        #     kwargs={"axis": axis, "keepdims": keepdims},
+        # )
 
     def __pos__(self) -> GammaTensor:
         return self._unary_op(
@@ -2385,7 +2423,8 @@ class GammaTensor:
         )
 
     def nonzero(self) -> GammaTensor:
-        return self._unary_op(gamma_op=GAMMA_TENSOR_OP.NONZERO, is_linear=False)
+        raise NotImplementedError
+        # return self._unary_op(gamma_op=GAMMA_TENSOR_OP.NONZERO, is_linear=False)
 
     def swapaxes(self, axis1: int, axis2: int) -> GammaTensor:
         return self._unary_op(
@@ -2586,11 +2625,12 @@ class GammaTensor:
         )
 
     def argsort(self, axis: int = -1, kind: Optional[str] = None) -> GammaTensor:
-        return self._unary_op(
-            gamma_op=GAMMA_TENSOR_OP.ARGSORT,
-            is_linear=False,
-            kwargs={"axis": axis, "kind": kind},
-        )
+        raise NotImplementedError
+        # return self._unary_op(
+        #     gamma_op=GAMMA_TENSOR_OP.ARGSORT,
+        #     is_linear=False,
+        #     kwargs={"axis": axis, "kind": kind},
+        # )
 
     def choose(
         self,
@@ -2651,68 +2691,68 @@ class GammaTensor:
     def dtype(self) -> np.dtype:
         return self.child.dtype
 
-    def _object2bytes(self) -> bytes:
-        # TODO Tudor: fix this
-        schema = get_capnp_schema(schema_file="gamma_tensor.capnp")
+    # def _object2bytes(self) -> bytes:
+    #     # TODO Tudor: fix this
+    #     schema = get_capnp_schema(schema_file="gamma_tensor.capnp")
 
-        gamma_tensor_struct: CapnpModule = schema.GammaTensor  # type: ignore
-        gamma_msg = gamma_tensor_struct.new_message()
-        # this is how we dispatch correct deserialization of bytes
-        gamma_msg.magicHeader = serde_magic_header(type(self))
+    #     gamma_tensor_struct: CapnpModule = schema.GammaTensor  # type: ignore
+    #     gamma_msg = gamma_tensor_struct.new_message()
+    #     # this is how we dispatch correct deserialization of bytes
+    #     gamma_msg.magicHeader = serde_magic_header(type(self))
 
-        # do we need to serde func? if so how?
-        # what about the state dict?
+    #     # do we need to serde func? if so how?
+    #     # what about the state dict?
 
-        if isinstance(self.child, np.ndarray) or np.isscalar(self.child):
-            chunk_bytes(capnp_serialize(np.array(self.child), to_bytes=True), "child", gamma_msg)  # type: ignore
-            gamma_msg.isNumpy = True
-        elif isinstance(self.child, jnp.ndarray):
-            chunk_bytes(
-                capnp_serialize(jax2numpy(self.child, self.child.dtype), to_bytes=True),
-                "child",
-                gamma_msg,
-            )
-            gamma_msg.isNumpy = True
-        else:
-            chunk_bytes(serialize(self.child, to_bytes=True), "child", gamma_msg)  # type: ignore
-            gamma_msg.isNumpy = False
+    #     if isinstance(self.child, np.ndarray) or np.isscalar(self.child):
+    #         chunk_bytes(capnp_serialize(np.array(self.child), to_bytes=True), "child", gamma_msg)  # type: ignore
+    #         gamma_msg.isNumpy = True
+    #     elif isinstance(self.child, jnp.ndarray):
+    #         chunk_bytes(
+    #             capnp_serialize(jax2numpy(self.child, self.child.dtype), to_bytes=True),
+    #             "child",
+    #             gamma_msg,
+    #         )
+    #         gamma_msg.isNumpy = True
+    #     else:
+    #         chunk_bytes(serialize(self.child, to_bytes=True), "child", gamma_msg)  # type: ignore
+    #         gamma_msg.isNumpy = False
 
-        gamma_msg.sources = serialize(self.sources, to_bytes=True)
-        gamma_msg.isLinear = self.is_linear
-        gamma_msg.id = self.id.to_string()
-        gamma_msg.jaxOp = serialize(self.jax_op, to_bytes=True)
+    #     gamma_msg.sources = serialize(self.sources, to_bytes=True)
+    #     gamma_msg.isLinear = self.is_linear
+    #     gamma_msg.id = self.id.to_string()
+    #     gamma_msg.jaxOp = serialize(self.jax_op, to_bytes=True)
 
-        # return gamma_msg.to_bytes_packed()
-        return gamma_msg.to_bytes()
+    #     # return gamma_msg.to_bytes_packed()
+    #     return gamma_msg.to_bytes()
 
-    @staticmethod
-    def _bytes2object(buf: bytes) -> GammaTensor:
-        # TODO Tudor: fix this
-        schema = get_capnp_schema(schema_file="gamma_tensor.capnp")
-        gamma_struct: CapnpModule = schema.GammaTensor  # type: ignore
-        # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
-        MAX_TRAVERSAL_LIMIT = 2**64 - 1
-        # capnp from_bytes is now a context
-        with gamma_struct.from_bytes(
-            buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        ) as gamma_msg:
+    # @staticmethod
+    # def _bytes2object(buf: bytes) -> GammaTensor:
+    #     # TODO Tudor: fix this
+    #     schema = get_capnp_schema(schema_file="gamma_tensor.capnp")
+    #     gamma_struct: CapnpModule = schema.GammaTensor  # type: ignore
+    #     # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
+    #     MAX_TRAVERSAL_LIMIT = 2**64 - 1
+    #     # capnp from_bytes is now a context
+    #     with gamma_struct.from_bytes(
+    #         buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
+    #     ) as gamma_msg:
 
-            if gamma_msg.isNumpy:
-                child = capnp_deserialize(
-                    combine_bytes(gamma_msg.child), from_bytes=True
-                )
-            else:
-                child = deserialize(combine_bytes(gamma_msg.child), from_bytes=True)
+    #         if gamma_msg.isNumpy:
+    #             child = capnp_deserialize(
+    #                 combine_bytes(gamma_msg.child), from_bytes=True
+    #             )
+    #         else:
+    #             child = deserialize(combine_bytes(gamma_msg.child), from_bytes=True)
 
-            state = deserialize(gamma_msg.sources, from_bytes=True)
-            is_linear = gamma_msg.isLinear
-            id_str = UID.from_string(gamma_msg.id)
-            jax_op = deserialize(gamma_msg.jaxOp, from_bytes=True)
+    #         state = deserialize(gamma_msg.sources, from_bytes=True)
+    #         is_linear = gamma_msg.isLinear
+    #         id_str = UID.from_string(gamma_msg.id)
+    #         jax_op = deserialize(gamma_msg.jaxOp, from_bytes=True)
 
-            return GammaTensor(
-                child=child,
-                is_linear=is_linear,
-                sources=state,
-                id=id_str,
-                jax_op=jax_op,
-            )
+    #         return GammaTensor(
+    #             child=child,
+    #             is_linear=is_linear,
+    #             sources=state,
+    #             id=id_str,
+    #             jax_op=jax_op,
+    #         )

@@ -12,7 +12,6 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.adp.data_subject_list import DataSubjectArray
 from syft.core.node.common.client import Client
 
 clients = []  # clients for smpc test
@@ -129,10 +128,13 @@ def create_data_scientist() -> Callable[[int], List[Any]]:
 def pytest_configure(config: _pytest.config.Config) -> None:
     config.addinivalue_line("markers", "general: general integration tests")
     config.addinivalue_line("markers", "frontend: frontend integration tests")
-    config.addinivalue_line("markers", "smpc: smpc integration tests")
     config.addinivalue_line("markers", "network: network integration tests")
     config.addinivalue_line("markers", "k8s: kubernetes integration tests")
     config.addinivalue_line("markers", "e2e: end-to-end integration tests")
     config.addinivalue_line("markers", "security: security integration tests")
+    config.addinivalue_line("markers", "smpc_np: smpc integration tests")
+    config.addinivalue_line("markers", "smpc_mpc_tensor: smpc integration tests")
+    config.addinivalue_line("markers", "smpc_abstract: smpc integration tests")
+    config.addinivalue_line("markers", "smpc_share_tensor: smpc integration tests")
+    config.addinivalue_line("markers", "redis: redis tests")
     config.addinivalue_line("markers", "tff: PySyTFF integration tests")
-    config.addinivalue_line("markers", "redis: Dataset tests")

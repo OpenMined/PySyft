@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-package syft.lib.python;
-
-message Bool {
-  bool data = 1;
-}

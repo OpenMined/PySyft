@@ -47,7 +47,7 @@ DOCKER_ERROR = """
 You are running an old version of docker, possibly on Linux. You need to install v2.
 At the time of writing this, if you are on linux you need to run the following:
 
-DOCKER_COMPOSE_VERSION=v2.7.0
+DOCKER_COMPOSE_VERSION=v2.15.1
 curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 \
      -o ~/.docker/cli-plugins/docker-compose
 chmod +x ~/.docker/cli-plugins/docker-compose
@@ -77,10 +77,7 @@ WARNING_MSG = f"\033[0;33mWARNING:{NO_COLOR}"
 
 
 def get_version_string() -> str:
-    version = str(__version__)
-    if EDITABLE_MODE:
-        version += "-dev"
-    return version
+    return str(__version__) + "-dev" if EDITABLE_MODE else ""
 
 
 @dataclass
@@ -768,7 +765,7 @@ PACKAGE_MANAGER_COMMANDS = {
         "windows": "choco install docker-desktop -y",
         "linux": (
             "mkdir -p ~/.docker/cli-plugins\n"
-            + "DOCKER_COMPOSE_VERSION=v2.7.0\n"
+            + "DOCKER_COMPOSE_VERSION=v2.15.1\n"
             + "curl -sSL https://github.com/docker/compose/releases/download/"
             + "${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 "
             + "-o ~/.docker/cli-plugins/docker-compose\n"

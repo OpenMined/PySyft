@@ -65,15 +65,14 @@ jobs:
         if: steps.changes.outputs.hagrid == 'true'
         run: |
           pip install --upgrade bandit safety setuptools wheel twine
-          pip install tox==3.27.1
+          pip install -U tox
           pip install -e .
 
       - name: Scan for security issues python 3.8+
         if: steps.changes.outputs.hagrid == 'true'
         run: |
-          pip install importlib-metadata==4.13.0
           bandit -r hagrid
-          safety check -i 42923 -i 51457
+          safety check -i 42923 -i 51457 -i 52495
 
       - name: Build Wheel
         if: steps.changes.outputs.hagrid == 'true'

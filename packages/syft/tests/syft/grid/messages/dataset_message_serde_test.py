@@ -10,7 +10,7 @@ import pytest
 # syft absolute
 from syft import deserialize
 from syft import serialize
-from syft.core.io.address import Address
+from syft.core.common.uid import UID
 
 # from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
 #     GetDatasetsResponse,
@@ -40,9 +40,9 @@ test_suite = [
     (
         CreateDatasetMessage,
         {
-            "address": Address(),
+            "address": UID(),
             "dataset": b"MyBinaryDataset",
-            "reply_to": Address(),
+            "reply_to": UID(),
             "platform": "syft",
             "metadata": metadata,
         },
@@ -50,23 +50,23 @@ test_suite = [
     ),
     (
         GetDatasetMessage,
-        {"address": Address(), "dataset_id": 3, "reply_to": Address()},
+        {"address": UID(), "dataset_id": 3, "reply_to": UID()},
         ["address", "dataset_id", "reply_to"],
     ),
     (
         GetDatasetResponse,
-        {"address": Address(), "metadata": metadata},
+        {"address": UID(), "metadata": metadata},
         ["address", "metadata"],
     ),
     (
         GetDatasetsMessage,
-        {"address": Address(), "reply_to": Address()},
+        {"address": UID(), "reply_to": UID()},
         ["address", "reply_to"],
     ),
     # (
     #     GetDatasetsResponse,
     #     {
-    #         "address": Address(),
+    #         "address": UID(),
     #         "metadatas": [metadata, metadata, metadata],
     #     },
     #     ["address", "metadatas"],
@@ -74,19 +74,19 @@ test_suite = [
     (
         UpdateDatasetMessage,
         {
-            "address": Address(),
+            "address": UID(),
             "dataset_id": 3,
             "metadata": metadata,
-            "reply_to": Address(),
+            "reply_to": UID(),
         },
         ["address", "dataset_id", "metadata", "reply_to"],
     ),
     (
         DeleteDatasetMessage,
         {
-            "address": Address(),
+            "address": UID(),
             "dataset_id": "8f2c411b-fcb7-4059-a0ee-aa370ed03e0c",
-            "reply_to": Address(),
+            "reply_to": UID(),
         },
         ["address", "dataset_id", "reply_to"],
     ),

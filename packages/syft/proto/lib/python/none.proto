@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-package syft.lib.python;
-
-message SyNone {
-    bool temporary_box = 1;
-}

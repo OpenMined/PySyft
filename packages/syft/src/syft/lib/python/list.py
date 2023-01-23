@@ -6,21 +6,15 @@ from typing import Optional
 from typing import Union
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import SupportsIndex
 
 # relative
-from ...core.common.serde.deserialize import _deserialize as deserialize
-from ...core.common.serde.serializable import serializable
-from ...core.common.serde.serialize import _serialize as serialize
-from ...proto.lib.python.list_pb2 import List as List_PB
 from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory
 from .primitive_factory import isprimitive
 from .primitive_interface import PyPrimitive
 from .slice import Slice
 from .types import SyPrimitiveRet
-from .util import downcast
 from .util import upcast
 
 
@@ -28,7 +22,6 @@ class ListIterator(Iterator):
     pass
 
 
-@serializable()
 class List(UserList, PyPrimitive):
     __slots__ = ["_index"]
 
@@ -140,28 +133,3 @@ class List(UserList, PyPrimitive):
     def count(self, other: Any) -> SyPrimitiveRet:
         res = super().count(other)
         return PrimitiveFactory.generate_primitive(value=res)
-
-    def _object2proto(self) -> List_PB:
-        downcasted = [downcast(value=element) for element in self.data]
-        data = [serialize(obj=element, to_bytes=True) for element in downcasted]
-        return List_PB(
-            data=data,
-            temporary_box=self.temporary_box,
-        )
-
-    @staticmethod
-    def _proto2object(proto: List_PB) -> "List":
-        value = []
-        # list comprehension doesn't work since it results in a
-        # [generator()] which is not equal to an empty list
-        for element in proto.data:
-            value.append(upcast(deserialize(blob=element, from_bytes=True)))
-        new_list = List(
-            value=value,
-            temporary_box=proto.temporary_box,
-        )
-        return new_list
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return List_PB

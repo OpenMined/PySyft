@@ -4,7 +4,6 @@ from typing import Dict
 
 # third party
 import numpy as np
-from numpy.typing import ArrayLike
 import pytest
 
 # syft absolute
@@ -285,8 +284,8 @@ def test_serde(
         min_vals=lower_bound,
     )
 
-    ser = sy.serialize(tensor1)
-    de = sy.deserialize(ser)
+    ser = sy.serialize(tensor1, to_bytes=True)
+    de = sy.deserialize(ser, from_bytes=True)
 
     assert de == tensor1
     assert (de.child == tensor1.child).all()
