@@ -16,6 +16,7 @@ from syft import serialize
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.common.message import SignedMessage
+from syft.core.common.serde.serializable import serializable
 from syft.core.node.enums import RequestAPIFields
 from syft.telemetry import TRACE_MODE
 
@@ -33,6 +34,18 @@ if TRACE_MODE:
     from opentelemetry.propagate import extract
 
 router = APIRouter()
+
+
+@serializable(recursive_serde=True)
+class SimpleObject:
+    first: int
+    second: float
+    third: str
+
+    def __init__(self, first: int, second: float, third: str) -> None:
+        self.first = first
+        self.second = second
+        self.third = third
 
 
 async def get_body(request: Request) -> bytes:
@@ -134,3 +147,12 @@ def syft_stream(data: bytes = Depends(get_body)) -> Any:
         else:
             raise Exception("MessageWithReply not supported on the stream endpoint")
     return ""
+
+
+@router.get("/js", response_model=str)
+def js_route(request: Request, data: bytes = Depends(get_body)) -> Any:
+    simple = SimpleObject(first=1, second=1.2, third="test")
+    return Response(
+        serialize(simple, to_bytes=True),
+        media_type="application/octet-stream",
+    )
