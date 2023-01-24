@@ -38,16 +38,15 @@ Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 - HAGrid Requires: 🐍 `python` 🐙 `git` - Run: `pip install -U hagrid`
 - Interactive Install 🧙🏽‍♂️ Wizard<sup>BETA</sup> Requires 🛵 `hagrid`: - Run: `hagrid quickstart`  
   †`Windows` does not support `ansible`, preventing some remote deployment targets
-- PySyft Requires: 🐍 `python 3.7+` - Run: `pip install -U syft --pre`  
+- PySyft Requires: 🐍 `python 3.8+` - Run: `pip install -U syft`  
   \*`macOS` Apple Silicon users need cmake: `brew install cmake`  
   ‡`Windows` users must run this first: `pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html`
 - PyGrid Requires: 🐳 `docker` / `k8s` or 🐧 `ubuntu` VM - Run: `hagrid launch ...`
 
 # Versions
 
-<!-- `0.8.0 beta` - `dev` branch 👈🏽   -->
-
-`0.7.0 beta` - `dev` branch 👈🏽  
+`0.8.0 beta` - `dev` branch 👈🏽  
+`0.7.0` - <a href="https://github.com/OpenMined/courses/tree/introduction-to-remote-data-science-dev">Course 3 Updated</a>  
 `0.6.0` - <a href="https://github.com/OpenMined/courses/tree/introduction-to-remote-data-science">Course 3</a>  
 `0.5.1` - <a href="https://github.com/OpenMined/courses/tree/foundations-of-private-computation">Course 2</a> + M1 Hotfix  
 `0.2.0` - `0.5.0` Deprecated
@@ -55,8 +54,6 @@ Perform `numpy`-like analysis on `data` that remains in `someone else's` server
 PySyft and PyGrid use the same `version` and its best to match them up where possible. We release weekly betas which can be used in each context:
 PySyft: `pip install -U syft --pre`
 PyGrid: `hagrid launch ... tag=latest`
-
-<!-- Quickstart: `hagrid quickstart --pre` -->
 
 HAGrid is a cli / deployment tool so the latest version of `hagrid` is usually the best.
 

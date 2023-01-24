@@ -14,9 +14,7 @@ from pydantic.error_wrappers import ValidationError as PydanticValidationError
 
 # relative
 from .....common.message import ImmediateSyftMessage
-from .....common.message import SignedMessage
 from .....common.uid import UID
-from .....io.address import Address
 from ....abstract.node_service_interface import NodeServiceInterface
 from ....common.exceptions import AuthorizationError
 from ....common.exceptions import BadPayloadException
@@ -52,18 +50,17 @@ class NewSyftMessage(ImmediateSyftMessage):
         This will eventually replace the old `SyftMessage` class.
     """
 
-    __attr_allowlist__ = ["id", "address", "reply_to", "reply", "msg_id", "kwargs"]
+    __attr_allowlist__ = ["id", "address", "reply_to", "reply", "kwargs"]
 
-    signed_type = SignedMessage
     request_payload_type = RequestPayload
     reply_payload_type = ReplyPayload
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         kwargs: Optional[Dict[str, Any]] = None,
         msg_id: Optional[UID] = None,
-        reply_to: Optional[Address] = None,
+        reply_to: Optional[UID] = None,
         reply: bool = False,
     ) -> None:
         super().__init__(address=address, msg_id=msg_id)
@@ -75,10 +72,7 @@ class NewSyftMessage(ImmediateSyftMessage):
     def payload(self) -> Payload:
         kwargs_dict = {}
 
-        if hasattr(self.kwargs, "upcast"):
-            kwargs_dict = self.kwargs.upcast()  # type: ignore
-        else:
-            kwargs_dict = self.kwargs  # type: ignore
+        kwargs_dict = self.kwargs  # type: ignore
 
         try:
             # If it's not a reply message then load kwargs as a proper request payload.

@@ -10,7 +10,6 @@ import syft as sy
 from syft.lib.python.dict import Dict
 from syft.lib.python.int import Int
 from syft.lib.python.string import String
-from syft.proto.lib.python.dict_pb2 import Dict as Dict_PB
 
 
 def test_dict_creation() -> None:
@@ -45,11 +44,9 @@ def test_dict_serde() -> None:
 
     syft_list = Dict({Int(1): t1, Int(2): t2})
 
-    serialized = syft_list._object2proto()
+    serialized = sy.serialize(syft_list)
 
-    assert isinstance(serialized, Dict_PB)
-
-    deserialized = Dict._proto2object(proto=serialized)
+    deserialized = sy.deserialize(serialized)
 
     assert isinstance(deserialized, Dict)
     for deserialized_el, original_el in zip(deserialized, syft_list):

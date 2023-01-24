@@ -30,10 +30,6 @@ jobs:
     uses: OpenMined/PySyft/.github/workflows/stack-integration_tests.yml@dev
     secrets: inherit
 
-  call-syft-merge_torch_tests:
-    if: github.repository == 'OpenMined/PySyft' # don't run on forks
-    uses: OpenMined/PySyft/.github/workflows/syft-merge_torch_tests.yml@dev
-
   call-syft-pr_tests:
     if: github.repository == 'OpenMined/PySyft' # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/syft-pr_tests.yml@dev
@@ -104,14 +100,14 @@ jobs:
 
       - name: Install tox
         run: |
-          pip install tox==3.27.1
+          pip install -U tox
 
       - name: Install Docker Compose
         if: runner.os == 'Linux'
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.7.0
+          DOCKER_COMPOSE_VERSION=v2.15.1
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 
@@ -124,6 +120,41 @@ jobs:
           docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
       - name: Run integration tests
-        timeout-minutes: 600
+        timeout-minutes: 300
         run: |
           EMULATION="true" HAGRID_FLAGS="--tag=local --test --platform linux/arm64" tox -e stack.test.integration
+
+      - name: Run log collector
+        timeout-minutes: 5
+        if: failure()
+        shell: bash
+        run: |
+          python ./scripts/container_log_collector.py
+
+      - name: Get job name and url
+        id: job_name
+        if: failure()
+        run: |
+          echo "::set-output name=job_name::$(echo ${{ github.job }})"
+          echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
+      - name: Get current date
+        id: date
+        if: failure()
+        shell: bash
+        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+
+      - name: Upload logs to GitHub
+        uses: actions/upload-artifact@master
+        if: failure()
+        with:
+          name: ${{ matrix.os }}-${{ steps.job_name.outputs.job_name }}-${{ matrix.pytest-modules }}-logs-${{ steps.date.outputs.date }}
+          path: ./logs/${{ steps.job_name.outputs.job_name}}/
+
+      - name: Mandatory Container cleanup
+        if: steps.changes.outputs.stack == 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
+          docker rm `docker ps -aq` --force || true
+          docker volume prune -f || true

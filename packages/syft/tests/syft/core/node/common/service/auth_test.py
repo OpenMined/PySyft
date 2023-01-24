@@ -11,7 +11,7 @@ from syft.core.node.common.node_service.auth import service_auth
 
 def test_service_auth_root_fails() -> None:
     node = sy.Device()
-    msg = sy.ReprMessage(address=node.address)
+    msg = sy.ReprMessage(address=node.node_uid)
 
     random_signing_key = SigningKey.generate()
     random_verify_key = random_signing_key.verify_key
@@ -31,7 +31,7 @@ def test_service_auth_root_fails() -> None:
 
 def test_service_auth_existing_user() -> None:
     node = sy.Device()
-    msg = sy.ReprMessage(address=node.address)
+    msg = sy.ReprMessage(address=node.node_uid)
     random_signing_key = SigningKey.generate()
     random_verify_key = random_signing_key.verify_key
 
@@ -50,7 +50,7 @@ def test_service_auth_existing_user() -> None:
 
 def test_service_auth_guests_fails() -> None:
     node = sy.Device()
-    msg = sy.ReprMessage(address=node.address)
+    msg = sy.ReprMessage(address=node.node_uid)
     new_signing_key = SigningKey.generate()
     new_verify_key = new_signing_key.verify_key
 
@@ -66,7 +66,7 @@ def test_service_auth_guests_fails() -> None:
 
 def test_service_auth_guests_succeeds() -> None:
     node = sy.Device()
-    msg = sy.ReprMessage(address=node.address)
+    msg = sy.ReprMessage(address=node.node_uid)
     new_signing_key = SigningKey.generate()
     new_verify_key = new_signing_key.verify_key
 
@@ -82,7 +82,7 @@ def test_service_auth_guests_succeeds() -> None:
 
 def test_service_auth_admin_fails() -> None:
     node = sy.Device()
-    msg = sy.ReprMessage(address=node.address)
+    msg = sy.ReprMessage(address=node.node_uid)
 
     random_signing_key = SigningKey.generate()
     random_verify_key = random_signing_key.verify_key
@@ -100,7 +100,7 @@ def test_service_auth_admin_fails() -> None:
 
 def test_service_auth_admin_success() -> None:
     node = sy.Device()
-    msg = sy.ReprMessage(address=node.address)
+    msg = sy.ReprMessage(address=node.node_uid)
 
     random_signing_key = SigningKey.generate()
     random_verify_key = random_signing_key.verify_key
@@ -117,7 +117,7 @@ def test_service_auth_admin_success() -> None:
 
 def test_service_auth_cpl_ofcr_fails() -> None:
     node = sy.Device()
-    msg = sy.ReprMessage(address=node.address)
+    msg = sy.ReprMessage(address=node.node_uid)
 
     random_signing_key = SigningKey.generate()
     random_verify_key = random_signing_key.verify_key
@@ -135,7 +135,7 @@ def test_service_auth_cpl_ofcr_fails() -> None:
 
 def test_service_auth_cpl_ofcr_success() -> None:
     node = sy.Device()
-    msg = sy.ReprMessage(address=node.address)
+    msg = sy.ReprMessage(address=node.node_uid)
 
     random_signing_key = SigningKey.generate()
     random_verify_key = random_signing_key.verify_key
@@ -152,7 +152,7 @@ def test_service_auth_cpl_ofcr_success() -> None:
 
 def test_service_auth_admin_success_as_root() -> None:
     node = sy.Device()
-    msg = sy.ReprMessage(address=node.address)
+    msg = sy.ReprMessage(address=node.node_uid)
 
     # Administrator only
     @service_auth(admin_only=True)
@@ -164,7 +164,7 @@ def test_service_auth_admin_success_as_root() -> None:
 
 def test_service_auth_cpl_ofcr_success_as_root() -> None:
     node = sy.Device()
-    msg = sy.ReprMessage(address=node.address)
+    msg = sy.ReprMessage(address=node.node_uid)
 
     # Compliance Officer only
     @service_auth(cpl_ofcr_only=True)

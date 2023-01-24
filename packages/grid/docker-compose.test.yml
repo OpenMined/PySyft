@@ -9,10 +9,6 @@ services:
     volumes:
       - ./tls/rootCA.pem:/usr/local/share/ca-certificates/rootCA.pem
 
-  db:
-    ports:
-      - "5432"
-
   redis:
     ports:
       - "6379"

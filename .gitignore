@@ -64,6 +64,4 @@ packages/grid/svelte
 # rendered template dir
 packages/grid/rendered
 
-# khoa's files
-tests/integration/e2e/BreastCancerDataset-02ec48b840824b1ea3e1f5d11c45314b.pkl
-tests/integration/e2e/tests_debug.py
+js/node_modules/*

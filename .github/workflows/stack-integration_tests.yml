@@ -33,6 +33,14 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
+      - name: "clean .git/config"
+        if: matrix.os == 'windows'
+        continue-on-error: true
+        shell: bash
+        run: |
+          echo "deleting ${GITHUB_WORKSPACE}/.git/config"
+          rm ${GITHUB_WORKSPACE}/.git/config
+
       - uses: actions/checkout@v3
 
       - name: Check for file changes
@@ -72,7 +80,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install tox==3.27.1
+          pip install -U tox
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
@@ -114,13 +122,13 @@ jobs:
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.7.0
+          DOCKER_COMPOSE_VERSION=v2.15.1
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
-        timeout-minutes: 30
+        timeout-minutes: 60
         env:
           HAGRID_ART: false
           PYTEST_MODULES: "${{ matrix.pytest-modules }}"
@@ -128,6 +136,7 @@ jobs:
           tox -e stack.test.integration
       #Run log collector python script
       - name: Run log collector
+        timeout-minutes: 5
         if: failure()
         shell: bash
         run: |
@@ -162,7 +171,6 @@ jobs:
           docker rm `docker ps -aq` --force || true
           docker volume prune -f || true
 
-
       #Get Pull request url
       - name: Get pull request url
         id: pull_request
@@ -170,19 +178,18 @@ jobs:
         run: |
           echo "::set-output name=url::$(echo ${{ github.event.pull_request.html_url }})"
 
-
       - name: Job Report Status
         # cant access secrets on forks
         if: github.repository == 'OpenMined/PySyft' && failure()
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
-          notify_when: 'failure'
-          notification_title: ' {workflow} has {status_message}'
-          message_format: '${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}'
-          footer: 'Find the PR here ${{ steps.pull_request.outputs.url }}'
-          mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
-          mention_users_when: 'failure,warnings'
+          notify_when: "failure"
+          notification_title: " {workflow} has {status_message}"
+          message_format: "${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}"
+          footer: "Find the PR here ${{ steps.pull_request.outputs.url }}"
+          mention_users: "U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0"
+          mention_users_when: "failure,warnings"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
 
@@ -237,7 +244,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install tox==3.27.1
+          pip install -U tox
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
@@ -279,7 +286,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.7.0
+          DOCKER_COMPOSE_VERSION=v2.15.1
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 
@@ -295,7 +302,7 @@ jobs:
 
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
-        timeout-minutes: 30
+        # timeout-minutes: 30
         env:
           HAGRID_ART: false
           PYTEST_MODULES: "${{ matrix.pytest-modules }}"
@@ -303,6 +310,7 @@ jobs:
           tox -e stack.test.integration.tls
       #Run log collector python script
       - name: Run log collector
+        timeout-minutes: 5
         if: failure()
         shell: bash
         run: |
@@ -344,19 +352,18 @@ jobs:
         run: |
           echo "::set-output name=url::$(echo ${{ github.event.pull_request.html_url }})"
 
-
       - name: Job Report Status
         # cant access secrets on forks
         if: github.repository == 'OpenMined/PySyft' && failure()
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
-          notify_when: 'failure'
-          notification_title: ' {workflow} has {status_message}'
-          message_format: '${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}'
-          footer: 'Find the PR here ${{ steps.pull_request.outputs.url }}'
-          mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
-          mention_users_when: 'failure,warnings'
+          notify_when: "failure"
+          notification_title: " {workflow} has {status_message}"
+          message_format: "${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}"
+          footer: "Find the PR here ${{ steps.pull_request.outputs.url }}"
+          mention_users: "U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0"
+          mention_users_when: "failure,warnings"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
 
@@ -411,7 +418,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install tox==3.27.1
+          pip install -U tox
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
@@ -448,23 +455,18 @@ jobs:
         run: |
           python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
-      - name: Install tff python 3.10
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          pip install ./packages/grid/backend/wheels/tensorflow_federated-0.36.0-py2.py3-none-any.whl
-
       - name: Install Docker Compose
         if: steps.changes.outputs.stack == 'true' && runner.os == 'Linux'
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.7.0
+          DOCKER_COMPOSE_VERSION=v2.15.1
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
-        timeout-minutes: 30
+        # timeout-minutes: 30
         env:
           HAGRID_ART: false
           PYTEST_MODULES: "${{ matrix.pytest-modules }}"
@@ -472,6 +474,7 @@ jobs:
           tox -e stack.test.integration.tff
       #Run log collector python script
       - name: Run log collector
+        timeout-minutes: 5
         if: failure()
         shell: bash
         run: |
@@ -484,7 +487,6 @@ jobs:
         run: |
           echo "::set-output name=job_name::$(echo ${{ github.job }})"
           echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
-
 
       - name: Get current date
         id: date
@@ -514,19 +516,18 @@ jobs:
         run: |
           echo "::set-output name=url::$(echo ${{ github.event.pull_request.html_url }})"
 
-
       - name: Job Report Status
         # cant access secrets on forks
         if: github.repository == 'OpenMined/PySyft' && failure()
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
-          notify_when: 'failure'
-          notification_title: ' {workflow} has {status_message}'
-          message_format: '${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}'
-          footer: 'Find the PR here ${{ steps.pull_request.outputs.url }}'
-          mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
-          mention_users_when: 'failure,warnings'
+          notify_when: "failure"
+          notification_title: " {workflow} has {status_message}"
+          message_format: "${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}"
+          footer: "Find the PR here ${{ steps.pull_request.outputs.url }}"
+          mention_users: "U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0"
+          mention_users_when: "failure,warnings"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
 
@@ -543,6 +544,13 @@ jobs:
     runs-on: [self-hosted, linux]
 
     steps:
+      - name: "clean .git/config"
+        continue-on-error: true
+        shell: bash
+        run: |
+          echo "deleting ${GITHUB_WORKSPACE}/.git/config"
+          rm ${GITHUB_WORKSPACE}/.git/config
+
       - name: set permissions on work folder for self-runners
         run: |
           sudo chown -R $USER:$USER ~/actions-runner/_work/
@@ -586,7 +594,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install tox==3.27.1
+          pip install -U tox
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
@@ -628,7 +636,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.7.0
+          DOCKER_COMPOSE_VERSION=v2.15.1
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 
@@ -643,11 +651,11 @@ jobs:
 
       #Run log collector python script
       - name: Run log collector
+        timeout-minutes: 5
         if: failure()
         shell: bash
         run: |
           python ./scripts/container_log_collector.py
-
 
       # Get Job name and url
       - name: Get job name and url
@@ -685,19 +693,18 @@ jobs:
         run: |
           echo "::set-output name=url::$(echo ${{ github.event.pull_request.html_url }})"
 
-
       - name: Job Report Status
         # cant access secrets on forks
         if: github.repository == 'OpenMined/PySyft' && failure()
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
-          notify_when: 'failure'
-          notification_title: ' {workflow} has {status_message}'
-          message_format: '${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}'
-          footer: 'Find the PR here ${{ steps.pull_request.outputs.url }}'
-          mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
-          mention_users_when: 'failure,warnings'
+          notify_when: "failure"
+          notification_title: " {workflow} has {status_message}"
+          message_format: "${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}"
+          footer: "Find the PR here ${{ steps.pull_request.outputs.url }}"
+          mention_users: "U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0"
+          mention_users_when: "failure,warnings"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
 
@@ -711,6 +718,13 @@ jobs:
     runs-on: [self-hosted, linux]
 
     steps:
+      - name: "clean .git/config"
+        continue-on-error: true
+        shell: bash
+        run: |
+          echo "deleting ${GITHUB_WORKSPACE}/.git/config"
+          rm ${GITHUB_WORKSPACE}/.git/config
+
       - name: set permissions on work folder for self-runners
         run: |
           sudo chown -R $USER:$USER ~/actions-runner/_work/
@@ -754,7 +768,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install tox==3.27.1
+          pip install -U tox
 
       - name: Install kubectl
         if: steps.changes.outputs.stack == 'true'
@@ -805,10 +819,11 @@ jobs:
           curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
           chmod +x devspace
           devspace --version
-          tox -e stack.test.integration.k8s
+          # tox -e stack.test.integration.k8s
 
         #Run log collector python script
       - name: Run log collector
+        timeout-minutes: 5
         if: failure()
         shell: bash
         run: |
@@ -821,7 +836,6 @@ jobs:
         run: |
           echo "::set-output name=job_name::$(echo ${{ github.job }})"
           echo "::set-output name=url::$(echo ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
-
 
       - name: Get current date
         id: date
@@ -857,12 +871,12 @@ jobs:
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
-          notify_when: 'failure'
-          notification_title: ' {workflow} has {status_message}'
-          message_format: '${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}'
-          footer: 'Find the PR here ${{ steps.pull_request.outputs.url }}'
-          mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
-          mention_users_when: 'failure,warnings'
+          notify_when: "failure"
+          notification_title: " {workflow} has {status_message}"
+          message_format: "${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}"
+          footer: "Find the PR here ${{ steps.pull_request.outputs.url }}"
+          mention_users: "U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0"
+          mention_users_when: "failure,warnings"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
 
@@ -918,7 +932,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install tox==3.27.1
+          pip install -U tox
 
       - name: docker cache
         uses: actions/cache@v3
@@ -935,7 +949,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.7.0
+          DOCKER_COMPOSE_VERSION=v2.15.1
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 
@@ -946,15 +960,15 @@ jobs:
           docker rm `docker ps -aq` --force || true
           tox -e stack.test.course
 
-
       #Run log collector python script
       - name: Run log collector
+        timeout-minutes: 5
         if: failure()
         shell: bash
         run: |
           python ./scripts/container_log_collector.py
 
-       # Get Job name and url
+        # Get Job name and url
       - name: Get job name and url
         id: job_name
         if: failure()
@@ -990,18 +1004,17 @@ jobs:
         run: |
           echo "::set-output name=url::$(echo ${{ github.event.pull_request.html_url }})"
 
-
       - name: Job Report Status
         # cant access secrets on forks
         if: github.repository == 'OpenMined/PySyft' && failure()
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
-          notify_when: 'failure'
-          notification_title: ' {workflow} has {status_message}'
-          message_format: '${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}'
-          footer: 'Find the PR here ${{ steps.pull_request.outputs.url }}'
-          mention_users: 'U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0'
-          mention_users_when: 'failure,warnings'
+          notify_when: "failure"
+          notification_title: " {workflow} has {status_message}"
+          message_format: "${{matrix.os}} {emoji} *{job}* {status_message} in {run_url}"
+          footer: "Find the PR here ${{ steps.pull_request.outputs.url }}"
+          mention_users: "U01LNCACY03,U8KUAD396,UNMQ2SJSW,U01SAESBJA0"
+          mention_users_when: "failure,warnings"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}

@@ -1,5 +1,4 @@
 # syft absolute
-from syft.core.common.message import SignedEventualSyftMessageWithoutReply
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.io.location.specific import SpecificLocation
@@ -90,19 +89,6 @@ def test_solo_route_send_immediate_msg_without_reply() -> None:
     msg = construct_dummy_message(SignedImmediateSyftMessageWithoutReply)
 
     assert h_solo.send_immediate_msg_without_reply(msg) is None
-
-
-def test_solo_route_send_eventual_msg_without_reply() -> None:
-    """Test SoloRoute.send_eventual_msg_without_reply method works."""
-    node = MockNode()
-    destination = SpecificLocation()
-    server = VirtualServerConnection(node=node)
-    connection = VirtualClientConnection(server=server)
-
-    h_solo = SoloRoute(destination=destination, connection=connection)
-    msg = construct_dummy_message(SignedEventualSyftMessageWithoutReply)
-
-    assert not h_solo.send_eventual_msg_without_reply(msg)
 
 
 def test_solo_route_send_immediate_msg_with_reply() -> None:

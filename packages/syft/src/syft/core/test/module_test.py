@@ -23,6 +23,7 @@ class A:
 
     def __init__(self) -> None:
         self._private_attr: float = 5.5
+        self.n = 0
 
     def __len__(self) -> int:
         return 3

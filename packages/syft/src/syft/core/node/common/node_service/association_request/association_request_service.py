@@ -26,7 +26,7 @@ from ....enums import AssociationRequestResponses
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...node_service.vpn.vpn_messages import VPNStatusMessageWithReply
-from ...node_table.association_request import AssociationRequest
+from ...node_table.association_request import NoSQLAssociationRequest
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
 from ..node_service import ImmediateNodeServiceWithoutReply
@@ -52,7 +52,7 @@ def get_vpn_status_metadata(node: DomainInterface) -> Dict[str, str]:
     try:
         vpn_status_msg = (
             VPNStatusMessageWithReply()
-            .to(address=node.address, reply_to=node.address)
+            .to(address=node.node_uid, reply_to=node.node_uid)
             .sign(signing_key=node.signing_key)
         )
 
@@ -70,7 +70,7 @@ def get_vpn_status_metadata(node: DomainInterface) -> Dict[str, str]:
     metadata = {
         "connected": str(bool(connected)).lower(),
         "host_or_ip": str(network_vpn_ip),
-        "node_id": str(node.target_id.id.no_dash),
+        "node_id": str(node.node_uid.no_dash),
         "node_name": str(node_name),
         "type": f"{str(type(node).__name__).lower()}",
     }
@@ -133,7 +133,7 @@ def send_association_request_msg(
 
         target_msg: SignedImmediateSyftMessageWithoutReply = (
             ReceiveAssociationRequestMessage(
-                address=target_client.address,
+                address=target_client.node_uid,
                 metadata=metadata,
                 source=vpn_metadata["host_or_ip"],
                 target=msg.target,
@@ -151,7 +151,7 @@ def send_association_request_msg(
             error(f"Failed to send ReceiveAssociationRequestMessage. {e}")
             error(f"Sending target message: {target_msg}")
             target_msg_args = {
-                "address": target_client.address,
+                "address": target_client.node_uid,
                 "metadata": metadata,
                 "source": vpn_metadata["host_or_ip"],
                 "target": "msg.target",
@@ -170,7 +170,7 @@ def send_association_request_msg(
         )
         node.association_requests.create_association_request(
             node_name=target_client.name,  # type: ignore
-            node_address=target_client.target_id.id.no_dash,  # type: ignore
+            node_address=target_client.node_uid.no_dash,  # type: ignore
             status=AssociationRequestResponses.PENDING,
             source=msg.source,
             target=msg.target,
@@ -224,18 +224,23 @@ def recv_association_request_msg(
         info(
             f"Node {node} - recv_association_request_msg: answering an existing association request."
         )
-        node.association_requests.set(source=msg.source, target=msg.target, response=msg.response)  # type: ignore
+
+        response = msg.response
+        node.association_requests.accept_or_deny(
+            source=msg.source, target=msg.target, response=response
+        )
 
     # get or create a new node and node_route which represents the opposing node which
     # is supplied in the metadata
     try:
-        node_id = node.node.create_or_get_node(  # type: ignore
-            node_uid=msg.metadata["node_id"], node_name=msg.metadata["node_name"]
-        )
         is_vpn = check_if_is_vpn(host_or_ip=msg.metadata["host_or_ip"])
-        node.node_route.update_route_for_node(  # type: ignore
-            node_id=node_id, host_or_ip=msg.metadata["host_or_ip"], is_vpn=is_vpn
+        node.node.create_or_get_node(  # type: ignore
+            node_uid=msg.metadata["node_id"],
+            node_name=msg.metadata["node_name"],
+            host_or_ip=msg.metadata["host_or_ip"],
+            is_vpn=is_vpn,
         )
+
     except Exception as e:
         error(f"Failed to save the node and node_route rows. {e}")
 
@@ -257,12 +262,14 @@ def respond_association_request_msg(
     resp_msg = "Association request replied!"
 
     info(
-        f"Node {node} - respond_association_request_msg: user can approve/deny association requests."
+        f"Node {node} - respond_association_request_msg: user can accept/deny association requests."
     )
     if allowed:
         # Set the status of the Association Request according to the "value" field received
 
-        node.association_requests.set(source=msg.source, target=msg.target, response=msg.response)  # type: ignore
+        node.association_requests.accept_or_deny(
+            source=msg.source, target=msg.target, response=msg.response
+        )
         user_priv_key = SigningKey(
             node.users.get_user(verify_key).private_key.encode(), encoder=HexEncoder  # type: ignore
         )
@@ -288,7 +295,7 @@ def respond_association_request_msg(
             metadata["node_address"] = node.id.no_dash  # type:ignore
             node_msg: SignedImmediateSyftMessageWithReply = (
                 ReceiveAssociationRequestMessage(
-                    address=source_client.address,
+                    address=source_client.node_uid,
                     response=msg.response,
                     metadata=metadata,
                     source=msg.source,
@@ -326,8 +333,8 @@ def get_association_request_msg(
     allowed = node.users.can_manage_infrastructure(verify_key=verify_key)
     # If allowed
     if allowed:
-        association_request: AssociationRequest = node.association_requests.first(
-            id=msg.association_id
+        association_request: NoSQLAssociationRequest = node.association_requests.first(
+            id_int=msg.association_id
         )
     else:  # Otherwise
         raise AuthorizationError(
@@ -336,7 +343,7 @@ def get_association_request_msg(
 
     return GetAssociationRequestResponse(
         address=msg.reply_to,
-        content=association_request.get_metadata(),
+        content=association_request.to_dict(),
         source=association_request.source,
         target=association_request.target,
     )
@@ -351,10 +358,12 @@ def get_all_association_request_msg(
 
     # If allowed
     if allowed:
-        association_requests = node.association_requests.all()
+        association_requests: List[
+            NoSQLAssociationRequest
+        ] = node.association_requests.all()
 
         association_requests_json = [
-            association_request.get_metadata()
+            association_request.to_dict()
             for association_request in association_requests
         ]
     else:  # Otherwise
@@ -376,11 +385,11 @@ def del_association_request_msg(
     # Check Key permissions
     allowed = node.users.can_manage_infrastructure(
         verify_key=verify_key
-    ) and node.association_requests.contain(id=msg.association_id)
+    ) and node.association_requests.contain(id_int=msg.association_id)
 
     # If allowed
     if allowed:
-        node.association_requests.delete(id=msg.association_id)
+        node.association_requests.delete(id_int=msg.association_id)
     else:  # Otherwise
         raise AuthorizationError(
             "You're not allowed to delete this Association Request information!"

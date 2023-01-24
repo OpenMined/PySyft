@@ -1,5 +1,4 @@
 # syft absolute
-from syft.core.common.message import SignedEventualSyftMessageWithoutReply
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.io.virtual import VirtualClientConnection
@@ -70,17 +69,6 @@ def test_virtual_server_connection_recv_immedaite_msg_without_reply() -> None:
     assert not server.recv_immediate_msg_without_reply(msg=msg)
 
 
-def test_virtual_server_connection_recv_eventual_msg_without_reply() -> None:
-    """
-    Test that VirtualServerConnection.recv_eventual_msg_with_reply raises NotImplementedError.
-    """
-    node = MockNode()
-    server = VirtualServerConnection(node=node)
-    msg = construct_dummy_message(SignedEventualSyftMessageWithoutReply)
-
-    assert server.recv_eventual_msg_without_reply(msg=msg) is None
-
-
 def test_virtual_client_connection_send_immediate_msg_without_reply() -> None:
     """
     Test that VirtualClientConnection.send_immediate_msg_without_reply works.
@@ -106,15 +94,3 @@ def test_virtual_client_connection_send_immediate_msg_with_reply() -> None:
         client.send_immediate_msg_with_reply(msg=msg),
         SignedImmediateSyftMessageWithoutReply,
     )
-
-
-def test_virtual_client_connection_send_eventual_msg_without_reply() -> None:
-    """
-    Test that VirtualClientConnection.send_eventual_msg_with_reply raises NotImplementedError.
-    """
-    node = MockNode()
-    server = VirtualServerConnection(node=node)
-    client = VirtualClientConnection(server=server)
-    msg = construct_dummy_message(SignedEventualSyftMessageWithoutReply)
-
-    assert client.send_eventual_msg_without_reply(msg=msg) is None

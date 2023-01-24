@@ -15,7 +15,7 @@ repos:
         always_run: true
       - id: check-added-large-files
         always_run: true
-        exclude: ^(packages/syft/src/syft/cache/constant2epsilon_1200k.npy|packages/grid/backend/wheels/.*|packages/syft/docs/img/header.png|packages/syft/docs/img/terminalizer.gif|notebooks/padawan)
+        exclude: ^(packages/syft/src/syft/cache/constant2epsilon_1200k.npy|packages/grid/backend/wheels/.*|packages/syft/docs/img/header.png|packages/syft/docs/img/terminalizer.gif|notebooks/padawan|notebooks/Experimental)
       - id: check-yaml
         always_run: true
         exclude: ^(packages/grid/k8s/rendered/)
@@ -136,7 +136,7 @@ repos:
       - id: mypy
         name: mypy-syft
         always_run: true
-        files: "^packages/syft(?!(/tests/|.*_pb2\\.py$)).*\\.py"
+        files: "^packages/syft(?!(/src/syft/shylock/|/tests/|._pb2\\.py$)).\\.py"
         args: [
             "--ignore-missing-imports",
             "--scripts-are-modules",
