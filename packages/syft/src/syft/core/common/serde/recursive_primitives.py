@@ -205,12 +205,6 @@ recursive_serde_register(
     deserialize=lambda x: slice(*deserialize_iterable(tuple, x)),
 )
 
-recursive_serde_register(
-    slice,
-    serialize=lambda x: serialize_iterable((x.start, x.stop, x.step)),
-    deserialize=lambda x: slice(*deserialize_iterable(tuple, x)),
-)
-
 recursive_serde_register(type, serialize=serialize_type, deserialize=deserialize_type)
 recursive_serde_register(
     MappingProxyType,
