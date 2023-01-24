@@ -359,13 +359,16 @@ class DomainClient(Client):
         )
         return self.send_immediate_msg_with_reply(msg=msg).kwargs
 
-    def create_task(
-        self, code: str, inputs: Dict[str, Any], outputs: List[str]
+    def code_request(
+        self, code: Union[str, callable], inputs: Dict[str, Any], outputs: List[str]
     ) -> None:
-        if not inspect.isfunction(code):
-            raise Exception("This code isn't a function ...")
+        if not inspect.isfunction(code) or isinstance(code, str):
+            raise Exception("This code isn't a function object or function string ...")
 
-        code_str = inspect.getsource(code)
+        if inspect.isfunction(code):
+            code_str = inspect.getsource(code)
+        else:
+            code_str = code
 
         for key, value in inputs.items():
             if not isinstance(value, str):
