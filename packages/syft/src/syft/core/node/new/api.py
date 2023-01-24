@@ -64,7 +64,7 @@ def signature_remove_self(signature: Signature) -> Signature:
     )
 
 
-def signature_remove_credentials(signature: Signature) -> Signature:
+def signature_remove_context(signature: Signature) -> Signature:
     params = dict(signature.parameters)
     params.pop("context", None)
     return Signature(
@@ -278,7 +278,7 @@ class SyftAPI(SyftObject):
             signature = v.signature
             if not v.has_self:
                 signature = signature_remove_self(signature)
-            signature = signature_remove_credentials(signature)
+            signature = signature_remove_context(signature)
             endpoint_function = generate_remote_function(
                 signature, v.path, self.make_call
             )

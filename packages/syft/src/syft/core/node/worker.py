@@ -22,6 +22,7 @@ from ..common.uid import UID
 from .new.action_service import ActionService
 from .new.api import SignedSyftAPICall
 from .new.api import SyftAPICall
+from .new.context import AuthedServiceContext
 from .new.credentials import SyftSigningKey
 from .new.node import NewNode
 from .new.service import AbstractService
@@ -91,7 +92,7 @@ class Worker(NewNode):
     def _construct_services(self):
         self.service_path_map = {}
         for service_klass in self.services:
-            self.service_path_map[service_klass.__name__] = service_klass(self)
+            self.service_path_map[service_klass.__name__] = service_klass()
 
     def get_service_method(self, path_or_func: Union[str, Callable]) -> Callable:
         if callable(path_or_func):
@@ -137,6 +138,8 @@ class Worker(NewNode):
         credentials = api_call.credentials
         api_call = api_call.message
 
+        context = AuthedServiceContext(node=self, credentials=credentials)
+
         # 🔵 TODO 4: Add @service decorator to autobind services into the SyftAPI
         if api_call.path not in self.service_config:
             return Err(f"API call not in registered services: {api_call.path}")
@@ -144,5 +147,5 @@ class Worker(NewNode):
         _private_api_path = ServiceConfigRegistry.private_path_for(api_call.path)
 
         method = self.get_service_method(_private_api_path)
-        result = method(credentials, *api_call.args, **api_call.kwargs)
+        result = method(context, *api_call.args, **api_call.kwargs)
         return result

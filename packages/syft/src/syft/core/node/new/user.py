@@ -26,7 +26,6 @@ from .context import NodeServiceContext
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .node import NewNode
-from .service import AbstractNode
 from .service import AbstractService
 from .service import service_method
 from .transforms import drop
@@ -128,7 +127,6 @@ class UserUpdate(SyftObject):
     role: Optional[ServiceRole] = None  # make sure role cant be set without uid
     password: Optional[str] = None
     password_verify: Optional[str] = None
-    verify_key: Optional[SyftVerifyKey] = None
 
 
 @transform(UserUpdate, User)
@@ -143,7 +141,7 @@ def user_update_to_user() -> List[Callable]:
 
 @transform(User, UserUpdate)
 def user_to_update_user() -> List[Callable]:
-    return [keep(["id", "email", "name", "role", "verify_key"])]
+    return [keep(["id", "email", "name", "role"])]
 
 
 @serializable(recursive_serde=True)
@@ -215,9 +213,7 @@ class SyftServiceRegistry:
 
 
 class UserCollection(AbstractService):
-    def __init__(self, node: AbstractNode) -> None:
-        self.node = node
-        self.node_uid = node.id
+    def __init__(self) -> None:
         self.data = {}
         self.primary_keys = {}
 
