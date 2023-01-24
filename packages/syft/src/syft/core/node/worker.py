@@ -51,7 +51,7 @@ node_uid_env = get_node_uid_env()
 
 @serializable(recursive_serde=True)
 class Worker(NewNode):
-    signing_key: Optional[SigningKey]
+    signing_key: Optional[SyftSigningKey]
     required_signed_calls: bool = True
 
     def __init__(
@@ -70,9 +70,7 @@ class Worker(NewNode):
             self.id = id
 
         if signing_key_env is not None:
-            self.signing_key = SyftSigningKey(
-                signing_key=SigningKey(bytes.fromhex(signing_key_env))
-            )
+            self.signing_key = SyftSigningKey.from_string(signing_key_env)
         else:
             self.signing_key = SyftSigningKey(signing_key=signing_key)
 
@@ -129,11 +127,11 @@ class Worker(NewNode):
 
         if self.required_signed_calls and isinstance(api_call, SyftAPICall):
             return Err(
-                f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."
+                f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."  # type: ignore
             )
         else:
             if not api_call.is_valid:
-                return Err("Your message signature is invalid")
+                return Err("Your message signature is invalid")  # type: ignore
 
         credentials = api_call.credentials
         api_call = api_call.message
@@ -142,7 +140,7 @@ class Worker(NewNode):
 
         # 🔵 TODO 4: Add @service decorator to autobind services into the SyftAPI
         if api_call.path not in self.service_config:
-            return Err(f"API call not in registered services: {api_call.path}")
+            return Err(f"API call not in registered services: {api_call.path}")  # type: ignore
 
         _private_api_path = ServiceConfigRegistry.private_path_for(api_call.path)
 

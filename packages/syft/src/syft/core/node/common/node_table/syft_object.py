@@ -62,7 +62,15 @@ class SyftObjectRegistry:
         return cls.__object_transform_registry__[mapping_string]
 
 
-class SyftObject(BaseModel, SyftObjectRegistry):
+class SyftBaseObject(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+
+    __canonical_name__: str  # the name which doesn't change even when there are multiple classes
+    __version__: int  # data is always versioned
+
+
+class SyftObject(SyftBaseObject, SyftObjectRegistry):
     class Config:
         arbitrary_types_allowed = True
 
@@ -74,8 +82,6 @@ class SyftObject(BaseModel, SyftObjectRegistry):
     def make_id(cls, v: Optional[UID]) -> UID:
         return v if isinstance(v, UID) else UID()
 
-    __canonical_name__: str  # the name which doesn't change even when there are multiple classes
-    __version__: int  # data is always versioned
     __attr_state__: List[str]  # persistent recursive serde keys
     __attr_searchable__: List[str]  # keys which can be searched in the ORM
     __attr_unique__: List[

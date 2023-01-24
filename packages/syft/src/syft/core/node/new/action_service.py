@@ -142,9 +142,7 @@ class ActionService(AbstractService):
         self, context: AuthedServiceContext, action: Action
     ) -> Result[ActionObjectPointer, Err]:
         """Execute an operation on objects in the action store"""
-        resolved_self = self.get(
-            credentials=context.credentials, uid=action.remote_self
-        )
+        resolved_self = self.get(context=context, uid=action.remote_self)
         if resolved_self.is_err():
             return resolved_self.err()
         else:
@@ -152,7 +150,7 @@ class ActionService(AbstractService):
         args = []
         if action.args:
             for arg_id in action.args:
-                arg_value = self.get(credentials=context.credentials, uid=arg_id)
+                arg_value = self.get(context=context, uid=arg_id)
                 if arg_value.is_err():
                     return arg_value.err()
                 args.append(arg_value.ok().syft_action_data)
@@ -160,7 +158,7 @@ class ActionService(AbstractService):
         kwargs = {}
         if action.kwargs:
             for key, arg_id in action.kwargs.items():
-                kwarg_value = self.get(credentials=context.credentials, uid=arg_id)
+                kwarg_value = self.get(context=context, uid=arg_id)
                 if kwarg_value.is_err():
                     return kwarg_value.err()
                 kwargs[key] = kwarg_value.ok().syft_action_data
@@ -184,7 +182,7 @@ class ActionService(AbstractService):
         else:
             # 🔵 TODO 12: Create an AnyPointer to handle unexpected results
             result_action_object = ActionObject(
-                id=action.result_id, parent_id=action.id, syft_action_data=result
+                id=action.result_id, parent_id=action.id, syft_action_data=result  # type: ignore
             )
 
         set_result = self.store.set(
@@ -195,4 +193,4 @@ class ActionService(AbstractService):
         if set_result.is_err():
             return set_result.err()
 
-        return Ok(result_action_object.to_pointer(context.node.id))
+        return Ok(result_action_object.to_pointer(node_uid=context.node.id))
