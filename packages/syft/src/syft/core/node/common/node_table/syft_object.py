@@ -19,6 +19,7 @@ from typeguard import check_type
 from ....common import UID
 from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serialize import _serialize as serialize
+from ...new.credentials import SyftVerifyKey
 
 
 class SyftObjectRegistry:
@@ -97,7 +98,10 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         for k in self.__attr_searchable__:
             # 🟡 TODO 24: pass in storage abstraction and detect unsupported types
             # if unsupported, convert to string
-            d[k] = str(getattr(self, k))
+            value = getattr(self, k, "")
+            if isinstance(value, SyftVerifyKey):
+                value = str(value)
+            d[k] = value
         blob = serialize(dict(self), to_bytes=True)
         d["_id"] = self.id.value  # type: ignore
         d["__canonical_name__"] = self.__canonical_name__

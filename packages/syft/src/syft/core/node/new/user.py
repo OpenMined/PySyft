@@ -169,7 +169,7 @@ def user_to_user_verify() -> List[Callable]:
 
 class UnauthedServiceContext(NodeServiceContext):
     login_credentials: UserLoginCredentials
-    node: Optional[Type[NewNode]]
+    node: Optional[NewNode]
 
 
 class SyftServiceRegistry:

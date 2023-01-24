@@ -16,6 +16,7 @@ from .....common.serde.serializable import serializable
 from ....abstract.node_service_interface import NodeServiceInterface
 from ....domain_interface import DomainInterface
 from ....domain_msg_registry import DomainMessageRegistry
+from ....new.user import User
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import UserNotFoundError
@@ -199,6 +200,9 @@ class GetUsersMessage(SyftMessage, DomainMessageRegistry):
         users = node.users.all()
         users_list = list()
         for user in users:
+            # 🟡 TODO 25: remove this check once ported to new service
+            if isinstance(user, User):
+                continue
             user_dict = syft_object_to_json(user)
             user_dict["id"] = user.id_int
             user_dict["role"] = user.role["name"]
