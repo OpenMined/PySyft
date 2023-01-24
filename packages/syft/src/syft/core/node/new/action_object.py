@@ -173,6 +173,7 @@ class ActionObject(SyftObject):
     __version__ = 1
 
     syft_parent_id: Optional[UID]
+    syft_history_hash: Optional[int]
     syft_pointer_type: ClassVar[Type[ActionObjectPointer]]
 
     @pydantic.validator("id", pre=True, always=True)
@@ -204,10 +205,11 @@ class ActionObject(SyftObject):
         return self.__repr__()
 
     def __post_init__(self) -> None:
-        pass
+        print("Lights... Cameras... ACTION OBJECT!")
+        # self.history_hash = hash(self.syft_parent_id)
 
     def __eq__(self, other: Any) -> bool:
-        return self.__add__(other)
+        return self._syft_output_action_object(self.__eq__(other))
 
     def _syft_run_pre_hooks__(self, name, args, kwargs):
         result_args, result_kwargs = args, kwargs
@@ -230,9 +232,13 @@ class ActionObject(SyftObject):
         return new_result
 
     def _syft_output_action_object(self, result) -> Any:
+        """Given an input argument (result) this method ensures the output is an ActionObject as well."""
         # can check types here
         if not isinstance(result, ActionObject):
-            result = ActionObject(syft_action_data=result)
+            result = ActionObject(
+                syft_action_data=result
+            )  # add syft_history_hash here?
+            result.syft_parent_id = self.id
         return result
 
     def __getattribute__(self, name):
