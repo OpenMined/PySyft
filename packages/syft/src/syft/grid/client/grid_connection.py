@@ -60,6 +60,7 @@ class GridHTTPConnection(HTTPConnection):
     GUEST_ROUTE = "/guest"
     SYFT_ROUTE = "/syft"
     SYFT_ROUTE_STREAM = "/syft/stream"  # non blocking node
+    NEW_LOGIN_ROUTE = "/new_login"
     # SYFT_MULTIPART_ROUTE = "/pysyft_multipart"
     SIZE_THRESHOLD = 20971520  # 20 MB
 
@@ -171,29 +172,19 @@ class GridHTTPConnection(HTTPConnection):
         # Return node metadata / user private key
         return (metadata, content["key"])
 
-    # def auth_using_key(self, user_key: SigningKey) -> Dict:
-    #     response = requests.post(
-    #         url=str(self.base_url) + GridHTTPConnection.KEY_ROUTE,
-    #         json={"signing_key": user_key.encode(encoder=HexEncoder).decode("utf-8")},
-    #         verify=verify_tls(),
-    #         timeout=2,
-    #         proxies=HTTPConnection.proxies,
-    #     )
-    #     # Response
-    #     content = json.loads(response.text)
-    #     # If fail
-    #     if response.status_code != requests.codes.ok:
-    #         raise Exception(content["detail"])
+    def new_login(self, credentials: Dict) -> Dict:
+        url = str(self.base_url) + GridHTTPConnection.NEW_LOGIN_ROUTE
+        response = requests.post(
+            url=url,
+            json=credentials,
+            verify=verify_tls(),
+            timeout=2,
+            proxies=HTTPConnection.proxies,
+        )
 
-    #     metadata = content["metadata"].encode("ISO-8859-1")
-    #     metadata_pb = Metadata_PB()
-    #     metadata_pb.ParseFromString(metadata)
-
-    #     # If success
-    #     # Save session token
-    #     self.session_token = content["access_token"]
-    #     self.token_type = content["token_type"]
-    #     return metadata_pb
+        print("Response", response.content)
+        content = response.json()
+        return content
 
     def _get_api(self, timeout: Optional[float] = 2) -> SyftAPI:
         """Request Node's API

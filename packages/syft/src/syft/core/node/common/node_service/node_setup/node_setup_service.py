@@ -114,9 +114,12 @@ def create_initial_setup(
         if create_user and create_setup:
             print("CreateInitialSetUpMessage Successful!")
         else:
-            print(
-                f"Failed CreateInitialSetUpMessage User: {create_user} Setup: {create_setup}"
-            )
+            if len(node.users) == 0:
+                print(
+                    f"Failed CreateInitialSetUpMessage User: {create_user} Setup: {create_setup}"
+                )
+            else:
+                print("Already got a User")
 
         return SuccessResponseMessage(
             address=msg.reply_to,
