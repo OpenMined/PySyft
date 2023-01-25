@@ -216,7 +216,7 @@ class ActionObject(SyftObject):
                     parent_id = self.syft_parent_id[0]
                     if not isinstance(parent_id, UID):
                         raise NotImplementedError(
-                            f"WHAT ARE WE WORKING WITH HERE? {parent_id}"
+                            f"Unrecognized parent id type: {parent_id}"
                         )
                     else:
                         if self.syft_parent_op is not None:
