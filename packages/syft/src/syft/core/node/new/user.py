@@ -87,7 +87,7 @@ def default_role(role: ServiceRole) -> Callable:
     return make_set_default(key="role", value=role)
 
 
-def hash_password(output: dict):
+def hash_password(_self: Any, output: Dict) -> Dict:
     if output["password"] == output["password_verify"]:
         salt, hashed = __salt_and_hash_password(output["password"], 12)
         output["hashed_password"] = hashed
@@ -95,7 +95,7 @@ def hash_password(output: dict):
     return output
 
 
-def generate_key(output: dict) -> dict:
+def generate_key(_self: Any, output: Dict) -> Dict:
     signing_key = SyftSigningKey.generate()
     output["signing_key"] = signing_key
     output["verify_key"] = signing_key.verify_key
@@ -106,9 +106,9 @@ def __salt_and_hash_password(password: str, rounds: int) -> Tuple[str, str]:
     bytes_pass = password.encode("UTF-8")
     salt = gensalt(rounds=rounds)
     hashed = hashpw(bytes_pass, salt)
-    hashed = hashed.decode("UTF-8")
-    salt = salt.decode("UTF-8")
-    return salt, hashed
+    hashed_bytes = hashed.decode("UTF-8")
+    salt_bytes = salt.decode("UTF-8")
+    return salt_bytes, hashed_bytes
 
 
 def check_pwd(password: str, hashed_password: str) -> bool:

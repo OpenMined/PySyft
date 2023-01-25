@@ -212,41 +212,6 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         self.__post_init__()
 
 
-# def transform_from(klass_from: str, version_from: int) -> Callable:
-#     def decorator(function: Callable):
-#         klass_name = function.__qualname__.split(".")[0]
-#         self_klass = getattr(sys.modules[function.__module__], klass_name, None)
-#         klass_to = self_klass.__canonical_name__
-#         version_to = self_klass.__version__
-
-#         SyftObjectRegistry.add_transform(
-#             klass_from=klass_from,
-#             version_from=version_from,
-#             klass_to=klass_to,
-#             version_to=version_to,
-#             method=function,
-#         )
-
-#         return function
-
-#     return decorator
-
-
-# example of transform_method
-# @transform_method(UserUpdate, User)
-# def user_update_to_user(self: UserUpdate) -> User:
-#     transforms = [
-#         hash_password,
-#         generate_key,
-#         default_role(ServiceRole()),
-#         drop(["password", "password_verify"]),
-#     ]
-#     output = dict(self)
-#     for transform in transforms:
-#         output = transform(output)
-#     return User(**output)
-
-
 def transform_method(
     klass_from: Union[type, str],
     klass_to: Union[type, str],
@@ -276,12 +241,6 @@ def transform_method(
         return function
 
     return decorator
-
-
-# example of simpler transform if you just want to apply the methods like above in a loop
-# @transform(User, UserUpdate)
-# def user_to_update_user() -> List[Callable]:
-#     return [keep(["uid", "email", "name", "role"])]
 
 
 def transform(
