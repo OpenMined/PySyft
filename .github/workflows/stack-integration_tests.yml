@@ -1020,8 +1020,6 @@ jobs:
   #         SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
 
 
-
-
   stack-integration-tests-oblv:
     strategy:
       max-parallel: 99
@@ -1080,7 +1078,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install tox==3.27.1
+          pip install -U tox
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
