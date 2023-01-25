@@ -222,7 +222,7 @@ class ActionObject(SyftObject):
                         if self.syft_parent_op is not None:
                             print("We got a parent and their op!")
                             self.syft_history_hash = hash(
-                                str(self.syft_parent_id) + self.syft_parent_id
+                                str(self.syft_parent_id) + self.syft_parent_op
                             )
                             print(
                                 self.syft_history_hash, " <--- this is my history hash"
@@ -324,7 +324,7 @@ class ActionObject(SyftObject):
                 )
                 result = original_func(*pre_hook_args, **pre_hook_kwargs)
                 post_result = self._syft_run_post_hooks__(name, result)
-                parent_ids = []
+                parent_ids = [self.id]
                 for item in args:
                     if isinstance(item, ActionObject):
                         print("WE FOUIND ONE")
@@ -345,7 +345,7 @@ class ActionObject(SyftObject):
                 )
                 result = original_func(*pre_hook_args, **pre_hook_kwargs)
                 post_result = self._syft_run_post_hooks__(name, result)
-                parent_ids = []
+                parent_ids = [self.id]
                 for item in args:
                     if isinstance(item, ActionObject):
                         print("WE FOUIND ONE")
