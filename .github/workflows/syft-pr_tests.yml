@@ -16,6 +16,7 @@ on:
       - "0.6.0"
       - "0.7.0"
       - "0.8"
+      - "padawan_trial_1"
 defaults:
   run:
     working-directory: ./packages/syft
