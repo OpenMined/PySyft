@@ -21,7 +21,15 @@ from nacl.signing import SigningKey
 # we raise an Exception if the values passed in to the ENV variables dont match or
 # the values from anywhere are invalid
 
-CREDENTIALS_PATH = "/credentials/credentials.json"
+
+def get_env(key: str, default: str = "") -> Optional[str]:
+    uid = str(os.environ.get(key, default))
+    if len(uid) > 0:
+        return uid
+    return None
+
+
+CREDENTIALS_PATH = get_env("CREDENTIALS_PATH", "/credentials/credentials.json")
 NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
 NODE_UID = "NODE_UID"
 
@@ -74,13 +82,6 @@ def get_private_key_env() -> Optional[str]:
 
 def get_node_uid_env() -> Optional[str]:
     return get_env(NODE_UID)
-
-
-def get_env(key: str) -> Optional[str]:
-    uid = str(os.environ.get(key, ""))
-    if len(uid) > 0:
-        return uid
-    return None
 
 
 def validate_private_key(private_key: Union[str, bytes]) -> str:

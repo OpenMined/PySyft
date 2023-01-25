@@ -20,7 +20,9 @@ from ...core.node.common.node_table.syft_object import SyftObject
 from ..common.serde.serializable import serializable
 from ..common.uid import UID
 from .new.action_service import ActionService
+from .new.action_service import ActionStore
 from .new.api import SignedSyftAPICall
+from .new.api import SyftAPI
 from .new.api import SyftAPICall
 from .new.context import AuthedServiceContext
 from .new.credentials import SyftSigningKey
@@ -87,10 +89,23 @@ class Worker(NewNode):
         pass
         # super().post_init()
 
+    def get_api(self) -> SyftAPI:
+        return SyftAPI.for_user(node_uid=self.id)
+
     def _construct_services(self):
         self.service_path_map = {}
         for service_klass in self.services:
-            self.service_path_map[service_klass.__name__] = service_klass()
+            kwargs = {}
+            if service_klass == ActionService:
+                action_store = ActionStore(root_verify_key=self.signing_key.verify_key)
+                kwargs["store"] = action_store
+                print(
+                    "Creating new ActionStore",
+                    action_store,
+                    action_store.id,
+                    action_store.data,
+                )
+            self.service_path_map[service_klass.__name__] = service_klass(**kwargs)
 
     def get_service_method(self, path_or_func: Union[str, Callable]) -> Callable:
         if callable(path_or_func):

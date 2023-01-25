@@ -79,6 +79,7 @@ class ActionStorePermissionUpdate:
 
 class ActionStore:
     def __init__(self, root_verify_key=SyftVerifyKey) -> None:
+        self.id = UID()
         self.data = {}
         self.permissions = defaultdict(set)
         self.root_verify_key = root_verify_key

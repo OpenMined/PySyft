@@ -1,6 +1,6 @@
-ARG PYTHON_VERSION='3.10.7'
+ARG PYTHON_VERSION='3.10.9'
 
-FROM python:3.10.7-slim as build
+FROM python:3.10.9-slim as build
 
 # set UTC timezone
 ENV TZ=Etc/UTC
