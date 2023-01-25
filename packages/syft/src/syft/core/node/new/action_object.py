@@ -172,7 +172,8 @@ class ActionObject(SyftObject):
     __canonical_name__ = "ActionObject"
     __version__ = 1
 
-    syft_parent_id: Optional[UID]
+    syft_parent_id: Optional[Union[UID, List[UID]]]
+    syft_parent_op: Optional[str]
     syft_history_hash: Optional[int]
     syft_pointer_type: ClassVar[Type[ActionObjectPointer]]
 
@@ -201,10 +202,38 @@ class ActionObject(SyftObject):
         return self._syft_output_action_object(self.__add__(other))
 
     def __repr__(self) -> str:
-        print("custom repr")
-        return self.__repr__()
+        return f"History: {self.syft_history_hash}"
 
     def __post_init__(self) -> None:
+        if self.syft_parent_id is not None:
+            if not isinstance(self.syft_parent_id, list):
+                raise NotImplementedError(
+                    f"Parent ID type not recognized: {type(self.syft_parent_id)}"
+                )
+            else:
+                print(self.syft_parent_id)
+                if len(self.syft_parent_id) == 1:
+                    parent_id = self.syft_parent_id[0]
+                    if not isinstance(parent_id, UID):
+                        raise NotImplementedError(
+                            f"WHAT ARE WE WORKING WITH HERE? {parent_id}"
+                        )
+                    else:
+                        if self.syft_parent_op is not None:
+                            print("We got a parent and their op!")
+                            self.syft_history_hash = hash(
+                                str(self.syft_parent_id) + self.syft_parent_id
+                            )
+                            print(
+                                self.syft_history_hash, " <--- this is my history hash"
+                            )
+                        else:
+                            print("No op, but I still have a parent")
+                            self.syft_history_hash = hash(self.syft_parent_id)
+                            print("Aaaaand I have history: ", self.syft_history_hash)
+                else:
+                    print("Our parents are many")
+                    pass
         print("Lights... Cameras... ACTION OBJECT!")
         # self.history_hash = hash(self.syft_parent_id)
 
@@ -231,17 +260,27 @@ class ActionObject(SyftObject):
             print(f"Returning {name} syft_post_hooks__", new_result)
         return new_result
 
-    def _syft_output_action_object(self, result) -> Any:
+    def _syft_output_action_object(
+        self,
+        result,
+        parents_id: Optional[Union[UID, List[UID]]] = None,
+        op_name: Optional[str] = None,
+    ) -> Any:
         """Given an input argument (result) this method ensures the output is an ActionObject as well."""
         # can check types here
+        if op_name is not None:
+            print("Hey we got a name! ", op_name)
         if not isinstance(result, ActionObject):
             result = ActionObject(
-                syft_action_data=result
+                syft_action_data=result,
+                syft_parent_id=parents_id,
+                syft_parent_op=op_name,
             )  # add syft_history_hash here?
             result.syft_parent_id = self.id
         return result
 
     def __getattribute__(self, name):
+        # print("method being called: ", name)
         # bypass certain attrs to prevent recursion issues
         if (
             name in passthrough_attrs
@@ -266,7 +305,9 @@ class ActionObject(SyftObject):
                 name, object.__getattribute__(context_self, name)
             )
             if name not in dont_wrap_output_attrs:
-                result = self._syft_output_action_object(result)
+                result = self._syft_output_action_object(
+                    result, parents_id=self.id, op_name=name
+                )
             return result
 
         # check for other types that aren't methods, functions etc
@@ -283,8 +324,15 @@ class ActionObject(SyftObject):
                 )
                 result = original_func(*pre_hook_args, **pre_hook_kwargs)
                 post_result = self._syft_run_post_hooks__(name, result)
+                parent_ids = []
+                for item in args:
+                    if isinstance(item, ActionObject):
+                        print("WE FOUIND ONE")
+                        parent_ids.append(item.id)
                 if name not in dont_wrap_output_attrs:
-                    post_result = self._syft_output_action_object(post_result)
+                    post_result = self._syft_output_action_object(
+                        post_result, parents_id=parent_ids, op_name=name
+                    )
                 return post_result
 
         else:
@@ -297,8 +345,15 @@ class ActionObject(SyftObject):
                 )
                 result = original_func(*pre_hook_args, **pre_hook_kwargs)
                 post_result = self._syft_run_post_hooks__(name, result)
+                parent_ids = []
+                for item in args:
+                    if isinstance(item, ActionObject):
+                        print("WE FOUIND ONE")
+                        parent_ids.append(item.id)
                 if name not in dont_wrap_output_attrs:
-                    post_result = self._syft_output_action_object(post_result)
+                    post_result = self._syft_output_action_object(
+                        post_result, parents_id=parent_ids, op_name=name
+                    )
                 return post_result
 
         try:

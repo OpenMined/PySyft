@@ -181,6 +181,7 @@ class SyftObject(BaseModel, SyftObjectRegistry):
         super().__init__(**kwargs)
         self._syft_set_validate_private_attrs_(**kwargs)
         self.__post_init__()
+        print("Potato gonna potate")
 
 
 # def transform_from(klass_from: str, version_from: int) -> Callable:
