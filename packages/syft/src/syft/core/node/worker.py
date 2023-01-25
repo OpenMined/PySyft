@@ -22,7 +22,9 @@ from ..common.uid import UID
 from .new.action_service import ActionService
 from .new.api import SignedSyftAPICall
 from .new.api import SyftAPICall
+from .new.context import AuthedServiceContext
 from .new.credentials import SyftSigningKey
+from .new.node import NewNode
 from .new.service import AbstractService
 from .new.service import ServiceConfigRegistry
 from .new.user import UserCollection
@@ -48,8 +50,8 @@ node_uid_env = get_node_uid_env()
 
 
 @serializable(recursive_serde=True)
-class Worker:
-    signing_key: Optional[SigningKey]
+class Worker(NewNode):
+    signing_key: Optional[SyftSigningKey]
     required_signed_calls: bool = True
 
     def __init__(
@@ -59,7 +61,6 @@ class Worker:
         id: Optional[UID] = UID(),
         services: Optional[List[Type[AbstractService]]] = None,
         signing_key: Optional[SigningKey] = SigningKey.generate(),
-        user_collection: Optional[UserCollection] = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -69,11 +70,9 @@ class Worker:
             self.id = id
 
         if signing_key_env is not None:
-            self.signing_key = SyftSigningKey(
-                SigningKey(bytes.fromhex(signing_key_env))
-            )
+            self.signing_key = SyftSigningKey.from_string(signing_key_env)
         else:
-            self.signing_key = SyftSigningKey(signing_key)
+            self.signing_key = SyftSigningKey(signing_key=signing_key)
 
         print("============> Starting Worker with:", self.id, self.signing_key)
 
@@ -91,10 +90,14 @@ class Worker:
     def _construct_services(self):
         self.service_path_map = {}
         for service_klass in self.services:
-            self.service_path_map[service_klass.__name__] = service_klass(self)
+            self.service_path_map[service_klass.__name__] = service_klass()
+
+    def get_service_method(self, path_or_func: Union[str, Callable]) -> Callable:
+        if callable(path_or_func):
+            path_or_func = path_or_func.__qualname__
+        return self._get_service_method_from_path(path_or_func)
 
     def _get_service_method_from_path(self, path: str) -> Callable:
-
         path_list = path.split(".")
         method_name = path_list.pop()
         service_name = path_list.pop()
@@ -124,39 +127,23 @@ class Worker:
 
         if self.required_signed_calls and isinstance(api_call, SyftAPICall):
             return Err(
-                f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."
+                f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."  # type: ignore
             )
         else:
             if not api_call.is_valid:
-                return Err("Your message signature is invalid")
+                return Err("Your message signature is invalid")  # type: ignore
 
         credentials = api_call.credentials
         api_call = api_call.message
 
+        context = AuthedServiceContext(node=self, credentials=credentials)
+
         # 🔵 TODO 4: Add @service decorator to autobind services into the SyftAPI
         if api_call.path not in self.service_config:
-            return Err(f"API call not in registered services: {api_call.path}")
+            return Err(f"API call not in registered services: {api_call.path}")  # type: ignore
 
         _private_api_path = ServiceConfigRegistry.private_path_for(api_call.path)
 
-        method = self._get_service_method_from_path(_private_api_path)
-        result = method(credentials, *api_call.args, **api_call.kwargs)
+        method = self.get_service_method(_private_api_path)
+        result = method(context, *api_call.args, **api_call.kwargs)
         return result
-
-        # if api_call.path == "services.user.create":
-        #     result = self.user_collection.create(
-        #         credentials=credentials, **api_call.kwargs
-        #     )
-        #     return result
-        # elif api_call.path == "services.action.set":
-        #     result = self.action_service.set(credentials=credentials, **api_call.kwargs)
-        #     return result
-        # elif api_call.path == "services.action.get":
-        #     result = self.action_service.get(credentials=credentials, **api_call.kwargs)
-        #     return result
-        # elif api_call.path == "services.action.execute":
-        #     result = self.action_service.execute(
-        #         credentials=credentials, **api_call.kwargs
-        #     )
-        #     return result
-        # return Err("Wrong path")
