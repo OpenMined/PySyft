@@ -76,6 +76,10 @@ else:
         + "NODE_TYPE to either 'Domain' or 'Network'."
     )
 
+
+root_user = node.users.find_one(search_params={"email": "newinfo@openmined.org"})
+worker.root_user = root_user
+
 node.loud_print()
 
 if len(node.setup):  # Check if setup was defined previously
