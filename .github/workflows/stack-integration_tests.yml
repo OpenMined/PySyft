@@ -36,7 +36,7 @@ jobs:
       - name: "Stop background Oblv uvicorn process"
         if: matrix.os == 'windows'
         continue-on-error: true
-        shell: pwsh
+        shell: powershell
         run: |
           Stop-Process -ID (Get-NetTCPConnection -LocalPort 8010).OwningProcess -Force
 
@@ -1041,7 +1041,7 @@ jobs:
       - name: "Stop background Oblv uvicorn process"
         if: matrix.os == 'windows'
         continue-on-error: true
-        shell: pwsh
+        shell: powershell
         run: |
           Stop-Process -ID (Get-NetTCPConnection -LocalPort 8010).OwningProcess -Force
 
