@@ -12,7 +12,6 @@ from loguru import logger
 from pydantic import ValidationError
 
 # syft absolute
-from syft import __version__
 from syft import deserialize
 from syft import serialize  # type: ignore
 from syft.core.node.new.node_metadata import NodeMetadataJSON
@@ -20,16 +19,10 @@ from syft.core.node.new.user import UnauthedServiceContext
 from syft.core.node.new.user import UserCollection
 from syft.core.node.new.user import UserLoginCredentials
 from syft.core.node.new.user import UserPrivateKey
-from syft.telemetry import TRACE_MODE
 
 # grid absolute
 from grid.core.node import node
 from grid.core.node import worker
-
-if TRACE_MODE:
-    # third party
-    from opentelemetry import trace
-    from opentelemetry.propagate import extract
 
 router = APIRouter()
 
@@ -84,7 +77,7 @@ def login(
 
     user_private_key = result.ok()
     if not isinstance(user_private_key, UserPrivateKey):
-        raise Exception(f"Incorrect return type", type(user_private_key))
+        raise Exception(f"Incorrect return type: {type(user_private_key)}")
 
     return Response(
         serialize(user_private_key, to_bytes=True),
