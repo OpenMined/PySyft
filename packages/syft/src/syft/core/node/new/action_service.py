@@ -19,8 +19,7 @@ from .action_object import Action
 from .action_object import ActionObject
 from .action_object import ActionObjectPointer
 from .action_store import ActionStore
-from .credentials import SyftVerifyKey
-from .service import AbstractNode
+from .context import AuthedServiceContext
 from .service import AbstractService
 from .service import service_method
 
@@ -59,7 +58,7 @@ class NumpyArrayObjectPointer(ActionObjectPointer):
                 #                 syft_action_data=other,
                 #                 dtype=other.dtype,
                 #                 shape=other.shape
-                #             )    
+                #             )
                 other = other.to_pointer(self.node_uid)
                 # print("🔵 TODO: pointerize")
                 # raise Exception("We need to pointerize first")
@@ -72,6 +71,7 @@ class NumpyArrayObjectPointer(ActionObjectPointer):
 
     def get_from(self, domain_client) -> Any:
         return domain_client.api.services.action.get(self.id).syft_action_data
+
 
 def numpy_like_eq(left: Any, right: Any) -> bool:
     result = left == right
@@ -103,23 +103,25 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
 
     def send_to(self, domain_node) -> NumpyArrayObjectPointer:
         return domain_node.api.services.action.set(self)
-    
+
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        inputs = tuple(np.array(x.syft_action_data, dtype=x.dtype.syft_action_data) 
-                       if isinstance(x, NumpyArrayObject) else x
-                       for x in inputs)
-        
+        inputs = tuple(
+            np.array(x.syft_action_data, dtype=x.dtype.syft_action_data)
+            if isinstance(x, NumpyArrayObject)
+            else x
+            for x in inputs
+        )
+
         result = getattr(ufunc, method)(*inputs, **kwargs)
         if type(result) is tuple:
-            return tuple(NumpyArrayObject(
-                            syft_action_data=x, 
-                            dtype=x.dtype, 
-                            shape=x.shape) for x in result)
+            return tuple(
+                NumpyArrayObject(syft_action_data=x, dtype=x.dtype, shape=x.shape)
+                for x in result
+            )
         else:
             return NumpyArrayObject(
-                            syft_action_data=result, 
-                            dtype=result.dtype, 
-                            shape=result.shape)
+                syft_action_data=result, dtype=result.dtype, shape=result.shape
+            )
 
 
 # def expose_dtype(output: dict) -> dict:
@@ -143,48 +145,45 @@ def np_array_to_pointer() -> List[Callable]:
 
 
 class ActionService(AbstractService):
-    def __init__(self, node: AbstractNode, store: ActionStore = ActionStore()) -> None:
-        self.node = node
-        self.node_uid = node.id
+    def __init__(self, store: ActionStore = ActionStore()) -> None:
         self.store = store
 
     @service_method(path="action.peek", name="peek")
-    def peek(self, credentials: SyftVerifyKey) -> Any:
+    def peek(self) -> Any:
         return Ok(self.store.data)
-
 
     @service_method(path="action.set", name="set")
     def set(
-        self, credentials: SyftVerifyKey, action_object: ActionObject
+        self, context: AuthedServiceContext, action_object: ActionObject
     ) -> Result[ActionObjectPointer, str]:
         """Save an object to the action store"""
         # 🟡 TODO 9: Create some kind of type checking / protocol for SyftSerializable
         result = self.store.set(
             uid=action_object.id,
-            credentials=credentials,
+            credentials=context.credentials,
             syft_object=action_object,
         )
         if result.is_ok():
-            return Ok(action_object.to_pointer(self.node_uid))
+            return Ok(action_object.to_pointer(context.node.id))
         return result.err()
 
     @service_method(path="action.get", name="get")
-    def get(self, credentials: SyftVerifyKey, uid: UID) -> Result[ActionObject, str]:
+    def get(self, context: AuthedServiceContext, uid: UID) -> Result[ActionObject, str]:
         """Get an object from the action store"""
-        result = self.store.get(uid=uid, credentials=credentials)
+        result = self.store.get(uid=uid, credentials=context.credentials)
         if result.is_ok():
             return Ok(result.ok())
         return Err(result.err())
 
     @service_method(path="action.execute", name="execute")
     def execute(
-        self, credentials: SyftVerifyKey, action: Action
+        self, context: AuthedServiceContext, action: Action
     ) -> Result[ActionObjectPointer, Err]:
         """Execute an operation on objects in the action store"""
         print(action.remote_self)
         print(action.parent_id)
         print(action.args)
-        resolved_self = self.get(credentials=credentials, uid=action.parent_id)
+        resolved_self = self.get(context=context, uid=action.remote_self)
         if resolved_self.is_err():
             return resolved_self.err()
         else:
@@ -192,7 +191,7 @@ class ActionService(AbstractService):
         args = []
         if action.args:
             for arg_id in action.args:
-                arg_value = self.get(credentials=credentials, uid=arg_id)
+                arg_value = self.get(context=context, uid=arg_id)
                 if arg_value.is_err():
                     return arg_value.err()
                 args.append(arg_value.ok().syft_action_data)
@@ -200,7 +199,7 @@ class ActionService(AbstractService):
         kwargs = {}
         if action.kwargs:
             for key, arg_id in action.kwargs.items():
-                kwarg_value = self.get(credentials=credentials, uid=arg_id)
+                kwarg_value = self.get(context=context, uid=arg_id)
                 if kwarg_value.is_err():
                     return kwarg_value.err()
                 kwargs[key] = kwarg_value.ok().syft_action_data
@@ -227,16 +226,16 @@ class ActionService(AbstractService):
         else:
             # 🔵 TODO 12: Create an AnyPointer to handle unexpected results
             result_action_object = ActionObject(
-                id=action.result_id, parent_id=action.id, syft_action_data=result
+                id=action.result_id, parent_id=action.id, syft_action_data=result  # type: ignore
             )
 
         set_result = self.store.set(
             uid=action.result_id,
-            credentials=credentials,
+            credentials=context.credentials,
             syft_object=result_action_object,
         )
         if set_result.is_err():
             return set_result.err()
 
         print(result_action_object)
-        return Ok(result_action_object.to_pointer(self.node_uid))
+        return Ok(result_action_object.to_pointer(node_uid=context.node.id))
