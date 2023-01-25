@@ -1676,7 +1676,7 @@ def create_launch_docker_cmd(
         elif version_string is None:
             version_string = "latest"
 
-    if platform.uname().machine == "x86_64":
+    if platform.uname().machine.lower() in ["x86_64", "amd64"]:
         docker_platform = "linux/amd64"
     else:
         docker_platform = "linux/arm64"
