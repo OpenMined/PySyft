@@ -1,5 +1,6 @@
 # stdlib
 import hashlib
+import json
 from typing import Any
 from typing import Dict
 from typing import Optional
@@ -15,11 +16,14 @@ from requests.packages.urllib3.util.retry import Retry
 from typing_extensions import Self
 
 # relative
+from .... import __version__
 from ....core.common.serde.deserialize import _deserialize
 from ....grid import GridURL
 from ....logger import debug
 from ....util import verify_tls
 from ...common.uid import UID
+from ...node.new.node_metadata import NodeMetadataJSON
+from ...node.new.user import UserLoginCredentials
 from .api import APIRegistry
 from .api import SyftAPI
 from .credentials import SyftSigningKey
@@ -44,51 +48,65 @@ def upgrade_tls(url: GridURL, response: Response) -> GridURL:
 API_PATH = "/api/v1/new"
 
 
+DEFAULT_PYGRID_PORT = 80
+DEFAULT_PYGRID_ADDRESS = f"http://127.0.0.1:{DEFAULT_PYGRID_PORT}"
+
+
 class SyftClient:
     proxies: Dict[str, str] = {}
     url: GridURL
-    node_name: str
-    node_uid: UID
+    metadata: Optional[NodeMetadataJSON]
     credentials: Optional[SyftSigningKey]
 
-    ROUTE_API_CALL = f"{API_PATH}/new_api_call"
-    ROUTE_LOGIN = f"{API_PATH}/new_login"
-    ROUTE_API = f"{API_PATH}/new_api"
-    METADATA_API = "/api/v1/syft/metadata"
+    ROUTE_METADATA = f"{API_PATH}/metadata"
+    ROUTE_API = f"{API_PATH}/api"
+    ROUTE_LOGIN = f"{API_PATH}/login"
+    ROUTE_API_CALL = f"{API_PATH}/api_call"
+
     _session: Optional[Session]
 
     def __init__(
         self,
         url: GridURL,
-        node_name: str,
-        node_uid: UID,
+        metadata: Optional[NodeMetadataJSON] = None,
         credentials: Optional[SyftSigningKey] = None,
+        api: Optional[SyftAPI] = None,
     ) -> None:
         self.url = url
-        self.node_name = node_name
-        self.node_uid = node_uid
+        self.metadata = metadata
         self.credentials: Optional[SyftSigningKey] = credentials
-        self._api = None
+        self._api = api
         self._session = None
+        self.post_init()
+
+    def post_init(self) -> None:
+        if self.metadata is None:
+            self._set_node_metadata()
 
     @staticmethod
     def from_url(url: Union[str, GridURL]) -> Self:
-        return SyftClient(
-            url=GridURL.from_url(url), node_name="Anonymous", node_uid=UID()
-        )
+        return SyftClient(url=GridURL.from_url(url))
+
+    @property
+    def name(self) -> Optional[str]:
+        return self.metadata.name if self.metadata else None
+
+    @property
+    def id(self) -> Optional[UID]:
+        return self.metadata.id if self.metadata else None
 
     @property
     def icon(self) -> str:
         return "📡"
 
     def __hash__(self) -> int:
-        return hash(self.node_uid)
+        return hash(self.id)
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, SyftClient):
             return False
         return (
-            self.node_uid == other.node_uid
+            self.metadata == other.metadata
             and self.url == other.url
             and self.credentials == other.credentials
         )
@@ -105,7 +123,7 @@ class SyftClient:
         return self._session
 
     def __repr__(self) -> str:
-        return f"<{type(self).__name__} - {self.node_name}: {self.node_uid.no_dash}>"
+        return f"<{type(self).__name__} - {self.name}: {self.id}>"
 
     def _make_get(self, path: str) -> bytes:
         url = self.url.with_path(path)
@@ -137,11 +155,15 @@ class SyftClient:
 
         return response.content
 
+    def _get_node_metadata(self) -> NodeMetadataJSON:
+        response = self._make_get(self.ROUTE_METADATA)
+        metadata_json = json.loads(response)
+        return NodeMetadataJSON(**metadata_json)
+
     def _set_node_metadata(self) -> None:
-        response = self._make_get(self.METADATA_API)
-        metadata = _deserialize(response, from_bytes=True)
-        self.node_name = metadata.name
-        self.node_uid = metadata.id
+        metadata = self._get_node_metadata()
+        metadata.check_version(__version__)
+        self.metadata = metadata
 
     def _get_api(self) -> SyftAPI:
         content = self._make_get(self.ROUTE_API)
@@ -153,7 +175,7 @@ class SyftClient:
 
     def _set_api(self):
         _api = self._get_api()
-        APIRegistry.set_api_for(node_uid=self.node_uid, api=_api)
+        APIRegistry.set_api_for(node_uid=self.id, api=_api)
         self._api = _api
 
     @property
@@ -168,28 +190,55 @@ class SyftClient:
         response = self._make_post(self.ROUTE_LOGIN, credentials)
         obj = _deserialize(response, from_bytes=True)
         self.credentials = obj.signing_key
-        self._set_node_metadata()
         self._set_api()
-        SyftClientSessionCache.add_user(
-            email=email, password=password, syft_client=self
+        SyftClientSessionCache.add_client(
+            email=email, password=password, url=self.url, syft_client=self
         )
+
+
+def connect(
+    url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
+    port: Optional[int] = None,
+    email: Optional[str] = None,
+    password: Optional[str] = None,
+) -> SyftClient:
+    if isinstance(port, (int, str)):
+        url = GridURL.from_url(url).set_port(int(port))
+
+    login_credentials = UserLoginCredentials(email=email, password=password)
+
+    _client = SyftClientSessionCache.get_client(
+        login_credentials.email,
+        login_credentials.password,
+        url=str(GridURL.from_url(url)),
+    )
+
+    if _client is None:
+        _client = SyftClient.from_url(url)
+        _client.login(
+            email=login_credentials.email, password=login_credentials.password
+        )
+
+    print(f"Logged into {_client.name} as <{login_credentials.email}>")
+
+    return _client
 
 
 class SyftClientSessionCache:
     __credentials_store__: Dict = {}
-    __cache_key_format__ = "{email}-{password}"
+    __cache_key_format__ = "{email}-{password}-{url}"
 
     @classmethod
-    def _get_key(cls, email: str, password: str) -> str:
-        key = cls.__cache_key_format__.format(email=email, password=password)
+    def _get_key(cls, email: str, password: str, url: str) -> str:
+        key = cls.__cache_key_format__.format(email=email, password=password, url=url)
         return hashlib.sha256(key.encode("utf-8")).hexdigest()
 
     @classmethod
-    def add_user(cls, email: str, password: str, syft_client: SyftClient):
-        hash_key = cls._get_key(email, password)
+    def add_client(cls, email: str, password: str, url: str, syft_client: SyftClient):
+        hash_key = cls._get_key(email, password, url)
         cls.__credentials_store__[hash_key] = syft_client
 
     @classmethod
-    def get_user_session(cls, email: str, password: str) -> Optional[SyftClient]:
-        hash_key = cls._get_key(email, password)
+    def get_client(cls, email: str, password: str, url: str) -> Optional[SyftClient]:
+        hash_key = cls._get_key(email, password, url)
         return cls.__credentials_store__.get(hash_key, None)

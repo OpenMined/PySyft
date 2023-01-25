@@ -17,6 +17,7 @@ from result import Ok
 from result import Result
 
 # relative
+from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import SyftObject
 from ....core.node.common.node_table.syft_object import transform
 from ...common.serde.serializable import serializable
@@ -55,7 +56,7 @@ class ServiceRole(Enum):
 class User(SyftObject):
     # version
     __canonical_name__ = "User"
-    __version__ = 1
+    __version__ = SYFT_OBJECT_VERSION_1
 
     # fields
     email: str
@@ -120,7 +121,7 @@ def check_pwd(password: str, hashed_password: str) -> bool:
 @serializable(recursive_serde=True)
 class UserUpdate(SyftObject):
     __canonical_name__ = "UserUpdate"
-    __version__ = 1
+    __version__ = SYFT_OBJECT_VERSION_1
 
     email: str
     name: str
@@ -147,7 +148,7 @@ def user_to_update_user() -> List[Callable]:
 @serializable(recursive_serde=True)
 class UserLoginCredentials(SyftObject):
     __canonical_name__ = "UserLoginCredentials"
-    __version__ = 1
+    __version__ = SYFT_OBJECT_VERSION_1
 
     email: str
     password: str
@@ -156,7 +157,7 @@ class UserLoginCredentials(SyftObject):
 @serializable(recursive_serde=True)
 class UserPrivateKey(SyftObject):
     __canonical_name__ = "UserPrivateKey"
-    __version__ = 1
+    __version__ = SYFT_OBJECT_VERSION_1
 
     email: str
     signing_key: SyftSigningKey

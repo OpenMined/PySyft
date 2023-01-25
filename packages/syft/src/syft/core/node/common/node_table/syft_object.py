@@ -21,6 +21,22 @@ from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serialize import _serialize as serialize
 from ...new.credentials import SyftVerifyKey
 
+SYFT_OBJECT_VERSION_1 = 1
+SYFT_OBJECT_VERSION_2 = 2
+
+supported_object_versions = [SYFT_OBJECT_VERSION_1, SYFT_OBJECT_VERSION_2]
+
+HIGHEST_SYFT_OBJECT_VERSION = max(supported_object_versions)
+LOWEST_SYFT_OBJECT_VERSION = min(supported_object_versions)
+
+
+class SyftBaseObject(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+
+    __canonical_name__: str  # the name which doesn't change even when there are multiple classes
+    __version__: int  # data is always versioned
+
 
 class SyftObjectRegistry:
     __object_version_registry__: Dict[str, Type["SyftObject"]] = {}
@@ -55,20 +71,21 @@ class SyftObjectRegistry:
     def get_transform(
         cls, type_from: Type["SyftObject"], type_to: Type["SyftObject"]
     ) -> Callable:
-        klass_from = type_from.__canonical_name__
-        version_from = type_from.__version__
-        klass_to = type_to.__canonical_name__
-        version_to = type_to.__version__
+        if issubclass(type_from, SyftBaseObject):
+            klass_from = type_from.__canonical_name__
+            version_from = type_from.__version__
+        else:
+            klass_from = type_from.__name__
+            version_from = None
+        if issubclass(type_to, SyftBaseObject):
+            klass_to = type_to.__canonical_name__
+            version_to = type_to.__version__
+        else:
+            klass_to = type_to.__name__
+            version_to = None
+
         mapping_string = f"{klass_from}_{version_from}_x_{klass_to}_{version_to}"
         return cls.__object_transform_registry__[mapping_string]
-
-
-class SyftBaseObject(BaseModel):
-    class Config:
-        arbitrary_types_allowed = True
-
-    __canonical_name__: str  # the name which doesn't change even when there are multiple classes
-    __version__: int  # data is always versioned
 
 
 class SyftObject(SyftBaseObject, SyftObjectRegistry):
@@ -273,16 +290,27 @@ def transform(
     version_from: Optional[int] = None,
     version_to: Optional[int] = None,
 ) -> Callable:
-    klass_from_str = (
-        klass_from if isinstance(klass_from, str) else klass_from.__canonical_name__
-    )
-    klass_to_str = (
-        klass_to if isinstance(klass_to, str) else klass_to.__canonical_name__
-    )
-    version_from = (
-        version_from if isinstance(version_from, int) else klass_from.__version__
-    )
-    version_to = version_to if isinstance(version_to, int) else klass_to.__version__
+    if isinstance(klass_from, str):
+        klass_from_str = klass_from
+
+    if issubclass(klass_from, SyftBaseObject):
+        klass_from_str = klass_from.__canonical_name__
+        version_from = klass_from.__version__
+
+    if not issubclass(klass_from, SyftBaseObject):
+        klass_from_str = klass_from.__name__
+        version_from = None
+
+    if isinstance(klass_to, str):
+        klass_to_str = klass_to
+
+    if issubclass(klass_to, SyftBaseObject):
+        klass_to_str = klass_to.__canonical_name__
+        version_to = klass_to.__version__
+
+    if not issubclass(klass_to, SyftBaseObject):
+        klass_to_str = klass_to.__name__
+        version_to = None
 
     def decorator(function: Callable):
         transforms = function()
@@ -290,7 +318,7 @@ def transform(
         def wrapper(self: klass_from) -> klass_to:
             output = dict(self)
             for transform in transforms:
-                output = transform(output)
+                output = transform(self, output)
             return klass_to(**output)
 
         SyftObjectRegistry.add_transform(

@@ -6,6 +6,7 @@ from typing import List
 # relative
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
+from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
 
 
@@ -13,7 +14,7 @@ from .syft_object import SyftObject
 class NoSQLBinObjDataset(SyftObject):
     # version
     __canonical_name__ = "BinObjDataset"
-    __version__ = 1
+    __version__ = SYFT_OBJECT_VERSION_1
 
     # fields
     name: str
@@ -34,7 +35,7 @@ class NoSQLBinObjDataset(SyftObject):
 class NoSQLDataset(SyftObject):
     # version
     __canonical_name__ = "Dataset"
-    __version__ = 1
+    __version__ = SYFT_OBJECT_VERSION_1
 
     # fields
     id: UID
