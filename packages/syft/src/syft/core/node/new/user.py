@@ -66,6 +66,8 @@ class User(SyftObject):
     signing_key: SyftSigningKey
     verify_key: SyftVerifyKey
     role: ServiceRole
+    institution: Optional[str]
+    website: Optional[str] = None
     created_at: Optional[str]
 
     # serde / storage rules
@@ -128,6 +130,9 @@ class UserUpdate(SyftObject):
     role: Optional[ServiceRole] = None  # make sure role cant be set without uid
     password: Optional[str] = None
     password_verify: Optional[str] = None
+    verify_key: Optional[SyftVerifyKey] = None
+    institution: Optional[str] = None
+    website: Optional[str] = None
 
 
 @transform(UserUpdate, User)
@@ -274,3 +279,8 @@ class UserCollection(AbstractService):
             return Err(f"UID: {uid} not in {type(self)} store.")
         syft_object = SyftObject.from_mongo(self.data[uid])
         return Ok(syft_object)
+
+    def signup(
+        self, context: UnauthedServiceContext, user_update: UserUpdate
+    ) -> Result[SyftObject, str]:
+        pass

@@ -35,6 +35,8 @@ def check_version(
     if client_syft_version.pre != node_syft_version.pre:
         if not silent:
             print(f"Warning: {msg}")
+            return False
+    return True
 
 
 @serializable(recursive_serde=True)

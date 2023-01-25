@@ -1,4 +1,5 @@
 # stdlib
+from enum import Enum
 import hashlib
 import json
 from typing import Any
@@ -48,6 +49,13 @@ def upgrade_tls(url: GridURL, response: Response) -> GridURL:
 API_PATH = "/api/v1/new"
 
 
+class Routes(Enum):
+    ROUTE_METADATA = f"{API_PATH}/metadata"
+    ROUTE_API = f"{API_PATH}/api"
+    ROUTE_LOGIN = f"{API_PATH}/login"
+    ROUTE_API_CALL = f"{API_PATH}/api_call"
+
+
 DEFAULT_PYGRID_PORT = 80
 DEFAULT_PYGRID_ADDRESS = f"http://127.0.0.1:{DEFAULT_PYGRID_PORT}"
 
@@ -57,12 +65,7 @@ class SyftClient:
     url: GridURL
     metadata: Optional[NodeMetadataJSON]
     credentials: Optional[SyftSigningKey]
-
-    ROUTE_METADATA = f"{API_PATH}/metadata"
-    ROUTE_API = f"{API_PATH}/api"
-    ROUTE_LOGIN = f"{API_PATH}/login"
-    ROUTE_API_CALL = f"{API_PATH}/api_call"
-
+    routes: Routes = Routes
     _session: Optional[Session]
 
     def __init__(
@@ -156,7 +159,7 @@ class SyftClient:
         return response.content
 
     def _get_node_metadata(self) -> NodeMetadataJSON:
-        response = self._make_get(self.ROUTE_METADATA)
+        response = self._make_get(self.routes.ROUTE_METADATA.value)
         metadata_json = json.loads(response)
         return NodeMetadataJSON(**metadata_json)
 
@@ -166,9 +169,9 @@ class SyftClient:
         self.metadata = metadata
 
     def _get_api(self) -> SyftAPI:
-        content = self._make_get(self.ROUTE_API)
+        content = self._make_get(self.routes.ROUTE_API.value)
         obj = _deserialize(content, from_bytes=True)
-        obj.api_url = self.url.with_path(self.ROUTE_API_CALL)
+        obj.api_url = self.url.with_path(self.routes.ROUTE_API_CALL.value)
         return cast(SyftAPI, obj)
 
     # public attributes
@@ -187,7 +190,7 @@ class SyftClient:
 
     def login(self, email: str, password: str) -> None:
         credentials = {"email": email, "password": password}
-        response = self._make_post(self.ROUTE_LOGIN, credentials)
+        response = self._make_post(self.routes.ROUTE_LOGIN.value, credentials)
         obj = _deserialize(response, from_bytes=True)
         self.credentials = obj.signing_key
         self._set_api()

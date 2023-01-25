@@ -237,7 +237,7 @@ class SyftAPI(SyftObject):
             endpoints[path] = endpoint
         return SyftAPI(node_uid=node_uid, endpoints=endpoints)
 
-    def make_call(self, api_call: SyftAPICall) -> None:
+    def make_call(self, api_call: SyftAPICall) -> Result:
         signed_call = api_call.sign(credentials=self.signing_key)
         msg_bytes: bytes = _serialize(obj=signed_call, to_bytes=True)
         response = requests.post(
