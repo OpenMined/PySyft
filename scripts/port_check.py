@@ -2,6 +2,7 @@
 # stdlib
 from multiprocessing import Process
 from multiprocessing import set_start_method
+import platform
 import sys
 import time
 
@@ -37,7 +38,18 @@ def check_uvicorn():
         print("Uvicorn process started ")
 
 
-set_start_method("fork", force=True)
+def os_name() -> str:
+    os_name = platform.system()
+    if os_name.lower() == "darwin":
+        return "macOS"
+    else:
+        return os_name
+
+
+if os_name() == "macOS":
+    # set start method to fork in case of MacOS
+    set_start_method("fork", force=True)
+
 process1 = Process(target=start_uvicorn)
 process2 = Process(target=check_uvicorn)
 process1.daemon = True
