@@ -62,7 +62,12 @@ class NumpyArrayObjectPointer(ActionObjectPointer):
                 other = other.to_pointer(self.node_uid)
                 # print("🔵 TODO: pointerize")
                 # raise Exception("We need to pointerize first")
+            print(f"{other.id=}")
+            print(f"{self.id=}")
+            # print(f"{_self.id=}")
+            
             action = self.make_method_action(op=op, args=[other])
+            print(f"{action=}")
             action_result = self.execute_action(action, sync=True)
             return action_result
 
@@ -149,8 +154,9 @@ class ActionService(AbstractService):
         self.store = store
 
     @service_method(path="action.peek", name="peek")
-    def peek(self) -> Any:
-        return Ok(self.store.data)
+    def peek(self, context: AuthedServiceContext) -> Any:
+        print(self.store.permissions)
+        # return Ok(self.store.permissions)
 
     @service_method(path="action.set", name="set")
     def set(

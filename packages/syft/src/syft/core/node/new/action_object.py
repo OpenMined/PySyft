@@ -100,6 +100,8 @@ class ActionObjectPointer(SyftObject, extra=pydantic.Extra.allow):
         kwargs: Optional[Dict[str, Union[UID, ActionObjectPointer]]] = None,
     ) -> Action:
         path = self.get_path()
+        print(f'{self.id=}')
+        print(f'{args=}')
         return self.make_action(
             path=path, op=op, remote_self=self.id, args=args, kwargs=kwargs
         )
