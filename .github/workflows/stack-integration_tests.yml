@@ -33,7 +33,7 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-      - name: "Stop background Oblv uvicorn process"
+      - name: "Stop Background Oblv uvicorn process"
         if: matrix.os == 'windows'
         continue-on-error: true
         shell: powershell
@@ -1038,7 +1038,7 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-      - name: "Stop background Oblv uvicorn process"
+      - name: "Stop Background Oblv uvicorn process"
         if: matrix.os == 'windows'
         continue-on-error: true
         shell: powershell
