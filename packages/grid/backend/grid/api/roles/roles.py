@@ -74,7 +74,7 @@ def create_role_route(
 
     # Build Syft Message
     msg = CreateRoleMessage(
-        address=node.address,
+        address=node.node_uid,
         name=name,
         can_make_data_requests=can_make_data_requests,
         can_triage_data_requests=can_triage_data_requests,
@@ -86,7 +86,7 @@ def create_role_route(
         can_upload_data=can_upload_data,
         can_upload_legal_document=can_upload_legal_document,
         can_edit_domain_settings=can_edit_domain_settings,
-        reply_to=node.address,
+        reply_to=node.node_uid,
     ).sign(signing_key=user_key)
 
     # Process syft message
@@ -114,7 +114,7 @@ def get_all_roles_route(
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
 
     # Build Syft Message
-    msg = GetRolesMessage(address=node.address, reply_to=node.address).sign(
+    msg = GetRolesMessage(address=node.node_uid, reply_to=node.node_uid).sign(
         signing_key=user_key
     )
 
@@ -125,7 +125,7 @@ def get_all_roles_route(
     if isinstance(reply, ExceptionMessage):
         return {"error": reply.exception_msg}
     else:
-        return [role.upcast() for role in reply.content]
+        return [role for role in reply.content]
 
 
 @router.get("/{role_id}", status_code=200, response_class=JSONResponse)
@@ -147,7 +147,7 @@ def get_specific_role_route(
 
     # Build Syft Message
     msg = GetRoleMessage(
-        address=node.address, role_id=role_id, reply_to=node.address
+        address=node.node_uid, role_id=role_id, reply_to=node.node_uid
     ).sign(signing_key=user_key)
 
     # Process syft message
@@ -157,7 +157,7 @@ def get_specific_role_route(
     if isinstance(reply, ExceptionMessage):
         return {"error": reply.exception_msg}
     else:
-        return reply.content.upcast()
+        return reply.content
 
 
 @router.patch("/{role_id}", status_code=200, response_class=JSONResponse)
@@ -197,7 +197,7 @@ def update_use_route(
 
     # Build Syft Message
     msg = UpdateRoleMessage(
-        address=node.address,
+        address=node.node_uid,
         role_id=role_id,
         name=name,
         can_make_data_requests=can_make_data_requests,
@@ -210,7 +210,7 @@ def update_use_route(
         can_upload_data=can_upload_data,
         can_upload_legal_document=can_upload_legal_document,
         can_edit_domain_settings=can_edit_domain_settings,
-        reply_to=node.address,
+        reply_to=node.node_uid,
     ).sign(signing_key=user_key)
 
     # Process syft message
@@ -241,7 +241,7 @@ def delete_user_role(
 
     # Build Syft Message
     msg = DeleteRoleMessage(
-        address=node.address, role_id=role_id, reply_to=node.address
+        address=node.node_uid, role_id=role_id, reply_to=node.node_uid
     ).sign(signing_key=user_key)
 
     # Process syft message

@@ -10,7 +10,6 @@ from nacl.signing import SigningKey
 
 # relative
 from ...core.common.uid import UID
-from ...core.io.address import Address
 from ...core.io.location import SpecificLocation
 from ...core.io.route import SoloRoute
 from ...core.node.common import AbstractNodeClient
@@ -31,7 +30,7 @@ class ProxyClient(DomainClient):
             return super().__repr__()
         else:
             return (
-                f"(This is a logged out ProxyClient() object for a domain called '{self.name}'."
+                f"(This is a logged out ProxyClient() object for a domain called {self.name!r}."
                 f" Please call .login(email, password) to get a full client you can use for stuff.)"
             )
 
@@ -41,7 +40,7 @@ class ProxyClient(DomainClient):
             # Build Syft Message
             msg = (
                 PingMessageWithReply(kwargs={"host_or_ip": "asdf"})
-                .to(address=self.address, reply_to=self.address)
+                .to(address=self.node_uid, reply_to=self.node_uid)
                 .sign(signing_key=self.signing_key)
             )
             self.send_immediate_msg_with_reply(msg, timeout=1)
@@ -52,7 +51,7 @@ class ProxyClient(DomainClient):
     @staticmethod
     def create(
         proxy_node_client: AbstractNodeClient,
-        remote_domain: Union[str, UID, Address],
+        remote_domain: Union[str, UID],
         domain_name: str,
     ) -> ProxyClient:
         domain_address = remote_domain
@@ -62,18 +61,7 @@ class ProxyClient(DomainClient):
         except Exception as e:
             error(f"Failed to convert remote_domain str to UID. {e}")
 
-        try:
-            if isinstance(domain_address, UID):
-                spec_location = SpecificLocation(domain_address)
-                domain_address = Address(name=domain_name, domain=spec_location)
-        except Exception as e:
-            error(f"Failed to convert remote_domain UID to Address. {e}")
-
-        if not isinstance(domain_address, Address):
-            raise Exception(
-                f"Failed to convert remote_domain {domain_address} to Address"
-            )
-
+        spec_location = SpecificLocation(domain_address)
         # the DomainRequestAPI is only on Network Clients so here we can re-use
         # the existing client route which will be pointing to the current Network
         base_url = proxy_node_client.routes[0].connection.base_url  # type: ignore
@@ -92,7 +80,7 @@ class ProxyClient(DomainClient):
             name=domain_name,
             routes=[route],
             signing_key=_user_key,
-            domain=domain_address.domain,  # type: ignore
+            node_uid=domain_address,  # type: ignore
         )
 
         return proxy_client

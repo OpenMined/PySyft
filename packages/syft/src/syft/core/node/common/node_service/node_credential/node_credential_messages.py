@@ -80,7 +80,7 @@ class InitiateExchangeCredentialsWithNodeMessage(
         credentials = node.get_credentials()
 
         # see ExchangeCredentialsWithNodeMessage below
-        signed_response = target_client.networking.exchange_credentials_with_node(
+        signed_response = target_client.networking.exchange_credentials_with_node(  # type: ignore
             credentials=credentials
         )
 

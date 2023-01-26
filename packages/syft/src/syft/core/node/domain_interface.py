@@ -3,17 +3,21 @@ from pydantic import BaseSettings
 
 # relative
 from .abstract.node_service_interface import NodeServiceInterface
-from .common.node_manager.association_request_manager import AssociationRequestManager
-from .common.node_manager.dataset_manager import DatasetManager
-from .common.node_manager.role_manager import RoleManager
-from .common.node_manager.setup_manager import SetupManager
-from .common.node_manager.user_manager import UserManager
+from .common.node_manager.association_request_manager import (
+    NoSQLAssociationRequestManager,
+)
+from .common.node_manager.dataset_manager import NoSQLDatasetManager
+from .common.node_manager.oblv_key_manager import NoSQLOblvKeyManager
+from .common.node_manager.role_manager import NewRoleManager
+from .common.node_manager.setup_manager import NoSQLSetupManager
+from .common.node_manager.user_manager import NoSQLUserManager
 
 
 class DomainInterface(NodeServiceInterface):
-    users: UserManager
-    roles: RoleManager
-    association_requests: AssociationRequestManager
-    datasets: DatasetManager
-    setup: SetupManager
+    users: NoSQLUserManager
+    roles: NewRoleManager
+    association_requests: NoSQLAssociationRequestManager
+    datasets: NoSQLDatasetManager
+    setup: NoSQLSetupManager
     settings: BaseSettings
+    oblv_keys: NoSQLOblvKeyManager

@@ -85,7 +85,7 @@ def test_overwrite_tensor(
         search_permissions={VERIFYALL: None},
     )
 
-    obj_msg = SaveObjectAction(obj=storable, address=client.address)
+    obj_msg = SaveObjectAction(obj=storable, address=client.node_uid)
 
     # ID collision exception
     with pytest.raises(Exception) as exc_info:
@@ -141,8 +141,8 @@ def test_deleting_pointer_without_permission(
     assert len(client.store) == 1
 
     obj_del_msg = ObjectDeleteMessage(
-        address=client.address,
-        reply_to=client.address,
+        address=client.node_uid,
+        reply_to=client.node_uid,
         kwargs={"id_at_location": ds_ptr.id_at_location.to_string()},
     ).sign(signing_key=client.signing_key)
 

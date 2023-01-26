@@ -2,12 +2,7 @@
 from typing import Any
 from typing import Optional
 
-# third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
-
 # relative
-from ...core.common.serde.serializable import serializable
-from ...proto.lib.python.bool_pb2 import Bool as Bool_PB
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
@@ -19,7 +14,6 @@ def dispatch_other(obj: Any) -> bool:
     return obj
 
 
-@serializable()
 class Bool(int, PyPrimitive):
     def __new__(cls, value: Any = None) -> "Bool":
         value = bool(value)
@@ -240,14 +234,3 @@ class Bool(int, PyPrimitive):
 
     def real(self) -> SyPrimitiveRet:  # type: ignore[override]
         return PrimitiveFactory.generate_primitive(value=self.value.real)
-
-    def _object2proto(self) -> Bool_PB:
-        return Bool_PB(data=self)
-
-    @staticmethod
-    def _proto2object(proto: Bool_PB) -> "Bool":
-        return Bool(value=proto.data)
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return Bool_PB

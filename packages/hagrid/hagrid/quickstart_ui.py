@@ -1,12 +1,14 @@
 # stdlib
 from dataclasses import dataclass
 import os
+from pathlib import Path
 import sys
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
 from urllib.parse import urlparse
+import zipfile
 
 # third party
 import click
@@ -112,6 +114,82 @@ def fetch_notebooks_for_url(
         )
         downloaded_files.append(file_path)
     return downloaded_files
+
+
+def quickstart_extract_notebook(
+    zip_file: str,
+    name: str,
+    directory: Path,
+    reset: bool = False,
+    overwrite_all: bool = False,
+) -> Tuple[str, bool, bool]:
+    directory.mkdir(exist_ok=True)
+    reset = overwrite_all
+
+    base_name = os.path.basename(name)
+    file_path = directory / base_name
+    file_name = file_path.name
+    file_exists = file_path.exists()
+
+    if file_exists and not reset:
+        response = click.prompt(
+            f"\nOverwrite {file_name}?",
+            prompt_suffix="(a/y/N)",
+            default="n",
+            show_default=False,
+        )
+        if response.lower() == "a":
+            reset = True
+            overwrite_all = True
+        elif response.lower() == "y":
+            reset = True
+        else:
+            print(f"Skipping {file_name}")
+            reset = False
+
+    extracted = False
+    if not file_exists or file_exists and reset:
+        print(f"Extracting notebook: {file_name}")
+        with zipfile.ZipFile(zip_file, "r") as zf:
+            zip_info = zf.getinfo(name)
+            zip_info.filename = base_name
+            zf.extract(zip_info, directory)
+        extracted = True
+    return str(file_path.absolute()), extracted, overwrite_all
+
+
+def fetch_notebooks_from_zipfile(
+    path: str, directory: str, reset: bool = False
+) -> List[str]:
+    dir_path = Path(directory)
+
+    with zipfile.ZipFile(path, "r") as zf:
+        notebooks = [f for f in zf.namelist() if f.endswith(".ipynb")]
+
+    notebook_files = [dir_path / os.path.basename(nb) for nb in notebooks]
+    existing_files = [nb for nb in notebook_files if nb.exists()]
+
+    existing_count = len(existing_files)
+
+    if existing_count > 0:
+        plural = "s" if existing_count > 1 else ""
+        print(f"You have {existing_count} existing notebook{plural}")
+        for nb in existing_files:
+            print(nb)
+
+    extracted_files = []
+    overwrite_all = False
+    for notebook in tqdm(notebooks):
+        file_path, _, overwrite_all = quickstart_extract_notebook(
+            zip_file=path,
+            name=notebook,
+            directory=dir_path,
+            reset=reset,
+            overwrite_all=overwrite_all,
+        )
+        extracted_files.append(file_path)
+
+    return extracted_files
 
 
 @dataclass
