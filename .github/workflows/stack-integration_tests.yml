@@ -1031,7 +1031,7 @@ jobs:
     strategy:
       max-parallel: 99
       matrix:
-        os: [linux, windows]
+        os: [ubuntu-latest, windows]
         python-version: ["3.10"]
       fail-fast: false
 
@@ -1045,10 +1045,6 @@ jobs:
         run: |
           Stop-Process -ID (Get-NetTCPConnection -LocalPort 8010).OwningProcess -Force
 
-      - name: set permissions on work folder for self-runners
-        if: matrix.os == 'linux'
-        run: |
-          sudo chown -R $USER:$USER ~/actions-runner/_work/
 
       - name: "clean .git/config"
         if: matrix.os == 'windows'
