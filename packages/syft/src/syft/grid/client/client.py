@@ -22,6 +22,7 @@ from ...core.io.route import SoloRoute
 from ...core.node.common.client import Client
 from ...core.node.domain_client import DomainClient
 from ...core.node.network_client import NetworkClient
+from ...core.node.new.client import SyftClient
 from ...util import bcolors
 from ...util import verify_tls
 from .grid_connection import GridHTTPConnection
@@ -85,7 +86,8 @@ def login(
     verbose: Optional[bool] = True,
     timeout: Optional[float] = None,
     retry: Optional[int] = None,
-) -> Client:
+    via_new_client: Optional[bool] = None,
+) -> Union[Client, SyftClient]:
 
     retry = 5 if retry is None else retry  # Default to 5 retries
     timeout = 30 if timeout is None else timeout  # Default to 10 seconds

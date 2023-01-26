@@ -235,7 +235,8 @@ class Domain(Node):
         _ = self.recv_immediate_msg_with_reply(msg=msg).message
 
         # process oblv message
-        _ = self.recv_immediate_msg_with_reply(msg=oblv_msg).message
+        res = self.recv_immediate_msg_with_reply(msg=oblv_msg).message
+        debug(res)
 
         return self
 

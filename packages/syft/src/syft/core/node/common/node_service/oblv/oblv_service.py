@@ -20,7 +20,6 @@ import requests
 
 # relative
 from ......logger import debug
-from ......oblv.constants import DOMAIN_CONNECTION_PORT
 from ......oblv.constants import LOCAL_MODE
 from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
@@ -54,6 +53,8 @@ USER_INPUT_MESSAGES = Union[
 ]
 
 USER_OUTPUT_MESSAGES = Union[SuccessResponseMessage, GetPublicKeyResponse]
+
+DOMAIN_CONNECTION_PORT = int(os.getenv("DOMAIN_CONNECTION_PORT", 3030))
 
 
 def connect_to_enclave(
