@@ -2,6 +2,8 @@ services:
   proxy:
     ports:
       - "8080"
+    extra_hosts:
+      - host.docker.internal:host-gateway
 
   tailscale:
     profiles:
