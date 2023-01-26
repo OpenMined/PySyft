@@ -1035,7 +1035,7 @@ jobs:
         python-version: ["3.10"]
       fail-fast: false
 
-    runs-on: ${{matrix.os}}
+    runs-on: [self-hosted]
 
     steps:
       - name: "Stop Background Oblv uvicorn process"
