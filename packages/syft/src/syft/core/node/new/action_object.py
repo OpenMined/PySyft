@@ -15,6 +15,7 @@ from typing import Union
 import pydantic
 
 # relative
+from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import SyftObject
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
@@ -48,7 +49,7 @@ class Action(SyftObject):
 
 class ActionObjectPointer(SyftObject, extra=pydantic.Extra.allow):
     __canonical_name__ = "ActionObjectPointer"
-    __version__ = 1
+    __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_state__ = ["id", "node_uid", "parent_id"]
 
@@ -170,7 +171,7 @@ def get_property(obj, method) -> Any:
 class ActionObject(SyftObject):
     __attr_searchable__: List[str] = []
     __canonical_name__ = "ActionObject"
-    __version__ = 1
+    __version__ = SYFT_OBJECT_VERSION_1
 
     syft_parent_id: Optional[UID]
     syft_pointer_type: ClassVar[Type[ActionObjectPointer]]

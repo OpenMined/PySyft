@@ -8,6 +8,7 @@ import numpy as np
 from syft.core.common.uid import UID
 from syft.core.node.new.action_object import ActionObject
 from syft.core.node.new.action_store import ActionStore
+from syft.core.node.new.context import AuthedServiceContext
 from syft.core.node.new.credentials import SIGNING_KEY_FOR
 from syft.core.node.new.credentials import SyftSigningKey
 from syft.core.node.new.credentials import SyftVerifyKey
@@ -123,7 +124,7 @@ def test_user_transform() -> None:
 def test_user_collection() -> None:
     test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
     worker = Worker()
-    user_collection = UserCollection(worker)
+    user_collection = UserCollection()
 
     # create a user
     new_user = UserUpdate(
@@ -133,10 +134,11 @@ def test_user_collection() -> None:
         password_verify="letmein",
     )
 
+    # create a context
+    context = AuthedServiceContext(node=worker, credentials=test_signing_key.verify_key)
+
     # call the create function
-    user_view_result = user_collection.create(
-        credentials=test_signing_key, user_update=new_user
-    )
+    user_view_result = user_collection.create(context=context, user_update=new_user)
 
     # get the result
     assert user_view_result.is_ok()
@@ -146,9 +148,7 @@ def test_user_collection() -> None:
     assert user_view.id is not None
 
     # we can query the same user again
-    user_view_2_result = user_collection.view(
-        uid=user_view.id, credentials=test_signing_key
-    )
+    user_view_2_result = user_collection.view(context=context, uid=user_view.id)
 
     # the object matches
     assert user_view_2_result.is_ok()
