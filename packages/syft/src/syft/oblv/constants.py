@@ -6,4 +6,3 @@ REGION = "us-east-1"
 VCS = "github"
 VISIBILITY = "private"
 LOCAL_MODE = True
-DOMAIN_CONNECTION_PORT = "3030"

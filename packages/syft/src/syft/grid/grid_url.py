@@ -150,3 +150,7 @@ class GridURL:
 
     def copy(self) -> GridURL:
         return GridURL.from_url(self.url)
+
+    def set_port(self, port: int) -> GridURL:
+        self.port = port
+        return self

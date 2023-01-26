@@ -23,8 +23,6 @@ from ...core.node.common.client import Client
 from ...core.node.domain_client import DomainClient
 from ...core.node.network_client import NetworkClient
 from ...core.node.new.client import SyftClient
-from ...core.node.new.client import SyftClientSessionCache
-from ...core.node.new.user import UserLoginCredentials
 from ...util import bcolors
 from ...util import verify_tls
 from .grid_connection import GridHTTPConnection
@@ -79,29 +77,6 @@ def connect(
     return node
 
 
-def new_connect(
-    email: str,
-    password: str,
-    url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
-) -> SyftClient:
-
-    login_credentials = UserLoginCredentials(email=email, password=password)
-
-    _client = SyftClientSessionCache.get_user_session(
-        login_credentials.email, login_credentials.password
-    )
-
-    if _client is None:
-        _client = SyftClient.from_url(url)
-        _client.login(
-            email=login_credentials.email, password=login_credentials.password
-        )
-
-    print(f"Logged into {_client.node_name} as <{login_credentials.email}>")
-
-    return _client
-
-
 def login(
     url: Optional[Union[str, GridURL]] = None,
     port: Optional[int] = None,
@@ -151,9 +126,6 @@ def login(
             grid_url.host_or_ip = "localhost"
     else:
         grid_url = GridURL(host_or_ip=url, port=port)
-
-    if via_new_client:
-        return new_connect(email=email, password=password, url=grid_url.base_url)
 
     grid_url = grid_url.with_path("/api/v1")
 

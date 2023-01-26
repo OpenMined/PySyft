@@ -76,7 +76,7 @@ def test_to_string() -> None:
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
 
-    assert str(uid) == "<UID: fb1bb0675bb74c49becee700ab0a1514>"
+    assert str(uid) == "fb1bb0675bb74c49becee700ab0a1514"
     assert uid.__repr__() == "<UID: fb1bb0675bb74c49becee700ab0a1514>"
 
 
@@ -87,7 +87,7 @@ def test_from_string() -> None:
     uid = UID.from_string(value=uid_str)
     uid_comp = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
 
-    assert str(uid) == "<UID: fb1bb0675bb74c49becee700ab0a1514>"
+    assert str(uid) == "fb1bb0675bb74c49becee700ab0a1514"
     assert uid.__repr__() == "<UID: fb1bb0675bb74c49becee700ab0a1514>"
     assert uid == uid_comp
 

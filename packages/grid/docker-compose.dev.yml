@@ -9,6 +9,8 @@ services:
   proxy:
     ports:
       - "8080"
+    extra_hosts:
+      - host.docker.internal:host-gateway
     command:
       - "--api" # admin panel
       - "--api.insecure=true" # admin panel no password

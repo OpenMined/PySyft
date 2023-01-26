@@ -4,6 +4,7 @@ from typing import Optional
 
 # relative
 from ....common.serde.serializable import serializable
+from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
 
 
@@ -11,7 +12,7 @@ from .syft_object import SyftObject
 class NoSQLObjectMetadata(SyftObject):
     # version
     __canonical_name__ = "ObjectMetadata"
-    __version__ = 1
+    __version__ = SYFT_OBJECT_VERSION_1
 
     # fields
     obj: str
