@@ -6,6 +6,7 @@ from typing import Optional
 
 # relative
 from ....common.serde.serializable import serializable
+from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
 
 
@@ -13,7 +14,7 @@ from .syft_object import SyftObject
 class NoSQLSyftUser(SyftObject):
     # version
     __canonical_name__ = "SyftUser"
-    __version__ = 1
+    __version__ = SYFT_OBJECT_VERSION_1
 
     # fields
     email: str
@@ -56,7 +57,7 @@ class NoSQLSyftUser(SyftObject):
 class NoSQLUserApplication(SyftObject):
     # version
     __canonical_name__ = "UserApplication"
-    __version__ = 1
+    __version__ = SYFT_OBJECT_VERSION_1
 
     # fields
     id_int: int

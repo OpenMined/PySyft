@@ -115,8 +115,8 @@ class Settings(BaseSettings):
     # Oblv
     OBLV_KEY_NAME: str = str(os.getenv("OBLV_KEY_NAME", "oblv_key"))
     OBLV_KEY_PATH: str = str(os.getenv("OBLV_KEY_NAME", "/app/content"))
-    INSTALL_OBLV_PROXY: bool = (
-        True if os.getenv("INSTALL_OBLV_PROXY", "false").lower() == "true" else False
+    INSTALL_OBLV_CLI: bool = (
+        True if os.getenv("INSTALL_OBLV_CLI", "false").lower() == "true" else False
     )
 
     class Config:

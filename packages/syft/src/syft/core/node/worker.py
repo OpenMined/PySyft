@@ -16,6 +16,9 @@ from result import Err
 from result import Result
 
 # relative
+from ... import __version__
+from ...core.node.common.node_table.syft_object import HIGHEST_SYFT_OBJECT_VERSION
+from ...core.node.common.node_table.syft_object import LOWEST_SYFT_OBJECT_VERSION
 from ...core.node.common.node_table.syft_object import SyftObject
 from ..common.serde.serializable import serializable
 from ..common.uid import UID
@@ -27,6 +30,7 @@ from .new.api import SyftAPICall
 from .new.context import AuthedServiceContext
 from .new.credentials import SyftSigningKey
 from .new.node import NewNode
+from .new.node_metadata import NodeMetadata
 from .new.service import AbstractService
 from .new.service import ServiceConfigRegistry
 from .new.user import UserCollection
@@ -119,6 +123,16 @@ class Worker(NewNode):
         service_obj = self.service_path_map[service_name]
 
         return getattr(service_obj, method_name)
+
+    def metadata(self) -> NodeMetadata:
+        return NodeMetadata(
+            name=self.name,
+            id=self.id,
+            verify_key=self.signing_key.verify_key,
+            highest_object_version=HIGHEST_SYFT_OBJECT_VERSION,
+            lowest_object_version=LOWEST_SYFT_OBJECT_VERSION,
+            syft_version=__version__,
+        )
 
     @property
     def icon(self) -> str:
