@@ -1045,6 +1045,11 @@ jobs:
         run: |
           Stop-Process -ID (Get-NetTCPConnection -LocalPort 8010).OwningProcess -Force
 
+      - name: set permissions on work folder for self-runners
+        if: matrix.os == 'linux'
+        run: |
+          sudo chown -R $USER:$USER ~/actions-runner/_work/
+
       - name: "clean .git/config"
         if: matrix.os == 'windows'
         continue-on-error: true
