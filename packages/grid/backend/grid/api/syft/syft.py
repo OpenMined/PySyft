@@ -1,6 +1,7 @@
 # stdlib
 import json
 from typing import Any
+from typing import Dict
 
 # third party
 from fastapi import APIRouter
@@ -19,6 +20,7 @@ from syft.core.common.message import SignedMessage
 from syft.core.common.serde.serializable import serializable
 from syft.core.node.enums import RequestAPIFields
 from syft.telemetry import TRACE_MODE
+from syft.core.common.serde.recursive import TYPE_BANK
 
 # grid absolute
 from grid.api.dependencies.current_user import get_current_user
@@ -27,6 +29,9 @@ from grid.core.celery_app import celery_app
 from grid.core.config import settings
 from grid.core.node import node
 from grid.core.node import worker
+from syft.core.node.common.node_service.user_manager.new_user_messages import (
+    CreateUserMessage,
+)
 
 if TRACE_MODE:
     # third party
@@ -39,13 +44,15 @@ router = APIRouter()
 @serializable(recursive_serde=True)
 class SimpleObject:
     first: int
-    second: float
+    second: bool
     third: str
+    tst: Dict[str, str]
 
-    def __init__(self, first: int, second: float, third: str) -> None:
+    def __init__(self, first: int, second: bool, third: str, tst: Dict[str,str]) -> None:
         self.first = first
         self.second = second
         self.third = third
+        self.tst = tst
 
 
 async def get_body(request: Request) -> bytes:
@@ -55,6 +62,16 @@ async def get_body(request: Request) -> bytes:
 @router.get("/version")
 def syft_version() -> Response:
     return JSONResponse(content={"version": __version__})
+
+
+@router.get("/serde")
+def syft_serde() -> Response:
+    bank = {}
+    for key,items in list(TYPE_BANK.items()):
+        if key == 'builtins.bytes':
+            print("bytes items: ", items)
+        bank[key]  = [item if not callable(item) else None for item in items[:-1]]
+    return JSONResponse(content={"bank": bank})
 
 
 @router.get("/metadata", response_model=str)
@@ -151,7 +168,8 @@ def syft_stream(data: bytes = Depends(get_body)) -> Any:
 
 @router.get("/js", response_model=str)
 def js_route(request: Request, data: bytes = Depends(get_body)) -> Any:
-    simple = SimpleObject(first=1, second=1.2, third="test")
+    simple = CreateUserMessage(address=node.id, reply_to=node.id, kwargs={'email': 'info@openmined.org', 'password': 'pwd123', 'name': 'Jana Doe', 'role': 'Data Scientist', 'institution': "DPUK"})
+    #simple = SimpleObject(first=1, second=True, third="hello world", tst={"key_word": 15})
     return Response(
         serialize(simple, to_bytes=True),
         media_type="application/octet-stream",
