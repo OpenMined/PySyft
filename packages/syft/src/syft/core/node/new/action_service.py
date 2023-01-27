@@ -10,6 +10,7 @@ from result import Err
 from result import Ok
 from result import Result
 from typing_extensions import Self
+from numpy.typing import ArrayLike
 
 # relative
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
@@ -40,14 +41,24 @@ class NumpyArrayObjectPointer(ActionObjectPointer):
     def __post_init__(self) -> None:
         self.setup_methods()
 
+    # def __add__(self, other):
+    #     pass
+
     def setup_methods(self) -> None:
-        infix_operations = ["__add__", "__sub__", "__eq__"]
+        infix_operations = ["__add__"]#, "__sub__", "__eq__"]
         for op in infix_operations:
+            new_op = self.__make_infix_op__(op)
+            # print(getattr(self, op))
             setattr(
-                type(self),
+                self,
                 op,
-                types.MethodType(self.__make_infix_op__(op), type(self)),
+                types.MethodType(new_op, self),
             )
+            # new_found_op = getattr(self, op)
+            # print(new_found_op)
+            # print(new_found_op.__name__)
+            
+            
 
     def __make_infix_op__(self, op: str) -> Callable:
         def infix_op(_self, other: Any) -> Self:
@@ -158,6 +169,19 @@ class ActionService(AbstractService):
     def peek(self, context: AuthedServiceContext) -> Any:
         print(self.store.permissions)
         # return Ok(self.store.permissions)
+
+    @service_method(path="action.np_array", name="np_array")
+    def np_array(self, context: AuthedServiceContext, data: Any) -> Any:
+        print(context.node.service_path_map)
+        if not isinstance(data, np.ndarray):
+            data = np.array(data)
+        np_obj = NumpyArrayObject(
+            syft_action_data=data,
+            dtype=data.dtype,
+            shape=data.shape
+        )
+        np_pointer = self.set(context, np_obj)
+        return np_pointer
 
     @service_method(path="action.set", name="set")
     def set(
