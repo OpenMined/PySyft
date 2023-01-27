@@ -178,6 +178,12 @@ jobs:
           docker rm `docker ps -aq` --force || true
           docker volume prune -f || true
 
+      # Get Job name and url
+      - name: Reboot node
+        if: failure()
+        run: |
+          shutdown /r /t 1
+
       #Get Pull request url
       - name: Get pull request url
         id: pull_request
@@ -1025,7 +1031,6 @@ jobs:
   #         mention_users_when: "failure,warnings"
   #       env:
   #         SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK_WEBHOOK_URL }}
-
 
   stack-integration-tests-oblv:
     strategy:
