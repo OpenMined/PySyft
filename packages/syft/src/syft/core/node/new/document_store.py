@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 # stdlib
+from enum import Enum
 from typing import Any
 from typing import Dict
+from typing import Iterable
 from typing import List
 from typing import Tuple
 from typing import Union
@@ -21,11 +23,11 @@ from .base import SyftBaseModel
 
 
 class PrimaryKey(BaseModel):
-    keys: Union[str, Tuple[str]]
-    types: Union[type, Tuple[type]]
+    keys: Union[str, Tuple[str, ...]]
+    types: Union[type, Tuple[type, ...]]
 
     @property
-    def pairs(self) -> Tuple[Tuple[str], Tuple[type]]:
+    def pairs(self) -> Iterable[str, type]:
         # make sure we always return Tuple's even if theres a single value
         _keys = self.keys if isinstance(self.keys, (tuple, list)) else (self.keys,)
         _types = self.types if isinstance(self.types, (tuple, list)) else (self.types,)
@@ -46,7 +48,20 @@ class PrimaryKey(BaseModel):
 
 class PrimaryKeyObject(SyftBaseModel):
     primary_key: PrimaryKey
-    values: Tuple[Any]
+    values: Tuple[Any, ...]
+
+    @property
+    def pairs(self) -> Iterable[str, type]:
+        # make sure we always return Tuple's even if theres a single value
+        _keys = (
+            self.primary_key.keys
+            if isinstance(self.primary_key.keys, (tuple, list))
+            else (self.primary_key.keys,)
+        )
+        _values = (
+            self.values if isinstance(self.values, (tuple, list)) else (self.values,)
+        )
+        return zip(_keys, _values)
 
     @staticmethod
     def from_object(primary_key: PrimaryKey, obj: SyftObject) -> List[Any]:
@@ -71,17 +86,43 @@ class PrimaryKeyObject(SyftBaseModel):
             values.append(pk_value)
         return PrimaryKeyObject(primary_key=primary_key, values=values)
 
-    def __str__(self) -> str:
-        return "_".join(str(self.values))
-
 
 UIDPrimaryKey = PrimaryKey(keys="id", types=UID)
 
 
+class CollectionSettings(SyftBaseModel):
+    name: str
+    primary_key: PrimaryKey
+
+
+class PrimaryKeyCheck(Enum):
+    EMPTY = 0
+    MATCHES = 1
+    ERROR = 2
+
+
 class BaseCollection:
-    def __init__(self) -> None:
+    def __init__(self, settings: CollectionSettings) -> None:
         self.data = {}
-        # self.permissions = {}
+        self.primary_key_cols = {}
+        self.primary_key_cols["id"] = {}
+        for pk_key, _ in settings.primary_key.pairs:
+            self.primary_key_cols[pk_key] = {}
+
+    def validate_primary_keys(self, uid: UID, pk: PrimaryKeyObject) -> PrimaryKeyCheck:
+        matches = []
+        pairs = pk.pairs
+        for (pk_key, pk_value) in pairs:
+            pk_col = self.primary_key_cols[pk_key]
+            if pk_value in pk_col and pk_col[pk_value] == uid:
+                matches.append(pk_key)
+
+        if len(matches) == 0:
+            return PrimaryKeyCheck.EMPTY
+        elif len(matches) == len(pairs):
+            return PrimaryKeyCheck.MATCHES
+        print("ERROR: matches", matches, pairs)
+        return PrimaryKeyCheck.ERROR
 
     def set(
         self,
@@ -89,17 +130,27 @@ class BaseCollection:
         obj: SyftObject,
     ) -> Result[SyftObject, str]:
         try:
-            self.data[str(pk)] = obj
+            uid = obj.id
+            pk_check = self.validate_primary_keys(uid=uid, pk=pk)
+            if pk_check == PrimaryKeyCheck.EMPTY:
+                # write set code
+                pass
+            if pk_check != PrimaryKeyCheck.ERROR:
+                self.data[uid] = obj
         except Exception:
             return Err(f"Failed to write primary_key {pk}")
         return Ok(obj)
 
     def get(self, pk: PrimaryKeyObject) -> Result[SyftObject, str]:
         try:
-            obj = self.data[str(pk)]
+            # todo: add id to pk subtype?
+            # pk_check = self.validate_primary_keys(uid=uid, pk=pk)
+            # if pk_check == PrimaryKeyCheck.MATCHES:
+            #     obj = self.data[uid]
+            return None
         except Exception:
             return Err(f"Failed to read primary_key {pk}")
-        return Ok(obj)
+        # return Ok(obj)
 
     def create(self, obj: SyftObject) -> Result[SyftObject, str]:
         pass
@@ -111,11 +162,6 @@ class BaseCollection:
         pass
 
 
-class CollectionSettings(SyftBaseModel):
-    name: str
-    primary_key: PrimaryKey
-
-
 class DocumentStore:
     collections: Dict[str, BaseCollection]
     collection_type: BaseCollection
@@ -125,23 +171,21 @@ class DocumentStore:
 
     def collection(self, settings: CollectionSettings) -> BaseCollection:
         if settings.name not in self.collections:
-            self.collections[settings.name] = self.collection_type()
+            self.collections[settings.name] = self.collection_type(settings=settings)
         return self.collections[settings.name]
 
 
 class BaseStash:
     object_type: SyftObject
-    settings: CollectionSettings = CollectionSettings(
-        name="Base", primary_key=UIDPrimaryKey
-    )
+    settings: CollectionSettings
     collection: BaseCollection
 
     def primary_key(self, obj: SyftObject) -> PrimaryKeyObject:
-        return self.settings.primary_key.with_obj(obj)
+        return type(self).settings.primary_key.with_obj(obj)
 
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
-        self.collection = store.collection(self.settings)
+        self.collection = store.collection(type(self).settings)
 
     def set(self, obj: BaseStash.object_type) -> Result[BaseStash.object_type, str]:
         result = self.collection.set(pk=self.primary_key(obj), obj=obj)

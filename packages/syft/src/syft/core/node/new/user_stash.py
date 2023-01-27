@@ -6,14 +6,18 @@ from ...common.uid import UID
 from .document_store import BaseStash
 from .document_store import CollectionSettings
 from .document_store import DocumentStore
-from .document_store import UIDPrimaryKey
+from .document_store import PrimaryKey
 from .user import User
+
+# UserPrimaryKey = PrimaryKey(keys=("id", "email"), types=(UID, EmailStr))
+# EmailStr seems to be lost every time the value is set even with a validator
+UserPrimaryKey = PrimaryKey(keys=("id", "email"), types=(UID, str))
 
 
 class UserStash(BaseStash):
     object_type = User
     settings: CollectionSettings = CollectionSettings(
-        name=User.__canonical_name__, primary_key=UIDPrimaryKey
+        name=User.__canonical_name__, primary_key=UserPrimaryKey
     )
 
     def __init__(self, store: DocumentStore) -> None:

@@ -11,12 +11,16 @@ from typing import Tuple
 from bcrypt import checkpw
 from bcrypt import gensalt
 from bcrypt import hashpw
+import pydantic
+from pydantic.networks import EmailStr
 
 # relative
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import SyftObject
+from ....core.node.common.node_table.syft_object import SyftUpdateObject
 from ....core.node.common.node_table.syft_object import transform
 from ...common.serde.serializable import serializable
+from ...common.uid import UID
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .transforms import drop
@@ -48,8 +52,15 @@ class User(SyftObject):
     __canonical_name__ = "User"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    @pydantic.validator("email", pre=True, always=True)
+    def make_email(cls, v: EmailStr) -> EmailStr:
+        print("before User are we getting called here?", type(v), v)
+        new_value = EmailStr(v)
+        print("after User", type(new_value))
+        return new_value
+
     # fields
-    email: str
+    email: EmailStr
     name: str
     hashed_password: str
     salt: str
@@ -94,6 +105,12 @@ def generate_key(_self: Any, output: Dict) -> Dict:
     return output
 
 
+def generate_id(_self: Any, output: Dict) -> Dict:
+    if not isinstance(output["id"], UID):
+        output["id"] = UID()
+    return output
+
+
 def __salt_and_hash_password(password: str, rounds: int) -> Tuple[str, str]:
     bytes_pass = password.encode("UTF-8")
     salt = gensalt(rounds=rounds)
@@ -110,12 +127,27 @@ def check_pwd(password: str, hashed_password: str) -> bool:
     )
 
 
+def validate_email(_self: Any, output: Dict) -> Dict:
+    output["email"] = EmailStr(output["email"])
+    EmailStr.validate(output["email"])
+    return output
+
+
 @serializable(recursive_serde=True)
-class UserUpdate(SyftObject):
+class UserUpdate(SyftUpdateObject):
     __canonical_name__ = "UserUpdate"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    email: str
+    id: Optional[UID] = None
+
+    @pydantic.validator("email", pre=True, always=True)
+    def make_email(cls, v: EmailStr) -> EmailStr:
+        print("before UserUpdate are we getting called here?", type(v), v)
+        new_value = EmailStr(v)
+        print("after UserUpdate", type(new_value))
+        return new_value
+
+    email: EmailStr
     name: str
     role: Optional[ServiceRole] = None  # make sure role cant be set without uid
     password: Optional[str] = None
@@ -128,6 +160,8 @@ class UserUpdate(SyftObject):
 @transform(UserUpdate, User)
 def user_update_to_user() -> List[Callable]:
     return [
+        generate_id,
+        validate_email,
         hash_password,
         generate_key,
         default_role(ServiceRole.GUEST),

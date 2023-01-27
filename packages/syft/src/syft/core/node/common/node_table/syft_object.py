@@ -10,7 +10,6 @@ from typing import Type
 from typing import Union
 
 # third party
-import pydantic
 from pydantic import BaseModel
 from pydantic.fields import Undefined
 from typeguard import check_type
@@ -93,12 +92,13 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         arbitrary_types_allowed = True
 
     # all objects have a UID
-    id: Optional[UID] = None  # consistent and persistent uuid across systems
+    id: Optional[UID] = UID()
 
-    # move this to transforms
-    @pydantic.validator("id", pre=True, always=True)
-    def make_id(cls, v: Optional[UID]) -> UID:
-        return v if isinstance(v, UID) else UID()
+    # # move this to transforms
+    # @pydantic.validator("id", pre=True, always=True)
+    # def make_id(cls, v: Optional[UID]) -> UID:
+    #     print("what is the type of UID", cls, cls.schema())
+    #     return v if isinstance(v, UID) else UID()
 
     __attr_state__: List[str]  # persistent recursive serde keys
     __attr_searchable__: List[str]  # keys which can be searched in the ORM
@@ -210,6 +210,10 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         super().__init__(**kwargs)
         self._syft_set_validate_private_attrs_(**kwargs)
         self.__post_init__()
+
+
+class SyftUpdateObject(SyftObject):
+    id: Optional[UID] = None  # no id means insert
 
 
 def transform_method(
