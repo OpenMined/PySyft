@@ -111,6 +111,14 @@ jobs:
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 
+      - name: Mandatory Container cleanup before
+        if: steps.changes.outputs.stack == 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
+          docker rm `docker ps -aq` --force || true
+          docker system prune -a -f --volumes || true
+
       - name: Setup linux/arm64 Docker
         run: |
           docker rm $(docker ps -aq) --force || true
@@ -151,10 +159,10 @@ jobs:
           name: ${{ matrix.os }}-${{ steps.job_name.outputs.job_name }}-${{ matrix.pytest-modules }}-logs-${{ steps.date.outputs.date }}
           path: ./logs/${{ steps.job_name.outputs.job_name}}/
 
-      - name: Mandatory Container cleanup
+      - name: Mandatory Container cleanup after
         if: steps.changes.outputs.stack == 'true'
         continue-on-error: true
         shell: bash
         run: |
           docker rm `docker ps -aq` --force || true
-          docker volume prune -f || true
+          docker system prune -a -f --volumes || true
