@@ -152,7 +152,7 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
                 t = param.annotation
             msg = None
             try:
-                if not issubclass(t, inspect._empty):
+                if t is not inspect.Parameter.empty:
                     check_type(key, value, t)  # raises Exception
             except TypeError:
                 _type_str = getattr(t, "__name__", str(t))
@@ -173,7 +173,7 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
             t = param.annotation
             msg = None
             try:
-                if not issubclass(t, inspect._empty):
+                if t is not inspect.Parameter.empty:
                     check_type(param_key, arg, t)  # raises Exception
             except TypeError:
                 _type_str = getattr(t, "__name__", str(t))
