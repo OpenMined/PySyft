@@ -21,7 +21,7 @@ from nacl.signing import SigningKey
 # we raise an Exception if the values passed in to the ENV variables dont match or
 # the values from anywhere are invalid
 
-CREDENTIALS_PATH = "/credentials/credentials.json"
+CREDENTIALS_PATH = os.getenv("CREDENTIALS_PATH", "/credentials/credentials.json")
 NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
 NODE_UID = "NODE_UID"
 
@@ -49,6 +49,9 @@ def save_credential(key: str, value: str) -> str:
         raise Exception(f"{key} already set in credentials file. Can't overwrite.")
     credentials[key] = value
     try:
+        dirname = os.path.dirname(CREDENTIALS_PATH)
+        if not os.path.exists(dirname):
+            os.mkdir(dirname)
         with open(CREDENTIALS_PATH, "w") as f:
             f.write(f"{json.dumps(credentials)}")
     except Exception as e:
@@ -145,11 +148,16 @@ def get_private_key() -> str:
 def get_node_uid() -> str:
     return get_credential(NODE_UID, validate_uid, generate_node_uid)
 
+def delete_credential_file():
+    if os.path.exists(CREDENTIALS_PATH):
+        os.unlink(CREDENTIALS_PATH)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--private_key", action="store_true", help="Get Private Key")
     parser.add_argument("--uid", action="store_true", help="Get UID")
+    parser.add_argument("--file", action="store_true", help="Generate credentials as file")
     parser.add_argument(
         "--debug", action="store_true", help="Show ENV and file credentials"
     )
@@ -160,9 +168,14 @@ if __name__ == "__main__":
             print(get_private_key())
         elif args.uid:
             print(get_node_uid())
+    elif args.file:
+        delete_credential_file()
+        get_private_key()
+        get_node_uid()
+        print(f"Generated credentials file at '{CREDENTIALS_PATH}'")
     elif args.debug:
         print("Credentials File", get_credentials_file())
         print(NODE_PRIVATE_KEY, "=", get_private_key_env())
         print(NODE_UID, "=", get_node_uid_env())
     else:
-        print("Use --private_key or --uid")
+        parser.print_help()
