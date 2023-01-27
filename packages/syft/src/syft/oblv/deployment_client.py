@@ -23,7 +23,6 @@ import requests
 from ..core.node.common.exceptions import OblvEnclaveError
 from ..core.node.common.exceptions import OblvUnAuthorizedError
 from ..util import bcolors
-from .constants import DOMAIN_CONNECTION_PORT
 from .constants import LOCAL_MODE
 from .oblv_proxy import check_oblv_proxy_installation_status
 
@@ -88,7 +87,7 @@ class DeploymentClient:
     def set_conn_string(self, url: str):
         self.__conn_string = url
 
-    def initiate_connection(self, connection_port: int = DOMAIN_CONNECTION_PORT):
+    def initiate_connection(self, connection_port: int = 3030):
         if LOCAL_MODE:
             self.__conn_string = f"http://127.0.0.1:{connection_port}"
             return

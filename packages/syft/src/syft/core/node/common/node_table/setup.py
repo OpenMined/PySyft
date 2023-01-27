@@ -5,6 +5,7 @@ from typing import List
 
 # relative
 from ....common.serde.serializable import serializable
+from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
 
 
@@ -12,7 +13,7 @@ from .syft_object import SyftObject
 class NoSQLSetup(SyftObject):
     # version
     __canonical_name__ = "Setup"
-    __version__ = 1
+    __version__ = SYFT_OBJECT_VERSION_1
 
     # fields
     domain_name: str
