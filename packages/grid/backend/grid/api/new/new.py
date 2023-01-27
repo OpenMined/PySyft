@@ -14,11 +14,11 @@ from pydantic import ValidationError
 # syft absolute
 from syft import deserialize
 from syft import serialize  # type: ignore
+from syft.core.node.new.context import UnauthedServiceContext
+from syft.core.node.new.credentials import UserLoginCredentials
 from syft.core.node.new.node_metadata import NodeMetadataJSON
-from syft.core.node.new.user import UnauthedServiceContext
-from syft.core.node.new.user import UserCollection
-from syft.core.node.new.user import UserLoginCredentials
 from syft.core.node.new.user import UserPrivateKey
+from syft.core.node.new.user_service import UserService
 
 # grid absolute
 from grid.core.node import node
@@ -68,7 +68,7 @@ def login(
     except ValidationError as e:
         return {"Error": e.json()}
 
-    method = worker.get_service_method(UserCollection.exchange_credentials)
+    method = worker.get_service_method(UserService.exchange_credentials)
     context = UnauthedServiceContext(node=worker, login_credentials=login_credentials)
     result = method(context=context)
     if result.is_err():

@@ -5,6 +5,7 @@ from typing import Optional
 from ..common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ..common.node_table.syft_object import SyftBaseObject
 from .credentials import SyftVerifyKey
+from .credentials import UserLoginCredentials
 from .node import NewNode
 
 
@@ -19,3 +20,8 @@ class AuthedServiceContext(NodeServiceContext):
     __version__ = SYFT_OBJECT_VERSION_1
 
     credentials: SyftVerifyKey
+
+
+class UnauthedServiceContext(NodeServiceContext):
+    login_credentials: UserLoginCredentials
+    node: Optional[NewNode]
