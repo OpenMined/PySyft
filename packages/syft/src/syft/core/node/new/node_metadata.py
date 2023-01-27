@@ -59,6 +59,7 @@ class NodeMetadata(SyftObject):
         )
 
 
+@serializable(recursive_serde=True)
 class NodeMetadataJSON(BaseModel):
     metadata_version: int
     name: str

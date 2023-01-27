@@ -13,8 +13,8 @@ from syft.core.node.new.credentials import SIGNING_KEY_FOR
 from syft.core.node.new.credentials import SyftSigningKey
 from syft.core.node.new.credentials import SyftVerifyKey
 from syft.core.node.new.user import User
-from syft.core.node.new.user import UserCollection
 from syft.core.node.new.user import UserUpdate
+from syft.core.node.new.user_service import UserService
 from syft.core.node.worker import Worker
 
 # from syft.core.node.worker import Worker
@@ -121,10 +121,10 @@ def test_user_transform() -> None:
     assert not hasattr(edit_user, "verify_key")
 
 
-def test_user_collection() -> None:
+def test_user_service() -> None:
     test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
     worker = Worker()
-    user_collection = UserCollection()
+    user_collection = UserService()
 
     # create a user
     new_user = UserUpdate(
