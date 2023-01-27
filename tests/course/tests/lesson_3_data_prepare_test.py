@@ -18,6 +18,10 @@ def test_quality_check(tb):
     assert tb.cell_output_text(24) == "129"
 
 
+def func():
+    pass
+
+
 def test_data_and_pygrid(tb):
     assert (
         "raw_data is of type: <class 'pandas.core.frame.DataFrame'>\nraw_data is of type: <class 'numpy.ndarray'>"
