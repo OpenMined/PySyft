@@ -148,7 +148,8 @@ def get_private_key() -> str:
 def get_node_uid() -> str:
     return get_credential(NODE_UID, validate_uid, generate_node_uid)
 
-def delete_credential_file():
+
+def delete_credential_file() -> None:
     if os.path.exists(CREDENTIALS_PATH):
         os.unlink(CREDENTIALS_PATH)
 
@@ -157,7 +158,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--private_key", action="store_true", help="Get Private Key")
     parser.add_argument("--uid", action="store_true", help="Get UID")
-    parser.add_argument("--file", action="store_true", help="Generate credentials as file")
+    parser.add_argument(
+        "--file", action="store_true", help="Generate credentials as file"
+    )
     parser.add_argument(
         "--debug", action="store_true", help="Show ENV and file credentials"
     )
