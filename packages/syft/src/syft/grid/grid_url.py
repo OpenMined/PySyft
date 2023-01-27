@@ -6,6 +6,7 @@ import copy
 import os
 import re
 from typing import Optional
+from typing import Sequence
 from typing import Union
 from urllib.parse import urlparse
 
@@ -19,7 +20,13 @@ from ..util import verify_tls
 
 @serializable(recursive_serde=True)
 class GridURL:
-    __attr_allowlist__ = ["protocol", "host_or_ip", "port", "path", "query"]
+    __attr_allowlist__: Sequence[str] = [
+        "protocol",
+        "host_or_ip",
+        "port",
+        "path",
+        "query",
+    ]
 
     @staticmethod
     def from_url(url: Union[str, GridURL]) -> GridURL:
@@ -72,7 +79,7 @@ class GridURL:
             host_or_ip = host_or_ip[start_index:]
 
         self.host_or_ip = host_or_ip
-        self.path = path
+        self.path: str = path
         self.port = port
         self.protocol = protocol
         self.query = query
@@ -143,3 +150,7 @@ class GridURL:
 
     def copy(self) -> GridURL:
         return GridURL.from_url(self.url)
+
+    def set_port(self, port: int) -> GridURL:
+        self.port = port
+        return self

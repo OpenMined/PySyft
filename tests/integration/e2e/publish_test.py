@@ -25,9 +25,7 @@ def test_publish_with_bool_type_values(capfd) -> None:
     data_shape = (10000,)
     data1 = np.random.randint(1, 1000, data_shape)
 
-    dataset1 = sy.Tensor(data1).annotate_with_dp_metadata(
-        -1, 10000, data_subjects="Jim"
-    )
+    dataset1 = sy.Tensor(data1).annotate_with_dp_metadata(-1, 10000, data_subject="Jim")
 
     data1_ptr = dataset1.send(domain_client)
 
@@ -58,7 +56,7 @@ def test_publish_with_bool_type_values(capfd) -> None:
     out, _ = capfd.readouterr()
 
     assert "WARNING" in out and "bool" in out
-    TEST_TIMEOUT_SECS = 10
+    TEST_TIMEOUT_SECS = 30  # increased timeout for arm64 tests in CI
 
     result = None
 

@@ -4,7 +4,7 @@ import os
 from typing import Any
 
 STABLE_BRANCH = "0.6.0"
-DEFAULT_BRANCH = "dev"
+DEFAULT_BRANCH = "0.7.0"
 RENDERED_DIR = "rendered"
 DEFAULT_REPO = "OpenMined/PySyft"
 

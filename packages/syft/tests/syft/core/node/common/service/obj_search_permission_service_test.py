@@ -23,7 +23,7 @@ def test_object_search_permissons_update_message_serde() -> None:
         add_instead_of_remove=True,
         target_verify_key=bob_phone_client.verify_key,
         target_object_id=ptr.id_at_location,
-        address=bob_phone_client.address,
+        address=bob_phone_client.node_uid,
     )
 
     blob = sy.serialize(msg)
@@ -46,7 +46,7 @@ def test_object_search_permissons_update_execute_add() -> None:
         add_instead_of_remove=True,
         target_verify_key=bob_phone_client.verify_key,
         target_object_id=ptr.id_at_location,
-        address=bob_phone_client.address,
+        address=bob_phone_client.node_uid,
     )
 
     ImmediateObjectSearchPermissionUpdateService.process(
@@ -71,7 +71,7 @@ def test_object_search_permissons_update_execute_remove() -> None:
         add_instead_of_remove=False,
         target_verify_key=bob_phone_client.verify_key,
         target_object_id=ptr.id_at_location,
-        address=bob_phone_client.address,
+        address=bob_phone_client.node_uid,
     )
 
     bob_phone.store.get(ptr.id_at_location).search_permissions[

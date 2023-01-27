@@ -11,6 +11,11 @@ services:
       dockerfile: frontend.dockerfile
       target: "${FRONTEND_TARGET:-grid-ui-production}"
 
+  svelte:
+    build:
+      context: ./svelte
+      dockerfile: frontend.dockerfile
+
   backend:
     build:
       context: ${RELATIVE_PATH}../

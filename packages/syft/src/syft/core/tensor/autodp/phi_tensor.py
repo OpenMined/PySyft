@@ -2,12 +2,12 @@
 from __future__ import annotations
 
 # stdlib
-from collections.abc import Sequence
 from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Tuple
 from typing import Union
 
@@ -15,37 +15,31 @@ from typing import Union
 import numpy as np
 from numpy.typing import ArrayLike
 from numpy.typing import NDArray
-from scipy.ndimage.interpolation import rotate
+from scipy.ndimage import rotate
 
 # relative
 from .... import lib
 from ....ast.klass import pointerize_args_and_kwargs
+
+# from ....core.adp.data_subject_list import DataSubjectArray
+from ....core.adp.data_subject import dstonumpyutf8
+from ....core.adp.data_subject import numpyutf8tods
 from ....core.adp.data_subject_ledger import DataSubjectLedger
-from ....core.adp.data_subject_list import DataSubjectArray
-from ....core.adp.data_subject_list import dslarraytonumpyutf8
-from ....core.adp.data_subject_list import numpyutf8todslarray
+from ....core.adp.data_subject_list import DataSubject
 from ....core.node.common.action.get_or_set_property_action import (
     GetOrSetPropertyAction,
 )
 from ....core.node.common.action.get_or_set_property_action import PropertyActions
-from ....lib.numpy.array import capnp_deserialize
-from ....lib.numpy.array import capnp_serialize
 from ....lib.python.util import upcast
 from ....util import inherit_tags
-from ...common.serde.capnp import CapnpModule
-from ...common.serde.capnp import chunk_bytes
-from ...common.serde.capnp import combine_bytes
-from ...common.serde.capnp import get_capnp_schema
-from ...common.serde.capnp import serde_magic_header
-from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
-from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
 from ...node.abstract.node import AbstractNodeClient
 from ...node.common.action.run_class_method_action import RunClassMethodAction
 from ...node.enums import PointerStatus
 from ...pointer.pointer import Pointer
-from ..broadcastable import is_broadcastable
+
+# from ..broadcastable import is_broadcastable
 from ..config import DEFAULT_INT_NUMPY_TYPE
 from ..fixed_precision_tensor import FixedPrecisionTensor
 from ..lazy_repeat_array import compute_min_max
@@ -58,9 +52,9 @@ from ..smpc import utils
 from ..smpc.mpc_tensor import MPCTensor
 from ..smpc.utils import TYPE_TO_RING_SIZE
 from ..util import implements
-from .adp_tensor import ADPTensor
 from .gamma_tensor import GammaTensor
 from .gamma_tensor import TensorWrappedGammaTensorPointer
+from .jax_ops import SyftTerminalNoop
 
 INPLACE_OPS = {"resize", "sort"}
 
@@ -77,17 +71,17 @@ class TensorWrappedPhiTensorPointer(Pointer):
         "tags",
         "description",
         # phi_tensor attrs
-        "data_subjects",
+        "data_subject",
         "min_vals",
         "max_vals",
         "public_dtype",
         "public_shape",
     ]
 
-    __serde_overrides__ = {
+    __serde_overrides__: Dict[str, Sequence[Callable]] = {
         "client": [lambda x: x.address, lambda y: y],
         "public_shape": [lambda x: x, lambda y: upcast(y)],
-        "data_subjects": [dslarraytonumpyutf8, numpyutf8todslarray],
+        "data_subject": [dstonumpyutf8, numpyutf8tods],
         "public_dtype": [lambda x: str(x), lambda y: np.dtype(y)],
     }
     _exhausted = False
@@ -97,7 +91,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
 
     def __init__(
         self,
-        data_subjects: np.ndarray,
+        data_subject: DataSubject,
         min_vals: np.typing.ArrayLike,
         max_vals: np.typing.ArrayLike,
         client: Any,
@@ -118,7 +112,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
 
         self.min_vals = min_vals
         self.max_vals = max_vals
-        self.data_subjects = data_subjects
+        self.data_subject = data_subject
         self.public_shape = public_shape
         self.public_dtype = public_dtype
 
@@ -180,7 +174,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
         )
 
         result = TensorWrappedPhiTensorPointer(
-            data_subjects=self.data_subjects,
+            data_subject=self.data_subject,
             min_vals=min_vals,
             max_vals=max_vals,
             client=self.client,
@@ -210,7 +204,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
                 args=pointer_args,
                 kwargs=pointer_kwargs,
                 id_at_location=result_id_at_location,
-                address=self.client.address,
+                address=self.client.node_uid,
             )
             self.client.send_immediate_msg_without_reply(msg=cmd)
 
@@ -276,66 +270,67 @@ class TensorWrappedPhiTensorPointer(Pointer):
             self.min_vals, self.max_vals, None, op_str, *args, **kwargs
         )
 
-        if hasattr(self.data_subjects, op_str):
-            if op_str == "choose":
-                if kwargs == {}:
-                    mode = None
-                    for arg in args[1:]:
-                        if isinstance(arg, str):
-                            mode = arg
-                            break
-                    if mode is None:
-                        if isinstance(
-                            args[0],
-                            (
-                                TensorWrappedPhiTensorPointer,
-                                TensorWrappedGammaTensorPointer,
-                            ),
-                        ):
-                            data_subjects = np.array(
-                                np.choose(
-                                    np.ones(args[0].shape, dtype=np.int64),
-                                    self.data_subjects,
-                                )
-                            )
-                        else:
-                            data_subjects = np.array(
-                                np.choose(args[0], self.data_subjects)
-                            )
-                    else:
-                        if isinstance(
-                            args[0],
-                            (
-                                TensorWrappedPhiTensorPointer,
-                                TensorWrappedGammaTensorPointer,
-                            ),
-                        ):
-                            data_subjects = np.array(
-                                np.choose(
-                                    np.ones(args[0].shape, dtype=np.int64),
-                                    self.data_subjects,
-                                    mode=mode,
-                                )
-                            )
-                        else:
-                            data_subjects = np.array(
-                                np.choose(args[0], self.data_subjects, mode=mode)
-                            )
-                else:
-                    data_subjects = np.choose(
-                        kwargs["choices"], self.data_subjects, kwargs["mode"]
-                    )
-            else:
-                data_subjects = getattr(self.data_subjects, op_str)(*args, **kwargs)
-            if op_str in INPLACE_OPS:
-                data_subjects = self.data_subjects
-        elif op_str in ("ones_like", "zeros_like"):
-            data_subjects = self.data_subjects
-        else:
-            raise ValueError(f"Invalid Numpy Operation: {op_str} for DSA")
-
+        # TODO: fix this
+        # if hasattr(self.data_subject, op_str):
+        #     if op_str == "choose":
+        #         if kwargs == {}:
+        #             mode = None
+        #             for arg in args[1:]:
+        #                 if isinstance(arg, str):
+        #                     mode = arg
+        #                     break
+        #             if mode is None:
+        #                 if isinstance(
+        #                     args[0],
+        #                     (
+        #                         TensorWrappedPhiTensorPointer,
+        #                         TensorWrappedGammaTensorPointer,
+        #                     ),
+        #                 ):
+        #                     data_subject = np.array(
+        #                         np.choose(
+        #                             np.ones(args[0].shape, dtype=np.int64),
+        #                             self.data_subject,
+        #                         )
+        #                     )
+        #                 else:
+        #                     data_subject = np.array(
+        #                         np.choose(args[0], self.data_subject)
+        #                     )
+        #             else:
+        #                 if isinstance(
+        #                     args[0],
+        #                     (
+        #                         TensorWrappedPhiTensorPointer,
+        #                         TensorWrappedGammaTensorPointer,
+        #                     ),
+        #                 ):
+        #                     data_subject = np.array(
+        #                         np.choose(
+        #                             np.ones(args[0].shape, dtype=np.int64),
+        #                             self.data_subject,
+        #                             mode=mode,
+        #                         )
+        #                     )
+        #                 else:
+        #                     data_subject = np.array(
+        #                         np.choose(args[0], self.data_subject, mode=mode)
+        #                     )
+        #         else:
+        #             data_subject = np.choose(
+        #                 kwargs["choices"], self.data_subject, kwargs["mode"]
+        #             )
+        #     else:
+        #         data_subject = getattr(self.data_subject, op_str)(*args, **kwargs)
+        #     if op_str in INPLACE_OPS:
+        #         data_subject = self.data_subject
+        # elif op_str in ("ones_like", "zeros_like"):
+        #     data_subject = self.data_subject
+        # else:
+        #     raise ValueError(f"Invalid Numpy Operation: {op_str} for DSA")
+        data_subject = self.data_subject
         result = TensorWrappedPhiTensorPointer(
-            data_subjects=data_subjects,
+            data_subject=data_subject,
             min_vals=min_vals,
             max_vals=max_vals,
             client=self.client,
@@ -365,7 +360,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
                 args=pointer_args,
                 kwargs=pointer_kwargs,
                 id_at_location=result_id_at_location,
-                address=self.client.address,
+                address=self.client.node_uid,
             )
             self.client.send_immediate_msg_without_reply(msg=cmd)
 
@@ -408,14 +403,11 @@ class TensorWrappedPhiTensorPointer(Pointer):
     @property
     def gamma(self) -> TensorWrappedGammaTensorPointer:
         return TensorWrappedGammaTensorPointer(
-            data_subjects=self.data_subjects,
             client=self.client,
             id_at_location=self.id_at_location,
             object_type=self.object_type,
             tags=self.tags,
             description=self.description,
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
             public_shape=getattr(self, "public_shape", None),
             public_dtype=getattr(self, "public_dtype", None),
         )
@@ -444,7 +436,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
             Tuple[MPCTensor,Union[MPCTensor,int,float,np.ndarray]] : Result of the operation
         """
         if isinstance(other, TensorWrappedPhiTensorPointer):
-            if np.array(self.data_subjects != other.data_subjects).all():  # type: ignore
+            if self.data_subject != other.data_subject:  # type: ignore
                 return getattr(self.gamma, op_str)(other.gamma)
         elif isinstance(other, TensorWrappedGammaTensorPointer):
             return getattr(self.gamma, op_str)(other)
@@ -1231,13 +1223,14 @@ class TensorWrappedPhiTensorPointer(Pointer):
 
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.std"
         result: TensorWrappedPhiTensorPointer
-        data_subjects = np.array(self.data_subjects.std(*args, **kwargs))
+        # TODO: fix this
+        data_subject = np.array(self.data_subject.std(*args, **kwargs))
         result = TensorWrappedPhiTensorPointer(
-            data_subjects=self.data_subjects,
-            min_vals=lazyrepeatarray(data=0, shape=data_subjects.shape),
+            data_subject=self.data_subject,
+            min_vals=lazyrepeatarray(data=0, shape=data_subject.shape),
             max_vals=lazyrepeatarray(
                 data=(self.max_vals.data - self.min_vals.data) / 2,
-                shape=data_subjects.shape,
+                shape=data_subject.shape,
             ),
             client=self.client,
         )
@@ -1266,7 +1259,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
                 args=pointer_args,
                 kwargs=pointer_kwargs,
                 id_at_location=result_id_at_location,
-                address=self.client.address,
+                address=self.client.node_uid,
             )
             self.client.send_immediate_msg_without_reply(msg=cmd)
 
@@ -1278,7 +1271,8 @@ class TensorWrappedPhiTensorPointer(Pointer):
             kwargs={},
         )
 
-        result.public_shape = data_subjects.shape
+        # TODO: fix this
+        result.public_shape = data_subject.shape
         result.public_dtype = self.public_dtype
         return result
 
@@ -1673,7 +1667,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.T"
 
         result = TensorWrappedPhiTensorPointer(
-            data_subjects=self.data_subjects,
+            data_subject=self.data_subject,
             min_vals=self.min_vals.transpose(),
             max_vals=self.max_vals.transpose(),
             client=self.client,
@@ -1700,7 +1694,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
             cmd = GetOrSetPropertyAction(
                 path=attr_path_and_name,
                 id_at_location=result_id_at_location,
-                address=self.client.address,
+                address=self.client.node_uid,
                 _self=self,
                 args=pointer_args,
                 kwargs=pointer_kwargs,
@@ -1734,8 +1728,8 @@ class TensorWrappedPhiTensorPointer(Pointer):
         public_dtype = getattr(self, "public_dtype", None)
         return Tensor(
             child=PhiTensor(
-                child=FixedPrecisionTensor(value=np.empty(self.data_subjects.shape)),
-                data_subjects=self.data_subjects,
+                child=FixedPrecisionTensor(value=np.empty(self.min_vals.shape)),
+                data_subject=self.data_subject,
                 min_vals=self.min_vals,  # type: ignore
                 max_vals=self.max_vals,  # type: ignore
             ),
@@ -1806,26 +1800,73 @@ def ones_like(
     return tensor.ones_like(*args, **kwargs)
 
 
-@serializable(capnp_bytes=True)
-class PhiTensor(PassthroughTensor, ADPTensor):
+# def dispatch_tensor(
+#     *tensors: Union[PhiTensor, GammaTensor, AcceptableSimpleType],
+#     child_func: Callable,
+#     min_func: Callable,
+#     max_func: Callable,
+#     original_func: Callable,
+# ) -> Union[PhiTensor, GammaTensor]:
+#     def cast_to_gamma(tensor: Union[PhiTensor, GammaTensor]) -> GammaTensor:
+#         if isinstance(tensor, PhiTensor):
+#             return tensor.gamma
+#         return tensor
+
+#     def check_phi_or_constant(tensor: Union[PhiTensor, GammaTensor]) -> bool:
+#         return is_acceptable_simple_type(tensor) or isinstance(tensor, PhiTensor)
+
+#     def extract_attribute_or_self(
+#         tensor: Union[PhiTensor, GammaTensor], field: str
+#     ) -> Union[PhiTensor, GammaTensor, DataSubject]:
+#         if hasattr(tensor, field):
+#             return getattr(tensor, field)
+#         if field != "data_subject":
+#             return tensor
+#         else:
+#             raise NotImplementedError
+
+#     childs = [extract_attribute_or_self(tensor, "child") for tensor in tensors]
+
+#     if all(map(check_phi_or_constant, tensors)):
+#         min_values = [
+#             extract_attribute_or_self(tensor, "min_vals") for tensor in tensors
+#         ]
+#         max_values = [
+#             extract_attribute_or_self(tensor, "max_vals") for tensor in tensors
+#         ]
+#         data_subject = [
+#             extract_attribute_or_self(tensor, "data_subject") for tensor in tensors
+#         ]
+#         data_subject = [ds for ds in data_subject if ds is not None]
+
+#         reducer = [ds == data_subject[0] for ds in data_subject]
+#         if np.all(reducer):
+#             return original_func(*map(cast_to_gamma, tensors))
+
+#         return PhiTensor(
+#             child=child_func(childs),
+#             min_vals=min_func(min_values),
+#             max_vals=max_func(max_values),
+#             data_subject=tensors[0].data_subject,  # type: ignore
+#         )
+
+#     return original_func(*map(cast_to_gamma, tensors))
+
+
+@serializable(recursive_serde=True)
+class PhiTensor(PassthroughTensor):
     PointerClassOverride = TensorWrappedPhiTensorPointer
-    # __attr_allowlist__ = ["child", "min_vals", "max_vals", "data_subjects"]
-    __slots__ = (
-        "child",
-        "min_vals",
-        "max_vals",
-        "data_subjects",
-    )
+    __attr_allowlist__ = ["child", "min_vals", "max_vals", "data_subject", "id"]
+    __slots__ = ("child", "min_vals", "max_vals", "data_subject", "id")
 
     def __init__(
         self,
         child: Union[Sequence, NDArray],
-        data_subjects: Union[DataSubjectArray, NDArray],
+        data_subject: DataSubject,
         min_vals: Union[np.ndarray, lazyrepeatarray],
         max_vals: Union[np.ndarray, lazyrepeatarray],
+        id: Optional[UID] = None,
     ) -> None:
-        # self.data_subjects: Union[DataSubjectList, np.ndarray]
-        # child = the actual private data
         super().__init__(child)
 
         # lazyrepeatarray matching the shape of child
@@ -1836,41 +1877,21 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         self.min_vals = min_vals
         self.max_vals = max_vals
 
-        numpy_data_subjects: np.ndarray = DataSubjectArray.from_objs(data_subjects)
-        self.data_subjects = numpy_data_subjects
-        if numpy_data_subjects.shape != self.shape:
-            raise ValueError(
-                f"DataSubjects shape: {numpy_data_subjects.shape} should match data shape: {self.shape}"
-            )
+        self.data_subject = data_subject
+        if id is None:
+            id = UID()
+        self.id = id
+
+    def reconstruct(self, state: Dict) -> PhiTensor:
+        return state[self.id]
 
     @property
     def proxy_public_kwargs(self) -> Dict[str, Any]:
         return {
             "min_vals": self.min_vals,
             "max_vals": self.max_vals,
-            "data_subjects": self.data_subjects,
+            "data_subject": self.data_subject,
         }
-
-    # def init_pointer(
-    #     self,
-    #     client: Any,
-    #     id_at_location: Optional[UID] = None,
-    #     object_type: str = "",
-    #     tags: Optional[List[str]] = None,
-    #     description: str = "",
-    # ) -> TensorWrappedPhiTensorPointer:
-    #     return TensorWrappedPhiTensorPointer(
-    #         # Arguments specifically for SEPhiTensor
-    #         data_subjects=self.data_subjects,
-    #         min_vals=self.min_vals,
-    #         max_vals=self.max_vals,
-    #         # Arguments required for a Pointer to work
-    #         client=client,
-    #         id_at_location=id_at_location,
-    #         object_type=object_type,
-    #         tags=tags,
-    #         description=description,
-    #     )
 
     @property
     def gamma(self) -> GammaTensor:
@@ -1884,7 +1905,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=self.child.copy(order=order),
             min_vals=self.min_vals.copy(order=order),
             max_vals=self.max_vals.copy(order=order),
-            data_subjects=self.data_subjects.copy(order=order),
+            data_subject=self.data_subject,
         )
 
     def take(
@@ -1900,9 +1921,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=out_child,
             min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
             max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
-            data_subjects=self.data_subjects.take(
-                indices, axis=axis, mode=mode, out=out
-            ),
+            data_subject=self.data_subject,
         )
 
     def put(
@@ -1924,7 +1943,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=out_child,
             min_vals=self.min_vals,
             max_vals=self.max_vals,
-            data_subjects=self.data_subjects,
+            data_subject=self.data_subject,
         )
 
     def ptp(
@@ -1933,46 +1952,26 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     ) -> PhiTensor:
         out_child = self.child.ptp(axis=axis)
 
-        argmin = self.child.argmin(axis=axis)
-        argmax = self.child.argmax(axis=axis)
-
-        if axis is None:
-            max_indices = np.unravel_index(argmax, shape=self.child.shape)
-            min_indices = np.unravel_index(argmin, shape=self.child.shape)
-            data_subjects = (
-                self.data_subjects[max_indices] - self.data_subjects[min_indices]
-            )
-        else:
-            max_indices = np.array([argmax])
-            min_indices = np.array([argmin])
-            data_subjects_max = np.squeeze(
-                np.take_along_axis(self.data_subjects, max_indices, axis=axis)
-            )
-            data_subjects_min = np.squeeze(
-                np.take_along_axis(self.data_subjects, min_indices, axis=axis)
-            )
-            data_subjects = data_subjects_max - data_subjects_min
-
         return PhiTensor(
             child=out_child,
             min_vals=lazyrepeatarray(data=0, shape=out_child.shape),
             max_vals=lazyrepeatarray(
                 data=self.max_vals.data - self.min_vals.data, shape=out_child.shape
             ),
-            data_subjects=data_subjects,
+            data_subject=self.data_subject,
         )
 
     def __mod__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         # if the tensor being added is also private
         if isinstance(other, PhiTensor):
-            if (self.data_subjects != other.data_subjects).any():
+            if self.data_subject != other.data_subject:
                 return self.gamma % other.gamma
             else:
                 out_child = self.child % other.child
                 return PhiTensor(
                     child=self.child % other.child,
-                    data_subjects=self.data_subjects,
+                    data_subject=self.data_subject,
                     min_vals=lazyrepeatarray(
                         data=min(0, other.min_vals.data), shape=out_child.shape
                     ),
@@ -1999,7 +1998,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 child=self.child % other,
                 min_vals=min_vals,
                 max_vals=max_vals,
-                data_subjects=self.data_subjects,
+                data_subject=self.data_subject,
             )
 
         elif isinstance(other, GammaTensor):
@@ -2018,28 +2017,16 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         # figure out if it is not a privacy violation to return bool
         if where is None:
             out_child = np.array(self.child.any(axis=axis, keepdims=keepdims))
-            new_data_subjects = np.add.reduce(
-                self.data_subjects,
-                axis=axis,
-                keepdims=keepdims,
-            )
         else:
             out_child = np.array(
                 self.child.any(axis=axis, keepdims=keepdims, where=where)
-            )
-            new_data_subjects = np.add.reduce(
-                self.data_subjects,
-                axis=axis,
-                keepdims=keepdims,
-                initial=DataSubjectArray(),
-                where=where,
             )
 
         return PhiTensor(
             child=out_child,
             min_vals=lazyrepeatarray(data=0, shape=out_child.shape),
             max_vals=lazyrepeatarray(data=1, shape=out_child.shape),
-            data_subjects=new_data_subjects,
+            data_subject=self.data_subject,
         )
 
     def all(
@@ -2051,34 +2038,22 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         # TODO: properly define data subjects
         if where is None:
             out_child = np.array(self.child.all(axis=axis, keepdims=keepdims))
-            new_data_subjects = np.add.reduce(
-                self.data_subjects,
-                axis=axis,
-                keepdims=keepdims,
-            )
         else:
             out_child = np.array(
                 self.child.all(axis=axis, keepdims=keepdims, where=where)
-            )
-            new_data_subjects = np.add.reduce(
-                self.data_subjects,
-                axis=axis,
-                keepdims=keepdims,
-                initial=DataSubjectArray(),
-                where=where,
             )
 
         return PhiTensor(
             child=out_child,
             min_vals=lazyrepeatarray(data=0, shape=out_child.shape),
             max_vals=lazyrepeatarray(data=1, shape=out_child.shape),
-            data_subjects=new_data_subjects,
+            data_subject=self.data_subject,
         )
 
     def __and__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
         # if the tensor being added is also private
         if isinstance(other, PhiTensor):
-            if (self.data_subjects != other.data_subjects).any():
+            if self.data_subject != other.data_subject:
                 return self.gamma & other.gamma
             else:
                 child = self.child & other.child
@@ -2108,7 +2083,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         return PhiTensor(
             child=child,
-            data_subjects=self.data_subjects,
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(data=_min_vals, shape=child.shape),
             max_vals=lazyrepeatarray(data=_max_vals, shape=child.shape),
         )
@@ -2116,7 +2091,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def __or__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
         # if the tensor being added is also private
         if isinstance(other, PhiTensor):
-            if (self.data_subjects != other.data_subjects).any():
+            if self.data_subject != other.data_subject:
                 return self.gamma | other.gamma
             else:
                 child = self.child | other.child
@@ -2145,7 +2120,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=child,
             min_vals=lazyrepeatarray(data=_min_vals, shape=child.shape),
             max_vals=lazyrepeatarray(data=_max_vals, shape=child.shape),
-            data_subjects=self.data_subjects,
+            data_subject=self.data_subject,
         )
 
     def copy_with(self, child: np.ndarray) -> PhiTensor:
@@ -2160,7 +2135,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 child=data,
                 min_vals=lazyrepeatarray(data=data, shape=data.shape),
                 max_vals=lazyrepeatarray(data=data, shape=data.shape),
-                data_subjects=self.data_subjects[item.child],
+                data_subject=self.data_subject,
             )
         else:
             data = self.child[item]
@@ -2168,7 +2143,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 child=data,
                 min_vals=lazyrepeatarray(data=data, shape=data.shape),
                 max_vals=lazyrepeatarray(data=data, shape=data.shape),
-                data_subjects=self.data_subjects[item],
+                data_subject=self.data_subject,
             )
 
     def zeros_like(
@@ -2190,7 +2165,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=child,
             min_vals=min_vals,
             max_vals=max_vals,
-            data_subjects=self.data_subjects,
+            data_subject=self.data_subject,
         )
 
     def __setitem__(
@@ -2211,7 +2186,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
             gamma_output = self.gamma
             gamma_output[key] = value.gamma
-            # print("It's on the right track")
             return gamma_output
 
         elif isinstance(value, GammaTensor):
@@ -2231,7 +2205,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
             return PhiTensor(
                 child=self.child,
-                data_subjects=self.data_subjects,
+                data_subject=self.data_subject,
                 min_vals=self.min_vals,
                 max_vals=self.max_vals,
             )
@@ -2250,7 +2224,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         return PhiTensor(
             child=output,
-            data_subjects=self.data_subjects,
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(data=new_min_val, shape=output.shape),
             max_vals=lazyrepeatarray(data=new_max_val, shape=output.shape),
         )
@@ -2262,18 +2236,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         child = self.child.argmax(axis=axis)
         if axis is None:
             max_value = self.child.size - 1
-            indices = np.unravel_index(child, shape=self.child.shape)
-            data_subjects = self.data_subjects[indices]
         else:
-            index = np.array([child])
             max_value = np.size(self.child, axis=axis) - 1
-            data_subjects = np.squeeze(
-                np.take_along_axis(self.data_subjects, index, axis=axis)
-            )
 
         return PhiTensor(
             child=child,
-            data_subjects=data_subjects,
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(data=0, shape=child.shape),
             max_vals=lazyrepeatarray(data=max_value, shape=child.shape),
         )
@@ -2285,18 +2253,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         child = self.child.argmin(axis=axis)
         if axis is None:
             max_value = self.child.size - 1
-            indices = np.unravel_index(child, shape=self.child.shape)
-            data_subjects = self.data_subjects[indices]
         else:
-            index = np.array([child])
             max_value = np.size(self.child, axis=axis) - 1
-            data_subjects = np.squeeze(
-                np.take_along_axis(self.data_subjects, index, axis=axis)
-            )
 
         return PhiTensor(
             child=child,
-            data_subjects=data_subjects,
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(data=0, shape=child.shape),
             max_vals=lazyrepeatarray(data=max_value, shape=child.shape),
         )
@@ -2307,7 +2269,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         output_data = np.reshape(data, *shape)
         return PhiTensor(
             child=output_data,
-            data_subjects=np.reshape(self.data_subjects, *shape),
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape),
             max_vals=lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape),
         )
@@ -2324,31 +2286,20 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     ((pad_top, pad_bottom), (pad_left, pad_right), (0, 0)),
                     padding_mode,
                 )
-                output_data_subjects = np.pad(
-                    self.data_subjects,
-                    ((pad_top, pad_bottom), (pad_left, pad_right), (0, 0)),
-                    padding_mode,
-                )
             # Grayscale image
             elif len(data.shape) == 2:
                 output_data = np.pad(
                     data, ((pad_top, pad_bottom), (pad_left, pad_right)), padding_mode
                 )
-                output_data_subjects = np.pad(
-                    self.data_subjects,
-                    ((pad_top, pad_bottom), (pad_left, pad_right)),
-                    padding_mode,
-                )
             else:
                 output_data = np.pad(data, width, padding_mode)
-                output_data_subjects = np.pad(self.data_subjects, width, padding_mode)
         else:
             raise NotImplementedError
 
         output_min_val, output_max_val = output_data.min(), output_data.max()
         return PhiTensor(
             child=output_data,
-            data_subjects=output_data_subjects,
+            data_subject=self.data_subject,
             min_vals=output_min_val,
             max_vals=output_max_val,
         )
@@ -2357,14 +2308,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         data = self.child
         output_data = data.ravel(order=order)
 
-        output_data_subjects = self.data_subjects.ravel(order=order)
-
         min_vals = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape)
         max_vals = lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape)
 
         return PhiTensor(
             child=output_data,
-            data_subjects=output_data_subjects,
+            data_subject=self.data_subject,
             min_vals=min_vals,
             max_vals=max_vals,
         )
@@ -2374,7 +2323,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         if np.random.random() <= p:
             return PhiTensor(
                 child=np.fliplr(self.child),
-                data_subjects=self.data_subjects,
+                data_subject=self.data_subject,
                 min_vals=self.min_vals.horizontal_flip(),
                 max_vals=self.max_vals.horizontal_flip(),
             )
@@ -2386,7 +2335,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         if np.random.random() <= p:
             return PhiTensor(
                 child=np.flipud(self.child),
-                data_subjects=self.data_subjects,
+                data_subject=self.data_subject,
                 min_vals=self.min_vals.vertical_flip(),
                 max_vals=self.max_vals.vertical_flip(),
             )
@@ -2403,7 +2352,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         return PhiTensor(
             child=rotated_data_value,
-            data_subjects=self.data_subjects,
+            data_subject=self.data_subject,
             min_vals=rotated_data_value.min(),
             max_vals=rotated_data_value.max(),
         )
@@ -2437,11 +2386,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 If axis is None, the result is a scalar value.
                 If axis is given, the result is an array of dimension a.ndim - 1.
         """
-        indices = np.unravel_index(self.child.argmax(axis), shape=self.child.shape)
         result = self.child.max(axis)
         return PhiTensor(
             child=result,
-            data_subjects=self.data_subjects[indices],
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
             max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
         )
@@ -2463,11 +2411,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 If axis is given, the result is an array of dimension a.ndim - 1.
         """
 
-        indices = np.unravel_index(self.child.argmin(axis), self.child.shape)
         result = self.child.min(axis)
         return PhiTensor(
             child=result,
-            data_subjects=self.data_subjects[indices],
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
             max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
         )
@@ -2485,10 +2432,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def swapaxes(self, axis1: int, axis2: int) -> PhiTensor:
         """Interchange two axes of an array."""
         out_child = np.swapaxes(self.child, axis1, axis2)
-        data_subjects = np.swapaxes(self.data_subjects, axis1, axis2)
         return PhiTensor(
             child=out_child,
-            data_subjects=data_subjects,
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
             max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
         )
@@ -2496,13 +2442,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def nonzero(self) -> PhiTensor:
         """Return the indices of the elements that are non-zero."""
         out_child = np.array(np.nonzero(self.child))
-        no_axis = len(self.child.shape)
-        out_data_subjects = np.repeat(
-            np.array([self.data_subjects[self.child != 0]]), no_axis, axis=0
-        )
         return PhiTensor(
             child=out_child,
-            data_subjects=out_data_subjects,
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(data=0, shape=out_child.shape),
             max_vals=lazyrepeatarray(data=max(self.child.shape), shape=out_child.shape),
         )
@@ -2516,7 +2458,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         return PhiTensor(
             child=result,
-            data_subjects=self.data_subjects.mean(axis, **kwargs),
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
             max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
         )
@@ -2566,7 +2508,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         # Std is highest when half the samples are min and other half are max
         return PhiTensor(
             child=result,
-            data_subjects=self.data_subjects.std(axis, **kwargs),
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(data=np.array([0]), shape=result.shape),
             max_vals=lazyrepeatarray(
                 data=(self.max_vals.data - self.min_vals.data) / 2, shape=result.shape
@@ -2608,7 +2550,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         result = self.child.var(axis, **kwargs)
         return PhiTensor(
             child=result,
-            data_subjects=self.data_subjects.var(axis, **kwargs),
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(data=0, shape=result.shape),
             max_vals=lazyrepeatarray(
                 data=0.25 * (self.max_vals.data - self.min_vals.data) ** 2,
@@ -2620,7 +2562,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         result = np.sqrt(self.child)
         return PhiTensor(
             child=result,
-            data_subjects=np.sqrt(self.data_subjects),
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(
                 data=np.sqrt(self.min_vals.data), shape=result.shape
             ),
@@ -2636,7 +2578,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         if isinstance(mean, float) and isinstance(std, float):
             return PhiTensor(
                 child=(self.child - mean) / std,
-                data_subjects=self.data_subjects,
+                data_subject=self.data_subject,
                 min_vals=(self.min_vals - mean) * (1 / std),
                 max_vals=(self.max_vals - mean) * (1 / std),
             )
@@ -2646,11 +2588,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def create_gamma(self) -> GammaTensor:
         """Return a new Gamma tensor based on this phi tensor"""
+        jax_op = SyftTerminalNoop(phi_id=self.id)
         gamma_tensor = GammaTensor(
             child=self.child,
-            data_subjects=self.data_subjects,
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
+            sources={self.id: self},
+            jax_op=jax_op,
+            is_linear=True,
         )
 
         return gamma_tensor
@@ -2661,7 +2604,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         data = self.child.reshape(*args)
         return PhiTensor(
             child=data,
-            data_subjects=self.data_subjects,
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(data=self.min_vals.data.min(), shape=data.shape),
             max_vals=lazyrepeatarray(data=self.max_vals.data.max(), shape=data.shape),
         )
@@ -2674,12 +2617,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         sigma: float,
         private: bool,
     ) -> AcceptableSimpleType:
-        print("PUBLISHING TO GAMMA:")
-        print(self.child)
-
         gamma = self.gamma
-        # gamma.func = lambda x: x
-        gamma.sources[gamma.id] = gamma
 
         res = gamma.publish(
             get_budget_for_user=get_budget_for_user,
@@ -2688,9 +2626,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             sigma=sigma,
             private=private,
         )
-
-        print("Final Values", res)
-
         return res
 
     @property
@@ -2700,7 +2635,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def astype(self, np_type: np.dtype) -> PhiTensor:
         return self.__class__(
             child=self.child.astype(np_type),
-            data_subjects=self.data_subjects,
+            data_subject=self.data_subject,
             min_vals=self.min_vals.astype(np_type),
             max_vals=self.max_vals.astype(np_type),
             # scalar_manager=self.scalar_manager,
@@ -2725,18 +2660,18 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             return PhiTensor(
                 child=(self.child == other)
                 * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
-                data_subjects=self.data_subjects,
+                data_subject=self.data_subject,
                 min_vals=lazyrepeatarray(data=0, shape=self.shape),
                 max_vals=lazyrepeatarray(data=1, shape=self.shape),
             )
         elif isinstance(other, PhiTensor):
-            if (self.data_subjects != other.data_subjects).any():
+            if self.data_subject != other.data_subject:
                 return self.gamma == other.gamma
             else:
                 return PhiTensor(
                     child=(self.child == other.child)
                     * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
-                    data_subjects=self.data_subjects,
+                    data_subject=self.data_subject,
                     min_vals=lazyrepeatarray(data=0, shape=self.shape),
                     max_vals=lazyrepeatarray(data=1, shape=self.shape),
                 )
@@ -2750,18 +2685,18 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             return PhiTensor(
                 child=(self.child != other)
                 * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
-                data_subjects=self.data_subjects,
+                data_subject=self.data_subject,
                 min_vals=lazyrepeatarray(data=0, shape=self.shape),
                 max_vals=lazyrepeatarray(data=1, shape=self.shape),
             )
         elif isinstance(other, PhiTensor):
-            if (self.data_subjects != other.data_subjects).any():
+            if self.data_subject != other.data_subject:
                 return self.gamma != other.gamma
             else:
                 return PhiTensor(
                     child=(self.child != other.child)
                     * 1,  # Multiply by 1 to convert to 0/1 instead of T/F
-                    data_subjects=self.data_subjects,
+                    data_subject=self.data_subject,
                     min_vals=lazyrepeatarray(data=0, shape=self.shape),
                     max_vals=lazyrepeatarray(data=1, shape=self.shape),
                 )
@@ -2774,17 +2709,15 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         # if the tensor being added is also private
         if isinstance(other, PhiTensor):
-            return self.gamma + other.gamma
-            # if self.data_subjects != other.data_subjects:
-            #     return self.gamma + other.gamma
+            if self.data_subject != other.data_subject:
+                return self.gamma + other.gamma
 
-            # return PhiTensor(
-            #     child=self.child + other.child,
-            #     min_vals=self.min_vals + other.min_vals,
-            #     max_vals=self.max_vals + other.max_vals,
-            #     data_subjects=self.data_subjects,
-            #     # scalar_manager=self.scalar_manager,
-            # )
+            return PhiTensor(
+                child=self.child + other.child,
+                min_vals=self.min_vals + other.min_vals,
+                max_vals=self.max_vals + other.max_vals,
+                data_subject=self.data_subject,
+            )
 
         # if the tensor being added is a public tensor / int / float / etc.
         elif is_acceptable_simple_type(other):
@@ -2793,7 +2726,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 child=self.child + other,
                 min_vals=self.min_vals + other,
                 max_vals=self.max_vals + other,
-                data_subjects=self.data_subjects,
+                data_subject=self.data_subject,
             )
 
         elif isinstance(other, GammaTensor):
@@ -2801,61 +2734,60 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         else:
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
+        # try:
+        # return dispatch_tensor(
+        #     self,
+        #     other,
+        #     child_func=lambda tensors: operator.add(*tensors),
+        #     min_func=lambda tensors: operator.add(*tensors),
+        #     max_func=lambda tensors: operator.add(*tensors),
+        #     original_func=lambda tensors: operator.add(*tensors),
+        # )
+        # except TypeError:
+        #     raise NotImplementedError(
+        #         f"__add__ not implemented for these types"
+        #     )
 
     def __radd__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
         return self.__add__(other)
 
     def __sub__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
+        # if the tensor being added is also private
         if isinstance(other, PhiTensor):
-            return self.gamma - other.gamma
-            # diff_data_subjects = (
-            #     self.data_subjects.one_hot_lookup != other.data_subjects.one_hot_lookup
-            # )
-            # diff_data_subjects = (
-            #     diff_data_subjects
-            #     if isinstance(diff_data_subjects, bool)
-            #     else diff_data_subjects.any()
-            # )
-            # if diff_data_subjects:
-            #     return self.gamma - other.gamma
-            #     # raise NotImplementedError
+            if self.data_subject != other.data_subject:
+                return self.gamma - other.gamma
 
-            # data = self.child - other.child
-            # min_min = self.min_vals.data - other.min_vals.data
-            # min_max = self.min_vals.data - other.max_vals.data
-            # max_min = self.max_vals.data - other.min_vals.data
-            # max_max = self.max_vals.data - other.max_vals.data
-            # _min_vals = np.minimum.reduce([min_min, min_max, max_min, max_max])
-            # _max_vals = np.maximum.reduce([min_min, min_max, max_min, max_max])
-            # min_vals = self.min_vals.copy()
-            # min_vals.data = _min_vals
-            # max_vals = self.max_vals.copy()
-            # max_vals.data = _max_vals
+            return PhiTensor(
+                child=self.child - other.child,
+                min_vals=self.min_vals - other.min_vals,
+                max_vals=self.max_vals - other.max_vals,
+                data_subject=self.data_subject,
+            )
 
-            # data_subjects = self.data_subjects
-
+        # if the tensor being added is a public tensor / int / float / etc.
         elif is_acceptable_simple_type(other):
-            if isinstance(other, np.ndarray):
-                if not is_broadcastable(other.shape, self.child.shape):  # type: ignore
-                    raise Exception(
-                        f"Shapes do not match for subtraction: {self.child.shape} and {other.shape}"
-                    )
-            data = self.child - other
-            min_vals = self.min_vals - other
-            max_vals = self.max_vals - other
-            data_subjects = self.data_subjects
+
+            return PhiTensor(
+                child=self.child - other,
+                min_vals=self.min_vals - other,
+                max_vals=self.max_vals - other,
+                data_subject=self.data_subject,
+            )
+
         elif isinstance(other, GammaTensor):
             return self.gamma - other
         else:
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
-        return PhiTensor(
-            child=data,
-            data_subjects=data_subjects,
-            min_vals=min_vals,
-            max_vals=max_vals,
-        )
+        # return dispatch_tensor(
+        #     self,
+        #     other,
+        #     child_func=lambda tensors: operator.sub(*tensors),
+        #     min_func=lambda tensors: operator.sub(*tensors),
+        #     max_func=lambda tensors: operator.sub(*tensors),
+        #     original_func=lambda tensors: operator.sub(*tensors),
+        # )
 
     def __rsub__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
         return (self - other) * -1
@@ -2863,7 +2795,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def __mul__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         if isinstance(other, PhiTensor):
-            if np.array(self.data_subjects == other.data_subjects).all():
+            if self.data_subject == other.data_subject:
                 min_min = self.min_vals.data * other.min_vals.data
                 min_max = self.min_vals.data * other.max_vals.data
                 max_min = self.max_vals.data * other.min_vals.data
@@ -2874,7 +2806,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
                 return PhiTensor(
                     child=self.child * other.child,
-                    data_subjects=self.data_subjects,
+                    data_subject=self.data_subject,
                     min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
                     max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
                 )
@@ -2897,11 +2829,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals = self.max_vals.copy()
             max_vals.data = _max_vals
 
-            data_subjects = self.data_subjects
-
             return PhiTensor(
                 child=data,
-                data_subjects=data_subjects,
+                data_subject=self.data_subject,
                 min_vals=min_vals,
                 max_vals=max_vals,
             )
@@ -2916,7 +2846,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def __truediv__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
         if isinstance(other, PhiTensor):
-            if np.array(self.data_subjects != other.data_subjects).all():
+            if self.data_subject != other.data_subject:
                 return self.gamma / other.gamma
             else:
                 min_min = self.min_vals.data / other.min_vals.data
@@ -2929,7 +2859,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
                 return PhiTensor(
                     child=self.child / other.child,
-                    data_subjects=self.data_subjects,
+                    data_subject=self.data_subject,
                     min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
                     max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
                 )
@@ -2938,7 +2868,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         elif is_acceptable_simple_type(other):
             return PhiTensor(
                 child=self.child / other,
-                data_subjects=self.data_subjects,
+                data_subject=self.data_subject,
                 min_vals=lazyrepeatarray(
                     data=self.min_vals.data / other, shape=self.min_vals.shape
                 ),
@@ -2958,7 +2888,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 child=(other / self.child),
                 min_vals=(other / self.min_vals),
                 max_vals=(other / self.max_vals),
-                data_subjects=self.data_subjects,
+                data_subject=self.data_subject,
             )
 
         elif isinstance(other, GammaTensor):
@@ -2984,9 +2914,8 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 minv = np.min([min_min, min_max, max_max, max_min], axis=0)  # type: ignore
                 min_vals = lazyrepeatarray(data=minv, shape=data.shape)
                 max_vals = self.max_vals.__matmul__(other)
-                output_ds = self.data_subjects @ other
             elif isinstance(other, PhiTensor):
-                if self.data_subjects.sum() != other.data_subjects.sum():
+                if self.data_subject != other.data_subject:
                     return self.gamma @ other.gamma
                 else:
                     min_min = (self.min_vals @ other.min_vals).data.min()
@@ -3002,7 +2931,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     data = self.child.__matmul__(other.child)
                     max_vals = self.max_vals.__matmul__(other.max_vals)
                     min_vals = lazyrepeatarray(data=minv, shape=data.shape)
-                    output_ds = self.data_subjects @ other.data_subjects
 
             elif isinstance(other, GammaTensor):
                 return self.gamma @ other
@@ -3014,7 +2942,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 child=data,
                 max_vals=max_vals,
                 min_vals=min_vals,
-                data_subjects=output_ds,
+                data_subject=self.data_subject,
             )
 
     def argsort(self, axis: Optional[int] = -1) -> PhiTensor:
@@ -3043,10 +2971,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 irrespective of dimensionality.
         """
         result = self.child.argsort(axis)
-        out_ds = np.take_along_axis(self.data_subjects, result, axis=axis)
         return PhiTensor(
             child=result,
-            data_subjects=out_ds,
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(data=0, shape=self.shape),
             max_vals=lazyrepeatarray(data=self.child.size, shape=self.shape),
         )
@@ -3081,13 +3008,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         """
 
         # Must do argsort before we change self.child by calling sort
-        indices = self.child.argsort(axis, kind)
         self.child.sort(axis, kind)
-
-        out_ds = np.take_along_axis(self.data_subjects, indices, axis=axis)
         return PhiTensor(
             child=self.child,
-            data_subjects=out_ds,
+            data_subject=self.data_subject,
             min_vals=self.min_vals,
             max_vals=self.max_vals,
         )
@@ -3104,7 +3028,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         elif isinstance(other, GammaTensor):
             return self.gamma << other
         elif isinstance(other, PhiTensor):
-            if (self.data_subjects != other.data_subjects).any():
+            if self.data_subject != other.data_subject:
                 return self.gamma << other.gamma
             else:
                 child = self.child << other.child
@@ -3124,7 +3048,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
         return PhiTensor(
             child=child,
-            data_subjects=self.data_subjects,
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
             max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
         )
@@ -3140,7 +3064,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         elif isinstance(other, GammaTensor):
             return self.gamma >> other
         elif isinstance(other, PhiTensor):
-            if (self.data_subjects != other.data_subjects).any():
+            if self.data_subject != other.data_subject:
                 return self.gamma >> other.gamma
             else:
                 child = self.child >> other.child
@@ -3160,7 +3084,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
         return PhiTensor(
             child=child,
-            data_subjects=self.data_subjects,
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
             max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
         )
@@ -3175,7 +3099,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         elif isinstance(other, GammaTensor):
             return self.gamma ^ other
         elif isinstance(other, PhiTensor):
-            if (self.data_subjects != other.data_subjects).any():
+            if self.data_subject != other.data_subject:
                 return self.gamma ^ other.gamma
             else:
                 child = self.child ^ other.child
@@ -3195,7 +3119,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         return PhiTensor(
             child=child,
-            data_subjects=self.data_subjects,
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
             max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
         )
@@ -3226,7 +3150,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def __round__(self, n: int = 0) -> PhiTensor:
         return PhiTensor(
             child=self.child.round(n),
-            data_subjects=self.data_subjects,
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(
                 data=self.min_vals.data.round(n), shape=self.min_vals.shape
             ),
@@ -3256,26 +3180,13 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     data = self.child.__rmatmul__(other)
                     min_vals = self.min_vals.__rmatmul__(other)
                     max_vals = self.max_vals.__rmatmul__(other)
-                    output_ds = self.data_subjects.__rmatmul__(other)
                 elif isinstance(other, PhiTensor):
-                    return self.gamma.__rmatmul__(other.gamma)
-                    # if self.data_subjects != other.data_subjects:
-                    #     # return convert_to_gamma_tensor(self).__matmul__(convert_to_gamma_tensor(other))
-                    #     raise NotImplementedError
-                    # else:
-                    #     data = self.child.__rmatmul__(other.child)
-                    #     # _min_vals = np.array(
-                    #     #     [self.min_vals.data.__matmul__(other.min_vals.data)]
-                    #     # )
-                    #     # _max_vals = np.array(
-                    #     #     [self.max_vals.data.__matmul__(other.max_vals.data)]
-                    #     # )
-                    #     # min_vals = self.min_vals.copy()
-                    #     # min_vals.data = _min_vals
-                    #     # max_vals = self.max_vals.copy()
-                    #     # max_vals.data = _max_vals
-                    #     min_vals = self.min_vals.__rmatmul__(other.min_vals)
-                    #     max_vals = self.max_vals.__rmatmul__(other.max_vals)
+                    if self.data_subject != other.data_subject:
+                        return self.gamma.__rmatmul__(other.gamma)
+                    else:
+                        data = self.child.__rmatmul__(other.child)
+                        min_vals = self.min_vals.__rmatmul__(other.min_vals)
+                        max_vals = self.max_vals.__rmatmul__(other.max_vals)
 
                 else:
                     print("Type is unsupported:" + str(type(other)))
@@ -3285,7 +3196,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     child=data,
                     max_vals=max_vals,
                     min_vals=min_vals,
-                    data_subjects=output_ds,
+                    data_subject=self.data_subject,
                 )
 
     def clip(self, a_min: float, a_max: float) -> PhiTensor:
@@ -3299,22 +3210,20 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         return PhiTensor(
             child=output_data,
-            data_subjects=self.data_subjects,
+            data_subject=self.data_subject,
             min_vals=min_vals,
             max_vals=max_vals,
         )
 
     def transpose(self, *args: Any, **kwargs: Any) -> PhiTensor:
         """Transposes self.child, min_vals, and max_vals if these can be transposed, otherwise doesn't change them."""
-        output_data = self.child.transpose(*args, **kwargs)
 
+        output_data = self.child.transpose(*args, **kwargs)
         min_vals = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape)
         max_vals = lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape)
-        output_ds = self.data_subjects.transpose(*args, **kwargs)
-
         return PhiTensor(
             child=output_data,
-            data_subjects=output_ds,
+            data_subject=self.data_subject,
             min_vals=min_vals,
             max_vals=max_vals,
         )
@@ -3340,7 +3249,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         output_data = self.child.flatten(order=order)
         return PhiTensor(
             child=output_data,
-            data_subjects=self.data_subjects.flatten(order=order),
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape),
             max_vals=lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape),
         )
@@ -3354,15 +3263,17 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         # if the tensor being added is also private
         if isinstance(other, PhiTensor):
-            if self.data_subjects != other.data_subjects:
-                return self.gamma + other.gamma
+            if self.data_subject != other.data_subject:
+                return self.gamma.concatenate(other.gamma, *args, **kwargs)
 
             return PhiTensor(
                 child=self.child.concatenate(other.child, *args, **kwargs),
                 min_vals=self.min_vals.concatenate(other.min_vals, *args, **kwargs),
                 max_vals=self.max_vals.concatenate(other.max_vals, *args, **kwargs),
-                data_subjects=self.data_subjects,
+                data_subject=self.data_subject,
             )
+        elif isinstance(other, GammaTensor):
+            return self.gamma.concatenate(other, *args, **kwargs)
 
         elif is_acceptable_simple_type(other):
             raise NotImplementedError
@@ -3372,10 +3283,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def __lt__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
         if isinstance(other, PhiTensor):
-            if np.array(self.data_subjects == other.data_subjects).all():
+            if self.data_subject == other.data_subject:
                 return PhiTensor(
                     child=(self.child < other.child) * 1,
-                    data_subjects=self.data_subjects,
+                    data_subject=self.data_subject,
                     min_vals=lazyrepeatarray(data=0, shape=self.shape),
                     max_vals=lazyrepeatarray(data=1, shape=self.shape),
                 )
@@ -3390,11 +3301,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             data = self.child < other
             min_vals = self.min_vals * 0
             max_vals = (self.max_vals * 0) + 1
-            data_subjects = self.data_subjects
 
             return PhiTensor(
                 child=data,
-                data_subjects=data_subjects,
+                data_subject=self.data_subject,
                 min_vals=min_vals,
                 max_vals=max_vals,
             )
@@ -3406,10 +3316,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         # if the tensor being compared is also private
         if isinstance(other, PhiTensor):
-            if np.array(self.data_subjects == other.data_subjects).all():
+            if self.data_subject == other.data_subject:
                 return PhiTensor(
                     child=(self.child <= other.child) * 1,
-                    data_subjects=self.data_subjects,
+                    data_subject=self.data_subject,
                     min_vals=lazyrepeatarray(data=0, shape=self.shape),
                     max_vals=lazyrepeatarray(data=1, shape=self.shape),
                 )
@@ -3424,11 +3334,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             data = self.child <= other
             min_vals = self.min_vals * 0
             max_vals = (self.max_vals * 0) + 1
-            data_subjects = self.data_subjects
 
             return PhiTensor(
                 child=data,
-                data_subjects=data_subjects,
+                data_subject=self.data_subject,
                 min_vals=min_vals,
                 max_vals=max_vals,
             )
@@ -3440,10 +3349,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         # if the tensor being compared is also private
         if isinstance(other, PhiTensor):
-            if np.array(self.data_subjects == other.data_subjects).all():
+            if self.data_subject == other.data_subject:
                 return PhiTensor(
                     child=(self.child > other.child) * 1,
-                    data_subjects=self.data_subjects,
+                    data_subject=self.data_subject,
                     min_vals=lazyrepeatarray(data=0, shape=self.shape),
                     max_vals=lazyrepeatarray(data=1, shape=self.shape),
                 )
@@ -3458,11 +3367,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             data = self.child > other
             min_vals = self.min_vals * 0
             max_vals = (self.max_vals * 0) + 1
-            data_subjects = self.data_subjects
 
             return PhiTensor(
                 child=data,
-                data_subjects=data_subjects,
+                data_subject=self.data_subject,
                 min_vals=min_vals,
                 max_vals=max_vals,
             )
@@ -3473,10 +3381,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         # if the tensor being compared is also private
         if isinstance(other, PhiTensor):
-            if np.array(self.data_subjects == other.data_subjects).all():
+            if self.data_subject == other.data_subject:
                 return PhiTensor(
                     child=(self.child >= other.child) * 1,
-                    data_subjects=self.data_subjects,
+                    data_subject=self.data_subject,
                     min_vals=lazyrepeatarray(data=0, shape=self.shape),
                     max_vals=lazyrepeatarray(data=1, shape=self.shape),
                 )
@@ -3491,11 +3399,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             data = self.child >= other
             min_vals = self.min_vals * 0
             max_vals = (self.max_vals * 0) + 1
-            data_subjects = self.data_subjects
 
             return PhiTensor(
                 child=data,
-                data_subjects=data_subjects,
+                data_subject=self.data_subject,
                 min_vals=min_vals,
                 max_vals=max_vals,
             )
@@ -3512,19 +3419,18 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 child=np.dot(self.child, other),
                 min_vals=np.dot(self.min_vals, other),
                 max_vals=np.dot(self.max_vals, other),
-                data_subjects=np.dot(self.data_subjects, other),
+                data_subject=self.data_subject,
             )
         elif isinstance(other, PhiTensor):
-            return self.gamma.dot(other.gamma)
-            # if self.data_subjects.one_hot_lookup == other.data_subjects.one_hot_lookup:
-            #     return PhiTensor(
-            #         child=np.dot(self.child, other.child),
-            #         min_vals=np.dot(self.min_vals, other.min_vals),
-            #         max_vals=np.dot(self.max_vals, other.max_vals),
-            #         data_subjects=self.data_subjects,
-            #     )
-            # else:
-            #     return self.gamma.dot(other.gamma)
+            if self.data_subject == other.data_subject:
+                return PhiTensor(
+                    child=np.dot(self.child, other.child),
+                    min_vals=np.dot(self.min_vals, other.min_vals),
+                    max_vals=np.dot(self.max_vals, other.max_vals),
+                    data_subject=self.data_subject,
+                )
+            else:
+                return self.gamma.dot(other.gamma)
         elif isinstance(other, GammaTensor):
             return self.gamma.dot(other)
         else:
@@ -3560,20 +3466,16 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         """
         if where is None:
             result = np.array(self.child.sum(axis=axis, keepdims=keepdims))
-            output_ds = self.data_subjects.sum(axis=axis, keepdims=keepdims)
             num = np.ones_like(self.child).sum(axis=axis, keepdims=keepdims)
         else:
             result = self.child.sum(axis=axis, keepdims=keepdims, where=where)
-            output_ds = self.data_subjects.sum(
-                axis=axis, keepdims=keepdims, initial=initial, where=where
-            )
             num = np.ones_like(self.child).sum(
                 axis=axis, keepdims=keepdims, initial=initial, where=where
             )
 
         return PhiTensor(
             child=result,
-            data_subjects=np.array(output_ds),
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(data=self.min_vals.data * num, shape=result.shape),
             max_vals=lazyrepeatarray(data=self.max_vals.data * num, shape=result.shape),
         )
@@ -3590,7 +3492,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
             return PhiTensor(
                 child=self.child**power,
-                data_subjects=self.data_subjects,
+                data_subject=self.data_subject,
                 min_vals=lazyrepeatarray(data=minv, shape=self.shape),
                 max_vals=lazyrepeatarray(
                     data=self.max_vals.data**power, shape=self.shape
@@ -3605,7 +3507,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 minv = (self.min_vals.data**power) % modulo
             return PhiTensor(
                 child=self.child**power % modulo,
-                data_subjects=self.data_subjects,
+                data_subject=self.data_subject,
                 min_vals=lazyrepeatarray(data=minv, shape=self.shape),
                 max_vals=lazyrepeatarray(
                     data=(self.max_vals.data**power) % modulo, shape=self.shape
@@ -3623,7 +3525,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=result,
             min_vals=minv,
             max_vals=maxv,
-            data_subjects=np.expand_dims(self.data_subjects, axis=axis),
+            data_subject=self.data_subject,
         )
 
     def ones_like(
@@ -3645,7 +3547,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=child,
             min_vals=min_vals,
             max_vals=max_vals,
-            data_subjects=self.data_subjects,
+            data_subject=self.data_subject,
         )
 
     def __neg__(self) -> PhiTensor:
@@ -3654,7 +3556,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=self.child * -1,
             min_vals=self.max_vals * -1,
             max_vals=self.min_vals * -1,
-            data_subjects=self.data_subjects,
+            data_subject=self.data_subject,
         )
 
     def __pos__(self) -> PhiTensor:
@@ -3662,21 +3564,19 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=self.child,
             min_vals=self.min_vals,
             max_vals=self.max_vals,
-            data_subjects=self.data_subjects,
+            data_subject=self.data_subject,
         )
 
     def resize(
         self, new_shape: Union[int, Tuple[int, ...]], refcheck: bool = True
     ) -> PhiTensor:
         self.child.resize(new_shape, refcheck=refcheck)
-        self.data_subjects.resize(new_shape, refcheck=refcheck)
-        self.data_subjects = DataSubjectArray.from_objs(self.data_subjects)
         out_shape = self.child.shape
         return PhiTensor(
             child=self.child,
             min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_shape),
             max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_shape),
-            data_subjects=self.data_subjects,
+            data_subject=self.data_subject,
         )
 
     def compress(self, condition: List[bool], axis: Optional[int] = None) -> PhiTensor:
@@ -3687,7 +3587,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=out_child,
             min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
             max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
-            data_subjects=self.data_subjects.compress(condition, axis),
+            data_subject=self.data_subject,
         )
 
     def squeeze(self, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> PhiTensor:
@@ -3696,7 +3596,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=out_child,
             min_vals=lazyrepeatarray(data=self.min_vals.data, shape=out_child.shape),
             max_vals=lazyrepeatarray(data=self.max_vals.data, shape=out_child.shape),
-            data_subjects=np.squeeze(self.data_subjects, axis),
+            data_subject=self.data_subject,
         )
 
     def repeat(
@@ -3732,7 +3632,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         return PhiTensor(
             child=result,
-            data_subjects=self.data_subjects.repeat(repeats, axis),
+            data_subject=self.data_subject,
             min_vals=minv,
             max_vals=maxv,
         )
@@ -3802,11 +3702,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         """
 
         if isinstance(choices, PhiTensor):
-            if (self.data_subjects != choices.data_subjects).any():
+            if self.data_subject != choices.data_subject:
                 return self.gamma.choose(choices.gamma, mode=mode)
             else:
                 result = self.child.choose(choices.child, mode=mode)
-                output_ds = np.choose(self.child, choices.data_subjects)
         elif isinstance(choices, GammaTensor):
             return self.gamma.choose(choices, mode=mode)
         else:
@@ -3816,7 +3715,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         return PhiTensor(
             child=result,
-            data_subjects=output_ds,
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(
                 data=choices.min_vals.data.min(), shape=result.shape
             ),
@@ -3845,7 +3744,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         num = np.ones_like(self.child).cumsum(axis=axis)
         return PhiTensor(
             child=result,
-            data_subjects=self.data_subjects.cumsum(axis=axis),
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(
                 data=(self.min_vals.data * num).min(), shape=result.shape
             ),
@@ -3879,7 +3778,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         return PhiTensor(
             child=result,
-            data_subjects=self.data_subjects.cumprod(axis=axis),
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(
                 data=-((highest**num).max()), shape=result.shape
             ),
@@ -3915,7 +3814,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         result = self.child.prod(axis=axis)
         return PhiTensor(
             child=result,
-            data_subjects=self.data_subjects.prod(axis),
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(
                 data=self.min_vals.data ** (self.child.size / result.size),
                 shape=result.shape,
@@ -3931,7 +3830,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         return self // value.
         """
         if isinstance(other, PhiTensor):
-            if np.array(self.data_subjects != other.data_subjects).all():
+            if self.data_subject != other.data_subject:
                 return self.gamma // other.gamma
             else:
                 min_min = self.min_vals.data // other.min_vals.data
@@ -3944,7 +3843,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
                 return PhiTensor(
                     child=self.child // other.child,
-                    data_subjects=self.data_subjects,
+                    data_subject=self.data_subject,
                     min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
                     max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
                 )
@@ -3953,7 +3852,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         elif is_acceptable_simple_type(other):
             return PhiTensor(
                 child=self.child // other,
-                data_subjects=self.data_subjects,
+                data_subject=self.data_subject,
                 min_vals=lazyrepeatarray(
                     data=self.min_vals.data // other, shape=self.min_vals.shape
                 ),
@@ -3972,7 +3871,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 child=(other // self.child),
                 min_vals=(other // self.min_vals),
                 max_vals=(other // self.max_vals),
-                data_subjects=self.data_subjects,
+                data_subject=self.data_subject,
             )
 
         elif isinstance(other, GammaTensor):
@@ -4013,7 +3912,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         num = np.ones_like(self.child).trace(offset, axis1, axis2)
         return PhiTensor(
             child=result,
-            data_subjects=self.data_subjects.trace(offset, axis1, axis2),
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(data=self.min_vals.data * num, shape=result.shape),
             max_vals=lazyrepeatarray(data=self.max_vals.data * num, shape=result.shape),
         )
@@ -4024,64 +3923,60 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         return PhiTensor(
             child=result,
-            data_subjects=self.data_subjects.diagonal(offset, axis1, axis2),
+            data_subject=self.data_subject,
             min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
             max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
         )
 
-    def _object2bytes(self) -> bytes:
-        schema = get_capnp_schema(schema_file="phi_tensor.capnp")
+    # def _object2bytes(self) -> bytes:
+    #     schema = get_capnp_schema(schema_file="phi_tensor.capnp")
 
-        pt_struct: CapnpModule = schema.PT  # type: ignore
-        pt_msg = pt_struct.new_message()
-        # this is how we dispatch correct deserialization of bytes
-        pt_msg.magicHeader = serde_magic_header(type(self))
+    #     pt_struct: CapnpModule = schema.PT  # type: ignore
+    #     pt_msg = pt_struct.new_message()
+    #     # this is how we dispatch correct deserialization of bytes
+    #     pt_msg.magicHeader = serde_magic_header(type(self))
 
-        if isinstance(self.child, np.ndarray) or np.isscalar(self.child):
-            chunk_bytes(capnp_serialize(np.array(self.child), to_bytes=True), "child", pt_msg)  # type: ignore
-            pt_msg.isNumpy = True
-        else:
-            chunk_bytes(serialize(self.child, to_bytes=True), "child", pt_msg)  # type: ignore
-            pt_msg.isNumpy = False
+    #     if isinstance(self.child, np.ndarray) or np.isscalar(self.child):
+    #         chunk_bytes(capnp_serialize(np.array(self.child), to_bytes=True), "child", pt_msg)  # type: ignore
+    #         pt_msg.isNumpy = True
+    #     else:
+    #         chunk_bytes(serialize(self.child, to_bytes=True), "child", pt_msg)  # type: ignore
+    #         pt_msg.isNumpy = False
 
-        pt_msg.minVals = serialize(self.min_vals, to_bytes=True)
-        pt_msg.maxVals = serialize(self.max_vals, to_bytes=True)
-        chunk_bytes(
-            capnp_serialize(dslarraytonumpyutf8(self.data_subjects), to_bytes=True),
-            "dataSubjects",
-            pt_msg,
-        )
-        # to pack or not to pack?
-        # to_bytes = pt_msg.to_bytes()
+    #     pt_msg.minVals = serialize(self.min_vals, to_bytes=True)
+    #     pt_msg.maxVals = serialize(self.max_vals, to_bytes=True)
+    #     pt_msg.dataSubject = serialize(dstonumpyutf8(self.data_subject), to_bytes=True)
+    #     pt_msg.id = self.id.to_string()
+    #     # to pack or not to pack?
+    #     # to_bytes = pt_msg.to_bytes()
 
-        return pt_msg.to_bytes_packed()
+    #     return pt_msg.to_bytes_packed()
 
-    @staticmethod
-    def _bytes2object(buf: bytes) -> PhiTensor:
-        schema = get_capnp_schema(schema_file="phi_tensor.capnp")
-        pt_struct: CapnpModule = schema.PT  # type: ignore
-        # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
-        MAX_TRAVERSAL_LIMIT = 2**64 - 1
-        # to pack or not to pack?
-        # pt_msg = pt_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
-        pt_msg = pt_struct.from_bytes_packed(
-            buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        )
+    # @staticmethod
+    # def _bytes2object(buf: bytes) -> PhiTensor:
+    #     schema = get_capnp_schema(schema_file="phi_tensor.capnp")
+    #     pt_struct: CapnpModule = schema.PT  # type: ignore
+    #     # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
+    #     MAX_TRAVERSAL_LIMIT = 2**64 - 1
+    #     # to pack or not to pack?
+    #     # pt_msg = pt_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
+    #     pt_msg = pt_struct.from_bytes_packed(
+    #         buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
+    #     )
 
-        if pt_msg.isNumpy:
-            child = capnp_deserialize(combine_bytes(pt_msg.child), from_bytes=True)
-        else:
-            child = deserialize(combine_bytes(pt_msg.child), from_bytes=True)
+    #     if pt_msg.isNumpy:
+    #         child = capnp_deserialize(combine_bytes(pt_msg.child), from_bytes=True)
+    #     else:
+    #         child = deserialize(combine_bytes(pt_msg.child), from_bytes=True)
 
-        min_vals = deserialize(pt_msg.minVals, from_bytes=True)
-        max_vals = deserialize(pt_msg.maxVals, from_bytes=True)
-        data_subjects = numpyutf8todslarray(
-            capnp_deserialize(combine_bytes(pt_msg.dataSubjects), from_bytes=True)
-        )
-
-        return PhiTensor(
-            child=child,
-            min_vals=min_vals,
-            max_vals=max_vals,
-            data_subjects=data_subjects,
-        )
+    #     min_vals = deserialize(pt_msg.minVals, from_bytes=True)
+    #     max_vals = deserialize(pt_msg.maxVals, from_bytes=True)
+    #     data_subject = numpyutf8tods(deserialize(pt_msg.dataSubject, from_bytes=True))
+    #     id_str = UID.from_string(pt_msg.id)
+    #     return PhiTensor(
+    #         child=child,
+    #         min_vals=min_vals,
+    #         max_vals=max_vals,
+    #         data_subject=data_subject,
+    #         id=id_str,
+    #     )
