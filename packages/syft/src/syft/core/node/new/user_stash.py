@@ -1,3 +1,6 @@
+# stdlib
+from typing import List
+
 # third party
 from result import Result
 
@@ -7,17 +10,23 @@ from .document_store import BaseStash
 from .document_store import CollectionSettings
 from .document_store import DocumentStore
 from .document_store import PrimaryKey
+from .document_store import PrimaryKeys
+from .document_store import QueryKeys
+from .document_store import UIDPrimaryKey
 from .user import User
 
 # UserPrimaryKey = PrimaryKey(keys=("id", "email"), types=(UID, EmailStr))
 # EmailStr seems to be lost every time the value is set even with a validator
-UserPrimaryKey = PrimaryKey(keys=("id", "email"), types=(UID, str))
+
+UserIndexKeys = PrimaryKeys(pks=PrimaryKey(key="email", type_=str))
+
+EmailPrimaryKey = PrimaryKey(key="email", type_=str)
 
 
 class UserStash(BaseStash):
     object_type = User
     settings: CollectionSettings = CollectionSettings(
-        name=User.__canonical_name__, primary_key=UserPrimaryKey
+        name=User.__canonical_name__, index_keys=UserIndexKeys
     )
 
     def __init__(self, store: DocumentStore) -> None:
@@ -26,8 +35,16 @@ class UserStash(BaseStash):
     def set(self, user: User) -> Result[User, str]:
         return super().set(obj=user)
 
-    def get(self, uid: UID) -> Result[User, str]:
-        return super().get(pk=self.settings.primary_key.make(uid))
+    def get_all(self, qks: QueryKeys) -> Result[List[User], str]:
+        return super().get_all_index(qks=qks)
+
+    def get_by_uid(self, uid: UID) -> Result[User, str]:
+        qks = QueryKeys(qks=[UIDPrimaryKey.with_obj(uid)])
+        return self.get_all(qks=qks)[0]
+
+    def get_by_email(self, email: str) -> Result[User, str]:
+        qks = QueryKeys(qks=[EmailPrimaryKey.with_obj(email)])
+        return self.get_all(qks=qks)[0]
 
     # def set(self, user: Any) -> None:
     #     self.collection.set(syft_object=user)

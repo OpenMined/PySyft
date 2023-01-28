@@ -17,8 +17,6 @@ def test_user_stash() -> None:
         password_verify="letmein",
     )
 
-    print(UserUpdate.__fields__)
-
     assert new_user.id is None
     assert new_user.email == "alice@bob.com"
     assert new_user.name == "Alice"
@@ -27,25 +25,23 @@ def test_user_stash() -> None:
 
     user = new_user.to(User)
     assert isinstance(user.id, UID)
-    print("user", user)
 
-    print("user and user update", type(user.email), type(new_user.email))
+    _ = user_stash.set(user)
+    result2 = user_stash.get_by_uid(user.id)
 
-    result = user_stash.set(user)
-    result2 = user_stash.get(user.id)
-    print("result", type(result))
-    print("result2", type(result2))
+    result3 = user_stash.get_by_email(user.email)
 
-    assert result.email == result2.email
-    assert result.name == result2.name
-    assert result.hashed_password == result2.hashed_password
-    assert result.salt == result2.salt
-    assert result.signing_key == result2.signing_key
-    assert result.verify_key == result2.verify_key
-    assert result.role == result2.role
-    assert result.institution == result2.institution
-    assert result.website == result2.website
-    assert result.created_at == result2.created_at
+    assert result2 == result3
 
-    assert result == result2
-    assert False
+    assert user.email == result2.email
+    assert user.name == result2.name
+    assert user.hashed_password == result2.hashed_password
+    assert user.salt == result2.salt
+    assert user.signing_key == result2.signing_key
+    assert user.verify_key == result2.verify_key
+    assert user.role == result2.role
+    assert user.institution == result2.institution
+    assert user.website == result2.website
+    assert user.created_at == result2.created_at
+
+    assert user == result2
