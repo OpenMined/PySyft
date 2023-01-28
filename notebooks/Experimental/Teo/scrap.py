@@ -10,7 +10,7 @@ from syft.core.node.new.action_service import NumpyArrayObject
 
 ds_client = sy.login(email="info@openmined.org", password="changethis", port=8081)
 
-raw_data = [1,2,3]
+raw_data = [1, 2, 3]
 
 pointer = ds_client.api.services.action.np_array(raw_data)
 print(pointer.get_from(ds_client))

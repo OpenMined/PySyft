@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 import inspect
 from typing import Any
+from typing import Callable
 from typing import ClassVar
 from typing import Dict
 from typing import List
@@ -13,6 +14,7 @@ from typing import Union
 
 # third party
 import pydantic
+from typing_extensions import Self
 
 # relative
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
@@ -47,14 +49,40 @@ class Action(SyftObject):
         return f"{self.path}.{self.op}"
 
 
-class ActionObjectPointer(SyftObject, extra=pydantic.Extra.allow):
+def __make_infix_op__(op: str) -> Callable:
+    def infix_op(_self, other: Any) -> Self:
+        if not isinstance(other, ActionObjectPointer):
+            other = other.to_pointer(_self.node_uid)
+            # print("🔵 TODO: pointerize")
+            # raise Exception("We need to pointerize first")
+        print(f"{other.id=}")
+        print(f"{_self.id=}")
+
+        action = _self.make_method_action(op=op, args=[other])
+        print(f"{action=}")
+        action_result = _self.execute_action(action, sync=True)
+        return action_result
+
+    infix_op.__name__ = op
+    return infix_op
+
+
+class ActionObjectPointer(SyftObject):
     __canonical_name__ = "ActionObjectPointer"
     __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_state__ = ["id", "node_uid", "parent_id"]
 
+    _inflix_operations: List = []
+
     node_uid: Optional[UID]
     parent_id: Optional[UID]
+
+    def __new__(cls, *args, **kwargs):
+        for op in cls._inflix_operations:
+            new_op = __make_infix_op__(op)
+            setattr(ActionObjectPointer, op, new_op)
+        return super(ActionObjectPointer, cls).__new__(cls)
 
     def execute_action(self, action: Action, sync: bool = True) -> ActionObjectPointer:
         if self.node_uid is None:
@@ -101,8 +129,6 @@ class ActionObjectPointer(SyftObject, extra=pydantic.Extra.allow):
         kwargs: Optional[Dict[str, Union[UID, ActionObjectPointer]]] = None,
     ) -> Action:
         path = self.get_path()
-        print(f'{self.id=}')
-        print(f'{args=}')
         return self.make_action(
             path=path, op=op, remote_self=self.id, args=args, kwargs=kwargs
         )

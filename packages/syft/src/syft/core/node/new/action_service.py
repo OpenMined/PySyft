@@ -1,5 +1,4 @@
 # stdlib
-import types
 from typing import Any
 from typing import Callable
 from typing import List
@@ -9,8 +8,6 @@ import numpy as np
 from result import Err
 from result import Ok
 from result import Result
-from typing_extensions import Self
-from numpy.typing import ArrayLike
 
 # relative
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
@@ -28,6 +25,7 @@ from .service import service_method
 
 @serializable(recursive_serde=True)
 class NumpyArrayObjectPointer(ActionObjectPointer):
+    _inflix_operations = ["__add__", "__sub__", "__eq__"]
     __canonical_name__ = "NumpyArrayObjectPointer"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -37,54 +35,6 @@ class NumpyArrayObjectPointer(ActionObjectPointer):
         "node_uid",
         "parent_id",
     ]
-
-    def __post_init__(self) -> None:
-        self.setup_methods()
-
-    # def __add__(self, other):
-    #     pass
-
-    def setup_methods(self) -> None:
-        infix_operations = ["__add__"]#, "__sub__", "__eq__"]
-        for op in infix_operations:
-            new_op = self.__make_infix_op__(op)
-            # print(getattr(self, op))
-            setattr(
-                self,
-                op,
-                types.MethodType(new_op, self),
-            )
-            # new_found_op = getattr(self, op)
-            # print(new_found_op)
-            # print(new_found_op.__name__)
-            
-            
-
-    def __make_infix_op__(self, op: str) -> Callable:
-        def infix_op(_self, other: Any) -> Self:
-            if not isinstance(other, ActionObjectPointer):
-                # if not isinstance(other, ActionObject):
-                #     if not isinstance(other, np.ndarray):
-                #         other = np.array(other)
-                #     other = NumpyArrayObject(
-                #                 syft_action_data=other,
-                #                 dtype=other.dtype,
-                #                 shape=other.shape
-                #             )
-                other = other.to_pointer(self.node_uid)
-                # print("🔵 TODO: pointerize")
-                # raise Exception("We need to pointerize first")
-            print(f"{other.id=}")
-            print(f"{self.id=}")
-            # print(f"{_self.id=}")
-            
-            action = self.make_method_action(op=op, args=[other])
-            print(f"{action=}")
-            action_result = self.execute_action(action, sync=True)
-            return action_result
-
-        infix_op.__name__ = op
-        return infix_op
 
     def get_from(self, domain_client) -> Any:
         return domain_client.api.services.action.get(self.id).syft_action_data
@@ -122,6 +72,7 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
         return domain_node.api.services.action.set(self)
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        print("Hello array func............")
         inputs = tuple(
             np.array(x.syft_action_data, dtype=x.dtype.syft_action_data)
             if isinstance(x, NumpyArrayObject)
@@ -176,9 +127,7 @@ class ActionService(AbstractService):
         if not isinstance(data, np.ndarray):
             data = np.array(data)
         np_obj = NumpyArrayObject(
-            syft_action_data=data,
-            dtype=data.dtype,
-            shape=data.shape
+            syft_action_data=data, dtype=data.dtype, shape=data.shape
         )
         np_pointer = self.set(context, np_obj)
         return np_pointer
