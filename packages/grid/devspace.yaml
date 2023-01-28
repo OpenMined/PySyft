@@ -467,7 +467,6 @@ deployments:
       values:
         volumes:
           - name: credentials-data
-            # size: "10Mi"
             secret:
               secretName: backend-credentials
         containers:
@@ -478,7 +477,7 @@ deployments:
               - containerPath: /credentials
                 volume:
                     name: credentials-data
-                    readOnly: false
+                    readOnly: true
             securityContext:
               capabilities:
                 add: ["NET_ADMIN"]
@@ -569,7 +568,6 @@ deployments:
       values:
         volumes:
           - name: credentials-data
-            # size: "10Mi"
             secret:
               secretName: backend-credentials
         containers:
@@ -580,7 +578,7 @@ deployments:
               - containerPath: /credentials
                 volume:
                     name: credentials-data
-                    readOnly: false
+                    readOnly: true
             securityContext:
               capabilities:
                 add: ["NET_ADMIN"]
