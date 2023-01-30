@@ -26,3 +26,11 @@ def test_add_private(data1: ActionObject, data2: ActionObject) -> None:
 
     assert result1.syft_history_hash == result2.syft_history_hash
     assert result3.syft_history_hash != result2.syft_history_hash
+
+
+def test_op(data1: ActionObject, data2: ActionObject) -> None:
+    """Ensure that using a different op will produce a different history hash"""
+    result1 = data1 + data2
+    result2 = data1 == data2
+
+    assert result1.syft_history_hash != result2.syft_history_hash

@@ -6,12 +6,14 @@ import inspect
 from typing import Any
 from typing import ClassVar
 from typing import Dict
+from typing import Hashable
 from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
 
 # third party
+import numpy as np
 import pydantic
 
 # relative
@@ -174,6 +176,7 @@ class ActionObject(SyftObject):
 
     syft_parent_id: Optional[Union[UID, List[UID]]]
     syft_parent_op: Optional[str]
+    syft_parent_args: Optional[Any]
     syft_history_hash: Optional[int]
     syft_pointer_type: ClassVar[Type[ActionObjectPointer]]
 
@@ -211,29 +214,22 @@ class ActionObject(SyftObject):
                     f"Parent ID type not recognized: {type(self.syft_parent_id)}"
                 )
             else:
-                print(self.syft_parent_id)
-                if len(self.syft_parent_id) == 1:
-                    parent_id = self.syft_parent_id[0]
-                    if not isinstance(parent_id, UID):
-                        raise NotImplementedError(
-                            f"Unrecognized parent id type: {parent_id}"
-                        )
+                print("We're making history")
+                # This Action Object has 1+ parent so it'll need a history hash for verification later
+                history = ""
+                for parent in self.syft_parent_id:
+                    history += str(parent)
+                if self.syft_parent_op is not None:
+                    history += self.syft_parent_op
+                if self.syft_parent_args is not None:
+                    if isinstance(self.syft_parent_args, list):
+                        for arg in self.syft_parent_args:
+                            history += str(arg)
                     else:
-                        if self.syft_parent_op is not None:
-                            print("We got a parent and their op!")
-                            self.syft_history_hash = hash(
-                                str(self.syft_parent_id) + self.syft_parent_op
-                            )
-                            print(
-                                self.syft_history_hash, " <--- this is my history hash"
-                            )
-                        else:
-                            print("No op, but I still have a parent")
-                            self.syft_history_hash = hash(self.syft_parent_id)
-                            print("Aaaaand I have history: ", self.syft_history_hash)
-                else:
-                    print("Our parents are many")
-                    pass
+                        history += str(self.syft_parent_args)
+                # else:
+                #     print("We have no Parent args!")
+                self.syft_history_hash = hash(history)
         print("Lights... Cameras... ACTION OBJECT!")
         # self.history_hash = hash(self.syft_parent_id)
 
@@ -265,22 +261,34 @@ class ActionObject(SyftObject):
         result,
         parents_id: Optional[Union[UID, List[UID]]] = None,
         op_name: Optional[str] = None,
+        parent_args: Optional[str, List[str]] = None,
     ) -> Any:
         """Given an input argument (result) this method ensures the output is an ActionObject as well."""
         # can check types here
-        if op_name is not None:
-            print("Hey we got a name! ", op_name)
         if not isinstance(result, ActionObject):
+            if parents_id is None:
+                parents_id = self.id
+            elif isinstance(parents_id, list):
+                if self.id not in parents_id:
+                    parents_id.append(self.id)
+            elif isinstance(parents_id, UID):
+                if parents_id != self.id:
+                    parents_id = [parents_id, self.id]
+            else:
+                raise NotImplementedError(
+                    "Not implemented for Parent_id type: ", type(parents_id), parents_id
+                )
+
             result = ActionObject(
                 syft_action_data=result,
                 syft_parent_id=parents_id,
                 syft_parent_op=op_name,
-            )  # add syft_history_hash here?
-            result.syft_parent_id = self.id
+                syft_parent_args=parent_args,
+            )
+
         return result
 
     def __getattribute__(self, name):
-        # print("method being called: ", name)
         # bypass certain attrs to prevent recursion issues
         if (
             name in passthrough_attrs
@@ -324,14 +332,27 @@ class ActionObject(SyftObject):
                 )
                 result = original_func(*pre_hook_args, **pre_hook_kwargs)
                 post_result = self._syft_run_post_hooks__(name, result)
-                parent_ids = [self.id]
-                for item in args:
-                    if isinstance(item, ActionObject):
-                        print("WE FOUIND ONE")
-                        parent_ids.append(item.id)
                 if name not in dont_wrap_output_attrs:
+                    parent_ids = [self.id]
+                    parent_args = []
+                    for item in args:
+                        if isinstance(item, ActionObject):
+                            parent_ids.append(item.id)
+                        elif isinstance(item, Hashable):
+                            parent_args.append(hash(item))
+                        elif isinstance(item, np.ndarray):
+                            parent_args.append(
+                                hash(item.tobytes())
+                            )  # this could be slow for large np arrays
+                        else:
+                            raise NotImplementedError(
+                                f"Unable to hash parent object: {type(item)} in method: {name}"
+                            )
                     post_result = self._syft_output_action_object(
-                        post_result, parents_id=parent_ids, op_name=name
+                        post_result,
+                        parents_id=parent_ids,
+                        op_name=name,
+                        parent_args=parent_args,
                     )
                 return post_result
 
@@ -345,14 +366,27 @@ class ActionObject(SyftObject):
                 )
                 result = original_func(*pre_hook_args, **pre_hook_kwargs)
                 post_result = self._syft_run_post_hooks__(name, result)
-                parent_ids = [self.id]
-                for item in args:
-                    if isinstance(item, ActionObject):
-                        print("WE FOUIND ONE")
-                        parent_ids.append(item.id)
                 if name not in dont_wrap_output_attrs:
+                    parent_ids = [self.id]
+                    parent_args = []
+                    for item in args:
+                        if isinstance(item, ActionObject):
+                            parent_ids.append(item.id)
+                        elif isinstance(item, Hashable):
+                            parent_args.append(hash(item))
+                        elif isinstance(item, np.ndarray):
+                            parent_args.append(
+                                hash(item.tobytes())
+                            )  # this could be slow for large np arrays
+                        else:
+                            raise NotImplementedError(
+                                f"Unable to hash parent object: {type(item)} in method: {name}"
+                            )
                     post_result = self._syft_output_action_object(
-                        post_result, parents_id=parent_ids, op_name=name
+                        post_result,
+                        parents_id=parent_ids,
+                        op_name=name,
+                        parent_args=parent_args,
                     )
                 return post_result
 
