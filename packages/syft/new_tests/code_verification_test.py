@@ -34,3 +34,15 @@ def test_op(data1: ActionObject, data2: ActionObject) -> None:
     result2 = data1 == data2
 
     assert result1.syft_history_hash != result2.syft_history_hash
+
+
+def test_args(data1: ActionObject, data2: ActionObject) -> None:
+    """Ensure that passing args results in different history hashes"""
+    result1 = data1.std()
+    result2 = data1.std(1)
+
+    assert result1.syft_history_hash != result2.syft_history_hash
+
+    result3 = data2 + 3
+    result4 = data2 + 4
+    assert result3.syft_history_hash != result4.syft_history_hash
