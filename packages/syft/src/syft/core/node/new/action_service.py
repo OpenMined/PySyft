@@ -123,7 +123,6 @@ class ActionService(AbstractService):
 
     @service_method(path="action.np_array", name="np_array")
     def np_array(self, context: AuthedServiceContext, data: Any) -> Any:
-        print(context.node.service_path_map)
         if not isinstance(data, np.ndarray):
             data = np.array(data)
         np_obj = NumpyArrayObject(
@@ -160,9 +159,6 @@ class ActionService(AbstractService):
         self, context: AuthedServiceContext, action: Action
     ) -> Result[ActionObjectPointer, Err]:
         """Execute an operation on objects in the action store"""
-        print(action.remote_self)
-        print(action.parent_id)
-        print(action.args)
         resolved_self = self.get(context=context, uid=action.remote_self)
         if resolved_self.is_err():
             return resolved_self.err()
@@ -187,8 +183,6 @@ class ActionService(AbstractService):
         # 🔵 TODO 10: Get proper code From old RunClassMethodAction to ensure the function
         # is not bound to the original object or mutated
         target_method = getattr(resolved_self, action.op, None)
-        print(target_method)
-        print(resolved_self)
         result = None
         try:
             if target_method:

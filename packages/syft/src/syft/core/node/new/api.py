@@ -172,9 +172,6 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
                 continue
             t = param.annotation
             msg = None
-            print(t)
-            print(type(arg))
-            print(param)
             try:
                 if t is not inspect.Parameter.empty:
                     check_type(param_key, arg, t)  # raises Exception

@@ -53,13 +53,8 @@ def __make_infix_op__(op: str) -> Callable:
     def infix_op(_self, other: Any) -> Self:
         if not isinstance(other, ActionObjectPointer):
             other = other.to_pointer(_self.node_uid)
-            # print("🔵 TODO: pointerize")
-            # raise Exception("We need to pointerize first")
-        print(f"{other.id=}")
-        print(f"{_self.id=}")
 
         action = _self.make_method_action(op=op, args=[other])
-        print(f"{action=}")
         action_result = _self.execute_action(action, sync=True)
         return action_result
 
