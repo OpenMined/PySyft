@@ -31,6 +31,7 @@ def test_user_stash() -> None:
 
     new_user.id = UID()
     # can only call set on User
+
     response = user_stash.set(new_user)
     assert isinstance(response, Err)
 
@@ -72,3 +73,16 @@ def test_user_stash() -> None:
     assert user.created_at == result2.created_at
 
     assert user == result2
+
+    result8 = user_stash.delete_by_uid(uid=user.id)
+    assert result8 is True
+
+    result9 = user_stash.get_by_uid(uid=user.id)
+    assert len(result9) == 0
+
+    result10 = user_stash.set(user)
+
+    assert result10 == user
+
+    result11 = user_stash.find_and_delete(**{"email": user.email})
+    assert result11 is True

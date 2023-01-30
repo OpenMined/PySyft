@@ -68,6 +68,10 @@ class UserStash(BaseStash):
         qks = QueryKeys(qks=[VerifyKeyCollectionKey.with_obj(verify_key)])
         return self.query_one(qks=qks)
 
+    def delete_by_uid(self, uid: UID) -> Result[bool, str]:
+        qk = UIDCollectionKey.with_obj(uid)
+        return super().delete(qk=qk)
+
 
 # def set(self, user: Any) -> None:
 #     self.collection.set(syft_object=user)
