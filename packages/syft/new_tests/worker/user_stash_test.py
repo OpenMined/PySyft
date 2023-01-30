@@ -1,3 +1,6 @@
+# third party
+from result import Err
+
 # syft absolute
 from syft.core.common.uid import UID
 from syft.core.node.new.document_store import DictDocumentStore
@@ -26,12 +29,36 @@ def test_user_stash() -> None:
     user = new_user.to(User)
     assert isinstance(user.id, UID)
 
-    _ = user_stash.set(user)
+    new_user.id = UID()
+    # can only call set on User
+    response = user_stash.set(new_user)
+    assert isinstance(response, Err)
+
+    result = user_stash.set(user)
+
+    assert result == user
+
     result2 = user_stash.get_by_uid(user.id)
 
     result3 = user_stash.get_by_email(user.email)
 
     assert result2 == result3
+
+    result4 = user_stash.get_by_signing_key(user.signing_key)
+
+    assert result2 == result4
+
+    result5 = user_stash.get_by_verify_key(user.verify_key)
+
+    assert result2 == result5
+
+    result6 = user_stash.find_one(
+        **{"name": user.name, "email": user.email, "id": user.id}
+    )
+    result7 = user_stash.find_one(**{"email": user.email})
+
+    assert result6 == result
+    assert result6 == result7
 
     assert user.email == result2.email
     assert user.name == result2.name

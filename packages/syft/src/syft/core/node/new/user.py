@@ -54,10 +54,7 @@ class User(SyftObject):
 
     @pydantic.validator("email", pre=True, always=True)
     def make_email(cls, v: EmailStr) -> EmailStr:
-        print("before User are we getting called here?", type(v), v)
-        new_value = EmailStr(v)
-        print("after User", type(new_value))
-        return new_value
+        return EmailStr(v)
 
     # fields
     email: EmailStr
@@ -82,8 +79,8 @@ class User(SyftObject):
         "role",
         "created_at",
     ]
-    __attr_searchable__ = ["name", "email", "verify_key"]
-    __attr_unique__ = ["email", "signing_key"]
+    __attr_searchable__ = ["name", "email"]
+    __attr_unique__ = ["email", "signing_key", "verify_key"]
 
 
 def default_role(role: ServiceRole) -> Callable:
@@ -142,10 +139,7 @@ class UserUpdate(SyftUpdateObject):
 
     @pydantic.validator("email", pre=True, always=True)
     def make_email(cls, v: EmailStr) -> EmailStr:
-        print("before UserUpdate are we getting called here?", type(v), v)
-        new_value = EmailStr(v)
-        print("after UserUpdate", type(new_value))
-        return new_value
+        return EmailStr(v)
 
     email: EmailStr
     name: str

@@ -2,11 +2,14 @@
 from __future__ import annotations
 
 # stdlib
+from collections import defaultdict
 from enum import Enum
 from typing import Any
 from typing import Dict
 from typing import Iterable
 from typing import List
+from typing import Optional
+from typing import Set
 from typing import Tuple
 from typing import Union
 
@@ -22,33 +25,49 @@ from ...common.uid import UID
 from .base import SyftBaseModel
 
 
-class PrimaryKey(BaseModel):
+def first_or_none(result: Any) -> Optional[Any]:
+    if hasattr(result, "__len__"):
+        return result[0]
+    return result
+
+
+class CollectionKey(BaseModel):
     key: str
     type_: type
 
     def __eq__(self, other: Any) -> bool:
-        if isinstance(other, type(self)):
+        if type(other) == type(self):
             return self.key == other.key and self.type_ == other.type_
-        return self == other
+        return False
 
     def with_obj(self, obj: SyftObject) -> QueryKey:
-        return QueryKey.from_obj(primary_key=self, obj=obj)
+        return QueryKey.from_obj(collection_key=self, obj=obj)
 
 
-class PrimaryKeys(BaseModel):
-    pks: Union[PrimaryKey, Tuple[PrimaryKey, ...]]
+class CollectionKeys(BaseModel):
+    cks: Union[CollectionKey, Tuple[CollectionKey, ...]]
 
     @property
-    def all(self) -> Iterable[PrimaryKey]:
+    def all(self) -> Iterable[CollectionKey]:
         # make sure we always return Tuple's even if theres a single value
-        _keys = self.pks if isinstance(self.pks, (tuple, list)) else (self.pks,)
+        _keys = self.cks if isinstance(self.cks, (tuple, list)) else (self.cks,)
         return _keys
 
     def with_obj(self, obj: SyftObject) -> QueryKeys:
-        return QueryKeys.from_obj(primary_keys=self, obj=obj)
+        return QueryKeys.from_obj(collection_keys=self, obj=obj)
 
     def with_tuple(self, *args: Tuple[Any, ...]) -> QueryKeys:
-        return QueryKeys.from_tuple(primary_keys=self, args=args)
+        return QueryKeys.from_tuple(collection_keys=self, args=args)
+
+    def add(self, ck: CollectionKey) -> CollectionKeys:
+        return CollectionKeys(cks=list(self.all) + [ck])
+
+    @staticmethod
+    def from_dict(cks_dict: Dict[str, type]) -> CollectionKeys:
+        cks = []
+        for k, t in cks_dict.items():
+            cks.append(CollectionKey(key=k, type_=t))
+        return CollectionKeys(cks=cks)
 
     def make(self, *obj_arg: Union[SyftObject, Tuple[Any, ...]]) -> QueryKeys:
         if isinstance(obj_arg, SyftObject):
@@ -57,41 +76,45 @@ class PrimaryKeys(BaseModel):
             return self.with_tuple(*obj_arg)
 
 
-class QueryKey(PrimaryKey):
+class QueryKey(CollectionKey):
     value: Any
 
     def __eq__(self, other: Any) -> bool:
-        if isinstance(other, type(self)):
+        if type(other) == type(self):
             return (
                 self.key == other.key
                 and self.type_ == other.type_
                 and self.value == other.value
             )
-        return self == other
-
-    @staticmethod
-    def from_obj(primary_key: PrimaryKey, obj: SyftObject) -> List[Any]:
-        pk_key = primary_key.key
-        pk_type = primary_key.type_
-
-        if isinstance(obj, pk_type):
-            pk_value = obj
-        else:
-            pk_value = getattr(obj, pk_key)
-
-        if not isinstance(pk_value, pk_type):
-            raise Exception(
-                f"PrimaryKey {pk_value} of type {type(pk_value)} must be {pk_type}."
-            )
-        return QueryKey(key=pk_key, type_=pk_type, value=pk_value)
-
-
-class PrimaryKeysWithUID(PrimaryKeys):
-    uid_pk: PrimaryKey
+        return False
 
     @property
-    def all(self) -> Iterable[PrimaryKey]:
-        all_keys = self.pks if isinstance(self.pks, (tuple, list)) else [self.pks]
+    def collection_key(self) -> CollectionKey:
+        return CollectionKey(key=self.key, type_=self.type_)
+
+    @staticmethod
+    def from_obj(collection_key: CollectionKey, obj: SyftObject) -> List[Any]:
+        ck_key = collection_key.key
+        ck_type = collection_key.type_
+
+        if isinstance(obj, ck_type):
+            ck_value = obj
+        else:
+            ck_value = getattr(obj, ck_key)
+
+        if not isinstance(ck_value, ck_type):
+            raise Exception(
+                f"CollectionKey {ck_value} of type {type(ck_value)} must be {ck_type}."
+            )
+        return QueryKey(key=ck_key, type_=ck_type, value=ck_value)
+
+
+class CollectionKeysWithUID(CollectionKeys):
+    uid_pk: CollectionKey
+
+    @property
+    def all(self) -> Iterable[CollectionKey]:
+        all_keys = self.cks if isinstance(self.cks, (tuple, list)) else [self.cks]
         if self.uid_pk not in all_keys:
             all_keys.insert(0, self.uid_pk)
         return all_keys
@@ -107,46 +130,63 @@ class QueryKeys(SyftBaseModel):
         return _keys
 
     @staticmethod
-    def from_obj(primary_keys: PrimaryKeys, obj: SyftObject) -> List[Any]:
+    def from_obj(collection_keys: CollectionKeys, obj: SyftObject) -> QueryKeys:
         qks = []
-        for primary_key in primary_keys.all:
-            pk_key = primary_key.key
-            pk_type = primary_key.type_
-            pk_value = getattr(obj, pk_key)
-            if not isinstance(pk_value, pk_type):
+        for collection_key in collection_keys.all:
+            ck_key = collection_key.key
+            ck_type = collection_key.type_
+            ck_value = getattr(obj, ck_key)
+            if not isinstance(ck_value, ck_type):
                 raise Exception(
-                    f"PrimaryKey {pk_value} of type {type(pk_value)} must be {pk_type}."
+                    f"CollectionKey {ck_value} of type {type(ck_value)} must be {ck_type}."
                 )
-            qk = QueryKey(key=pk_key, type_=pk_type, value=pk_value)
+            qk = QueryKey(key=ck_key, type_=ck_type, value=ck_value)
             qks.append(qk)
         return QueryKeys(qks=qks)
 
     @staticmethod
-    def from_tuple(primary_keys: PrimaryKeys, args: Tuple[Any, ...]) -> List[Any]:
+    def from_tuple(collection_keys: CollectionKeys, args: Tuple[Any, ...]) -> QueryKeys:
         qks = []
-        for primary_key, pk_value in zip(primary_keys.all, args):
-            pk_key = primary_key.key
-            pk_type = primary_key.type_
-            if not isinstance(pk_value, pk_type):
+        for collection_key, ck_value in zip(collection_keys.all, args):
+            ck_key = collection_key.key
+            ck_type = collection_key.type_
+            if not isinstance(ck_value, ck_type):
                 raise Exception(
-                    f"PrimaryKey {pk_value} of type {type(pk_value)} must be {pk_type}."
+                    f"CollectionKey {ck_value} of type {type(ck_value)} must be {ck_type}."
                 )
-            qk = QueryKey(key=pk_key, type_=pk_type, value=pk_value)
-            print("made qk", qk)
+            qk = QueryKey(key=ck_key, type_=ck_type, value=ck_value)
             qks.append(qk)
         return QueryKeys(qks=qks)
 
+    @staticmethod
+    def from_dict(qks_dict: Dict[str, Any]) -> QueryKeys:
+        qks = []
+        for k, v in qks_dict.items():
+            qks.append(QueryKey(key=k, type_=type(v), value=v))
+        return QueryKeys(qks=qks)
 
-UIDPrimaryKey = PrimaryKey(key="id", type_=UID)
+
+UIDCollectionKey = CollectionKey(key="id", type_=UID)
 
 
 class CollectionSettings(SyftBaseModel):
     name: str
-    store_key: PrimaryKey = UIDPrimaryKey
-    index_keys: PrimaryKeys
+    object_type: type
+    store_key: CollectionKey = UIDCollectionKey
+
+    @property
+    def unique_keys(self) -> CollectionKeys:
+        unique_keys = CollectionKeys.from_dict(
+            self.object_type._syft_unique_keys_dict()
+        )
+        return unique_keys.add(self.store_key)
+
+    @property
+    def searchable_keys(self) -> CollectionKeys:
+        return CollectionKeys.from_dict(self.object_type._syft_searchable_keys_dict())
 
 
-class PrimaryKeyCheck(Enum):
+class UniqueKeyCheck(Enum):
     EMPTY = 0
     MATCHES = 1
     ERROR = 2
@@ -158,48 +198,74 @@ class BaseCollection:
         self.settings = settings
         self.init_store()
 
-    def init_store(self) -> None:
-        self.index_key_cols = {}
-        self.index_key_cols[self.settings.store_key.key] = {}
-        for primary_key in self.settings.index_keys.all:
-            pk_key = primary_key.key
-            self.index_key_cols[pk_key] = {}
+    def store_query_key(self, obj: Any) -> QueryKey:
+        return self.settings.store_key.with_obj(obj)
 
-    def validate_primary_keys(
-        self, store_query_key: QueryKey, index_query_keys: QueryKeys
-    ) -> PrimaryKeyCheck:
+    def store_query_keys(self, objs: Any) -> QueryKeys:
+        return QueryKeys(qks=[self.store_query_key(obj) for obj in objs])
+
+    def init_store(self) -> None:
+        self.unique_cks = self.settings.unique_keys.all
+        self.unique_keys = {}
+
+        for collection_key in self.unique_cks:
+            ck_key = collection_key.key
+            self.unique_keys[ck_key] = {}
+
+        self.searchable_cks = self.settings.searchable_keys.all
+        self.searchable_keys = {}
+        for collection_key in self.searchable_cks:
+            ck_key = collection_key.key
+            self.searchable_keys[ck_key] = defaultdict(list)
+
+    def validate_collection_keys(
+        self, store_query_key: QueryKey, unique_query_keys: QueryKeys
+    ) -> UniqueKeyCheck:
         matches = []
-        qks = index_query_keys.all
+        qks = unique_query_keys.all
         for qk in qks:
-            pk_key, pk_value = qk.key, qk.value
-            if pk_key not in self.index_key_cols:
+            ck_key, ck_value = qk.key, qk.value
+            if ck_key not in self.unique_keys:
                 raise Exception(
-                    f"pk_key: {pk_key} not in index_cols: {self.index_key_cols.keys()}"
+                    f"ck_key: {ck_key} not in unique_keys: {self.unique_keys.keys()}"
                 )
-            pk_col = self.index_key_cols[pk_key]
-            if pk_value in pk_col and pk_col[pk_value] == store_query_key.value:
-                matches.append(pk_key)
+            ck_col = self.unique_keys[ck_key]
+            if ck_value in ck_col and ck_col[ck_value] == store_query_key.value:
+                matches.append(ck_key)
 
         if len(matches) == 0:
-            return PrimaryKeyCheck.EMPTY
+            return UniqueKeyCheck.EMPTY
         elif len(matches) == len(qks):
-            return PrimaryKeyCheck.MATCHES
+            return UniqueKeyCheck.MATCHES
 
-        return PrimaryKeyCheck.ERROR
+        return UniqueKeyCheck.ERROR
 
     def set_data_and_keys(
-        self, store_query_key: QueryKey, index_query_keys: QueryKeys, obj: SyftObject
+        self,
+        store_query_key: QueryKey,
+        unique_query_keys: QueryKeys,
+        searchable_query_keys: QueryKeys,
+        obj: SyftObject,
     ) -> None:
         # we should lock
-        qks = index_query_keys.all
-        for qk in qks:
-            pk_key, pk_value = qk.key, qk.value
-            pk_col = self.index_key_cols[pk_key]
-            pk_col[pk_value] = store_query_key.value
-            self.index_key_cols[pk_key] = pk_col
-        self.index_key_cols[store_query_key.key][
+        uqks = unique_query_keys.all
+        for qk in uqks:
+            ck_key, ck_value = qk.key, qk.value
+            ck_col = self.unique_keys[ck_key]
+            ck_col[ck_value] = store_query_key.value
+            self.unique_keys[ck_key] = ck_col
+
+        self.unique_keys[store_query_key.key][
             store_query_key.value
         ] = store_query_key.value
+
+        sqks = searchable_query_keys.all
+        for qk in sqks:
+            ck_key, ck_value = qk.key, qk.value
+            ck_col = self.searchable_keys[ck_key]
+            ck_col[ck_value].append(store_query_key.value)
+            self.searchable_keys[ck_key] = ck_col
+
         self.data[store_query_key.value] = obj
 
     def set(
@@ -209,54 +275,89 @@ class BaseCollection:
         try:
             store_query_key = self.settings.store_key.with_obj(obj)
             exists = store_query_key.value in self.data
-            index_query_keys = self.settings.index_keys.with_obj(obj)
+            unique_query_keys = self.settings.unique_keys.with_obj(obj)
+            searchable_query_keys = self.settings.searchable_keys.with_obj(obj)
 
-            pk_check = self.validate_primary_keys(
-                store_query_key=store_query_key, index_query_keys=index_query_keys
+            ck_check = self.validate_collection_keys(
+                store_query_key=store_query_key, unique_query_keys=unique_query_keys
             )
-            if not exists and pk_check == PrimaryKeyCheck.EMPTY:
+            if not exists and ck_check == UniqueKeyCheck.EMPTY:
                 self.set_data_and_keys(
                     store_query_key=store_query_key,
-                    index_query_keys=index_query_keys,
+                    unique_query_keys=unique_query_keys,
+                    searchable_query_keys=searchable_query_keys,
                     obj=obj,
                 )
 
-            # if pk_check == PrimaryKeyCheck.EMPTY:
+            # if ck_check == UniqueKeyCheck.EMPTY:
             #     # write set code
             #     pass
-            # if pk_check != PrimaryKeyCheck.ERROR:
+            # if ck_check != UniqueKeyCheck.ERROR:
             #     self.data[uid] = obj
         except Exception as e:
             return Err(f"Failed to write obj {obj}. {e}")
         return Ok(obj)
 
-    def get_all_index(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
+    def get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
+        matches = []
+        for qk in qks.all:
+            if qk.value in self.data:
+                matches.append(self.data[qk.value])
+        return Ok(matches)
+
+    def get_keys_index(self, qks: QueryKeys) -> Result[Set[QueryKey], str]:
         try:
             # match AND
             subsets = []
             for qk in qks.all:
                 subset = {}
-                pk_key, pk_value = qk.key, qk.value
-                pk_col = self.index_key_cols[pk_key]
-                if pk_value not in pk_col:
+                ck_key, ck_value = qk.key, qk.value
+                if ck_key not in self.unique_keys:
+                    return Err(f"Failed to query index with {qk}")
+                ck_col = self.unique_keys[ck_key]
+                if ck_value not in ck_col.keys():
                     # must be at least one in all query keys
-                    return Ok([])
-                store_value = pk_col[pk_value]
+                    return Ok(set())
+                store_value = ck_col[ck_value]
                 subsets.append({store_value})
 
             if len(subsets) == 0:
-                return Ok([])
+                return Ok(set())
+            # AND
             subset = subsets.pop()
             for s in subsets:
                 subset = subset.intersection(s)
 
-            matches = []
-            for key in subset:
-                matches.append(self.data[key])
+            return Ok(subset)
+        except Exception as e:
+            return Err(f"Failed to query with {qks}. {e}")
 
-            return Ok(matches)
-        except Exception:
-            return Err(f"Failed to query with {qks}")
+    def find_keys_search(self, qks: QueryKeys) -> Result[Set[QueryKey], str]:
+        try:
+            # match AND
+            subsets = []
+            for qk in qks.all:
+                subset = {}
+                ck_key, ck_value = qk.key, qk.value
+                if ck_key not in self.searchable_keys:
+                    return Err(f"Failed to search with {qk}")
+                ck_col = self.searchable_keys[ck_key]
+                if ck_value not in ck_col.keys():
+                    # must be at least one in all query keys
+                    return Ok(set())
+                store_values = ck_col[ck_value]
+                subsets.append(set(store_values))
+
+            if len(subsets) == 0:
+                return Ok(set())
+            # AND
+            subset = subsets.pop()
+            for s in subsets:
+                subset = subset.intersection(s)
+
+            return Ok(subset)
+        except Exception as e:
+            return Err(f"Failed to query with {qks}. {e}")
 
     def create(self, obj: SyftObject) -> Result[SyftObject, str]:
         pass
@@ -301,11 +402,101 @@ class BaseStash:
     ) -> Result[BaseStash.object_type, str]:
         if isinstance(qks, QueryKey):
             qks = QueryKeys(qks=qks)
-        result = self.collection.get_all_index(qks=qks)
+        result = self.collection.get_keys_index(qks=qks)
+        if result.is_ok():
+            qks = self.collection.store_query_keys(result.ok())
+            objects = self.collection.get_all_from_store(qks=qks)
+            if objects.is_ok():
+                return objects.ok()
+            return objects.err()
+        return result.err()
+
+    def find_all_search(
+        self, qks: Union[QueryKey, QueryKeys]
+    ) -> Result[BaseStash.object_type, str]:
+        if isinstance(qks, QueryKey):
+            qks = QueryKeys(qks=qks)
+        result = self.collection.find_keys_search(qks=qks)
 
         if result.is_ok():
-            return result.ok()
+            qks = self.collection.store_query_keys(result.ok())
+            objects = self.collection.get_all_from_store(qks=qks)
+            if objects.is_ok():
+                return objects.ok()
+            return objects.err()
         return result.err()
+
+    def query_all(
+        self, qks: Union[QueryKey, QueryKeys]
+    ) -> Result[List[BaseStash.object_type], str]:
+        if isinstance(qks, QueryKey):
+            qks = QueryKeys(qks=qks)
+
+        unique_keys = []
+        searchable_keys = []
+
+        for qk in qks.all:
+            ck = qk.collection_key
+            if ck in self.collection.unique_cks:
+                unique_keys.append(qk)
+            elif ck in self.collection.searchable_cks:
+                searchable_keys.append(qk)
+            else:
+                raise Exception(
+                    f"{qk} not in {type(self.collection)} unique or searchable keys"
+                )
+
+        ids: Optional[Set] = None
+        errors = []
+        if len(unique_keys) > 0:
+            index_results = self.collection.get_keys_index(
+                qks=QueryKeys(qks=unique_keys)
+            )
+            if index_results.is_ok():
+                if ids is None:
+                    ids = index_results.ok()
+                ids = ids.intersection(index_results.ok())
+            else:
+                errors.append(index_results.err())
+
+        search_results = None
+        if len(searchable_keys) > 0:
+            search_results = self.collection.find_keys_search(
+                qks=QueryKeys(qks=searchable_keys)
+            )
+
+            if search_results.is_ok():
+                if ids is None:
+                    ids = search_results.ok()
+                ids = ids.intersection(search_results.ok())
+            else:
+                errors.append(search_results.err())
+
+        if len(errors) > 0:
+            return Err(" ".join(errors))
+
+        qks = self.collection.store_query_keys(ids)
+        objects = self.collection.get_all_from_store(qks=qks)
+        if objects.is_ok():
+            return objects.ok()
+        return objects.err()
+
+    def query_all_kwargs(
+        self, **kwargs: Dict[str, Any]
+    ) -> Result[List[BaseStash.object_type], str]:
+        qks = QueryKeys.from_dict(kwargs)
+        return self.query_all(qks=qks)
+
+    def query_one(
+        self, qks: Union[QueryKey, QueryKeys]
+    ) -> Result[Optional[BaseStash.object_type], str]:
+        return first_or_none(self.query_all(qks=qks))
+
+    def query_one_kwargs(
+        self,
+        **kwargs: Dict[str, Any],
+    ) -> Result[Optional[BaseStash.object_type], str]:
+        return first_or_none(self.query_all_kwargs(**kwargs))
 
     def delete(self, *args, **kwargs) -> Result[bool, str]:
         return self.collection.delete(*args, **kwargs)

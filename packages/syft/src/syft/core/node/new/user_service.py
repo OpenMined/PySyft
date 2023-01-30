@@ -21,7 +21,7 @@ from .user import check_pwd
 class UserService(AbstractService):
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
-        self.primary_keys = {}
+        self.collection_keys = {}
 
     @service_method(path="user.create", name="create")
     def create(

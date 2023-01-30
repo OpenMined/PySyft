@@ -11,6 +11,7 @@ from typing import Union
 
 # third party
 from pydantic import BaseModel
+from pydantic import EmailStr
 from pydantic.fields import Undefined
 from typeguard import check_type
 
@@ -210,6 +211,26 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         super().__init__(**kwargs)
         self._syft_set_validate_private_attrs_(**kwargs)
         self.__post_init__()
+
+    @classmethod
+    def _syft_keys_types_dict(cls, attr_name: str) -> Dict[str, type]:
+        kt_dict = {}
+        for key in getattr(cls, attr_name, []):
+            type_ = cls.__fields__[key].type_
+            # EmailStr seems to be lost every time the value is set even with a validator
+            # this means the incoming type is str so our validators fail
+            if issubclass(type_, EmailStr):
+                type_ = str
+            kt_dict[key] = type_
+        return kt_dict
+
+    @classmethod
+    def _syft_unique_keys_dict(cls) -> Dict[str, type]:
+        return cls._syft_keys_types_dict("__attr_unique__")
+
+    @classmethod
+    def _syft_searchable_keys_dict(cls) -> Dict[str, type]:
+        return cls._syft_keys_types_dict("__attr_searchable__")
 
 
 class SyftUpdateObject(SyftObject):
