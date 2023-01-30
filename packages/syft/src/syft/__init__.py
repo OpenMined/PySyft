@@ -65,7 +65,7 @@ from .core.node.domain import DomainClient  # noqa: F401
 from .core.node.network import Network  # noqa: F401
 from .core.node.network_client import NetworkClient  # noqa: F401
 from .core.node.new.client import connect as new_connect  # noqa: F401
-from .core.node.new.user import UserCollection  # noqa: F401
+from .core.node.new.user_service import UserService  # noqa: F401
 
 # Convenience Constructors
 from .core.node.vm import VirtualMachine  # noqa: F401
