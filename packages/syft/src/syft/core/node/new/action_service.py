@@ -112,7 +112,7 @@ def np_array_to_pointer() -> List[Callable]:
 
 
 class ActionService(AbstractService):
-    def __init__(self, store: ActionStore = ActionStore()) -> None:
+    def __init__(self, store: ActionStore) -> None:
         self.store = store
 
     @service_method(path="action.set", name="set")
