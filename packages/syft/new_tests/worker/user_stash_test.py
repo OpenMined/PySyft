@@ -55,7 +55,7 @@ def test_user_stash() -> None:
     result6 = user_stash.find_one(
         **{"name": user.name, "email": user.email, "id": user.id}
     )
-    result7 = user_stash.find_one(**{"email": user.email})
+    result7 = user_stash.find_one(email=user.email)
 
     assert result6 == result
     assert result6 == result7

@@ -1,7 +1,5 @@
 # stdlib
 from typing import Any
-from typing import Dict
-from typing import List
 from typing import Optional
 
 # third party
@@ -69,12 +67,6 @@ class UserStash(BaseStash):
             verify_key = SyftVerifyKey.from_string(verify_key)
         qks = QueryKeys(qks=[VerifyKeyCollectionKey.with_obj(verify_key)])
         return self.query_one(qks=qks)
-
-    def find_all(self, **kwargs: Dict[str, Any]) -> Result[List[User], str]:
-        return self.query_all_kwargs(*kwargs)
-
-    def find_one(self, **kwargs: Dict[str, Any]) -> Result[Optional[User], str]:
-        return self.query_one_kwargs(**kwargs)
 
 
 # def set(self, user: Any) -> None:

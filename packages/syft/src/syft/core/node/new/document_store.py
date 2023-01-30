@@ -498,6 +498,16 @@ class BaseStash:
     ) -> Result[Optional[BaseStash.object_type], str]:
         return first_or_none(self.query_all_kwargs(**kwargs))
 
+    def find_all(
+        self, **kwargs: Dict[str, Any]
+    ) -> Result[List[BaseStash.object_type], str]:
+        return self.query_all_kwargs(*kwargs)
+
+    def find_one(
+        self, **kwargs: Dict[str, Any]
+    ) -> Result[Optional[BaseStash.object_type], str]:
+        return self.query_one_kwargs(**kwargs)
+
     def delete(self, *args, **kwargs) -> Result[bool, str]:
         return self.collection.delete(*args, **kwargs)
 
