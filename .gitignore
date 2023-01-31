@@ -64,4 +64,7 @@ packages/grid/svelte
 # rendered template dir
 packages/grid/rendered
 
-js/node_modules
+js/node_modules/*
+
+#nohup
+nohup.out

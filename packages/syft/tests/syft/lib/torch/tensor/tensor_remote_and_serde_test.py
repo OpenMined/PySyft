@@ -9,6 +9,7 @@ import torch as th
 import syft as sy
 from syft.core.node.common.node_service.auth import AuthorizationException
 
+# TODO: Add back
 # @pytest.mark.slow
 # def test_torch_remote_tensor_register() -> None:
 #     """Test if sending a tensor will be registered on the remote worker."""
@@ -94,6 +95,7 @@ def test_torch_no_read_permissions(
     assert x.grad == x2.grad
 
 
+# TODO: Add back
 # def test_torch_garbage_collect() -> None:
 #     """
 #     Test if sending a tensor and then deleting the pointer removes the object

@@ -49,13 +49,13 @@ def update_settings(
 
     # Build Syft Message
     msg = UpdateSetupMessage(
-        address=node.address,
+        address=node.node_uid,
         contact=dict_settings.get("contact", ""),
         domain_name=dict_settings.get("domain_name", ""),
         description=dict_settings.get("description", ""),
         daa=dict_settings.get("daa", False),
         daa_document=pdf_file,
-        reply_to=node.address,
+        reply_to=node.node_uid,
     ).sign(signing_key=user_key)
 
     # Process syft message
@@ -72,7 +72,7 @@ def update_settings(
 
 @router.get("", status_code=200, response_class=JSONResponse)
 def get_setup() -> Any:
-    msg = GetSetUpMessage(address=node.address, reply_to=node.address).sign(
+    msg = GetSetUpMessage(address=node.node_uid, reply_to=node.node_uid).sign(
         signing_key=node.signing_key
     )
 

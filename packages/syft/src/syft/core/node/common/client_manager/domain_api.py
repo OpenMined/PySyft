@@ -104,7 +104,7 @@ class DomainRequestAPI(RequestAPI):
             timeout=timeout,
         )
 
-        result = response.payload.kwargs.upcast()  # type: ignore
+        result = response.payload.kwargs  # type: ignore
 
         # a ProxyClient requires an existing NetworkClient and a Remote Domain Address
         # or a known Domain Node UID, and a Node Name

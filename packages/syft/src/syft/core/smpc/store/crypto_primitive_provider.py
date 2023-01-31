@@ -108,7 +108,7 @@ class CryptoPrimitiveProvider:
                 args=args,
                 kwargs=kwargs,
                 id_at_location=UID(),
-                address=client.address,
+                address=client.node_uid,
             )
             client.send_immediate_msg_without_reply(msg=cmd)
 

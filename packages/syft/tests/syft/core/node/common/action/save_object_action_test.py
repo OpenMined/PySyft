@@ -6,15 +6,13 @@ import torch as th
 import syft as sy
 from syft import serialize
 from syft.core.common.uid import UID
-from syft.core.io.address import Address
-from syft.core.io.location import SpecificLocation
 from syft.core.node.common.action.save_object_action import SaveObjectAction
 from syft.core.store.storeable_object import StorableObject
 
 
 def test_save_object_action_serde() -> None:
     obj = th.tensor([1, 2, 3])
-    addr = Address(network=SpecificLocation(), device=SpecificLocation())
+    addr = UID()
 
     storable = StorableObject(id=UID(), data=obj)
     msg = SaveObjectAction(obj=storable, address=addr)

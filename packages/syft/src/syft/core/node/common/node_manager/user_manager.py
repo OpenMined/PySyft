@@ -3,32 +3,34 @@
 # stdlib
 from datetime import datetime
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
-from typing import Union
 
 # third party
 from bcrypt import checkpw
 from bcrypt import gensalt
 from bcrypt import hashpw
+import jax
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-from sqlalchemy.engine import Engine
-from sqlalchemy.orm import Query
-from sqlalchemy.orm import sessionmaker
+from pymongo import MongoClient
 
 # relative
+from ....common.serde.serialize import _serialize
+from ...new.credentials import SyftSigningKey
+from ...new.user import User
+from ...new.user import UserUpdate
 from ..exceptions import InvalidCredentialsError
 from ..exceptions import UserNotFoundError
-from ..node_table.pdf import PDFObject
-from ..node_table.roles import Role
-from ..node_table.user import SyftUser
-from ..node_table.user import UserApplication
+from ..node_manager.role_manager import NewRoleManager
+from ..node_table.user import NoSQLSyftUser
+from ..node_table.user import NoSQLUserApplication
 from .constants import UserApplicationStatus
-from .database_manager import DatabaseManager
-from .role_manager import RoleManager
+from .database_manager import NoSQLDatabaseManager
+from .user_application_manager import NoSQLUserApplicationManager
 
 
 class RefreshBudgetException(Exception):
@@ -43,31 +45,15 @@ class NotEnoughBudgetException(Exception):
     pass
 
 
-class UserManager(DatabaseManager):
+class NoSQLUserManager(NoSQLDatabaseManager):
     """Class to manage user database actions."""
 
-    schema = SyftUser
+    _collection_name = "syft_users"
+    __canonical_object_name__ = "SyftUser"
 
-    def __init__(self, database: Engine) -> None:
-        super().__init__(schema=UserManager.schema, db=database)
-        self.roles = RoleManager(database)
-
-    @property
-    def common_users(self) -> list:
-        """Return users having the common role access."""
-        common_users: List[SyftUser] = []
-        for role in self.roles.common_roles:
-            common_users = common_users + list(super().query(role=role.id))
-
-        return common_users
-
-    @property
-    def org_users(self) -> list:
-        """Return all the users in the organization."""
-        org_users: List[SyftUser] = []
-        for role in self.roles.org_roles:
-            org_users = org_users + list(super().query(role=role.id))
-        return org_users
+    def __init__(self, client: MongoClient, db_name: str) -> None:
+        super().__init__(client, db_name)
+        self.user_application_manager = NoSQLUserApplicationManager(client, db_name)
 
     def create_user_application(
         self,
@@ -95,40 +81,29 @@ class UserManager(DatabaseManager):
         """
 
         salt, hashed = self.__salt_and_hash_password(password, 12)
-        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
-        _pdf_obj = PDFObject(binary=daa_pdf)
-        session_local.add(_pdf_obj)
-        session_local.commit()
-        session_local.flush()
-        session_local.refresh(_pdf_obj)
 
-        _obj = UserApplication(
+        curr_len = len(self.user_application_manager)
+        _obj = NoSQLUserApplication(
+            id_int=curr_len + 1,
             name=name,
             email=email,
             salt=salt,
             hashed_password=hashed,
-            daa_pdf=_pdf_obj.id,
+            daa_pdf=daa_pdf,
             institution=institution,
             website=website,
             budget=budget,
         )
-        session_local.add(_pdf_obj)
-        session_local.add(_obj)
-        session_local.commit()
-        _obj_id = _obj.id
-        session_local.close()
-        return _obj_id
+        self.user_application_manager.add(_obj)
+        return _obj.id_int
 
-    def get_all_applicant(self) -> List[UserApplication]:
+    def get_all_applicant(self) -> List[NoSQLUserApplication]:
         """Returns the application data of all the applicants in the database.
 
         Returns:
-            List[UserApplication]: All user applications.
+            List[NoSQLUserApplication]: All user applications.
         """
-        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
-        result = list(session_local.query(UserApplication).all())
-        session_local.close()
-        return result
+        return self.user_application_manager.all()
 
     def process_user_application(
         self, candidate_id: int, status: str, verify_key: VerifyKey
@@ -144,11 +119,7 @@ class UserManager(DatabaseManager):
             status (str): application status.
             verify_key (VerifyKey): public digital signature of the user.
         """
-        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
-        candidate = (
-            session_local.query(UserApplication).filter_by(id=candidate_id).first()
-        )
-        session_local.close()
+        candidate = self.user_application_manager.first(id_int=candidate_id)
 
         if (
             status == UserApplicationStatus.ACCEPTED.value
@@ -162,11 +133,15 @@ class UserManager(DatabaseManager):
             )
             added_by = self.get_user(verify_key).name  # type: ignore
 
+            # TODO: Should modify user manager to use Nested Syft Object for Role.
+            role = NewRoleManager()
+
             # Register the user in the database
-            self.register(
+            self.signup(
                 name=candidate.name,
                 email=candidate.email,
-                role=self.roles.ds_role.id,
+                password=None,
+                role=role.ds_role,
                 budget=candidate.budget,
                 private_key=encoded_pk,
                 verify_key=encoded_vk,
@@ -176,30 +151,78 @@ class UserManager(DatabaseManager):
                 added_by=added_by,
                 institution=candidate.institution,
                 website=candidate.website,
-                created_at=datetime.now(),
             )
         else:
             status = UserApplicationStatus.REJECTED.value
 
-        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
-        candidate = (
-            session_local.query(UserApplication).filter_by(id=candidate_id).first()
+        self.user_application_manager.update(
+            {"id_int": candidate.id_int}, {"status": status}
         )
-        candidate.status = status
-        session_local.flush()
-        session_local.commit()
-        session_local.close()
+
+    def create_user(
+        self,
+        name: str,
+        email: str,
+        password: str,
+        daa_pdf: Optional[bytes],
+        institution: str,
+        website: str,
+        budget: float,
+        role: Dict[Any, Any],
+        verify_key: VerifyKey,
+    ) -> None:
+        """Process the application for the given candidate.
+
+        If the application of the user was accepted, then register the user
+        and its details in the database. Finally update the application status
+        for the given user/candidate in the database.
+
+        Args:
+            candidate_id (int): user id of the candidate.
+            status (str): application status.
+            verify_key (VerifyKey): public digital signature of the user.
+        """
+        _private_key = SigningKey.generate()
+
+        encoded_pk = _private_key.encode(encoder=HexEncoder).decode("utf-8")
+        encoded_vk = _private_key.verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        added_by = self.get_user(verify_key).name  # type: ignore
+
+        # Register the user in the database
+        self.signup(
+            name=name,
+            email=email,
+            password=password,
+            role=role,
+            budget=budget,
+            private_key=encoded_pk,
+            verify_key=encoded_vk,
+            daa_pdf=daa_pdf,
+            added_by=added_by,
+            institution=institution,
+            website=website,
+        )
+
+    def is_owner(self, verify_key: VerifyKey) -> bool:
+        user = self.get_user(verify_key)
+        return user.role["name"] == "Owner"
 
     def signup(
         self,
         name: str,
         email: str,
-        password: str,
+        password: Optional[str],
         budget: float,
-        role: int,
+        role: dict,
         private_key: str,
         verify_key: str,
-    ) -> Union[SyftUser, None]:
+        daa_pdf: Optional[bytes] = None,
+        added_by: Optional[str] = "",
+        institution: Optional[str] = "",
+        website: Optional[str] = "",
+        hashed_password: Optional[str] = None,
+        salt: Optional[str] = None,
+    ) -> Optional[NoSQLSyftUser]:
         """Registers a user in the database, when they signup on a domain.
 
         Args:
@@ -214,9 +237,22 @@ class UserManager(DatabaseManager):
         Returns:
             SyftUser: the registered user object.
         """
-        if not super().contain(email=email):
+        if password is None:
+            if hashed_password is not None and salt is not None:
+                salt, hashed = salt, hashed_password
+            else:
+                raise ValueError(
+                    "Either Password or Salt and hased password should be provided for user signup. "
+                )
+        else:
             salt, hashed = self.__salt_and_hash_password(password, 12)
-            return self.register(
+        curr_len = len(self)
+
+        row_exists = self.find_one({email: email})
+        if row_exists:
+            return None
+        else:
+            user = NoSQLSyftUser(
                 name=name,
                 email=email,
                 role=role,
@@ -225,21 +261,97 @@ class UserManager(DatabaseManager):
                 verify_key=verify_key,
                 hashed_password=hashed,
                 salt=salt,
-                created_at=datetime.now(),
+                created_at=str(datetime.now()),
+                id_int=curr_len + 1,
+                daa_pdf=daa_pdf,
+                added_by=added_by,
+                institution=institution,
+                website=website,
             )
-        return None
+            self._collection.insert_one(user.to_mongo())
+            return user
 
-    def query(self, **kwargs: Any) -> Query:
-        results = super().query(**kwargs)
-        return results
+    def create_admin(
+        self,
+        name: str,
+        email: str,
+        password: str,
+        budget: float,
+        role: dict,
+        node: Any,
+        daa_pdf: Optional[bytes] = None,
+        added_by: Optional[str] = "",
+        institution: Optional[str] = "",
+        website: Optional[str] = "",
+    ) -> Optional[User]:
+        salt, hashed = self.__salt_and_hash_password(password, 12)
+        curr_len = len(self)
+        try:
+            row_exists = self.find_one({email: email})
+            if row_exists:
+                return None
+            else:
+                private_key = SigningKey(bytes.fromhex(node.setup.first().signing_key))
+                user = NoSQLSyftUser(
+                    name=name,
+                    email=email,
+                    role=role,
+                    budget=budget,
+                    private_key=private_key.encode(encoder=HexEncoder).decode("utf-8"),
+                    verify_key=private_key.verify_key.encode(encoder=HexEncoder).decode(
+                        "utf-8"
+                    ),
+                    hashed_password=hashed,
+                    salt=salt,
+                    created_at=str(datetime.now()),
+                    id_int=curr_len + 1,
+                    daa_pdf=daa_pdf,
+                    added_by=added_by,
+                    institution=institution,
+                    website=website,
+                )
+                self._collection.insert_one(user.to_mongo())
+                self.create_admin_new(
+                    name=name, email=f"new{email}", password=password, node=node
+                )
 
-    def first(self, **kwargs: Any) -> SyftUser:
-        result = super().first(**kwargs)
+                return user
+        except Exception as e:
+            print("create_admin failed", e)
+
+    def create_admin_new(
+        self,
+        name: str,
+        email: str,
+        password: str,
+        node: Any,
+    ) -> Optional[User]:
+        try:
+            row_exists = self.find_one({email: email})
+            if row_exists:
+                return None
+            else:
+                create_user = UserUpdate(
+                    name=name, email=email, password=password, password_verify=password
+                )
+                user = create_user.to(User)
+                sk = node.setup.first().signing_key
+                signing_key = SyftSigningKey.from_string(sk)
+                user.signing_key = signing_key
+                user.verify_key = signing_key.verify_key
+                data = user.to_mongo()
+                self._collection.insert_one(data)
+                return user
+        except Exception as e:
+            print("create_admin failed", e)
+
+    def first(self, **kwargs: Any) -> NoSQLSyftUser:
+        result = super().find_one(kwargs)
         if not result:
             raise UserNotFoundError
         return result
 
-    def login(self, email: str, password: str) -> SyftUser:
+    def login(self, email: str, password: str) -> NoSQLSyftUser:
         """Returns the user object for the given the email and password.
 
         Args:
@@ -251,17 +363,7 @@ class UserManager(DatabaseManager):
         """
         return self.__login_validation(email, password)
 
-    def set(  # nosec
-        self,
-        user_id: str,
-        email: str = "",
-        password: str = "",
-        role: int = 0,
-        name: str = "",
-        website: str = "",
-        institution: str = "",
-        budget: float = 0.0,
-    ) -> None:
+    def set(self, **kwargs: Any) -> None:  # nosec
         """Updates the information for the given user id.
 
         Args:
@@ -278,48 +380,48 @@ class UserManager(DatabaseManager):
             UserNotFoundError: Raised when a user does not exits for the given user id.
             Exception: Raised when an invalid argument/property is passed.
         """
-        if not self.contain(id=user_id):
-            raise UserNotFoundError
+        attributes = {}
+        user_id: int = int(kwargs["user_id"])
+        user = self.first(id_int=user_id)
 
-        key: str
-        value: Union[str, int, float]
+        for k, v in kwargs.items():
+            if k in user.__attr_searchable__:
+                attributes[k] = v
 
-        if email:
-            key = "email"
-            value = email
-        elif role != 0:
-            key = "role"
-            value = role
-        elif name:
-            key = "name"
-            value = name
-        elif budget:
-            key = "budget"
-            value = budget
-        elif website:
-            key = "website"
-            value = website
-        elif budget:
-            key = "budget"
-            value = budget
-        elif institution:
-            key = "institution"
-            value = institution
+        if kwargs.get("email", None):
+            user.email = kwargs["email"]
+        elif kwargs.get("role", None):
+            user.role = kwargs["role"]
+        elif kwargs.get("name", None):
+            user.name = kwargs["name"]
+        elif kwargs.get("budget", None):
+            user.budget = kwargs["budget"]
+        elif kwargs.get("website", None):
+            user.website = kwargs["website"]
+        elif kwargs.get("institution", None):
+            user.institution = kwargs["institution"]
         else:
             raise Exception
 
-        self.modify({"id": user_id}, {key: value})
+        attributes["__blob__"] = _serialize(user, to_bytes=True)
+
+        self.update_one(query={"id_int": user_id}, values=attributes)
 
     def change_password(self, user_id: str, current_pwd: str, new_pwd: str) -> None:
-        user = self.first(id=user_id)
+        user = self.first(id_int=int(user_id))
 
         hashed = user.hashed_password.encode("UTF-8")
         salt = user.salt.encode("UTF-8")
         bytes_pass = current_pwd.encode("UTF-8")
 
         if checkpw(bytes_pass, salt + hashed):
-            salt, hashed = self.__salt_and_hash_password(new_pwd, 12)
-            self.modify({"id": user_id}, {"salt": salt, "hashed_password": hashed})
+            new_salt, new_hashed = self.__salt_and_hash_password(new_pwd, 12)
+            user.salt = new_salt
+            user.hashed_password = new_hashed
+            self.update_one(
+                query={"id_int": int(user_id)},
+                values={"__blob__": _serialize(user, to_bytes=True)},
+            )
         else:
             # Should it warn the user about his wrong current password input?
             raise InvalidCredentialsError
@@ -327,52 +429,55 @@ class UserManager(DatabaseManager):
     def can_create_users(self, verify_key: VerifyKey) -> bool:
         """Checks if a user has permissions to create new users."""
         try:
-            return self.role(verify_key=verify_key).can_create_users
+            user = self.get_user(verify_key)
+            return user.role.get("can_create_users", False)
         except UserNotFoundError:
             return False
 
     def can_upload_data(self, verify_key: VerifyKey) -> bool:
         """Checks if a user has permissions to upload data to the node."""
         try:
-            return self.role(verify_key=verify_key).can_upload_data
+            user = self.get_user(verify_key)
+            return user.role.get("can_upload_data", False)
         except UserNotFoundError:
             return False
 
     def can_triage_requests(self, verify_key: VerifyKey) -> bool:
         """Checks if a user has permissions to triage requests."""
         try:
-            return self.role(verify_key=verify_key).can_triage_data_requests
+            user = self.get_user(verify_key)
+            return user.role.get("can_triage_data_requests", False)
         except UserNotFoundError:
             return False
 
     def can_manage_infrastructure(self, verify_key: VerifyKey) -> bool:
         """Checks if a user has permissions to manage the deployed infrastructure."""
         try:
-            return self.role(verify_key=verify_key).can_manage_infrastructure
+            user = self.get_user(verify_key)
+            return user.role.get("can_manage_infrastructure", False)
         except UserNotFoundError:
             return False
 
     def can_edit_roles(self, verify_key: VerifyKey) -> bool:
         """Checks if a user has permission to edit roles of other users."""
         try:
-            return self.role(verify_key=verify_key).can_edit_roles
+            user = self.get_user(verify_key)
+            return user.role.get("can_edit_roles", False)
         except UserNotFoundError:
             return False
 
-    def role(self, verify_key: VerifyKey) -> Role:
+    def role(self, verify_key: VerifyKey) -> Dict[Any, Any]:
         """Returns the role of the given user."""
         user = self.get_user(verify_key)
-        if not user:
-            raise UserNotFoundError
-        return self.roles.first(id=user.role)
+        return user.role
 
-    def get_user(self, verify_key: VerifyKey) -> Optional[SyftUser]:
+    def get_user(self, verify_key: VerifyKey) -> NoSQLSyftUser:
         """Returns the user for the given public digital signature."""
-        return self.first(
-            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
-        )
+        encoded_vk = verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        user = self.first(verify_key=encoded_vk)
+        return user
 
-    def __login_validation(self, email: str, password: str) -> SyftUser:
+    def __login_validation(self, email: str, password: str) -> NoSQLSyftUser:
         """Validates and returns the user object for the given credentials.
 
         Args:
@@ -388,8 +493,6 @@ class UserManager(DatabaseManager):
         """
         try:
             user = self.first(email=email)
-            if not user:
-                raise UserNotFoundError
 
             hashed = user.hashed_password.encode("UTF-8")
             salt = user.salt.encode("UTF-8")
@@ -400,6 +503,7 @@ class UserManager(DatabaseManager):
             else:
                 raise InvalidCredentialsError
         except UserNotFoundError:
+
             raise InvalidCredentialsError
 
     def __salt_and_hash_password(self, password: str, rounds: int) -> Tuple[str, str]:
@@ -413,37 +517,33 @@ class UserManager(DatabaseManager):
         return salt, hashed
 
     def get_budget_for_user(self, verify_key: VerifyKey) -> float:
-        encoded_vk = verify_key.encode(encoder=HexEncoder).decode("utf-8")
-        user = self.first(verify_key=encoded_vk)
-        if user is None:
-            raise Exception(f"No user for verify_key: {verify_key}")
+        user = self.get_user(verify_key=verify_key)
         return user.budget
 
     def deduct_epsilon_for_user(
         self, verify_key: VerifyKey, old_budget: float, epsilon_spend: float
     ) -> bool:
-        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
-        with session_local.begin():
-            encoded_vk = verify_key.encode(encoder=HexEncoder).decode("utf-8")
-            user = self.first(verify_key=encoded_vk)
-            if user.budget != old_budget:
-                raise RefreshBudgetException(
-                    "The budget used does not match the current budget in the database."
-                    + "Try refreshing again"
-                )
-            if user.budget < 0:
-                raise NegativeBudgetException(
-                    f"Budget is somehow negative {user.budget}"
-                )
+        if isinstance(epsilon_spend, jax.numpy.DeviceArray) and len(epsilon_spend) == 1:
+            epsilon_spend = float(epsilon_spend)
 
-            if old_budget - abs(epsilon_spend) < 0:
-                raise NotEnoughBudgetException(
-                    f"The user does not have enough budget: {user.budget} for epsilon spend: {epsilon_spend}"
-                )
+        user = self.get_user(verify_key=verify_key)
+        if user.budget != old_budget:
+            raise RefreshBudgetException(
+                "The budget used does not match the current budget in the database."
+                + "Try refreshing again"
+            )
+        if user.budget < 0:
+            raise NegativeBudgetException(f"Budget is somehow negative {user.budget}")
 
-            user.budget = user.budget - epsilon_spend
-            session_local.add(user)
+        if old_budget - abs(epsilon_spend) < 0:
+            raise NotEnoughBudgetException(
+                f"The user does not have enough budget: {user.budget} for epsilon spend: {epsilon_spend}"
+            )
 
-        session_local.commit()
-        session_local.close()
+        user.budget = user.budget - epsilon_spend
+        self.update_one(
+            query={"id_int": int(user.id_int)},
+            values={"__blob__": _serialize(user, to_bytes=True)},
+        )  # type: ignore
+
         return True

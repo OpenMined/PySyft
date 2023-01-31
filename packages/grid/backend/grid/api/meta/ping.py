@@ -29,7 +29,7 @@ def remote_ping(
     # Build Syft Message
     msg = (
         PingMessageWithReply(kwargs={"grid_url": GridURL.from_url(host_or_ip)})
-        .to(address=node.address, reply_to=node.address)
+        .to(address=node.node_uid, reply_to=node.node_uid)
         .sign(signing_key=user_key)
     )
 

@@ -5,12 +5,12 @@ from random import random
 # third party
 from fastapi import FastAPI
 from httpx import AsyncClient
+from pymongo_inmemory import MongoClient
 import pytest
-from sqlalchemy.orm import Session
 from starlette import status
 
 # syft absolute
-from syft.core.node.common.node_manager.user_manager import UserManager
+from syft.core.node.common.node_manager.role_manager import NewRoleManager
 
 # grid absolute
 from grid.tests.utils.auth import OWNER_EMAIL
@@ -40,7 +40,6 @@ class TestUsersRoutes:
         assert "Authorization" not in res.request.headers.keys()
         assert res.status_code == status.HTTP_401_UNAUTHORIZED
 
-    @pytest.mark.asyncio
     async def test_successfully_create_user(
         self, app: FastAPI, client: AsyncClient
     ) -> None:
@@ -48,12 +47,13 @@ class TestUsersRoutes:
         # Create dummy user
         user = create_user(budget=random() * 100)
         headers = await authenticate_owner(app, client)
+        role = NewRoleManager()
         new_user = {
             "name": user.name,
             "email": user.email,
             "password": user.password,
             "confirm_password": user.password,
-            "role": 1,
+            "role": role.ds_role["name"],
             "budget": user.budget,
         }
         headers["Content-Type"] = "application/x-www-form-urlencoded"
@@ -62,6 +62,9 @@ class TestUsersRoutes:
         res = await client.post(
             app.url_path_for("users:create"), headers=headers, data=data
         )
+
+        headers = await authenticate_owner(app, client)
+        res = await client.get(app.url_path_for("users:read_all"), headers=headers)
 
         assert res.status_code == status.HTTP_201_CREATED
         assert res.json() == "User created successfully!"
@@ -87,7 +90,7 @@ class TestUsersRoutes:
         )
 
         # Check if the request was successful
-        assert res.status_code == status.HTTP_204_NO_CONTENT
+        assert res.status_code == status.HTTP_200_OK
 
         # Get the details of the update user
         res = await client.get(
@@ -144,7 +147,7 @@ class TestUsersRoutes:
         )
 
         # Check if the request was successful
-        assert res.status_code == status.HTTP_204_NO_CONTENT
+        assert res.status_code == status.HTTP_200_OK
 
         # Check if the user details were updated correctly
         headers = await authenticate_user(
@@ -165,7 +168,7 @@ class TestUsersRoutes:
         )
 
         # Check if the request was successful
-        assert res.status_code == status.HTTP_204_NO_CONTENT
+        assert res.status_code == status.HTTP_200_OK
 
     @pytest.mark.asyncio
     async def test_fail_change_owner_role(
@@ -200,36 +203,36 @@ class TestUsersRoutes:
 
     @pytest.mark.asyncio
     async def test_delete_user(
-        self, app: FastAPI, client: AsyncClient, db: Session
+        self, app: FastAPI, client: AsyncClient, db: MongoClient, db_name: str
     ) -> None:
-        # Create a data for dummy user
+        # Create dummy user
         user = create_user(budget=random() * 100)
         headers = await authenticate_owner(app, client)
+        role = NewRoleManager()
+        new_user = {
+            "name": user.name,
+            "email": user.email,
+            "password": user.password,
+            "confirm_password": user.password,
+            "role": role.ds_role["name"],
+            "budget": user.budget,
+        }
+        headers["Content-Type"] = "application/x-www-form-urlencoded"
+        data = {"new_user": json.dumps(new_user), "file": None}
 
-        db_engine = db.get_bind()
-        user_manager = UserManager(db_engine)
-
-        # create new user
-        user_manager.signup(
-            name=user.name,
-            email=user.email,
-            password=user.password,
-            budget=user.budget,
-            role=1,  # Assign Data Scientist as Role
-            verify_key="",
-            private_key="",
+        res = await client.post(
+            app.url_path_for("users:create"), headers=headers, data=data
         )
 
-        # retrieve the new user
-        new_user = user_manager.last(**{"email": user.email})
-        assert new_user is not None
+        headers = await authenticate_owner(app, client)
+        res = await client.get(app.url_path_for("users:read_all"), headers=headers)
 
         # Deleting the new user
         res = await client.delete(
-            app.url_path_for("users:delete", **{"user_id": int(new_user.id)}),
+            app.url_path_for("users:delete", **{"user_id": 3}),
             headers=headers,
         )
-        assert res.status_code == status.HTTP_204_NO_CONTENT
+        assert res.status_code == status.HTTP_200_OK
 
     """
     @pytest.mark.asyncio

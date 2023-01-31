@@ -13,18 +13,17 @@ from nacl.signing import VerifyKey
 from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.uid import UID
-from .....io.address import Address
 from ....abstract.node_service_interface import NodeServiceInterface
 
 
 class GenericPayloadMessage(ImmediateSyftMessageWithReply):
-    __attr_allowlist__ = ["id", "payload", "address", "reply_to", "msg_id"]
+    __attr_allowlist__ = ["id", "payload", "address", "reply_to", "id"]
 
     def __init__(
         self,
         payload: GenericPayloadMessageWithReply,
-        address: Address,
-        reply_to: Address,
+        address: UID,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -32,12 +31,12 @@ class GenericPayloadMessage(ImmediateSyftMessageWithReply):
 
 
 class GenericPayloadReplyMessage(ImmediateSyftMessageWithoutReply):
-    __attr_allowlist__ = ["id", "payload", "address", "msg_id"]
+    __attr_allowlist__ = ["id", "payload", "address", "id"]
 
     def __init__(
         self,
         payload: GenericPayloadMessageWithReply,
-        address: Address,
+        address: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
@@ -50,8 +49,6 @@ class GenericPayloadMessageWithReply:
     message_reply_type = GenericPayloadReplyMessage
 
     def __init__(self, kwargs: Optional[Dict[str, Any]] = None) -> None:
-        if hasattr(kwargs, "upcast"):
-            kwargs = kwargs.upcast()  # type: ignore
         self.kwargs: Dict[str, Any] = kwargs if kwargs is not None else {}
 
     def run(
@@ -59,8 +56,8 @@ class GenericPayloadMessageWithReply:
     ) -> Dict[str, Any]:
         raise NotImplementedError
 
-    def to(self, address: Address, reply_to: Address) -> Any:
+    def to(self, address: UID, reply_to: UID) -> Any:
         return self.message_type(address=address, reply_to=reply_to, payload=self)
 
-    def back_to(self, address: Address) -> Any:
+    def back_to(self, address: UID) -> Any:
         return self.message_reply_type(address=address, payload=self)

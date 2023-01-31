@@ -35,10 +35,8 @@ def auth_using_signing_key(
         expires_delta=access_token_expires,
     )
 
-    metadata = (
-        serialize(node.get_metadata_for_client())
-        .SerializeToString()
-        .decode("ISO-8859-1")
+    metadata = serialize(node.get_metadata_for_client(), to_bytes=True).decode(
+        "ISO-8859-1"
     )
 
     return {
@@ -57,10 +55,8 @@ def guest_user() -> Any:
         expires_delta=access_token_expires,
         guest=True,
     )
-    metadata = (
-        serialize(node.get_metadata_for_client())
-        .SerializeToString()
-        .decode("ISO-8859-1")
+    metadata = serialize(node.get_metadata_for_client(), to_bytes=True).decode(
+        "ISO-8859-1"
     )
     guest_signing_key = (
         SigningKey.generate()
@@ -86,21 +82,17 @@ def login_access_token(
     domains is sufficient for logging in.
     """
     try:
-        node.users.login(email=email, password=password)
+        user = node.users.login(email=email, password=password)
     except InvalidCredentialsError as err:
         logger.bind(payload={"email": email}).error(err)
         raise HTTPException(status_code=401, detail="Incorrect email or password")
 
-    user = node.users.first(email=email)
-
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = security.create_access_token(
-        user.id, expires_delta=access_token_expires
+        user.id_int, expires_delta=access_token_expires
     )
-    metadata = (
-        serialize(node.get_metadata_for_client())
-        .SerializeToString()
-        .decode("ISO-8859-1")
+    metadata = serialize(node.get_metadata_for_client(), to_bytes=True).decode(
+        "ISO-8859-1"
     )
 
     return {

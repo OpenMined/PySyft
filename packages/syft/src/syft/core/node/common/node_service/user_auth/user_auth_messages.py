@@ -70,13 +70,11 @@ class UserLoginMessageWithReply(GenericPayloadMessageWithReply):
             response: Dict[str, Any] = {}
             response["status"] = "error"
             try:
-                node.users.login(email=email, password=password)  # type: ignore
+                user = node.users.login(email=email, password=password)  # type: ignore
             except InvalidCredentialsError as e:
                 error(f"Invalid credentials during login for {email}. {e}")
                 response["reason"] = "Incorrect email or password"
                 return response
-
-            user = node.users.first(email=email)  # type: ignore
 
             # settings = node.settings
             # access_token_expires = timedelta(

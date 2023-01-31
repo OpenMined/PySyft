@@ -51,14 +51,15 @@ def domain_reconnect_network() -> None:
         network_vpn_endpoint = get_network_url().with_path("/api/v1/vpn/status")
         msg = (
             VPNStatusMessageWithReply(kwargs={})
-            .to(address=node.address, reply_to=node.address)
+            .to(address=node.node_uid, reply_to=node.node_uid)
             .sign(signing_key=node.signing_key)
         )
         reply = node.recv_immediate_msg_with_reply(msg=msg)
         is_connected = reply.message.payload.kwargs["connected"]
         disconnected = not is_connected or not network_vpn_endpoint
         if node_connections.keep_connected and disconnected:
-            routes = list(node.node_route.query(node_id=node_connections.id))
+            routes = node.node.get_routes(node_connections)
+
             for route in routes:
                 try:
                     status, error = connect_with_key(
@@ -80,7 +81,7 @@ def network_connect_self() -> None:
     # TODO: refactor to be non blocking and in a different queue
     msg = (
         VPNJoinSelfMessageWithReply(kwargs={})
-        .to(address=node.address, reply_to=node.address)
+        .to(address=node.node_uid, reply_to=node.node_uid)
         .sign(signing_key=node.signing_key)
     )
     _ = node.recv_immediate_msg_with_reply(msg=msg).message
