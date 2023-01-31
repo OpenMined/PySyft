@@ -19,7 +19,7 @@ from ....domain_interface import DomainInterface
 from ....domain_msg_registry import DomainMessageRegistry
 from ...exceptions import InvalidParameterValueError
 from ...exceptions import RequestError
-from ...node_table.utils import model_to_json
+from ...node_table.utils import syft_object_to_json
 from ...permissions.permissions import BasePermission
 from ...permissions.user_permissions import UserCanTriageRequest
 from ..generic_payload.syft_message import NewSyftMessage as SyftMessage
@@ -90,7 +90,7 @@ class NewGetRequestMessage(SyftMessage, DomainMessageRegistry):
 
         request = node.data_requests.all()[0]
 
-        request_json = model_to_json(request)
+        request_json = syft_object_to_json(request)
         print("My Request JSON: ", request_json)
         return NewGetRequestMessage.Reply(**request_json)
 
@@ -129,13 +129,13 @@ class NewGetDataRequestsMessage(SyftMessage, DomainMessageRegistry):
             # Get current state user
             if node.data_requests.status(request.id) == RequestStatus.Pending:
                 _user = node.users.first(id=request.user_id)
-                user = model_to_json(_user)
+                user = syft_object_to_json(_user)
                 user["role"] = node.roles.first(id=_user.role).name
                 user["current_budget"] = user[REQUEST_TYPES.BUDGET.value]
             # Get History state user
             else:
                 user = node.data_requests.get_user_info(request_id=request.id)
-            request = model_to_json(request)
+            request = syft_object_to_json(request)
             response.append({"user": user, "req": request})
         return NewGetDataRequestsMessage.Reply(requests=response)
 
@@ -174,10 +174,10 @@ class NewGetBudgetRequestsMessage(SyftMessage, DomainMessageRegistry):
             # Get current state user
             if node.data_requests.status(request.id) == RequestStatus.Pending:
                 _user = node.users.first(id=request.user_id)
-                user = model_to_json(_user)
+                user = syft_object_to_json(_user)
                 user["role"] = node.roles.first(id=_user.role).name
                 user["current_budget"] = user[REQUEST_TYPES.BUDGET.value]
-                request = model_to_json(request)
+                request = syft_object_to_json(request)
             # Get History state user
             else:
                 user = node.data_requests.get_user_info(request_id=request.id)

@@ -11,7 +11,6 @@ except Exception:
 
 # syft absolute
 import syft as sy
-from syft.core.adp.data_subject_list import DataSubjectArray
 
 
 def create_keras_model():
@@ -25,18 +24,16 @@ def create_keras_model():
 
 
 def load_dataset(domain):
-    data_subjects = DataSubjectArray.from_objs(["Test"])
+    data_subject = "Test"
 
     train_data = np.random.randint(256, size=(1, 100))
     label_data = np.array([0])
 
-    train_data_subjects = np.broadcast_to(np.array(data_subjects), train_data.shape)
-
     train_image_data = sy.Tensor(train_data).annotate_with_dp_metadata(
-        lower_bound=0, upper_bound=255, data_subjects=train_data_subjects
+        lower_bound=0, upper_bound=255, data_subject=data_subject
     )
     train_label_data = sy.Tensor(label_data).annotate_with_dp_metadata(
-        lower_bound=0, upper_bound=5, data_subjects=data_subjects
+        lower_bound=0, upper_bound=5, data_subject=data_subject
     )
 
     domain.load_dataset(

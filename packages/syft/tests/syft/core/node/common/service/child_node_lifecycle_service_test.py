@@ -19,8 +19,8 @@ def test_child_node_lifecycle_message_serde(
     # generates this message
     msg = RegisterChildNodeMessage(
         lookup_id=client.id,  # TODO: not sure if this is needed anymore
-        child_node_client_address=client.address,
-        address=second_client.address,
+        child_node_client_address=client.node_uid,
+        address=second_client.node_uid,
     )
 
     blob = serialize(msg)

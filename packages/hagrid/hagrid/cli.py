@@ -71,6 +71,7 @@ from .lib import check_jupyter_server
 from .lib import check_login_page
 from .lib import commit_hash
 from .lib import docker_desktop_memory
+from .lib import find_available_port
 from .lib import generate_process_status_table
 from .lib import generate_user_table
 from .lib import gitpod_url
@@ -84,6 +85,7 @@ from .mode import EDITABLE_MODE
 from .parse_template import render_templates
 from .parse_template import setup_from_manifest_template
 from .quickstart_ui import fetch_notebooks_for_url
+from .quickstart_ui import fetch_notebooks_from_zipfile
 from .quickstart_ui import quickstart_download_notebook
 from .rand_sec import generate_sec_random_password
 from .style import RichGroup
@@ -309,6 +311,12 @@ def clean(location: str) -> None:
     help="Suppress extra launch outputs",
 )
 @click.option(
+    "--trace",
+    required=False,
+    type=str,
+    help="Optional: allow trace to be turned on or off",
+)
+@click.option(
     "--from-template",
     is_flag=True,
     help="Launch node using the manifest template",
@@ -317,6 +325,11 @@ def clean(location: str) -> None:
     "--no-health-checks",
     is_flag=True,
     help="Turn off auto health checks post node launch",
+)
+@click.option(
+    "--oblv",
+    is_flag=True,
+    help="Installs Oblivious CLI tool",
 )
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
@@ -1058,12 +1071,21 @@ def create_launch_cmd(
     headless = bool(kwargs["headless"])
     parsed_kwargs["headless"] = headless
 
+    parsed_kwargs["oblv"] = bool(kwargs["oblv"])
+
     parsed_kwargs["tls"] = bool(kwargs["tls"])
     parsed_kwargs["test"] = bool(kwargs["test"])
     parsed_kwargs["dev"] = bool(kwargs["dev"])
 
     parsed_kwargs["silent"] = bool(kwargs["silent"])
     parsed_kwargs["from_template"] = bool(kwargs["from_template"])
+
+    parsed_kwargs["trace"] = False
+    if ("trace" not in kwargs or kwargs["trace"] is None) and parsed_kwargs["dev"]:
+        # default to trace on in dev mode
+        parsed_kwargs["trace"] = True
+    elif "trace" in kwargs:
+        parsed_kwargs["trace"] = str_to_bool(cast(str, kwargs["trace"]))
 
     parsed_kwargs["release"] = "production"
     if "release" in kwargs and kwargs["release"] != "production":
@@ -1587,7 +1609,7 @@ def pull_command(cmd: str, kwargs: TypeDict[str, Any]) -> TypeList[str]:
         pull_cmd += " --file docker-compose.yml"
     else:
         pull_cmd += " --file docker-compose.pull.yml"
-    pull_cmd += " pull"
+    pull_cmd += " pull --ignore-pull-failures"  # ignore missing svelte kit for now
     return [pull_cmd]
 
 
@@ -1661,7 +1683,7 @@ def create_launch_docker_cmd(
         elif version_string is None:
             version_string = "latest"
 
-    if platform.uname().machine == "x86_64":
+    if platform.uname().machine.lower() in ["x86_64", "amd64"]:
         docker_platform = "linux/amd64"
     else:
         docker_platform = "linux/arm64"
@@ -1669,6 +1691,7 @@ def create_launch_docker_cmd(
     if "platform" in kwargs and kwargs["platform"] is not None:
         docker_platform = kwargs["platform"]
 
+    install_oblv_cli = bool(kwargs["oblv"])
     print("  - NAME: " + str(snake_name))
     print("  - RELEASE: " + kwargs["release"])
     print("  - ARCH: " + docker_platform)
@@ -1681,6 +1704,7 @@ def create_launch_docker_cmd(
         print("  - HAGRID_REPO_SHA: " + commit_hash())
     print("  - PORT: " + str(host_term.free_port))
     print("  - DOCKER COMPOSE: " + docker_version)
+    print("  - OBLV_CLI: ", install_oblv_cli)
 
     print("\n")
 
@@ -1705,7 +1729,15 @@ def create_launch_docker_cmd(
         "STACK_API_KEY": str(
             generate_sec_random_password(length=48, special_chars=False)
         ),
+        "INSTALL_OBLV_CLI": str(install_oblv_cli).lower(),
     }
+
+    if "trace" in kwargs and kwargs["trace"] is True:
+        envs["TRACE"] = "True"
+        envs["JAEGER_HOST"] = "docker-host"
+        envs["JAEGER_PORT"] = int(
+            find_available_port(host="localhost", port=14268, search=True)
+        )
 
     if "platform" in kwargs and kwargs["platform"] is not None:
         envs["DOCKER_DEFAULT_PLATFORM"] = docker_platform
@@ -1763,6 +1795,9 @@ def create_launch_docker_cmd(
     # no frontend container so expect bad gateway on the / route
     if not bool(kwargs["headless"]):
         cmd += " --profile frontend"
+
+    if "trace" in kwargs and kwargs["trace"]:
+        cmd += " --profile telemetry"
 
     # new docker compose regression work around
     # default_env = os.path.expanduser("~/.hagrid/app/.env")
@@ -3005,6 +3040,7 @@ def run_quickstart(
     branch: str = DEFAULT_BRANCH,
     commit: Optional[str] = None,
     python: Optional[str] = None,
+    zip_file: Optional[str] = None,
 ) -> None:
     try:
         quickstart_art()
@@ -3030,7 +3066,13 @@ def run_quickstart(
                 python=python,
             )
         downloaded_files = []
-        if url:
+        if zip_file:
+            downloaded_files = fetch_notebooks_from_zipfile(
+                zip_file,
+                directory=directory,
+                reset=reset,
+            )
+        elif url:
             downloaded_files = fetch_notebooks_for_url(
                 url=url,
                 directory=directory,
@@ -3377,26 +3419,18 @@ def add_intro_notebook(directory: str, reset: bool = False) -> str:
 
 
 @click.command(help="Walk the Path", context_settings={"show_default": True})
-@click.option(
-    "--repo",
-    help="Obi-Wan will guide you to Dagobah",
-)
-@click.option(
-    "--branch",
-    default=DEFAULT_BRANCH,
-    help="Choose a branch to fetch from or just use dev",
-)
-@click.option(
-    "--commit",
-    help="Choose a specific commit to fetch the notebook from",
-)
-def dagobah(
-    repo: str,
-    branch: str = DEFAULT_BRANCH,
-    commit: Optional[str] = None,
-) -> None:
-    raise Exception("Obi-Wan will guide you to Dagobah")
-    # return run_quickstart(url="padawan", repo=repo, branch=branch, commit=commit)
+@click.argument("zip_file", type=str, default="padawan.zip", metavar="ZIPFILE")
+def dagobah(zip_file: str) -> None:
+    if not os.path.exists(zip_file):
+        for text in (
+            f"{zip_file} does not exists.",
+            "Please specify the path to the zip file containing the notebooks.",
+            "hagrid dagobah [ZIPFILE]",
+        ):
+            print(text, file=sys.stderr)
+        sys.exit(1)
+
+    return run_quickstart(zip_file=zip_file)
 
 
 cli.add_command(dagobah)

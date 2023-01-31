@@ -99,13 +99,13 @@ def spdz_mask(
     beaver_action = BeaverAction(
         values=[eps, delta],
         locations=[eps_id, delta_id],
-        address=curr_client.address,
+        address=curr_client.node_uid,
     )
     beaver_action.execute_action(node, None)
 
     for _, client in enumerate(clients):
         if client != curr_client:
-            beaver_action.address = client.address
+            beaver_action.address = client.node_uid
             client.send_immediate_msg_without_reply(msg=beaver_action)
 
 
@@ -217,13 +217,13 @@ def divide_mask(
     beaver_action = BeaverAction(
         values=[z],
         locations=[z_id],
-        address=curr_client.address,
+        address=curr_client.node_uid,
     )
     beaver_action.execute_action(node, None)
 
     for _, client in enumerate(clients):
         if client != curr_client:
-            beaver_action.address = client.address
+            beaver_action.address = client.node_uid
             client.send_immediate_msg_without_reply(msg=beaver_action)
 
 
