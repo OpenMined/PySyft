@@ -6,6 +6,7 @@ broker_pool_limit = 500
 worker_prefetch_multiplier = 1
 task_routes = {
     "grid.worker.msg_without_reply": "main-queue",
+    "grid.worker.execute_task": "main-queue",
     "delivery_mode": "transient",
 }
 accept_content = ["application/syft"]
