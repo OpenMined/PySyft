@@ -13,17 +13,6 @@ from grid.core.node import node
 
 
 @celery_app.task
-def check_tasks_to_be_executed() -> None:
-    tasks = node.tasks.find(search_params={"status": "accepted"})
-    for task in tasks:
-        if task.execution["status"] == "enqueued":
-            celery_app.send_task(
-                "grid.worker.execute_task",
-                args=[task.uid, task.code, task.inputs, task.outputs],
-            )
-
-
-@celery_app.task
 def cleanup_incomplete_uploads_from_blob_store() -> bool:
     """Cleans up incomplete uploads from blob storage."""
 
