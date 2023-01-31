@@ -2209,11 +2209,10 @@ def create_aws_security_group(
     sg_description = f"{snake_name} security group"
     create_cmd = f"aws ec2 create-security-group --group-name {security_group_name} "
     create_cmd += f'--region {region} --description "{sg_description}" '
-    sg_output = subprocess.check_output(
+    sg_output = subprocess.check_output(  # nosec
         create_cmd,
         shell=True,
-    )  # nosec
-    # print(f"sg_output: {sg_output}")
+    )
     sg_output_dict = json.loads(sg_output)
     if "GroupId" in sg_output_dict:
         return sg_output_dict["GroupId"]
@@ -2227,7 +2226,7 @@ def open_port_aws(
     cmd = f"aws ec2 authorize-security-group-ingress --group-name {security_group_name} --protocol tcp "
     cmd += f"--port {port_no} --cidr {cidr} --region {region}"
     # TODO not sure why, but this call is waiting for prompt from user (have to enter q to proceed)
-    subprocess.check_call(
+    subprocess.check_call(  # nosec
         cmd,
         shell=True,
     )
