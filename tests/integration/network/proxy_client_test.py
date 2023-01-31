@@ -40,9 +40,19 @@ def test_domain1_via_network_proxy_client() -> None:
 
     domain_list = network_client.domains.all(pandas=False)
     assert len(domain_list) > 0
-    proxy_client = network_client.domains[domain_client.node_uid]
+    if sy.__version__ == "0.7.0":
+        node_uid = domain_client.id
+    else:
+        node_uid = domain_client.node_uid
 
-    assert proxy_client.node_uid == domain_client.node_uid
+    proxy_client = network_client.domains[node_uid]
+
+    if sy.__version__ == "0.7.0":
+        proxy_client_uid = proxy_client.id
+    else:
+        proxy_client_uid = proxy_client.node_uid
+
+    assert proxy_client_uid == node_uid
     assert proxy_client.name == domain_client.name
     assert proxy_client.routes[0] != domain_client.routes[0]
 
@@ -83,9 +93,22 @@ def test_domain2_via_network_proxy_client() -> None:
 
     domain_list = network_client.domains.all(pandas=False)
     assert len(domain_list) > 0
-    proxy_client = network_client.domains[domain_client.node_uid]
 
-    assert proxy_client.node_uid == domain_client.node_uid
+    if sy.__version__ == "0.7.0":
+        node_uid = domain_client.id
+    else:
+        node_uid = domain_client.node_uid
+
+    proxy_client = network_client.domains[node_uid]
+
+    if sy.__version__ == "0.7.0":
+        proxy_client_uid = proxy_client.id
+    else:
+        proxy_client_uid = proxy_client.node_uid
+
+    proxy_client = network_client.domains[node_uid]
+
+    assert proxy_client_uid == node_uid
     assert proxy_client.name == domain_client.name
     assert proxy_client.routes[0] != domain_client.routes[0]
 
