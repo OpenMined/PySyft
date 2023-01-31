@@ -225,6 +225,13 @@ class ReviewTask(SyftMessage, DomainMessageRegistry):
         if not task:
             raise Exception(f"The given task_id:{self.payload.task_uid} does not exist")
         task = task[0]
+
+        node.tasks.update(
+            search_params={"uid": task.uid},
+            updated_args={
+                "execution": {"status": "executing"},
+            },
+        )
         execute_task(node, task.uid, task.code, task.inputs, task.outputs)
 
         return CreateTask.Reply()
