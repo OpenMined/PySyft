@@ -1,10 +1,8 @@
 # third party
 import numpy as np
-import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.adp.data_subject_list import DataSubjectArray
 from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
 
 # def test_incompatible_input_tensor_type() -> None:

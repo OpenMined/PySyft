@@ -39,6 +39,31 @@ def convert_to_mongo_id(fields: Dict[Any, Any]) -> Dict:
     return fields
 
 
+# TODO: Possible way for adding codecs for storing custom objects e.g. SigningKey
+# from bson.codec_options import TypeCodec
+# from bson.codec_options import TypeRegistry, CodecOptions
+# from bson.binary import Binary
+# from bson.raw_bson import RawBSONDocument
+
+
+# class SyftSingingKeyCodec(TypeCodec):
+#     python_type = SyftVerifyKey  # the Python type acted upon by this type codec
+#     bson_type = RawBSONDocument  # the BSON type acted upon by this type codec
+
+#     def transform_python(self, value):
+#         """Function that transforms a SyftSigningKey type value into a type
+#         that BSON can encode."""
+#         return str(value)
+
+#     def transform_bson(self, value):
+#         """Function that transforms a vanilla BSON type value into our
+#         SyftSigningKeyType."""
+#         return SyftVerifyKey.from_string(value.decode("utf-8"))
+
+
+# codec_options = CodecOptions(type_registry=TypeRegistry([SyftSingingKeyCodec()]))
+
+
 @instrument
 class NoSQLDatabaseManager:
     _collection_name: str

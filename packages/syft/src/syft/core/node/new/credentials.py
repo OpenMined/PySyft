@@ -9,6 +9,7 @@ from typing import Union
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+from pydantic import BaseModel
 
 # relative
 from ...common.serde.serializable import serializable
@@ -16,17 +17,21 @@ from ...common.serde.serializable import serializable
 SIGNING_KEY_FOR = "SigningKey for"
 
 
+class SyftBaseModel(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+
+
 @serializable(recursive_serde=True)
-class SyftVerifyKey:
-    def __init__(self, verify_key: VerifyKey) -> None:
-        self.verify_key = verify_key
+class SyftVerifyKey(SyftBaseModel):
+    verify_key: VerifyKey
 
     def __str__(self) -> str:
         return self.verify_key.encode(encoder=HexEncoder).decode("utf-8")
 
     @staticmethod
     def from_string(key_str: str) -> SyftVerifyKey:
-        return SyftVerifyKey(VerifyKey(bytes.fromhex(key_str)))
+        return SyftVerifyKey(verify_key=VerifyKey(bytes.fromhex(key_str)))
 
     @property
     def verify(self) -> str:
@@ -37,26 +42,28 @@ class SyftVerifyKey:
             return False
         return self.verify_key == other.verify_key
 
+    def __repr__(self) -> str:
+        return str(self)
+
 
 @serializable(recursive_serde=True)
-class SyftSigningKey:
-    def __init__(self, signing_key: SigningKey) -> None:
-        self.signing_key = signing_key
+class SyftSigningKey(SyftBaseModel):
+    signing_key: SigningKey
 
     @property
     def verify_key(self) -> SyftVerifyKey:
-        return SyftVerifyKey(self.signing_key.verify_key)
+        return SyftVerifyKey(verify_key=self.signing_key.verify_key)
 
     def __str__(self) -> str:
         return self.signing_key.encode(encoder=HexEncoder).decode("utf-8")
 
     @staticmethod
     def generate() -> SyftSigningKey:
-        return SyftSigningKey(SigningKey.generate())
+        return SyftSigningKey(signing_key=SigningKey.generate())
 
     @staticmethod
     def from_string(key_str: str) -> SyftSigningKey:
-        return SyftSigningKey(SigningKey(bytes.fromhex(key_str)))
+        return SyftSigningKey(signing_key=SigningKey(bytes.fromhex(key_str)))
 
     def __repr__(self) -> str:
         return f"<{SIGNING_KEY_FOR}: {self.verify}>"

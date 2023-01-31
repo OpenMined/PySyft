@@ -6,19 +6,27 @@ from typing import Any
 from fastapi import APIRouter
 from fastapi import Body
 from fastapi import HTTPException
+from fastapi import Response
 from fastapi.responses import JSONResponse
 from loguru import logger
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
+from pydantic import ValidationError
 
 # syft absolute
 from syft import serialize  # type: ignore
+from syft.core.common.uid import UID
 from syft.core.node.common.exceptions import InvalidCredentialsError
+from syft.core.node.new.credentials import SyftVerifyKey
+from syft.core.node.new.user import UserCollection
+from syft.core.node.new.user import UserLoginCredentials
+from syft.core.node.new.user import UserPrivateKey
 
 # grid absolute
 from grid.core import security
 from grid.core.config import settings
 from grid.core.node import node
+from grid.core.node import worker
 
 router = APIRouter()
 

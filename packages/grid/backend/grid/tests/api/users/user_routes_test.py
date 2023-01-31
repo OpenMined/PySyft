@@ -229,7 +229,7 @@ class TestUsersRoutes:
 
         # Deleting the new user
         res = await client.delete(
-            app.url_path_for("users:delete", **{"user_id": 2}),
+            app.url_path_for("users:delete", **{"user_id": 3}),
             headers=headers,
         )
         assert res.status_code == status.HTTP_200_OK

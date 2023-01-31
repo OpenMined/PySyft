@@ -4,7 +4,6 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.adp.data_subject_list import DataSubjectArray
 
 
 def create_test_dataset(client, name: str = "TSTDataset"):

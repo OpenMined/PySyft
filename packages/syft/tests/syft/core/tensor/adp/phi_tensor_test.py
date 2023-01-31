@@ -4,7 +4,6 @@ from typing import Dict
 
 # third party
 import numpy as np
-from numpy.typing import ArrayLike
 import pytest
 
 # syft absolute
