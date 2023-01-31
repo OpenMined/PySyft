@@ -57,13 +57,13 @@ class User(SyftObject):
         return EmailStr(v)
 
     # fields
-    email: EmailStr
-    name: str
-    hashed_password: str
-    salt: str
-    signing_key: SyftSigningKey
-    verify_key: SyftVerifyKey
-    role: ServiceRole
+    email: Optional[EmailStr]
+    name: Optional[str]
+    hashed_password: Optional[str]
+    salt: Optional[str]
+    signing_key: Optional[SyftSigningKey]
+    verify_key: Optional[SyftVerifyKey]
+    role: Optional[ServiceRole]
     institution: Optional[str]
     website: Optional[str] = None
     created_at: Optional[str]
@@ -88,7 +88,9 @@ def default_role(role: ServiceRole) -> Callable:
 
 
 def hash_password(_self: Any, output: Dict) -> Dict:
-    if output["password"] == output["password_verify"]:
+    if output["password"] is not None and (
+        output["password"] == output["password_verify"]
+    ):
         salt, hashed = __salt_and_hash_password(output["password"], 12)
         output["hashed_password"] = hashed
         output["salt"] = salt
@@ -125,8 +127,9 @@ def check_pwd(password: str, hashed_password: str) -> bool:
 
 
 def validate_email(_self: Any, output: Dict) -> Dict:
-    output["email"] = EmailStr(output["email"])
-    EmailStr.validate(output["email"])
+    if output["email"] is not None:
+        output["email"] = EmailStr(output["email"])
+        EmailStr.validate(output["email"])
     return output
 
 
@@ -139,10 +142,10 @@ class UserUpdate(SyftUpdateObject):
 
     @pydantic.validator("email", pre=True, always=True)
     def make_email(cls, v: EmailStr) -> EmailStr:
-        return EmailStr(v)
+        return EmailStr(v) if v is not None else v
 
-    email: EmailStr
-    name: str
+    email: Optional[EmailStr]
+    name: Optional[str]
     role: Optional[ServiceRole] = None  # make sure role cant be set without uid
     password: Optional[str] = None
     password_verify: Optional[str] = None
@@ -151,8 +154,32 @@ class UserUpdate(SyftUpdateObject):
     website: Optional[str] = None
 
 
+@serializable(recursive_serde=True)
+class UserCreate(UserUpdate):
+    __canonical_name__ = "CreateUpdate"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    email: EmailStr
+    name: str
+    role: Optional[ServiceRole] = None  # make sure role cant be set without uid
+    password: str
+    password_verify: str
+    verify_key: Optional[SyftVerifyKey] = None
+    institution: Optional[str] = None
+    website: Optional[str] = None
+
+
 @transform(UserUpdate, User)
 def user_update_to_user() -> List[Callable]:
+    return [
+        validate_email,
+        hash_password,
+        drop(["password", "password_verify"]),
+    ]
+
+
+@transform(UserCreate, User)
+def user_create_to_user() -> List[Callable]:
     return [
         generate_id,
         validate_email,
@@ -165,6 +192,11 @@ def user_update_to_user() -> List[Callable]:
 
 @transform(User, UserUpdate)
 def user_to_update_user() -> List[Callable]:
+    return [keep(["id", "email", "name", "role"])]
+
+
+@transform(User, UserCreate)
+def user_to_create_user() -> List[Callable]:
     return [keep(["id", "email", "name", "role"])]
 
 

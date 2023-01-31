@@ -72,6 +72,9 @@ class UserStash(BaseStash):
         qk = UIDCollectionKey.with_obj(uid)
         return super().delete(qk=qk)
 
+    def update(self, user: User) -> Result[User, str]:
+        return self.check_type(user, self.object_type).and_then(super().update)
+
 
 # def set(self, user: Any) -> None:
 #     self.collection.set(syft_object=user)

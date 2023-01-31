@@ -5,6 +5,7 @@ from result import Err
 from syft.core.common.uid import UID
 from syft.core.node.new.document_store import DictDocumentStore
 from syft.core.node.new.user import User
+from syft.core.node.new.user import UserCreate
 from syft.core.node.new.user import UserUpdate
 from syft.core.node.new.user_stash import UserStash
 
@@ -13,7 +14,7 @@ def test_user_stash() -> None:
     store = DictDocumentStore()
     user_stash = UserStash(store=store)
 
-    new_user = UserUpdate(
+    new_user = UserCreate(
         email="alice@bob.com",
         name="Alice",
         password="letmein",
@@ -86,3 +87,35 @@ def test_user_stash() -> None:
 
     result11 = user_stash.find_and_delete(**{"email": user.email})
     assert result11 is True
+
+    update_user = UserUpdate(email="alice@bob.com", name="Bob", institution="OpenMined")
+    result12 = user_stash.update(user=update_user.to(User))
+
+    assert result12.is_ok() is False
+    assert isinstance(result12, Err)
+
+    new_user = UserCreate(
+        email="alice@bob.com",
+        name="Alice",
+        password="letmein",
+        password_verify="letmein",
+    )
+
+    user = new_user.to(User)
+    result13 = user_stash.set(user)
+
+    assert result13 == user
+
+    update_user = UserUpdate(email="alice@bob.com", name="Bob", institution="OpenMined")
+    result14 = user_stash.update(user=update_user.to(User))
+
+    assert user.email == result14.email
+    assert user.name == result14.name
+    assert user.hashed_password == result13.hashed_password
+    assert user.salt == result13.salt
+    assert user.signing_key == result13.signing_key
+    assert user.verify_key == result13.verify_key
+    assert user.role == result13.role
+    assert user.institution == result14.institution
+    assert user.website == result13.website
+    assert user.created_at == result13.created_at

@@ -103,7 +103,7 @@ class QueryKey(CollectionKey):
         else:
             ck_value = getattr(obj, ck_key)
 
-        if not isinstance(ck_value, ck_type):
+        if ck_value and not isinstance(ck_value, ck_type):
             raise Exception(
                 f"CollectionKey {ck_value} of type {type(ck_value)} must be {ck_type}."
             )
@@ -137,7 +137,7 @@ class QueryKeys(SyftBaseModel):
             ck_key = collection_key.key
             ck_type = collection_key.type_
             ck_value = getattr(obj, ck_key)
-            if not isinstance(ck_value, ck_type):
+            if ck_value and not isinstance(ck_value, ck_type):
                 raise Exception(
                     f"CollectionKey {ck_value} of type {type(ck_value)} must be {ck_type}."
                 )
@@ -299,6 +299,58 @@ class BaseCollection:
             return Err(f"Failed to write obj {obj}. {e}")
         return Ok(obj)
 
+    def remove_keys(
+        self,
+        unique_query_keys: QueryKeys,
+        searchable_query_keys: QueryKeys,
+    ) -> None:
+
+        uqks = unique_query_keys.all
+        for qk in uqks:
+            ck_key, ck_value = qk.key, qk.value
+            ck_col = self.unique_keys[ck_key]
+            ck_col.pop(ck_value, None)
+
+        sqks = searchable_query_keys.all
+        for qk in sqks:
+            ck_key, ck_value = qk.key, qk.value
+            ck_col = self.searchable_keys[ck_key]
+            ck_col.pop(ck_value, None)
+
+    def update(self, qk: QueryKey, obj: SyftObject) -> Result[SyftObject, str]:
+        try:
+            _original_obj = self.data[qk.value]
+            _original_unique_keys = self.settings.unique_keys.with_obj(_original_obj)
+            _original_searchable_keys = self.settings.searchable_keys.with_obj(
+                _original_obj
+            )
+
+            # 🟡 TODO 28: Add locking in this transaction
+
+            # remove old keys
+            self.remove_keys(
+                unique_query_keys=_original_unique_keys,
+                searchable_query_keys=_original_searchable_keys,
+            )
+
+            # update the object with new data
+            for key, value in obj.dict(exclude_none=True).items():
+                setattr(_original_obj, key, value)
+
+            # update data and keys
+            self.set_data_and_keys(
+                store_query_key=qk,
+                unique_query_keys=self.settings.unique_keys.with_obj(_original_obj),
+                searchable_query_keys=self.settings.searchable_keys.with_obj(
+                    _original_obj
+                ),
+                obj=_original_obj,
+            )
+
+            return Ok(_original_obj)
+        except Exception as e:
+            return Err(f"Failed to update obj {obj} with error: {e}")
+
     def get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
         matches = []
         for qk in qks.all:
@@ -330,7 +382,7 @@ class BaseCollection:
                 ck_col = self.unique_keys[ck_key]
                 if ck_value not in ck_col.keys():
                     # must be at least one in all query keys
-                    return Ok(set())
+                    continue
                 store_value = ck_col[ck_value]
                 subsets.append({store_value})
 
@@ -357,7 +409,7 @@ class BaseCollection:
                 ck_col = self.searchable_keys[ck_key]
                 if ck_value not in ck_col.keys():
                     # must be at least one in all query keys
-                    return Ok(set())
+                    continue
                 store_values = ck_col[ck_value]
                 subsets.append(set(store_values))
 
@@ -373,9 +425,6 @@ class BaseCollection:
             return Err(f"Failed to query with {qks}. {e}")
 
     def create(self, obj: SyftObject) -> Result[SyftObject, str]:
-        pass
-
-    def update(self, uid: UID, obj: SyftObject) -> Result[SyftObject, str]:
         pass
 
     def delete(self, qk: QueryKey) -> Result[bool, str]:
@@ -539,6 +588,27 @@ class BaseStash:
         result = self.collection.delete(qk=qk)
         if result.is_ok():
             return result.ok()
+        return result.err()
+
+    def update(
+        self, obj: BaseStash.object_type
+    ) -> Optional[Result[BaseStash.object_type, str]]:
+
+        qks = self.collection.settings.unique_keys.with_obj(obj)
+        result = self.collection.get_keys_index(qks=qks)
+
+        if result.is_ok():
+            result = result.ok()
+            if len(result) < 1:
+                return Err(f"No obj found for query keys: {qks}")
+            elif len(result) > 1:
+                return Err(f"Multiple objects found for query keys: {qks}")
+
+            qk = self.collection.store_query_key(result.pop())
+            updated_obj = self.collection.update(qk=qk, obj=obj)
+            if updated_obj.is_ok():
+                return updated_obj.ok()
+            return updated_obj.err()
         return result.err()
 
 
