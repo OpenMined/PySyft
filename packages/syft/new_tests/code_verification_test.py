@@ -46,3 +46,19 @@ def test_args(data1: ActionObject, data2: ActionObject) -> None:
     result3 = data2 + 3
     result4 = data2 + 4
     assert result3.syft_history_hash != result4.syft_history_hash
+
+
+def test_kwargs(data1: ActionObject) -> None:
+    """Ensure that passing kwargs results in different history hashes"""
+    result1 = data1.std()
+    result2 = data1.std(axis=1)
+
+    assert result1.syft_history_hash != result2.syft_history_hash
+
+
+def test_args_kwargs_identical(data1: ActionObject) -> None:
+    """Test that data.std(1) == data.std(axis=1) are the same"""
+    result1 = data1.std(1)
+    result2 = data1.std(axis=1)
+
+    assert result1.syft_history_hash == result2.syft_history_hash
