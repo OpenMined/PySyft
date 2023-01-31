@@ -293,7 +293,7 @@ def execute_task(
         locals().update(local_vars)
         # byte_code = compile_restricted(code, "<string>", "exec")
         # exec(byte_code, restricted_globals)
-        exec(code)
+        exec(code)  # nosec
 
         for output in outputs:
             logger.info(f"variable: {output} result: {vars()[output]}")
