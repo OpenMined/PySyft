@@ -23,8 +23,8 @@ from ....grid import GridURL
 from ....logger import debug
 from ....util import verify_tls
 from ...common.uid import UID
+from ...node.new.credentials import UserLoginCredentials
 from ...node.new.node_metadata import NodeMetadataJSON
-from ...node.new.user import UserLoginCredentials
 from .api import APIRegistry
 from .api import SyftAPI
 from .credentials import SyftSigningKey

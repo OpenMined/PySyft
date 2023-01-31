@@ -6,29 +6,19 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
-from typing import Type
 
 # third party
 from bcrypt import checkpw
 from bcrypt import gensalt
 from bcrypt import hashpw
-from result import Err
-from result import Ok
-from result import Result
 
 # relative
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import SyftObject
 from ....core.node.common.node_table.syft_object import transform
 from ...common.serde.serializable import serializable
-from ...common.uid import UID
-from .context import AuthedServiceContext
-from .context import NodeServiceContext
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
-from .node import NewNode
-from .service import AbstractService
-from .service import service_method
 from .transforms import drop
 from .transforms import keep
 from .transforms import make_set_default
@@ -151,15 +141,6 @@ def user_to_update_user() -> List[Callable]:
 
 
 @serializable(recursive_serde=True)
-class UserLoginCredentials(SyftObject):
-    __canonical_name__ = "UserLoginCredentials"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    email: str
-    password: str
-
-
-@serializable(recursive_serde=True)
 class UserPrivateKey(SyftObject):
     __canonical_name__ = "UserPrivateKey"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -171,116 +152,3 @@ class UserPrivateKey(SyftObject):
 @transform(User, UserPrivateKey)
 def user_to_user_verify() -> List[Callable]:
     return [keep(["email", "signing_key"])]
-
-
-class UnauthedServiceContext(NodeServiceContext):
-    login_credentials: UserLoginCredentials
-    node: Optional[NewNode]
-
-
-class SyftServiceRegistry:
-    __service_registry__: Dict[str, Callable] = {}
-
-    def __init_subclass__(cls, **kwargs: Any) -> None:
-        super().__init_subclass__(**kwargs)
-        if hasattr(cls, "__canonical_name__") and hasattr(cls, "__version__"):
-            mapping_string = f"{cls.__canonical_name__}_{cls.__version__}"
-            cls.__object_version_registry__[mapping_string] = cls
-
-    @classmethod
-    def versioned_class(cls, name: str, version: int) -> Optional[Type["SyftObject"]]:
-        mapping_string = f"{name}_{version}"
-        if mapping_string not in cls.__object_version_registry__:
-            return None
-        return cls.__object_version_registry__[mapping_string]
-
-    @classmethod
-    def add_transform(
-        cls,
-        klass_from: str,
-        version_from: int,
-        klass_to: str,
-        version_to: int,
-        method: Callable,
-    ) -> None:
-        mapping_string = f"{klass_from}_{version_from}_x_{klass_to}_{version_to}"
-        cls.__object_transform_registry__[mapping_string] = method
-
-    @classmethod
-    def get_transform(
-        cls, type_from: Type["SyftObject"], type_to: Type["SyftObject"]
-    ) -> Callable:
-        klass_from = type_from.__canonical_name__
-        version_from = type_from.__version__
-        klass_to = type_to.__canonical_name__
-        version_to = type_to.__version__
-        mapping_string = f"{klass_from}_{version_from}_x_{klass_to}_{version_to}"
-        return cls.__object_transform_registry__[mapping_string]
-
-
-class UserCollection(AbstractService):
-    def __init__(self) -> None:
-        self.data = {}
-        self.primary_keys = {}
-
-    # @service(path="services.happy.maybe_create", name="create_user")
-    @service_method(path="user.create", name="create")
-    def create(
-        self, context: AuthedServiceContext, user_update: UserUpdate
-    ) -> Result[UserUpdate, str]:
-        """TEST MY DOCS"""
-        if user_update.id is None:
-            user_update.id = UID()
-        user = user_update.to(User)
-
-        result = self.set(context=context, uid=user.id, syft_object=user)
-        if result.is_ok():
-            return Ok(user.to(UserUpdate))
-        else:
-            return Err("Failed to create User.")
-
-    @service_method(path="user.view", name="view")
-    def view(self, context: AuthedServiceContext, uid: UID) -> Result[UserUpdate, str]:
-        user_result = self.get(context=context, uid=uid)
-        if user_result.is_ok():
-            return Ok(user_result.ok().to(UserUpdate))
-        else:
-            return Err(f"Failed to get User for UID: {uid}")
-
-    def set(
-        self, context: AuthedServiceContext, uid: UID, syft_object: SyftObject
-    ) -> Result[bool, str]:
-        self.data[uid] = syft_object.to_mongo()
-        return Ok(True)
-
-    def exchange_credentials(
-        self, context: UnauthedServiceContext
-    ) -> Result[UserLoginCredentials, str]:
-        """Verify user
-        TODO: We might want to use a SyftObject instead
-        """
-        # for _, user in self.data.items():
-        # syft_object: User = SyftObject.from_mongo(user)
-        # 🟡 TOD 234: Store real root user and fetch from collectionO🟡
-        syft_object = context.node.root_user
-        if (syft_object.email == context.login_credentials.email) and check_pwd(
-            context.login_credentials.password,
-            syft_object.hashed_password,
-        ):
-            return Ok(syft_object.to(UserPrivateKey))
-
-        return Err(
-            f"No user exists with {context.login_credentials.email} and supplied password."
-        )
-
-    def get(self, context: AuthedServiceContext, uid: UID) -> Result[SyftObject, str]:
-        print("self.data", self.data.keys())
-        if uid not in self.data:
-            return Err(f"UID: {uid} not in {type(self)} store.")
-        syft_object = SyftObject.from_mongo(self.data[uid])
-        return Ok(syft_object)
-
-    def signup(
-        self, context: UnauthedServiceContext, user_update: UserUpdate
-    ) -> Result[SyftObject, str]:
-        pass

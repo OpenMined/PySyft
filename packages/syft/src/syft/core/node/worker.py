@@ -23,15 +23,17 @@ from ...core.node.common.node_table.syft_object import SyftObject
 from ..common.serde.serializable import serializable
 from ..common.uid import UID
 from .new.action_service import ActionService
+from .new.action_store import ActionStore
 from .new.api import SignedSyftAPICall
 from .new.api import SyftAPICall
 from .new.context import AuthedServiceContext
 from .new.credentials import SyftSigningKey
+from .new.document_store import DictDocumentStore
 from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
 from .new.service import AbstractService
 from .new.service import ServiceConfigRegistry
-from .new.user import UserCollection
+from .new.user_service import UserService
 
 NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
 NODE_UID = "NODE_UID"
@@ -81,7 +83,7 @@ class Worker(NewNode):
         print("============> Starting Worker with:", self.id, self.signing_key)
 
         self.name = name
-        services = [UserCollection, ActionService] if services is None else services
+        services = [UserService, ActionService] if services is None else services
         self.services = services
         self.service_config = ServiceConfigRegistry.get_registered_configs()
         self._construct_services()
@@ -93,8 +95,15 @@ class Worker(NewNode):
 
     def _construct_services(self):
         self.service_path_map = {}
+        self.document_store = DictDocumentStore()
         for service_klass in self.services:
-            self.service_path_map[service_klass.__name__] = service_klass()
+            kwargs = {}
+            if service_klass == ActionService:
+                action_store = ActionStore(root_verify_key=self.signing_key.verify_key)
+                kwargs["store"] = action_store
+            if service_klass == UserService:
+                kwargs["store"] = self.document_store
+            self.service_path_map[service_klass.__name__] = service_klass(**kwargs)
 
     def get_service_method(self, path_or_func: Union[str, Callable]) -> Callable:
         if callable(path_or_func):
