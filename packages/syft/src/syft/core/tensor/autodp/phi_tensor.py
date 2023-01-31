@@ -1881,6 +1881,9 @@ class PhiTensor(PassthroughTensor):
         if id is None:
             id = UID()
         self.id = id
+        
+    def __array__(self, dtype=None):
+        return self.child
 
     def reconstruct(self, state: Dict) -> PhiTensor:
         return state[self.id]
