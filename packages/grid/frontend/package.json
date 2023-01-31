@@ -67,7 +67,7 @@
     "browserslist": "^4.16.5",
     "cypress": "^8.7.0",
     "eslint": "^7.19.0",
-    "eslint-config-next": "12.1.6",
+    "eslint-config-next": "^13.1.6",
     "eslint-config-prettier": "^7.2.0",
     "eslint-plugin-cypress": "^2.11.3",
     "eslint-plugin-prettier": "^3.3.1",
