@@ -9,17 +9,12 @@ from typing import Union
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-from pydantic import BaseModel
 
 # relative
 from ...common.serde.serializable import serializable
+from .base import SyftBaseModel
 
 SIGNING_KEY_FOR = "SigningKey for"
-
-
-class SyftBaseModel(BaseModel):
-    class Config:
-        arbitrary_types_allowed = True
 
 
 @serializable(recursive_serde=True)
@@ -79,3 +74,10 @@ class SyftSigningKey(SyftBaseModel):
 
 
 SyftCredentials = Union[SyftVerifyKey, SyftSigningKey]
+
+
+@serializable(recursive_serde=True)
+class UserLoginCredentials(SyftBaseModel):
+
+    email: str
+    password: str
