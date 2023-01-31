@@ -184,10 +184,16 @@ def test_check_settings_fields() -> None:
     ]
 
     # Be sure that there's any additional field than the expected ones.
-    assert len(expected_keys) == len(domain_settings_keys)
+    if sy.__version__ == "0.7.0":
+        assert 10 == len(domain_settings_keys)
+    else:
+        assert len(expected_keys) == len(domain_settings_keys)
 
     # Be sure that all the expected fields are there.
     for key in expected_keys:
+        if sy.__version__ == "0.7.0":
+            if key == "node_uid":
+                key = "id"
         assert key in domain_settings_keys
 
 
