@@ -1,5 +1,6 @@
 # stdlib
 from typing import Dict
+from typing import Optional
 from typing import Union
 
 # third party
@@ -47,8 +48,11 @@ def process_task_requests(
     user: UserPrivate,
     msg_class: NewSyftMessage,
     return_type: BaseModel,
-    request: Dict[str, str] = {},
+    request: Optional[Dict[str, str]] = None,
 ) -> BaseModel:
+    if request is None:
+        request = {}
+
     msg = msg_class(address=node.address, reply_to=node.address, kwargs=request).sign(
         signing_key=user.get_signing_key()
     )
