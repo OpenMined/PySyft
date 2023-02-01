@@ -354,7 +354,7 @@ class DomainClient(Client):
 
     @property
     def tasks(self) -> List[Dict[str, str]]:
-        msg = GetTasks(address=self.address, reply_to=self.address, kwargs={}).sign(  # type: ignore
+        msg = GetTasks(address=self.node_uid, reply_to=self.node_uid, kwargs={}).sign(  # type: ignore
             signing_key=self.signing_key
         )
         return self.send_immediate_msg_with_reply(msg=msg).kwargs
@@ -362,8 +362,8 @@ class DomainClient(Client):
     def code_request(
         self, code: Union[str, callable], inputs: Dict[str, Any], outputs: List[str]
     ) -> None:
-        if not inspect.isfunction(code) or isinstance(code, str):
-            raise Exception("This code isn't a function object or function string ...")
+        if not inspect.isfunction(code) and not isinstance(code, str):
+            raise Exception("The code should either be a function or  string ...")
 
         if inspect.isfunction(code):
             code_str = inspect.getsource(code)
@@ -375,8 +375,8 @@ class DomainClient(Client):
                 inputs[key] = value.id_at_location.to_string()
 
         msg = CreateTask(
-            address=self.address,
-            reply_to=self.address,
+            address=self.node_uid,
+            reply_to=self.node_uid,
             kwargs={"code": code_str, "inputs": inputs, "outputs": outputs},
         ).sign(  # type: ignore
             signing_key=self.signing_key
@@ -387,8 +387,8 @@ class DomainClient(Client):
     def review(self, task_uid: str, approve: True, reason: str) -> None:
         status = "accepted" if approve else "denied"
         msg = ReviewTask(
-            address=self.address,
-            reply_to=self.address,
+            address=self.node_uid,
+            reply_to=self.node_uid,
             kwargs={"task_uid": task_uid, "status": status, "reason": reason},
         ).sign(  # type: ignore
             signing_key=self.signing_key
