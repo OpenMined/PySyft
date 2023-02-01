@@ -218,12 +218,16 @@ class ActionObject(SyftObject):
     __canonical_name__ = "ActionObject"
     __version__ = 1
 
+    syft_action_data: Optional[Any] = None
+    syft_pointer_type: ClassVar[Type[ActionObjectPointer]]
+
+    # Help with calculating history hash for code verification
     syft_parent_id: Optional[Union[UID, List[UID]]]
     syft_parent_op: Optional[str]
     syft_parent_args: Optional[Any]
     syft_parent_kwargs: Optional[Any]
     syft_history_hash: Optional[int]
-    syft_pointer_type: ClassVar[Type[ActionObjectPointer]]
+    syft_result_obj: Optional[Any]
 
     @pydantic.validator("id", pre=True, always=True)
     def make_id(cls, v: Optional[UID]) -> UID:
@@ -234,7 +238,6 @@ class ActionObject(SyftObject):
         pointer.node_uid = node_uid
         return pointer
 
-    syft_action_data: Any
     #  = (
     #     PrivateAttr()
     # )  # 🔵 TODO 6: Make special ActionObject attrs _syft if possible
@@ -356,7 +359,11 @@ class ActionObject(SyftObject):
         # use the custom definied version
         context_self = self
         if not defined_on_self:
-            context_self = self.syft_action_data
+            if self.syft_action_data is not None:
+                context_self = self.syft_action_data
+            else:
+                context_self = self.syft_result_obj
+                # raise NotImplementedError(f"OP: {name}, id: {self.id}")
 
         if is_property(context_self, name):
             _ = self._syft_run_pre_hooks__(name, (), {})
@@ -371,7 +378,13 @@ class ActionObject(SyftObject):
             return result
 
         # check for other types that aren't methods, functions etc
-        original_func = getattr(self.syft_action_data, name)
+        if self.syft_action_data is not None:
+            original_func = getattr(self.syft_action_data, name)
+            skip_result = False
+        else:
+            original_func = getattr(self.syft_result_obj, name)
+            skip_result = True
+
         if show_print:
             debug_original_func(name, original_func)
         if inspect.ismethod(original_func) or inspect.ismethoddescriptor(original_func):
@@ -382,7 +395,11 @@ class ActionObject(SyftObject):
                 pre_hook_args, pre_hook_kwargs = self._syft_run_pre_hooks__(
                     name, args, kwargs
                 )
-                result = original_func(*pre_hook_args, **pre_hook_kwargs)
+                if skip_result:
+                    result = None
+                else:
+                    result = original_func(*pre_hook_args, **pre_hook_kwargs)
+
                 post_result = self._syft_run_post_hooks__(name, result)
                 if name not in dont_wrap_output_attrs:
                     parent_ids, parent_args, parent_kwargs = fetch_all_inputs(
@@ -405,7 +422,11 @@ class ActionObject(SyftObject):
                 pre_hook_args, pre_hook_kwargs = self._syft_run_pre_hooks__(
                     name, args, kwargs
                 )
-                result = original_func(*pre_hook_args, **pre_hook_kwargs)
+                if skip_result:
+                    result = None
+                else:
+                    result = original_func(*pre_hook_args, **pre_hook_kwargs)
+
                 post_result = self._syft_run_post_hooks__(name, result)
                 if name not in dont_wrap_output_attrs:
                     parent_ids, parent_args, parent_kwargs = fetch_all_inputs(

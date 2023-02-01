@@ -62,3 +62,11 @@ def test_args_kwargs_identical(data1: ActionObject) -> None:
     result2 = data1.std(axis=1)
 
     assert result1.syft_history_hash == result2.syft_history_hash
+
+
+def test_trace_easy(data1: ActionObject) -> None:
+    """Test that we can recreate the correct history hash using TraceMode"""
+    result1 = data1.std(axis=1)
+    trace_result = ActionObject(syft_result_obj=np.array([]), id=data1.id).std(axis=1)
+
+    assert result1.syft_history_hash == trace_result.syft_history_hash
