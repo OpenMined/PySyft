@@ -22,7 +22,7 @@ from pymongo import MongoClient
 from ....common.serde.serialize import _serialize
 from ...new.credentials import SyftSigningKey
 from ...new.user import User
-from ...new.user import UserUpdate
+from ...new.user import UserCreate
 from ..exceptions import InvalidCredentialsError
 from ..exceptions import UserNotFoundError
 from ..node_manager.role_manager import NewRoleManager
@@ -331,7 +331,7 @@ class NoSQLUserManager(NoSQLDatabaseManager):
             if row_exists:
                 return None
             else:
-                create_user = UserUpdate(
+                create_user = UserCreate(
                     name=name, email=email, password=password, password_verify=password
                 )
                 user = create_user.to(User)
