@@ -17,11 +17,16 @@ from .user import UserPrivateKey
 from .user import UserUpdate
 from .user import check_pwd
 
+# class UserQuery:
+#     email: str
+#     name: str
+#     verify_key: SyftVerifyKey
+
 
 class UserService(AbstractService):
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
-        self.primary_keys = {}
+        self.collection_keys = {}
 
     @service_method(path="user.create", name="create")
     def create(
@@ -83,3 +88,7 @@ class UserService(AbstractService):
         self, context: UnauthedServiceContext, user_update: UserUpdate
     ) -> Result[SyftObject, str]:
         pass
+
+    # @service_method(path="user.search", name="search", splat_kwargs_from=["query_obj"])
+    # def search(self, context: AuthedServiceContext, query_obj: UserQuery, limit: int):
+    #     pass
