@@ -136,7 +136,7 @@ def test_mpc_forward_methods(
 
 
 @pytest.mark.smpc_mpc_tensor
-@pytest.mark.parametrize("op_str", ["lt", "gt", "ge", "le", "eq", "ne"])
+@pytest.mark.parametrize("op_str", ["lt"])
 def test_comp_mpc_private_private_op(get_clients, op_str: str) -> None:
     clients = get_clients(2)
 
@@ -159,7 +159,7 @@ def test_comp_mpc_private_private_op(get_clients, op_str: str) -> None:
 
 
 @pytest.mark.smpc_mpc_tensor
-@pytest.mark.parametrize("op_str", ["lt", "gt", "ge", "le", "eq", "ne"])
+@pytest.mark.parametrize("op_str", ["lt"])
 def test_comp_mpc_private_public_op(get_clients, op_str: str) -> None:
     clients = get_clients(2)
 

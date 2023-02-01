@@ -12,6 +12,7 @@ from typing import Union
 # third party
 import pydantic
 from pydantic import BaseModel
+from pydantic import EmailStr
 from pydantic.fields import Undefined
 from typeguard import check_type
 
@@ -93,12 +94,15 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         arbitrary_types_allowed = True
 
     # all objects have a UID
-    id: Optional[UID] = None  # consistent and persistent uuid across systems
+    id: UID
 
-    # move this to transforms
-    @pydantic.validator("id", pre=True, always=True)
-    def make_id(cls, v: Optional[UID]) -> UID:
-        return v if isinstance(v, UID) else UID()
+    # # move this to transforms
+    @pydantic.root_validator(pre=True)
+    def make_id(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        id_field = cls.__fields__["id"]
+        if "id" not in values and id_field.required:
+            values["id"] = id_field.type_()
+        return values
 
     __attr_state__: List[str]  # persistent recursive serde keys
     __attr_searchable__: List[str]  # keys which can be searched in the ORM
@@ -210,6 +214,30 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         super().__init__(**kwargs)
         self._syft_set_validate_private_attrs_(**kwargs)
         self.__post_init__()
+
+    @classmethod
+    def _syft_keys_types_dict(cls, attr_name: str) -> Dict[str, type]:
+        kt_dict = {}
+        for key in getattr(cls, attr_name, []):
+            type_ = cls.__fields__[key].type_
+            # EmailStr seems to be lost every time the value is set even with a validator
+            # this means the incoming type is str so our validators fail
+            if issubclass(type_, EmailStr):
+                type_ = str
+            kt_dict[key] = type_
+        return kt_dict
+
+    @classmethod
+    def _syft_unique_keys_dict(cls) -> Dict[str, type]:
+        return cls._syft_keys_types_dict("__attr_unique__")
+
+    @classmethod
+    def _syft_searchable_keys_dict(cls) -> Dict[str, type]:
+        return cls._syft_keys_types_dict("__attr_searchable__")
+
+
+class SyftUpdateObject(SyftObject):
+    id: Optional[UID] = None  # no id means insert
 
 
 def transform_method(
