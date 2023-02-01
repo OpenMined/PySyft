@@ -806,7 +806,7 @@ class Class(Callable):
             # chunk_size: Optional[int] = None,
             # send_to_blob_storage: bool = True,
             # **kwargs: Any,
-        ) -> Result[ActionObjectPointer]:
+        ) -> Result[ActionObjectPointer, Err]:
             # third party
             import numpy as np
 
