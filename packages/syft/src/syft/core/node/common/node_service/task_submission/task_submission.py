@@ -233,7 +233,6 @@ class ReviewTask(SyftMessage, DomainMessageRegistry):
             },
         )
         execute_task(node, task.uid, task.code, task.inputs, task.outputs)
-
         return CreateTask.Reply()
 
     def get_permissions(self) -> List[Type[BasePermission]]:
