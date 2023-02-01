@@ -5,9 +5,7 @@ from typing import Any
 from celery.utils.log import get_task_logger
 
 # syft absolute
-from syft.core.common.group import VERIFYALL
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
-from syft.core.common.uid import UID
 from syft.core.node.common.node_service.vpn.vpn_messages import (
     VPNJoinSelfMessageWithReply,
 )
@@ -17,7 +15,6 @@ from syft.core.node.common.node_service.vpn.vpn_messages import (
 from syft.core.node.common.node_service.vpn.vpn_messages import TAILSCALE_URL
 from syft.core.node.common.node_service.vpn.vpn_messages import connect_with_key
 from syft.core.node.common.node_service.vpn.vpn_messages import get_network_url
-from syft.core.store.storeable_object import StorableObject
 
 # grid absolute
 from grid.core.celery_app import celery_app
