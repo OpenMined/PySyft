@@ -1,8 +1,13 @@
 # stdlib
 from typing import Any
 
+# third party
+from celery.utils.log import get_task_logger
+
 # syft absolute
+from syft.core.common.group import VERIFYALL
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
+from syft.core.common.uid import UID
 from syft.core.node.common.node_service.vpn.vpn_messages import (
     VPNJoinSelfMessageWithReply,
 )
@@ -12,12 +17,15 @@ from syft.core.node.common.node_service.vpn.vpn_messages import (
 from syft.core.node.common.node_service.vpn.vpn_messages import TAILSCALE_URL
 from syft.core.node.common.node_service.vpn.vpn_messages import connect_with_key
 from syft.core.node.common.node_service.vpn.vpn_messages import get_network_url
+from syft.core.store.storeable_object import StorableObject
 
 # grid absolute
 from grid.core.celery_app import celery_app
 from grid.core.config import settings  # noqa: F401
 from grid.core.node import node
 from grid.periodic_tasks import cleanup_incomplete_uploads_from_blob_store
+
+logger = get_task_logger(__name__)
 
 
 # TODO : Should be modified to use exponential backoff (for efficiency)
