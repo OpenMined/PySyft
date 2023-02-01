@@ -27,7 +27,6 @@ def cleanup_incomplete_uploads_from_blob_store() -> bool:
     )
 
     for obj in incomplete_upload_objs:
-
         # Get the upload id and object name
         upload_id: str = obj["UploadId"]
         obj_name: str = obj["Key"]

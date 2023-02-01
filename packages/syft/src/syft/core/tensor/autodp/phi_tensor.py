@@ -445,7 +445,6 @@ class TensorWrappedPhiTensorPointer(Pointer):
             isinstance(other, TensorWrappedPhiTensorPointer)
             and self.client != other.client
         ):
-
             parties = [self.client, other.client]
 
             self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=parties)
@@ -456,7 +455,6 @@ class TensorWrappedPhiTensorPointer(Pointer):
             return getattr(self_mpc, op_str)(other_mpc)
 
         elif isinstance(other, MPCTensor):
-
             return getattr(other, op_str)(self)
         elif is_acceptable_simple_type(other) or isinstance(
             other, TensorWrappedPhiTensorPointer
@@ -725,7 +723,6 @@ class TensorWrappedPhiTensorPointer(Pointer):
             )
 
         if self.client != other.client:
-
             parties = [self.client, other.client]
 
             self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=parties)
@@ -1962,7 +1959,6 @@ class PhiTensor(PassthroughTensor):
         )
 
     def __mod__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
-
         # if the tensor being added is also private
         if isinstance(other, PhiTensor):
             if self.data_subject != other.data_subject:
@@ -1982,7 +1978,6 @@ class PhiTensor(PassthroughTensor):
 
         # if the tensor being added is a public tensor / int / float / etc.
         elif is_acceptable_simple_type(other):
-
             if isinstance(other, np.ndarray):
                 max_vals = lazyrepeatarray(
                     data=max(0, other.max()), shape=self.child.shape
@@ -2264,7 +2259,6 @@ class PhiTensor(PassthroughTensor):
         )
 
     def reshape(self, *shape: Tuple[int, ...]) -> PhiTensor:
-
         data = self.child
         output_data = np.reshape(data, *shape)
         return PhiTensor(
@@ -2706,7 +2700,6 @@ class PhiTensor(PassthroughTensor):
             )
 
     def __add__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
-
         # if the tensor being added is also private
         if isinstance(other, PhiTensor):
             if self.data_subject != other.data_subject:
@@ -2721,7 +2714,6 @@ class PhiTensor(PassthroughTensor):
 
         # if the tensor being added is a public tensor / int / float / etc.
         elif is_acceptable_simple_type(other):
-
             return PhiTensor(
                 child=self.child + other,
                 min_vals=self.min_vals + other,
@@ -2752,7 +2744,6 @@ class PhiTensor(PassthroughTensor):
         return self.__add__(other)
 
     def __sub__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
-
         # if the tensor being added is also private
         if isinstance(other, PhiTensor):
             if self.data_subject != other.data_subject:
@@ -2767,7 +2758,6 @@ class PhiTensor(PassthroughTensor):
 
         # if the tensor being added is a public tensor / int / float / etc.
         elif is_acceptable_simple_type(other):
-
             return PhiTensor(
                 child=self.child - other,
                 min_vals=self.min_vals - other,
@@ -2793,7 +2783,6 @@ class PhiTensor(PassthroughTensor):
         return (self - other) * -1
 
     def __mul__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
-
         if isinstance(other, PhiTensor):
             if self.data_subject == other.data_subject:
                 min_min = self.min_vals.data * other.min_vals.data
@@ -2814,7 +2803,6 @@ class PhiTensor(PassthroughTensor):
                 return self.gamma * other.gamma
 
         elif is_acceptable_simple_type(other):
-
             data = self.child * other
 
             min_min = self.min_vals.data * other
@@ -2882,7 +2870,6 @@ class PhiTensor(PassthroughTensor):
             )
 
     def __rtruediv__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
-
         if is_acceptable_simple_type(other):
             return PhiTensor(
                 child=(other / self.child),
@@ -3260,7 +3247,6 @@ class PhiTensor(PassthroughTensor):
         *args: Any,
         **kwargs: Any,
     ) -> Union[PhiTensor, GammaTensor]:
-
         # if the tensor being added is also private
         if isinstance(other, PhiTensor):
             if self.data_subject != other.data_subject:
@@ -3297,7 +3283,6 @@ class PhiTensor(PassthroughTensor):
 
         # if the tensor being compared is a public tensor / int / float / etc.
         elif is_acceptable_simple_type(other):
-
             data = self.child < other
             min_vals = self.min_vals * 0
             max_vals = (self.max_vals * 0) + 1
@@ -3313,7 +3298,6 @@ class PhiTensor(PassthroughTensor):
             raise NotImplementedError
 
     def __le__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
-
         # if the tensor being compared is also private
         if isinstance(other, PhiTensor):
             if self.data_subject == other.data_subject:
@@ -3330,7 +3314,6 @@ class PhiTensor(PassthroughTensor):
 
         # if the tensor being compared is a public tensor / int / float / etc.
         elif is_acceptable_simple_type(other):
-
             data = self.child <= other
             min_vals = self.min_vals * 0
             max_vals = (self.max_vals * 0) + 1
@@ -3346,7 +3329,6 @@ class PhiTensor(PassthroughTensor):
             raise NotImplementedError
 
     def __gt__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
-
         # if the tensor being compared is also private
         if isinstance(other, PhiTensor):
             if self.data_subject == other.data_subject:
@@ -3363,7 +3345,6 @@ class PhiTensor(PassthroughTensor):
 
         # if the tensor being compared is a public tensor / int / float / etc.
         elif is_acceptable_simple_type(other):
-
             data = self.child > other
             min_vals = self.min_vals * 0
             max_vals = (self.max_vals * 0) + 1
@@ -3378,7 +3359,6 @@ class PhiTensor(PassthroughTensor):
             raise NotImplementedError  # type: ignore
 
     def __ge__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
-
         # if the tensor being compared is also private
         if isinstance(other, PhiTensor):
             if self.data_subject == other.data_subject:
@@ -3395,7 +3375,6 @@ class PhiTensor(PassthroughTensor):
 
         # if the tensor being compared is a public tensor / int / float / etc.
         elif is_acceptable_simple_type(other):
-
             data = self.child >= other
             min_vals = self.min_vals * 0
             max_vals = (self.max_vals * 0) + 1
@@ -3551,7 +3530,6 @@ class PhiTensor(PassthroughTensor):
         )
 
     def __neg__(self) -> PhiTensor:
-
         return PhiTensor(
             child=self.child * -1,
             min_vals=self.max_vals * -1,
@@ -3918,7 +3896,6 @@ class PhiTensor(PassthroughTensor):
         )
 
     def diagonal(self, offset: int = 0, axis1: int = 0, axis2: int = 1) -> PhiTensor:
-
         result = self.child.diagonal(offset, axis1, axis2)
 
         return PhiTensor(

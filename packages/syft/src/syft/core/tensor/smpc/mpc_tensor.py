@@ -86,7 +86,6 @@ class MPCTensor(PassthroughTensor):
         shape: Optional[Tuple[int, ...]] = None,
         ring_size: Optional[int] = None,
     ) -> None:
-
         if secret is None and shares is None:
             raise ValueError("Secret or shares should be populated!")
 
@@ -302,7 +301,6 @@ class MPCTensor(PassthroughTensor):
             if isinstance(
                 secret, (TensorWrappedPhiTensorPointer, TensorWrappedGammaTensorPointer)
             ):
-
                 share_wrapper = secret.to_local_object_without_private_data_child()
 
                 kwargs = {
@@ -360,7 +358,6 @@ class MPCTensor(PassthroughTensor):
         parties_info: List[Tuple],
         ring_size: int = DEFAULT_RING_SIZE,
     ) -> List[Tensor]:
-
         # relative
         from ..tensor import Tensor
 
@@ -536,7 +533,6 @@ class MPCTensor(PassthroughTensor):
         """
 
         def method_all_shares(_self: MPCTensor, *args: Any, **kwargs: Any) -> Any:
-
             shares = []
 
             for share in _self.child:
@@ -560,7 +556,6 @@ class MPCTensor(PassthroughTensor):
         return functools.partial(method_all_shares, __self)
 
     def __getattribute__(self, attr_name: str) -> Any:
-
         if attr_name in METHODS_FORWARD_ALL_SHARES:
             return MPCTensor.hook_method(self, attr_name)
 
@@ -695,7 +690,6 @@ class MPCTensor(PassthroughTensor):
     def __apply_private_op(
         self, other: MPCTensor, op_str: str, **kwargs: Any
     ) -> List[ShareTensor]:
-
         op_method = f"__{op_str}__"
         if op_str in {"add", "sub"}:
             if len(self.child) != len(other.child):
@@ -797,7 +791,6 @@ class MPCTensor(PassthroughTensor):
     def mul(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
-
         self, y = MPCTensor.sanity_checks(self, y)
         kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
         op = "__mul__"
@@ -883,7 +876,6 @@ class MPCTensor(PassthroughTensor):
     def ge(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
-
         mpc_res = 1 - MPCTensor.lt(self, y)
 
         return mpc_res  # type: ignore
@@ -1063,7 +1055,6 @@ class MPCTensor(PassthroughTensor):
         ).astype(public_dtype_func())
 
     def __repr__(self) -> str:
-
         # out = self.synthetic.__repr__()
         # out += "\n\n (The data printed above is synthetic - it's an imitation of the real data.)"
         out = ""

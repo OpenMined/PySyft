@@ -15,7 +15,6 @@ from syft.core.node.worker import Worker
 
 
 def setup_worker():
-
     test_signing_key = SyftSigningKey.generate()
     credentials = test_signing_key.verify_key
     worker = Worker(name="Test Worker", signing_key=test_signing_key.signing_key)
@@ -29,7 +28,6 @@ def setup_worker():
 
 
 def test_pointer_addition():
-
     worker, context = setup_worker()
 
     x1 = np.array([1, 2, 3])

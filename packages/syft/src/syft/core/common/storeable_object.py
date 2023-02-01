@@ -7,7 +7,6 @@ from .uid import UID
 
 
 class AbstractStorableObject:
-
     data: object
     id: UID
     search_permissions: dict

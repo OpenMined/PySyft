@@ -245,7 +245,6 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
     #         return mask
 
     def _write_ledger(self) -> bool:
-
         self._update_number += 1
         try:
             self._pending_save = False
@@ -448,7 +447,6 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         epsilon_spend: float,
         old_user_budget: float,
     ) -> float:
-
         if epsilon_spend < 0:
             raise Exception(
                 "Deducting a negative epsilon spend would result in potentially infinite PB. "

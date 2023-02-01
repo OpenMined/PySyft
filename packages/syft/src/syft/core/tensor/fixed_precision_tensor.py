@@ -21,7 +21,6 @@ from .smpc import context
 
 @serializable(recursive_serde=True)
 class FixedPrecisionTensor(PassthroughTensor):
-
     __attr_allowlist__ = ("child", "_base", "_precision", "_scale")
 
     def __init__(

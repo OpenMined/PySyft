@@ -40,7 +40,6 @@ from .enum import TASK_SERVICE_STATUS
 @serializable(recursive_serde=True)
 @final
 class CreateTask(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         """Payload fields and types used during a User Creation Request."""
@@ -93,7 +92,6 @@ class CreateTask(SyftMessage, DomainMessageRegistry):
 @serializable(recursive_serde=True)
 @final
 class GetTasks(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         pass
@@ -130,7 +128,6 @@ class GetTasks(SyftMessage, DomainMessageRegistry):
 @serializable(recursive_serde=True)
 @final
 class GetTask(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         task_uid: str
@@ -182,7 +179,6 @@ class GetTask(SyftMessage, DomainMessageRegistry):
 @serializable(recursive_serde=True)
 @final
 class ReviewTask(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         task_uid: str

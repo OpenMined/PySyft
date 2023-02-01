@@ -42,7 +42,6 @@ from ..core.node.common.util import check_send_to_blob_storage
 from ..core.node.common.util import upload_to_s3_using_presigned
 from ..core.node.new.action_object import ActionObjectPointer
 from ..core.node.new.action_service import NumpyArrayObject
-from ..core.node.new.action_service import NumpyArrayObjectPointer
 from ..core.pointer.pointer import Pointer
 from ..core.store.storeable_object import StorableObject
 from ..logger import traceback_and_raise
@@ -618,10 +617,8 @@ class Class(Callable):
         # if the object already has a pointer class specified, use that instead of creating
         # an empty subclass of Pointer
         if hasattr(self.object_ref, "PointerClassOverride"):
-
             klass_pointer = getattr(self.object_ref, "PointerClassOverride")
             for key, val in attrs.items():
-
                 # only override functioanlity of AST attributes if they
                 # don't already exist on the PointerClassOverride class
                 # (the opposite of inheritance)
@@ -680,7 +677,6 @@ class Class(Callable):
             send_to_blob_storage: bool = True,
             **kwargs: Any,
         ) -> Union[Pointer, Tuple[Pointer, SaveObjectAction]]:
-
             """Send obj to client and return pointer to the object.
 
             Args:
@@ -810,7 +806,7 @@ class Class(Callable):
             # chunk_size: Optional[int] = None,
             # send_to_blob_storage: bool = True,
             # **kwargs: Any,
-        ) -> ActionObjectPointer:
+        ) -> Result[ActionObjectPointer]:
             # third party
             import numpy as np
 
@@ -825,7 +821,7 @@ class Class(Callable):
 
         aggressive_set_attr(obj=outer_self.object_ref, name="send", attr=send)
         aggressive_set_attr(obj=outer_self.object_ref, name="new_send", attr=new_send)
-        
+
     def create_storable_object_attr_convenience_methods(outer_self: Any) -> None:
         """Add methods to set tag and description to `outer_self.object_ref`."""
 

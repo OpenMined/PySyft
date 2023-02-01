@@ -122,7 +122,6 @@ class DatasetRequestAPI(RequestAPI):
         super().create(**kwargs)
 
     def delete(self, dataset_id: str, skip_checks: bool = False) -> None:  # type: ignore
-
         if not skip_checks:
             pref = input(
                 f"You are about to delete the dataset with id `{dataset_id}`? 🚨 \n"
@@ -141,7 +140,6 @@ class DatasetRequestAPI(RequestAPI):
     def del_asset(
         self, dataset_id: str, asset_id: str, skip_checks: bool = False
     ) -> None:
-
         if not skip_checks:
             pref = input(
                 f"You are about to delete asset with id: {asset_id} in the dataset with id `{dataset_id}`? 🚨 \n"
@@ -228,7 +226,6 @@ class DatasetRequestAPI(RequestAPI):
         return len(self.all())
 
     def __delitem__(self, key: int) -> Any:
-
         try:
             dataset = self.all()[key]
         except IndexError as err:
@@ -260,7 +257,6 @@ class DatasetRequestAPI(RequestAPI):
 
     @staticmethod
     def dataset_list_to_html(dataset_iterable: List[Any]) -> str:
-
         initial_boilerplate = """<style>
                 #myInput {
                   background-position: 10px 12px; /* Position the search icon */
@@ -308,7 +304,6 @@ class DatasetRequestAPI(RequestAPI):
 
         rows = ""
         for _, d in enumerate(dataset_iterable):
-
             data = d.data
             truncated_assets = False
             if len(data) > 3:
@@ -390,7 +385,6 @@ class Dataset:
         )
 
     def _repr_html_(self) -> str:
-
         print("Dataset: " + self.name)
         print("Description: " + self.description)
         print()
