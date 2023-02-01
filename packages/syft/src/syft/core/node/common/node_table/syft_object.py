@@ -10,6 +10,7 @@ from typing import Type
 from typing import Union
 
 # third party
+import pydantic
 from pydantic import BaseModel
 from pydantic import EmailStr
 from pydantic.fields import Undefined
@@ -93,13 +94,15 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         arbitrary_types_allowed = True
 
     # all objects have a UID
-    id: Optional[UID] = UID()
+    id: UID
 
     # # move this to transforms
-    # @pydantic.validator("id", pre=True, always=True)
-    # def make_id(cls, v: Optional[UID]) -> UID:
-    #     print("what is the type of UID", cls, cls.schema())
-    #     return v if isinstance(v, UID) else UID()
+    @pydantic.root_validator(pre=True)
+    def make_id(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        id_field = cls.__fields__["id"]
+        if "id" not in values and id_field.required:
+            values["id"] = id_field.type_()
+        return values
 
     __attr_state__: List[str]  # persistent recursive serde keys
     __attr_searchable__: List[str]  # keys which can be searched in the ORM
