@@ -33,7 +33,10 @@ from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
 from .new.service import AbstractService
 from .new.service import ServiceConfigRegistry
+from .new.user import User
+from .new.user import UserCreate
 from .new.user_service import UserService
+from .new.user_stash import UserStash
 
 NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
 NODE_UID = "NODE_UID"
@@ -170,3 +173,25 @@ class Worker(NewNode):
         method = self.get_service_method(_private_api_path)
         result = method(context, *api_call.args, **api_call.kwargs)
         return result
+
+
+def create_admin_new(
+    name: str,
+    email: str,
+    password: str,
+    worker: Worker,
+) -> Optional[User]:
+    try:
+        user_stash = UserStash(store=worker.document_store)
+        row_exists = user_stash.get_by_email(email=email).ok()
+        if row_exists:
+            return None
+        else:
+            create_user = UserCreate(
+                name=name, email=email, password=password, password_verify=password
+            )
+            # New User Initialization
+            user = user_stash.set(user=create_user.to(User))
+            return user.ok()
+    except Exception as e:
+        print("create_admin failed", e)
