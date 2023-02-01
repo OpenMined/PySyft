@@ -22,6 +22,7 @@ from result import Result
 
 # relative
 from ....core.node.common.node_table.syft_object import SyftObject
+from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .base import SyftBaseModel
 
@@ -618,5 +619,6 @@ class DictCollection(BaseCollection):
 
 
 # the base document store is already a dict but we can change it later
+@serializable(recursive_serde=True)
 class DictDocumentStore(DocumentStore):
     collection_type = DictCollection

@@ -1,10 +1,13 @@
 # stdlib
 from collections import OrderedDict
+from collections import defaultdict
 from enum import Enum
 import functools
 import sys
 from types import MappingProxyType
+from typing import Any
 from typing import Collection
+from typing import List
 from typing import Mapping
 from typing import Union
 from typing import _GenericAlias
@@ -74,7 +77,7 @@ def serialze_kv(map: Mapping) -> bytes:
     return message.to_bytes()
 
 
-def deserialize_kv(mapping_type: type, blob: bytes) -> Mapping:
+def get_deserialized_kv_pairs(blob: bytes) -> List[Any]:
     # relative
     from .deserialize import _deserialize
 
@@ -91,8 +94,26 @@ def deserialize_kv(mapping_type: type, blob: bytes) -> Mapping:
                     _deserialize(value, from_bytes=True),
                 )
             )
+    return pairs
 
+
+def deserialize_kv(mapping_type: type, blob: bytes) -> Mapping:
+    pairs = get_deserialized_kv_pairs(blob=blob)
     return mapping_type(pairs)
+
+
+def deserialize_defaultdict(blob: bytes) -> Mapping:
+    pairs = get_deserialized_kv_pairs(blob=blob)
+    default_factory = None
+    # TODO if pairs is empty (no value set for the original property), we might lose the original type
+    # and it would instead just be None
+    if len(pairs) > 0:
+        # TODO for defaultdict(set), if empty set {}, the type might get set to dict?
+
+        # we're getting the type of the value of the first kv pair, and using that as default factory
+        # for constructing the defaultdict
+        default_factory = type(pairs[0][1])
+    return defaultdict(default_factory, pairs)
 
 
 def serialize_enum(enum: Enum) -> bytes:
@@ -162,6 +183,12 @@ recursive_serde_register(
 
 recursive_serde_register(
     dict, serialize=serialze_kv, deserialize=functools.partial(deserialize_kv, dict)
+)
+
+recursive_serde_register(
+    defaultdict,
+    serialize=serialze_kv,
+    deserialize=functools.partial(deserialize_defaultdict),
 )
 
 recursive_serde_register(

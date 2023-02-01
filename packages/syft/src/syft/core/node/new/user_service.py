@@ -5,6 +5,7 @@ from result import Result
 
 # relative
 from ....core.node.common.node_table.syft_object import SyftObject
+from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .context import AuthedServiceContext
 from .context import UnauthedServiceContext
@@ -23,6 +24,7 @@ from .user import check_pwd
 #     verify_key: SyftVerifyKey
 
 
+@serializable(recursive_serde=True)
 class UserService(AbstractService):
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
