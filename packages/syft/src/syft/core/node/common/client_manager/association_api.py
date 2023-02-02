@@ -3,6 +3,7 @@ from typing import Any
 from typing import Dict
 
 # relative
+from .....telemetry import instrument
 from ...abstract.node import AbstractNodeClient
 from ...enums import AssociationRequestResponses
 from ...enums import RequestAPIFields
@@ -27,6 +28,7 @@ from ..node_service.success_resp_message import ErrorResponseMessage
 from .request_api import RequestAPI
 
 
+@instrument
 class AssociationRequestAPI(RequestAPI):
     def __init__(self, client: AbstractNodeClient):
         super().__init__(

@@ -20,9 +20,7 @@ from pymongo import MongoClient
 
 # relative
 from ....common.serde.serialize import _serialize
-from ...new.credentials import SyftSigningKey
 from ...new.user import User
-from ...new.user import UserCreate
 from ..exceptions import InvalidCredentialsError
 from ..exceptions import UserNotFoundError
 from ..node_manager.role_manager import NewRoleManager
@@ -311,36 +309,6 @@ class NoSQLUserManager(NoSQLDatabaseManager):
                     website=website,
                 )
                 self._collection.insert_one(user.to_mongo())
-                self.create_admin_new(
-                    name=name, email=f"new{email}", password=password, node=node
-                )
-
-                return user
-        except Exception as e:
-            print("create_admin failed", e)
-
-    def create_admin_new(
-        self,
-        name: str,
-        email: str,
-        password: str,
-        node: Any,
-    ) -> Optional[User]:
-        try:
-            row_exists = self.find_one({email: email})
-            if row_exists:
-                return None
-            else:
-                create_user = UserCreate(
-                    name=name, email=email, password=password, password_verify=password
-                )
-                user = create_user.to(User)
-                sk = node.setup.first().signing_key
-                signing_key = SyftSigningKey.from_string(sk)
-                user.signing_key = signing_key
-                user.verify_key = signing_key.verify_key
-                data = user.to_mongo()
-                self._collection.insert_one(data)
                 return user
         except Exception as e:
             print("create_admin failed", e)

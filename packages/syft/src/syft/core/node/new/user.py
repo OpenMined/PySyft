@@ -17,7 +17,6 @@ from pydantic.networks import EmailStr
 # relative
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import SyftObject
-from ....core.node.common.node_table.syft_object import SyftUpdateObject
 from ....core.node.common.node_table.syft_object import transform
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
@@ -134,7 +133,7 @@ def validate_email(_self: Any, output: Dict) -> Dict:
 
 
 @serializable(recursive_serde=True)
-class UserUpdate(SyftUpdateObject):
+class UserUpdate(SyftObject):
     __canonical_name__ = "UserUpdate"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -156,7 +155,7 @@ class UserUpdate(SyftUpdateObject):
 
 @serializable(recursive_serde=True)
 class UserCreate(UserUpdate):
-    __canonical_name__ = "CreateUpdate"
+    __canonical_name__ = "UserCreate"
     __version__ = SYFT_OBJECT_VERSION_1
 
     email: EmailStr
@@ -167,6 +166,11 @@ class UserCreate(UserUpdate):
     verify_key: Optional[SyftVerifyKey] = None
     institution: Optional[str] = None
     website: Optional[str] = None
+
+
+class UserView(UserUpdate):
+    __canonical_name__ = "UserView"
+    __version__ = SYFT_OBJECT_VERSION_1
 
 
 @transform(UserUpdate, User)
@@ -190,13 +194,8 @@ def user_create_to_user() -> List[Callable]:
     ]
 
 
-@transform(User, UserUpdate)
-def user_to_update_user() -> List[Callable]:
-    return [keep(["id", "email", "name", "role"])]
-
-
-@transform(User, UserCreate)
-def user_to_create_user() -> List[Callable]:
+@transform(User, UserView)
+def user_to_view_user() -> List[Callable]:
     return [keep(["id", "email", "name", "role"])]
 
 
