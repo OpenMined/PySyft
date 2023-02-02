@@ -201,7 +201,7 @@ class GridHTTPConnection(HTTPConnection):
         session.mount("http://", adapter)
         session.mount("https://", adapter)
 
-        metadata_url = str(self.base_url) + "/syft/new_api"
+        metadata_url = str(self.base_url) + "/syft/worker/new_api"
         response = session.get(metadata_url, verify=verify_tls())
 
         if response.status_code != 200:
@@ -221,7 +221,7 @@ class GridHTTPConnection(HTTPConnection):
             print(f"Failed to upgrade to HTTPS. {e}")
 
         obj = _deserialize(response.content, from_bytes=True)
-        obj.api_url = f"{str(self.base_url)}/syft/new_api_call"
+        obj.api_url = f"{str(self.base_url)}/syft/worker/new_api_call"
         return cast(SyftAPI, obj)
 
     def _get_metadata(self, timeout: Optional[float] = 2) -> Tuple:
