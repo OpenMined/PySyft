@@ -58,7 +58,7 @@ def test_vpn_scan() -> None:
     ]
 
     allowed_ports = [80]
-    blocked_ports = [21, 4000, 8001, 8011, 8080, 5050, 5432, 5555, 5672, 15672]
+    blocked_ports = [21, 4000, 8001, 8011, 8111, 8080, 5050, 5432, 5555, 5672, 15672]
     # when SSL is enabled we route 80 to 81 externally so that we can redirect to HTTPS
     # however we want to leave normal port 80 available over the VPN internally
     blocked_ports.append(81)  # this shouldnt be available over the VPN
