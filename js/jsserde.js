@@ -4,10 +4,12 @@ import { KVIterable } from "./capnp/kv_iterable.capnp.cjs";
 import { Iterable } from "./capnp/iterable.capnp.cjs";
 
 class SimpleObject{
-	constructor(first, second, third) {
+	constructor(first, second, third, fourth, fifth) {
 		this.first = first
 		this.second = second
 		this.third = third
+		this.fourth = fourth 
+		this.fifth = new Map(Object.entries(fifth))
 		this.fqn = "grid.api.syft.syft.SimpleObject"
 	}
 }
@@ -25,9 +27,9 @@ class JSSerde {
 				 .then(function(response) {return response['bank']})
 		
 				 this.type_bank['builtins.int'] = [ true,
-					  function (number) { return capnp.Int64.fromNumber(number).buffer},
+					  function (number) { return capnp.Int64.fromNumber(number).buffer.reverse().buffer },
 					  function (buffer) { 
-						var buffer_array = new Uint8Array(buffer.slice(1)) // Not sure why but first byte is always zero, so we need to remove it.
+						var buffer_array = new Uint8Array(buffer) // Not sure why but first byte is always zero, so we need to remove it.
 						buffer_array.reverse()  // Little endian / big endian
 						if (buffer.byteLength < 8){
 							var array64 = new Uint8Array(8)
@@ -44,9 +46,7 @@ class JSSerde {
 					function (number) { return capnp.Int64.fromNumber(number)},
 					function (buffer) { 
 					const hex_str = new TextDecoder().decode(buffer)
-					
 					var aggr = 0
-					console.log(hex_str)
 					var [signal,int_n,hex_dec_n,exp] = hex_str.replaceAll('.', ' ').replaceAll('0x', ' ').replaceAll('p', ' ').split(' ')
 					aggr += parseInt(int_n, 16)
 					
@@ -73,7 +73,21 @@ class JSSerde {
 					null,
 					{}
 				]
-				this.type_bank['builtins.list'] = [true, function (list) {}, function (buffer) {
+				this.type_bank['builtins.list'] = [true, function (list) {
+					const message = new capnp.Message()
+					const rs = message.initRoot(Iterable)
+					const listStruct = rs.initValues(list.length)
+					let count = 0
+					for (let index = 0; index < list.length; index++){
+						let serializedObj = _this.serialize(list[index])
+						let dataMsg = new capnp.Message(serializedObj, false);
+						let dataCapnpObj = capnp.Struct.initData(0, serializedObj.byteLength, dataMsg.getRoot(capnp.Data))
+						dataCapnpObj.copyBuffer(serializedObj)
+						listStruct.set(count, dataCapnpObj)
+						count += 1								
+					}
+					return message.toArrayBuffer()
+				}, function (buffer) {
 					var iter = []
 					const message = new capnp.Message(buffer, false);
 					const rs = message.getRoot(Iterable);
@@ -85,7 +99,27 @@ class JSSerde {
 					}
 					return iter;
 				}, null, {}]
-				this.type_bank['builtins.dict'] = [true, function (dict) {}, function (buffer) {
+				this.type_bank['builtins.dict'] = [true, function (dict) {
+					const message = new capnp.Message()
+					const rs = message.initRoot(KVIterable)
+					const keys = rs.initKeys(dict.size)
+					const values = rs.initValues(dict.size)
+					let count = 0
+					dict.forEach((value, key) => {
+						let serializedKey = _this.serialize(key)
+						let serializedValue = _this.serialize(value)
+						let keyMsg = new capnp.Message(serializedKey, false);
+						let valueMsg = new capnp.Message(serializedKey, false);
+						let keyDataCapnpObj = capnp.Struct.initData(0, serializedKey.byteLength, keyMsg.getRoot(capnp.Data))
+						let valueDataCapnpObj = capnp.Struct.initData(0, serializedValue.byteLength, valueMsg.getRoot(capnp.Data))
+						keyDataCapnpObj.copyBuffer(serializedKey)
+						valueDataCapnpObj.copyBuffer(serializedValue)
+						keys.set(count, keyDataCapnpObj)
+						values.set(count, valueDataCapnpObj)
+						count += 1
+					});
+					return message.toArrayBuffer()
+				}, function (buffer) {
 					var kv_iter = {}
 					const message = new capnp.Message(buffer, false);
 					const rs = message.getRoot(KVIterable);
@@ -111,7 +145,14 @@ class JSSerde {
 		}
 		else if ( typeof obj === 'number' ) {
 			fqn = "builtins.int"
-		}else {
+		}
+		else if (Array.isArray(obj)){
+			fqn = 'builtins.list'
+		}
+		else if (obj instanceof Map){
+			fqn = 'builtins.dict'
+		}
+		else {
 			fqn = obj.fqn
 		}
 		const message = new capnp.Message();
@@ -120,25 +161,27 @@ class JSSerde {
 		let notRecursive = objSerdeProps[0]
 		rs.setFullyQualifiedName(fqn)
 		if (!notRecursive) {
-			const txt = rs.initFieldsName(4)
-			const data = rs.initFieldsData(4)
+			delete obj.fqn
+			const txt = rs.initFieldsName(Object.keys(obj).length)
+			const data = rs.initFieldsData(Object.keys(obj).length)
 			let count = 0
 			for (let attr in obj){
 				txt.set(count, attr)
 				let serializedObj = this.serialize(obj[attr])
 				let dataMsg = new capnp.Message(serializedObj, false);
-				let dataRoot = dataMsg.getRoot(capnp.Data);
-				data.set(count, dataRoot)
+				let dataCapnpObj = capnp.Struct.initData(0, serializedObj.byteLength, dataMsg.getRoot(capnp.Data))
+				dataCapnpObj.copyBuffer(serializedObj)
+				data.set(count, dataCapnpObj)
 				count += 1
 			}
-			console.log(this.deserialize(message.toArrayBuffer()))
-			return message.toArrayBuffer()
 		} else{
 			let serializedObj = this.type_bank[fqn][1](obj)
 			let data = rs.initNonrecursiveBlob(serializedObj.byteLength)
 			data.copyBuffer(serializedObj)
-			return message.toArrayBuffer()
+
 		}
+
+		return message.toArrayBuffer()
 	}
 
 	deserialize(buffer) {
@@ -166,93 +209,14 @@ class JSSerde {
 			return kv_iterable
 		}
 	}
-
-	roughSizeOfObject( object ) {
-
-		var objectList = [];
-	
-		var recurse = function( value )
-		{
-			var bytes = 0;
-	
-			if ( typeof value === 'boolean' ) {
-				bytes = 4;
-			}
-			else if ( typeof value === 'string' ) {
-				bytes = value.length * 2;
-			}
-			else if ( typeof value === 'number' ) {
-				bytes = 8;
-			}
-			else if
-			(
-				typeof value === 'object'
-				&& objectList.indexOf( value ) === -1
-			)
-			{
-				objectList[ objectList.length ] = value;
-				for( let i in value) {
-					bytes+= 8; // an assumed existence overhead
-					bytes+= recurse( value[i] )
-				}
-			}
-	
-			return bytes;
-		}
-	
-		return recurse( object );
-	}
 }
-
 const js = new JSSerde('http://localhost:8081/api/v1/syft/serde')
 await js.loadTypeBank();
 const response = await fetch('http://localhost:8081/api/v1/syft/js')
 const bytes_arr = await response.arrayBuffer()
-let simpleObj = new SimpleObject(1,true,'hello world')
-console.log(js.serialize(simpleObj))
-
-//let new_msg = new capnp.Message().initRoot(RecursiveSerde)
-//let textMsg = new capnp.Message()
-//let textstc = textMsg.initRoot(capnp.Text)
-//let textFieldsMsg = new capnp.Message()
-//let textFields = textFieldsMsg.initRoot(capnp.TextList)
-
-//textstc.set(0, "Hello World")
-//textFields.set(0,textMsg)
-//textFields.set(1,textMsg)
-//textFields.set(2,textMsg)
-//textFields.set(3,textMsg)
-//console.log("Index 1: ", textFields.get(1))
-//console.log(textMsg.dump())
-//console.log(textFieldsMsg.dump())
-//textFields.set(1,second_str)
-//textFields.set(2,third_str)
-//console.log("My Field: ", textFields.get(0))
-
-//console.log(req.getLength())
-//const new_msg = new capnp.Message(msg.toArrayBuffer(), false);
-//console.log(new_msg.getRoot(capnp.Text))
-
-//console.log(req.getLength())
-//console.log(msg.dump())
-//console.log(req.segment.toString())
-//console.log(msg.toArrayBuffer())
-//console.log(req.get(0))
-//
-//
-//console.log(js.deserialize(bytes_arr))
-
-//console.log(req.get(0))
-//req.
-//let new_msg = new capnp.Message()
-//let new_req = new_msg.getRoot(capnp.Text)
-//console.log(new_req.get(1))
-//for (let i = 0; i < x.length; i++) {
-//	req.set(i, x[i])
-//}
-//console.log(req.segment.getUint32(req.byteOffset + 4) >>> 3)
-//req.set(0, "Hello World")
-
-//const new_msg = new capnp.Message(msg.toArrayBuffer());
-//const new_req = msg.getRoot(capnp.Text);
-//console.log(msg.toArrayBuffer())
+//console.log(js.serialize(1))
+let result = js.deserialize(js.serialize(new SimpleObject(589462615899, true, 'hello world', [1,2,3,4,5], {'Hello': 'World', 'field1': 159})))
+console.log(result)
+console.log(typeof result.get('fourth')[0])
+//console.log(" Object Sent From PySyft to JavaScript : ", js.deserialize(bytes_arr))
+//const response2 = await fetch('http://localhost:8081/api/v1/syft/js', {method: "POST", headers: {"content-type": "application/octect-stream"}, body: js.serialize(new SimpleObject(true, 'JavaScript SimpleObject'))})
