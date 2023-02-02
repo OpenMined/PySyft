@@ -27,6 +27,10 @@ from syft.core.node.common.node_service.task_submission.task_submission import (
 from syft.core.node.common.node_service.task_submission.task_submission import (
     ReviewTask,
 )
+from syft.core.node.common.node_service.task_submission.task_submission import (
+    RunTask as RunTaskMessage,
+)
+
 
 # grid absolute
 from grid.api.dependencies.current_user import get_current_user
@@ -37,8 +41,10 @@ from grid.core.node import node
 from .models import CreateTaskModel
 from .models import GetTasks
 from .models import ReviewTaskModel
+from .models import RunTaskModel
 from .models import StdResponseMessage
 from .models import Task
+from .models import TaskOutputs
 from .models import TaskErrorResponse
 
 router = APIRouter()
@@ -58,6 +64,7 @@ def process_task_requests(
     )
 
     reply = node.recv_immediate_msg_with_reply(msg)
+    print(reply)
     return return_type(**reply.message.kwargs)
 
 
@@ -123,6 +130,26 @@ async def review_task(
         review_task.task_uid = task_uid
         return process_task_requests(
             user, ReviewTask, StdResponseMessage, request=review_task
+        )
+    except Exception as err:
+        logger.error(err)
+        return TaskErrorResponse(error=str(err))
+
+@router.put(
+    "/{task_uid}/run",
+    response_model=TaskOutputs,
+    name="tasks:run",
+    status_code=status.HTTP_200_OK,
+)
+async def run_task(
+    task_uid: str,
+    run_task: RunTaskModel = Body(...),
+    user: UserPrivate = Depends(get_current_user),
+) -> Union[TaskOutputs, Dict[str, str]]:
+    try:
+        run_task.task_uid = task_uid
+        return process_task_requests(
+            user, RunTaskMessage, TaskOutputs, request=run_task
         )
     except Exception as err:
         logger.error(err)

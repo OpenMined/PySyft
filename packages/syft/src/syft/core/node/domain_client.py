@@ -61,6 +61,7 @@ from .common.node_service.simple.obj_exists import DoesObjectExistMessage
 from .common.node_service.task_submission.task_submission import CreateTask
 from .common.node_service.task_submission.task_submission import GetTasks
 from .common.node_service.task_submission.task_submission import ReviewTask
+from .common.node_service.task_submission.task_submission import RunTask
 from .common.util import check_send_to_blob_storage
 from .common.util import upload_to_s3_using_presigned
 from .enums import PyGridClientEnums
@@ -394,6 +395,16 @@ class DomainClient(Client):
             signing_key=self.signing_key
         )
         self.send_immediate_msg_with_reply(msg=msg)
+
+    def run_task(self, task_uid: str):
+        msg = RunTask(
+            address=self.node_uid,
+            reply_to=self.node_uid,
+            kwargs={"task_uid": task_uid},
+        ).sign(  # type: ignore
+            signing_key=self.signing_key
+        )
+        return self.send_immediate_msg_with_reply(msg=msg).payload      
 
     def request_budget(
         self,

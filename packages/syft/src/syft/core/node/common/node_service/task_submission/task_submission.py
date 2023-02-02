@@ -207,34 +207,78 @@ class ReviewTask(SyftMessage, DomainMessageRegistry):
 
         status = self.payload.status.lower()
 
+        # TODO change status to accepted or denied, not enqueued
         update_values = {
             TASK_SERVICE_FIELDS.STATUS.value: status,
             TASK_SERVICE_FIELDS.REASON.value: self.payload.reason,
             TASK_SERVICE_FIELDS.REVIEWED_BY.value: user.name,
             TASK_SERVICE_FIELDS.UPDATED_AT.value: date.today().strftime("%d/%m/%Y"),
-            TASK_SERVICE_FIELDS.EXECUTION.value: {}
+            TASK_SERVICE_FIELDS.EXECUTION.value: {"status": "not executing"}
             if status != TASK_SERVICE_STATUS.ACCEPTED.value
-            else {TASK_SERVICE_FIELDS.STATUS.value: EXECUTION_STATUS.ENQUEUED.value},
+            else {TASK_SERVICE_FIELDS.STATUS.value: EXECUTION_STATUS.ENQUEUED.value}, 
         }
 
         node.tasks.update(
             search_params={TASK_SERVICE_FIELDS.UID.value: self.payload.task_uid},
             updated_args=update_values,
         )
+        # task = node.tasks.find(search_params={"uid": self.payload.task_uid})
+        # if not task:
+        #     raise Exception(f"The given task_id:{self.payload.task_uid} does not exist")
+        # task = task[0]
+
+        # node.tasks.update(
+        #     search_params={"uid": task.uid},
+        #     updated_args={
+        #         "execution": {"status": "executing"},
+        #     },
+        # )
+        # execute_task(node, task.uid, task.code, task.inputs, task.outputs)
+
+        return ReviewTask.Reply()
+
+    def get_permissions(self) -> List[Type[BasePermission]]:
+        """Returns the list of permission classes."""
+        return [UserIsOwner]
+
+
+
+@serializable(recursive_serde=True)
+@final
+class RunTask(SyftMessage, DomainMessageRegistry):
+
+    # Pydantic Inner class to define expected request payload fields.
+    class Request(RequestPayload):
+        task_uid: str
+        
+    # Pydantic Inner class to define expected reply payload fields.
+    class Reply(ReplyPayload):
+        outputs: Dict[str, str]
+
+    request_payload_type = (
+        Request  # Converts generic syft dict into a CreateUserMessage.Request object.
+    )
+    reply_payload_type = (
+        Reply  # Creates a proper Reply payload message structure as a response.
+    )
+
+    def run(  # type: ignore
+        self, node: DomainInterface, verify_key: Optional[VerifyKey] = None
+    ) -> ReplyPayload:  # type: ignore
+        user = node.users.get_user(verify_key=verify_key)
         task = node.tasks.find(search_params={"uid": self.payload.task_uid})
         if not task:
             raise Exception(f"The given task_id:{self.payload.task_uid} does not exist")
         task = task[0]
-
-        node.tasks.update(
-            search_params={"uid": task.uid},
-            updated_args={
-                "execution": {"status": "executing"},
-            },
-        )
-        execute_task(node, task.uid, task.code, task.inputs, task.outputs)
-
-        return CreateTask.Reply()
+        if task.user != user.id.to_string(): # TODO find a better wayt to check this
+            raise Exception(f"User {user.id.to_string()} does not have access to task {task.uid}")
+        
+        # if task.status != EXECUTION_STATUS.ENQUEUED.value:
+        #     raise Exception(f"Task {task.uid} not approved")
+        
+        outputs = execute_task(node, task.uid, task.code, task.inputs, task.outputs)
+        # TODO apply policy
+        return RunTask.Reply(outputs=outputs)
 
     def get_permissions(self) -> List[Type[BasePermission]]:
         """Returns the list of permission classes."""
@@ -331,9 +375,10 @@ def execute_task(
             search_params={"uid": task_uid},
             updated_args={
                 "execution": {"status": "done"},
-                "outputs": {"output": new_id.to_string()},
+                "outputs": {"output": new_id.to_string()}, # TODO change this to be more readable
             },
         )
+        return {"output": new_id.to_string()}
     except Exception as e:
         sys.stdout = stdout_
         sys.stderr = stderr_

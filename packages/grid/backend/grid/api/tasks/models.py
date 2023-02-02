@@ -18,6 +18,11 @@ class ReviewTaskModel(BaseModel):
     reason: str
     task_uid: Optional[str] = ""
 
+class RunTaskModel(BaseModel):
+    task_uid: str
+
+class TaskOutputs(BaseModel):
+    outputs: Dict[str,str]
 
 class Task(BaseModel):
     code: str
