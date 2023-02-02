@@ -17,15 +17,21 @@ from syft import deserialize
 from syft import serialize  # type: ignore
 from syft.core.node.new.context import UnauthedServiceContext
 from syft.core.node.new.credentials import UserLoginCredentials
+from syft.core.node.new.node_metadata import NodeMetadataJSON
 from syft.core.node.new.user import UserPrivateKey
 from syft.core.node.new.user_service import UserService
 from syft.core.node.worker import Worker
+from syft.core.node.worker import create_admin_new
 
 API_V1_SYFT_STR = "/api/v1/syft/worker"
 router = APIRouter()
 
 
 worker = Worker()
+
+create_admin_new(
+    name="Jane Doe", email="info@openmined.org", password="changethis", worker=worker
+)
 print("worker", worker.id, worker.signing_key)
 
 
@@ -39,6 +45,12 @@ def root() -> Response:
         b"hello",
         media_type="application/octet-stream",
     )
+
+
+# provide information about the node in JSON
+@router.get("/metadata", response_class=JSONResponse)
+def syft_metadata() -> JSONResponse:
+    return worker.metadata().to(NodeMetadataJSON)
 
 
 @router.get("/new_api", response_model=str)

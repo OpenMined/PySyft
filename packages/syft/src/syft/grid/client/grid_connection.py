@@ -214,7 +214,7 @@ class GridHTTPConnection(HTTPConnection):
             if response.url.startswith("https://") and self.base_url.protocol == "http":
                 # we got redirected to https
                 self.base_url = GridURL.from_url(
-                    response.url.replace("/syft/metadata", "")
+                    response.url.replace("/syft/worker/metadata", "")
                 )
                 debug(f"GridURL Upgraded to HTTPS. {self.base_url}")
         except Exception as e:
