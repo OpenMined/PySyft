@@ -32,8 +32,6 @@ def make_set_default(key: str, value: Any) -> Callable:
 
 def drop(list_keys: List[str]) -> Callable:
     def drop_keys(_self: Any, output: Dict) -> Dict:
-        print("list keys", list_keys)
-        print("output", output)
         for key in list_keys:
             if key in output:
                 del output[key]

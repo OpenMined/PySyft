@@ -13,8 +13,9 @@ from syft.core.node.new.credentials import SIGNING_KEY_FOR
 from syft.core.node.new.credentials import SyftSigningKey
 from syft.core.node.new.credentials import SyftVerifyKey
 from syft.core.node.new.user import User
-from syft.core.node.new.user import UserCollection
-from syft.core.node.new.user import UserUpdate
+from syft.core.node.new.user import UserCreate
+from syft.core.node.new.user import UserView
+from syft.core.node.new.user_service import UserService
 from syft.core.node.worker import Worker
 
 # from syft.core.node.worker import Worker
@@ -89,7 +90,7 @@ def test_action_store() -> None:
 
 
 def test_user_transform() -> None:
-    new_user = UserUpdate(
+    new_user = UserCreate(
         email="alice@bob.com",
         name="Alice",
         password="letmein",
@@ -111,23 +112,22 @@ def test_user_transform() -> None:
     assert user.hashed_password is not None
     assert user.salt is not None
 
-    edit_user = user.to(UserUpdate)
+    edit_user = user.to(UserView)
     # assert edit_user.id is not None # need to insert / update first
     assert edit_user.email == "alice@bob.com"
     assert edit_user.name == "Alice"
     assert edit_user.password is None
     assert edit_user.password_verify is None
     assert not hasattr(edit_user, "signing_key")
-    assert not hasattr(edit_user, "verify_key")
 
 
-def test_user_collection() -> None:
+def test_user_service() -> None:
     test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
     worker = Worker()
-    user_collection = UserCollection()
+    user_collection = worker.service_path_map[UserService.__name__]
 
     # create a user
-    new_user = UserUpdate(
+    new_user = UserCreate(
         email="alice@bob.com",
         name="Alice",
         password="letmein",
@@ -138,11 +138,15 @@ def test_user_collection() -> None:
     context = AuthedServiceContext(node=worker, credentials=test_signing_key.verify_key)
 
     # call the create function
-    user_view_result = user_collection.create(context=context, user_update=new_user)
+    user_view = user_collection.create(context=context, user_create=new_user)
 
     # get the result
-    assert user_view_result.is_ok()
-    user_view = user_view_result.ok()
+    assert user_view.is_ok()
+
+    user_view = user_view.ok()
+
+    assert user_view.email == new_user.email
+    assert user_view.name == new_user.name
 
     # we have a UID
     assert user_view.id is not None
@@ -158,7 +162,7 @@ def test_user_collection() -> None:
 
 def test_syft_object_serde() -> None:
     # create a user
-    new_user = UserUpdate(
+    new_user = UserCreate(
         email="alice@bob.com",
         name="Alice",
         password="letmein",

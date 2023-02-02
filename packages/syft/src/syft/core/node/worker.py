@@ -23,17 +23,22 @@ from ...core.node.common.node_table.syft_object import SyftObject
 from ..common.serde.serializable import serializable
 from ..common.uid import UID
 from .new.action_service import ActionService
-from .new.action_service import ActionStore
+from .new.action_store import ActionStore
 from .new.api import SignedSyftAPICall
 from .new.api import SyftAPI
 from .new.api import SyftAPICall
 from .new.context import AuthedServiceContext
 from .new.credentials import SyftSigningKey
+from .new.document_store import DictDocumentStore
 from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
 from .new.service import AbstractService
 from .new.service import ServiceConfigRegistry
-from .new.user import UserCollection
+from .new.test_service import TestService
+from .new.user import User
+from .new.user import UserCreate
+from .new.user_service import UserService
+from .new.user_stash import UserStash
 
 NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
 NODE_UID = "NODE_UID"
@@ -83,7 +88,9 @@ class Worker(NewNode):
         print("============> Starting Worker with:", self.id, self.signing_key)
 
         self.name = name
-        services = [UserCollection, ActionService] if services is None else services
+        services = (
+            [UserService, ActionService, TestService] if services is None else services
+        )
         self.services = services
         self.service_config = ServiceConfigRegistry.get_registered_configs()
         self._construct_services()
@@ -93,22 +100,16 @@ class Worker(NewNode):
         pass
         # super().post_init()
 
-    def get_api(self) -> SyftAPI:
-        return SyftAPI.for_user(node_uid=self.id)
-
     def _construct_services(self):
         self.service_path_map = {}
+        self.document_store = DictDocumentStore()
         for service_klass in self.services:
             kwargs = {}
             if service_klass == ActionService:
                 action_store = ActionStore(root_verify_key=self.signing_key.verify_key)
                 kwargs["store"] = action_store
-                print(
-                    "Creating new ActionStore",
-                    action_store,
-                    action_store.id,
-                    action_store.data,
-                )
+            if service_klass == UserService:
+                kwargs["store"] = self.document_store
             self.service_path_map[service_klass.__name__] = service_klass(**kwargs)
 
     def get_service_method(self, path_or_func: Union[str, Callable]) -> Callable:
@@ -176,3 +177,28 @@ class Worker(NewNode):
         method = self.get_service_method(_private_api_path)
         result = method(context, *api_call.args, **api_call.kwargs)
         return result
+
+    def get_api(self) -> SyftAPI:
+        return SyftAPI.for_user(node_uid=self.id)
+
+
+def create_admin_new(
+    name: str,
+    email: str,
+    password: str,
+    worker: Worker,
+) -> Optional[User]:
+    try:
+        user_stash = UserStash(store=worker.document_store)
+        row_exists = user_stash.get_by_email(email=email).ok()
+        if row_exists:
+            return None
+        else:
+            create_user = UserCreate(
+                name=name, email=email, password=password, password_verify=password
+            )
+            # New User Initialization
+            user = user_stash.set(user=create_user.to(User))
+            return user.ok()
+    except Exception as e:
+        print("create_admin failed", e)
