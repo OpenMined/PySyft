@@ -13,6 +13,7 @@ import pandas as pd
 
 # relative
 from .....core.tensor.tensor import Tensor
+from .....telemetry import instrument
 from ....common import UID
 from ....common.serde.serialize import _serialize as serialize  # noqa: F401
 from ...abstract.node import AbstractNodeClient
@@ -106,6 +107,7 @@ end_boilerplate = """
         </script>"""
 
 
+@instrument
 class DatasetRequestAPI(RequestAPI):
     def __init__(self, client: AbstractNodeClient):
         super().__init__(
