@@ -23,6 +23,7 @@ from ...core.node.common.client import Client
 from ...core.node.domain_client import DomainClient
 from ...core.node.network_client import NetworkClient
 from ...core.node.new.client import SyftClient
+from ...telemetry import instrument
 from ...util import bcolors
 from ...util import verify_tls
 from .grid_connection import GridHTTPConnection
@@ -31,6 +32,7 @@ DEFAULT_PYGRID_PORT = 80
 DEFAULT_PYGRID_ADDRESS = f"http://127.0.0.1:{DEFAULT_PYGRID_PORT}"
 
 
+@instrument
 def connect(
     url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
     conn_type: Type[ClientConnection] = GridHTTPConnection,
@@ -77,6 +79,7 @@ def connect(
     return node
 
 
+@instrument
 def login(
     url: Optional[Union[str, GridURL]] = None,
     port: Optional[int] = None,
@@ -215,6 +218,7 @@ def login(
     return node
 
 
+@instrument
 def register(
     name: Optional[str] = None,
     email: Optional[str] = None,
