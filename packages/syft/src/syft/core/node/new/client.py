@@ -21,6 +21,7 @@ from .... import __version__
 from ....core.common.serde.deserialize import _deserialize
 from ....grid import GridURL
 from ....logger import debug
+from ....telemetry import instrument
 from ....util import verify_tls
 from ...common.uid import UID
 from ...node.new.credentials import UserLoginCredentials
@@ -60,6 +61,7 @@ DEFAULT_PYGRID_PORT = 80
 DEFAULT_PYGRID_ADDRESS = f"http://127.0.0.1:{DEFAULT_PYGRID_PORT}"
 
 
+@instrument
 class SyftClient:
     proxies: Dict[str, str] = {}
     url: GridURL
@@ -131,7 +133,7 @@ class SyftClient:
     def _make_get(self, path: str) -> bytes:
         url = self.url.with_path(path)
         response = self.session.get(
-            url, verify=verify_tls(), proxies=SyftClient.proxies
+            str(url), verify=verify_tls(), proxies=SyftClient.proxies
         )
         if response.status_code != 200:
             raise requests.ConnectionError(
@@ -146,7 +148,7 @@ class SyftClient:
     def _make_post(self, path: str, json: Dict[str, Any]) -> bytes:
         url = self.url.with_path(path)
         response = self.session.post(
-            url, verify=verify_tls(), json=json, proxies=SyftClient.proxies
+            str(url), verify=verify_tls(), json=json, proxies=SyftClient.proxies
         )
         if response.status_code != 200:
             raise requests.ConnectionError(
@@ -199,6 +201,7 @@ class SyftClient:
         )
 
 
+@instrument
 def connect(
     url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
     port: Optional[int] = None,
