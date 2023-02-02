@@ -1,3 +1,6 @@
+# stdlib
+from typing import Optional
+
 # third party
 from result import Err
 from result import Ok
@@ -10,54 +13,44 @@ from ...common.uid import UID
 from .context import AuthedServiceContext
 from .context import UnauthedServiceContext
 from .credentials import UserLoginCredentials
+from .document_store import DocumentStore
 from .service import AbstractService
 from .service import service_method
 from .user import User
+from .user import UserCreate
 from .user import UserPrivateKey
 from .user import UserUpdate
+from .user import UserView
 from .user import check_pwd
 from .user_stash import UserStash
-
-# class UserQuery:
-#     email: str
-#     name: str
-#     verify_key: SyftVerifyKey
 
 
 @serializable(recursive_serde=True)
 class UserService(AbstractService):
-    def __init__(self, stash: UserStash) -> None:
-        self.stash = stash
-        self.collection_keys = {}
+    store: DocumentStore
+    stash: UserStash
+
+    def __init__(self, store: DocumentStore) -> None:
+        self.store = store
+        self.stash = UserStash(store=store)
 
     @service_method(path="user.create", name="create")
     def create(
-        self, context: AuthedServiceContext, user_update: UserUpdate
-    ) -> Result[UserUpdate, str]:
-        """TEST MY DOCS"""
-        if user_update.id is None:
-            user_update.id = UID()
-        user = user_update.to(User)
-
-        result = self.set(context=context, syft_object=user)
-        if result.is_ok():
-            return Ok(user.to(UserUpdate))
-        else:
-            return Err("Failed to create User.")
+        self, context: AuthedServiceContext, user_create: UserCreate
+    ) -> Result[UserView, str]:
+        """Create a new user"""
+        user = user_create.to(User)
+        return self.stash.set(user=user).map(lambda x: x.to(UserView))
 
     @service_method(path="user.view", name="view")
-    def view(self, context: AuthedServiceContext, uid: UID) -> Result[UserUpdate, str]:
-        user_result = self.get(context=context, uid=uid)
-        if user_result.is_ok():
-            return Ok(user_result.ok().to(UserUpdate))
-        else:
-            return Err(f"Failed to get User for UID: {uid}")
-
-    def set(
-        self, context: AuthedServiceContext, syft_object: SyftObject
-    ) -> Result[bool, str]:
-        self.stash.set(syft_object)
-        return Ok(True)
+    def view(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Result[Optional[UserView], str]:
+        """Get user for given uid"""
+        result = self.stash.get_by_uid(uid=uid).map(
+            lambda x: x if x is None else x.to(UserView)
+        )
+        return result
 
     def exchange_credentials(
         self, context: UnauthedServiceContext
@@ -68,19 +61,24 @@ class UserService(AbstractService):
         # for _, user in self.data.items():
         # syft_object: User = SyftObject.from_mongo(user)
         # 🟡 TOD 234: Store real root user and fetch from collectionO🟡
-        syft_object = context.node.root_user
-        if (syft_object.email == context.login_credentials.email) and check_pwd(
-            context.login_credentials.password,
-            syft_object.hashed_password,
-        ):
-            return Ok(syft_object.to(UserPrivateKey))
+
+        result = self.stash.get_by_email(email=context.login_credentials.email)
+
+        if result.is_ok():
+            user = result.ok()
+            if user is not None and check_pwd(
+                context.login_credentials.password,
+                user.hashed_password,
+            ):
+                return Ok(user.to(UserPrivateKey))
+
+            return Err(
+                f"No user exists with {context.login_credentials.email} and supplied password."
+            )
 
         return Err(
-            f"No user exists with {context.login_credentials.email} and supplied password."
+            f"Failed to retrieve user with {context.login_credentials.email} with error: {result.err()}"
         )
-
-    def get(self, context: AuthedServiceContext, uid: UID) -> Result[SyftObject, str]:
-        return self.stash.get_by_uid(uid)
 
     def signup(
         self, context: UnauthedServiceContext, user_update: UserUpdate

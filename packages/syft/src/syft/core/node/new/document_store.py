@@ -29,8 +29,8 @@ from .base import SyftBaseModel
 
 def first_or_none(result: Any) -> Optional[Any]:
     if hasattr(result, "__len__") and len(result) > 0:
-        return result[0]
-    return result
+        return Ok(result[0])
+    return Ok(None)
 
 
 @serializable(recursive_serde=True)
@@ -471,10 +471,7 @@ class BaseStash:
         self.collection = store.collection(type(self).settings)
 
     def set(self, obj: BaseStash.object_type) -> Result[BaseStash.object_type, str]:
-        result = self.collection.set(obj=obj)
-        if result.is_ok():
-            return result.ok()
-        return result.err()
+        return self.collection.set(obj=obj)
 
     def get_all_index(
         self, qks: Union[QueryKey, QueryKeys]
@@ -485,10 +482,8 @@ class BaseStash:
         if result.is_ok():
             qks = self.collection.store_query_keys(result.ok())
             objects = self.collection.get_all_from_store(qks=qks)
-            if objects.is_ok():
-                return objects.ok()
-            return objects.err()
-        return result.err()
+            return objects
+        return Err(result.err())
 
     def find_all_search(
         self, qks: Union[QueryKey, QueryKeys]
@@ -500,10 +495,8 @@ class BaseStash:
         if result.is_ok():
             qks = self.collection.store_query_keys(result.ok())
             objects = self.collection.get_all_from_store(qks=qks)
-            if objects.is_ok():
-                return objects.ok()
-            return objects.err()
-        return result.err()
+            return objects
+        return Err(result.err())
 
     def query_all(
         self, qks: Union[QueryKey, QueryKeys]
@@ -556,9 +549,7 @@ class BaseStash:
 
         qks = self.collection.store_query_keys(ids)
         objects = self.collection.get_all_from_store(qks=qks)
-        if objects.is_ok():
-            return objects.ok()
-        return objects.err()
+        return objects
 
     def query_all_kwargs(
         self, **kwargs: Dict[str, Any]
@@ -569,13 +560,13 @@ class BaseStash:
     def query_one(
         self, qks: Union[QueryKey, QueryKeys]
     ) -> Result[Optional[BaseStash.object_type], str]:
-        return first_or_none(self.query_all(qks=qks))
+        return self.query_all(qks=qks).and_then(first_or_none)
 
     def query_one_kwargs(
         self,
         **kwargs: Dict[str, Any],
     ) -> Result[Optional[BaseStash.object_type], str]:
-        return first_or_none(self.query_all_kwargs(**kwargs))
+        return self.query_all_kwargs(**kwargs).and_then(first_or_none)
 
     def find_all(
         self, **kwargs: Dict[str, Any]
@@ -587,18 +578,20 @@ class BaseStash:
     ) -> Result[Optional[BaseStash.object_type], str]:
         return self.query_one_kwargs(**kwargs)
 
-    def find_and_delete(self, **kwargs: Dict[str, Any]) -> Union[bool, str]:
+    def find_and_delete(self, **kwargs: Dict[str, Any]) -> Result[bool, str]:
         obj = self.query_one_kwargs(**kwargs)
+        if obj.is_err():
+            return obj.err()
+        else:
+            obj = obj.ok()
+
         if not obj:
             return Err(f"Object does not exists with kwargs: {kwargs}")
         qk = self.collection.store_query_key(obj)
         return self.delete(qk=qk)
 
-    def delete(self, qk: QueryKey) -> Union[bool, str]:
-        result = self.collection.delete(qk=qk)
-        if result.is_ok():
-            return result.ok()
-        return result.err()
+    def delete(self, qk: QueryKey) -> Result[bool, str]:
+        return self.collection.delete(qk=qk)
 
     def update(
         self, obj: BaseStash.object_type
@@ -616,10 +609,8 @@ class BaseStash:
 
             qk = self.collection.store_query_key(result.pop())
             updated_obj = self.collection.update(qk=qk, obj=obj)
-            if updated_obj.is_ok():
-                return updated_obj.ok()
-            return updated_obj.err()
-        return result.err()
+            return updated_obj
+        return Err(result.err())
 
 
 # 🟡 TODO 26: the base collection is already a dict collection but we can change it later

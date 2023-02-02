@@ -36,7 +36,7 @@ def test_user_stash() -> None:
     assert isinstance(response, Err)
 
     result = user_stash.set(user)
-
+    result = result.ok()
     assert result == user
 
     result2 = user_stash.get_by_uid(user.id)
@@ -57,11 +57,14 @@ def test_user_stash() -> None:
     result6 = user_stash.find_one(
         **{"name": user.name, "email": user.email, "id": user.id}
     )
+    result6 = result6.ok()
     result7 = user_stash.find_one(email=user.email)
+    result7 = result7.ok()
 
     assert result6 == result
     assert result6 == result7
 
+    result2 = result2.ok()
     assert user.email == result2.email
     assert user.name == result2.name
     assert user.hashed_password == result2.hashed_password
@@ -76,17 +79,21 @@ def test_user_stash() -> None:
     assert user == result2
 
     result8 = user_stash.delete_by_uid(uid=user.id)
+    result8 = result8.ok()
     assert result8 is True
 
     result9 = user_stash.get_by_uid(uid=user.id)
     result9 = result9.ok()
-    assert len(result9) == 0
+    result9 = result9.ok()  # fix nesting
+    assert result9 is None
 
     result10 = user_stash.set(user)
+    result10 = result10.ok()
 
     assert result10 == user
 
     result11 = user_stash.find_and_delete(**{"email": user.email})
+    result11 = result11.ok()
     assert result11 is True
 
     # update_user = UserUpdate(email="alice@bob.com", name="Bob", institution="OpenMined")
@@ -106,6 +113,7 @@ def test_user_stash() -> None:
 
     user = new_user.to(User)
     result13 = user_stash.set(user)
+    result13 = result13.ok()
 
     assert result13 == user
 

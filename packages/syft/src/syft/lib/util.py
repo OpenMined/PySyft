@@ -59,5 +59,13 @@ def full_name_with_name(klass: type) -> str:
     try:
         return f"{klass.__module__}.{klass.__name__}"
     except Exception as e:
+        # stdlib
+        import typing
+
+        if issubclass(klass, typing._GenericAlias):
+            # this is happening on Linux?
+            print("Failed to get FQN for:", klass, type(klass))
+            print("Returning typing.Union")
+            return "typing.Union"
         print("Failed to get FQN for:", klass, type(klass))
         raise e
