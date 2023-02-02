@@ -47,10 +47,8 @@ class UserService(AbstractService):
         self, context: AuthedServiceContext, uid: UID
     ) -> Result[Optional[UserView], str]:
         """Get user for given uid"""
-        result = self.stash.get_by_uid(uid=uid).map(
-            lambda x: x if x is None else x.to(UserView)
-        )
-        return result
+        result = self.stash.get_by_uid(uid=uid)
+        return result.ok().map(lambda x: x if x is None else x.to(UserView))
 
     def exchange_credentials(
         self, context: UnauthedServiceContext
@@ -60,7 +58,7 @@ class UserService(AbstractService):
         """
         # for _, user in self.data.items():
         # syft_object: User = SyftObject.from_mongo(user)
-        # 🟡 TOD 234: Store real root user and fetch from collectionO🟡
+        # 🟡 TOD2230Store real root user and fetch from collection
 
         result = self.stash.get_by_email(email=context.login_credentials.email)
 

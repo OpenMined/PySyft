@@ -103,7 +103,6 @@ class Worker(NewNode):
     def _construct_services(self):
         self.service_path_map = {}
         self.document_store = DictDocumentStore()
-        self.user_stash = UserStash(store=self.document_store)
 
         for service_klass in self.services:
             kwargs = {}
@@ -111,7 +110,7 @@ class Worker(NewNode):
                 action_store = ActionStore(root_verify_key=self.signing_key.verify_key)
                 kwargs["store"] = action_store
             if service_klass == UserService:
-                kwargs["stash"] = self.user_stash
+                kwargs["store"] = self.document_store
             self.service_path_map[service_klass.__name__] = service_klass(**kwargs)
 
     def get_service_method(self, path_or_func: Union[str, Callable]) -> Callable:
