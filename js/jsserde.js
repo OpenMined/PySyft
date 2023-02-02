@@ -8,7 +8,8 @@ class SimpleObject{
 		this.first = first
 		this.second = second
 		this.third = third
-		this.fourth = fourth 
+		this.fourth = fourth
+		this.sixth = 78.45
 		this.fifth = new Map(Object.entries(fifth))
 		this.fqn = "grid.api.syft.syft.SimpleObject"
 	}
@@ -43,7 +44,33 @@ class JSSerde {
 					  {}
 					]
 				this.type_bank['builtins.float'] = [ true,
-					function (number) { return capnp.Int64.fromNumber(number)},
+					function (number) { 
+						let hex_str = ''
+
+						if (number < 0) {
+							hex_str += '-'
+							number = number * -1
+						}
+						hex_str += '0x'
+						let exponent = 10
+
+						let n_1 = number / 2 ** exponent
+						hex_str += Math.trunc(n_1).toString(16)
+						hex_str += '.'
+
+
+						let notZeros = true
+						let currNumber = n_1
+						while (notZeros){
+							currNumber = (currNumber % 1) * 16
+							hex_str += Math.trunc(currNumber).toString(16)
+							if ((currNumber % 1) === 0){
+								notZeros = false
+							}
+						}
+						hex_str += 'p' + exponent
+						return new TextEncoder().encode(hex_str)
+					},
 					function (buffer) { 
 					const hex_str = new TextDecoder().decode(buffer)
 					var aggr = 0
@@ -144,7 +171,11 @@ class JSSerde {
 			fqn = "builtins.str"
 		}
 		else if ( typeof obj === 'number' ) {
-			fqn = "builtins.int"
+			if (Number.isInteger(obj)){
+				fqn = "builtins.int"
+			} else{
+				fqn = 'builtins.float'
+			}
 		}
 		else if (Array.isArray(obj)){
 			fqn = 'builtins.list'
@@ -214,9 +245,7 @@ const js = new JSSerde('http://localhost:8081/api/v1/syft/serde')
 await js.loadTypeBank();
 const response = await fetch('http://localhost:8081/api/v1/syft/js')
 const bytes_arr = await response.arrayBuffer()
-//console.log(js.serialize(1))
-let result = js.deserialize(js.serialize(new SimpleObject(589462615899, true, 'hello world', [1,2,3,4,5], {'Hello': 'World', 'field1': 159})))
-console.log(result)
-console.log(typeof result.get('fourth')[0])
+let result = js.deserialize(js.serialize(new SimpleObject(589462615899, true, 'hello world', [1,2.5,3.78,4,5], {'Hello': 'World', 'field1': 159.78})))
+//console.log(typeof result.get('fourth')[0])
 //console.log(" Object Sent From PySyft to JavaScript : ", js.deserialize(bytes_arr))
 //const response2 = await fetch('http://localhost:8081/api/v1/syft/js', {method: "POST", headers: {"content-type": "application/octect-stream"}, body: js.serialize(new SimpleObject(true, 'JavaScript SimpleObject'))})
