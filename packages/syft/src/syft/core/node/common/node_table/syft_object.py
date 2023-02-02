@@ -236,10 +236,6 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         return cls._syft_keys_types_dict("__attr_searchable__")
 
 
-class SyftUpdateObject(SyftObject):
-    id: Optional[UID] = None  # no id means insert
-
-
 def transform_method(
     klass_from: Union[type, str],
     klass_to: Union[type, str],
