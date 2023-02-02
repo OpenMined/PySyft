@@ -15,6 +15,10 @@ data:
           loadBalancer:
             servers:
               - url: "http://backend-stream"
+        worker:
+          loadBalancer:
+            servers:
+              - url: "http://worker"
         headscale:
           loadBalancer:
             servers:
@@ -35,6 +39,11 @@ data:
           entryPoints:
             - "web"
           service: "backend-stream"
+        worker:
+          rule: "PathPrefix(`/api`) && PathPrefix(`/api/v1/syft/worker`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)"
+          entryPoints:
+            - "web"
+          service: "worker"
         vpn:
           rule: "PathPrefix(`/vpn`)"
           entryPoints:

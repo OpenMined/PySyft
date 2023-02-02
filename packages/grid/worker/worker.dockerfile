@@ -49,11 +49,15 @@ RUN --mount=type=cache,target=/root/.cache \
     pip install --user -r requirements.txt
 
 # Backend
-FROM python:$PYTHON_VERSION-slim as backend
+FROM python:$PYTHON_VERSION-slim as worker
 COPY --from=build /root/.local /root/.local
 
 ENV PYTHONPATH=/app
 ENV PATH=/root/.local/bin:$PATH
+
+COPY grid/worker/start.sh /start.sh
+
+RUN chmod +x /start.sh
 
 RUN --mount=type=cache,target=/root/.cache \
     pip install -U pip
@@ -61,7 +65,6 @@ RUN --mount=type=cache,target=/root/.cache \
 WORKDIR /app
 
 # copy grid
-COPY grid/backend/grid/bootstrap.py /app/
 COPY grid/worker /app/
 
 # copy skeleton to do package install
@@ -80,5 +83,5 @@ RUN --mount=type=cache,target=/root/.cache \
 # copy any changed source
 COPY syft/src /app/syft/src
 
-# change to worker-start.sh or start-reload.sh as needed
-CMD ["bash", "app/start.sh"]
+
+CMD ["bash", "start.sh"]

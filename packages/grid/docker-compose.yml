@@ -243,6 +243,33 @@ services:
       # - "14269:14269"
       # - "9411:9411"
 
+  worker:
+    restart: always
+    image: "${DOCKER_IMAGE_WORKER?Variable not set}:${VERSION-latest}"
+    depends_on:
+      - proxy
+    env_file:
+      - .env
+    environment:
+      - SERVICE_NAME=worker
+      - RELEASE=${RELEASE:-production}
+      - VERSION=${VERSION}
+      - VERSION_HASH=${VERSION_HASH}
+      - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
+      - STACK_API_KEY=${STACK_API_KEY}
+      - PORT=8111
+      - IGNORE_TLS_ERRORS=${IGNORE_TLS_ERRORS?False}
+      - HTTP_PORT=${HTTP_PORT}
+      - HTTPS_PORT=${HTTPS_PORT}
+      - CONTAINER_HOST=${CONTAINER_HOST}
+      - ASSOCIATION_TIMEOUT=${ASSOCIATION_TIMEOUT}
+      - DEV_MODE=${DEV_MODE}
+      - DOMAIN_CONNECTION_PORT=${DOMAIN_CONNECTION_PORT}
+    command: /start.sh
+    network_mode: service:proxy
+    volumes:
+      - credentials-data:/credentials
+
 volumes:
   credentials-data:
   tailscale-data:
