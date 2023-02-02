@@ -2,6 +2,7 @@
 from typing import Any
 
 # relative
+from .....telemetry import instrument
 from ...abstract.node import AbstractNodeClient
 from ...enums import ResponseObjectEnum
 from ..node_service.role_manager.role_manager_messages import CreateRoleMessage
@@ -12,6 +13,7 @@ from ..node_service.role_manager.role_manager_messages import UpdateRoleMessage
 from .request_api import RequestAPI
 
 
+@instrument
 class RoleRequestAPI(RequestAPI):
     def __init__(self, client: AbstractNodeClient):
         super().__init__(
