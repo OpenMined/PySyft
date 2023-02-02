@@ -61,7 +61,7 @@ def deserialize_iterable(iterable_type: type, blob: bytes) -> Collection:
     return iterable_type(values)
 
 
-def serialze_kv(map: Mapping) -> bytes:
+def serialize_kv(map: Mapping) -> bytes:
     # relative
     from .serialize import _serialize
 
@@ -102,18 +102,28 @@ def deserialize_kv(mapping_type: type, blob: bytes) -> Mapping:
     return mapping_type(pairs)
 
 
-def deserialize_defaultdict(blob: bytes) -> Mapping:
-    pairs = get_deserialized_kv_pairs(blob=blob)
-    default_factory = None
-    # TODO if pairs is empty (no value set for the original property), we might lose the original type
-    # and it would instead just be None
-    if len(pairs) > 0:
-        # TODO for defaultdict(set), if empty set {}, the type might get set to dict?
+def serialize_defaultdict(df_dict: defaultdict) -> bytes:
+    # relative
+    from .serialize import _serialize
 
-        # we're getting the type of the value of the first kv pair, and using that as default factory
-        # for constructing the defaultdict
-        default_factory = type(pairs[0][1])
-    return defaultdict(default_factory, pairs)
+    df_type_bytes = _serialize(df_dict.default_factory, to_bytes=True)
+    df_kv_bytes = serialize_kv(df_dict)
+    return _serialize((df_type_bytes, df_kv_bytes), to_bytes=True)
+
+
+def deserialize_defaultdict(blob: bytes) -> Mapping:
+    # relative
+    from .deserialize import _deserialize
+
+    df_tuple = _deserialize(blob, from_bytes=True)
+    df_type_bytes, df_kv_bytes = df_tuple[0], df_tuple[1]
+    df_type = _deserialize(df_type_bytes, from_bytes=True)
+    mapping = defaultdict(df_type)
+
+    pairs = get_deserialized_kv_pairs(blob=df_kv_bytes)
+    mapping.update(pairs)
+
+    return mapping
 
 
 def serialize_enum(enum: Enum) -> bytes:
@@ -182,18 +192,18 @@ recursive_serde_register(
 )
 
 recursive_serde_register(
-    dict, serialize=serialze_kv, deserialize=functools.partial(deserialize_kv, dict)
+    dict, serialize=serialize_kv, deserialize=functools.partial(deserialize_kv, dict)
 )
 
 recursive_serde_register(
     defaultdict,
-    serialize=serialze_kv,
-    deserialize=functools.partial(deserialize_defaultdict),
+    serialize=serialize_defaultdict,
+    deserialize=deserialize_defaultdict,
 )
 
 recursive_serde_register(
     OrderedDict,
-    serialize=serialze_kv,
+    serialize=serialize_kv,
     deserialize=functools.partial(deserialize_kv, OrderedDict),
 )
 
@@ -241,7 +251,7 @@ recursive_serde_register(
 recursive_serde_register(type, serialize=serialize_type, deserialize=deserialize_type)
 recursive_serde_register(
     MappingProxyType,
-    serialize=serialze_kv,
+    serialize=serialize_kv,
     deserialize=functools.partial(deserialize_kv, MappingProxyType),
 )
 
