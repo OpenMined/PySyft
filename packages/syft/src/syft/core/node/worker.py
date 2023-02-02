@@ -103,6 +103,7 @@ class Worker(NewNode):
     def _construct_services(self):
         self.service_path_map = {}
         self.document_store = DictDocumentStore()
+
         for service_klass in self.services:
             kwargs = {}
             if service_klass == ActionService:

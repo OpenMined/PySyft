@@ -111,6 +111,7 @@ def np_array_to_pointer() -> List[Callable]:
     ]
 
 
+@serializable(recursive_serde=True)
 class ActionService(AbstractService):
     def __init__(self, store: ActionStore) -> None:
         self.store = store
