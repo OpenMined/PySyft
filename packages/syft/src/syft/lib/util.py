@@ -1,5 +1,6 @@
 """ A set of util methods used by the syft.lib submodule. """
 # stdlib
+import re
 from typing import Callable
 from typing import Union as TypeUnion
 
@@ -46,8 +47,8 @@ def full_name_with_qualname(klass: type) -> str:
     """Returns the klass module name + klass qualname."""
     try:
         if not hasattr(klass, "__module__"):
-            return f"builtins.{klass.__qualname__}"
-        return f"{klass.__module__}.{klass.__qualname__}"
+            return f"builtins.{get_qualname_for(klass)}"
+        return f"{klass.__module__}.{get_qualname_for(klass)}"
     except Exception:
         # try name as backup
         print("Failed to get FQN for:", klass, type(klass))
@@ -57,15 +58,39 @@ def full_name_with_qualname(klass: type) -> str:
 def full_name_with_name(klass: type) -> str:
     """Returns the klass module name + klass name."""
     try:
-        return f"{klass.__module__}.{klass.__name__}"
+        if not hasattr(klass, "__module__"):
+            return f"builtins.{get_name_for(klass)}"
+        return f"{klass.__module__}.{get_name_for(klass)}"
     except Exception as e:
-        # stdlib
-        import typing
-
-        if issubclass(klass, typing._GenericAlias):
-            # this is happening on Linux?
-            print("Failed to get FQN for:", klass, type(klass))
-            print("Returning typing.Union")
-            return "typing.Union"
         print("Failed to get FQN for:", klass, type(klass))
+        raise e
+
+
+def get_qualname_for(klass: type):
+    qualname = getattr(klass, "__qualname__", None) or getattr(klass, "__name__", None)
+    if qualname is None:
+        qualname = extract_name(klass)
+    return qualname
+
+
+def get_name_for(klass: type):
+    klass_name = getattr(klass, "__name__", None)
+    if klass_name is None:
+        klass_name = extract_name(klass)
+    return klass_name
+
+
+def extract_name(klass: type):
+    name_regex = r".+class.+?([\w\._]+).+"
+    regex2 = r"([\w\.]+)"
+    matches = re.match(name_regex, str(klass))
+    if matches is None:
+        matches = re.match(regex2, str(klass))
+    try:
+        fqn = matches[1]
+        if "." in fqn:
+            return fqn.split(".")[-1]
+        return fqn
+    except Exception as e:
+        print(f"Failed to get klass name {klass}")
         raise e

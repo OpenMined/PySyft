@@ -9,6 +9,8 @@ from typing import Any
 from typing import Collection
 from typing import List
 from typing import Mapping
+from typing import Optional
+from typing import TypeVar
 from typing import Union
 from typing import _GenericAlias
 from typing import _SpecialForm
@@ -147,8 +149,6 @@ def serialize_type(serialized_type: type) -> bytes:
 
     fqn = full_name_with_qualname(klass=serialized_type)
     module_parts = fqn.split(".")
-    _ = module_parts.pop()  # remove incorrect .type ending
-    module_parts.append(serialized_type.__name__)
     return ".".join(module_parts).encode()
 
 
@@ -258,21 +258,19 @@ recursive_serde_register(
 
 def serialize_generic_alias(serialized_type: _GenericAlias) -> bytes:
     # relative
-    from ....lib.util import full_name_with_qualname
+    from ....lib.util import full_name_with_name
     from .serialize import _serialize
 
-    fqn = full_name_with_qualname(klass=serialized_type)
+    fqn = full_name_with_name(klass=serialized_type)
     module_parts = fqn.split(".")
-    _ = module_parts.pop()  # remove incorrect .type ending
-    module_parts.append(serialized_type.__name__)
 
     obj_dict = {
         "path": ".".join(module_parts),
         "__origin__": serialized_type.__origin__,
         "__args__": serialized_type.__args__,
-        "_paramspec_tvars": serialized_type._paramspec_tvars,
     }
-    print("creating obj_dict", obj_dict)
+    if hasattr(serialized_type, "_paramspec_tvars"):
+        obj_dict["_paramspec_tvars"] = serialized_type._paramspec_tvars
     return _serialize(obj_dict, to_bytes=True)
 
 
@@ -286,26 +284,39 @@ def deserialize_generic_alias(type_blob: bytes) -> type:
     klass = module_parts.pop()
     type_constructor = getattr(sys.modules[".".join(module_parts)], klass)
     # does this apply to all _SpecialForm?
-    if type_constructor == Union:
-        # stay consistent python 😭
-        type_constructor = _GenericAlias
-        obj_dict["origin"] = obj_dict.pop("__origin__")
-        obj_dict["params"] = obj_dict.pop("__args__")
 
-    return type_constructor(**obj_dict)
+    # Note: Some typing constructors are callable while
+    # some use custom __getitem__ implementations
+    # to initialize the type 😭
+
+    try:
+        return type_constructor(**obj_dict)
+    except TypeError:
+        _args = obj_dict["__args__"]
+        return type_constructor[_args]
+    except Exception as e:
+        raise e
 
 
 # 🟡 TODO 5: add tests and all typing options for signatures
-def recursive_serde_register_type(t: type) -> None:
-    if isinstance(t, type) and issubclass(t, _GenericAlias):
+def recursive_serde_register_type(
+    t: type, attr_allowlist: Optional[List] = None
+) -> None:
+    if (isinstance(t, type) and issubclass(t, _GenericAlias)) or issubclass(
+        type(t), _GenericAlias
+    ):
         recursive_serde_register(
             t,
             serialize=serialize_generic_alias,
             deserialize=deserialize_generic_alias,
+            attr_allowlist=attr_allowlist,
         )
     else:
         recursive_serde_register(
-            t, serialize=serialize_type, deserialize=deserialize_type
+            t,
+            serialize=serialize_type,
+            deserialize=deserialize_type,
+            attr_allowlist=attr_allowlist,
         )
 
 
@@ -314,3 +325,4 @@ if _UnionGenericAlias is not None:
     recursive_serde_register_type(_UnionGenericAlias)
 recursive_serde_register_type(_GenericAlias)
 recursive_serde_register_type(Union)
+recursive_serde_register_type(TypeVar)
