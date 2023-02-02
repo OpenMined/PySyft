@@ -25,6 +25,7 @@ from ..common.uid import UID
 from .new.action_service import ActionService
 from .new.action_store import ActionStore
 from .new.api import SignedSyftAPICall
+from .new.api import SyftAPI
 from .new.api import SyftAPICall
 from .new.context import AuthedServiceContext
 from .new.credentials import SyftSigningKey
@@ -33,6 +34,7 @@ from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
 from .new.service import AbstractService
 from .new.service import ServiceConfigRegistry
+from .new.test_service import TestService
 from .new.user_service import UserService
 
 NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
@@ -83,7 +85,9 @@ class Worker(NewNode):
         print("============> Starting Worker with:", self.id, self.signing_key)
 
         self.name = name
-        services = [UserService, ActionService] if services is None else services
+        services = (
+            [UserService, ActionService, TestService] if services is None else services
+        )
         self.services = services
         self.service_config = ServiceConfigRegistry.get_registered_configs()
         self._construct_services()
@@ -170,3 +174,6 @@ class Worker(NewNode):
         method = self.get_service_method(_private_api_path)
         result = method(context, *api_call.args, **api_call.kwargs)
         return result
+
+    def get_api(self) -> SyftAPI:
+        return SyftAPI.for_user(node_uid=self.id)
