@@ -156,6 +156,7 @@ def deserialize_type(type_blob: bytes) -> type:
     deserialized_type = type_blob.decode()
     module_parts = deserialized_type.split(".")
     klass = module_parts.pop()
+    klass = "None" if klass == "NoneType" else klass
     exception_type = getattr(sys.modules[".".join(module_parts)], klass)
     return exception_type
 
@@ -293,6 +294,9 @@ def deserialize_generic_alias(type_blob: bytes) -> type:
         return type_constructor(**obj_dict)
     except TypeError:
         _args = obj_dict["__args__"]
+        # Again not very consistent 😭
+        if type_constructor == Optional:
+            _args = _args[0]
         return type_constructor[_args]
     except Exception as e:
         raise e
