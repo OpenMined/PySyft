@@ -9,6 +9,7 @@ from typing import Union
 from .....core.pointer.pointer import Pointer
 from .....oblv.deployment_client import DeploymentClient
 from .....oblv.oblv_enclave_pointer import OblvEnclavePointer
+from .....telemetry import instrument
 from ....common.message import SyftMessage  # type: ignore
 from ...abstract.node import AbstractNodeClient
 from ...enums import RequestAPIFields
@@ -23,6 +24,7 @@ from ..node_service.oblv.oblv_messages import TransferDatasetMessage
 from .request_api import RequestAPI
 
 
+@instrument
 class OblvAPI(RequestAPI):
     def __init__(self, client: AbstractNodeClient):
         super().__init__(

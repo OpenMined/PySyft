@@ -241,7 +241,7 @@ class SyftAPI(SyftObject):
         signed_call = api_call.sign(credentials=self.signing_key)
         msg_bytes: bytes = _serialize(obj=signed_call, to_bytes=True)
         response = requests.post(
-            url=self.api_url,
+            url=str(self.api_url),
             data=msg_bytes,
         )
 
