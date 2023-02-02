@@ -44,11 +44,19 @@ def generic_update_ast(
 
 def full_name_with_qualname(klass: type) -> str:
     """Returns the klass module name + klass qualname."""
-    if not hasattr(klass, "__module__"):
-        return f"builtins.{klass.__qualname__}"
-    return f"{klass.__module__}.{klass.__qualname__}"
+    try:
+        if not hasattr(klass, "__module__"):
+            return f"builtins.{klass.__qualname__}"
+        return f"{klass.__module__}.{klass.__qualname__}"
+    except Exception as e:
+        print("Failed to get FQN for:", klass, type(klass))
+        raise e
 
 
 def full_name_with_name(klass: type) -> str:
     """Returns the klass module name + klass name."""
-    return f"{klass.__module__}.{klass.__name__}"
+    try:
+        return f"{klass.__module__}.{klass.__name__}"
+    except Exception as e:
+        print("Failed to get FQN for:", klass, type(klass))
+        raise e
