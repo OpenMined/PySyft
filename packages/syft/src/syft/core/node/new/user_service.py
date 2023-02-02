@@ -10,13 +10,13 @@ from ...common.uid import UID
 from .context import AuthedServiceContext
 from .context import UnauthedServiceContext
 from .credentials import UserLoginCredentials
-from .document_store import DocumentStore
 from .service import AbstractService
 from .service import service_method
 from .user import User
 from .user import UserPrivateKey
 from .user import UserUpdate
 from .user import check_pwd
+from .user_stash import UserStash
 
 # class UserQuery:
 #     email: str
@@ -26,8 +26,8 @@ from .user import check_pwd
 
 @serializable(recursive_serde=True)
 class UserService(AbstractService):
-    def __init__(self, store: DocumentStore) -> None:
-        self.store = store
+    def __init__(self, stash: UserStash) -> None:
+        self.stash = stash
         self.collection_keys = {}
 
     @service_method(path="user.create", name="create")
@@ -39,7 +39,7 @@ class UserService(AbstractService):
             user_update.id = UID()
         user = user_update.to(User)
 
-        result = self.set(context=context, uid=user.id, syft_object=user)
+        result = self.set(context=context, syft_object=user)
         if result.is_ok():
             return Ok(user.to(UserUpdate))
         else:
@@ -54,9 +54,9 @@ class UserService(AbstractService):
             return Err(f"Failed to get User for UID: {uid}")
 
     def set(
-        self, context: AuthedServiceContext, uid: UID, syft_object: SyftObject
+        self, context: AuthedServiceContext, syft_object: SyftObject
     ) -> Result[bool, str]:
-        self.data[uid] = syft_object.to_mongo()
+        self.stash.set(syft_object)
         return Ok(True)
 
     def exchange_credentials(
@@ -80,11 +80,7 @@ class UserService(AbstractService):
         )
 
     def get(self, context: AuthedServiceContext, uid: UID) -> Result[SyftObject, str]:
-        print("self.data", self.data.keys())
-        if uid not in self.data:
-            return Err(f"UID: {uid} not in {type(self)} store.")
-        syft_object = SyftObject.from_mongo(self.data[uid])
-        return Ok(syft_object)
+        return self.stash.get_by_uid(uid)
 
     def signup(
         self, context: UnauthedServiceContext, user_update: UserUpdate

@@ -34,6 +34,7 @@ from .new.node_metadata import NodeMetadata
 from .new.service import AbstractService
 from .new.service import ServiceConfigRegistry
 from .new.user_service import UserService
+from .new.user_stash import UserStash
 
 NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
 NODE_UID = "NODE_UID"
@@ -96,13 +97,15 @@ class Worker(NewNode):
     def _construct_services(self):
         self.service_path_map = {}
         self.document_store = DictDocumentStore()
+        self.user_stash = UserStash(store=self.document_store)
+
         for service_klass in self.services:
             kwargs = {}
             if service_klass == ActionService:
                 action_store = ActionStore(root_verify_key=self.signing_key.verify_key)
                 kwargs["store"] = action_store
             if service_klass == UserService:
-                kwargs["store"] = self.document_store
+                kwargs["stash"] = self.user_stash
             self.service_path_map[service_klass.__name__] = service_klass(**kwargs)
 
     def get_service_method(self, path_or_func: Union[str, Callable]) -> Callable:

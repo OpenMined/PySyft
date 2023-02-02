@@ -5,6 +5,7 @@ from typing import Any
 import numpy as np
 
 # syft absolute
+import syft as sy
 from syft.core.common.uid import UID
 from syft.core.node.new.action_object import ActionObject
 from syft.core.node.new.action_store import ActionStore
@@ -12,12 +13,13 @@ from syft.core.node.new.context import AuthedServiceContext
 from syft.core.node.new.credentials import SIGNING_KEY_FOR
 from syft.core.node.new.credentials import SyftSigningKey
 from syft.core.node.new.credentials import SyftVerifyKey
+from syft.core.node.new.document_store import DictDocumentStore
 from syft.core.node.new.user import User
+from syft.core.node.new.user import UserCreate
 from syft.core.node.new.user import UserUpdate
 from syft.core.node.new.user_service import UserService
+from syft.core.node.new.user_stash import UserStash
 from syft.core.node.worker import Worker
-
-# from syft.core.node.worker import Worker
 
 test_signing_key_string = (
     "b7803e90a6f3f4330afbd943cef3451c716b338b17a9cf40a0a309bc38bc366d"
@@ -89,7 +91,7 @@ def test_action_store() -> None:
 
 
 def test_user_transform() -> None:
-    new_user = UserUpdate(
+    new_user = UserCreate(
         email="alice@bob.com",
         name="Alice",
         password="letmein",
@@ -117,14 +119,16 @@ def test_user_transform() -> None:
     assert edit_user.name == "Alice"
     assert edit_user.password is None
     assert edit_user.password_verify is None
+
     assert not hasattr(edit_user, "signing_key")
-    assert not hasattr(edit_user, "verify_key")
 
 
 def test_user_service() -> None:
     test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
     worker = Worker()
-    user_collection = UserService()
+    document_store = DictDocumentStore()
+    user_stash = UserStash(store=document_store)
+    user_service = UserService(stash=user_stash)
 
     # create a user
     new_user = UserUpdate(
@@ -138,7 +142,7 @@ def test_user_service() -> None:
     context = AuthedServiceContext(node=worker, credentials=test_signing_key.verify_key)
 
     # call the create function
-    user_view_result = user_collection.create(context=context, user_update=new_user)
+    user_view_result = user_service.create(context=context, user_update=new_user)
 
     # get the result
     assert user_view_result.is_ok()
@@ -148,7 +152,7 @@ def test_user_service() -> None:
     assert user_view.id is not None
 
     # we can query the same user again
-    user_view_2_result = user_collection.view(context=context, uid=user_view.id)
+    user_view_2_result = user_service.view(context=context, uid=user_view.id)
 
     # the object matches
     assert user_view_2_result.is_ok()
@@ -209,3 +213,12 @@ def test_action_object_hooks() -> None:
     y = sum((raw_data * 2) + raw_data)
     assert y == 18
     assert x == y
+
+
+def test_worker_serde() -> None:
+    worker = Worker()
+    ser = sy.serialize(worker, to_bytes=True)
+    de = sy.deserialize(ser, from_bytes=True)
+
+    assert de.signing_key == worker.signing_key
+    assert de.id == worker.id
