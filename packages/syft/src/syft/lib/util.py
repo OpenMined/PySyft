@@ -48,9 +48,10 @@ def full_name_with_qualname(klass: type) -> str:
         if not hasattr(klass, "__module__"):
             return f"builtins.{klass.__qualname__}"
         return f"{klass.__module__}.{klass.__qualname__}"
-    except Exception as e:
+    except Exception:
+        # try name as backup
         print("Failed to get FQN for:", klass, type(klass))
-        raise e
+    return full_name_with_name(klass=klass)
 
 
 def full_name_with_name(klass: type) -> str:
