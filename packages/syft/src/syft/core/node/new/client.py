@@ -26,6 +26,7 @@ from ....util import verify_tls
 from ...common.uid import UID
 from ...node.new.credentials import UserLoginCredentials
 from ...node.new.node_metadata import NodeMetadataJSON
+from ...node.new.user import UserPrivateKey
 from .api import APIRegistry
 from .api import SyftAPI
 from .credentials import SyftSigningKey
@@ -190,15 +191,20 @@ class SyftClient:
 
         return self._api
 
-    def login(self, email: str, password: str) -> None:
+    def login(self, email: str, password: str, cache: bool = True) -> None:
         credentials = {"email": email, "password": password}
         response = self._make_post(self.routes.ROUTE_LOGIN.value, credentials)
         obj = _deserialize(response, from_bytes=True)
+        if not isinstance(obj, UserPrivateKey):
+            print(obj)
+            self.credentials = None
+            return
         self.credentials = obj.signing_key
         self._set_api()
-        SyftClientSessionCache.add_client(
-            email=email, password=password, url=self.url, syft_client=self
-        )
+        if cache:
+            SyftClientSessionCache.add_client(
+                email=email, password=password, url=self.url, syft_client=self
+            )
 
 
 @instrument
@@ -207,25 +213,34 @@ def connect(
     port: Optional[int] = None,
     email: Optional[str] = None,
     password: Optional[str] = None,
+    cache: bool = True,
 ) -> SyftClient:
     if isinstance(port, (int, str)):
         url = GridURL.from_url(url).set_port(int(port))
 
     login_credentials = UserLoginCredentials(email=email, password=password)
 
-    _client = SyftClientSessionCache.get_client(
-        login_credentials.email,
-        login_credentials.password,
-        url=str(GridURL.from_url(url)),
-    )
+    _client = None
+    if cache:
+        _client = SyftClientSessionCache.get_client(
+            login_credentials.email,
+            login_credentials.password,
+            url=str(GridURL.from_url(url)),
+        )
+        if _client:
+            print(
+                f"Using cached client for {_client.name} as <{login_credentials.email}>"
+            )
 
     if _client is None:
         _client = SyftClient.from_url(url)
         _client.login(
-            email=login_credentials.email, password=login_credentials.password
+            email=login_credentials.email,
+            password=login_credentials.password,
+            cache=cache,
         )
-
-    print(f"Logged into {_client.name} as <{login_credentials.email}>")
+        if _client.credentials:
+            print(f"Logged into {_client.name} as <{login_credentials.email}>")
 
     return _client
 

@@ -1,5 +1,9 @@
 # stdlib
+from typing import Any
+from typing import Dict
+from typing import List
 from typing import Optional
+from typing import Union
 
 # third party
 from result import Err
@@ -26,6 +30,11 @@ from .user_stash import UserStash
 
 
 @serializable(recursive_serde=True)
+class SyftError:
+    message: str
+
+
+@serializable(recursive_serde=True)
 class UserService(AbstractService):
     store: DocumentStore
     stash: UserStash
@@ -37,10 +46,14 @@ class UserService(AbstractService):
     @service_method(path="user.create", name="create")
     def create(
         self, context: AuthedServiceContext, user_create: UserCreate
-    ) -> Result[UserView, str]:
+    ) -> Union[UserView, SyftError]:
         """Create a new user"""
         user = user_create.to(User)
-        return self.stash.set(user=user).map(lambda x: x.to(UserView))
+        result = self.stash.set(user=user)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        user = result.ok()
+        return user.to(UserView)
 
     @service_method(path="user.view", name="view")
     def view(
@@ -49,6 +62,16 @@ class UserService(AbstractService):
         """Get user for given uid"""
         result = self.stash.get_by_uid(uid=uid)
         return result.ok().map(lambda x: x if x is None else x.to(UserView))
+
+    @service_method(path="user.find_all", name="find_all")
+    def find_all(
+        self, context: AuthedServiceContext, **kwargs: Dict[str, Any]
+    ) -> Union[List[UserView], SyftError]:
+        result = self.stash.find_all(**kwargs)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        users = result.ok()
+        return [user.to(UserView) for user in users]
 
     def exchange_credentials(
         self, context: UnauthedServiceContext
@@ -61,7 +84,6 @@ class UserService(AbstractService):
         # 🟡 TOD2230Store real root user and fetch from collection
 
         result = self.stash.get_by_email(email=context.login_credentials.email)
-
         if result.is_ok():
             user = result.ok()
             if user is not None and check_pwd(

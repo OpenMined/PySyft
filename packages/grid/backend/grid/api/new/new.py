@@ -71,15 +71,17 @@ def login(
     method = worker.get_service_method(UserService.exchange_credentials)
     context = UnauthedServiceContext(node=worker, login_credentials=login_credentials)
     result = method(context=context)
+
     if result.is_err():
         logger.bind(payload={"email": email}).error(result.err())
-        return {"Error": result.err()}
-
-    user_private_key = result.ok()
-    if not isinstance(user_private_key, UserPrivateKey):
-        raise Exception(f"Incorrect return type: {type(user_private_key)}")
+        response = {"Error": result.err()}
+    else:
+        user_private_key = result.ok()
+        if not isinstance(user_private_key, UserPrivateKey):
+            raise Exception(f"Incorrect return type: {type(user_private_key)}")
+        response = user_private_key
 
     return Response(
-        serialize(user_private_key, to_bytes=True),
+        serialize(response, to_bytes=True),
         media_type="application/octet-stream",
     )

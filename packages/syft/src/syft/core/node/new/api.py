@@ -139,51 +139,54 @@ class SyftAPICall(SyftObject):
 def generate_remote_function(signature: Signature, path: str, make_call: Callable):
     def wrapper(*args, **kwargs):
         _valid_kwargs = {}
+        if "kwargs" in signature.parameters:
+            _valid_kwargs = kwargs
+        else:
+            for key, value in kwargs.items():
+                if key not in signature.parameters:
+                    raise Exception("Wrong key", key, "for sig", signature)
+                param = signature.parameters[key]
+                if isinstance(param.annotation, str):
+                    # 🟡 TODO 21: make this work for weird string type situations
+                    # happens when from __future__ import annotations in a class file
+                    t = index_syft_by_module_name(param.annotation)
+                else:
+                    t = param.annotation
+                msg = None
+                try:
+                    if t is not inspect.Parameter.empty:
+                        check_type(key, value, t)  # raises Exception
+                except TypeError:
+                    _type_str = getattr(t, "__name__", str(t))
+                    msg = f"{key} must be {_type_str} not {type(value).__name__}"
 
-        for key, value in kwargs.items():
-            if key not in signature.parameters:
-                raise Exception("Wrong key", key, "for sig", signature)
-            param = signature.parameters[key]
-            if isinstance(param.annotation, str):
-                # 🟡 TODO 21: make this work for weird string type situations
-                # happens when from __future__ import annotations in a class file
-                t = index_syft_by_module_name(param.annotation)
-            else:
-                t = param.annotation
-            msg = None
-            try:
-                if t is not inspect.Parameter.empty:
-                    check_type(key, value, t)  # raises Exception
-            except TypeError:
-                _type_str = getattr(t, "__name__", str(t))
-                msg = f"{key} must be {_type_str} not {type(value).__name__}"
+                if msg:
+                    raise Exception(msg)
 
-            if msg:
-                raise Exception(msg)
-
-            _valid_kwargs[key] = value
+                _valid_kwargs[key] = value
 
         # signature.parameters is an OrderedDict, therefore,
         # its fair to assume that order of args
         # and the signature.parameters should always match
         _valid_args = []
-        for (param_key, param), arg in zip(signature.parameters.items(), args):
-            if param_key in _valid_kwargs:
-                continue
-            t = param.annotation
-            msg = None
-            try:
-                if t is not inspect.Parameter.empty:
-                    check_type(param_key, arg, t)  # raises Exception
-            except TypeError:
-                _type_str = getattr(t, "__name__", str(t))
-                msg = (
-                    f"Arg: `{arg}` must be `{_type_str}` and not `{type(arg).__name__}`"
-                )
-            if msg:
-                raise Exception(msg)
+        if "args" in signature.parameters:
+            _valid_args = args
+        else:
+            for (param_key, param), arg in zip(signature.parameters.items(), args):
+                if param_key in _valid_kwargs:
+                    continue
+                t = param.annotation
+                msg = None
+                try:
+                    if t is not inspect.Parameter.empty:
+                        check_type(param_key, arg, t)  # raises Exception
+                except TypeError:
+                    _type_str = getattr(t, "__name__", str(t))
+                    msg = f"Arg: `{arg}` must be `{_type_str}` and not `{type(arg).__name__}`"
+                if msg:
+                    raise Exception(msg)
 
-            _valid_args.append(arg)
+                _valid_args.append(arg)
 
         api_call = SyftAPICall(path=path, args=_valid_args, kwargs=_valid_kwargs)
         result = make_call(api_call=api_call)
@@ -195,7 +198,14 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
 
 @serializable(recursive_serde=True)
 class APIModule:
-    pass
+    _modules: List[APIModule]
+
+    def __init__(self) -> None:
+        self._modules = []
+
+    def add_submodule(self, attr_name, module_or_func):
+        setattr(self, attr_name, module_or_func)
+        self._modules.append(attr_name)
 
 
 @serializable(recursive_serde=True)
@@ -271,9 +281,9 @@ class SyftAPI(SyftObject):
         while _modules:
             module = _modules.pop(0)
             if not hasattr(_self, module):
-                setattr(_self, module, APIModule())
+                _self.add_submodule(module, APIModule())
             _self = getattr(_self, module)
-        setattr(_self, _last_module, endpoint_method)
+        _self.add_submodule(_last_module, endpoint_method)
 
     def generate_endpoints(self) -> None:
         api_module = APIModule()
@@ -294,6 +304,20 @@ class SyftAPI(SyftObject):
         if self.api_module is None:
             self.generate_endpoints()
         return self.api_module
+
+    def __repr__(self) -> str:
+        modules = self.services
+        _repr_str = "client.api.services\n"
+        for attr_name in modules._modules:
+            module_or_func = getattr(modules, attr_name)
+            module_path_str = f"client.api.services.{attr_name}"
+            _repr_str += f"\n{module_path_str}\n\n"
+            if hasattr(module_or_func, "_modules"):
+                for func_name in module_or_func._modules:
+                    func = getattr(module_or_func, func_name)
+                    sig = func.__ipython_inspector_signature_override__
+                    _repr_str += f"{module_path_str}.{func_name}{sig}\n\n"
+        return _repr_str
 
 
 # code from here:

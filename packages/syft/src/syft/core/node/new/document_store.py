@@ -571,7 +571,7 @@ class BaseStash:
     def find_all(
         self, **kwargs: Dict[str, Any]
     ) -> Result[List[BaseStash.object_type], str]:
-        return self.query_all_kwargs(*kwargs)
+        return self.query_all_kwargs(**kwargs)
 
     def find_one(
         self, **kwargs: Dict[str, Any]

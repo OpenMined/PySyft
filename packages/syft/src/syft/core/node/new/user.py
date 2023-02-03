@@ -168,6 +168,7 @@ class UserCreate(UserUpdate):
     website: Optional[str] = None
 
 
+@serializable(recursive_serde=True)
 class UserView(UserUpdate):
     __canonical_name__ = "UserView"
     __version__ = SYFT_OBJECT_VERSION_1
