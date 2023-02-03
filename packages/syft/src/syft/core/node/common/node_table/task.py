@@ -20,7 +20,7 @@ class NoSQLTask(SyftObject):
     code: str
     policy_code: str
     policy_name: str
-    state: Dict[str, str]
+    state: str#Dict[str, str]
     status: str
     created_at: str
     updated_at: str

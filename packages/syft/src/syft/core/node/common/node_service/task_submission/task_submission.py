@@ -243,7 +243,7 @@ class ReviewTask(SyftMessage, DomainMessageRegistry):
             #     "execution": {"status": "executing"},
             # },
             updated_args={
-                "state": init_state # TODO serialize
+                "state": str(init_state) # TODO serialize
             }
         )
         # execute_task(node, task.uid, task.code, task.inputs, task.outputs)
@@ -291,12 +291,14 @@ class RunTask(SyftMessage, DomainMessageRegistry):
         
         outputs = execute_task(node, task.uid, task.code, task.inputs, task.outputs)
     
-        # TODO deserialize state    
-        deserialized_state = ...
+        # TODO deserialize state   
+        print(task.state)
+        deserialized_state = eval(task.state)
+        print(deserialized_state)
         outputs, state = apply_policy(outputs, task.policy_code, task.policy_name, deserialized_state)
         
         # TODO update state
-        serialized_state = ...
+        serialized_state = str(state)
         node.tasks.update(
             search_params={"uid": task.uid},
             updated_args={
@@ -310,12 +312,15 @@ class RunTask(SyftMessage, DomainMessageRegistry):
         return [UserIsOwner]
 
 def get_policy(policy_code, policy_name):
+    print(policy_code)
     exec(policy_code)
-    policy_class = globals()[policy_name]
+    print(vars().keys())
+    policy_class = eval(policy_name)
     return policy_class() #TODO: add args
 
 def init_policy_state(policy_code, policy_name):
     policy_obj = get_policy(policy_code, policy_name)
+    policy_obj.start()
     return policy_obj.state
 
 def apply_policy(outputs, policy_code, policy_name, state):

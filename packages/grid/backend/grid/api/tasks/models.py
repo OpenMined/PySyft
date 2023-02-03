@@ -40,7 +40,7 @@ class Task(BaseModel):
     outputs: Dict[str, str] = {}
     policy_code: str
     policy_name: str
-    state: Dict[str, str]
+    state: str
 
 
 class GetTasks(BaseModel):
