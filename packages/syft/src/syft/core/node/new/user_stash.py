@@ -8,6 +8,7 @@ from result import Ok
 from result import Result
 
 # relative
+from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
@@ -25,6 +26,7 @@ SigningKeyCollectionKey = CollectionKey(key="signing_key", type_=SyftSigningKey)
 VerifyKeyCollectionKey = CollectionKey(key="verify_key", type_=SyftVerifyKey)
 
 
+@serializable(recursive_serde=True)
 class UserStash(BaseStash):
     object_type = User
     settings: CollectionSettings = CollectionSettings(
@@ -46,7 +48,7 @@ class UserStash(BaseStash):
 
     def get_by_uid(self, uid: UID) -> Result[Optional[User], str]:
         qks = QueryKeys(qks=[UIDCollectionKey.with_obj(uid)])
-        return self.query_one(qks=qks)
+        return Ok(self.query_one(qks=qks))
 
     def get_by_email(self, email: str) -> Result[Optional[User], str]:
         qks = QueryKeys(qks=[EmailCollectionKey.with_obj(email)])

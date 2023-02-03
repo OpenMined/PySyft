@@ -8,6 +8,7 @@ from result import Result
 
 # relative
 from ....core.node.common.node_table.syft_object import SyftObject
+from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .context import AuthedServiceContext
 from .context import UnauthedServiceContext
@@ -23,13 +24,10 @@ from .user import UserView
 from .user import check_pwd
 from .user_stash import UserStash
 
-# class UserQuery:
-#     email: str
-#     name: str
-#     verify_key: SyftVerifyKey
 
-
+@serializable(recursive_serde=True)
 class UserService(AbstractService):
+    store: DocumentStore
     stash: UserStash
 
     def __init__(self, store: DocumentStore) -> None:
@@ -41,22 +39,16 @@ class UserService(AbstractService):
         self, context: AuthedServiceContext, user_create: UserCreate
     ) -> Result[UserView, str]:
         """Create a new user"""
-
         user = user_create.to(User)
-
-        result = self.stash.set(user=user).map(lambda x: x.to(UserView))
-
-        return result
+        return self.stash.set(user=user).map(lambda x: x.to(UserView))
 
     @service_method(path="user.view", name="view")
     def view(
         self, context: AuthedServiceContext, uid: UID
     ) -> Result[Optional[UserView], str]:
         """Get user for given uid"""
-        result = self.stash.get_by_uid(uid=uid).map(
-            lambda x: x if x is None else x.to(UserView)
-        )
-        return result
+        result = self.stash.get_by_uid(uid=uid)
+        return result.ok().map(lambda x: x if x is None else x.to(UserView))
 
     def exchange_credentials(
         self, context: UnauthedServiceContext
@@ -66,7 +58,7 @@ class UserService(AbstractService):
         """
         # for _, user in self.data.items():
         # syft_object: User = SyftObject.from_mongo(user)
-        # 🟡 TOD 234: Store real root user and fetch from collectionO🟡
+        # 🟡 TOD2230Store real root user and fetch from collection
 
         result = self.stash.get_by_email(email=context.login_credentials.email)
 

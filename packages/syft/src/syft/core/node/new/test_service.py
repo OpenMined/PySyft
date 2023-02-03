@@ -4,11 +4,13 @@ from result import Ok
 from result import Result
 
 # relative
+from ...common.serde.serializable import serializable
 from .context import AuthedServiceContext
 from .service import AbstractService
 from .service import service_method
 
 
+@serializable(recursive_serde=True)
 class TestService(AbstractService):
     def __init__(self) -> None:
         pass
