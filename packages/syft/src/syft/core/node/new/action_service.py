@@ -12,6 +12,7 @@ from result import Result
 from typing_extensions import Self
 
 # relative
+from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import transform
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
@@ -27,7 +28,7 @@ from .service import service_method
 @serializable(recursive_serde=True)
 class NumpyArrayObjectPointer(ActionObjectPointer):
     __canonical_name__ = "NumpyArrayObjectPointer"
-    __version__ = 1
+    __version__ = SYFT_OBJECT_VERSION_1
 
     # 🟡 TODO 17: add state / allowlist inheritance to SyftObject and ignore methods by default
     __attr_state__ = [
@@ -76,7 +77,7 @@ def numpy_like_eq(left: Any, right: Any) -> bool:
 @serializable(recursive_serde=True)
 class NumpyArrayObject(ActionObject):
     __canonical_name__ = "NumpyArrayObject"
-    __version__ = 1
+    __version__ = SYFT_OBJECT_VERSION_1
 
     syft_pointer_type = NumpyArrayObjectPointer
 
@@ -110,8 +111,9 @@ def np_array_to_pointer() -> List[Callable]:
     ]
 
 
+@serializable(recursive_serde=True)
 class ActionService(AbstractService):
-    def __init__(self, store: ActionStore = ActionStore()) -> None:
+    def __init__(self, store: ActionStore) -> None:
         self.store = store
 
     @service_method(path="action.set", name="set")

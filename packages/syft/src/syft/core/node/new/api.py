@@ -23,6 +23,7 @@ from typeguard import check_type
 
 # relative
 from ....core.common.serde.recursive import index_syft_by_module_name
+from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import SyftObject
 from ...common.serde.deserialize import _deserialize
 from ...common.serde.serializable import serializable
@@ -38,7 +39,9 @@ class APIRegistry:
     __api_registry__: Dict[str, SyftAPI] = {}
 
     @classmethod
-    def set_api_for(cls, node_uid: UID, api: SyftAPI) -> None:
+    def set_api_for(cls, node_uid: Union[UID, str], api: SyftAPI) -> None:
+        if isinstance(node_uid, str):
+            node_uid = UID.from_string(node_uid)
         cls.__api_registry__[node_uid] = api
 
     @classmethod
@@ -75,7 +78,7 @@ def signature_remove_context(signature: Signature) -> Signature:
 @serializable(recursive_serde=True)
 class SignedSyftAPICall(SyftObject):
     __canonical_name__ = "SyftAPICall"
-    __version__ = 1
+    __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_allowlist__ = ["signature", "credentials", "serialized_message"]
     credentials: SyftVerifyKey
@@ -112,7 +115,7 @@ class SignedSyftAPICall(SyftObject):
 class SyftAPICall(SyftObject):
     # version
     __canonical_name__ = "SyftAPICall"
-    __version__ = 1
+    __version__ = SYFT_OBJECT_VERSION_1
     __attr_allowlist__ = ["path", "args", "kwargs"]
 
     # fields
@@ -149,7 +152,7 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
                 t = param.annotation
             msg = None
             try:
-                if not issubclass(t, inspect._empty):
+                if t is not inspect.Parameter.empty:
                     check_type(key, value, t)  # raises Exception
             except TypeError:
                 _type_str = getattr(t, "__name__", str(t))
@@ -170,7 +173,7 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
             t = param.annotation
             msg = None
             try:
-                if not issubclass(t, inspect._empty):
+                if t is not inspect.Parameter.empty:
                     check_type(param_key, arg, t)  # raises Exception
             except TypeError:
                 _type_str = getattr(t, "__name__", str(t))
@@ -199,7 +202,7 @@ class APIModule:
 class SyftAPI(SyftObject):
     # version
     __canonical_name__ = "SyftAPI"
-    __version__ = 1
+    __version__ = SYFT_OBJECT_VERSION_1
     __attr_allowlist__ = ["endpoints"]
 
     # fields
@@ -234,11 +237,11 @@ class SyftAPI(SyftObject):
             endpoints[path] = endpoint
         return SyftAPI(node_uid=node_uid, endpoints=endpoints)
 
-    def make_call(self, api_call: SyftAPICall) -> None:
+    def make_call(self, api_call: SyftAPICall) -> Result:
         signed_call = api_call.sign(credentials=self.signing_key)
         msg_bytes: bytes = _serialize(obj=signed_call, to_bytes=True)
         response = requests.post(
-            url=self.api_url,
+            url=str(self.api_url),
             data=msg_bytes,
         )
 

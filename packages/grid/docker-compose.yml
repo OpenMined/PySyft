@@ -130,6 +130,7 @@ services:
       - JAEGER_PORT=${JAEGER_PORT}
       - ASSOCIATION_TIMEOUT=${ASSOCIATION_TIMEOUT}
       - DEV_MODE=${DEV_MODE}
+      - DOMAIN_CONNECTION_PORT=${DOMAIN_CONNECTION_PORT}
     command: /start.sh
     network_mode: service:proxy
     volumes:
@@ -161,6 +162,7 @@ services:
       - JAEGER_HOST=${JAEGER_HOST}
       - JAEGER_PORT=${JAEGER_PORT}
       - DEV_MODE=${DEV_MODE}
+      - DOMAIN_CONNECTION_PORT=${DOMAIN_CONNECTION_PORT}
     command: "/start.sh"
     network_mode: service:proxy
     volumes:
@@ -194,6 +196,7 @@ services:
       - JAEGER_HOST=${JAEGER_HOST}
       - JAEGER_PORT=${JAEGER_PORT}
       - DEV_MODE=${DEV_MODE}
+      - DOMAIN_CONNECTION_PORT=${DOMAIN_CONNECTION_PORT}
     command: "/worker-start.sh"
     network_mode: service:proxy
     volumes:
