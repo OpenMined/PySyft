@@ -77,6 +77,7 @@ class ActionStorePermissionUpdate:
         pass
 
 
+@serializable(recursive_serde=True)
 class ActionStore:
     def __init__(self, root_verify_key=SyftVerifyKey) -> None:
         self.data = {}

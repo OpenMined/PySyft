@@ -22,6 +22,7 @@ from result import Result
 
 # relative
 from ....core.node.common.node_table.syft_object import SyftObject
+from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .base import SyftBaseModel
 
@@ -32,6 +33,7 @@ def first_or_none(result: Any) -> Optional[Any]:
     return Ok(None)
 
 
+@serializable(recursive_serde=True)
 class CollectionKey(BaseModel):
     key: str
     type_: type
@@ -45,6 +47,7 @@ class CollectionKey(BaseModel):
         return QueryKey.from_obj(collection_key=self, obj=obj)
 
 
+@serializable(recursive_serde=True)
 class CollectionKeys(BaseModel):
     cks: Union[CollectionKey, Tuple[CollectionKey, ...]]
 
@@ -77,6 +80,7 @@ class CollectionKeys(BaseModel):
             return self.with_tuple(*obj_arg)
 
 
+@serializable(recursive_serde=True)
 class QueryKey(CollectionKey):
     value: Any
 
@@ -110,6 +114,7 @@ class QueryKey(CollectionKey):
         return QueryKey(key=ck_key, type_=ck_type, value=ck_value)
 
 
+@serializable(recursive_serde=True)
 class CollectionKeysWithUID(CollectionKeys):
     uid_pk: CollectionKey
 
@@ -121,6 +126,7 @@ class CollectionKeysWithUID(CollectionKeys):
         return all_keys
 
 
+@serializable(recursive_serde=True)
 class QueryKeys(SyftBaseModel):
     qks: Union[QueryKey, Tuple[QueryKey, ...]]
 
@@ -170,6 +176,7 @@ class QueryKeys(SyftBaseModel):
 UIDCollectionKey = CollectionKey(key="id", type_=UID)
 
 
+@serializable(recursive_serde=True)
 class CollectionSettings(SyftBaseModel):
     name: str
     object_type: type
@@ -187,12 +194,14 @@ class CollectionSettings(SyftBaseModel):
         return CollectionKeys.from_dict(self.object_type._syft_searchable_keys_dict())
 
 
+@serializable(recursive_serde=True)
 class UniqueKeyCheck(Enum):
     EMPTY = 0
     MATCHES = 1
     ERROR = 2
 
 
+@serializable(recursive_serde=True)
 class BaseCollection:
     def __init__(self, settings: CollectionSettings) -> None:
         self.data = {}
@@ -438,6 +447,7 @@ class BaseCollection:
             return Err(f"Failed to delete with query key {qk} with error: {e}")
 
 
+@serializable(recursive_serde=True)
 class DocumentStore:
     collections: Dict[str, BaseCollection]
     collection_type: BaseCollection
@@ -570,6 +580,11 @@ class BaseStash:
 
     def find_and_delete(self, **kwargs: Dict[str, Any]) -> Result[bool, str]:
         obj = self.query_one_kwargs(**kwargs)
+        if obj.is_err():
+            return obj.err()
+        else:
+            obj = obj.ok()
+
         if not obj:
             return Err(f"Object does not exists with kwargs: {kwargs}")
         qk = self.collection.store_query_key(obj)
@@ -599,10 +614,12 @@ class BaseStash:
 
 
 # 🟡 TODO 26: the base collection is already a dict collection but we can change it later
+@serializable(recursive_serde=True)
 class DictCollection(BaseCollection):
     pass
 
 
 # the base document store is already a dict but we can change it later
+@serializable(recursive_serde=True)
 class DictDocumentStore(DocumentStore):
     collection_type = DictCollection
