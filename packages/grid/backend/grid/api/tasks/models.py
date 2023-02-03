@@ -11,6 +11,8 @@ class CreateTaskModel(BaseModel):
     code: str
     inputs: Dict[str, str] = {}
     outputs: List[str] = []
+    policy_code: str
+    policy_name: str
 
 
 class ReviewTaskModel(BaseModel):
@@ -36,6 +38,9 @@ class Task(BaseModel):
     reason: Optional[str]
     inputs: Dict[str, str] = {}
     outputs: Dict[str, str] = {}
+    policy_code: str
+    policy_name: str
+    state: Dict[str, str]
 
 
 class GetTasks(BaseModel):

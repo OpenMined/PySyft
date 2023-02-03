@@ -47,6 +47,8 @@ class CreateTask(SyftMessage, DomainMessageRegistry):
 
         inputs: Dict[str, str]
         code: str
+        policy_code: str
+        policy_name: str
         outputs: List[str]
 
     # Pydantic Inner class to define expected reply payload fields.
@@ -74,6 +76,9 @@ class CreateTask(SyftMessage, DomainMessageRegistry):
             outputs={var: " -- " for var in self.payload.outputs},
             owner={"name": user.name, "role": user.role["name"], "email": user.email},
             code=self.payload.code,
+            policy_code=self.payload.policy_code,
+            policy_name=self.payload.policy_name,
+            state={},
             status=TASK_SERVICE_STATUS.PENDING.value,
             created_at=date.today().strftime("%d/%m/%Y"),
             updated_at=" -- ",
@@ -138,6 +143,9 @@ class GetTask(SyftMessage, DomainMessageRegistry):
     # Pydantic Inner class to define expected reply payload fields.
     class Reply(ReplyPayload):
         code: str
+        policy_code: str
+        policy_name: str
+        state: str
         status: str
         owner: Dict[str, str]
         created_at: str
@@ -222,17 +230,22 @@ class ReviewTask(SyftMessage, DomainMessageRegistry):
             search_params={TASK_SERVICE_FIELDS.UID.value: self.payload.task_uid},
             updated_args=update_values,
         )
-        # task = node.tasks.find(search_params={"uid": self.payload.task_uid})
-        # if not task:
-        #     raise Exception(f"The given task_id:{self.payload.task_uid} does not exist")
-        # task = task[0]
+        
+        task = node.tasks.find(search_params={"uid": self.payload.task_uid})
+        if not task:
+            raise Exception(f"The given task_id:{self.payload.task_uid} does not exist")
+        task = task[0]
 
-        # node.tasks.update(
-        #     search_params={"uid": task.uid},
-        #     updated_args={
-        #         "execution": {"status": "executing"},
-        #     },
-        # )
+        init_state = init_policy_state(task.policy_code, task.policy_name)
+        node.tasks.update(
+            search_params={"uid": task.uid},
+            # updated_args={
+            #     "execution": {"status": "executing"},
+            # },
+            updated_args={
+                "state": init_state # TODO serialize
+            }
+        )
         # execute_task(node, task.uid, task.code, task.inputs, task.outputs)
 
         return ReviewTask.Reply()
@@ -277,13 +290,40 @@ class RunTask(SyftMessage, DomainMessageRegistry):
         #     raise Exception(f"Task {task.uid} not approved")
         
         outputs = execute_task(node, task.uid, task.code, task.inputs, task.outputs)
-        # TODO apply policy
+    
+        # TODO deserialize state    
+        deserialized_state = ...
+        outputs, state = apply_policy(outputs, task.policy_code, task.policy_name, deserialized_state)
+        
+        # TODO update state
+        serialized_state = ...
+        node.tasks.update(
+            search_params={"uid": task.uid},
+            updated_args={
+                "state": serialized_state,
+            },
+        )
         return RunTask.Reply(outputs=outputs)
 
     def get_permissions(self) -> List[Type[BasePermission]]:
         """Returns the list of permission classes."""
         return [UserIsOwner]
 
+def get_policy(policy_code, policy_name):
+    exec(policy_code)
+    policy_class = globals()[policy_name]
+    return policy_class() #TODO: add args
+
+def init_policy_state(policy_code, policy_name):
+    policy_obj = get_policy(policy_code, policy_name)
+    return policy_obj.state
+
+def apply_policy(outputs, policy_code, policy_name, state):
+    policy_obj = get_policy(policy_code, policy_name)
+    policy_obj.set_state(state)
+    new_outputs = policy_obj.apply_output(outputs) # TODO: add kwargs
+    new_state = policy_obj.state
+    return new_outputs, new_state
 
 stdout_ = sys.stdout
 stderr_ = sys.stderr

@@ -10,6 +10,7 @@ from typing import Optional
 from typing import Type
 from typing import Union
 
+
 # third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
@@ -25,6 +26,8 @@ from ...telemetry import instrument
 from ...util import bcolors
 from ...util import print_dynamic_log
 from ...util import validate_field
+from ...util import is_interpreter_jupyter
+from ...util import is_interpreter_standard
 from ..common.message import SyftMessage
 from ..common.serde.serialize import _serialize as serialize  # noqa: F401
 from ..common.uid import UID
@@ -66,6 +69,7 @@ from .common.util import check_send_to_blob_storage
 from .common.util import upload_to_s3_using_presigned
 from .enums import PyGridClientEnums
 from .enums import RequestAPIFields
+from IPython.core.magics.code import extract_symbols
 
 SAVE_DATASET_TIMEOUT = 300  # seconds
 
@@ -361,7 +365,7 @@ class DomainClient(Client):
         return self.send_immediate_msg_with_reply(msg=msg).kwargs
 
     def code_request(
-        self, code: Union[str, callable], inputs: Dict[str, Any], outputs: List[str]
+        self, code: Union[str, callable], inputs: Dict[str, Any], outputs: List[str], policy: type
     ) -> None:
         if not inspect.isfunction(code) and not isinstance(code, str):
             raise Exception("The code should either be a function or  string ...")
@@ -375,10 +379,51 @@ class DomainClient(Client):
             if not isinstance(value, str):
                 inputs[key] = value.id_at_location.to_string()
 
+        # TODO: add some better verifications
+        if not inspect.isclass(policy):
+            raise Exception("The policy must be a class")
+        
+        def new_getfile(object):
+            if not inspect.isclass(object):
+                return inspect.getfile(object)
+            
+            # Lookup by parent module (as in current inspect)
+            if hasattr(object, '__module__'):
+                object_ = sys.modules.get(object.__module__)
+                if hasattr(object_, '__file__'):
+                    return object_.__file__
+            
+            # If parent module is __main__, lookup by methods (NEW)
+            for _, member in inspect.getmembers(object):
+                if inspect.isfunction(member) and object.__qualname__ + '.' + member.__name__ == member.__qualname__:
+                    return inspect.getfile(member)
+            else:
+                raise TypeError('Source for {!r} not found'.format(object))
+
+        def get_code_from_class(policy):
+            klasses = inspect.getmro(policy)[-2::-1]
+            whole_str = ""
+            for klass in klasses:
+                if is_interpreter_jupyter():
+                    cell_code = "".join(inspect.linecache.getlines(new_getfile(klass)))
+                    class_code = extract_symbols(cell_code, klass.__name__)[0][0]
+                else:
+                    class_code = inspect.getsource(klass)
+                whole_str += class_code
+            return whole_str
+                
+        policy_code = get_code_from_class(policy)
+                
         msg = CreateTask(
             address=self.node_uid,
             reply_to=self.node_uid,
-            kwargs={"code": code_str, "inputs": inputs, "outputs": outputs},
+            kwargs={
+                "code": code_str, 
+                "inputs": inputs, 
+                "outputs": outputs, 
+                "policy_code": policy_code,
+                "policy_name": policy.__name__
+                },
         ).sign(  # type: ignore
             signing_key=self.signing_key
         )

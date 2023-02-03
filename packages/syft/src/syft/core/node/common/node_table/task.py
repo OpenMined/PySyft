@@ -18,6 +18,9 @@ class NoSQLTask(SyftObject):
     inputs: Dict[str, str]
     owner: Dict[str, str]
     code: str
+    policy_code: str
+    policy_name: str
+    state: Dict[str, str]
     status: str
     created_at: str
     updated_at: str
@@ -30,6 +33,9 @@ class NoSQLTask(SyftObject):
     __attr_state__ = [
         "uid",
         "code",
+        "policy_code",
+        "policy_name",
+        "state",
         "user",
         "status",
         "inputs",
