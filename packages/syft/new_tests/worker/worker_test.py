@@ -141,9 +141,7 @@ def test_user_service() -> None:
     user_view = user_service.create(context=context, user_create=new_user)
 
     # get the result
-    assert user_view.is_ok()
-
-    user_view = user_view.ok()
+    assert user_view is not None
 
     assert user_view.email == new_user.email
     assert user_view.name == new_user.name
@@ -152,11 +150,10 @@ def test_user_service() -> None:
     assert user_view.id is not None
 
     # we can query the same user again
-    user_view_2_result = user_service.view(context=context, uid=user_view.id)
+    user_view_2 = user_service.view(context=context, uid=user_view.id)
 
     # the object matches
-    assert user_view_2_result.is_ok()
-    user_view_2 = user_view_2_result.ok()
+    assert user_view_2 is not None
     assert user_view == user_view_2
 
 

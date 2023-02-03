@@ -191,7 +191,7 @@ class SyftClient:
 
         return self._api
 
-    def login(self, email: str, password: str, cache: bool = True) -> None:
+    def connect(self, email: str, password: str, cache: bool = True) -> None:
         credentials = {"email": email, "password": password}
         response = self._make_post(self.routes.ROUTE_LOGIN.value, credentials)
         obj = _deserialize(response, from_bytes=True)
@@ -208,7 +208,7 @@ class SyftClient:
 
 
 @instrument
-def connect(
+def login(
     url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
     port: Optional[int] = None,
     email: Optional[str] = None,
@@ -234,7 +234,7 @@ def connect(
 
     if _client is None:
         _client = SyftClient.from_url(url)
-        _client.login(
+        _client.connect(
             email=login_credentials.email,
             password=login_credentials.password,
             cache=cache,
