@@ -48,7 +48,7 @@ class UserStash(BaseStash):
 
     def get_by_uid(self, uid: UID) -> Result[Optional[User], str]:
         qks = QueryKeys(qks=[UIDCollectionKey.with_obj(uid)])
-        return Ok(self.query_one(qks=qks))
+        return self.query_one(qks=qks)
 
     def get_by_email(self, email: str) -> Result[Optional[User], str]:
         qks = QueryKeys(qks=[EmailCollectionKey.with_obj(email)])

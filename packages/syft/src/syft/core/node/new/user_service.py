@@ -1,5 +1,10 @@
 # stdlib
+from dataclasses import dataclass
+from typing import Any
+from typing import Dict
+from typing import List
 from typing import Optional
+from typing import Union
 
 # third party
 from result import Err
@@ -26,6 +31,12 @@ from .user_stash import UserStash
 
 
 @serializable(recursive_serde=True)
+@dataclass
+class SyftError:
+    message: str
+
+
+@serializable(recursive_serde=True)
 class UserService(AbstractService):
     store: DocumentStore
     stash: UserStash
@@ -37,18 +48,68 @@ class UserService(AbstractService):
     @service_method(path="user.create", name="create")
     def create(
         self, context: AuthedServiceContext, user_create: UserCreate
-    ) -> Result[UserView, str]:
+    ) -> Union[UserView, SyftError]:
         """Create a new user"""
         user = user_create.to(User)
-        return self.stash.set(user=user).map(lambda x: x.to(UserView))
+        result = self.stash.get_by_email(email=user.email)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        user_exists = result.ok() is not None
+        if user_exists:
+            return SyftError(message=f"User already exists with email: {user.email}")
+
+        result = self.stash.set(user=user)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        user = result.ok()
+        return user.to(UserView)
 
     @service_method(path="user.view", name="view")
     def view(
         self, context: AuthedServiceContext, uid: UID
-    ) -> Result[Optional[UserView], str]:
+    ) -> Union[Optional[UserView], SyftError]:
         """Get user for given uid"""
         result = self.stash.get_by_uid(uid=uid)
-        return result.ok().map(lambda x: x if x is None else x.to(UserView))
+        if result.is_ok():
+            user = result.ok()
+            if user is None:
+                return SyftError(message=f"No user exists for given: {uid}")
+            return user.to(UserView)
+
+        return SyftError(message=str(result.err()))
+
+    @service_method(path="user.find_all", name="find_all")
+    def find_all(
+        self, context: AuthedServiceContext, **kwargs: Dict[str, Any]
+    ) -> Union[List[UserView], SyftError]:
+        result = self.stash.find_all(**kwargs)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        users = result.ok()
+        return [user.to(UserView) for user in users] if users is not None else []
+
+    @service_method(path="user.update", name="update")
+    def update(
+        self, context: AuthedServiceContext, user_update: UserUpdate
+    ) -> Union[UserView, SyftError]:
+        user = user_update.to(User)
+        result = self.stash.update(user=user)
+
+        if result.err():
+            return SyftError(message=str(result.err()))
+
+        user = result.ok()
+        return user.to(UserView)
+
+    @service_method(path="user.delete", name="delete")
+    def delete(self, context: AuthedServiceContext, uid: UID) -> Union[bool, SyftError]:
+
+        result = self.stash.delete_by_uid(uid=uid)
+
+        if result.err():
+            return SyftError(message=str(result.err()))
+
+        return result.ok()
 
     def exchange_credentials(
         self, context: UnauthedServiceContext
@@ -61,7 +122,6 @@ class UserService(AbstractService):
         # 🟡 TOD2230Store real root user and fetch from collection
 
         result = self.stash.get_by_email(email=context.login_credentials.email)
-
         if result.is_ok():
             user = result.ok()
             if user is not None and check_pwd(
