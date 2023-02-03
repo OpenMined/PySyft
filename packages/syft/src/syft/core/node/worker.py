@@ -25,6 +25,7 @@ from ..common.uid import UID
 from .new.action_service import ActionService
 from .new.action_store import ActionStore
 from .new.api import SignedSyftAPICall
+from .new.api import SyftAPI
 from .new.api import SyftAPICall
 from .new.context import AuthedServiceContext
 from .new.credentials import SyftSigningKey
@@ -33,7 +34,11 @@ from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
 from .new.service import AbstractService
 from .new.service import ServiceConfigRegistry
+from .new.test_service import TestService
+from .new.user import User
+from .new.user import UserCreate
 from .new.user_service import UserService
+from .new.user_stash import UserStash
 
 NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
 NODE_UID = "NODE_UID"
@@ -83,7 +88,9 @@ class Worker(NewNode):
         print("============> Starting Worker with:", self.id, self.signing_key)
 
         self.name = name
-        services = [UserService, ActionService] if services is None else services
+        services = (
+            [UserService, ActionService, TestService] if services is None else services
+        )
         self.services = services
         self.service_config = ServiceConfigRegistry.get_registered_configs()
         self._construct_services()
@@ -96,6 +103,7 @@ class Worker(NewNode):
     def _construct_services(self):
         self.service_path_map = {}
         self.document_store = DictDocumentStore()
+
         for service_klass in self.services:
             kwargs = {}
             if service_klass == ActionService:
@@ -170,3 +178,28 @@ class Worker(NewNode):
         method = self.get_service_method(_private_api_path)
         result = method(context, *api_call.args, **api_call.kwargs)
         return result
+
+    def get_api(self) -> SyftAPI:
+        return SyftAPI.for_user(node_uid=self.id)
+
+
+def create_admin_new(
+    name: str,
+    email: str,
+    password: str,
+    worker: Worker,
+) -> Optional[User]:
+    try:
+        user_stash = UserStash(store=worker.document_store)
+        row_exists = user_stash.get_by_email(email=email).ok()
+        if row_exists:
+            return None
+        else:
+            create_user = UserCreate(
+                name=name, email=email, password=password, password_verify=password
+            )
+            # New User Initialization
+            user = user_stash.set(user=create_user.to(User))
+            return user.ok()
+    except Exception as e:
+        print("create_admin failed", e)
