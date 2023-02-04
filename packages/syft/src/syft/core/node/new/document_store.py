@@ -22,6 +22,7 @@ from result import Result
 
 # relative
 from ....core.node.common.node_table.syft_object import SyftObject
+from ....telemetry import instrument
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .base import SyftBaseModel
@@ -201,6 +202,7 @@ class UniqueKeyCheck(Enum):
     ERROR = 2
 
 
+@instrument
 @serializable(recursive_serde=True)
 class BaseCollection:
     def __init__(self, settings: CollectionSettings) -> None:
@@ -447,6 +449,7 @@ class BaseCollection:
             return Err(f"Failed to delete with query key {qk} with error: {e}")
 
 
+@instrument
 @serializable(recursive_serde=True)
 class DocumentStore:
     collections: Dict[str, BaseCollection]
@@ -461,6 +464,7 @@ class DocumentStore:
         return self.collections[settings.name]
 
 
+@instrument
 class BaseStash:
     object_type: Type[SyftObject]
     settings: CollectionSettings
@@ -571,7 +575,7 @@ class BaseStash:
     def find_all(
         self, **kwargs: Dict[str, Any]
     ) -> Result[List[BaseStash.object_type], str]:
-        return self.query_all_kwargs(*kwargs)
+        return self.query_all_kwargs(**kwargs)
 
     def find_one(
         self, **kwargs: Dict[str, Any]

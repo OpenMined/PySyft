@@ -51,6 +51,8 @@ class User(SyftObject):
     __canonical_name__ = "User"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    id: Optional[UID] = None
+
     @pydantic.validator("email", pre=True, always=True)
     def make_email(cls, v: EmailStr) -> EmailStr:
         return EmailStr(v)
@@ -168,6 +170,7 @@ class UserCreate(UserUpdate):
     website: Optional[str] = None
 
 
+@serializable(recursive_serde=True)
 class UserView(UserUpdate):
     __canonical_name__ = "UserView"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -196,7 +199,7 @@ def user_create_to_user() -> List[Callable]:
 
 @transform(User, UserView)
 def user_to_view_user() -> List[Callable]:
-    return [keep(["id", "email", "name", "role"])]
+    return [keep(["id", "email", "name", "role", "institution", "website"])]
 
 
 @serializable(recursive_serde=True)
