@@ -8,6 +8,7 @@ from result import Ok
 from result import Result
 
 # relative
+from ....telemetry import instrument
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .credentials import SyftSigningKey
@@ -26,6 +27,7 @@ SigningKeyCollectionKey = CollectionKey(key="signing_key", type_=SyftSigningKey)
 VerifyKeyCollectionKey = CollectionKey(key="verify_key", type_=SyftVerifyKey)
 
 
+@instrument
 @serializable(recursive_serde=True)
 class UserStash(BaseStash):
     object_type = User

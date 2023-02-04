@@ -20,6 +20,7 @@ from ... import __version__
 from ...core.node.common.node_table.syft_object import HIGHEST_SYFT_OBJECT_VERSION
 from ...core.node.common.node_table.syft_object import LOWEST_SYFT_OBJECT_VERSION
 from ...core.node.common.node_table.syft_object import SyftObject
+from ...telemetry import instrument
 from ..common.serde.serializable import serializable
 from ..common.uid import UID
 from .new.action_service import ActionService
@@ -60,6 +61,7 @@ signing_key_env = get_private_key_env()
 node_uid_env = get_node_uid_env()
 
 
+@instrument
 @serializable(recursive_serde=True)
 class Worker(NewNode):
     signing_key: Optional[SyftSigningKey]

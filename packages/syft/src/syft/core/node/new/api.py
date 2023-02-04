@@ -25,6 +25,7 @@ from typeguard import check_type
 from ....core.common.serde.recursive import index_syft_by_module_name
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import SyftObject
+from ....telemetry import instrument
 from ...common.serde.deserialize import _deserialize
 from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize
@@ -111,6 +112,7 @@ class SignedSyftAPICall(SyftObject):
         return Ok(True)
 
 
+@instrument
 @serializable(recursive_serde=True)
 class SyftAPICall(SyftObject):
     # version
@@ -208,6 +210,7 @@ class APIModule:
         self._modules.append(attr_name)
 
 
+@instrument
 @serializable(recursive_serde=True)
 class SyftAPI(SyftObject):
     # version

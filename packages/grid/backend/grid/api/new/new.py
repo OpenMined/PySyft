@@ -19,10 +19,17 @@ from syft.core.node.new.credentials import UserLoginCredentials
 from syft.core.node.new.node_metadata import NodeMetadataJSON
 from syft.core.node.new.user import UserPrivateKey
 from syft.core.node.new.user_service import UserService
+from syft.telemetry import TRACE_MODE
 
 # grid absolute
 from grid.core.node import node
 from grid.core.node import worker
+
+if TRACE_MODE:
+    # third party
+    from opentelemetry import trace
+    from opentelemetry.propagate import extract
+
 
 router = APIRouter()
 
@@ -37,18 +44,28 @@ def syft_metadata() -> JSONResponse:
     return worker.metadata().to(NodeMetadataJSON)
 
 
-# get the SyftAPI object
-@router.get("/api")
-def syft_new_api() -> Response:
+def handle_syft_new_api() -> Response:
     return Response(
         serialize(node.get_api(), to_bytes=True),
         media_type="application/octet-stream",
     )
 
 
-# make a request to the SyftAPI
-@router.post("/api_call")
-def syft_new_api_call(request: Request, data: bytes = Depends(get_body)) -> Response:
+# get the SyftAPI object
+@router.get("/api")
+def syft_new_api(request: Request) -> Response:
+    if TRACE_MODE:
+        with trace.get_tracer(syft_new_api.__module__).start_as_current_span(
+            syft_new_api.__qualname__,
+            context=extract(request.headers),
+            kind=trace.SpanKind.SERVER,
+        ):
+            return handle_syft_new_api()
+    else:
+        return handle_syft_new_api()
+
+
+def handle_new_api_call(data: bytes) -> Response:
     obj_msg = deserialize(blob=data, from_bytes=True)
     result = worker.handle_api_call(api_call=obj_msg)
     return Response(
@@ -57,12 +74,21 @@ def syft_new_api_call(request: Request, data: bytes = Depends(get_body)) -> Resp
     )
 
 
-# exchange email and password for a SyftSigningKey
-@router.post("/login", name="login", status_code=200)
-def login(
-    email: str = Body(..., example="info@openmined.org"),
-    password: str = Body(..., example="changethis"),
-) -> Any:
+# make a request to the SyftAPI
+@router.post("/api_call")
+def syft_new_api_call(request: Request, data: bytes = Depends(get_body)) -> Response:
+    if TRACE_MODE:
+        with trace.get_tracer(syft_new_api_call.__module__).start_as_current_span(
+            syft_new_api_call.__qualname__,
+            context=extract(request.headers),
+            kind=trace.SpanKind.SERVER,
+        ):
+            return handle_new_api_call(data)
+    else:
+        return handle_new_api_call(data)
+
+
+def handle_login(email: str, password: str) -> Any:
     try:
         login_credentials = UserLoginCredentials(email=email, password=password)
     except ValidationError as e:
@@ -85,3 +111,21 @@ def login(
         serialize(response, to_bytes=True),
         media_type="application/octet-stream",
     )
+
+
+# exchange email and password for a SyftSigningKey
+@router.post("/login", name="login", status_code=200)
+def login(
+    request: Request,
+    email: str = Body(..., example="info@openmined.org"),
+    password: str = Body(..., example="changethis"),
+) -> Any:
+    if TRACE_MODE:
+        with trace.get_tracer(login.__module__).start_as_current_span(
+            login.__qualname__,
+            context=extract(request.headers),
+            kind=trace.SpanKind.SERVER,
+        ):
+            return handle_login(email, password)
+    else:
+        return handle_login(email, password)
