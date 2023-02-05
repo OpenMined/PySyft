@@ -2,6 +2,7 @@
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
 
 # third party
 from pydantic import BaseModel
@@ -29,7 +30,7 @@ class NodeView(BaseModel):
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, NodeView):
             return False
-        elif self.name == other.name and self.node_uid == other.uid:
+        elif self.name == other.name and self.node_uid == other.node_uid:
             return True
 
     def __hash__(self) -> int:
@@ -45,7 +46,7 @@ class Task(SyftObject):
     # fields
     user: str
     inputs: Dict[NodeView, dict]
-    owner: List[NodeView]
+    owners: List[NodeView]
     code: str
     status: Dict[NodeView, str]
     created_at: str
@@ -54,10 +55,12 @@ class Task(SyftObject):
     execution: str
     outputs: Dict
     reason: str = ""
+    oblv_metadata: Optional[Dict] = None
 
     # serde / storage rules
     __attr_state__ = [
         "id",
+        "owners",
         "code",
         "user",
         "status",
@@ -68,7 +71,7 @@ class Task(SyftObject):
         "reviewed_by",
         "execution",
         "reason",
-        "owner",
+        "oblv_metadata",
     ]
 
     __attr_searchable__ = ["id", "user"]

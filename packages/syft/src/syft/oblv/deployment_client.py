@@ -259,6 +259,10 @@ class DeploymentClient:
         # Step2: Send manual code requests to the domains clients
         task_id = UID()  # Set a unique task id to be sent to all the data owners
         owners: List[NodeView] = []
+        oblv_metadata = {
+            "deployment_id": self.deployment_id,
+            "oblv_client": self.oblv_client,
+        }
         for client in clients:
             node_view = NodeView.from_client(client)
             owners.append(node_view)
@@ -266,8 +270,9 @@ class DeploymentClient:
                 inputs=node_input_map,
                 code=code,
                 outputs=outputs,
-                owner=[node_view],
+                owners=[node_view],
                 task_id=task_id,
+                oblv_metadata=oblv_metadata,
             )
             print(res)
 
@@ -277,6 +282,7 @@ class DeploymentClient:
             outputs=outputs,
             owners=owners,
             task_id=task_id,
+            oblv_metadata=oblv_metadata,
         )
         print(res)
         print("task id", task_id)

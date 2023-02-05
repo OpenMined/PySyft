@@ -2,6 +2,7 @@
 from datetime import date
 from typing import Dict
 from typing import List
+from typing import Optional
 
 # third party
 from result import Err
@@ -38,6 +39,7 @@ class TaskService(AbstractService):
         outputs: List[str],
         owners: List[NodeView],
         task_id: UID,
+        oblv_metadata: Optional[dict] = None,
     ) -> Result[Ok, Err]:
         """Enclave Submit task"""
         # TODO 🟣 Check for permission after it is fully integrated
@@ -52,12 +54,13 @@ class TaskService(AbstractService):
             code=code,
             outputs={var: " -- " for var in outputs},
             user=str(context.credentials),
-            owner=owners,
+            owners=owners,
             status={owner: "pending" for owner in owners},
             created_at=date.today().strftime("%d/%m/%Y"),
             updated_at=" -- ",
             reviewed_by=" -- ",
             execution="pending",
+            oblv_metadata=oblv_metadata,
         )
 
         result = self.task_stash.set(task)
@@ -74,13 +77,14 @@ class TaskService(AbstractService):
         inputs: Dict[NodeView, dict],
         code: str,
         outputs: List[str],
-        owner: List[NodeView],
+        owners: List[NodeView],
         task_id: UID,
+        oblv_metadata: Optional[dict] = None,
     ) -> Result[Ok, Err]:
         """Enclave Submit task"""
         # TODO 🟣 Check for permission after it is fully integrated
 
-        if owner and isinstance(owner, list) and len(owner) != 1:
+        if owners and isinstance(owners, list) and len(owners) != 1:
             return Err("Domain task creation should have exactly one owner")
         task = Task(
             id=task_id,
@@ -88,18 +92,19 @@ class TaskService(AbstractService):
             code=code,
             outputs={var: " -- " for var in outputs},
             user=str(context.credentials),
-            owner=owner,
-            status={owner[0]: "pending"},
+            owners=owners,
+            status={owners[0]: "pending"},
             created_at=date.today().strftime("%d/%m/%Y"),
             updated_at=" -- ",
             reviewed_by=" -- ",
             execution="pending",
+            oblv_metadata=oblv_metadata,
         )
 
         result = self.task_stash.set(task)
 
         if result.is_ok():
-            return Ok(f"Added task to domain node: {owner[0].name}")
+            return Ok(f"Added task to domain node: {owners[0].name}")
 
         return result.err()
 
@@ -114,4 +119,28 @@ class TaskService(AbstractService):
         res = self.task_stash.get_by_uid(task_id)
         if res.is_ok():
             return res.ok()
+        return res.err()
+
+    @service_method(path="task.review_task", name="review_task")
+    def review_task(
+        self,
+        context: AuthedServiceContext,
+        task_id: UID,
+        approve: bool,
+        reason: str = "",
+    ) -> Result[Ok, Err]:
+        # TODO 🟣 Check for permission after it is fully integrated
+
+        task = self.task_stash.get_by_uid(task_id)
+        if task.is_ok():
+            # 🟡 TODO: To Remove double nesting of result variable in Collection access
+            task = task.ok().ok()
+        else:
+            return task.err()
+
+        task.reason = reason
+        task.status[task.owners[0]] = approve
+        res = self.task_stash.update(task)
+        if res.is_ok():
+            return Ok(f"Task: {task_id}  - {approve}")
         return res.err()
