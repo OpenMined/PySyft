@@ -35,6 +35,7 @@ from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
 from .new.service import AbstractService
 from .new.service import ServiceConfigRegistry
+from .new.task.task_service import TaskService
 from .new.test_service import TestService
 from .new.user import User
 from .new.user import UserCreate
@@ -91,7 +92,9 @@ class Worker(NewNode):
 
         self.name = name
         services = (
-            [UserService, ActionService, TestService] if services is None else services
+            [UserService, ActionService, TestService, TaskService]
+            if services is None
+            else services
         )
         self.services = services
         self.service_config = ServiceConfigRegistry.get_registered_configs()
@@ -112,6 +115,8 @@ class Worker(NewNode):
                 action_store = ActionStore(root_verify_key=self.signing_key.verify_key)
                 kwargs["store"] = action_store
             if service_klass == UserService:
+                kwargs["store"] = self.document_store
+            if service_klass == TaskService:
                 kwargs["store"] = self.document_store
             self.service_path_map[service_klass.__name__] = service_klass(**kwargs)
 
