@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 @serializable(recursive_serde=True)
 class lazyrepeatarray:
     """
-    A class representing Differential Privacy metadata (minimum and maximum values) in a way that saves RAM/CPU.
+    A class representing metadata(minimum and maximum) values in a way that saves RAM/CPU.
 
     We store large arrays of a single repeating value as a single tuple (shape) and a single value (int/float/etc)
     e.g. np.array([8,8,8,8,8,8]) = lazyrepeatarray(data=8, shape=(6,))
