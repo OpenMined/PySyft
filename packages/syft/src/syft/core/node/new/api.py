@@ -11,7 +11,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
-from typing import _UnionGenericAlias
+from typing import _GenericAlias
 
 # third party
 from nacl.exceptions import BadSignatureError
@@ -149,7 +149,7 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
                 msg = None
                 try:
                     if t is not inspect.Parameter.empty:
-                        if isinstance(t, _UnionGenericAlias):
+                        if isinstance(t, _GenericAlias) and type(None) in t.__args__:
                             for v in t.__args__:
                                 if issubclass(v, EmailStr):
                                     v = str
@@ -180,7 +180,7 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
                 msg = None
                 try:
                     if t is not inspect.Parameter.empty:
-                        if isinstance(t, _UnionGenericAlias):
+                        if isinstance(t, _GenericAlias) and type(None) in t.__args__:
                             for v in t.__args__:
                                 if issubclass(v, EmailStr):
                                     v = str
