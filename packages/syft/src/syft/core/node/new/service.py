@@ -1,4 +1,5 @@
 # stdlib
+from copy import deepcopy
 import inspect
 from inspect import Parameter
 from typing import Any
@@ -6,6 +7,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Type
 
 # relative
@@ -13,6 +15,8 @@ from ....core.node.common.node_table.syft_object import SyftObject
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .signature import Signature
+from .signature import signature_remove_context
+from .signature import signature_remove_self
 
 
 class AbstractNode:
@@ -72,6 +76,42 @@ def deconstruct_param(param: inspect.Parameter) -> Dict[str, Any]:
     return sub_mapping
 
 
+def types_for_autosplat(signature: Signature, autosplat: List[str]) -> Dict[str, type]:
+    autosplat_types = {}
+    for k, v in signature.parameters.items():
+        if k in autosplat:
+            autosplat_types[k] = v.annotation
+    return autosplat_types
+
+
+def reconstruct_args_kwargs(
+    signature: Signature,
+    autosplat: List[str],
+    args: Tuple[Any, ...],
+    kwargs: Dict[Any, str],
+) -> Tuple[Tuple[Any, ...], Dict[str, Any]]:
+    autosplat_types = types_for_autosplat(signature=signature, autosplat=autosplat)
+
+    autosplat_objs = {}
+    for autosplat_key, autosplat_type in autosplat_types.items():
+        init_kwargs = {}
+        keys = autosplat_type.__fields__.keys()
+        for key in keys:
+            if key in kwargs:
+                init_kwargs[key] = kwargs.pop(key)
+        autosplat_objs[autosplat_key] = autosplat_type(**init_kwargs)
+
+    final_kwargs = {}
+    for param_key, _ in signature.parameters.items():
+        if param_key in kwargs:
+            final_kwargs[param_key] = kwargs[param_key]
+        elif param_key in autosplat_objs:
+            final_kwargs[param_key] = autosplat_objs[param_key]
+        else:
+            raise Exception(f"Missing {param_key} not in kwargs.")
+    return (args, final_kwargs)
+
+
 def expand_signature(signature: Signature, autosplat: List[str]) -> Signature:
     new_mapping = {}
     for k, v in signature.parameters.items():
@@ -107,8 +147,23 @@ def service_method(
         class_name = func.__qualname__.split(".")[-2]
         _path = class_name + "." + func_name
         signature = inspect.signature(func)
+        signature = signature_remove_self(signature)
+        signature = signature_remove_context(signature)
+
+        input_signature = deepcopy(signature)
+
+        def _decorator(self, *args, **kwargs):
+            if autosplat is not None and len(autosplat) > 0:
+                args, kwargs = reconstruct_args_kwargs(
+                    signature=input_signature,
+                    autosplat=autosplat,
+                    args=args,
+                    kwargs=kwargs,
+                )
+            return func(self, *args, **kwargs)
+
         if autosplat is not None and len(autosplat) > 0:
-            signature = expand_signature(signature=signature, autosplat=autosplat)
+            signature = expand_signature(signature=input_signature, autosplat=autosplat)
 
         config = ServiceConfig(
             public_path=_path if path is None else path,
@@ -120,9 +175,6 @@ def service_method(
             permissions=["Guest"],
         )
         ServiceConfigRegistry.register(config)
-
-        def _decorator(self, *args, **kwargs):
-            return func(self, *args, **kwargs)
 
         return _decorator
 

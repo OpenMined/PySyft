@@ -24,6 +24,7 @@ from .service import service_method
 from .user import User
 from .user import UserCreate
 from .user import UserPrivateKey
+from .user import UserSearch
 from .user import UserUpdate
 from .user import UserView
 from .user import check_pwd
@@ -83,6 +84,17 @@ class UserService(AbstractService):
         users = result.ok()
         return [user.to(UserView) for user in users] if users is not None else []
 
+    @service_method(path="user.search", name="search", autosplat=["user_search"])
+    def search(
+        self, context: AuthedServiceContext, user_search: UserSearch
+    ) -> Union[List[UserView], SyftError]:
+        kwargs = user_search.dict(exclude_none=True)
+        result = self.stash.find_all(**kwargs)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        users = result.ok()
+        return [user.to(UserView) for user in users] if users is not None else []
+
     @service_method(path="user.update", name="update")
     def update(
         self, context: AuthedServiceContext, user_update: UserUpdate
@@ -95,14 +107,6 @@ class UserService(AbstractService):
 
         user = result.ok()
         return user.to(UserView)
-
-    @service_method(
-        path="user.update_splat", name="update_splat", autosplat=["user_update"]
-    )
-    def update_splat(
-        self, context: AuthedServiceContext, user_update: UserUpdate
-    ) -> Union[UserView, SyftError]:
-        return self.update(context=context, user_update=user_update)
 
     @service_method(path="user.delete", name="delete")
     def delete(self, context: AuthedServiceContext, uid: UID) -> Union[bool, SyftError]:

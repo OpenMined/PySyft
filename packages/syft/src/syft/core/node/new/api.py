@@ -34,9 +34,12 @@ from ...common.uid import UID
 from .connection import NodeConnection
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
+from .response import SyftError
 from .response import SyftSuccess
 from .service import ServiceConfigRegistry
 from .signature import Signature
+from .signature import signature_remove_context
+from .signature import signature_remove_self
 
 
 class APIRegistry:
@@ -61,22 +64,6 @@ class APIEndpoint(SyftObject):
     doc_string: Optional[str]
     signature: Signature
     has_self: bool = False
-
-
-def signature_remove_self(signature: Signature) -> Signature:
-    params = dict(signature.parameters)
-    params.pop("self", None)
-    return Signature(
-        list(params.values()), return_annotation=signature.return_annotation
-    )
-
-
-def signature_remove_context(signature: Signature) -> Signature:
-    params = dict(signature.parameters)
-    params.pop("context", None)
-    return Signature(
-        list(params.values()), return_annotation=signature.return_annotation
-    )
 
 
 @serializable(recursive_serde=True)
@@ -149,7 +136,9 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
         else:
             for key, value in kwargs.items():
                 if key not in signature.parameters:
-                    raise Exception("Wrong key", key, "for sig", signature)
+                    return SyftError(
+                        message=f"""Invalid parameter: `{key}`. Valid Parameters: {list(signature.parameters)}"""
+                    )
                 param = signature.parameters[key]
                 if isinstance(param.annotation, str):
                     # 🟡 TODO 21: make this work for weird string type situations
@@ -170,10 +159,10 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
                             check_type(key, value, t)  # raises Exception
                 except TypeError:
                     _type_str = getattr(t, "__name__", str(t))
-                    msg = f"{key} must be {_type_str} not {type(value).__name__}"
+                    msg = f"`{key}` must be of type `{_type_str}` not `{type(value).__name__}`"
 
                 if msg:
-                    raise Exception(msg)
+                    return SyftError(message=msg)
 
                 _valid_kwargs[key] = value
 
