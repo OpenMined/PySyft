@@ -24,7 +24,7 @@ from ..adp.data_subject_ledger import DataSubjectLedger
 from ..adp.data_subject_list import DataSubjectArray
 from .config import DEFAULT_FLOAT_NUMPY_TYPE
 from .config import DEFAULT_INT_NUMPY_TYPE
-from .lazy_repeat_array import lazyrepeatarray
+from ..common.lazy_repeat_array import lazyrepeatarray
 from .manager import TensorChainManager
 from .passthrough import PassthroughTensor  # type: ignore
 

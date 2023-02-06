@@ -12,7 +12,7 @@
 # from ...adp.data_subject_list import DataSubjectArray
 # from ..autodp.gamma_tensor import GammaTensor
 # from ..autodp.phi_tensor import PhiTensor
-# from ..lazy_repeat_array import lazyrepeatarray
+# from packages.syft.src.syft.core.common.lazy_repeat_array import lazyrepeatarray
 #
 #
 # def dp_maximum(

@@ -77,7 +77,7 @@ from .core.tensor import autodp  # noqa: F401
 from .core.tensor import nn  # noqa: F401
 from .core.tensor.autodp.gamma_tensor import GammaTensor  # noqa: F401
 from .core.tensor.autodp.phi_tensor import PhiTensor  # noqa: F401
-from .core.tensor.lazy_repeat_array import lazyrepeatarray  # noqa: F401
+from .core.common.lazy_repeat_array import lazyrepeatarray  # noqa: F401
 from .core.tensor.tensor import Tensor  # noqa: F401
 from .experimental_flags import flags  # noqa: F401
 from .grid.client.client import connect  # noqa: F401

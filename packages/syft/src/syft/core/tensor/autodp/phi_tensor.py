@@ -42,8 +42,8 @@ from ...pointer.pointer import Pointer
 # from ..broadcastable import is_broadcastable
 from ..config import DEFAULT_INT_NUMPY_TYPE
 from ..fixed_precision_tensor import FixedPrecisionTensor
-from ..lazy_repeat_array import compute_min_max
-from ..lazy_repeat_array import lazyrepeatarray
+from ...common.lazy_repeat_array import compute_min_max
+from ...common.lazy_repeat_array import lazyrepeatarray
 from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import SupportedChainType  # type: ignore

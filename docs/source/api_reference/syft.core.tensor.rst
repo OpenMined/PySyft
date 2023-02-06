@@ -40,7 +40,6 @@ syft.core.tensor
    syft.core.tensor.fixed_precision_tensor
    syft.core.tensor.fixed_precision_tensor_ancestor
    syft.core.tensor.functions
-   syft.core.tensor.lazy_repeat_array
    syft.core.tensor.manager
    syft.core.tensor.nn
    syft.core.tensor.passthrough

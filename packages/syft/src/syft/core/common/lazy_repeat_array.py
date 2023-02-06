@@ -15,16 +15,16 @@ import numpy as np
 from scipy.ndimage import rotate
 
 # relative
-from ..common.serde.serializable import serializable
-from .broadcastable import is_broadcastable
-from .config import DEFAULT_FLOAT_NUMPY_TYPE
-from .config import DEFAULT_INT_NUMPY_TYPE
-from .passthrough import is_acceptable_simple_type  # type: ignore
-from .smpc.utils import get_shape
+from .serde.serializable import serializable
+from ..tensor.broadcastable import is_broadcastable
+from ..tensor.config import DEFAULT_FLOAT_NUMPY_TYPE
+from ..tensor.config import DEFAULT_INT_NUMPY_TYPE
+from ..tensor.passthrough import is_acceptable_simple_type  # type: ignore
+from ..tensor.smpc.utils import get_shape
 
 if TYPE_CHECKING:
     # relative
-    from .autodp.phi_tensor import PhiTensor
+    from ..tensor.autodp.phi_tensor import PhiTensor
 
 
 @serializable(recursive_serde=True)
@@ -543,7 +543,7 @@ def compute_min_max(
         max_vals = lazyrepeatarray(data=max_v, shape=dummy_res.shape)
     elif op_str == "choose":
         # relative
-        from .tensor import Pointer
+        from ..tensor.tensor import Pointer
 
         dummy_res = np.ones(x_min_vals.shape, dtype=np.int64)
         if isinstance(args[0], Pointer):

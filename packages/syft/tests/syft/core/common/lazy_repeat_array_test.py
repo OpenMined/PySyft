@@ -4,8 +4,8 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.tensor.lazy_repeat_array import has_nans_inf
-from syft.core.tensor.lazy_repeat_array import lazyrepeatarray
+from syft.core.common.lazy_repeat_array import has_nans_inf
+from syft.core.common.lazy_repeat_array import lazyrepeatarray
 
 
 def test_create_lazy_repeat_array() -> None:

@@ -1,7 +1,7 @@
-syft.core.tensor.lazy\_repeat\_array
+syft.core.common.lazy\_repeat\_array
 ====================================
 
-.. automodule:: syft.core.tensor.lazy_repeat_array
+.. automodule:: syft.core.common.lazy_repeat_array
 
    
    
