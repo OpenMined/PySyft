@@ -14,7 +14,6 @@ from typing import Union
 
 # third party
 from nacl.exceptions import BadSignatureError
-import requests
 from result import Err
 from result import Ok
 from result import OkErr
@@ -30,8 +29,10 @@ from ...common.serde.deserialize import _deserialize
 from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize
 from ...common.uid import UID
+from .connection import NodeConnection
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
+from .response import SyftSuccess
 from .service import ServiceConfigRegistry
 from .signature import Signature
 
@@ -101,7 +102,7 @@ class SignedSyftAPICall(SyftObject):
         return self.cached_deseralized_message
 
     @property
-    def is_valid(self) -> Result[bool, Err]:
+    def is_valid(self) -> Result[SyftSuccess, Err]:
         try:
             _ = self.credentials.verify_key.verify(
                 self.serialized_message, self.signature
@@ -109,7 +110,7 @@ class SignedSyftAPICall(SyftObject):
         except BadSignatureError:
             return Err("BadSignatureError")
 
-        return Ok(True)
+        return Ok(SyftSuccess(message="Credentials are valid"))
 
 
 @instrument
@@ -205,7 +206,7 @@ class APIModule:
     def __init__(self) -> None:
         self._modules = []
 
-    def add_submodule(self, attr_name, module_or_func):
+    def _add_submodule(self, attr_name, module_or_func):
         setattr(self, attr_name, module_or_func)
         self._modules.append(attr_name)
 
@@ -219,10 +220,10 @@ class SyftAPI(SyftObject):
     __attr_allowlist__ = ["endpoints"]
 
     # fields
+    connection: Optional[NodeConnection] = None
     node_uid: Optional[UID] = None
     endpoints: Dict[str, APIEndpoint]
     api_module: Optional[APIModule] = None
-    api_url: str = ""
     signing_key: Optional[SyftSigningKey] = None
     # serde / storage rules
     __attr_state__ = ["endpoints"]
@@ -252,18 +253,8 @@ class SyftAPI(SyftObject):
 
     def make_call(self, api_call: SyftAPICall) -> Result:
         signed_call = api_call.sign(credentials=self.signing_key)
-        msg_bytes: bytes = _serialize(obj=signed_call, to_bytes=True)
-        response = requests.post(
-            url=str(self.api_url),
-            data=msg_bytes,
-        )
+        result = self.connection.make_call(signed_call)
 
-        if response.status_code != 200:
-            raise requests.ConnectionError(
-                f"Failed to fetch metadata. Response returned with code {response.status_code}"
-            )
-
-        result = _deserialize(response.content, from_bytes=True)
         if isinstance(result, OkErr):
             if result.is_ok():
                 return result.ok()
@@ -284,9 +275,9 @@ class SyftAPI(SyftObject):
         while _modules:
             module = _modules.pop(0)
             if not hasattr(_self, module):
-                _self.add_submodule(module, APIModule())
+                _self._add_submodule(module, APIModule())
             _self = getattr(_self, module)
-        _self.add_submodule(_last_module, endpoint_method)
+        _self._add_submodule(_last_module, endpoint_method)
 
     def generate_endpoints(self) -> None:
         api_module = APIModule()

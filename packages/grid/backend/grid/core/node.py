@@ -12,7 +12,6 @@ from syft import Network  # type: ignore
 from syft.core.node.common.client import Client
 from syft.core.node.common.util import get_s3_client
 from syft.core.node.worker import Worker
-from syft.core.node.worker import create_admin_new
 
 # grid absolute
 from grid.core.config import Settings
@@ -79,10 +78,6 @@ else:
 
 # 🟡 TODO 29: Remove this once we move to mongo instead of in-memory dict
 # This is done to reload in root user to in-memory store
-
-create_admin_new(
-    name="Jane Doe", email="info@openmined.org", password="changethis", worker=worker
-)
 
 node.loud_print()
 

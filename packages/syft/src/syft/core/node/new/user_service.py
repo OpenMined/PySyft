@@ -1,5 +1,4 @@
 # stdlib
-from dataclasses import dataclass
 from typing import Any
 from typing import Dict
 from typing import List
@@ -9,7 +8,6 @@ from typing import Union
 # third party
 from result import Err
 from result import Ok
-from result import Result
 
 # relative
 from ....core.node.common.node_table.syft_object import SyftObject
@@ -20,6 +18,7 @@ from .context import AuthedServiceContext
 from .context import UnauthedServiceContext
 from .credentials import UserLoginCredentials
 from .document_store import DocumentStore
+from .response import SyftError
 from .service import AbstractService
 from .service import service_method
 from .user import User
@@ -29,12 +28,6 @@ from .user import UserUpdate
 from .user import UserView
 from .user import check_pwd
 from .user_stash import UserStash
-
-
-@serializable(recursive_serde=True)
-@dataclass
-class SyftError:
-    message: str
 
 
 @instrument
@@ -115,7 +108,7 @@ class UserService(AbstractService):
 
     def exchange_credentials(
         self, context: UnauthedServiceContext
-    ) -> Result[UserLoginCredentials, str]:
+    ) -> Union[UserLoginCredentials, SyftError]:
         """Verify user
         TODO: We might want to use a SyftObject instead
         """
@@ -142,7 +135,7 @@ class UserService(AbstractService):
 
     def signup(
         self, context: UnauthedServiceContext, user_update: UserUpdate
-    ) -> Result[SyftObject, str]:
+    ) -> Union[SyftObject, SyftError]:
         pass
 
     # @service_method(path="user.search", name="search", splat_kwargs_from=["query_obj"])

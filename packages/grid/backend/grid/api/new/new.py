@@ -16,6 +16,7 @@ from syft import deserialize
 from syft import serialize  # type: ignore
 from syft.core.node.new.context import UnauthedServiceContext
 from syft.core.node.new.credentials import UserLoginCredentials
+from syft.core.node.new.node import NewNode
 from syft.core.node.new.node_metadata import NodeMetadataJSON
 from syft.core.node.new.user import UserPrivateKey
 from syft.core.node.new.user_service import UserService
@@ -88,14 +89,14 @@ def syft_new_api_call(request: Request, data: bytes = Depends(get_body)) -> Resp
         return handle_new_api_call(data)
 
 
-def handle_login(email: str, password: str) -> Any:
+def handle_login(email: str, password: str, node: NewNode) -> Any:
     try:
         login_credentials = UserLoginCredentials(email=email, password=password)
     except ValidationError as e:
         return {"Error": e.json()}
 
-    method = worker.get_service_method(UserService.exchange_credentials)
-    context = UnauthedServiceContext(node=worker, login_credentials=login_credentials)
+    method = node.get_service_method(UserService.exchange_credentials)
+    context = UnauthedServiceContext(node=node, login_credentials=login_credentials)
     result = method(context=context)
 
     if result.is_err():
@@ -126,6 +127,6 @@ def login(
             context=extract(request.headers),
             kind=trace.SpanKind.SERVER,
         ):
-            return handle_login(email, password)
+            return handle_login(email, password, worker)
     else:
-        return handle_login(email, password)
+        return handle_login(email, password, worker)
