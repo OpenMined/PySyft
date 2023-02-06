@@ -11,9 +11,11 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
+from typing import _UnionGenericAlias
 
 # third party
 from nacl.exceptions import BadSignatureError
+from pydantic import EmailStr
 from result import Err
 from result import Ok
 from result import OkErr
@@ -158,7 +160,14 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
                 msg = None
                 try:
                     if t is not inspect.Parameter.empty:
-                        check_type(key, value, t)  # raises Exception
+                        if isinstance(t, _UnionGenericAlias):
+                            for v in t.__args__:
+                                if issubclass(v, EmailStr):
+                                    v = str
+                                check_type(key, value, v)  # raises Exception
+                                break  # only need one to match
+                        else:
+                            check_type(key, value, t)  # raises Exception
                 except TypeError:
                     _type_str = getattr(t, "__name__", str(t))
                     msg = f"{key} must be {_type_str} not {type(value).__name__}"
@@ -182,7 +191,14 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
                 msg = None
                 try:
                     if t is not inspect.Parameter.empty:
-                        check_type(param_key, arg, t)  # raises Exception
+                        if isinstance(t, _UnionGenericAlias):
+                            for v in t.__args__:
+                                if issubclass(v, EmailStr):
+                                    v = str
+                                check_type(param_key, arg, v)  # raises Exception
+                                break  # only need one to match
+                        else:
+                            check_type(param_key, arg, t)  # raises Exception
                 except TypeError:
                     _type_str = getattr(t, "__name__", str(t))
                     msg = f"Arg: `{arg}` must be `{_type_str}` and not `{type(arg).__name__}`"

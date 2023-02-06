@@ -96,6 +96,14 @@ class UserService(AbstractService):
         user = result.ok()
         return user.to(UserView)
 
+    @service_method(
+        path="user.update_splat", name="update_splat", autosplat=["user_update"]
+    )
+    def update_splat(
+        self, context: AuthedServiceContext, user_update: UserUpdate
+    ) -> Union[UserView, SyftError]:
+        return self.update(context=context, user_update=user_update)
+
     @service_method(path="user.delete", name="delete")
     def delete(self, context: AuthedServiceContext, uid: UID) -> Union[bool, SyftError]:
 

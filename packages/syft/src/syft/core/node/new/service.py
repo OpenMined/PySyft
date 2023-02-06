@@ -1,5 +1,6 @@
 # stdlib
 import inspect
+from inspect import Parameter
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -57,14 +58,57 @@ class ServiceConfigRegistry:
         return path in cls.__service_config_registry__
 
 
+def deconstruct_param(param: inspect.Parameter) -> Dict[str, Any]:
+    # Gets the init signature form pydantic object
+    param_type = param.annotation
+    if not hasattr(param_type, "__signature__"):
+        raise Exception(
+            f"Type {param_type} needs __signature__. Or code changed to support backup init"
+        )
+    signature = param_type.__signature__
+    sub_mapping = {}
+    for k, v in signature.parameters.items():
+        sub_mapping[k] = v
+    return sub_mapping
+
+
+def expand_signature(signature: Signature, autosplat: List[str]) -> Signature:
+    new_mapping = {}
+    for k, v in signature.parameters.items():
+        if k in autosplat:
+            sub_mapping = deconstruct_param(v)
+            for s, t in sub_mapping.items():
+                new_t_kwargs = {
+                    "annotation": t.annotation,
+                    "name": t.name,
+                    "default": t.default,
+                    "kind": Parameter.POSITIONAL_OR_KEYWORD,
+                }
+                new_t = Parameter(**new_t_kwargs)
+                new_mapping[s] = new_t
+        else:
+            new_mapping[k] = v
+
+    return Signature(
+        **{
+            "parameters": list(new_mapping.values()),
+            "return_annotation": signature.return_annotation,
+        }
+    )
+
+
 def service_method(
     name: Optional[str] = None,
     path: Optional[str] = None,
+    autosplat: Optional[List[str]] = None,
 ):
     def wrapper(func):
         func_name = func.__name__
         class_name = func.__qualname__.split(".")[-2]
         _path = class_name + "." + func_name
+        signature = inspect.signature(func)
+        if autosplat is not None and len(autosplat) > 0:
+            signature = expand_signature(signature=signature, autosplat=autosplat)
 
         config = ServiceConfig(
             public_path=_path if path is None else path,
@@ -72,7 +116,7 @@ def service_method(
             public_name=("public_" + func_name) if name is None else name,
             method_name=func_name,
             doc_string=func.__doc__,
-            signature=inspect.signature(func),
+            signature=signature,
             permissions=["Guest"],
         )
         ServiceConfigRegistry.register(config)
