@@ -105,7 +105,7 @@ class Worker(NewNode):
         self.services = services
         self.service_config = ServiceConfigRegistry.get_registered_configs()
         self._construct_services()
-        create_admin_new(
+        create_admin_new(  # nosec B106
             name="Jane Doe",
             email="info@openmined.org",
             password="changethis",
