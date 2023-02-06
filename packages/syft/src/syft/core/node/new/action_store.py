@@ -84,10 +84,12 @@ class ActionStore:
         self.permissions = defaultdict(set)
         self.root_verify_key = root_verify_key
 
-    def get(self, uid: UID, credentials: SyftCredentials) -> Result[SyftObject, str]:
+    def get(
+        self, uid: UID, credentials: SyftCredentials, skip_permission: bool = False
+    ) -> Result[SyftObject, str]:
         # if you get something you need READ permission
         read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
-        if self.has_permission(read_permission):
+        if skip_permission or self.has_permission(read_permission):
             data = self.data[uid]
             syft_object = SyftObject.from_mongo(data)
             return Ok(syft_object)
