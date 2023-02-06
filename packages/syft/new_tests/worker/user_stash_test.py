@@ -82,7 +82,7 @@ def test_user_stash() -> None:
 
     result8 = user_stash.delete_by_uid(uid=user.id)
     result8 = result8.ok()
-    assert result8 is True
+    assert bool(result8) is True
 
     result9 = user_stash.get_by_uid(uid=user.id)
     result9 = result9.ok()
@@ -95,7 +95,7 @@ def test_user_stash() -> None:
 
     result11 = user_stash.find_and_delete(**{"email": user.email})
     result11 = result11.ok()
-    assert result11 is True
+    assert bool(result11) is True
 
     # update_user = UserUpdate(email="alice@bob.com", name="Bob", institution="OpenMined")
     # result12 = user_stash.update(user=update_user.to(User))
