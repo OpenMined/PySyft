@@ -22,9 +22,9 @@ from ...user_settings import settings
 from ..adp.data_subject import DataSubject
 from ..adp.data_subject_ledger import DataSubjectLedger
 from ..adp.data_subject_list import DataSubjectArray
+from ..common.lazy_repeat_array import lazyrepeatarray
 from .config import DEFAULT_FLOAT_NUMPY_TYPE
 from .config import DEFAULT_INT_NUMPY_TYPE
-from ..common.lazy_repeat_array import lazyrepeatarray
 from .manager import TensorChainManager
 from .passthrough import PassthroughTensor  # type: ignore
 

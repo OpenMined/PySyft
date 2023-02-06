@@ -15,12 +15,12 @@ import numpy as np
 from scipy.ndimage import rotate
 
 # relative
-from .serde.serializable import serializable
 from ..tensor.broadcastable import is_broadcastable
 from ..tensor.config import DEFAULT_FLOAT_NUMPY_TYPE
 from ..tensor.config import DEFAULT_INT_NUMPY_TYPE
 from ..tensor.passthrough import is_acceptable_simple_type  # type: ignore
 from ..tensor.smpc.utils import get_shape
+from .serde.serializable import serializable
 
 if TYPE_CHECKING:
     # relative

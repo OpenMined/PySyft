@@ -9,9 +9,9 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.core.adp.data_subject_list import DataSubject
+from syft.core.common.lazy_repeat_array import lazyrepeatarray as lra
 from syft.core.tensor.autodp.gamma_tensor import GammaTensor
 from syft.core.tensor.autodp.phi_tensor import PhiTensor as PT
-from syft.core.common.lazy_repeat_array import lazyrepeatarray as lra
 from syft.core.tensor.tensor import Tensor
 
 
