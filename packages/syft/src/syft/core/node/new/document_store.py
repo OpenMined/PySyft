@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from abc import abstractmethod
 from collections import defaultdict
 from enum import Enum
 from typing import Any
@@ -207,7 +208,6 @@ class UniqueKeyCheck(Enum):
 @serializable(recursive_serde=True)
 class BaseCollection:
     def __init__(self, settings: CollectionSettings) -> None:
-        self.data = {}
         self.settings = settings
         self.init_store()
 
@@ -217,243 +217,40 @@ class BaseCollection:
     def store_query_keys(self, objs: Any) -> QueryKeys:
         return QueryKeys(qks=[self.store_query_key(obj) for obj in objs])
 
+    @abstractmethod
     def init_store(self) -> None:
-        self.unique_cks = self.settings.unique_keys.all
-        self.unique_keys = {}
-
-        for collection_key in self.unique_cks:
-            ck_key = collection_key.key
-            self.unique_keys[ck_key] = {}
-
-        self.searchable_cks = self.settings.searchable_keys.all
-        self.searchable_keys = {}
-        for collection_key in self.searchable_cks:
-            ck_key = collection_key.key
-            self.searchable_keys[ck_key] = defaultdict(list)
-
-    def validate_collection_keys(
-        self, store_query_key: QueryKey, unique_query_keys: QueryKeys
-    ) -> UniqueKeyCheck:
-        matches = []
-        qks = unique_query_keys.all
-        for qk in qks:
-            ck_key, ck_value = qk.key, qk.value
-            if ck_key not in self.unique_keys:
-                raise Exception(
-                    f"ck_key: {ck_key} not in unique_keys: {self.unique_keys.keys()}"
-                )
-            ck_col = self.unique_keys[ck_key]
-            if ck_value in ck_col and ck_col[ck_value] == store_query_key.value:
-                matches.append(ck_key)
-
-        if len(matches) == 0:
-            return UniqueKeyCheck.EMPTY
-        elif len(matches) == len(qks):
-            return UniqueKeyCheck.MATCHES
-
-        return UniqueKeyCheck.ERROR
-
-    def set_data_and_keys(
-        self,
-        store_query_key: QueryKey,
-        unique_query_keys: QueryKeys,
-        searchable_query_keys: QueryKeys,
-        obj: SyftObject,
-    ) -> None:
-        # we should lock
-        uqks = unique_query_keys.all
-        for qk in uqks:
-            ck_key, ck_value = qk.key, qk.value
-            ck_col = self.unique_keys[ck_key]
-            ck_col[ck_value] = store_query_key.value
-            self.unique_keys[ck_key] = ck_col
-
-        self.unique_keys[store_query_key.key][
-            store_query_key.value
-        ] = store_query_key.value
-
-        sqks = searchable_query_keys.all
-        for qk in sqks:
-            ck_key, ck_value = qk.key, qk.value
-            ck_col = self.searchable_keys[ck_key]
-            ck_col[ck_value].append(store_query_key.value)
-            self.searchable_keys[ck_key] = ck_col
-
-        self.data[store_query_key.value] = obj
+        raise NotImplementedError
 
     def set(
         self,
         obj: SyftObject,
     ) -> Result[SyftObject, str]:
-        try:
-            store_query_key = self.settings.store_key.with_obj(obj)
-            exists = store_query_key.value in self.data
-            unique_query_keys = self.settings.unique_keys.with_obj(obj)
-            searchable_query_keys = self.settings.searchable_keys.with_obj(obj)
-
-            ck_check = self.validate_collection_keys(
-                store_query_key=store_query_key, unique_query_keys=unique_query_keys
-            )
-            if not exists and ck_check == UniqueKeyCheck.EMPTY:
-                self.set_data_and_keys(
-                    store_query_key=store_query_key,
-                    unique_query_keys=unique_query_keys,
-                    searchable_query_keys=searchable_query_keys,
-                    obj=obj,
-                )
-
-            # if ck_check == UniqueKeyCheck.EMPTY:
-            #     # write set code
-            #     pass
-            # if ck_check != UniqueKeyCheck.ERROR:
-            #     self.data[uid] = obj
-        except Exception as e:
-            return Err(f"Failed to write obj {obj}. {e}")
-        return Ok(obj)
-
-    def remove_keys(
-        self,
-        unique_query_keys: QueryKeys,
-        searchable_query_keys: QueryKeys,
-    ) -> None:
-
-        uqks = unique_query_keys.all
-        for qk in uqks:
-            ck_key, ck_value = qk.key, qk.value
-            ck_col = self.unique_keys[ck_key]
-            ck_col.pop(ck_value, None)
-
-        sqks = searchable_query_keys.all
-        for qk in sqks:
-            ck_key, ck_value = qk.key, qk.value
-            ck_col = self.searchable_keys[ck_key]
-            ck_col.pop(ck_value, None)
+        raise NotImplementedError
 
     def update(self, qk: QueryKey, obj: SyftObject) -> Result[SyftObject, str]:
-        try:
-            _original_obj = self.data[qk.value]
-            _original_unique_keys = self.settings.unique_keys.with_obj(_original_obj)
-            _original_searchable_keys = self.settings.searchable_keys.with_obj(
-                _original_obj
-            )
-
-            # 🟡 TODO 28: Add locking in this transaction
-
-            # remove old keys
-            self.remove_keys(
-                unique_query_keys=_original_unique_keys,
-                searchable_query_keys=_original_searchable_keys,
-            )
-
-            # update the object with new data
-            for key, value in obj.dict(exclude_none=True).items():
-                setattr(_original_obj, key, value)
-
-            # update data and keys
-            self.set_data_and_keys(
-                store_query_key=qk,
-                unique_query_keys=self.settings.unique_keys.with_obj(_original_obj),
-                searchable_query_keys=self.settings.searchable_keys.with_obj(
-                    _original_obj
-                ),
-                obj=_original_obj,
-            )
-
-            return Ok(_original_obj)
-        except Exception as e:
-            return Err(f"Failed to update obj {obj} with error: {e}")
+        raise NotImplementedError
 
     def get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
-        matches = []
-        for qk in qks.all:
-            if qk.value in self.data:
-                matches.append(self.data[qk.value])
-        return Ok(matches)
-
-    def delete_unique_keys_for(self, obj: SyftObject) -> Result[SyftSuccess, str]:
-        for _unique_ck in self.unique_cks:
-            qk = _unique_ck.with_obj(obj)
-            self.unique_keys[qk.key].pop(qk.value, None)
-        return Ok(SyftSuccess(message="Deleted"))
-
-    def delete_search_keys_for(self, obj: SyftObject) -> Result[SyftSuccess, str]:
-        for _search_ck in self.searchable_cks:
-            qk = _search_ck.with_obj(obj)
-            self.searchable_keys[qk.key].pop(qk.value, None)
-        return Ok(SyftSuccess(message="Deleted"))
+        raise NotImplementedError
 
     def get_keys_index(self, qks: QueryKeys) -> Result[Set[QueryKey], str]:
-        try:
-            # match AND
-            subsets = []
-            for qk in qks.all:
-                subset = {}
-                ck_key, ck_value = qk.key, qk.value
-                if ck_key not in self.unique_keys:
-                    return Err(f"Failed to query index with {qk}")
-                ck_col = self.unique_keys[ck_key]
-                if ck_value not in ck_col.keys():
-                    # must be at least one in all query keys
-                    continue
-                store_value = ck_col[ck_value]
-                subsets.append({store_value})
-
-            if len(subsets) == 0:
-                return Ok(set())
-            # AND
-            subset = subsets.pop()
-            for s in subsets:
-                subset = subset.intersection(s)
-
-            return Ok(subset)
-        except Exception as e:
-            return Err(f"Failed to query with {qks}. {e}")
+        raise NotImplementedError
 
     def find_keys_search(self, qks: QueryKeys) -> Result[Set[QueryKey], str]:
-        try:
-            # match AND
-            subsets = []
-            for qk in qks.all:
-                subset = {}
-                ck_key, ck_value = qk.key, qk.value
-                if ck_key not in self.searchable_keys:
-                    return Err(f"Failed to search with {qk}")
-                ck_col = self.searchable_keys[ck_key]
-                if ck_value not in ck_col.keys():
-                    # must be at least one in all query keys
-                    continue
-                store_values = ck_col[ck_value]
-                subsets.append(set(store_values))
-
-            if len(subsets) == 0:
-                return Ok(set())
-            # AND
-            subset = subsets.pop()
-            for s in subsets:
-                subset = subset.intersection(s)
-
-            return Ok(subset)
-        except Exception as e:
-            return Err(f"Failed to query with {qks}. {e}")
+        raise NotImplementedError
 
     def create(self, obj: SyftObject) -> Result[SyftObject, str]:
-        pass
+        raise NotImplementedError
 
     def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
-        try:
-            _obj = self.data.pop(qk.value)
-            self.delete_unique_keys_for(_obj)
-            self.delete_search_keys_for(_obj)
-            return Ok(SyftSuccess(message="Deleted"))
-        except Exception as e:
-            return Err(f"Failed to delete with query key {qk} with error: {e}")
+        raise NotImplementedError
 
 
 @instrument
 @serializable(recursive_serde=True)
 class DocumentStore:
     collections: Dict[str, BaseCollection]
-    collection_type: BaseCollection
+    collection_type: Type[BaseCollection]
 
     def __init__(self) -> None:
         self.collections = {}
@@ -620,7 +417,235 @@ class BaseStash:
 # 🟡 TODO 26: the base collection is already a dict collection but we can change it later
 @serializable(recursive_serde=True)
 class DictCollection(BaseCollection):
-    pass
+    def __init__(self, settings: CollectionSettings) -> None:
+        self.data = {}
+        self.settings = settings
+        self.init_store()
+
+    def init_store(self) -> None:
+        self.unique_cks = self.settings.unique_keys.all
+        self.unique_keys = {}
+
+        for collection_key in self.unique_cks:
+            ck_key = collection_key.key
+            self.unique_keys[ck_key] = {}
+
+        self.searchable_cks = self.settings.searchable_keys.all
+        self.searchable_keys = {}
+        for collection_key in self.searchable_cks:
+            ck_key = collection_key.key
+            self.searchable_keys[ck_key] = defaultdict(list)
+
+    def validate_collection_keys(
+        self, store_query_key: QueryKey, unique_query_keys: QueryKeys
+    ) -> UniqueKeyCheck:
+        matches = []
+        qks = unique_query_keys.all
+        for qk in qks:
+            ck_key, ck_value = qk.key, qk.value
+            if ck_key not in self.unique_keys:
+                raise Exception(
+                    f"ck_key: {ck_key} not in unique_keys: {self.unique_keys.keys()}"
+                )
+            ck_col = self.unique_keys[ck_key]
+            if ck_value in ck_col and ck_col[ck_value] == store_query_key.value:
+                matches.append(ck_key)
+
+        if len(matches) == 0:
+            return UniqueKeyCheck.EMPTY
+        elif len(matches) == len(qks):
+            return UniqueKeyCheck.MATCHES
+
+        return UniqueKeyCheck.ERROR
+
+    def set_data_and_keys(
+        self,
+        store_query_key: QueryKey,
+        unique_query_keys: QueryKeys,
+        searchable_query_keys: QueryKeys,
+        obj: SyftObject,
+    ) -> None:
+        # we should lock
+        uqks = unique_query_keys.all
+        for qk in uqks:
+            ck_key, ck_value = qk.key, qk.value
+            ck_col = self.unique_keys[ck_key]
+            ck_col[ck_value] = store_query_key.value
+            self.unique_keys[ck_key] = ck_col
+
+        self.unique_keys[store_query_key.key][
+            store_query_key.value
+        ] = store_query_key.value
+
+        sqks = searchable_query_keys.all
+        for qk in sqks:
+            ck_key, ck_value = qk.key, qk.value
+            ck_col = self.searchable_keys[ck_key]
+            ck_col[ck_value].append(store_query_key.value)
+            self.searchable_keys[ck_key] = ck_col
+
+        self.data[store_query_key.value] = obj
+
+    def set(
+        self,
+        obj: SyftObject,
+    ) -> Result[SyftObject, str]:
+        try:
+            store_query_key = self.settings.store_key.with_obj(obj)
+            exists = store_query_key.value in self.data
+            unique_query_keys = self.settings.unique_keys.with_obj(obj)
+            searchable_query_keys = self.settings.searchable_keys.with_obj(obj)
+
+            ck_check = self.validate_collection_keys(
+                store_query_key=store_query_key, unique_query_keys=unique_query_keys
+            )
+            if not exists and ck_check == UniqueKeyCheck.EMPTY:
+                self.set_data_and_keys(
+                    store_query_key=store_query_key,
+                    unique_query_keys=unique_query_keys,
+                    searchable_query_keys=searchable_query_keys,
+                    obj=obj,
+                )
+        except Exception as e:
+            return Err(f"Failed to write obj {obj}. {e}")
+        return Ok(obj)
+
+    def remove_keys(
+        self,
+        unique_query_keys: QueryKeys,
+        searchable_query_keys: QueryKeys,
+    ) -> None:
+
+        uqks = unique_query_keys.all
+        for qk in uqks:
+            ck_key, ck_value = qk.key, qk.value
+            ck_col = self.unique_keys[ck_key]
+            ck_col.pop(ck_value, None)
+
+        sqks = searchable_query_keys.all
+        for qk in sqks:
+            ck_key, ck_value = qk.key, qk.value
+            ck_col = self.searchable_keys[ck_key]
+            ck_col.pop(ck_value, None)
+
+    def update(self, qk: QueryKey, obj: SyftObject) -> Result[SyftObject, str]:
+        try:
+            _original_obj = self.data[qk.value]
+            _original_unique_keys = self.settings.unique_keys.with_obj(_original_obj)
+            _original_searchable_keys = self.settings.searchable_keys.with_obj(
+                _original_obj
+            )
+
+            # 🟡 TODO 28: Add locking in this transaction
+
+            # remove old keys
+            self.remove_keys(
+                unique_query_keys=_original_unique_keys,
+                searchable_query_keys=_original_searchable_keys,
+            )
+
+            # update the object with new data
+            for key, value in obj.dict(exclude_none=True).items():
+                setattr(_original_obj, key, value)
+
+            # update data and keys
+            self.set_data_and_keys(
+                store_query_key=qk,
+                unique_query_keys=self.settings.unique_keys.with_obj(_original_obj),
+                searchable_query_keys=self.settings.searchable_keys.with_obj(
+                    _original_obj
+                ),
+                obj=_original_obj,
+            )
+
+            return Ok(_original_obj)
+        except Exception as e:
+            return Err(f"Failed to update obj {obj} with error: {e}")
+
+    def get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
+        matches = []
+        for qk in qks.all:
+            if qk.value in self.data:
+                matches.append(self.data[qk.value])
+        return Ok(matches)
+
+    def delete_unique_keys_for(self, obj: SyftObject) -> Result[SyftSuccess, str]:
+        for _unique_ck in self.unique_cks:
+            qk = _unique_ck.with_obj(obj)
+            self.unique_keys[qk.key].pop(qk.value, None)
+        return Ok(SyftSuccess(message="Deleted"))
+
+    def delete_search_keys_for(self, obj: SyftObject) -> Result[SyftSuccess, str]:
+        for _search_ck in self.searchable_cks:
+            qk = _search_ck.with_obj(obj)
+            self.searchable_keys[qk.key].pop(qk.value, None)
+        return Ok(SyftSuccess(message="Deleted"))
+
+    def get_keys_index(self, qks: QueryKeys) -> Result[Set[QueryKey], str]:
+        try:
+            # match AND
+            subsets = []
+            for qk in qks.all:
+                subset = {}
+                ck_key, ck_value = qk.key, qk.value
+                if ck_key not in self.unique_keys:
+                    return Err(f"Failed to query index with {qk}")
+                ck_col = self.unique_keys[ck_key]
+                if ck_value not in ck_col.keys():
+                    # must be at least one in all query keys
+                    continue
+                store_value = ck_col[ck_value]
+                subsets.append({store_value})
+
+            if len(subsets) == 0:
+                return Ok(set())
+            # AND
+            subset = subsets.pop()
+            for s in subsets:
+                subset = subset.intersection(s)
+
+            return Ok(subset)
+        except Exception as e:
+            return Err(f"Failed to query with {qks}. {e}")
+
+    def find_keys_search(self, qks: QueryKeys) -> Result[Set[QueryKey], str]:
+        try:
+            # match AND
+            subsets = []
+            for qk in qks.all:
+                subset = {}
+                ck_key, ck_value = qk.key, qk.value
+                if ck_key not in self.searchable_keys:
+                    return Err(f"Failed to search with {qk}")
+                ck_col = self.searchable_keys[ck_key]
+                if ck_value not in ck_col.keys():
+                    # must be at least one in all query keys
+                    continue
+                store_values = ck_col[ck_value]
+                subsets.append(set(store_values))
+
+            if len(subsets) == 0:
+                return Ok(set())
+            # AND
+            subset = subsets.pop()
+            for s in subsets:
+                subset = subset.intersection(s)
+
+            return Ok(subset)
+        except Exception as e:
+            return Err(f"Failed to query with {qks}. {e}")
+
+    def create(self, obj: SyftObject) -> Result[SyftObject, str]:
+        pass
+
+    def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
+        try:
+            _obj = self.data.pop(qk.value)
+            self.delete_unique_keys_for(_obj)
+            self.delete_search_keys_for(_obj)
+            return Ok(SyftSuccess(message="Deleted"))
+        except Exception as e:
+            return Err(f"Failed to delete with query key {qk} with error: {e}")
 
 
 # the base document store is already a dict but we can change it later
