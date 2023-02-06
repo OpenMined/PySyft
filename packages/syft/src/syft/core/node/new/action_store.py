@@ -87,7 +87,7 @@ class ActionStore:
     def get(self, uid: UID, credentials: SyftCredentials) -> Result[SyftObject, str]:
         # if you get something you need READ permission
         read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
-        if True or self.has_permission(read_permission):
+        if self.has_permission(read_permission):
             data = self.data[uid]
             syft_object = SyftObject.from_mongo(data)
             return Ok(syft_object)
