@@ -129,9 +129,16 @@ def expand_signature(signature: Signature, autosplat: List[str]) -> Signature:
         else:
             new_mapping[k] = v
 
+    # Reorder the parameter based on if they have default value or not
+    new_params = sorted(
+        new_mapping.values(),
+        key=lambda param: param.default is param.empty,
+        reverse=True,
+    )
+
     return Signature(
         **{
-            "parameters": list(new_mapping.values()),
+            "parameters": new_params,
             "return_annotation": signature.return_annotation,
         }
     )

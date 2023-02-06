@@ -86,7 +86,9 @@ class UserService(AbstractService):
 
     @service_method(path="user.search", name="search", autosplat=["user_search"])
     def search(
-        self, context: AuthedServiceContext, user_search: UserSearch
+        self,
+        context: AuthedServiceContext,
+        user_search: UserSearch,
     ) -> Union[List[UserView], SyftError]:
         kwargs = user_search.dict(exclude_none=True)
         result = self.stash.find_all(**kwargs)
