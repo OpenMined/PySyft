@@ -1,6 +1,9 @@
 # stdlib
 from datetime import date
+from io import StringIO
 import os
+import sys
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -13,6 +16,7 @@ from result import Ok
 from result import Result
 
 # relative
+from .....logger import logger
 from .....oblv.constants import LOCAL_MODE
 from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serializable import serializable
@@ -39,13 +43,17 @@ class DictObject(SyftObject):
     __canonical_name__ = "Dict"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    base_dict: Dict[UID, dict] = {}
+    base_dict: Dict[Any, Any] = {}
 
     # serde / storage rules
     __attr_state__ = ["id", "base_dict"]
 
     __attr_searchable__ = []
-    __attr_unique__ = []
+    __attr_unique__ = ["id"]
+
+
+stdout_ = sys.stdout
+stderr_ = sys.stderr
 
 
 @serializable(recursive_serde=True)
@@ -236,6 +244,7 @@ class TaskService(AbstractService):
         self, context: AuthedServiceContext, task: Task, private_input_map: dict
     ) -> Result[Ok, Err]:
         enclave_task = self.task_stash.get_by_uid(task.id)
+
         if enclave_task.is_ok():
             # 🟡 TODO: To Remove double nesting of result variable in Collection access
             enclave_task = enclave_task.ok().ok()
@@ -243,7 +252,16 @@ class TaskService(AbstractService):
             return enclave_task.err()
 
         task_owner = task.owners[0]
+        # TODO 🟣 Sometimes the pydantic mapping is converted to dict values
+        enclave_task.owners = [
+            NodeView(**owner) if isinstance(owner, dict) else owner
+            for owner in enclave_task.owners
+        ]
         if task_owner in enclave_task.owners:
+            if enclave_task.status[task_owner] in ["Approved", "Denied"]:
+                return Err(
+                    f"Cannot Modify the status of task: {task.id} which has Approved/Denied"
+                )
             enclave_task.status[task_owner] = task.status[task_owner]
             # Create nested action store of DO for storing intermediate data
             if not self.action_store.exists(task_owner.node_uid):
@@ -264,11 +282,112 @@ class TaskService(AbstractService):
                 else:
                     return result.err()
 
+            # Check if all the DO approve the code execution
+            code_status_check = set(enclave_task.status.values())
+            if len(code_status_check) == 1 and "Approved" in code_status_check:
+                enclave_task.execution = "executing"
+                self.task_stash.update(enclave_task)
+                # TODO 🟣 Branch to separate thread for execution of enclave task
+                self.execute_task(enclave_task=enclave_task, context=context)
+
+            self.task_stash.update(enclave_task)
+
             return Ok(True)
         else:
             return Err(
-                f"Task: {task.id.no_dash} in enclave does not contain {task.owners[0].name} "
+                f"Task: {task.id.no_dash}:{enclave_task.owners} in enclave does not contain {task.owners[0].name} "
             )
+
+    def fetch_private_inputs(
+        self, enclave_task: Task, context: AuthedServiceContext
+    ) -> Dict:
+        inputs = {}
+        for domain in enclave_task.owners:
+            # TODO 🟣 Sometimes the pydantic mapping is converted to dict values
+            domain = NodeView(**domain) if isinstance(domain, dict) else domain
+            domain_input = self.action_store.get(
+                uid=domain.node_uid,
+                credentials=context.credentials,
+                skip_permission=True,
+            )
+            if domain_input.is_ok():
+                inputs.update(domain_input.ok().base_dict[enclave_task.id])
+            else:
+                return domain_input.err()
+        return inputs
+
+    def execute_task(self, enclave_task: Task, context: AuthedServiceContext) -> None:
+        global stdout_
+        global stderr_
+
+        code = enclave_task.code
+        inputs = self.fetch_private_inputs(enclave_task=enclave_task, context=context)
+        outputs = enclave_task.outputs
+
+        try:
+            logger.info(f"inital outputs: {outputs}")
+
+            # Check overlap between inputs and vars
+            global_input_inter = set(globals().keys()).intersection(set(inputs.keys()))
+            local_input_inter = set(vars().keys()).intersection(set(inputs.keys()))
+
+            # If there's some intersection between global variables and input
+            if global_input_inter or local_input_inter:
+                stderr_message = " You can't use variable name: "
+                stderr_message += ",".join(list(global_input_inter))
+                stderr_message += ",".join(list(local_input_inter))
+
+                enclave_task.execution = "failed"
+                self.task_stash.update(enclave_task)
+                return Err("Variable conflicts in global space")
+
+            # create file-like string to capture ouputs
+            codeOut = StringIO()
+            codeErr = StringIO()
+
+            sys.stdout = codeOut
+            sys.stderr = codeErr
+
+            locals().update(inputs)
+            # byte_code = compile_restricted(code, "<string>", "exec")
+            # exec(byte_code, restricted_globals)
+            exec(code)  # nosec
+
+            for output in outputs:
+                logger.info(f"variable: {output} result: {vars()[output]}")
+                outputs[output] = vars()[output]
+
+            # restore stdout and stderr
+            sys.stdout = stdout_
+            sys.stderr = stderr_
+
+            logger.info(outputs)
+
+            logger.info("Error: " + str(codeErr.getvalue()))
+            logger.info("Std ouputs: " + str(codeOut.getvalue()))
+
+            new_id = UID()
+
+            dict_object = DictObject()
+            dict_object.base_dict = outputs
+            print("dict object", dict_object)
+            self.action_store.set(
+                uid=new_id,
+                credentials=context.credentials,
+                syft_object=dict_object,
+            )
+            print("Output id", new_id)
+            enclave_task.outputs = {"output_id": new_id}
+            enclave_task.execution = "Done"
+            self.task_stash.update(enclave_task)
+        except Exception as e:
+            sys.stdout = stdout_
+            sys.stderr = stderr_
+            raise e
+            print("Task Failed with Exception", e)
+        finally:
+            sys.stdout = stdout_
+            sys.stderr = stderr_
 
     @service_method(path="task.get", name="get")
     def get(self, context: AuthedServiceContext, uid: UID) -> Result[ActionObject, str]:

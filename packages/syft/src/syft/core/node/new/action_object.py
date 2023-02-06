@@ -168,6 +168,7 @@ def get_property(obj, method) -> Any:
     return klass_method.__get__(obj)
 
 
+@serializable(recursive_serde=True)
 class ActionObject(SyftObject):
     __attr_searchable__: List[str] = []
     __canonical_name__ = "ActionObject"
