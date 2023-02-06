@@ -24,6 +24,7 @@ from .service import service_method
 from .user import User
 from .user import UserCreate
 from .user import UserPrivateKey
+from .user import UserSearch
 from .user import UserUpdate
 from .user import UserView
 from .user import check_pwd
@@ -77,6 +78,19 @@ class UserService(AbstractService):
     def find_all(
         self, context: AuthedServiceContext, **kwargs: Dict[str, Any]
     ) -> Union[List[UserView], SyftError]:
+        result = self.stash.find_all(**kwargs)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        users = result.ok()
+        return [user.to(UserView) for user in users] if users is not None else []
+
+    @service_method(path="user.search", name="search", autosplat=["user_search"])
+    def search(
+        self,
+        context: AuthedServiceContext,
+        user_search: UserSearch,
+    ) -> Union[List[UserView], SyftError]:
+        kwargs = user_search.dict(exclude_none=True)
         result = self.stash.find_all(**kwargs)
         if result.is_err():
             return SyftError(message=str(result.err()))

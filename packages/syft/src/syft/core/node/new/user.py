@@ -171,6 +171,17 @@ class UserCreate(UserUpdate):
 
 
 @serializable(recursive_serde=True)
+class UserSearch(SyftObject):
+    __canonical_name__ = "UserSearch"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: Optional[UID]
+    email: Optional[EmailStr]
+    verify_key: Optional[SyftVerifyKey]
+    name: Optional[str]
+
+
+@serializable(recursive_serde=True)
 class UserView(UserUpdate):
     __canonical_name__ = "UserView"
     __version__ = SYFT_OBJECT_VERSION_1
