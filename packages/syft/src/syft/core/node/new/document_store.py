@@ -22,9 +22,11 @@ from result import Result
 
 # relative
 from ....core.node.common.node_table.syft_object import SyftObject
+from ....telemetry import instrument
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .base import SyftBaseModel
+from .response import SyftSuccess
 
 
 def first_or_none(result: Any) -> Optional[Any]:
@@ -201,6 +203,7 @@ class UniqueKeyCheck(Enum):
     ERROR = 2
 
 
+@instrument
 @serializable(recursive_serde=True)
 class BaseCollection:
     def __init__(self, settings: CollectionSettings) -> None:
@@ -367,17 +370,17 @@ class BaseCollection:
                 matches.append(self.data[qk.value])
         return Ok(matches)
 
-    def delete_unique_keys_for(self, obj: SyftObject) -> Result[bool, str]:
+    def delete_unique_keys_for(self, obj: SyftObject) -> Result[SyftSuccess, str]:
         for _unique_ck in self.unique_cks:
             qk = _unique_ck.with_obj(obj)
             self.unique_keys[qk.key].pop(qk.value, None)
-        return Ok(True)
+        return Ok(SyftSuccess(message="Deleted"))
 
-    def delete_search_keys_for(self, obj: SyftObject) -> Result[bool, str]:
+    def delete_search_keys_for(self, obj: SyftObject) -> Result[SyftSuccess, str]:
         for _search_ck in self.searchable_cks:
             qk = _search_ck.with_obj(obj)
             self.searchable_keys[qk.key].pop(qk.value, None)
-        return Ok(True)
+        return Ok(SyftSuccess(message="Deleted"))
 
     def get_keys_index(self, qks: QueryKeys) -> Result[Set[QueryKey], str]:
         try:
@@ -436,17 +439,17 @@ class BaseCollection:
     def create(self, obj: SyftObject) -> Result[SyftObject, str]:
         pass
 
-    def delete(self, qk: QueryKey) -> Result[bool, str]:
-
+    def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
         try:
             _obj = self.data.pop(qk.value)
             self.delete_unique_keys_for(_obj)
             self.delete_search_keys_for(_obj)
-            return Ok(True)
+            return Ok(SyftSuccess(message="Deleted"))
         except Exception as e:
             return Err(f"Failed to delete with query key {qk} with error: {e}")
 
 
+@instrument
 @serializable(recursive_serde=True)
 class DocumentStore:
     collections: Dict[str, BaseCollection]
@@ -461,6 +464,7 @@ class DocumentStore:
         return self.collections[settings.name]
 
 
+@instrument
 class BaseStash:
     object_type: Type[SyftObject]
     settings: CollectionSettings
@@ -571,14 +575,14 @@ class BaseStash:
     def find_all(
         self, **kwargs: Dict[str, Any]
     ) -> Result[List[BaseStash.object_type], str]:
-        return self.query_all_kwargs(*kwargs)
+        return self.query_all_kwargs(**kwargs)
 
     def find_one(
         self, **kwargs: Dict[str, Any]
     ) -> Result[Optional[BaseStash.object_type], str]:
         return self.query_one_kwargs(**kwargs)
 
-    def find_and_delete(self, **kwargs: Dict[str, Any]) -> Result[bool, str]:
+    def find_and_delete(self, **kwargs: Dict[str, Any]) -> Result[SyftSuccess, Err]:
         obj = self.query_one_kwargs(**kwargs)
         if obj.is_err():
             return obj.err()
@@ -590,7 +594,7 @@ class BaseStash:
         qk = self.collection.store_query_key(obj)
         return self.delete(qk=qk)
 
-    def delete(self, qk: QueryKey) -> Result[bool, str]:
+    def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
         return self.collection.delete(qk=qk)
 
     def update(

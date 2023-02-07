@@ -43,15 +43,18 @@ def test_user_stash() -> None:
     result2 = result2.ok()  # temp until we normalise the Result layers
 
     result3 = user_stash.get_by_email(user.email)
-
+    assert result3.is_ok()
+    result3 = result3.ok()
     assert result2 == result3
 
     result4 = user_stash.get_by_signing_key(user.signing_key)
-
+    assert result4.is_ok()
+    result4 = result4.ok()
     assert result2 == result4
 
     result5 = user_stash.get_by_verify_key(user.verify_key)
-
+    assert result5.is_ok()
+    result5 = result5.ok()
     assert result2 == result5
 
     result6 = user_stash.find_one(
@@ -64,7 +67,6 @@ def test_user_stash() -> None:
     assert result6 == result
     assert result6 == result7
 
-    result2 = result2.ok()
     assert user.email == result2.email
     assert user.name == result2.name
     assert user.hashed_password == result2.hashed_password
@@ -80,11 +82,10 @@ def test_user_stash() -> None:
 
     result8 = user_stash.delete_by_uid(uid=user.id)
     result8 = result8.ok()
-    assert result8 is True
+    assert bool(result8) is True
 
     result9 = user_stash.get_by_uid(uid=user.id)
     result9 = result9.ok()
-    result9 = result9.ok()  # fix nesting
     assert result9 is None
 
     result10 = user_stash.set(user)
@@ -94,7 +95,7 @@ def test_user_stash() -> None:
 
     result11 = user_stash.find_and_delete(**{"email": user.email})
     result11 = result11.ok()
-    assert result11 is True
+    assert bool(result11) is True
 
     # update_user = UserUpdate(email="alice@bob.com", name="Bob", institution="OpenMined")
     # result12 = user_stash.update(user=update_user.to(User))
