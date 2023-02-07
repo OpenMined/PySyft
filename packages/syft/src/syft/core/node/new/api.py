@@ -14,6 +14,7 @@ from typing import Union
 
 # third party
 from nacl.exceptions import BadSignatureError
+from nacl.signing import SigningKey
 import requests
 from result import Err
 from result import Ok
@@ -216,7 +217,7 @@ class SyftAPI(SyftObject):
     # version
     __canonical_name__ = "SyftAPI"
     __version__ = SYFT_OBJECT_VERSION_1
-    __attr_allowlist__ = ["endpoints"]
+    __attr_allowlist__ = ["endpoints", "signing_key"]
 
     # fields
     node_uid: Optional[UID] = None
@@ -225,14 +226,20 @@ class SyftAPI(SyftObject):
     api_url: str = ""
     signing_key: Optional[SyftSigningKey] = None
     # serde / storage rules
-    __attr_state__ = ["endpoints"]
+    __attr_state__ = ["endpoints", "signing_key"]
 
     def __post_init__(self) -> None:
         # 🟡 TODO 16: Write user login and key retrieval / local caching
-        self.signing_key = SyftSigningKey.generate()
+        if self.signing_key is None:
+            self.signing_key = SyftSigningKey.generate()
 
     @staticmethod
-    def for_user(node_uid: UID) -> SyftAPI:
+    def for_user(
+        node_uid: UID, signing_key: Union[SyftSigningKey, SigningKey]
+    ) -> SyftAPI:
+        if isinstance(signing_key, SigningKey):
+            signing_key = SyftSigningKey(signing_key=signing_key)
+
         # 🟡 TODO 1: Filter SyftAPI with User VerifyKey
         # relative
         # TODO: Maybe there is a possibility of merging ServiceConfig and APIEndpoint
@@ -248,7 +255,7 @@ class SyftAPI(SyftObject):
                 has_self=False,
             )
             endpoints[path] = endpoint
-        return SyftAPI(node_uid=node_uid, endpoints=endpoints)
+        return SyftAPI(node_uid=node_uid, endpoints=endpoints, signing_key=signing_key)
 
     def make_call(self, api_call: SyftAPICall) -> Result:
         signed_call = api_call.sign(credentials=self.signing_key)
