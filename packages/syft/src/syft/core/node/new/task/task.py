@@ -30,8 +30,7 @@ class NodeView(BaseModel):
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, NodeView):
             return False
-        elif self.name == other.name and self.node_uid == other.node_uid:
-            return True
+        return self.name == other.name and self.node_uid == other.node_uid
 
     def __hash__(self) -> int:
         return hash((self.name, self.node_uid))

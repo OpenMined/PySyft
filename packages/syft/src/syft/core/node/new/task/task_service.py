@@ -83,10 +83,8 @@ class TaskService(AbstractService):
         """Enclave Submit task"""
         # TODO 🟣 Check for permission after it is fully integrated
 
-        if owners and not isinstance(owners, list):
-            return Err(
-                f"Enclave task creation should contain valid owners list : {owners}"
-            )
+        if not owners:
+            return Err("Enclave task creation should contain atleast one owner")
         task = Task(
             id=task_id,
             inputs=inputs,
