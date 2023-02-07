@@ -44,9 +44,9 @@ def test_create_role_message(domain: sy.Domain) -> None:
     user_key = SigningKey(domain.verify_key.encode())
 
     msg = CreateRoleMessage(
-        address=domain.address,
+        address=domain.id,
         name=role_name,
-        reply_to=domain.address,
+        reply_to=domain.id,
     )
 
     reply = None
@@ -66,10 +66,10 @@ def test_update_role_message(domain: sy.Domain) -> None:
     user_key = SigningKey(domain.verify_key.encode())
 
     msg = UpdateRoleMessage(
-        address=domain.address,
+        address=domain.id,
         role_id=role.id,
         name=new_name,
-        reply_to=domain.address,
+        reply_to=domain.id,
     )
 
     reply = None
@@ -88,9 +88,9 @@ def test_get_role_message(domain: sy.Domain) -> None:
     user_key = SigningKey(domain.verify_key.encode())
 
     msg = GetRoleMessage(
-        address=domain.address,
+        address=domain.id,
         role_id=role.id,
-        reply_to=domain.address,
+        reply_to=domain.id,
     )
 
     reply = None
@@ -108,8 +108,8 @@ def test_get_roles_message(domain: sy.Domain) -> None:
     user_key = SigningKey(domain.verify_key.encode())
 
     msg = GetRolesMessage(
-        address=domain.address,
-        reply_to=domain.address,
+        address=domain.id,
+        reply_to=domain.id,
     )
 
     reply = None
@@ -131,8 +131,8 @@ def test_del_role_manager(domain: sy.Domain) -> None:
     role = domain.roles.first(**{"name": "RoleToDelete"})
 
     msg = DeleteRoleMessage(
-        address=domain.address,
-        reply_to=domain.address,
+        address=domain.id,
+        reply_to=domain.id,
         role_id=role.id,
     )
 

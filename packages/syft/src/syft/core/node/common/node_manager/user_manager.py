@@ -12,6 +12,7 @@ from typing import Tuple
 from bcrypt import checkpw
 from bcrypt import gensalt
 from bcrypt import hashpw
+import jax
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
@@ -19,6 +20,7 @@ from pymongo import MongoClient
 
 # relative
 from ....common.serde.serialize import _serialize
+from ...new.user import User
 from ..exceptions import InvalidCredentialsError
 from ..exceptions import UserNotFoundError
 from ..node_manager.role_manager import NewRoleManager
@@ -279,35 +281,37 @@ class NoSQLUserManager(NoSQLDatabaseManager):
         added_by: Optional[str] = "",
         institution: Optional[str] = "",
         website: Optional[str] = "",
-    ) -> Optional[NoSQLSyftUser]:
+    ) -> Optional[User]:
         salt, hashed = self.__salt_and_hash_password(password, 12)
         curr_len = len(self)
-
-        row_exists = self.find_one({email: email})
-        if row_exists:
-            return None
-        else:
-            private_key = SigningKey(bytes.fromhex(node.setup.first().signing_key))
-            user = NoSQLSyftUser(
-                name=name,
-                email=email,
-                role=role,
-                budget=budget,
-                private_key=private_key.encode(encoder=HexEncoder).decode("utf-8"),
-                verify_key=private_key.verify_key.encode(encoder=HexEncoder).decode(
-                    "utf-8"
-                ),
-                hashed_password=hashed,
-                salt=salt,
-                created_at=str(datetime.now()),
-                id_int=curr_len + 1,
-                daa_pdf=daa_pdf,
-                added_by=added_by,
-                institution=institution,
-                website=website,
-            )
-            self._collection.insert_one(user.to_mongo())
-            return user
+        try:
+            row_exists = self.find_one({email: email})
+            if row_exists:
+                return None
+            else:
+                private_key = SigningKey(bytes.fromhex(node.setup.first().signing_key))
+                user = NoSQLSyftUser(
+                    name=name,
+                    email=email,
+                    role=role,
+                    budget=budget,
+                    private_key=private_key.encode(encoder=HexEncoder).decode("utf-8"),
+                    verify_key=private_key.verify_key.encode(encoder=HexEncoder).decode(
+                        "utf-8"
+                    ),
+                    hashed_password=hashed,
+                    salt=salt,
+                    created_at=str(datetime.now()),
+                    id_int=curr_len + 1,
+                    daa_pdf=daa_pdf,
+                    added_by=added_by,
+                    institution=institution,
+                    website=website,
+                )
+                self._collection.insert_one(user.to_mongo())
+                return user
+        except Exception as e:
+            print("create_admin failed", e)
 
     def first(self, **kwargs: Any) -> NoSQLSyftUser:
         result = super().find_one(kwargs)
@@ -487,6 +491,9 @@ class NoSQLUserManager(NoSQLDatabaseManager):
     def deduct_epsilon_for_user(
         self, verify_key: VerifyKey, old_budget: float, epsilon_spend: float
     ) -> bool:
+        if isinstance(epsilon_spend, jax.numpy.DeviceArray) and len(epsilon_spend) == 1:
+            epsilon_spend = float(epsilon_spend)
+
         user = self.get_user(verify_key=verify_key)
         if user.budget != old_budget:
             raise RefreshBudgetException(

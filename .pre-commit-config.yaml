@@ -15,7 +15,7 @@ repos:
         always_run: true
       - id: check-added-large-files
         always_run: true
-        exclude: ^(packages/syft/src/syft/cache/constant2epsilon_1200k.npy|packages/grid/backend/wheels/.*|packages/syft/docs/img/header.png|packages/syft/docs/img/terminalizer.gif|notebooks/padawan)
+        exclude: ^(packages/syft/src/syft/cache/constant2epsilon_1200k.npy|packages/grid/backend/wheels/.*|packages/syft/docs/img/header.png|packages/syft/docs/img/terminalizer.gif|notebooks/padawan|notebooks/Experimental)
       - id: check-yaml
         always_run: true
         exclude: ^(packages/grid/k8s/rendered/)
@@ -55,7 +55,7 @@ repos:
           )$
 
   - repo: https://github.com/pycqa/isort
-    rev: 5.10.1
+    rev: 5.12.0
     hooks:
       - id: isort
         name: isort

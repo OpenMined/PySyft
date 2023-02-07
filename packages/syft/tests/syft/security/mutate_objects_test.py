@@ -104,7 +104,7 @@ def test_store_overwrite_key(
         args=[guest_y],
         kwargs={},
         id_at_location=target_uid,  # normal destination changed
-        address=client.address,
+        address=client.node_uid,
     )
 
     # ID collision exception

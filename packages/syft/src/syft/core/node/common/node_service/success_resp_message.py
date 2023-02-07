@@ -8,7 +8,6 @@ from typing_extensions import final
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
-from ....io.address import Address
 
 
 @serializable(recursive_serde=True)
@@ -18,7 +17,7 @@ class SuccessResponseMessage(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         resp_msg: str,
         msg_id: Optional[UID] = None,
     ):
@@ -32,7 +31,7 @@ class ErrorResponseMessage(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         resp_msg: str,
         msg_id: Optional[UID] = None,
     ):

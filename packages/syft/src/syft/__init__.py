@@ -26,7 +26,7 @@ Syft "python" functionality includes the following modules:
 To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
 
-__version__ = "0.7.0-beta.62"
+__version__ = "0.8.0-beta.0"
 
 # stdlib
 from pathlib import Path
@@ -64,7 +64,8 @@ from .core.node.domain import Domain  # noqa: F401
 from .core.node.domain import DomainClient  # noqa: F401
 from .core.node.network import Network  # noqa: F401
 from .core.node.network_client import NetworkClient  # noqa: F401
-from .core.node.new.user import UserCollection  # noqa: F401
+from .core.node.new.client import login as new_login  # noqa: F401
+from .core.node.new.user_service import UserService  # noqa: F401
 
 # Convenience Constructors
 from .core.node.vm import VirtualMachine  # noqa: F401
@@ -98,6 +99,10 @@ from .registry import NetworkRegistry  # noqa: F401
 from .telemetry import instrument  # noqa: F401
 from .user_settings import UserSettings  # noqa: F401
 from .user_settings import settings  # noqa: F401
+from .version_compare import make_requires
+
+LATEST_STABLE_SYFT = "0.7"
+requires = make_requires(LATEST_STABLE_SYFT, __version__)
 
 sys.path.append(str(Path(__file__)))
 

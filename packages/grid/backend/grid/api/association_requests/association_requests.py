@@ -59,11 +59,11 @@ def send_association_request(
 
     # Build Syft Message
     msg = SendAssociationRequestMessage(
-        address=node.address,
+        address=node.node_uid,
         metadata={},
         target=target,
         source=source,
-        reply_to=node.address,
+        reply_to=node.node_uid,
     ).sign(signing_key=user_key)
 
     # Process syft message
@@ -96,11 +96,11 @@ def receive_association_request(
     """
     # Build Syft Message
     msg = ReceiveAssociationRequestMessage(
-        address=node.address,
+        address=node.node_uid,
         name=name,
         source=source,
         target=target,
-        reply_to=node.address,
+        reply_to=node.node_uid,
     ).sign(signing_key=SigningKey.generate())
 
     # Process syft message
@@ -135,10 +135,10 @@ def respond_association_request(
 
     # Build Syft Message
     msg = RespondAssociationRequestMessage(
-        address=node.address,
+        address=node.node_uid,
         target=target,
         source=source,
-        reply_to=node.address,
+        reply_to=node.node_uid,
     ).sign(signing_key=user_key)
 
     # Process syft message
@@ -166,7 +166,7 @@ def get_all_association_requests(
 
     # Build Syft Message
     msg = GetAssociationRequestsMessage(
-        address=node.address, reply_to=node.address
+        address=node.node_uid, reply_to=node.node_uid
     ).sign(signing_key=user_key)
 
     # Process syft message
@@ -196,9 +196,9 @@ def get_specific_association_route(
 
     # Build Syft Message
     msg = GetAssociationRequestMessage(
-        address=node.address,
+        address=node.node_uid,
         association_request_id=association_request_id,
-        reply_to=node.address,
+        reply_to=node.node_uid,
     ).sign(signing_key=user_key)
 
     # Process syft message
@@ -230,9 +230,9 @@ def delete_association_route(
 
     # Build Syft Message
     msg = DeleteAssociationRequestMessage(
-        address=node.address,
+        address=node.node_uid,
         association_request_id=association_request_id,
-        reply_to=node.address,
+        reply_to=node.node_uid,
     ).sign(signing_key=user_key)
 
     # Process syft message

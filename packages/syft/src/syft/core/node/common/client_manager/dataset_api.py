@@ -12,8 +12,8 @@ from typing import Union
 import pandas as pd
 
 # relative
-from .....core.tensor.autodp.adp_tensor import ADPTensor
 from .....core.tensor.tensor import Tensor
+from .....telemetry import instrument
 from ....common import UID
 from ....common.serde.serialize import _serialize as serialize  # noqa: F401
 from ...abstract.node import AbstractNodeClient
@@ -107,6 +107,7 @@ end_boilerplate = """
         </script>"""
 
 
+@instrument
 class DatasetRequestAPI(RequestAPI):
     def __init__(self, client: AbstractNodeClient):
         super().__init__(
@@ -447,9 +448,7 @@ class Dataset:
         from .....lib.python.util import downcast
 
         if not skip_checks:
-            if not isinstance(value, Tensor) or not isinstance(
-                getattr(value, "child", None), ADPTensor
-            ):
+            if not isinstance(value, Tensor):
                 raise Exception(
                     "ERROR: all private assets must be NumPy ndarray.int32 assets "
                     + "with proper Differential Privacy metadata applied.\n"

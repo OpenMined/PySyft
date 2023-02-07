@@ -22,6 +22,8 @@ from ...core.io.route import SoloRoute
 from ...core.node.common.client import Client
 from ...core.node.domain_client import DomainClient
 from ...core.node.network_client import NetworkClient
+from ...core.node.new.client import SyftClient
+from ...telemetry import instrument
 from ...util import bcolors
 from ...util import verify_tls
 from .grid_connection import GridHTTPConnection
@@ -30,6 +32,7 @@ DEFAULT_PYGRID_PORT = 80
 DEFAULT_PYGRID_ADDRESS = f"http://127.0.0.1:{DEFAULT_PYGRID_PORT}"
 
 
+@instrument
 def connect(
     url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
     conn_type: Type[ClientConnection] = GridHTTPConnection,
@@ -60,21 +63,15 @@ def connect(
         client_type = NetworkClient
 
     # Create a new Solo Route using the selected connection type
-    route = SoloRoute(destination=metadata.node, connection=conn)
+    route = SoloRoute(destination=metadata.id, connection=conn)
 
     kwargs = {
+        "node_uid": metadata.id,
         "name": metadata.name,
         "routes": [route],
         "signing_key": _user_key,
         "version": metadata.version,
     }
-
-    if client_type is NetworkClient:
-        kwargs["network"] = metadata.node
-    elif client_type is DomainClient:
-        kwargs["domain"] = metadata.node
-    else:
-        raise NotImplementedError
 
     # Create a new client using the selected client type
     node = client_type(**kwargs)
@@ -82,6 +79,7 @@ def connect(
     return node
 
 
+@instrument
 def login(
     url: Optional[Union[str, GridURL]] = None,
     port: Optional[int] = None,
@@ -91,10 +89,11 @@ def login(
     verbose: Optional[bool] = True,
     timeout: Optional[float] = None,
     retry: Optional[int] = None,
-) -> Client:
+    via_new_client: Optional[bool] = None,
+) -> Union[Client, SyftClient]:
 
     retry = 5 if retry is None else retry  # Default to 5 retries
-    timeout = 10 if timeout is None else timeout  # Default to 10 seconds
+    timeout = 30 if timeout is None else timeout  # Default to 10 seconds
 
     if password == "changethis":  # nosec
 
@@ -219,6 +218,7 @@ def login(
     return node
 
 
+@instrument
 def register(
     name: Optional[str] = None,
     email: Optional[str] = None,

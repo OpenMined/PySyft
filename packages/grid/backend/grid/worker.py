@@ -1,6 +1,9 @@
 # stdlib
 from typing import Any
 
+# third party
+from celery.utils.log import get_task_logger
+
 # syft absolute
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.node.common.node_service.vpn.vpn_messages import (
@@ -18,6 +21,8 @@ from grid.core.celery_app import celery_app
 from grid.core.config import settings  # noqa: F401
 from grid.core.node import node
 from grid.periodic_tasks import cleanup_incomplete_uploads_from_blob_store
+
+logger = get_task_logger(__name__)
 
 
 # TODO : Should be modified to use exponential backoff (for efficiency)
@@ -51,7 +56,7 @@ def domain_reconnect_network() -> None:
         network_vpn_endpoint = get_network_url().with_path("/api/v1/vpn/status")
         msg = (
             VPNStatusMessageWithReply(kwargs={})
-            .to(address=node.address, reply_to=node.address)
+            .to(address=node.node_uid, reply_to=node.node_uid)
             .sign(signing_key=node.signing_key)
         )
         reply = node.recv_immediate_msg_with_reply(msg=msg)
@@ -81,7 +86,7 @@ def network_connect_self() -> None:
     # TODO: refactor to be non blocking and in a different queue
     msg = (
         VPNJoinSelfMessageWithReply(kwargs={})
-        .to(address=node.address, reply_to=node.address)
+        .to(address=node.node_uid, reply_to=node.node_uid)
         .sign(signing_key=node.signing_key)
     )
     _ = node.recv_immediate_msg_with_reply(msg=msg).message

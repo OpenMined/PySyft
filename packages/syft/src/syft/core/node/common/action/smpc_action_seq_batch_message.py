@@ -9,7 +9,6 @@ from typing import Optional
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
-from ....io.address import Address
 from .smpc_action_message import SMPCActionMessage
 
 
@@ -20,7 +19,7 @@ class SMPCActionSeqBatchMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         smpc_actions: List[SMPCActionMessage],
-        address: Address,
+        address: UID,
         msg_id: Optional[UID] = None,
     ) -> None:
         self.smpc_actions = smpc_actions

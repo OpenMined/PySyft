@@ -23,9 +23,10 @@ class DeviceClient(Client):
 
     def __init__(
         self,
+        node_uid: UID,
         name: Optional[str],
         routes: List[Route],
-        device: SpecificLocation,
+        device: Optional[SpecificLocation] = None,
         network: Optional[Location] = None,
         domain: Optional[Location] = None,
         vm: Optional[Location] = None,
@@ -41,6 +42,7 @@ class DeviceClient(Client):
             vm=vm,
             signing_key=signing_key,
             verify_key=verify_key,
+            node_uid=node_uid,
         )
 
         self.post_init()
@@ -70,7 +72,7 @@ class DeviceClient(Client):
     @property
     def id(self) -> UID:
         """This client points to a vm, this returns the id of that vm."""
-        return self.device.id
+        return self.node_uid
 
     @property
     def vm(self) -> Optional[Location]:

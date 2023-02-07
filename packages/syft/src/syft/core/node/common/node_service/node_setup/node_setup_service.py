@@ -82,7 +82,7 @@ def create_initial_setup(
         try:
             # 5 - Save Node SetUp Configs
             if len(node.setup) == 0:
-                node_id = node.target_id.id
+                node_id = node.id
                 node.setup.register_once(
                     domain_name=msg.domain_name,
                     node_uid=node_id.no_dash,
@@ -114,9 +114,12 @@ def create_initial_setup(
         if create_user and create_setup:
             print("CreateInitialSetUpMessage Successful!")
         else:
-            print(
-                f"Failed CreateInitialSetUpMessage User: {create_user} Setup: {create_setup}"
-            )
+            if len(node.users) == 0:
+                print(
+                    f"Failed CreateInitialSetUpMessage User: {create_user} Setup: {create_setup}"
+                )
+            else:
+                print("Already got a User")
 
         return SuccessResponseMessage(
             address=msg.reply_to,

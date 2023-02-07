@@ -15,7 +15,6 @@ from .....logger import traceback_and_raise
 from .....util import inherit_tags
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
-from ....io.address import Address
 from ....pointer.pointer import Pointer
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
@@ -49,7 +48,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         args: Union[Tuple[Any, ...], List[Any]],
         kwargs: Dict[Any, Any],
         id_at_location: UID,
-        address: Address,
+        address: UID,
         msg_id: Optional[UID] = None,
         is_static: Optional[bool] = False,
     ):

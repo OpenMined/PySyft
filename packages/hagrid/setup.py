@@ -5,13 +5,13 @@ import platform
 from setuptools import find_packages
 from setuptools import setup
 
-__version__ = "0.2.120"
+__version__ = "0.2.128"
 
 DATA_FILES = {"img": ["hagrid/img/*.png"], "hagrid": ["*.yml"]}
 
 packages = [
     "ascii_magic",
-    "click",
+    "click>=7.1",
     "cryptography>=37.0.2",
     "gitpython",
     "jinja2",

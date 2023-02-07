@@ -25,7 +25,7 @@ def test_run_function_or_constructor_action_serde(
         args=args,
         kwargs={},
         id_at_location=UID(),
-        address=root_client.address,
+        address=root_client.node_uid,
         msg_id=UID(),
     )
 

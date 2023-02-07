@@ -14,6 +14,7 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # relative
+from ......lib.python.util import downcast
 from ......logger import error
 from ......util import obj2pointer_type
 from ......util import traceback_and_raise
@@ -22,7 +23,6 @@ from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.serializable import serializable
 from .....common.uid import UID
-from .....io.address import Address
 from .....pointer.pointer import Pointer
 from .....store.proxy_dataset import ProxyDataset
 from ....abstract.node import AbstractNode
@@ -36,8 +36,8 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
-        reply_to: Address,
+        address: UID,
+        reply_to: UID,
         obj_id: Optional[UID] = None,
         msg_id: Optional[UID] = None,
     ):
@@ -58,7 +58,7 @@ class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         results: List[Pointer],
-        address: Address,
+        address: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
@@ -121,11 +121,11 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
                         )
 
                     else:
-                        if hasattr(obj.data, "init_pointer"):
-                            ptr_constructor = obj.data.init_pointer  # type: ignore
+                        obj_data = downcast(obj.data)
+                        if hasattr(obj_data, "init_pointer"):
+                            ptr_constructor = obj_data.init_pointer  # type: ignore
                         else:
-                            ptr_constructor = obj2pointer_type(obj=obj.data)
-
+                            ptr_constructor = obj2pointer_type(obj=obj_data)
                         ptr = ptr_constructor(
                             client=node,
                             id_at_location=obj.id,

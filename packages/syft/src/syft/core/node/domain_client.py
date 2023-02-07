@@ -1,4 +1,5 @@
 # stdlib
+import inspect
 import logging
 import sys
 import time
@@ -27,7 +28,6 @@ from ...util import validate_field
 from ..common.message import SyftMessage
 from ..common.serde.serialize import _serialize as serialize  # noqa: F401
 from ..common.uid import UID
-from ..io.address import Address
 from ..io.location import Location
 from ..io.location.specific import SpecificLocation
 from ..io.route import Route
@@ -58,6 +58,9 @@ from .common.node_service.request_receiver.request_receiver_messages import (
     RequestMessage,
 )
 from .common.node_service.simple.obj_exists import DoesObjectExistMessage
+from .common.node_service.task_submission.task_submission import CreateTask
+from .common.node_service.task_submission.task_submission import GetTasks
+from .common.node_service.task_submission.task_submission import ReviewTask
 from .common.util import check_send_to_blob_storage
 from .common.util import upload_to_s3_using_presigned
 from .enums import PyGridClientEnums
@@ -86,7 +89,7 @@ class RequestQueueClient(AbstractNodeClient):
         )
 
         msg = GetAllRequestsMessage(
-            address=self.client.address, reply_to=self.client.address
+            address=self.client.node_uid, reply_to=self.client.node_uid
         )
 
         requests = self.client.send_immediate_msg_with_reply(msg=msg).requests  # type: ignore
@@ -222,7 +225,7 @@ class RequestQueueClient(AbstractNodeClient):
         )
 
         msg = UpdateRequestHandlerMessage(
-            address=self.client.address, handler=request_handler, keep=keep
+            address=self.client.node_uid, handler=request_handler, keep=keep
         )
         self.client.send_immediate_msg_without_reply(msg=msg)
 
@@ -239,7 +242,7 @@ class RequestHandlerQueueClient:
         )
 
         msg = GetAllRequestHandlersMessage(
-            address=self.client.address, reply_to=self.client.address
+            address=self.client.node_uid, reply_to=self.client.node_uid
         )
         return validate_field(
             self.client.send_immediate_msg_with_reply(msg=msg), "handlers"
@@ -306,9 +309,10 @@ class DomainClient(Client):
 
     def __init__(
         self,
+        node_uid: UID,
         name: Optional[str],
         routes: List[Route],
-        domain: SpecificLocation,
+        domain: Optional[SpecificLocation] = None,
         network: Optional[Location] = None,
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
@@ -326,6 +330,7 @@ class DomainClient(Client):
             signing_key=signing_key,
             verify_key=verify_key,
             version=version,
+            node_uid=node_uid,
         )
 
         self.requests = RequestQueueClient(client=self)
@@ -344,8 +349,51 @@ class DomainClient(Client):
 
     @property
     def privacy_budget(self) -> float:
-        msg = GetRemainingBudgetMessage(address=self.address, reply_to=self.address)
+        msg = GetRemainingBudgetMessage(address=self.node_uid, reply_to=self.node_uid)
         return self.send_immediate_msg_with_reply(msg=msg).budget  # type: ignore
+
+    @property
+    def tasks(self) -> List[Dict[str, str]]:
+        msg = GetTasks(address=self.node_uid, reply_to=self.node_uid, kwargs={}).sign(  # type: ignore
+            signing_key=self.signing_key
+        )
+        return self.send_immediate_msg_with_reply(msg=msg).kwargs
+
+    def code_request(
+        self, code: Union[str, callable], inputs: Dict[str, Any], outputs: List[str]
+    ) -> None:
+        if not inspect.isfunction(code) and not isinstance(code, str):
+            raise Exception("The code should either be a function or  string ...")
+
+        if inspect.isfunction(code):
+            code_str = inspect.getsource(code)
+        else:
+            code_str = code
+
+        for key, value in inputs.items():
+            if not isinstance(value, str):
+                inputs[key] = value.id_at_location.to_string()
+
+        msg = CreateTask(
+            address=self.node_uid,
+            reply_to=self.node_uid,
+            kwargs={"code": code_str, "inputs": inputs, "outputs": outputs},
+        ).sign(  # type: ignore
+            signing_key=self.signing_key
+        )
+
+        self.send_immediate_msg_with_reply(msg=msg)
+
+    def review(self, task_uid: str, approve: True, reason: str) -> None:
+        status = "accepted" if approve else "denied"
+        msg = ReviewTask(
+            address=self.node_uid,
+            reply_to=self.node_uid,
+            kwargs={"task_uid": task_uid, "status": status, "reason": reason},
+        ).sign(  # type: ignore
+            signing_key=self.signing_key
+        )
+        self.send_immediate_msg_with_reply(msg=msg)
 
     def request_budget(
         self,
@@ -366,7 +414,7 @@ class DomainClient(Client):
         msg = CreateBudgetRequestMessage(
             reason=reason,
             budget=eps,
-            address=self.address,
+            address=self.node_uid,
         )
 
         self.send_immediate_msg_without_reply(msg=msg)
@@ -378,7 +426,7 @@ class DomainClient(Client):
         )
 
     def load(
-        self, obj_ptr: Type[Pointer], address: Address, pointable: bool = False
+        self, obj_ptr: Type[Pointer], address: UID, pointable: bool = False
     ) -> None:
         content = {
             RequestAPIFields.ADDRESS: serialize(address, to_bytes=True).decode(
@@ -415,8 +463,8 @@ class DomainClient(Client):
         if content is None:
             content = {}
         # Build Syft Message
-        content[RequestAPIFields.ADDRESS] = self.address
-        content[RequestAPIFields.REPLY_TO] = self.address
+        content[RequestAPIFields.ADDRESS] = self.node_uid
+        content[RequestAPIFields.REPLY_TO] = self.node_uid
         signed_msg = grid_msg(**content).sign(signing_key=self.signing_key)
         # Send to the dest
         response = self.send_immediate_msg_with_reply(msg=signed_msg)
@@ -519,7 +567,7 @@ class DomainClient(Client):
 
     @property
     def id(self) -> UID:
-        return self.domain.id
+        return self.node_uid
 
     @property
     def device(self) -> Optional[Location]:

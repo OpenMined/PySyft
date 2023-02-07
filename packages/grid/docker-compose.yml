@@ -129,8 +129,12 @@ services:
       - JAEGER_HOST=${JAEGER_HOST}
       - JAEGER_PORT=${JAEGER_PORT}
       - ASSOCIATION_TIMEOUT=${ASSOCIATION_TIMEOUT}
+      - DEV_MODE=${DEV_MODE}
+      - DOMAIN_CONNECTION_PORT=${DOMAIN_CONNECTION_PORT}
     command: /start.sh
     network_mode: service:proxy
+    volumes:
+      - credentials-data:/credentials
 
   backend_stream:
     restart: always
@@ -157,8 +161,12 @@ services:
       - TRACE=${TRACE}
       - JAEGER_HOST=${JAEGER_HOST}
       - JAEGER_PORT=${JAEGER_PORT}
+      - DEV_MODE=${DEV_MODE}
+      - DOMAIN_CONNECTION_PORT=${DOMAIN_CONNECTION_PORT}
     command: "/start.sh"
     network_mode: service:proxy
+    volumes:
+      - credentials-data:/credentials
 
   celeryworker:
     restart: always
@@ -187,8 +195,12 @@ services:
       - TRACE=${TRACE}
       - JAEGER_HOST=${JAEGER_HOST}
       - JAEGER_PORT=${JAEGER_PORT}
+      - DEV_MODE=${DEV_MODE}
+      - DOMAIN_CONNECTION_PORT=${DOMAIN_CONNECTION_PORT}
     command: "/worker-start.sh"
     network_mode: service:proxy
+    volumes:
+      - credentials-data:/credentials
 
   headscale:
     profiles:
@@ -250,6 +262,7 @@ services:
       # - "9411:9411"
 
 volumes:
+  credentials-data:
   tailscale-data:
   headscale-data:
   app-redis-data:

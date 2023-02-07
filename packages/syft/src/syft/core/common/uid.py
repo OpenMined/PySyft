@@ -102,6 +102,9 @@ class UID:
     def to_string(self) -> str:
         return self.no_dash
 
+    def __str__(self) -> str:
+        return self.no_dash
+
     def __hash__(self) -> int:
         """Hashes the UID for use in dictionaries and sets
 
@@ -139,6 +142,12 @@ class UID:
 
         try:
             return self.value == other.value
+        except Exception:
+            return False
+
+    def __lt__(self, other: Any) -> bool:
+        try:
+            return self.value < other.value
         except Exception:
             return False
 

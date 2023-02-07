@@ -1,4 +1,7 @@
 # stdlib
+from collections import defaultdict
+import inspect
+from inspect import Signature
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -6,19 +9,40 @@ from typing import KeysView
 from typing import List
 from typing import Optional
 from typing import Sequence
+from typing import Tuple
 from typing import Type
 from typing import Union
 
 # third party
 import pydantic
 from pydantic import BaseModel
+from pydantic import EmailStr
 from pydantic.fields import Undefined
 from typeguard import check_type
 
 # relative
+from .....lib.util import full_name_with_qualname
+from .....lib.util import get_qualname_for
 from ....common import UID
 from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serialize import _serialize as serialize
+from ...new.credentials import SyftVerifyKey
+
+SYFT_OBJECT_VERSION_1 = 1
+SYFT_OBJECT_VERSION_2 = 2
+
+supported_object_versions = [SYFT_OBJECT_VERSION_1, SYFT_OBJECT_VERSION_2]
+
+HIGHEST_SYFT_OBJECT_VERSION = max(supported_object_versions)
+LOWEST_SYFT_OBJECT_VERSION = min(supported_object_versions)
+
+
+class SyftBaseObject(BaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+
+    __canonical_name__: str  # the name which doesn't change even when there are multiple classes
+    __version__: int  # data is always versioned
 
 
 class SyftObjectRegistry:
@@ -54,28 +78,41 @@ class SyftObjectRegistry:
     def get_transform(
         cls, type_from: Type["SyftObject"], type_to: Type["SyftObject"]
     ) -> Callable:
-        klass_from = type_from.__canonical_name__
-        version_from = type_from.__version__
-        klass_to = type_to.__canonical_name__
-        version_to = type_to.__version__
+        if issubclass(type_from, SyftBaseObject):
+            klass_from = type_from.__canonical_name__
+            version_from = type_from.__version__
+        else:
+            klass_from = type_from.__name__
+            version_from = None
+        if issubclass(type_to, SyftBaseObject):
+            klass_to = type_to.__canonical_name__
+            version_to = type_to.__version__
+        else:
+            klass_to = type_to.__name__
+            version_to = None
+
         mapping_string = f"{klass_from}_{version_from}_x_{klass_to}_{version_to}"
         return cls.__object_transform_registry__[mapping_string]
 
 
-class SyftObject(BaseModel, SyftObjectRegistry):
+print_type_cache = defaultdict(list)
+
+
+class SyftObject(SyftBaseObject, SyftObjectRegistry):
     class Config:
         arbitrary_types_allowed = True
 
     # all objects have a UID
-    id: Optional[UID] = None  # consistent and persistent uuid across systems
+    id: UID
 
-    # move this to transforms
-    @pydantic.validator("id", pre=True, always=True)
-    def make_id(cls, v: Optional[UID]) -> UID:
-        return v if isinstance(v, UID) else UID()
+    # # move this to transforms
+    @pydantic.root_validator(pre=True)
+    def make_id(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        id_field = cls.__fields__["id"]
+        if "id" not in values and id_field.required:
+            values["id"] = id_field.type_()
+        return values
 
-    __canonical_name__: str  # the name which doesn't change even when there are multiple classes
-    __version__: int  # data is always versioned
     __attr_state__: List[str]  # persistent recursive serde keys
     __attr_searchable__: List[str]  # keys which can be searched in the ORM
     __attr_unique__: List[
@@ -89,14 +126,66 @@ class SyftObject(BaseModel, SyftObjectRegistry):
     def to_mongo(self) -> Dict[str, Any]:
         d = {}
         for k in self.__attr_searchable__:
-            d[k] = getattr(self, k)
+            # 🟡 TODO 24: pass in storage abstraction and detect unsupported types
+            # if unsupported, convert to string
+            value = getattr(self, k, "")
+            if isinstance(value, SyftVerifyKey):
+                value = str(value)
+            d[k] = value
         blob = serialize(dict(self), to_bytes=True)
         d["_id"] = self.id.value  # type: ignore
         d["__canonical_name__"] = self.__canonical_name__
         d["__version__"] = self.__version__
         d["__blob__"] = blob
+        d["__repr__"] = self.__repr__()
 
         return d
+
+    def __syft_get_funcs__(self) -> List[Tuple[str, Signature]]:
+        funcs = print_type_cache[type(self)]
+        if len(funcs) > 0:
+            return funcs
+
+        for attr in dir(type(self)):
+            obj = getattr(type(self), attr, None)
+            if (
+                "SyftObject" in getattr(obj, "__qualname__", "")
+                and callable(obj)
+                and not isinstance(obj, type)
+                and not attr.startswith("__")
+            ):
+                sig = inspect.signature(obj)
+                funcs.append((attr, sig))
+
+        print_type_cache[type(self)] = funcs
+        return funcs
+
+    def __repr__(self) -> str:
+        class_name = get_qualname_for(type(self))
+        _repr_str = f"class {class_name}:\n"
+        fields = getattr(self, "__fields__", {})
+        for attr in fields.keys():
+            value = getattr(self, attr, "<Missing>")
+            value_type = full_name_with_qualname(type(attr))
+            value_type = value_type.replace("builtins.", "")
+            value = f'"{value}"' if isinstance(value, str) else value
+            _repr_str += f"  {attr}: {value_type} = {value}\n"
+
+        return _repr_str
+        # _repr_str += "\n"
+        # fqn = full_name_with_qualname(type(self))
+        # _repr_str += f'fqn = "{fqn}"\n'
+        # _repr_str += f"mro = {[t.__name__ for t in type(self).mro()]}"
+
+        # _repr_str += "\n\ncallables = [\n"
+        # for func, sig in self.__syft_get_funcs__():
+        #     _repr_str += f"  {func}{sig}: pass\n"
+        # _repr_str += f"]"
+        # return _repr_str
+
+    def _repr_markdown_(self) -> str:
+        text_repr = self.__repr__()
+        return "```python\n" + text_repr + "\n```"
 
     @staticmethod
     def from_mongo(bson: Any) -> "SyftObject":
@@ -157,7 +246,7 @@ class SyftObject(BaseModel, SyftObjectRegistry):
                 if decl.default_factory:
                     # If the value is defined via PrivateAttr with default factory
                     value = decl.default_factory(value)
-                else:
+                elif var_annotation is not None:
                     # Otherwise validate value against the variable annotation
                     check_type(attr, value, var_annotation)
                 setattr(self, attr, value)
@@ -174,40 +263,25 @@ class SyftObject(BaseModel, SyftObjectRegistry):
         self._syft_set_validate_private_attrs_(**kwargs)
         self.__post_init__()
 
+    @classmethod
+    def _syft_keys_types_dict(cls, attr_name: str) -> Dict[str, type]:
+        kt_dict = {}
+        for key in getattr(cls, attr_name, []):
+            type_ = cls.__fields__[key].type_
+            # EmailStr seems to be lost every time the value is set even with a validator
+            # this means the incoming type is str so our validators fail
+            if issubclass(type_, EmailStr):
+                type_ = str
+            kt_dict[key] = type_
+        return kt_dict
 
-# def transform_from(klass_from: str, version_from: int) -> Callable:
-#     def decorator(function: Callable):
-#         klass_name = function.__qualname__.split(".")[0]
-#         self_klass = getattr(sys.modules[function.__module__], klass_name, None)
-#         klass_to = self_klass.__canonical_name__
-#         version_to = self_klass.__version__
+    @classmethod
+    def _syft_unique_keys_dict(cls) -> Dict[str, type]:
+        return cls._syft_keys_types_dict("__attr_unique__")
 
-#         SyftObjectRegistry.add_transform(
-#             klass_from=klass_from,
-#             version_from=version_from,
-#             klass_to=klass_to,
-#             version_to=version_to,
-#             method=function,
-#         )
-
-#         return function
-
-#     return decorator
-
-
-# example of transform_method
-# @transform_method(UserUpdate, User)
-# def user_update_to_user(self: UserUpdate) -> User:
-#     transforms = [
-#         hash_password,
-#         generate_key,
-#         default_role(ServiceRole()),
-#         drop(["password", "password_verify"]),
-#     ]
-#     output = dict(self)
-#     for transform in transforms:
-#         output = transform(output)
-#     return User(**output)
+    @classmethod
+    def _syft_searchable_keys_dict(cls) -> Dict[str, type]:
+        return cls._syft_keys_types_dict("__attr_searchable__")
 
 
 def transform_method(
@@ -241,28 +315,33 @@ def transform_method(
     return decorator
 
 
-# example of simpler transform if you just want to apply the methods like above in a loop
-# @transform(User, UserUpdate)
-# def user_to_update_user() -> List[Callable]:
-#     return [keep(["uid", "email", "name", "role"])]
-
-
 def transform(
     klass_from: Union[type, str],
     klass_to: Union[type, str],
     version_from: Optional[int] = None,
     version_to: Optional[int] = None,
 ) -> Callable:
-    klass_from_str = (
-        klass_from if isinstance(klass_from, str) else klass_from.__canonical_name__
-    )
-    klass_to_str = (
-        klass_to if isinstance(klass_to, str) else klass_to.__canonical_name__
-    )
-    version_from = (
-        version_from if isinstance(version_from, int) else klass_from.__version__
-    )
-    version_to = version_to if isinstance(version_to, int) else klass_to.__version__
+    if isinstance(klass_from, str):
+        klass_from_str = klass_from
+
+    if issubclass(klass_from, SyftBaseObject):
+        klass_from_str = klass_from.__canonical_name__
+        version_from = klass_from.__version__
+
+    if not issubclass(klass_from, SyftBaseObject):
+        klass_from_str = klass_from.__name__
+        version_from = None
+
+    if isinstance(klass_to, str):
+        klass_to_str = klass_to
+
+    if issubclass(klass_to, SyftBaseObject):
+        klass_to_str = klass_to.__canonical_name__
+        version_to = klass_to.__version__
+
+    if not issubclass(klass_to, SyftBaseObject):
+        klass_to_str = klass_to.__name__
+        version_to = None
 
     def decorator(function: Callable):
         transforms = function()
@@ -270,7 +349,7 @@ def transform(
         def wrapper(self: klass_from) -> klass_to:
             output = dict(self)
             for transform in transforms:
-                output = transform(output)
+                output = transform(self, output)
             return klass_to(**output)
 
         SyftObjectRegistry.add_transform(
