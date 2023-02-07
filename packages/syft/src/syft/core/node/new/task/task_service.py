@@ -182,7 +182,8 @@ class TaskService(AbstractService):
         # Fetch private data from action store if the code task is approved
         if approve:
             owner = task.owners[0]
-
+            if isinstance(owner, dict):
+                owner = NodeView(**owner)
             task.status[owner] = "Approved"
             # Retrive input map of the current domain
             private_input_map = {}
@@ -351,7 +352,7 @@ class TaskService(AbstractService):
             locals().update(inputs)
             # byte_code = compile_restricted(code, "<string>", "exec")
             # exec(byte_code, restricted_globals)
-            exec(code)  # nosec
+            exec(code, locals(), locals()) in {}  # nosec
 
             for output in outputs:
                 logger.info(f"variable: {output} result: {vars()[output]}")
