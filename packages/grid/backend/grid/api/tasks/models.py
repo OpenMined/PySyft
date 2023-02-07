@@ -22,6 +22,7 @@ class ReviewTaskModel(BaseModel):
 
 class RunTaskModel(BaseModel):
     task_uid: str
+    poicy_args: str
 
 class TaskOutputs(BaseModel):
     outputs: Dict[str,str]
@@ -40,6 +41,7 @@ class Task(BaseModel):
     outputs: Dict[str, str] = {}
     policy_code: str
     policy_name: str
+    # poicy_args: str
     state: str
 
 

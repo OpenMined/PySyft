@@ -441,11 +441,11 @@ class DomainClient(Client):
         )
         self.send_immediate_msg_with_reply(msg=msg)
 
-    def run_task(self, task_uid: str):
+    def run_task(self, task_uid: str, policy_args):
         msg = RunTask(
             address=self.node_uid,
             reply_to=self.node_uid,
-            kwargs={"task_uid": task_uid},
+            kwargs={"task_uid": task_uid, "policy_args": policy_args},
         ).sign(  # type: ignore
             signing_key=self.signing_key
         )

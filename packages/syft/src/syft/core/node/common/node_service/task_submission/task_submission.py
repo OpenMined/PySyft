@@ -78,7 +78,7 @@ class CreateTask(SyftMessage, DomainMessageRegistry):
             code=self.payload.code,
             policy_code=self.payload.policy_code,
             policy_name=self.payload.policy_name,
-            state={},
+            state=str({}),
             status=TASK_SERVICE_STATUS.PENDING.value,
             created_at=date.today().strftime("%d/%m/%Y"),
             updated_at=" -- ",
@@ -237,13 +237,15 @@ class ReviewTask(SyftMessage, DomainMessageRegistry):
         task = task[0]
 
         init_state = init_policy_state(task.policy_code, task.policy_name)
+        # TODO use our better serialization for the state variable
+        
         node.tasks.update(
             search_params={"uid": task.uid},
             # updated_args={
             #     "execution": {"status": "executing"},
             # },
             updated_args={
-                "state": str(init_state) # TODO serialize
+                "state": str(init_state) 
             }
         )
         # execute_task(node, task.uid, task.code, task.inputs, task.outputs)
@@ -263,6 +265,7 @@ class RunTask(SyftMessage, DomainMessageRegistry):
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         task_uid: str
+        policy_args: str
         
     # Pydantic Inner class to define expected reply payload fields.
     class Reply(ReplyPayload):
@@ -289,13 +292,19 @@ class RunTask(SyftMessage, DomainMessageRegistry):
         # if task.status != EXECUTION_STATUS.ENQUEUED.value:
         #     raise Exception(f"Task {task.uid} not approved")
         
-        outputs = execute_task(node, task.uid, task.code, task.inputs, task.outputs)
+        outputs = execute_task(node, task.uid, task.code, task.inputs, self.payload.outputs)
     
         # TODO deserialize state   
         print(task.state)
         deserialized_state = eval(task.state)
         print(deserialized_state)
-        outputs, state = apply_policy(outputs, task.policy_code, task.policy_name, deserialized_state)
+        outputs, state = apply_policy(
+                            outputs, 
+                            task.policy_code, 
+                            task.policy_name, 
+                            deserialized_state,
+                            task.policy_args
+                        )
         
         # TODO update state
         serialized_state = str(state)
@@ -311,11 +320,14 @@ class RunTask(SyftMessage, DomainMessageRegistry):
         """Returns the list of permission classes."""
         return [UserIsOwner]
 
+# TODO: Figure what to do when the policy code is using object outside our context
 def get_policy(policy_code, policy_name):
     print(policy_code)
+    import syft as sy
     exec(policy_code)
     print(vars().keys())
     policy_class = eval(policy_name)
+    # de_policy_args = eval(policy_args)
     return policy_class() #TODO: add args
 
 def init_policy_state(policy_code, policy_name):
@@ -323,10 +335,11 @@ def init_policy_state(policy_code, policy_name):
     policy_obj.start()
     return policy_obj.state
 
-def apply_policy(outputs, policy_code, policy_name, state):
+def apply_policy(outputs, policy_code, policy_name, state, policy_args):
     policy_obj = get_policy(policy_code, policy_name)
     policy_obj.set_state(state)
-    new_outputs = policy_obj.apply_output(outputs) # TODO: add kwargs
+    policy_args_dict = eval(policy_args)
+    new_outputs = policy_obj.apply_output(outputs, **policy_args_dict) # TODO: add kwargs
     new_state = policy_obj.state
     return new_outputs, new_state
 
