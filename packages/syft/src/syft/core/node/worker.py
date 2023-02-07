@@ -200,7 +200,9 @@ class Worker(NewNode):
         return result
 
     def get_api(self) -> SyftAPI:
-        return SyftAPI.for_user(node_uid=self.id)
+        return SyftAPI.for_user(
+            node_uid=self.id, signing_key=self.signing_key.signing_key
+        )
 
     def get_method_with_context(
         self, function: Callable, context: NodeServiceContext
