@@ -90,3 +90,4 @@ jobs:
         if: steps.changes.outputs.syft == 'true'
         run: |
           pytest -s -m 'fast or slow' --cov syft --cov-fail-under 60 -n auto --durations=50
+          pytest new_tests

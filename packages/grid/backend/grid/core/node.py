@@ -76,9 +76,8 @@ else:
         + "NODE_TYPE to either 'Domain' or 'Network'."
     )
 
-
-root_user = node.users.find_one(search_params={"email": "newinfo@openmined.org"})
-worker.root_user = root_user
+# 🟡 TODO 29: Remove this once we move to mongo instead of in-memory dict
+# This is done to reload in root user to in-memory store
 
 node.loud_print()
 
