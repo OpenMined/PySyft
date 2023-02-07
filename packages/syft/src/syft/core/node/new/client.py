@@ -99,10 +99,13 @@ class HTTPConnection(NodeConnection):
             self._session = session
         return self._session
 
-    def _make_get(self, path: str) -> bytes:
+    def _make_get(self, path: str, query_params: Optional[Dict] = None) -> bytes:
         url = self.url.with_path(path)
         response = self.session.get(
-            str(url), verify=verify_tls(), proxies=HTTPConnection.proxies
+            str(url),
+            verify=verify_tls(),
+            proxies=HTTPConnection.proxies,
+            params=query_params,
         )
         if response.status_code != 200:
             raise requests.ConnectionError(
@@ -134,8 +137,9 @@ class HTTPConnection(NodeConnection):
         metadata_json = json.loads(response)
         return NodeMetadataJSON(**metadata_json)
 
-    def get_api(self) -> SyftAPI:
-        content = self._make_get(self.routes.ROUTE_API.value)
+    def get_api(self, signing_key: Optional[SyftSigningKey] = None) -> SyftAPI:
+        query_params = {"signing_key": str(signing_key)} if signing_key else None
+        content = self._make_get(self.routes.ROUTE_API.value, query_params=query_params)
         obj = _deserialize(content, from_bytes=True)
         obj.connection = self
         return cast(SyftAPI, obj)
@@ -175,8 +179,8 @@ class PythonConnection(NodeConnection):
     def get_node_metadata(self) -> NodeMetadataJSON:
         return self.node.metadata().to(NodeMetadataJSON)
 
-    def get_api(self) -> SyftAPI:
-        obj = self.node.get_api()
+    def get_api(self, signing_key: Optional[SyftSigningKey] = None) -> SyftAPI:
+        obj = self.node.get_api(signing_key=signing_key)
         obj.connection = self
         return obj
 
@@ -255,7 +259,7 @@ class SyftClient:
     @property
     def api(self) -> SyftAPI:
         if self._api is None:
-            self._fetch_api()
+            self._fetch_api(signing_key=self.credentials)
 
         return self._api
 
@@ -263,7 +267,7 @@ class SyftClient:
         signing_key = self.connection.connect(email=email, password=password)
         if signing_key is not None:
             self.credentials = signing_key
-            self._fetch_api()
+            self._fetch_api(signing_key=signing_key)
             if cache:
                 SyftClientSessionCache.add_client(
                     email=email,
@@ -292,8 +296,8 @@ class SyftClient:
         metadata.check_version(__version__)
         self.metadata = metadata
 
-    def _fetch_api(self):
-        _api = self.connection.get_api()
+    def _fetch_api(self, signing_key: Optional[SyftSigningKey] = None):
+        _api = self.connection.get_api(signing_key=signing_key)
         APIRegistry.set_api_for(node_uid=self.id, api=_api)
         self._api = _api
 

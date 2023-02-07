@@ -1,5 +1,6 @@
 # stdlib
 from typing import Any
+from typing import Optional
 
 # third party
 from fastapi import APIRouter
@@ -15,6 +16,7 @@ from pydantic import ValidationError
 from syft import deserialize
 from syft import serialize  # type: ignore
 from syft.core.node.new.context import UnauthedServiceContext
+from syft.core.node.new.credentials import SyftSigningKey
 from syft.core.node.new.credentials import UserLoginCredentials
 from syft.core.node.new.node import NewNode
 from syft.core.node.new.node_metadata import NodeMetadataJSON
@@ -45,25 +47,30 @@ def syft_metadata() -> JSONResponse:
     return worker.metadata().to(NodeMetadataJSON)
 
 
-def handle_syft_new_api() -> Response:
+def handle_syft_new_api(signing_key: Optional[str]) -> Response:
+    _signing_key = (
+        SyftSigningKey.from_string(signing_key)
+        if signing_key is not None
+        else signing_key
+    )
     return Response(
-        serialize(node.get_api(), to_bytes=True),
+        serialize(node.get_api(signing_key=_signing_key), to_bytes=True),
         media_type="application/octet-stream",
     )
 
 
 # get the SyftAPI object
 @router.get("/api")
-def syft_new_api(request: Request) -> Response:
+def syft_new_api(request: Request, signing_key: Optional[str] = None) -> Response:
     if TRACE_MODE:
         with trace.get_tracer(syft_new_api.__module__).start_as_current_span(
             syft_new_api.__qualname__,
             context=extract(request.headers),
             kind=trace.SpanKind.SERVER,
         ):
-            return handle_syft_new_api()
+            return handle_syft_new_api(signing_key=signing_key)
     else:
-        return handle_syft_new_api()
+        return handle_syft_new_api(signing_key=signing_key)
 
 
 def handle_new_api_call(data: bytes) -> Response:

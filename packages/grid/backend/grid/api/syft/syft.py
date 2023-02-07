@@ -1,6 +1,7 @@
 # stdlib
 import json
 from typing import Any
+from typing import Optional
 
 # third party
 from fastapi import APIRouter
@@ -17,6 +18,7 @@ from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.common.message import SignedMessage
 from syft.core.node.enums import RequestAPIFields
+from syft.core.node.new.credentials import SyftSigningKey
 from syft.telemetry import TRACE_MODE
 
 # grid absolute
@@ -53,9 +55,14 @@ def syft_metadata() -> Response:
 
 
 @router.get("/new_api", response_model=str)
-def syft_new_api() -> Response:
+def syft_new_api(signing_key: Optional[str] = None) -> Response:
+    _signing_key = (
+        SyftSigningKey.from_string(signing_key)
+        if signing_key is not None
+        else signing_key
+    )
     return Response(
-        serialize(node.get_api(), to_bytes=True),
+        serialize(node.get_api(signing_key=_signing_key), to_bytes=True),
         media_type="application/octet-stream",
     )
 

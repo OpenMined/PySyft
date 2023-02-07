@@ -221,7 +221,6 @@ class GridHTTPConnection(HTTPConnection):
             print(f"Failed to upgrade to HTTPS. {e}")
 
         obj = _deserialize(response.content, from_bytes=True)
-        obj.api_url = f"{str(self.base_url)}/syft/new_api_call"
         return cast(SyftAPI, obj)
 
     def _get_metadata(self, timeout: Optional[float] = 2) -> Tuple:

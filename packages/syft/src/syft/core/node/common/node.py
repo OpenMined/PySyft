@@ -45,6 +45,7 @@ from ..common.exceptions import OblvEnclaveError
 from ..common.exceptions import OblvEnclaveUnAuthorizedError
 from ..common.exceptions import OblvKeyNotFoundError
 from ..common.exceptions import OblvProxyConnectPCRError
+from ..new.credentials import SyftSigningKey
 from .action.exception_action import ExceptionMessage
 from .action.exception_action import UnknownPrivateException
 from .client import Client
@@ -383,7 +384,8 @@ class Node(AbstractNode):
             version=str(__version__),
         )
 
-    def get_api(self) -> SyftAPI:
+    def get_api(self, signing_key: Optional[SyftSigningKey] = None) -> SyftAPI:
+        signing_key = self.signing_key if signing_key is None else signing_key
         return SyftAPI.for_user(node_uid=self.id, signing_key=self.signing_key)
 
     def add_peer_routes(self, peer: NoSQLNode) -> None:

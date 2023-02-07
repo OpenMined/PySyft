@@ -291,7 +291,6 @@ class DeploymentClient:
         )
         self.sanity_check_oblv_response(req)
         obj = deserialize(req.content, from_bytes=True)
-        obj.api_url = f"{self.__conn_string}/worker/syft_api_call"
         return cast(SyftAPI, obj)
 
     # public attributes
