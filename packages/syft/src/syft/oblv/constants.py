@@ -5,4 +5,4 @@ REF = "dev"
 REGION = "us-east-1"
 VCS = "github"
 VISIBILITY = "private"
-LOCAL_MODE = True
+LOCAL_MODE = False
