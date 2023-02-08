@@ -22,16 +22,20 @@ from result import Result
 
 # relative
 from ....core.node.common.node_table.syft_object import SyftObject
+from ....telemetry import instrument
+from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .base import SyftBaseModel
+from .response import SyftSuccess
 
 
 def first_or_none(result: Any) -> Optional[Any]:
     if hasattr(result, "__len__") and len(result) > 0:
-        return result[0]
-    return result
+        return Ok(result[0])
+    return Ok(None)
 
 
+@serializable(recursive_serde=True)
 class CollectionKey(BaseModel):
     key: str
     type_: type
@@ -45,6 +49,7 @@ class CollectionKey(BaseModel):
         return QueryKey.from_obj(collection_key=self, obj=obj)
 
 
+@serializable(recursive_serde=True)
 class CollectionKeys(BaseModel):
     cks: Union[CollectionKey, Tuple[CollectionKey, ...]]
 
@@ -77,6 +82,7 @@ class CollectionKeys(BaseModel):
             return self.with_tuple(*obj_arg)
 
 
+@serializable(recursive_serde=True)
 class QueryKey(CollectionKey):
     value: Any
 
@@ -110,6 +116,7 @@ class QueryKey(CollectionKey):
         return QueryKey(key=ck_key, type_=ck_type, value=ck_value)
 
 
+@serializable(recursive_serde=True)
 class CollectionKeysWithUID(CollectionKeys):
     uid_pk: CollectionKey
 
@@ -121,6 +128,7 @@ class CollectionKeysWithUID(CollectionKeys):
         return all_keys
 
 
+@serializable(recursive_serde=True)
 class QueryKeys(SyftBaseModel):
     qks: Union[QueryKey, Tuple[QueryKey, ...]]
 
@@ -170,6 +178,7 @@ class QueryKeys(SyftBaseModel):
 UIDCollectionKey = CollectionKey(key="id", type_=UID)
 
 
+@serializable(recursive_serde=True)
 class CollectionSettings(SyftBaseModel):
     name: str
     object_type: type
@@ -187,12 +196,15 @@ class CollectionSettings(SyftBaseModel):
         return CollectionKeys.from_dict(self.object_type._syft_searchable_keys_dict())
 
 
+@serializable(recursive_serde=True)
 class UniqueKeyCheck(Enum):
     EMPTY = 0
     MATCHES = 1
     ERROR = 2
 
 
+@instrument
+@serializable(recursive_serde=True)
 class BaseCollection:
     def __init__(self, settings: CollectionSettings) -> None:
         self.data = {}
@@ -358,17 +370,17 @@ class BaseCollection:
                 matches.append(self.data[qk.value])
         return Ok(matches)
 
-    def delete_unique_keys_for(self, obj: SyftObject) -> Result[bool, str]:
+    def delete_unique_keys_for(self, obj: SyftObject) -> Result[SyftSuccess, str]:
         for _unique_ck in self.unique_cks:
             qk = _unique_ck.with_obj(obj)
             self.unique_keys[qk.key].pop(qk.value, None)
-        return Ok(True)
+        return Ok(SyftSuccess(message="Deleted"))
 
-    def delete_search_keys_for(self, obj: SyftObject) -> Result[bool, str]:
+    def delete_search_keys_for(self, obj: SyftObject) -> Result[SyftSuccess, str]:
         for _search_ck in self.searchable_cks:
             qk = _search_ck.with_obj(obj)
             self.searchable_keys[qk.key].pop(qk.value, None)
-        return Ok(True)
+        return Ok(SyftSuccess(message="Deleted"))
 
     def get_keys_index(self, qks: QueryKeys) -> Result[Set[QueryKey], str]:
         try:
@@ -427,17 +439,18 @@ class BaseCollection:
     def create(self, obj: SyftObject) -> Result[SyftObject, str]:
         pass
 
-    def delete(self, qk: QueryKey) -> Result[bool, str]:
-
+    def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
         try:
             _obj = self.data.pop(qk.value)
             self.delete_unique_keys_for(_obj)
             self.delete_search_keys_for(_obj)
-            return Ok(True)
+            return Ok(SyftSuccess(message="Deleted"))
         except Exception as e:
             return Err(f"Failed to delete with query key {qk} with error: {e}")
 
 
+@instrument
+@serializable(recursive_serde=True)
 class DocumentStore:
     collections: Dict[str, BaseCollection]
     collection_type: BaseCollection
@@ -451,6 +464,7 @@ class DocumentStore:
         return self.collections[settings.name]
 
 
+@instrument
 class BaseStash:
     object_type: Type[SyftObject]
     settings: CollectionSettings
@@ -461,10 +475,7 @@ class BaseStash:
         self.collection = store.collection(type(self).settings)
 
     def set(self, obj: BaseStash.object_type) -> Result[BaseStash.object_type, str]:
-        result = self.collection.set(obj=obj)
-        if result.is_ok():
-            return result.ok()
-        return result.err()
+        return self.collection.set(obj=obj)
 
     def get_all_index(
         self, qks: Union[QueryKey, QueryKeys]
@@ -475,10 +486,8 @@ class BaseStash:
         if result.is_ok():
             qks = self.collection.store_query_keys(result.ok())
             objects = self.collection.get_all_from_store(qks=qks)
-            if objects.is_ok():
-                return objects.ok()
-            return objects.err()
-        return result.err()
+            return objects
+        return Err(result.err())
 
     def find_all_search(
         self, qks: Union[QueryKey, QueryKeys]
@@ -490,10 +499,8 @@ class BaseStash:
         if result.is_ok():
             qks = self.collection.store_query_keys(result.ok())
             objects = self.collection.get_all_from_store(qks=qks)
-            if objects.is_ok():
-                return objects.ok()
-            return objects.err()
-        return result.err()
+            return objects
+        return Err(result.err())
 
     def query_all(
         self, qks: Union[QueryKey, QueryKeys]
@@ -546,9 +553,7 @@ class BaseStash:
 
         qks = self.collection.store_query_keys(ids)
         objects = self.collection.get_all_from_store(qks=qks)
-        if objects.is_ok():
-            return objects.ok()
-        return objects.err()
+        return objects
 
     def query_all_kwargs(
         self, **kwargs: Dict[str, Any]
@@ -559,36 +564,38 @@ class BaseStash:
     def query_one(
         self, qks: Union[QueryKey, QueryKeys]
     ) -> Result[Optional[BaseStash.object_type], str]:
-        return first_or_none(self.query_all(qks=qks))
+        return self.query_all(qks=qks).and_then(first_or_none)
 
     def query_one_kwargs(
         self,
         **kwargs: Dict[str, Any],
     ) -> Result[Optional[BaseStash.object_type], str]:
-        return first_or_none(self.query_all_kwargs(**kwargs))
+        return self.query_all_kwargs(**kwargs).and_then(first_or_none)
 
     def find_all(
         self, **kwargs: Dict[str, Any]
     ) -> Result[List[BaseStash.object_type], str]:
-        return self.query_all_kwargs(*kwargs)
+        return self.query_all_kwargs(**kwargs)
 
     def find_one(
         self, **kwargs: Dict[str, Any]
     ) -> Result[Optional[BaseStash.object_type], str]:
         return self.query_one_kwargs(**kwargs)
 
-    def find_and_delete(self, **kwargs: Dict[str, Any]) -> Union[bool, str]:
+    def find_and_delete(self, **kwargs: Dict[str, Any]) -> Result[SyftSuccess, Err]:
         obj = self.query_one_kwargs(**kwargs)
+        if obj.is_err():
+            return obj.err()
+        else:
+            obj = obj.ok()
+
         if not obj:
             return Err(f"Object does not exists with kwargs: {kwargs}")
         qk = self.collection.store_query_key(obj)
         return self.delete(qk=qk)
 
-    def delete(self, qk: QueryKey) -> Union[bool, str]:
-        result = self.collection.delete(qk=qk)
-        if result.is_ok():
-            return result.ok()
-        return result.err()
+    def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
+        return self.collection.delete(qk=qk)
 
     def update(
         self, obj: BaseStash.object_type
@@ -606,17 +613,17 @@ class BaseStash:
 
             qk = self.collection.store_query_key(result.pop())
             updated_obj = self.collection.update(qk=qk, obj=obj)
-            if updated_obj.is_ok():
-                return updated_obj.ok()
-            return updated_obj.err()
-        return result.err()
+            return updated_obj
+        return Err(result.err())
 
 
 # 🟡 TODO 26: the base collection is already a dict collection but we can change it later
+@serializable(recursive_serde=True)
 class DictCollection(BaseCollection):
     pass
 
 
 # the base document store is already a dict but we can change it later
+@serializable(recursive_serde=True)
 class DictDocumentStore(DocumentStore):
     collection_type = DictCollection

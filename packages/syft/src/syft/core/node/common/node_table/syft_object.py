@@ -1,4 +1,7 @@
 # stdlib
+from collections import defaultdict
+import inspect
+from inspect import Signature
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -6,6 +9,7 @@ from typing import KeysView
 from typing import List
 from typing import Optional
 from typing import Sequence
+from typing import Tuple
 from typing import Type
 from typing import Union
 
@@ -17,6 +21,8 @@ from pydantic.fields import Undefined
 from typeguard import check_type
 
 # relative
+from .....lib.util import full_name_with_qualname
+from .....lib.util import get_qualname_for
 from ....common import UID
 from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serialize import _serialize as serialize
@@ -89,6 +95,9 @@ class SyftObjectRegistry:
         return cls.__object_transform_registry__[mapping_string]
 
 
+print_type_cache = defaultdict(list)
+
+
 class SyftObject(SyftBaseObject, SyftObjectRegistry):
     class Config:
         arbitrary_types_allowed = True
@@ -132,12 +141,51 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
 
         return d
 
+    def __syft_get_funcs__(self) -> List[Tuple[str, Signature]]:
+        funcs = print_type_cache[type(self)]
+        if len(funcs) > 0:
+            return funcs
+
+        for attr in dir(type(self)):
+            obj = getattr(type(self), attr, None)
+            if (
+                "SyftObject" in getattr(obj, "__qualname__", "")
+                and callable(obj)
+                and not isinstance(obj, type)
+                and not attr.startswith("__")
+            ):
+                sig = inspect.signature(obj)
+                funcs.append((attr, sig))
+
+        print_type_cache[type(self)] = funcs
+        return funcs
+
     def __repr__(self) -> str:
-        _repr_str = f"{type(self)}\n"
-        for attr in getattr(self, "__attr_state__", []):
-            value = getattr(self, attr, "Missing")
-            _repr_str += f"{attr}: {type(attr)} = {value}\n"
+        class_name = get_qualname_for(type(self))
+        _repr_str = f"class {class_name}:\n"
+        fields = getattr(self, "__fields__", {})
+        for attr in fields.keys():
+            value = getattr(self, attr, "<Missing>")
+            value_type = full_name_with_qualname(type(attr))
+            value_type = value_type.replace("builtins.", "")
+            value = f'"{value}"' if isinstance(value, str) else value
+            _repr_str += f"  {attr}: {value_type} = {value}\n"
+
         return _repr_str
+        # _repr_str += "\n"
+        # fqn = full_name_with_qualname(type(self))
+        # _repr_str += f'fqn = "{fqn}"\n'
+        # _repr_str += f"mro = {[t.__name__ for t in type(self).mro()]}"
+
+        # _repr_str += "\n\ncallables = [\n"
+        # for func, sig in self.__syft_get_funcs__():
+        #     _repr_str += f"  {func}{sig}: pass\n"
+        # _repr_str += f"]"
+        # return _repr_str
+
+    def _repr_markdown_(self) -> str:
+        text_repr = self.__repr__()
+        return "```python\n" + text_repr + "\n```"
 
     @staticmethod
     def from_mongo(bson: Any) -> "SyftObject":
@@ -234,10 +282,6 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
     @classmethod
     def _syft_searchable_keys_dict(cls) -> Dict[str, type]:
         return cls._syft_keys_types_dict("__attr_searchable__")
-
-
-class SyftUpdateObject(SyftObject):
-    id: Optional[UID] = None  # no id means insert
 
 
 def transform_method(

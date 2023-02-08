@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from functools import partial
 import os
 from typing import Any
 from typing import Callable
@@ -20,20 +21,30 @@ from ... import __version__
 from ...core.node.common.node_table.syft_object import HIGHEST_SYFT_OBJECT_VERSION
 from ...core.node.common.node_table.syft_object import LOWEST_SYFT_OBJECT_VERSION
 from ...core.node.common.node_table.syft_object import SyftObject
+from ...telemetry import instrument
+from ...util import random_name
 from ..common.serde.serializable import serializable
 from ..common.uid import UID
 from .new.action_service import ActionService
 from .new.action_store import ActionStore
 from .new.api import SignedSyftAPICall
+from .new.api import SyftAPI
 from .new.api import SyftAPICall
 from .new.context import AuthedServiceContext
+from .new.context import NodeServiceContext
+from .new.context import UnauthedServiceContext
+from .new.context import UserLoginCredentials
 from .new.credentials import SyftSigningKey
 from .new.document_store import DictDocumentStore
 from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
 from .new.service import AbstractService
 from .new.service import ServiceConfigRegistry
+from .new.test_service import TestService
+from .new.user import User
+from .new.user import UserCreate
 from .new.user_service import UserService
+from .new.user_stash import UserStash
 
 NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
 NODE_UID = "NODE_UID"
@@ -55,6 +66,7 @@ signing_key_env = get_private_key_env()
 node_uid_env = get_node_uid_env()
 
 
+@instrument
 @serializable(recursive_serde=True)
 class Worker(NewNode):
     signing_key: Optional[SyftSigningKey]
@@ -64,15 +76,19 @@ class Worker(NewNode):
         self,
         *,  # Trasterisk
         name: Optional[str] = None,
-        id: Optional[UID] = UID(),
+        id: Optional[UID] = None,
         services: Optional[List[Type[AbstractService]]] = None,
         signing_key: Optional[SigningKey] = SigningKey.generate(),
+        root_email: str = "info@openmined.org",
+        root_password: str = "changethis",
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
         if node_uid_env is not None:
             self.id = UID.from_string(node_uid_env)
         else:
+            if id is None:
+                id = UID()
             self.id = id
 
         if signing_key_env is not None:
@@ -80,22 +96,34 @@ class Worker(NewNode):
         else:
             self.signing_key = SyftSigningKey(signing_key=signing_key)
 
-        print("============> Starting Worker with:", self.id, self.signing_key)
-
+        if name is None:
+            name = random_name()
         self.name = name
-        services = [UserService, ActionService] if services is None else services
+        services = (
+            [UserService, ActionService, TestService] if services is None else services
+        )
         self.services = services
         self.service_config = ServiceConfigRegistry.get_registered_configs()
         self._construct_services()
+        create_admin_new(  # nosec B106
+            name="Jane Doe",
+            email="info@openmined.org",
+            password="changethis",
+            node=self,
+        )
         self.post_init()
 
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}: {self.name} - {self.id} {self.services}"
+
     def post_init(self) -> None:
-        pass
+        print(f"Starting {self}")
         # super().post_init()
 
     def _construct_services(self):
         self.service_path_map = {}
         self.document_store = DictDocumentStore()
+
         for service_klass in self.services:
             kwargs = {}
             if service_klass == ActionService:
@@ -169,3 +197,39 @@ class Worker(NewNode):
         method = self.get_service_method(_private_api_path)
         result = method(context, *api_call.args, **api_call.kwargs)
         return result
+
+    def get_api(self) -> SyftAPI:
+        return SyftAPI.for_user(node_uid=self.id)
+
+    def get_method_with_context(
+        self, function: Callable, context: NodeServiceContext
+    ) -> Callable:
+        method = self.get_service_method(function)
+        return partial(method, context=context)
+
+    def get_unauthed_context(
+        self, login_credentials: UserLoginCredentials
+    ) -> NodeServiceContext:
+        return UnauthedServiceContext(node=self, login_credentials=login_credentials)
+
+
+def create_admin_new(
+    name: str,
+    email: str,
+    password: str,
+    node: NewNode,
+) -> Optional[User]:
+    try:
+        user_stash = UserStash(store=node.document_store)
+        row_exists = user_stash.get_by_email(email=email).ok()
+        if row_exists:
+            return None
+        else:
+            create_user = UserCreate(
+                name=name, email=email, password=password, password_verify=password
+            )
+            # New User Initialization
+            user = user_stash.set(user=create_user.to(User))
+            return user.ok()
+    except Exception as e:
+        print("create_admin failed", e)

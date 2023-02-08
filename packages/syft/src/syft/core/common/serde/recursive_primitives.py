@@ -1,11 +1,16 @@
 # stdlib
 from collections import OrderedDict
+from collections import defaultdict
 from enum import Enum
 import functools
 import sys
 from types import MappingProxyType
+from typing import Any
 from typing import Collection
+from typing import List
 from typing import Mapping
+from typing import Optional
+from typing import TypeVar
 from typing import Union
 from typing import _GenericAlias
 from typing import _SpecialForm
@@ -57,7 +62,7 @@ def deserialize_iterable(iterable_type: type, blob: bytes) -> Collection:
     return iterable_type(values)
 
 
-def serialze_kv(map: Mapping) -> bytes:
+def serialize_kv(map: Mapping) -> bytes:
     # relative
     from .serialize import _serialize
 
@@ -73,7 +78,7 @@ def serialze_kv(map: Mapping) -> bytes:
     return message.to_bytes()
 
 
-def deserialize_kv(mapping_type: type, blob: bytes) -> Mapping:
+def get_deserialized_kv_pairs(blob: bytes) -> List[Any]:
     # relative
     from .deserialize import _deserialize
 
@@ -90,8 +95,36 @@ def deserialize_kv(mapping_type: type, blob: bytes) -> Mapping:
                     _deserialize(value, from_bytes=True),
                 )
             )
+    return pairs
 
+
+def deserialize_kv(mapping_type: type, blob: bytes) -> Mapping:
+    pairs = get_deserialized_kv_pairs(blob=blob)
     return mapping_type(pairs)
+
+
+def serialize_defaultdict(df_dict: defaultdict) -> bytes:
+    # relative
+    from .serialize import _serialize
+
+    df_type_bytes = _serialize(df_dict.default_factory, to_bytes=True)
+    df_kv_bytes = serialize_kv(df_dict)
+    return _serialize((df_type_bytes, df_kv_bytes), to_bytes=True)
+
+
+def deserialize_defaultdict(blob: bytes) -> Mapping:
+    # relative
+    from .deserialize import _deserialize
+
+    df_tuple = _deserialize(blob, from_bytes=True)
+    df_type_bytes, df_kv_bytes = df_tuple[0], df_tuple[1]
+    df_type = _deserialize(df_type_bytes, from_bytes=True)
+    mapping = defaultdict(df_type)
+
+    pairs = get_deserialized_kv_pairs(blob=df_kv_bytes)
+    mapping.update(pairs)
+
+    return mapping
 
 
 def serialize_enum(enum: Enum) -> bytes:
@@ -115,8 +148,6 @@ def serialize_type(serialized_type: type) -> bytes:
 
     fqn = full_name_with_qualname(klass=serialized_type)
     module_parts = fqn.split(".")
-    _ = module_parts.pop()  # remove incorrect .type ending
-    module_parts.append(serialized_type.__name__)
     return ".".join(module_parts).encode()
 
 
@@ -124,6 +155,7 @@ def deserialize_type(type_blob: bytes) -> type:
     deserialized_type = type_blob.decode()
     module_parts = deserialized_type.split(".")
     klass = module_parts.pop()
+    klass = "None" if klass == "NoneType" else klass
     exception_type = getattr(sys.modules[".".join(module_parts)], klass)
     return exception_type
 
@@ -160,12 +192,18 @@ recursive_serde_register(
 )
 
 recursive_serde_register(
-    dict, serialize=serialze_kv, deserialize=functools.partial(deserialize_kv, dict)
+    dict, serialize=serialize_kv, deserialize=functools.partial(deserialize_kv, dict)
+)
+
+recursive_serde_register(
+    defaultdict,
+    serialize=serialize_defaultdict,
+    deserialize=deserialize_defaultdict,
 )
 
 recursive_serde_register(
     OrderedDict,
-    serialize=serialze_kv,
+    serialize=serialize_kv,
     deserialize=functools.partial(deserialize_kv, OrderedDict),
 )
 
@@ -213,28 +251,26 @@ recursive_serde_register(
 recursive_serde_register(type, serialize=serialize_type, deserialize=deserialize_type)
 recursive_serde_register(
     MappingProxyType,
-    serialize=serialze_kv,
+    serialize=serialize_kv,
     deserialize=functools.partial(deserialize_kv, MappingProxyType),
 )
 
 
 def serialize_generic_alias(serialized_type: _GenericAlias) -> bytes:
     # relative
-    from ....lib.util import full_name_with_qualname
+    from ....lib.util import full_name_with_name
     from .serialize import _serialize
 
-    fqn = full_name_with_qualname(klass=serialized_type)
+    fqn = full_name_with_name(klass=serialized_type)
     module_parts = fqn.split(".")
-    _ = module_parts.pop()  # remove incorrect .type ending
-    module_parts.append(serialized_type.__name__)
 
     obj_dict = {
         "path": ".".join(module_parts),
         "__origin__": serialized_type.__origin__,
         "__args__": serialized_type.__args__,
-        "_paramspec_tvars": serialized_type._paramspec_tvars,
     }
-    print("creating obj_dict", obj_dict)
+    if hasattr(serialized_type, "_paramspec_tvars"):
+        obj_dict["_paramspec_tvars"] = serialized_type._paramspec_tvars
     return _serialize(obj_dict, to_bytes=True)
 
 
@@ -248,26 +284,42 @@ def deserialize_generic_alias(type_blob: bytes) -> type:
     klass = module_parts.pop()
     type_constructor = getattr(sys.modules[".".join(module_parts)], klass)
     # does this apply to all _SpecialForm?
-    if type_constructor == Union:
-        # stay consistent python 😭
-        type_constructor = _GenericAlias
-        obj_dict["origin"] = obj_dict.pop("__origin__")
-        obj_dict["params"] = obj_dict.pop("__args__")
 
-    return type_constructor(**obj_dict)
+    # Note: Some typing constructors are callable while
+    # some use custom __getitem__ implementations
+    # to initialize the type 😭
+
+    try:
+        return type_constructor(**obj_dict)
+    except TypeError:
+        _args = obj_dict["__args__"]
+        # Again not very consistent 😭
+        if type_constructor == Optional:
+            _args = _args[0]
+        return type_constructor[_args]
+    except Exception as e:
+        raise e
 
 
 # 🟡 TODO 5: add tests and all typing options for signatures
-def recursive_serde_register_type(t: type) -> None:
-    if isinstance(t, type) and issubclass(t, _GenericAlias):
+def recursive_serde_register_type(
+    t: type, attr_allowlist: Optional[List] = None
+) -> None:
+    if (isinstance(t, type) and issubclass(t, _GenericAlias)) or issubclass(
+        type(t), _GenericAlias
+    ):
         recursive_serde_register(
             t,
             serialize=serialize_generic_alias,
             deserialize=deserialize_generic_alias,
+            attr_allowlist=attr_allowlist,
         )
     else:
         recursive_serde_register(
-            t, serialize=serialize_type, deserialize=deserialize_type
+            t,
+            serialize=serialize_type,
+            deserialize=deserialize_type,
+            attr_allowlist=attr_allowlist,
         )
 
 
@@ -276,3 +328,4 @@ if _UnionGenericAlias is not None:
     recursive_serde_register_type(_UnionGenericAlias)
 recursive_serde_register_type(_GenericAlias)
 recursive_serde_register_type(Union)
+recursive_serde_register_type(TypeVar)

@@ -14,14 +14,17 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import cast
 
 # third party
 from oblv import OblvClient
 import requests
 
 # relative
+from ..core.common.serde.deserialize import _deserialize as deserialize
 from ..core.node.common.exceptions import OblvEnclaveError
 from ..core.node.common.exceptions import OblvUnAuthorizedError
+from ..core.node.new.api import SyftAPI
 from ..util import bcolors
 from .constants import LOCAL_MODE
 from .oblv_proxy import check_oblv_proxy_installation_status
@@ -42,6 +45,7 @@ class DeploymentClient:
         deployment_id: Optional[str] = None,
         oblv_client: Optional[OblvClient] = None,
         user_key_name: Optional[str] = None,
+        api: Optional[SyftAPI] = None,
     ):
         if not domain_clients:
             raise Exception(
@@ -54,6 +58,7 @@ class DeploymentClient:
         self.__conn_string = ""
         self.__process = None
         self.__logs = None
+        self._api = api
 
     def make_request_to_enclave(
         self,
@@ -276,6 +281,31 @@ class DeploymentClient:
                 client=self.oblv_client,
             )
         return data
+
+    def _get_api(self) -> SyftAPI:
+        self.check_connection_string()
+        req = self.make_request_to_enclave(
+            requests.get,
+            connection_string=self.__conn_string + "/worker/api",
+        )
+        self.sanity_check_oblv_response(req)
+        obj = deserialize(req.content, from_bytes=True)
+        obj.api_url = f"{self.__conn_string}/worker/syft_api_call"
+        return cast(SyftAPI, obj)
+
+    # public attributes
+
+    def _set_api(self):
+        _api = self._get_api()
+        # APIRegistry.set_api_for(node_uid=self.id, api=_api)
+        self._api = _api
+
+    @property
+    def api(self) -> SyftAPI:
+        if self._api is None:
+            self._set_api()
+
+        return self._api
 
     def check_publish_request_status(self, publish_request_id):
         self.check_connection_string()
