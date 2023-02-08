@@ -1,7 +1,7 @@
 INFRA = "r5.xlarge"
 REPO_OWNER = "OpenMined"
 REPO_NAME = "syft-enclave"
-REF = "dev"
+REF = "rasswanth/manual_code"
 REGION = "us-east-1"
 VCS = "github"
 VISIBILITY = "private"
