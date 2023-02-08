@@ -1,6 +1,9 @@
 # stdlib
 from typing import Any
 
+# third party
+from celery.utils.log import get_task_logger
+
 # syft absolute
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.node.common.node_service.vpn.vpn_messages import (
@@ -18,6 +21,8 @@ from grid.core.celery_app import celery_app
 from grid.core.config import settings  # noqa: F401
 from grid.core.node import node
 from grid.periodic_tasks import cleanup_incomplete_uploads_from_blob_store
+
+logger = get_task_logger(__name__)
 
 
 # TODO : Should be modified to use exponential backoff (for efficiency)

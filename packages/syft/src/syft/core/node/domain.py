@@ -41,6 +41,7 @@ from .common.node_manager.oblv_key_manager import NoSQLOblvKeyManager
 from .common.node_manager.redis_store import RedisStore
 from .common.node_manager.request_manager import NoSQLRequestManager
 from .common.node_manager.role_manager import NewRoleManager
+from .common.node_manager.task_manager import NoSQLTaskManager
 from .common.node_manager.user_manager import NoSQLUserManager
 from .common.node_service.association_request.association_request_service import (
     AssociationRequestService,
@@ -133,6 +134,7 @@ class Domain(Node):
 
         # Database Management Instances
         self.users = NoSQLUserManager(self.nosql_db_engine, self.db_name)
+        self.tasks = NoSQLTaskManager(self.nosql_db_engine, self.db_name)
         self.roles = NewRoleManager()
         self.association_requests = NoSQLAssociationRequestManager(
             self.nosql_db_engine, self.db_name
