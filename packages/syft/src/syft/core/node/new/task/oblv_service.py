@@ -24,7 +24,7 @@ from ..service import service_method
 from .oblv_keys import OblvKeys
 from .oblv_keys_stash import OblvKeysStash
 
-DOMAIN_CONNECTION_PORT = int(os.getenv("DOMAIN_CONNECTION_PORT", 3030))
+DOMAIN_CONNECTION_PORT = str(os.getenv("DOMAIN_CONNECTION_PORT", 3030))
 
 
 def connect_to_enclave(
@@ -156,7 +156,7 @@ def create_keys_from_db(oblv_keys_stash: OblvKeysStash):
 
     keys = oblv_keys_stash.get_by_id(id_int=1)
     if keys.is_ok():
-        keys = keys.ok.ok()
+        keys = keys.ok().ok()
 
     # Creating directory if not exist
     os.makedirs(
