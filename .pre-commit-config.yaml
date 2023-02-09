@@ -13,6 +13,7 @@ repos:
         exclude: ^(packages/grid/ansible/)
       - id: check-json
         always_run: true
+        exclude: ^(packages/grid/frontend/)
       - id: check-added-large-files
         always_run: true
         exclude: ^(packages/syft/src/syft/cache/constant2epsilon_1200k.npy|packages/grid/backend/wheels/.*|packages/syft/docs/img/header.png|packages/syft/docs/img/terminalizer.gif|notebooks/padawan|notebooks/Experimental)
