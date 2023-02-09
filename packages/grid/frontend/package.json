@@ -34,5 +34,9 @@
     "vite": "^4.1.1",
     "vitest": "^0.25.3"
   },
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+		"capnp-ts": "^0.7.0",
+		"uuid": "^9.0.0"
+	}
 }
