@@ -10,20 +10,12 @@ from result import Result
 # relative
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
-from ..credentials import SyftSigningKey
-from ..credentials import SyftVerifyKey
 from ..document_store import BaseStash
-from ..document_store import CollectionKey
 from ..document_store import CollectionSettings
 from ..document_store import DocumentStore
 from ..document_store import QueryKeys
 from ..document_store import UIDCollectionKey
 from .task import Task
-
-# 🟡 TODO 27: it would be nice if these could be defined closer to the Task
-EmailCollectionKey = CollectionKey(key="email", type_=str)
-SigningKeyCollectionKey = CollectionKey(key="signing_key", type_=SyftSigningKey)
-VerifyKeyCollectionKey = CollectionKey(key="verify_key", type_=SyftVerifyKey)
 
 
 @serializable(recursive_serde=True)

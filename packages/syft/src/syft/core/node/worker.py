@@ -35,6 +35,7 @@ from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
 from .new.service import AbstractService
 from .new.service import ServiceConfigRegistry
+from .new.task.oblv_service import OblvService
 from .new.task.task_service import TaskService
 from .new.test_service import TestService
 from .new.user import User
@@ -92,7 +93,7 @@ class Worker(NewNode):
 
         self.name = name
         services = (
-            [UserService, ActionService, TestService, TaskService]
+            [UserService, ActionService, TestService, TaskService, OblvService]
             if services is None
             else services
         )
@@ -120,6 +121,8 @@ class Worker(NewNode):
             if service_klass == TaskService:
                 kwargs["document_store"] = self.document_store
                 kwargs["action_store"] = self.action_store
+            if service_klass == OblvService:
+                kwargs["document_store"] = self.document_store
             self.service_path_map[service_klass.__name__] = service_klass(**kwargs)
 
     def get_service_method(self, path_or_func: Union[str, Callable]) -> Callable:

@@ -30,6 +30,8 @@ from ..context import AuthedServiceContext
 from ..document_store import DocumentStore
 from ..service import AbstractService
 from ..service import service_method
+from .oblv_keys_stash import OblvKeysStash
+from .oblv_service import make_request_to_enclave
 from .task import NodeView
 from .task import Task
 from .task_stash import TaskStash
@@ -60,6 +62,7 @@ stderr_ = sys.stderr
 class TaskService(AbstractService):
     document_store: DocumentStore
     task_stash: TaskStash
+    oblv_keys_stash: OblvKeysStash
     action_store: ActionStore
 
     def __init__(
@@ -67,6 +70,7 @@ class TaskService(AbstractService):
     ) -> None:
         self.document_store = document_store
         self.task_stash = TaskStash(store=document_store)
+        self.oblv_keys_stash = OblvKeysStash(store=document_store)
         self.action_store = action_store
 
     @service_method(path="task.create_enclave_task", name="create_enclave_task")
@@ -175,13 +179,20 @@ class TaskService(AbstractService):
         else:
             return task.err()
 
+        owner = task.owners[0]
+        if isinstance(owner, dict):
+            owner = NodeView(**owner)
+        if task.status[owner] in ["Approved", "Denied"]:
+            return Err(
+                f"Cannot Modify the status of task: {task.id} which has been Approved/Denied \n"
+                + "Kindly Submit a new request"
+            )
+
         task.reason = reason
 
         # Fetch private data from action store if the code task is approved
         if approve:
-            owner = task.owners[0]
-            if isinstance(owner, dict):
-                owner = NodeView(**owner)
+
             task.status[owner] = "Approved"
             # Retrive input map of the current domain
             private_input_map = {}
@@ -210,30 +221,31 @@ class TaskService(AbstractService):
         # If we are in the Enclave and have metadata for enclaves
         # Sent the task status to the connected enclaves
         if task.oblv_metadata:
-            if LOCAL_MODE:
-                api = self._get_api(
-                    f"http://host.docker.internal:{DOMAIN_CONNECTION_PORT}"
-                )
-                enclave_res = api.services.task.send_status_to_enclave(
-                    task, private_input_map
-                )
-                if isinstance(enclave_res, bool) and enclave_res:
-                    return Ok(f"Sent task: {task_id} status to enclave")
-                return Err(f"{enclave_res}")
-            else:
-                # TODO 🟣 Add code for real enclave deployment
-                pass
+            api = self._get_api(task.oblv_metadata)
+            enclave_res = api.services.task.send_status_to_enclave(
+                task, private_input_map
+            )
+            if isinstance(enclave_res, bool) and enclave_res:
+                return Ok(f"Sent task: {task_id} status to enclave")
+            return Err(f"{enclave_res}")
 
         if res.is_ok():
             return Ok(f"Task: {task_id}  - {approve}")
         return res.err()
 
-    @staticmethod
-    def _get_api(connection_string: str) -> SyftAPI:
-
-        req = requests.get(
-            connection_string + "/worker/api",
+    def _get_api(self, oblv_metadata: dict) -> SyftAPI:
+        if not LOCAL_MODE:
+            connection_string = f"http://127.0.0.1:{DOMAIN_CONNECTION_PORT}"
+        else:
+            connection_string = f"http://host.docker.internal:{DOMAIN_CONNECTION_PORT}"
+        req = make_request_to_enclave(
+            connection_string=connection_string + "/worker/api",
+            deployment_id=oblv_metadata["deployment_id"],
+            oblv_client=oblv_metadata["oblv_client"],
+            oblv_keys_stash=self.oblv_keys_stash,
+            request_method=requests.get,
         )
+
         obj = deserialize(req.content, from_bytes=True)
         obj.api_url = f"{connection_string}/worker/syft_api_call"
         return cast(SyftAPI, obj)
@@ -259,7 +271,8 @@ class TaskService(AbstractService):
         if task_owner in enclave_task.owners:
             if enclave_task.status[task_owner] in ["Approved", "Denied"]:
                 return Err(
-                    f"Cannot Modify the status of task: {task.id} which has Approved/Denied"
+                    f"Cannot Modify the status of task: {task.id} which has been Approved/Denied \n"
+                    + "Kindly Submit a new request"
                 )
             enclave_task.status[task_owner] = task.status[task_owner]
             # Create nested action store of DO for storing intermediate data
