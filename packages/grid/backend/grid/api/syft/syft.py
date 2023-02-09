@@ -18,6 +18,7 @@ from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.common.message import SignedMessage
 from syft.core.node.enums import RequestAPIFields
 from syft.telemetry import TRACE_MODE
+from syft.core.common.serde.recursive import TYPE_BANK
 
 # grid absolute
 from grid.api.dependencies.current_user import get_current_user
@@ -43,6 +44,13 @@ async def get_body(request: Request) -> bytes:
 def syft_version() -> Response:
     return JSONResponse(content={"version": __version__})
 
+
+@router.get("/serde")
+def syft_serde() -> Response:
+    bank = {}
+    for key,items in list(TYPE_BANK.items()):
+        bank[key]  = [item if not callable(item) else None for item in items[:-1]]
+    return JSONResponse(content={"bank": bank})
 
 @router.get("/metadata", response_model=str)
 def syft_metadata() -> Response:
