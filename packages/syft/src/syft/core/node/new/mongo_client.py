@@ -4,7 +4,7 @@ from typing import Dict
 from typing import Optional
 
 # third party
-from pymongo.collection import Collection as _MongoCollection
+from pymongo.collection import Collection as MongoCollection
 from pymongo.database import Database as MongoDatabase
 from pymongo.errors import ConnectionFailure
 from pymongo.mongo_client import MongoClient as PyMongoClient
@@ -13,7 +13,7 @@ from typing_extensions import Self
 # relative
 from ...common.serde.serializable import serializable
 from .base import SyftBaseModel
-from .document_store import CollectionSettings
+from .document_store import PartitionSettings
 
 
 class ClientSettings(SyftBaseModel):
@@ -66,8 +66,8 @@ class MongoClient(metaclass=SingletonMeta):
         return self.client[db_name]
 
     def with_collection(
-        self, collection_settings: CollectionSettings
-    ) -> _MongoCollection:
+        self, collection_settings: PartitionSettings
+    ) -> MongoCollection:
         db = self.with_db(db_name=collection_settings.db_name)
         return db.get_collection(name=collection_settings.name)
 

@@ -1,38 +1,72 @@
 # stdlib
+from typing import Dict
 from typing import List
-from typing import Set
 
 # third party
-import pymongo
-from pymongo.collection import Collection as PyMongoCollection
+from pymongo.collection import Collection as MongoCollection
+from pymongo.errors import DuplicateKeyError
 from result import Err
 from result import Ok
 from result import Result
 
 # relative
+from ...common.serde.deserialize import _deserialize as deserialize
+from ...common.serde.serialize import _serialize as serialize
+from ..common.node_table.syft_object import StorableObjectType
 from ..common.node_table.syft_object import SyftObject
-from .document_store import BaseCollection
-from .document_store import CollectionSettings
+from ..common.node_table.syft_object import transform
+from .credentials import SyftVerifyKey
 from .document_store import DocumentStore
 from .document_store import QueryKey
 from .document_store import QueryKeys
+from .document_store import StorePartition
 from .mongo_client import MongoClient
 from .mongo_client import MongoClientSettings
 from .response import SyftSuccess
 
 
-class MongoCollectionSettings(CollectionSettings):
-    db_name: str
+class MongoBsonObject(StorableObjectType, dict):
+    def to_syft_obj(storage_obj: Dict, object_type: SyftObject) -> SyftObject:
+        output = deserialize(storage_obj["__blob__"], from_bytes=True)
+        for attr, funcs in object_type.__serde_overrides__.items():
+            if attr in output:
+                output[attr] = funcs[1](output[attr])
+        return object_type(**output)
 
 
-class MongoCollection(BaseCollection):
-    db_collection: PyMongoCollection = None
+def to_mongo(_self, output) -> Dict:
+    output_dict = {}
+    for k in _self.__attr_searchable__:
+        # 🟡 TODO 24: pass in storage abstraction and detect unsupported types
+        # if unsupported, convert to string
+        value = getattr(_self, k, "")
+        if isinstance(value, SyftVerifyKey):
+            value = str(value)
+        output_dict[k] = value
+    blob = serialize(dict(_self), to_bytes=True)
+    output_dict["_id"] = output["id"].value  # type: ignore
+    output_dict["__canonical_name__"] = _self.__canonical_name__
+    output_dict["__version__"] = _self.__version__
+    output_dict["__blob__"] = blob
+    output_dict["__repr__"] = _self.__repr__()
 
-    def __init__(self, settings: CollectionSettings) -> None:
-        self.settings = settings
-        self.init_store()
+    return output_dict
+
+
+@transform(SyftObject, MongoBsonObject)
+def syft_obj_to_mongo():
+    return [to_mongo]
+
+
+class MongoStorePartition(StorePartition):
+    db_collection: MongoCollection = None
+    storage_type: StorableObjectType = MongoBsonObject
 
     def init_store(self):
+        super().init_store()
+        self.init_collection()
+
+    def init_collection(self):
         client = MongoClient.from_settings(settings=MongoClientSettings)
         self.db_collection = client.with_collection(collection_settings=self.settings)
 
@@ -40,40 +74,62 @@ class MongoCollection(BaseCollection):
         self,
         obj: SyftObject,
     ) -> Result[SyftObject, str]:
-        bson_dict = obj.to_mongo()
+        storage_obj = obj.to(self.storage_type)
         try:
-            self.db_collection.insert_one(bson_dict)
-        except pymongo.errors.DuplicateKeyError as e:
-            return Err(
-                f"Duplicate Key Error: {e}",
-            )
+            self.db_collection.insert_one(storage_obj)
+        except DuplicateKeyError as e:
+            return Err(f"Duplicate Key Error: {e}")
+
         return Ok(obj)
+
+    def _create_filter(self, qks: QueryKeys) -> Dict:
+        query_filter = {}
+        for qk in qks.all:
+            qk_key = qk.key
+            qk_value = qk.value
+            if self.settings.store_key == qk.partition_key:
+                qk_key = f"_{qk_key}"
+                qk_value = qk_value.value
+
+            query_filter[qk_key] = qk_value
+
+        return query_filter
 
     def update(self, qk: QueryKey, obj: SyftObject) -> Result[SyftObject, str]:
         # 🟡 TODO: 31 Ids in Mongo are like _id, instead of `id`.
         # Maybe we need a method to format query keys according to store type.
-        filter_params = {f"_{qk.key}": qk.value.value}
-        bson_dict = obj.to_mongo()
+
+        filter_params = self._create_filter(QueryKeys(qks=qk))
+        storage_obj = obj.to(self.storage_type)
         try:
             result = self.db_collection.update_one(
-                filter=filter_params, update={"$set": bson_dict}
+                filter=filter_params, update={"$set": storage_obj}
             )
         except Exception as e:
             return Err(f"Failed to update obj: {obj} with qk: {qk}. Error: {e}")
 
-        if result.modified_count == 0:
+        if result.matched_count == 0:
+            return Err(f"No object found with query key: {qk}")
+        elif result.modified_count == 0:
             return Err(f"Failed to modify obj: {obj} with qk: {qk}")
-
         return Ok(obj)
 
+    def find_index_or_search_keys(
+        self, index_qks: QueryKeys, search_qks: QueryKeys
+    ) -> Result[List[SyftObject], str]:
+        qks = QueryKeys(qks=(index_qks.all + search_qks.all))
+        return self.get_all_from_store(qks=qks)
+
     def get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
-        raise NotImplementedError
-
-    def get_keys_index(self, qks: QueryKeys) -> Result[Set[QueryKey], str]:
-        raise NotImplementedError
-
-    def find_keys_search(self, qks: QueryKeys) -> Result[Set[QueryKey], str]:
-        raise NotImplementedError
+        query_filter = self._create_filter(qks=qks)
+        storage_objs = self.db_collection.find(filter=query_filter)
+        syft_objs = [
+            self.storage_type.to_syft_obj(
+                storage_obj=storage_obj, object_type=self.settings.object_type
+            )
+            for storage_obj in storage_objs
+        ]
+        return Ok(syft_objs)
 
     def create(self, obj: SyftObject) -> Result[SyftObject, str]:
         raise NotImplementedError
@@ -83,4 +139,4 @@ class MongoCollection(BaseCollection):
 
 
 class MongoDocumentStore(DocumentStore):
-    collection_type = MongoCollection
+    partition_type = MongoStorePartition

@@ -78,27 +78,40 @@ class SyftObjectRegistry:
     def get_transform(
         cls, type_from: Type["SyftObject"], type_to: Type["SyftObject"]
     ) -> Callable:
-        if issubclass(type_from, SyftBaseObject):
-            klass_from = type_from.__canonical_name__
-            version_from = type_from.__version__
-        else:
-            klass_from = type_from.__name__
-            version_from = None
-        if issubclass(type_to, SyftBaseObject):
-            klass_to = type_to.__canonical_name__
-            version_to = type_to.__version__
-        else:
-            klass_to = type_to.__name__
-            version_to = None
 
-        mapping_string = f"{klass_from}_{version_from}_x_{klass_to}_{version_to}"
-        return cls.__object_transform_registry__[mapping_string]
+        for type_from_mro in type_from.mro():
+            if issubclass(type_from_mro, SyftBaseObject):
+                klass_from = type_from_mro.__canonical_name__
+                version_from = type_from_mro.__version__
+            else:
+                klass_from = type_from_mro.__name__
+                version_from = None
+            for type_to_mro in type_to.mro():
+                if issubclass(type_to_mro, SyftBaseObject):
+                    klass_to = type_to_mro.__canonical_name__
+                    version_to = type_to_mro.__version__
+                else:
+                    klass_to = type_to_mro.__name__
+                    version_to = None
+
+                mapping_string = (
+                    f"{klass_from}_{version_from}_x_{klass_to}_{version_to}"
+                )
+                if mapping_string in cls.__object_transform_registry__:
+                    return cls.__object_transform_registry__[mapping_string]
+        raise Exception(
+            f"No mapping found for: {type_from} to {type_to} in the registry"
+        )
 
 
 print_type_cache = defaultdict(list)
 
 
 class SyftObject(SyftBaseObject, SyftObjectRegistry):
+
+    __canonical_name__ = "SyftObject"
+    __version__ = SYFT_OBJECT_VERSION_1
+
     class Config:
         arbitrary_types_allowed = True
 
@@ -284,37 +297,6 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         return cls._syft_keys_types_dict("__attr_searchable__")
 
 
-def transform_method(
-    klass_from: Union[type, str],
-    klass_to: Union[type, str],
-    version_from: Optional[int] = None,
-    version_to: Optional[int] = None,
-) -> Callable:
-    klass_from_str = (
-        klass_from if isinstance(klass_from, str) else klass_from.__canonical_name__
-    )
-    klass_to_str = (
-        klass_to if isinstance(klass_to, str) else klass_to.__canonical_name__
-    )
-    version_from = (
-        version_from if isinstance(version_from, int) else klass_from.__version__
-    )
-    version_to = version_to if isinstance(version_to, int) else klass_to.__version__
-
-    def decorator(function: Callable):
-        SyftObjectRegistry.add_transform(
-            klass_from=klass_from_str,
-            version_from=version_from,
-            klass_to=klass_to_str,
-            version_to=version_to,
-            method=function,
-        )
-
-        return function
-
-    return decorator
-
-
 def transform(
     klass_from: Union[type, str],
     klass_to: Union[type, str],
@@ -363,3 +345,13 @@ def transform(
         return function
 
     return decorator
+
+
+class StorableObjectType:
+    def to(self, projection: type) -> Any:
+        transform = SyftObjectRegistry.get_transform(type(self), projection)
+        return transform(self)
+
+    @staticmethod
+    def to_syft_obj(storage_obj: Dict, object_type: SyftObject) -> SyftObject:
+        raise NotImplementedError
