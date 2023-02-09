@@ -1,21 +1,21 @@
 <script>
-  import { JSSerde } from '../lib/jsserde/jsserde.svelte';
-  async function initJSSerde(url) {
-    let type_bank = await fetch(url)
-      .then((response) => response.json())
-      .then(function (response) {
-        return response['bank'];
-      });
-    return new JSSerde(type_bank);
-  }
+  import { store, getSerde } from '../lib/store.js';
+  import { goto } from '$app/navigation';
 
-  let promise = initJSSerde('http://localhost:8081/api/v1/syft/serde');
+  let credentials = null;
+
+  store.subscribe((value) => {
+    credentials = value.credentials;
+  });
 </script>
 
 <main>
   <h1>PyGrid</h1>
-  {#await promise then jsserde}
-    <h1>Welcome to SvelteKit</h1>
-    <p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
+  {#await getSerde() then jsserde}
+    {#if JSON.stringify(credentials) === '{}'}
+      {goto('/login')}
+    {:else}
+      {goto('/home')}
+    {/if}
   {/await}
 </main>

@@ -5,7 +5,15 @@ from ...common.uid import UID
 
 @serializable(recursive_serde=True)
 class Metadata:
-    __attr_allowlist__ = ["name", "id", "node_type", "version", 'deployed_on', 'organization', 'description']
+    __attr_allowlist__ = [
+        "name",
+        "id",
+        "node_type",
+        "version",
+        "deployed_on",
+        "organization",
+        "description",
+    ]
 
     def __init__(
         self,
