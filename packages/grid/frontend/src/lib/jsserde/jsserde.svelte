@@ -319,7 +319,6 @@
       const fieldsName = rs.getFieldsName();
       const size = fieldsName.getLength();
       const fqn = rs.getFullyQualifiedName();
-      console.log('FQN: ', fqn);
       let objSerdeProps = this.type_bank[fqn];
       if (size < 1) {
         return this.type_bank[fqn][2](rs.getNonrecursiveBlob().toArrayBuffer());
