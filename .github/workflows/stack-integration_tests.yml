@@ -832,7 +832,9 @@ jobs:
           curl -sSL https://github.com/loft-sh/devspace/releases/download/${DEVSPACE_VERSION}/devspace-linux-amd64 -o ./devspace
           chmod +x devspace
           devspace --version
-          # tox -e stack.test.integration.k8s
+          bash ./scripts/kube_config_rootless.sh
+          export KUBECONFIG="${HOME}/.kube/config"
+          tox -e stack.test.integration.k8s
 
         #Run log collector python script
       - name: Run log collector
