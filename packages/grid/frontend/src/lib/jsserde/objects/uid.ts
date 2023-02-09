@@ -1,9 +1,8 @@
-
 export class UUID {
-    value: String;
-    fqn: String = "syft.core.common.uid.UID";
-    
-    constructor(value: String) {
-        this.value = value
-    }	
+  value: string;
+  fqn = 'syft.core.common.uid.UID';
+
+  constructor(value: string) {
+    this.value = value;
+  }
 }

@@ -36,7 +36,7 @@
   },
   "type": "module",
   "dependencies": {
-		"capnp-ts": "^0.7.0",
-		"uuid": "^9.0.0"
-	}
+    "capnp-ts": "^0.7.0",
+    "uuid": "^9.0.0"
+  }
 }
