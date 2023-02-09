@@ -474,6 +474,16 @@ class BaseStash:
         self.store = store
         self.collection = store.collection(type(self).settings)
 
+    def check_type(self, obj: Any, type_: type) -> Result[Any, str]:
+        return (
+            Ok(obj)
+            if isinstance(obj, type_)
+            else Err(f"{type(obj)} does not match required type: {type_}")
+        )
+
+    def get_all(self) -> Result[List[BaseStash.object_type], str]:
+        return Ok(list(self.collection.data.values()))
+
     def set(self, obj: BaseStash.object_type) -> Result[BaseStash.object_type, str]:
         return self.collection.set(obj=obj)
 
@@ -615,6 +625,22 @@ class BaseStash:
             updated_obj = self.collection.update(qk=qk, obj=obj)
             return updated_obj
         return Err(result.err())
+
+
+@instrument
+class BaseUIDStoreStash(BaseStash):
+    def delete_by_uid(self, uid: UID) -> Result[SyftSuccess, str]:
+        qk = UIDCollectionKey.with_obj(uid)
+        result = super().delete(qk=qk)
+        if result.is_ok():
+            return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
+        return result.err()
+
+    def get_by_uid(
+        self, uid: UID
+    ) -> Result[Optional[BaseUIDStoreStash.object_type], str]:
+        qks = QueryKeys(qks=[UIDCollectionKey.with_obj(uid)])
+        return self.query_one(qks=qks)
 
 
 # 🟡 TODO 26: the base collection is already a dict collection but we can change it later
