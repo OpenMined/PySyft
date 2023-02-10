@@ -211,12 +211,14 @@ class OblvService(AbstractService):
     def create_key(
         self,
         context: AuthedServiceContext,
+        override_existing_key: bool = False,
     ) -> Result[Ok, Err]:
         """Domain Public/Private Key pair creation"""
         # TODO 🟣 Check for permission after it is fully integrated
         public_key, private_key = generate_oblv_key()
 
-        self.oblv_keys_stash.clear()
+        if override_existing_key:
+            self.oblv_keys_stash.clear()
         oblv_keys = OblvKeys(public_key=public_key, private_key=private_key)
 
         res = self.oblv_keys_stash.set(oblv_keys)
