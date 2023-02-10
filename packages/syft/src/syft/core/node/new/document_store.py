@@ -537,13 +537,13 @@ class DictStorePartition(StorePartition):
                 matches.append(self.data[qk.value])
         return Ok(matches)
 
-    def delete_unique_keys_for(self, obj: SyftObject) -> Result[SyftSuccess, str]:
+    def _delete_unique_keys_for(self, obj: SyftObject) -> Result[SyftSuccess, str]:
         for _unique_ck in self.unique_cks:
             qk = _unique_ck.with_obj(obj)
             self.unique_keys[qk.key].pop(qk.value, None)
         return Ok(SyftSuccess(message="Deleted"))
 
-    def delete_search_keys_for(self, obj: SyftObject) -> Result[SyftSuccess, str]:
+    def _delete_search_keys_for(self, obj: SyftObject) -> Result[SyftSuccess, str]:
         for _search_ck in self.searchable_cks:
             qk = _search_ck.with_obj(obj)
             self.searchable_keys[qk.key].pop(qk.value, None)
@@ -609,8 +609,8 @@ class DictStorePartition(StorePartition):
     def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
         try:
             _obj = self.data.pop(qk.value)
-            self.delete_unique_keys_for(_obj)
-            self.delete_search_keys_for(_obj)
+            self._delete_unique_keys_for(_obj)
+            self._delete_search_keys_for(_obj)
             return Ok(SyftSuccess(message="Deleted"))
         except Exception as e:
             return Err(f"Failed to delete with query key {qk} with error: {e}")

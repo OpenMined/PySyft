@@ -96,9 +96,6 @@ class MongoStorePartition(StorePartition):
         return query_filter
 
     def update(self, qk: QueryKey, obj: SyftObject) -> Result[SyftObject, str]:
-        # 🟡 TODO: 31 Ids in Mongo are like _id, instead of `id`.
-        # Maybe we need a method to format query keys according to store type.
-
         filter_params = self._create_filter(QueryKeys(qks=qk))
         storage_obj = obj.to(self.storage_type)
         try:
@@ -117,6 +114,7 @@ class MongoStorePartition(StorePartition):
     def find_index_or_search_keys(
         self, index_qks: QueryKeys, search_qks: QueryKeys
     ) -> Result[List[SyftObject], str]:
+        # TODO: pass index as hint to find method
         qks = QueryKeys(qks=(index_qks.all + search_qks.all))
         return self.get_all_from_store(qks=qks)
 
@@ -131,11 +129,14 @@ class MongoStorePartition(StorePartition):
         ]
         return Ok(syft_objs)
 
-    def create(self, obj: SyftObject) -> Result[SyftObject, str]:
-        raise NotImplementedError
-
     def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
-        raise NotImplementedError
+        query_filter = self._create_filter(qks=QueryKeys(qks=qk))
+        result = self.db_collection.delete_one(filter=query_filter)
+
+        if result.deleted_count == 1:
+            return Ok(SyftSuccess(message="Deleted"))
+
+        return Err(f"Failed to delete object with qk: {qk}")
 
 
 class MongoDocumentStore(DocumentStore):

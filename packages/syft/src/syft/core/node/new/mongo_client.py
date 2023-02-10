@@ -77,10 +77,10 @@ class MongoClient(metaclass=SingletonMeta):
 
 
 # 🟡 TODO 30: import from .env
-MONGO_HOST = "localhost"
-MONGO_PORT = "49165"
+MONGO_HOST = "mongo"  # # change to 'localhost'
+MONGO_PORT = "27017"  # change to public port
 MONGO_USERNAME = "root"
-MONGO_PASSWORD = "example"
+MONGO_PASSWORD = "example"  # nosec
 
 MongoClientSettings = ClientSettings(
     hostname=MONGO_HOST,
