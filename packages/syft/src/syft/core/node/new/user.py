@@ -23,8 +23,10 @@ from ...common.uid import UID
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .transforms import drop
+from .transforms import generate_id
 from .transforms import keep
 from .transforms import make_set_default
+from .transforms import validate_email
 
 
 class ServiceRoleCapability(Enum):
@@ -105,12 +107,6 @@ def generate_key(_self: Any, output: Dict) -> Dict:
     return output
 
 
-def generate_id(_self: Any, output: Dict) -> Dict:
-    if not isinstance(output["id"], UID):
-        output["id"] = UID()
-    return output
-
-
 def __salt_and_hash_password(password: str, rounds: int) -> Tuple[str, str]:
     bytes_pass = password.encode("UTF-8")
     salt = gensalt(rounds=rounds)
@@ -125,13 +121,6 @@ def check_pwd(password: str, hashed_password: str) -> bool:
         password=password.encode("utf-8"),
         hashed_password=hashed_password.encode("utf-8"),
     )
-
-
-def validate_email(_self: Any, output: Dict) -> Dict:
-    if output["email"] is not None:
-        output["email"] = EmailStr(output["email"])
-        EmailStr.validate(output["email"])
-    return output
 
 
 @serializable(recursive_serde=True)

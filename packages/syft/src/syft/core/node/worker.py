@@ -35,6 +35,7 @@ from .new.context import NodeServiceContext
 from .new.context import UnauthedServiceContext
 from .new.context import UserLoginCredentials
 from .new.credentials import SyftSigningKey
+from .new.dataset_service import DatasetService
 from .new.document_store import DictDocumentStore
 from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
@@ -100,7 +101,9 @@ class Worker(NewNode):
             name = random_name()
         self.name = name
         services = (
-            [UserService, ActionService, TestService] if services is None else services
+            [UserService, ActionService, TestService, DatasetService]
+            if services is None
+            else services
         )
         self.services = services
         self.service_config = ServiceConfigRegistry.get_registered_configs()
@@ -129,7 +132,7 @@ class Worker(NewNode):
             if service_klass == ActionService:
                 action_store = ActionStore(root_verify_key=self.signing_key.verify_key)
                 kwargs["store"] = action_store
-            if service_klass == UserService:
+            if service_klass in [UserService, DatasetService]:
                 kwargs["store"] = self.document_store
             self.service_path_map[service_klass.__name__] = service_klass(**kwargs)
 
