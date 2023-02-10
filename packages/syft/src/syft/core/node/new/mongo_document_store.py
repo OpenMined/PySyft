@@ -3,6 +3,7 @@ from typing import Dict
 from typing import List
 
 # third party
+from pymongo import ASCENDING
 from pymongo.collection import Collection as MongoCollection
 from pymongo.errors import DuplicateKeyError
 from result import Err
@@ -65,11 +66,61 @@ class MongoStorePartition(StorePartition):
 
     def init_store(self):
         super().init_store()
-        self.init_collection()
+        self._init_collection()
 
-    def init_collection(self):
+    def _init_collection(self):
         client = MongoClient.from_settings(settings=MongoClientSettings)
         self.db_collection = client.with_collection(collection_settings=self.settings)
+        self._create_update_index()
+
+    def _create_update_index(self):
+        """Create or update mongo database indexes"""
+
+        def check_index_keys(current_keys, new_index_keys):
+            current_keys.sort()
+            new_index_keys.sort()
+            return current_keys == new_index_keys
+
+        syft_obj = self.settings.object_type
+
+        unique_attrs = getattr(syft_obj, "__attr_unique__", [])
+        object_name = syft_obj.__canonical_name__
+
+        new_index_keys = [(attr, ASCENDING) for attr in unique_attrs]
+
+        current_indexes = self.db_collection.index_information()
+        index_name = f"{object_name}_index_name"
+
+        current_index_keys = current_indexes.get(index_name, None)
+
+        if current_index_keys is not None:
+            keys_same = check_index_keys(current_index_keys["key"], new_index_keys)
+            if keys_same:
+                return
+
+            # Drop current index, since incompatible with current object
+            try:
+                self.db_collection.drop_index(index_or_name=index_name)
+            except Exception as e:
+                print(
+                    f"Failed to drop index for object: {object_name} with index keys: {current_index_keys}"
+                )
+                raise e
+
+        # If no new indexes, then skip index creation
+        if len(new_index_keys) == 0:
+            return
+
+        try:
+            self.db_collection.create_index(
+                new_index_keys, unique=True, name=index_name
+            )
+            print(f"Index Created for {object_name} with indexes: {new_index_keys}")
+        except Exception as e:
+            print(
+                f"Failed to create index for {object_name} with index keys: {new_index_keys}"
+            )
+            raise e
 
     def set(
         self,
