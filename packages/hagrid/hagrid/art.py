@@ -59,7 +59,6 @@ def hold_on_tight() -> None:
         return
 
     if int(columns) >= 91:
-
         print(
             """
  _   _       _     _                 _   _       _     _     _   _                       _

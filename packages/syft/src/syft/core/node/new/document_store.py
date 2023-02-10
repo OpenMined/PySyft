@@ -316,7 +316,6 @@ class BaseCollection:
         unique_query_keys: QueryKeys,
         searchable_query_keys: QueryKeys,
     ) -> None:
-
         uqks = unique_query_keys.all
         for qk in uqks:
             ck_key, ck_value = qk.key, qk.value
@@ -600,7 +599,6 @@ class BaseStash:
     def update(
         self, obj: BaseStash.object_type
     ) -> Optional[Result[BaseStash.object_type, str]]:
-
         qks = self.collection.settings.unique_keys.with_obj(obj)
         result = self.collection.get_keys_index(qks=qks)
 

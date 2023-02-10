@@ -130,7 +130,6 @@ def create_initial_setup(
 def get_setup(
     msg: GetSetUpMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> GetSetUpResponse:
-
     _setup = node.setup.first(domain_name=node.name).to_dict()
     _setup["tags"] = _setup["tags"]
     # TODO: Make this a little more defensive so we dont accidentally spill secrets
@@ -172,7 +171,6 @@ def update_settings(
 
 
 class NodeSetupService(ImmediateNodeServiceWithReply):
-
     msg_handler_map: Dict[type, Callable] = {
         CreateInitialSetUpMessage: create_initial_setup,
         GetSetUpMessage: get_setup,

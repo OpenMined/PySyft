@@ -157,7 +157,6 @@ def test_pointable_property(
     client: sy.VirtualMachineClient,
     root_client: sy.VirtualMachineClient,
 ) -> None:
-
     ten = th.tensor([1, 2])
     ptr = ten.send(root_client, pointable=False)
     assert len(client.store) == 0

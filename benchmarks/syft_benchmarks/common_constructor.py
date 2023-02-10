@@ -15,7 +15,6 @@ def create_bench_constructor(
     runner: pyperf.Runner,
     data_file,
 ) -> None:
-
     df = pd.read_parquet(data_file)
     # name = f"Tweets- {df.shape[0]} rows dataset "
     impressions = np.array(list(df["impressions"]))
