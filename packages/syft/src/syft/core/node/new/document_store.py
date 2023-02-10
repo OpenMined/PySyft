@@ -183,7 +183,7 @@ class PartitionSettings(SyftBaseModel):
     name: str
     object_type: type
     store_key: PartitionKey = UIDPartitionKey
-    db_name: str
+    db_name: str = "app"
 
     @property
     def unique_keys(self) -> PartitionKeys:
@@ -353,6 +353,22 @@ class BaseStash:
     ) -> Optional[Result[BaseStash.object_type, str]]:
         qk = self.partition.store_query_key(obj)
         return self.partition.update(qk=qk, obj=obj)
+
+
+@instrument
+class BaseUIDStoreStash(BaseStash):
+    def delete_by_uid(self, uid: UID) -> Result[SyftSuccess, str]:
+        qk = UIDPartitionKey.with_obj(uid)
+        result = super().delete(qk=qk)
+        if result.is_ok():
+            return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
+        return result.err()
+
+    def get_by_uid(
+        self, uid: UID
+    ) -> Result[Optional[BaseUIDStoreStash.object_type], str]:
+        qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
+        return self.query_one(qks=qks)
 
 
 # 🟡 TODO 26: the base partition is already a dict partition but we can change it later
