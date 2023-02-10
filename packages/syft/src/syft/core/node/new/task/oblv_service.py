@@ -5,6 +5,7 @@ import subprocess
 from typing import Callable
 from typing import Dict
 from typing import Optional
+from typing import Tuple
 
 # third party
 from oblv import OblvClient
@@ -30,13 +31,12 @@ DOMAIN_CONNECTION_PORT = str(os.getenv("DOMAIN_CONNECTION_PORT", 3030))
 def connect_to_enclave(
     oblv_keys_stash: OblvKeysStash, oblv_client: OblvClient, deployment_id: str
 ) -> subprocess.Popen:
-
     # Always create key file each time, which ensures consistency when there is key change in database
     create_keys_from_db(oblv_keys_stash)
     key_path = os.getenv("OBLV_KEY_PATH", "/app/content")
-    # TODO 🟣 Setting a custom name for the key as the 0.7 oblv_service uses the same code
-    # Should be modified to use environment variables when old service code is removed.
-    key_name = "new_oblv_key"
+    # Temporary new key name for the new service
+    key_name = os.getenv("OBLV_NEW_KEY_NAME", "new_oblv_key")
+
     cli = oblv_client
     public_file_name = key_path + "/" + key_name + "_public.der"
     private_file_name = key_path + "/" + key_name + "_private.der"
@@ -149,14 +149,10 @@ def make_request_to_enclave(
 
 def create_keys_from_db(oblv_keys_stash: OblvKeysStash):
     file_path = os.getenv("OBLV_KEY_PATH", "/app/content")
+    # Temporary new key name for the new service
+    file_name = os.getenv("OBLV_NEW_KEY_NAME", "new_oblv_key")
 
-    # TODO 🟣 Setting a custom name for the key as the 0.7 oblv_service uses the same code
-    # Should be modified when old service code is removed.
-    file_name = "new_oblv_key"
-
-    keys = oblv_keys_stash.get_by_id(id_int=1)
-    if keys.is_ok():
-        keys = keys.ok().ok()
+    keys = oblv_keys_stash.get_all()[0]
 
     # Creating directory if not exist
     os.makedirs(
@@ -168,6 +164,38 @@ def create_keys_from_db(oblv_keys_stash: OblvKeysStash):
     f_public = open(file_path + "/" + file_name + "_public.der", "w+b")
     f_public.write(keys.public_key)
     f_public.close()
+
+
+def generate_oblv_key() -> Tuple[bytes]:
+    file_path = os.getenv("OBLV_KEY_PATH", "/app/content")
+    # Temporary new key name for the new service
+    file_name = os.getenv("OBLV_NEW_KEY_NAME", "new_oblv_key")
+    result = subprocess.run(  # nosec
+        [
+            "/usr/local/bin/oblv",
+            "keygen",
+            "--key-name",
+            file_name,
+            "--output",
+            file_path,
+        ],
+        capture_output=True,
+    )
+    if result.stderr:
+        raise Err(
+            subprocess.CalledProcessError(  # nosec
+                returncode=result.returncode, cmd=result.args, stderr=result.stderr
+            )
+        )
+
+    f_private = open(file_path + "/" + file_name + "_private.der", "rb")
+    private_key = f_private.read()
+    f_private.close()
+    f_public = open(file_path + "/" + file_name + "_public.der", "rb")
+    public_key = f_public.read()
+    f_public.close()
+
+    return (public_key, private_key)
 
 
 @serializable(recursive_serde=True)
@@ -186,38 +214,10 @@ class OblvService(AbstractService):
     ) -> Result[Ok, Err]:
         """Domain Public/Private Key pair creation"""
         # TODO 🟣 Check for permission after it is fully integrated
-        file_path = os.getenv("OBLV_KEY_PATH", "/app/content")
-        # file_name = os.getenv("OBLV_KEY_NAME", "oblv_key")
-        # TODO 🟣 Setting a custom name for the key as the 0.7 oblv_service uses the same code
-        # Should be modified when old service code is removed.
-        file_name = "new_oblv_key"
-        result = subprocess.run(  # nosec
-            [
-                "/usr/local/bin/oblv",
-                "keygen",
-                "--key-name",
-                file_name,
-                "--output",
-                file_path,
-            ],
-            capture_output=True,
-        )
-        if result.stderr:
-            raise Err(
-                subprocess.CalledProcessError(  # nosec
-                    returncode=result.returncode, cmd=result.args, stderr=result.stderr
-                )
-            )
+        public_key, private_key = generate_oblv_key()
 
-        f_private = open(file_path + "/" + file_name + "_private.der", "rb")
-        private_key = f_private.read()
-        f_private.close()
-        f_public = open(file_path + "/" + file_name + "_public.der", "rb")
-        public_key = f_public.read()
-        f_public.close()
-
-        self.oblv_keys_stash.delete_by_id(1)
-        oblv_keys = OblvKeys(id_int=1, public_key=public_key, private_key=private_key)
+        self.oblv_keys_stash.clear()
+        oblv_keys = OblvKeys(public_key=public_key, private_key=private_key)
 
         res = self.oblv_keys_stash.set(oblv_keys)
 
@@ -227,22 +227,14 @@ class OblvService(AbstractService):
             )
         return res.err()
 
-    @service_method(path="oblv.get_key", name="get_key")
+    @service_method(path="oblv.get_public_key", name="get_public_key")
     def get_public_key(
         self,
         context: AuthedServiceContext,
     ) -> Result[Ok, Err]:
 
-        row_exists = self.oblv_keys_stash.get_by_id(id_int=1).ok()
-
-        if row_exists.is_ok() and not row_exists.ok():
-            res = self.create_key(context)
-            if res.is_err():
-                return res.err()
-
-        oblv_keys = self.oblv_keys_stash.get_by_id(id_int=1)
-        if oblv_keys.is_ok():
-            oblv_keys = oblv_keys.ok().ok()
+        if len(self.oblv_keys_stash):
+            oblv_keys = self.oblv_keys_stash.get_all()[0]
             public_key_str = (
                 encodebytes(oblv_keys.public_key).decode("UTF-8").replace("\n", "")
             )

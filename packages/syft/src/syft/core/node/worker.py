@@ -35,7 +35,10 @@ from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
 from .new.service import AbstractService
 from .new.service import ServiceConfigRegistry
+from .new.task.oblv_keys_stash import OblvKeys
+from .new.task.oblv_keys_stash import OblvKeysStash
 from .new.task.oblv_service import OblvService
+from .new.task.oblv_service import generate_oblv_key
 from .new.task.task_service import TaskService
 from .new.test_service import TestService
 from .new.user import User
@@ -217,3 +220,22 @@ def create_admin_new(
             return user.ok()
     except Exception as e:
         print("create_admin failed", e)
+
+
+def create_oblv_key_pair(
+    worker: Worker,
+) -> Optional[str]:
+    try:
+        if os.getenv("INSTALL_OBLV_CLI") == "true":
+
+            oblv_keys_stash = OblvKeysStash(store=worker.document_store)
+
+            if not len(oblv_keys_stash):
+                public_key, private_key = generate_oblv_key()
+                oblv_keys = OblvKeys(public_key=public_key, private_key=private_key)
+                res = oblv_keys_stash.set(oblv_keys)
+                if res.is_ok():
+                    print("Successfully generated Oblv Key pair at startup")
+                return res.err()
+    except Exception as e:
+        print("Unable to create Oblv Keys.", e)

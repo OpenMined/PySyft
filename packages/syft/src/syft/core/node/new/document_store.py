@@ -477,6 +477,15 @@ class BaseStash:
     def set(self, obj: BaseStash.object_type) -> Result[BaseStash.object_type, str]:
         return self.collection.set(obj=obj)
 
+    def get_all(self) -> List[BaseStash.object_type]:
+        return list(self.collection.data.values())
+
+    def __len__(self) -> int:
+        return len(self.get_all())
+
+    def clear(self) -> None:
+        self.collection.data = {}
+
     def get_all_index(
         self, qks: Union[QueryKey, QueryKeys]
     ) -> Result[BaseStash.object_type, str]:

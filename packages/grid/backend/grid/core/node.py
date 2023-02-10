@@ -13,6 +13,7 @@ from syft.core.node.common.client import Client
 from syft.core.node.common.util import get_s3_client
 from syft.core.node.worker import Worker
 from syft.core.node.worker import create_admin_new
+from syft.core.node.worker import create_oblv_key_pair
 
 # grid absolute
 from grid.core.config import Settings
@@ -83,6 +84,9 @@ else:
 create_admin_new(
     name="Jane Doe", email="info@openmined.org", password="changethis", worker=worker
 )
+
+create_oblv_key_pair(worker=worker)
+
 
 node.loud_print()
 
