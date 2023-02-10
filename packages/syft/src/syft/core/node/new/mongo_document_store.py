@@ -11,6 +11,7 @@ from result import Result
 
 # relative
 from ...common.serde.deserialize import _deserialize as deserialize
+from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize as serialize
 from ..common.node_table.syft_object import StorableObjectType
 from ..common.node_table.syft_object import SyftObject
@@ -139,5 +140,6 @@ class MongoStorePartition(StorePartition):
         return Err(f"Failed to delete object with qk: {qk}")
 
 
+@serializable(recursive_serde=True)
 class MongoDocumentStore(DocumentStore):
     partition_type = MongoStorePartition
