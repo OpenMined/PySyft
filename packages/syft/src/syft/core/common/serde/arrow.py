@@ -1,5 +1,4 @@
 # stdlib
-from typing import Tuple
 from typing import Union
 from typing import cast
 
@@ -51,11 +50,11 @@ def arrow_deserialize(
     return np_array.astype(original_dtype)
 
 
-def numpyutf8toarray(input_index: Tuple[np.ndarray, np.ndarray]) -> np.ndarray:
-    """Decodes utf-8 encoded numpy array to numpy array.
+def numpyutf8toarray(input_index: np.ndarray) -> np.ndarray:
+    """Decodes utf-8 encoded numpy array to string numpy array.
 
     Args:
-        string_index (Tuple[np.ndarray, np.ndarray]): encoded array
+        input_index (np.ndarray): utf-8 encoded array
 
     Returns:
         np.ndarray: decoded NumpyArray.
@@ -78,20 +77,20 @@ def numpyutf8toarray(input_index: Tuple[np.ndarray, np.ndarray]) -> np.ndarray:
 
 
 def arraytonumpyutf8(string_list: Union[str, np.ndarray]) -> bytes:
-    """Encodes Numpyarray  to utf-8 encoded numpy array.
+    """Encodes string Numpyarray  to utf-8 encoded numpy array.
 
     Args:
-        string_array (np.ndarray): NumpyArray to be encoded
+        string_list (np.ndarray): NumpyArray to be encoded
 
     Returns:
-        Tuple[np.ndarray, np.ndarray]: utf-8 encoded int Numpy array
+        bytes: serialized utf-8 encoded int Numpy array
     """
     array_shape = np.array(string_list).shape
     string_list = np.array(string_list).flatten()
     bytes_list = []
     indexes = []
     offset = 0
-    # print("dsl list ", string_list)
+
     for item in string_list:
         name_bytes = item.encode("utf-8")
         offset += len(name_bytes)
