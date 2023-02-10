@@ -95,7 +95,7 @@ def create_deployment(
             users.append(
                 {
                     "user_name": domain_client.name,
-                    "public key": domain_client.api.services.oblv.get_key(),
+                    "public key": domain_client.api.services.oblv.get_public_key(),
                 }
             )
         except OblvKeyNotFoundError:

@@ -1,7 +1,7 @@
 # stdlib
 from datetime import date
 from io import StringIO
-import os
+import socket
 import sys
 from typing import Any
 from typing import Dict
@@ -18,6 +18,7 @@ from result import Result
 # relative
 from .....logger import logger
 from .....oblv.constants import LOCAL_MODE
+from .....oblv.constants import LOCAL_MODE_CONNECTION_PORT
 from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
@@ -36,7 +37,34 @@ from .task import NodeView
 from .task import Task
 from .task_stash import TaskStash
 
-DOMAIN_CONNECTION_PORT = int(os.getenv("DOMAIN_CONNECTION_PORT", 3030))
+
+def find_available_port(host: str, port: int, search: bool = False) -> int:
+    port_available = False
+    while not port_available:
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            result_of_check = sock.connect_ex((host, port))
+
+            if result_of_check != 0:
+                port_available = True
+                break
+            else:
+                if search:
+                    port += 1
+                else:
+                    break
+
+        except Exception as e:
+            print(f"Failed to check port {port}. {e}")
+    sock.close()
+
+    if search is False and port_available is False:
+        error = (
+            f"{port} is in use, either free the port or "
+            + f"try: {port}+ to auto search for a port"
+        )
+        raise Exception(error)
+    return port
 
 
 @serializable(recursive_serde=True)
@@ -234,21 +262,35 @@ class TaskService(AbstractService):
         return res.err()
 
     def _get_api(self, oblv_metadata: dict) -> SyftAPI:
+
         if not LOCAL_MODE:
-            connection_string = f"http://127.0.0.1:{DOMAIN_CONNECTION_PORT}"
+            port = find_available_port(host="127.0.0.1", port=3031, search=True)
+            connection_string = f"http://127.0.0.1:{port}"
         else:
-            connection_string = f"http://host.docker.internal:{DOMAIN_CONNECTION_PORT}"
+            port = LOCAL_MODE_CONNECTION_PORT
+            connection_string = (
+                f"http://host.docker.internal:{LOCAL_MODE_CONNECTION_PORT}"
+            )
         req = make_request_to_enclave(
             connection_string=connection_string + "/worker/api",
             deployment_id=oblv_metadata["deployment_id"],
             oblv_client=oblv_metadata["oblv_client"],
             oblv_keys_stash=self.oblv_keys_stash,
             request_method=requests.get,
+            connection_port=port,
         )
 
         obj = deserialize(req.content, from_bytes=True)
         obj.api_url = f"{connection_string}/worker/syft_api_call"
         return cast(SyftAPI, obj)
+
+    @service_method(path="task.send_hello_to_enclave", name="send_hello_to_enclave")
+    def send_hello_to_enclave(
+        self, context: AuthedServiceContext, oblv_metadata: dict
+    ) -> Result[Ok, Err]:
+        api = self._get_api(oblv_metadata)
+        res = api.services.test.send_name("natsu")
+        return Ok(res)
 
     @service_method(path="task.send_status_to_enclave", name="send_status_to_enclave")
     def send_status_to_enclave(
@@ -291,6 +333,11 @@ class TaskService(AbstractService):
                 if result.is_ok():
                     result = result.ok()
                     result.base_dict[task.id] = private_input_map
+                    self.action_store.set(
+                        uid=task_owner.node_uid,
+                        credentials=context.credentials,
+                        syft_object=result,
+                    )
                 else:
                     return result.err()
 

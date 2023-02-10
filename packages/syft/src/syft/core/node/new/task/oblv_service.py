@@ -25,11 +25,14 @@ from ..service import service_method
 from .oblv_keys import OblvKeys
 from .oblv_keys_stash import OblvKeysStash
 
-DOMAIN_CONNECTION_PORT = str(os.getenv("DOMAIN_CONNECTION_PORT", 3030))
+__PROCESS = None
 
 
 def connect_to_enclave(
-    oblv_keys_stash: OblvKeysStash, oblv_client: OblvClient, deployment_id: str
+    oblv_keys_stash: OblvKeysStash,
+    oblv_client: OblvClient,
+    deployment_id: str,
+    connection_port: int,
 ) -> subprocess.Popen:
     # Always create key file each time, which ensures consistency when there is key change in database
     create_keys_from_db(oblv_keys_stash)
@@ -65,7 +68,7 @@ def connect_to_enclave(
                 "--port",
                 "443",
                 "--lport",
-                DOMAIN_CONNECTION_PORT,
+                str(connection_port),
                 "--disable-pcr-check",
             ],
             stdout=subprocess.PIPE,
@@ -91,7 +94,7 @@ def connect_to_enclave(
                 "--port",
                 "443",
                 "--lport",
-                DOMAIN_CONNECTION_PORT,
+                str(connection_port),
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -105,7 +108,11 @@ def connect_to_enclave(
         elif log_line.__contains__("listening on"):
             break
 
-    return process
+    global __PROCESS
+    if __PROCESS is None:
+        __PROCESS = process
+
+    return __PROCESS
 
 
 def make_request_to_enclave(
@@ -114,16 +121,18 @@ def make_request_to_enclave(
     oblv_client: OblvClient,
     request_method: Callable,
     connection_string: str,
+    connection_port: int,
     params: Optional[Dict] = None,
     files: Optional[Dict] = None,
     data: Optional[Dict] = None,
     json: Optional[Dict] = None,
 ):
     if not LOCAL_MODE:
-        process = connect_to_enclave(
+        _ = connect_to_enclave(
             oblv_keys_stash=oblv_keys_stash,
             oblv_client=oblv_client,
             deployment_id=deployment_id,
+            connection_port=connection_port,
         )
         req = request_method(
             connection_string,
@@ -132,8 +141,8 @@ def make_request_to_enclave(
             data=data,
             json=json,
         )
-        process.kill()
-        process.wait(1)
+        # process.kill()
+        # process.wait(1)
         return req
     else:
         headers = {"x-oblv-user-name": "enclave-test", "x-oblv-user-role": "domain"}
