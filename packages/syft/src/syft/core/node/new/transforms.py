@@ -6,6 +6,12 @@ from typing import List
 from typing import Optional
 from typing import Union
 
+# third party
+from pydantic import EmailStr
+
+# relative
+from ...common.uid import UID
+
 
 class NotNone:
     pass
@@ -80,3 +86,16 @@ def convert_types(list_keys: List[str], types: Union[type, List[type]]) -> Calla
         return output
 
     return run_convert_types
+
+
+def generate_id(_self: Any, output: Dict) -> Dict:
+    if not isinstance(output["id"], UID):
+        output["id"] = UID()
+    return output
+
+
+def validate_email(_self: Any, output: Dict) -> Dict:
+    if output["email"] is not None:
+        output["email"] = EmailStr(output["email"])
+        EmailStr.validate(output["email"])
+    return output
