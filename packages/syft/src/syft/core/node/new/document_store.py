@@ -458,7 +458,7 @@ class DictStorePartition(StorePartition):
 
         search_results = None
         if len(search_qks.all) > 0:
-            search_results = self._find_keys_search(qks=QueryKeys(qks=search_qks))
+            search_results = self._find_keys_search(qks=search_qks)
 
             if search_results.is_ok():
                 if ids is None:
