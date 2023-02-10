@@ -14,7 +14,6 @@ class TestAuthRoutes:
     async def test_user_register(
         self, app: FastAPI, client: AsyncClient, faker: Faker
     ) -> None:
-
         user = {
             "email": faker.email(),
             "password": faker.password(),

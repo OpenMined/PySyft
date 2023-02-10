@@ -89,6 +89,7 @@ extensions.append("recommonmark")
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 
+
 # override autodoc defaults to skip/not skip certain methods
 def skip(
     app: Any, what: Any, name: str, obj: Any, would_skip: bool, options: Any

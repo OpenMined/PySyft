@@ -503,7 +503,6 @@ def check_docker_version() -> Optional[str]:
 
 
 def docker_running(timeout: Optional[float] = None) -> Tuple[bool, str]:
-
     status, error_msg = False, ""
 
     try:

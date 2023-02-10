@@ -45,7 +45,6 @@ from .smpc.mpc_tensor import MPCTensor
 
 
 class TensorPointer(Pointer):
-
     # Must set these at class init time despite
     # the fact that klass.Class tries to override them (unsuccessfully)
     __name__ = "TensorPointer"
@@ -62,7 +61,6 @@ class TensorPointer(Pointer):
         public_shape: Optional[Tuple[int, ...]] = None,
         public_dtype: Optional[Union[str, np.dtype]] = None,
     ):
-
         super().__init__(
             client=client,
             id_at_location=id_at_location,
@@ -96,7 +94,6 @@ class TensorPointer(Pointer):
         *args: Any,
         **kwargs: Any,
     ) -> Any:
-
         # we want to get the return type which matches the attr_path_and_name
         # so we ask lib_ast for the return type name that matches out
         # attr_path_and_name and then use that to get the actual pointer klass
@@ -422,14 +419,12 @@ class TensorPointer(Pointer):
 
 
 def to32bit(np_array: np.ndarray, verbose: bool = True) -> np.ndarray:
-
     if np_array.dtype == np.int64:
         if verbose:
             print("Casting internal tensor to int32")
         out = np_array.astype(np.int32)
 
     elif np_array.dtype == np.float64:
-
         if verbose:
             print("Casting internal tensor to float32")
         out = np_array.astype(np.float32)
@@ -447,7 +442,6 @@ class Tensor(
     FixedPrecisionTensorAncestor,
     # MPCTensorAncestor,
 ):
-
     __attr_allowlist__ = ["child", "tag_name", "public_shape", "public_dtype"]
     __serde_overrides__: Dict[str, Sequence[Callable]] = {
         "public_dtype": ((lambda x: str(x), lambda x: np.dtype(x)))
@@ -481,7 +475,6 @@ class Tensor(
             and not isinstance(child, np.ndarray)
             and not isinstance(child, GammaTensor)
         ):
-
             raise Exception(
                 f"Data: {child} ,type: {type(child)} must be list or nd.array "
             )

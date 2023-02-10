@@ -31,7 +31,6 @@ class DictLedgerStore(AbstractLedgerStore):
 
 class RedisLedgerStore(AbstractLedgerStore):
     def __init__(self, settings: Optional[BaseSettings] = None) -> None:
-
         if settings is None:
             raise Exception("RedisStore requires Settings")
         self.settings = settings

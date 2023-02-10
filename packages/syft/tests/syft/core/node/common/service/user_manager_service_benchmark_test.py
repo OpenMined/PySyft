@@ -58,7 +58,6 @@ from syft.core.node.domain_service import DomainServiceClass
 def _create_dummy_user(
     faker: Faker, domain: DomainInterface, is_admin: bool = False
 ) -> Tuple[dict, VerifyKey]:
-
     # Create dummy user
     private_key = SigningKey.generate()
     verify_key = private_key.verify_key
@@ -99,7 +98,6 @@ def _signup_user(
 @pytest.mark.skip
 class TestCreateUserMessageBenchmarking:
     def setup_users(self, domain: DomainInterface, faker: Faker) -> None:
-
         # Register domain setup configuration
         domain.setup.register_once(domain_name=domain.name)
 
@@ -111,7 +109,6 @@ class TestCreateUserMessageBenchmarking:
         self.do_users.append((user, verify_key))
 
     def test_create_user_message(self, domain: sy.Domain, faker: Faker) -> None:
-
         # Setup users
         self.setup_users(domain, faker)
         _, do_verify_key = self.do_users[0]
@@ -214,7 +211,6 @@ class TestGetUserMessageBenchmarking:
         self.do_users.append((user, verify_key))
 
     def test_get_user_message(self, domain: sy.Domain, faker: Faker) -> None:
-
         # Setup users
         self.setup_users(domain, faker)
         do_user, do_verify_key = self.do_users[0]
@@ -392,7 +388,6 @@ class TestUpdateUserMessageBenchmarking:
             self.ds_users.append((user, verify_key))
 
     def test_update_user_message(self, domain: DomainInterface, faker: Faker) -> None:
-
         self.setup_users(domain, faker)
 
         _, do_verify_key = self.do_users[0]
