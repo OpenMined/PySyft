@@ -16,6 +16,11 @@ from typing import Tuple
 from typing import Union
 import warnings
 
+# third party
+from result import Err
+from result import Ok
+from result import Result
+
 # relative
 from .. import ast
 from .. import lib
@@ -35,6 +40,8 @@ from ..core.node.common.node_service.resolve_pointer_type.resolve_pointer_type_m
 )
 from ..core.node.common.util import check_send_to_blob_storage
 from ..core.node.common.util import upload_to_s3_using_presigned
+from ..core.node.new.action_object import ActionObjectPointer
+from ..core.node.new.action_service import NumpyArrayObject
 from ..core.pointer.pointer import Pointer
 from ..core.store.storeable_object import StorableObject
 from ..logger import traceback_and_raise
@@ -789,7 +796,31 @@ class Class(Callable):
             else:
                 return ptr, obj_msg
 
+        def new_send(
+            self: Any,
+            client: Any,
+            # pointable: bool = True,
+            # description: str = "",
+            # tags: Optional[List[str]] = None,
+            # searchable: Optional[bool] = None,
+            # chunk_size: Optional[int] = None,
+            # send_to_blob_storage: bool = True,
+            # **kwargs: Any,
+        ) -> Result[ActionObjectPointer, Err]:
+            # third party
+            import numpy as np
+
+            if isinstance(self, np.ndarray):
+                obj = NumpyArrayObject(
+                    syft_action_data=self, dtype=self.dtype, shape=self.shape
+                )
+                obj_pointer = client.api.services.action.set(obj)
+                return Ok(obj_pointer)
+            else:
+                return Err("Not implemented")
+
         aggressive_set_attr(obj=outer_self.object_ref, name="send", attr=send)
+        aggressive_set_attr(obj=outer_self.object_ref, name="new_send", attr=new_send)
 
     def create_storable_object_attr_convenience_methods(outer_self: Any) -> None:
         """Add methods to set tag and description to `outer_self.object_ref`."""

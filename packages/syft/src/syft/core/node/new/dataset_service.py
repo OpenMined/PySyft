@@ -7,7 +7,8 @@ from ....telemetry import instrument
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .context import AuthedServiceContext
-from .dataset_stash import Dataset
+from .dataset import CreateDataset
+from .dataset import Dataset
 from .dataset_stash import DatasetStash
 from .document_store import DocumentStore
 from .response import SyftError
@@ -28,10 +29,10 @@ class DatasetService(AbstractService):
 
     @service_method(path="dataset.add", name="add")
     def add(
-        self, context: AuthedServiceContext, dataset: Dataset
+        self, context: AuthedServiceContext, dataset: CreateDataset
     ) -> Union[SyftSuccess, SyftError]:
         """Add a Dataset"""
-        result = self.stash.set(dataset)
+        result = self.stash.set(dataset.to(Dataset))
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="Dataset Added")

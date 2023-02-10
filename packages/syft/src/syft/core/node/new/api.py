@@ -191,9 +191,9 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
                             check_type(param_key, arg, t)  # raises Exception
                 except TypeError:
                     _type_str = getattr(t, "__name__", str(t))
-                    msg = f"Arg: `{arg}` must be `{_type_str}` and not `{type(arg).__name__}`"
+                    msg = f"Arg: {arg} must be {_type_str} not {type(arg).__name__}"
                 if msg:
-                    raise Exception(msg)
+                    return SyftError(message=msg)
 
                 _valid_args.append(arg)
 
@@ -234,9 +234,8 @@ class SyftAPI(SyftObject):
     # serde / storage rules
     __attr_state__ = ["endpoints"]
 
-    def __post_init__(self) -> None:
-        # 🟡 TODO 16: Write user login and key retrieval / local caching
-        self.signing_key = SyftSigningKey.generate()
+    # def __post_init__(self) -> None:
+    #     pass
 
     @staticmethod
     def for_user(node_uid: UID) -> SyftAPI:
