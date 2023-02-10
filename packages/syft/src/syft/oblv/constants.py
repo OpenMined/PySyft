@@ -1,4 +1,4 @@
-INFRA = "r5.xlarge"
+INFRA = "m5.4xlarge"
 REPO_OWNER = "OpenMined"
 REPO_NAME = "syft-enclave"
 REF = "manual_code"
