@@ -178,7 +178,6 @@ class Worker(NewNode):
     def handle_api_call(
         self, api_call: Union[SyftAPICall, SignedSyftAPICall]
     ) -> Result[SyftObject, Err]:
-
         if self.required_signed_calls and isinstance(api_call, SyftAPICall):
             return Err(
                 f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."  # type: ignore

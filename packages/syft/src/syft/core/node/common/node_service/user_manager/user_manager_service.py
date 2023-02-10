@@ -304,7 +304,6 @@ def del_user_msg(
     node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
-
     _target_user = node.users.first(id_int=msg.user_id)
     _not_owner = _target_user.role["name"] != node.roles.owner_role["name"]
 

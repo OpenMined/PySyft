@@ -23,7 +23,6 @@ from ..generic_payload.syft_message import RequestPayload
 @serializable(recursive_serde=True)
 @final
 class ObjectDeleteMessage(SyftMessage, DomainMessageRegistry, VMMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         """Payload fields and types used during a User Creation Request."""
@@ -46,7 +45,6 @@ class ObjectDeleteMessage(SyftMessage, DomainMessageRegistry, VMMessageRegistry)
     def run(  # type: ignore
         self, node: DomainInterface, verify_key: Optional[VerifyKey] = None
     ) -> ReplyPayload:  # type: ignore
-
         # TODO: We can have it run async and have a cron/periodic task to clean up failed deletes.
 
         # relative

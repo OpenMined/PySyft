@@ -214,7 +214,6 @@ class Domain(Node):
         first_superuser_budget: float = 5.55,
         domain_name: str = "BigHospital",
     ) -> Domain:
-
         # Build Syft Message
         msg: SignedImmediateSyftMessageWithReply = CreateInitialSetUpMessage(
             address=self.node_uid,

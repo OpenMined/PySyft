@@ -93,7 +93,6 @@ class UserIsOwner(BasePermission):
         node: NodeServiceInterface,
         verify_key: Optional[VerifyKey],
     ) -> bool:
-
         msg_kwargs = msg.kwargs  # type: ignore
         user_id = msg_kwargs.get("user_id")
 

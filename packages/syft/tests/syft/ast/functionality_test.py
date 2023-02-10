@@ -256,7 +256,6 @@ def test_static_method(custom_client: Client) -> None:
 
 
 def test_static_attribute_set_get(custom_client: Client) -> None:
-
     """Unit test to check static_attribute(get & set) of remote class object"""
     result_ptr = custom_client.module_test.A.static_attr
     result = module_test.A.static_attr

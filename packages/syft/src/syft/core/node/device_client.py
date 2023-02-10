@@ -18,7 +18,6 @@ from .common.client import Client
 
 @final
 class DeviceClient(Client):
-
     device: SpecificLocation  # redefine the type of self.device to not be optional
 
     def __init__(

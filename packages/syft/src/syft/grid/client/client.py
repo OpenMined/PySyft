@@ -91,12 +91,10 @@ def login(
     retry: Optional[int] = None,
     via_new_client: Optional[bool] = None,
 ) -> Union[Client, SyftClient]:
-
     retry = 5 if retry is None else retry  # Default to 5 retries
     timeout = 30 if timeout is None else timeout  # Default to 10 seconds
 
     if password == "changethis":  # nosec
-
         if email == "info@openmined.org":
             print(
                 f"{bcolors.YELLOW}WARNING:{bcolors.ENDC} CHANGE YOUR USERNAME AND PASSWORD!!! \n\n"

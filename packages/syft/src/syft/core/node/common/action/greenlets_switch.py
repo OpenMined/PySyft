@@ -73,7 +73,6 @@ def crypto_store_retrieve_object(  # type: ignore
             )
             return tuple(store_values)
         except EmptyPrimitiveStore:
-
             if ctr % 1500 == 0:
                 critical(
                     f"Crypto Store Retrieval failed for parties due to missing object: {EmptyPrimitiveStore}"
