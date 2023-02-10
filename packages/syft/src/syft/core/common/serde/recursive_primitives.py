@@ -5,6 +5,7 @@ from enum import Enum
 import functools
 import sys
 from types import MappingProxyType
+import typing
 from typing import Any
 from typing import Collection
 from typing import List
@@ -14,20 +15,16 @@ from typing import TypeVar
 from typing import Union
 from typing import _GenericAlias
 from typing import _SpecialForm
-from typing import _SpecialGenericAlias
-
-try:
-    # stdlib
-    from typing import _UnionGenericAlias
-except Exception:
-    _UnionGenericAlias = None
-
-# stdlib
 from typing import cast
 
 # relative
 from .capnp import get_capnp_schema
 from .recursive import recursive_serde_register
+
+# import types unsupported on python 3.8
+_UnionGenericAlias = getattr(typing, "_UnionGenericAlias", None)
+_SpecialGenericAlias = getattr(typing, "_SpecialGenericAlias", None)
+
 
 iterable_schema = get_capnp_schema("iterable.capnp").Iterable  # type: ignore
 kv_iterable_schema = get_capnp_schema("kv_iterable.capnp").KVIterable  # type: ignore
@@ -330,4 +327,5 @@ if _UnionGenericAlias is not None:
 recursive_serde_register_type(_GenericAlias)
 recursive_serde_register_type(Union)
 recursive_serde_register_type(TypeVar)
-recursive_serde_register_type(_SpecialGenericAlias)
+if _SpecialGenericAlias is not None:
+    recursive_serde_register_type(_SpecialGenericAlias)
