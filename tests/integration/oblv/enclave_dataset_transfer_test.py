@@ -12,7 +12,6 @@ LOCAL_ENCLAVE_PORT = 8010
 
 @pytest.mark.oblv
 def test_dataset_upload_to_enclave() -> None:
-
     data_scientist = {
         "name": "DS",
         "email": "DS@om.com",

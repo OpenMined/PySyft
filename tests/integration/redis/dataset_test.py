@@ -51,7 +51,6 @@ def test_create_dataset(domain_owner, cleanup_storage):
 @pytest.mark.skip
 @pytest.mark.redis
 def test_delete_dataset_assets(domain_owner, cleanup_storage):
-
     create_test_dataset(domain_owner)
 
     # Check if the dataset has been loaded
@@ -90,7 +89,6 @@ def test_delete_dataset_assets(domain_owner, cleanup_storage):
 
 @pytest.mark.redis
 def test_delete_entire_dataset(domain_owner, cleanup_storage):
-
     create_test_dataset(domain_owner, "Dataset_1")
     create_test_dataset(domain_owner, "Dataset_2")
 

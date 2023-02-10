@@ -43,7 +43,6 @@ class TestUsersRoutes:
     async def test_successfully_create_user(
         self, app: FastAPI, client: AsyncClient
     ) -> None:
-
         # Create dummy user
         user = create_user(budget=random() * 100)
         headers = await authenticate_owner(app, client)

@@ -78,7 +78,6 @@ class SyftObjectRegistry:
     def get_transform(
         cls, type_from: Type["SyftObject"], type_to: Type["SyftObject"]
     ) -> Callable:
-
         for type_from_mro in type_from.mro():
             if issubclass(type_from_mro, SyftBaseObject):
                 klass_from = type_from_mro.__canonical_name__
@@ -108,7 +107,6 @@ print_type_cache = defaultdict(list)
 
 
 class SyftObject(SyftBaseObject, SyftObjectRegistry):
-
     __canonical_name__ = "SyftObject"
     __version__ = SYFT_OBJECT_VERSION_1
 

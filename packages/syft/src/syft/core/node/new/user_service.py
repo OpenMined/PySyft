@@ -113,7 +113,6 @@ class UserService(AbstractService):
 
     @service_method(path="user.delete", name="delete")
     def delete(self, context: AuthedServiceContext, uid: UID) -> Union[bool, SyftError]:
-
         result = self.stash.delete_by_uid(uid=uid)
 
         if result.err():

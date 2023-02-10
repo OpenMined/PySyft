@@ -338,7 +338,6 @@ class BaseStash:
     def update(
         self, obj: BaseStash.object_type
     ) -> Optional[Result[BaseStash.object_type, str]]:
-
         qk = self.partition.store_query_key(obj)
         return self.partition.update(qk=qk, obj=obj)
 
@@ -446,7 +445,6 @@ class DictStorePartition(StorePartition):
     def find_index_or_search_keys(
         self, index_qks: QueryKeys, search_qks: QueryKeys
     ) -> Result[List[SyftObject], str]:
-
         ids: Optional[Set] = None
         errors = []
         if len(index_qks.all) > 0:
@@ -480,7 +478,6 @@ class DictStorePartition(StorePartition):
         unique_query_keys: QueryKeys,
         searchable_query_keys: QueryKeys,
     ) -> None:
-
         uqks = unique_query_keys.all
         for qk in uqks:
             pk_key, pk_value = qk.key, qk.value

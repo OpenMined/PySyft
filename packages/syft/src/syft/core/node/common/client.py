@@ -220,7 +220,6 @@ class Client(AbstractNodeClient):
         route_index: int = 0,
         verbose: bool = False,
     ) -> Union[SyftMessage, SignedMessage]:
-
         # relative
         from .node_service.simple.simple_messages import NodeRunnableMessageWithReply
         from .node_service.tff.tff_messages import TFFMessageWithReply
