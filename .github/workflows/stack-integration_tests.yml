@@ -180,7 +180,7 @@ jobs:
 
       # Get Job name and url
       - name: Reboot node
-        if: failure()
+        if: matrix.os == 'windows' && failure()
         run: |
           shutdown /r /t 1
 

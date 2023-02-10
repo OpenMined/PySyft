@@ -1,9 +1,7 @@
 # stdlib
-from typing import Any
 from typing import Optional
 
 # third party
-from result import Err
 from result import Ok
 from result import Result
 
@@ -38,13 +36,6 @@ class UserStash(BaseStash):
 
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
-
-    def check_type(self, obj: Any, type_: type) -> Result[Any, str]:
-        return (
-            Ok(obj)
-            if isinstance(obj, type_)
-            else Err(f"{type(obj)} does not match required type: {type_}")
-        )
 
     def set(self, user: User) -> Result[User, str]:
         return self.check_type(user, self.object_type).and_then(super().set)

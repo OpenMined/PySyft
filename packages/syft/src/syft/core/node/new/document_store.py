@@ -222,6 +222,9 @@ class StorePartition:
     def find_index_or_search_keys(self, index_qks: QueryKeys, search_qks: QueryKeys):
         raise NotImplementedError
 
+    def all(self) -> Result[List[BaseStash.object_type], str]:
+        raise NotImplementedError
+
     def set(self, obj: SyftObject) -> Result[SyftObject, str]:
         raise NotImplementedError
 
@@ -262,6 +265,16 @@ class BaseStash:
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
         self.partition = store.partition(type(self).settings)
+
+    def check_type(self, obj: Any, type_: type) -> Result[Any, str]:
+        return (
+            Ok(obj)
+            if isinstance(obj, type_)
+            else Err(f"{type(obj)} does not match required type: {type_}")
+        )
+
+    def get_all(self) -> Result[List[BaseStash.object_type], str]:
+        return self.partition.all()
 
     def set(self, obj: BaseStash.object_type) -> Result[BaseStash.object_type, str]:
         return self.partition.set(obj=obj)
@@ -340,11 +353,6 @@ class BaseStash:
     ) -> Optional[Result[BaseStash.object_type, str]]:
         qk = self.partition.store_query_key(obj)
         return self.partition.update(qk=qk, obj=obj)
-
-        return Err(
-            f"Invalid Query Key Type. "
-            f"Required: {self.partition.settings.store_key}, Found: {qk.partition_key}"
-        )
 
 
 # 🟡 TODO 26: the base partition is already a dict partition but we can change it later
@@ -441,6 +449,9 @@ class DictStorePartition(StorePartition):
         except Exception as e:
             return Err(f"Failed to write obj {obj}. {e}")
         return Ok(obj)
+
+    def all(self) -> Result[List[BaseStash.object_type], str]:
+        return Ok(list(self.data.values()))
 
     def find_index_or_search_keys(
         self, index_qks: QueryKeys, search_qks: QueryKeys
