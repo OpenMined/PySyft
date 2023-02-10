@@ -640,6 +640,11 @@ class BaseUIDStoreStash(BaseStash):
         qks = QueryKeys(qks=[UIDCollectionKey.with_obj(uid)])
         return self.query_one(qks=qks)
 
+    def set(
+        self, obj: BaseUIDStoreStash.object_type
+    ) -> Result[BaseUIDStoreStash.object_type, str]:
+        return self.check_type(obj, self.object_type).and_then(super().set)
+
 
 # 🟡 TODO 26: the base collection is already a dict collection but we can change it later
 @serializable(recursive_serde=True)

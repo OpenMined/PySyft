@@ -257,7 +257,7 @@ class SyftClient:
     @property
     def api(self) -> SyftAPI:
         if self._api is None:
-            self._fetch_api()
+            self._fetch_api(self.credentials)
 
         return self._api
 

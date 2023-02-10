@@ -11,7 +11,6 @@ from typing import Optional
 from typing import Sequence
 from typing import Tuple
 from typing import Type
-from typing import Union
 
 # third party
 import pydantic
@@ -44,6 +43,10 @@ class SyftBaseObject(BaseModel):
 
     __canonical_name__: str  # the name which doesn't change even when there are multiple classes
     __version__: int  # data is always versioned
+
+
+class Context(SyftBaseObject):
+    pass
 
 
 class SyftObjectRegistry:
@@ -234,10 +237,10 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
             return upgraded
 
     # transform from one supported type to another
-    def to(self, projection: type) -> Any:
+    def to(self, projection: type, context: Optional[Context] = None) -> Any:
         # 🟡 TODO 19: Could we do an mro style inheritence conversion? Risky?
         transform = SyftObjectRegistry.get_transform(type(self), projection)
-        return transform(self)
+        return transform(self, context)
 
     def to_dict(self) -> Dict[str, Any]:
         # 🟡 TODO 18: Remove to_dict and replace usage with transforms etc
@@ -360,84 +363,3 @@ def list_dict_repr_html(self) -> str:
 # give lists and dicts a _repr_html_ if they contain SyftObject's
 aggressive_set_attr(type([]), "_repr_html_", list_dict_repr_html)
 aggressive_set_attr(type({}), "_repr_html_", list_dict_repr_html)
-
-
-def transform_method(
-    klass_from: Union[type, str],
-    klass_to: Union[type, str],
-    version_from: Optional[int] = None,
-    version_to: Optional[int] = None,
-) -> Callable:
-    klass_from_str = (
-        klass_from if isinstance(klass_from, str) else klass_from.__canonical_name__
-    )
-    klass_to_str = (
-        klass_to if isinstance(klass_to, str) else klass_to.__canonical_name__
-    )
-    version_from = (
-        version_from if isinstance(version_from, int) else klass_from.__version__
-    )
-    version_to = version_to if isinstance(version_to, int) else klass_to.__version__
-
-    def decorator(function: Callable):
-        SyftObjectRegistry.add_transform(
-            klass_from=klass_from_str,
-            version_from=version_from,
-            klass_to=klass_to_str,
-            version_to=version_to,
-            method=function,
-        )
-
-        return function
-
-    return decorator
-
-
-def transform(
-    klass_from: Union[type, str],
-    klass_to: Union[type, str],
-    version_from: Optional[int] = None,
-    version_to: Optional[int] = None,
-) -> Callable:
-    if isinstance(klass_from, str):
-        klass_from_str = klass_from
-
-    if issubclass(klass_from, SyftBaseObject):
-        klass_from_str = klass_from.__canonical_name__
-        version_from = klass_from.__version__
-
-    if not issubclass(klass_from, SyftBaseObject):
-        klass_from_str = klass_from.__name__
-        version_from = None
-
-    if isinstance(klass_to, str):
-        klass_to_str = klass_to
-
-    if issubclass(klass_to, SyftBaseObject):
-        klass_to_str = klass_to.__canonical_name__
-        version_to = klass_to.__version__
-
-    if not issubclass(klass_to, SyftBaseObject):
-        klass_to_str = klass_to.__name__
-        version_to = None
-
-    def decorator(function: Callable):
-        transforms = function()
-
-        def wrapper(self: klass_from) -> klass_to:
-            output = dict(self)
-            for transform in transforms:
-                output = transform(self, output)
-            return klass_to(**output)
-
-        SyftObjectRegistry.add_transform(
-            klass_from=klass_from_str,
-            version_from=version_from,
-            klass_to=klass_to_str,
-            version_to=version_to,
-            method=wrapper,
-        )
-
-        return function
-
-    return decorator

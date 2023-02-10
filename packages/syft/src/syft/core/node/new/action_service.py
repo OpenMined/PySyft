@@ -11,7 +11,6 @@ from result import Result
 
 # relative
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ....core.node.common.node_table.syft_object import transform
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .action_object import Action
@@ -22,6 +21,7 @@ from .client import SyftClient
 from .context import AuthedServiceContext
 from .service import AbstractService
 from .service import service_method
+from .transforms import transform
 
 
 @serializable(recursive_serde=True)

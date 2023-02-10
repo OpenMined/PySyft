@@ -8,7 +8,6 @@ from typing import Optional
 # relative
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import SyftObject
-from ....core.node.common.node_table.syft_object import transform
 from ....grid import GridURL
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
@@ -16,6 +15,7 @@ from .action_object import ActionObjectPointer
 from .api import APIRegistry
 from .document_store import CollectionKey
 from .transforms import generate_id
+from .transforms import transform
 
 NameCollectionKey = CollectionKey(key="name", type_=str)
 
