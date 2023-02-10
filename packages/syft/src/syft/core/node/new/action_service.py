@@ -18,6 +18,7 @@ from .action_object import Action
 from .action_object import ActionObject
 from .action_object import ActionObjectPointer
 from .action_store import ActionStore
+from .client import SyftClient
 from .context import AuthedServiceContext
 from .service import AbstractService
 from .service import service_method
@@ -25,7 +26,7 @@ from .service import service_method
 
 @serializable(recursive_serde=True)
 class NumpyArrayObjectPointer(ActionObjectPointer):
-    _inflix_operations = ["__add__", "__sub__", "__eq__"]
+    _inflix_operations = ["__add__", "__sub__", "__eq__", "__mul__"]
     __canonical_name__ = "NumpyArrayObjectPointer"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -68,8 +69,8 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
             )
         return self == other
 
-    def send_to(self, domain_node) -> NumpyArrayObjectPointer:
-        return domain_node.api.services.action.set(self)
+    def send(self, client: SyftClient) -> NumpyArrayObjectPointer:
+        return client.api.services.action.set(self)
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         print("Hello array func............")
@@ -92,24 +93,9 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
             )
 
 
-# def expose_dtype(output: dict) -> dict:
-#     output["public_dtype"] = output["dtype"]
-#     del output["dtype"]
-#     return output
-
-
-# def expose_shape(output: dict) -> dict:
-#     output["public_shape"] = output["shape"]
-#     del output["shape"]
-#     return output
-
-
 @transform(NumpyArrayObject, NumpyArrayObjectPointer)
 def np_array_to_pointer() -> List[Callable]:
-    return [
-        # expose_dtype,
-        # expose_shape,
-    ]
+    return []
 
 
 @serializable(recursive_serde=True)
@@ -151,6 +137,18 @@ class ActionService(AbstractService):
     def get(self, context: AuthedServiceContext, uid: UID) -> Result[ActionObject, str]:
         """Get an object from the action store"""
         result = self.store.get(uid=uid, credentials=context.credentials)
+        if result.is_ok():
+            return Ok(result.ok())
+        return Err(result.err())
+
+    @service_method(path="action.get_pointer", name="get_pointer")
+    def get_pointer(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Result[ActionObjectPointer, str]:
+        """Get a pointer from the action store"""
+        result = self.store.get_pointer(
+            uid=uid, credentials=context.credentials, node_uid=context.node.id
+        )
         if result.is_ok():
             return Ok(result.ok())
         return Err(result.err())

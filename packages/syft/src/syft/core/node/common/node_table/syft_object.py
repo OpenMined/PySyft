@@ -23,6 +23,7 @@ from typeguard import check_type
 # relative
 from .....lib.util import full_name_with_qualname
 from .....lib.util import get_qualname_for
+from .....util import aggressive_set_attr
 from ....common import UID
 from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serialize import _serialize as serialize
@@ -92,6 +93,10 @@ class SyftObjectRegistry:
             version_to = None
 
         mapping_string = f"{klass_from}_{version_from}_x_{klass_to}_{version_to}"
+        if mapping_string not in cls.__object_transform_registry__:
+            raise Exception(
+                f"{mapping_string} missing from {cls.__object_transform_registry__.keys()}"
+            )
         return cls.__object_transform_registry__[mapping_string]
 
 
@@ -161,6 +166,13 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         return funcs
 
     def __repr__(self) -> str:
+        try:
+            fqn = full_name_with_qualname(type(self))
+            return fqn
+        except Exception:
+            return str(type(self))
+
+    def _repr_markdown_(self) -> str:
         class_name = get_qualname_for(type(self))
         _repr_str = f"class {class_name}:\n"
         fields = getattr(self, "__fields__", {})
@@ -171,7 +183,6 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
             value = f'"{value}"' if isinstance(value, str) else value
             _repr_str += f"  {attr}: {value_type} = {value}\n"
 
-        return _repr_str
         # _repr_str += "\n"
         # fqn = full_name_with_qualname(type(self))
         # _repr_str += f'fqn = "{fqn}"\n'
@@ -182,10 +193,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         #     _repr_str += f"  {func}{sig}: pass\n"
         # _repr_str += f"]"
         # return _repr_str
-
-    def _repr_markdown_(self) -> str:
-        text_repr = self.__repr__()
-        return "```python\n" + text_repr + "\n```"
+        return "```python\n" + _repr_str + "\n```"
 
     @staticmethod
     def from_mongo(bson: Any) -> "SyftObject":
@@ -282,6 +290,74 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
     @classmethod
     def _syft_searchable_keys_dict(cls) -> Dict[str, type]:
         return cls._syft_keys_types_dict("__attr_searchable__")
+
+
+def list_dict_repr_html(self) -> str:
+    try:
+        max_check = 1
+        items_checked = 0
+        has_syft = False
+        for item in iter(self):
+            items_checked += 1
+            if items_checked > max_check:
+                break
+            if isinstance(self, dict):
+                item = self.__getitem__(item)
+
+            if hasattr(type(item), "mro") and type(item) != type:
+                mro = type(item).mro()
+            elif hasattr(item, "mro") and type(item) != type:
+                mro = item.mro()
+            else:
+                mro = str(self)
+
+            if "syft" in str(mro).lower():
+                has_syft = True
+                break
+        if has_syft:
+            # third party
+            import pandas as pd
+
+            data = {}
+            types = []
+            keys = []
+            max_lines = 5
+            line = 0
+            for item in iter(self):
+                line += 1
+                if line > max_lines:
+                    break
+                if isinstance(self, dict):
+                    keys.append(item)
+                    item = self.__getitem__(item)
+
+                if type(item) == type:
+                    types.append(full_name_with_qualname(item))
+                else:
+                    types.append(item.__repr__())
+            data["type"] = types
+            data["keys"] = keys
+            if len(keys) > 0:
+                x = pd.DataFrame(data, columns=["keys", "type"])
+            else:
+                x = pd.DataFrame(data, columns=["type"])
+            collection_type = (
+                f"{type(self).__name__.capitalize()} - Size: {len(self)}\n"
+            )
+            return collection_type + x._repr_html_()
+    except Exception as e:
+        print(e)
+        pass
+
+    # stdlib
+    import html
+
+    return html.escape(self.__repr__())
+
+
+# give lists and dicts a _repr_html_ if they contain SyftObject's
+aggressive_set_attr(type([]), "_repr_html_", list_dict_repr_html)
+aggressive_set_attr(type({}), "_repr_html_", list_dict_repr_html)
 
 
 def transform_method(

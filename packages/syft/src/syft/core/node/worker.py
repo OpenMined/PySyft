@@ -141,11 +141,22 @@ class Worker(NewNode):
             path_or_func = path_or_func.__qualname__
         return self._get_service_method_from_path(path_or_func)
 
+    def get_service(self, path_or_func: Union[str, Callable]) -> Callable:
+        if callable(path_or_func):
+            path_or_func = path_or_func.__qualname__
+        return self._get_service_from_path(path_or_func)
+
+    def _get_service_from_path(self, path: str) -> AbstractService:
+        path_list = path.split(".")
+        if len(path_list) > 1:
+            _ = path_list.pop()
+        service_name = path_list.pop()
+        return self.service_path_map[service_name]
+
     def _get_service_method_from_path(self, path: str) -> Callable:
         path_list = path.split(".")
         method_name = path_list.pop()
-        service_name = path_list.pop()
-        service_obj = self.service_path_map[service_name]
+        service_obj = self._get_service_from_path(path=path)
 
         return getattr(service_obj, method_name)
 

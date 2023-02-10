@@ -98,6 +98,17 @@ class ActionStore:
             return Ok(syft_object)
         return Err(f"Permission: {read_permission} denied")
 
+    def get_pointer(
+        self, uid: UID, credentials: SyftCredentials, node_uid: UID
+    ) -> Result[SyftObject, str]:
+        # 🟡 TODO 34: do we want pointer read permissions?
+        if uid in self.data:
+            data = self.data[uid]
+            syft_object_ptr = SyftObject.from_mongo(data).to_pointer(node_uid)
+            if syft_object_ptr:
+                return Ok(syft_object_ptr)
+        return Err("Permission denied")
+
     def exists(self, uid: UID) -> bool:
         return uid in self.data
 

@@ -12,6 +12,8 @@ from ....core.node.common.node_table.syft_object import transform
 from ....grid import GridURL
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
+from .action_object import ActionObjectPointer
+from .api import APIRegistry
 from .document_store import CollectionKey
 from .transforms import generate_id
 
@@ -34,10 +36,17 @@ class Asset(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     action_id: UID
+    node_uid: UID
     name: str
     description: str
     contributors: List[Contributor]
     mock_is_real: bool = False
+
+    @property
+    def pointer(self) -> ActionObjectPointer:
+        api = APIRegistry.api_for(node_uid=self.node_uid)
+        obj_ptr = api.services.action.get_pointer(uid=self.action_id)
+        return obj_ptr
 
 
 @serializable(recursive_serde=True)
@@ -49,7 +58,7 @@ class Dataset(SyftObject):
     id: UID
     name: str
     node_uid: Optional[UID]
-    assets: List[Asset]
+    asset_list: List[Asset]
     citation: Optional[str]
     url: Optional[str]
     description: Optional[str]
@@ -57,7 +66,28 @@ class Dataset(SyftObject):
     __attr_searchable__ = ["name", "citation", "url", "description"]
     __attr_unique__ = ["name"]
 
+    @property
+    def assets(self) -> Dict[str, str]:
+        data = {}
+        for asset in self.asset_list:
+            data[asset.name] = asset
+        return data
 
+    def _repr_markdown_(self) -> str:
+        _repr_str = f"Syft Dataset: {self.name}\n"
+        _repr_str += "Assets:\n"
+        for asset in self.asset_list:
+            _repr_str += f"\t{asset.name}: {asset.description}\n"
+        if self.citation:
+            _repr_str += f"Citation: {self.citation}\n"
+        if self.url:
+            _repr_str += f"URL: {self.url}\n"
+        if self.description:
+            _repr_str += f"Description: {self.description}\n"
+        return "```python\n" + _repr_str + "\n```"
+
+
+@serializable(recursive_serde=True)
 class CreateDataset(Dataset):
     # version
     __canonical_name__ = "CreateDataset"
@@ -67,7 +97,8 @@ class CreateDataset(Dataset):
 
 
 def validate_url(obj: Any, state: Dict) -> Dict:
-    state["url"] = GridURL.from_url(state["url"])
+    if state["url"] is not None:
+        state["url"] = GridURL.from_url(state["url"]).url_no_port
     return state
 
 

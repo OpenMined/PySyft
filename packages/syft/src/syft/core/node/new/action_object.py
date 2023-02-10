@@ -165,6 +165,7 @@ passthrough_attrs = [
     "__args__",  # pydantic
     "to_pointer",  # syft
     "to",  # syft
+    "send",  # syft
 ]
 dont_wrap_output_attrs = ["__repr__", "__array_struct__", "__array_prepare__"]
 
@@ -224,7 +225,6 @@ class ActionObject(SyftObject):
         return self._syft_output_action_object(self.__add__(other))
 
     def __repr__(self) -> str:
-        print("custom repr")
         return self.__repr__()
 
     def __post_init__(self) -> None:
