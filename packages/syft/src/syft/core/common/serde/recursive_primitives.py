@@ -14,6 +14,7 @@ from typing import TypeVar
 from typing import Union
 from typing import _GenericAlias
 from typing import _SpecialForm
+from typing import _SpecialGenericAlias
 
 try:
     # stdlib
@@ -329,3 +330,4 @@ if _UnionGenericAlias is not None:
 recursive_serde_register_type(_GenericAlias)
 recursive_serde_register_type(Union)
 recursive_serde_register_type(TypeVar)
+recursive_serde_register_type(_SpecialGenericAlias)
