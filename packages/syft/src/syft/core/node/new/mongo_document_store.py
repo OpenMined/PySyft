@@ -139,6 +139,10 @@ class MongoStorePartition(StorePartition):
 
         return Err(f"Failed to delete object with qk: {qk}")
 
+    def all(self):
+        qks = QueryKeys(qks=())
+        return self.get_all_from_store(qks=qks)
+
 
 @serializable(recursive_serde=True)
 class MongoDocumentStore(DocumentStore):
