@@ -53,6 +53,8 @@ class SyftObjectRegistry:
         super().__init_subclass__(**kwargs)
         if hasattr(cls, "__canonical_name__") and hasattr(cls, "__version__"):
             mapping_string = f"{cls.__canonical_name__}_{cls.__version__}"
+            if mapping_string in cls.__object_version_registry__:
+                raise Exception(f"Duplicate mapping for {mapping_string} and {cls}")
             cls.__object_version_registry__[mapping_string] = cls
 
     @classmethod

@@ -68,7 +68,7 @@ class APIEndpoint(SyftObject):
 
 @serializable(recursive_serde=True)
 class SignedSyftAPICall(SyftObject):
-    __canonical_name__ = "SyftAPICall"
+    __canonical_name__ = "SignedSyftAPICall"
     __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_allowlist__ = ["signature", "credentials", "serialized_message"]
