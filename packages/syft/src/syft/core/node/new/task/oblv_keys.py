@@ -15,6 +15,6 @@ class OblvKeys(SyftObject):
     private_key: bytes
 
     # serde / storage rules
-    __attr_state__ = ["public_key", "private_key"]
+    __attr_state__ = ["private_key", "public_key"]
     __attr_searchable__ = ["private_key", "public_key"]
     __attr_unique__ = ["private_key", "public_key"]

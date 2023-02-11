@@ -85,6 +85,7 @@ create_admin_new(
     name="Jane Doe", email="info@openmined.org", password="changethis", worker=worker
 )
 
+# Creates a new public/private rsa key pair using oblivious cli
 create_oblv_key_pair(worker=worker)
 
 
