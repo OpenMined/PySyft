@@ -209,8 +209,6 @@ class TaskService(AbstractService):
             return task.err()
 
         owner = task.owners[0]
-        if isinstance(owner, dict):
-            owner = NodeView(**owner)
         if task.status[owner] in ["Approved", "Denied"]:
             return Err(
                 f"Cannot Modify the status of task: {task.id} which has been Approved/Denied \n"
@@ -308,11 +306,6 @@ class TaskService(AbstractService):
             return enclave_task.err()
 
         task_owner = task.owners[0]
-        # TODO 🟣 Sometimes the pydantic mapping is converted to dict values
-        enclave_task.owners = [
-            NodeView(**owner) if isinstance(owner, dict) else owner
-            for owner in enclave_task.owners
-        ]
         if task_owner in enclave_task.owners:
             if enclave_task.status[task_owner] in ["Approved", "Denied"]:
                 return Err(
@@ -365,8 +358,6 @@ class TaskService(AbstractService):
     ) -> Dict:
         inputs = {}
         for domain in enclave_task.owners:
-            # TODO 🟣 Sometimes the pydantic mapping is converted to dict values
-            domain = NodeView(**domain) if isinstance(domain, dict) else domain
             domain_input = self.action_store.get(
                 uid=domain.node_uid,
                 credentials=context.credentials,

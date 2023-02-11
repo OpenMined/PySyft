@@ -345,7 +345,7 @@ class BaseCollection:
             )
 
             # update the object with new data
-            for key, value in obj.dict(exclude_none=True).items():
+            for key, value in dict(obj).items():
                 setattr(_original_obj, key, value)
 
             # update data and keys
