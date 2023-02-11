@@ -25,7 +25,8 @@ from ..service import service_method
 from .oblv_keys import OblvKeys
 from .oblv_keys_stash import OblvKeysStash
 
-__PROCESS = None
+# caches the connection to Enclave using the deployment ID
+OBLV_PROCESS_CACHE: Dict[str, subprocess.Popen] = {}
 
 
 def connect_to_enclave(
@@ -34,16 +35,19 @@ def connect_to_enclave(
     deployment_id: str,
     connection_port: int,
 ) -> subprocess.Popen:
+    global OBLV_PROCESS_CACHE
+    if deployment_id in OBLV_PROCESS_CACHE:
+        return OBLV_PROCESS_CACHE[deployment_id]
+
     # Always create key file each time, which ensures consistency when there is key change in database
     create_keys_from_db(oblv_keys_stash)
     key_path = os.getenv("OBLV_KEY_PATH", "/app/content")
     # Temporary new key name for the new service
     key_name = os.getenv("OBLV_NEW_KEY_NAME", "new_oblv_key")
-
-    cli = oblv_client
     public_file_name = key_path + "/" + key_name + "_public.der"
     private_file_name = key_path + "/" + key_name + "_private.der"
-    depl = cli.deployment_info(deployment_id)
+
+    depl = oblv_client.deployment_info(deployment_id)
     if depl.is_deleted:
         raise OblvEnclaveError(
             "User cannot connect to this deployment, as it is no longer available."
@@ -108,11 +112,7 @@ def connect_to_enclave(
         elif log_line.__contains__("listening on"):
             break
 
-    global __PROCESS
-    if __PROCESS is None:
-        __PROCESS = process
-
-    return __PROCESS
+    OBLV_PROCESS_CACHE[deployment_id] = process
 
 
 def make_request_to_enclave(
@@ -141,8 +141,7 @@ def make_request_to_enclave(
             data=data,
             json=json,
         )
-        # process.kill()
-        # process.wait(1)
+
         return req
     else:
         headers = {"x-oblv-user-name": "enclave-test", "x-oblv-user-role": "domain"}
@@ -234,7 +233,7 @@ class OblvService(AbstractService):
 
         if res.is_ok():
             return Ok(
-                "Successfully created a new public/private key pair on the domain node"
+                "Successfully created a new public/private RSA key-pair on the domain node"
             )
         return res.err()
 
@@ -243,6 +242,7 @@ class OblvService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> Result[Ok, Err]:
+        "Retrieves the public key present on the Domain Node."
 
         if len(self.oblv_keys_stash):
             oblv_keys = self.oblv_keys_stash.get_all()[0]
@@ -252,7 +252,7 @@ class OblvService(AbstractService):
             return Ok(public_key_str)
 
         return Err(
-            "Oblv Keys not present for the domain node, Kindly request the admin to create a new one"
+            "Public Key not present for the domain node, Kindly request the admin to create a new one"
         )
 
     # TODO 🟣 Temporary method to help in testing an enclave
@@ -264,7 +264,7 @@ class OblvService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> Result[Ok, Err]:
-        """Domain Public/Private Key pair creation"""
+
         res = self.oblv_keys_stash.get_all()[0]
         assert isinstance(res, OblvKeys)
         return res
@@ -275,7 +275,7 @@ class OblvService(AbstractService):
         context: AuthedServiceContext,
         oblv_key: OblvKeys,
     ) -> Result[Ok, Err]:
-        """Domain Public/Private Key pair creation"""
+
         self.oblv_keys_stash.clear()
         res = self.oblv_keys_stash.set(oblv_key)
 

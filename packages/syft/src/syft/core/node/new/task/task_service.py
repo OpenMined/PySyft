@@ -1,6 +1,7 @@
 # stdlib
 from datetime import date
 from io import StringIO
+import random
 import socket
 import sys
 from typing import Any
@@ -264,7 +265,9 @@ class TaskService(AbstractService):
     def _get_api(self, oblv_metadata: dict) -> SyftAPI:
 
         if not LOCAL_MODE:
-            port = find_available_port(host="127.0.0.1", port=3031, search=True)
+            # randomized port staring point, to quickly find free port
+            port_start = 3000 + random.randint(1, 10_000)
+            port = find_available_port(host="127.0.0.1", port=port_start, search=True)
             connection_string = f"http://127.0.0.1:{port}"
         else:
             port = LOCAL_MODE_CONNECTION_PORT
