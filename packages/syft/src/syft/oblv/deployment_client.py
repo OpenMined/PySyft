@@ -234,6 +234,10 @@ class DeploymentClient:
         code: Union[str, Callable],
         outputs: Iterable[str],
     ):
+        # third party
+        from IPython.display import HTML
+        from IPython.display import display
+
         if not inspect.isfunction(code) and not isinstance(code, str):
             raise Exception("The code should either be a function or  string ...")
 
@@ -274,7 +278,7 @@ class DeploymentClient:
                 task_id=task_id,
                 oblv_metadata=oblv_metadata,
             )
-            print(res)
+            display(HTML(res._repr_html_()))
 
         res = self.api.services.task.create_enclave_task(
             inputs=node_input_map,
@@ -284,7 +288,7 @@ class DeploymentClient:
             task_id=task_id,
             oblv_metadata=oblv_metadata,
         )
-        print(res)
+        display(HTML(res._repr_html_()))
 
     def get_uploaded_datasets(self) -> Dict:
         self.check_connection_string()
