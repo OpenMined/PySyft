@@ -1,4 +1,6 @@
 # stdlib
+from typing import Any
+from typing import Dict
 from typing import List
 from typing import Union
 
@@ -14,6 +16,7 @@ from .service import AbstractService
 from .service import service_method
 from .user_code import SubmitUserCode
 from .user_code import UserCode
+from .user_code import execute_byte_code
 from .user_code_stash import UserCodeStash
 
 
@@ -48,11 +51,34 @@ class UserCodeService(AbstractService):
         return SyftError(message=result.err())
 
     @service_method(path="code.get_by_id", name="get_by_id")
-    def get_by_id(
+    def get_by_uid(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:
         """Get a User Code Item"""
-        result = self.stash.get_by_id(uid=uid)
+        result = self.stash.get_by_uid(uid=uid)
         if result.is_ok():
             return result.ok()
+        return SyftError(message=result.err())
+
+    @service_method(path="code.get_all_for_user", name="get_all_for_user")
+    def get_all_for_user(
+        self, context: AuthedServiceContext
+    ) -> Union[SyftSuccess, SyftError]:
+        """Get All User Code Items for User's VerifyKey"""
+        # TODO: replace with incoming user context and key
+        result = self.stash.get_all()
+        if result.is_ok():
+            return result.ok()
+        return SyftError(message=result.err())
+
+    @service_method(path="code.call", name="call")
+    def call(
+        self, context: AuthedServiceContext, uid: UID, **kwargs: Dict[str, Any]
+    ) -> Union[SyftSuccess, SyftError]:
+        """Call a User Code Function"""
+        result = self.stash.get_by_uid(uid=uid)
+        if result.is_ok():
+            code_item = result.ok()
+            exec_result = execute_byte_code(code_item, kwargs)
+            return exec_result.result
         return SyftError(message=result.err())
