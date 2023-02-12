@@ -2534,7 +2534,7 @@ class GammaTensor:
         if self.is_linear:
             return 1.0
 
-        def convert_array_to_dict_state(array_state: Dict, input_sizes: Dict) -> Dict:
+        def convert_array_to_dict_state(array_state: List, input_sizes: Dict) -> Dict:
             start_id = 0
             state = {}
 
@@ -2567,7 +2567,7 @@ class GammaTensor:
         input_sizes = {tensor.id: tensor.shape for tensor in self.sources.values()}
         bounds = convert_state_to_bounds(input_sizes, self.sources)
 
-        def search(array_state: Dict) -> jnp.DeviceArray:
+        def search(array_state: List) -> jnp.DeviceArray:
             dict_state = convert_array_to_dict_state(array_state, input_sizes)
             grads = grad_fn(dict_state)
             return -jnp.max(jnp.array(list(grads.values())))
