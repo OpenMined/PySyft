@@ -15,6 +15,26 @@ from ....common.uid import UID
 from ...abstract.node import AbstractNodeClient
 
 
+# TODO: 🟡 Duplication of PyPrimitive Dict
+# This is emulated since the action store curently accepts  only SyftObject types
+@serializable(recursive_serde=True)
+class DictObject(SyftObject):
+    # version
+    __canonical_name__ = "Dict"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    base_dict: Dict[Any, Any] = {}
+
+    # serde / storage rules
+    __attr_state__ = ["id", "base_dict"]
+
+    __attr_searchable__ = []
+    __attr_unique__ = ["id"]
+
+    def __repr__(self) -> str:
+        return self.base_dict.__repr__()
+
+
 @serializable(recursive_serde=True)
 class NodeView(BaseModel):
     class Config:

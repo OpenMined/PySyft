@@ -2,9 +2,7 @@
 from datetime import date
 from io import StringIO
 import random
-import socket
 import sys
-from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -23,8 +21,6 @@ from .....oblv.constants import LOCAL_MODE_CONNECTION_PORT
 from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
-from ...common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ...common.node_table.syft_object import SyftObject
 from ..action_object import ActionObject
 from ..action_store import ActionStore
 from ..api import SyftAPI
@@ -34,54 +30,11 @@ from ..service import AbstractService
 from ..service import service_method
 from .oblv_keys_stash import OblvKeysStash
 from .oblv_service import make_request_to_enclave
+from .task import DictObject
 from .task import NodeView
 from .task import Task
 from .task_stash import TaskStash
-
-
-def find_available_port(host: str, port: int, search: bool = False) -> int:
-    port_available = False
-    while not port_available:
-        try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            result_of_check = sock.connect_ex((host, port))
-
-            if result_of_check != 0:
-                port_available = True
-                break
-            else:
-                if search:
-                    port += 1
-                else:
-                    break
-
-        except Exception as e:
-            print(f"Failed to check port {port}. {e}")
-    sock.close()
-
-    if search is False and port_available is False:
-        error = (
-            f"{port} is in use, either free the port or "
-            + f"try: {port}+ to auto search for a port"
-        )
-        raise Exception(error)
-    return port
-
-
-@serializable(recursive_serde=True)
-class DictObject(SyftObject):
-    # version
-    __canonical_name__ = "Dict"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    base_dict: Dict[Any, Any] = {}
-
-    # serde / storage rules
-    __attr_state__ = ["id", "base_dict"]
-
-    __attr_searchable__ = []
-    __attr_unique__ = ["id"]
-
+from .util import find_available_port
 
 stdout_ = sys.stdout
 stderr_ = sys.stderr
@@ -126,7 +79,7 @@ class TaskService(AbstractService):
             user=str(context.credentials),
             owners=owners,
             status={owner: "pending" for owner in owners},
-            created_at=date.today().strftime("%d/%m/%Y"),
+            created_at=date.today().strftime("%d/%m/%Y %H:%M:%S"),
             updated_at=" -- ",
             reviewed_by=" -- ",
             execution="pending",
@@ -136,7 +89,7 @@ class TaskService(AbstractService):
         result = self.task_stash.set(task)
 
         if result.is_ok():
-            return Ok(f"Added task to Enclave with id: {task_id}")
+            return Ok(f"Added task to enclave with id: {task_id}")
 
         return result.err()
 
@@ -151,10 +104,10 @@ class TaskService(AbstractService):
         task_id: UID,
         oblv_metadata: Optional[dict] = None,
     ) -> Result[Ok, Err]:
-        """Enclave Submit task"""
+        """Domain Submit task"""
         # TODO 🟣 Check for permission after it is fully integrated
 
-        if owners and isinstance(owners, list) and len(owners) != 1:
+        if owners and len(owners) != 1:
             return Err("Domain task creation should have exactly one owner")
         task = Task(
             id=task_id,
@@ -164,7 +117,7 @@ class TaskService(AbstractService):
             user=str(context.credentials),
             owners=owners,
             status={owners[0]: "pending"},
-            created_at=date.today().strftime("%d/%m/%Y"),
+            created_at=date.today().strftime("%d/%m/%Y %H:%M:%S"),
             updated_at=" -- ",
             reviewed_by=" -- ",
             execution="pending",
@@ -211,31 +164,28 @@ class TaskService(AbstractService):
         owner = task.owners[0]
         if task.status[owner] in ["Approved", "Denied"]:
             return Err(
-                f"Cannot Modify the status of task: {task.id} which has been Approved/Denied \n"
+                f"Cannot Modify the status of task: {task.id} which has been Approved/Denied."
                 + "Kindly Submit a new request"
             )
 
         task.reason = reason
+        task.updated_at = date.today().strftime("%d/%m/%Y %H:%M:%S")
 
         # Fetch private data from action store if the code task is approved
         if approve:
-
             task.status[owner] = "Approved"
-            # Retrive input map of the current domain
+
+            # Retrieving input map of the current domain
+            owner_input_map = task.inputs[owner]
             private_input_map = {}
-            owner_input_map = {}
-            for node_view, input_map in task.inputs.items():
-                if node_view == owner:
-                    owner_input_map = input_map
-                    break
 
             # Replace inputs with private data
-            for input_data_name, input_id in owner_input_map.items():
+            for obj_name, obj_id in owner_input_map.items():
                 result = self.action_store.get(
-                    uid=input_id, credentials=context.credentials
+                    uid=obj_id, credentials=context.credentials
                 )
                 if result.is_ok():
-                    private_input_map[input_data_name] = result.ok()
+                    private_input_map[obj_name] = result.ok()
                 else:
                     return Err(result.err())
 
@@ -245,8 +195,8 @@ class TaskService(AbstractService):
         # Update task status back to DB
         res = self.task_stash.update(task)
 
-        # If we are in the Enclave and have metadata for enclaves
-        # Sent the task status to the connected enclaves
+        # If we are in the Enclave execution and have metadata for enclaves
+        # Sent the task status to the connected enclave
         if task.oblv_metadata:
             api = self._get_api(task.oblv_metadata)
             enclave_res = api.services.task.send_status_to_enclave(
@@ -284,14 +234,6 @@ class TaskService(AbstractService):
         obj = deserialize(req.content, from_bytes=True)
         obj.api_url = f"{connection_string}/worker/syft_api_call"
         return cast(SyftAPI, obj)
-
-    @service_method(path="task.send_hello_to_enclave", name="send_hello_to_enclave")
-    def send_hello_to_enclave(
-        self, context: AuthedServiceContext, oblv_metadata: dict
-    ) -> Result[Ok, Err]:
-        api = self._get_api(oblv_metadata)
-        res = api.services.test.send_name("natsu")
-        return Ok(res)
 
     @service_method(path="task.send_status_to_enclave", name="send_status_to_enclave")
     def send_status_to_enclave(
@@ -337,7 +279,7 @@ class TaskService(AbstractService):
                 else:
                     return result.err()
 
-            # Check if all the DO approve the code execution
+            # Check if all the DO approved the code execution
             code_status_check = set(enclave_task.status.values())
             if len(code_status_check) == 1 and "Approved" in code_status_check:
                 enclave_task.execution = "executing"
@@ -445,9 +387,22 @@ class TaskService(AbstractService):
     @service_method(path="task.get", name="get")
     def get(self, context: AuthedServiceContext, uid: UID) -> Result[ActionObject, str]:
         """Get an object from the action store"""
+        # TODO 🟣 Check for permission after it is fully integrated
+        # The method should also be removed when we have permissions integrated
+        # as we could access the action_store by the action service
         result = self.action_store.get(
             uid=uid, credentials=context.credentials, skip_permission=True
         )
         if result.is_ok():
             return Ok(result.ok())
         return Err(result.err())
+
+    # Below are convenience methods to be used for testing code execution requests
+    # Below method checks if  the domain nodes are able to connect to enclaves
+    @service_method(path="task.send_hello_to_enclave", name="send_hello_to_enclave")
+    def send_hello_to_enclave(
+        self, context: AuthedServiceContext, oblv_metadata: dict
+    ) -> Result[Ok, Err]:
+        api = self._get_api(oblv_metadata)
+        res = api.services.test.send_name("Natsu")
+        return Ok(res)
