@@ -26,6 +26,8 @@ from ..action_store import ActionStore
 from ..api import SyftAPI
 from ..context import AuthedServiceContext
 from ..document_store import DocumentStore
+from ..response import SyftError
+from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
 from .oblv_keys_stash import OblvKeysStash
@@ -89,7 +91,7 @@ class TaskService(AbstractService):
         result = self.task_stash.set(task)
 
         if result.is_ok():
-            return Ok(f"Added task to enclave with id: {task_id}")
+            return Ok(SyftSuccess(message=f"Added task to enclave with id: {task_id}"))
 
         return result.err()
 
@@ -127,7 +129,9 @@ class TaskService(AbstractService):
         result = self.task_stash.set(task)
 
         if result.is_ok():
-            return Ok(f"Added task to domain node: {owners[0].name}")
+            return Ok(
+                SyftSuccess(message=f"Added task to domain node: {owners[0].name}")
+            )
 
         return result.err()
 
@@ -164,8 +168,10 @@ class TaskService(AbstractService):
         owner = task.owners[0]
         if task.status[owner] in ["Approved", "Denied"]:
             return Err(
-                f"Cannot Modify the status of task: {task.id} which has been Approved/Denied."
-                + "Kindly Submit a new request"
+                SyftError(
+                    message=f"Cannot Modify the status of task: {task.id} which has been Approved/Denied."
+                    + "Kindly Submit a new request"
+                )
             )
 
         task.reason = reason
@@ -203,11 +209,13 @@ class TaskService(AbstractService):
                 task, private_input_map
             )
             if isinstance(enclave_res, bool) and enclave_res:
-                return Ok(f"Sent task: {task_id} status to enclave")
+                return Ok(
+                    SyftSuccess(message=f"Sent task: {task_id} status to enclave")
+                )
             return Err(f"{enclave_res}")
 
         if res.is_ok():
-            return Ok(f"Task: {task_id}  - {approve}")
+            return Ok(SyftSuccess(message=f"Task: {task_id}  - {approve}"))
         return res.err()
 
     def _get_api(self, oblv_metadata: dict) -> SyftAPI:
@@ -251,8 +259,10 @@ class TaskService(AbstractService):
         if task_owner in enclave_task.owners:
             if enclave_task.status[task_owner] in ["Approved", "Denied"]:
                 return Err(
-                    f"Cannot Modify the status of task: {task.id} which has been Approved/Denied \n"
-                    + "Kindly Submit a new request"
+                    SyftSuccess(
+                        message=f"Cannot Modify the status of task: {task.id} which has been Approved/Denied \n"
+                        + "Kindly Submit a new request"
+                    )
                 )
             enclave_task.status[task_owner] = task.status[task_owner]
             # Create nested action store of DO for storing intermediate data

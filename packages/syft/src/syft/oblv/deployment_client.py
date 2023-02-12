@@ -285,7 +285,6 @@ class DeploymentClient:
             oblv_metadata=oblv_metadata,
         )
         print(res)
-        print("task id", task_id)
 
     def get_uploaded_datasets(self) -> Dict:
         self.check_connection_string()
