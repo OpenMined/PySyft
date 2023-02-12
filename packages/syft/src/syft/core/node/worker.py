@@ -13,6 +13,7 @@ from typing import Union
 
 # third party
 from nacl.signing import SigningKey
+from pydantic import BaseSettings
 from result import Err
 from result import Result
 
@@ -36,7 +37,9 @@ from .new.context import UnauthedServiceContext
 from .new.context import UserLoginCredentials
 from .new.credentials import SyftSigningKey
 from .new.dataset_service import DatasetService
+from .new.document_store import ClientConfig
 from .new.document_store import DictDocumentStore
+from .new.mongo_document_store import MongoDocumentStore
 from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
 from .new.service import AbstractService
@@ -82,6 +85,8 @@ class Worker(NewNode):
         signing_key: Optional[SigningKey] = SigningKey.generate(),
         root_email: str = "info@openmined.org",
         root_password: str = "changethis",
+        in_memory: bool = True,
+        env_settings: Optional[BaseSettings] = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -107,6 +112,7 @@ class Worker(NewNode):
         )
         self.services = services
         self.service_config = ServiceConfigRegistry.get_registered_configs()
+        self.init_stores(env_settings=env_settings, in_memory=in_memory)
         self._construct_services()
         create_admin_new(  # nosec B106
             name="Jane Doe",
@@ -114,6 +120,7 @@ class Worker(NewNode):
             password="changethis",
             node=self,
         )
+        self.in_memory = in_memory
         self.post_init()
 
     def __repr__(self) -> str:
@@ -123,10 +130,22 @@ class Worker(NewNode):
         print(f"Starting {self}")
         # super().post_init()
 
+    def init_stores(self, env_settings: BaseSettings, in_memory: bool):
+        if in_memory:
+            document_store = DictDocumentStore()
+        else:
+            mongo_client_config = ClientConfig(
+                hostname=env_settings.MONGO_HOST,
+                port=env_settings.MONGO_PORT,
+                username=env_settings.MONGO_USERNAME,
+                password=env_settings.MONGO_PASSWORD,
+            )
+            document_store = MongoDocumentStore(client_config=mongo_client_config)
+
+        self.document_store = document_store
+
     def _construct_services(self):
         self.service_path_map = {}
-        self.document_store = DictDocumentStore()
-
         for service_klass in self.services:
             kwargs = {}
             if service_klass == ActionService:

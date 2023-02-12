@@ -18,12 +18,12 @@ from ..common.node_table.syft_object import StorableObjectType
 from ..common.node_table.syft_object import SyftObject
 from ..common.node_table.syft_object import transform
 from .credentials import SyftVerifyKey
+from .document_store import ClientConfig
 from .document_store import DocumentStore
 from .document_store import QueryKey
 from .document_store import QueryKeys
 from .document_store import StorePartition
 from .mongo_client import MongoClient
-from .mongo_client import MongoClientSettings
 from .response import SyftSuccess
 
 
@@ -64,12 +64,12 @@ class MongoStorePartition(StorePartition):
     db_collection: MongoCollection = None
     storage_type: StorableObjectType = MongoBsonObject
 
-    def init_store(self):
+    def init_store(self, client_config: ClientConfig):
         super().init_store()
-        self._init_collection()
+        self._init_collection(client_config=client_config)
 
-    def _init_collection(self):
-        client = MongoClient.from_settings(settings=MongoClientSettings)
+    def _init_collection(self, client_config: ClientConfig):
+        client = MongoClient.from_config(config=client_config)
         self.db_collection = client.with_collection(collection_settings=self.settings)
         self._create_update_index()
 

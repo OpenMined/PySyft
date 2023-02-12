@@ -65,7 +65,7 @@ if settings.NODE_TYPE.lower() == "domain":
 
 elif settings.NODE_TYPE.lower() == "network":
     node = Network("Network", settings=settings, document_store=True)
-    worker = Worker(id=node.id, signing_key=node.signing_key)
+    worker = Worker(id=node.id, signing_key=node.signing_key, env_settings=settings)
     format = "%(asctime)s: %(message)s"
     logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
 else:

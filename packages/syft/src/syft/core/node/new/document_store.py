@@ -36,6 +36,15 @@ def first_or_none(result: Any) -> Optional[Any]:
 
 
 @serializable(recursive_serde=True)
+class ClientConfig(BaseModel):
+    hostname: str
+    port: int
+    username: str
+    password: str
+    tls: Optional[bool] = False
+
+
+@serializable(recursive_serde=True)
 class PartitionKey(BaseModel):
     key: str
     type_: type
@@ -205,11 +214,13 @@ class UniqueKeyCheck(Enum):
 @instrument
 @serializable(recursive_serde=True)
 class StorePartition:
-    def __init__(self, settings: PartitionSettings) -> None:
+    def __init__(
+        self, settings: PartitionSettings, client_config: Optional[ClientConfig] = None
+    ) -> None:
         self.settings = settings
-        self.init_store()
+        self.init_store(client_config=client_config)
 
-    def init_store(self) -> None:
+    def init_store(self, client_config: Optional[ClientConfig] = None) -> None:
         self.unique_cks = self.settings.unique_keys.all
         self.searchable_cks = self.settings.searchable_keys.all
 
@@ -247,12 +258,15 @@ class DocumentStore:
     partitions: Dict[str, StorePartition]
     partition_type: Type[StorePartition]
 
-    def __init__(self) -> None:
+    def __init__(self, client_config: Optional[ClientConfig] = None) -> None:
         self.partitions = {}
+        self.client_config = client_config
 
     def partition(self, settings: PartitionSettings) -> StorePartition:
         if settings.name not in self.partitions:
-            self.partitions[settings.name] = self.partition_type(settings=settings)
+            self.partitions[settings.name] = self.partition_type(
+                settings=settings, client_config=self.client_config
+            )
         return self.partitions[settings.name]
 
 
@@ -374,11 +388,8 @@ class BaseUIDStoreStash(BaseStash):
 # 🟡 TODO 26: the base partition is already a dict partition but we can change it later
 @serializable(recursive_serde=True)
 class DictStorePartition(StorePartition):
-    def __init__(self, settings: PartitionSettings) -> None:
+    def init_store(self, client_config: Optional[ClientConfig] = None) -> None:
         self.data = {}
-        super().__init__(settings=settings)
-
-    def init_store(self) -> None:
         super().init_store()
 
         self.unique_keys = {}
