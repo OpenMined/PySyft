@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 from collections import defaultdict
 from enum import Enum
+from functools import partial
 from typing import List
 from typing import Optional
 from typing import Set
@@ -304,4 +305,4 @@ class DictDocumentStore(DocumentStore):
     partition_type = DictStorePartition
 
 
-DictStoreConfig = StoreConfig(store_type=DictDocumentStore)
+DictStoreConfig = partial(StoreConfig, DictDocumentStore)

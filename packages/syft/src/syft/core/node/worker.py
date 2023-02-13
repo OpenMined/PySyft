@@ -81,7 +81,7 @@ class Worker(NewNode):
         id: Optional[UID] = None,
         services: Optional[List[Type[AbstractService]]] = None,
         signing_key: Optional[SigningKey] = SigningKey.generate(),
-        store_config: Optional[StoreConfig] = DictStoreConfig,
+        store_config: Optional[StoreConfig] = None,
         root_email: str = "info@openmined.org",
         root_password: str = "changethis",
     ):
@@ -109,6 +109,7 @@ class Worker(NewNode):
         )
         self.services = services
         self.service_config = ServiceConfigRegistry.get_registered_configs()
+        store_config = DictStoreConfig() if store_config is None else store_config
         self.init_stores(store_config=store_config)
         self._construct_services()
         create_admin_new(  # nosec B106
