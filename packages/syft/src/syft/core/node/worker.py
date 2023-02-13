@@ -13,7 +13,6 @@ from typing import Union
 
 # third party
 from nacl.signing import SigningKey
-from pydantic import BaseSettings
 from result import Err
 from result import Result
 
@@ -37,9 +36,8 @@ from .new.context import UnauthedServiceContext
 from .new.context import UserLoginCredentials
 from .new.credentials import SyftSigningKey
 from .new.dataset_service import DatasetService
-from .new.document_store import DictDocumentStore
-from .new.document_store import StoreClientConfig
-from .new.mongo_document_store import MongoDocumentStore
+from .new.dict_document_store import DictStoreConfig
+from .new.document_store import StoreConfig
 from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
 from .new.service import AbstractService
@@ -83,10 +81,9 @@ class Worker(NewNode):
         id: Optional[UID] = None,
         services: Optional[List[Type[AbstractService]]] = None,
         signing_key: Optional[SigningKey] = SigningKey.generate(),
+        store_config: Optional[StoreConfig] = DictStoreConfig,
         root_email: str = "info@openmined.org",
         root_password: str = "changethis",
-        in_memory: bool = True,
-        env_settings: Optional[BaseSettings] = None,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -112,7 +109,7 @@ class Worker(NewNode):
         )
         self.services = services
         self.service_config = ServiceConfigRegistry.get_registered_configs()
-        self.init_stores(env_settings=env_settings, in_memory=in_memory)
+        self.init_stores(store_config=store_config)
         self._construct_services()
         create_admin_new(  # nosec B106
             name="Jane Doe",
@@ -120,7 +117,6 @@ class Worker(NewNode):
             password="changethis",
             node=self,
         )
-        self.in_memory = in_memory
         self.post_init()
 
     def __repr__(self) -> str:
@@ -130,19 +126,9 @@ class Worker(NewNode):
         print(f"Starting {self}")
         # super().post_init()
 
-    def init_stores(self, env_settings: BaseSettings, in_memory: bool):
-        if in_memory:
-            document_store = DictDocumentStore()
-        else:
-            mongo_client_config = StoreClientConfig(
-                hostname=env_settings.MONGO_HOST,
-                port=env_settings.MONGO_PORT,
-                username=env_settings.MONGO_USERNAME,
-                password=env_settings.MONGO_PASSWORD,
-            )
-            document_store = MongoDocumentStore(client_config=mongo_client_config)
-
-        self.document_store = document_store
+    def init_stores(self, store_config: StoreConfig):
+        document_store = store_config.store_type
+        self.document_store = document_store(client_config=store_config.client_config)
 
     def _construct_services(self):
         self.service_path_map = {}

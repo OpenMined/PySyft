@@ -1,4 +1,5 @@
 # stdlib
+from functools import partial
 from typing import Dict
 from typing import List
 
@@ -22,6 +23,7 @@ from .document_store import DocumentStore
 from .document_store import QueryKey
 from .document_store import QueryKeys
 from .document_store import StoreClientConfig
+from .document_store import StoreConfig
 from .document_store import StorePartition
 from .mongo_client import MongoClient
 from .response import SyftSuccess
@@ -61,7 +63,7 @@ def syft_obj_to_mongo():
 
 
 class MongoStorePartition(StorePartition):
-    db_collection: MongoCollection = None
+    collection: MongoCollection = None
     storage_type: StorableObjectType = MongoBsonObject
 
     def init_store(self, client_config: StoreClientConfig):
@@ -70,7 +72,7 @@ class MongoStorePartition(StorePartition):
 
     def _init_collection(self, client_config: StoreClientConfig):
         client = MongoClient.from_config(config=client_config)
-        self.db_collection = client.with_collection(collection_settings=self.settings)
+        self.collection = client.with_collection(collection_settings=self.settings)
         self._create_update_index()
 
     def _create_update_index(self):
@@ -88,7 +90,7 @@ class MongoStorePartition(StorePartition):
 
         new_index_keys = [(attr, ASCENDING) for attr in unique_attrs]
 
-        current_indexes = self.db_collection.index_information()
+        current_indexes = self.collection.index_information()
         index_name = f"{object_name}_index_name"
 
         current_index_keys = current_indexes.get(index_name, None)
@@ -100,7 +102,7 @@ class MongoStorePartition(StorePartition):
 
             # Drop current index, since incompatible with current object
             try:
-                self.db_collection.drop_index(index_or_name=index_name)
+                self.collection.drop_index(index_or_name=index_name)
             except Exception as e:
                 print(
                     f"Failed to drop index for object: {object_name} with index keys: {current_index_keys}"
@@ -112,9 +114,7 @@ class MongoStorePartition(StorePartition):
             return
 
         try:
-            self.db_collection.create_index(
-                new_index_keys, unique=True, name=index_name
-            )
+            self.collection.create_index(new_index_keys, unique=True, name=index_name)
             print(f"Index Created for {object_name} with indexes: {new_index_keys}")
         except Exception as e:
             print(
@@ -128,7 +128,7 @@ class MongoStorePartition(StorePartition):
     ) -> Result[SyftObject, str]:
         storage_obj = obj.to(self.storage_type)
         try:
-            self.db_collection.insert_one(storage_obj)
+            self.collection.insert_one(storage_obj)
         except DuplicateKeyError as e:
             return Err(f"Duplicate Key Error: {e}")
 
@@ -151,7 +151,7 @@ class MongoStorePartition(StorePartition):
         filter_params = self._create_filter(QueryKeys(qks=qk))
         storage_obj = obj.to(self.storage_type)
         try:
-            result = self.db_collection.update_one(
+            result = self.collection.update_one(
                 filter=filter_params, update={"$set": storage_obj}
             )
         except Exception as e:
@@ -172,7 +172,7 @@ class MongoStorePartition(StorePartition):
 
     def get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
         query_filter = self._create_filter(qks=qks)
-        storage_objs = self.db_collection.find(filter=query_filter)
+        storage_objs = self.collection.find(filter=query_filter)
         syft_objs = [
             self.storage_type.to_syft_obj(
                 storage_obj=storage_obj, object_type=self.settings.object_type
@@ -183,7 +183,7 @@ class MongoStorePartition(StorePartition):
 
     def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
         query_filter = self._create_filter(qks=QueryKeys(qks=qk))
-        result = self.db_collection.delete_one(filter=query_filter)
+        result = self.collection.delete_one(filter=query_filter)
 
         if result.deleted_count == 1:
             return Ok(SyftSuccess(message="Deleted"))
@@ -198,3 +198,6 @@ class MongoStorePartition(StorePartition):
 @serializable(recursive_serde=True)
 class MongoDocumentStore(DocumentStore):
     partition_type = MongoStorePartition
+
+
+MongoStoreConfig = partial(StoreConfig, MongoDocumentStore)
