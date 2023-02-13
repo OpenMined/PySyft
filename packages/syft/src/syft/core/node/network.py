@@ -60,7 +60,6 @@ from .network_service import NetworkServiceClass
 
 
 class Network(Node):
-
     network: SpecificLocation
 
     child_type = Domain

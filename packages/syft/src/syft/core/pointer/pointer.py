@@ -101,7 +101,6 @@ class Pointer(AbstractPointer):
         return self
 
     def block_with_timeout(self, secs: int, secs_per_poll: int = 1) -> AbstractPointer:
-
         total_secs = secs
 
         while not self.exists and secs > 0:
@@ -285,7 +284,6 @@ class Pointer(AbstractPointer):
             if "You do not have permission to .get()" in str(
                 e
             ) or "UnknownPrivateException" in str(e):
-
                 # relative
                 from ..node.common.node_service.request_receiver.request_receiver_messages import (
                     RequestStatus,
@@ -314,7 +312,6 @@ class Pointer(AbstractPointer):
         return self
 
     def publish(self, sigma: float = 1.5, private: bool = True) -> Any:
-
         # relative
         from ..node.common.node_service.publish.publish_service import (
             PublishScalarsAction,

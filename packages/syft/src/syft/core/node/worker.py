@@ -35,6 +35,7 @@ from .new.context import NodeServiceContext
 from .new.context import UnauthedServiceContext
 from .new.context import UserLoginCredentials
 from .new.credentials import SyftSigningKey
+from .new.dataset_service import DatasetService
 from .new.document_store import DictDocumentStore
 from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
@@ -100,7 +101,9 @@ class Worker(NewNode):
             name = random_name()
         self.name = name
         services = (
-            [UserService, ActionService, TestService] if services is None else services
+            [UserService, ActionService, TestService, DatasetService]
+            if services is None
+            else services
         )
         self.services = services
         self.service_config = ServiceConfigRegistry.get_registered_configs()
@@ -129,7 +132,7 @@ class Worker(NewNode):
             if service_klass == ActionService:
                 action_store = ActionStore(root_verify_key=self.signing_key.verify_key)
                 kwargs["store"] = action_store
-            if service_klass == UserService:
+            if service_klass in [UserService, DatasetService]:
                 kwargs["store"] = self.document_store
             self.service_path_map[service_klass.__name__] = service_klass(**kwargs)
 
@@ -138,11 +141,22 @@ class Worker(NewNode):
             path_or_func = path_or_func.__qualname__
         return self._get_service_method_from_path(path_or_func)
 
+    def get_service(self, path_or_func: Union[str, Callable]) -> Callable:
+        if callable(path_or_func):
+            path_or_func = path_or_func.__qualname__
+        return self._get_service_from_path(path_or_func)
+
+    def _get_service_from_path(self, path: str) -> AbstractService:
+        path_list = path.split(".")
+        if len(path_list) > 1:
+            _ = path_list.pop()
+        service_name = path_list.pop()
+        return self.service_path_map[service_name]
+
     def _get_service_method_from_path(self, path: str) -> Callable:
         path_list = path.split(".")
         method_name = path_list.pop()
-        service_name = path_list.pop()
-        service_obj = self.service_path_map[service_name]
+        service_obj = self._get_service_from_path(path=path)
 
         return getattr(service_obj, method_name)
 
@@ -175,7 +189,6 @@ class Worker(NewNode):
     def handle_api_call(
         self, api_call: Union[SyftAPICall, SignedSyftAPICall]
     ) -> Result[SyftObject, Err]:
-
         if self.required_signed_calls and isinstance(api_call, SyftAPICall):
             return Err(
                 f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."  # type: ignore
