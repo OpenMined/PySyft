@@ -31,6 +31,7 @@ from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
 from .oblv_keys_stash import OblvKeysStash
+from .oblv_service import OBLV_PROCESS_CACHE
 from .oblv_service import make_request_to_enclave
 from .task import DictObject
 from .task import NodeView
@@ -219,11 +220,20 @@ class TaskService(AbstractService):
         return res.err()
 
     def _get_api(self, oblv_metadata: dict) -> SyftAPI:
-
+        deployment_id = oblv_metadata["deployment_id"]
+        oblv_client = oblv_metadata["oblv_client"]
         if not LOCAL_MODE:
-            # randomized port staring point, to quickly find free port
-            port_start = 3000 + random.randint(1, 10_000)
-            port = find_available_port(host="127.0.0.1", port=port_start, search=True)
+            if (
+                deployment_id in OBLV_PROCESS_CACHE
+                and OBLV_PROCESS_CACHE[deployment_id][0].poll() is None
+            ):
+                port = OBLV_PROCESS_CACHE[deployment_id][1]
+            else:
+                # randomized port staring point, to quickly find free port
+                port_start = 3000 + random.randint(1, 10_000)
+                port = find_available_port(
+                    host="127.0.0.1", port=port_start, search=True
+                )
             connection_string = f"http://127.0.0.1:{port}"
         else:
             port = LOCAL_MODE_CONNECTION_PORT
@@ -232,8 +242,8 @@ class TaskService(AbstractService):
             )
         req = make_request_to_enclave(
             connection_string=connection_string + "/worker/api",
-            deployment_id=oblv_metadata["deployment_id"],
-            oblv_client=oblv_metadata["oblv_client"],
+            deployment_id=deployment_id,
+            oblv_client=oblv_client,
             oblv_keys_stash=self.oblv_keys_stash,
             request_method=requests.get,
             connection_port=port,

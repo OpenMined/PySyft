@@ -4,6 +4,7 @@ import os
 import subprocess
 from typing import Callable
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Tuple
 
@@ -26,7 +27,7 @@ from .oblv_keys import OblvKeys
 from .oblv_keys_stash import OblvKeysStash
 
 # caches the connection to Enclave using the deployment ID
-OBLV_PROCESS_CACHE: Dict[str, subprocess.Popen] = {}
+OBLV_PROCESS_CACHE: Dict[str, List] = {}
 
 
 def connect_to_enclave(
@@ -37,7 +38,11 @@ def connect_to_enclave(
 ) -> subprocess.Popen:
     global OBLV_PROCESS_CACHE
     if deployment_id in OBLV_PROCESS_CACHE:
-        return OBLV_PROCESS_CACHE[deployment_id]
+        process = OBLV_PROCESS_CACHE[deployment_id][0]
+        if process.poll() is None:
+            return process
+        # If the process has been terminated create a new connection
+        del OBLV_PROCESS_CACHE[deployment_id]
 
     # Always create key file each time, which ensures consistency when there is key change in database
     create_keys_from_db(oblv_keys_stash)
@@ -112,7 +117,7 @@ def connect_to_enclave(
         elif log_line.__contains__("listening on"):
             break
 
-    OBLV_PROCESS_CACHE[deployment_id] = process
+    OBLV_PROCESS_CACHE[deployment_id] = [process, connection_port]
 
 
 def make_request_to_enclave(
