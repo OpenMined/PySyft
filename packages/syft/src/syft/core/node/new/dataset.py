@@ -14,14 +14,17 @@ from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .action_object import ActionObjectPointer
 from .api import APIRegistry
-from .document_store import CollectionKey
+from .document_store import PartitionKey
 from .transforms import generate_id
 
-NameCollectionKey = CollectionKey(key="name", type_=str)
+NamePartitionKey = PartitionKey(key="name", type_=str)
 
 
 @serializable(recursive_serde=True)
 class Contributor(SyftObject):
+    __canonical_name__ = "Contributor"
+    __version__ = SYFT_OBJECT_VERSION_1
+
     name: str
     role: str
     email: str

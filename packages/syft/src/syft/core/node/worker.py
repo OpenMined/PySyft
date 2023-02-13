@@ -36,7 +36,8 @@ from .new.context import UnauthedServiceContext
 from .new.context import UserLoginCredentials
 from .new.credentials import SyftSigningKey
 from .new.dataset_service import DatasetService
-from .new.document_store import DictDocumentStore
+from .new.dict_document_store import DictStoreConfig
+from .new.document_store import StoreConfig
 from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
 from .new.service import AbstractService
@@ -80,6 +81,7 @@ class Worker(NewNode):
         id: Optional[UID] = None,
         services: Optional[List[Type[AbstractService]]] = None,
         signing_key: Optional[SigningKey] = SigningKey.generate(),
+        store_config: Optional[StoreConfig] = None,
         root_email: str = "info@openmined.org",
         root_password: str = "changethis",
     ):
@@ -107,6 +109,8 @@ class Worker(NewNode):
         )
         self.services = services
         self.service_config = ServiceConfigRegistry.get_registered_configs()
+        store_config = DictStoreConfig() if store_config is None else store_config
+        self.init_stores(store_config=store_config)
         self._construct_services()
         create_admin_new(  # nosec B106
             name="Jane Doe",
@@ -123,10 +127,12 @@ class Worker(NewNode):
         print(f"Starting {self}")
         # super().post_init()
 
+    def init_stores(self, store_config: StoreConfig):
+        document_store = store_config.store_type
+        self.document_store = document_store(client_config=store_config.client_config)
+
     def _construct_services(self):
         self.service_path_map = {}
-        self.document_store = DictDocumentStore()
-
         for service_klass in self.services:
             kwargs = {}
             if service_klass == ActionService:
