@@ -22,9 +22,11 @@ from result import Result
 
 # relative
 from ....core.node.common.node_table.syft_object import SyftObject
+from ....telemetry import instrument
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .base import SyftBaseModel
+from .response import SyftSuccess
 
 
 def first_or_none(result: Any) -> Optional[Any]:
@@ -201,6 +203,7 @@ class UniqueKeyCheck(Enum):
     ERROR = 2
 
 
+@instrument
 @serializable(recursive_serde=True)
 class BaseCollection:
     def __init__(self, settings: CollectionSettings) -> None:
@@ -313,7 +316,6 @@ class BaseCollection:
         unique_query_keys: QueryKeys,
         searchable_query_keys: QueryKeys,
     ) -> None:
-
         uqks = unique_query_keys.all
         for qk in uqks:
             ck_key, ck_value = qk.key, qk.value
@@ -367,17 +369,17 @@ class BaseCollection:
                 matches.append(self.data[qk.value])
         return Ok(matches)
 
-    def delete_unique_keys_for(self, obj: SyftObject) -> Result[bool, str]:
+    def delete_unique_keys_for(self, obj: SyftObject) -> Result[SyftSuccess, str]:
         for _unique_ck in self.unique_cks:
             qk = _unique_ck.with_obj(obj)
             self.unique_keys[qk.key].pop(qk.value, None)
-        return Ok(True)
+        return Ok(SyftSuccess(message="Deleted"))
 
-    def delete_search_keys_for(self, obj: SyftObject) -> Result[bool, str]:
+    def delete_search_keys_for(self, obj: SyftObject) -> Result[SyftSuccess, str]:
         for _search_ck in self.searchable_cks:
             qk = _search_ck.with_obj(obj)
             self.searchable_keys[qk.key].pop(qk.value, None)
-        return Ok(True)
+        return Ok(SyftSuccess(message="Deleted"))
 
     def get_keys_index(self, qks: QueryKeys) -> Result[Set[QueryKey], str]:
         try:
@@ -436,17 +438,17 @@ class BaseCollection:
     def create(self, obj: SyftObject) -> Result[SyftObject, str]:
         pass
 
-    def delete(self, qk: QueryKey) -> Result[bool, str]:
-
+    def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
         try:
             _obj = self.data.pop(qk.value)
             self.delete_unique_keys_for(_obj)
             self.delete_search_keys_for(_obj)
-            return Ok(True)
+            return Ok(SyftSuccess(message="Deleted"))
         except Exception as e:
             return Err(f"Failed to delete with query key {qk} with error: {e}")
 
 
+@instrument
 @serializable(recursive_serde=True)
 class DocumentStore:
     collections: Dict[str, BaseCollection]
@@ -461,6 +463,7 @@ class DocumentStore:
         return self.collections[settings.name]
 
 
+@instrument
 class BaseStash:
     object_type: Type[SyftObject]
     settings: CollectionSettings
@@ -469,6 +472,16 @@ class BaseStash:
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
         self.collection = store.collection(type(self).settings)
+
+    def check_type(self, obj: Any, type_: type) -> Result[Any, str]:
+        return (
+            Ok(obj)
+            if isinstance(obj, type_)
+            else Err(f"{type(obj)} does not match required type: {type_}")
+        )
+
+    def get_all(self) -> Result[List[BaseStash.object_type], str]:
+        return Ok(list(self.collection.data.values()))
 
     def set(self, obj: BaseStash.object_type) -> Result[BaseStash.object_type, str]:
         return self.collection.set(obj=obj)
@@ -571,14 +584,14 @@ class BaseStash:
     def find_all(
         self, **kwargs: Dict[str, Any]
     ) -> Result[List[BaseStash.object_type], str]:
-        return self.query_all_kwargs(*kwargs)
+        return self.query_all_kwargs(**kwargs)
 
     def find_one(
         self, **kwargs: Dict[str, Any]
     ) -> Result[Optional[BaseStash.object_type], str]:
         return self.query_one_kwargs(**kwargs)
 
-    def find_and_delete(self, **kwargs: Dict[str, Any]) -> Result[bool, str]:
+    def find_and_delete(self, **kwargs: Dict[str, Any]) -> Result[SyftSuccess, Err]:
         obj = self.query_one_kwargs(**kwargs)
         if obj.is_err():
             return obj.err()
@@ -590,13 +603,12 @@ class BaseStash:
         qk = self.collection.store_query_key(obj)
         return self.delete(qk=qk)
 
-    def delete(self, qk: QueryKey) -> Result[bool, str]:
+    def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
         return self.collection.delete(qk=qk)
 
     def update(
         self, obj: BaseStash.object_type
     ) -> Optional[Result[BaseStash.object_type, str]]:
-
         qks = self.collection.settings.unique_keys.with_obj(obj)
         result = self.collection.get_keys_index(qks=qks)
 
@@ -611,6 +623,22 @@ class BaseStash:
             updated_obj = self.collection.update(qk=qk, obj=obj)
             return updated_obj
         return Err(result.err())
+
+
+@instrument
+class BaseUIDStoreStash(BaseStash):
+    def delete_by_uid(self, uid: UID) -> Result[SyftSuccess, str]:
+        qk = UIDCollectionKey.with_obj(uid)
+        result = super().delete(qk=qk)
+        if result.is_ok():
+            return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
+        return result.err()
+
+    def get_by_uid(
+        self, uid: UID
+    ) -> Result[Optional[BaseUIDStoreStash.object_type], str]:
+        qks = QueryKeys(qks=[UIDCollectionKey.with_obj(uid)])
+        return self.query_one(qks=qks)
 
 
 # 🟡 TODO 26: the base collection is already a dict collection but we can change it later

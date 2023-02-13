@@ -42,7 +42,6 @@ class REQUEST_STATUS(Enum):
 @serializable(recursive_serde=True)
 @final
 class NewGetRequestMessage(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         """Payload fields and types used during a GetRequest Request."""
@@ -102,7 +101,6 @@ class NewGetRequestMessage(SyftMessage, DomainMessageRegistry):
 @serializable(recursive_serde=True)
 @final
 class NewGetDataRequestsMessage(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         """Payload fields and types used during a GetRequests Request."""
@@ -147,7 +145,6 @@ class NewGetDataRequestsMessage(SyftMessage, DomainMessageRegistry):
 @serializable(recursive_serde=True)
 @final
 class NewGetBudgetRequestsMessage(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         """Payload fields and types used during a GetRequests Request."""
@@ -193,7 +190,6 @@ class NewGetBudgetRequestsMessage(SyftMessage, DomainMessageRegistry):
 @serializable(recursive_serde=True)
 @final
 class NewUpdateRequestsMessage(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         """Payload fields and types used during a GetRequests Request."""

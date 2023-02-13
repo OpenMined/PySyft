@@ -190,7 +190,6 @@ def get_request_msg(
     node: Domain,
     verify_key: VerifyKey,
 ) -> GetRequestResponse:
-
     # Get Payload Content
     request_id = msg.request_id
     current_user = node.users.first(verify_key=verify_key)
@@ -296,7 +295,6 @@ def update_request_msg(
     node: Domain,
     verify_key: VerifyKey,
 ) -> UpdateRequestResponse:
-
     # Get Payload Content
     request_id = msg.request_id
     status = msg.status
@@ -365,7 +363,6 @@ def del_request_msg(
     node: Domain,
     verify_key: VerifyKey,
 ) -> DeleteRequestResponse:
-
     request_id = msg.request_id.get("request_id", None)  # type: ignore
 
     current_user_id = node.users.first(
@@ -452,7 +449,6 @@ def get_all_requests(
 def get_all_request_handlers(
     msg: GetAllRequestHandlersMessage, node: Domain, verify_key: VerifyKey
 ) -> GetAllRequestHandlersResponseMessage:
-
     if verify_key is None:
         raise ValueError(
             "Can't process Request service without a given " "verification key"

@@ -1,4 +1,7 @@
 # stdlib
+from collections import defaultdict
+import inspect
+from inspect import Signature
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -6,6 +9,7 @@ from typing import KeysView
 from typing import List
 from typing import Optional
 from typing import Sequence
+from typing import Tuple
 from typing import Type
 from typing import Union
 
@@ -17,6 +21,9 @@ from pydantic.fields import Undefined
 from typeguard import check_type
 
 # relative
+from .....lib.util import full_name_with_qualname
+from .....lib.util import get_qualname_for
+from .....util import aggressive_set_attr
 from ....common import UID
 from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serialize import _serialize as serialize
@@ -47,6 +54,8 @@ class SyftObjectRegistry:
         super().__init_subclass__(**kwargs)
         if hasattr(cls, "__canonical_name__") and hasattr(cls, "__version__"):
             mapping_string = f"{cls.__canonical_name__}_{cls.__version__}"
+            if mapping_string in cls.__object_version_registry__:
+                raise Exception(f"Duplicate mapping for {mapping_string} and {cls}")
             cls.__object_version_registry__[mapping_string] = cls
 
     @classmethod
@@ -86,7 +95,14 @@ class SyftObjectRegistry:
             version_to = None
 
         mapping_string = f"{klass_from}_{version_from}_x_{klass_to}_{version_to}"
+        if mapping_string not in cls.__object_transform_registry__:
+            raise Exception(
+                f"{mapping_string} missing from {cls.__object_transform_registry__.keys()}"
+            )
         return cls.__object_transform_registry__[mapping_string]
+
+
+print_type_cache = defaultdict(list)
 
 
 class SyftObject(SyftBaseObject, SyftObjectRegistry):
@@ -132,12 +148,54 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
 
         return d
 
+    def __syft_get_funcs__(self) -> List[Tuple[str, Signature]]:
+        funcs = print_type_cache[type(self)]
+        if len(funcs) > 0:
+            return funcs
+
+        for attr in dir(type(self)):
+            obj = getattr(type(self), attr, None)
+            if (
+                "SyftObject" in getattr(obj, "__qualname__", "")
+                and callable(obj)
+                and not isinstance(obj, type)
+                and not attr.startswith("__")
+            ):
+                sig = inspect.signature(obj)
+                funcs.append((attr, sig))
+
+        print_type_cache[type(self)] = funcs
+        return funcs
+
     def __repr__(self) -> str:
-        _repr_str = f"{type(self)}\n"
-        for attr in getattr(self, "__attr_state__", []):
-            value = getattr(self, attr, "Missing")
-            _repr_str += f"{attr}: {type(attr)} = {value}\n"
-        return _repr_str
+        try:
+            fqn = full_name_with_qualname(type(self))
+            return fqn
+        except Exception:
+            return str(type(self))
+
+    def _repr_markdown_(self) -> str:
+        class_name = get_qualname_for(type(self))
+        _repr_str = f"class {class_name}:\n"
+        fields = getattr(self, "__fields__", {})
+        for attr in fields.keys():
+            value = getattr(self, attr, "<Missing>")
+            value_type = full_name_with_qualname(type(attr))
+            value_type = value_type.replace("builtins.", "")
+            value = f'"{value}"' if isinstance(value, str) else value
+            _repr_str += f"  {attr}: {value_type} = {value}\n"
+
+        # _repr_str += "\n"
+        # fqn = full_name_with_qualname(type(self))
+        # _repr_str += f'fqn = "{fqn}"\n'
+        # _repr_str += f"mro = {[t.__name__ for t in type(self).mro()]}"
+
+        # _repr_str += "\n\ncallables = [\n"
+        # for func, sig in self.__syft_get_funcs__():
+        #     _repr_str += f"  {func}{sig}: pass\n"
+        # _repr_str += f"]"
+        # return _repr_str
+        return "```python\n" + _repr_str + "\n```"
 
     @staticmethod
     def from_mongo(bson: Any) -> "SyftObject":
@@ -234,6 +292,74 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
     @classmethod
     def _syft_searchable_keys_dict(cls) -> Dict[str, type]:
         return cls._syft_keys_types_dict("__attr_searchable__")
+
+
+def list_dict_repr_html(self) -> str:
+    try:
+        max_check = 1
+        items_checked = 0
+        has_syft = False
+        for item in iter(self):
+            items_checked += 1
+            if items_checked > max_check:
+                break
+            if isinstance(self, dict):
+                item = self.__getitem__(item)
+
+            if hasattr(type(item), "mro") and type(item) != type:
+                mro = type(item).mro()
+            elif hasattr(item, "mro") and type(item) != type:
+                mro = item.mro()
+            else:
+                mro = str(self)
+
+            if "syft" in str(mro).lower():
+                has_syft = True
+                break
+        if has_syft:
+            # third party
+            import pandas as pd
+
+            data = {}
+            types = []
+            keys = []
+            max_lines = 5
+            line = 0
+            for item in iter(self):
+                line += 1
+                if line > max_lines:
+                    break
+                if isinstance(self, dict):
+                    keys.append(item)
+                    item = self.__getitem__(item)
+
+                if type(item) == type:
+                    types.append(full_name_with_qualname(item))
+                else:
+                    types.append(item.__repr__())
+            data["type"] = types
+            data["keys"] = keys
+            if len(keys) > 0:
+                x = pd.DataFrame(data, columns=["keys", "type"])
+            else:
+                x = pd.DataFrame(data, columns=["type"])
+            collection_type = (
+                f"{type(self).__name__.capitalize()} - Size: {len(self)}\n"
+            )
+            return collection_type + x._repr_html_()
+    except Exception as e:
+        print(e)
+        pass
+
+    # stdlib
+    import html
+
+    return html.escape(self.__repr__())
+
+
+# give lists and dicts a _repr_html_ if they contain SyftObject's
+aggressive_set_attr(type([]), "_repr_html_", list_dict_repr_html)
+aggressive_set_attr(type({}), "_repr_html_", list_dict_repr_html)
 
 
 def transform_method(

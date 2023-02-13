@@ -59,7 +59,6 @@ def _GammaTensor() -> Type[GammaTensor]:
 # TODO 0.7: fix the wizard
 # There are a lot of instances of data_subjects but now he have only one data_subject
 def data_subject_creation_wizard(data: Any) -> List[Any]:
-
     w = textwrap.TextWrapper(initial_indent="\t", subsequent_indent="\t")
 
     welcome_msg = "Welcome to the Data Subject Annotation Wizard!!!"
@@ -223,7 +222,6 @@ protect the people or the business)"""
         answer = str(input("\t"))
 
         if answer == "yes":
-
             print()
 
             data_subjects = list()
@@ -264,7 +262,6 @@ protect the people or the business)"""
             return data_subjects
 
         elif answer == "no":
-
             print()
 
             print(
@@ -292,7 +289,6 @@ protect the people or the business)"""
                 "one per row of your tensor."
             )
     elif answer == "no":
-
         print(
             w.fill(
                 "Question 3: Is your data one data subject for every column (yes/no)?"
@@ -316,7 +312,6 @@ protect the people or the business)"""
             raise Exception("Wizard aborted.")
 
         elif answer == "no":
-
             print(
                 w.fill(
                     "It sounds like your tensor is a random assortment of data_subjects (and perhaps empty/non"
@@ -551,7 +546,6 @@ class PhiTensorAncestor(TensorChainManager):
 
         # Check 1: Is self.child a compatible type? We only support DP and SMPC for a few types.
         if not isinstance(self.child, np.ndarray):
-
             msg = (
                 "At present, you can only call .annotate_with_dp_metadata() "
                 + "on syft.Tensor objects wrapping numpy arrays. You called it on a "

@@ -11,10 +11,11 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
+from typing import _GenericAlias
 
 # third party
 from nacl.exceptions import BadSignatureError
-import requests
+from pydantic import EmailStr
 from result import Err
 from result import Ok
 from result import OkErr
@@ -25,14 +26,20 @@ from typeguard import check_type
 from ....core.common.serde.recursive import index_syft_by_module_name
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import SyftObject
+from ....telemetry import instrument
 from ...common.serde.deserialize import _deserialize
 from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize
 from ...common.uid import UID
+from .connection import NodeConnection
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
+from .response import SyftError
+from .response import SyftSuccess
 from .service import ServiceConfigRegistry
 from .signature import Signature
+from .signature import signature_remove_context
+from .signature import signature_remove_self
 
 
 class APIRegistry:
@@ -59,25 +66,9 @@ class APIEndpoint(SyftObject):
     has_self: bool = False
 
 
-def signature_remove_self(signature: Signature) -> Signature:
-    params = dict(signature.parameters)
-    params.pop("self", None)
-    return Signature(
-        list(params.values()), return_annotation=signature.return_annotation
-    )
-
-
-def signature_remove_context(signature: Signature) -> Signature:
-    params = dict(signature.parameters)
-    params.pop("context", None)
-    return Signature(
-        list(params.values()), return_annotation=signature.return_annotation
-    )
-
-
 @serializable(recursive_serde=True)
 class SignedSyftAPICall(SyftObject):
-    __canonical_name__ = "SyftAPICall"
+    __canonical_name__ = "SignedSyftAPICall"
     __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_allowlist__ = ["signature", "credentials", "serialized_message"]
@@ -100,7 +91,7 @@ class SignedSyftAPICall(SyftObject):
         return self.cached_deseralized_message
 
     @property
-    def is_valid(self) -> Result[bool, Err]:
+    def is_valid(self) -> Result[SyftSuccess, Err]:
         try:
             _ = self.credentials.verify_key.verify(
                 self.serialized_message, self.signature
@@ -108,9 +99,10 @@ class SignedSyftAPICall(SyftObject):
         except BadSignatureError:
             return Err("BadSignatureError")
 
-        return Ok(True)
+        return Ok(SyftSuccess(message="Credentials are valid"))
 
 
+@instrument
 @serializable(recursive_serde=True)
 class SyftAPICall(SyftObject):
     # version
@@ -139,51 +131,70 @@ class SyftAPICall(SyftObject):
 def generate_remote_function(signature: Signature, path: str, make_call: Callable):
     def wrapper(*args, **kwargs):
         _valid_kwargs = {}
+        if "kwargs" in signature.parameters:
+            _valid_kwargs = kwargs
+        else:
+            for key, value in kwargs.items():
+                if key not in signature.parameters:
+                    return SyftError(
+                        message=f"""Invalid parameter: `{key}`. Valid Parameters: {list(signature.parameters)}"""
+                    )
+                param = signature.parameters[key]
+                if isinstance(param.annotation, str):
+                    # 🟡 TODO 21: make this work for weird string type situations
+                    # happens when from __future__ import annotations in a class file
+                    t = index_syft_by_module_name(param.annotation)
+                else:
+                    t = param.annotation
+                msg = None
+                try:
+                    if t is not inspect.Parameter.empty:
+                        if isinstance(t, _GenericAlias) and type(None) in t.__args__:
+                            for v in t.__args__:
+                                if issubclass(v, EmailStr):
+                                    v = str
+                                check_type(key, value, v)  # raises Exception
+                                break  # only need one to match
+                        else:
+                            check_type(key, value, t)  # raises Exception
+                except TypeError:
+                    _type_str = getattr(t, "__name__", str(t))
+                    msg = f"`{key}` must be of type `{_type_str}` not `{type(value).__name__}`"
 
-        for key, value in kwargs.items():
-            if key not in signature.parameters:
-                raise Exception("Wrong key", key, "for sig", signature)
-            param = signature.parameters[key]
-            if isinstance(param.annotation, str):
-                # 🟡 TODO 21: make this work for weird string type situations
-                # happens when from __future__ import annotations in a class file
-                t = index_syft_by_module_name(param.annotation)
-            else:
-                t = param.annotation
-            msg = None
-            try:
-                if t is not inspect.Parameter.empty:
-                    check_type(key, value, t)  # raises Exception
-            except TypeError:
-                _type_str = getattr(t, "__name__", str(t))
-                msg = f"{key} must be {_type_str} not {type(value).__name__}"
+                if msg:
+                    return SyftError(message=msg)
 
-            if msg:
-                raise Exception(msg)
-
-            _valid_kwargs[key] = value
+                _valid_kwargs[key] = value
 
         # signature.parameters is an OrderedDict, therefore,
         # its fair to assume that order of args
         # and the signature.parameters should always match
         _valid_args = []
-        for (param_key, param), arg in zip(signature.parameters.items(), args):
-            if param_key in _valid_kwargs:
-                continue
-            t = param.annotation
-            msg = None
-            try:
-                if t is not inspect.Parameter.empty:
-                    check_type(param_key, arg, t)  # raises Exception
-            except TypeError:
-                _type_str = getattr(t, "__name__", str(t))
-                msg = (
-                    f"Arg: `{arg}` must be `{_type_str}` and not `{type(arg).__name__}`"
-                )
-            if msg:
-                raise Exception(msg)
+        if "args" in signature.parameters:
+            _valid_args = args
+        else:
+            for (param_key, param), arg in zip(signature.parameters.items(), args):
+                if param_key in _valid_kwargs:
+                    continue
+                t = param.annotation
+                msg = None
+                try:
+                    if t is not inspect.Parameter.empty:
+                        if isinstance(t, _GenericAlias) and type(None) in t.__args__:
+                            for v in t.__args__:
+                                if issubclass(v, EmailStr):
+                                    v = str
+                                check_type(param_key, arg, v)  # raises Exception
+                                break  # only need one to match
+                        else:
+                            check_type(param_key, arg, t)  # raises Exception
+                except TypeError:
+                    _type_str = getattr(t, "__name__", str(t))
+                    msg = f"Arg: {arg} must be {_type_str} not {type(arg).__name__}"
+                if msg:
+                    return SyftError(message=msg)
 
-            _valid_args.append(arg)
+                _valid_args.append(arg)
 
         api_call = SyftAPICall(path=path, args=_valid_args, kwargs=_valid_kwargs)
         result = make_call(api_call=api_call)
@@ -195,9 +206,17 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
 
 @serializable(recursive_serde=True)
 class APIModule:
-    pass
+    _modules: List[APIModule]
+
+    def __init__(self) -> None:
+        self._modules = []
+
+    def _add_submodule(self, attr_name, module_or_func):
+        setattr(self, attr_name, module_or_func)
+        self._modules.append(attr_name)
 
 
+@instrument
 @serializable(recursive_serde=True)
 class SyftAPI(SyftObject):
     # version
@@ -206,17 +225,16 @@ class SyftAPI(SyftObject):
     __attr_allowlist__ = ["endpoints"]
 
     # fields
+    connection: Optional[NodeConnection] = None
     node_uid: Optional[UID] = None
     endpoints: Dict[str, APIEndpoint]
     api_module: Optional[APIModule] = None
-    api_url: str = ""
     signing_key: Optional[SyftSigningKey] = None
     # serde / storage rules
     __attr_state__ = ["endpoints"]
 
-    def __post_init__(self) -> None:
-        # 🟡 TODO 16: Write user login and key retrieval / local caching
-        self.signing_key = SyftSigningKey.generate()
+    # def __post_init__(self) -> None:
+    #     pass
 
     @staticmethod
     def for_user(node_uid: UID) -> SyftAPI:
@@ -239,18 +257,8 @@ class SyftAPI(SyftObject):
 
     def make_call(self, api_call: SyftAPICall) -> Result:
         signed_call = api_call.sign(credentials=self.signing_key)
-        msg_bytes: bytes = _serialize(obj=signed_call, to_bytes=True)
-        response = requests.post(
-            url=str(self.api_url),
-            data=msg_bytes,
-        )
+        result = self.connection.make_call(signed_call)
 
-        if response.status_code != 200:
-            raise requests.ConnectionError(
-                f"Failed to fetch metadata. Response returned with code {response.status_code}"
-            )
-
-        result = _deserialize(response.content, from_bytes=True)
         if isinstance(result, OkErr):
             if result.is_ok():
                 return result.ok()
@@ -271,9 +279,9 @@ class SyftAPI(SyftObject):
         while _modules:
             module = _modules.pop(0)
             if not hasattr(_self, module):
-                setattr(_self, module, APIModule())
+                _self._add_submodule(module, APIModule())
             _self = getattr(_self, module)
-        setattr(_self, _last_module, endpoint_method)
+        _self._add_submodule(_last_module, endpoint_method)
 
     def generate_endpoints(self) -> None:
         api_module = APIModule()
@@ -294,6 +302,20 @@ class SyftAPI(SyftObject):
         if self.api_module is None:
             self.generate_endpoints()
         return self.api_module
+
+    def __repr__(self) -> str:
+        modules = self.services
+        _repr_str = "client.api.services\n"
+        for attr_name in modules._modules:
+            module_or_func = getattr(modules, attr_name)
+            module_path_str = f"client.api.services.{attr_name}"
+            _repr_str += f"\n{module_path_str}\n\n"
+            if hasattr(module_or_func, "_modules"):
+                for func_name in module_or_func._modules:
+                    func = getattr(module_or_func, func_name)
+                    sig = func.__ipython_inspector_signature_override__
+                    _repr_str += f"{module_path_str}.{func_name}{sig}\n\n"
+        return _repr_str
 
 
 # code from here:
