@@ -4,18 +4,10 @@
 
 <div class="login-header">
 	<div style="grid-column: span 1;display:flex;justify-content:left">
-		<svg
-			style="margin-left: 10px;margin-right: 10px;"
-			width="24"
-			height="24"
-			viewBox="0 0 24 24"
-			xmlns="http://www.w3.org/2000/svg"
-			><path
-				d="m21 7.702-8.5 4.62v9.678c1.567-.865 6.379-3.517 7.977-4.399.323-.177.523-.519.523-.891zm-9.5 4.619-8.5-4.722v9.006c0 .37.197.708.514.887 1.59.898 6.416 3.623 7.986 4.508zm-8.079-5.629 8.579 4.763 8.672-4.713s-6.631-3.738-8.186-4.614c-.151-.085-.319-.128-.486-.128-.168 0-.335.043-.486.128-1.555.876-8.093 4.564-8.093 4.564z"
-				fill-rule="nonzero"
-			/></svg
-		>
-		<h4 style="color:gray;">Version : {version}</h4>
+		<img style="margin-left: 30px;margin-right: 10px;" src="../../public/assets/small-logo.png" />
+		<div style="display:flex; align-items:center;">
+			<h4 style="color:gray;">Version : {version}</h4>
+		</div>
 	</div>
 	<div style="grid-column: 2 / span 1;display:flex;justify-content:right">
 		<a href="https://openmined.github.io/PySyft/index.html"
@@ -39,7 +31,7 @@
 
 <style>
 	.login-header {
-		margin-top: 10px;
+		margin-top: 25px;
 		width: 100%;
 		display: grid;
 		grid-auto-columns: 50%;

@@ -5,25 +5,23 @@ export const credentials = writable('');
 export const jsSerde = writable('');
 
 export const store = writable({
-	user: {},
-	tenantDetail: {},
-	jsserde: {},
-	credentials: {}
+	jsserde: ''
 });
 
 export async function getSerde() {
-	let jsValue = '';
-	jsSerde.subscribe((value) => {
-		jsValue = value;
+	let newStore = '';
+	store.subscribe((value) => {
+		newStore = value;
 	});
 
-	if (!jsValue) {
+	if (!newStore.jsserde) {
 		let type_bank = await fetch('http://localhost:8081/api/v1/syft/serde')
 			.then((response) => response.json())
 			.then(function (response) {
 				return response['bank'];
 			});
-		jsSerde.set(new JSSerde(type_bank));
+		newStore.jsserde = new JSSerde(type_bank);
+		store.set(newStore);
 	}
-	return jsValue;
+	return newStore.jsserde;
 }

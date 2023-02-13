@@ -3,28 +3,42 @@
 	import RegisterModal from '../../components/RegisterModal.svelte';
 	import { Input, Label, Helper, Button } from 'flowbite-svelte';
 	import { getSerde, store } from '../../lib/store.js';
-
+	import { prettyName } from '../../lib/utils.js';
+	import { goto } from '$app/navigation';
 	let email = '';
 	let password = '';
 	$: formModal = false;
 	let inputColor = 'base';
 	let displayError = 'none';
 	let localStore;
+
 	store.subscribe((value) => {
 		localStore = value;
 	});
 
 	async function loadScreenInfo(serde) {
-		let metadata = fetch('http://localhost:8081/api/v1/syft/metadata')
+		return fetch('http://localhost:8081/api/v1/syft/metadata')
 			.then((response) => response.arrayBuffer())
 			.then(function (response) {
-				return serde.deserialize(response);
+				let metadata = serde.deserialize(response);
+
+				let nodeAddrObj = {};
+				metadata.get('id').forEach((value, key) => {
+					nodeAddrObj[key] = value;
+				});
+
+				let metadataObj = {};
+				metadata.forEach((value, key) => {
+					metadataObj[key] = value;
+				});
+
+				metadataObj.id = nodeAddrObj;
+				window.sessionStorage.setItem('metadata', JSON.stringify(metadataObj));
+				return metadata;
 			});
-		console.log('My Deserialized Metadata: ', metadata);
-		return metadata;
 	}
 
-	async function login(email, password) {
+	async function login(email, password, metadata) {
 		await fetch('http://localhost:8081/api/v1/login', {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
@@ -35,9 +49,10 @@
 				displayError = 'block';
 			} else {
 				response.json().then((body) => {
-					console.log(body);
+					window.sessionStorage.setItem('token', 'Bearer ' + body['access_token']);
 					localStore.credentials = body['access_token'];
 					store.set(localStore);
+					goto('/home');
 				});
 			}
 		});
@@ -53,14 +68,6 @@
 		// Alert the copied text
 		alert('Domain UID copied!');
 	};
-
-	function prettyName(name) {
-		let nameList = name.split('_');
-		for (var i = 0; i < nameList.length; i++) {
-			nameList[i] = nameList[i].charAt(0).toUpperCase() + nameList[i].slice(1);
-		}
-		return nameList.join(' ');
-	}
 </script>
 
 <main>
@@ -143,8 +150,10 @@
 							>
 						</Label>
 						<div style="display:flex; justify-content:center">
-							<Button on:click={() => login(email, password)} style="width: 30vh;" color="dark"
-								>Login</Button
+							<Button
+								on:click={() => login(email, password, metadata)}
+								style="width: 30vh;"
+								color="dark">Login</Button
 							>
 						</div>
 					</div>
@@ -166,7 +175,7 @@
 						<p
 							id="gridUID"
 							on:click={() => copyToClipBoard()}
-							style="margin-left: 5px; color: black;padding-left:10px; padding-right:10px; background-color: gray"
+							style="margin-left: 5px; color: black;padding-left:10px; padding-right:10px; background-color: #DDDDDD"
 						>
 							{metadata.get('id').get('value')}
 						</p>
@@ -174,9 +183,23 @@
 					<h3 class="info-foot"><b> DEPLOYED ON:&nbsp;&nbsp;</b> {metadata.get('deployed_on')}</h3>
 				</div>
 			</div>
+
+			<a href="https://www.openmined.org/">
+				<div id="login-footer">
+					<h3>Empowered by</h3>
+					<img
+						style="margin-left: 10px; margin-right: 8vh;"
+						width="120"
+						height="120"
+						src="../../public/assets/small-om-logo.png"
+					/>
+				</div></a
+			>
 		{/await}
 	{/await}
 </main>
+
+<svelte:window />
 
 <style>
 	#login-screen {
@@ -184,6 +207,17 @@
 		width: 100%;
 		position: absolute;
 		overflow: hidden;
+	}
+
+	#login-footer {
+		height: 10%;
+		width: 100%;
+		position: absolute;
+		top: 90%;
+		display: flex;
+		justify-content: right;
+		align-items: center;
+		z-index: 2;
 	}
 
 	#login-window {
