@@ -69,7 +69,7 @@ class UserStash(BaseStash):
         result = super().delete(qk=qk)
         if result.is_ok():
             return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
-        return result.err()
+        return result
 
     def update(self, user: User) -> Result[User, str]:
         return self.check_type(user, self.object_type).and_then(super().update)

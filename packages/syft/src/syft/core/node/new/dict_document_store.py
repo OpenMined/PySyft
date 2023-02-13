@@ -4,10 +4,10 @@ from __future__ import annotations
 # stdlib
 from collections import defaultdict
 from enum import Enum
-from functools import partial
 from typing import List
 from typing import Optional
 from typing import Set
+from typing import Type
 
 # third party
 from result import Err
@@ -304,4 +304,6 @@ class DictDocumentStore(DocumentStore):
     partition_type = DictStorePartition
 
 
-DictStoreConfig = partial(StoreConfig, DictDocumentStore)
+@serializable(recursive_serde=True)
+class DictStoreConfig(StoreConfig):
+    store_type: Type[DocumentStore] = DictDocumentStore

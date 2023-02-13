@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 # stdlib
-from dataclasses import dataclass
 from typing import Any
 from typing import Dict
 from typing import Iterable
@@ -19,6 +18,8 @@ from result import Ok
 from result import Result
 
 # relative
+from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
+from ....core.node.common.node_table.syft_object import SyftBaseObject
 from ....core.node.common.node_table.syft_object import SyftObject
 from ....telemetry import instrument
 from ...common.serde.serializable import serializable
@@ -379,7 +380,10 @@ class BaseUIDStoreStash(BaseStash):
         return self.query_one(qks=qks)
 
 
-@dataclass
-class StoreConfig:
-    store_type: DocumentStore
-    client_config: Optional[StoreClientConfig] = None
+@serializable(recursive_serde=True)
+class StoreConfig(SyftBaseObject):
+    __canonical_name__ = "StoreConfig"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    store_type: Type[DocumentStore]
+    client_config: Optional[StoreClientConfig]

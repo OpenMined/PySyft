@@ -1,7 +1,7 @@
 # stdlib
-from functools import partial
 from typing import Dict
 from typing import List
+from typing import Type
 
 # third party
 from pymongo import ASCENDING
@@ -223,4 +223,6 @@ class MongoDocumentStore(DocumentStore):
     partition_type = MongoStorePartition
 
 
-MongoStoreConfig = partial(StoreConfig, MongoDocumentStore)
+@serializable(recursive_serde=True)
+class MongoStoreConfig(StoreConfig):
+    store_type: Type[DocumentStore] = MongoDocumentStore

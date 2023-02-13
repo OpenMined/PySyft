@@ -138,6 +138,8 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
     ] = {}  # List of attributes names which require a serde override.
     __owner__: str
 
+    __attr_repr_cols__: List[str] = []  # show these in html repr collections
+
     def to_mongo(self) -> Dict[str, Any]:
         d = {}
         for k in self.__attr_searchable__:
@@ -307,6 +309,7 @@ def list_dict_repr_html(self) -> str:
         max_check = 1
         items_checked = 0
         has_syft = False
+        extra_fields = []
         for item in iter(self):
             items_checked += 1
             if items_checked > max_check:
@@ -323,14 +326,13 @@ def list_dict_repr_html(self) -> str:
 
             if "syft" in str(mro).lower():
                 has_syft = True
+                extra_fields = getattr(item, "__attr_repr_cols__", [])
                 break
         if has_syft:
             # third party
             import pandas as pd
 
-            data = {}
-            types = []
-            keys = []
+            cols = defaultdict(list)
             max_lines = 5
             line = 0
             for item in iter(self):
@@ -338,19 +340,20 @@ def list_dict_repr_html(self) -> str:
                 if line > max_lines:
                     break
                 if isinstance(self, dict):
-                    keys.append(item)
+                    cols["key"].append(item)
                     item = self.__getitem__(item)
 
                 if type(item) == type:
-                    types.append(full_name_with_qualname(item))
+                    cols["type"].append(full_name_with_qualname(item))
                 else:
-                    types.append(item.__repr__())
-            data["type"] = types
-            data["keys"] = keys
-            if len(keys) > 0:
-                x = pd.DataFrame(data, columns=["keys", "type"])
-            else:
-                x = pd.DataFrame(data, columns=["type"])
+                    cols["type"].append(item.__repr__())
+
+                cols["id"].append(getattr(item, "id", None))
+                for field in extra_fields:
+                    value = getattr(item, field, None)
+                    cols[field] = value
+
+            x = pd.DataFrame(cols)
             collection_type = (
                 f"{type(self).__name__.capitalize()} - Size: {len(self)}\n"
             )
