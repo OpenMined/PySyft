@@ -21,14 +21,14 @@ from ....core.node.common.node_table.syft_object import SyftObject
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .credentials import SyftVerifyKey
-from .document_store import CollectionKey
+from .document_store import PartitionKey
 from .transforms import TransformContext
 from .transforms import generate_id
 from .transforms import transform
 from .user_code_parse import parse_and_wrap_code
 
-UserVerifyKeyCollectionKey = CollectionKey(key="user_verify_key", type_=SyftVerifyKey)
-CodeHashCollectionKey = CollectionKey(key="code_hash", type_=int)
+UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
+CodeHashPartitionKey = PartitionKey(key="code_hash", type_=int)
 
 stdout_ = sys.stdout
 stderr_ = sys.stderr

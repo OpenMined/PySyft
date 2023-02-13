@@ -10,19 +10,19 @@ from ....telemetry import instrument
 from ...common.serde.serializable import serializable
 from .credentials import SyftVerifyKey
 from .document_store import BaseUIDStoreStash
-from .document_store import CollectionSettings
 from .document_store import DocumentStore
+from .document_store import PartitionSettings
 from .document_store import QueryKeys
-from .user_code import CodeHashCollectionKey
+from .user_code import CodeHashPartitionKey
 from .user_code import UserCode
-from .user_code import UserVerifyKeyCollectionKey
+from .user_code import UserVerifyKeyPartitionKey
 
 
 @instrument
 @serializable(recursive_serde=True)
 class UserCodeStash(BaseUIDStoreStash):
     object_type = UserCode
-    settings: CollectionSettings = CollectionSettings(
+    settings: PartitionSettings = PartitionSettings(
         name=UserCode.__canonical_name__, object_type=UserCode
     )
 
@@ -32,9 +32,9 @@ class UserCodeStash(BaseUIDStoreStash):
     def get_all_by_user_verify_key(
         self, user_verify_key: SyftVerifyKey
     ) -> Result[List[UserCode], str]:
-        qks = QueryKeys(qks=[UserVerifyKeyCollectionKey.with_obj(user_verify_key)])
+        qks = QueryKeys(qks=[UserVerifyKeyPartitionKey.with_obj(user_verify_key)])
         return self.query_one(qks=qks)
 
     def get_by_code_hash(self, code_hash: int) -> Result[Optional[UserCode], str]:
-        qks = QueryKeys(qks=[CodeHashCollectionKey.with_obj(code_hash)])
+        qks = QueryKeys(qks=[CodeHashPartitionKey.with_obj(code_hash)])
         return self.query_one(qks=qks)

@@ -6,10 +6,10 @@ from typing import List
 
 # relative
 from .credentials import SyftVerifyKey
-from .document_store import CollectionKey
+from .document_store import PartitionKey
 
-UserVerifyKeyCollectionKey = CollectionKey(key="user_verify_key", type_=SyftVerifyKey)
-CodeHashCollectionKey = CollectionKey(key="code_hash", type_=int)
+UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
+CodeHashPartitionKey = PartitionKey(key="code_hash", type_=int)
 
 stdout_ = sys.stdout
 stderr_ = sys.stderr
