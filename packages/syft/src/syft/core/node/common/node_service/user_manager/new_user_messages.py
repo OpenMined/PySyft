@@ -362,7 +362,6 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
             # in the next step since we already did it in the previous line.
             del payload_dict["password"]
 
-
         # Update values of all other parameters
         for param, val in payload_dict.items():
             update_dict = {"user_id": user_id, param: val}

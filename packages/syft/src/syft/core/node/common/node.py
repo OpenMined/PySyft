@@ -375,7 +375,6 @@ class Node(AbstractNode):
         return client
 
     def get_metadata_for_client(self) -> Metadata:
-
         node_setup = self.setup.first()
         return Metadata(
             name=node_setup.domain_name,

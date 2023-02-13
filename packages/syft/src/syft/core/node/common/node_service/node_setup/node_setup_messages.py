@@ -1,8 +1,8 @@
 # stdlib
 from typing import Dict
 from typing import List
-from typing import Type
 from typing import Optional
+from typing import Type
 
 # third party
 from nacl.signing import SigningKey
@@ -11,15 +11,15 @@ from nacl.signing import VerifyKey
 # relative
 from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
-from ..generic_payload.syft_message import NewSyftMessage as SyftMessage
-from ....domain_interface import DomainInterface
-from ...permissions.permissions import BasePermission
-from ...permissions.user_permissions import UserIsOwner
-from ..generic_payload.syft_message import ReplyPayload
-from ..generic_payload.syft_message import RequestPayload
-from ....domain_msg_registry import DomainMessageRegistry
 from .....common.serde.serializable import serializable
 from .....common.uid import UID
+from ....domain_interface import DomainInterface
+from ....domain_msg_registry import DomainMessageRegistry
+from ...permissions.permissions import BasePermission
+from ...permissions.user_permissions import UserIsOwner
+from ..generic_payload.syft_message import NewSyftMessage as SyftMessage
+from ..generic_payload.syft_message import ReplyPayload
+from ..generic_payload.syft_message import RequestPayload
 
 
 @serializable(recursive_serde=True)
@@ -110,7 +110,6 @@ class UpdateSetupMessage(SyftMessage, DomainMessageRegistry):
     def run(  # type: ignore
         self, node: DomainInterface, verify_key: Optional[VerifyKey] = None
     ) -> ReplyPayload:  # type: ignore
-        
         node.setup.update_config(
             domain_name=self.payload.domain_name,
             description=self.payload.description,
