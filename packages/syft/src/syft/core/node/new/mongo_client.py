@@ -11,8 +11,8 @@ from typing_extensions import Self
 
 # relative
 from ...common.serde.serializable import serializable
-from .document_store import ClientConfig
 from .document_store import PartitionSettings
+from .document_store import StoreClientConfig
 
 
 @serializable(recursive_serde=True)
@@ -36,10 +36,10 @@ class SingletonMeta(type):
 class MongoClient(metaclass=SingletonMeta):
     client: PyMongoClient = None
 
-    def __init__(self, config: ClientConfig) -> None:
+    def __init__(self, config: StoreClientConfig) -> None:
         self.connect(config=config)
 
-    def connect(self, config: ClientConfig):
+    def connect(self, config: StoreClientConfig):
         try:
             self.client = PyMongoClient(
                 host=config.hostname,
@@ -63,5 +63,5 @@ class MongoClient(metaclass=SingletonMeta):
         return db.get_collection(name=collection_settings.name)
 
     @staticmethod
-    def from_config(config: ClientConfig) -> Self:
+    def from_config(config: StoreClientConfig) -> Self:
         return MongoClient(config=config)

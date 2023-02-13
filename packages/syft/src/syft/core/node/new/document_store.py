@@ -36,7 +36,7 @@ def first_or_none(result: Any) -> Optional[Any]:
 
 
 @serializable(recursive_serde=True)
-class ClientConfig(BaseModel):
+class StoreClientConfig(BaseModel):
     hostname: str
     port: int
     username: str
@@ -215,12 +215,14 @@ class UniqueKeyCheck(Enum):
 @serializable(recursive_serde=True)
 class StorePartition:
     def __init__(
-        self, settings: PartitionSettings, client_config: Optional[ClientConfig] = None
+        self,
+        settings: PartitionSettings,
+        client_config: Optional[StoreClientConfig] = None,
     ) -> None:
         self.settings = settings
         self.init_store(client_config=client_config)
 
-    def init_store(self, client_config: Optional[ClientConfig] = None) -> None:
+    def init_store(self, client_config: Optional[StoreClientConfig] = None) -> None:
         self.unique_cks = self.settings.unique_keys.all
         self.searchable_cks = self.settings.searchable_keys.all
 
@@ -258,7 +260,7 @@ class DocumentStore:
     partitions: Dict[str, StorePartition]
     partition_type: Type[StorePartition]
 
-    def __init__(self, client_config: Optional[ClientConfig] = None) -> None:
+    def __init__(self, client_config: Optional[StoreClientConfig] = None) -> None:
         self.partitions = {}
         self.client_config = client_config
 
@@ -388,7 +390,7 @@ class BaseUIDStoreStash(BaseStash):
 # 🟡 TODO 26: the base partition is already a dict partition but we can change it later
 @serializable(recursive_serde=True)
 class DictStorePartition(StorePartition):
-    def init_store(self, client_config: Optional[ClientConfig] = None) -> None:
+    def init_store(self, client_config: Optional[StoreClientConfig] = None) -> None:
         self.data = {}
         super().init_store()
 

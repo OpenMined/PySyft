@@ -37,8 +37,8 @@ from .new.context import UnauthedServiceContext
 from .new.context import UserLoginCredentials
 from .new.credentials import SyftSigningKey
 from .new.dataset_service import DatasetService
-from .new.document_store import ClientConfig
 from .new.document_store import DictDocumentStore
+from .new.document_store import StoreClientConfig
 from .new.mongo_document_store import MongoDocumentStore
 from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
@@ -134,7 +134,7 @@ class Worker(NewNode):
         if in_memory:
             document_store = DictDocumentStore()
         else:
-            mongo_client_config = ClientConfig(
+            mongo_client_config = StoreClientConfig(
                 hostname=env_settings.MONGO_HOST,
                 port=env_settings.MONGO_PORT,
                 username=env_settings.MONGO_USERNAME,
