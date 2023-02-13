@@ -93,28 +93,19 @@ class UserIsOwner(BasePermission):
         node: NodeServiceInterface,
         verify_key: Optional[VerifyKey],
     ) -> bool:
-
-        msg_kwargs = msg.kwargs  # type: ignore
-        user_id = msg_kwargs.get("user_id")
-
-        if not user_id:
-            return False
-
-        _target_user = node.users.first(id_int=user_id)
         request_user = (
             node.users.get_user(verify_key=verify_key) if verify_key else None
         )
 
         _is_owner = False
-        if _target_user and request_user:  # If target and request user exists
+        if request_user:  # If request user exists
             if (
                 request_user.role["name"] == node.roles.owner_role["name"]
             ):  # If the user has role `Owner`
                 _is_owner = True
-            elif request_user and (
-                _target_user.id_int == request_user.id_int
-            ):  # request user is the target user
-                _is_owner = True
+            else:
+                _is_owner = False
+        
         return _is_owner
 
 
