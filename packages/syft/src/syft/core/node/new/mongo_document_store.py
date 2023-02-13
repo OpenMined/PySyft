@@ -17,7 +17,9 @@ from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize as serialize
 from ..common.node_table.syft_object import StorableObjectType
 from ..common.node_table.syft_object import SyftObject
+from ..common.node_table.syft_object import SyftObjectRegistry
 from ..common.node_table.syft_object import transform
+from ..common.node_table.syft_object import transform_method
 from .credentials import SyftVerifyKey
 from .document_store import DocumentStore
 from .document_store import QueryKey
@@ -30,12 +32,7 @@ from .response import SyftSuccess
 
 
 class MongoBsonObject(StorableObjectType, dict):
-    def to_syft_obj(storage_obj: Dict, object_type: SyftObject) -> SyftObject:
-        output = deserialize(storage_obj["__blob__"], from_bytes=True)
-        for attr, funcs in object_type.__serde_overrides__.items():
-            if attr in output:
-                output[attr] = funcs[1](output[attr])
-        return object_type(**output)
+    pass
 
 
 def to_mongo(_self, output) -> Dict:
@@ -60,6 +57,22 @@ def to_mongo(_self, output) -> Dict:
 @transform(SyftObject, MongoBsonObject)
 def syft_obj_to_mongo():
     return [to_mongo]
+
+
+@transform_method(MongoBsonObject, SyftObject)
+def from_mongo(storage_obj: Dict) -> SyftObject:
+    constructor = SyftObjectRegistry.versioned_class(
+        name=storage_obj["__canonical_name__"], version=storage_obj["__version__"]
+    )
+    if constructor is None:
+        raise ValueError(
+            "Versioned class should not be None for initialization of SyftObject."
+        )
+    output = deserialize(storage_obj["__blob__"], from_bytes=True)
+    for attr, funcs in constructor.__serde_overrides__.items():
+        if attr in output:
+            output[attr] = funcs[1](output[attr])
+    return constructor(**output)
 
 
 class MongoStorePartition(StorePartition):
@@ -174,9 +187,7 @@ class MongoStorePartition(StorePartition):
         query_filter = self._create_filter(qks=qks)
         storage_objs = self.collection.find(filter=query_filter)
         syft_objs = [
-            self.storage_type.to_syft_obj(
-                storage_obj=storage_obj, object_type=self.settings.object_type
-            )
+            self.storage_type(storage_obj).to(self.settings.object_type)
             for storage_obj in storage_objs
         ]
         return Ok(syft_objs)
