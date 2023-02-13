@@ -21,7 +21,6 @@ from .document_store import BaseStash
 from .document_store import DocumentStore
 from .document_store import QueryKey
 from .document_store import QueryKeys
-from .document_store import StoreClientConfig
 from .document_store import StoreConfig
 from .document_store import StorePartition
 from .response import SyftSuccess
@@ -36,7 +35,7 @@ class UniqueKeyCheck(Enum):
 
 @serializable(recursive_serde=True)
 class DictStorePartition(StorePartition):
-    def init_store(self, client_config: Optional[StoreClientConfig] = None) -> None:
+    def init_store(self) -> None:
         self.data = {}
         super().init_store()
 

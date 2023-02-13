@@ -12,7 +12,6 @@ from pymongo.mongo_client import MongoClient as PyMongoClient
 from typing_extensions import Self
 
 # relative
-from ...common.serde.serializable import serializable
 from .document_store import PartitionSettings
 from .document_store import StoreClientConfig
 
@@ -31,7 +30,6 @@ class MongoClientCache:
             cls.__client_cache__[hash(str(config))] = client
 
 
-@serializable(recursive_serde=True)
 class MongoClient:
     client: PyMongoClient = None
 

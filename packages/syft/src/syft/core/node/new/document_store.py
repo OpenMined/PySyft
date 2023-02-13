@@ -211,9 +211,10 @@ class StorePartition:
         client_config: Optional[StoreClientConfig] = None,
     ) -> None:
         self.settings = settings
-        self.init_store(client_config=client_config)
+        self.store_client_config = client_config
+        self.init_store()
 
-    def init_store(self, client_config: Optional[StoreClientConfig] = None) -> None:
+    def init_store(self) -> None:
         self.unique_cks = self.settings.unique_keys.all
         self.searchable_cks = self.settings.searchable_keys.all
 

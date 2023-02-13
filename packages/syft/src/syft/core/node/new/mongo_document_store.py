@@ -5,7 +5,6 @@ from typing import List
 
 # third party
 from pymongo import ASCENDING
-from pymongo.collection import Collection as MongoCollection
 from pymongo.errors import DuplicateKeyError
 from result import Err
 from result import Ok
@@ -24,7 +23,6 @@ from .credentials import SyftVerifyKey
 from .document_store import DocumentStore
 from .document_store import QueryKey
 from .document_store import QueryKeys
-from .document_store import StoreClientConfig
 from .document_store import StoreConfig
 from .document_store import StorePartition
 from .mongo_client import MongoClient
@@ -75,18 +73,32 @@ def from_mongo(storage_obj: Dict) -> SyftObject:
     return constructor(**output)
 
 
+@serializable(recursive_serde=True)
 class MongoStorePartition(StorePartition):
-    collection: MongoCollection = None
+    __attr_allowlist__ = [
+        "storage_type",
+        "settings",
+        "store_client_config",
+        "unique_cks",
+        "searchable_cks",
+    ]
     storage_type: StorableObjectType = MongoBsonObject
 
-    def init_store(self, client_config: StoreClientConfig):
+    def init_store(self):
         super().init_store()
-        self._init_collection(client_config=client_config)
+        self._init_collection()
 
-    def _init_collection(self, client_config: StoreClientConfig):
-        client = MongoClient.from_config(config=client_config)
-        self.collection = client.with_collection(collection_settings=self.settings)
+    def _init_collection(self):
+        client = MongoClient.from_config(config=self.store_client_config)
+        self._collection = client.with_collection(collection_settings=self.settings)
         self._create_update_index()
+
+    @property
+    def collection(self):
+        if not hasattr(self, "_collection"):
+            self.init_store()
+
+        return self._collection
 
     def _create_update_index(self):
         """Create or update mongo database indexes"""
