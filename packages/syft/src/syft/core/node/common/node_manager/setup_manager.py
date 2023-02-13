@@ -1,27 +1,21 @@
 # stdlib
 from typing import Any
 from typing import List
-
-# third party
-from sqlalchemy.engine import Engine
-from sqlalchemy.orm import sessionmaker
+from typing import Optional
 
 # relative
-from ..node_table.pdf import PDFObject
-from ..node_table.setup import SetupConfig
-
-# from ..exceptions import SetupNotFoundError
-from .database_manager import DatabaseManager
+from ...common.exceptions import SetupNotFoundError
+from ..node_table.setup import NoSQLSetup
+from .database_manager import NoSQLDatabaseManager
 
 
-class SetupManager(DatabaseManager):
+class NoSQLSetupManager(NoSQLDatabaseManager):
+    """Class to manage user database actions."""
 
-    schema = SetupConfig
+    _collection_name = "setup"
+    __canonical_object_name__ = "Setup"
 
-    def __init__(self, database: Engine) -> None:
-        super().__init__(db=database, schema=SetupManager.schema)
-
-    def register_once(self, **kwargs: Any) -> Any:
+    def register_once(self, **kwargs: Any) -> Optional[NoSQLSetup]:
         """Register a new object into the database.
 
         Args:
@@ -29,51 +23,34 @@ class SetupManager(DatabaseManager):
         Returns:
             object: Database Object
         """
-        _obj = self._schema(**kwargs)
-        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+        curr_len = len(self)
+        if curr_len == 0:
+            _obj = NoSQLSetup(**kwargs)
+            self.add(_obj)
+            return _obj
 
-        with session_local.begin():
-            nrows = len(self)
-            if nrows == 0:
-                session_local.add(_obj)
-                session_local.commit()
-
-        return _obj
+        return None
 
     @property
     def node_name(self) -> str:
         setup = super().all()[0]
         return setup.domain_name
 
-    @property
-    def id(self) -> int:
-        setup = super().all()[0]
-        return setup.id
-
-    def first(self, **kwargs: Any) -> SetupConfig:
-        result = super().first(**kwargs)
+    def first(self, **kwargs: Any) -> NoSQLSetup:
+        result = super().all()
         if not result:
-            # raise SetupNotFoundError
-            raise Exception
-        return result
+            raise SetupNotFoundError
+        return result[0]
 
-    def query(self, **kwargs: Any) -> List[SetupConfig]:
+    def query(self, **kwargs: Any) -> List[NoSQLSetup]:
         results = super().query(**kwargs)
         if len(results) == 0:
-            # raise SetupNotFoundError
-            raise Exception
+            raise SetupNotFoundError
         return results
 
-    def update(self, **kwargs: Any) -> None:
-        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
-        if "daa_document" in kwargs.keys():
-            _pdf_obj = PDFObject(binary=kwargs["daa_document"])
-            session_local.add(_pdf_obj)
-            session_local.commit()
-            session_local.flush()
-            session_local.refresh(_pdf_obj)
-            kwargs["daa_document"] = str(_pdf_obj.id)
-
-        session_local.query(self._schema).update(kwargs)
-        session_local.commit()
-        session_local.close()
+    def update_config(self, **kwargs: Any) -> None:
+        setup: NoSQLSetup = self.all()[0]
+        self.update(
+            search_params={"node_uid": setup.node_uid},
+            updated_args=kwargs,
+        )

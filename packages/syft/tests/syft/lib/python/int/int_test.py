@@ -658,10 +658,6 @@ def test_error_message() -> None:
     check("123\ud800", 10)
 
 
-def test_protobof_schema():
-    assert Int.get_protobuf_schema()
-
-
 def test_bytes():
     assert (
         Int.from_bytes(Int(42).to_bytes(4, "big", signed=True), "big", signed=True)

@@ -1,17 +1,12 @@
 # stdlib
 from typing import Any
 from typing import Optional
-from typing import Union
 
 # third party
 from nacl.signing import SigningKey
-from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # relative
-from ...logger import critical
-from ..common.message import SignedMessage
-from ..common.message import SyftMessage
 from ..common.uid import UID
 from ..io.location import Location
 from ..io.location import SpecificLocation
@@ -24,7 +19,6 @@ from .vm_client import VirtualMachineClient
 
 @final
 class Device(Node):
-
     device: SpecificLocation
 
     client_type = DeviceClient
@@ -40,7 +34,6 @@ class Device(Node):
         vm: Optional[Location] = None,
         device_type: Any = None,
         signing_key: Optional[SigningKey] = None,
-        verify_key: Optional[VerifyKey] = None,
         store_type: type = DictStore,
     ):
         super().__init__(
@@ -50,7 +43,6 @@ class Device(Node):
             device=device,
             vm=vm,
             signing_key=signing_key,
-            verify_key=verify_key,
             store_type=store_type,
         )
 
@@ -64,7 +56,6 @@ class Device(Node):
         self.post_init()
 
     def post_init(self) -> None:
-        Node.set_keys(node=self)
         super().post_init()
 
     @property
@@ -73,12 +64,4 @@ class Device(Node):
 
     @property
     def id(self) -> UID:
-        return self.device.id
-
-    def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
-        # this needs to be defensive by checking device_id NOT device.id or it breaks
-        try:
-            return msg.address.device_id == self.id and msg.address.vm is None
-        except Exception as e:
-            critical(f"Error checking if {msg.pprint} is for me on {self.pprint}. {e}")
-            return False
+        return self.node_uid

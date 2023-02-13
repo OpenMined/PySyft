@@ -77,7 +77,7 @@ class StaticAttribute(ast.attribute.Attribute):
         msg = GetSetStaticAttributeAction(
             path=self.path_and_name,
             id_at_location=ptr.id_at_location,
-            address=self.client.address,
+            address=self.client.node_uid,
             action=StaticAttributeAction.GET,
         )
         self.client.send_immediate_msg_without_reply(msg=msg)
@@ -155,7 +155,7 @@ class StaticAttribute(ast.attribute.Attribute):
         cmd = GetSetStaticAttributeAction(
             path=self.path_and_name,
             id_at_location=result_id_at_location,
-            address=self.client.address,
+            address=self.client.node_uid,
             action=StaticAttributeAction.SET,
             set_arg=downcasted_set_arg_ptr,
         )

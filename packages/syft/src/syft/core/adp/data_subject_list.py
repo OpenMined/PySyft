@@ -3,9 +3,12 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
+from typing import Callable
+from typing import Dict
 from typing import Iterator
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Set
 from typing import Tuple
 from typing import Union
@@ -39,7 +42,9 @@ def numpyutf8tolist(string_index: Tuple[np.ndarray, np.ndarray]) -> np.ndarray:
     return np.array(output_list)
 
 
-def liststrtonumpyutf8(string_list: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def liststrtonumpyutf8(
+    string_list: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray]:
     bytes_list = []
     indexes = []
     offset = 0
@@ -62,16 +67,18 @@ def liststrtonumpyutf8(string_list: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
     return output_array
 
 
+# INFO: excluding coverage of the whole class , as we intend to replace with new DSA
 @serializable(recursive_serde=True)
 class DataSubjectList:
     """[DEPRECATED] This class has been deprecated in v0.7.0 and will be removed in future versions.
-    Instead use the class `sy.DataSubjectArray` to define data subjects for your dataset."""
+    Instead use the class `sy.DataSubjectArray` to define data subjects for your dataset.
+    """
 
     __attr_allowlist__ = ("one_hot_lookup", "data_subjects_indexed")
     __slots__ = ("one_hot_lookup", "data_subjects_indexed")
 
     # one_hot_lookup is a numpy array of unicode strings which can't be serialized
-    __serde_overrides__ = {
+    __serde_overrides__: Dict[str, Sequence[Callable]] = {
         "one_hot_lookup": [liststrtonumpyutf8, numpyutf8tolist],
     }
 
@@ -126,7 +133,6 @@ class DataSubjectList:
 
     @staticmethod
     def from_objs(entities: Union[np.ndarray, list]) -> DataSubjectList:
-
         deprec_msg = (
             "DataSubjectList has been deprecated in v0.7.0 and will be removed in future versions. "
             "Using this class may throw errors as it is no longer supported for calculation of Auto DP. "
@@ -194,7 +200,6 @@ class DataSubjectList:
 
     @staticmethod
     def combine(dsl1: DataSubjectList, dsl2: DataSubjectList) -> DataSubjectList:
-
         """
         From Ishan's PR: https://github.com/OpenMined/PySyft/pull/6490/
 
@@ -214,7 +219,6 @@ class DataSubjectList:
         elif dsl2.one_hot_lookup.size == 0:
             return dsl1
         else:
-
             # dsl1_uniques = dsl1.num_uniques
             # dsl2_uniques = dsl2.num_uniques
             dsl1_uniques = len(dsl1.one_hot_lookup)
@@ -310,7 +314,6 @@ class DataSubjectList:
         elif dsl2.one_hot_lookup.size == 0:
             return dsl1
         else:
-
             # dsl1_uniques = dsl1.num_uniques
             # dsl2_uniques = dsl2.num_uniques
             dsl1_uniques = len(dsl1.one_hot_lookup)
@@ -554,9 +557,9 @@ class DataSubjectArray:
 
     def __contains__(self, item: Union[str, DataSubjectArray]) -> bool:
         if isinstance(item, DataSubjectArray):
-            return self.data_subjects.isdisjoint(item.data_subjects)
+            return not self.data_subjects.isdisjoint(item.data_subjects)
         else:
-            return self.data_subjects.isdisjoint(set(item))
+            return not self.data_subjects.isdisjoint(set(item))
 
     def __pow__(self, power: int) -> DataSubjectArray:
         if not isinstance(power, int):

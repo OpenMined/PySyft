@@ -2,7 +2,6 @@
 from syft import deserialize
 from syft import serialize
 from syft.core.common import UID
-from syft.core.io.address import Address
 from syft.core.node.common.node_service.request_answer.request_answer_messages import (
     RequestAnswerMessage,
 )
@@ -15,8 +14,7 @@ from syft.core.node.common.node_service.request_receiver.request_receiver_messag
 
 
 def test_request_answer_message() -> None:
-
-    addr = Address()
+    addr = UID()
 
     msg = RequestAnswerMessage(request_id=UID(), address=addr, reply_to=addr)
 
@@ -29,8 +27,7 @@ def test_request_answer_message() -> None:
 
 
 def test_request_answer_response() -> None:
-
-    addr = Address()
+    addr = UID()
 
     msg = RequestAnswerResponse(
         request_id=UID(), address=addr, status=RequestStatus.Pending

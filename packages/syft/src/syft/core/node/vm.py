@@ -1,20 +1,15 @@
 # stdlib
 from typing import Any
 from typing import Optional
-from typing import Union
 
 # third party
 from nacl.signing import SigningKey
-from nacl.signing import VerifyKey
 from pydantic import BaseSettings
 from typing_extensions import final
 
 # relative
-from ...logger import critical
 from ...logger import traceback_and_raise
-from ..common.message import SignedMessage
-from ..common.message import SyftMessage
-from ..common.uid import UID
+from ..common.serde.serializable import serializable
 from ..io.location import Location
 from ..io.location import SpecificLocation
 from .common.node import Node
@@ -23,12 +18,11 @@ from .service import VMServiceClass
 from .vm_client import VirtualMachineClient
 
 
+@serializable(recursive_serde=True)
 @final
 class VirtualMachine(Node):
     client_type = VirtualMachineClient
-    vm: SpecificLocation  # redefine the type of self.vm to not be optional
     signing_key: Optional[SigningKey]
-    verify_key: Optional[VerifyKey]
     child_type_client_type = None
 
     def __init__(
@@ -40,7 +34,6 @@ class VirtualMachine(Node):
         device: Optional[Location] = None,
         vm: SpecificLocation = SpecificLocation(),
         signing_key: Optional[SigningKey] = None,
-        verify_key: Optional[VerifyKey] = None,
         store_type: type = DictStore,
         settings: Optional[BaseSettings] = None,
     ):
@@ -51,7 +44,6 @@ class VirtualMachine(Node):
             device=device,
             vm=vm,
             signing_key=signing_key,
-            verify_key=verify_key,
             store_type=store_type,
         )
 
@@ -70,24 +62,11 @@ class VirtualMachine(Node):
         self.post_init()
 
     def post_init(self) -> None:
-        Node.set_keys(node=self)
         super().post_init()
 
     @property
     def icon(self) -> str:
         return "🍰"
-
-    @property
-    def id(self) -> UID:
-        return self.vm.id
-
-    def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
-        # this needs to be defensive by checking vm_id NOT vm.id or it breaks
-        try:
-            return msg.address.vm_id == self.id
-        except Exception as e:
-            critical(f"Error checking if {msg.pprint} is for me on {self.pprint}. {e}")
-            return False
 
     def _register_frameworks(self) -> None:
         traceback_and_raise(NotImplementedError)
@@ -112,7 +91,7 @@ class VirtualMachine(Node):
         if not isinstance(other, VirtualMachine):
             return False
 
-        if self.vm.id != other.vm.id:
+        if self.node_uid != other.node_uid:
             return False
 
         return True

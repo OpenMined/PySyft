@@ -353,7 +353,6 @@ def parse_grammar(args: TypeTuple, verb: GrammarVerb) -> TypeList[GrammarTerm]:
         terms = []
         abbreviation = verb.abbreviations[arg_count]
         for i, term_type in enumerate(abbreviation):
-
             if term_type is None:
                 arg = None  # use None so we get the default
             else:

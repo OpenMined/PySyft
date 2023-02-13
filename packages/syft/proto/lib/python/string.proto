@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-package syft.lib.python;
-
-message String {
-  string data = 1;
-  bool temporary_box = 2;
-}
