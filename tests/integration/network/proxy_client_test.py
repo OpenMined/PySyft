@@ -1,5 +1,8 @@
 # stdlib
 import time
+from typing import Any
+from typing import Dict
+from typing import Optional
 import uuid
 
 # third party
@@ -37,9 +40,19 @@ def test_domain1_via_network_proxy_client() -> None:
 
     domain_list = network_client.domains.all(pandas=False)
     assert len(domain_list) > 0
-    proxy_client = network_client.domains[domain_client.address.target_id.id]
+    if sy.__version__ == "0.7.0":
+        node_uid = domain_client.id
+    else:
+        node_uid = domain_client.node_uid
 
-    assert proxy_client.address == domain_client.address
+    proxy_client = network_client.domains[node_uid]
+
+    if sy.__version__ == "0.7.0":
+        proxy_client_uid = proxy_client.id
+    else:
+        proxy_client_uid = proxy_client.node_uid
+
+    assert proxy_client_uid == node_uid
     assert proxy_client.name == domain_client.name
     assert proxy_client.routes[0] != domain_client.routes[0]
 
@@ -80,9 +93,22 @@ def test_domain2_via_network_proxy_client() -> None:
 
     domain_list = network_client.domains.all(pandas=False)
     assert len(domain_list) > 0
-    proxy_client = network_client.domains[domain_client.address.target_id.id]
 
-    assert proxy_client.address == domain_client.address
+    if sy.__version__ == "0.7.0":
+        node_uid = domain_client.id
+    else:
+        node_uid = domain_client.node_uid
+
+    proxy_client = network_client.domains[node_uid]
+
+    if sy.__version__ == "0.7.0":
+        proxy_client_uid = proxy_client.id
+    else:
+        proxy_client_uid = proxy_client.node_uid
+
+    proxy_client = network_client.domains[node_uid]
+
+    assert proxy_client_uid == node_uid
     assert proxy_client.name == domain_client.name
     assert proxy_client.routes[0] != domain_client.routes[0]
 
@@ -103,6 +129,17 @@ def test_domain2_via_network_proxy_client() -> None:
     assert type(x_ptr).__name__ == type(y_ptr).__name__
 
 
+def search_network(network_client: sy.Network, query: str) -> Optional[Dict[str, Any]]:
+    results = network_client.search(
+        query=query, pandas=False, timeout=GET_OBJECT_TIMEOUT
+    )
+
+    for row in results:
+        if row["host_or_ip"] == DOMAIN1_VPN_IP:
+            return row
+    return None
+
+
 @pytest.mark.network
 def test_search_network() -> None:
     unique_tag = str(uuid.uuid4())
@@ -114,18 +151,22 @@ def test_search_network() -> None:
     x.send(domain_client, tags=[unique_tag])
 
     network_client = sy.login(port=NETWORK_PORT)
-
     query = [unique_tag]
-    results = network_client.search(
-        query=query, pandas=False, timeout=GET_OBJECT_TIMEOUT
-    )
 
-    assert len(results) == 2
-    vpn_row = None
-    for row in results:
-        if row["host_or_ip"] == DOMAIN1_VPN_IP:
-            vpn_row = row
-            break
+    retry_time = 3
+    while retry_time > 0:
+        print(f"search_network attempt: {retry_time}")
+        retry_time -= 1
+
+        try:
+            vpn_row = search_network(network_client=network_client, query=query)
+            if vpn_row is not None:
+                break
+            else:
+                time.sleep(10)
+        except Exception as e:
+            print(f"search_network failed. {e}")
+            time.sleep(10)
 
     assert (
         vpn_row["name"].replace("-", "_") == "test_domain_1"

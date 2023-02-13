@@ -23,7 +23,7 @@ def test_get_timeout() -> None:
 
     res = None
     try:
-        res = x_ptr.get(timeout_secs=3)
+        res = x_ptr.get(timeout_secs=30)  # this should work but CI can be slow
     except Exception:
         pass
 
@@ -32,7 +32,7 @@ def test_get_timeout() -> None:
 
     # using the same pointer lets retry for 5 seconds
     start_time = time.time()
-    TEST_TIMEOUT = 8
+    TEST_TIMEOUT = 5
     res = None
     try:
         # reset the pointer and processing flag

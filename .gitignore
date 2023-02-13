@@ -8,6 +8,7 @@
 .python-version
 .vscode/
 .tox/*
+.creds
 
 # python stuff
 *__pycache__*
@@ -63,3 +64,8 @@ packages/grid/svelte
 
 # rendered template dir
 packages/grid/rendered
+
+js/node_modules/*
+
+#nohup
+nohup.out

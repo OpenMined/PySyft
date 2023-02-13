@@ -16,7 +16,6 @@ from .utils import split_and_preprocess_dataset
 
 
 def add_dataset_to_domain(domain_ip, dataset_url):
-
     # Need to run update_syft.sh on every domain
     #         sshpass -p MflpTeamOne@31052022 ssh azureuser@20.253.155.189 update_syft.sh
 

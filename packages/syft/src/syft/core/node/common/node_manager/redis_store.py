@@ -8,26 +8,28 @@ from typing import cast
 
 # third party
 from pydantic import BaseSettings
+from pymongo import MongoClient
 import redis
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm.session import Session
 
 # relative
 from .....lib.python.dict import Dict as SyftDict
 from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serialize import _serialize as serialize
 from ....common.uid import UID
-from ....node.common.node_table.bin_obj_dataset import BinObjDataset
 from ....store import ObjectStore
 from ....store.proxy_dataset import ProxyDataset
 from ....store.store_interface import StoreKey
 from ....store.storeable_object import StorableObject
-from ..node_table.bin_obj_metadata import ObjectMetadata
+from .obj_metadata_manager import NoSQLObjectMetadataManager
 
 
 class RedisStore(ObjectStore):
-    def __init__(self, db: Session, settings: Optional[BaseSettings] = None) -> None:
-        self.db = db
+    def __init__(
+        self,
+        nosql_db_engine: MongoClient,
+        db_name: str,
+        settings: Optional[BaseSettings] = None,
+    ) -> None:
         if settings is None:
             raise Exception("RedisStore requires Settings")
         self.settings = settings
@@ -36,6 +38,9 @@ class RedisStore(ObjectStore):
                 host=settings.REDIS_HOST,
                 port=self.settings.REDIS_PORT,
                 db=self.settings.REDIS_STORE_DB_ID,
+            )
+            self.obj_metadata_manager = NoSQLObjectMetadataManager(
+                nosql_db_engine, db_name
             )
         except Exception as e:
             print("failed to load redis", e)
@@ -96,12 +101,10 @@ class RedisStore(ObjectStore):
 
     def get(self, key: StoreKey, proxy_only: bool = False) -> StorableObject:
         key_str, key_uid = self.key_to_str_and_uid(key=key)
-        local_session = sessionmaker(bind=self.db)()
 
         obj = self.redis.get(key_str)
-        obj_metadata = (
-            local_session.query(ObjectMetadata).filter_by(obj=key_str).first()
-        )
+        obj_metadata = self.obj_metadata_manager.first(obj=key_str)
+
         if obj is None or obj_metadata is None:
             raise KeyError(f"Object not found! for UID: {key_str}")
 
@@ -131,17 +134,7 @@ class RedisStore(ObjectStore):
             ),
             # name=obj_metadata.name,
         )
-        local_session.close()
         return obj
-
-    def is_dataset(self, key: UID) -> bool:
-        local_session = sessionmaker(bind=self.db)()
-        is_dataset_obj = (
-            local_session.query(BinObjDataset).filter_by(obj=str(key.value)).exists()
-        )
-        is_dataset_obj = local_session.query(is_dataset_obj).scalar()
-        local_session.close()
-        return is_dataset_obj
 
     def __getitem__(self, key: StoreKey) -> StorableObject:
         raise Exception("obj = store[key] not allowed because additional args required")
@@ -162,85 +155,49 @@ class RedisStore(ObjectStore):
             bin = serialize(value.data, to_bytes=True)
         self.redis.set(key_str, bin)  # type: ignore
 
-        create_metadata = True
-        local_session = sessionmaker(bind=self.db)()
-        try:
-            # use existing metadata row to prevent more than 1
-            metadata_obj = (
-                local_session.query(ObjectMetadata).filter_by(obj=key_str).all()[-1]
-            )
-            create_metadata = False
-        except Exception:
-            pass
-            # no metadata row exists lets insert one
-            metadata_obj = ObjectMetadata()
+        if not self.obj_metadata_manager.contain(obj=key_str):
+            read_permissions = cast(
+                bytes,
+                serialize(SyftDict(value.read_permissions), to_bytes=True),
+            ).hex()
+            search_permissions = cast(
+                bytes,
+                serialize(SyftDict(value.search_permissions), to_bytes=True),
+            ).hex()
+            write_permissions = cast(
+                bytes,
+                serialize(SyftDict(value.write_permissions), to_bytes=True),
+            ).hex()
 
-        metadata_obj.obj = key_str
-        metadata_obj.tags = value.tags
-        metadata_obj.description = value.description
-        metadata_obj.read_permissions = cast(
-            bytes,
-            serialize(SyftDict(value.read_permissions), to_bytes=True),
-        ).hex()
-        metadata_obj.search_permissions = cast(
-            bytes,
-            serialize(SyftDict(value.search_permissions), to_bytes=True),
-        ).hex()
-        metadata_obj.write_permissions = cast(
-            bytes,
-            serialize(SyftDict(value.write_permissions), to_bytes=True),
-        ).hex()
-        metadata_obj.is_proxy_dataset = is_proxy_dataset
-
-        local_session = sessionmaker(bind=self.db)()
-        if create_metadata:
-            local_session.add(metadata_obj)
-        else:
-            local_session.query(ObjectMetadata).filter_by(obj=key_str).update(
-                {
-                    "tags": value.tags,
-                    "description": value.description,
-                    "read_permissions": metadata_obj.read_permissions,
-                    "write_permissions": metadata_obj.write_permissions,
-                    "search_permissions": metadata_obj.search_permissions,
-                }
+            self.obj_metadata_manager.create_metadata(
+                obj=key_str,
+                tags=value.tags,
+                description=value.description,
+                read_permissions=read_permissions,
+                search_permissions=search_permissions,
+                write_permissions=write_permissions,
+                is_proxy_dataset=is_proxy_dataset,
             )
-        local_session.commit()
-        local_session.close()
 
     def delete(self, key: UID) -> None:
         try:
-            local_session = sessionmaker(bind=self.db)()
-            metadata_to_delete = (
-                local_session.query(ObjectMetadata)
-                .filter_by(obj=str(key.value))
-                .first()
-            )
-            obj_dataset_to_delete = (
-                local_session.query(BinObjDataset).filter_by(obj=str(key.value)).first()
-            )
+            # Yellow Team: fix this, update to use: obj_metadata_manager?
+            # self.dataset_manager.delete_bin_obj(bin_obj_id=key)
             # Check if the uploaded data is a proxy dataset
-            if metadata_to_delete and metadata_to_delete.is_proxy_dataset:
-                # Retrieve proxy dataset from store
-                obj = self.get(key=key, proxy_only=True)
-                proxy_dataset = obj.data
-                if proxy_dataset:
-                    proxy_dataset.delete_s3_data(settings=self.settings)
+            # if metadata_to_delete and metadata_to_delete.is_proxy_dataset:
+            #     # Retrieve proxy dataset from store
+            #     obj = self.get(key=key, proxy_only=True)
+            #     proxy_dataset = obj.data
+            #     if proxy_dataset:
+            #         proxy_dataset.delete_s3_data(settings=self.settings)
 
             self.redis.delete(str(key.value))
-            local_session.delete(metadata_to_delete)
-            local_session.delete(obj_dataset_to_delete)
-            local_session.commit()
-            local_session.close()
         except Exception as e:
             print(f"{type(self)} Exception in __delitem__ error {key}. {e}")
 
     def clear(self) -> None:
         self.redis.flushdb()
-        local_session = sessionmaker(bind=self.db)()
-        local_session.query(ObjectMetadata).delete()
-        local_session.commit()
-        local_session.close()
+        self.obj_metadata_manager.clear()
 
     def __repr__(self) -> str:
         return f"{type(self)}"

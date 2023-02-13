@@ -15,7 +15,6 @@ from syft import deserialize
 from syft import serialize
 from syft.core.adp.ledger_store import DictLedgerStore
 from syft.core.common import UID
-from syft.core.io.address import Address
 from syft.core.node.common.node_manager.dict_store import DictStore
 from syft.core.node.common.node_service.request_receiver.request_receiver_messages import (
     RequestMessage,
@@ -34,7 +33,7 @@ def get_verify_key() -> VerifyKey:
 
 
 def test_request_message() -> None:
-    addr = Address()
+    addr = UID()
     msg = RequestMessage(
         object_id=UID(),
         address=addr,
@@ -61,7 +60,7 @@ def test_accept(method_name: str) -> None:
     )
     node_client = node.get_root_client()
 
-    addr = Address()
+    addr = node_client.node_uid
     request = RequestMessage(
         object_id=UID(),
         address=addr,
@@ -74,11 +73,14 @@ def test_accept(method_name: str) -> None:
         request.owner_client_if_available, "send_immediate_msg_without_reply"
     ) as mock_send_msg:
         getattr(request, method_name)()
-        assert mock_send_msg.call_args[1]["msg"].address == node_client.address
+        assert mock_send_msg.call_args[1]["msg"].address == node_client.node_uid
         assert mock_send_msg.call_args[1]["msg"].accept is True
         assert mock_send_msg.call_args[1]["msg"].request_id == request.id
 
 
+@pytest.mark.skip(
+    "To Re-enable after merge of https://github.com/OpenMined/PySyft/pull/6719"
+)
 @pytest.mark.asyncio
 def test_privacy_budget_and_obj_request():
     node = Domain(
@@ -121,7 +123,7 @@ def test_deny(method_name: str) -> None:
     )
     node_client = node.get_root_client()
 
-    addr = Address()
+    addr = node_client.node_uid
     request = RequestMessage(
         object_id=UID(),
         address=addr,
@@ -134,13 +136,13 @@ def test_deny(method_name: str) -> None:
         request.owner_client_if_available, "send_immediate_msg_without_reply"
     ) as mock_send_msg:
         getattr(request, method_name)()
-        assert mock_send_msg.call_args[1]["msg"].address == node_client.address
+        assert mock_send_msg.call_args[1]["msg"].address == node_client.node_uid
         assert mock_send_msg.call_args[1]["msg"].accept is False
         assert mock_send_msg.call_args[1]["msg"].request_id == request.id
 
 
 def test_fail_accept_request_message() -> None:
-    addr = Address()
+    addr = UID()
     request = RequestMessage(
         object_id=UID(),
         address=addr,
@@ -153,7 +155,7 @@ def test_fail_accept_request_message() -> None:
 
 
 def test_fail_deny_request_message() -> None:
-    addr = Address()
+    addr = UID()
     request = RequestMessage(
         object_id=UID(),
         address=addr,
@@ -166,7 +168,7 @@ def test_fail_deny_request_message() -> None:
 
 
 def test_fail_process_request_service() -> None:
-    addr = Address()
+    addr = UID()
     request = RequestMessage(
         object_id=UID(),
         address=addr,

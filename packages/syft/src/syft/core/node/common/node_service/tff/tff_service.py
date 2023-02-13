@@ -49,7 +49,6 @@ async def tff_train_federated(
 
     # This makes tasks run in order
     async with tff.async_utils.ordered_tasks() as tasks:
-
         train_data_iterator = train_data_source.iterator()
 
         # Main training loop

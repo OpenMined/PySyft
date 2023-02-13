@@ -8,7 +8,6 @@ from typing_extensions import final
 from .....common.message import ImmediateSyftMessageWithoutReply  # type: ignore
 from .....common.serde.serializable import serializable  # type: ignore
 from .....common.uid import UID  # type: ignore
-from .....io.address import Address  # type: ignore
 
 
 @serializable(recursive_serde=True)
@@ -26,7 +25,7 @@ class PublishScalarsAction(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         id_at_location: UID,
-        address: Address,
+        address: UID,
         publish_ids_at_location: TypeList[UID],
         sigma: float,
         private: bool,

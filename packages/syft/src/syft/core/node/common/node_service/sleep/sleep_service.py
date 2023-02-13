@@ -17,7 +17,6 @@ from .sleep_messages import SleepReplyMessage
 
 
 class SleepService(ImmediateNodeServiceWithReply):
-
     # TODO: Change this to not be available for guests
     @staticmethod
     @service_auth(guests_welcome=True)

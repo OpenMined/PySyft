@@ -63,10 +63,10 @@ def upload_dataset_route(
     metadata = json.loads(metadata)
 
     msg = CreateDatasetMessage(
-        address=node.address,
+        address=node.node_uid,
         dataset=file.file.read(),
         metadata=SyftDict(metadata),
-        reply_to=node.address,
+        reply_to=node.node_uid,
     ).sign(signing_key=user_key)
 
     # Process syft message
@@ -96,7 +96,7 @@ def get_all_dataset_metadata_route(
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
 
     # Build Syft Message
-    msg = GetDatasetsMessage(address=node.address, reply_to=node.address).sign(
+    msg = GetDatasetsMessage(address=node.node_uid, reply_to=node.node_uid).sign(
         signing_key=user_key
     )
 
@@ -139,7 +139,7 @@ def get_specific_dataset_metadata_route(
 
     # Build Syft Message
     msg = GetDatasetMessage(
-        address=node.address, dataset_id=dataset_id, reply_to=node.address
+        address=node.node_uid, dataset_id=dataset_id, reply_to=node.node_uid
     ).sign(signing_key=user_key)
 
     # Process syft message
@@ -149,7 +149,7 @@ def get_specific_dataset_metadata_route(
     if isinstance(reply, ExceptionMessage):
         return {"error": reply.exception_msg}
     else:
-        return reply.metadatas.upcast()
+        return reply.metadatas
 
 
 @router.put("/{dataset_id}", status_code=200, response_class=JSONResponse)
@@ -171,10 +171,10 @@ def update_dataset_metadata_route(
 
     # Build Syft Message
     msg = UpdateDatasetMessage(
-        address=node.address,
+        address=node.node_uid,
         dataset_id=dataset_id,
         metadata=metadata,
-        reply_to=node.address,
+        reply_to=node.node_uid,
     ).sign(signing_key=user_key)
 
     # Process syft message
@@ -205,7 +205,7 @@ def delete_dataset_route(
 
     # Build Syft Message
     msg = DeleteDatasetMessage(
-        address=node.address, dataset_id=dataset_id, reply_to=node.address
+        address=node.node_uid, dataset_id=dataset_id, reply_to=node.node_uid
     ).sign(signing_key=user_key)
 
     # Process syft message
