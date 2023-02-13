@@ -25,6 +25,7 @@ from typeguard import check_type
 # relative
 from ....core.common.serde.recursive import index_syft_by_module_name
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
+from ....core.node.common.node_table.syft_object import SyftBaseObject
 from ....core.node.common.node_table.syft_object import SyftObject
 from ....telemetry import instrument
 from ...common.serde.deserialize import _deserialize
@@ -59,7 +60,7 @@ class APIRegistry:
 
 
 @serializable(recursive_serde=True)
-class APIEndpoint(SyftObject):
+class APIEndpoint(SyftBaseObject):
     path: str
     name: str
     description: str

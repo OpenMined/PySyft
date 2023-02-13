@@ -11,6 +11,7 @@ from typing import Tuple
 from typing import Type
 
 # relative
+from ....core.node.common.node_table.syft_object import SyftBaseObject
 from ....core.node.common.node_table.syft_object import SyftObject
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
@@ -29,7 +30,7 @@ class AbstractService:
 
 
 @serializable(recursive_serde=True)
-class ServiceConfig(SyftObject):
+class ServiceConfig(SyftBaseObject):
     public_path: str
     private_path: str
     public_name: str

@@ -240,7 +240,7 @@ class SyftClient:
 
     @staticmethod
     def from_node(node: NewNode) -> Self:
-        return SyftClient(connetcion=PythonConnection(node=node))
+        return SyftClient(connection=PythonConnection(node=node))
 
     @property
     def name(self) -> Optional[str]:
