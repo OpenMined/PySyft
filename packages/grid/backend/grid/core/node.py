@@ -11,6 +11,8 @@ from syft import Domain  # type: ignore
 from syft import Network  # type: ignore
 from syft.core.node.common.client import Client
 from syft.core.node.common.util import get_s3_client
+from syft.core.node.new.mongo_document_store import ClientConfig
+from syft.core.node.new.mongo_document_store import MongoStoreConfig
 from syft.core.node.worker import Worker
 
 # grid absolute
@@ -57,15 +59,25 @@ def create_s3_bucket(bucket_name: str, settings: Settings, attempt: int = 0) -> 
         raise e
 
 
+mongo_client_config = ClientConfig(
+    hostname=settings.MONGO_HOST,
+    port=settings.MONGO_PORT,
+    username=settings.MONGO_USERNAME,
+    password=settings.MONGO_PASSWORD,
+)
+
+store_config = MongoStoreConfig(client_config=settings.MONGO_USERNAME)
+
+
 if settings.NODE_TYPE.lower() == "domain":
     node = Domain("Domain", settings=settings, document_store=True)
-    worker = Worker(id=node.id, signing_key=node.signing_key)
+    worker = Worker(id=node.id, signing_key=node.signing_key, store_config=store_config)
     if settings.USE_BLOB_STORAGE:
         create_s3_bucket(bucket_name=node.id.no_dash, settings=settings)
 
 elif settings.NODE_TYPE.lower() == "network":
     node = Network("Network", settings=settings, document_store=True)
-    worker = Worker(id=node.id, signing_key=node.signing_key, env_settings=settings)
+    worker = Worker(id=node.id, signing_key=node.signing_key, store_config=store_config)
     format = "%(asctime)s: %(message)s"
     logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
 else:
