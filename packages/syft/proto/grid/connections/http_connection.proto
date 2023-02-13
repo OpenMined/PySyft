@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-package syft.grid.connections;
-
-message GridHTTPConnection {
-  string base_url = 1;
-  string session_token = 2;
-  string token_type = 3;
-}

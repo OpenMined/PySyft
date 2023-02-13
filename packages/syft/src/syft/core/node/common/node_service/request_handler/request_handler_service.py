@@ -87,7 +87,6 @@ class GetAllRequestHandlersService(ImmediateNodeServiceWithoutReply):
         msg: GetAllRequestHandlersMessage,
         verify_key: Optional[VerifyKey] = None,
     ) -> GetAllRequestHandlersResponseMessage:
-
         if verify_key is None:
             traceback_and_raise(
                 ValueError(

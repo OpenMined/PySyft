@@ -9,6 +9,7 @@ import torch as th
 import syft as sy
 from syft.core.node.common.node_service.auth import AuthorizationException
 
+# TODO: Add back
 # @pytest.mark.slow
 # def test_torch_remote_tensor_register() -> None:
 #     """Test if sending a tensor will be registered on the remote worker."""
@@ -49,7 +50,6 @@ def test_torch_remote_tensor_with_send() -> None:
 
 
 def test_torch_serde() -> None:
-
     x = th.tensor([1.0, 2, 3, 4], requires_grad=True)
 
     # This is not working currently:
@@ -68,7 +68,6 @@ def test_torch_serde() -> None:
 def test_torch_no_read_permissions(
     client: sy.VirtualMachineClient, root_client: sy.VirtualMachineClient
 ) -> None:
-
     x = th.tensor([1, 2, 3, 4])
 
     # root user of Bob's machine sends a tensor
@@ -94,6 +93,7 @@ def test_torch_no_read_permissions(
     assert x.grad == x2.grad
 
 
+# TODO: Add back
 # def test_torch_garbage_collect() -> None:
 #     """
 #     Test if sending a tensor and then deleting the pointer removes the object

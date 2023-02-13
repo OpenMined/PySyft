@@ -23,7 +23,9 @@ import torch
 from .util import implements
 from .util import query_implementation
 
-AcceptableSimpleType = Union[int, bool, float, np.ndarray]
+AcceptableSimpleType = Union[
+    int, bool, float, np.ndarray, torch.Tensor, jaxlib.xla_extension.DeviceArrayBase
+]
 SupportedChainType = Union["PassthroughTensor", AcceptableSimpleType]
 
 
@@ -416,7 +418,6 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def manual_dot(
         self, other: Union[Type[PassthroughTensor], np.ndarray]
     ) -> PassthroughTensor:
-
         expanded_self = self.repeat(other.shape[1], axis=1)
         expanded_self = expanded_self.reshape(
             self.shape[0], self.shape[1], other.shape[1]

@@ -73,7 +73,7 @@ class EnumAttribute(ast.attribute.Attribute):
         msg = EnumAttributeAction(
             path=self.path_and_name,
             id_at_location=ptr.id_at_location,
-            address=self.client.address,
+            address=self.client.node_uid,
         )
         self.client.send_immediate_msg_without_reply(msg=msg)
         return ptr

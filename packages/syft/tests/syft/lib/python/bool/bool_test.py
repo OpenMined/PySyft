@@ -278,10 +278,10 @@ def test_sane_len():
 
         try:
             Bool(A())
-        except (Exception) as e_bool:
+        except Exception as e_bool:
             try:
                 len(A())
-            except (Exception) as e_len:
+            except Exception as e_len:
                 assert str(e_bool) == str(e_len)
 
 
@@ -393,10 +393,6 @@ def test_neg():
 def test_pos():
     assert SyTrue.__pos__() == PyTrue.__pos__()
     assert SyFalse.__pos__() == PyFalse.__pos__()
-
-
-def test_protobuf_schema():
-    assert Bool.get_protobuf_schema()
 
 
 def test_to_bytes():

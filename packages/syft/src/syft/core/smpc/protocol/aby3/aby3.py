@@ -135,7 +135,7 @@ class ABY3:
         )
 
         ring_bits = get_nr_bits(ring_size)
-        c = np.array([0], dtype=np.bool)  # carry bits of addition.
+        c = np.array([0], dtype=np.bool_)  # carry bits of addition.
         result: List[MPCTensor] = []
         for idx in range(ring_bits):
             print("Bit Number :", idx)
@@ -186,10 +186,10 @@ class ABY3:
 
         ring_bits = get_nr_bits(ring_size)
 
-        carry = np.zeros(a[0].mpc_shape, dtype=np.bool)
+        carry = np.zeros(a[0].mpc_shape, dtype=np.bool_)
         # one = MPCTensor(
         #     parties=parties,
-        #     secret=Tensor(np.ones(a[0].mpc_shape, dtype=np.bool)),
+        #     secret=Tensor(np.ones(a[0].mpc_shape, dtype=np.bool_)),
         #     shape=a[0].mpc_shape,
         # )
 
@@ -200,7 +200,6 @@ class ABY3:
             b: Union[MPCTensor, np.ndarray],
             c: Union[MPCTensor, np.ndarray],
         ) -> MPCTensor:
-
             return (a + c + np.array(1, dtype=bool)) * (b + c) + b
 
         for idx in tqdm(range(ring_bits), desc="Computing..."):

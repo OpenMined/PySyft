@@ -54,12 +54,12 @@ class ChildNodeLifecycleService(ImmediateNodeServiceWithoutReply):
         # original child clients send_immediate_msg_without_reply function so
         # there is no way to invoke it
         debug(f"> Sending 👪 Update from {node.pprint} back to {addr.target_emoji()}")
-        debug("> Update Contains", type(node.address), node.address)
+        debug("> Update Contains", type(node.node_uid), node.node_uid)
         heritage_msg = HeritageUpdateMessage(
-            new_ancestry_address=node.address, address=msg.child_node_client_address
+            new_ancestry_address=node.node_uid, address=msg.child_node_client_address
         )
 
-        location = msg.child_node_client_address.target_id.id
+        location = msg.child_node_client_address
         try:
             in_memory_client = node.in_memory_client_registry[location]
             # we need to sign here with the current node not the destination side

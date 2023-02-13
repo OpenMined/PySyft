@@ -8,6 +8,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Tuple
 from typing import Union
 
@@ -21,14 +22,7 @@ from ... import lib
 from ...ast.klass import pointerize_args_and_kwargs
 from ...core.adp.data_subject_ledger import DataSubjectLedger
 from ...util import inherit_tags
-from ..common.serde.capnp import CapnpModule
-from ..common.serde.capnp import chunk_bytes
-from ..common.serde.capnp import combine_bytes
-from ..common.serde.capnp import get_capnp_schema
-from ..common.serde.capnp import serde_magic_header
-from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import serializable
-from ..common.serde.serialize import _serialize as serialize
 from ..common.uid import UID
 from ..node.abstract.node import AbstractNodeClient
 from ..node.common.action import smpc_action_functions
@@ -51,7 +45,6 @@ from .smpc.mpc_tensor import MPCTensor
 
 
 class TensorPointer(Pointer):
-
     # Must set these at class init time despite
     # the fact that klass.Class tries to override them (unsuccessfully)
     __name__ = "TensorPointer"
@@ -68,7 +61,6 @@ class TensorPointer(Pointer):
         public_shape: Optional[Tuple[int, ...]] = None,
         public_dtype: Optional[Union[str, np.dtype]] = None,
     ):
-
         super().__init__(
             client=client,
             id_at_location=id_at_location,
@@ -102,7 +94,6 @@ class TensorPointer(Pointer):
         *args: Any,
         **kwargs: Any,
     ) -> Any:
-
         # we want to get the return type which matches the attr_path_and_name
         # so we ask lib_ast for the return type name that matches out
         # attr_path_and_name and then use that to get the actual pointer klass
@@ -149,7 +140,7 @@ class TensorPointer(Pointer):
                 kwargs=pointer_kwargs,
                 id_at_location=result_id_at_location,
                 seed_id_locations=seed_id_locations,
-                address=self.client.address,
+                address=self.client.node_uid,
             )
             self.client.send_immediate_msg_without_reply(msg=cmd)
 
@@ -428,14 +419,12 @@ class TensorPointer(Pointer):
 
 
 def to32bit(np_array: np.ndarray, verbose: bool = True) -> np.ndarray:
-
     if np_array.dtype == np.int64:
         if verbose:
             print("Casting internal tensor to int32")
         out = np_array.astype(np.int32)
 
     elif np_array.dtype == np.float64:
-
         if verbose:
             print("Casting internal tensor to float32")
         out = np_array.astype(np.float32)
@@ -446,15 +435,17 @@ def to32bit(np_array: np.ndarray, verbose: bool = True) -> np.ndarray:
     return out
 
 
-@serializable(capnp_bytes=True)
+@serializable(recursive_serde=True)
 class Tensor(
     PassthroughTensor,
     PhiTensorAncestor,
     FixedPrecisionTensorAncestor,
     # MPCTensorAncestor,
 ):
-
-    # __attr_allowlist__ = ["child", "tag_name", "public_shape", "public_dtype"]
+    __attr_allowlist__ = ["child", "tag_name", "public_shape", "public_dtype"]
+    __serde_overrides__: Dict[str, Sequence[Callable]] = {
+        "public_dtype": ((lambda x: str(x), lambda x: np.dtype(x)))
+    }
 
     PointerClassOverride = TensorPointer
 
@@ -484,7 +475,6 @@ class Tensor(
             and not isinstance(child, np.ndarray)
             and not isinstance(child, GammaTensor)
         ):
-
             raise Exception(
                 f"Data: {child} ,type: {type(child)} must be list or nd.array "
             )
@@ -563,7 +553,7 @@ class Tensor(
 
         if isinstance(self.child, PhiTensor):
             return TensorWrappedPhiTensorPointer(
-                data_subjects=self.child.data_subjects,
+                data_subject=self.child.data_subject,
                 client=client,
                 id_at_location=id_at_location,
                 object_type=object_type,
@@ -576,14 +566,14 @@ class Tensor(
             )
         elif isinstance(self.child, GammaTensor):
             return TensorWrappedGammaTensorPointer(
-                data_subjects=self.child.data_subjects,
+                # data_subjects=self.child.data_subjects,
                 client=client,
                 id_at_location=id_at_location,
                 object_type=object_type,
                 tags=tags,
                 description=description,
-                min_vals=self.child.min_vals,
-                max_vals=self.child.max_vals,
+                # min_vals=self.child.min_vals,
+                # max_vals=self.child.max_vals,
                 public_shape=getattr(self, "public_shape", None),
                 public_dtype=getattr(self, "public_dtype", None),
             )
@@ -624,42 +614,6 @@ class Tensor(
 
         return None
 
-    def _object2bytes(self) -> bytes:
-        schema = get_capnp_schema(schema_file="tensor.capnp")
-        tensor_struct: CapnpModule = schema.Tensor  # type: ignore
-        tensor_msg = tensor_struct.new_message()
-
-        # this is how we dispatch correct deserialization of bytes
-        tensor_msg.magicHeader = serde_magic_header(type(self))
-
-        chunk_bytes(serialize(self.child, to_bytes=True), "child", tensor_msg)  # type: ignore
-
-        tensor_msg.publicShape = serialize(self.public_shape, to_bytes=True)
-
-        # upcast the String class before setting to capnp
-        public_dtype_func = getattr(
-            self.public_dtype, "upcast", lambda: self.public_dtype
-        )
-        tensor_msg.publicDtype = str(public_dtype_func())
-        tensor_msg.tagName = self.tag_name
-
-        return tensor_msg.to_bytes_packed()
-
-    @staticmethod
-    def _bytes2object(buf: bytes) -> Tensor:
-        schema = get_capnp_schema(schema_file="tensor.capnp")
-        tensor_struct: CapnpModule = schema.Tensor  # type: ignore
-        # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
-        MAX_TRAVERSAL_LIMIT = 2**64 - 1
-        tensor_msg = tensor_struct.from_bytes_packed(
-            buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        )
-
-        tensor = Tensor(
-            child=deserialize(combine_bytes(tensor_msg.child), from_bytes=True),
-            public_shape=deserialize(tensor_msg.publicShape, from_bytes=True),
-            public_dtype=np.dtype(tensor_msg.publicDtype),
-        )
-        tensor.tag_name = tensor_msg.tagName
-
-        return tensor
+    def mpc_swap(self, other: Tensor) -> Tensor:
+        self.child.child = other.child.child
+        return self

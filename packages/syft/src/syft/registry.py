@@ -43,7 +43,6 @@ class NetworkRegistry:
 
     @property
     def online_networks(self) -> List[Dict]:
-
         networks = self.all_networks
 
         def check_network(network: Dict) -> Optional[Dict[Any, Any]]:

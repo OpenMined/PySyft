@@ -10,6 +10,7 @@ from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Type
+from typing import Union
 from warnings import warn
 
 # third party
@@ -18,6 +19,7 @@ from numpy.typing import ArrayLike
 
 # relative
 from ...user_settings import settings
+from ..adp.data_subject import DataSubject
 from ..adp.data_subject_ledger import DataSubjectLedger
 from ..adp.data_subject_list import DataSubjectArray
 from .config import DEFAULT_FLOAT_NUMPY_TYPE
@@ -54,8 +56,9 @@ def _GammaTensor() -> Type[GammaTensor]:
     return _GammaTensorRef
 
 
+# TODO 0.7: fix the wizard
+# There are a lot of instances of data_subjects but now he have only one data_subject
 def data_subject_creation_wizard(data: Any) -> List[Any]:
-
     w = textwrap.TextWrapper(initial_indent="\t", subsequent_indent="\t")
 
     welcome_msg = "Welcome to the Data Subject Annotation Wizard!!!"
@@ -219,7 +222,6 @@ protect the people or the business)"""
         answer = str(input("\t"))
 
         if answer == "yes":
-
             print()
 
             data_subjects = list()
@@ -260,7 +262,6 @@ protect the people or the business)"""
             return data_subjects
 
         elif answer == "no":
-
             print()
 
             print(
@@ -288,7 +289,6 @@ protect the people or the business)"""
                 "one per row of your tensor."
             )
     elif answer == "no":
-
         print(
             w.fill(
                 "Question 3: Is your data one data subject for every column (yes/no)?"
@@ -312,7 +312,6 @@ protect the people or the business)"""
             raise Exception("Wizard aborted.")
 
         elif answer == "no":
-
             print(
                 w.fill(
                     "It sounds like your tensor is a random assortment of data_subjects (and perhaps empty/non"
@@ -402,7 +401,7 @@ class PhiTensorAncestor(TensorChainManager):
         self,
         min_val: ArrayLike,
         max_val: ArrayLike,
-        data_subjects: Optional[Any] = None,
+        data_subject: Optional[Any] = None,
         skip_blocking_checks: bool = False,
     ) -> PhiTensorAncestor:
         """[DEPRECATED] This method will annotate your Tensor with metadata (an upper bound
@@ -424,7 +423,7 @@ class PhiTensorAncestor(TensorChainManager):
         return self.annotate_with_dp_metadata(
             lower_bound=min_val,
             upper_bound=max_val,
-            data_subjects=data_subjects,
+            data_subject=data_subject,
             skip_blocking_checks=skip_blocking_checks,
         )
 
@@ -432,7 +431,7 @@ class PhiTensorAncestor(TensorChainManager):
         self,
         min_val: ArrayLike,
         max_val: ArrayLike,
-        data_subjects: Optional[Any] = None,
+        data_subject: Optional[Any] = None,
         skip_blocking_checks: bool = False,
     ) -> PhiTensorAncestor:
         """[DEPRECATED] This method will annotate your Tensor with metadata (an upper bound
@@ -456,7 +455,7 @@ class PhiTensorAncestor(TensorChainManager):
         return self.annotate_with_dp_metadata(
             lower_bound=min_val,
             upper_bound=max_val,
-            data_subjects=data_subjects,
+            data_subject=data_subject,
             skip_blocking_checks=skip_blocking_checks,
         )
 
@@ -464,7 +463,7 @@ class PhiTensorAncestor(TensorChainManager):
         self,
         lower_bound: ArrayLike,
         upper_bound: ArrayLike,
-        data_subjects: Optional[Any] = None,
+        data_subject: Optional[Any] = None,
         skip_blocking_checks: bool = False,
     ) -> PhiTensorAncestor:
         """
@@ -532,7 +531,7 @@ class PhiTensorAncestor(TensorChainManager):
         return self.copy()._private(
             min_val=lower_bound,
             max_val=upper_bound,
-            data_subjects=data_subjects,
+            data_subject=data_subject,
             skip_blocking_checks=skip_blocking_checks,
         )
 
@@ -540,14 +539,13 @@ class PhiTensorAncestor(TensorChainManager):
         self,
         min_val: ArrayLike,
         max_val: ArrayLike,
-        data_subjects: Optional[Any] = None,
+        data_subject: Optional[Any] = None,
         skip_blocking_checks: bool = False,
     ) -> PhiTensorAncestor:
         # PHASE 1: RUN CHECKS
 
         # Check 1: Is self.child a compatible type? We only support DP and SMPC for a few types.
         if not isinstance(self.child, np.ndarray):
-
             msg = (
                 "At present, you can only call .annotate_with_dp_metadata() "
                 + "on syft.Tensor objects wrapping numpy arrays. You called it on a "
@@ -561,9 +559,9 @@ class PhiTensorAncestor(TensorChainManager):
             raise TypeError(msg)
 
         # Check 2: Have Data Subjects been allotted properly?
-        data_subjects = check_data_subjects(
+        data_subject = check_data_subjects(
             data=self.child,
-            data_subjects=data_subjects,
+            data_subject=data_subject,
             skip_blocking_checks=skip_blocking_checks,
         )
 
@@ -572,31 +570,33 @@ class PhiTensorAncestor(TensorChainManager):
             min_val, max_val, target_shape=self.child.shape
         )
 
-        if any(len(x.item()) > 1 for x in np.nditer(data_subjects, flags=["refs_ok"])):
-            self.replace_abstraction_top(
-                tensor_type=_GammaTensor(),
-                child=self.child,
-                min_vals=min_vals,
-                max_vals=max_vals,
-                data_subjects=data_subjects,  # type: ignore
-            )  # type: ignore
-        else:
-            self.replace_abstraction_top(
-                tensor_type=_PhiTensor(),
-                child=self.child,
-                min_vals=min_vals,
-                max_vals=max_vals,
-                data_subjects=data_subjects,  # type: ignore
-            )  # type: ignore
+        # if any(len(x.item()) > 1 for x in np.nditer(data_subject, flags=["refs_ok"])):
+        #     self.replace_abstraction_top(
+        #         tensor_type=_GammaTensor(),
+        #         child=self.child,
+        #         min_vals=min_vals,
+        #         max_vals=max_vals,
+        #         data_subjects=data_subjects,  # type: ignore
+        #     )  # type: ignore
+        # else:
+        self.replace_abstraction_top(
+            tensor_type=_PhiTensor(),
+            child=self.child,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            data_subject=data_subject,  # type: ignore
+        )  # type: ignore
 
         return self
 
 
+# TODO 0.7: decide what to do with this
+# Do we keep the other types or only str?
 def check_data_subjects(
-    data: np.ndarray, data_subjects: Optional[Any], skip_blocking_checks: bool
-) -> np.ndarray:
+    data: np.ndarray, data_subject: Optional[Any], skip_blocking_checks: bool
+) -> Union[np.ndarray, DataSubject]:
     # Check 2: If data_subjects == None, then run the entity creation tutorial
-    if data_subjects is None:
+    if data_subject is None:
         if skip_blocking_checks:
             raise Exception(
                 "Error: 'data_subjects' argument to .annotate_with_dp_metadata() must not be None!"
@@ -604,40 +604,43 @@ def check_data_subjects(
         print(
             "ALERT: You didn't pass in any data_subjects. Launching data subject wizard...\n"
         )
-        data_subjects = data_subject_creation_wizard(data)
+        data_subject = data_subject_creation_wizard(data)
 
     # Check 3: If data_subjects is a string, make it an array of the correct shape
-    if isinstance(data_subjects, str):
-        data_subjects = np.array(
-            DataSubjectArray.from_objs([data_subjects] * data.size)
-        )
-        data_subjects = data_subjects.reshape(data.shape)
+    if isinstance(data_subject, str):
+        # data_subject = np.array(
+        #     DataSubjectArray.from_objs([data_subject] * data.size)
+        # )
+        # data_subject = data_subject.reshape(data.shape)
+        data_subject = DataSubject(data_subject)
 
-    if isinstance(data_subjects, DataSubjectArray):
+    elif isinstance(data_subject, DataSubject):
+        pass  # TODO 0.8: this would need some refactoring given the changes from 0.7
+    elif isinstance(data_subject, DataSubjectArray):
         # if data.size == 1, data_subjects will be a DSA instead of a np array
-        data_subjects = np.array(data_subjects)
+        data_subject = np.array(data_subject)
 
-    if not isinstance(data_subjects, DataSubjectArray):
-        data_subjects = DataSubjectArray.from_objs(data_subjects)
+    elif not isinstance(data_subject, DataSubjectArray):
+        data_subject = DataSubjectArray.from_objs(data_subject)
 
-    if data_subjects.shape != data.shape:
-        if data_subjects.size == 1:
-            # 1 data subject for the entire tensor.
-            data_subjects = np.broadcast_to(data_subjects, data.shape)
-        elif data_subjects.shape[0] == data.shape[0] and len(data_subjects.shape) == 1:
-            # e.g. 1 data subject per image for 10 imgs: child = (10, 25, 25) and data_subjects = (10,)
+    # if data_subject.shape != data.shape:
+    #     if data_subject.size == 1:
+    #         # 1 data subject for the entire tensor.
+    #         data_subject = np.broadcast_to(data_subject, data.shape)
+    #     elif data_subject.shape[0] == data.shape[0] and len(data_subject.shape) == 1:
+    #         # e.g. 1 data subject per image for 10 imgs: child = (10, 25, 25) and data_subjects = (10,)
 
-            axis_count = len(data.shape)
-            axes_to_expand = list(range(axis_count))[1:]
-            data_subjects = np.expand_dims(data_subjects, axis=axes_to_expand)
+    #         axis_count = len(data.shape)
+    #         axes_to_expand = list(range(axis_count))[1:]
+    #         data_subject = np.expand_dims(data_subject, axis=axes_to_expand)
 
-            data_subjects = np.broadcast_to(data_subjects, data.shape)
-        else:
-            raise Exception(
-                "Data Subject shape doesn't match the shape of your data. Please provide either 1 data subject per "
-                "data point, or 1 data subject per row of data. Please try again."
-            )
-    return data_subjects
+    #         data_subject = np.broadcast_to(data_subject, data.shape)
+    #     else:
+    #         raise Exception(
+    #             "Data Subject shape doesn't match the shape of your data. Please provide either 1 data subject per "
+    #             "data point, or 1 data subject per row of data. Please try again."
+    #         )
+    return data_subject
 
 
 def check_min_max_vals(

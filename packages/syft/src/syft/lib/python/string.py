@@ -9,12 +9,9 @@ from typing import Optional
 from typing import Union
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import SupportsIndex
 
 # relative
-from ...core.common.serde.serializable import serializable
-from ...proto.lib.python.string_pb2 import String as String_PB
 from .int import Int
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
@@ -22,14 +19,12 @@ from .slice import Slice
 from .types import SyPrimitiveRet
 
 
-@serializable()
 class String(UserString, PyPrimitive):
     def __init__(
         self,
         value: Any = None,
         temporary_box: bool = False,
     ):
-
         if value is None:
             value = ""
 
@@ -378,27 +373,3 @@ class String(UserString, PyPrimitive):
     def __contains__(self, val: object) -> SyPrimitiveRet:
         res = super().__contains__(val)
         return PrimitiveFactory.generate_primitive(value=res)
-
-    def _object2proto(self) -> String_PB:
-        return String_PB(
-            data=self.data,
-            temporary_box=self.temporary_box,
-        )
-
-    @staticmethod
-    def _proto2object(proto: String_PB) -> "String":
-        return String(
-            value=proto.data,
-            temporary_box=proto.temporary_box,
-        )
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return String_PB
-
-    # fixes __rmod__ in python <= 3.7
-    # https://github.com/python/cpython/commit/7abf8c60819d5749e6225b371df51a9c5f1ea8e9
-    def __rmod__(
-        self, template: Union[PyPrimitive, str, object]
-    ) -> Union[SyPrimitiveRet, String]:
-        return self.__class__(str(template) % self)

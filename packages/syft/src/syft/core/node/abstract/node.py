@@ -12,7 +12,7 @@ from pydantic import BaseSettings
 
 # relative
 from ....logger import traceback_and_raise
-from ...common.message import SignedEventualSyftMessageWithoutReply
+from ....util import key_emoji
 from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedImmediateSyftMessageWithoutReply
 from ...common.uid import UID
@@ -27,6 +27,7 @@ class AbstractNodeClient(Address):
     in_memory_client_registry: Dict[Any, Any]
     signing_key: SigningKey
     verify_key: VerifyKey
+    node_uid: UID
     """"""
 
     @property
@@ -44,17 +45,15 @@ class AbstractNodeClient(Address):
 
 
 class AbstractNode(Address):
-
     name: Optional[str]
     signing_key: Optional[SigningKey]
-    verify_key: Optional[VerifyKey]
-    root_verify_key: VerifyKey
     guest_signing_key_registry: Set[SigningKey]
     guest_verify_key_registry: Set[VerifyKey]
     admin_verify_key_registry: Set[VerifyKey]
     cpl_ofcr_verify_key_registry: Set[VerifyKey]
     acc: Optional[Any]
     settings: BaseSettings
+    node_uid: UID
 
     # TODO: remove hacky in_memory_client_registry
     in_memory_client_registry: Dict[Any, Any]
@@ -84,11 +83,6 @@ class AbstractNode(Address):
     def known_child_nodes(self) -> List[Any]:
         traceback_and_raise(NotImplementedError)
 
-    def recv_eventual_msg_without_reply(
-        self, msg: SignedEventualSyftMessageWithoutReply
-    ) -> None:
-        traceback_and_raise(NotImplementedError)
-
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
@@ -105,14 +99,29 @@ class AbstractNode(Address):
         traceback_and_raise(NotImplementedError)
 
     @property
+    def icon(self) -> str:
+        icon = "🏰"
+        return icon
+
+    @property
+    def pprint(self) -> str:
+        output = f"{self.icon} {self.name} ({str(self.__class__.__name__)})"
+        if hasattr(self, "id"):
+            _id = getattr(self, "node_uid", None)
+            emoji = getattr(_id, "emoji", None)
+            emoji_str = emoji() if emoji is not None else None
+            output += f"@{emoji_str}"
+        return output
+
+    @property
     def keys(self) -> str:
         verify = (
-            self.key_emoji(key=self.signing_key.verify_key)
+            key_emoji(key=self.signing_key.verify_key)
             if self.signing_key is not None
             else "🚫"
         )
         root = (
-            self.key_emoji(key=self.root_verify_key)
+            key_emoji(key=self.root_verify_key)
             if self.root_verify_key is not None
             else "🚫"
         )
@@ -124,3 +133,7 @@ class AbstractNode(Address):
         self, node_id: UID, only_vpn: bool = True
     ) -> Optional[AbstractNodeClient]:
         traceback_and_raise(NotImplementedError)
+
+    def __repr__(self) -> str:
+        out = f"<{type(self).__name__} -"
+        return out[:-1] + ">"

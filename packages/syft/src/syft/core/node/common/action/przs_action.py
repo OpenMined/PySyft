@@ -11,7 +11,6 @@ from nacl.signing import VerifyKey
 from ..... import lib
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
-from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ....tensor.smpc import context
 from ....tensor.smpc.share_tensor import ShareTensor
@@ -43,7 +42,7 @@ class PRZSAction(ImmediateActionWithoutReply):
         "id_at_location",
         "is_dp_tensor",
         "address",
-        "msg_id",
+        "id",
         "_id",
     ]
     __serde_overrides__ = {
@@ -58,7 +57,7 @@ class PRZSAction(ImmediateActionWithoutReply):
         kwargs: Dict[Any, Any],
         id_at_location: UID,
         is_dp_tensor: bool,
-        address: Address,
+        address: UID,
         msg_id: Optional[UID] = None,
     ):
         self.path = path

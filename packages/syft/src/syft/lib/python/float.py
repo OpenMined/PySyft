@@ -2,18 +2,12 @@
 from typing import Any
 from typing import Optional
 
-# third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
-
 # relative
-from ...core.common.serde.serializable import serializable
-from ...proto.lib.python.float_pb2 import Float as Float_PB
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
 
 
-@serializable()
 class Float(float, PyPrimitive):
     def __new__(cls, value: Any = None) -> "Float":
         if value is None:
@@ -192,16 +186,3 @@ class Float(float, PyPrimitive):
 
     def __hash__(self) -> int:
         return super().__hash__()
-
-    def _object2proto(self) -> Float_PB:
-        return Float_PB(
-            data=self,
-        )
-
-    @staticmethod
-    def _proto2object(proto: Float_PB) -> "Float":
-        return Float(value=proto.data)
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return Float_PB

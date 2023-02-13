@@ -12,9 +12,8 @@ from typing import Union
 import pandas as pd
 
 # relative
-from ..... import deserialize
-from .....core.tensor.autodp.adp_tensor import ADPTensor
 from .....core.tensor.tensor import Tensor
+from .....telemetry import instrument
 from ....common import UID
 from ....common.serde.serialize import _serialize as serialize  # noqa: F401
 from ...abstract.node import AbstractNodeClient
@@ -108,6 +107,7 @@ end_boilerplate = """
         </script>"""
 
 
+@instrument
 class DatasetRequestAPI(RequestAPI):
     def __init__(self, client: AbstractNodeClient):
         super().__init__(
@@ -124,7 +124,6 @@ class DatasetRequestAPI(RequestAPI):
         super().create(**kwargs)
 
     def delete(self, dataset_id: str, skip_checks: bool = False) -> None:  # type: ignore
-
         if not skip_checks:
             pref = input(
                 f"You are about to delete the dataset with id `{dataset_id}`? 🚨 \n"
@@ -132,7 +131,7 @@ class DatasetRequestAPI(RequestAPI):
                 "Please enter y/n to proceed: "
             )
             while pref != "y" and pref != "n":
-                pref = input(f"Invalid input '{pref}', please specify 'y' or 'n'.")
+                pref = input(f"Invalid input {pref!r}, please specify 'y' or 'n'.")
             if pref == "n":
                 print("Dataset deletion is cancelled.")
                 return
@@ -143,7 +142,6 @@ class DatasetRequestAPI(RequestAPI):
     def del_asset(
         self, dataset_id: str, asset_id: str, skip_checks: bool = False
     ) -> None:
-
         if not skip_checks:
             pref = input(
                 f"You are about to delete asset with id: {asset_id} in the dataset with id `{dataset_id}`? 🚨 \n"
@@ -151,7 +149,7 @@ class DatasetRequestAPI(RequestAPI):
                 "Please enter y/n to proceed: "
             )
             while pref != "y" and pref != "n":
-                pref = input(f"Invalid input '{pref}', please specify 'y' or 'n'.")
+                pref = input(f"Invalid input {pref!r}, please specify 'y' or 'n'.")
             if pref == "n":
                 sys.stdout.write("Asset deletion is cancelled.")
                 return
@@ -178,7 +176,7 @@ class DatasetRequestAPI(RequestAPI):
             new_dataset = {}
             for k, v_blob in dataset.items():
                 if k not in ["str_metadata", "blob_metadata", "manifest"]:
-                    new_dataset[k] = deserialize(v_blob, from_bytes=True)
+                    new_dataset[k] = v_blob
             new_all.append(new_dataset)
 
         return new_all
@@ -230,7 +228,6 @@ class DatasetRequestAPI(RequestAPI):
         return len(self.all())
 
     def __delitem__(self, key: int) -> Any:
-
         try:
             dataset = self.all()[key]
         except IndexError as err:
@@ -262,7 +259,6 @@ class DatasetRequestAPI(RequestAPI):
 
     @staticmethod
     def dataset_list_to_html(dataset_iterable: List[Any]) -> str:
-
         initial_boilerplate = """<style>
                 #myInput {
                   background-position: 10px 12px; /* Position the search icon */
@@ -310,7 +306,6 @@ class DatasetRequestAPI(RequestAPI):
 
         rows = ""
         for _, d in enumerate(dataset_iterable):
-
             data = d.data
             truncated_assets = False
             if len(data) > 3:
@@ -341,7 +336,7 @@ class DatasetRequestAPI(RequestAPI):
                 + assets
                 + """</td>
             <td>"""
-                + d.id
+                + d.id.to_string()
                 + """</td>
           </tr>"""
             )
@@ -392,7 +387,6 @@ class Dataset:
         )
 
     def _repr_html_(self) -> str:
-
         print("Dataset: " + self.name)
         print("Description: " + self.description)
         print()
@@ -448,9 +442,7 @@ class Dataset:
         from .....lib.python.util import downcast
 
         if not skip_checks:
-            if not isinstance(value, Tensor) or not isinstance(
-                getattr(value, "child", None), ADPTensor
-            ):
+            if not isinstance(value, Tensor):
                 raise Exception(
                     "ERROR: all private assets must be NumPy ndarray.int32 assets "
                     + "with proper Differential Privacy metadata applied.\n"
