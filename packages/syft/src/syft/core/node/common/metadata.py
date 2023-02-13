@@ -5,7 +5,7 @@ from ...common.uid import UID
 
 @serializable(recursive_serde=True)
 class Metadata:
-    __attr_allowlist__ = ["name", "id", "node_type", "version", 'deployed_on', 'organization', 'description']
+    __attr_allowlist__ = ["name", "id", "node_type", "version", 'deployed_on', 'organization', 'description', 'on_board']
 
     def __init__(
         self,
@@ -17,6 +17,7 @@ class Metadata:
         deployed_on: str = "",
         organization: str = "",
         description: str = "",
+        on_board: bool = False,
     ) -> None:
         super().__init__()
         self.name = name
@@ -28,3 +29,4 @@ class Metadata:
         self.deployed_on = deployed_on
         self.description = description
         self.organization = organization
+        self.on_board = on_board
