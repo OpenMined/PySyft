@@ -1,6 +1,8 @@
 # stdlib
 from threading import Lock
 from typing import Dict
+from typing import Optional
+from typing import Type
 
 # third party
 from pymongo.collection import Collection as MongoCollection
@@ -15,42 +17,45 @@ from .document_store import PartitionSettings
 from .document_store import StoreClientConfig
 
 
-@serializable(recursive_serde=True)
-class SingletonMeta(type):
-    """This is a thread-safe implementation of Singleton."""
-
-    _instances: Dict = {}
-
+class MongoClientCache:
+    __client_cache__: Dict[str, Type["MongoClient"]] = {}
     _lock: Lock = Lock()
 
-    def __call__(cls, *args, **kwargs):
-        """Possible changes to the value of the `__init__` argument do not affect the returned instance."""
+    @classmethod
+    def from_cache(cls, config: StoreClientConfig) -> Optional[PyMongoClient]:
+        return cls.__client_cache__.get(hash(str(config)), None)
+
+    @classmethod
+    def set_cache(cls, config: StoreClientConfig, client: PyMongoClient) -> None:
         with cls._lock:
-            if cls not in cls._instances:
-                instance = super().__call__(*args, **kwargs)
-                cls._instances[cls] = instance
-        return cls._instances[cls]
+            cls.__client_cache__[hash(str(config))] = client
 
 
 @serializable(recursive_serde=True)
-class MongoClient(metaclass=SingletonMeta):
+class MongoClient:
     client: PyMongoClient = None
 
-    def __init__(self, config: StoreClientConfig) -> None:
-        self.connect(config=config)
+    def __init__(self, config: StoreClientConfig, cache: bool = True) -> None:
+        if cache:
+            self.client = MongoClientCache.from_cache(config=config)
+        if not cache or self.client is None:
+            self.connect(config=config)
 
     def connect(self, config: StoreClientConfig):
+        self.client = PyMongoClient(
+            host=config.hostname,
+            port=config.port,
+            username=config.username,
+            password=config.password,
+            tls=config.tls,
+            uuidRepresentation="standard",
+        )
+        MongoClientCache.set_cache(config=config, client=self.client)
         try:
-            self.client = PyMongoClient(
-                host=config.hostname,
-                port=config.port,
-                username=config.username,
-                password=config.password,
-                tls=config.tls,
-                uuidRepresentation="standard",
-            )
+            # Check if mongo connection is still up
+            self.client.admin.command("ping")
         except ConnectionFailure as e:
-            print("Failed to connect to mongo store !!!", e)
+            print("Failed to connect to mongo store server !!!", e)
             raise e
 
     def with_db(self, db_name: str) -> MongoDatabase:
@@ -63,5 +68,5 @@ class MongoClient(metaclass=SingletonMeta):
         return db.get_collection(name=collection_settings.name)
 
     @staticmethod
-    def from_config(config: StoreClientConfig) -> Self:
-        return MongoClient(config=config)
+    def from_config(config: StoreClientConfig, cache: bool = True) -> Self:
+        return MongoClient(config=config, cache=cache)
