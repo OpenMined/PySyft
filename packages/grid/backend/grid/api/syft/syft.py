@@ -8,6 +8,8 @@ from fastapi import Depends
 from fastapi import Request
 from fastapi import Response
 from fastapi.responses import JSONResponse
+from nacl.encoding import HexEncoder
+from nacl.signing import SigningKey
 
 # syft absolute
 from syft import __version__
@@ -142,3 +144,14 @@ def syft_stream(data: bytes = Depends(get_body)) -> Any:
         else:
             raise Exception("MessageWithReply not supported on the stream endpoint")
     return ""
+
+@router.post("/js", response_model=str)
+def js_route(request: Request, current_user: UserPrivate = Depends(get_current_user), data: bytes = Depends(get_body)) -> Any:
+    user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
+    obj_msg = deserialize(blob=data, from_bytes=True)
+    signed_msg = obj_msg.sign(user_key)
+    reply = node.recv_immediate_msg_with_reply(msg=signed_msg).message
+    return Response(
+        serialize(reply, to_bytes=True),
+        media_type="application/octet-stream",
+    )
