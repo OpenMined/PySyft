@@ -20,15 +20,19 @@ class NoSQLSetup(SyftObject):
     contact: str = ""
     daa: bool = False
     node_uid: str
+    organization: str = ""
     daa_document: bytes = b""
     tags: List[str] = []
     deployed_on: str
     signing_key: str
+    on_board: bool = False
 
     # serde / storage rules
     __attr_state__ = [
         "domain_name",
         "description",
+        "on_board",
+        "organization",
         "contact",
         "daa",
         "node_uid",
