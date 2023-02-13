@@ -16,6 +16,7 @@ from result import Result
 from ....core.node.common.node_table.syft_object import SyftObject
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
+from .action_object import TwinObject
 from .credentials import SyftCredentials
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
@@ -92,6 +93,7 @@ class ActionStore:
     def get(self, uid: UID, credentials: SyftCredentials) -> Result[SyftObject, str]:
         # if you get something you need READ permission
         read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
+        # if True:
         if self.has_permission(read_permission):
             data = self.data[uid]
             syft_object = SyftObject.from_mongo(data)
@@ -104,7 +106,10 @@ class ActionStore:
         # 🟡 TODO 34: do we want pointer read permissions?
         if uid in self.data:
             data = self.data[uid]
-            syft_object_ptr = SyftObject.from_mongo(data).to_pointer(node_uid)
+            obj = SyftObject.from_mongo(data)
+            if isinstance(obj, TwinObject):
+                obj = obj.mock
+            syft_object_ptr = obj.to_pointer(node_uid)
             if syft_object_ptr:
                 return Ok(syft_object_ptr)
         return Err("Permission denied")

@@ -134,7 +134,9 @@ class Worker(NewNode):
                 kwargs["store"] = action_store
             if service_klass in [UserService, DatasetService]:
                 kwargs["store"] = self.document_store
-            self.service_path_map[service_klass.__name__] = service_klass(**kwargs)
+            self.service_path_map[service_klass.__name__.lower()] = service_klass(
+                **kwargs
+            )
 
     def get_service_method(self, path_or_func: Union[str, Callable]) -> Callable:
         if callable(path_or_func):
@@ -151,7 +153,7 @@ class Worker(NewNode):
         if len(path_list) > 1:
             _ = path_list.pop()
         service_name = path_list.pop()
-        return self.service_path_map[service_name]
+        return self.service_path_map[service_name.lower()]
 
     def _get_service_method_from_path(self, path: str) -> Callable:
         path_list = path.split(".")
