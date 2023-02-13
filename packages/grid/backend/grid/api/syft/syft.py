@@ -146,8 +146,13 @@ def syft_stream(data: bytes = Depends(get_body)) -> Any:
             raise Exception("MessageWithReply not supported on the stream endpoint")
     return ""
 
+
 @router.post("/js", response_model=str)
-def js_route(request: Request, current_user: UserPrivate = Depends(get_current_user), data: bytes = Depends(get_body)) -> Any:
+def js_route(
+    request: Request,
+    current_user: UserPrivate = Depends(get_current_user),
+    data: bytes = Depends(get_body),
+) -> Any:
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
     obj_msg = deserialize(blob=data, from_bytes=True)
     signed_msg = obj_msg.sign(user_key)
