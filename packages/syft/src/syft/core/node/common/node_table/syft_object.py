@@ -370,6 +370,37 @@ aggressive_set_attr(type([]), "_repr_html_", list_dict_repr_html)
 aggressive_set_attr(type({}), "_repr_html_", list_dict_repr_html)
 
 
+def transform_method(
+    klass_from: Union[type, str],
+    klass_to: Union[type, str],
+    version_from: Optional[int] = None,
+    version_to: Optional[int] = None,
+) -> Callable:
+    klass_from_str = (
+        klass_from if isinstance(klass_from, str) else klass_from.__canonical_name__
+    )
+    klass_to_str = (
+        klass_to if isinstance(klass_to, str) else klass_to.__canonical_name__
+    )
+    version_from = (
+        version_from if isinstance(version_from, int) else klass_from.__version__
+    )
+    version_to = version_to if isinstance(version_to, int) else klass_to.__version__
+
+    def decorator(function: Callable):
+        SyftObjectRegistry.add_transform(
+            klass_from=klass_from_str,
+            version_from=version_from,
+            klass_to=klass_to_str,
+            version_to=version_to,
+            method=function,
+        )
+
+        return function
+
+    return decorator
+
+
 def transform(
     klass_from: Union[type, str],
     klass_to: Union[type, str],
