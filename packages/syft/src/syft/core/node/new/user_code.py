@@ -36,6 +36,7 @@ stderr_ = sys.stderr
 PyCodeObject = Any
 
 
+@serializable(recursive_serde=True)
 class UserCodeStatus(Enum):
     SUBMITTED = "submitted"
     DENIED = "denied"
