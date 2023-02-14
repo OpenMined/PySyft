@@ -25,7 +25,6 @@ def test_remote_numpy_array(
 
     test_arrays: List[np.ndarray] = []  # type: ignore
     for dtype in SUPPORTED_DTYPES:
-
         # test their bounds
         if dtype in SUPPORTED_BOOL_TYPES:
             if arrow_backend:

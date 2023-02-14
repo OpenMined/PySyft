@@ -60,7 +60,6 @@ DOMAIN_CONNECTION_PORT = int(os.getenv("DOMAIN_CONNECTION_PORT", 3030))
 def connect_to_enclave(
     node: AbstractNode, oblv_client: OblvClient, deployment_id: str
 ) -> subprocess.Popen:
-
     # Always create key file each time, which ensures consistency when there is key change in database
     create_keys_from_db(node)
     cli = oblv_client
@@ -260,7 +259,6 @@ def get_public_key_msg(
     node: DomainInterface,
     verify_key: VerifyKey,
 ) -> GetPublicKeyResponse:
-
     """Retrieves the oblv public_key from the database.
 
     Args:
@@ -454,7 +452,6 @@ def dataset_publish_budget_deduction(
 
 
 class OblvRequestAdminService(ImmediateNodeServiceWithReply):
-
     msg_handler_map: Dict[type, Callable] = {
         CreateKeyPairMessage: create_key_pair_msg,
     }
@@ -476,7 +473,6 @@ class OblvRequestAdminService(ImmediateNodeServiceWithReply):
 
 
 class OblvRequestUserService(ImmediateNodeServiceWithReply):
-
     msg_handler_map: Dict[type, Callable] = {
         GetPublicKeyMessage: get_public_key_msg,
         TransferDatasetMessage: transfer_dataset,

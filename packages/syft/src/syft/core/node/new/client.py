@@ -134,10 +134,11 @@ class HTTPConnection(NodeConnection):
         metadata_json = json.loads(response)
         return NodeMetadataJSON(**metadata_json)
 
-    def get_api(self) -> SyftAPI:
+    def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
         content = self._make_get(self.routes.ROUTE_API.value)
         obj = _deserialize(content, from_bytes=True)
         obj.connection = self
+        obj.signing_key = credentials
         return cast(SyftAPI, obj)
 
     def connect(self, email: str, password: str) -> SyftSigningKey:
@@ -175,9 +176,10 @@ class PythonConnection(NodeConnection):
     def get_node_metadata(self) -> NodeMetadataJSON:
         return self.node.metadata().to(NodeMetadataJSON)
 
-    def get_api(self) -> SyftAPI:
+    def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
         obj = self.node.get_api()
         obj.connection = self
+        obj.signing_key = credentials
         return obj
 
     def get_cache_key(self) -> str:
@@ -238,7 +240,7 @@ class SyftClient:
 
     @staticmethod
     def from_node(node: NewNode) -> Self:
-        return SyftClient(connetcion=PythonConnection(node=node))
+        return SyftClient(connection=PythonConnection(node=node))
 
     @property
     def name(self) -> Optional[str]:
@@ -255,7 +257,7 @@ class SyftClient:
     @property
     def api(self) -> SyftAPI:
         if self._api is None:
-            self._fetch_api()
+            self._fetch_api(self.credentials)
 
         return self._api
 
@@ -263,7 +265,7 @@ class SyftClient:
         signing_key = self.connection.connect(email=email, password=password)
         if signing_key is not None:
             self.credentials = signing_key
-            self._fetch_api()
+            self._fetch_api(self.credentials)
             if cache:
                 SyftClientSessionCache.add_client(
                     email=email,
@@ -292,8 +294,8 @@ class SyftClient:
         metadata.check_version(__version__)
         self.metadata = metadata
 
-    def _fetch_api(self):
-        _api = self.connection.get_api()
+    def _fetch_api(self, credentials: SyftSigningKey):
+        _api = self.connection.get_api(credentials=credentials)
         APIRegistry.set_api_for(node_uid=self.id, api=_api)
         self._api = _api
 

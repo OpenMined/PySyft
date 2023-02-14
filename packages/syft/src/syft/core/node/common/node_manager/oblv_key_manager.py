@@ -10,7 +10,6 @@ class NoSQLOblvKeyManager(NoSQLDatabaseManager):
     __canonical_object_name__ = "OblvKeys"
 
     def add_keys(self, public_key: bytes, private_key: bytes) -> None:
-
         if not len(self):
             key_obj = NoSQLOblvKeys(
                 public_key=public_key,

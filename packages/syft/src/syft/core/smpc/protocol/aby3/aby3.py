@@ -200,7 +200,6 @@ class ABY3:
             b: Union[MPCTensor, np.ndarray],
             c: Union[MPCTensor, np.ndarray],
         ) -> MPCTensor:
-
             return (a + c + np.array(1, dtype=bool)) * (b + c) + b
 
         for idx in tqdm(range(ring_bits), desc="Computing..."):
