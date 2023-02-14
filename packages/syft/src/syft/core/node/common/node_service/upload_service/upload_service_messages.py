@@ -28,7 +28,6 @@ from ..generic_payload.syft_message import RequestPayload
 @serializable(recursive_serde=True)
 @final
 class UploadDataMessage(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         """Payload fields and types used during a User Creation Request."""
@@ -102,7 +101,6 @@ class UploadDataMessage(SyftMessage, DomainMessageRegistry):
 @serializable(recursive_serde=True)
 @final
 class UploadDataCompleteMessage(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         """Payload fields and types used during a User Creation Request."""
@@ -127,7 +125,6 @@ class UploadDataCompleteMessage(SyftMessage, DomainMessageRegistry):
     def run(  # type: ignore
         self, node: DomainInterface, verify_key: Optional[VerifyKey] = None
     ) -> ReplyPayload:  # type: ignore
-
         # TODO: Move to permissions
         # user_role = node.roles.first(**{"id": current_user.role})
         # if not user_role.can_upload_data:
@@ -151,7 +148,6 @@ class UploadDataCompleteMessage(SyftMessage, DomainMessageRegistry):
 @serializable(recursive_serde=True)
 @final
 class AbortDataUploadMessage(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         """Payload fields and types used during Deletion of Incomplete Data Upload Request."""
@@ -175,7 +171,6 @@ class AbortDataUploadMessage(SyftMessage, DomainMessageRegistry):
     def run(  # type: ignore
         self, node: DomainInterface, verify_key: Optional[VerifyKey] = None
     ) -> ReplyPayload:  # type: ignore
-
         # TODO: Move to permissions
         # user_role = node.roles.first(**{"id": current_user.role})
         # if not user_role.can_upload_data:

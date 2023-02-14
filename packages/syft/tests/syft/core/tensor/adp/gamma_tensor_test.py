@@ -1174,7 +1174,6 @@ def test_resize(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,

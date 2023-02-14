@@ -39,7 +39,6 @@ DEFAULT_SEARCH_TIMEOUT = 120  # seconds
 
 @final
 class NetworkClient(Client):
-
     network: SpecificLocation  # redefine the type of self.vm to not be optional
 
     def __init__(

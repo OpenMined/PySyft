@@ -317,7 +317,6 @@ class TensorWrappedGammaTensorPointer(Pointer):
             isinstance(other, TensorWrappedGammaTensorPointer)
             and self.client != other.client
         ):
-
             parties = [self.client, other.client]
 
             self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=parties)
@@ -328,7 +327,6 @@ class TensorWrappedGammaTensorPointer(Pointer):
             return getattr(self_mpc, op_str)(other_mpc)
 
         elif isinstance(other, MPCTensor):
-
             return getattr(other, op_str)(self)
 
         return self._apply_tensor_op(other=other, op_str=op_str)
@@ -664,7 +662,6 @@ class TensorWrappedGammaTensorPointer(Pointer):
             )
 
         if self.client != other.client:
-
             parties = [self.client, other.client]
 
             self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=parties)
@@ -1482,7 +1479,6 @@ class TensorWrappedGammaTensorPointer(Pointer):
         *args: Any,
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-
         """
         Return a new array with the specified shape.
 
@@ -1504,7 +1500,6 @@ class TensorWrappedGammaTensorPointer(Pointer):
         *args: Any,
         **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
-
         """
         Gives a new shape to an array without changing its data.
 

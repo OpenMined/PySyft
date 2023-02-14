@@ -2,6 +2,7 @@
 from collections import OrderedDict
 from collections import defaultdict
 from enum import Enum
+from enum import EnumMeta
 import functools
 import sys
 from types import MappingProxyType
@@ -56,7 +57,6 @@ def deserialize_iterable(iterable_type: type, blob: bytes) -> Collection:
     with iterable_schema.from_bytes(  # type: ignore
         blob, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
     ) as msg:
-
         for element in msg.values:
             values.append(_deserialize(element, from_bytes=True))
 
@@ -89,7 +89,7 @@ def get_deserialized_kv_pairs(blob: bytes) -> List[Any]:
     with kv_iterable_schema.from_bytes(  # type: ignore
         blob, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
     ) as msg:
-        for (key, value) in zip(msg.keys, msg.values):
+        for key, value in zip(msg.keys, msg.values):
             pairs.append(
                 (
                     _deserialize(key, from_bytes=True),
@@ -330,3 +330,5 @@ if _UnionGenericAlias is not None:
 recursive_serde_register_type(_GenericAlias)
 recursive_serde_register_type(Union)
 recursive_serde_register_type(TypeVar)
+
+recursive_serde_register_type(EnumMeta)

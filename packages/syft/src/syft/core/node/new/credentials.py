@@ -84,6 +84,5 @@ SyftCredentials = Union[SyftVerifyKey, SyftSigningKey]
 
 @serializable(recursive_serde=True)
 class UserLoginCredentials(SyftBaseModel):
-
     email: str
     password: str
