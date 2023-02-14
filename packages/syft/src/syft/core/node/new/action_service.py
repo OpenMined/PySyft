@@ -73,7 +73,6 @@ class NumpyArrayObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
         return client.api.services.action.set(self)
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        print("Hello array func............")
         inputs = tuple(
             np.array(x.syft_action_data, dtype=x.dtype.syft_action_data)
             if isinstance(x, NumpyArrayObject)
@@ -102,11 +101,6 @@ def np_array_to_pointer() -> List[Callable]:
 class ActionService(AbstractService):
     def __init__(self, store: ActionStore) -> None:
         self.store = store
-
-    @service_method(path="action.peek", name="peek")
-    def peek(self, context: AuthedServiceContext) -> Any:
-        print(self.store.permissions)
-        # return Ok(self.store.permissions)
 
     @service_method(path="action.np_array", name="np_array")
     def np_array(self, context: AuthedServiceContext, data: Any) -> Any:
@@ -187,10 +181,8 @@ class ActionService(AbstractService):
             if target_method:
                 result = target_method(*args, **kwargs)
         except Exception as e:
-            print("what is this exception", e)
             return Err(e)
 
-        print(result)
         # 🟡 TODO 11: Figure out how we want to store action object results
         if isinstance(result, np.ndarray):
             result_action_object = NumpyArrayObject(
@@ -210,5 +202,4 @@ class ActionService(AbstractService):
         if set_result.is_err():
             return set_result.err()
 
-        print(result_action_object)
         return Ok(result_action_object.to_pointer(node_uid=context.node.id))
