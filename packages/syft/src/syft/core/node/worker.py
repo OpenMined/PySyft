@@ -36,7 +36,8 @@ from .new.context import UnauthedServiceContext
 from .new.context import UserLoginCredentials
 from .new.credentials import SyftSigningKey
 from .new.dataset_service import DatasetService
-from .new.document_store import DictDocumentStore
+from .new.dict_document_store import DictStoreConfig
+from .new.document_store import StoreConfig
 from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
 from .new.service import AbstractService
@@ -44,6 +45,7 @@ from .new.service import ServiceConfigRegistry
 from .new.test_service import TestService
 from .new.user import User
 from .new.user import UserCreate
+from .new.user_code_service import UserCodeService
 from .new.user_service import UserService
 from .new.user_stash import UserStash
 
@@ -80,6 +82,7 @@ class Worker(NewNode):
         id: Optional[UID] = None,
         services: Optional[List[Type[AbstractService]]] = None,
         signing_key: Optional[SigningKey] = SigningKey.generate(),
+        store_config: Optional[StoreConfig] = None,
         root_email: str = "info@openmined.org",
         root_password: str = "changethis",
     ):
@@ -101,12 +104,14 @@ class Worker(NewNode):
             name = random_name()
         self.name = name
         services = (
-            [UserService, ActionService, TestService, DatasetService]
+            [UserService, ActionService, TestService, DatasetService, UserCodeService]
             if services is None
             else services
         )
         self.services = services
         self.service_config = ServiceConfigRegistry.get_registered_configs()
+        store_config = DictStoreConfig() if store_config is None else store_config
+        self.init_stores(store_config=store_config)
         self._construct_services()
         create_admin_new(  # nosec B106
             name="Jane Doe",
@@ -123,16 +128,18 @@ class Worker(NewNode):
         print(f"Starting {self}")
         # super().post_init()
 
+    def init_stores(self, store_config: StoreConfig):
+        document_store = store_config.store_type
+        self.document_store = document_store(client_config=store_config.client_config)
+
     def _construct_services(self):
         self.service_path_map = {}
-        self.document_store = DictDocumentStore()
-
         for service_klass in self.services:
             kwargs = {}
             if service_klass == ActionService:
                 action_store = ActionStore(root_verify_key=self.signing_key.verify_key)
                 kwargs["store"] = action_store
-            if service_klass in [UserService, DatasetService]:
+            if service_klass in [UserService, DatasetService, UserCodeService]:
                 kwargs["store"] = self.document_store
             self.service_path_map[service_klass.__name__] = service_klass(**kwargs)
 
@@ -213,7 +220,7 @@ class Worker(NewNode):
         return result
 
     def get_api(self) -> SyftAPI:
-        return SyftAPI.for_user(node_uid=self.id)
+        return SyftAPI.for_user(node=self)
 
     def get_method_with_context(
         self, function: Callable, context: NodeServiceContext

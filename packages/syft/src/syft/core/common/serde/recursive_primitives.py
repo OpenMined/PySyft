@@ -2,6 +2,7 @@
 from collections import OrderedDict
 from collections import defaultdict
 from enum import Enum
+from enum import EnumMeta
 import functools
 import sys
 from types import MappingProxyType
@@ -329,3 +330,5 @@ if _UnionGenericAlias is not None:
 recursive_serde_register_type(_GenericAlias)
 recursive_serde_register_type(Union)
 recursive_serde_register_type(TypeVar)
+
+recursive_serde_register_type(EnumMeta)
