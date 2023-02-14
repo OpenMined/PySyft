@@ -1,8 +1,6 @@
 # stdlib
 from enum import Enum
-from typing import Any
 from typing import Callable
-from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -17,15 +15,16 @@ from pydantic.networks import EmailStr
 # relative
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import SyftObject
-from ....core.node.common.node_table.syft_object import transform
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
+from .transforms import TransformContext
 from .transforms import drop
 from .transforms import generate_id
 from .transforms import keep
 from .transforms import make_set_default
+from .transforms import transform
 from .transforms import validate_email
 
 
@@ -90,21 +89,21 @@ def default_role(role: ServiceRole) -> Callable:
     return make_set_default(key="role", value=role)
 
 
-def hash_password(_self: Any, output: Dict) -> Dict:
-    if output["password"] is not None and (
-        output["password"] == output["password_verify"]
+def hash_password(context: TransformContext) -> TransformContext:
+    if context.output["password"] is not None and (
+        context.output["password"] == context.output["password_verify"]
     ):
-        salt, hashed = __salt_and_hash_password(output["password"], 12)
-        output["hashed_password"] = hashed
-        output["salt"] = salt
-    return output
+        salt, hashed = __salt_and_hash_password(context.output["password"], 12)
+        context.output["hashed_password"] = hashed
+        context.output["salt"] = salt
+    return context
 
 
-def generate_key(_self: Any, output: Dict) -> Dict:
+def generate_key(context: TransformContext) -> TransformContext:
     signing_key = SyftSigningKey.generate()
-    output["signing_key"] = signing_key
-    output["verify_key"] = signing_key.verify_key
-    return output
+    context.output["signing_key"] = signing_key
+    context.output["verify_key"] = signing_key.verify_key
+    return context
 
 
 def __salt_and_hash_password(password: str, rounds: int) -> Tuple[str, str]:

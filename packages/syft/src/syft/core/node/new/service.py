@@ -184,6 +184,8 @@ def service_method(
         )
         ServiceConfigRegistry.register(config)
 
+        _decorator.__name__ = func.__name__
+        _decorator.__qualname__ = func.__qualname__
         return _decorator
 
     return wrapper

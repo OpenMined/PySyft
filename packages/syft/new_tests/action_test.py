@@ -20,7 +20,7 @@ def setup_worker():
     worker = Worker(name="Test Worker", signing_key=test_signing_key.signing_key)
     context = AuthedServiceContext(node=worker, credentials=credentials)
 
-    api = SyftAPI.for_user(node_uid=worker.id)
+    api = SyftAPI.for_user(node=worker)
 
     APIRegistry.set_api_for(node_uid=worker.id, api=api)
 

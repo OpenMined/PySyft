@@ -35,12 +35,14 @@ from ...common.uid import UID
 from .connection import NodeConnection
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
+from .node import NewNode
 from .response import SyftError
 from .response import SyftSuccess
 from .service import ServiceConfigRegistry
 from .signature import Signature
 from .signature import signature_remove_context
 from .signature import signature_remove_self
+from .user_code_service import UserCodeService
 
 
 class APIRegistry:
@@ -65,6 +67,7 @@ class APIEndpoint(SyftBaseObject):
     doc_string: Optional[str]
     signature: Signature
     has_self: bool = False
+    pre_kwargs: Optional[Dict[str, Any]]
 
 
 @serializable(recursive_serde=True)
@@ -129,7 +132,9 @@ class SyftAPICall(SyftObject):
         )
 
 
-def generate_remote_function(signature: Signature, path: str, make_call: Callable):
+def generate_remote_function(
+    signature: Signature, path: str, make_call: Callable, pre_kwargs: Dict[str, Any]
+):
     def wrapper(*args, **kwargs):
         _valid_kwargs = {}
         if "kwargs" in signature.parameters:
@@ -197,6 +202,8 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
 
                 _valid_args.append(arg)
 
+        if pre_kwargs:
+            _valid_kwargs.update(pre_kwargs)
         api_call = SyftAPICall(path=path, args=_valid_args, kwargs=_valid_kwargs)
         result = make_call(api_call=api_call)
         return result
@@ -238,12 +245,13 @@ class SyftAPI(SyftObject):
     #     pass
 
     @staticmethod
-    def for_user(node_uid: UID) -> SyftAPI:
+    def for_user(node: NewNode) -> SyftAPI:
         # 🟡 TODO 1: Filter SyftAPI with User VerifyKey
         # relative
         # TODO: Maybe there is a possibility of merging ServiceConfig and APIEndpoint
         _registered_service_configs = ServiceConfigRegistry.get_registered_configs()
         endpoints = {}
+
         for path, service_config in _registered_service_configs.items():
             endpoint = APIEndpoint(
                 path=path,
@@ -254,7 +262,26 @@ class SyftAPI(SyftObject):
                 has_self=False,
             )
             endpoints[path] = endpoint
-        return SyftAPI(node_uid=node_uid, endpoints=endpoints)
+
+        # 🟡 TODO 35: fix root context
+        context = None
+        method = node.get_method_with_context(UserCodeService.get_all_for_user, context)
+        code_items = method()
+
+        for code_item in code_items:
+            path = "code.call"
+            endpoint = APIEndpoint(
+                path=path,
+                name=code_item.service_func_name,
+                description="",
+                doc_string=f"Users custom func {code_item.service_func_name}",
+                signature=code_item.signature,
+                has_self=False,
+                pre_kwargs={"uid": code_item.id},
+            )
+            endpoints[path] = endpoint
+
+        return SyftAPI(node_uid=node.id, endpoints=endpoints)
 
     def make_call(self, api_call: SyftAPICall) -> Result:
         signed_call = api_call.sign(credentials=self.signing_key)
@@ -292,7 +319,7 @@ class SyftAPI(SyftObject):
                 signature = signature_remove_self(signature)
             signature = signature_remove_context(signature)
             endpoint_function = generate_remote_function(
-                signature, v.path, self.make_call
+                signature, v.path, self.make_call, pre_kwargs=v.pre_kwargs
             )
             endpoint_function.__doc__ = v.doc_string
             self._add_route(api_module, v, endpoint_function)

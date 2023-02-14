@@ -17,8 +17,6 @@ from ...common.serde.serialize import _serialize as serialize
 from ..common.node_table.syft_object import StorableObjectType
 from ..common.node_table.syft_object import SyftObject
 from ..common.node_table.syft_object import SyftObjectRegistry
-from ..common.node_table.syft_object import transform
-from ..common.node_table.syft_object import transform_method
 from .credentials import SyftVerifyKey
 from .document_store import DocumentStore
 from .document_store import QueryKey
@@ -27,6 +25,8 @@ from .document_store import StoreConfig
 from .document_store import StorePartition
 from .mongo_client import MongoClient
 from .response import SyftSuccess
+from .transforms import transform
+from .transforms import transform_method
 
 
 class MongoBsonObject(StorableObjectType, dict):

@@ -379,6 +379,11 @@ class BaseUIDStoreStash(BaseStash):
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
         return self.query_one(qks=qks)
 
+    def set(
+        self, obj: BaseUIDStoreStash.object_type
+    ) -> Result[BaseUIDStoreStash.object_type, str]:
+        return self.check_type(obj, self.object_type).and_then(super().set)
+
 
 @serializable(recursive_serde=True)
 class StoreConfig(SyftBaseObject):

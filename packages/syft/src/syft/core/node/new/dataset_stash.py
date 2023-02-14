@@ -14,7 +14,6 @@ from .document_store import DocumentStore
 from .document_store import PartitionKey
 from .document_store import PartitionSettings
 from .document_store import QueryKeys
-from .user import User
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
 
@@ -29,9 +28,6 @@ class DatasetStash(BaseUIDStoreStash):
 
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
-
-    def set(self, user: User) -> Result[User, str]:
-        return self.check_type(user, self.object_type).and_then(super().set)
 
     def get_by_name(self, name: str) -> Result[Optional[Dataset], str]:
         qks = QueryKeys(qks=[NamePartitionKey.with_obj(name)])
