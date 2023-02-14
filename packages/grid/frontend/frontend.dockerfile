@@ -1,6 +1,6 @@
 FROM node:18-alpine as grid-ui-development
 ENV NODE_TYPE domain
-
+ENV PORT $PORT
 WORKDIR /app
 COPY package.json yarn.lock /app/
 # cant use the cache for multi architecture builds in CI because it fails
