@@ -13,6 +13,7 @@ from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .action_object import ActionObjectPointer
 from .api import APIRegistry
+from .data_subject import DataSubject
 from .document_store import PartitionKey
 from .transforms import generate_id
 from .transforms import transform
@@ -42,8 +43,25 @@ class Asset(SyftObject):
     node_uid: UID
     name: str
     description: str
-    contributors: List[Contributor]
+    contributors: List[Contributor] = []
+    data_subjects: List[DataSubject] = []
     mock_is_real: bool = False
+
+    def add_data_subject(self, data_subject: DataSubject) -> None:
+        self.data_subjects.append(data_subject)
+
+    def add_contributor(
+        self,
+        name: str,
+        email: str,
+        role: str,
+        phone: Optional[str] = None,
+        note: Optional[str] = None,
+    ) -> None:
+        contributor = Contributor(
+            name=name, role=role, email=email, phone=phone, note=note
+        )
+        self.contributors.append(contributor)
 
     @property
     def pointer(self) -> ActionObjectPointer:
@@ -61,7 +79,8 @@ class Dataset(SyftObject):
     id: UID
     name: str
     node_uid: Optional[UID]
-    asset_list: List[Asset]
+    asset_list: List[Asset] = []
+    contributors: List[Contributor] = []
     citation: Optional[str]
     url: Optional[str]
     description: Optional[str]
@@ -75,6 +94,42 @@ class Dataset(SyftObject):
         for asset in self.asset_list:
             data[asset.name] = asset
         return data
+
+    def set_description(self, description: str) -> None:
+        self.description = description
+
+    def add_citation(self, citation: str) -> None:
+        self.citation = citation
+
+    def add_url(self, url: str) -> None:
+        self.url = url
+
+    def add_contributor(
+        self,
+        name: str,
+        email: str,
+        role: str,
+        phone: Optional[str] = None,
+        note: Optional[str] = None,
+    ) -> None:
+        contributor = Contributor(
+            name=name, role=role, email=email, phone=phone, note=note
+        )
+        self.contributors.append(contributor)
+
+    def add_asset(self, asset: Asset) -> None:
+        self.asset_list.append(asset)
+
+    def remove_asset(self, name: str) -> None:
+        asset_to_remove = None
+        for asset in self.asset_list:
+            if asset.name == name:
+                asset_to_remove = asset
+                break
+
+        if asset_to_remove is None:
+            print(f"No asset exists with name: {name}")
+        self.asset_list.remove(asset_to_remove)
 
     def _repr_markdown_(self) -> str:
         _repr_str = f"Syft Dataset: {self.name}\n"
