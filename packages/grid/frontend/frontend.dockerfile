@@ -1,8 +1,5 @@
 FROM node:18-alpine as grid-ui-development
-ENV NEXT_PUBLIC_ENVIRONMENT development
-ENV NEXT_PUBLIC_API_URL /api/v1
 ENV NODE_TYPE domain
-ENV NEXT_TELEMETRY_DISABLED 1
 
 WORKDIR /app
 COPY package.json yarn.lock /app/
@@ -17,10 +14,7 @@ FROM grid-ui-development as build-stage
 RUN yarn build
 
 FROM node:18-alpine as grid-ui-production
-ENV NEXT_PUBLIC_ENVIRONMENT production
-ENV NEXT_PUBLIC_API_URL /api/v1
 ENV NODE_TYPE $NODE_TYPE
-ENV NEXT_TELEMETRY_DISABLED 1
 
 WORKDIR /app
 RUN rm -rf ./*
