@@ -610,10 +610,8 @@ class Class(Callable):
         # if the object already has a pointer class specified, use that instead of creating
         # an empty subclass of Pointer
         if hasattr(self.object_ref, "PointerClassOverride"):
-
             klass_pointer = getattr(self.object_ref, "PointerClassOverride")
             for key, val in attrs.items():
-
                 # only override functioanlity of AST attributes if they
                 # don't already exist on the PointerClassOverride class
                 # (the opposite of inheritance)
@@ -672,7 +670,6 @@ class Class(Callable):
             send_to_blob_storage: bool = True,
             **kwargs: Any,
         ) -> Union[Pointer, Tuple[Pointer, SaveObjectAction]]:
-
             """Send obj to client and return pointer to the object.
 
             Args:

@@ -72,7 +72,6 @@ class GridHTTPConnection(HTTPConnection):
 
     @property
     def header(self) -> Dict[str, str]:
-
         _header = {}
 
         if self.session_token and self.token_type:

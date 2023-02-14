@@ -29,7 +29,6 @@ from .oblv_proxy import check_oblv_proxy_installation_status
 
 
 class DeploymentClient:
-
     deployment_id: str
     user_key_name: str
     domain_clients: List[Any] = []  # List of domain client objects

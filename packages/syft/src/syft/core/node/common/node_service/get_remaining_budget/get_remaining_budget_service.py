@@ -23,14 +23,12 @@ class GetRemainingBudgetService(ImmediateNodeServiceWithReply):
         msg: GetRemainingBudgetMessage,
         verify_key: Optional[VerifyKey] = None,
     ) -> GetRemainingBudgetReplyMessage:
-
         if verify_key is None:
             traceback_and_raise(
                 "Can't process GetRemainingBudgetService with no verification key."
             )
 
         try:
-
             result = node.users.get_budget_for_user(  # type: ignore
                 verify_key=verify_key
             )

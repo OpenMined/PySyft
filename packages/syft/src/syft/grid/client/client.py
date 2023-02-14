@@ -86,12 +86,10 @@ def login(
     timeout: Optional[float] = None,
     retry: Optional[int] = None,
 ) -> Client:
-
     retry = 5 if retry is None else retry  # Default to 5 retries
     timeout = 10 if timeout is None else timeout  # Default to 10 seconds
 
     if password == "changethis":  # nosec
-
         if email == "info@openmined.org":
             print(
                 f"{bcolors.YELLOW}WARNING:{bcolors.ENDC} CHANGE YOUR USERNAME AND PASSWORD!!! \n\n"

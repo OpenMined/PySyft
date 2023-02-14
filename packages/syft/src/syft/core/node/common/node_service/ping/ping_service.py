@@ -17,7 +17,6 @@ from .ping_messages import PingReplyMessage
 
 
 class PingService(ImmediateNodeServiceWithReply):
-
     # TODO: Change this to not be available for guests
     @staticmethod
     @service_auth(guests_welcome=True)

@@ -24,7 +24,6 @@ def highest() -> int:
 
 @pytest.mark.e2e
 def test_large_blob_upload() -> None:
-
     # use to enable mitm proxy
     # from syft.grid.connections.http_connection import HTTPConnection
     # HTTPConnection.proxies = {"http": "http://127.0.0.1:8080"}

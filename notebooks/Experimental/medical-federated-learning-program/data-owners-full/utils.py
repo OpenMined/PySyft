@@ -110,7 +110,6 @@ def download_mednist_dataset(dataset_url):
 
 
 def validate_ds_credentials(ds_credentials):
-
     valid = True
     for key, val in ds_credentials.items():
         if not val:

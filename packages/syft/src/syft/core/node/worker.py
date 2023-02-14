@@ -94,7 +94,6 @@ class Worker:
             self.service_path_map[service_klass.__name__] = service_klass(self)
 
     def _get_service_method_from_path(self, path: str) -> Callable:
-
         path_list = path.split(".")
         method_name = path_list.pop()
         service_name = path_list.pop()
@@ -121,7 +120,6 @@ class Worker:
     def handle_api_call(
         self, api_call: Union[SyftAPICall, SignedSyftAPICall]
     ) -> Result[SyftObject, Err]:
-
         if self.required_signed_calls and isinstance(api_call, SyftAPICall):
             return Err(
                 f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."

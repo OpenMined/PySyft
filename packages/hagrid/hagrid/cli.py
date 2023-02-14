@@ -131,7 +131,6 @@ def cli() -> None:
 )
 @click.argument("location", type=str, nargs=1)
 def clean(location: str) -> None:
-
     if location == "library" or location == "volumes":
         print("Deleting all Docker volumes in 2 secs (Ctrl-C to stop)")
         time.sleep(2)
@@ -438,7 +437,6 @@ def check_pulling(line: str, cmd_name: str, progress_bar: Progress) -> None:
 
 
 def check_building(line: str, cmd_name: str, progress_bar: Progress) -> None:
-
     load_pattern = re.compile(
         r"^#.* load build definition from [A-Za-z0-9]+\.dockerfile$", re.IGNORECASE
     )
@@ -675,7 +673,6 @@ def display_vm_status(process_list: TypeList) -> None:
 
     # Render the live table
     with Live(status_table, refresh_per_second=1) as live:
-
         # Loop till all processes have not completed executing
         while not process_completed:
             status_table, process_completed = generate_process_status_table(
@@ -1129,7 +1126,6 @@ def create_launch_cmd(
         parsed_kwargs.update(kwargs)
 
     if host in ["docker"]:
-
         # Check docker service status
         if not ignore_docker_version_check:
             check_docker_service_status()
@@ -1188,7 +1184,6 @@ def create_launch_cmd(
             login_azure()
 
         if DEPENDENCIES["ansible-playbook"]:
-
             resource_group = ask(
                 question=Question(
                     var_name="azure_resource_group",
@@ -1958,7 +1953,6 @@ def extract_host_ip_gcp(stdout: bytes) -> Optional[str]:
 
 
 def extract_host_ip_from_cmd(cmd: str) -> Optional[str]:
-
     try:
         matcher = r"(?:[0-9]{1,3}\.){3}[0-9]{1,3}"
         ips = re.findall(matcher, cmd)
@@ -1973,7 +1967,6 @@ def extract_host_ip_from_cmd(cmd: str) -> Optional[str]:
 def check_ip_for_ssh(
     host_ip: str, timeout: int = 600, wait_time: int = 5, silent: bool = False
 ) -> bool:
-
     if not silent:
         print(f"Checking VM at {host_ip} is up")
     checks = int(timeout / wait_time)  # 10 minutes in 5 second chunks
@@ -2204,7 +2197,6 @@ def create_launch_azure_cmd(
     ansible_extras: str,
     kwargs: TypeDict[str, Any],
 ) -> TypeList[str]:
-
     get_or_make_resource_group(resource_group=resource_group, location=location)
 
     node_count = kwargs.get("node_count", 1)
@@ -2782,7 +2774,6 @@ def get_host_name(container_name: str) -> str:
 
 
 def from_url(url: str) -> Tuple[str, str, int, str, Union[Any, str]]:
-
     try:
         # urlparse doesnt handle no protocol properly
         if "://" not in url:
@@ -3307,7 +3298,6 @@ def quickstart_setup(
     pre: bool = False,
     python: Optional[str] = None,
 ) -> None:
-
     console = rich.get_console()
     OK_EMOJI = RichEmoji("white_heavy_check_mark").to_str()
 
@@ -3522,7 +3512,6 @@ cli.add_command(ssh)
 )
 @click.argument("domain_name", type=str)
 def logs(domain_name: str) -> None:  # nosec
-
     container_ids = (
         subprocess.check_output(  # nosec
             f"docker ps -qf name=^{domain_name}-*", shell=True

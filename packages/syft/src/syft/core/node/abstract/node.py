@@ -45,7 +45,6 @@ class AbstractNodeClient(Address):
 
 
 class AbstractNode(Address):
-
     name: Optional[str]
     signing_key: Optional[SigningKey]
     guest_signing_key_registry: Set[SigningKey]

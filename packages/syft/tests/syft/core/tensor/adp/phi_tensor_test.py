@@ -131,7 +131,6 @@ def test_zeros_like(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -151,7 +150,6 @@ def test_ones_like(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -364,7 +362,6 @@ def test_sum(
     ishan: DataSubject,
     kwargs: Dict,
 ) -> None:
-
     zeros_tensor = PT(
         child=reference_data * 0,
         data_subject=ishan,
@@ -459,7 +456,6 @@ def test_flatten(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -493,7 +489,6 @@ def test_add_public(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -518,7 +513,6 @@ def test_radd(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -543,7 +537,6 @@ def test_rsub(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -567,7 +560,6 @@ def test_rmul(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -591,7 +583,6 @@ def test_rmatmul(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -615,7 +606,6 @@ def test_rtruediv(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -639,7 +629,6 @@ def test_rfloordiv(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -664,7 +653,6 @@ def test_sub_public(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -690,7 +678,6 @@ def test_mul_public(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -716,7 +703,6 @@ def test_truediv_public(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -742,7 +728,6 @@ def test_add_private(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -775,7 +760,6 @@ def test_sub_private(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -807,7 +791,6 @@ def test_mul_private(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -839,7 +822,6 @@ def test_truediv_private(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=np.ones_like(reference_data),
         data_subject=ishan,
@@ -871,7 +853,6 @@ def test_eq_public(
     lower_bound: lra,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=np.ones_like(reference_data),
         data_subject=ishan,
@@ -898,7 +879,6 @@ def test_ne_public(
     lower_bound: lra,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=np.ones_like(reference_data),
         data_subject=ishan,
@@ -924,7 +904,6 @@ def test_lt_public(
     lower_bound: lra,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=np.ones_like(reference_data),
         data_subject=ishan,
@@ -950,7 +929,6 @@ def test_gt_public(
     lower_bound: lra,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=np.ones_like(reference_data),
         data_subject=ishan,
@@ -976,7 +954,6 @@ def test_le_public(
     lower_bound: lra,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=np.ones_like(reference_data),
         data_subject=ishan,
@@ -1002,7 +979,6 @@ def test_ge_public(
     lower_bound: lra,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=np.ones_like(reference_data),
         data_subject=ishan,
@@ -1028,7 +1004,6 @@ def test_eq_private(
     lower_bound: lra,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=np.ones_like(reference_data),
         data_subject=ishan,
@@ -1055,7 +1030,6 @@ def test_ne_private(
     lower_bound: lra,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=np.ones_like(reference_data),
         data_subject=ishan,
@@ -1081,7 +1055,6 @@ def test_lt_private(
     lower_bound: lra,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=np.ones_like(reference_data),
         data_subject=ishan,
@@ -1107,7 +1080,6 @@ def test_gt_private(
     lower_bound: lra,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=np.ones_like(reference_data),
         data_subject=ishan,
@@ -1133,7 +1105,6 @@ def test_le_private(
     lower_bound: lra,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=np.ones_like(reference_data),
         data_subject=ishan,
@@ -1159,7 +1130,6 @@ def test_ge_private(
     lower_bound: lra,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=np.ones_like(reference_data),
         data_subject=ishan,
@@ -1183,7 +1153,6 @@ def test_resize(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -1214,7 +1183,6 @@ def test_compress(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -1254,7 +1222,6 @@ def test_squeeze(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=np.array([reference_data]),
         data_subject=ishan,
@@ -1274,7 +1241,6 @@ def test_any(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -1314,7 +1280,6 @@ def test_all(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=np.array(reference_data),
         data_subject=ishan,
@@ -1439,7 +1404,6 @@ def test_and_public(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -1474,7 +1438,6 @@ def test_and_private(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -1594,7 +1557,6 @@ def test_or_public(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -1629,7 +1591,6 @@ def test_or_private(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -1664,7 +1625,6 @@ def test_take(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=np.array(reference_data),
         data_subject=np.array(ishan),
@@ -1686,7 +1646,6 @@ def test_put(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=np.array(reference_data),
         data_subject=ishan,
@@ -1710,7 +1669,6 @@ def test_abs(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=np.array(reference_data),
         data_subject=ishan,
@@ -1731,7 +1689,6 @@ def test_argmax(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=np.array(reference_data),
         data_subject=ishan,
@@ -1756,7 +1713,6 @@ def test_swapaxes(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=np.array(reference_data),
         data_subject=ishan,
@@ -1777,7 +1733,6 @@ def test_argmin(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=np.array(reference_data),
         data_subject=ishan,
@@ -1801,7 +1756,6 @@ def test_ptp(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=np.array(reference_data),
         data_subject=ishan,
@@ -1933,7 +1887,6 @@ def test_mod_public(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -1968,7 +1921,6 @@ def test_mod_private(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=reference_data,
         data_subject=ishan,
@@ -2003,7 +1955,6 @@ def test_nonzero(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=np.array(reference_data),
         data_subject=ishan,
@@ -2238,7 +2189,6 @@ def test_matmul(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=np.array([reference_data]),
         data_subject=ishan,
@@ -2257,7 +2207,6 @@ def test_xor(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-
     reference_tensor = PT(
         child=np.array([reference_data]),
         data_subject=ishan,

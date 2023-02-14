@@ -103,7 +103,6 @@ def time_upload(
 def time_sum(
     domain: Domain, chunk_index: int, size_name: str, timeout: int = 300
 ) -> Tuple[float, Any]:
-
     # get the dataset asset for size_name at chunk_index
     dataset = domain.datasets[chunk_index][f"{size_name}_tweets"]
     start_time = time.time()
@@ -141,7 +140,6 @@ def time_dataset_download(domain: Domain, dataset_index: int, asset_name: str):
 )
 @pytest.mark.e2e
 def test_benchmark_datasets() -> None:
-
     # 1M takes about 5 minutes right now for all the extra serde so lets use 100K
     # in the integration test
     key_size = "100K"

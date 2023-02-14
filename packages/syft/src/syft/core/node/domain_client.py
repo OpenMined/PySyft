@@ -78,7 +78,6 @@ class RequestQueueClient(AbstractNodeClient):
 
     @property
     def requests(self) -> List[RequestMessage]:
-
         # relative
         from .common.node_service.object_request.object_request_messages import (
             GetAllRequestsMessage,
@@ -299,7 +298,6 @@ class RequestHandlerQueueClient:
 
 @instrument
 class DomainClient(Client):
-
     domain: SpecificLocation
     requests: RequestQueueClient
 
@@ -354,7 +352,6 @@ class DomainClient(Client):
         reason: str = "",
         skip_checks: bool = False,
     ) -> Any:
-
         if not skip_checks:
             if eps == 0.0:
                 eps = float(input("Please specify how much more epsilon you want:"))
@@ -669,7 +666,6 @@ class DomainClient(Client):
 
         if not skip_checks:
             for _, asset in assets.items():
-
                 if not isinstance(asset, Tensor) or not isinstance(
                     getattr(asset, "child", None), (PhiTensor, GammaTensor)
                 ):

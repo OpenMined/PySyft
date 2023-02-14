@@ -93,7 +93,6 @@ def load_data_as_df(file_path):
 
 
 def preprocess_data(data):
-
     # Convert images to numpy int64 array
     images = data["images"]
     images = np.dstack(images.values).astype(np.int64)  # type cast to int64
@@ -110,7 +109,6 @@ def preprocess_data(data):
 
 
 def split_and_preprocess_dataset(data):
-
     print("Splitting dataset into train, validation and test sets.")
     train, val, test = split_into_train_test_val_sets(data)
 
@@ -160,7 +158,6 @@ def download_dataset(dataset_url):
 
 
 def validate_ds_credentials(ds_credentials):
-
     valid = True
     for key, val in ds_credentials.items():
         if not val:
