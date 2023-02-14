@@ -49,5 +49,5 @@ class OblvKeysStash(BaseStash):
         qk = UIDPartitionKey.with_obj(uid)
         return super().delete(qk=qk)
 
-    def update(self, task: OblvKeys) -> Result[OblvKeys, str]:
-        return self.check_type(task, self.object_type).and_then(super().update)
+    def update(self, oblv_keys: OblvKeys) -> Result[OblvKeys, str]:
+        return self.check_type(oblv_keys, self.object_type).and_then(super().update)

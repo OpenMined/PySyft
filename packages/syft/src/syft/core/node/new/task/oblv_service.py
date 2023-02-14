@@ -1,5 +1,6 @@
 # stdlib
 from base64 import encodebytes
+from datetime import date
 import os
 import random
 import subprocess  # nosec
@@ -38,10 +39,13 @@ from ..context import AuthedServiceContext
 from ..context import ChangeContext
 from ..credentials import SyftSigningKey
 from ..document_store import DocumentStore
+from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
 from ..user_code import UserCode
 from ..user_code import UserCodeStatus
+from .enclave_transfer_request import EnclaveTransferRequest
+from .enclave_transfer_request_stash import EnclaveTransferRequestStash
 from .oblv_keys import OblvKeys
 from .oblv_keys_stash import OblvKeysStash
 from .util import find_available_port
@@ -256,10 +260,12 @@ def generate_oblv_key() -> Tuple[bytes]:
 class OblvService(AbstractService):
     store: DocumentStore
     oblv_keys_stash: OblvKeysStash
+    enclave_transfer_request_stash: EnclaveTransferRequestStash
 
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
         self.oblv_keys_stash = OblvKeysStash(store=store)
+        self.enclave_transfer_request_stash = EnclaveTransferRequestStash(store=store)
 
     @service_method(path="oblv.create_key", name="create_key")
     def create_key(
@@ -399,6 +405,70 @@ class OblvService(AbstractService):
                 return res
 
         return Ok(Ok(True))
+
+    @service_method(path="oblv.enclave_transfer", name="enclave_transfer")
+    def enclave_transfer(
+        self,
+        context: AuthedServiceContext,
+        data: UID,
+        deployment_id: str,
+        oblv_client: OblvClient,
+    ):
+        request = EnclaveTransferRequest(
+            deployment_id=deployment_id,
+            data_id=data if isinstance(data, UID) else data.id,
+            user_verify_key=context.credentials,
+            created_at=date.today().strftime("%d/%m/%Y %H:%M:%S"),
+            oblv_client=oblv_client,
+        )
+        res = self.enclave_transfer_request_stash.set(request)
+
+        if res.is_ok():
+            return SyftSuccess(
+                f"Successfully created request for data transfer approval with id {request.id}"
+            )
+
+    @service_method(path="oblv.review_enclave_transfer", name="review_enclave_transfer")
+    def review_enclave_transfer(
+        self,
+        context: AuthedServiceContext,
+        request_id: UID,
+        approve: bool,
+        reason: str = "",
+    ) -> Result[Ok, Err]:
+        # TODO 🟣 Check for permission after it is fully integrated
+
+        request = self.enclave_transfer_request_stash.get_by_uid(request_id)
+        if request.is_ok():
+            # 🟡 TODO: To Remove double nesting of result variable in Collection access
+            request = request.ok().ok()
+        else:
+            return request.err()
+
+        request.reason = reason
+        request.reviewed_at = date.today().strftime("%d/%m/%Y %H:%M:%S")
+        # request.reviewed_by =
+
+        # Fetch private data from action store if the code task is approved
+        if approve:
+            # TODO 🟣 call action method to transfer data
+            pass
+
+        request.status = approve
+
+        # Update task status back to DB
+        res = self.enclave_transfer_request_stash.update(request)
+
+        # If we are in the Enclave execution and have metadata for enclaves
+        # Sent the task status to the connected enclave
+
+        if res.is_ok():
+            return Ok(
+                SyftSuccess(
+                    message=f"Request: {request_id}  - {'Approved' if approve else 'Denied'}"
+                )
+            )
+        return res.err()
 
 
 # Checks if the given user code would  propogate value to enclave on acceptance
