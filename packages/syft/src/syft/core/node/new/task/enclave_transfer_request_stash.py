@@ -15,14 +15,15 @@ from ..document_store import CollectionSettings
 from ..document_store import DocumentStore
 from ..document_store import QueryKeys
 from ..document_store import UIDCollectionKey
-from .oblv_keys import OblvKeys
+from .enclave_transfer_request import EnclaveTransferRequest
 
 
 @serializable(recursive_serde=True)
-class OblvKeysStash(BaseStash):
-    object_type = OblvKeys
+class EnclaveTransferRequestStash(BaseStash):
+    object_type = EnclaveTransferRequest
     settings: CollectionSettings = CollectionSettings(
-        name=OblvKeys.__canonical_name__, object_type=OblvKeys
+        name=EnclaveTransferRequest.__canonical_name__,
+        object_type=EnclaveTransferRequest,
     )
 
     def __init__(self, store: DocumentStore) -> None:
@@ -35,19 +36,18 @@ class OblvKeysStash(BaseStash):
             else Err(f"{type(obj)} does not match required type: {type_}")
         )
 
-    def set(self, oblv_keys: OblvKeys) -> Result[OblvKeys, Err]:
-        if not len(self):
-            return self.check_type(oblv_keys, self.object_type).and_then(super().set)
-        else:
-            return Err("Domain Node already has an existing public/private key pair")
+    def set(
+        self, enclave_transfer_request: EnclaveTransferRequest
+    ) -> Result[EnclaveTransferRequest, Err]:
+        return self.check_type(enclave_transfer_request, self.object_type).and_then(
+            super().set
+        )
 
-    def get_by_uid(self, uid: UID) -> Result[Optional[OblvKeys], str]:
+    def get_by_uid(self, uid: UID) -> Result[Optional[EnclaveTransferRequest], str]:
         qks = QueryKeys(qks=[UIDCollectionKey.with_obj(uid)])
         return Ok(self.query_one(qks=qks))
 
-    def delete_by_uid(self, uid: UID) -> Result[bool, str]:
-        qk = UIDCollectionKey.with_obj(uid)
-        return super().delete(qk=qk)
-
-    def update(self, oblv_keys: OblvKeys) -> Result[OblvKeys, str]:
-        return self.check_type(oblv_keys, self.object_type).and_then(super().update)
+    def update(
+        self, request: EnclaveTransferRequest
+    ) -> Result[EnclaveTransferRequest, str]:
+        return self.check_type(request, self.object_type).and_then(super().update)
