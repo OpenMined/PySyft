@@ -9,19 +9,19 @@ services:
   proxy:
     ports:
       - "8080"
+    extra_hosts:
+      - host.docker.internal:host-gateway
     command:
       - "--api" # admin panel
       - "--api.insecure=true" # admin panel no password
 
   frontend:
-    build:
-      target: "grid-ui-development"
     volumes:
       - ${RELATIVE_PATH}./frontend/:/app
 
-  db:
-    ports:
-      - "5432"
+  # svelte:
+  #   volumes:
+  #     - ./svelte:/app
 
   redis:
     ports:
@@ -36,44 +36,29 @@ services:
   backend:
     volumes:
       - ${RELATIVE_PATH}./backend/grid:/app/grid
-      - ${RELATIVE_PATH}./backend/alembic:/app/alembic
       - ${RELATIVE_PATH}../syft:/app/syft
       - ${RELATIVE_PATH}./data/package-cache:/root/.cache
-      # - ./profile:/tmp/profile
-    command: /start-reload.sh
-    # command: "sleep 99999"
     environment:
-      - PROFILE=true
-      - JAEGER_HOST=docker-host
-      - JAEGER_PORT=6831
+      - DEV_MODE=True
+    command: /start.sh
 
   backend_stream:
     volumes:
       - ${RELATIVE_PATH}./backend/grid:/app/grid
-      - ${RELATIVE_PATH}./backend/alembic:/app/alembic
       - ${RELATIVE_PATH}../syft:/app/syft
       - ${RELATIVE_PATH}./data/package-cache:/root/.cache
-      # - ./profile:/tmp/profile
-    command: "/start-reload.sh"
-    # command: "sleep 99999"
     environment:
-      - PROFILE=true
-      - JAEGER_HOST=docker-host
-      - JAEGER_PORT=6831
+      - DEV_MODE=True
+    command: "/start.sh"
 
   celeryworker:
     volumes:
       - ${RELATIVE_PATH}./backend/grid:/app/grid
-      - ${RELATIVE_PATH}./backend/alembic:/app/alembic
       - ${RELATIVE_PATH}../syft/:/app/syft
       - ${RELATIVE_PATH}./data/package-cache:/root/.cache
-      # - ./profile:/tmp/profile
-    command: "/worker-start-reload.sh"
-    # command: "sleep 99999"
     environment:
-      - PROFILE=true
-      - JAEGER_HOST=docker-host
-      - JAEGER_PORT=6831
+      - DEV_MODE=True
+    command: "/worker-start.sh"
 
   headscale:
     profiles:

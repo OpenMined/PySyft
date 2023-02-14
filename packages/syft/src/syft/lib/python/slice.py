@@ -7,38 +7,27 @@ to be handled by the PySyft's abstract syntax tree data structure during a remot
 from typing import Any
 from typing import Optional
 
-# third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
-
 # relative
-from ...core.common import UID
-from ...core.common.serde.deserialize import _deserialize as deserialize
-from ...core.common.serde.serializable import serializable
-from ...core.common.serde.serialize import _serialize as serialize
-from ...proto.lib.python.slice_pb2 import Slice as Slice_PB
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
 from .util import upcast
 
 
-@serializable()  # This decorator turns this class serializable.
 class Slice(PyPrimitive):
     def __init__(
         self,
         start: Any = None,
         stop: Optional[Any] = None,
         step: Optional[Any] = None,
-        id: Optional[UID] = None,
     ):
         """
-        This class will receive start, stop, step and ID as valid parameters.
+        This class will receive start, stop, step  valid parameters.
 
         Args:
             start (Any): Index/position where the slicing of the object starts.
             stop (Any): Index/position which the slicing takes place. The slicing stops at index stop-1.
             step (Any): Determines the increment between each index for slicing.
-            id (UID): PySyft's objects have an unique ID related to them.
         """
 
         # first, second, third
@@ -48,19 +37,6 @@ class Slice(PyPrimitive):
             start = None
 
         self.value = slice(start, stop, step)
-        self._id: UID = id if id else UID()
-
-    @property
-    def id(self) -> UID:
-        """
-        We reveal PyPrimitive.id as a property to discourage users and
-        developers of Syft from modifying .id attributes after an object
-        has been initialized.
-
-        Returns:
-            UID: The unique ID of the object.
-        """
-        return self._id
 
     def __eq__(self, other: Any) -> SyPrimitiveRet:
         """
@@ -195,67 +171,3 @@ class Slice(PyPrimitive):
             slice: returns a default python slice object represented by this object instance.
         """
         return self.value
-
-    def _object2proto(self) -> Slice_PB:
-        """
-        Serialize  the Slice object instance returning a protobuf.
-
-        Returns:
-            Slice_PB: returns a protobuf object class representing this Slice object.
-        """
-        slice_pb = Slice_PB()
-        if self.start:
-            slice_pb.start = self.start
-            slice_pb.has_start = True
-
-        if self.stop:
-            slice_pb.stop = self.stop
-            slice_pb.has_stop = True
-
-        if self.step:
-            slice_pb.step = self.step
-            slice_pb.has_step = True
-
-        slice_pb.id.CopyFrom(serialize(obj=self._id))
-
-        return slice_pb
-
-    @staticmethod
-    def _proto2object(proto: Slice_PB) -> "Slice":
-        """
-        Deserialize a protobuf object creating a new Slice object instance.
-
-        Args:
-            proto (Slice_PB): Protobuf object representing a serialized slice object.
-        Returns:
-            Slice: PySyft Slice object instance.
-        """
-        id_: UID = deserialize(blob=proto.id)
-        start = None
-        stop = None
-        step = None
-        if proto.has_start:
-            start = proto.start
-
-        if proto.has_stop:
-            stop = proto.stop
-
-        if proto.has_step:
-            step = proto.step
-
-        return Slice(
-            start=start,
-            stop=stop,
-            step=step,
-            id=id_,
-        )
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """
-        Returns the proper Slice protobuf schema.
-
-        Returns:
-            Slice_PB: Returns the Slice's Protobuf class definition.
-        """
-        return Slice_PB

@@ -104,7 +104,7 @@ class DomainRequestAPI(RequestAPI):
             timeout=timeout,
         )
 
-        result = response.payload.kwargs.upcast()  # type: ignore
+        result = response.payload.kwargs  # type: ignore
 
         # a ProxyClient requires an existing NetworkClient and a Remote Domain Address
         # or a known Domain Node UID, and a Node Name
@@ -123,7 +123,6 @@ class DomainRequestAPI(RequestAPI):
 def check_domain_status(
     self: DomainRequestAPI, i: int, n: int, domain_uid: str
 ) -> bool:
-
     sys.stdout.write(
         "\rChecking whether domains are online: " + str(i + 1) + " of " + str(n)
     )

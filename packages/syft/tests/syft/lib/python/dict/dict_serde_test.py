@@ -7,26 +7,20 @@ import torch as th
 
 # syft absolute
 import syft as sy
-from syft.core.common.uid import UID
 from syft.lib.python.dict import Dict
 from syft.lib.python.int import Int
 from syft.lib.python.string import String
-from syft.proto.lib.python.dict_pb2 import Dict as Dict_PB
 
 
 def test_dict_creation() -> None:
     d1 = {String("t1"): 1, String("t2"): 2}
     dict1 = Dict(d1)
-    assert type(getattr(dict1, "id", None)) is UID
 
     d2 = dict({"t1": 1, "t2": 2})
     dict2 = Dict(d2)
-    dict2._id = UID()
-    assert type(getattr(dict2, "id", None)) is UID
 
     d3 = UserDict({"t1": 1, "t2": 2})
     dict3 = Dict(**d3)
-    assert type(getattr(dict3, "id", None)) is UID
 
     assert dict1.keys() == dict2.keys()
     assert dict1.keys() == dict3.keys()
@@ -49,16 +43,12 @@ def test_dict_serde() -> None:
     t2 = th.tensor([1, 3])
 
     syft_list = Dict({Int(1): t1, Int(2): t2})
-    assert type(getattr(syft_list, "id", None)) is UID
 
-    serialized = syft_list._object2proto()
+    serialized = sy.serialize(syft_list)
 
-    assert isinstance(serialized, Dict_PB)
-
-    deserialized = Dict._proto2object(proto=serialized)
+    deserialized = sy.deserialize(serialized)
 
     assert isinstance(deserialized, Dict)
-    assert deserialized.id == syft_list.id
     for deserialized_el, original_el in zip(deserialized, syft_list):
         assert deserialized_el == original_el
 
@@ -90,3 +80,10 @@ def test_iterator_methods(
     for itemptr, local_item in zip(itemsptr, getattr(d, method_name)()):
         get_item = itemptr.get()
         assert get_item == local_item
+
+
+def test_dict_bytes() -> None:
+    # Testing if multiple serialization of the similar object results in same bytes
+    value_1 = Dict({"Hello": "OM"})
+    value_2 = Dict({"Hello": "OM"})
+    assert sy.serialize(value_1, to_bytes=True) == sy.serialize(value_2, to_bytes=True)

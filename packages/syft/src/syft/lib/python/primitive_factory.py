@@ -1,5 +1,4 @@
 # stdlib
-from abc import ABC
 from collections import OrderedDict
 from collections import UserDict
 from collections import UserList
@@ -65,7 +64,7 @@ def isprimitive(value: Any) -> bool:
     return False
 
 
-class PrimitiveFactory(ABC):
+class PrimitiveFactory:
     def upcast(self) -> Union[int, float, bool, complex, list, str, None]:
         traceback_and_raise(NotImplementedError)
 
@@ -80,19 +79,19 @@ class PrimitiveFactory(ABC):
             return value
 
         if isinstance(value, bool):
-            return python.Bool(value=value, id=id)
+            return python.Bool(value=value)
 
         if isinstance(value, int):
-            return python.Int(value=value, id=id)
+            return python.Int(value=value)
 
         if isinstance(value, bytes):
             return python.Bytes(value=value)
 
         if isinstance(value, float):
-            return python.Float(value=value, id=id)
+            return python.Float(value=value)
 
         if isinstance(value, complex):
-            return python.Complex(real=value.real, imag=value.imag, id=id)
+            return python.Complex(real=value.real, imag=value.imag)
 
         if isinstance(value, tuple):
             return python.Tuple(value)
@@ -101,23 +100,19 @@ class PrimitiveFactory(ABC):
             return python.Set(value)
 
         if isinstance(value, slice):
-            return python.Slice(
-                start=value.start, stop=value.stop, step=value.step, id=id
-            )
+            return python.Slice(start=value.start, stop=value.stop, step=value.step)
 
         if isinstance(value, range):
-            return python.Range(
-                start=value.start, stop=value.stop, step=value.step, id=id
-            )
+            return python.Range(start=value.start, stop=value.stop, step=value.step)
 
         if type(value) in [list, UserList]:
             if not recurse:
-                return python.List(value=value, id=id)
+                return python.List(value=value)
             else:
                 # allow recursive primitive downcasting
                 new_list = []
                 if value is not None:
-                    for val in value:
+                    for val in value:  # type: ignore[union-attr]
                         if isprimitive(value=val):
                             new_list.append(
                                 PrimitiveFactory.generate_primitive(
@@ -128,11 +123,11 @@ class PrimitiveFactory(ABC):
                             )
                         else:
                             new_list.append(val)
-                return python.List(value=new_list, id=id)
+                return python.List(value=new_list)
 
         if type(value) in [dict, UserDict, OrderedDict]:
             constructor = (
-                python.collections.OrderedDict
+                python.collections.SyOrderedDict
                 if type(value) is OrderedDict
                 else python.Dict
             )
@@ -154,13 +149,11 @@ class PrimitiveFactory(ABC):
                                 )
                             else:
                                 new_dict[k] = val
-            # if we pass id in as a kwargs it ends up in the actual dict
-            if id is not None:
-                new_dict._id = id
+
             return new_dict
 
         if type(value) in [str, UserString]:
-            return python.String(value=value, id=id, temporary_box=temporary_box)
+            return python.String(value=value, temporary_box=temporary_box)
 
         if value is NotImplemented:
             return value

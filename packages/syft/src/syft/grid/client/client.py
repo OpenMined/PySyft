@@ -22,6 +22,8 @@ from ...core.io.route import SoloRoute
 from ...core.node.common.client import Client
 from ...core.node.domain_client import DomainClient
 from ...core.node.network_client import NetworkClient
+from ...core.node.new.client import SyftClient
+from ...telemetry import instrument
 from ...util import bcolors
 from ...util import verify_tls
 from .grid_connection import GridHTTPConnection
@@ -30,6 +32,7 @@ DEFAULT_PYGRID_PORT = 80
 DEFAULT_PYGRID_ADDRESS = f"http://127.0.0.1:{DEFAULT_PYGRID_PORT}"
 
 
+@instrument
 def connect(
     url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
     conn_type: Type[ClientConnection] = GridHTTPConnection,
@@ -39,23 +42,18 @@ def connect(
 ) -> Client:
     # Use Server metadata
     # to build client route
-    credentials = credentials if credentials else {}
     conn = conn_type(url=GridURL.from_url(url))  # type: ignore
 
     # get metadata and check for https redirect so that login is sent over TLS
     metadata = conn._get_metadata(timeout=timeout)  # type: ignore
 
-    credentials = credentials if credentials is not None else {}
-
-    if credentials:
+    if not user_key:
+        credentials = credentials if credentials is not None else {}
         metadata, _user_key = conn.login(credentials=credentials)  # type: ignore
         _user_key = SigningKey(_user_key.encode(), encoder=HexEncoder)
     else:
-
-        if not user_key:
-            _user_key = SigningKey.generate()
-        else:
-            _user_key = user_key
+        # metadata = conn.auth_using_key(user_key=user_key)  # type: ignore
+        _user_key = user_key
 
     # Check node client type based on metadata response
     client_type: Union[Type[DomainClient], Type[NetworkClient]]
@@ -64,28 +62,16 @@ def connect(
     else:
         client_type = NetworkClient
 
-    (
-        spec_location,
-        name,
-        client_id,
-    ) = client_type.deserialize_client_metadata_from_node(metadata=metadata)
-
     # Create a new Solo Route using the selected connection type
-    route = SoloRoute(destination=spec_location, connection=conn)
+    route = SoloRoute(destination=metadata.id, connection=conn)
 
     kwargs = {
-        "name": name,
+        "node_uid": metadata.id,
+        "name": metadata.name,
         "routes": [route],
         "signing_key": _user_key,
         "version": metadata.version,
     }
-
-    if client_type is NetworkClient:
-        kwargs["network"] = spec_location
-    elif client_type is DomainClient:
-        kwargs["domain"] = spec_location
-    else:
-        raise NotImplementedError
 
     # Create a new client using the selected client type
     node = client_type(**kwargs)
@@ -93,6 +79,7 @@ def connect(
     return node
 
 
+@instrument
 def login(
     url: Optional[Union[str, GridURL]] = None,
     port: Optional[int] = None,
@@ -102,13 +89,12 @@ def login(
     verbose: Optional[bool] = True,
     timeout: Optional[float] = None,
     retry: Optional[int] = None,
-) -> Client:
-
+    via_new_client: Optional[bool] = None,
+) -> Union[Client, SyftClient]:
     retry = 5 if retry is None else retry  # Default to 5 retries
-    timeout = 10 if timeout is None else timeout  # Default to 10 seconds
+    timeout = 30 if timeout is None else timeout  # Default to 10 seconds
 
     if password == "changethis":  # nosec
-
         if email == "info@openmined.org":
             print(
                 f"{bcolors.YELLOW}WARNING:{bcolors.ENDC} CHANGE YOUR USERNAME AND PASSWORD!!! \n\n"
@@ -230,6 +216,7 @@ def login(
     return node
 
 
+@instrument
 def register(
     name: Optional[str] = None,
     email: Optional[str] = None,

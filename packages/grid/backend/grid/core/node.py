@@ -10,14 +10,14 @@ from nacl.signing import SigningKey
 from syft import Domain  # type: ignore
 from syft import Network  # type: ignore
 from syft.core.node.common.client import Client
-from syft.core.node.common.node_table.utils import seed_db
 from syft.core.node.common.util import get_s3_client
+from syft.core.node.new.document_store import StoreClientConfig
+from syft.core.node.new.mongo_document_store import MongoStoreConfig
+from syft.core.node.worker import Worker
 
 # grid absolute
 from grid.core.config import Settings
 from grid.core.config import settings
-from grid.db.session import get_db_engine
-from grid.db.session import get_db_session
 
 SEAWEEDFS_MAX_RETRIES = 5
 
@@ -51,18 +51,35 @@ def create_s3_bucket(bucket_name: str, settings: Settings, attempt: int = 0) -> 
         if s3_client and not bucket_exists:
             resp = s3_client.create_bucket(Bucket=bucket_name)
             logging.info(f"Bucket Creation response: {resp}")
+    except s3_client.meta.client.exceptions.BucketAlreadyExists:
+        logging.info(f"Bucket {bucket_name} Already exists.")
+        pass
     except Exception as e:
         print(f"Failed to create bucket. {e}")
         raise e
 
 
+mongo_client_config = StoreClientConfig(
+    hostname=settings.MONGO_HOST,
+    port=settings.MONGO_PORT,
+    username=settings.MONGO_USERNAME,
+    password=settings.MONGO_PASSWORD,
+)
+
+store_config = (
+    MongoStoreConfig(client_config=mongo_client_config) if settings.MONGO_HOST else None
+)
+
+
 if settings.NODE_TYPE.lower() == "domain":
-    node = Domain("Domain", db_engine=get_db_engine(), settings=settings)
+    node = Domain("Domain", settings=settings, document_store=True)
+    worker = Worker(id=node.id, signing_key=node.signing_key, store_config=store_config)
     if settings.USE_BLOB_STORAGE:
         create_s3_bucket(bucket_name=node.id.no_dash, settings=settings)
 
 elif settings.NODE_TYPE.lower() == "network":
-    node = Network("Network", db_engine=get_db_engine(), settings=settings)
+    node = Network("Network", settings=settings, document_store=True)
+    worker = Worker(id=node.id, signing_key=node.signing_key, store_config=store_config)
     format = "%(asctime)s: %(message)s"
     logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
 else:
@@ -73,14 +90,14 @@ else:
         + "NODE_TYPE to either 'Domain' or 'Network'."
     )
 
+# 🟡 TODO 29: Remove this once we move to mongo instead of in-memory dict
+# This is done to reload in root user to in-memory store
+
 node.loud_print()
 
 if len(node.setup):  # Check if setup was defined previously
     node.name = node.setup.node_name
-
-# Moving this to get called WITHIN Domain and Network so that they can operate in standalone mode
-if not len(node.roles):  # Check if roles were registered previously
-    seed_db(get_db_session())
+    worker.name = node.setup.node_name
 
 
 def get_client(signing_key: Optional[SigningKey] = None) -> Client:

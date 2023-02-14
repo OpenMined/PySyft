@@ -102,7 +102,7 @@ class Callable(Attribute):
                     args=pointer_args,
                     kwargs=pointer_kwargs,
                     id_at_location=ptr.id_at_location,
-                    address=self.client.address,
+                    address=self.client.node_uid,
                     is_static=self.is_static,
                 )
 
@@ -115,6 +115,8 @@ class Callable(Attribute):
                     args=args,
                     kwargs=kwargs,
                 )
+
+                self.client.processing_pointers[ptr.id_at_location] = True  # type: ignore
                 return ptr
 
         if "path" not in kwargs or "index" not in kwargs:

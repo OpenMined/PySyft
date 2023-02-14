@@ -113,7 +113,6 @@ class ProcessStatus(Enum):
 
 
 def docker_desktop_memory() -> int:
-
     path = str(Path.home()) + "/Library/Group Containers/group.com.docker/settings.json"
 
     try:
@@ -212,7 +211,6 @@ def update_repo(repo: git.Repo, branch: str) -> None:
     console = rich.get_console()
     if not EDITABLE_MODE:
         with console.status("Updating hagrid") as console_status:
-
             console_status.update(f"[bold blue]Updating HAGrid from branch: {branch}")
             try:
                 if repo.is_dirty():
@@ -254,7 +252,7 @@ def should_provision_remote(
     if username and password or username and key_path:
         return is_remote
     if is_remote:
-        raise Exception("--username requires either --password or --key_path")
+        raise Exception("--username requires either --password or --key-path")
     return is_remote
 
 

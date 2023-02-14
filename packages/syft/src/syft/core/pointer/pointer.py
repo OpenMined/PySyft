@@ -1,98 +1,14 @@
-"""A Pointer is the main handler when interacting with remote data.
-A Pointer object represents an API for interacting with data (of any type)
-at a specific location. The pointer should never be instantiated, only subclassed.
-
-The relation between pointers and data is many to one,
-there can be multiple pointers pointing to the same piece of data, meanwhile,
-a pointer cannot point to multiple data sources.
-
-A pointer is just an object id on a remote location and a set of methods that can be
-executed on the remote machine directly on that object. One note that has to be made
-is that all operations between pointers will return a pointer, the only way to have access
-to the result is by calling .get() on the pointer.
-
-There are two proper ways of receiving a pointer on some data:
-
-1. When sending that data on a remote machine the user receives a pointer.
-2. When the user searches for the data in an object store it receives a pointer to that data,
-   if it has the correct permissions for that.
-
-After receiving a pointer, one might want to get the data behind the pointer locally. For that the
-user should:
-
-1. Request access by calling .request().
-
-Example:
-
-.. code-block::
-
-    pointer_object.request(name = "Request name", reason = "Request reason")
-
-2. The data owner has to approve the request (check the domain node docs).
-3. The data user checks if the request has been approved (check the domain node docs).
-4. After the request has been approved, the data user can call .get() on the pointer to get the
-   data locally.
-
-Example:
-
-.. code-block::
-
-    pointer_object.get()
-
-Pointers are being generated for most types of objects in the data science scene, but what you can
-do on them is not the pointers job, see the lib module for more details. One can see the pointer
-as a proxy to the actual data, the filtering and the security being applied where the data is being
-held.
-
-Example:
-
-.. code-block::
-
-    # creating the data holder domain
-    domain_1 = Domain(name="Data holder domain")
-
-    # creating dummy data
-    tensor = th.tensor([1, 2, 3])
-
-    # creating the data holder client
-    domain_1_client = domain_1.get_root_client()
-
-    # sending the data to the client and receiving a pointer of that data.
-    data_ptr_domain_1 = tensor.send(domain_1_client)
-
-    # creating the data user domain
-    domain_2 = Domain(name="Data user domain")
-
-    # creating a request to access the data
-    data_ptr_domain_1.request(
-        name="My Request", reason="I'd lke to see this pointer"
-    )
-
-    # getting the remote id of the object
-    requested_object = data_ptr_domain_1.id_at_location
-
-    # getting the request id
-    message_request_id = domain_1_client.requests.get_request_id_from_object_id(
-        object_id=requested_object
-    )
-
-    # the data holder accepts the request
-    domain_1.requests[0].owner_client_if_available = domain_1_client
-    domain_1.requests[0].accept()
-
-    # the data user checks if the data holder approved his request
-    response = data_ptr_domain_1.check_access(node=domain_2, request_id=message_request_id)
-
-"""
 # stdlib
 import time
 from typing import Any
+from typing import Callable
+from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sequence
 import warnings
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 import requests
 
@@ -100,11 +16,11 @@ import requests
 from ...logger import debug
 from ...logger import error
 from ...logger import warning
-from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
+from ...util import bcolors
 from ..common.pointer import AbstractPointer
+from ..common.serde import _serialize
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import serializable
-from ..common.serde.serialize import _serialize as serialize
 from ..common.uid import UID
 from ..io.address import Address
 from ..node.abstract.node import AbstractNode
@@ -115,12 +31,30 @@ from ..node.common.node_service.get_repr.get_repr_service import GetReprMessage
 from ..node.common.node_service.object_search_permission_update.obj_search_permission_messages import (
     ObjectSearchPermissionUpdateMessage,
 )
+from ..node.enums import PointerStatus
 from ..store.storeable_object import StorableObject
 
 
-# TODO: Fix the Client, Address, Location confusion
-@serializable()
+# TODO: Fix the Client, UID, Location confusion
+@serializable(recursive_serde=True)
 class Pointer(AbstractPointer):
+    __attr_allowlist__ = [
+        "id_at_location",
+        "client",
+        "tags",
+        "description",
+        "object_type",
+        "_exhausted",
+        "gc_enabled",
+        "is_enum",
+    ]
+    __serde_overrides__: Dict[str, Sequence[Callable]] = {
+        "client": (
+            lambda client: _serialize(client.address, to_bytes=True),
+            lambda blob: _deserialize(blob, from_bytes=True),
+        )
+    }
+
     """
     The pointer is the handler when interacting with remote data.
 
@@ -130,7 +64,7 @@ class Pointer(AbstractPointer):
     module.
 
     :param location: The location where the data is being held.
-    :type location: Address
+    :type location: UID
     :param id_at_location: The UID of the object on the remote location.
     :type id_at_location: UID
     """
@@ -158,6 +92,7 @@ class Pointer(AbstractPointer):
         # when delete_obj is True and network call
         # has already been made
         self._exhausted = False
+        self.gc_enabled = True
 
     @property
     def block(self) -> AbstractPointer:
@@ -166,7 +101,6 @@ class Pointer(AbstractPointer):
         return self
 
     def block_with_timeout(self, secs: int, secs_per_poll: int = 1) -> AbstractPointer:
-
         total_secs = secs
 
         while not self.exists and secs > 0:
@@ -189,10 +123,24 @@ class Pointer(AbstractPointer):
         return self.client.obj_exists(obj_id=self.id_at_location)
 
     def __repr__(self) -> str:
-        return f"<{self.__name__} -> {self.client.name}:{self.id_at_location.no_dash}>"
+        if hasattr(self.client, "obj_exists"):
+            _ptr_status = (
+                PointerStatus.READY.value
+                if self.exists
+                else PointerStatus.PROCESSING.value
+            )
+            return f"<{self.__name__} -> {self.client.name}:{self.id_at_location.no_dash}, status={_ptr_status}>"
+        else:
+            return (
+                f"<{self.__name__} -> {self.client.name}:{self.id_at_location.no_dash}>"
+            )
 
     def _get(
-        self, delete_obj: bool = True, verbose: bool = False, proxy_only: bool = False
+        self,
+        delete_obj: bool = True,
+        verbose: bool = False,
+        proxy_only: bool = False,
+        timeout_secs: Optional[int] = None,
     ) -> StorableObject:
         """Method to download a remote object from a pointer object if you have the right
         permissions.
@@ -203,6 +151,7 @@ class Pointer(AbstractPointer):
 
         # relative
         from ...core.node.common.client import GET_OBJECT_TIMEOUT
+        from ..node.common.action.exception_action import UnknownPrivateException
 
         debug(
             f"> GetObjectAction for id_at_location={self.id_at_location} "
@@ -210,14 +159,47 @@ class Pointer(AbstractPointer):
         )
         obj_msg = GetObjectAction(
             id_at_location=self.id_at_location,
-            address=self.client.address,
-            reply_to=self.client.address,
+            address=self.client.node_uid,
+            reply_to=self.client.node_uid,
             delete_obj=delete_obj,
         )
 
-        obj = self.client.send_immediate_msg_with_reply(
-            msg=obj_msg, timeout=GET_OBJECT_TIMEOUT
+        obj: Any = None
+        is_processing_pointer = self.client.processing_pointers.get(
+            self.id_at_location, False
         )
+
+        start_time = time.time()
+        future_time = (
+            float(timeout_secs if timeout_secs is not None else GET_OBJECT_TIMEOUT)
+            + start_time
+        )
+
+        # If pointer is one of the processing pointers and didn't timeout keep trying
+        while is_processing_pointer and future_time > time.time():
+            try:
+                obj = self.client.send_immediate_msg_with_reply(
+                    msg=obj_msg, timeout=timeout_secs, verbose=True
+                )
+
+                # If we reached here it's because we didn't have any failure,
+                # so we were able to retrieve the pointer successfully.
+                # So it isn't a processing pointer anymore and we can exit the while loop.
+                # without wait the timeout
+                is_processing_pointer = False
+            except UnknownPrivateException:
+                time.sleep(0.5)
+                pass
+
+        # If pointer was there, then we remove it from the processing_pointer list
+        self.client.processing_pointers.pop(self.id_at_location, None)
+
+        # if we didn't get the object try one last time
+        if not obj:
+            obj = self.client.send_immediate_msg_with_reply(
+                msg=obj_msg, timeout=timeout_secs
+            )
+
         if not proxy_only and obj.obj.is_proxy:
             presigned_url_path = obj.obj._data.url
             presigned_url = self.client.url_from_path(presigned_url_path)
@@ -249,8 +231,8 @@ class Pointer(AbstractPointer):
             # TODO: Fix circular import
             # This deletes the data from both database and blob store
             obj_del_msg: NewSyftMessage = ObjectDeleteMessage(
-                address=self.client.address,
-                reply_to=self.client.address,
+                address=self.client.node_uid,
+                reply_to=self.client.node_uid,
                 kwargs={
                     "id_at_location": self.id_at_location.to_string(),
                 },
@@ -293,8 +275,8 @@ class Pointer(AbstractPointer):
         try:
             obj_msg = GetReprMessage(
                 id_at_location=self.id_at_location,
-                address=self.client.address,
-                reply_to=self.client.address,
+                address=self.client.node_uid,
+                reply_to=self.client.node_uid,
             )
 
             obj = self.client.send_immediate_msg_with_reply(msg=obj_msg).repr
@@ -302,7 +284,6 @@ class Pointer(AbstractPointer):
             if "You do not have permission to .get()" in str(
                 e
             ) or "UnknownPrivateException" in str(e):
-
                 # relative
                 from ..node.common.node_service.request_receiver.request_receiver_messages import (
                     RequestStatus,
@@ -331,7 +312,6 @@ class Pointer(AbstractPointer):
         return self
 
     def publish(self, sigma: float = 1.5, private: bool = True) -> Any:
-
         # relative
         from ..node.common.node_service.publish.publish_service import (
             PublishScalarsAction,
@@ -341,7 +321,7 @@ class Pointer(AbstractPointer):
 
         obj_msg = PublishScalarsAction(
             id_at_location=id_at_location,
-            address=self.client.address,
+            address=self.client.node_uid,
             publish_ids_at_location=[self.id_at_location],
             sigma=sigma,
             private=private,
@@ -350,19 +330,31 @@ class Pointer(AbstractPointer):
         self.client.send_immediate_msg_without_reply(msg=obj_msg)
         # create pointer which will point to float result
 
-        ptr = self.client.lib_ast.query("syft.lib.python.Any").pointer_type(
+        if not hasattr(self, "PUBLISH_POINTER_TYPE"):
+            raise TypeError(
+                f"Publish operation cannot be performed on pointer type: {self.__name__}"
+            )
+
+        public_dtype = str(getattr(self, "public_dtype", ""))
+        if public_dtype in ["bool"]:
+            print(
+                f"{bcolors.warning('Warning:')} Publishing values of `{public_dtype}` "
+                "dtype are not yet fully supported and may result in inconsistent results."
+            )
+
+        ptr = self.client.lib_ast.query(self.PUBLISH_POINTER_TYPE).pointer_type(  # type: ignore
             client=self.client
         )
         ptr.id_at_location = id_at_location
         ptr._pointable = True
-
+        ptr.client.processing_pointers[ptr.id_at_location] = True
         # return pointer
         return ptr
 
     def get(
         self,
         request_block: bool = False,
-        timeout_secs: int = 600,
+        timeout_secs: Optional[int] = None,
         reason: str = "",
         delete_obj: bool = True,
         verbose: bool = False,
@@ -390,9 +382,14 @@ class Pointer(AbstractPointer):
 
         if not request_block:
             result = self._get(
-                delete_obj=delete_obj, verbose=verbose, proxy_only=proxy_only
+                delete_obj=delete_obj,
+                verbose=verbose,
+                proxy_only=proxy_only,
+                timeout_secs=timeout_secs,
             )
         else:
+            if timeout_secs is None:
+                timeout_secs = 600  # old default
             response_status = self.request(
                 reason=reason,
                 block=True,
@@ -403,7 +400,9 @@ class Pointer(AbstractPointer):
                 response_status is not None
                 and response_status == RequestStatus.Accepted
             ):
-                result = self._get(delete_obj=delete_obj, verbose=verbose)
+                result = self._get(
+                    delete_obj=delete_obj, verbose=verbose, timeout_secs=timeout_secs
+                )
             else:
                 return None
 
@@ -412,91 +411,6 @@ class Pointer(AbstractPointer):
             self._exhausted = True
 
         return result
-
-    def _object2proto(self) -> Pointer_PB:
-        """Returns a protobuf serialization of self.
-
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms the current object into the corresponding
-        Protobuf object so that it can be further serialized.
-
-        :return: returns a protobuf object
-        :rtype: Pointer_PB
-
-        .. note::
-            This method is purely an internal method. Please use serialize(object) or one of
-            the other public serialization methods if you wish to serialize an
-            object.
-        """
-
-        return Pointer_PB(
-            points_to_object_with_path=self.path_and_name,
-            pointer_name=type(self).__name__,
-            id_at_location=serialize(self.id_at_location),
-            location=serialize(self.client.address),
-            tags=self.tags,
-            description=self.description,
-            object_type=self.object_type,
-            attribute_name=getattr(self, "attribute_name", ""),
-            public_shape=serialize(getattr(self, "public_shape", None), to_bytes=True),
-        )
-
-    @staticmethod
-    def _proto2object(proto: Pointer_PB) -> "Pointer":
-        """Creates a Pointer from a protobuf
-
-        As a requirement of all objects which inherit from Serializable,
-        this method transforms a protobuf object into an instance of this class.
-
-        :return: returns an instance of Pointer
-        :rtype: Pointer
-
-        .. note::
-            This method is purely an internal method. Please use syft.deserialize()
-            if you wish to deserialize an object.
-        """
-        # relative
-        from ...lib import lib_ast
-
-        # TODO: we need _proto2object to include a reference to the node doing the
-        # deserialization so that we can convert location into a client object. At present
-        # it is an address object which will cause things to break later.
-        points_to_type = lib_ast.query(proto.points_to_object_with_path)
-        pointer_type = getattr(points_to_type, proto.pointer_name)
-
-        # WARNING: This is sending a serialized Address back to the constructor
-        # which currently depends on a Client for send_immediate_msg_with_reply
-
-        out = pointer_type(
-            id_at_location=_deserialize(blob=proto.id_at_location),
-            client=_deserialize(blob=proto.location),
-            tags=proto.tags,
-            description=proto.description,
-            object_type=proto.object_type,
-        )
-
-        out.public_shape = _deserialize(proto.public_shape, from_bytes=True)
-        return out
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Return the type of protobuf object which stores a class of this type
-
-        As a part of serialization and deserialization, we need the ability to
-        lookup the protobuf object type directly from the object type. This
-        static method allows us to do this.
-
-        Importantly, this method is also used to create the reverse lookup ability within
-        the metaclass of Serializable. In the metaclass, it calls this method and then
-        it takes whatever type is returned from this method and adds an attribute to it
-        with the type of this class attached to it. See the MetaSerializable class for details.
-
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
-
-        """
-
-        return Pointer_PB
 
     def request(
         self,
@@ -552,8 +466,8 @@ class Pointer(AbstractPointer):
 
         msg = RequestMessage(
             request_description=reason,
-            address=self.client.address,
-            owner_address=self.client.address,
+            address=self.client.node_uid,
+            owner_address=self.client.node_uid,
             object_id=self.id_at_location,
             object_type=self.object_type,
             requester_verify_key=self.client.verify_key,
@@ -608,8 +522,8 @@ class Pointer(AbstractPointer):
                         debug(f"> Sending another Request Message {now - start}")
                         status_msg = RequestAnswerMessage(
                             request_id=msg.id,
-                            address=self.client.address,
-                            reply_to=self.client.address,
+                            address=self.client.node_uid,
+                            reply_to=self.client.node_uid,
                         )
                         response = self.client.send_immediate_msg_with_reply(
                             msg=status_msg
@@ -691,7 +605,7 @@ class Pointer(AbstractPointer):
             add_instead_of_remove=pointable,
             target_verify_key=target_verify_key,
             target_object_id=self.id_at_location,
-            address=self.client.address,
+            address=self.client.node_uid,
         )
         self.client.send_immediate_msg_without_reply(msg=msg)
 
@@ -715,7 +629,7 @@ class Pointer(AbstractPointer):
         )
 
         msg = RequestAnswerMessage(
-            request_id=request_id, address=self.client.address, reply_to=node.address
+            request_id=request_id, address=self.client.node_uid, reply_to=node.node_uid
         )
         response = self.client.send_immediate_msg_with_reply(msg=msg)
 
@@ -727,6 +641,9 @@ class Pointer(AbstractPointer):
             # it is a serialized pointer that we receive from another client do nothing
             return
 
-        if self.gc_enabled:
-            # this is not being used in the node currenetly
-            self.client.gc.apply(self)
+        # Check/Remove it if this pointer is still in processing_pointers dict
+        self.client.processing_pointers.pop(self.id_at_location, None)
+
+        # if self.gc_enabled:
+        #     # this is not being used in the node currenetly
+        #     self.client.gc.apply(self)

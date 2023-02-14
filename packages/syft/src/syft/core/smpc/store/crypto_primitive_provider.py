@@ -94,7 +94,6 @@ class CryptoPrimitiveProvider:
             )
 
         for primitives_party, client in zip(primitives, parties):
-
             args: List[Any] = []
             kwargs = {
                 "op_str": op_str,
@@ -108,7 +107,7 @@ class CryptoPrimitiveProvider:
                 args=args,
                 kwargs=kwargs,
                 id_at_location=UID(),
-                address=client.address,
+                address=client.node_uid,
             )
             client.send_immediate_msg_without_reply(msg=cmd)
 

@@ -14,9 +14,10 @@ from typing import Union
 
 # third party
 import names
+import numpy as np
+from numpy.typing import ArrayLike
 
 # relative
-from . import data_subject_list
 from ..common import UID
 from ..common.serde.serializable import serializable
 
@@ -27,7 +28,6 @@ class DataSubject:
     __attr_allowlist__ = ("name",)
 
     def __init__(self, name: str = "") -> None:
-
         # If someone doesn't provide a unique name - make one up!
         if name == "":
             name = names.get_full_name().replace(" ", "_") + "_g"
@@ -73,15 +73,12 @@ class DataSubject:
         other: Union[
             DataSubject,
             DataSubjectGroup,
-            data_subject_list.DataSubjectArray,
             int,
             float,
         ],
     ) -> Union[DataSubjectGroup, DataSubject]:
         if isinstance(other, DataSubject):
             return DataSubjectGroup([self, other])
-        elif isinstance(other, data_subject_list.DataSubjectArray):
-            return DataSubjectGroup([self, *other.data_subjects])
         elif isinstance(other, DataSubjectGroup):
             other.entity_set.add(self)
             return other
@@ -163,7 +160,6 @@ class DataSubjectGroup:
         other: Union[
             DataSubjectGroup,
             DataSubject,
-            data_subject_list.DataSubjectArray,
             int,
             float,
         ],
@@ -172,8 +168,6 @@ class DataSubjectGroup:
             return DataSubjectGroup(self.entity_set.union({other}))
         elif isinstance(other, DataSubjectGroup):
             return DataSubjectGroup(self.entity_set.union(other.entity_set))
-        elif isinstance(other, data_subject_list.DataSubjectArray):
-            return DataSubjectGroup(self.entity_set.union(other.data_subjects))
         elif not other:  # type: ignore
             return self
         elif isinstance(other, (int, float)):
@@ -190,3 +184,16 @@ class DataSubjectGroup:
 
     def __repr__(self) -> str:
         return f"DSG{[i.__repr__() for i in self.entity_set]}"
+
+
+def numpyutf8tods(np_bytes: np.ndarray) -> DataSubject:
+    output_bytes = np_bytes.astype(np.uint8).tobytes()
+    name = output_bytes.decode("utf-8")
+    data_subject = DataSubject(name)
+    return data_subject
+
+
+def dstonumpyutf8(data_subject: DataSubject) -> ArrayLike:
+    name_bytes = data_subject.to_string().encode("utf-8")
+    np_bytes = np.frombuffer(name_bytes, dtype=np.uint8).astype(np.uint64)
+    return np_bytes

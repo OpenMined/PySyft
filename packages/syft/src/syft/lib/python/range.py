@@ -1,49 +1,27 @@
 # stdlib
 from typing import Any
 from typing import Optional
-from typing import Union
-
-# third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # relative
-from ...core.common import UID
-from ...core.common.serde.deserialize import _deserialize as deserialize
-from ...core.common.serde.serializable import serializable
-from ...proto.lib.python.range_pb2 import Range as Range_PB
 from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
 from .types import SyPrimitiveRet
 
 
-@serializable()
 class Range(PyPrimitive):
-    __slots__ = ["_id", "_index"]
+    __slots__ = ["_index"]
 
     def __init__(
         self,
         start: Any = None,
-        stop: Union[Any] = None,
-        step: Union[Any] = 1,
-        id: Optional[UID] = None,
+        stop: Any = None,
+        step: Any = 1,
     ):
         if stop is None:
             stop = start
             start = 0
         self.value = range(start, stop, step)
-        self._id: UID = id if id else UID()
-
-    @property
-    def id(self) -> UID:
-        """We reveal PyPrimitive.id as a property to discourage users and
-        developers of Syft from modifying .id attributes after an object
-        has been initialized.
-
-        :return: returns the unique id of the object
-        :rtype: UID
-        """
-        return self._id
 
     def __contains__(self, other: Any) -> SyPrimitiveRet:
         res = self.value.__contains__(other)
@@ -75,7 +53,7 @@ class Range(PyPrimitive):
         res = self.value.__len__()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def __getitem__(self, key: Union[int]) -> Any:
+    def __getitem__(self, key: int) -> Any:
         res = self.value.__getitem__(key)
         return PrimitiveFactory.generate_primitive(value=res)
 
@@ -107,27 +85,3 @@ class Range(PyPrimitive):
 
     def upcast(self) -> range:
         return self.value
-
-    def _object2proto(self) -> Range_PB:
-        range_pb = Range_PB()
-
-        range_pb.start = self.start
-        range_pb.stop = self.stop
-        range_pb.step = self.step
-        range_pb.id.CopyFrom(self._id._object2proto())
-
-        return range_pb
-
-    @staticmethod
-    def _proto2object(proto: Range_PB) -> "Range":
-
-        return Range(
-            start=proto.start,
-            stop=proto.stop,
-            step=proto.step,
-            id=deserialize(blob=proto.id),
-        )
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return Range_PB

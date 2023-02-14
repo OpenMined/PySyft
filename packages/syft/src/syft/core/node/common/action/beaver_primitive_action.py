@@ -11,7 +11,6 @@ from nacl.signing import VerifyKey
 from .....common.lib_ast_shares import upcast_args_and_kwargs
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
-from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
@@ -38,7 +37,7 @@ class BeaverPrimitiveAction(ImmediateActionWithoutReply):
         "kwargs",
         "id_at_location",
         "address",
-        "msg_id",
+        "id",
         "_id",
     ]
 
@@ -48,7 +47,7 @@ class BeaverPrimitiveAction(ImmediateActionWithoutReply):
         args: List[Any],
         kwargs: Dict[Any, Any],
         id_at_location: UID,
-        address: Address,
+        address: UID,
         msg_id: Optional[UID] = None,
     ):
         self.path = path

@@ -16,7 +16,6 @@ import pytest
 # syft absolute
 import syft as sy
 from syft import Domain
-from syft.core.adp.data_subject_list import DataSubjectArray
 from syft.core.node.common.node_service.user_manager.user_messages import (
     UpdateUserMessage,
 )
@@ -61,12 +60,12 @@ def upload_subset(
     name = f"Tweets - {size_name} - {unique_key}"
     impressions = df["impressions"].to_numpy(dtype=np.int64)
 
-    user_id = df["user_id"]
+    user_id = str(df["user_id"])
 
-    entities = DataSubjectArray.from_objs(user_id)
+    # entities = DataSubjectArray.from_objs(user_id)
 
-    tweets_data = sy.Tensor(impressions).private(
-        min_val=0, max_val=30, data_subjects=entities
+    tweets_data = sy.Tensor(impressions).annotate_with_dp_metadata(
+        lower_bound=0, upper_bound=30, data_subject=user_id
     )
 
     assert isinstance(tweets_data.child, GammaTensor)
@@ -103,7 +102,6 @@ def time_upload(
 def time_sum(
     domain: Domain, chunk_index: int, size_name: str, timeout: int = 300
 ) -> Tuple[float, Any]:
-
     # get the dataset asset for size_name at chunk_index
     dataset = domain.datasets[chunk_index][f"{size_name}_tweets"]
     start_time = time.time()
@@ -141,7 +139,6 @@ def time_dataset_download(domain: Domain, dataset_index: int, asset_name: str):
 )
 @pytest.mark.e2e
 def test_benchmark_datasets() -> None:
-
     # 1M takes about 5 minutes right now for all the extra serde so lets use 100K
     # in the integration test
     key_size = "100K"
@@ -211,8 +208,7 @@ def test_benchmark_datasets() -> None:
 
         start_time = time.time()
         publish_ptr = sum_ptr.publish(sigma=500_000)
-        publish_ptr.block_with_timeout(timeout)
-        result = publish_ptr.get()
+        result = publish_ptr.get(timeout_secs=timeout)
         print("result", result)
 
         benchmark_report[size_name]["publish_secs"] = time.time() - start_time

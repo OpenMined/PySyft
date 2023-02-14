@@ -62,7 +62,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.frontend == 'true'
         run: |
-          pip install tox --upgrade
+          pip install -U tox
 
       - name: Cache Cypress binary
         if: steps.changes.outputs.frontend == 'true'

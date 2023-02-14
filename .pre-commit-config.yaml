@@ -1,13 +1,13 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.3.0
+    rev: v4.4.0
     hooks:
       - id: check-ast
         exclude: ^(packages/grid/ansible/)
         always_run: true
       - id: trailing-whitespace
         always_run: true
-        exclude: ^(docs/|.+\.md)
+        exclude: ^(docs/|.+\.md|.bumpversion.cfg)
       - id: check-docstring-first
         always_run: true
         exclude: ^(packages/grid/ansible/)
@@ -15,7 +15,7 @@ repos:
         always_run: true
       - id: check-added-large-files
         always_run: true
-        exclude: ^(notebooks/trade_demo/datasets|packages/syft/src/syft/cache/constant2epsilon_1200k.npy|packages/grid/backend/wheels/.*|packages/syft/docs/img/header.png|packages/syft/docs/img/terminalizer.gif|notebooks/padawan)
+        exclude: ^(packages/syft/src/syft/cache/constant2epsilon_1200k.npy|packages/grid/backend/wheels/.*|packages/syft/docs/img/header.png|packages/syft/docs/img/terminalizer.gif|notebooks/padawan|notebooks/Experimental)
       - id: check-yaml
         always_run: true
         exclude: ^(packages/grid/k8s/rendered/)
@@ -36,6 +36,7 @@ repos:
       - id: mixed-line-ending
         args: ["--fix=lf"]
         exclude: '\.bat|\.csv|\.ps1$'
+
   - repo: https://github.com/MarcoGorelli/absolufy-imports
     rev: v0.3.1
     hooks:
@@ -52,37 +53,41 @@ repos:
               packages/hagrid.*|
               packages/syft/src/syft/federated/model_serialization/protos.py
           )$
+
   - repo: https://github.com/pycqa/isort
-    rev: 5.10.1
+    rev: 5.12.0
     hooks:
       - id: isort
         name: isort
         args: [".", "--settings-path .isort.cfg"]
         always_run: true
+
   - repo: https://github.com/psf/black
-    rev: 22.8.0
+    rev: 23.1.0
     hooks:
       - id: black
         args: ["."]
         always_run: true
-        exclude: ^(packages/syft/src/syft/proto)
-  - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.9.2
+        # exclude: ^(packages/syft/src/syft/proto)
+        files: "^packages/syft(?!(.*_pb2\\.py$)).*\\.py"
+
+  - repo: https://github.com/PyCQA/flake8
+    rev: 6.0.0
     hooks:
       - id: flake8
         args: ["--config=packages/syft/setup.cfg"]
         always_run: true
         additional_dependencies:
           - flake8-bugbear
-        exclude: ^(packages/syft/src/syft/proto|packages/grid/ansible/)
+        files: "^packages/syft(?!(/tests/|.*_pb2\\.py$)).*\\.py"
+
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.971
+    rev: v1.0.0
     hooks:
       - id: mypy
         name: mypy-hagrid
         always_run: true
         files: ^packages/hagrid
-        exclude: ^(packages/syft|packages/grid)
         args: [
             "--ignore-missing-imports",
             "--scripts-are-modules",
@@ -98,15 +103,15 @@ repos:
             "--namespace-packages",
             "--install-types",
             "--non-interactive",
+            "--config-file=tox.ini",
           ]
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.971
+    rev: v1.0.0
     hooks:
       - id: mypy
         name: mypy-grid
         always_run: true
         files: ^packages/grid
-        exclude: ^(packages/grid/ansible|packages/grid/backend/app/alembic/versions)
         args: [
             "--ignore-missing-imports",
             "--scripts-are-modules",
@@ -122,21 +127,16 @@ repos:
             "--namespace-packages",
             "--install-types",
             "--non-interactive",
+            "--config-file=tox.ini",
           ]
+
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.971
+    rev: v1.0.0
     hooks:
       - id: mypy
         name: mypy-syft
         always_run: true
-        files: ^packages/syft
-        exclude: |
-          (?x)^(
-              packages/syft/examples/.*|
-              packages/syft/tests/syft/.*|
-              packages/syft/src/syft/proto.*|
-              packages/syft/tests/syft/lib/python.*
-          )$
+        files: "^packages/syft(?!(/src/syft/shylock/|/tests/|._pb2\\.py$)).\\.py"
         args: [
             "--ignore-missing-imports",
             "--scripts-are-modules",
@@ -152,4 +152,10 @@ repos:
             "--no-warn-unused-ignores",
             "--install-types",
             "--non-interactive",
+            "--config-file=tox.ini",
           ]
+  # - repo: meta
+  #   hooks:
+  #     - id: identity
+  #       always_run: true
+  #       files: "^packages/syft(?!(/tests/|.*_pb2\\.py$)).*\\.py"

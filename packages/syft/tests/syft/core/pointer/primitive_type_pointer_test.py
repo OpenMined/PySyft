@@ -361,8 +361,8 @@ test_dict: Dict[str, Dict[str, Any]] = {
         "inputs": inputs_ordered_dict,
         "construct": (
             OrderedDict,
-            sy.lib.python.collections.OrderedDict,
-            lambda client: client.syft.lib.python.collections.OrderedDict,
+            sy.lib.python.collections.SyOrderedDict,
+            lambda client: client.syft.lib.python.collections.SyOrderedDict,
         ),
         "objects": [
             [("1", 1), ("2", 2), ("3", 3)],

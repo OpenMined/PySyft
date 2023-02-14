@@ -23,7 +23,9 @@ import torch
 from .util import implements
 from .util import query_implementation
 
-AcceptableSimpleType = Union[int, bool, float, np.ndarray]
+AcceptableSimpleType = Union[
+    int, bool, float, np.ndarray, torch.Tensor, jaxlib.xla_extension.DeviceArrayBase
+]
 SupportedChainType = Union["PassthroughTensor", AcceptableSimpleType]
 
 
@@ -256,9 +258,9 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         other: Union[Type[PassthroughTensor], AcceptableSimpleType],
     ) -> PassthroughTensor:
         if is_acceptable_simple_type(other):
-            return self.__class__(other.__floordiv__(self.child))
+            return self.__class__(self.child.__rfloordiv__(other))
 
-        return self.__class__(other.child.__floordiv__(self.child))
+        return self.__class__(self.child.__rfloordiv__(other.child))
 
     def __lshift__(
         self,
@@ -405,13 +407,17 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
         return self.__class__(self.child / other.child)
 
-    def __rtruediv__(self, other: Type[PassthroughTensor]) -> PassthroughTensor:
-        return other.__truediv__(self)
+    def __rtruediv__(
+        self, other: Union[Type[PassthroughTensor], AcceptableSimpleType]
+    ) -> PassthroughTensor:
+        if is_acceptable_simple_type(other):
+            return self.__class__(self.child.__rtruediv__(other))  # type: ignore
+
+        return self.__class__(self.child.__rtruediv__(other.child))
 
     def manual_dot(
         self, other: Union[Type[PassthroughTensor], np.ndarray]
     ) -> PassthroughTensor:
-
         expanded_self = self.repeat(other.shape[1], axis=1)
         expanded_self = expanded_self.reshape(
             self.shape[0], self.shape[1], other.shape[1]
@@ -696,13 +702,20 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         implementation = query_implementation(self.__class__, func)
         if implementation:
             return implementation(*args, **kwargs)
-        return self.__class__(func(*args, **kwargs))
 
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        implementation = query_implementation(self.__class__, ufunc)
+        method_name = func.__name__
+        implementation = getattr(self.__class__, method_name, None)
         if implementation:
-            return implementation(*inputs, **kwargs)
-        return self.__class__(ufunc(*inputs, **kwargs))
+            return (
+                implementation(*args, **kwargs)
+                if callable(implementation)
+                else self.__getattribute__(method_name)
+            )
+
+        return NotImplemented
+
+    # Set __array_ufunc_ = None for now until we can implement this properly
+    __array_ufunc__ = None
 
     def __repr__(self):
         return f"{self.__class__.__name__}(child={self.child})"

@@ -1,5 +1,12 @@
 # stdlib
 from enum import Enum
+import functools
+
+# relative
+from ...util import bcolors
+from ..common.serde import recursive_serde_register
+from ..common.serde.recursive_primitives import deserialize_enum
+from ..common.serde.recursive_primitives import serialize_enum
 
 
 class PyGridClientEnums(str, Enum):
@@ -29,6 +36,13 @@ class AssociationRequestResponses(str, Enum):
     PENDING = "PENDING"
 
 
+recursive_serde_register(
+    AssociationRequestResponses,
+    serialize=serialize_enum,
+    deserialize=functools.partial(deserialize_enum, AssociationRequestResponses),
+)
+
+
 class ResponseObjectEnum(str, Enum):
     ASSOCIATION_REQUEST = "association-request"
     DATASET = "dataset"
@@ -37,3 +51,9 @@ class ResponseObjectEnum(str, Enum):
     USER = "user"
     WORKER = "worker"
     DATA = "data"
+    OBLV = "oblv"
+
+
+class PointerStatus(str, Enum):
+    READY = bcolors.green("Ready")
+    PROCESSING = bcolors.yellow("Processing")

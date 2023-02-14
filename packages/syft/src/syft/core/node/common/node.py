@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+import os
 from typing import Any
 from typing import Dict
 from typing import List
@@ -13,41 +14,43 @@ from typing import Union
 # third party
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
-from nacl.signing import VerifyKey
 from pydantic import BaseSettings
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base
 
 # relative
 from .... import __version__
+from ....core.node.new.api import SyftAPI
 from ....grid import GridURL
 from ....lib import lib_ast
+from ....logger import critical
 from ....logger import debug
 from ....logger import error
-from ....logger import info
 from ....logger import traceback_and_raise
+from ....shylock import ShylockPymongoBackend
+from ....shylock import configure
+from ....telemetry import instrument
 from ....util import get_subclasses
-from ...common.message import EventualSyftMessageWithoutReply
 from ...common.message import ImmediateSyftMessageWithReply
 from ...common.message import ImmediateSyftMessageWithoutReply
-from ...common.message import SignedEventualSyftMessageWithoutReply
 from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedImmediateSyftMessageWithoutReply
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.uid import UID
 from ...io.location import Location
-from ...io.location import SpecificLocation
 from ...io.route import Route
 from ...io.route import SoloRoute
 from ...io.virtual import create_virtual_connection
 from ..abstract.node import AbstractNode
+from ..common.exceptions import OblvEnclaveError
+from ..common.exceptions import OblvEnclaveUnAuthorizedError
+from ..common.exceptions import OblvKeyNotFoundError
+from ..common.exceptions import OblvProxyConnectPCRError
 from .action.exception_action import ExceptionMessage
 from .action.exception_action import UnknownPrivateException
 from .client import Client
 from .metadata import Metadata
 from .node_manager.redis_store import RedisStore
-from .node_manager.setup_manager import SetupManager
+from .node_manager.setup_manager import NoSQLSetupManager
 from .node_service.auth import AuthorizationException
 from .node_service.child_node_lifecycle.child_node_lifecycle_service import (
     ChildNodeLifecycleService,
@@ -61,11 +64,7 @@ from .node_service.msg_forwarding.msg_forwarding_service import (
     SignedMessageWithoutReplyForwardingService,
 )
 from .node_service.node_credential.node_credential_messages import NodeCredentials
-from .node_service.node_service import EventualNodeServiceWithoutReply
 from .node_service.node_service import ImmediateNodeServiceWithReply
-from .node_service.object_action.obj_action_service import (
-    EventualObjectActionServiceWithoutReply,
-)
 from .node_service.object_action.obj_action_service import (
     ImmediateObjectActionServiceWithReply,
 )
@@ -81,8 +80,7 @@ from .node_service.resolve_pointer_type.resolve_pointer_type_service import (
 )
 from .node_service.testing_services.repr_service import ReprService
 from .node_service.vpn.vpn_messages import VPNRegisterMessage
-from .node_table import Base
-from .node_table.node import Node as NodeRow
+from .node_table.node import NoSQLNode
 
 # this generic type for Client bound by Client
 ClientT = TypeVar("ClientT", bound=Client)
@@ -93,6 +91,28 @@ class DuplicateRequestException(Exception):
     pass
 
 
+NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
+NODE_UID = "NODE_UID"
+
+
+def get_private_key_env() -> Optional[str]:
+    return get_env(NODE_PRIVATE_KEY)
+
+
+def get_node_uid_env() -> Optional[str]:
+    return get_env(NODE_UID)
+
+
+def get_env(key: str) -> Optional[str]:
+    value = os.environ.get(key, None)
+    return str(value) if value is not None else value
+
+
+signing_key_env = get_private_key_env()
+node_uid_env = get_node_uid_env()
+
+
+@instrument
 class Node(AbstractNode):
 
     """
@@ -108,23 +128,47 @@ class Node(AbstractNode):
     ChildT = TypeVar("ChildT", bound="Node")
     child_type = ChildT
 
-    signing_key: Optional[SigningKey]
-    verify_key: Optional[VerifyKey]
-
     def __init__(
         self,
+        node_uid: Optional[str] = None,
+        signing_key: Optional[str] = None,
         name: Optional[str] = None,
         network: Optional[Location] = None,
         domain: Optional[Location] = None,
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
-        signing_key: Optional[SigningKey] = None,
-        verify_key: Optional[VerifyKey] = None,
         TableBase: Any = None,
         db_engine: Any = None,
         store_type: type = RedisStore,
         settings: Optional[BaseSettings] = None,
+        document_store: bool = False,
     ):
+        if node_uid_env is not None:
+            self.node_uid = UID.from_string(node_uid_env)
+        elif node_uid is not None:
+            self.node_uid = UID.from_string(node_uid)
+        else:
+            self.node_uid = UID()
+
+        if self.node_uid is None:
+            raise Exception("self.node_uid is None")
+
+        if signing_key_env is not None:
+            self.signing_key = SigningKey(bytes.fromhex(signing_key_env))
+        elif signing_key is not None:
+            self.signing_key = SigningKey(bytes.fromhex(signing_key))
+        else:
+            self.signing_key = SigningKey.generate()
+
+        if self.signing_key is None:
+            raise Exception("self.signing_key is None")
+        self.root_verify_key = self.signing_key.verify_key
+        self.verify_key = self.signing_key.verify_key
+        print(
+            "============> Starting Node with:",
+            self.node_uid,
+            self.signing_key.encode(encoder=HexEncoder).decode("utf-8"),
+        )
 
         # The node has a name - it exists purely to help the
         # end user have some idea about what this node is in a human
@@ -136,20 +180,32 @@ class Node(AbstractNode):
 
         self.settings = settings
 
-        # TableBase is the base class from which all ORM classes must inherit
-        # If one isn't provided then we can simply make one.
-        if TableBase is None:
-            TableBase = declarative_base()
+        if self.settings and self.settings.MONGO_USERNAME:
+            # third party
+            from pymongo import MongoClient
 
-        # If not provided a session connecting us to the database, let's just
-        # initialize a database in memory
-        if db_engine is None:
-            db_engine = create_engine("sqlite://", echo=False)
-            Base.metadata.create_all(db_engine)  # type: ignore
+            # FIXME: Modify to use environment variable
+            self.nosql_db_engine = MongoClient(  # nosec
+                host=self.settings.MONGO_HOST,
+                port=self.settings.MONGO_PORT,
+                username=self.settings.MONGO_USERNAME,
+                password=self.settings.MONGO_PASSWORD,
+                uuidRepresentation="standard",
+            )
+        else:
+            # third party
+            from pymongo_inmemory import MongoClient
+
+            self.nosql_db_engine = MongoClient(
+                port=27017, uuidRepresentation="standard"
+            )
+
+        self.db_name = "app"
+        if document_store:
+            configure(ShylockPymongoBackend.create(self.nosql_db_engine, self.db_name))
 
         # cache these variables on self
         self.TableBase = TableBase
-        self.db_engine = db_engine
         # self.db = db
         # self.session = db
 
@@ -164,8 +220,12 @@ class Node(AbstractNode):
         # become quite numerous (or otherwise fill up RAM).
         # self.store is the elastic memory.
 
-        self.store = store_type(db=self.db_engine, settings=settings)
-        self.setup = SetupManager(database=self.db_engine)
+        self.store = store_type(
+            settings=settings,
+            nosql_db_engine=self.nosql_db_engine,
+            db_name=self.db_name,
+        )
+        self.setup = NoSQLSetupManager(self.nosql_db_engine, self.db_name)
 
         # We need to register all the services once a node is created
         # On the off chance someone forgot to do this (super unlikely)
@@ -210,12 +270,6 @@ class Node(AbstractNode):
             Type[ImmediateSyftMessageWithoutReply], Any
         ] = {}
 
-        # for messages which don't need to be run right now
-        # and will not generate a reply.
-        self.eventual_msg_without_reply_router: Dict[
-            Type[EventualSyftMessageWithoutReply], EventualNodeServiceWithoutReply
-        ] = {}
-
         # This is the list of services which all node support.
         # You can read more about them by reading their respective
         # class documentation.
@@ -240,12 +294,6 @@ class Node(AbstractNode):
         self.immediate_services_with_reply.append(ImmediateObjectSearchService)
         self.immediate_services_with_reply.append(GetReprService)
         self.immediate_services_with_reply.append(ResolvePointerTypeService)
-
-        # for services which can run at a later time and do not return a reply
-        self.eventual_services_without_reply = list()
-        self.eventual_services_without_reply.append(
-            EventualObjectActionServiceWithoutReply
-        )
 
         # This is a special service which cannot be listed in any
         # of the other services because it handles messages of all types.
@@ -273,11 +321,8 @@ class Node(AbstractNode):
         # comes from the node. In order to do that, the node needs to generate keys
         # for itself to sign and verify with.
 
-        # update keys
-        if signing_key:
-            Node.set_keys(node=self, signing_key=signing_key)
-
         # PERMISSION REGISTRY:
+        self.guest_signing_key_registry = set()
         self.guest_verify_key_registry = set()
         self.admin_verify_key_registry = set()
         self.cpl_ofcr_verify_key_registry = set()
@@ -291,40 +336,6 @@ class Node(AbstractNode):
     def post_init(self) -> None:
         debug(f"> Creating {self.pprint}")
 
-    def set_node_uid(self) -> None:
-        try:
-            setup = self.setup.first()
-            # if its empty it will be set during CreateInitialSetUpMessage
-            if setup.node_id != "":
-                try:
-                    node_id = UID.from_string(setup.node_id)
-                except Exception as e:
-                    error(f"Invalid Node UID in Setup Table. {setup.node_id}")
-                    raise e
-
-                location = SpecificLocation(name=setup.domain_name, id=node_id)
-                # TODO: Fix with proper isinstance when the class will import
-                if type(self).__name__ == "Domain":
-                    self.domain = location
-                elif type(self).__name__ == "Network":
-                    self.network = location
-                info(f"Finished setting Node UID. {location}")
-            if setup.signing_key:
-                signing_key = SigningKey(setup.signing_key, encoder=HexEncoder)
-                Node.set_keys(node=self, signing_key=signing_key)
-        except Exception:
-            info("Setup hasnt run yet so ignoring set_node_uid")
-            pass
-
-    @staticmethod
-    def set_keys(node: Node, signing_key: Optional[SigningKey] = None) -> None:
-        if signing_key is None:
-            signing_key = SigningKey.generate()
-
-        node.signing_key = signing_key
-        node.verify_key = signing_key.verify_key
-        node.root_verify_key = node.verify_key  # TODO: CHANGE
-
     @property
     def icon(self) -> str:
         return "📍"
@@ -333,10 +344,10 @@ class Node(AbstractNode):
         self,
         routes: Optional[List[Route]] = None,
         signing_key: Optional[SigningKey] = None,
-    ) -> ClientT:
+    ) -> Client:
         if not routes:
             conn_client = create_virtual_connection(node=self)
-            solo = SoloRoute(destination=self.target_id, connection=conn_client)
+            solo = SoloRoute(destination=self.node_uid, connection=conn_client)
             # inject name
             setattr(
                 solo,
@@ -346,6 +357,7 @@ class Node(AbstractNode):
             routes = [solo]
 
         return self.client_type(  # type: ignore
+            node_uid=self.node_uid,
             name=self.name,
             routes=routes,
             network=self.network,
@@ -356,7 +368,7 @@ class Node(AbstractNode):
             verify_key=None,  # DO NOT PASS IN A VERIFY KEY!!! The client generates one.
         )
 
-    def get_root_client(self, routes: Optional[List[Route]] = None) -> ClientT:
+    def get_root_client(self, routes: Optional[List[Route]] = None) -> Client:
         client: ClientT = self.get_client(routes=routes)
         client.verify_key = self.verify_key
         client.signing_key = self.signing_key
@@ -366,14 +378,16 @@ class Node(AbstractNode):
         return Metadata(
             name=self.name if self.name else "",
             id=self.id,
-            node=self.target_id,
             node_type=str(type(self).__name__),
             version=str(__version__),
         )
 
-    def add_peer_routes(self, peer: NodeRow) -> None:
+    def get_api(self) -> SyftAPI:
+        return SyftAPI.for_user(node=self)
+
+    def add_peer_routes(self, peer: NoSQLNode) -> None:
         try:
-            routes = self.node_route.query(node_id=peer.id)  # type: ignore
+            routes = peer.node_route
             for route in routes:
                 self.add_route(
                     node_id=UID.from_string(value=peer.node_uid),
@@ -482,10 +496,18 @@ class Node(AbstractNode):
 
     @property
     def id(self) -> UID:
-        traceback_and_raise(NotImplementedError)
+        return self.node_uid
 
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
-        traceback_and_raise(NotImplementedError)
+        # this needs to be defensive by checking domain_id NOT domain.id or it breaks
+        try:
+            msg_address_id = msg.address
+            return msg_address_id == self.id
+        except Exception as excp3:
+            critical(
+                f"Error checking if {msg.pprint} is for me on {self.pprint}. {excp3}"
+            )
+        return False
 
     def recv_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
@@ -498,7 +520,7 @@ class Node(AbstractNode):
             debug(
                 f"> Received with Reply {contents.pprint} {contents.id} @ {self.pprint}"
             )
-            # try to process message
+
             response = self.process_message(
                 msg=msg, router=self.immediate_msg_with_reply_router
             )
@@ -510,9 +532,22 @@ class Node(AbstractNode):
             if isinstance(e, AuthorizationException):
                 private_log_msg = "An AuthorizationException has been triggered"
                 public_exception = e
+            elif isinstance(
+                e,
+                (
+                    OblvKeyNotFoundError,
+                    OblvProxyConnectPCRError,
+                    OblvEnclaveUnAuthorizedError,
+                    OblvEnclaveError,
+                ),
+            ):
+                private_log_msg = "An OblvException has been triggered"
+                public_exception = e
             else:
                 private_log_msg = f"An {type(e)} has been triggered"  # dont send
-                public_exception = UnknownPrivateException(str(e))
+                public_exception = UnknownPrivateException(
+                    "UnknownPrivateException has been triggered."
+                )
             try:
                 # try printing a useful message
                 private_log_msg += f" by {type(contents)} "
@@ -533,13 +568,7 @@ class Node(AbstractNode):
 
         # maybe I shouldn't have created process_message because it screws up
         # all the type inference.
-        res_msg = response.sign(signing_key=self.signing_key)  # type: ignore
-        output = (
-            f"> {self.pprint} Signing {res_msg.pprint} with "
-            + f"{self.key_emoji(key=self.signing_key.verify_key)}"  # type: ignore
-        )
-        debug(output)
-        return res_msg
+        return response.sign(signing_key=self.signing_key)  # type: ignore
 
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
@@ -551,6 +580,7 @@ class Node(AbstractNode):
             )
 
         self.process_message(msg=msg, router=self.immediate_msg_without_reply_router)
+
         try:
             pass
         except Exception as e:
@@ -598,12 +628,6 @@ class Node(AbstractNode):
             #     )
         return None
 
-    def recv_eventual_msg_without_reply(
-        self, msg: SignedEventualSyftMessageWithoutReply
-    ) -> None:
-        self.process_message(msg=msg, router=self.eventual_msg_without_reply_router)
-
-    # TODO: Add SignedEventualSyftMessageWithoutReply and others
     def process_message(
         self, msg: SignedMessage, router: dict
     ) -> Union[SyftMessage, None]:
@@ -614,9 +638,7 @@ class Node(AbstractNode):
             )  # in the event the message is unsigned
             debug(f"> Processing 📨 {msg.pprint} @ {self.pprint} {contents}")
             if self.message_is_for_me(msg=msg):
-                debug(
-                    f"> Recipient Found {msg.pprint}{msg.address.target_emoji()} == {self.pprint}"
-                )
+                debug(f"> Recipient Found {msg.pprint}{msg.address} == {self.pprint}")
 
                 # only a small number of messages are allowed to be unsigned otherwise
                 # they need to be valid
@@ -649,7 +671,7 @@ class Node(AbstractNode):
 
             else:
                 debug(
-                    f"> Recipient Not Found ↪️ {msg.pprint}{msg.address.target_emoji()} != {self.pprint}"
+                    f"> Recipient Not Found ↪️ {msg.pprint}{msg.address} != {self.pprint}"
                 )
                 # Forward message onwards
                 if issubclass(type(msg), SignedImmediateSyftMessageWithReply):
@@ -705,7 +727,6 @@ class Node(AbstractNode):
             # to one or more message types.
             iswr_instance = iswr()
             for handler_type in iswr.message_handler_types():
-
                 # for each explicitly supported type, add it to the router
                 self.immediate_msg_without_reply_router[handler_type] = iswr_instance
 
@@ -715,22 +736,6 @@ class Node(AbstractNode):
                     self.immediate_msg_without_reply_router[
                         handler_type_subclass
                     ] = iswr_instance
-
-        for eswr in self.eventual_services_without_reply:
-            # Create a single instance of the service to cache in the router corresponding
-            # to one or more message types.
-            eswr_instance = eswr()
-            for handler_type in eswr.message_handler_types():
-
-                # for each explicitly supported type, add it to the router
-                self.eventual_msg_without_reply_router[handler_type] = eswr_instance
-
-                # for all sub-classes of the explicitly supported type, add them
-                # to the router as well.
-                for handler_type_subclass in get_subclasses(obj_type=handler_type):
-                    self.eventual_msg_without_reply_router[
-                        handler_type_subclass
-                    ] = eswr_instance
 
         # Set the services_registered flag to true so that we know that all services
         # have been properly registered. This mostly exists because someone might

@@ -9,15 +9,9 @@ from typing import Optional
 from typing import Union
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import SupportsIndex
 
 # relative
-from ...core.common import UID
-from ...core.common.serde.deserialize import _deserialize as deserialize
-from ...core.common.serde.serializable import serializable
-from ...core.common.serde.serialize import _serialize as serialize
-from ...proto.lib.python.string_pb2 import String as String_PB
 from .int import Int
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
@@ -25,22 +19,17 @@ from .slice import Slice
 from .types import SyPrimitiveRet
 
 
-@serializable()
 class String(UserString, PyPrimitive):
     def __init__(
         self,
         value: Any = None,
-        id: Optional[UID] = None,
         temporary_box: bool = False,
     ):
-
         if value is None:
             value = ""
 
         UserString.__init__(self, value)
         PyPrimitive.__init__(self, temporary_box=temporary_box)
-
-        self._id: UID = id if id else UID()
 
     def upcast(self) -> str:
         return str(self)
@@ -250,7 +239,7 @@ class String(UserString, PyPrimitive):
         )
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def ljust(self, width: Union[int], *args: Any) -> SyPrimitiveRet:
+    def ljust(self, width: int, *args: Any) -> SyPrimitiveRet:
         if args:
             _args_0 = str(args[0]) if isinstance(args[0], String) else args[0]
             res = super().ljust(width, _args_0, *args[1:])
@@ -384,41 +373,3 @@ class String(UserString, PyPrimitive):
     def __contains__(self, val: object) -> SyPrimitiveRet:
         res = super().__contains__(val)
         return PrimitiveFactory.generate_primitive(value=res)
-
-    @property
-    def id(self) -> UID:
-        """We reveal PyPrimitive.id as a property to discourage users and
-        developers of Syft from modifying .id attributes after an object
-        has been initialized.
-
-        :return: returns the unique id of the object
-        :rtype: UID
-        """
-        return self._id
-
-    def _object2proto(self) -> String_PB:
-        return String_PB(
-            data=self.data,
-            id=serialize(obj=self.id),
-            temporary_box=self.temporary_box,
-        )
-
-    @staticmethod
-    def _proto2object(proto: String_PB) -> "String":
-        str_id: UID = deserialize(blob=proto.id)
-        return String(
-            value=proto.data,
-            id=str_id,
-            temporary_box=proto.temporary_box,
-        )
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return String_PB
-
-    # fixes __rmod__ in python <= 3.7
-    # https://github.com/python/cpython/commit/7abf8c60819d5749e6225b371df51a9c5f1ea8e9
-    def __rmod__(
-        self, template: Union[PyPrimitive, str, object]
-    ) -> Union[SyPrimitiveRet, String]:
-        return self.__class__(str(template) % self)

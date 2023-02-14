@@ -1,12 +1,4 @@
 ---
-- name: Fix Bad DB
-  shell: ". ../packages/grid/.env && ./fix_db.sh $POSTGRES_PASSWORD d4867f3a4c0a"
-  args:
-    chdir: "{{ syft_dir }}/scripts"
-  become_user: "{{ om_user }}"
-  ignore_errors: yes
-  when: docker_volume_destroy is not defined and install == "true"
-
 - name: Build Docker Images
   shell: "docker compose build"
   args:
@@ -35,12 +27,12 @@
 
 - name: Start Docker Containers
   shell:
-    cmd: runuser -l {{ om_user }} -c 'hagrid launch {{ node_name }} {{ node_type }} to docker:80 --release={{ release }} --tag={{ docker_tag }} --tail=false'
+    cmd: runuser -l {{ om_user }} -c 'hagrid launch {{ node_name }} {{ node_type }} to docker:80 --release={{ release }} --tag={{ docker_tag }}'
   become: yes
   when: tls == "false" and install == "true"
 
 - name: Start Docker Containers with TLS
   shell:
-    cmd: runuser -l {{ om_user }} -c 'hagrid launch {{ node_name }} {{ node_type }} to docker:80 --release={{ release }} --tag={{ docker_tag }} --tail=false --tls --cert_store_path={{ cert_store_path }}'
+    cmd: runuser -l {{ om_user }} -c 'hagrid launch {{ node_name }} {{ node_type }} to docker:80 --release={{ release }} --tag={{ docker_tag }} --tls --cert-store-path={{ cert_store_path }}'
   become: yes
   when: tls == "true" and install == "true"

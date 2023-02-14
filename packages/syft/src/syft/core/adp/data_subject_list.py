@@ -3,12 +3,16 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
+from typing import Callable
+from typing import Dict
 from typing import Iterator
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Set
 from typing import Tuple
 from typing import Union
+from warnings import warn
 
 # third party
 import numpy as np
@@ -38,7 +42,9 @@ def numpyutf8tolist(string_index: Tuple[np.ndarray, np.ndarray]) -> np.ndarray:
     return np.array(output_list)
 
 
-def liststrtonumpyutf8(string_list: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def liststrtonumpyutf8(
+    string_list: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray]:
     bytes_list = []
     indexes = []
     offset = 0
@@ -61,13 +67,18 @@ def liststrtonumpyutf8(string_list: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
     return output_array
 
 
+# INFO: excluding coverage of the whole class , as we intend to replace with new DSA
 @serializable(recursive_serde=True)
 class DataSubjectList:
+    """[DEPRECATED] This class has been deprecated in v0.7.0 and will be removed in future versions.
+    Instead use the class `sy.DataSubjectArray` to define data subjects for your dataset.
+    """
+
     __attr_allowlist__ = ("one_hot_lookup", "data_subjects_indexed")
     __slots__ = ("one_hot_lookup", "data_subjects_indexed")
 
     # one_hot_lookup is a numpy array of unicode strings which can't be serialized
-    __serde_overrides__ = {
+    __serde_overrides__: Dict[str, Sequence[Callable]] = {
         "one_hot_lookup": [liststrtonumpyutf8, numpyutf8tolist],
     }
 
@@ -76,13 +87,26 @@ class DataSubjectList:
         one_hot_lookup: np.ndarray[Union[DataSubject, str, np.integer]],
         data_subjects_indexed: np.ndaray,
     ) -> None:
+        deprec_msg = (
+            f"{self.__class__.__name__} has been deprecated in v0.7.0 and will be removed in future versions. "
+            "Using this class may throw errors as it is no longer supported for calculation of Auto DP. "
+            "Instead use the class `sy.DataSubjectArray.from_objs` to define data subjects for your dataset."
+        )
+        warn(deprec_msg, DeprecationWarning, stacklevel=2)
         self.one_hot_lookup = one_hot_lookup
         self.data_subjects_indexed = data_subjects_indexed
 
     @staticmethod
     def from_series(entities_dataframe_slice: pd.Series) -> DataSubjectList:
-        """Given a Pandas Series object (such as from
+        """[DEPRECATED] Given a Pandas Series object (such as from
         getting a column from a pandas DataFrame, return an DataSubjectList"""
+
+        deprec_msg = (
+            "DataSubjectList has been deprecated in v0.7.0 and will be removed in future versions. "
+            "Using this class may throw errors as it is no longer supported for calculation of Auto DP. "
+            "Instead use the class `sy.DataSubjectArray.from_objs` to define data subjects for your dataset."
+        )
+        warn(deprec_msg, DeprecationWarning, stacklevel=2)
 
         # This will be the equivalent of the DataSubjectList.data_subjects_indexed
         if not isinstance(entities_dataframe_slice, np.ndarray):
@@ -109,6 +133,12 @@ class DataSubjectList:
 
     @staticmethod
     def from_objs(entities: Union[np.ndarray, list]) -> DataSubjectList:
+        deprec_msg = (
+            "DataSubjectList has been deprecated in v0.7.0 and will be removed in future versions. "
+            "Using this class may throw errors as it is no longer supported for calculation of Auto DP. "
+            "Instead use the class `sy.DataSubjectArray.from_objs` to define data subjects for your dataset."
+        )
+        warn(deprec_msg, DeprecationWarning, stacklevel=2)
 
         entities = np.array(entities, copy=False)
         one_hot_lookup, entities_indexed = np.unique(entities, return_inverse=True)
@@ -170,7 +200,6 @@ class DataSubjectList:
 
     @staticmethod
     def combine(dsl1: DataSubjectList, dsl2: DataSubjectList) -> DataSubjectList:
-
         """
         From Ishan's PR: https://github.com/OpenMined/PySyft/pull/6490/
 
@@ -190,7 +219,6 @@ class DataSubjectList:
         elif dsl2.one_hot_lookup.size == 0:
             return dsl1
         else:
-
             # dsl1_uniques = dsl1.num_uniques
             # dsl2_uniques = dsl2.num_uniques
             dsl1_uniques = len(dsl1.one_hot_lookup)
@@ -286,7 +314,6 @@ class DataSubjectList:
         elif dsl2.one_hot_lookup.size == 0:
             return dsl1
         else:
-
             # dsl1_uniques = dsl1.num_uniques
             # dsl2_uniques = dsl2.num_uniques
             dsl1_uniques = len(dsl1.one_hot_lookup)
@@ -470,6 +497,12 @@ class DataSubjectArray:
         else:
             return DataSubjectArray(self.data_subjects)
 
+    def __rmul__(self, other: Union[DataSubjectArray, Any]) -> DataSubjectArray:
+        if isinstance(other, DataSubjectArray):
+            return DataSubjectArray(self.data_subjects.union(other.data_subjects))
+        else:
+            return DataSubjectArray(self.data_subjects)
+
     def __ge__(self, other: Union[DataSubjectArray, Any]) -> DataSubjectArray:
         if isinstance(other, DataSubjectArray):
             return DataSubjectArray(self.data_subjects.union(other.data_subjects))
@@ -524,9 +557,9 @@ class DataSubjectArray:
 
     def __contains__(self, item: Union[str, DataSubjectArray]) -> bool:
         if isinstance(item, DataSubjectArray):
-            return self.data_subjects.isdisjoint(item.data_subjects)
+            return not self.data_subjects.isdisjoint(item.data_subjects)
         else:
-            return self.data_subjects.isdisjoint(set(item))
+            return not self.data_subjects.isdisjoint(set(item))
 
     def __pow__(self, power: int) -> DataSubjectArray:
         if not isinstance(power, int):
@@ -605,16 +638,6 @@ class DataSubjectArray:
 
     def rint(self, *args: Any, **kwargs: Any) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)
-
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs) -> ArrayLike:  # type: ignore
-        method_name = ufunc.__name__
-        method = getattr(self, method_name, None)
-        if method is not None:
-            return method(*inputs, **kwargs)
-        else:
-            raise NotImplementedError(
-                f"Method: {method_name} not implemented in DataSubjectArray"
-            )
 
     @staticmethod
     def from_objs(input_subjects: Union[np.ndarray, list]) -> ArrayLike:

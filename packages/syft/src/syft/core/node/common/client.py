@@ -1,15 +1,12 @@
 # stdlib
-import sys
 from typing import Any
 from typing import Dict
 from typing import Iterator
 from typing import List
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import pandas as pd
@@ -22,26 +19,19 @@ from ....logger import debug
 from ....logger import error
 from ....logger import info
 from ....logger import traceback_and_raise
-from ....proto.core.node.common.client_pb2 import Client as Client_PB
-from ....proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
-from ....util import get_fully_qualified_name
-from ...common.message import EventualSyftMessageWithoutReply
 from ...common.message import ImmediateSyftMessageWithReply
 from ...common.message import ImmediateSyftMessageWithoutReply
-from ...common.message import SignedEventualSyftMessageWithoutReply
 from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedImmediateSyftMessageWithoutReply
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
-from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
-from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
 from ...io.location import Location
-from ...io.location import SpecificLocation
 from ...io.route import Route
-from ...pointer.garbage_collection import GarbageCollection
-from ...pointer.garbage_collection import gc_get_default_strategy
+
+# from ...pointer.garbage_collection import GarbageCollection
+# from ...pointer.garbage_collection import gc_get_default_strategy
 from ...pointer.pointer import Pointer
 from ..abstract.node import AbstractNodeClient
 from ..common.client_manager.node_networking_api import NodeNetworkingAPI
@@ -49,7 +39,7 @@ from .action.exception_action import ExceptionMessage
 from .node_service.object_search.obj_search_service import ObjectSearchMessage
 
 
-@serializable()
+@serializable(recursive_serde=True)
 class Client(AbstractNodeClient):
     """Client is an incredibly powerful abstraction in Syft. We assume that,
     no matter where a client is, it can figure out how to communicate with
@@ -58,8 +48,20 @@ class Client(AbstractNodeClient):
     you need to know to interact with a node (although you might not
     have permissions - clients should not store private keys)."""
 
+    __attr_allowlist__ = [
+        "id",
+        "name",
+        "routes",
+        "network",
+        "domain",
+        "device",
+        "vm",
+        "node_uid",
+    ]
+
     def __init__(
         self,
+        node_uid: UID,
         name: Optional[str],
         routes: List[Route],
         network: Optional[Location] = None,
@@ -77,9 +79,11 @@ class Client(AbstractNodeClient):
 
         self.routes = routes
         self.default_route_index = 0
+        self.processing_pointers: Dict[UID, bool] = {}
+        self.node_uid = node_uid
 
-        gc_strategy_name = gc_get_default_strategy()
-        self.gc = GarbageCollection(gc_strategy_name)
+        # gc_strategy_name = gc_get_default_strategy()
+        # self.gc = GarbageCollection(gc_strategy_name)
 
         # create a signing key if one isn't provided
         if signing_key is None:
@@ -121,14 +125,6 @@ class Client(AbstractNodeClient):
                 icon += s
             icon += "]"
         return icon
-
-    @staticmethod
-    def deserialize_client_metadata_from_node(
-        metadata: Metadata_PB,
-    ) -> Tuple[SpecificLocation, str, UID]:
-        # string of bytes
-        meta = deserialize(blob=metadata)
-        return meta.node, meta.name, meta.id
 
     def install_supported_frameworks(self) -> None:
         self.lib_ast = create_lib_ast(client=self)
@@ -222,8 +218,8 @@ class Client(AbstractNodeClient):
         timeout: Optional[float] = None,
         return_signed: bool = False,
         route_index: int = 0,
+        verbose: bool = False,
     ) -> Union[SyftMessage, SignedMessage]:
-
         # relative
         from .node_service.simple.simple_messages import NodeRunnableMessageWithReply
         from .node_service.tff.tff_messages import TFFMessageWithReply
@@ -232,7 +228,7 @@ class Client(AbstractNodeClient):
         if isinstance(msg, NodeRunnableMessageWithReply) or isinstance(
             msg, TFFMessageWithReply
         ):
-            msg = msg.prepare(address=self.address, reply_to=self.address)
+            msg = msg.prepare(address=self.node_uid, reply_to=self.node_uid)
 
         route_index = route_index or self.default_route_index
 
@@ -254,7 +250,7 @@ class Client(AbstractNodeClient):
                 exception_msg = response.message
                 exception = exception_msg.exception_type(exception_msg.exception_msg)
                 error(str(exception))
-                traceback_and_raise(exception)
+                traceback_and_raise(exception, verbose=verbose)
             else:
                 if return_signed:
                     return response
@@ -283,29 +279,9 @@ class Client(AbstractNodeClient):
             )
             debug(output)
             msg = msg.sign(signing_key=self.signing_key)
-        debug(f"> Sending {msg.pprint} {self.pprint} ➡️  {msg.address.pprint}")
+        debug(f"> Sending {msg.pprint} {self.pprint} ➡️  {msg.address}")
         self.routes[route_index].send_immediate_msg_without_reply(
             msg=msg, timeout=timeout
-        )
-
-    def send_eventual_msg_without_reply(
-        self,
-        msg: EventualSyftMessageWithoutReply,
-        route_index: int = 0,
-        timeout: Optional[float] = None,
-    ) -> None:
-        route_index = route_index or self.default_route_index
-        output = (
-            f"> {self.pprint} Signing {msg.pprint} with "
-            + f"{self.key_emoji(key=self.signing_key.verify_key)}"
-        )
-        debug(output)
-        signed_msg: SignedEventualSyftMessageWithoutReply = msg.sign(
-            signing_key=self.signing_key
-        )
-
-        self.routes[route_index].send_eventual_msg_without_reply(
-            msg=signed_msg, timeout=timeout
         )
 
     def url_from_path(self, path: str) -> str:
@@ -325,47 +301,6 @@ class Client(AbstractNodeClient):
     def set_default_route(self, route_index: int) -> None:
         self.default_route = route_index
 
-    def _object2proto(self) -> Client_PB:
-        client_pb = Client_PB(
-            obj_type=get_fully_qualified_name(obj=self),
-            id=serialize(self.id),
-            name=self.name,
-            routes=[serialize(route) for route in self.routes],
-            network=self.network._object2proto() if self.network else None,
-            domain=self.domain._object2proto() if self.domain else None,
-            device=self.device._object2proto() if self.device else None,
-            vm=self.vm._object2proto() if self.vm else None,
-        )
-        return client_pb
-
-    @staticmethod
-    def _proto2object(proto: Client_PB) -> "Client":
-        module_parts = proto.obj_type.split(".")
-        klass = module_parts.pop()
-        obj_type = getattr(sys.modules[".".join(module_parts)], klass)
-
-        obj = obj_type(
-            name=proto.name,
-            routes=[deserialize(route) for route in proto.routes],
-            network=deserialize(proto.network) if proto.HasField("network") else None,
-            domain=deserialize(proto.domain) if proto.HasField("domain") else None,
-            device=deserialize(proto.device) if proto.HasField("device") else None,
-            vm=deserialize(proto.vm) if proto.HasField("vm") else None,
-        )
-
-        if type(obj) != obj_type:
-            traceback_and_raise(
-                TypeError(
-                    f"Deserializing Client. Expected type {obj_type}. Got {type(obj)}"
-                )
-            )
-
-        return obj
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return Client_PB
-
     @property
     def keys(self) -> str:
         verify = (
@@ -378,7 +313,10 @@ class Client(AbstractNodeClient):
         return keys
 
     def __hash__(self) -> Any:
-        return hash(self.id)
+        return hash(self.id.no_dash)
+
+    def __eq__(self, other: AbstractNodeClient) -> bool:
+        return self.node_uid == other.node_uid
 
 
 GET_OBJECT_TIMEOUT = 60  # seconds
@@ -391,7 +329,7 @@ class StoreClient:
     @property
     def store(self) -> List[Pointer]:
         msg = ObjectSearchMessage(
-            address=self.client.address, reply_to=self.client.address
+            address=self.client.node_uid, reply_to=self.client.node_uid
         )
 
         results = getattr(
@@ -515,7 +453,7 @@ class StoreClient:
             return self.store[key]
         elif isinstance(key, UID):
             msg = ObjectSearchMessage(
-                address=self.client.address, reply_to=self.client.address, obj_id=key
+                address=self.client.node_uid, reply_to=self.client.node_uid, obj_id=key
             )
             results = getattr(
                 self.client.send_immediate_msg_with_reply(

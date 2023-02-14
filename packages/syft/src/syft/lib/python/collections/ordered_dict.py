@@ -6,43 +6,19 @@ from collections.abc import ValuesView
 from typing import Any
 from typing import Optional
 
-# third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
-
 # relative
-from ....core.common.serde.deserialize import _deserialize as deserialize
-from ....core.common.serde.serializable import serializable
-from ....core.common.serde.serialize import _serialize as serialize
-from ....core.common.uid import UID
 from ....logger import traceback_and_raise
-from ....proto.lib.python.collections.ordered_dict_pb2 import (
-    OrderedDict as OrderedDict_PB,
-)
 from ..iterator import Iterator
 from ..primitive_factory import PrimitiveFactory
 from ..primitive_factory import isprimitive
 from ..primitive_interface import PyPrimitive
 from ..types import SyPrimitiveRet
-from ..util import downcast
 from ..util import upcast
 
 
-@serializable()
-class OrderedDict(PyOrderedDict, PyPrimitive):
-    def __init__(self, *args: Any, _id: UID = UID(), **kwds: Any):
+class SyOrderedDict(PyOrderedDict, PyPrimitive):
+    def __init__(self, *args: Any, **kwds: Any):
         super().__init__(*args, **kwds)
-        self._id = _id
-
-    @property
-    def id(self) -> UID:
-        """We reveal PyPrimitive.id as a property to discourage users and
-        developers of Syft from modifying .id attributes after an object
-        has been initialized.
-
-        :return: returns the unique id of the object
-        :rtype: UID
-        """
-        return self._id
 
     def __contains__(self, other: Any) -> SyPrimitiveRet:
         res = super().__contains__(other)
@@ -146,49 +122,6 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
             )
         return Iterator(ValuesView(self), max_len=max_len)
 
-    def _object2proto(self) -> OrderedDict_PB:
-        id_ = serialize(obj=self.id)
-        # serialize to bytes so that we can avoid using StorableObject
-        # otherwise we get recursion where the permissions of StorableObject
-        # themselves utilise Dict
-        keys = [
-            serialize(obj=downcast(value=element), to_bytes=True)
-            for element in self.keys()
-        ]
-        # serialize to bytes so that we can avoid using StorableObject
-        # otherwise we get recursion where the permissions of StorableObject
-        # themselves utilise Dict
-        values = [
-            serialize(obj=downcast(value=element), to_bytes=True)
-            for element in self.values()
-        ]
-        return OrderedDict_PB(id=id_, keys=keys, values=values)
-
-    @staticmethod
-    def _proto2object(proto: OrderedDict_PB) -> "OrderedDict":
-        id_: UID = deserialize(blob=proto.id)
-        # deserialize from bytes so that we can avoid using StorableObject
-        # otherwise we get recursion where the permissions of StorableObject
-        # themselves utilise OrderedDict
-        values = [
-            deserialize(blob=upcast(value=element), from_bytes=True)
-            for element in proto.values
-        ]
-        # deserialize from bytes so that we can avoid using StorableObject
-        # otherwise we get recursion where the permissions of StorableObject
-        # themselves utilise OrderedDict
-        keys = [
-            deserialize(blob=upcast(value=element), from_bytes=True)
-            for element in proto.keys
-        ]
-        new_dict = OrderedDict(dict(zip(keys, values)))
-        new_dict._id = id_
-        return new_dict
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return OrderedDict_PB
-
     def upcast(self) -> PyOrderedDict:
         # recursively upcast
-        return OrderedDict((k, upcast(v)) for k, v in self.items())
+        return PyOrderedDict((k, upcast(v)) for k, v in self.items())

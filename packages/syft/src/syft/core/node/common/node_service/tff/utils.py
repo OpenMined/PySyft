@@ -17,7 +17,7 @@ try:
     # third party
     import tensorflow as tf
     import tensorflow_federated as tff
-    from tensorflow_federated.python.learning.model_utils import ModelWeights
+    from tensorflow_federated.python.learning.models import ModelWeights
 except Exception:  # nosec
     # no tff
     pass
@@ -64,7 +64,12 @@ def train_model(
     shutil.rmtree("_tmp")
 
     # Send the train message to the domain
-    msg = TFFMessageWithReply(params=params, model_bytes=model_bytes)
+    msg = TFFMessageWithReply(
+        params=params,
+        model_bytes=model_bytes,
+        address=domain.node_uid,
+        reply_to=domain.node_uid,
+    )
     reply_msg = domain.send_immediate_msg_with_reply(msg, timeout=timeout)
 
     # Read the serialized weights

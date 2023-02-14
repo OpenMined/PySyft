@@ -21,7 +21,7 @@ import pytest
 # syft absolute
 from syft.core.common.uid import UID
 from syft.lib.python import SyNone
-from syft.lib.python.collections import OrderedDict as SyOrderedDict
+from syft.lib.python.collections import SyOrderedDict
 
 
 def assertEqual(left, right):
@@ -118,12 +118,6 @@ def test_update():
 
     pytest.raises(TypeError, OrderedDict().update, 42)
     pytest.raises(TypeError, OrderedDict().update, (), ())
-
-    d = OrderedDict(
-        [("a", 1), ("b", 2), ("c", 3), ("d", 44), ("e", 55)],
-        _id=UID.from_string(value="{12345678-1234-5678-1234-567812345678}"),
-    )
-    assert d.id.__eq__(UID.from_string(value="{12345678-1234-5678-1234-567812345678}"))
 
 
 def test_init_calls():
@@ -355,10 +349,6 @@ def test_reduce_not_too_fat():
     od = OrderedDict(pairs)
     assert isinstance(od.__dict__, dict)
 
-    res = od.__reduce__()[2]
-    del res["_id"]
-    assertEqual(res, {})
-
     od.x = 10
     assertEqual(od.__dict__["x"], 10)
     assertEqual(od.__reduce__()[2], {"x": 10})
@@ -369,10 +359,10 @@ def test_repr():
     od = OrderedDict([("c", 1), ("b", 2), ("a", 3), ("d", 4), ("e", 5), ("f", 6)])
     assertEqual(
         repr(od),
-        "OrderedDict([('c', 1), ('b', 2), ('a', 3), ('d', 4), ('e', 5), ('f', 6)])",
+        "SyOrderedDict([('c', 1), ('b', 2), ('a', 3), ('d', 4), ('e', 5), ('f', 6)])",
     )
     assertEqual(eval(repr(od)), od)
-    assertEqual(repr(OrderedDict()), "OrderedDict()")
+    assertEqual(repr(OrderedDict()), "SyOrderedDict()")
 
 
 def test_repr_recursive():
@@ -382,7 +372,7 @@ def test_repr_recursive():
     od["x"] = od
     assertEqual(
         repr(od),
-        f"OrderedDict([('a', {repr(SyNone)}), ('b', {repr(SyNone)}), ('c', {repr(SyNone)}), ('x', ...)])",
+        f"SyOrderedDict([('a', {repr(SyNone)}), ('b', {repr(SyNone)}), ('c', {repr(SyNone)}), ('x', ...)])",
     )
 
 

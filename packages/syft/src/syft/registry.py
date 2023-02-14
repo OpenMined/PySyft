@@ -31,7 +31,7 @@ NETWORK_REGISTRY_REPO = "https://github.com/OpenMined/NetworkRegistry"
 
 class NetworkRegistry:
     def __init__(self) -> None:
-        self.networks: List[Dict] = []
+        self.all_networks: List[Dict] = []
         try:
             response = requests.get(NETWORK_REGISTRY_URL)
             network_json = response.json()
@@ -43,7 +43,6 @@ class NetworkRegistry:
 
     @property
     def online_networks(self) -> List[Dict]:
-
         networks = self.all_networks
 
         def check_network(network: Dict) -> Optional[Dict[Any, Any]]:

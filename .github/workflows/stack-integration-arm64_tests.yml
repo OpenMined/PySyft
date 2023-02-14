@@ -59,14 +59,14 @@ jobs:
 
       - name: Install tox
         run: |
-          pip install tox --upgrade
+          pip install -U tox
 
       - name: Install Docker Compose
         if: runner.os == 'Linux'
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.7.0
+          DOCKER_COMPOSE_VERSION=v2.15.1
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 
@@ -134,7 +134,7 @@ jobs:
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install tox --upgrade
+          pip install -U tox
 
       - name: Show choco installed packages
         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
@@ -171,17 +171,12 @@ jobs:
         run: |
           python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
 
-      - name: Install tff python 3.10
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          pip install ./packages/grid/backend/wheels/tensorflow_federated-0.36.0-py2.py3-none-any.whl
-
       - name: Install Docker Compose
         if: steps.changes.outputs.stack == 'true' && runner.os == 'Linux'
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.7.0
+          DOCKER_COMPOSE_VERSION=v2.15.1
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 

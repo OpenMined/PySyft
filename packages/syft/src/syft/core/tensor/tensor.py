@@ -8,6 +8,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Tuple
 from typing import Union
 
@@ -21,14 +22,7 @@ from ...ast.util import pointerize_args_and_kwargs
 from ...common.lib_ast_shares import downcast_args_and_kwargs
 from ...core.adp.data_subject_ledger import DataSubjectLedger
 from ...util import inherit_tags
-from ..common.serde.capnp import CapnpModule
-from ..common.serde.capnp import chunk_bytes
-from ..common.serde.capnp import combine_bytes
-from ..common.serde.capnp import get_capnp_schema
-from ..common.serde.capnp import serde_magic_header
-from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import serializable
-from ..common.serde.serialize import _serialize as serialize
 from ..common.uid import UID
 from ..node.abstract.node import AbstractNodeClient
 from ..node.common.action import smpc_action_functions
@@ -51,11 +45,11 @@ from .smpc.mpc_tensor import MPCTensor
 
 
 class TensorPointer(Pointer):
-
     # Must set these at class init time despite
     # the fact that klass.Class tries to override them (unsuccessfully)
     __name__ = "TensorPointer"
     __module__ = "syft.core.tensor.tensor"
+    PUBLISH_POINTER_TYPE = "numpy.ndarray"
 
     def __init__(
         self,
@@ -67,7 +61,6 @@ class TensorPointer(Pointer):
         public_shape: Optional[Tuple[int, ...]] = None,
         public_dtype: Optional[Union[str, np.dtype]] = None,
     ):
-
         super().__init__(
             client=client,
             id_at_location=id_at_location,
@@ -145,7 +138,7 @@ class TensorPointer(Pointer):
                 kwargs=pointer_kwargs,
                 id_at_location=result_id_at_location,
                 seed_id_locations=seed_id_locations,
-                address=self.client.address,
+                address=self.client.node_uid,
             )
             self.client.send_immediate_msg_without_reply(msg=cmd)
 
@@ -165,7 +158,7 @@ class TensorPointer(Pointer):
             other_dtype = other.public_dtype
         elif isinstance(other, (int, float)):
             other_shape = (1,)
-            other_dtype = np.int32
+            other_dtype = DEFAULT_INT_NUMPY_TYPE
         elif isinstance(other, bool):
             other_shape = (1,)
             other_dtype = np.dtype("bool")
@@ -181,16 +174,13 @@ class TensorPointer(Pointer):
                 op_str, self.public_shape, other_shape
             )
 
-        if self.public_dtype is not None and other_dtype is not None:
-            if self.public_dtype != other_dtype:
-                raise ValueError(
-                    f"Type for self and other do not match ({self.public_dtype} vs {other_dtype})"
-                )
-            result_public_dtype = self.public_dtype
+        # calculate the dtype of the result based on the op_str
+        result_public_dtype = utils.get_dtype(
+            op_str, self.public_shape, other_shape, self.public_dtype, other_dtype
+        )
 
         result.public_shape = result_public_shape
         result.public_dtype = result_public_dtype
-
         return result
 
     @staticmethod
@@ -215,14 +205,25 @@ class TensorPointer(Pointer):
                 secret=other, shape=other.public_shape, parties=parties
             )
             func = getattr(self_mpc, op_str)
-            return func(other_mpc)
+            result = func(other_mpc)
+
+            # We check to avoid calling id_at_location for MPCTensors
+            # since they don't have this attribute.
+            if hasattr(result, "id_at_location"):
+                other.client.processing_pointers[result.id_at_location] = True
         elif isinstance(other, MPCTensor):
             # "self" should be secretly shared
             other_mpc, self_mpc = MPCTensor.sanity_checks(other, self)
             func = getattr(self_mpc, op_str)
-            return func(other_mpc)
+            result = func(other_mpc)
+        else:
+            result = self._apply_tensor_op(other=other, op_str=op_str, **kwargs)
 
-        return self._apply_tensor_op(other=other, op_str=op_str, **kwargs)
+        # We check to avoid calling id_at_location for MPCTensors
+        # since they don't have this attribute.
+        if hasattr(result, "id_at_location"):
+            self.client.processing_pointers[result.id_at_location] = True
+        return result
 
     def __add__(
         self,
@@ -416,14 +417,12 @@ class TensorPointer(Pointer):
 
 
 def to32bit(np_array: np.ndarray, verbose: bool = True) -> np.ndarray:
-
     if np_array.dtype == np.int64:
         if verbose:
             print("Casting internal tensor to int32")
         out = np_array.astype(np.int32)
 
     elif np_array.dtype == np.float64:
-
         if verbose:
             print("Casting internal tensor to float32")
         out = np_array.astype(np.float32)
@@ -434,15 +433,17 @@ def to32bit(np_array: np.ndarray, verbose: bool = True) -> np.ndarray:
     return out
 
 
-@serializable(capnp_bytes=True)
+@serializable(recursive_serde=True)
 class Tensor(
     PassthroughTensor,
     PhiTensorAncestor,
     FixedPrecisionTensorAncestor,
     # MPCTensorAncestor,
 ):
-
-    # __attr_allowlist__ = ["child", "tag_name", "public_shape", "public_dtype"]
+    __attr_allowlist__ = ["child", "tag_name", "public_shape", "public_dtype"]
+    __serde_overrides__: Dict[str, Sequence[Callable]] = {
+        "public_dtype": ((lambda x: str(x), lambda x: np.dtype(x)))
+    }
 
     PointerClassOverride = TensorPointer
 
@@ -472,7 +473,6 @@ class Tensor(
             and not isinstance(child, np.ndarray)
             and not isinstance(child, GammaTensor)
         ):
-
             raise Exception(
                 f"Data: {child} ,type: {type(child)} must be list or nd.array "
             )
@@ -514,6 +514,13 @@ class Tensor(
         self.public_shape = public_shape
         self.public_dtype = public_dtype
 
+        # TODO: re-enable this in a way that doesnt happen when internal methods
+        # call the constructor so it doesn't spam the output of notebooks and ci
+        # print(
+        #     "Tensor created! You can activate Differential Privacy protection by calling"
+        #     ".private() or .annotate_with_dp_metadata()."
+        # )
+
     def tag(self, name: str) -> Tensor:
         self.tag_name = name
         return self
@@ -544,7 +551,7 @@ class Tensor(
 
         if isinstance(self.child, PhiTensor):
             return TensorWrappedPhiTensorPointer(
-                data_subjects=self.child.data_subjects,
+                data_subject=self.child.data_subject,
                 client=client,
                 id_at_location=id_at_location,
                 object_type=object_type,
@@ -557,14 +564,14 @@ class Tensor(
             )
         elif isinstance(self.child, GammaTensor):
             return TensorWrappedGammaTensorPointer(
-                data_subjects=self.child.data_subjects,
+                # data_subjects=self.child.data_subjects,
                 client=client,
                 id_at_location=id_at_location,
                 object_type=object_type,
                 tags=tags,
                 description=description,
-                min_vals=self.child.min_vals,
-                max_vals=self.child.max_vals,
+                # min_vals=self.child.min_vals,
+                # max_vals=self.child.max_vals,
                 public_shape=getattr(self, "public_shape", None),
                 public_dtype=getattr(self, "public_dtype", None),
             )
@@ -605,42 +612,6 @@ class Tensor(
 
         return None
 
-    def _object2bytes(self) -> bytes:
-        schema = get_capnp_schema(schema_file="tensor.capnp")
-        tensor_struct: CapnpModule = schema.Tensor  # type: ignore
-        tensor_msg = tensor_struct.new_message()
-
-        # this is how we dispatch correct deserialization of bytes
-        tensor_msg.magicHeader = serde_magic_header(type(self))
-
-        chunk_bytes(serialize(self.child, to_bytes=True), "child", tensor_msg)  # type: ignore
-
-        tensor_msg.publicShape = serialize(self.public_shape, to_bytes=True)
-
-        # upcast the String class before setting to capnp
-        public_dtype_func = getattr(
-            self.public_dtype, "upcast", lambda: self.public_dtype
-        )
-        tensor_msg.publicDtype = str(public_dtype_func())
-        tensor_msg.tagName = self.tag_name
-
-        return tensor_msg.to_bytes_packed()
-
-    @staticmethod
-    def _bytes2object(buf: bytes) -> Tensor:
-        schema = get_capnp_schema(schema_file="tensor.capnp")
-        tensor_struct: CapnpModule = schema.Tensor  # type: ignore
-        # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
-        MAX_TRAVERSAL_LIMIT = 2**64 - 1
-        tensor_msg = tensor_struct.from_bytes_packed(
-            buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        )
-
-        tensor = Tensor(
-            child=deserialize(combine_bytes(tensor_msg.child), from_bytes=True),
-            public_shape=deserialize(tensor_msg.publicShape, from_bytes=True),
-            public_dtype=np.dtype(tensor_msg.publicDtype),
-        )
-        tensor.tag_name = tensor_msg.tagName
-
-        return tensor
+    def mpc_swap(self, other: Tensor) -> Tensor:
+        self.child.child = other.child.child
+        return self

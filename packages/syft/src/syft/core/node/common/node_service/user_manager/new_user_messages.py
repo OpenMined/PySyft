@@ -11,14 +11,16 @@ from pydantic import EmailStr
 from typing_extensions import final
 
 # relative
+from ......telemetry import instrument
 from .....common.serde.serializable import serializable
 from ....abstract.node_service_interface import NodeServiceInterface
 from ....domain_interface import DomainInterface
 from ....domain_msg_registry import DomainMessageRegistry
+from ....new.user import User
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import UserNotFoundError
-from ...node_table.utils import model_to_json
+from ...node_table.utils import syft_object_to_json
 from ...permissions.permissions import BasePermission
 from ...permissions.permissions import BinaryOperation
 from ...permissions.permissions import UnaryOperation
@@ -31,10 +33,10 @@ from ..generic_payload.syft_message import ReplyPayload
 from ..generic_payload.syft_message import RequestPayload
 
 
+@instrument
 @serializable(recursive_serde=True)
 @final
 class CreateUserMessage(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         """Payload fields and types used during a User Creation Request."""
@@ -46,7 +48,7 @@ class CreateUserMessage(SyftMessage, DomainMessageRegistry):
         institution: Optional[str]
         website: Optional[str]
         budget: Optional[float] = 0.0
-        daa_pdf: Optional[bytes] = b""
+        daa_pdf: Optional[bytes] = None
 
     # Pydantic Inner class to define expected reply payload fields.
     class Reply(ReplyPayload):
@@ -77,7 +79,6 @@ class CreateUserMessage(SyftMessage, DomainMessageRegistry):
         Returns:
             ReplyPayload: Message on successful user creation.
         """
-
         # Check if this email was already registered
         try:
             node.users.first(email=self.payload.email)
@@ -113,7 +114,6 @@ class CreateUserMessage(SyftMessage, DomainMessageRegistry):
 @serializable(recursive_serde=True)
 @final
 class GetUserMessage(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         user_id: int
@@ -147,13 +147,14 @@ class GetUserMessage(SyftMessage, DomainMessageRegistry):
             ReplyPayload: Details of the user.
         """
         # Retrieve User Model
-        user = node.users.first(id=self.payload.user_id)  # type: ignore
+        user = node.users.first(id_int=self.payload.user_id)  # type: ignore
+
+        user_dict = syft_object_to_json(user)
+        user_dict["id"] = user.id_int
+        user_dict["role"] = user.role["name"]
 
         # Build Reply
-        reply = GetUserMessage.Reply(**model_to_json(user))
-
-        # Use role name instead of role ID.
-        reply.role = node.roles.first(id=reply.role).name  # type: ignore
+        reply = GetUserMessage.Reply(**user_dict)
 
         # Get budget spent
         reply.budget_spent = node.users.get_budget_for_user(  # type: ignore
@@ -169,7 +170,6 @@ class GetUserMessage(SyftMessage, DomainMessageRegistry):
 @serializable(recursive_serde=True)
 @final
 class GetUsersMessage(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         pass
@@ -197,10 +197,14 @@ class GetUsersMessage(SyftMessage, DomainMessageRegistry):
         users = node.users.all()
         users_list = list()
         for user in users:
-            user_model = GetUserMessage.Reply(**model_to_json(user))
+            # 🟡 TODO 25: remove this check once ported to new service
+            if isinstance(user, User):
+                continue
+            user_dict = syft_object_to_json(user)
+            user_dict["id"] = user.id_int
+            user_dict["role"] = user.role["name"]
 
-            # Use role name instead of role ID.
-            user_model.role = node.roles.first(id=user_model.role).name
+            user_model = GetUserMessage.Reply(**user_dict)
 
             # Remaining Budget
             # TODO:
@@ -222,7 +226,6 @@ class GetUsersMessage(SyftMessage, DomainMessageRegistry):
 @serializable(recursive_serde=True)
 @final
 class DeleteUserMessage(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         user_id: int
@@ -247,19 +250,18 @@ class DeleteUserMessage(SyftMessage, DomainMessageRegistry):
             ReplyPayload: message on successful user deletion.
         """
 
-        node.users.delete(id=self.payload.user_id)
+        node.users.delete(id_int=self.payload.user_id)
 
         return DeleteUserMessage.Reply()
 
     def get_permissions(self) -> List[Union[Type[BasePermission], UnaryOperation]]:
         """Returns the list of permission classes applicable to this message."""
-        return [UserCanCreateUsers, ~UserIsOwner]
+        return [UserIsOwner]
 
 
 @serializable(recursive_serde=True)
 @final
 class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         user_id: int
@@ -304,17 +306,15 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
             or self.payload.name
             or self.payload.institution
             or self.payload.website
+            or self.payload.budget
         )
-
-        # Change own information
-        _valid_user = node.users.contain(id=self.payload.user_id)
 
         if not _valid_parameters:
             raise MissingRequestKeyError(
-                "Missing json fields ( email,password,role,groups, name )"
+                "Missing json fields (email, password, role, groups, name or budget)"
             )
 
-        if not _valid_user:
+        if not node.users.contain(id_int=self.payload.user_id):
             raise UserNotFoundError
 
         payload_dict = self.payload.dict(exclude_unset=True)
@@ -324,11 +324,12 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
         # has proper permissions.
         # TODO: This can also be simplified further.
         if self.payload.role:  # type: ignore
-            target_user = node.users.first(id=user_id)
+            target_user = node.users.first(id_int=user_id)
             _allowed = (
-                self.payload.role != node.roles.owner_role.name  # Target Role != Owner
-                and target_user.role
-                != node.roles.owner_role.id  # Target User Role != Owner
+                self.payload.role
+                != node.roles.owner_role["name"]  # Target Role != Owner
+                and target_user.role["name"]
+                != node.roles.owner_role["name"]  # Target User Role != Owner
                 and node.users.can_create_users(
                     verify_key=verify_key
                 )  # Key Permissions
@@ -337,9 +338,11 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
             # If all premises were respected
             if _allowed:
                 role = payload_dict.pop("role")
-                new_role_id = node.roles.first(name=role).id
-                node.users.set(user_id=user_id, role=new_role_id)  # type: ignore
-            elif target_user.role == node.roles.owner_role.id:
+                for k, v in node.roles.role_dict:
+                    if v["name"] == role:
+                        break
+                node.users.set(user_id=user_id, role=v)  # type: ignore
+            elif target_user.role["name"] == node.roles.owner_role["name"]:
                 raise AuthorizationError(
                     "You're not allowed to change Owner user roles!"
                 )

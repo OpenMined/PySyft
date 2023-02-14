@@ -12,7 +12,7 @@ from typing import Union
 
 # third party
 import numpy as np
-from scipy.ndimage.interpolation import rotate
+from scipy.ndimage import rotate
 
 # relative
 from ..common.serde.serializable import serializable
@@ -53,6 +53,7 @@ class lazyrepeatarray:
     """
 
     __attr_allowlist__ = ["data", "shape"]
+    __array_ufunc__ = None
 
     def __init__(self, data: np.ndarray, shape: Tuple[int, ...]) -> None:
         """
@@ -117,6 +118,9 @@ class lazyrepeatarray:
         else:
             return self.__class__(data=self.data + other.data, shape=self.shape)
 
+    def __radd__(self, other: Any) -> lazyrepeatarray:
+        return self.__add__(other)
+
     def __sub__(self, other: Any) -> lazyrepeatarray:
         """
         THIS MIGHT LOOK LIKE COPY-PASTED CODE!
@@ -151,6 +155,9 @@ class lazyrepeatarray:
             )
         else:
             return self.__class__(data=self.data * other.data, shape=self.shape)
+
+    def __rmul__(self, other: Any) -> lazyrepeatarray:
+        return self.__mul__(other)
 
     def __matmul__(self, other: Any) -> lazyrepeatarray:
         """
@@ -226,6 +233,10 @@ class lazyrepeatarray:
             )
         else:
             return self.__class__(data=self.data // other.data, shape=self.shape)
+
+    def __rfloordiv__(self, other: Any) -> lazyrepeatarray:
+        res = other // self.data
+        return lazyrepeatarray(data=res, shape=self.shape)
 
     def __rmatmul__(self, other: Any) -> lazyrepeatarray:
         """
@@ -389,7 +400,6 @@ class lazyrepeatarray:
         return self.__class__(self.data.astype(np_type), self.shape)
 
     def to_numpy(self) -> np.ndarray:
-
         # FIX: shape is not set sometimes
         if not self.shape:
             self.shape = self.data.shape
@@ -419,6 +429,27 @@ class lazyrepeatarray:
         return lazyrepeatarray(data=res, shape=res.shape)
 
 
+def has_nans_inf(min_val: lazyrepeatarray, max_val: lazyrepeatarray) -> bool:
+    """Helper function that detects if a LRA has NaNs or Inf, and raises exceptions.
+    This is so that we can raise Exceptions at the pointer level."""
+    raise_exception = False
+    if min_val.data.size == 1:
+        if np.isnan(min_val.data) or np.isinf(min_val.data):
+            raise_exception = True
+    else:
+        if np.isnan(min_val.data).any() or np.isnan(min_val.data).any():
+            raise_exception = True
+
+    if max_val.data.size == 1:
+        if np.isnan(max_val.data) or np.isinf(max_val.data):
+            raise_exception = True
+    else:
+        if np.isnan(max_val.data).any() or np.isinf(max_val.data).any():
+            raise_exception = True
+
+    return raise_exception
+
+
 # As the min and max values calculation is the same regardless of the tensor type,
 # We centralize this method as baseline for calculation for min/max values
 def compute_min_max(
@@ -434,10 +465,13 @@ def compute_min_max(
 
     if op_str in [
         "__add__",
+        "__radd__",
         "__matmul__",
         "__rmatmul__",
         "__truediv__",
         "__floordiv__",
+        "__rtruediv__",
+        "__rfloordiv__",
     ]:
         if is_acceptable_simple_type(other):
             min_vals = getattr(x_min_vals, op_str)(other)
@@ -450,7 +484,7 @@ def compute_min_max(
                 f"Not supported type for lazy repeat array computation: {type(other)}"
             )
 
-    elif op_str in ["__sub__", "__mul__"]:
+    elif op_str in ["__sub__", "__mul__", "__rmul__"]:
         if is_acceptable_simple_type(other):
             min_vals = getattr(x_min_vals, op_str)(other)
             max_vals = getattr(x_max_vals, op_str)(other)
@@ -536,6 +570,9 @@ def compute_min_max(
         dummy_res = np.empty(x_min_vals.shape).max(*args, **kwargs)
         min_vals = lazyrepeatarray(data=x_min_vals.data, shape=dummy_res.shape)
         max_vals = lazyrepeatarray(data=x_max_vals.data, shape=dummy_res.shape)
+    elif op_str == "zeros_like":
+        min_vals = x_min_vals.zeros_like(*args, **kwargs)
+        max_vals = x_max_vals.zeros_like(*args, **kwargs)
     elif op_str == "ones_like":
         min_vals = x_min_vals.ones_like(*args, **kwargs)
         max_vals = x_max_vals.ones_like(*args, **kwargs)
@@ -774,8 +811,32 @@ def compute_min_max(
 
         min_vals = lazyrepeatarray(data=_min_vals, shape=x_min_vals.shape)
         max_vals = lazyrepeatarray(data=_max_vals, shape=x_max_vals.shape)
+    elif op_str == "__rsub__":
+        x_min_vals, x_max_vals = compute_min_max(
+            x_min_vals=x_min_vals, x_max_vals=x_max_vals, other=other, op_str="__sub__"
+        )
+        return compute_min_max(
+            x_min_vals=x_min_vals, x_max_vals=x_max_vals, other=-1, op_str="__mul__"
+        )
 
     else:
         raise ValueError(f"Invaid Operation for LazyRepeatArray: {op_str}")
 
-    return (min_vals, max_vals)
+    if has_nans_inf(min_vals, max_vals):
+        raise Exception(
+            "I'm sorry, but our DP Privacy Accountant can't yet handle NaNs or Infinite values."
+            "This was likely caused by dividing by zero. Please find a way to approximate your "
+            "computation without dividing by a private value which might be zero. "
+            "\n"
+            "This can usually be done by computing the function piecewise- by performing three "
+            "computations which are merged through masking & summing; one which addresses what happens"
+            "if the denominator is positive-definite, another if it is negative-definite, and finally"
+            "one which addresses what happens if the denominator is 0 exactly. Use comparison operators,"
+            "masking, and summing to accomplish this (not if statements- which don't work on private"
+            "values)."
+            "\n"
+            "Again, we apologize for the inconvenience and are working to extend support to this in "
+            "future versions of PySyft."
+        )
+
+    return min_vals, max_vals
