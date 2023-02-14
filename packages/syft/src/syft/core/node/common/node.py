@@ -383,7 +383,7 @@ class Node(AbstractNode):
         )
 
     def get_api(self) -> SyftAPI:
-        return SyftAPI.for_user(node_uid=self.id)
+        return SyftAPI.for_user(node=self)
 
     def add_peer_routes(self, peer: NoSQLNode) -> None:
         try:
