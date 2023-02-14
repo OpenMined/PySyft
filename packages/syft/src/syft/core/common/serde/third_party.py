@@ -3,6 +3,7 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from oblv.oblv_client import OblvClient
 import pydantic
+from pymongo.collection import Collection
 from result import Err
 from result import Ok
 from result import Result
@@ -41,6 +42,9 @@ recursive_serde_register_type(Result, attr_allowlist=["_value"])
 
 # exceptions
 recursive_serde_register(cls=TypeError)
+
+# mongo collection
+recursive_serde_register_type(Collection)
 
 # how else do you import a relative file to execute it?
 NOTHING = None
