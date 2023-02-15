@@ -375,11 +375,14 @@ class Node(AbstractNode):
         return client
 
     def get_metadata_for_client(self) -> Metadata:
+        node_setup = self.setup.first()
         return Metadata(
             name=self.name if self.name else "",
             id=self.id,
             node_type=str(type(self).__name__),
             version=str(__version__),
+            description=node_setup.description,
+            deployed_on=node_setup.deployed_on,
         )
 
     def get_api(self) -> SyftAPI:
