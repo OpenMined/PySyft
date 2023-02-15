@@ -81,6 +81,14 @@ def create_deployment(
         )
     except Exception as e:
         raise Exception(e)
+
+    import pdb
+
+    pdb.set_trace()
+    verify_keys = {
+        "root_verify_key": [client.verify_key for client in domain_clients],
+        "ds_verify_key": [oblv_client.verify_key],
+    }
     build_args = {
         "auth": {},
         "users": {"domain": [], "user": []},
