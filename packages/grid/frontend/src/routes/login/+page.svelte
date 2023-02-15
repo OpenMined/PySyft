@@ -2,7 +2,7 @@
 	import LoginHeader from '../../components/LoginHeader.svelte';
 	import RegisterModal from '../../components/RegisterModal.svelte';
 	import { Input, Label, Helper, Button } from 'flowbite-svelte';
-	import { getSerde, store } from '../../lib/store.js';
+	import { getClient, store } from '../../lib/store.js';
 	import { prettyName } from '../../lib/utils.js';
 	import { goto } from '$app/navigation';
 	let email = '';
@@ -10,52 +10,23 @@
 	$: formModal = false;
 	let inputColor = 'base';
 	let displayError = 'none';
+	let errorText = '';
 	let localStore;
+
 
 	store.subscribe((value) => {
 		localStore = value;
 	});
 
-	async function loadScreenInfo(serde) {
-		return fetch('http://localhost:8081/api/v1/syft/metadata')
-			.then((response) => response.arrayBuffer())
-			.then(function (response) {
-				let metadata = serde.deserialize(response);
 
-				let nodeAddrObj = {};
-				metadata.get('id').forEach((value, key) => {
-					nodeAddrObj[key] = value;
-				});
-
-				let metadataObj = {};
-				metadata.forEach((value, key) => {
-					metadataObj[key] = value;
-				});
-
-				metadataObj.id = nodeAddrObj;
-				window.sessionStorage.setItem('metadata', JSON.stringify(metadataObj));
-				return metadata;
-			});
-	}
-
-	async function login(email, password, metadata) {
-		await fetch('http://localhost:8081/api/v1/login', {
-			method: 'POST',
-			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify({ email: email, password: password })
-		}).then((response) => {
-			if (response.status === 401) {
+	async function login(client, email, password) {
+		await client.login(email,password)
+			.then( () => {goto('/home')} )
+			.catch( error => {
+				errorText = error.message
 				inputColor = 'red';
 				displayError = 'block';
-			} else {
-				response.json().then((body) => {
-					window.sessionStorage.setItem('token', 'Bearer ' + body['access_token']);
-					localStore.credentials = body['access_token'];
-					store.set(localStore);
-					goto('/home');
-				});
-			}
-		});
+			})
 	}
 
 	const copyToClipBoard = () => {
@@ -71,8 +42,8 @@
 </script>
 
 <main>
-	{#await getSerde() then jsserde}
-		{#await loadScreenInfo(jsserde) then metadata}
+	{#await getClient() then client}
+		{#await client.metadata then metadata}
 			<!-- Login Screen Header -->
 			<LoginHeader version={metadata.get('version')} />
 
@@ -83,7 +54,7 @@
 				<div id="login-blue-circle-bg" />
 
 				<!-- Register Modal -->
-				<RegisterModal bind:formModal {jsserde} nodeId={metadata.get('id').get('value')} />
+				<RegisterModal bind:formModal {client} nodeId={metadata.get('id').get('value')} />
 
 				<!-- Login Window -->
 				<div id="login-window">
@@ -138,7 +109,7 @@
 								class="text-sm"
 								style="text-align: center;display: {displayError}"
 							>
-								Incorrect email or password
+								{errorText}
 							</Helper>
 							<Helper class="text-sm" style="text-align: center"
 								>Don't you have an account yet? Apply for an account <a
@@ -151,7 +122,7 @@
 						</Label>
 						<div style="display:flex; justify-content:center">
 							<Button
-								on:click={() => login(email, password, metadata)}
+								on:click={() => login(client, email, password)}
 								style="width: 30vh;"
 								color="dark">Login</Button
 							>
