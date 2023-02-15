@@ -1,5 +1,6 @@
 <script context="module">
   import * as capnp from 'capnp-ts';
+  import * as nacl from 'js-nacl';
   import { RecursiveSerde } from './capnp/recursive_serde.capnp.js';
   import { KVIterable } from './capnp/kv_iterable.capnp.js';
   import { Iterable } from './capnp/iterable.capnp.js';
@@ -201,6 +202,17 @@
         null,
         {}
       ];
+      this.type_bank['nacl.signing.VerifyKey'] = [
+        true,
+        (key) => {
+          console.log(key);
+        },
+        (buffer) => {
+          console.log(buffer);
+        },
+        null,
+        {}
+      ];
       this.type_bank['builtins.dict'] = [
         true,
         function (dict) {
@@ -320,6 +332,7 @@
       const size = fieldsName.getLength();
       const fqn = rs.getFullyQualifiedName();
       let objSerdeProps = this.type_bank[fqn];
+      console.log('FQN: ', fqn);
       if (size < 1) {
         return this.type_bank[fqn][2](rs.getNonrecursiveBlob().toArrayBuffer());
       } else if (objSerdeProps[2] !== null) {

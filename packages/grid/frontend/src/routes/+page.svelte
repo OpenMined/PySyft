@@ -6,7 +6,7 @@
 <main>
   <h1>PyGrid</h1>
   {#await getClient() then client}
-    {#if !client.access_token }
+    {#if !client.access_token}
       {goto('/login')}
     {:else}
       {goto('/home')}
