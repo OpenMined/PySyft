@@ -16,12 +16,12 @@ from result import Result
 from ....core.node.common.node_table.syft_object import SyftObject
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
-from .credentials import SyftCredentials
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .response import SyftSuccess
 
 
+@serializable(recursive_serde=True)
 class ActionPermission(Enum):
     OWNER = 1
     READ = 2
@@ -32,7 +32,7 @@ class ActionPermission(Enum):
 @serializable(recursive_serde=True)
 class ActionObjectPermission:
     def __init__(
-        self, uid: UID, credentials: SyftCredentials, permission: ActionPermission
+        self, uid: UID, credentials: SyftVerifyKey, permission: ActionPermission
     ):
         self.uid = uid
         self.credentials = credentials
@@ -47,37 +47,31 @@ class ActionObjectPermission:
 
 
 class ActionObjectOWNER(ActionObjectPermission):
-    def __init__(self, uid: UID, credentials: SyftCredentials):
+    def __init__(self, uid: UID, credentials: SyftVerifyKey):
         self.uid = uid
         self.credentials = credentials
         self.permission = ActionPermission.OWNER
 
 
 class ActionObjectREAD(ActionObjectPermission):
-    def __init__(self, uid: UID, credentials: SyftCredentials):
+    def __init__(self, uid: UID, credentials: SyftVerifyKey):
         self.uid = uid
         self.credentials = credentials
         self.permission = ActionPermission.READ
 
 
 class ActionObjectWRITE(ActionObjectPermission):
-    def __init__(self, uid: UID, credentials: SyftCredentials):
+    def __init__(self, uid: UID, credentials: SyftVerifyKey):
         self.uid = uid
         self.credentials = credentials
         self.permission = ActionPermission.WRITE
 
 
 class ActionObjectEXECUTE(ActionObjectPermission):
-    def __init__(self, uid: UID, credentials: SyftCredentials):
+    def __init__(self, uid: UID, credentials: SyftVerifyKey):
         self.uid = uid
         self.credentials = credentials
         self.permission = ActionPermission.EXECUTE
-
-
-@serializable(recursive_serde=True)
-class ActionStorePermissionUpdate:
-    def __init__(self) -> None:
-        pass
 
 
 @serializable(recursive_serde=True)
@@ -89,7 +83,7 @@ class ActionStore:
             root_verify_key = SyftSigningKey.generate().verify_key
         self.root_verify_key = root_verify_key
 
-    def get(self, uid: UID, credentials: SyftCredentials) -> Result[SyftObject, str]:
+    def get(self, uid: UID, credentials: SyftVerifyKey) -> Result[SyftObject, str]:
         # if you get something you need READ permission
         read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
         if self.has_permission(read_permission):
@@ -99,7 +93,7 @@ class ActionStore:
         return Err(f"Permission: {read_permission} denied")
 
     def get_pointer(
-        self, uid: UID, credentials: SyftCredentials, node_uid: UID
+        self, uid: UID, credentials: SyftVerifyKey, node_uid: UID
     ) -> Result[SyftObject, str]:
         # 🟡 TODO 34: do we want pointer read permissions?
         if uid in self.data:
@@ -113,7 +107,7 @@ class ActionStore:
         return uid in self.data
 
     def set(
-        self, uid: UID, credentials: SyftCredentials, syft_object: SyftObject
+        self, uid: UID, credentials: SyftVerifyKey, syft_object: SyftObject
     ) -> Result[SyftSuccess, Err]:
         # if you set something you need WRITE permission
         write_permission = ActionObjectWRITE(uid=uid, credentials=credentials)
@@ -140,7 +134,7 @@ class ActionStore:
         return Err(f"Permission: {write_permission} denied")
 
     def take_ownership(
-        self, uid: UID, credentials: SyftCredentials
+        self, uid: UID, credentials: SyftVerifyKey
     ) -> Result[SyftSuccess, str]:
         # first person using this UID can claim ownership
         if uid not in self.permissions and uid not in self.data:
@@ -155,9 +149,7 @@ class ActionStore:
             return Ok(SyftSuccess(message=f"Ownership of ID: {uid} taken."))
         return Err(f"UID: {uid} already owned.")
 
-    def delete(
-        self, uid: UID, credentials: SyftCredentials
-    ) -> Result[SyftSuccess, str]:
+    def delete(self, uid: UID, credentials: SyftVerifyKey) -> Result[SyftSuccess, str]:
         # if you delete something you need OWNER permission
         # is it bad to evict a key and have someone else reuse it?
         # perhaps we should keep permissions but no data?

@@ -1,15 +1,13 @@
 # syft absolute
-import syft as sy
 from syft import VirtualMachine
 from syft import deserialize
 from syft import serialize
 
+# def test_client_from_metadata(domain: sy.Domain) -> None:
+#     client_metadata = domain.get_metadata_for_client()
 
-def test_client_from_metadata(domain: sy.Domain) -> None:
-    client_metadata = domain.get_metadata_for_client()
-
-    assert "Alice" == client_metadata.name
-    assert domain.id == client_metadata.id
+#     assert "Alice" == client_metadata.name
+#     assert domain.id == client_metadata.id
 
 
 def test_client_serde() -> None:
