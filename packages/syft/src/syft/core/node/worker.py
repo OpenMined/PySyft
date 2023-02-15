@@ -12,18 +12,25 @@ from typing import Type
 from typing import Union
 
 # third party
+import gevent
+import gipc
+from gipc.gipc import _GIPCDuplexHandle
 from nacl.signing import SigningKey
 from result import Err
+from result import Ok
 from result import Result
 
 # relative
 from ... import __version__
 from ...core.node.common.node_table.syft_object import HIGHEST_SYFT_OBJECT_VERSION
 from ...core.node.common.node_table.syft_object import LOWEST_SYFT_OBJECT_VERSION
+from ...core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ...core.node.common.node_table.syft_object import SyftObject
 from ...telemetry import instrument
 from ...util import random_name
+from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import serializable
+from ..common.serde.serialize import _serialize
 from ..common.uid import UID
 from .new.action_service import ActionService
 from .new.action_store import ActionStore
@@ -50,6 +57,17 @@ from .new.user_code_service import UserCodeService
 from .new.user_service import UserService
 from .new.user_stash import UserStash
 
+
+def gipc_encoder(obj):
+    return _serialize(obj, to_bytes=True)
+
+
+def gipc_decoder(obj_bytes):
+    return _deserialize(obj_bytes, from_bytes=True)
+
+
+global_value = 1
+
 NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
 NODE_UID = "NODE_UID"
 
@@ -70,6 +88,14 @@ signing_key_env = get_private_key_env()
 node_uid_env = get_node_uid_env()
 
 
+@serializable(recursive_serde=True)
+class SyftFuture(SyftObject):
+    __canonical_name__ = "SyftFuture"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    resolved: bool = False
+
+
 @instrument
 @serializable(recursive_serde=True)
 class Worker(NewNode):
@@ -86,6 +112,7 @@ class Worker(NewNode):
         store_config: Optional[StoreConfig] = None,
         root_email: str = "info@openmined.org",
         root_password: str = "changethis",
+        processes: int = 0,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -127,6 +154,7 @@ class Worker(NewNode):
             password="changethis",
             node=self,
         )
+        self.processes = processes
         self.post_init()
 
     def __repr__(self) -> str:
@@ -205,7 +233,7 @@ class Worker(NewNode):
 
     def handle_api_call(
         self, api_call: Union[SyftAPICall, SignedSyftAPICall]
-    ) -> Result[SyftObject, Err]:
+    ) -> Result[Union[SyftFuture, SyftObject], Err]:
         if self.required_signed_calls and isinstance(api_call, SyftAPICall):
             return Err(
                 f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."  # type: ignore
@@ -214,19 +242,33 @@ class Worker(NewNode):
             if not api_call.is_valid:
                 return Err("Your message signature is invalid")  # type: ignore
 
-        credentials = api_call.credentials
-        api_call = api_call.message
+        print("execute_api_call with processes", self.processes)
+        result = None
+        global global_value
+        if self.processes == 0:
+            credentials = api_call.credentials
+            api_call = api_call.message
 
-        context = AuthedServiceContext(node=self, credentials=credentials)
+            context = AuthedServiceContext(node=self, credentials=credentials)
 
-        # 🔵 TODO 4: Add @service decorator to autobind services into the SyftAPI
-        if api_call.path not in self.service_config:
-            return Err(f"API call not in registered services: {api_call.path}")  # type: ignore
+            # 🔵 TODO 4: Add @service decorator to autobind services into the SyftAPI
+            if api_call.path not in self.service_config:
+                return Err(f"API call not in registered services: {api_call.path}")  # type: ignore
 
-        _private_api_path = ServiceConfigRegistry.private_path_for(api_call.path)
-
-        method = self.get_service_method(_private_api_path)
-        result = method(context, *api_call.args, **api_call.kwargs)
+            _private_api_path = ServiceConfigRegistry.private_path_for(api_call.path)
+            method = self.get_service_method(_private_api_path)
+            result = method(context, *api_call.args, **api_call.kwargs)
+        else:
+            global_value += 1
+            print("before global_value", global_value)
+            thread = gevent.spawn(queue_task, api_call, save_result)
+            if api_call.message.blocking:
+                gevent.joinall([thread])
+                result = Ok(thread.value)
+            else:
+                result = Ok(SyftFuture())
+        global_value += 1
+        print("after global_value", global_value)
         return result
 
     def get_api(self) -> SyftAPI:
@@ -242,6 +284,65 @@ class Worker(NewNode):
         self, login_credentials: UserLoginCredentials
     ) -> NodeServiceContext:
         return UnauthedServiceContext(node=self, login_credentials=login_credentials)
+
+
+def task_producer(pipe: _GIPCDuplexHandle, api_call: SyftAPICall) -> Any:
+    print("Producer with pipe")
+    try:
+        with pipe:
+            pipe.put(api_call)
+            gevent.sleep(0)
+            result = pipe.get()
+            pipe.close()
+            print("Producer has result:", result)
+            return result
+    except Exception as e:
+        print("Exception in task_producer", e)
+        pipe.close()
+    print("Failed to produce result")
+
+
+def task_runner(pipe: _GIPCDuplexHandle) -> None:
+    worker = Worker()
+    try:
+        with pipe:
+            api_call = pipe.get()
+            print("got task", type(api_call))
+            result = worker.handle_api_call(api_call)
+            print("got result", result)
+            global global_value
+            global_value += 1
+            print("mid global_value", global_value)
+            pipe.put(result)
+            pipe.close()
+    except Exception as e:
+        print("Exception in task_runner", e)
+        pipe.close()
+    print("Shutting down Task Process")
+
+
+def queue_task(api_call: SyftAPICall, save_result: Callable) -> Optional[Any]:
+    with gipc.pipe(encoder=gipc_encoder, decoder=gipc_decoder, duplex=True) as (
+        cend,
+        pend,
+    ):
+        process = gipc.start_process(task_runner, args=(cend,))
+        producer = gevent.spawn(task_producer, pend, api_call)
+        try:
+            process.join()
+        except KeyboardInterrupt:
+            producer.kill(block=True)
+            process.terminate()
+        process.join()
+
+    result = producer.value
+    save_result(result)
+    print("Queue task got result", result)
+    return result
+
+
+def save_result(result: Any) -> Optional[Any]:
+    print("got result", result)
 
 
 def create_admin_new(
@@ -264,3 +365,132 @@ def create_admin_new(
             return user.ok()
     except Exception as e:
         print("create_admin failed", e)
+
+
+# @serializable(recursive_serde=True)
+# class Thing(SyftObject):
+#     # version
+#     __canonical_name__ = "Thing"
+#     __version__ = SYFT_OBJECT_VERSION_1
+
+#     id: UID
+#     number: float
+
+
+# @serializable(recursive_serde=True)
+# class ExecutorStash(BaseStash):
+#     object_type = Thing
+#     settings: PartitionSettings = PartitionSettings(
+#         name=Thing.__canonical_name__, object_type=Thing
+#     )
+
+#     def __init__(self, store: DocumentStore) -> None:
+#         super().__init__(store=store)
+
+#     def set(self, thing: Thing) -> Result[Thing, str]:
+#         return super().set(thing)
+
+
+# def add_number_slowly(number: float) -> Thing:
+#     # third party
+#     import numpy as np
+
+#     x = np.array([range(1_000_000_00)])
+#     y = x.sum()
+#     thing = Thing(number=y)
+#     print("made thing", thing, thing.number, thing.id)
+#     return thing
+
+
+# class Task:
+#     func_bytes: bytes
+
+#     def __init__(self, func: Callable) -> None:
+#         self.func_bytes = cloudpickle.dumps(func)
+
+#     @property
+#     def func(self) -> Callable:
+#         return cloudpickle.loads(self.func_bytes)
+
+
+# def task_runner(pipe: _GIPCDuplexHandle) -> None:
+#     try:
+#         with pipe:
+#             task = pipe.get()
+#             print("got task", type(task))
+#             result = task.func()
+#             print("got result", result)
+#             pipe.put(result)
+#             pipe.close()
+#     except Exception as e:
+#         print("Exception in task_runner", e)
+#         pipe.close()
+#     print("Shutting down Task Process")
+
+
+# def task_producer(pipe: _GIPCDuplexHandle, task: Task) -> Any:
+#     print("Producer with pipe", pipe, "and task", task)
+#     try:
+#         with pipe:
+#             pipe.put(task)
+#             gevent.sleep(0)
+#             result = pipe.get()
+#             pipe.close()
+#             print("Producer has result:", result)
+#             return result
+#     except Exception as e:
+#         print("Exception in task_producer", e)
+#         pipe.close()
+#     print("Failed to produce result")
+
+
+# def queue_task(task: Task, save_result: Callable) -> Optional[Any]:
+#     with gipc.pipe(duplex=True) as (cend, pend):
+#         process = gipc.start_process(task_runner, args=(cend,))
+#         producer = gevent.spawn(task_producer, pend, task)
+#         try:
+#             process.join()
+#         except KeyboardInterrupt:
+#             producer.kill(block=True)
+#             process.terminate()
+#         process.join()
+
+#     result = producer.value
+#     save_result(result)
+#     print("Queue task got result", result)
+#     return result
+
+
+# @serializable(recursive_serde=True)
+# class ExecutorService(AbstractService):
+#     store: DocumentStore
+#     stash: UserStash
+
+#     def __init__(self, store: DocumentStore) -> None:
+#         self.store = store
+#         self.stash = ExecutorStash(store=store)
+
+#     @service_method(path="executor.run_rask", name="run_task")
+#     def run_task(
+#         self, context: AuthedServiceContext, number: float, blocking: bool = False
+#     ) -> Result[Ok, Err]:
+#         """Initial testing service"""
+
+#         def run_me():
+#             return add_number_slowly(number)
+
+#         def save_result(result):
+#             self.stash.set(result)
+
+#         task = Task(func=run_me)
+
+#         thread = gevent.spawn(queue_task, task, save_result)
+#         if blocking:
+#             gevent.joinall([thread])
+#             return Ok(thread.value)
+#         else:
+#             return Ok("Queued")
+
+#     @service_method(path="executor.get_results", name="get_results")
+#     def get_results(self, context: AuthedServiceContext) -> Result[Ok, Err]:
+#         return self.stash.get_all()

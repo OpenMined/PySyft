@@ -83,6 +83,7 @@ class User(SyftObject):
     ]
     __attr_searchable__ = ["name", "email"]
     __attr_unique__ = ["email", "signing_key", "verify_key"]
+    __attr_repr_cols__ = ["name", "email"]
 
 
 def default_role(role: ServiceRole) -> Callable:

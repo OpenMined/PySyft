@@ -118,6 +118,7 @@ class SyftAPICall(SyftObject):
     path: str
     args: List
     kwargs: Dict[str, Any]
+    blocking: bool = True
 
     # serde / storage rules
     __attr_state__ = ["path", "args", "kwargs"]

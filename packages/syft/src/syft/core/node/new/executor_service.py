@@ -4,7 +4,6 @@ from typing import Callable
 from typing import Optional
 
 # third party
-import cloudpickle
 import gevent
 import gipc
 from gipc.gipc import _GIPCDuplexHandle
@@ -19,8 +18,8 @@ from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .context import AuthedServiceContext
 from .document_store import BaseStash
-from .document_store import CollectionSettings
 from .document_store import DocumentStore
+from .document_store import PartitionSettings
 from .service import AbstractService
 from .service import service_method
 from .user_stash import UserStash
@@ -39,7 +38,7 @@ class Thing(SyftObject):
 @serializable(recursive_serde=True)
 class ExecutorStash(BaseStash):
     object_type = Thing
-    settings: CollectionSettings = CollectionSettings(
+    settings: PartitionSettings = PartitionSettings(
         name=Thing.__canonical_name__, object_type=Thing
     )
 
@@ -65,11 +64,13 @@ class Task:
     func_bytes: bytes
 
     def __init__(self, func: Callable) -> None:
-        self.func_bytes = cloudpickle.dumps(func)
+        # self.func_bytes = cloudpickle.dumps(func)
+        pass
 
     @property
     def func(self) -> Callable:
-        return cloudpickle.loads(self.func_bytes)
+        # return cloudpickle.loads(self.func_bytes)
+        pass
 
 
 def task_runner(pipe: _GIPCDuplexHandle) -> None:
