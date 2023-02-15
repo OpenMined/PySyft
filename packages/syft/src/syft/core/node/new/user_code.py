@@ -127,9 +127,11 @@ def add_credentials_for_key(key: str) -> Callable:
 
 
 def generate_signature(context: TransformContext) -> TransformContext:
-    for k in context.output["input_kwargs"]:
-        param = Parameter(name=k, kind=Parameter.POSITIONAL_OR_KEYWORD)
-    sig = Signature(parameters=[param])
+    params = [
+        Parameter(name=k, kind=Parameter.POSITIONAL_OR_KEYWORD)
+        for k in context.output["input_kwargs"]
+    ]
+    sig = Signature(parameters=params)
     context.output["signature"] = sig
     return context
 
