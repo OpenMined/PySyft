@@ -14,6 +14,7 @@ from typing_extensions import Self
 from ....core.node.common.node_table.syft_object import Context
 from ....core.node.common.node_table.syft_object import SyftBaseObject
 from ....core.node.common.node_table.syft_object import SyftObjectRegistry
+from ....grid.grid_url import GridURL
 from ...common.uid import UID
 from .context import NodeServiceContext
 from .credentials import SyftVerifyKey
@@ -120,6 +121,12 @@ def convert_types(list_keys: List[str], types: Union[type, List[type]]) -> Calla
 def generate_id(context: TransformContext) -> TransformContext:
     if "id" not in context.output or not isinstance(context.output["id"], UID):
         context.output["id"] = UID()
+    return context
+
+
+def validate_url(context: TransformContext) -> TransformContext:
+    if context.output["url"] is not None:
+        context.output["url"] = GridURL.from_url(context.output["url"]).url_no_port
     return context
 
 

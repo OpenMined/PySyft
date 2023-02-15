@@ -15,6 +15,7 @@ from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from result import OkErr
+from tqdm import tqdm
 from typing_extensions import Self
 
 # relative
@@ -35,6 +36,7 @@ from .api import SyftAPI
 from .api import SyftAPICall
 from .connection import NodeConnection
 from .credentials import SyftSigningKey
+from .dataset import CreateDataset
 from .node import NewNode
 from .response import SyftError
 from .user_service import UserService
@@ -248,7 +250,7 @@ class SyftClient:
 
     @property
     def id(self) -> Optional[UID]:
-        return self.metadata.id if self.metadata else None
+        return UID.from_string(self.metadata.id) if self.metadata else None
 
     @property
     def icon(self) -> str:
@@ -260,6 +262,17 @@ class SyftClient:
             self._fetch_api(self.credentials)
 
         return self._api
+
+    def upload_dataset(self, dataset: CreateDataset) -> None:
+        for asset in tqdm(dataset.asset_list):
+            response = asset.data.new_send(self)
+            if response.is_ok():
+                data_ptr = response.ok()
+                asset.action_id = data_ptr.id
+                asset.node_uid = self.id
+            else:
+                print(f"Failed to upload asset: {response.err()}")
+        self.api.services.dataset.add(dataset=dataset)
 
     def connect(self, email: str, password: str, cache: bool = True) -> None:
         signing_key = self.connection.connect(email=email, password=password)

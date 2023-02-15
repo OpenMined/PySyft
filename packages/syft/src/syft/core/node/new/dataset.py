@@ -4,19 +4,24 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Tuple
+
+# third party
+import numpy as np
 
 # relative
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import SyftObject
-from ....grid import GridURL
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .action_object import ActionObjectPointer
 from .api import APIRegistry
 from .data_subject import DataSubject
 from .document_store import PartitionKey
+from .transforms import TransformContext
 from .transforms import generate_id
 from .transforms import transform
+from .transforms import validate_url
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
 
@@ -42,10 +47,32 @@ class Asset(SyftObject):
     action_id: UID
     node_uid: UID
     name: str
-    description: str
+    description: Optional[str]
     contributors: List[Contributor] = []
     data_subjects: List[DataSubject] = []
+    mock: Any
     mock_is_real: bool = False
+    shape: Tuple
+
+    @property
+    def pointer(self) -> ActionObjectPointer:
+        api = APIRegistry.api_for(node_uid=self.node_uid)
+        obj_ptr = api.services.action.get_pointer(uid=self.action_id)
+        return obj_ptr
+
+
+@serializable(recursive_serde=True)
+class CreateAsset(Asset):
+    # version
+    __canonical_name__ = "CreateAsset"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: Optional[UID] = None
+    action_id: Optional[UID]
+    node_uid: Optional[UID]
+    data: Optional[np.ndarray]
+    mock: Optional[Any]
+    shape: Optional[Tuple]
 
     def add_data_subject(self, data_subject: DataSubject) -> None:
         self.data_subjects.append(data_subject)
@@ -63,11 +90,18 @@ class Asset(SyftObject):
         )
         self.contributors.append(contributor)
 
-    @property
-    def pointer(self) -> ActionObjectPointer:
-        api = APIRegistry.api_for(node_uid=self.node_uid)
-        obj_ptr = api.services.action.get_pointer(uid=self.action_id)
-        return obj_ptr
+    def set_description(self, description: str) -> None:
+        self.description = description
+
+    def set_obj(self, data: np.ndarray) -> None:
+        self.data = data
+
+    def set_mock(self, mock_data: Any, mock_is_real: bool) -> None:
+        self.mock = mock_data
+        self.mock_is_real = mock_is_real
+
+    def set_shape(self, shape: Tuple) -> None:
+        self.shape = shape
 
 
 @serializable(recursive_serde=True)
@@ -95,6 +129,29 @@ class Dataset(SyftObject):
             data[asset.name] = asset
         return data
 
+    def _repr_markdown_(self) -> str:
+        _repr_str = f"Syft Dataset: {self.name}\n"
+        _repr_str += "Assets:\n"
+        for asset in self.asset_list:
+            _repr_str += f"\t{asset.name}: {asset.description}\n"
+        if self.citation:
+            _repr_str += f"Citation: {self.citation}\n"
+        if self.url:
+            _repr_str += f"URL: {self.url}\n"
+        if self.description:
+            _repr_str += f"Description: {self.description}\n"
+        return "```python\n" + _repr_str + "\n```"
+
+
+@serializable(recursive_serde=True)
+class CreateDataset(Dataset):
+    # version
+    __canonical_name__ = "CreateDataset"
+    __version__ = SYFT_OBJECT_VERSION_1
+    asset_list: List[CreateAsset] = []
+
+    id: Optional[UID] = None
+
     def set_description(self, description: str) -> None:
         self.description = description
 
@@ -117,7 +174,7 @@ class Dataset(SyftObject):
         )
         self.contributors.append(contributor)
 
-    def add_asset(self, asset: Asset) -> None:
+    def add_asset(self, asset: CreateAsset) -> None:
         self.asset_list.append(asset)
 
     def remove_asset(self, name: str) -> None:
@@ -131,38 +188,28 @@ class Dataset(SyftObject):
             print(f"No asset exists with name: {name}")
         self.asset_list.remove(asset_to_remove)
 
-    def _repr_markdown_(self) -> str:
-        _repr_str = f"Syft Dataset: {self.name}\n"
-        _repr_str += "Assets:\n"
-        for asset in self.asset_list:
-            _repr_str += f"\t{asset.name}: {asset.description}\n"
-        if self.citation:
-            _repr_str += f"Citation: {self.citation}\n"
-        if self.url:
-            _repr_str += f"URL: {self.url}\n"
-        if self.description:
-            _repr_str += f"Description: {self.description}\n"
-        return "```python\n" + _repr_str + "\n```"
+
+def remove_original_data(context: TransformContext) -> TransformContext:
+    context.output.pop("data", None)
+    return context
 
 
-@serializable(recursive_serde=True)
-class CreateDataset(Dataset):
-    # version
-    __canonical_name__ = "CreateDataset"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    id: Optional[UID] = None
+@transform(CreateAsset, Asset)
+def createasset_to_asset() -> List[Callable]:
+    return [generate_id, remove_original_data]
 
 
-def validate_url(obj: Any, state: Dict) -> Dict:
-    if state["url"] is not None:
-        state["url"] = GridURL.from_url(state["url"]).url_no_port
-    return state
+def convert_asset(context: TransformContext) -> TransformContext:
+    assets = context.output.pop("asset_list", [])
+    for idx, asset in enumerate(assets):
+        assets[idx] = asset.to(Asset)
+    context.output["asset_list"] = assets
+    return context
 
 
 @transform(CreateDataset, Dataset)
 def createdataset_to_dataset() -> List[Callable]:
-    return [generate_id, validate_url]
+    return [generate_id, validate_url, convert_asset]
 
 
 class DatasetUpdate:
