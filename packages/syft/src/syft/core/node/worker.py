@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from functools import partial
 import os
 from typing import Any
 from typing import Callable
@@ -21,6 +22,7 @@ from ...core.node.common.node_table.syft_object import HIGHEST_SYFT_OBJECT_VERSI
 from ...core.node.common.node_table.syft_object import LOWEST_SYFT_OBJECT_VERSION
 from ...core.node.common.node_table.syft_object import SyftObject
 from ...telemetry import instrument
+from ...util import random_name
 from ..common.serde.serializable import serializable
 from ..common.uid import UID
 from .new.action_service import ActionService
@@ -29,8 +31,13 @@ from .new.api import SignedSyftAPICall
 from .new.api import SyftAPI
 from .new.api import SyftAPICall
 from .new.context import AuthedServiceContext
+from .new.context import NodeServiceContext
+from .new.context import UnauthedServiceContext
+from .new.context import UserLoginCredentials
 from .new.credentials import SyftSigningKey
-from .new.document_store import DictDocumentStore
+from .new.dataset_service import DatasetService
+from .new.dict_document_store import DictStoreConfig
+from .new.document_store import StoreConfig
 from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
 from .new.service import AbstractService
@@ -43,6 +50,7 @@ from .new.task.task_service import TaskService
 from .new.test_service import TestService
 from .new.user import User
 from .new.user import UserCreate
+from .new.user_code_service import UserCodeService
 from .new.user_service import UserService
 from .new.user_stash import UserStash
 
@@ -76,15 +84,20 @@ class Worker(NewNode):
         self,
         *,  # Trasterisk
         name: Optional[str] = None,
-        id: Optional[UID] = UID(),
+        id: Optional[UID] = None,
         services: Optional[List[Type[AbstractService]]] = None,
         signing_key: Optional[SigningKey] = SigningKey.generate(),
+        store_config: Optional[StoreConfig] = None,
+        root_email: str = "info@openmined.org",
+        root_password: str = "changethis",
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
         if node_uid_env is not None:
             self.id = UID.from_string(node_uid_env)
         else:
+            if id is None:
+                id = UID()
             self.id = id
 
         if signing_key_env is not None:
@@ -92,34 +105,57 @@ class Worker(NewNode):
         else:
             self.signing_key = SyftSigningKey(signing_key=signing_key)
 
-        print("============> Starting Worker with:", self.id, self.signing_key)
-
+        if name is None:
+            name = random_name()
         self.name = name
         services = (
-            [UserService, ActionService, TestService, TaskService, OblvService]
+            [
+                UserService,
+                ActionService,
+                TestService,
+                TaskService,
+                OblvService,
+                DatasetService,
+                UserCodeService,
+            ]
             if services is None
             else services
         )
         self.services = services
         self.service_config = ServiceConfigRegistry.get_registered_configs()
+        store_config = DictStoreConfig() if store_config is None else store_config
+        self.init_stores(store_config=store_config)
         self._construct_services()
+        create_admin_new(  # nosec B106
+            name="Jane Doe",
+            email="info@openmined.org",
+            password="changethis",
+            node=self,
+        )
+        create_oblv_key_pair(worker=self)
         self.post_init()
 
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}: {self.name} - {self.id} {self.services}"
+
     def post_init(self) -> None:
-        pass
+        print(f"Starting {self}")
         # super().post_init()
+
+    def init_stores(self, store_config: StoreConfig):
+        document_store = store_config.store_type
+        self.document_store = document_store(client_config=store_config.client_config)
+        self.action_store = ActionStore(root_verify_key=self.signing_key.verify_key)
 
     def _construct_services(self):
         self.service_path_map = {}
-        self.document_store = DictDocumentStore()
-        self.action_store = ActionStore(root_verify_key=self.signing_key.verify_key)
 
         for service_klass in self.services:
             kwargs = {}
             if service_klass == ActionService:
                 action_store = self.action_store
                 kwargs["store"] = action_store
-            if service_klass == UserService:
+            if service_klass in [UserService, DatasetService, UserCodeService]:
                 kwargs["store"] = self.document_store
             if service_klass == TaskService:
                 kwargs["document_store"] = self.document_store
@@ -133,11 +169,22 @@ class Worker(NewNode):
             path_or_func = path_or_func.__qualname__
         return self._get_service_method_from_path(path_or_func)
 
+    def get_service(self, path_or_func: Union[str, Callable]) -> Callable:
+        if callable(path_or_func):
+            path_or_func = path_or_func.__qualname__
+        return self._get_service_from_path(path_or_func)
+
+    def _get_service_from_path(self, path: str) -> AbstractService:
+        path_list = path.split(".")
+        if len(path_list) > 1:
+            _ = path_list.pop()
+        service_name = path_list.pop()
+        return self.service_path_map[service_name]
+
     def _get_service_method_from_path(self, path: str) -> Callable:
         path_list = path.split(".")
         method_name = path_list.pop()
-        service_name = path_list.pop()
-        service_obj = self.service_path_map[service_name]
+        service_obj = self._get_service_from_path(path=path)
 
         return getattr(service_obj, method_name)
 
@@ -170,7 +217,6 @@ class Worker(NewNode):
     def handle_api_call(
         self, api_call: Union[SyftAPICall, SignedSyftAPICall]
     ) -> Result[SyftObject, Err]:
-
         if self.required_signed_calls and isinstance(api_call, SyftAPICall):
             return Err(
                 f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."  # type: ignore
@@ -195,17 +241,28 @@ class Worker(NewNode):
         return result
 
     def get_api(self) -> SyftAPI:
-        return SyftAPI.for_user(node_uid=self.id)
+        return SyftAPI.for_user(node=self)
+
+    def get_method_with_context(
+        self, function: Callable, context: NodeServiceContext
+    ) -> Callable:
+        method = self.get_service_method(function)
+        return partial(method, context=context)
+
+    def get_unauthed_context(
+        self, login_credentials: UserLoginCredentials
+    ) -> NodeServiceContext:
+        return UnauthedServiceContext(node=self, login_credentials=login_credentials)
 
 
 def create_admin_new(
     name: str,
     email: str,
     password: str,
-    worker: Worker,
+    node: NewNode,
 ) -> Optional[User]:
     try:
-        user_stash = UserStash(store=worker.document_store)
+        user_stash = UserStash(store=node.document_store)
         row_exists = user_stash.get_by_email(email=email).ok()
         if row_exists:
             return None
@@ -225,7 +282,6 @@ def create_oblv_key_pair(
 ) -> Optional[str]:
     try:
         if os.getenv("INSTALL_OBLV_CLI") == "true":
-
             oblv_keys_stash = OblvKeysStash(store=worker.document_store)
 
             if not len(oblv_keys_stash):

@@ -269,7 +269,6 @@ class OblvService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> Result[Ok, Err]:
-
         res = self.oblv_keys_stash.get_all()[0]
         assert isinstance(res, OblvKeys)
         return res
@@ -280,7 +279,6 @@ class OblvService(AbstractService):
         context: AuthedServiceContext,
         oblv_key: OblvKeys,
     ) -> Result[Ok, Err]:
-
         self.oblv_keys_stash.clear()
         res = self.oblv_keys_stash.set(oblv_key)
 

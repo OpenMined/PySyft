@@ -11,10 +11,11 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
+from typing import _GenericAlias
 
 # third party
 from nacl.exceptions import BadSignatureError
-import requests
+from pydantic import EmailStr
 from result import Err
 from result import Ok
 from result import OkErr
@@ -24,16 +25,24 @@ from typeguard import check_type
 # relative
 from ....core.common.serde.recursive import index_syft_by_module_name
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
+from ....core.node.common.node_table.syft_object import SyftBaseObject
 from ....core.node.common.node_table.syft_object import SyftObject
 from ....telemetry import instrument
 from ...common.serde.deserialize import _deserialize
 from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize
 from ...common.uid import UID
+from .connection import NodeConnection
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
+from .node import NewNode
+from .response import SyftError
+from .response import SyftSuccess
 from .service import ServiceConfigRegistry
 from .signature import Signature
+from .signature import signature_remove_context
+from .signature import signature_remove_self
+from .user_code_service import UserCodeService
 
 
 class APIRegistry:
@@ -51,34 +60,19 @@ class APIRegistry:
 
 
 @serializable(recursive_serde=True)
-class APIEndpoint(SyftObject):
+class APIEndpoint(SyftBaseObject):
     path: str
     name: str
     description: str
     doc_string: Optional[str]
     signature: Signature
     has_self: bool = False
-
-
-def signature_remove_self(signature: Signature) -> Signature:
-    params = dict(signature.parameters)
-    params.pop("self", None)
-    return Signature(
-        list(params.values()), return_annotation=signature.return_annotation
-    )
-
-
-def signature_remove_context(signature: Signature) -> Signature:
-    params = dict(signature.parameters)
-    params.pop("context", None)
-    return Signature(
-        list(params.values()), return_annotation=signature.return_annotation
-    )
+    pre_kwargs: Optional[Dict[str, Any]]
 
 
 @serializable(recursive_serde=True)
 class SignedSyftAPICall(SyftObject):
-    __canonical_name__ = "SyftAPICall"
+    __canonical_name__ = "SignedSyftAPICall"
     __version__ = SYFT_OBJECT_VERSION_1
 
     __attr_allowlist__ = ["signature", "credentials", "serialized_message"]
@@ -101,7 +95,7 @@ class SignedSyftAPICall(SyftObject):
         return self.cached_deseralized_message
 
     @property
-    def is_valid(self) -> Result[bool, Err]:
+    def is_valid(self) -> Result[SyftSuccess, Err]:
         try:
             _ = self.credentials.verify_key.verify(
                 self.serialized_message, self.signature
@@ -109,7 +103,7 @@ class SignedSyftAPICall(SyftObject):
         except BadSignatureError:
             return Err("BadSignatureError")
 
-        return Ok(True)
+        return Ok(SyftSuccess(message="Credentials are valid"))
 
 
 @instrument
@@ -138,7 +132,9 @@ class SyftAPICall(SyftObject):
         )
 
 
-def generate_remote_function(signature: Signature, path: str, make_call: Callable):
+def generate_remote_function(
+    signature: Signature, path: str, make_call: Callable, pre_kwargs: Dict[str, Any]
+):
     def wrapper(*args, **kwargs):
         _valid_kwargs = {}
         if "kwargs" in signature.parameters:
@@ -146,7 +142,9 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
         else:
             for key, value in kwargs.items():
                 if key not in signature.parameters:
-                    raise Exception("Wrong key", key, "for sig", signature)
+                    return SyftError(
+                        message=f"""Invalid parameter: `{key}`. Valid Parameters: {list(signature.parameters)}"""
+                    )
                 param = signature.parameters[key]
                 if isinstance(param.annotation, str):
                     # 🟡 TODO 21: make this work for weird string type situations
@@ -157,13 +155,20 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
                 msg = None
                 try:
                     if t is not inspect.Parameter.empty:
-                        check_type(key, value, t)  # raises Exception
+                        if isinstance(t, _GenericAlias) and type(None) in t.__args__:
+                            for v in t.__args__:
+                                if issubclass(v, EmailStr):
+                                    v = str
+                                check_type(key, value, v)  # raises Exception
+                                break  # only need one to match
+                        else:
+                            check_type(key, value, t)  # raises Exception
                 except TypeError:
                     _type_str = getattr(t, "__name__", str(t))
-                    msg = f"{key} must be {_type_str} not {type(value).__name__}"
+                    msg = f"`{key}` must be of type `{_type_str}` not `{type(value).__name__}`"
 
                 if msg:
-                    raise Exception(msg)
+                    return SyftError(message=msg)
 
                 _valid_kwargs[key] = value
 
@@ -181,15 +186,24 @@ def generate_remote_function(signature: Signature, path: str, make_call: Callabl
                 msg = None
                 try:
                     if t is not inspect.Parameter.empty:
-                        check_type(param_key, arg, t)  # raises Exception
+                        if isinstance(t, _GenericAlias) and type(None) in t.__args__:
+                            for v in t.__args__:
+                                if issubclass(v, EmailStr):
+                                    v = str
+                                check_type(param_key, arg, v)  # raises Exception
+                                break  # only need one to match
+                        else:
+                            check_type(param_key, arg, t)  # raises Exception
                 except TypeError:
                     _type_str = getattr(t, "__name__", str(t))
-                    msg = f"Arg: `{arg}` must be `{_type_str}` and not `{type(arg).__name__}`"
+                    msg = f"Arg: {arg} must be {_type_str} not {type(arg).__name__}"
                 if msg:
-                    raise Exception(msg)
+                    return SyftError(message=msg)
 
                 _valid_args.append(arg)
 
+        if pre_kwargs:
+            _valid_kwargs.update(pre_kwargs)
         api_call = SyftAPICall(path=path, args=_valid_args, kwargs=_valid_kwargs)
         result = make_call(api_call=api_call)
         return result
@@ -205,7 +219,7 @@ class APIModule:
     def __init__(self) -> None:
         self._modules = []
 
-    def add_submodule(self, attr_name, module_or_func):
+    def _add_submodule(self, attr_name, module_or_func):
         setattr(self, attr_name, module_or_func)
         self._modules.append(attr_name)
 
@@ -219,25 +233,25 @@ class SyftAPI(SyftObject):
     __attr_allowlist__ = ["endpoints"]
 
     # fields
+    connection: Optional[NodeConnection] = None
     node_uid: Optional[UID] = None
     endpoints: Dict[str, APIEndpoint]
     api_module: Optional[APIModule] = None
-    api_url: str = ""
     signing_key: Optional[SyftSigningKey] = None
     # serde / storage rules
     __attr_state__ = ["endpoints"]
 
-    def __post_init__(self) -> None:
-        # 🟡 TODO 16: Write user login and key retrieval / local caching
-        self.signing_key = SyftSigningKey.generate()
+    # def __post_init__(self) -> None:
+    #     pass
 
     @staticmethod
-    def for_user(node_uid: UID) -> SyftAPI:
+    def for_user(node: NewNode) -> SyftAPI:
         # 🟡 TODO 1: Filter SyftAPI with User VerifyKey
         # relative
         # TODO: Maybe there is a possibility of merging ServiceConfig and APIEndpoint
         _registered_service_configs = ServiceConfigRegistry.get_registered_configs()
         endpoints = {}
+
         for path, service_config in _registered_service_configs.items():
             endpoint = APIEndpoint(
                 path=path,
@@ -248,22 +262,31 @@ class SyftAPI(SyftObject):
                 has_self=False,
             )
             endpoints[path] = endpoint
-        return SyftAPI(node_uid=node_uid, endpoints=endpoints)
+
+        # 🟡 TODO 35: fix root context
+        context = None
+        method = node.get_method_with_context(UserCodeService.get_all_for_user, context)
+        code_items = method()
+
+        for code_item in code_items:
+            path = "code.call"
+            endpoint = APIEndpoint(
+                path=path,
+                name=code_item.service_func_name,
+                description="",
+                doc_string=f"Users custom func {code_item.service_func_name}",
+                signature=code_item.signature,
+                has_self=False,
+                pre_kwargs={"uid": code_item.id},
+            )
+            endpoints[path] = endpoint
+
+        return SyftAPI(node_uid=node.id, endpoints=endpoints)
 
     def make_call(self, api_call: SyftAPICall) -> Result:
         signed_call = api_call.sign(credentials=self.signing_key)
-        msg_bytes: bytes = _serialize(obj=signed_call, to_bytes=True)
-        response = requests.post(
-            url=str(self.api_url),
-            data=msg_bytes,
-        )
+        result = self.connection.make_call(signed_call)
 
-        if response.status_code != 200:
-            raise requests.ConnectionError(
-                f"Failed to fetch metadata. Response returned with code {response.status_code}"
-            )
-
-        result = _deserialize(response.content, from_bytes=True)
         if isinstance(result, OkErr):
             if result.is_ok():
                 return result.ok()
@@ -284,9 +307,9 @@ class SyftAPI(SyftObject):
         while _modules:
             module = _modules.pop(0)
             if not hasattr(_self, module):
-                _self.add_submodule(module, APIModule())
+                _self._add_submodule(module, APIModule())
             _self = getattr(_self, module)
-        _self.add_submodule(_last_module, endpoint_method)
+        _self._add_submodule(_last_module, endpoint_method)
 
     def generate_endpoints(self) -> None:
         api_module = APIModule()
@@ -296,7 +319,7 @@ class SyftAPI(SyftObject):
                 signature = signature_remove_self(signature)
             signature = signature_remove_context(signature)
             endpoint_function = generate_remote_function(
-                signature, v.path, self.make_call
+                signature, v.path, self.make_call, pre_kwargs=v.pre_kwargs
             )
             endpoint_function.__doc__ = v.doc_string
             self._add_route(api_module, v, endpoint_function)

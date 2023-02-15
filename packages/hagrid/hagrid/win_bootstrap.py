@@ -260,7 +260,6 @@ def main() -> None:
             print(f"{dep.full_name}")
         print("Please try again.")
     else:
-
         print("\nCongratulations. All done.")
         print("===================================\n")
         print("Now you can run HAGrid on Windows!")

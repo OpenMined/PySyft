@@ -39,7 +39,6 @@ ENCODING = "UTF-8"
 def _handle_dataset_creation_grid_ui(
     msg: CreateDatasetMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> None:
-
     file_obj = io.BytesIO(msg.dataset)
     tar_obj = tarfile.open(fileobj=file_obj)
     tar_obj.extractall()

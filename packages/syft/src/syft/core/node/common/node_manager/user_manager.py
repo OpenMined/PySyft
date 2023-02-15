@@ -375,24 +375,15 @@ class NoSQLUserManager(NoSQLDatabaseManager):
 
         self.update_one(query={"id_int": user_id}, values=attributes)
 
-    def change_password(self, user_id: str, current_pwd: str, new_pwd: str) -> None:
+    def change_password(self, user_id: str, new_pwd: str) -> None:
         user = self.first(id_int=int(user_id))
-
-        hashed = user.hashed_password.encode("UTF-8")
-        salt = user.salt.encode("UTF-8")
-        bytes_pass = current_pwd.encode("UTF-8")
-
-        if checkpw(bytes_pass, salt + hashed):
-            new_salt, new_hashed = self.__salt_and_hash_password(new_pwd, 12)
-            user.salt = new_salt
-            user.hashed_password = new_hashed
-            self.update_one(
-                query={"id_int": int(user_id)},
-                values={"__blob__": _serialize(user, to_bytes=True)},
-            )
-        else:
-            # Should it warn the user about his wrong current password input?
-            raise InvalidCredentialsError
+        new_salt, new_hashed = self.__salt_and_hash_password(new_pwd, 12)
+        user.salt = new_salt
+        user.hashed_password = new_hashed
+        self.update_one(
+            query={"id_int": int(user_id)},
+            values={"__blob__": _serialize(user, to_bytes=True)},
+        )
 
     def can_create_users(self, verify_key: VerifyKey) -> bool:
         """Checks if a user has permissions to create new users."""
@@ -471,7 +462,6 @@ class NoSQLUserManager(NoSQLDatabaseManager):
             else:
                 raise InvalidCredentialsError
         except UserNotFoundError:
-
             raise InvalidCredentialsError
 
     def __salt_and_hash_password(self, password: str, rounds: int) -> Tuple[str, str]:

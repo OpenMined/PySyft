@@ -25,7 +25,6 @@ class String(UserString, PyPrimitive):
         value: Any = None,
         temporary_box: bool = False,
     ):
-
         if value is None:
             value = ""
 

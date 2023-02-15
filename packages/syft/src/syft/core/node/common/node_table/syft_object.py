@@ -11,7 +11,6 @@ from typing import Optional
 from typing import Sequence
 from typing import Tuple
 from typing import Type
-from typing import Union
 
 # third party
 import pydantic
@@ -23,6 +22,7 @@ from typeguard import check_type
 # relative
 from .....lib.util import full_name_with_qualname
 from .....lib.util import get_qualname_for
+from .....util import aggressive_set_attr
 from ....common import UID
 from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serialize import _serialize as serialize
@@ -45,6 +45,10 @@ class SyftBaseObject(BaseModel):
     __version__: int  # data is always versioned
 
 
+class Context(SyftBaseObject):
+    pass
+
+
 class SyftObjectRegistry:
     __object_version_registry__: Dict[str, Type["SyftObject"]] = {}
     __object_transform_registry__: Dict[str, Callable] = {}
@@ -53,6 +57,8 @@ class SyftObjectRegistry:
         super().__init_subclass__(**kwargs)
         if hasattr(cls, "__canonical_name__") and hasattr(cls, "__version__"):
             mapping_string = f"{cls.__canonical_name__}_{cls.__version__}"
+            if mapping_string in cls.__object_version_registry__:
+                raise Exception(f"Duplicate mapping for {mapping_string} and {cls}")
             cls.__object_version_registry__[mapping_string] = cls
 
     @classmethod
@@ -78,27 +84,39 @@ class SyftObjectRegistry:
     def get_transform(
         cls, type_from: Type["SyftObject"], type_to: Type["SyftObject"]
     ) -> Callable:
-        if issubclass(type_from, SyftBaseObject):
-            klass_from = type_from.__canonical_name__
-            version_from = type_from.__version__
-        else:
-            klass_from = type_from.__name__
-            version_from = None
-        if issubclass(type_to, SyftBaseObject):
-            klass_to = type_to.__canonical_name__
-            version_to = type_to.__version__
-        else:
-            klass_to = type_to.__name__
-            version_to = None
+        for type_from_mro in type_from.mro():
+            if issubclass(type_from_mro, SyftBaseObject):
+                klass_from = type_from_mro.__canonical_name__
+                version_from = type_from_mro.__version__
+            else:
+                klass_from = type_from_mro.__name__
+                version_from = None
+            for type_to_mro in type_to.mro():
+                if issubclass(type_to_mro, SyftBaseObject):
+                    klass_to = type_to_mro.__canonical_name__
+                    version_to = type_to_mro.__version__
+                else:
+                    klass_to = type_to_mro.__name__
+                    version_to = None
 
-        mapping_string = f"{klass_from}_{version_from}_x_{klass_to}_{version_to}"
-        return cls.__object_transform_registry__[mapping_string]
+                mapping_string = (
+                    f"{klass_from}_{version_from}_x_{klass_to}_{version_to}"
+                )
+                if mapping_string in cls.__object_transform_registry__:
+                    return cls.__object_transform_registry__[mapping_string]
+        raise Exception(
+            f"No mapping found for: {type_from} to {type_to} in"
+            f"the registry: {cls.__object_transform_registry__.keys()}"
+        )
 
 
 print_type_cache = defaultdict(list)
 
 
 class SyftObject(SyftBaseObject, SyftObjectRegistry):
+    __canonical_name__ = "SyftObject"
+    __version__ = SYFT_OBJECT_VERSION_1
+
     class Config:
         arbitrary_types_allowed = True
 
@@ -122,6 +140,8 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         str, Sequence[Callable]
     ] = {}  # List of attributes names which require a serde override.
     __owner__: str
+
+    __attr_repr_cols__: List[str] = []  # show these in html repr collections
 
     def to_mongo(self) -> Dict[str, Any]:
         d = {}
@@ -161,6 +181,13 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         return funcs
 
     def __repr__(self) -> str:
+        try:
+            fqn = full_name_with_qualname(type(self))
+            return fqn
+        except Exception:
+            return str(type(self))
+
+    def _repr_markdown_(self) -> str:
         class_name = get_qualname_for(type(self))
         _repr_str = f"class {class_name}:\n"
         fields = getattr(self, "__fields__", {})
@@ -171,7 +198,6 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
             value = f'"{value}"' if isinstance(value, str) else value
             _repr_str += f"  {attr}: {value_type} = {value}\n"
 
-        return _repr_str
         # _repr_str += "\n"
         # fqn = full_name_with_qualname(type(self))
         # _repr_str += f'fqn = "{fqn}"\n'
@@ -182,10 +208,7 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         #     _repr_str += f"  {func}{sig}: pass\n"
         # _repr_str += f"]"
         # return _repr_str
-
-    def _repr_markdown_(self) -> str:
-        text_repr = self.__repr__()
-        return "```python\n" + text_repr + "\n```"
+        return "```python\n" + _repr_str + "\n```"
 
     @staticmethod
     def from_mongo(bson: Any) -> "SyftObject":
@@ -224,10 +247,10 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
             return upgraded
 
     # transform from one supported type to another
-    def to(self, projection: type) -> Any:
+    def to(self, projection: type, context: Optional[Context] = None) -> Any:
         # 🟡 TODO 19: Could we do an mro style inheritence conversion? Risky?
         transform = SyftObjectRegistry.get_transform(type(self), projection)
-        return transform(self)
+        return transform(self, context)
 
     def to_dict(self) -> Dict[str, Any]:
         # 🟡 TODO 18: Remove to_dict and replace usage with transforms etc
@@ -284,82 +307,76 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         return cls._syft_keys_types_dict("__attr_searchable__")
 
 
-def transform_method(
-    klass_from: Union[type, str],
-    klass_to: Union[type, str],
-    version_from: Optional[int] = None,
-    version_to: Optional[int] = None,
-) -> Callable:
-    klass_from_str = (
-        klass_from if isinstance(klass_from, str) else klass_from.__canonical_name__
-    )
-    klass_to_str = (
-        klass_to if isinstance(klass_to, str) else klass_to.__canonical_name__
-    )
-    version_from = (
-        version_from if isinstance(version_from, int) else klass_from.__version__
-    )
-    version_to = version_to if isinstance(version_to, int) else klass_to.__version__
+def list_dict_repr_html(self) -> str:
+    try:
+        max_check = 1
+        items_checked = 0
+        has_syft = False
+        extra_fields = []
+        for item in iter(self):
+            items_checked += 1
+            if items_checked > max_check:
+                break
+            if isinstance(self, dict):
+                item = self.__getitem__(item)
 
-    def decorator(function: Callable):
-        SyftObjectRegistry.add_transform(
-            klass_from=klass_from_str,
-            version_from=version_from,
-            klass_to=klass_to_str,
-            version_to=version_to,
-            method=function,
-        )
+            if hasattr(type(item), "mro") and type(item) != type:
+                mro = type(item).mro()
+            elif hasattr(item, "mro") and type(item) != type:
+                mro = item.mro()
+            else:
+                mro = str(self)
 
-        return function
+            if "syft" in str(mro).lower():
+                has_syft = True
+                extra_fields = getattr(item, "__attr_repr_cols__", [])
+                break
+        if has_syft:
+            # third party
+            import pandas as pd
 
-    return decorator
+            cols = defaultdict(list)
+            max_lines = 5
+            line = 0
+            for item in iter(self):
+                line += 1
+                if line > max_lines:
+                    break
+                if isinstance(self, dict):
+                    cols["key"].append(item)
+                    item = self.__getitem__(item)
+
+                if type(item) == type:
+                    cols["type"].append(full_name_with_qualname(item))
+                else:
+                    cols["type"].append(item.__repr__())
+
+                cols["id"].append(getattr(item, "id", None))
+                for field in extra_fields:
+                    value = getattr(item, field, None)
+                    cols[field] = value
+
+            x = pd.DataFrame(cols)
+            collection_type = (
+                f"{type(self).__name__.capitalize()} - Size: {len(self)}\n"
+            )
+            return collection_type + x._repr_html_()
+    except Exception as e:
+        print(e)
+        pass
+
+    # stdlib
+    import html
+
+    return html.escape(self.__repr__())
 
 
-def transform(
-    klass_from: Union[type, str],
-    klass_to: Union[type, str],
-    version_from: Optional[int] = None,
-    version_to: Optional[int] = None,
-) -> Callable:
-    if isinstance(klass_from, str):
-        klass_from_str = klass_from
+# give lists and dicts a _repr_html_ if they contain SyftObject's
+aggressive_set_attr(type([]), "_repr_html_", list_dict_repr_html)
+aggressive_set_attr(type({}), "_repr_html_", list_dict_repr_html)
 
-    if issubclass(klass_from, SyftBaseObject):
-        klass_from_str = klass_from.__canonical_name__
-        version_from = klass_from.__version__
 
-    if not issubclass(klass_from, SyftBaseObject):
-        klass_from_str = klass_from.__name__
-        version_from = None
-
-    if isinstance(klass_to, str):
-        klass_to_str = klass_to
-
-    if issubclass(klass_to, SyftBaseObject):
-        klass_to_str = klass_to.__canonical_name__
-        version_to = klass_to.__version__
-
-    if not issubclass(klass_to, SyftBaseObject):
-        klass_to_str = klass_to.__name__
-        version_to = None
-
-    def decorator(function: Callable):
-        transforms = function()
-
-        def wrapper(self: klass_from) -> klass_to:
-            output = dict(self)
-            for transform in transforms:
-                output = transform(self, output)
-            return klass_to(**output)
-
-        SyftObjectRegistry.add_transform(
-            klass_from=klass_from_str,
-            version_from=version_from,
-            klass_to=klass_to_str,
-            version_to=version_to,
-            method=wrapper,
-        )
-
-        return function
-
-    return decorator
+class StorableObjectType:
+    def to(self, projection: type) -> Any:
+        transform = SyftObjectRegistry.get_transform(type(self), projection)
+        return transform(self)

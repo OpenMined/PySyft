@@ -3,9 +3,10 @@ from result import Err
 
 # syft absolute
 from syft.core.common.uid import UID
-from syft.core.node.new.document_store import DictDocumentStore
+from syft.core.node.new.dict_document_store import DictDocumentStore
 from syft.core.node.new.user import User
 from syft.core.node.new.user import UserCreate
+from syft.core.node.new.user import UserUpdate
 from syft.core.node.new.user_stash import UserStash
 
 
@@ -82,7 +83,7 @@ def test_user_stash() -> None:
 
     result8 = user_stash.delete_by_uid(uid=user.id)
     result8 = result8.ok()
-    assert result8 is True
+    assert bool(result8) is True
 
     result9 = user_stash.get_by_uid(uid=user.id)
     result9 = result9.ok()
@@ -95,15 +96,15 @@ def test_user_stash() -> None:
 
     result11 = user_stash.find_and_delete(**{"email": user.email})
     result11 = result11.ok()
-    assert result11 is True
+    assert bool(result11) is True
 
-    # update_user = UserUpdate(email="alice@bob.com", name="Bob", institution="OpenMined")
-    # result12 = user_stash.update(user=update_user.to(User))
+    update_user = UserUpdate(
+        id=user.id, email="alice@bob.com", name="Bob", institution="OpenMined"
+    )
+    result12 = user_stash.update(user=update_user.to(User))
 
-    # assert result12.is_ok() is False
-    # assert isinstance(result12, Err)
-    # need to allow update by id but not new fields since how would we find the old
-    # record?
+    assert result12.is_ok() is False
+    assert isinstance(result12, Err)
 
     new_user = UserCreate(
         email="alice@bob.com",
@@ -118,8 +119,10 @@ def test_user_stash() -> None:
 
     assert result13 == user
 
-    # update_user = UserUpdate(email="alice@bob.com", name="Bob", institution="OpenMined")
-    # result14 = user_stash.update(user=update_user.to(User))
+    update_user = UserUpdate(
+        id=user.id, email="alice@bob.com", name="Bob", institution="OpenMined"
+    )
+    result14 = user_stash.update(user=update_user.to(User))
     result14 = result13
 
     assert user.email == result14.email

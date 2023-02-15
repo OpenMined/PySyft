@@ -40,7 +40,6 @@ def update_manifest(docker_tag: Optional[str]) -> None:
 
 
 if __name__ == "__main__":
-
     docker_tag = None
 
     if len(sys.argv) > 1:

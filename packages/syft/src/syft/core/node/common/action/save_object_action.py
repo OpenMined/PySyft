@@ -37,7 +37,6 @@ class SaveObjectAction(ImmediateActionWithoutReply):
         return f"SaveObjectAction {obj_str}"
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
-
         # If if there's another object with the same ID.
         node.store.check_collision(self.obj.id)
 
