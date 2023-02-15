@@ -30,9 +30,6 @@ from .user_code_parse import parse_and_wrap_code
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 CodeHashPartitionKey = PartitionKey(key="code_hash", type_=int)
 
-stdout_ = sys.stdout
-stderr_ = sys.stderr
-
 PyCodeObject = Any
 
 
@@ -163,8 +160,9 @@ class UserCodeExecutionResult(SyftObject):
 
 
 def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
-    global stdout_
-    global stderr_
+    stdout_ = sys.stdout
+    stderr_ = sys.stderr
+
     try:
         stdout = StringIO()
         stderr = StringIO()
