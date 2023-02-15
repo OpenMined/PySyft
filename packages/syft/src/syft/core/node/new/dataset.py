@@ -60,6 +60,17 @@ class Asset(SyftObject):
         obj_ptr = api.services.action.get_pointer(uid=self.action_id)
         return obj_ptr
 
+    def _repr_markdown_(self) -> str:
+        _repr_str = f"Asset: {self.name}\n"
+        _repr_str += f"Pointer Id: {self.action_id}\n"
+        _repr_str += f"Description: {self.description}\n"
+        _repr_str += f"Total Data Subjects: {len(self.data_subjects)}\n"
+        _repr_str += f"Shape: {self.shape}\n"
+        _repr_str += f"Contributors: {len(self.contributors)}\n"
+        for contributor in self.contributors:
+            _repr_str += f"\t{contributor.name}: {contributor.email}\n"
+        return "```python\n" + _repr_str + "\n```"
+
 
 @serializable(recursive_serde=True)
 class CreateAsset(Asset):

@@ -39,6 +39,7 @@ from .credentials import SyftSigningKey
 from .dataset import CreateDataset
 from .node import NewNode
 from .response import SyftError
+from .response import SyftSuccess
 from .user_service import UserService
 
 # use to enable mitm proxy
@@ -263,16 +264,18 @@ class SyftClient:
 
         return self._api
 
-    def upload_dataset(self, dataset: CreateDataset) -> None:
+    def upload_dataset(self, dataset: CreateDataset) -> Union[SyftSuccess, SyftError]:
         for asset in tqdm(dataset.asset_list):
+            print(f"Uploading: {asset.name}")
             response = asset.data.new_send(self)
-            if response.is_ok():
-                data_ptr = response.ok()
-                asset.action_id = data_ptr.id
-                asset.node_uid = self.id
-            else:
-                print(f"Failed to upload asset: {response.err()}")
-        self.api.services.dataset.add(dataset=dataset)
+            if isinstance(response, SyftError):
+                print(f"Failed to upload asset\n: {asset}")
+                return response
+            data_ptr = response
+            asset.action_id = data_ptr.id
+            asset.node_uid = self.id
+
+        return self.api.services.dataset.add(dataset=dataset)
 
     def connect(self, email: str, password: str, cache: bool = True) -> None:
         signing_key = self.connection.connect(email=email, password=password)

@@ -17,8 +17,6 @@ from typing import Union
 import warnings
 
 # third party
-from result import Err
-from result import Ok
 from result import Result
 
 # relative
@@ -42,6 +40,7 @@ from ..core.node.common.util import check_send_to_blob_storage
 from ..core.node.common.util import upload_to_s3_using_presigned
 from ..core.node.new.action_object import ActionObjectPointer
 from ..core.node.new.numpy_array import NumpyArrayObject
+from ..core.node.new.response import SyftError
 from ..core.pointer.pointer import Pointer
 from ..core.store.storeable_object import StorableObject
 from ..logger import traceback_and_raise
@@ -806,7 +805,7 @@ class Class(Callable):
             # chunk_size: Optional[int] = None,
             # send_to_blob_storage: bool = True,
             # **kwargs: Any,
-        ) -> Result[ActionObjectPointer, Err]:
+        ) -> Result[ActionObjectPointer, SyftError]:
             # third party
             import numpy as np
 
@@ -815,9 +814,9 @@ class Class(Callable):
                     syft_action_data=self, dtype=self.dtype, shape=self.shape
                 )
                 obj_pointer = client.api.services.action.set(obj)
-                return Ok(obj_pointer)
+                return obj_pointer
             else:
-                return Err("Not implemented")
+                return SyftError(message="Not implemented")
 
         aggressive_set_attr(obj=outer_self.object_ref, name="send", attr=send)
         aggressive_set_attr(obj=outer_self.object_ref, name="new_send", attr=new_send)
