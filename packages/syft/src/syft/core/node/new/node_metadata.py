@@ -12,13 +12,13 @@ from pydantic import BaseModel
 # relative
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import SyftObject
-from ....core.node.common.node_table.syft_object import transform
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from ..new.credentials import SyftVerifyKey
 from ..new.transforms import convert_types
 from ..new.transforms import drop
 from ..new.transforms import rename
+from .transforms import transform
 
 
 def check_version(

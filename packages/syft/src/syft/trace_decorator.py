@@ -63,7 +63,6 @@ def instrument(
         for name, method in inspect.getmembers(cls, inspect.isfunction):
             # Ignore private functions, TODO: maybe make this a setting?
             if not name.startswith("_"):
-
                 if isinstance(inspect.getattr_static(cls, name), staticmethod):
                     setattr(
                         cls,
@@ -94,7 +93,6 @@ def instrument(
         return decorate_class(_func_or_class)
 
     def span_decorator(func_or_class):
-
         if inspect.isclass(func_or_class):
             return decorate_class(func_or_class)
 

@@ -14,7 +14,6 @@ from syft.core.node.common.node_service.request_receiver.request_receiver_messag
 
 
 def test_request_answer_message() -> None:
-
     addr = UID()
 
     msg = RequestAnswerMessage(request_id=UID(), address=addr, reply_to=addr)
@@ -28,7 +27,6 @@ def test_request_answer_message() -> None:
 
 
 def test_request_answer_response() -> None:
-
     addr = UID()
 
     msg = RequestAnswerResponse(

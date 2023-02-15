@@ -88,7 +88,6 @@ class IterWithoutLen:
 
 @serializable(recursive_serde=True)
 class C:
-
     __attr_allowlist__ = ["dynamic_object"]
 
     def __init__(self) -> None:

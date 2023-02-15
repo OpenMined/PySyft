@@ -25,7 +25,6 @@ def get_domain_addresses():
 
 
 def initialize_model(input_shape) -> nn.Model:
-
     # create an empty model
     model = nn.Model()
 
@@ -86,7 +85,6 @@ def train_on_domains(domain_addresses):
     model = initialize_model(input_shape=input_shape)
 
     for i, address in enumerate(domain_addresses):
-
         print()
         print("=================================" * 3)
 

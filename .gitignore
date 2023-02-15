@@ -8,6 +8,7 @@
 .python-version
 .vscode/
 .tox/*
+.creds
 
 # python stuff
 *__pycache__*

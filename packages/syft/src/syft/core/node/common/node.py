@@ -143,7 +143,6 @@ class Node(AbstractNode):
         settings: Optional[BaseSettings] = None,
         document_store: bool = False,
     ):
-
         if node_uid_env is not None:
             self.node_uid = UID.from_string(node_uid_env)
         elif node_uid is not None:
@@ -376,15 +375,20 @@ class Node(AbstractNode):
         return client
 
     def get_metadata_for_client(self) -> Metadata:
+        node_setup = self.setup.first()
         return Metadata(
-            name=self.name if self.name else "",
+            name=node_setup.domain_name,
             id=self.id,
             node_type=str(type(self).__name__),
             version=str(__version__),
+            description=node_setup.description,
+            deployed_on=node_setup.deployed_on,
+            organization=node_setup.organization,
+            on_board=node_setup.on_board,
         )
 
     def get_api(self) -> SyftAPI:
-        return SyftAPI.for_user(node_uid=self.id)
+        return SyftAPI.for_user(node=self)
 
     def add_peer_routes(self, peer: NoSQLNode) -> None:
         try:
@@ -500,7 +504,6 @@ class Node(AbstractNode):
         return self.node_uid
 
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
-
         # this needs to be defensive by checking domain_id NOT domain.id or it breaks
         try:
             msg_address_id = msg.address
@@ -633,7 +636,6 @@ class Node(AbstractNode):
     def process_message(
         self, msg: SignedMessage, router: dict
     ) -> Union[SyftMessage, None]:
-
         self.message_counter += 1
         try:
             contents = getattr(
@@ -730,7 +732,6 @@ class Node(AbstractNode):
             # to one or more message types.
             iswr_instance = iswr()
             for handler_type in iswr.message_handler_types():
-
                 # for each explicitly supported type, add it to the router
                 self.immediate_msg_without_reply_router[handler_type] = iswr_instance
 

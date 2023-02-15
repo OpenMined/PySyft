@@ -10,7 +10,6 @@ DOMAIN1_PORT = 9082
 
 @pytest.mark.e2e
 def test_publish_with_bool_type_values(capfd) -> None:
-
     data_scientist = {
         "name": "Joker",
         "email": "joker@ace.com",
