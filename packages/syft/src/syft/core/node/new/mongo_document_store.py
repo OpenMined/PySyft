@@ -78,7 +78,7 @@ class MongoStorePartition(StorePartition):
     __attr_allowlist__ = [
         "storage_type",
         "settings",
-        "store_client_config",
+        "store_config",
         "unique_cks",
         "searchable_cks",
     ]
@@ -89,7 +89,7 @@ class MongoStorePartition(StorePartition):
         self._init_collection()
 
     def _init_collection(self):
-        client = MongoClient.from_config(config=self.store_client_config)
+        client = MongoClient.from_config(config=self.store_config.client_config)
         self._collection = client.with_collection(collection_settings=self.settings)
         self._create_update_index()
 
