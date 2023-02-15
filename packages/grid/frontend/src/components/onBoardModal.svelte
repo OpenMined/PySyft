@@ -5,8 +5,7 @@
 	export let onBoardModal = false;
 	export let user_info;
 	export let metadata;
-	export let token;
-	export let jsserde;
+	export let client;
 
 	let domainInfo = {
 		domain_name: '',
@@ -25,6 +24,7 @@
 
 	let steps = ['inline', 'none', 'none', 'none'];
 	let stepIndex = 0;
+
 	function nextStep() {
 		steps[stepIndex] = 'none';
 		steps[stepIndex + 1] = 'inline';
@@ -47,70 +47,17 @@
 
 	async function submitChanges() {
 		// Set Domain name, organization and description
-		let msg = new SyftMessageWithoutReply(
-			metadata['id']['value'],
-			domainInfo,
-			'syft.core.node.common.node_service.node_setup.node_setup_messages.UpdateSetupMessage'
-		);
-		let client_bytes = jsserde.serialize(msg);
-
-		let response = await fetch('http://localhost:8081/api/v1/syft/js', {
-			method: 'POST',
-			headers: { 'content-type': 'application/octect-stream', Authorization: token },
-			body: client_bytes
-		}).then((response) => response.arrayBuffer());
+		await client.updateConfigs(domainInfo)
 
 		userInfo.user_id = user_info.id;
-
-		// Update User Profile
-		msg = new SyftMessageWithoutReply(
-			metadata['id']['value'],
-			userInfo,
-			'syft.core.node.common.node_service.user_manager.new_user_messages.UpdateUserMessage'
-		);
-
-		client_bytes = jsserde.serialize(msg);
-
-		response = await fetch('http://localhost:8081/api/v1/syft/js', {
-			method: 'POST',
-			headers: { 'content-type': 'application/octect-stream', Authorization: token },
-			body: client_bytes
-		}).then((response) => response.arrayBuffer());
+		await client.updateUser(userInfo)
 
 		// Update layout metadata variable
-		fetch('http://localhost:8081/api/v1/syft/metadata')
-			.then((response) => response.arrayBuffer())
-			.then(function (response) {
-				let metadataResponse = jsserde.deserialize(response);
-				let nodeAddrObj = {};
-				metadataResponse.get('id').forEach((value, key) => {
-					nodeAddrObj[key] = value;
-				});
-
-				let metadataObj = {};
-				metadataResponse.forEach((value, key) => {
-					metadataObj[key] = value;
-				});
-
-				metadataObj.id = nodeAddrObj;
-				// UPDATE local and global metadata info
-				metadata = metadataObj;
-				window.sessionStorage.setItem('metadata', JSON.stringify(metadataObj));
-			});
-
+		await client.metadata
+		metadata = JSON.parse(window.sessionStorage.getItem('metadata'))
+		
 		// Update user info
-		await fetch('http://localhost:8081/api/v1/users/me', {
-			method: 'GET',
-			headers: { Authorization: window.sessionStorage.getItem('token') }
-		}).then((response) => {
-			if (response.status === 401) {
-				goto('/login');
-			} else {
-				return response.json().then((body) => {
-					user_info = body;
-				});
-			}
-		});
+		user_info = await client.user
 
 		nextStep();
 	}
