@@ -1,5 +1,5 @@
 <script>
-  import { Sidebar, SidebarGroup, SidebarItem, SidebarWrapper, SidebarCta } from 'flowbite-svelte';
+  import { Sidebar, SidebarGroup, SidebarItem, SidebarWrapper } from 'flowbite-svelte';
   import { prettyName, shortName } from '../lib/utils.js';
   export let user_info;
   export let metadata;

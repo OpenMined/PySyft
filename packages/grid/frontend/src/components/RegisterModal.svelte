@@ -32,7 +32,7 @@
     let client_bytes = client.serde.serialize(msg);
 
     let token = 'Bearer ' + guestCredentials;
-    const response = await fetch('http://localhost:8081/api/v1/syft/js', {
+    await fetch('http://localhost:8081/api/v1/syft/js', {
       method: 'POST',
       headers: { 'content-type': 'application/octect-stream', Authorization: token },
       body: client_bytes

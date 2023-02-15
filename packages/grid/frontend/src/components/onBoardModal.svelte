@@ -1,6 +1,5 @@
 <script>
   import { Input, Label, Modal, Textarea, Button, Helper } from 'flowbite-svelte';
-  import { SyftMessageWithoutReply } from '../lib/jsserde/objects/syftMessage.ts';
   import { Progressbar } from 'flowbite-svelte';
   export let onBoardModal = false;
   export let user_info;
@@ -88,7 +87,7 @@
       <h2>Click "Next" to begin.</h2>
 
       <div style="display:flex; justify-content: right">
-        <div class="cancel-button" on:click={(onBoardModal = false)}><h1>Cancel</h1></div>
+        <button class="cancel-button" on:click={(onBoardModal = false)}><h1>Cancel</h1></button>
 
         <Button pill={true} on:click={() => nextStep()} color="dark">Next</Button>
       </div>

@@ -4,7 +4,11 @@
 
 <div class="login-header">
   <div style="grid-column: span 1;display:flex;justify-content:left">
-    <img style="margin-left: 30px;margin-right: 10px;" src="../../public/assets/small-logo.png" />
+    <img
+      style="margin-left: 30px;margin-right: 10px;"
+      src="../../public/assets/small-logo.png"
+      alt="pygrid-logo.png"
+    />
     <div style="display:flex; align-items:center;">
       <h4 style="color:gray;">Version : {version}</h4>
     </div>

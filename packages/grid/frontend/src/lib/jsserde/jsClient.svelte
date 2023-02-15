@@ -4,7 +4,7 @@
   export class JSClient {
     constructor(url) {
       return (async () => {
-        let type_bank = await fetch(url + '/api/v1/syft/serde')
+        await fetch(url + '/api/v1/syft/serde')
           .then((response) => response.json())
           .then((response) => {
             this.serde = new JSSerde(response['bank']);

@@ -113,11 +113,11 @@
                 {errorText}
               </Helper>
               <Helper class="text-sm" style="text-align: center"
-                >Don't you have an account yet? Apply for an account <a
+                >Don't you have an account yet? Apply for an account <button
                   on:click={() => {
                     formModal = true;
                   }}
-                  class="font-medium text-blue-600 hover:underline dark:text-blue-500">here</a
+                  class="font-medium text-blue-600 hover:underline dark:text-blue-500">here</button
                 >.</Helper
               >
             </Label>
@@ -144,13 +144,13 @@
           </div>
           <h3 class="info-foot">
             <b> ID# </b>
-            <p
+            <button
               id="gridUID"
               on:click={() => copyToClipBoard()}
               style="margin-left: 5px; color: black;padding-left:10px; padding-right:10px; background-color: #DDDDDD"
             >
-              {metadata.get('id').get('value')}
-            </p>
+              <p>{metadata.get('id').get('value')}</p>
+            </button>
           </h3>
           <h3 class="info-foot"><b> DEPLOYED ON:&nbsp;&nbsp;</b> {metadata.get('deployed_on')}</h3>
         </div>
@@ -161,6 +161,7 @@
           <h3>Empowered by</h3>
           <img
             style="margin-left: 10px; margin-right: 8vh;"
+            alt="openmined-logo.png"
             width="120"
             height="120"
             src="../../public/assets/small-om-logo.png"
