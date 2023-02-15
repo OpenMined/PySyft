@@ -1,54 +1,48 @@
 <script>
 	import '../../app.postcss';
 	import { goto } from '$app/navigation';
-	import { Input, Label, Modal, Textarea, Button, Helper } from 'flowbite-svelte';
 	import OnBoardModal from '../../components/onBoardModal.svelte';
 	import Sidebar from '../../components/Sidebar.svelte';
 	import Navbar from '../../components/Navbar.svelte';
-	import { store, getSerde } from '../../lib/store.js';
+	import { store } from '../../lib/store.js';
 
-	let jsSerde;
+	let client;
 	let activeUrl = '/home';
 
 	$: metadata = '';
 	$: user_info = '';
 
-	async function loadGlobalInfos(url) {
+	async function loadGlobalInfos() {
+		// Load JSSerde from local Storage
+		store.subscribe(async (value) => {
+			if (value) {
+				client  = value.client;
+			} else{
+				goto('/login')
+			}
+		});
+
 		// Load metadata from session Storage
 		metadata = JSON.parse(window.sessionStorage.getItem('metadata'));
+		if (!metadata){
+			metadata = await client.metadata;
+			window.sessionStorage.setItem('metadata', JSON.stringify(metadata))
+		}
 
-		// Load JSSerde from local Storage
-		store.subscribe((value) => {
-			if (!value.jsserde) {
-				jsSerde = getSerde();
-			} else {
-				jsSerde = value.jsserde;
-			}
-		});
-
-		// Get current user info from users/me API
-		await fetch(url, {
-			method: 'GET',
-			headers: { Authorization: window.sessionStorage.getItem('token') }
-		}).then((response) => {
-			if (response.status === 401) {
-				goto('/login');
-			} else {
-				return response.json().then((body) => {
-					user_info = body;
-				});
-			}
-		});
+		user_info = JSON.parse(window.sessionStorage.getItem('user_info'));
+		if (!user_info){
+			user_info = await client.user
+			window.sessionStorage.setItem('user_info', JSON.stringify(user_info))
+		}
 	}
 </script>
 
 <main>
-	{#await loadGlobalInfos('http://localhost:8081/api/v1/users/me') then none}
+	{#await loadGlobalInfos() then none}
 		<Navbar bind:user_info />
 		<Sidebar bind:activeUrl bind:metadata bind:user_info />
 		<OnBoardModal
-			token={window.sessionStorage.getItem('token')}
-			jsserde={jsSerde}
+			client={client}
 			bind:user_info
 			bind:metadata
 		/>
