@@ -11,18 +11,17 @@ from result import Result
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ..document_store import BaseStash
-from ..document_store import CollectionSettings
 from ..document_store import DocumentStore
 from ..document_store import QueryKeys
-from ..document_store import UIDCollectionKey
+from ..document_store import UIDPartitionKey,PartitionSettings
 from .task import Task
 
 
 @serializable(recursive_serde=True)
 class TaskStash(BaseStash):
     object_type = Task
-    settings: CollectionSettings = CollectionSettings(
-        name=Task.__canonical_name__, object_type=Task
+    settings: PartitionSettings = PartitionSettings(
+        name=Task.__canonical_name__, object_type=Task, db_name="app"
     )
 
     def __init__(self, store: DocumentStore) -> None:
@@ -39,11 +38,11 @@ class TaskStash(BaseStash):
         return self.check_type(task, self.object_type).and_then(super().set)
 
     def get_by_uid(self, uid: UID) -> Result[Optional[Task], str]:
-        qks = QueryKeys(qks=[UIDCollectionKey.with_obj(uid)])
+        qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
         return Ok(self.query_one(qks=qks))
 
     def delete_by_uid(self, uid: UID) -> Result[bool, str]:
-        qk = UIDCollectionKey.with_obj(uid)
+        qk = UIDPartitionKey.with_obj(uid)
         return super().delete(qk=qk)
 
     def update(self, task: Task) -> Result[Task, str]:
