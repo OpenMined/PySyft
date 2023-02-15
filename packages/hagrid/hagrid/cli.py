@@ -1604,7 +1604,7 @@ def pull_command(cmd: str, kwargs: TypeDict[str, Any]) -> TypeList[str]:
         pull_cmd += " --file docker-compose.yml"
     else:
         pull_cmd += " --file docker-compose.pull.yml"
-    pull_cmd += " pull --ignore-pull-failures"  # ignore missing svelte kit for now
+    pull_cmd += " pull --ignore-pull-failures"  # ignore missing version from Dockerhub
     return [pull_cmd]
 
 

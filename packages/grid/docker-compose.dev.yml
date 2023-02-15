@@ -18,10 +18,8 @@ services:
   frontend:
     volumes:
       - ${RELATIVE_PATH}./frontend/:/app
-
-  # svelte:
-  #   volumes:
-  #     - ./svelte:/app
+    environment:
+      - FRONTEND_TARGET=grid-ui-development
 
   redis:
     ports:
