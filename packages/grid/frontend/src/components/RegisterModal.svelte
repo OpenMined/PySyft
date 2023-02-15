@@ -2,7 +2,7 @@
 	import { Input, Label, Modal, Checkbox, Button, Helper } from 'flowbite-svelte';
 	import { SyftMessageWithoutReply } from '../lib/jsserde/objects/syftMessage.ts';
 	export let formModal;
-	export let jsserde;
+	export let client;
 	export let nodeId;
 
 	let guestCredentials;
@@ -22,21 +22,21 @@
 					guestCredentials = response['access_token'];
 				});
 		}
-		console.log('My Guest credentials: ', guestCredentials);
+
 		let msg = new SyftMessageWithoutReply(
 			nodeId,
 			{ email: email, password: password, name: name, role: 'Data Scientist', institution: 'DPUK' },
 			'syft.core.node.common.node_service.user_manager.new_user_messages.CreateUserMessage'
 		);
 
-		let client_bytes = jsserde.serialize(msg);
+		let client_bytes = client.serde.serialize(msg);
 
 		let token = 'Bearer ' + guestCredentials;
 		const response = await fetch('http://localhost:8081/api/v1/syft/js', {
 			method: 'POST',
 			headers: { 'content-type': 'application/octect-stream', Authorization: token },
 			body: client_bytes
-		}).then((response) => response.arrayBuffer());
+		}).then((response) => response.arrayBuffer()).then(byte_msg => client.serde.deserialize(byte_msg));
 	}
 </script>
 
