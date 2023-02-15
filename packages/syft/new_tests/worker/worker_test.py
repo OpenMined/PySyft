@@ -124,7 +124,7 @@ def test_user_transform() -> None:
 def test_user_service() -> None:
     test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
     worker = Worker()
-    user_service = worker.service_path_map[UserService.__name__]
+    user_service = worker.get_service(UserService)
 
     # create a user
     new_user = UserCreate(
