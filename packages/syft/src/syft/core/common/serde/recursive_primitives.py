@@ -2,6 +2,7 @@
 from collections import OrderedDict
 from collections import defaultdict
 from enum import Enum
+from enum import EnumMeta
 import functools
 import sys
 from types import MappingProxyType
@@ -330,3 +331,5 @@ recursive_serde_register_type(TypeVar)
 if sys.version_info >= (3, 9):
     recursive_serde_register_type(_UnionGenericAlias)
     recursive_serde_register_type(_SpecialGenericAlias)
+
+recursive_serde_register_type(EnumMeta)

@@ -1,4 +1,0 @@
-server {
-  listen 80;
-  include 'conf.d/nodes/$NODE_TYPE.conf';
-}

@@ -8,6 +8,8 @@ from fastapi import Depends
 from fastapi import Request
 from fastapi import Response
 from fastapi.responses import JSONResponse
+from nacl.encoding import HexEncoder
+from nacl.signing import SigningKey
 
 # syft absolute
 from syft import __version__
@@ -16,6 +18,7 @@ from syft import serialize
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.common.message import SignedMessage
+from syft.core.common.serde.recursive import TYPE_BANK
 from syft.core.node.enums import RequestAPIFields
 from syft.telemetry import TRACE_MODE
 
@@ -42,6 +45,14 @@ async def get_body(request: Request) -> bytes:
 @router.get("/version")
 def syft_version() -> Response:
     return JSONResponse(content={"version": __version__})
+
+
+@router.get("/serde")
+def syft_serde() -> Response:
+    bank = {}
+    for key, items in list(TYPE_BANK.items()):
+        bank[key] = [item if not callable(item) else None for item in items[:-1]]
+    return JSONResponse(content={"bank": bank})
 
 
 @router.get("/metadata", response_model=str)
@@ -134,3 +145,19 @@ def syft_stream(data: bytes = Depends(get_body)) -> Any:
         else:
             raise Exception("MessageWithReply not supported on the stream endpoint")
     return ""
+
+
+@router.post("/js", response_model=str)
+def js_route(
+    request: Request,
+    current_user: UserPrivate = Depends(get_current_user),
+    data: bytes = Depends(get_body),
+) -> Any:
+    user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
+    obj_msg = deserialize(blob=data, from_bytes=True)
+    signed_msg = obj_msg.sign(user_key)
+    reply = node.recv_immediate_msg_with_reply(msg=signed_msg).message
+    return Response(
+        serialize(reply, to_bytes=True),
+        media_type="application/octet-stream",
+    )

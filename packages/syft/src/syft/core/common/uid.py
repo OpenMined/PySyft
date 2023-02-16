@@ -62,7 +62,7 @@ class UID:
     __slots__ = "value"
     value: uuid_type
 
-    def __init__(self, value: Optional[uuid_type] = None):
+    def __init__(self, value: Optional[Union[uuid_type, str]] = None):
         """Initializes the internal id using the uuid package.
 
         This initializes the object. Normal use for this object is
@@ -86,6 +86,8 @@ class UID:
         super().__init__()
 
         # if value is not set - create a novel and unique ID.
+        if isinstance(value, str):
+            value = uuid.UUID(value)
 
         self.value = (
             next(uuid_value_generator, uuid.uuid4()) if value is None else value

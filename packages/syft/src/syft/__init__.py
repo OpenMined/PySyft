@@ -65,6 +65,10 @@ from .core.node.domain import DomainClient  # noqa: F401
 from .core.node.network import Network  # noqa: F401
 from .core.node.network_client import NetworkClient  # noqa: F401
 from .core.node.new.client import login as new_login  # noqa: F401
+from .core.node.new.data_subject import DataSubject  # noqa: F401
+from .core.node.new.dataset import CreateAsset as Asset  # noqa: F401
+from .core.node.new.dataset import CreateDataset as Dataset  # noqa: F401
+from .core.node.new.roles import Roles  # noqa: F401
 from .core.node.new.user_service import UserService  # noqa: F401
 
 # Convenience Constructors
@@ -73,6 +77,8 @@ from .core.node.vm_client import VirtualMachineClient  # noqa: F401
 
 # new code
 from .core.node.worker import Worker  # noqa: F401
+
+# Convenience Objects
 from .core.tensor import autodp  # noqa: F401
 from .core.tensor import nn  # noqa: F401
 from .core.tensor.autodp.gamma_tensor import GammaTensor  # noqa: F401

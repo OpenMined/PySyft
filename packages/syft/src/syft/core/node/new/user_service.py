@@ -99,9 +99,10 @@ class UserService(AbstractService):
 
     @service_method(path="user.update", name="update")
     def update(
-        self, context: AuthedServiceContext, user_update: UserUpdate
+        self, context: AuthedServiceContext, uid: UID, user_update: UserUpdate
     ) -> Union[UserView, SyftError]:
         user = user_update.to(User)
+        user.id = uid
         result = self.stash.update(user=user)
 
         if result.err():
@@ -113,7 +114,6 @@ class UserService(AbstractService):
     @service_method(path="user.delete", name="delete")
     def delete(self, context: AuthedServiceContext, uid: UID) -> Union[bool, SyftError]:
         result = self.stash.delete_by_uid(uid=uid)
-
         if result.err():
             return SyftError(message=str(result.err()))
 

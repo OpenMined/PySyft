@@ -199,8 +199,8 @@ class DependencyPyPI(Dependency):
     package_name: str = ""
     package_display_name: str = ""
     pre: bool = False
-    install_issue: Callable = lambda: None
-    update_available_issue: Callable = lambda: None
+    install_issue: Callable = lambda: None  # noqa: E731
+    update_available_issue: Callable = lambda: None  # noqa: E731
 
     def check(self) -> None:
         package_dict = get_pip_package(self.package_name)
