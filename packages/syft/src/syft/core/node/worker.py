@@ -282,7 +282,7 @@ def create_admin_new(
             user = user_stash.set(user=create_user.to(User))
             return user.ok()
     except Exception as e:
-        print("create_admin failed", e)
+        raise e
 
 
 def create_oblv_key_pair(
