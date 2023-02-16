@@ -249,7 +249,7 @@ class DocumentStore:
 
     def __init__(self, store_config: StoreConfig) -> None:
         if store_config is None:
-            raise Exception("must have stoe config")
+            raise Exception("must have store config")
         self.partitions = {}
         self.store_config = store_config
 

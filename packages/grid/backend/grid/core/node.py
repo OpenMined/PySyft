@@ -11,7 +11,7 @@ from syft import Domain  # type: ignore
 from syft import Network  # type: ignore
 from syft.core.node.common.client import Client
 from syft.core.node.common.util import get_s3_client
-from syft.core.node.new.document_store import MongoStoreClientConfig
+from syft.core.node.new.mongo_client import MongoStoreClientConfig
 from syft.core.node.new.mongo_document_store import MongoStoreConfig
 from syft.core.node.worker import Worker
 

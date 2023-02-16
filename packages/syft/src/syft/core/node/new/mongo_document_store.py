@@ -1,7 +1,6 @@
 # stdlib
 from typing import Dict
 from typing import List
-from typing import Optional
 from typing import Type
 
 # third party
@@ -27,40 +26,31 @@ from .document_store import StoreConfig
 from .document_store import StorePartition
 from .mongo_client import MongoClient
 from .response import SyftSuccess
+from .transforms import TransformContext
 from .transforms import transform
 from .transforms import transform_method
-
-
-@serializable(recursive_serde=True)
-class MongoStoreClientConfig(StoreClientConfig):
-    hostname: str
-    port: int
-    username: str
-    password: str
-    tls: Optional[bool] = False
 
 
 class MongoBsonObject(StorableObjectType, dict):
     pass
 
 
-def to_mongo(_self, output) -> Dict:
-    output_dict = {}
-    for k in _self.__attr_searchable__:
+def to_mongo(context: TransformContext) -> TransformContext:
+    for k in context.obj.__attr_searchable__:
         # 🟡 TODO 24: pass in storage abstraction and detect unsupported types
         # if unsupported, convert to string
-        value = getattr(_self, k, "")
+        value = getattr(context.obj, k, "")
         if isinstance(value, SyftVerifyKey):
             value = str(value)
-        output_dict[k] = value
-    blob = serialize(dict(_self), to_bytes=True)
-    output_dict["_id"] = output["id"].value  # type: ignore
-    output_dict["__canonical_name__"] = _self.__canonical_name__
-    output_dict["__version__"] = _self.__version__
-    output_dict["__blob__"] = blob
-    output_dict["__repr__"] = _self.__repr__()
+        context.output[k] = value
+    blob = serialize(dict(context.obj), to_bytes=True)
+    context.output["_id"] = context.output["id"].value  # type: ignore
+    context.output["__canonical_name__"] = context.obj.__canonical_name__
+    context.output["__version__"] = context.obj.__version__
+    context.output["__blob__"] = blob
+    context.output["__repr__"] = context.obj.__repr__()
 
-    return output_dict
+    return context.output
 
 
 @transform(SyftObject, MongoBsonObject)

@@ -12,9 +12,19 @@ from pymongo.mongo_client import MongoClient as PyMongoClient
 from typing_extensions import Self
 
 # relative
+from ...common.serde.serializable import serializable
 from .document_store import PartitionSettings
+from .document_store import StoreClientConfig
 from .document_store import StoreConfig
-from .mongo_document_store import MongoStoreClientConfig
+
+
+@serializable(recursive_serde=True)
+class MongoStoreClientConfig(StoreClientConfig):
+    hostname: str
+    port: int
+    username: str
+    password: str
+    tls: Optional[bool] = False
 
 
 class MongoClientCache:
