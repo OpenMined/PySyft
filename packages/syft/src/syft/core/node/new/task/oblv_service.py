@@ -250,7 +250,12 @@ class OblvService(AbstractService):
         "Retrieves the public key present on the Domain Node."
 
         if len(self.oblv_keys_stash):
-            oblv_keys = self.oblv_keys_stash.get_all()[0]
+            oblv_keys = self.oblv_keys_stash.get_all()
+            if oblv_keys.is_ok():
+                oblv_keys = oblv_keys.ok()[0]
+            else:
+                return oblv_keys.err()
+
             public_key_str = (
                 encodebytes(oblv_keys.public_key).decode("UTF-8").replace("\n", "")
             )
