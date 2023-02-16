@@ -49,7 +49,7 @@ def to_mongo(context: TransformContext) -> TransformContext:
     context.output["__blob__"] = blob
     context.output["__repr__"] = context.obj.__repr__()
 
-    return context.output
+    return context
 
 
 @transform(SyftObject, MongoBsonObject)
