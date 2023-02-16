@@ -3,7 +3,9 @@ from __future__ import annotations
 
 # stdlib
 from copy import deepcopy
+import os
 import sqlite3
+import tempfile
 from typing import Any
 from typing import List
 from typing import Optional
@@ -19,16 +21,22 @@ from ...common.serde.serialize import _serialize
 from ...common.uid import UID
 from .document_store import DocumentStore
 from .document_store import PartitionSettings
+from .document_store import StoreClientConfig
 from .document_store import StoreConfig
 from .kv_document_store import KeyValueBackingStore
 from .kv_document_store import KeyValueStorePartition
 
 
 class SQLiteBackingStore(KeyValueBackingStore):
-    def __init__(self, settings: PartitionSettings) -> None:
+    def __init__(
+        self, index_name: str, settings: PartitionSettings, store_config: StoreConfig
+    ) -> None:
         self.settings = settings
-        self.table_name = self.settings.name
-        self.db = sqlite3.connect("/tmp/db.sqlite")
+        self.store_config = store_config
+        self.index_name = index_name
+        self.table_name = f"{self.settings.name}_{self.index_name}"
+        self.file_path = self.store_config.client_config.file_path
+        self.db = sqlite3.connect(self.file_path)
         self.cur = self.db.cursor()
         try:
             self.cur.execute(
@@ -39,15 +47,22 @@ class SQLiteBackingStore(KeyValueBackingStore):
             if f"table {self.table_name} already exists" not in str(e):
                 raise e
 
+    def _close(self) -> None:
+        self._commit()
+        self.db.close()
+
+    def _commit(self) -> None:
+        self.db.commit()
+
     def _execute(self, sql: str, *args: Optional[List[Any]]) -> None:
         cursor = self.cur.execute(sql, *args)
-        self.db.commit()
+        self._commit()
         return cursor
 
     def _set(self, key: UID, value: Any) -> None:
         try:
             if self._exists(key):
-                self.update(key, value)
+                self._update(key, value)
             else:
                 insert_sql = f"insert into {self.table_name} (uid, value) VALUES (?, ?)"
                 data = _serialize(value, to_bytes=True)
@@ -142,7 +157,15 @@ class SQLiteBackingStore(KeyValueBackingStore):
 
 @serializable(recursive_serde=True)
 class SQLiteStorePartition(KeyValueStorePartition):
-    pass
+    def close(self) -> None:
+        self.data._close()
+        self.unique_keys._close()
+        self.searchable_keys._close()
+
+    def commit(self) -> None:
+        self.data._commit()
+        self.unique_keys._commit()
+        self.searchable_keys._commit()
 
 
 # the base document store is already a dict but we can change it later
@@ -152,6 +175,22 @@ class SQLiteDocumentStore(DocumentStore):
 
 
 @serializable(recursive_serde=True)
+class SQLiteStoreClientConfig(StoreClientConfig):
+    filename: Optional[str]
+    path: Optional[str]
+
+    @property
+    def temp_path(self) -> str:
+        return tempfile.gettempdir()
+
+    @property
+    def file_path(self) -> str:
+        path = self.path if self.path else self.temp_path
+        return path + os.sep + self.filename
+
+
+@serializable(recursive_serde=True)
 class SQLiteStoreConfig(StoreConfig):
+    client_config: StoreClientConfig
     store_type: Type[DocumentStore] = SQLiteDocumentStore
     backing_store: Type[KeyValueBackingStore] = SQLiteBackingStore

@@ -43,3 +43,10 @@ class SyftSuccess(SyftResponseMessage):
     @property
     def _repr_html_class_(self) -> str:
         return "alert-success"
+
+
+@serializable(recursive_serde=True)
+class SyftNotReady(SyftResponseMessage):
+    @property
+    def _repr_html_class_(self) -> str:
+        return "alert-info"

@@ -34,13 +34,8 @@ def first_or_none(result: Any) -> Optional[Any]:
     return Ok(None)
 
 
-@serializable(recursive_serde=True)
 class StoreClientConfig(BaseModel):
-    hostname: str
-    port: int
-    username: str
-    password: str
-    tls: Optional[bool] = False
+    pass
 
 
 @serializable(recursive_serde=True)
@@ -191,7 +186,6 @@ class PartitionSettings(SyftBaseModel):
     name: str
     object_type: type
     store_key: PartitionKey = UIDPartitionKey
-    db_name: str = "app"
 
     @property
     def unique_keys(self) -> PartitionKeys:
@@ -312,7 +306,6 @@ class BaseStash:
 
         index_qks = QueryKeys(qks=unique_keys)
         search_qks = QueryKeys(qks=searchable_keys)
-
         return self.partition.find_index_or_search_keys(
             index_qks=index_qks, search_qks=search_qks
         )

@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 # stdlib
+from typing import Any
+from typing import Dict
 from typing import Type
 
 # relative
@@ -13,7 +15,8 @@ from .kv_document_store import KeyValueStorePartition
 
 
 class DictBackingStore(dict, KeyValueBackingStore):
-    pass
+    def __init__(self, *args: Any, **kwargs: Any) -> Dict:
+        super(dict).__init__()
 
 
 @serializable(recursive_serde=True)

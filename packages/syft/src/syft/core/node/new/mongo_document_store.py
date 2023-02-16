@@ -1,6 +1,7 @@
 # stdlib
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Type
 
 # third party
@@ -21,12 +22,22 @@ from .credentials import SyftVerifyKey
 from .document_store import DocumentStore
 from .document_store import QueryKey
 from .document_store import QueryKeys
+from .document_store import StoreClientConfig
 from .document_store import StoreConfig
 from .document_store import StorePartition
 from .mongo_client import MongoClient
 from .response import SyftSuccess
 from .transforms import transform
 from .transforms import transform_method
+
+
+@serializable(recursive_serde=True)
+class MongoStoreClientConfig(StoreClientConfig):
+    hostname: str
+    port: int
+    username: str
+    password: str
+    tls: Optional[bool] = False
 
 
 class MongoBsonObject(StorableObjectType, dict):
@@ -90,7 +101,9 @@ class MongoStorePartition(StorePartition):
 
     def _init_collection(self):
         client = MongoClient.from_config(config=self.store_config.client_config)
-        self._collection = client.with_collection(collection_settings=self.settings)
+        self._collection = client.with_collection(
+            collection_settings=self.settings, store_config=self.store_config
+        )
         self._create_update_index()
 
     @property
@@ -225,4 +238,6 @@ class MongoDocumentStore(DocumentStore):
 
 @serializable(recursive_serde=True)
 class MongoStoreConfig(StoreConfig):
+    client_config: StoreClientConfig
     store_type: Type[DocumentStore] = MongoDocumentStore
+    db_name: str = "app"

@@ -112,7 +112,7 @@ class SyftAPICall(SyftObject):
     # version
     __canonical_name__ = "SyftAPICall"
     __version__ = SYFT_OBJECT_VERSION_1
-    __attr_allowlist__ = ["path", "args", "kwargs"]
+    __attr_allowlist__ = ["path", "args", "kwargs", "blocking"]
 
     # fields
     path: str
@@ -121,7 +121,7 @@ class SyftAPICall(SyftObject):
     blocking: bool = True
 
     # serde / storage rules
-    __attr_state__ = ["path", "args", "kwargs"]
+    __attr_state__ = ["path", "args", "kwargs", "blocking"]
 
     def sign(self, credentials: SyftSigningKey) -> SignedSyftAPICall:
         signed_message = credentials.signing_key.sign(_serialize(self, to_bytes=True))
@@ -136,7 +136,17 @@ class SyftAPICall(SyftObject):
 def generate_remote_function(
     signature: Signature, path: str, make_call: Callable, pre_kwargs: Dict[str, Any]
 ):
+    if "blocking" in signature.parameters:
+        raise Exception(
+            f"Signature {signature} can't have 'blocking' kwarg because its reserved"
+        )
+
     def wrapper(*args, **kwargs):
+        blocking = True
+        if "blocking" in kwargs:
+            blocking = bool(kwargs["blocking"])
+            del kwargs["blocking"]
+
         _valid_kwargs = {}
         if "kwargs" in signature.parameters:
             _valid_kwargs = kwargs
@@ -205,7 +215,9 @@ def generate_remote_function(
 
         if pre_kwargs:
             _valid_kwargs.update(pre_kwargs)
-        api_call = SyftAPICall(path=path, args=_valid_args, kwargs=_valid_kwargs)
+        api_call = SyftAPICall(
+            path=path, args=_valid_args, kwargs=_valid_kwargs, blocking=blocking
+        )
         result = make_call(api_call=api_call)
         return result
 

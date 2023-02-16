@@ -11,7 +11,7 @@ from syft import Domain  # type: ignore
 from syft import Network  # type: ignore
 from syft.core.node.common.client import Client
 from syft.core.node.common.util import get_s3_client
-from syft.core.node.new.document_store import StoreClientConfig
+from syft.core.node.new.document_store import MongoStoreClientConfig
 from syft.core.node.new.mongo_document_store import MongoStoreConfig
 from syft.core.node.worker import Worker
 
@@ -59,7 +59,7 @@ def create_s3_bucket(bucket_name: str, settings: Settings, attempt: int = 0) -> 
         raise e
 
 
-mongo_client_config = StoreClientConfig(
+mongo_client_config = MongoStoreClientConfig(
     hostname=settings.MONGO_HOST,
     port=settings.MONGO_PORT,
     username=settings.MONGO_USERNAME,

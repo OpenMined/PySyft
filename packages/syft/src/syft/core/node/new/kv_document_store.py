@@ -54,9 +54,6 @@ class KeyValueBackingStore:
     def copy(self) -> Self:
         raise NotImplementedError
 
-    def has_key(self, key: str) -> bool:
-        raise NotImplementedError
-
     def update(self, *args: Any, **kwargs: Any) -> Self:
         raise NotImplementedError
 
@@ -82,17 +79,25 @@ class KeyValueBackingStore:
 class KeyValueStorePartition(StorePartition):
     def init_store(self) -> None:
         super().init_store()
-        self.data = self.store_config.backing_store(self.settings)
-        self.unique_keys = {}
+        self.data = self.store_config.backing_store(
+            "data", self.settings, self.store_config
+        )
+        self.unique_keys = self.store_config.backing_store(
+            "unique_keys", self.settings, self.store_config
+        )
+        self.searchable_keys = self.store_config.backing_store(
+            "searchable_keys", self.settings, self.store_config
+        )
 
         for partition_key in self.unique_cks:
             pk_key = partition_key.key
-            self.unique_keys[pk_key] = {}
+            if pk_key not in self.unique_keys:
+                self.unique_keys[pk_key] = {}
 
-        self.searchable_keys = {}
         for partition_key in self.searchable_cks:
             pk_key = partition_key.key
-            self.searchable_keys[pk_key] = defaultdict(list)
+            if pk_key not in self.searchable_keys:
+                self.searchable_keys[pk_key] = defaultdict(list)
 
     def validate_partition_keys(
         self, store_query_key: QueryKey, unique_query_keys: QueryKeys
