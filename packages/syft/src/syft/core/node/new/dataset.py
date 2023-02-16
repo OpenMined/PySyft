@@ -1,4 +1,5 @@
 # stdlib
+from enum import Enum
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -8,6 +9,7 @@ from typing import Tuple
 
 # third party
 import numpy as np
+from pydantic import validator
 
 # relative
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
@@ -30,6 +32,12 @@ NamePartitionKey = PartitionKey(key="name", type_=str)
 class Contributor(SyftObject):
     __canonical_name__ = "Contributor"
     __version__ = SYFT_OBJECT_VERSION_1
+
+    @validator("role")
+    def role_dtype(cls, val):
+        if isinstance(val, Enum):
+            val = str(val)
+        return val
 
     name: str
     role: str
