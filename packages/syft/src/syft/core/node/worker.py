@@ -48,6 +48,7 @@ from .new.user import UserCreate
 from .new.user_code_service import UserCodeService
 from .new.user_service import UserService
 from .new.user_stash import UserStash
+from .new.policy_code_service import PolicyCodeService
 
 NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
 NODE_UID = "NODE_UID"
@@ -104,7 +105,14 @@ class Worker(NewNode):
             name = random_name()
         self.name = name
         services = (
-            [UserService, ActionService, TestService, DatasetService, UserCodeService]
+            [
+                UserService, 
+                ActionService, 
+                TestService, 
+                DatasetService, 
+                UserCodeService,
+                PolicyCodeService
+            ]
             if services is None
             else services
         )
@@ -139,7 +147,12 @@ class Worker(NewNode):
             if service_klass == ActionService:
                 action_store = ActionStore(root_verify_key=self.signing_key.verify_key)
                 kwargs["store"] = action_store
-            if service_klass in [UserService, DatasetService, UserCodeService]:
+            if service_klass in [
+                UserService, 
+                DatasetService, 
+                UserCodeService,
+                PolicyCodeService
+            ]:
                 kwargs["store"] = self.document_store
             self.service_path_map[service_klass.__name__] = service_klass(**kwargs)
 
