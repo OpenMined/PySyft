@@ -1,10 +1,12 @@
 # stdlib
+from enum import Enum
 from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 # third party
 import numpy as np
@@ -94,12 +96,13 @@ class CreateAsset(Asset):
         self,
         name: str,
         email: str,
-        role: str,
+        role: Union[Enum, str],
         phone: Optional[str] = None,
         note: Optional[str] = None,
     ) -> None:
+        _role_str = role.value if isinstance(role, Enum) else role
         contributor = Contributor(
-            name=name, role=role, email=email, phone=phone, note=note
+            name=name, role=_role_str, email=email, phone=phone, note=note
         )
         self.contributors.append(contributor)
 
@@ -179,12 +182,13 @@ class CreateDataset(Dataset):
         self,
         name: str,
         email: str,
-        role: str,
+        role: Union[Enum, str],
         phone: Optional[str] = None,
         note: Optional[str] = None,
     ) -> None:
+        _role_str = role.value if isinstance(role, Enum) else role
         contributor = Contributor(
-            name=name, role=role, email=email, phone=phone, note=note
+            name=name, role=_role_str, email=email, phone=phone, note=note
         )
         self.contributors.append(contributor)
 
