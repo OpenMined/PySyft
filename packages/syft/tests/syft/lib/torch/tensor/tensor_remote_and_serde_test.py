@@ -50,7 +50,6 @@ def test_torch_remote_tensor_with_send() -> None:
 
 
 def test_torch_serde() -> None:
-
     x = th.tensor([1.0, 2, 3, 4], requires_grad=True)
 
     # This is not working currently:
@@ -69,7 +68,6 @@ def test_torch_serde() -> None:
 def test_torch_no_read_permissions(
     client: sy.VirtualMachineClient, root_client: sy.VirtualMachineClient
 ) -> None:
-
     x = th.tensor([1, 2, 3, 4])
 
     # root user of Bob's machine sends a tensor

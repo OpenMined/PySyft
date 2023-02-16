@@ -85,7 +85,6 @@ def spdz_mask(
     b_share: ShareTensor,
     node: Optional[AbstractNode] = None,
 ) -> None:
-
     if node is None:
         raise ValueError("Node context should be passed to spdz mask")
 
@@ -120,7 +119,6 @@ def spdz_multiply(
     c_share: ShareTensor,
     node: Optional[Any] = None,
 ) -> ShareTensor:
-
     nr_parties = x.nr_parties
     ring_size = x.ring_size
 
@@ -204,7 +202,6 @@ def divide_mask(
     z_id: UID,
     node: Optional[AbstractNode] = None,
 ) -> None:
-
     if node is None:
         raise ValueError("Node context should be passed to spdz mask")
 
@@ -331,7 +328,6 @@ def local_decomposition(
         input_shares.append(x)
 
     for share in input_shares:
-
         for i in range(nr_parties):
             id_at_location = UID(UUID(bytes=generator.bytes(16)))
             sh = x.copy_tensor()

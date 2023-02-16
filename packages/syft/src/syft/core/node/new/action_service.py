@@ -1,19 +1,13 @@
 # stdlib
-import types
 from typing import Any
-from typing import Callable
-from typing import List
 
 # third party
 import numpy as np
 from result import Err
 from result import Ok
 from result import Result
-from typing_extensions import Self
 
 # relative
-from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ....core.node.common.node_table.syft_object import transform
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .action_object import Action
@@ -21,100 +15,25 @@ from .action_object import ActionObject
 from .action_object import ActionObjectPointer
 from .action_store import ActionStore
 from .context import AuthedServiceContext
+from .numpy_array import NumpyArrayObject
 from .service import AbstractService
 from .service import service_method
-
-
-@serializable(recursive_serde=True)
-class NumpyArrayObjectPointer(ActionObjectPointer):
-    __canonical_name__ = "NumpyArrayObjectPointer"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    # 🟡 TODO 17: add state / allowlist inheritance to SyftObject and ignore methods by default
-    __attr_state__ = [
-        "id",
-        "node_uid",
-        "parent_id",
-    ]
-
-    def __post_init__(self) -> None:
-        self.setup_methods()
-
-    def setup_methods(self) -> None:
-        infix_operations = ["__add__", "__sub__"]
-        for op in infix_operations:
-            setattr(
-                type(self),
-                op,
-                types.MethodType(self.__make_infix_op__(op), type(self)),
-            )
-
-    def __make_infix_op__(self, op: str) -> Callable:
-        def infix_op(_self, other: ActionObjectPointer) -> Self:
-            if not isinstance(other, ActionObjectPointer):
-                print("🔵 TODO: pointerize")
-                raise Exception("We need to pointerize first")
-            action = self.make_method_action(op=op, args=[other])
-            action_result = self.execute_action(action, sync=True)
-            return action_result
-
-        infix_op.__name__ = op
-        return infix_op
-
-
-def numpy_like_eq(left: Any, right: Any) -> bool:
-    result = left == right
-    if isinstance(result, bool):
-        return result
-
-    if hasattr(result, "all"):
-        return (result).all()
-    return bool(result)
-
-
-# 🔵 TODO 7: Map TPActionObjects and their 3rd Party types like numpy type to these
-# classes for bi-directional lookup.
-@serializable(recursive_serde=True)
-class NumpyArrayObject(ActionObject):
-    __canonical_name__ = "NumpyArrayObject"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    syft_pointer_type = NumpyArrayObjectPointer
-
-    def __eq__(self, other: Any) -> bool:
-        # 🟡 TODO 8: move __eq__ to a Data / Serdeable type interface on ActionObject
-        if isinstance(other, NumpyArrayObject):
-            return (
-                numpy_like_eq(self.syft_action_data, other.syft_action_data)
-                and self.syft_pointer_type == other.syft_pointer_type
-            )
-        return self == other
-
-
-# def expose_dtype(output: dict) -> dict:
-#     output["public_dtype"] = output["dtype"]
-#     del output["dtype"]
-#     return output
-
-
-# def expose_shape(output: dict) -> dict:
-#     output["public_shape"] = output["shape"]
-#     del output["shape"]
-#     return output
-
-
-@transform(NumpyArrayObject, NumpyArrayObjectPointer)
-def np_array_to_pointer() -> List[Callable]:
-    return [
-        # expose_dtype,
-        # expose_shape,
-    ]
 
 
 @serializable(recursive_serde=True)
 class ActionService(AbstractService):
     def __init__(self, store: ActionStore) -> None:
         self.store = store
+
+    @service_method(path="action.np_array", name="np_array")
+    def np_array(self, context: AuthedServiceContext, data: Any) -> Any:
+        if not isinstance(data, np.ndarray):
+            data = np.array(data)
+        np_obj = NumpyArrayObject(
+            syft_action_data=data, dtype=data.dtype, shape=data.shape
+        )
+        np_pointer = self.set(context, np_obj)
+        return np_pointer
 
     @service_method(path="action.set", name="set")
     def set(
@@ -135,6 +54,18 @@ class ActionService(AbstractService):
     def get(self, context: AuthedServiceContext, uid: UID) -> Result[ActionObject, str]:
         """Get an object from the action store"""
         result = self.store.get(uid=uid, credentials=context.credentials)
+        if result.is_ok():
+            return Ok(result.ok())
+        return Err(result.err())
+
+    @service_method(path="action.get_pointer", name="get_pointer")
+    def get_pointer(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Result[ActionObjectPointer, str]:
+        """Get a pointer from the action store"""
+        result = self.store.get_pointer(
+            uid=uid, credentials=context.credentials, node_uid=context.node.id
+        )
         if result.is_ok():
             return Ok(result.ok())
         return Err(result.err())
@@ -173,7 +104,6 @@ class ActionService(AbstractService):
             if target_method:
                 result = target_method(*args, **kwargs)
         except Exception as e:
-            print("what is this exception", e)
             return Err(e)
 
         # 🟡 TODO 11: Figure out how we want to store action object results

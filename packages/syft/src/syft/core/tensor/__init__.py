@@ -2,7 +2,7 @@
 from typing import Optional
 
 # relative
-from . import functions  # noqa: 401
+from . import functions  # noqa: F401
 from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
@@ -15,7 +15,7 @@ from .fixed_precision_tensor import FixedPrecisionTensor
 # from .nn import Model
 from .smpc.share_tensor import ShareTensor
 from .tensor import Tensor
-from .tensor import TensorPointer  # noqa: 401
+from .tensor import TensorPointer  # noqa: F401
 
 
 def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:

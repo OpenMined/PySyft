@@ -14,7 +14,7 @@ from ...ast.globals import Globals
 from ..node.abstract.node import AbstractNodeClient
 from .store import CryptoStore
 
-from .protocol import beaver  # noqa: 401 isort: skip
+from .protocol import beaver  # noqa: F401 isort: skip
 
 
 def create_smpc_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
