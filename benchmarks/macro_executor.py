@@ -97,7 +97,7 @@ print(f"Time taken to make Private Syft Tensor: {round(tf,2)} seconds")
 benchmark_report["make_private_syft_tensor"] = tf
 
 # login to domain
-domain_node = sy.login(email="info@openmined.org", password="changethis", port=9082)
+domain_node = sy.old_login(email="info@openmined.org", password="changethis", port=9082)
 
 # Upgrade admins budget
 content = {"user_id": 1, "budget": 9_999_999}
