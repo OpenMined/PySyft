@@ -387,8 +387,6 @@ class Node(AbstractNode):
             on_board=node_setup.on_board,
         )
 
-    def get_api(self) -> SyftAPI:
-        return SyftAPI.for_user(node=self)
 
     def add_peer_routes(self, peer: NoSQLNode) -> None:
         try:
