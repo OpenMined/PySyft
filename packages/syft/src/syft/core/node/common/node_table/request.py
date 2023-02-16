@@ -14,7 +14,7 @@ from .syft_object import SyftObject
 @serializable(recursive_serde=True)
 class NoSQLRequest(SyftObject):
     # version
-    __canonical_name__ = "Request"
+    __canonical_name__ = "OldRequest"
     __version__ = SYFT_OBJECT_VERSION_1
 
     # fields

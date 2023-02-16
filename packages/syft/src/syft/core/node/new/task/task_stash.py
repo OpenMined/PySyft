@@ -12,8 +12,9 @@ from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ..document_store import BaseStash
 from ..document_store import DocumentStore
+from ..document_store import PartitionSettings
 from ..document_store import QueryKeys
-from ..document_store import UIDPartitionKey,PartitionSettings
+from ..document_store import UIDPartitionKey
 from .task import Task
 
 
