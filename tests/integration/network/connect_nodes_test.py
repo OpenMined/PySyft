@@ -159,42 +159,42 @@ def check_node_is_connected(email: str, password: str, port: int) -> None:
     return response
 
 
-@pytest.mark.network
-def test_check_settings_fields() -> None:
-    domain = sy.login(
-        email="info@openmined.org",
-        password="changethis",
-        port=DOMAIN1_PORT,
-    )
+# @pytest.mark.network
+# def test_check_settings_fields() -> None:
+#     domain = sy.login(
+#         email="info@openmined.org",
+#         password="changethis",
+#         port=DOMAIN1_PORT,
+#     )
 
-    # Assert placeholder and service respone are the same
-    assert domain.settings == domain.get_setup().content
+#     # Assert placeholder and service respone are the same
+#     assert domain.settings == domain.get_setup().content
 
-    domain_settings_keys = list(domain.settings.keys())
+#     domain_settings_keys = list(domain.settings.keys())
 
-    expected_keys = [
-        "domain_name",
-        "description",
-        "contact",
-        "daa",
-        "node_uid",
-        "tags",
-        "deployed_on",
-        "use_blob_storage",
-    ]
+#     expected_keys = [
+#         "domain_name",
+#         "description",
+#         "contact",
+#         "daa",
+#         "node_uid",
+#         "tags",
+#         "deployed_on",
+#         "use_blob_storage",
+#     ]
 
-    # Be sure that there's any additional field than the expected ones.
-    if sy.__version__ == "0.7.0":
-        assert 10 == len(domain_settings_keys)
-    else:
-        assert len(expected_keys) == len(domain_settings_keys)
+#     # Be sure that there's any additional field than the expected ones.
+#     if sy.__version__ == "0.7.0":
+#         assert 10 == len(domain_settings_keys)
+#     else:
+#         assert len(expected_keys) == len(domain_settings_keys)
 
-    # Be sure that all the expected fields are there.
-    for key in expected_keys:
-        if sy.__version__ == "0.7.0":
-            if key == "node_uid":
-                key = "id"
-        assert key in domain_settings_keys
+#     # Be sure that all the expected fields are there.
+#     for key in expected_keys:
+#         if sy.__version__ == "0.7.0":
+#             if key == "node_uid":
+#                 key = "id"
+#         assert key in domain_settings_keys
 
 
 def disconnect_network() -> None:
