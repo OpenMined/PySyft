@@ -1,5 +1,5 @@
 <script lang="ts">
-  export let variant: 'gray' | 'blue' = 'gray';
+  export let variant: 'gray' | 'primary-light' | 'primary-dark' = 'gray';
 </script>
 
 <span class={variant}>
@@ -7,32 +7,18 @@
 </span>
 
 <style lang="postcss">
+  span {
+    @apply h-5;
+  }
   .gray {
-    @apply bg-gray-100
-    text-gray-800
-    px-1.5
-    py-0.5
-    rounded-sm
-    items-center
-    inline-flex
-    font-bold
-    font-roboto
-    text-xs
-    leading-normal;
+    @apply bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded-sm items-center inline-flex font-bold font-roboto text-xs leading-normal;
   }
 
-  .blue {
-    @apply bg-gray-800
-    text-primary-200
-    px-1.5
-    py-0.5
-    rounded-sm
-    items-center
-    inline-flex
-    font-bold
-    font-roboto
-    text-xs
-    leading-normal
-    w-fit;
+  .primary-light {
+    @apply bg-primary-100 text-primary-600 px-1.5 py-0.5 rounded-sm items-center inline-flex font-bold font-roboto text-xs leading-normal w-fit;
+  }
+
+  .primary-dark {
+    @apply bg-gray-800 text-primary-200 px-1.5 py-0.5 rounded-sm items-center inline-flex font-bold font-roboto text-xs leading-normal w-fit;
   }
 </style>

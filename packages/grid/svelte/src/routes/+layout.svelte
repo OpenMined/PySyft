@@ -9,7 +9,7 @@
 
 <div class="flex h-auto min-h-screen">
   <Router {url}>
-    <NavBar location={url} />
+    <NavBar />
     <AppRouter />
   </Router>
 
