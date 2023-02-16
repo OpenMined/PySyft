@@ -213,12 +213,12 @@ def generate_oblv_key() -> Tuple[bytes]:
 
 @serializable(recursive_serde=True)
 class OblvService(AbstractService):
-    document_store: DocumentStore
+    store: DocumentStore
     oblv_keys_stash: OblvKeysStash
 
-    def __init__(self, document_store: DocumentStore) -> None:
-        self.document_store = document_store
-        self.oblv_keys_stash = OblvKeysStash(store=document_store)
+    def __init__(self, store: DocumentStore) -> None:
+        self.store = store
+        self.oblv_keys_stash = OblvKeysStash(store=store)
 
     @service_method(path="oblv.create_key", name="create_key")
     def create_key(
