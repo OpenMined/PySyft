@@ -86,6 +86,8 @@ class UID:
         super().__init__()
 
         # if value is not set - create a novel and unique ID.
+        if isinstance(value, str):
+            value = uuid.UUID(value)
 
         if isinstance(value, str):
             value = uuid.UUID(value)

@@ -1,8 +1,13 @@
+.DS_Store
 node_modules
-.next
-yarn.lock
-package-lock.json
+/build
+/.svelte-kit
+/package
+.env
+.env.*
+!.env.example
+
+# Ignore files for PNPM, NPM and YARN
 pnpm-lock.yaml
-public
-out
-coverage
+package-lock.json
+yarn.lock

@@ -409,7 +409,7 @@ def test_Float_containment():
         assert {f} == {f}
         assert {f: None} == {f: None}
         # identical containers
-        l, t, s, d = [f], (f,), {f}, {f: None}
+        l, t, s, d = [f], (f,), {f}, {f: None}  # noqa: E741
         assert l == l  # noqa: E741
         assert t == t  # noqa: E741
         assert s == s  # noqa: E741

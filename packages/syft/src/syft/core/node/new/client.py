@@ -15,6 +15,7 @@ from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from result import OkErr
+from tqdm import tqdm
 from typing_extensions import Self
 
 # relative
@@ -30,13 +31,16 @@ from ...common.uid import UID
 from ...node.new.credentials import UserLoginCredentials
 from ...node.new.node_metadata import NodeMetadataJSON
 from ...node.new.user import UserPrivateKey
+from .api import APIModule
 from .api import APIRegistry
 from .api import SyftAPI
 from .api import SyftAPICall
 from .connection import NodeConnection
 from .credentials import SyftSigningKey
+from .dataset import CreateDataset
 from .node import NewNode
 from .response import SyftError
+from .response import SyftSuccess
 from .user_service import UserService
 
 # use to enable mitm proxy
@@ -240,7 +244,7 @@ class SyftClient:
 
     @staticmethod
     def from_node(node: NewNode) -> Self:
-        return SyftClient(connetcion=PythonConnection(node=node))
+        return SyftClient(connection=PythonConnection(node=node))
 
     @property
     def name(self) -> Optional[str]:
@@ -248,7 +252,7 @@ class SyftClient:
 
     @property
     def id(self) -> Optional[UID]:
-        return self.metadata.id if self.metadata else None
+        return UID.from_string(self.metadata.id) if self.metadata else None
 
     @property
     def icon(self) -> str:
@@ -257,9 +261,28 @@ class SyftClient:
     @property
     def api(self) -> SyftAPI:
         if self._api is None:
-            self._fetch_api()
+            self._fetch_api(self.credentials)
 
         return self._api
+
+    def upload_dataset(self, dataset: CreateDataset) -> Union[SyftSuccess, SyftError]:
+        for asset in tqdm(dataset.asset_list):
+            print(f"Uploading: {asset.name}")
+            response = asset.data.new_send(self)
+            if isinstance(response, SyftError):
+                print(f"Failed to upload asset\n: {asset}")
+                return response
+            data_ptr = response
+            asset.action_id = data_ptr.id
+            asset.node_uid = self.id
+
+        return self.api.services.dataset.add(dataset=dataset)
+
+    @property
+    def data_subject_registry(self) -> Optional[APIModule]:
+        if self.api is not None and hasattr(self.api.services, "data_subject"):
+            return self.api.services.data_subject
+        return None
 
     def connect(self, email: str, password: str, cache: bool = True) -> None:
         signing_key = self.connection.connect(email=email, password=password)

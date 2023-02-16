@@ -8,7 +8,7 @@ from typing import Tuple as TypeTuple
 import numpy as np
 
 # relative
-from . import array  # noqa: 401
+from . import array  # noqa: F401
 from ...ast import add_classes
 from ...ast import add_methods
 from ...ast import add_modules
