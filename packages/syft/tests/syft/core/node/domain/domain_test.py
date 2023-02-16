@@ -144,3 +144,45 @@ def test_object_exists_on_domain(domain: sy.Domain) -> None:
     assert not ptr.exists
     ptr = x.send(domain_client, id_at_location_override=uid)
     assert ptr.exists
+
+
+@pytest.mark.skip(
+    "To Re-enable after merge of https://github.com/OpenMined/PySyft/pull/6719"
+)
+@pytest.mark.asyncio
+def test_create_user() -> None:
+    domain = sy.Domain(
+        name="remote domain", store_type=DictStore, ledger_store_type=DictLedgerStore
+    )
+    root_client = domain.get_root_client()
+    domain.initial_setup(
+        signing_key=root_client.signing_key,
+        first_superuser_name="Jane Doe",
+        first_superuser_email="superuser@openmined.org",
+        first_superuser_password="pwd",
+        first_superuser_budget=5.55,
+        domain_name="remote domain",
+    )
+
+    name = "Test Create"
+    email = "test@test.com"
+    budget = 1
+    root_client.create_user(
+        name=name, email=email, password="changethis", budget=budget
+    )
+    user = domain.users.first(email="test@test.com")
+    assert user
+    assert user.name == name
+    assert user.budget == budget
+
+
+@pytest.mark.asyncio
+def test_raise_error_create_user_invalid_budget(domain: sy.Domain) -> None:
+    domain_client = domain.get_root_client()
+    with pytest.raises(ValueError):
+        domain_client.create_user(
+            name="Test Invalid Budget",
+            email="test@test.com",
+            password="changethis",
+            budget=-10,
+        )

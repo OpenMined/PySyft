@@ -11,7 +11,6 @@ from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.serializable import serializable
 from .....common.uid import UID
-from .....io.address import Address
 
 
 @serializable(recursive_serde=True)
@@ -33,15 +32,15 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         name: str,
         email: str,
         password: str,
-        reply_to: Address,
+        reply_to: UID,
         role: Optional[str] = "",
         website: str = "",
         institution: str = "",
-        daa_pdf: Optional[bytes] = b"",
+        daa_pdf: Optional[bytes] = None,
         msg_id: Optional[UID] = None,
         budget: Optional[float] = 0.0,
     ):
@@ -63,9 +62,9 @@ class GetUserMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         user_id: int,
-        reply_to: Address,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -79,10 +78,10 @@ class ProcessUserCandidateMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         candidate_id: int,
         status: str,
-        reply_to: Address,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -97,7 +96,7 @@ class GetUserResponse(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):
@@ -112,8 +111,8 @@ class GetUsersMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
-        reply_to: Address,
+        address: UID,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -126,8 +125,8 @@ class GetCandidatesMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
-        reply_to: Address,
+        address: UID,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -140,7 +139,7 @@ class GetCandidatesResponse(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         content: List[Dict],
         msg_id: Optional[UID] = None,
     ):
@@ -155,7 +154,7 @@ class GetUsersResponse(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         content: List[Dict],
         msg_id: Optional[UID] = None,
     ):
@@ -184,8 +183,8 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
 
     def __init__(  # nosec
         self,
-        address: Address,
-        reply_to: Address,
+        address: UID,
+        reply_to: UID,
         user_id: Optional[int] = 0,
         msg_id: Optional[UID] = None,
         email: Optional[str] = "",
@@ -218,9 +217,9 @@ class DeleteUserMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         user_id: int,
-        reply_to: Address,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -242,8 +241,8 @@ class SearchUsersMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
-        reply_to: Address,
+        address: UID,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
         email: Optional[str] = "",
         role: Optional[str] = "",
@@ -264,7 +263,7 @@ class SearchUsersResponse(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         content: List[Dict],
         msg_id: Optional[UID] = None,
     ):

@@ -15,9 +15,7 @@ from typing import Union
 # third party
 import ascii_magic
 from nacl.signing import SigningKey
-from nacl.signing import VerifyKey
 from pydantic import BaseSettings
-from pymongo import MongoClient
 
 # relative
 from ...lib.python import String
@@ -25,27 +23,25 @@ from ...logger import critical
 from ...logger import debug
 from ...logger import info
 from ...logger import traceback
-from ...shylock import ShylockPymongoBackend
-from ...shylock import configure
 from ...telemetry import instrument
 from ..adp.ledger_store import RedisLedgerStore
 from ..common.message import SignedImmediateSyftMessageWithReply
-from ..common.message import SignedMessage
-from ..common.message import SyftMessage
 from ..common.uid import UID
 from ..io.location import Location
 from ..io.location import SpecificLocation
 from .common.action.get_object_action import GetObjectAction
 from .common.client import Client
 from .common.node import Node
-from .common.node_manager.association_request_manager import AssociationRequestManager
-from .common.node_manager.dataset_manager import DatasetManager
-from .common.node_manager.environment_manager import EnvironmentManager
-from .common.node_manager.node_manager import NodeManager
-from .common.node_manager.node_route_manager import NodeRouteManager
+from .common.node_manager.association_request_manager import (
+    NoSQLAssociationRequestManager,
+)
+from .common.node_manager.dataset_manager import NoSQLDatasetManager
+from .common.node_manager.node_manager import NoSQLNodeManager
+from .common.node_manager.oblv_key_manager import NoSQLOblvKeyManager
 from .common.node_manager.redis_store import RedisStore
-from .common.node_manager.request_manager import RequestManager
+from .common.node_manager.request_manager import NoSQLRequestManager
 from .common.node_manager.role_manager import NewRoleManager
+from .common.node_manager.task_manager import NoSQLTaskManager
 from .common.node_manager.user_manager import NoSQLUserManager
 from .common.node_service.association_request.association_request_service import (
     AssociationRequestService,
@@ -67,6 +63,10 @@ from .common.node_service.object_request.object_request_service import (
     ObjectRequestServiceWithoutReply,
 )
 from .common.node_service.object_request.object_request_service import RequestService
+from .common.node_service.oblv.oblv_messages import CreateKeyPairMessage
+from .common.node_service.oblv.oblv_service import OblvBackgroundService
+from .common.node_service.oblv.oblv_service import OblvRequestAdminService
+from .common.node_service.oblv.oblv_service import OblvRequestUserService
 from .common.node_service.ping.ping_service import PingService
 from .common.node_service.publish.publish_service import PublishScalarsService
 from .common.node_service.request_answer.request_answer_messages import RequestStatus
@@ -79,12 +79,12 @@ from .common.node_service.request_receiver.request_receiver_messages import (
 from .common.node_service.role_manager.role_manager_service import RoleManagerService
 from .common.node_service.simple.simple_service import SimpleService
 from .common.node_service.sleep.sleep_service import SleepService
+from .common.node_service.tff.tff_service import TFFService
 from .common.node_service.user_auth.user_auth_service import UserLoginService
 from .common.node_service.user_manager.user_manager_service import UserManagerService
 from .common.node_service.vpn.vpn_service import VPNConnectService
 from .common.node_service.vpn.vpn_service import VPNJoinService
 from .common.node_service.vpn.vpn_service import VPNStatusService
-from .common.node_table.utils import create_memory_db_engine
 from .device import Device
 from .device import DeviceClient
 from .domain_client import DomainClient
@@ -94,7 +94,6 @@ from .domain_service import DomainServiceClass
 @instrument
 class Domain(Node):
     domain: SpecificLocation
-    root_key: Optional[VerifyKey]
 
     child_type = Device
     client_type = DomainClient
@@ -108,18 +107,12 @@ class Domain(Node):
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
         signing_key: Optional[SigningKey] = None,
-        verify_key: Optional[VerifyKey] = None,
-        root_key: Optional[VerifyKey] = None,
         db_engine: Any = None,
         store_type: type = RedisStore,
         ledger_store_type: type = RedisLedgerStore,
         settings: Optional[BaseSettings] = None,
         document_store: bool = False,
     ):
-
-        if db_engine is None:
-            db_engine, _ = create_memory_db_engine()
-
         super().__init__(
             name=name,
             network=network,
@@ -127,41 +120,30 @@ class Domain(Node):
             device=device,
             vm=vm,
             signing_key=signing_key,
-            verify_key=verify_key,
             db_engine=db_engine,
             store_type=store_type,
             settings=settings,
+            document_store=document_store,
         )
 
         # share settings with the FastAPI application level
         self.settings = settings
 
         # specific location with name
-        self.domain = SpecificLocation(name=self.name)
-        self.root_key = root_key
-
-        # FIXME: Modify to use environment variable
-        nosql_db_engine = MongoClient(  # nosec
-            host="mongo",
-            port=27017,
-            username="root",
-            password="example",
-            uuidRepresentation="standard",
-        )
-        db_name = "app"
-        if document_store:
-            configure(ShylockPymongoBackend.create(nosql_db_engine, db_name))
+        self.domain = SpecificLocation(id=self.id, name=self.name)
 
         # Database Management Instances
-        self.users = NoSQLUserManager(nosql_db_engine, db_name)
+        self.users = NoSQLUserManager(self.nosql_db_engine, self.db_name)
+        self.tasks = NoSQLTaskManager(self.nosql_db_engine, self.db_name)
         self.roles = NewRoleManager()
-        self.environments = EnvironmentManager(db_engine)
-        self.association_requests = AssociationRequestManager(db_engine)
-        self.data_requests = RequestManager(db_engine)
-        self.datasets = DatasetManager(db_engine)
-        self.node = NodeManager(db_engine)
-        self.node_route = NodeRouteManager(db_engine)
+        self.association_requests = NoSQLAssociationRequestManager(
+            self.nosql_db_engine, self.db_name
+        )
+        self.data_requests = NoSQLRequestManager(self.nosql_db_engine, self.db_name)
+        self.datasets = NoSQLDatasetManager(self.nosql_db_engine, self.db_name)
+        self.node = NoSQLNodeManager(self.nosql_db_engine, self.db_name)
         self.ledger_store = ledger_store_type(settings=settings)
+        self.oblv_keys = NoSQLOblvKeyManager(self.nosql_db_engine, self.db_name)
 
         # self.immediate_services_without_reply.append(RequestReceiverService)
         # self.immediate_services_without_reply.append(AcceptOrDenyRequestService)
@@ -172,9 +154,9 @@ class Domain(Node):
 
         # Grid Domain Services
         self.immediate_services_with_reply.append(AssociationRequestService)
-        # self.immediate_services_with_reply.append(DomainInfrastructureService)
         self.immediate_services_with_reply.append(GetRemainingBudgetService)
         self.immediate_services_with_reply.append(SimpleService)
+        self.immediate_services_with_reply.append(TFFService)
         self.immediate_services_with_reply.append(PingService)
         self.immediate_services_with_reply.append(VPNConnectService)
         self.immediate_services_with_reply.append(VPNJoinService)
@@ -185,8 +167,10 @@ class Domain(Node):
         self.immediate_services_with_reply.append(DatasetManagerService)
         self.immediate_services_with_reply.append(RequestService)
         self.immediate_services_with_reply.append(UserLoginService)
-
+        self.immediate_services_with_reply.append(OblvRequestAdminService)
+        self.immediate_services_with_reply.append(OblvRequestUserService)
         self.immediate_services_without_reply.append(ObjectRequestServiceWithoutReply)
+        self.immediate_services_without_reply.append(OblvBackgroundService)
         self.immediate_services_without_reply.append(
             AssociationRequestWithoutReplyService
         )
@@ -220,9 +204,6 @@ class Domain(Node):
 
     def post_init(self) -> None:
         super().post_init()
-        self.set_node_uid()
-        if not hasattr(self, "signing_key"):
-            Node.set_keys(node=self)
 
     def initial_setup(  # nosec
         self,
@@ -233,29 +214,35 @@ class Domain(Node):
         first_superuser_budget: float = 5.55,
         domain_name: str = "BigHospital",
     ) -> Domain:
-        Node.set_keys(node=self, signing_key=signing_key)
-
         # Build Syft Message
         msg: SignedImmediateSyftMessageWithReply = CreateInitialSetUpMessage(
-            address=self.address,
+            address=self.node_uid,
             name=first_superuser_name,
             email=first_superuser_email,
             password=first_superuser_password,
             domain_name=domain_name,
             budget=first_superuser_budget,
-            reply_to=self.address,
+            reply_to=self.node_uid,
             signing_key=signing_key,
+        ).sign(signing_key=self.signing_key)
+
+        oblv_msg: SignedImmediateSyftMessageWithReply = CreateKeyPairMessage(
+            address=self.node_uid, reply_to=self.node_uid
         ).sign(signing_key=self.signing_key)
 
         # Process syft message
         _ = self.recv_immediate_msg_with_reply(msg=msg).message
+
+        # process oblv message
+        res = self.recv_immediate_msg_with_reply(msg=oblv_msg).message
+        debug(res)
 
         return self
 
     def loud_print(self) -> None:
         try:
             install_path = os.path.abspath(
-                os.path.join(os.path.realpath(__file__), "../../../../img/")
+                os.path.join(os.path.realpath(__file__), "../../../img/")
             )
             ascii_magic.to_terminal(
                 ascii_magic.from_image_file(
@@ -277,20 +264,9 @@ class Domain(Node):
     def icon(self) -> str:
         return "🏰"
 
-    @property
-    def id(self) -> UID:
-        return self.domain.id
-
-    def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
-
-        # this needs to be defensive by checking domain_id NOT domain.id or it breaks
-        try:
-            return msg.address.domain_id == self.id and msg.address.device is None
-        except Exception as excp3:
-            critical(
-                f"Error checking if {msg.pprint} is for me on {self.pprint}. {excp3}"
-            )
-            return False
+    # @property
+    # def id(self) -> UID:
+    #     return self.domain.id
 
     def set_request_status(
         self, message_request_id: UID, status: RequestStatus, client: Client
@@ -338,7 +314,7 @@ class Domain(Node):
             obj_msg = GetObjectAction(
                 id_at_location=request.object_id,
                 address=request.owner_address,
-                reply_to=self.address,
+                reply_to=self.node_uid,
                 delete_obj=False,
             )
 
@@ -478,7 +454,6 @@ class Domain(Node):
             self.store.clear()
             self.data_requests.clear()
             self.users.clear()
-            self.environments.clear()
             self.association_requests.clear()
             self.datasets.clear()
             self.initial_setup(signing_key=self.signing_key)

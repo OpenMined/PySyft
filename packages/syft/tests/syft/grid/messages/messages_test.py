@@ -4,13 +4,12 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.core.common.message import AbstractMessage
-from syft.core.io.address import Address
+from syft.core.common.uid import UID
 from syft.core.node.common.node_service.node_setup import node_setup_messages
 from syft.core.node.common.node_service.request_receiver import (
     request_receiver_messages,
 )
 from syft.core.node.common.node_service.role_manager import role_manager_messages
-from syft.core.node.common.node_service.tensor_manager import tensor_manager_messages
 
 messages = {
     # role_manager_messages
@@ -109,61 +108,6 @@ messages = {
             }
         },
     },
-    # tensor_manager_messages
-    "CreateTensor": {
-        "module": tensor_manager_messages,
-        "request_content": {
-            "tensor": [1, 2, 3, 4, 5, 6],
-            "description": "Tensor Description",
-            "tags": ["#x", "#data-sample"],
-            "pointable": True,
-        },
-        "response_content": {"msg": "Tensor created succesfully!"},
-    },
-    "DeleteTensor": {
-        "module": tensor_manager_messages,
-        "request_content": {"tensor_id": "f2a6as5d16fasd"},
-        "response_content": {"msg": "Tensor deleted successfully!"},
-    },
-    "GetTensor": {
-        "module": tensor_manager_messages,
-        "request_content": {"tensor_id": "eqw9e4a5d846"},
-        "response_content": {
-            "description": "Tensor description",
-            "tags": ["#x", "#data-sample"],
-        },
-    },
-    "GetTensors": {
-        "module": tensor_manager_messages,
-        "request_content": {},
-        "response_content": {
-            "workers": {
-                "626sadaf631": {
-                    "tensor": [1, 2, 3, 4, 5, 6],
-                    "description": "Tensor description",
-                    "tags": ["#x", "#data-sample"],
-                    "pointable": True,
-                },
-                "a84ew64wq6e": {
-                    "tensor": [9, 8, 2, 3, 5, 6],
-                    "description": "Tensor sample description",
-                    "tags": ["#y", "#label-sample"],
-                    "pointable": True,
-                },
-            }
-        },
-    },
-    "UpdateTensor": {
-        "module": tensor_manager_messages,
-        "request_content": {
-            "tensor_id": "546a4d51",
-            "tensor": [1, 2, 3, 4, 5, 6],
-            "description": "Tensor description",
-            "tags": ["#x", "#data-sample"],
-            "pointable": True,
-        },
-        "response_content": {"msg": "Tensor updated successfully!"},
-    },
     # request_receiver_messages
     "CreateRequest": {
         "module": request_receiver_messages,
@@ -221,14 +165,14 @@ messages = {
 
 
 # MADHAVA: this needs fixing
-@pytest.mark.xfail
+@pytest.mark.skip
 @pytest.mark.parametrize("message_name", messages.keys())
 def test_message(message_name: str, node: sy.VirtualMachine) -> None:
     content = messages[message_name]
     lib = content["module"]
     request_content = content["request_content"]
     response_content = content["response_content"]
-    target = Address(name="Alice")
+    target = UID()
 
     msg_func = getattr(lib, message_name + "Message")
     msg = msg_func(content=request_content, address=target, reply_to=target.address)
@@ -244,7 +188,7 @@ def test_message(message_name: str, node: sy.VirtualMachine) -> None:
     message_integrity_test(msg, target)
 
 
-def message_integrity_test(msg: AbstractMessage, target: Address) -> None:
+def message_integrity_test(msg: AbstractMessage, target: UID) -> None:
     blob = sy.serialize(msg)
     msg2 = sy.deserialize(blob=blob)
 

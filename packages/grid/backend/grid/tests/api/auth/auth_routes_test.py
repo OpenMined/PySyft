@@ -9,14 +9,11 @@ import pytest
 from starlette import status
 
 
-# TODO:  Ionesio and Rasswanth, fix after adding pymongo inmemory db.
-@pytest.mark.skip
 class TestAuthRoutes:
     @pytest.mark.asyncio
     async def test_user_register(
         self, app: FastAPI, client: AsyncClient, faker: Faker
     ) -> None:
-
         user = {
             "email": faker.email(),
             "password": faker.password(),

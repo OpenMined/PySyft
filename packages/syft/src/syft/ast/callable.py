@@ -7,7 +7,6 @@ from typing import Any
 from typing import Callable as CallableT
 from typing import List
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
 # relative
@@ -56,7 +55,7 @@ class Callable(ast.attribute.Attribute):
 
     def __call__(
         self,
-        *args: Tuple[Any, ...],
+        *args: Any,
         **kwargs: Any,
     ) -> Optional[Union["Callable", CallableT]]:
         """The `__call__` method on a `Callable` has two possible roles, e.g.
@@ -102,7 +101,7 @@ class Callable(ast.attribute.Attribute):
                     args=pointer_args,
                     kwargs=pointer_kwargs,
                     id_at_location=ptr.id_at_location,
-                    address=self.client.address,
+                    address=self.client.node_uid,
                     is_static=self.is_static,
                 )
 
@@ -115,6 +114,8 @@ class Callable(ast.attribute.Attribute):
                     args=args,
                     kwargs=kwargs,
                 )
+
+                self.client.processing_pointers[ptr.id_at_location] = True  # type: ignore
                 return ptr
 
         if "path" not in kwargs or "index" not in kwargs:

@@ -2,13 +2,13 @@
 from __future__ import annotations
 
 # stdlib
-import operator
 import secrets
 from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Tuple
 from typing import Union
 
@@ -45,11 +45,11 @@ from .smpc.mpc_tensor import MPCTensor
 
 
 class TensorPointer(Pointer):
-
     # Must set these at class init time despite
     # the fact that klass.Class tries to override them (unsuccessfully)
     __name__ = "TensorPointer"
     __module__ = "syft.core.tensor.tensor"
+    PUBLISH_POINTER_TYPE = "numpy.ndarray"
 
     def __init__(
         self,
@@ -61,7 +61,6 @@ class TensorPointer(Pointer):
         public_shape: Optional[Tuple[int, ...]] = None,
         public_dtype: Optional[Union[str, np.dtype]] = None,
     ):
-
         super().__init__(
             client=client,
             id_at_location=id_at_location,
@@ -92,7 +91,7 @@ class TensorPointer(Pointer):
         self,
         other: Any,
         op_str: str,
-        *args: Tuple[Any, ...],
+        *args: Any,
         **kwargs: Any,
     ) -> Any:
         # we want to get the return type which matches the attr_path_and_name
@@ -141,7 +140,7 @@ class TensorPointer(Pointer):
                 kwargs=pointer_kwargs,
                 id_at_location=result_id_at_location,
                 seed_id_locations=seed_id_locations,
-                address=self.client.address,
+                address=self.client.node_uid,
             )
             self.client.send_immediate_msg_without_reply(msg=cmd)
 
@@ -161,7 +160,7 @@ class TensorPointer(Pointer):
             other_dtype = other.public_dtype
         elif isinstance(other, (int, float)):
             other_shape = (1,)
-            other_dtype = np.int64
+            other_dtype = DEFAULT_INT_NUMPY_TYPE
         elif isinstance(other, bool):
             other_shape = (1,)
             other_dtype = np.dtype("bool")
@@ -177,16 +176,13 @@ class TensorPointer(Pointer):
                 op_str, self.public_shape, other_shape
             )
 
-        if self.public_dtype is not None and other_dtype is not None:
-            if self.public_dtype != other_dtype:
-                raise ValueError(
-                    f"Type for self and other do not match ({self.public_dtype} vs {other_dtype})"
-                )
-            result_public_dtype = self.public_dtype
+        # calculate the dtype of the result based on the op_str
+        result_public_dtype = utils.get_dtype(
+            op_str, self.public_shape, other_shape, self.public_dtype, other_dtype
+        )
 
         result.public_shape = result_public_shape
         result.public_dtype = result_public_dtype
-
         return result
 
     @staticmethod
@@ -194,7 +190,7 @@ class TensorPointer(Pointer):
         self: TensorPointer,
         other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
         op_str: str,
-        **kwargs: Dict[str, Any],
+        **kwargs: Any,
     ) -> Union[MPCTensor, TensorPointer]:
         """Performs the operation based on op_str
 
@@ -204,33 +200,37 @@ class TensorPointer(Pointer):
         Returns:
             Tuple[MPCTensor,Union[MPCTensor,int,float,np.ndarray]] : Result of the operation
         """
-
         if isinstance(other, TensorPointer) and self.client != other.client:
-
             parties = [self.client, other.client]
             self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=parties)
             other_mpc = MPCTensor(
                 secret=other, shape=other.public_shape, parties=parties
             )
-            if op_str != "concatenate":
-                op = getattr(operator, op_str)
-                return op(self_mpc, other_mpc)
-            else:
-                return self_mpc.concatenate(other_mpc)
+            func = getattr(self_mpc, op_str)
+            result = func(other_mpc)
 
+            # We check to avoid calling id_at_location for MPCTensors
+            # since they don't have this attribute.
+            if hasattr(result, "id_at_location"):
+                other.client.processing_pointers[result.id_at_location] = True
         elif isinstance(other, MPCTensor):
-            if op_str != "concatenate":
-                op = getattr(operator, op_str)
-                return op(other, self)
-            else:
-                return other.concatenate(self)
+            # "self" should be secretly shared
+            other_mpc, self_mpc = MPCTensor.sanity_checks(other, self)
+            func = getattr(self_mpc, op_str)
+            result = func(other_mpc)
+        else:
+            result = self._apply_tensor_op(other=other, op_str=op_str, **kwargs)
 
-        return self._apply_tensor_op(other=other, op_str=op_str, **kwargs)
+        # We check to avoid calling id_at_location for MPCTensors
+        # since they don't have this attribute.
+        if hasattr(result, "id_at_location"):
+            self.client.processing_pointers[result.id_at_location] = True
+        return result
 
     def __add__(
         self,
         other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
-        **kwargs: Dict[str, Any],
+        **kwargs: Any,
     ) -> Union[TensorPointer, MPCTensor]:
         """Apply the "add" operation between "self" and "other"
 
@@ -245,7 +245,7 @@ class TensorPointer(Pointer):
     def __sub__(
         self,
         other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
-        **kwargs: Dict[str, Any],
+        **kwargs: Any,
     ) -> Union[TensorPointer, MPCTensor]:
         """Apply the "sub" operation between "self" and "other"
 
@@ -260,7 +260,7 @@ class TensorPointer(Pointer):
     def __mul__(
         self,
         other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
-        **kwargs: Dict[str, Any],
+        **kwargs: Any,
     ) -> Union[TensorPointer, MPCTensor]:
         """Apply the "mul" operation between "self" and "other"
 
@@ -275,7 +275,7 @@ class TensorPointer(Pointer):
     def __matmul__(
         self,
         other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
-        **kwargs: Dict[str, Any],
+        **kwargs: Any,
     ) -> Union[TensorPointer, MPCTensor]:
         """Apply the "matmul" operation between "self" and "other"
 
@@ -290,9 +290,9 @@ class TensorPointer(Pointer):
     def __truediv__(
         self,
         other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
-        **kwargs: Dict[str, Any],
+        **kwargs: Any,
     ) -> Union[TensorPointer, MPCTensor]:
-        """Apply the "mul" operation between "self" and "other"
+        """Apply the "truediv" operation between "self" and "other"
 
         Args:
             y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -305,9 +305,9 @@ class TensorPointer(Pointer):
     def __rtruediv__(
         self,
         other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
-        **kwargs: Dict[str, Any],
+        **kwargs: Any,
     ) -> Union[TensorPointer, MPCTensor]:
-        """Apply the "mul" operation between "self" and "other"
+        """Apply the "rtruediv" operation between "self" and "other"
 
         Args:
             y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -404,10 +404,10 @@ class TensorPointer(Pointer):
     def concatenate(
         self,
         other: TensorPointer,
-        *args: List[Any],
-        **kwargs: Dict[str, Any],
+        *args: Any,
+        **kwargs: Any,
     ) -> Union[TensorPointer, MPCTensor]:
-        """Apply the "add" operation between "self" and "other"
+        """Apply the "concatenate" operation between "self" and "other"
 
         Args:
             y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
@@ -419,14 +419,12 @@ class TensorPointer(Pointer):
 
 
 def to32bit(np_array: np.ndarray, verbose: bool = True) -> np.ndarray:
-
     if np_array.dtype == np.int64:
         if verbose:
             print("Casting internal tensor to int32")
         out = np_array.astype(np.int32)
 
     elif np_array.dtype == np.float64:
-
         if verbose:
             print("Casting internal tensor to float32")
         out = np_array.astype(np.float32)
@@ -444,8 +442,10 @@ class Tensor(
     FixedPrecisionTensorAncestor,
     # MPCTensorAncestor,
 ):
-
     __attr_allowlist__ = ["child", "tag_name", "public_shape", "public_dtype"]
+    __serde_overrides__: Dict[str, Sequence[Callable]] = {
+        "public_dtype": ((lambda x: str(x), lambda x: np.dtype(x)))
+    }
 
     PointerClassOverride = TensorPointer
 
@@ -475,14 +475,20 @@ class Tensor(
             and not isinstance(child, np.ndarray)
             and not isinstance(child, GammaTensor)
         ):
-
             raise Exception(
                 f"Data: {child} ,type: {type(child)} must be list or nd.array "
             )
 
+        # Temp fix for windows
+        if getattr(child, "dtype", None):
+            if "int" in str(child.dtype) and "64" not in str(child.dtype):
+                child = child.astype(DEFAULT_INT_NUMPY_TYPE)  # type: ignore
+            if "float" in str(child.dtype) and "64" not in str(child.dtype):
+                child = child.astype(DEFAULT_FLOAT_NUMPY_TYPE)  # type: ignore
+
         if not isinstance(child, (np.ndarray, PassthroughTensor, GammaTensor)) or (
             getattr(child, "dtype", None)
-            not in [DEFAULT_INT_NUMPY_TYPE, DEFAULT_FLOAT_NUMPY_TYPE, np.bool]
+            not in [DEFAULT_INT_NUMPY_TYPE, DEFAULT_FLOAT_NUMPY_TYPE, np.bool_]
             and getattr(child, "dtype", None) is not None
         ):
             raise TypeError(
@@ -510,33 +516,16 @@ class Tensor(
         self.public_shape = public_shape
         self.public_dtype = public_dtype
 
+        # TODO: re-enable this in a way that doesnt happen when internal methods
+        # call the constructor so it doesn't spam the output of notebooks and ci
+        # print(
+        #     "Tensor created! You can activate Differential Privacy protection by calling"
+        #     ".private() or .annotate_with_dp_metadata()."
+        # )
+
     def tag(self, name: str) -> Tensor:
         self.tag_name = name
         return self
-
-    def exp(self) -> Tensor:
-        if hasattr(self.child, "exp"):
-            return self.__class__(self.child.exp())
-        else:
-            raise ValueError("Tensor Chain does not have exp function")
-
-    def reciprocal(self) -> Tensor:
-        if hasattr(self.child, "reciprocal"):
-            return self.__class__(self.child.reciprocal())
-        else:
-            raise ValueError("Tensor Chain does not have reciprocal function")
-
-    def softmax(self) -> Tensor:
-        if hasattr(self.child, "softmax"):
-            return self.__class__(self.child.softmax())
-        else:
-            raise ValueError("Tensor Chain does not have softmax function")
-
-    def one_hot(self) -> Tensor:
-        if hasattr(self.child, "one_hot"):
-            return self.__class__(self.child.one_hot())
-        else:
-            raise ValueError("Tensor Chain does not have one_hot function")
 
     @property
     def shape(self) -> Tuple[Any, ...]:
@@ -547,7 +536,10 @@ class Tensor(
 
     @property
     def proxy_public_kwargs(self) -> Dict[str, Any]:
-        return {"public_shape": self.public_shape, "public_dtype": self.public_dtype}
+        return {
+            "public_shape": self.public_shape,
+            "public_dtype": str(self.public_dtype),
+        }
 
     def init_pointer(
         self,
@@ -561,7 +553,7 @@ class Tensor(
 
         if isinstance(self.child, PhiTensor):
             return TensorWrappedPhiTensorPointer(
-                data_subjects=self.child.data_subjects,
+                data_subject=self.child.data_subject,
                 client=client,
                 id_at_location=id_at_location,
                 object_type=object_type,
@@ -574,14 +566,14 @@ class Tensor(
             )
         elif isinstance(self.child, GammaTensor):
             return TensorWrappedGammaTensorPointer(
-                data_subjects=self.child.data_subjects,
+                # data_subjects=self.child.data_subjects,
                 client=client,
                 id_at_location=id_at_location,
                 object_type=object_type,
                 tags=tags,
                 description=description,
-                min_vals=self.child.min_vals,
-                max_vals=self.child.max_vals,
+                # min_vals=self.child.min_vals,
+                # max_vals=self.child.max_vals,
                 public_shape=getattr(self, "public_shape", None),
                 public_dtype=getattr(self, "public_dtype", None),
             )
@@ -602,9 +594,14 @@ class Tensor(
         deduct_epsilon_for_user: Callable,
         ledger: DataSubjectLedger,
         sigma: float,
+        private: bool,
     ) -> Any:
         return self.child.publish(
-            get_budget_for_user, deduct_epsilon_for_user, ledger, sigma
+            get_budget_for_user,
+            deduct_epsilon_for_user,
+            ledger,
+            sigma,
+            private=private,
         )
 
     # TODO: remove after moving private compare to sharetensor level

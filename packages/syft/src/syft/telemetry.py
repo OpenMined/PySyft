@@ -58,10 +58,14 @@ def setup_tracer() -> Any:
 
     opentelemetry.instrumentation.requests.RequestsInstrumentor().instrument()
 
-    # third party
-    from opentelemetry.instrumentation.digma.trace_decorator import (
-        instrument as _instrument,
-    )
+    # relative
+    # from opentelemetry.instrumentation.digma.trace_decorator import (
+    #     instrument as _instrument,
+    # )
+    #
+    # until this is merged:
+    # https://github.com/digma-ai/opentelemetry-instrumentation-digma/pull/41
+    from .trace_decorator import instrument as _instrument
 
     return _instrument
 

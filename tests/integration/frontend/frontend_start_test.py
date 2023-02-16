@@ -14,16 +14,17 @@ HOST_IP = os.environ.get("HOST_IP", "localhost")
 
 @pytest.mark.frontend
 def test_serves_domain_frontend() -> None:
-    print("got the host ip", HOST_IP)
-    title_str = "<title>PyGrid UI</title>"
-    url = f"http://{HOST_IP}:{DOMAIN_PORT}/status"
+    title_str = "PyGrid"
+    url = f"http://{HOST_IP}:{DOMAIN_PORT}"
     result = requests.get(url)
+    assert result.status_code == 200
     assert title_str in result.text
 
 
-# @pytest.mark.frontend
-# def test_serves_network_frontend() -> None:
-#     title_str = "<title>network</title>"
-#     url = f"http://localhost:{NETWORK_PORT}/status"
-#     result = requests.get(url)
-#     assert title_str in result.text
+@pytest.mark.frontend
+def test_serves_network_frontend() -> None:
+    title_str = "PyGrid"
+    url = f"http://localhost:{NETWORK_PORT}"
+    result = requests.get(url)
+    assert result.status_code == 200
+    assert title_str in result.text

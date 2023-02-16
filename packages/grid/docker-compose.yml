@@ -60,49 +60,12 @@ services:
       - SERVICE_NAME=frontend
       - RELEASE=${RELEASE:-production}
       - NODE_TYPE=${NODE_TYPE?Variable not set}
+      - FRONTEND_TARGET=${FRONTEND_TARGET}
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
+      - PORT=80
       - HTTP_PORT=${HTTP_PORT}
       - HTTPS_PORT=${HTTPS_PORT}
-
-  svelte:
-    restart: always
-    image: "${DOCKER_IMAGE_SVELTE?Variable not set}:${VERSION-latest}"
-    profiles:
-      - frontend
-    depends_on:
-      - proxy
-    environment:
-      - SERVICE_NAME=frontend
-      - RELEASE=${RELEASE:-production}
-      - NODE_TYPE=${NODE_TYPE?Variable not set}
-      - VERSION=${VERSION}
-      - VERSION_HASH=${VERSION_HASH}
-      - HTTP_PORT=${HTTP_PORT}
-      - HTTPS_PORT=${HTTPS_PORT}
-    ports:
-      - "3000"
-
-  db:
-    restart: always
-    image: postgres:12
-    volumes:
-      - app-db-data:/var/lib/postgresql/data
-    environment:
-      - SERVICE_NAME=db
-      - RELEASE=${RELEASE:-production}
-    env_file:
-      - .env
-    command:
-      - postgres
-      - --max_connections=1000 # default 100
-      # - --shared_buffers=8GB # 32 MB
-      # - --temp_buffers=8GB # default 8 MB
-      # - --work_mem=8GB # default 4 MB
-      # - --effective_io_concurrency=8 # default 1
-      # - --block_size=16384 # default 8192
-      # - --max_files_per_process=1000 # default 1000
-      # - --segment_size=8GB # default 1GB # cant change
 
   redis:
     restart: always
@@ -130,7 +93,6 @@ services:
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
     depends_on:
       - proxy
-      - db
     env_file:
       - .env
     environment:
@@ -150,15 +112,19 @@ services:
       - TRACE=${TRACE}
       - JAEGER_HOST=${JAEGER_HOST}
       - JAEGER_PORT=${JAEGER_PORT}
+      - ASSOCIATION_TIMEOUT=${ASSOCIATION_TIMEOUT}
+      - DEV_MODE=${DEV_MODE}
+      - DOMAIN_CONNECTION_PORT=${DOMAIN_CONNECTION_PORT}
     command: /start.sh
     network_mode: service:proxy
+    volumes:
+      - credentials-data:/credentials
 
   backend_stream:
     restart: always
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
     depends_on:
       - proxy
-      - db
     env_file:
       - .env
     environment:
@@ -179,15 +145,18 @@ services:
       - TRACE=${TRACE}
       - JAEGER_HOST=${JAEGER_HOST}
       - JAEGER_PORT=${JAEGER_PORT}
+      - DEV_MODE=${DEV_MODE}
+      - DOMAIN_CONNECTION_PORT=${DOMAIN_CONNECTION_PORT}
     command: "/start.sh"
     network_mode: service:proxy
+    volumes:
+      - credentials-data:/credentials
 
   celeryworker:
     restart: always
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
     depends_on:
       - proxy
-      - db
       - queue
     env_file:
       - .env
@@ -210,8 +179,12 @@ services:
       - TRACE=${TRACE}
       - JAEGER_HOST=${JAEGER_HOST}
       - JAEGER_PORT=${JAEGER_PORT}
+      - DEV_MODE=${DEV_MODE}
+      - DOMAIN_CONNECTION_PORT=${DOMAIN_CONNECTION_PORT}
     command: "/worker-start.sh"
     network_mode: service:proxy
+    volumes:
+      - credentials-data:/credentials
 
   headscale:
     profiles:
@@ -242,13 +215,12 @@ services:
       - ./seaweedfs/s3config.json:/etc/s3config.json
       - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml
 
-
   mongo:
     image: mongo:latest
     restart: always
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: example
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
     ports:
       - "27017"
     volumes:
@@ -274,7 +246,7 @@ services:
       # - "9411:9411"
 
 volumes:
-  app-db-data:
+  credentials-data:
   tailscale-data:
   headscale-data:
   app-redis-data:

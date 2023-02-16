@@ -1,7 +1,10 @@
 # stdlib
+from collections import namedtuple
 import json
 import os
 from pathlib import Path
+import platform
+from queue import Queue
 import re
 import shutil
 import socket
@@ -9,11 +12,12 @@ import stat
 import subprocess  # nosec
 import sys
 import tempfile
+from threading import Event
+from threading import Thread
 import time
 from typing import Any
 from typing import Callable
 from typing import Dict as TypeDict
-from typing import List
 from typing import List as TypeList
 from typing import Optional
 from typing import Tuple
@@ -21,23 +25,36 @@ from typing import Tuple as TypeTuple
 from typing import Union
 from typing import cast
 from urllib.parse import urlparse
+import webbrowser
 
 # third party
 import click
 import requests
 import rich
+from rich.console import Console
 from rich.live import Live
+from rich.progress import BarColumn
+from rich.progress import Progress
+from rich.progress import SpinnerColumn
+from rich.progress import TextColumn
 from virtualenvapi.manage import VirtualEnvironment
 
 # relative
+from .art import RichEmoji
 from .art import hagrid
+from .art import quickstart_art
 from .auth import AuthCredentials
 from .cache import DEFAULT_BRANCH
+from .cache import DEFAULT_REPO
+from .cache import RENDERED_DIR
 from .cache import arg_cache
 from .deps import DEPENDENCIES
 from .deps import allowed_hosts
+from .deps import check_docker_service_status
 from .deps import check_docker_version
+from .deps import check_grid_docker
 from .deps import gather_debug
+from .deps import get_version_string
 from .deps import is_windows
 from .exceptions import MissingDependency
 from .grammar import BadGrammar
@@ -52,20 +69,26 @@ from .lib import check_api_metadata
 from .lib import check_host
 from .lib import check_jupyter_server
 from .lib import check_login_page
+from .lib import commit_hash
 from .lib import docker_desktop_memory
 from .lib import find_available_port
 from .lib import generate_process_status_table
 from .lib import generate_user_table
+from .lib import gitpod_url
 from .lib import hagrid_root
+from .lib import is_gitpod
 from .lib import name_tag
 from .lib import save_vm_details_as_json
 from .lib import update_repo
 from .lib import use_branch
 from .mode import EDITABLE_MODE
+from .parse_template import render_templates
+from .parse_template import setup_from_manifest_template
+from .quickstart_ui import fetch_notebooks_for_url
+from .quickstart_ui import fetch_notebooks_from_zipfile
 from .quickstart_ui import quickstart_download_notebook
 from .rand_sec import generate_sec_random_password
 from .style import RichGroup
-from .version import __version__
 
 
 def fix_windows_virtualenv_api(cls: type) -> None:
@@ -104,11 +127,11 @@ def cli() -> None:
 
 
 @click.command(
-    help="Restore some part of the hagrid installation or deployment to its initial/starting state."
+    help="Restore some part of the hagrid installation or deployment to its initial/starting state.",
+    context_settings={"show_default": True},
 )
 @click.argument("location", type=str, nargs=1)
 def clean(location: str) -> None:
-
     if location == "library" or location == "volumes":
         print("Deleting all Docker volumes in 2 secs (Ctrl-C to stop)")
         time.sleep(2)
@@ -125,97 +148,90 @@ def clean(location: str) -> None:
         subprocess.call("docker rmi $(docker images -q)", shell=True)  # nosec
 
 
-@click.command(help="Start a new PyGrid domain/network node!")
+@click.command(
+    help="Start a new PyGrid domain/network node!",
+    context_settings={"show_default": True},
+)
 @click.argument("args", type=str, nargs=-1)
 @click.option(
     "--username",
     default=None,
     required=False,
     type=str,
-    help="Optional: the username for provisioning the remote host",
+    help="Username for provisioning the remote host",
 )
 @click.option(
-    "--key_path",
+    "--key-path",
     default=None,
     required=False,
     type=str,
-    help="Optional: the path to the key file for provisioning the remote host",
+    help="Path to the key file for provisioning the remote host",
 )
 @click.option(
     "--password",
     default=None,
     required=False,
     type=str,
-    help="Optional: the password for provisioning the remote host",
+    help="Password for provisioning the remote host",
 )
 @click.option(
     "--repo",
     default=None,
     required=False,
     type=str,
-    help="Optional: repo to fetch source from",
+    help="Repo to fetch source from",
 )
 @click.option(
     "--branch",
     default=None,
     required=False,
     type=str,
-    help="Optional: branch to monitor for updates",
+    help="Branch to monitor for updates",
 )
 @click.option(
     "--tail",
-    default="true",
-    required=False,
-    type=str,
-    help="Optional: don't tail logs on launch",
+    is_flag=True,
+    help="Tail logs on launch",
 )
 @click.option(
     "--headless",
-    default="false",
-    required=False,
-    type=str,
-    help="Optional: don't start the frontend container",
+    is_flag=True,
+    help="Start the frontend container",
 )
 @click.option(
     "--cmd",
-    default="false",
-    required=False,
-    type=str,
-    help="Optional: print the cmd without running it",
+    is_flag=True,
+    help="Print the cmd without running it",
 )
 @click.option(
     "--jupyter",
     is_flag=True,
-    help="Optional: enable Jupyter Notebooks",
+    help="Enable Jupyter Notebooks",
 )
 @click.option(
     "--build",
-    default=None,
-    required=False,
-    type=str,
-    help="Optional: enable or disable forcing re-build",
+    is_flag=True,
+    help="Disable forcing re-build",
 )
 @click.option(
-    "--provision",
-    default="true",
-    required=False,
-    type=str,
-    help="Optional: enable or disable provisioning VMs",
+    "--no-provision",
+    is_flag=True,
+    help="Disable provisioning VMs",
 )
 @click.option(
-    "--node_count",
+    "--node-count",
     default=1,
     required=False,
     type=click.IntRange(1, 250),
-    help="Optional: number of independent nodes/VMs to launch",
+    help="Number of independent nodes/VMs to launch",
 )
 @click.option(
-    "--auth_type",
+    "--auth-type",
     default=None,
     type=click.Choice(["key", "password"], case_sensitive=False),
 )
 @click.option(
-    "--ansible_extras",
+    "--ansible-extras",
     default="",
     type=str,
 )
@@ -227,75 +243,71 @@ def clean(location: str) -> None:
     default="production",
     required=False,
     type=click.Choice(["production", "development"], case_sensitive=False),
-    help="Optional: choose between production and development release",
+    help="Choose between production and development release",
 )
 @click.option(
-    "--cert_store_path",
+    "--cert-store-path",
     default="/home/om/certs",
     required=False,
     type=str,
-    help="Optional: remote path to store and load TLS cert and key",
+    help="Remote path to store and load TLS cert and key",
 )
 @click.option(
-    "--upload_tls_cert",
+    "--upload-tls-cert",
     default="",
     required=False,
     type=str,
-    help="Optional: local path to TLS cert to upload and store at --cert_store_path",
+    help="Local path to TLS cert to upload and store at --cert-store-path",
 )
 @click.option(
-    "--upload_tls_key",
+    "--upload-tls-key",
     default="",
     required=False,
     type=str,
-    help="Optional: local path to TLS private key to upload and store at --cert_store_path",
+    help="Local path to TLS private key to upload and store at --cert-store-path",
 )
 @click.option(
-    "--use_blob_storage",
+    "--no-blob-storage",
+    is_flag=True,
+    help="Disable blob storage",
+)
+@click.option(
+    "--image-name",
     default=None,
     required=False,
     type=str,
-    help="Optional: flag to use blob storage",
-)
-@click.option(
-    "--image_name",
-    default=None,
-    required=False,
-    type=str,
-    help="Optional: image to use for the VM",
+    help="Image to use for the VM",
 )
 @click.option(
     "--tag",
     default=None,
     required=False,
     type=str,
-    help="Optional: container image tag to use",
+    help="Container image tag to use",
 )
 @click.option(
-    "--build_src",
+    "--build-src",
     default=DEFAULT_BRANCH,
     required=False,
     type=str,
-    help="Optional: git branch to use for launch / build operations",
+    help="Git branch to use for launch / build operations",
 )
 @click.option(
     "--platform",
     default=None,
     required=False,
     type=str,
-    help="Optional: run docker with a different platform like linux/arm64",
+    help="Run docker with a different platform like linux/arm64",
 )
 @click.option(
-    "--vpn",
-    default="true",
-    required=False,
-    type=str,
-    help="Optional: turn tailscale vpn container on or off",
+    "--no-vpn",
+    is_flag=True,
+    help="Disable tailscale vpn container",
 )
 @click.option(
     "--silent",
     is_flag=True,
-    help="Optional: prevent lots of launch output",
+    help="Suppress extra launch outputs",
 )
 @click.option(
     "--trace",
@@ -303,7 +315,22 @@ def clean(location: str) -> None:
     type=str,
     help="Optional: allow trace to be turned on or off",
 )
-def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
+@click.option(
+    "--from-template",
+    is_flag=True,
+    help="Launch node using the manifest template",
+)
+@click.option(
+    "--no-health-checks",
+    is_flag=True,
+    help="Turn off auto health checks post node launch",
+)
+@click.option(
+    "--oblv",
+    is_flag=True,
+    help="Installs Oblivious CLI tool",
+)
+def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
     try:
         grammar = parse_grammar(args=args, verb=verb)
@@ -323,36 +350,212 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
         print(f"Error: {e}\n\n")
         return
 
-    dry_run = True
-    if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
-        dry_run = False
+    dry_run = bool(kwargs["cmd"])
+
+    health_checks = not bool(kwargs["no_health_checks"])
 
     try:
-        silent = bool(kwargs["silent"]) if "silent" in kwargs else False
-        execute_commands(cmds, dry_run=dry_run, silent=silent)
-        print("Success!\n\n")
+        tail = bool(kwargs["tail"])
+        silent = not tail
+
+        from_rendered_dir = bool(kwargs["from_template"]) and EDITABLE_MODE
+
+        execute_commands(
+            cmds, dry_run=dry_run, silent=silent, from_rendered_dir=from_rendered_dir
+        )
+
+        host_term = verb.get_named_term_hostgrammar(name="host")
+        run_health_checks = (
+            health_checks and not dry_run and host_term.host == "docker" and silent
+        )
+
+        if run_health_checks:
+            docker_cmds = cast(TypeDict[str, TypeList[str]], cmds)
+
+            # get the first command (cmd1) from docker_cmds which is of the form
+            # {"<first>": [cmd1, cmd2], "<second>": [cmd3, cmd4]}
+            (command, *_), *_ = docker_cmds.values()
+
+            match_port = re.search("HTTP_PORT=[0-9]{1,5}", command)
+            if match_port:
+                rich.get_console().print(
+                    "\n[bold green]⠋[bold blue] Checking node API [/bold blue]\t"
+                )
+                port = match_port.group().replace("HTTP_PORT=", "")
+                check_status("localhost" + ":" + port)
+
+            node_name = verb.get_named_term_type(name="node_name").snake_input
+            rich.get_console().print(
+                rich.panel.Panel.fit(
+                    f"✨ To view container logs run [bold green]hagrid logs {node_name}[/bold green]\t"
+                )
+            )
+
     except Exception as e:
         print(f"Error: {e}\n\n")
         return
 
 
-def execute_commands(
-    cmds: TypeList, dry_run: bool = False, silent: bool = False
+def check_errors(
+    line: str, process: subprocess.Popen, cmd_name: str, progress_bar: Progress
 ) -> None:
-    """Execute the launch commands and display their status in realtime.
+    task = progress_bar.tasks[0]
+    if "Error response from daemon: " in line:
+        if progress_bar:
+            progress_bar.update(
+                0,
+                description=f"❌ [bold red]{cmd_name}[/bold red] [{task.completed} / {task.total}]",
+                refresh=True,
+            )
+            progress_bar.update(0, visible=False)
+            progress_bar.console.clear_live()
+            progress_bar.console.quiet = True
+            progress_bar.stop()
+            console = rich.get_console()
+            progress_bar.console.quiet = False
+            console.print(f"\n\n [red] ERROR [/red]: [bold]{line}[/bold]\n")
+        process.terminate()
+        raise Exception
 
-    Args:
-        cmds (list): list of commands to be executed
-        dry_run (bool, optional): If `True` only displays cmds to be executed. Defaults to False.
-    """
+
+def check_pulling(line: str, cmd_name: str, progress_bar: Progress) -> None:
+    task = progress_bar.tasks[0]
+    if "Pulling" in line and "fs layer" not in line:
+        progress_bar.update(
+            0,
+            description=f"[bold]{cmd_name} [{task.completed} / {task.total+1}]",
+            total=task.total + 1,
+            refresh=True,
+        )
+    if "Pulled" in line:
+        progress_bar.update(
+            0,
+            description=f"[bold]{cmd_name} [{task.completed + 1} / {task.total}]",
+            completed=task.completed + 1,
+            refresh=True,
+        )
+        if progress_bar.finished:
+            progress_bar.update(
+                0,
+                description=f"✅ [bold green]{cmd_name} [{task.completed} / {task.total}]",
+                refresh=True,
+            )
+
+
+def check_building(line: str, cmd_name: str, progress_bar: Progress) -> None:
+    load_pattern = re.compile(
+        r"^#.* load build definition from [A-Za-z0-9]+\.dockerfile$", re.IGNORECASE
+    )
+    build_pattern = re.compile(
+        r"^#.* naming to docker\.io/openmined/.* done$", re.IGNORECASE
+    )
+    task = progress_bar.tasks[0]
+
+    if load_pattern.match(line):
+        progress_bar.update(
+            0,
+            description=f"[bold]{cmd_name} [{task.completed} / {task.total +1}]",
+            total=task.total + 1,
+            refresh=True,
+        )
+    if build_pattern.match(line):
+        progress_bar.update(
+            0,
+            description=f"[bold]{cmd_name} [{task.completed+1} / {task.total}]",
+            completed=task.completed + 1,
+            refresh=True,
+        )
+
+    if progress_bar.finished:
+        progress_bar.update(
+            0,
+            description=f"✅ [bold green]{cmd_name} [{task.completed} / {task.total}]",
+            refresh=True,
+        )
+
+
+def check_launching(line: str, cmd_name: str, progress_bar: Progress) -> None:
+    task = progress_bar.tasks[0]
+    if "Starting" in line:
+        progress_bar.update(
+            0,
+            description=f" [bold]{cmd_name} [{task.completed} / {task.total+1}]",
+            total=task.total + 1,
+            refresh=True,
+        )
+    if "Started" in line:
+        progress_bar.update(
+            0,
+            description=f" [bold]{cmd_name} [{task.completed + 1} / {task.total}]",
+            completed=task.completed + 1,
+            refresh=True,
+        )
+        if progress_bar.finished:
+            progress_bar.update(
+                0,
+                description=f"✅ [bold green]{cmd_name} [{task.completed} / {task.total}]",
+                refresh=True,
+            )
+
+
+DOCKER_FUNC_MAP = {
+    "Pulling": check_pulling,
+    "Building": check_building,
+    "Launching": check_launching,
+}
+
+
+def read_thread_logs(
+    progress_bar: Progress, process: subprocess.Popen, queue: Queue, cmd_name: str
+) -> None:
+    line = queue.get()
+    line = str(line, encoding="utf-8").strip()
+
+    if progress_bar:
+        check_errors(line, process, cmd_name, progress_bar=progress_bar)
+        DOCKER_FUNC_MAP[cmd_name](line, cmd_name, progress_bar=progress_bar)
+
+
+def create_thread_logs(process: subprocess.Popen) -> Queue:
+    def enqueue_output(out: Any, queue: Queue) -> None:
+        for line in iter(out.readline, b""):
+            queue.put(line)
+        out.close()
+
+    queue: Queue = Queue()
+    thread_1 = Thread(target=enqueue_output, args=(process.stdout, queue))
+    thread_2 = Thread(target=enqueue_output, args=(process.stderr, queue))
+
+    thread_1.daemon = True  # thread dies with the program
+    thread_1.start()
+    thread_2.daemon = True  # thread dies with the program
+    thread_2.start()
+    return queue
+
+
+def process_cmd(
+    cmds: TypeList[str],
+    dry_run: bool,
+    silent: bool,
+    from_rendered_dir: bool,
+    progress_bar: Union[Progress, None] = None,
+    cmd_name: str = "",
+) -> None:
     process_list: TypeList = []
-    console = rich.get_console()
-
+    cwd = (
+        os.path.join(GRID_SRC_PATH, RENDERED_DIR)
+        if from_rendered_dir
+        else GRID_SRC_PATH
+    )
     username, password = (
         extract_username_and_pass(cmds[0]) if len(cmds) > 0 else ("-", "-")
     )
+
     # display VM credentials
-    console.print(generate_user_table(username=username, password=password))
+    console = rich.get_console()
+    credentials = generate_user_table(username=username, password=password)
+    if credentials:
+        console.print(credentials)
 
     for cmd in cmds:
         if dry_run:
@@ -368,7 +571,7 @@ def execute_commands(
                     cmd_to_exec,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
-                    cwd=GRID_SRC_PATH,
+                    cwd=cwd,
                     shell=True,
                 )
                 ip_address = extract_host_ip_from_cmd(cmd)
@@ -377,19 +580,35 @@ def execute_commands(
             else:
                 display_jupyter_token(cmd)
                 if silent:
+                    ON_POSIX = "posix" in sys.builtin_module_names
+
                     process = subprocess.Popen(  # nosec
                         cmd_to_exec,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
-                        cwd=GRID_SRC_PATH,
+                        cwd=cwd,
+                        close_fds=ON_POSIX,
                         shell=True,
                     )
-                    process.communicate()
+
+                    # Creates two threads to get docker stdout and sterr
+                    logs_queue = create_thread_logs(process=process)
+
+                    read_thread_logs(progress_bar, process, logs_queue, cmd_name)
+                    while process.poll() != 0:
+                        while not logs_queue.empty():
+                            # Read stdout and sterr to check errors or update progress bar.
+                            read_thread_logs(
+                                progress_bar, process, logs_queue, cmd_name
+                            )
                 else:
+                    if progress_bar:
+                        progress_bar.stop()
+
                     subprocess.run(  # nosec
                         cmd_to_exec,
                         shell=True,
-                        cwd=GRID_SRC_PATH,
+                        cwd=cwd,
                     )
         except Exception as e:
             print(f"Failed to run cmd: {cmd}. {e}")
@@ -400,6 +619,52 @@ def execute_commands(
 
         # save vm details as json
         save_vm_details_as_json(username, password, process_list)
+
+
+def execute_commands(
+    cmds: Union[TypeList[str], TypeDict[str, TypeList[str]]],
+    dry_run: bool = False,
+    silent: bool = False,
+    from_rendered_dir: bool = False,
+) -> None:
+    """Execute the launch commands and display their status in realtime.
+
+    Args:
+        cmds (list): list of commands to be executed
+        dry_run (bool, optional): If `True` only displays cmds to be executed. Defaults to False.
+    """
+    console = rich.get_console()
+    if isinstance(cmds, dict):
+        console.print("[bold green]⠋[bold blue] Launching Containers [/bold blue]\t")
+        for cmd_name, cmd in cmds.items():
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                BarColumn(),
+                TextColumn("[progress.percentage]{task.percentage:.2f}%   "),
+                console=console,
+                auto_refresh=True,
+            ) as progress:
+                if silent:
+                    progress.add_task(
+                        f"[bold green]{cmd_name} Images",
+                        total=0,
+                    )
+                process_cmd(
+                    cmds=cmd,
+                    dry_run=dry_run,
+                    silent=silent,
+                    from_rendered_dir=from_rendered_dir,
+                    progress_bar=progress,
+                    cmd_name=cmd_name,
+                )
+    else:
+        process_cmd(
+            cmds=cmds,
+            dry_run=dry_run,
+            silent=silent,
+            from_rendered_dir=from_rendered_dir,
+        )
 
 
 def display_vm_status(process_list: TypeList) -> None:
@@ -414,7 +679,6 @@ def display_vm_status(process_list: TypeList) -> None:
 
     # Render the live table
     with Live(status_table, refresh_per_second=1) as live:
-
         # Loop till all processes have not completed executing
         while not process_completed:
             status_table, process_completed = generate_process_status_table(
@@ -568,7 +832,7 @@ def ask(question: Question, kwargs: TypeDict[str, str]) -> str:
         print(e)
         return ask(question=question, kwargs=kwargs)
     if question.cache:
-        setattr(arg_cache, question.var_name, value)
+        arg_cache[question.var_name] = value
 
     return value
 
@@ -777,26 +1041,19 @@ def create_launch_cmd(
     verb: GrammarVerb,
     kwargs: TypeDict[str, Any],
     ignore_docker_version_check: Optional[bool] = False,
-) -> Union[str, TypeList[str]]:
+) -> Union[str, TypeList[str], TypeDict[str, TypeList[str]]]:
     parsed_kwargs: TypeDict[str, Any] = {}
     host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host
     auth: Optional[AuthCredentials] = None
 
-    tail = True
-    if "tail" in kwargs and not str_to_bool(kwargs["tail"]):
-        tail = False
+    tail = bool(kwargs["tail"])
 
     parsed_kwargs = {}
 
-    if "build" in kwargs and kwargs["build"] is not None:
-        parsed_kwargs["build"] = str_to_bool(cast(str, kwargs["build"]))
-    else:
-        parsed_kwargs["build"] = None
+    parsed_kwargs["build"] = bool(kwargs["build"])
 
-    parsed_kwargs["use_blob_storage"] = (
-        kwargs["use_blob_storage"] if "use_blob_storage" in kwargs else None
-    )
+    parsed_kwargs["use_blob_storage"] = not bool(kwargs["no_blob_storage"])
 
     parsed_kwargs["node_count"] = (
         int(kwargs["node_count"]) if "node_count" in kwargs else 1
@@ -808,15 +1065,17 @@ def create_launch_cmd(
         # Default to detached mode if running more than one nodes
         tail = False if parsed_kwargs["node_count"] > 1 else tail
 
-    headless = False
-    if "headless" in kwargs and str_to_bool(cast(str, kwargs["headless"])):
-        headless = True
+    headless = bool(kwargs["headless"])
     parsed_kwargs["headless"] = headless
 
-    parsed_kwargs["tls"] = bool(kwargs["tls"]) if "tls" in kwargs else False
-    parsed_kwargs["test"] = bool(kwargs["test"]) if "test" in kwargs else False
-    parsed_kwargs["dev"] = bool(kwargs["dev"]) if "dev" in kwargs else False
-    parsed_kwargs["silent"] = bool(kwargs["silent"]) if "silent" in kwargs else False
+    parsed_kwargs["oblv"] = bool(kwargs["oblv"])
+
+    parsed_kwargs["tls"] = bool(kwargs["tls"])
+    parsed_kwargs["test"] = bool(kwargs["test"])
+    parsed_kwargs["dev"] = bool(kwargs["dev"])
+
+    parsed_kwargs["silent"] = bool(kwargs["silent"])
+    parsed_kwargs["from_template"] = bool(kwargs["from_template"])
 
     parsed_kwargs["trace"] = False
     if ("trace" not in kwargs or kwargs["trace"] is None) and parsed_kwargs["dev"]:
@@ -839,8 +1098,8 @@ def create_launch_cmd(
         parsed_kwargs["upload_tls_cert"] = kwargs["upload_tls_cert"]
     if "upload_tls_key" in kwargs:
         parsed_kwargs["upload_tls_key"] = kwargs["upload_tls_key"]
-    if "provision" in kwargs:
-        parsed_kwargs["provision"] = str_to_bool(cast(str, kwargs["provision"]))
+
+    parsed_kwargs["provision"] = not bool(kwargs["no_provision"])
 
     if "image_name" in kwargs and kwargs["image_name"] is not None:
         parsed_kwargs["image_name"] = kwargs["image_name"]
@@ -857,15 +1116,31 @@ def create_launch_cmd(
     else:
         parsed_kwargs["jupyter"] = False
 
-    if "vpn" in kwargs and kwargs["vpn"] is not None:
-        parsed_kwargs["vpn"] = str_to_bool(cast(str, kwargs["vpn"]))
-    else:
-        parsed_kwargs["vpn"] = True
+    parsed_kwargs["vpn"] = not bool(kwargs["no_vpn"])
 
     # allows changing docker platform to other cpu architectures like arm64
     parsed_kwargs["platform"] = kwargs["platform"] if "platform" in kwargs else None
 
+    parsed_kwargs["tail"] = tail
+
+    if parsed_kwargs["from_template"] and host is not None:
+        # Setup the files from the manifest_template.yml
+        kwargs = setup_from_manifest_template(host_type=host)
+
+        # Override template tag with user input tag
+        if parsed_kwargs["tag"] is not None:
+            kwargs.pop("tag")
+
+        parsed_kwargs.update(kwargs)
+
     if host in ["docker"]:
+        # Check docker service status
+        if not ignore_docker_version_check:
+            check_docker_service_status()
+
+        # Check grid docker versions
+        if not ignore_docker_version_check:
+            check_grid_docker(display=True, output_in_text=True)
 
         if not ignore_docker_version_check:
             version = check_docker_version()
@@ -888,7 +1163,10 @@ def create_launch_cmd(
                     f"\tWindows Help: https://docs.docker.com/desktop/windows/\n\n"
                     f"Then re-run your hagrid command.\n\n"
                     f"If you see this warning on Linux then something isn't right. "
-                    f"Please file a Github Issue on PySyft's Github"
+                    f"Please file a Github Issue on PySyft's Github.\n\n"
+                    f"Alternatively in case no more memory could be allocated, "
+                    f"you can run hagrid on the cloud with GitPod by visiting "
+                    f"https://gitpod.io/#https://github.com/OpenMined/PySyft."
                 )
 
             if is_windows() and not DEPENDENCIES["wsl"]:
@@ -906,24 +1184,6 @@ def create_launch_cmd(
                 silent=parsed_kwargs["silent"],
             )
 
-    elif host in ["vm"]:
-        if (
-            DEPENDENCIES["vagrant"]
-            and DEPENDENCIES["virtualbox"]
-            and DEPENDENCIES["ansible-playbook"]
-        ):
-            return create_launch_vagrant_cmd(verb=verb)
-        else:
-            errors = []
-            if not DEPENDENCIES["vagrant"]:
-                errors.append("vagrant")
-            if not DEPENDENCIES["virtualbox"]:
-                errors.append("virtualbox")
-            if not DEPENDENCIES["ansible-playbook"]:
-                errors.append("ansible-playbook")
-            raise MissingDependency(
-                f"Launching a VM locally requires: {' '.join(errors)}"
-            )
     elif host in ["azure"]:
         check_azure_cli_installed()
 
@@ -932,12 +1192,11 @@ def create_launch_cmd(
             login_azure()
 
         if DEPENDENCIES["ansible-playbook"]:
-
             resource_group = ask(
                 question=Question(
                     var_name="azure_resource_group",
                     question="What resource group name do you want to use (or create)?",
-                    default=arg_cache.azure_resource_group,
+                    default=arg_cache["azure_resource_group"],
                     kind="string",
                     cache=True,
                 ),
@@ -948,7 +1207,7 @@ def create_launch_cmd(
                 question=Question(
                     var_name="azure_location",
                     question="If this is a new resource group what location?",
-                    default=arg_cache.azure_location,
+                    default=arg_cache["azure_location"],
                     kind="string",
                     cache=True,
                 ),
@@ -959,7 +1218,7 @@ def create_launch_cmd(
                 question=Question(
                     var_name="azure_size",
                     question="What size machine?",
-                    default=arg_cache.azure_size,
+                    default=arg_cache["azure_size"],
                     kind="string",
                     cache=True,
                 ),
@@ -970,7 +1229,7 @@ def create_launch_cmd(
                 question=Question(
                     var_name="azure_username",
                     question="What do you want the username for the VM to be?",
-                    default=arg_cache.azure_username,
+                    default=arg_cache["azure_username"],
                     kind="string",
                     cache=True,
                 ),
@@ -981,7 +1240,7 @@ def create_launch_cmd(
                 question=Question(
                     var_name="auth_type",
                     question="Do you want to login with a key or password",
-                    default=arg_cache.auth_type,
+                    default=arg_cache["auth_type"],
                     kind="option",
                     options=["key", "password"],
                     cache=True,
@@ -994,7 +1253,7 @@ def create_launch_cmd(
                 key_path_question = Question(
                     var_name="azure_key_path",
                     question=f"Absolute path of the private key to access {username}@{host}?",
-                    default=arg_cache.azure_key_path,
+                    default=arg_cache["azure_key_path"],
                     kind="path",
                     cache=True,
                 )
@@ -1048,7 +1307,7 @@ def create_launch_cmd(
                 Question(
                     var_name="azure_repo",
                     question="Repo to fetch source from?",
-                    default=arg_cache.azure_repo,
+                    default=arg_cache["azure_repo"],
                     kind="string",
                     cache=True,
                 ),
@@ -1058,7 +1317,7 @@ def create_launch_cmd(
                 Question(
                     var_name="azure_branch",
                     question="Branch to monitor for updates?",
-                    default=arg_cache.azure_branch,
+                    default=arg_cache["azure_branch"],
                     kind="string",
                     cache=True,
                 ),
@@ -1116,7 +1375,7 @@ def create_launch_cmd(
                 question=Question(
                     var_name="gcp_project_id",
                     question="What PROJECT ID do you want to use?",
-                    default=arg_cache.gcp_project_id,
+                    default=arg_cache["gcp_project_id"],
                     kind="string",
                     cache=True,
                 ),
@@ -1127,7 +1386,7 @@ def create_launch_cmd(
                 question=Question(
                     var_name="gcp_zone",
                     question="What zone do you want your VM in?",
-                    default=arg_cache.gcp_zone,
+                    default=arg_cache["gcp_zone"],
                     kind="string",
                     cache=True,
                 ),
@@ -1138,7 +1397,7 @@ def create_launch_cmd(
                 question=Question(
                     var_name="gcp_machine_type",
                     question="What size machine?",
-                    default=arg_cache.gcp_machine_type,
+                    default=arg_cache["gcp_machine_type"],
                     kind="string",
                     cache=True,
                 ),
@@ -1149,7 +1408,7 @@ def create_launch_cmd(
                 question=Question(
                     var_name="gcp_username",
                     question="What is your shell username?",
-                    default=arg_cache.gcp_username,
+                    default=arg_cache["gcp_username"],
                     kind="string",
                     cache=True,
                 ),
@@ -1159,7 +1418,7 @@ def create_launch_cmd(
             key_path_question = Question(
                 var_name="gcp_key_path",
                 question=f"Private key to access user@{host}?",
-                default=arg_cache.gcp_key_path,
+                default=arg_cache["gcp_key_path"],
                 kind="path",
                 cache=True,
             )
@@ -1193,7 +1452,7 @@ def create_launch_cmd(
                 Question(
                     var_name="gcp_repo",
                     question="Repo to fetch source from?",
-                    default=arg_cache.gcp_repo,
+                    default=arg_cache["gcp_repo"],
                     kind="string",
                     cache=True,
                 ),
@@ -1203,7 +1462,7 @@ def create_launch_cmd(
                 Question(
                     var_name="gcp_branch",
                     question="Branch to monitor for updates?",
-                    default=arg_cache.gcp_branch,
+                    default=arg_cache["gcp_branch"],
                     kind="string",
                     cache=True,
                 ),
@@ -1249,7 +1508,7 @@ def create_launch_cmd(
                     question=Question(
                         var_name="username",
                         question=f"Username for {host} with sudo privledges?",
-                        default=arg_cache.username,
+                        default=arg_cache["username"],
                         kind="string",
                         cache=True,
                     ),
@@ -1259,7 +1518,7 @@ def create_launch_cmd(
                     question=Question(
                         var_name="auth_type",
                         question="Do you want to login with a key or password",
-                        default=arg_cache.auth_type,
+                        default=arg_cache["auth_type"],
                         kind="option",
                         options=["key", "password"],
                         cache=True,
@@ -1271,7 +1530,7 @@ def create_launch_cmd(
                         question=Question(
                             var_name="key_path",
                             question=f"Private key to access {parsed_kwargs['username']}@{host}?",
-                            default=arg_cache.key_path,
+                            default=arg_cache["key_path"],
                             kind="path",
                             cache=True,
                         ),
@@ -1291,7 +1550,7 @@ def create_launch_cmd(
                 question=Question(
                     var_name="repo",
                     question="Repo to fetch source from?",
-                    default=arg_cache.repo,
+                    default=arg_cache["repo"],
                     kind="string",
                     cache=True,
                 ),
@@ -1302,7 +1561,7 @@ def create_launch_cmd(
                 Question(
                     var_name="branch",
                     question="Branch to monitor for updates?",
-                    default=arg_cache.branch,
+                    default=arg_cache["branch"],
                     kind="string",
                     cache=True,
                 ),
@@ -1339,13 +1598,39 @@ def create_launch_cmd(
     )
 
 
+def pull_command(cmd: str, kwargs: TypeDict[str, Any]) -> TypeList[str]:
+    pull_cmd = str(cmd)
+    if kwargs["release"] == "production":
+        pull_cmd += " --file docker-compose.yml"
+    else:
+        pull_cmd += " --file docker-compose.pull.yml"
+    pull_cmd += " pull --ignore-pull-failures"  # ignore missing version from Dockerhub
+    return [pull_cmd]
+
+
+def build_command(cmd: str) -> TypeList[str]:
+    build_cmd = str(cmd)
+    build_cmd += " --file docker-compose.build.yml"
+    build_cmd += " build"
+    return [build_cmd]
+
+
+def deploy_command(cmd: str, tail: bool, release_type: str) -> TypeList[str]:
+    up_cmd = str(cmd)
+    up_cmd += " --file docker-compose.dev.yml" if release_type == "development" else ""
+    up_cmd += " up"
+    if not tail:
+        up_cmd += " -d"
+    return [up_cmd]
+
+
 def create_launch_docker_cmd(
     verb: GrammarVerb,
     docker_version: str,
     kwargs: TypeDict[str, Any],
     tail: bool = True,
     silent: bool = False,
-) -> str:
+) -> TypeDict[str, TypeList[str]]:
     host_term = verb.get_named_term_hostgrammar(name="host")
     node_name = verb.get_named_term_type(name="node_name")
     node_type = verb.get_named_term_type(name="node_type")
@@ -1364,17 +1649,13 @@ def create_launch_docker_cmd(
         + "!\n"
     )
 
-    print("  - TYPE: " + str(node_type.input))
-    print("  - NAME: " + str(snake_name))
-    # print("  - TAG: " + str(tag))
-    print("  - PORT: " + str(host_term.free_port))
-    print("  - DOCKER: " + docker_version)
-    # print("  - TAIL: " + str(tail))
-    print("\n")
-
     version_string = kwargs["tag"]
     version_hash = "dockerhub"
     build = kwargs["build"]
+    from_template = kwargs["from_template"]
+
+    # if in development mode, generate a version_string which is either
+    # the one you inputed concatenated with -dev or the contents of the VERSION file
     if "release" in kwargs and kwargs["release"] == "development":
         # force version to have -dev at the end in dev mode
         # during development we can use the latest beta version
@@ -1382,11 +1663,11 @@ def create_launch_docker_cmd(
             version_string = GRID_SRC_VERSION[0]
         version_string += "-dev"
         version_hash = GRID_SRC_VERSION[1]
-        if build is None:
-            build = True
+        build = True
     else:
-        if build is None:
-            build = False
+        # whereas if in production mode and tag == "local" use the local VERSION file
+        # or if its not set somehow, which should never happen, use stable
+        # otherwise use the kwargs["tag"] from above
 
         # during production the default would be stable
         if version_string == "local":
@@ -1395,13 +1676,36 @@ def create_launch_docker_cmd(
             version_hash = GRID_SRC_VERSION[1]
             build = True
         elif version_string is None:
-            version_string = "stable"
+            version_string = "latest"
 
-    use_blob_storage = "True"
-    if str(node_type.input) == "network":
-        use_blob_storage = "False"
-    elif "use_blob_storage" in kwargs and kwargs["use_blob_storage"] is not None:
-        use_blob_storage = str(str_to_bool(kwargs["use_blob_storage"]))
+    if platform.uname().machine.lower() in ["x86_64", "amd64"]:
+        docker_platform = "linux/amd64"
+    else:
+        docker_platform = "linux/arm64"
+
+    if "platform" in kwargs and kwargs["platform"] is not None:
+        docker_platform = kwargs["platform"]
+
+    install_oblv_cli = bool(kwargs["oblv"])
+    print("  - NAME: " + str(snake_name))
+    print("  - RELEASE: " + kwargs["release"])
+    print("  - ARCH: " + docker_platform)
+    print("  - TYPE: " + str(node_type.input))
+    print("  - DOCKER_TAG: " + version_string)
+    if version_hash != "dockerhub":
+        print("  - GIT_HASH: " + version_hash)
+    print("  - HAGRID_VERSION: " + get_version_string())
+    if EDITABLE_MODE:
+        print("  - HAGRID_REPO_SHA: " + commit_hash())
+    print("  - PORT: " + str(host_term.free_port))
+    print("  - DOCKER COMPOSE: " + docker_version)
+    print("  - OBLV_CLI: ", install_oblv_cli)
+
+    print("\n")
+
+    use_blob_storage = (
+        False if str(node_type.input) == "network" else bool(kwargs["use_blob_storage"])
+    )
 
     envs = {
         "RELEASE": "production",
@@ -1415,10 +1719,12 @@ def create_launch_docker_cmd(
         "TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL": "False",
         "VERSION": version_string,
         "VERSION_HASH": version_hash,
-        "USE_BLOB_STORAGE": use_blob_storage,
+        "USE_BLOB_STORAGE": str(use_blob_storage),
+        "FRONTEND_TARGET": "grid-ui-production",
         "STACK_API_KEY": str(
             generate_sec_random_password(length=48, special_chars=False)
         ),
+        "INSTALL_OBLV_CLI": str(install_oblv_cli).lower(),
     }
 
     if "trace" in kwargs and kwargs["trace"] is True:
@@ -1429,7 +1735,7 @@ def create_launch_docker_cmd(
         )
 
     if "platform" in kwargs and kwargs["platform"] is not None:
-        envs["DOCKER_DEFAULT_PLATFORM"] = kwargs["platform"]
+        envs["DOCKER_DEFAULT_PLATFORM"] = docker_platform
 
     if "tls" in kwargs and kwargs["tls"] is True and len(kwargs["cert_store_path"]) > 0:
         envs["TRAEFIK_TLS_CERTS"] = kwargs["cert_store_path"]
@@ -1444,6 +1750,13 @@ def create_launch_docker_cmd(
 
     if "test" in kwargs and kwargs["test"] is True:
         envs["S3_VOLUME_SIZE_MB"] = "100"  # GitHub CI is small
+
+    if kwargs.get("release", "") == "development":
+        envs["RABBITMQ_MANAGEMENT"] = "-management"
+
+    # currently we only have a domain frontend for dev mode
+    if kwargs.get("release", "") == "development" and str(node_type.input) != "network":
+        envs["FRONTEND_TARGET"] = "grid-ui-development"
 
     if "release" in kwargs:
         envs["RELEASE"] = kwargs["release"]
@@ -1463,28 +1776,26 @@ def create_launch_docker_cmd(
     else:
         cmd += " ".join(args)
 
-    if not build:
-        pull_cmd = str(cmd)
-        pull_cmd += " docker compose pull"
-
     cmd += " docker compose -p " + snake_name
 
-    if "vpn" in kwargs and kwargs["vpn"]:
+    if bool(kwargs["vpn"]):
         cmd += " --profile vpn"
 
     if str(node_type.input) == "network":
         cmd += " --profile network"
-    else:
+
+    if use_blob_storage:
         cmd += " --profile blob-storage"
 
-    # network frontend disabled
-    if str(node_type.input) != "network" and kwargs["headless"] is False:
+    # no frontend container so expect bad gateway on the / route
+    if not bool(kwargs["headless"]):
         cmd += " --profile frontend"
 
     if "trace" in kwargs and kwargs["trace"]:
         cmd += " --profile telemetry"
 
     # new docker compose regression work around
+    # default_env = os.path.expanduser("~/.hagrid/app/.env")
     default_env = f"{GRID_SRC_PATH}/.env"
     default_envs = {}
     with open(default_env, "r") as f:
@@ -1497,12 +1808,28 @@ def create_launch_docker_cmd(
                     value = parts[1]
                 default_envs[key] = value
     default_envs.update(envs)
+
+    # env file path
+    env_file_path = os.path.join(GRID_SRC_PATH, ".envfile")
+
+    # Render templates if creating stack from the manifest_template.yml
+    if from_template and host_term.host is not None:
+        # If release is development, update relative path
+        if EDITABLE_MODE:
+            default_envs["RELATIVE_PATH"] = "../"
+
+        render_templates(
+            env_vars=default_envs,
+            host_type=host_term.host,
+        )
+
+        env_file_path = os.path.join(GRID_SRC_PATH, RENDERED_DIR, ".envfile")
+
     try:
         env_file = ""
         for k, v in default_envs.items():
             env_file += f"{k}={v}\n"
 
-        env_file_path = os.path.abspath("./.envfile")
         with open(env_file_path, "w") as f:
             f.write(env_file)
 
@@ -1510,29 +1837,23 @@ def create_launch_docker_cmd(
     except Exception:  # nosec
         pass
 
+    final_commands = {}
+    final_commands["Pulling"] = pull_command(cmd, kwargs)
+
     cmd += " --file docker-compose.yml"
-    if build:
-        cmd += " --file docker-compose.build.yml"
-    if "release" in kwargs and kwargs["release"] == "development":
-        cmd += " --file docker-compose.dev.yml"
     if "tls" in kwargs and kwargs["tls"] is True:
         cmd += " --file docker-compose.tls.yml"
     if "test" in kwargs and kwargs["test"] is True:
         cmd += " --file docker-compose.test.yml"
-    cmd += " up"
-
-    if not tail:
-        cmd += " -d"
 
     if build:
-        cmd += " --build"  # force rebuild
-    else:
-        if is_windows():
-            cmd = pull_cmd + "; " + cmd
-        else:
-            cmd = pull_cmd + " && " + cmd
+        my_build_command = build_command(cmd)
+        final_commands["Building"] = my_build_command
 
-    return cmd
+    release_type = kwargs["release"]
+
+    final_commands["Launching"] = deploy_command(cmd, tail, release_type)
+    return final_commands
 
 
 def create_launch_vagrant_cmd(verb: GrammarVerb) -> str:
@@ -1643,7 +1964,6 @@ def extract_host_ip_gcp(stdout: bytes) -> Optional[str]:
 
 
 def extract_host_ip_from_cmd(cmd: str) -> Optional[str]:
-
     try:
         matcher = r"(?:[0-9]{1,3}\.){3}[0-9]{1,3}"
         ips = re.findall(matcher, cmd)
@@ -1658,7 +1978,6 @@ def extract_host_ip_from_cmd(cmd: str) -> Optional[str]:
 def check_ip_for_ssh(
     host_ip: str, timeout: int = 600, wait_time: int = 5, silent: bool = False
 ) -> bool:
-
     if not silent:
         print(f"Checking VM at {host_ip} is up")
     checks = int(timeout / wait_time)  # 10 minutes in 5 second chunks
@@ -1798,7 +2117,7 @@ def create_launch_gcp_cmd(
     if not host_up:
         raise Exception(f"Something went wrong launching the VM at IP: {host_ip}.")
 
-    if "provision" in kwargs and not kwargs["provision"]:
+    if not bool(kwargs["provision"]):
         print("Skipping automatic provisioning.")
         print("VM created with:")
         print(f"IP: {host_ip}")
@@ -1889,7 +2208,6 @@ def create_launch_azure_cmd(
     ansible_extras: str,
     kwargs: TypeDict[str, Any],
 ) -> TypeList[str]:
-
     get_or_make_resource_group(resource_group=resource_group, location=location)
 
     node_count = kwargs.get("node_count", 1)
@@ -1948,7 +2266,7 @@ def create_launch_azure_cmd(
         host_term.parse_input(host_ip)
         verb.set_named_term_type(name="host", new_term=host_term)
 
-        if "provision" in kwargs and not kwargs["provision"]:
+        if not bool(kwargs["provision"]):
             print("Skipping automatic provisioning.")
             print("VM created with:")
             print(f"Name: {snake_name}")
@@ -2163,7 +2481,7 @@ def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
                     question=Question(
                         var_name="username",
                         question=f"Username for {host} with sudo privledges?",
-                        default=arg_cache.username,
+                        default=arg_cache["username"],
                         kind="string",
                         cache=True,
                     ),
@@ -2173,7 +2491,7 @@ def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
                     question=Question(
                         var_name="auth_type",
                         question="Do you want to login with a key or password",
-                        default=arg_cache.auth_type,
+                        default=arg_cache["auth_type"],
                         kind="option",
                         options=["key", "password"],
                         cache=True,
@@ -2185,7 +2503,7 @@ def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
                         question=Question(
                             var_name="key_path",
                             question=f"Private key to access {parsed_kwargs['username']}@{host}?",
-                            default=arg_cache.key_path,
+                            default=arg_cache["key_path"],
                             kind="path",
                             cache=True,
                         ),
@@ -2245,35 +2563,42 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
     return cmd
 
 
-@click.command(help="Stop a running PyGrid domain/network node.")
+@click.command(
+    help="Stop a running PyGrid domain/network node.",
+    context_settings={"show_default": True},
+)
 @click.argument("args", type=str, nargs=-1)
 @click.option(
     "--cmd",
-    default="false",
-    required=False,
-    type=str,
-    help="Optional: print the cmd without running it",
+    is_flag=True,
+    help="Print the cmd without running it",
 )
 @click.option(
-    "--ansible_extras",
+    "--ansible-extras",
     default="",
     type=str,
 )
 @click.option(
-    "--build_src",
+    "--build-src",
     default=DEFAULT_BRANCH,
     required=False,
     type=str,
-    help="Optional: git branch to use for launch / build operations",
+    help="Git branch to use for launch / build operations",
 )
 @click.option(
     "--silent",
     is_flag=True,
-    help="Optional: prevent lots of land output",
+    help="Suppress extra outputs",
 )
-def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
+@click.option(
+    "--force",
+    is_flag=True,
+    help="Bypass the prompt during hagrid land",
+)
+def land(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_land_verb()
-    silent = bool(kwargs["silent"]) if "silent" in kwargs else False
+    silent = bool(kwargs["silent"])
+    force = bool(kwargs["force"])
     try:
         grammar = parse_grammar(args=args, verb=verb)
         verb.load_grammar(grammar=grammar)
@@ -2291,28 +2616,41 @@ def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     except Exception as e:
         print(f"{e}")
         return
-    if not silent:
-        print("Running: \n", hide_password(cmd=cmd))
 
-    if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
-        if not silent:
-            print("Running: \n", cmd)
-        try:
-            if silent:
-                process = subprocess.Popen(  # nosec
-                    cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    cwd=GRID_SRC_PATH,
-                    shell=True,
-                )
-                process.communicate()
-                target = verb.get_named_term_grammar("node_name").input
-                print(f"HAGrid land {target} complete!")
-            else:
-                subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)  # nosec
-        except Exception as e:
-            print(f"Failed to run cmd: {cmd}. {e}")
+    target = verb.get_named_term_grammar("node_name").input
+
+    if not force:
+        _land_domain = ask(
+            Question(
+                var_name="_land_domain",
+                question=f"Are you sure you want to land {target} (y/n)",
+                kind="yesno",
+            ),
+            kwargs={},
+        )
+
+    if force or _land_domain == "y":
+        if not bool(kwargs["cmd"]):
+            if not silent:
+                print("Running: \n", cmd)
+            try:
+                if silent:
+                    process = subprocess.Popen(  # nosec
+                        cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        cwd=GRID_SRC_PATH,
+                        shell=True,
+                    )
+                    process.communicate()
+
+                    print(f"HAGrid land {target} complete!")
+                else:
+                    subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)  # nosec
+            except Exception as e:
+                print(f"Failed to run cmd: {cmd}. {e}")
+    else:
+        print("Hagrid land aborted.")
 
 
 cli.add_command(launch)
@@ -2320,7 +2658,9 @@ cli.add_command(land)
 cli.add_command(clean)
 
 
-@click.command(help="Show HAGrid debug information")
+@click.command(
+    help="Show HAGrid debug information", context_settings={"show_default": True}
+)
 @click.argument("args", type=str, nargs=-1)
 def debug(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     debug_info = gather_debug()
@@ -2331,6 +2671,7 @@ def debug(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 
 
 cli.add_command(debug)
+
 
 DEFAULT_HEALTH_CHECKS = ["host", "UI (βeta)", "api", "ssh", "jupyter"]
 HEALTH_CHECK_FUNCTIONS = {
@@ -2382,6 +2723,16 @@ def get_health_checks(ip_address: str) -> TypeTuple[bool, TypeList[TypeList[str]
     health_status = check_host_health(ip_address=ip_address, keys=keys)
     complete_status = all(health_status.values())
 
+    # find port from ip_address
+    try:
+        port = int(ip_address.split(":")[1])
+    except Exception:
+        # default to 80
+        port = 80
+
+    # url to display based on running environment
+    display_url = gitpod_url(port).split("//")[1] if is_gitpod() else ip_address
+
     # figure out how to add this back?
     # console.print("[bold magenta]Checking host:[/bold magenta]", ip_address, ":mage:")
     table_contents = []
@@ -2390,7 +2741,7 @@ def get_health_checks(ip_address: str) -> TypeTuple[bool, TypeList[TypeList[str]
             [
                 HEALTH_CHECK_ICONS[key],
                 key,
-                HEALTH_CHECK_URLS[key].replace("{ip_address}", ip_address),
+                HEALTH_CHECK_URLS[key].replace("{ip_address}", display_url),
                 icon_status(value),
             ]
         )
@@ -2403,7 +2754,7 @@ def create_check_table(
 ) -> rich.table.Table:
     table = rich.table.Table()
     table.add_column("PyGrid", style="magenta")
-    table.add_column("Info", justify="left")
+    table.add_column("Info", justify="left", overflow="fold")
     time_left_str = "" if time_left == 0 else str(time_left)
     table.add_column(time_left_str, justify="left")
     for row in table_contents:
@@ -2411,22 +2762,144 @@ def create_check_table(
     return table
 
 
-@click.command(help="Check health of an IP address/addresses or a resource group")
+def shell(command: str) -> str:
+    try:
+        output = subprocess.check_output(  # nosec
+            command, shell=True, stderr=subprocess.STDOUT
+        )
+    except Exception:
+        output = b""
+    return output.decode("utf-8")
+
+
+def get_host_name(container_name: str) -> str:
+    # Assumption we always get proxy containers first.
+    # if users have old docker compose versios.
+    # the container names are _ instead of -
+    # canada_proxy_1 instead of canada-proxy-1
+    try:
+        host_name = container_name[0 : container_name.find("proxy") - 1]  # noqa: E203
+    except Exception:
+        host_name = ""
+    return host_name
+
+
+def from_url(url: str) -> Tuple[str, str, int, str, Union[Any, str]]:
+    try:
+        # urlparse doesnt handle no protocol properly
+        if "://" not in url:
+            url = "http://" + url
+        parts = urlparse(url)
+        host_or_ip_parts = parts.netloc.split(":")
+        # netloc is host:port
+        port = 80
+        if len(host_or_ip_parts) > 1:
+            port = int(host_or_ip_parts[1])
+        host_or_ip = host_or_ip_parts[0]
+        return (
+            host_or_ip,
+            parts.path,
+            port,
+            parts.scheme,
+            getattr(parts, "query", ""),
+        )
+    except Exception as e:
+        print(f"Failed to convert url: {url} to GridURL. {e}")
+        raise e
+
+
+def get_docker_status(ip_address: str) -> Tuple[bool, Tuple[str, str]]:
+    proxy_containers = shell("docker ps --format '{{.Names}}' | grep 'proxy' ").split()
+    backend_containers = shell(
+        "docker ps --format '{{.Names}}' | grep 'backend' "
+    ).split()
+
+    # to prevent importing syft, have duplicated the from_url code from GridURL
+    url = from_url(ip_address)
+    container_name = None
+    for container in proxy_containers:
+        ports = shell(f"docker port {container}")
+        if ports.count(str(url[2])):
+            container_name = container
+            break
+
+    if not container_name:
+        return False, ("", "")
+    host_name = get_host_name(container_name)
+
+    _backend_exists = False
+    for container in backend_containers:
+        if host_name in container and "stream" not in container:
+            _backend_exists = True
+            break
+    if not _backend_exists:
+        return False, ("", "")
+
+    # Identifying Type of Node.
+    headscale_containers = shell(
+        "docker ps --format '{{.Names}}' | grep 'headscale' "
+    ).split()
+
+    node_type = "Domain"
+    for container in headscale_containers:
+        if host_name in container:
+            node_type = "Network"
+            break
+
+    return True, (host_name, node_type)
+
+
+def get_syft_install_status(host_name: str) -> bool:
+    backend_containers = shell(
+        "docker ps --format '{{.Names}}' | grep 'backend' "
+    ).split()
+    backend_container = None
+    for container in backend_containers:
+        if host_name in container and "stream" not in container:
+            backend_container = container
+            break
+    if not backend_container:
+        print(f"❌ Backend Docker Stack for: {host_name} not found")
+        exit(0)
+    else:
+        backend_log = shell(f"docker logs {backend_container}")
+        if "Application startup complete" not in backend_log:
+            return False
+        return True
+
+
+@click.command(
+    help="Check health of an IP address/addresses or a resource group",
+    context_settings={"show_default": True},
+)
 @click.argument("ip_addresses", type=str, nargs=-1)
 @click.option(
-    "--wait",
-    is_flag=True,
-    help="Optional: wait until checks pass",
+    "--timeout",
+    default=300,
+    help="Timeout for hagrid check command",
 )
 @click.option(
-    "--silent",
+    "--verbose",
     is_flag=True,
-    help="Optional: don't refresh output during wait",
+    help="Refresh output",
 )
 def check(
-    ip_addresses: TypeList[str], wait: bool = False, silent: bool = False
+    ip_addresses: TypeList[str], verbose: bool = False, timeout: Union[int, str] = 300
 ) -> None:
-    console = rich.get_console()
+    check_status(ip_addresses=ip_addresses, silent=not verbose, timeout=timeout)
+
+
+def _check_status(
+    ip_addresses: Union[str, TypeList[str]],
+    silent: bool = True,
+    signal: Optional[Event] = None,
+) -> None:
+    OK_EMOJI = RichEmoji("white_heavy_check_mark").to_str()
+    # Check if ip_addresses is str, then convert to list
+    if ip_addresses and isinstance(ip_addresses, str):
+        ip_addresses = [ip_addresses]
+    console = Console()
+
     if len(ip_addresses) == 0:
         headers = {"User-Agent": "curl/7.79.1"}
         print("Detecting External IP...")
@@ -2439,15 +2912,50 @@ def check(
         status, table_contents = get_health_checks(ip_address=ip_address)
         table = create_check_table(table_contents=table_contents)
         max_timeout = 600
-        if wait and not status:
+        if not status:
             table = create_check_table(
                 table_contents=table_contents, time_left=max_timeout
             )
             if silent:
-                print("Checking...")
-            while not status:
-                if not silent:
-                    with Live(table, refresh_per_second=4, screen=True) as live:
+                with console.status("Gathering Node information") as console_status:
+                    console_status.update(
+                        "[bold orange_red1]Waiting for Container Creation"
+                    )
+                    docker_status, domain_info = get_docker_status(ip_address)
+                    while not docker_status:
+                        docker_status, domain_info = get_docker_status(ip_address)
+                        time.sleep(1)
+                        if (
+                            signal and signal.is_set()
+                        ):  # Stop execution if timeout is triggered
+                            return
+                    console.print(
+                        f"{OK_EMOJI} {domain_info[0]} {domain_info[1]} Containers Created"
+                    )
+
+                    console_status.update("[bold orange_red1]Starting Backend")
+                    syft_install_status = get_syft_install_status(domain_info[0])
+                    while not syft_install_status:
+                        syft_install_status = get_syft_install_status(domain_info[0])
+                        time.sleep(1)
+                        # Stop execution if timeout is triggered
+                        if signal and signal.is_set():
+                            return
+                    console.print(f"{OK_EMOJI} Backend")
+                    console.print(f"{OK_EMOJI} Startup Complete")
+
+                status, table_contents = get_health_checks(ip_address)
+                table = create_check_table(
+                    table_contents=table_contents, time_left=max_timeout
+                )
+            else:
+                while not status:
+                    # Stop execution if timeout is triggered
+                    if signal is not None and signal.is_set():
+                        return
+                    with Live(
+                        table, refresh_per_second=2, screen=True, auto_refresh=False
+                    ) as live:
                         max_timeout -= 1
                         if max_timeout % 5 == 0:
                             status, table_contents = get_health_checks(ip_address)
@@ -2458,14 +2966,7 @@ def check(
                         if status:
                             break
                         time.sleep(1)
-                else:
-                    max_timeout -= 1
-                    if max_timeout % 5 == 0:
-                        status, table_contents = get_health_checks(ip_address)
-                    table = create_check_table(
-                        table_contents=table_contents, time_left=max_timeout
-                    )
-                    time.sleep(1)
+
         console.print(table)
     else:
         for ip_address in ip_addresses:
@@ -2474,84 +2975,66 @@ def check(
             console.print(table)
 
 
+def check_status(
+    ip_addresses: Union[str, TypeList[str]],
+    silent: bool = True,
+    timeout: Union[int, str] = 300,
+) -> None:
+    timeout = int(timeout)
+    # third party
+    from rich import print
+
+    signal = Event()
+
+    t = Thread(
+        target=_check_status,
+        kwargs={"ip_addresses": ip_addresses, "silent": silent, "signal": signal},
+    )
+    t.start()
+    t.join(timeout=timeout)
+
+    if t.is_alive():
+        signal.set()
+        t.join()
+
+        print(f"Hagrid check command timed out after: {timeout} seconds 🕛")
+        print(
+            "Please try increasing the timeout or kindly check the docker containers for error logs."
+        )
+        print("You can view your container logs using the following tool:")
+        print("Tool: [link=https://ctop.sh]Ctop[/link]")
+        print("Video Explanation: https://youtu.be/BJhlCxerQP4 \n")
+
+
 cli.add_command(check)
 
 
 # add Hagrid info to the cli
-@click.command(help="Show HAGrid info")
+@click.command(help="Show HAGrid info", context_settings={"show_default": True})
 def version() -> None:
-    print(f"HAGrid version: {__version__}")
+    print(f"HAGRID_VERSION: {get_version_string()}")
+    if EDITABLE_MODE:
+        print(f"HAGRID_REPO_SHA: {commit_hash()}")
 
 
 cli.add_command(version)
 
 
-@click.command(help="Launch a Syft + Jupyter Session with a Notebook URL / Path")
-@click.argument("url", type=str, required=False)
-@click.option(
-    "--reset",
-    is_flag=True,
-    show_default=True,
-    default=False,
-    help="Force hagrid quickstart to setup a fresh virtualenv",
-)
-@click.option(
-    "--syft",
-    default="latest",
-    help="Choose a syft version or just use latest",
-)
-@click.option(
-    "--quiet",
-    is_flag=True,
-    show_default=True,
-    default=False,
-    help="Silence confirmation prompts",
-)
-@click.option(
-    "--pre",
-    is_flag=True,
-    show_default=True,
-    default=False,
-    help="Install pre-release versions of syft",
-)
-@click.option(
-    "--python",
-    default=None,
-    help="Specify the path to which python to use",
-)
-@click.option(
-    "--test",
-    default=False,
-    is_flag=True,
-    help="CI Test Mode, don't hang on Jupyter",
-)
-@click.option(
-    "--repo",
-    default=arg_cache.repo,
-    help="Choose a repo to fetch the notebook from or just use OpenMined/PySyft",
-)
-@click.option(
-    "--branch",
-    default=DEFAULT_BRANCH,
-    help="Choose a branch to fetch from or just use dev",
-)
-@click.option(
-    "--commit",
-    help="Choose a specific commit to fetch the notebook from",
-)
-def quickstart_cli(
+def run_quickstart(
     url: Optional[str] = None,
     syft: str = "latest",
     reset: bool = False,
     quiet: bool = False,
     pre: bool = False,
     test: bool = False,
-    repo: str = arg_cache.repo,
+    repo: str = DEFAULT_REPO,
     branch: str = DEFAULT_BRANCH,
     commit: Optional[str] = None,
     python: Optional[str] = None,
+    zip_file: Optional[str] = None,
 ) -> None:
     try:
+        quickstart_art()
         directory = os.path.expanduser("~/.hagrid/quickstart/")
         confirm_reset = None
         if reset:
@@ -2573,36 +3056,29 @@ def quickstart_cli(
                 pre=pre,
                 python=python,
             )
-
-        if url:
-            allowed_schemes_as_url = ["http", "https"]
-            url_scheme = urlparse(url).scheme
-
-            if url_scheme not in allowed_schemes_as_url:
-                notebooks = get_urls_from_dir(
-                    repo=repo, branch=branch, commit=commit, url=url
-                )
-                overwrite_all_notebooks = False
-                if not reset:
-                    overwrite_all_notebooks = click.confirm(
-                        text=f"You have {len(notebooks)} conflicting notebooks. Would you like to overwrite them all?",
-                        default=False,
-                    )
-
-                for notebook_url in notebooks:
-                    file_path, _ = quickstart_download_notebook(
-                        url=notebook_url,
-                        directory=directory + "/" + url + "/",
-                        reset=reset,
-                        overwrite_all_notebooks=overwrite_all_notebooks,
-                    )
-
-            else:
-                file_path, _ = quickstart_download_notebook(
-                    url=url, directory=directory, reset=reset
-                )
+        downloaded_files = []
+        if zip_file:
+            downloaded_files = fetch_notebooks_from_zipfile(
+                zip_file,
+                directory=directory,
+                reset=reset,
+            )
+        elif url:
+            downloaded_files = fetch_notebooks_for_url(
+                url=url,
+                directory=directory,
+                reset=reset,
+                repo=repo,
+                branch=branch,
+                commit=commit,
+            )
         else:
             file_path = add_intro_notebook(directory=directory, reset=reset)
+            downloaded_files.append(file_path)
+
+        if len(downloaded_files) == 0:
+            raise Exception(f"Unable to find files at: {url}")
+        file_path = sorted(downloaded_files)[0]
 
         # add virtualenv path
         environ = os.environ.copy()
@@ -2610,16 +3086,32 @@ def quickstart_cli(
         venv_dir = directory + ".venv"
         environ["PATH"] = venv_dir + os.sep + os_bin_path + os.pathsep + environ["PATH"]
         jupyter_binary = "jupyter.exe" if is_windows() else "jupyter"
-        try:
-            print(
-                f"Running Jupyter Lab in: {directory}\nUse Control-C to stop this server."
+
+        if is_windows():
+            env_activate_cmd = (
+                "(Powershell): "
+                + "cd "
+                + venv_dir
+                + "; "
+                + os_bin_path
+                + os.sep
+                + "activate"
             )
+        else:
+            env_activate_cmd = (
+                "(Linux): source " + venv_dir + os.sep + os_bin_path + "/activate"
+            )
+
+        print(f"To activate your virtualenv {env_activate_cmd}")
+
+        try:
+            allow_browser = " --no-browser" if is_gitpod() else ""
             cmd = (
                 venv_dir
                 + os.sep
                 + os_bin_path
                 + os.sep
-                + f"{jupyter_binary} lab --notebook-dir={directory} {file_path}"
+                + f"{jupyter_binary} lab{allow_browser} --ip 0.0.0.0 --notebook-dir={directory} {file_path}"
             )
             if test:
                 jupyter_path = venv_dir + os.sep + os_bin_path + os.sep + jupyter_binary
@@ -2629,25 +3121,192 @@ def quickstart_cli(
                 print(f"Jupyter exists at: {jupyter_path}. CI Test mode exiting.")
                 sys.exit(0)
 
-            disable_toolbar_extension = f"{jupyter_binary} labextension disable @jupyterlab/cell-toolbar-extension"
+            disable_toolbar_extension = (
+                venv_dir
+                + os.sep
+                + os_bin_path
+                + os.sep
+                + f"{jupyter_binary} labextension disable @jupyterlab/cell-toolbar-extension"
+            )
 
             subprocess.run(  # nosec
                 disable_toolbar_extension.split(" "), cwd=directory, env=environ
             )
+
+            ON_POSIX = "posix" in sys.builtin_module_names
+
+            def enqueue_output(out: Any, queue: Queue) -> None:
+                for line in iter(out.readline, b""):
+                    queue.put(line)
+                out.close()
+
             proc = subprocess.Popen(  # nosec
                 cmd.split(" "),
                 cwd=directory,
                 env=environ,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
+                close_fds=ON_POSIX,
             )
-            proc.communicate()
+            queue: Queue = Queue()
+            thread_1 = Thread(target=enqueue_output, args=(proc.stdout, queue))
+            thread_2 = Thread(target=enqueue_output, args=(proc.stderr, queue))
+            thread_1.daemon = True  # thread dies with the program
+            thread_1.start()
+            thread_2.daemon = True  # thread dies with the program
+            thread_2.start()
+
+            display_url = None
+            console = rich.get_console()
+
+            # keepn reading the queue of stdout + stderr
+            while True:
+                try:
+                    if not display_url:
+                        # try to read the line and extract a jupyter url:
+                        with console.status(
+                            "Starting Jupyter service"
+                        ) as console_status:
+                            line = queue.get()
+                            display_url = extract_jupyter_url(line.decode("utf-8"))
+                            if display_url:
+                                display_jupyter_url(url_parts=display_url)
+                                console_status.stop()
+                except KeyboardInterrupt:
+                    proc.kill()  # make sure jupyter gets killed
+                    sys.exit(1)
+                except Exception:  # nosec
+                    pass  # nosec
         except KeyboardInterrupt:
             proc.kill()  # make sure jupyter gets killed
             sys.exit(1)
     except Exception as e:
         print(f"Error running quickstart: {e}")
         raise e
+
+
+@click.command(
+    help="Launch a Syft + Jupyter Session with a Notebook URL / Path",
+    context_settings={"show_default": True},
+)
+@click.argument("url", type=str, required=False)
+@click.option(
+    "--reset",
+    is_flag=True,
+    default=False,
+    help="Force hagrid quickstart to setup a fresh virtualenv",
+)
+@click.option(
+    "--syft",
+    default="latest",
+    help="Choose a syft version or just use latest",
+)
+@click.option(
+    "--quiet",
+    is_flag=True,
+    help="Silence confirmation prompts",
+)
+@click.option(
+    "--pre",
+    is_flag=True,
+    help="Install pre-release versions of syft",
+)
+@click.option(
+    "--python",
+    default=None,
+    help="Specify the path to which python to use",
+)
+@click.option(
+    "--test",
+    is_flag=True,
+    help="CI Test Mode, don't hang on Jupyter",
+)
+@click.option(
+    "--repo",
+    default=DEFAULT_REPO,
+    help="Choose a repo to fetch the notebook from or just use OpenMined/PySyft",
+)
+@click.option(
+    "--branch",
+    default=DEFAULT_BRANCH,
+    help="Choose a branch to fetch from or just use dev",
+)
+@click.option(
+    "--commit",
+    help="Choose a specific commit to fetch the notebook from",
+)
+def quickstart_cli(
+    url: Optional[str] = None,
+    syft: str = "latest",
+    reset: bool = False,
+    quiet: bool = False,
+    pre: bool = False,
+    test: bool = False,
+    repo: str = DEFAULT_REPO,
+    branch: str = DEFAULT_BRANCH,
+    commit: Optional[str] = None,
+    python: Optional[str] = None,
+) -> None:
+    return run_quickstart(
+        url=url,
+        syft=syft,
+        reset=reset,
+        quiet=quiet,
+        pre=pre,
+        test=test,
+        repo=repo,
+        branch=branch,
+        commit=commit,
+        python=python,
+    )
+
+
+cli.add_command(quickstart_cli, "quickstart")
+
+
+def display_jupyter_url(url_parts: Tuple[str, str, int]) -> None:
+    url = url_parts[0]
+    if is_gitpod():
+        parts = urlparse(url)
+        query = getattr(parts, "query", "")
+        url = gitpod_url(port=url_parts[2]) + "?" + query
+
+    console = rich.get_console()
+
+    tick_emoji = RichEmoji("white_heavy_check_mark").to_str()
+    link_emoji = RichEmoji("link").to_str()
+
+    console.print(
+        f"[bold white]{tick_emoji} Jupyter Server is running at:\n{link_emoji} [bold blue]{url}\n"
+        + "[bold white]Use Control-C to stop this server and shut down all kernels.",
+        new_line_start=True,
+    )
+
+    # if is_gitpod():
+    #     open_browser_with_url(url=url)
+
+
+def open_browser_with_url(url: str) -> None:
+    webbrowser.open(url)
+
+
+def extract_jupyter_url(line: str) -> Optional[Tuple[str, str, int]]:
+    jupyter_regex = r"^.*(http.*127.*)"
+    try:
+        matches = re.match(jupyter_regex, line)
+        if matches is not None:
+            url = matches.group(1).strip()
+            parts = urlparse(url)
+            host_or_ip_parts = parts.netloc.split(":")
+            # netloc is host:port
+            port = 8888
+            if len(host_or_ip_parts) > 1:
+                port = int(host_or_ip_parts[1])
+            host_or_ip = host_or_ip_parts[0]
+            return (url, host_or_ip, port)
+    except Exception as e:
+        print("failed to parse jupyter url", e)
+    return None
 
 
 def quickstart_setup(
@@ -2657,109 +3316,74 @@ def quickstart_setup(
     pre: bool = False,
     python: Optional[str] = None,
 ) -> None:
+    console = rich.get_console()
+    OK_EMOJI = RichEmoji("white_heavy_check_mark").to_str()
+
     try:
-        os.makedirs(directory, exist_ok=True)
-        virtual_env_dir = os.path.abspath(directory + ".venv/")
-        if reset and os.path.exists(virtual_env_dir):
-            shutil.rmtree(virtual_env_dir)
-        env = VirtualEnvironment(virtual_env_dir, python=python)
+        with console.status(
+            "[bold blue]Setting up Quickstart Environment"
+        ) as console_status:
+            os.makedirs(directory, exist_ok=True)
+            virtual_env_dir = os.path.abspath(directory + ".venv/")
+            if reset and os.path.exists(virtual_env_dir):
+                shutil.rmtree(virtual_env_dir)
+            env = VirtualEnvironment(virtual_env_dir, python=python)
+            console.print(
+                f"{OK_EMOJI} Created Virtual Environment {RichEmoji('evergreen_tree').to_str()}"
+            )
 
-        # upgrade pip
-        env.install("pip", options=["-U"])
-        env.install("packaging", options=["-U"])
+            # upgrade pip
+            console_status.update("[bold blue]Installing pip")
+            env.install("pip", options=["-U"])
+            console.print(f"{OK_EMOJI} pip")
 
-        print("Installing Jupyter Labs")
-        env.install("jupyterlab")
-        env.install("ipywidgets")
+            # upgrade packaging
+            console_status.update("[bold blue]Installing packaging")
+            env.install("packaging", options=["-U"])
+            console.print(f"{OK_EMOJI} packaging")
 
-        if EDITABLE_MODE:
-            # local_syft_dir = Path(os.path.abspath(Path(hagrid_root()) / "../syft"))
-            # print("Installing Syft in Editable Mode")
-            # env.install("-e " + str(local_syft_dir))
-            local_hagrid_dir = Path(os.path.abspath(Path(hagrid_root()) / "../hagrid"))
-            print("Installing HAGrid in Editable Mode", str(local_hagrid_dir))
-            env.install("-e " + str(local_hagrid_dir))
-        else:
-            # options = []
-            # options.append("--force")
-            # if syft_version == "latest":
-            #     syft_version = LATEST_STABLE_SYFT
-            #     package = f"syft>={syft_version}"
-            #     if pre:
-            #         package = f"{package}.dev0"  # force pre release
-            # else:
-            #     package = f"syft=={syft_version}"
+            # Install jupyter lab
+            console_status.update("[bold blue]Installing Jupyter Lab")
+            env.install("jupyterlab")
+            env.install("ipywidgets")
+            console.print(f"{OK_EMOJI} Jupyter Lab")
 
-            # if pre:
-            #     options.append("--pre")
-            #     print(f"Installing {package} --pre")
-            # else:
-            #     print(f"Installing {package}")
-            # env.install(package, options=options)
-            print("Installing hagrid")
-            env.install("hagrid", options=["-U"])
+            # Install hagrid
+            if EDITABLE_MODE:
+                local_hagrid_dir = Path(
+                    os.path.abspath(Path(hagrid_root()) / "../hagrid")
+                )
+                console_status.update(
+                    f"[bold blue]Installing HAGrid in Editable Mode: {str(local_hagrid_dir)}"
+                )
+                env.install("-e " + str(local_hagrid_dir))
+                console.print(
+                    f"{OK_EMOJI} HAGrid in Editable Mode: {str(local_hagrid_dir)}"
+                )
+            else:
+                console_status.update("[bold blue]Installing hagrid")
+                env.install("hagrid", options=["-U"])
+                console.print(f"{OK_EMOJI} HAGrid")
     except Exception as e:
-        print("failed", e)
+        print(e)
         raise e
 
 
-def get_urls_from_dir(
-    repo: str,
-    branch: str,
-    commit: Optional[str],
-    url: str,
-) -> List[str]:
-    notebooks = []
-    if commit is not None:
-        gh_api_call = (
-            "https://api.github.com/repos/"
-            + repo
-            + "/git/trees/"
-            + commit
-            + "?recursive=1"
-        )
-    else:
-        gh_api_call = (
-            "https://api.github.com/repos/"
-            + repo
-            + "/git/trees/"
-            + branch
-            + "?recursive=1"
-        )
-    r = requests.get(gh_api_call)
-    if r.status_code != 200:
-        print(
-            f"Failed to fetch notebook from: {gh_api_call}.\nPlease try again with the correct parameters!"
-        )
-        sys.exit(1)
-
-    res = r.json()
-
-    for file in res["tree"]:
-        if file["path"].startswith("notebooks/quickstart/" + url):
-            if file["path"].endswith(".ipynb"):
-                temp_url = (
-                    "https://raw.githubusercontent.com/"
-                    + repo
-                    + "/"
-                    + branch
-                    + "/"
-                    + file["path"]
-                )
-                notebooks.append(temp_url)
-    return notebooks
-
-
 def add_intro_notebook(directory: str, reset: bool = False) -> str:
+    filenames = ["00-quickstart.ipynb", "01-install-wizard.ipynb"]
+
     files = os.listdir(directory)
     try:
         files.remove(".venv")
     except Exception:  # nosec
         pass
 
-    filenames = ["00-quickstart.ipynb", "01-install-wizard.ipynb"]
+    existing = 0
+    for file in files:
+        if file in filenames:
+            existing += 1
 
-    if len(files) == 0 or reset:
+    if existing != len(filenames) or reset:
         if EDITABLE_MODE:
             local_src_dir = Path(os.path.abspath(Path(hagrid_root()) / "../../"))
             for filename in filenames:
@@ -2774,14 +3398,32 @@ def add_intro_notebook(directory: str, reset: bool = False) -> str:
                     "https://raw.githubusercontent.com/OpenMined/PySyft/dev/"
                     + f"notebooks/quickstart/{filename}"
                 )
-                file_path, _ = quickstart_download_notebook(
+                file_path, _, _ = quickstart_download_notebook(
                     url=url, directory=directory, reset=reset
                 )
-    file_path = os.path.abspath(f"{directory}/{filenames[0]}")
-    return file_path
+    if arg_cache["install_wizard_complete"]:
+        filename = filenames[0]
+    else:
+        filename = filenames[1]
+    return os.path.abspath(f"{directory}/{filename}")
 
 
-cli.add_command(quickstart_cli, "quickstart")
+@click.command(help="Walk the Path", context_settings={"show_default": True})
+@click.argument("zip_file", type=str, default="padawan.zip", metavar="ZIPFILE")
+def dagobah(zip_file: str) -> None:
+    if not os.path.exists(zip_file):
+        for text in (
+            f"{zip_file} does not exists.",
+            "Please specify the path to the zip file containing the notebooks.",
+            "hagrid dagobah [ZIPFILE]",
+        ):
+            print(text, file=sys.stderr)
+        sys.exit(1)
+
+    return run_quickstart(zip_file=zip_file)
+
+
+cli.add_command(dagobah)
 
 
 def ssh_into_remote_machine(
@@ -2810,7 +3452,10 @@ def ssh_into_remote_machine(
         raise e
 
 
-@click.command(help="SSH into the IP address or a resource group")
+@click.command(
+    help="SSH into the IP address or a resource group",
+    context_settings={"show_default": True},
+)
 @click.argument("ip_address", type=str)
 @click.option(
     "--cmd",
@@ -2828,7 +3473,7 @@ def ssh(ip_address: str, cmd: str) -> None:
             question=Question(
                 var_name="azure_username",
                 question="What is the username for the VM?",
-                default=arg_cache.azure_username,
+                default=arg_cache["azure_username"],
                 kind="string",
                 cache=True,
             ),
@@ -2838,7 +3483,7 @@ def ssh(ip_address: str, cmd: str) -> None:
             question=Question(
                 var_name="auth_type",
                 question="Do you want to login with a key or password",
-                default=arg_cache.auth_type,
+                default=arg_cache["auth_type"],
                 kind="option",
                 options=["key", "password"],
                 cache=True,
@@ -2851,7 +3496,7 @@ def ssh(ip_address: str, cmd: str) -> None:
                 question=Question(
                     var_name="azure_key_path",
                     question="Absolute path to the private key of the VM?",
-                    default=arg_cache.azure_key_path,
+                    default=arg_cache["azure_key_path"],
                     kind="string",
                     cache=True,
                 ),
@@ -2869,3 +3514,78 @@ def ssh(ip_address: str, cmd: str) -> None:
 
 
 cli.add_command(ssh)
+
+
+# Add hagrid logs command to the CLI
+@click.command(
+    help="Get the logs of the HAGrid node", context_settings={"show_default": True}
+)
+@click.argument("domain_name", type=str)
+def logs(domain_name: str) -> None:  # nosec
+    container_ids = (
+        subprocess.check_output(  # nosec
+            f"docker ps -qf name=^{domain_name}-*", shell=True
+        )
+        .decode("utf-8")
+        .split()
+    )
+    Container = namedtuple("Container", "id name logs")
+    container_names = []
+    for container in container_ids:
+        container_name = (
+            subprocess.check_output(  # nosec
+                "docker inspect --format '{{.Name}}' " + container, shell=True
+            )
+            .decode("utf-8")
+            .strip()
+            .replace("/", "")
+        )
+        log_command = "docker logs -f " + container_name
+        container_names.append(
+            Container(id=container, name=container_name, logs=log_command)
+        )
+    # Generate a table of the containers and their logs with Rich
+    table = rich.table.Table(title="Container Logs")
+    table.add_column("Container ID", justify="center", style="cyan", no_wrap=True)
+    table.add_column("Container Name", justify="right", style="cyan", no_wrap=True)
+    table.add_column("Log Command", justify="right", style="cyan", no_wrap=True)
+    for container in container_names:  # type: ignore
+        table.add_row(container.id, container.name, container.logs)  # type: ignore
+    console = rich.console.Console()
+    console.print(table)
+    # Print instructions on how to view the logs
+    console.print(
+        rich.panel.Panel(
+            long_string,
+            title="How to view logs",
+            border_style="white",
+            expand=False,
+            padding=1,
+            highlight=True,
+        )
+    )
+
+
+long_string = (
+    "ℹ [bold green]To view the live logs of a container,copy the log command and paste it into your terminal.[/bold green]\n"  # noqa: E501
+    + "\n"
+    + "ℹ [bold green]The logs will be streamed to your terminal until you exit the command.[/bold green]\n"
+    + "\n"
+    + "ℹ [bold green]To exit the logs, press CTRL+C.[/bold green]\n"
+    + "\n"
+    + "🚨 The [bold white]backend,backend_stream & celery[/bold white] [bold green]containers are the most important to monitor for debugging.[/bold green]\n"  # noqa: E501
+    + "\n"
+    + "               [bold white]--------------- Ctop 🦾 -------------------------[/bold white]\n"
+    + "\n"
+    + "🧠 To learn about using [bold white]ctop[/bold white] to monitor your containers,visit https://www.youtube.com/watch?v=BJhlCxerQP4n \n"  # noqa: E501
+    + "\n"
+    + "               [bold white]----------------- How to view this. 🙂 ---------------[/bold white]\n"
+    + "\n"
+    + """ℹ [bold green]To view this panel again, run the command [bold white]hagrid logs {{DOMAIN_NAME}}[/bold white] [/bold green]\n"""  # noqa: E501
+    + "\n"
+    + """🚨 DOMAIN_NAME above is the name of your Hagrid deployment,without the curly braces. E.g hagrid logs canada [bold green]\n"""  # noqa: E501
+    + "\n"
+    + "               [bold green]HAPPY DEBUGGING! 🐛🐞🦗🦟🦠🦠🦠[/bold green]\n                      "
+)
+
+cli.add_command(logs)

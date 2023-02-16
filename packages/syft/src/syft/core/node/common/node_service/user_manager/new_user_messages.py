@@ -16,10 +16,11 @@ from .....common.serde.serializable import serializable
 from ....abstract.node_service_interface import NodeServiceInterface
 from ....domain_interface import DomainInterface
 from ....domain_msg_registry import DomainMessageRegistry
+from ....new.user import User
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import UserNotFoundError
-from ...node_table.utils import model_to_json
+from ...node_table.utils import syft_object_to_json
 from ...permissions.permissions import BasePermission
 from ...permissions.permissions import BinaryOperation
 from ...permissions.permissions import UnaryOperation
@@ -36,7 +37,6 @@ from ..generic_payload.syft_message import RequestPayload
 @serializable(recursive_serde=True)
 @final
 class CreateUserMessage(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         """Payload fields and types used during a User Creation Request."""
@@ -48,7 +48,7 @@ class CreateUserMessage(SyftMessage, DomainMessageRegistry):
         institution: Optional[str]
         website: Optional[str]
         budget: Optional[float] = 0.0
-        daa_pdf: Optional[bytes] = b""
+        daa_pdf: Optional[bytes] = None
 
     # Pydantic Inner class to define expected reply payload fields.
     class Reply(ReplyPayload):
@@ -79,6 +79,7 @@ class CreateUserMessage(SyftMessage, DomainMessageRegistry):
         Returns:
             ReplyPayload: Message on successful user creation.
         """
+
         # Check if this email was already registered
         try:
             node.users.first(email=self.payload.email)
@@ -90,32 +91,30 @@ class CreateUserMessage(SyftMessage, DomainMessageRegistry):
             # If email not registered, a new user can be created.
             pass
 
-        # FIXME: Re-enable when we have integration UserApplication Document in the codebase.
-        # app_id = node.users.create_user_application(
-        #     name=self.payload.name,
-        #     email=self.payload.email,
-        #     password=self.payload.password,
-        #     daa_pdf=self.payload.daa_pdf,
-        #     institution=self.payload.institution,
-        #     website=self.payload.website,
-        #     budget=self.payload.budget,
-        # )
+        app_id = node.users.create_user_application(
+            name=self.payload.name,
+            email=self.payload.email,
+            password=self.payload.password,
+            daa_pdf=self.payload.daa_pdf,
+            institution=self.payload.institution,
+            website=self.payload.website,
+            budget=self.payload.budget,
+        )
 
-        # node.users.process_user_application(
-        #     candidate_id=app_id, status="accepted", verify_key=verify_key
-        # )
+        node.users.process_user_application(
+            candidate_id=app_id, status="accepted", verify_key=node.verify_key
+        )
 
         return CreateUserMessage.Reply()
 
     def get_permissions(self) -> List[Type[BasePermission]]:
         """Returns the list of permission classes."""
-        return [UserCanCreateUsers, IsNodeDaaEnabled]
+        return [IsNodeDaaEnabled]
 
 
 @serializable(recursive_serde=True)
 @final
 class GetUserMessage(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         user_id: int
@@ -151,11 +150,12 @@ class GetUserMessage(SyftMessage, DomainMessageRegistry):
         # Retrieve User Model
         user = node.users.first(id_int=self.payload.user_id)  # type: ignore
 
-        # Build Reply
-        reply = GetUserMessage.Reply(**model_to_json(user))
+        user_dict = syft_object_to_json(user)
+        user_dict["id"] = user.id_int
+        user_dict["role"] = user.role["name"]
 
-        # Use role name instead of role ID.
-        reply.role = node.roles.first(id=reply.role).name  # type: ignore
+        # Build Reply
+        reply = GetUserMessage.Reply(**user_dict)
 
         # Get budget spent
         reply.budget_spent = node.users.get_budget_for_user(  # type: ignore
@@ -171,7 +171,6 @@ class GetUserMessage(SyftMessage, DomainMessageRegistry):
 @serializable(recursive_serde=True)
 @final
 class GetUsersMessage(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         pass
@@ -199,10 +198,14 @@ class GetUsersMessage(SyftMessage, DomainMessageRegistry):
         users = node.users.all()
         users_list = list()
         for user in users:
-            user_model = GetUserMessage.Reply(**model_to_json(user))
+            # 🟡 TODO 25: remove this check once ported to new service
+            if isinstance(user, User):
+                continue
+            user_dict = syft_object_to_json(user)
+            user_dict["id"] = user.id_int
+            user_dict["role"] = user.role["name"]
 
-            # Use role name instead of role ID.
-            user_model.role = user.role["name"]
+            user_model = GetUserMessage.Reply(**user_dict)
 
             # Remaining Budget
             # TODO:
@@ -224,7 +227,6 @@ class GetUsersMessage(SyftMessage, DomainMessageRegistry):
 @serializable(recursive_serde=True)
 @final
 class DeleteUserMessage(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         user_id: int
@@ -249,19 +251,18 @@ class DeleteUserMessage(SyftMessage, DomainMessageRegistry):
             ReplyPayload: message on successful user deletion.
         """
 
-        node.users.delete(id=self.payload.user_id)
+        node.users.delete(id_int=self.payload.user_id)
 
         return DeleteUserMessage.Reply()
 
     def get_permissions(self) -> List[Union[Type[BasePermission], UnaryOperation]]:
         """Returns the list of permission classes applicable to this message."""
-        return [UserCanCreateUsers, ~UserIsOwner]
+        return [UserIsOwner]
 
 
 @serializable(recursive_serde=True)
 @final
 class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         user_id: int
@@ -270,7 +271,6 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
         institution: Optional[str] = ""
         website: Optional[str] = ""
         password: Optional[str] = ""
-        new_password: Optional[str] = ""
         role: Optional[str] = ""
         budget: Optional[float] = None
 
@@ -301,16 +301,17 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
 
         _valid_parameters = (
             self.payload.email
-            or (self.payload.password and self.payload.new_password)
+            or self.payload.password
             or self.payload.role
             or self.payload.name
             or self.payload.institution
             or self.payload.website
+            or self.payload.budget
         )
 
         if not _valid_parameters:
             raise MissingRequestKeyError(
-                "Missing json fields ( email,password,role,groups, name )"
+                "Missing json fields (email, password, role, groups, name or budget)"
             )
 
         if not node.users.contain(id_int=self.payload.user_id):
@@ -351,17 +352,15 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
         # Note: Maybe we should create a specific message to change password
         # but in order to accomplish this, we also need to refactory the frontend
         # methods in order to perform a request to the proper endpoint.
-        elif self.payload.password and self.payload.new_password:
+        elif self.payload.password:
             node.users.change_password(
                 user_id=user_id,
-                current_pwd=self.payload.password,
-                new_pwd=self.payload.new_password,
+                new_pwd=self.payload.password,
             )
 
             # Delete password keys from the update parameters dictionary to be updated
             # in the next step since we already did it in the previous line.
             del payload_dict["password"]
-            del payload_dict["new_password"]
 
         # Update values of all other parameters
         for param, val in payload_dict.items():

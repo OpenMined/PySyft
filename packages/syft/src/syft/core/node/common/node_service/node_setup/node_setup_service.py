@@ -1,7 +1,5 @@
 # stdlib
 from datetime import datetime
-from json import dumps
-from json import loads
 from typing import Callable
 from typing import Dict
 from typing import List
@@ -21,7 +19,6 @@ from ....domain_interface import DomainInterface
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import OwnerAlreadyExistsError
-from ...node_table.utils import model_to_json
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
 from ..success_resp_message import SuccessResponseMessage
@@ -39,9 +36,9 @@ def set_node_uid(node: DomainInterface) -> None:
         print("Missing Setup Table entry", e)
 
     try:
-        node_id = UID.from_string(setup.node_id)
+        node_id = UID.from_string(setup.node_uid)
     except Exception as e:
-        print(f"Invalid Node UID in Setup Table. {setup.node_id}")
+        print(f"Invalid Node UID in Setup Table. {setup.node_uid}")
         raise e
 
     location = SpecificLocation(name=setup.domain_name, id=node_id)
@@ -57,7 +54,7 @@ def create_initial_setup(
     msg: CreateInitialSetUpMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> SuccessResponseMessage:
     # use a lock in mongodb to ensure we run this on each backend container in sequence
-    print("Performing initial setup...")
+
     with Lock("create_initial_setup"):
         # 1 - Should not run if Node has an owner
 
@@ -85,11 +82,11 @@ def create_initial_setup(
         try:
             # 5 - Save Node SetUp Configs
             if len(node.setup) == 0:
-                node_id = node.target_id.id
+                node_id = node.id
                 node.setup.register_once(
                     domain_name=msg.domain_name,
-                    node_id=node_id.no_dash,
-                    deployed_on=datetime.now(),
+                    node_uid=node_id.no_dash,
+                    deployed_on=str(datetime.now()),
                     signing_key=_node_private_key,
                 )
                 create_setup = True
@@ -117,9 +114,12 @@ def create_initial_setup(
         if create_user and create_setup:
             print("CreateInitialSetUpMessage Successful!")
         else:
-            print(
-                f"Failed CreateInitialSetUpMessage User: {create_user} Setup: {create_setup}"
-            )
+            if len(node.users) == 0:
+                print(
+                    f"Failed CreateInitialSetUpMessage User: {create_user} Setup: {create_setup}"
+                )
+            else:
+                print("Already got a User")
 
         return SuccessResponseMessage(
             address=msg.reply_to,
@@ -130,12 +130,14 @@ def create_initial_setup(
 def get_setup(
     msg: GetSetUpMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> GetSetUpResponse:
-
-    _setup = model_to_json(node.setup.first(domain_name=node.name))
-    _setup["tags"] = loads(_setup["tags"])
+    _setup = node.setup.first(domain_name=node.name).to_dict()
+    _setup["tags"] = _setup["tags"]
     # TODO: Make this a little more defensive so we dont accidentally spill secrets
     # from node.settings. Perhaps we should add a public settings interface
     _setup["use_blob_storage"] = getattr(node.settings, "USE_BLOB_STORAGE", False)
+    # Remove it before sending setup's response
+    del _setup["signing_key"]
+
     if node.network:
         _setup["domains"] = len(node.node.all())
     return GetSetUpResponse(
@@ -151,13 +153,13 @@ def update_settings(
         if msg.domain_name:
             node.name = msg.domain_name
 
-        node.setup.update(
+        node.setup.update_config(
             domain_name=node.name,
             description=msg.description,
             daa=msg.daa,
             contact=msg.contact,
             daa_document=msg.daa_document,
-            tags=dumps(msg.tags),
+            tags=msg.tags,
         )
     else:
         raise AuthorizationError("You're not allowed to get setup configs!")
@@ -169,7 +171,6 @@ def update_settings(
 
 
 class NodeSetupService(ImmediateNodeServiceWithReply):
-
     msg_handler_map: Dict[type, Callable] = {
         CreateInitialSetUpMessage: create_initial_setup,
         GetSetUpMessage: get_setup,

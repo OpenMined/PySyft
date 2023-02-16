@@ -15,7 +15,6 @@ from ..... import lib
 from .....logger import traceback_and_raise
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
-from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from ..util import check_send_to_blob_storage
@@ -57,7 +56,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         kwargs: Dict[Any, Any],
         id_at_location: UID,
         seed_id_locations: int,
-        address: Address,
+        address: UID,
         msg_id: Optional[UID] = None,
     ):
         self.path = path
@@ -98,6 +97,9 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         # relative
         from ....tensor.smpc import context
+
+        # If if there's another object with the same ID.
+        node.store.check_collision(self.id_at_location)
 
         resolved_self = retrieve_object(node, self._self.id_at_location, self.path)
         result_read_permissions = resolved_self.read_permissions

@@ -7,10 +7,12 @@ from typing import Callable
 from typing import Dict
 from typing import Iterator
 from typing import List
+from typing import Optional
 from typing import Sequence
 from typing import Set
 from typing import Tuple
 from typing import Union
+from warnings import warn
 
 # third party
 import numpy as np
@@ -68,6 +70,10 @@ def liststrtonumpyutf8(
 # INFO: excluding coverage of the whole class , as we intend to replace with new DSA
 @serializable(recursive_serde=True)
 class DataSubjectList:
+    """[DEPRECATED] This class has been deprecated in v0.7.0 and will be removed in future versions.
+    Instead use the class `sy.DataSubjectArray` to define data subjects for your dataset.
+    """
+
     __attr_allowlist__ = ("one_hot_lookup", "data_subjects_indexed")
     __slots__ = ("one_hot_lookup", "data_subjects_indexed")
 
@@ -81,13 +87,26 @@ class DataSubjectList:
         one_hot_lookup: np.ndarray[Union[DataSubject, str, np.integer]],
         data_subjects_indexed: np.ndaray,
     ) -> None:
+        deprec_msg = (
+            f"{self.__class__.__name__} has been deprecated in v0.7.0 and will be removed in future versions. "
+            "Using this class may throw errors as it is no longer supported for calculation of Auto DP. "
+            "Instead use the class `sy.DataSubjectArray.from_objs` to define data subjects for your dataset."
+        )
+        warn(deprec_msg, DeprecationWarning, stacklevel=2)
         self.one_hot_lookup = one_hot_lookup
         self.data_subjects_indexed = data_subjects_indexed
 
     @staticmethod
     def from_series(entities_dataframe_slice: pd.Series) -> DataSubjectList:
-        """Given a Pandas Series object (such as from
+        """[DEPRECATED] Given a Pandas Series object (such as from
         getting a column from a pandas DataFrame, return an DataSubjectList"""
+
+        deprec_msg = (
+            "DataSubjectList has been deprecated in v0.7.0 and will be removed in future versions. "
+            "Using this class may throw errors as it is no longer supported for calculation of Auto DP. "
+            "Instead use the class `sy.DataSubjectArray.from_objs` to define data subjects for your dataset."
+        )
+        warn(deprec_msg, DeprecationWarning, stacklevel=2)
 
         # This will be the equivalent of the DataSubjectList.data_subjects_indexed
         if not isinstance(entities_dataframe_slice, np.ndarray):
@@ -114,6 +133,12 @@ class DataSubjectList:
 
     @staticmethod
     def from_objs(entities: Union[np.ndarray, list]) -> DataSubjectList:
+        deprec_msg = (
+            "DataSubjectList has been deprecated in v0.7.0 and will be removed in future versions. "
+            "Using this class may throw errors as it is no longer supported for calculation of Auto DP. "
+            "Instead use the class `sy.DataSubjectArray.from_objs` to define data subjects for your dataset."
+        )
+        warn(deprec_msg, DeprecationWarning, stacklevel=2)
 
         entities = np.array(entities, copy=False)
         one_hot_lookup, entities_indexed = np.unique(entities, return_inverse=True)
@@ -175,7 +200,6 @@ class DataSubjectList:
 
     @staticmethod
     def combine(dsl1: DataSubjectList, dsl2: DataSubjectList) -> DataSubjectList:
-
         """
         From Ishan's PR: https://github.com/OpenMined/PySyft/pull/6490/
 
@@ -195,7 +219,6 @@ class DataSubjectList:
         elif dsl2.one_hot_lookup.size == 0:
             return dsl1
         else:
-
             # dsl1_uniques = dsl1.num_uniques
             # dsl2_uniques = dsl2.num_uniques
             dsl1_uniques = len(dsl1.one_hot_lookup)
@@ -291,7 +314,6 @@ class DataSubjectList:
         elif dsl2.one_hot_lookup.size == 0:
             return dsl1
         else:
-
             # dsl1_uniques = dsl1.num_uniques
             # dsl2_uniques = dsl2.num_uniques
             dsl1_uniques = len(dsl1.one_hot_lookup)
@@ -405,8 +427,8 @@ def dslarraytonumpyutf8(string_list: np.ndarray) -> ArrayLike:
         Tuple[np.ndarray, np.ndarray]: utf-8 encoded int Numpy array
     """
     # print("dsl list before", string_list)
-    array_shape = string_list.shape
-    string_list = string_list.flatten()
+    array_shape = np.array(string_list).shape
+    string_list = np.array(string_list).flatten()
     bytes_list = []
     indexes = []
     offset = 0
@@ -441,8 +463,11 @@ class DataSubjectArray:
 
     delimiter = ","
 
-    def __init__(self, data_subjects: Union[str, List[str], Set[str]]):
-        self.data_subjects = set(data_subjects)
+    def __init__(self, data_subjects: Optional[Union[str, List[str], Set[str]]] = None):
+        if data_subjects is None:
+            self.data_subjects = set()
+        else:
+            self.data_subjects = set(data_subjects)
 
     def __len__(self) -> int:
         return len(self.data_subjects)
@@ -467,6 +492,12 @@ class DataSubjectArray:
             return DataSubjectArray(self.data_subjects)
 
     def __mul__(self, other: Union[DataSubjectArray, Any]) -> DataSubjectArray:
+        if isinstance(other, DataSubjectArray):
+            return DataSubjectArray(self.data_subjects.union(other.data_subjects))
+        else:
+            return DataSubjectArray(self.data_subjects)
+
+    def __rmul__(self, other: Union[DataSubjectArray, Any]) -> DataSubjectArray:
         if isinstance(other, DataSubjectArray):
             return DataSubjectArray(self.data_subjects.union(other.data_subjects))
         else:
@@ -526,19 +557,26 @@ class DataSubjectArray:
 
     def __contains__(self, item: Union[str, DataSubjectArray]) -> bool:
         if isinstance(item, DataSubjectArray):
-            return self.data_subjects.isdisjoint(item.data_subjects)
+            return not self.data_subjects.isdisjoint(item.data_subjects)
         else:
-            return self.data_subjects.isdisjoint(set(item))
+            return not self.data_subjects.isdisjoint(set(item))
 
-    def conjugate(self, *args: List[Any], **kwargs: Dict[Any, Any]) -> DataSubjectArray:
+    def __pow__(self, power: int) -> DataSubjectArray:
+        if not isinstance(power, int):
+            raise ValueError(
+                f"Expected type: int for DataSubjectArray pow function, received: {type(power)} "
+            )
+        return DataSubjectArray(self.data_subjects)
+
+    def conjugate(self, *args: Any, **kwargs: Any) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)
 
     def subtract(
         self,
         x: Union[DataSubjectArray, Any],
         y: Union[DataSubjectArray, Any],
-        *args: List[Any],
-        **kwargs: Dict[Any, Any],
+        *args: Any,
+        **kwargs: Any,
     ) -> DataSubjectArray:
         if isinstance(y, DataSubjectArray) and isinstance(x, DataSubjectArray):
             return DataSubjectArray(x.data_subjects.union(y.data_subjects))
@@ -555,8 +593,8 @@ class DataSubjectArray:
         self,
         x: Union[DataSubjectArray, Any],
         y: Union[DataSubjectArray, Any],
-        *args: List[Any],
-        **kwargs: Dict[Any, Any],
+        *args: Any,
+        **kwargs: Any,
     ) -> DataSubjectArray:
         if isinstance(y, DataSubjectArray) and isinstance(x, DataSubjectArray):
             return DataSubjectArray(x.data_subjects.union(y.data_subjects))
@@ -580,25 +618,26 @@ class DataSubjectArray:
     def log(self) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)
 
+    def __round__(self, n: Optional[int] = None) -> DataSubjectArray:
+        return DataSubjectArray(self.data_subjects)
+
+    def __abs__(self) -> DataSubjectArray:
+        return DataSubjectArray(self.data_subjects)
+
+    def round(self, n: Optional[int] = None) -> DataSubjectArray:
+        return DataSubjectArray(self.data_subjects)
+
     def real(self) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)
 
-    def var(self, *args: List[Any], **kwargs: Dict[Any, Any]) -> DataSubjectArray:
+    def var(self, *args: Any, **kwargs: Any) -> DataSubjectArray:
         return (self - np.mean(self)) * (self - np.mean(self))
 
-    def sqrt(self, *args: List[Any], **kwargs: Dict[Any, Any]) -> DataSubjectArray:
+    def sqrt(self, *args: Any, **kwargs: Any) -> DataSubjectArray:
         return DataSubjectArray(self.data_subjects)
 
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs) -> ArrayLike:  # type: ignore
-        method_name = ufunc.__name__
-        print("method_name", method_name)
-        method = getattr(self, method_name, None)
-        if method is not None:
-            return method(*inputs, **kwargs)
-        else:
-            raise NotImplementedError(
-                f"Method: {method_name} not implemented in DataSubjectArray"
-            )
+    def rint(self, *args: Any, **kwargs: Any) -> DataSubjectArray:
+        return DataSubjectArray(self.data_subjects)
 
     @staticmethod
     def from_objs(input_subjects: Union[np.ndarray, list]) -> ArrayLike:
@@ -607,13 +646,13 @@ class DataSubjectArray:
         # per data point, we should make sure that we implement in such a way we expand
         # the datasubjects automatically for row to data point mapping.
         if not isinstance(input_subjects, np.ndarray):
-            input_subjects = np.array(input_subjects)
+            input_subjects = np.array(input_subjects, dtype=DataSubjectArray)
 
-        data_map = (
-            lambda x: DataSubjectArray([str(x)])
-            if not isinstance(x, DataSubjectArray)
-            else x
-        )
+        def data_map(x):
+            return (
+                DataSubjectArray([str(x)]) if not isinstance(x, DataSubjectArray) else x
+            )
+
         map_function = np.vectorize(data_map)
 
         return map_function(input_subjects)

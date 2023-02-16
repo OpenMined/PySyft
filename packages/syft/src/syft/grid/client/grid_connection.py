@@ -22,13 +22,15 @@ from ...core.common.message import SyftMessage
 from ...core.common.serde.deserialize import _deserialize
 from ...core.common.serde.serializable import serializable
 from ...core.common.serde.serialize import _serialize
+from ...core.node.common.exceptions import AuthorizationError
 from ...core.node.enums import RequestAPIFields
 from ...core.node.exceptions import RequestAPIException
+from ...core.node.new.api import SyftAPI
 from ...logger import debug
 from ...util import verify_tls
 from ..connections.http_connection import HTTPConnection
 
-DEFAULT_TIMEOUT = 30  # seconds
+DEFAULT_TIMEOUT = 60  # seconds
 
 
 class TimeoutHTTPAdapter(HTTPAdapter):
@@ -54,8 +56,11 @@ class GridHTTPConnection(HTTPConnection):
     __attr_allowlist__ = ["base_url", "session_token", "token_type"]
 
     LOGIN_ROUTE = "/login"
+    KEY_ROUTE = "/key"
+    GUEST_ROUTE = "/guest"
     SYFT_ROUTE = "/syft"
     SYFT_ROUTE_STREAM = "/syft/stream"  # non blocking node
+    NEW_LOGIN_ROUTE = "/new_login"
     # SYFT_MULTIPART_ROUTE = "/pysyft_multipart"
     SIZE_THRESHOLD = 20971520  # 20 MB
 
@@ -68,7 +73,6 @@ class GridHTTPConnection(HTTPConnection):
 
     @property
     def header(self) -> Dict[str, str]:
-
         _header = {}
 
         if self.session_token and self.token_type:
@@ -124,6 +128,10 @@ class GridHTTPConnection(HTTPConnection):
             timeout=timeout,
             proxies=HTTPConnection.proxies,
         )
+        if r.status_code == 401:
+            raise AuthorizationError(
+                "Check if your credentials are still valid or if your session was expired."
+            )
         # else:
         #     r = self.send_streamed_messages(blob_message=msg_bytes)
 
@@ -132,8 +140,13 @@ class GridHTTPConnection(HTTPConnection):
         return r
 
     def login(self, credentials: Dict) -> Tuple:
+        if credentials:
+            url = str(self.base_url) + GridHTTPConnection.LOGIN_ROUTE
+        else:
+            url = str(self.base_url) + GridHTTPConnection.GUEST_ROUTE
+
         response = requests.post(
-            url=str(self.base_url) + GridHTTPConnection.LOGIN_ROUTE,
+            url=url,
             json=credentials,
             verify=verify_tls(),
             timeout=2,
@@ -157,6 +170,58 @@ class GridHTTPConnection(HTTPConnection):
 
         # Return node metadata / user private key
         return (metadata, content["key"])
+
+    def new_login(self, credentials: Dict) -> Dict:
+        url = str(self.base_url) + GridHTTPConnection.NEW_LOGIN_ROUTE
+        response = requests.post(
+            url=url,
+            json=credentials,
+            verify=verify_tls(),
+            timeout=2,
+            proxies=HTTPConnection.proxies,
+        )
+
+        print("Response", response.content)
+        content = response.json()
+        return content
+
+    def _get_api(self, timeout: Optional[float] = 2) -> SyftAPI:
+        """Request Node's API
+        :return: returns node API
+        :rtype: str of bytes
+        """
+        # allow retry when connecting in CI
+        session = requests.Session()
+        retry = Retry(connect=1, backoff_factor=0.5)
+        if timeout is None:
+            adapter = HTTPAdapter(max_retries=retry)
+        else:
+            adapter = TimeoutHTTPAdapter(max_retries=retry, timeout=timeout)
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
+
+        metadata_url = str(self.base_url) + "/syft/new_api"
+        response = session.get(metadata_url, verify=verify_tls())
+
+        if response.status_code != 200:
+            raise requests.ConnectionError(
+                f"Failed to fetch metadata. Response returned with code {response.status_code}"
+            )
+
+        # upgrade to tls if available
+        try:
+            if response.url.startswith("https://") and self.base_url.protocol == "http":
+                # we got redirected to https
+                self.base_url = GridURL.from_url(
+                    response.url.replace("/syft/metadata", "")
+                )
+                debug(f"GridURL Upgraded to HTTPS. {self.base_url}")
+        except Exception as e:
+            print(f"Failed to upgrade to HTTPS. {e}")
+
+        obj = _deserialize(response.content, from_bytes=True)
+        obj.api_url = f"{str(self.base_url)}/syft/new_api_call"
+        return cast(SyftAPI, obj)
 
     def _get_metadata(self, timeout: Optional[float] = 2) -> Tuple:
         """Request Node's metadata

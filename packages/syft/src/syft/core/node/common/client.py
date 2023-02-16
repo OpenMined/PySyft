@@ -11,11 +11,9 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import pandas as pd
 
-# syft absolute
-import syft as sy
-
 # relative
 from ....grid import GridURL
+from ....lib import create_lib_ast
 from ....logger import critical
 from ....logger import debug
 from ....logger import error
@@ -31,8 +29,9 @@ from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.route import Route
-from ...pointer.garbage_collection import GarbageCollection
-from ...pointer.garbage_collection import gc_get_default_strategy
+
+# from ...pointer.garbage_collection import GarbageCollection
+# from ...pointer.garbage_collection import gc_get_default_strategy
 from ...pointer.pointer import Pointer
 from ..abstract.node import AbstractNodeClient
 from ..common.client_manager.node_networking_api import NodeNetworkingAPI
@@ -57,10 +56,12 @@ class Client(AbstractNodeClient):
         "domain",
         "device",
         "vm",
+        "node_uid",
     ]
 
     def __init__(
         self,
+        node_uid: UID,
         name: Optional[str],
         routes: List[Route],
         network: Optional[Location] = None,
@@ -78,9 +79,11 @@ class Client(AbstractNodeClient):
 
         self.routes = routes
         self.default_route_index = 0
+        self.processing_pointers: Dict[UID, bool] = {}
+        self.node_uid = node_uid
 
-        gc_strategy_name = gc_get_default_strategy()
-        self.gc = GarbageCollection(gc_strategy_name)
+        # gc_strategy_name = gc_get_default_strategy()
+        # self.gc = GarbageCollection(gc_strategy_name)
 
         # create a signing key if one isn't provided
         if signing_key is None:
@@ -124,7 +127,7 @@ class Client(AbstractNodeClient):
         return icon
 
     def install_supported_frameworks(self) -> None:
-        self.lib_ast = sy.lib.create_lib_ast(client=self)
+        self.lib_ast = create_lib_ast(client=self)
 
         # first time we want to register for future updates
         self.lib_ast.register_updates(self)
@@ -215,14 +218,17 @@ class Client(AbstractNodeClient):
         timeout: Optional[float] = None,
         return_signed: bool = False,
         route_index: int = 0,
+        verbose: bool = False,
     ) -> Union[SyftMessage, SignedMessage]:
-
         # relative
         from .node_service.simple.simple_messages import NodeRunnableMessageWithReply
+        from .node_service.tff.tff_messages import TFFMessageWithReply
 
         # TEMPORARY: if message is instance of NodeRunnableMessageWithReply then we need to wrap it in a SimpleMessage
-        if isinstance(msg, NodeRunnableMessageWithReply):
-            msg = msg.prepare(address=self.address, reply_to=self.address)
+        if isinstance(msg, NodeRunnableMessageWithReply) or isinstance(
+            msg, TFFMessageWithReply
+        ):
+            msg = msg.prepare(address=self.node_uid, reply_to=self.node_uid)
 
         route_index = route_index or self.default_route_index
 
@@ -244,7 +250,7 @@ class Client(AbstractNodeClient):
                 exception_msg = response.message
                 exception = exception_msg.exception_type(exception_msg.exception_msg)
                 error(str(exception))
-                traceback_and_raise(exception)
+                traceback_and_raise(exception, verbose=verbose)
             else:
                 if return_signed:
                     return response
@@ -273,7 +279,7 @@ class Client(AbstractNodeClient):
             )
             debug(output)
             msg = msg.sign(signing_key=self.signing_key)
-        debug(f"> Sending {msg.pprint} {self.pprint} ➡️  {msg.address.pprint}")
+        debug(f"> Sending {msg.pprint} {self.pprint} ➡️  {msg.address}")
         self.routes[route_index].send_immediate_msg_without_reply(
             msg=msg, timeout=timeout
         )
@@ -307,7 +313,10 @@ class Client(AbstractNodeClient):
         return keys
 
     def __hash__(self) -> Any:
-        return hash(self.id)
+        return hash(self.id.no_dash)
+
+    def __eq__(self, other: AbstractNodeClient) -> bool:
+        return self.node_uid == other.node_uid
 
 
 GET_OBJECT_TIMEOUT = 60  # seconds
@@ -320,7 +329,7 @@ class StoreClient:
     @property
     def store(self) -> List[Pointer]:
         msg = ObjectSearchMessage(
-            address=self.client.address, reply_to=self.client.address
+            address=self.client.node_uid, reply_to=self.client.node_uid
         )
 
         results = getattr(
@@ -444,7 +453,7 @@ class StoreClient:
             return self.store[key]
         elif isinstance(key, UID):
             msg = ObjectSearchMessage(
-                address=self.client.address, reply_to=self.client.address, obj_id=key
+                address=self.client.node_uid, reply_to=self.client.node_uid, obj_id=key
             )
             results = getattr(
                 self.client.send_immediate_msg_with_reply(

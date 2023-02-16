@@ -30,7 +30,7 @@ def test_send_message_from_vm_client_to_vm(
 
     with pytest.raises(AuthorizationException):
         client.send_immediate_msg_without_reply(
-            msg=sy.ReprMessage(address=client.address)
+            msg=sy.ReprMessage(address=client.node_uid)
         )
 
 
@@ -40,5 +40,5 @@ def test_send_message_from_device_client_to_device() -> None:
 
     with pytest.raises(AuthorizationException):
         bob_phone_client.send_immediate_msg_without_reply(
-            msg=sy.ReprMessage(address=bob_phone_client.address)
+            msg=sy.ReprMessage(address=bob_phone_client.node_uid)
         )

@@ -6,6 +6,7 @@ from typing import Generator
 from typing import List
 from typing import Optional
 from typing import Sequence
+from typing import Union
 import uuid
 from uuid import UUID as uuid_type
 
@@ -61,7 +62,7 @@ class UID:
     __slots__ = "value"
     value: uuid_type
 
-    def __init__(self, value: Optional[uuid_type] = None):
+    def __init__(self, value: Optional[Union[uuid_type, str]] = None):
         """Initializes the internal id using the uuid package.
 
         This initializes the object. Normal use for this object is
@@ -85,6 +86,8 @@ class UID:
         super().__init__()
 
         # if value is not set - create a novel and unique ID.
+        if isinstance(value, str):
+            value = uuid.UUID(value)
 
         self.value = (
             next(uuid_value_generator, uuid.uuid4()) if value is None else value
@@ -99,6 +102,9 @@ class UID:
             traceback_and_raise(e)
 
     def to_string(self) -> str:
+        return self.no_dash
+
+    def __str__(self) -> str:
         return self.no_dash
 
     def __hash__(self) -> int:
@@ -138,6 +144,20 @@ class UID:
 
         try:
             return self.value == other.value
+        except Exception:
+            return False
+
+    def __lt__(self, other: Any) -> bool:
+        try:
+            return self.value < other.value
+        except Exception:
+            return False
+
+    @staticmethod
+    def is_valid_uuid(value: Any) -> bool:
+        try:
+            UID(value=uuid.UUID(value))
+            return True
         except Exception:
             return False
 
@@ -182,3 +202,17 @@ class UID:
         UID objects) within other object __repr__ methods."""
 
         return f"..{str(self.value)[-5:]}"
+
+    @staticmethod
+    def _check_or_convert(value: Union[str, "UID", uuid.UUID]) -> "UID":
+        if isinstance(value, uuid.UUID):
+            return UID(value)
+        elif isinstance(value, str):
+            return UID.from_string(value)
+        elif isinstance(value, UID):
+            return value
+        else:
+            # Ask @Madhava , can we check for  invalid types , even though type annotation is specified.
+            return ValueError(  # type: ignore
+                f"Incorrect value,type:{value,type(value)} for conversion to UID, expected Union[str,UID,UUID]"
+            )

@@ -1,29 +1,26 @@
 # stdlib
 from datetime import datetime
 from typing import Any
-
-# third party
-from sqlalchemy.engine import Engine
+from typing import Dict
 
 # relative
+from ....common.serde.serialize import _serialize
 from ...enums import RequestAPIFields
 from ..exceptions import AssociationRequestError
-from ..node_table.association_request import AssociationRequest
-from .database_manager import DatabaseManager
+from ..node_table.association_request import NoSQLAssociationRequest
+from .database_manager import NoSQLDatabaseManager
 
 
-class AssociationRequestManager(DatabaseManager):
+class NoSQLAssociationRequestManager(NoSQLDatabaseManager):
+    """Class to manage user database actions."""
 
-    schema = AssociationRequest
+    _collection_name = "association_requests"
+    __canonical_object_name__ = "AssociationRequest"
 
-    def __init__(self, database: Engine) -> None:
-        super().__init__(schema=AssociationRequestManager.schema, db=database)
-
-    def first(self, **kwargs: Any) -> AssociationRequest:
-        result = super().first(**kwargs)
+    def first(self, **kwargs: Any) -> NoSQLAssociationRequest:
+        result = super().find_one(kwargs)
         if not result:
             raise AssociationRequestError
-
         return result
 
     def create_association_request(
@@ -46,17 +43,28 @@ class AssociationRequestManager(DatabaseManager):
         table_fields["node_address"] = node_address
 
         try:
-            self.first(**{"source": source, "target": target})
-            self.modify(query={"source": source, "target": target}, values=table_fields)
+            self.update(
+                search_params={"source": source, "target": target},
+                updated_args=table_fields,
+            )
         except AssociationRequestError:
             # no existing AssociationRequest so lets make one
-            self.register(**table_fields)  # type: ignore
+            curr_len = len(self)
+            association_request = NoSQLAssociationRequest(
+                id_int=curr_len + 1,
+                **table_fields,
+            )
+            self.add(association_request)
 
-    def set(self, source: str, target: str, response: str) -> None:
-        self.modify(
+    # modify in association field before testing.
+    def accept_or_deny(self, source: str, target: str, response: str) -> None:
+        association_request = self.first(**{"source": source, "target": target})
+        association_request.status = response
+        association_request.processed_date = str(datetime.now().strftime("%m/%d/%Y"))
+        attributes: Dict[str, Any] = {}
+        attributes["__blob__"] = _serialize(association_request, to_bytes=True)
+
+        self.update_one(
             query={"source": source, "target": target},
-            values={
-                "status": response,
-                "accepted_date": datetime.now().strftime("%m/%d/%Y"),
-            },
+            values=attributes,
         )

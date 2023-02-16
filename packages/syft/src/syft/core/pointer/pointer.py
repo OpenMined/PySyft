@@ -16,6 +16,7 @@ import requests
 from ...logger import debug
 from ...logger import error
 from ...logger import warning
+from ...util import bcolors
 from ..common.pointer import AbstractPointer
 from ..common.serde import _serialize
 from ..common.serde.deserialize import _deserialize
@@ -30,10 +31,11 @@ from ..node.common.node_service.get_repr.get_repr_service import GetReprMessage
 from ..node.common.node_service.object_search_permission_update.obj_search_permission_messages import (
     ObjectSearchPermissionUpdateMessage,
 )
+from ..node.enums import PointerStatus
 from ..store.storeable_object import StorableObject
 
 
-# TODO: Fix the Client, Address, Location confusion
+# TODO: Fix the Client, UID, Location confusion
 @serializable(recursive_serde=True)
 class Pointer(AbstractPointer):
     __attr_allowlist__ = [
@@ -62,7 +64,7 @@ class Pointer(AbstractPointer):
     module.
 
     :param location: The location where the data is being held.
-    :type location: Address
+    :type location: UID
     :param id_at_location: The UID of the object on the remote location.
     :type id_at_location: UID
     """
@@ -99,7 +101,6 @@ class Pointer(AbstractPointer):
         return self
 
     def block_with_timeout(self, secs: int, secs_per_poll: int = 1) -> AbstractPointer:
-
         total_secs = secs
 
         while not self.exists and secs > 0:
@@ -122,10 +123,24 @@ class Pointer(AbstractPointer):
         return self.client.obj_exists(obj_id=self.id_at_location)
 
     def __repr__(self) -> str:
-        return f"<{self.__name__} -> {self.client.name}:{self.id_at_location.no_dash}>"
+        if hasattr(self.client, "obj_exists"):
+            _ptr_status = (
+                PointerStatus.READY.value
+                if self.exists
+                else PointerStatus.PROCESSING.value
+            )
+            return f"<{self.__name__} -> {self.client.name}:{self.id_at_location.no_dash}, status={_ptr_status}>"
+        else:
+            return (
+                f"<{self.__name__} -> {self.client.name}:{self.id_at_location.no_dash}>"
+            )
 
     def _get(
-        self, delete_obj: bool = True, verbose: bool = False, proxy_only: bool = False
+        self,
+        delete_obj: bool = True,
+        verbose: bool = False,
+        proxy_only: bool = False,
+        timeout_secs: Optional[int] = None,
     ) -> StorableObject:
         """Method to download a remote object from a pointer object if you have the right
         permissions.
@@ -136,6 +151,7 @@ class Pointer(AbstractPointer):
 
         # relative
         from ...core.node.common.client import GET_OBJECT_TIMEOUT
+        from ..node.common.action.exception_action import UnknownPrivateException
 
         debug(
             f"> GetObjectAction for id_at_location={self.id_at_location} "
@@ -143,14 +159,47 @@ class Pointer(AbstractPointer):
         )
         obj_msg = GetObjectAction(
             id_at_location=self.id_at_location,
-            address=self.client.address,
-            reply_to=self.client.address,
+            address=self.client.node_uid,
+            reply_to=self.client.node_uid,
             delete_obj=delete_obj,
         )
 
-        obj = self.client.send_immediate_msg_with_reply(
-            msg=obj_msg, timeout=GET_OBJECT_TIMEOUT
+        obj: Any = None
+        is_processing_pointer = self.client.processing_pointers.get(
+            self.id_at_location, False
         )
+
+        start_time = time.time()
+        future_time = (
+            float(timeout_secs if timeout_secs is not None else GET_OBJECT_TIMEOUT)
+            + start_time
+        )
+
+        # If pointer is one of the processing pointers and didn't timeout keep trying
+        while is_processing_pointer and future_time > time.time():
+            try:
+                obj = self.client.send_immediate_msg_with_reply(
+                    msg=obj_msg, timeout=timeout_secs, verbose=True
+                )
+
+                # If we reached here it's because we didn't have any failure,
+                # so we were able to retrieve the pointer successfully.
+                # So it isn't a processing pointer anymore and we can exit the while loop.
+                # without wait the timeout
+                is_processing_pointer = False
+            except UnknownPrivateException:
+                time.sleep(0.5)
+                pass
+
+        # If pointer was there, then we remove it from the processing_pointer list
+        self.client.processing_pointers.pop(self.id_at_location, None)
+
+        # if we didn't get the object try one last time
+        if not obj:
+            obj = self.client.send_immediate_msg_with_reply(
+                msg=obj_msg, timeout=timeout_secs
+            )
+
         if not proxy_only and obj.obj.is_proxy:
             presigned_url_path = obj.obj._data.url
             presigned_url = self.client.url_from_path(presigned_url_path)
@@ -182,8 +231,8 @@ class Pointer(AbstractPointer):
             # TODO: Fix circular import
             # This deletes the data from both database and blob store
             obj_del_msg: NewSyftMessage = ObjectDeleteMessage(
-                address=self.client.address,
-                reply_to=self.client.address,
+                address=self.client.node_uid,
+                reply_to=self.client.node_uid,
                 kwargs={
                     "id_at_location": self.id_at_location.to_string(),
                 },
@@ -226,8 +275,8 @@ class Pointer(AbstractPointer):
         try:
             obj_msg = GetReprMessage(
                 id_at_location=self.id_at_location,
-                address=self.client.address,
-                reply_to=self.client.address,
+                address=self.client.node_uid,
+                reply_to=self.client.node_uid,
             )
 
             obj = self.client.send_immediate_msg_with_reply(msg=obj_msg).repr
@@ -235,7 +284,6 @@ class Pointer(AbstractPointer):
             if "You do not have permission to .get()" in str(
                 e
             ) or "UnknownPrivateException" in str(e):
-
                 # relative
                 from ..node.common.node_service.request_receiver.request_receiver_messages import (
                     RequestStatus,
@@ -263,8 +311,7 @@ class Pointer(AbstractPointer):
 
         return self
 
-    def publish(self, sigma: float = 1.5) -> Any:
-
+    def publish(self, sigma: float = 1.5, private: bool = True) -> Any:
         # relative
         from ..node.common.node_service.publish.publish_service import (
             PublishScalarsAction,
@@ -274,27 +321,40 @@ class Pointer(AbstractPointer):
 
         obj_msg = PublishScalarsAction(
             id_at_location=id_at_location,
-            address=self.client.address,
+            address=self.client.node_uid,
             publish_ids_at_location=[self.id_at_location],
             sigma=sigma,
+            private=private,
         )
 
         self.client.send_immediate_msg_without_reply(msg=obj_msg)
         # create pointer which will point to float result
 
-        ptr = self.client.lib_ast.query("syft.lib.python.Any").pointer_type(
+        if not hasattr(self, "PUBLISH_POINTER_TYPE"):
+            raise TypeError(
+                f"Publish operation cannot be performed on pointer type: {self.__name__}"
+            )
+
+        public_dtype = str(getattr(self, "public_dtype", ""))
+        if public_dtype in ["bool"]:
+            print(
+                f"{bcolors.warning('Warning:')} Publishing values of `{public_dtype}` "
+                "dtype are not yet fully supported and may result in inconsistent results."
+            )
+
+        ptr = self.client.lib_ast.query(self.PUBLISH_POINTER_TYPE).pointer_type(  # type: ignore
             client=self.client
         )
         ptr.id_at_location = id_at_location
         ptr._pointable = True
-
+        ptr.client.processing_pointers[ptr.id_at_location] = True
         # return pointer
         return ptr
 
     def get(
         self,
         request_block: bool = False,
-        timeout_secs: int = 600,
+        timeout_secs: Optional[int] = None,
         reason: str = "",
         delete_obj: bool = True,
         verbose: bool = False,
@@ -322,9 +382,14 @@ class Pointer(AbstractPointer):
 
         if not request_block:
             result = self._get(
-                delete_obj=delete_obj, verbose=verbose, proxy_only=proxy_only
+                delete_obj=delete_obj,
+                verbose=verbose,
+                proxy_only=proxy_only,
+                timeout_secs=timeout_secs,
             )
         else:
+            if timeout_secs is None:
+                timeout_secs = 600  # old default
             response_status = self.request(
                 reason=reason,
                 block=True,
@@ -335,7 +400,9 @@ class Pointer(AbstractPointer):
                 response_status is not None
                 and response_status == RequestStatus.Accepted
             ):
-                result = self._get(delete_obj=delete_obj, verbose=verbose)
+                result = self._get(
+                    delete_obj=delete_obj, verbose=verbose, timeout_secs=timeout_secs
+                )
             else:
                 return None
 
@@ -399,8 +466,8 @@ class Pointer(AbstractPointer):
 
         msg = RequestMessage(
             request_description=reason,
-            address=self.client.address,
-            owner_address=self.client.address,
+            address=self.client.node_uid,
+            owner_address=self.client.node_uid,
             object_id=self.id_at_location,
             object_type=self.object_type,
             requester_verify_key=self.client.verify_key,
@@ -455,8 +522,8 @@ class Pointer(AbstractPointer):
                         debug(f"> Sending another Request Message {now - start}")
                         status_msg = RequestAnswerMessage(
                             request_id=msg.id,
-                            address=self.client.address,
-                            reply_to=self.client.address,
+                            address=self.client.node_uid,
+                            reply_to=self.client.node_uid,
                         )
                         response = self.client.send_immediate_msg_with_reply(
                             msg=status_msg
@@ -538,7 +605,7 @@ class Pointer(AbstractPointer):
             add_instead_of_remove=pointable,
             target_verify_key=target_verify_key,
             target_object_id=self.id_at_location,
-            address=self.client.address,
+            address=self.client.node_uid,
         )
         self.client.send_immediate_msg_without_reply(msg=msg)
 
@@ -562,7 +629,7 @@ class Pointer(AbstractPointer):
         )
 
         msg = RequestAnswerMessage(
-            request_id=request_id, address=self.client.address, reply_to=node.address
+            request_id=request_id, address=self.client.node_uid, reply_to=node.node_uid
         )
         response = self.client.send_immediate_msg_with_reply(msg=msg)
 
@@ -574,7 +641,9 @@ class Pointer(AbstractPointer):
             # it is a serialized pointer that we receive from another client do nothing
             return
 
-        if self.gc_enabled:
-            # this is not being used in the node currenetly
-            # self.client.gc.apply(self)
-            pass
+        # Check/Remove it if this pointer is still in processing_pointers dict
+        self.client.processing_pointers.pop(self.id_at_location, None)
+
+        # if self.gc_enabled:
+        #     # this is not being used in the node currenetly
+        #     self.client.gc.apply(self)

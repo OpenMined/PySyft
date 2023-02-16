@@ -85,7 +85,6 @@ def spdz_mask(
     b_share: ShareTensor,
     node: Optional[AbstractNode] = None,
 ) -> None:
-
     if node is None:
         raise ValueError("Node context should be passed to spdz mask")
 
@@ -99,13 +98,13 @@ def spdz_mask(
     beaver_action = BeaverAction(
         values=[eps, delta],
         locations=[eps_id, delta_id],
-        address=curr_client.address,
+        address=curr_client.node_uid,
     )
     beaver_action.execute_action(node, None)
 
     for _, client in enumerate(clients):
         if client != curr_client:
-            beaver_action.address = client.address
+            beaver_action.address = client.node_uid
             client.send_immediate_msg_without_reply(msg=beaver_action)
 
 
@@ -120,7 +119,6 @@ def spdz_multiply(
     c_share: ShareTensor,
     node: Optional[Any] = None,
 ) -> ShareTensor:
-
     nr_parties = x.nr_parties
     ring_size = x.ring_size
 
@@ -204,7 +202,6 @@ def divide_mask(
     z_id: UID,
     node: Optional[AbstractNode] = None,
 ) -> None:
-
     if node is None:
         raise ValueError("Node context should be passed to spdz mask")
 
@@ -217,13 +214,13 @@ def divide_mask(
     beaver_action = BeaverAction(
         values=[z],
         locations=[z_id],
-        address=curr_client.address,
+        address=curr_client.node_uid,
     )
     beaver_action.execute_action(node, None)
 
     for _, client in enumerate(clients):
         if client != curr_client:
-            beaver_action.address = client.address
+            beaver_action.address = client.node_uid
             client.send_immediate_msg_without_reply(msg=beaver_action)
 
 
@@ -331,7 +328,6 @@ def local_decomposition(
         input_shares.append(x)
 
     for share in input_shares:
-
         for i in range(nr_parties):
             id_at_location = UID(UUID(bytes=generator.bytes(16)))
             sh = x.copy_tensor()

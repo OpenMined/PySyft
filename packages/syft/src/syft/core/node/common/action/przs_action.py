@@ -11,8 +11,8 @@ from nacl.signing import VerifyKey
 from ..... import lib
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
-from ....io.address import Address
 from ....store.storeable_object import StorableObject
+from ....tensor.smpc import context
 from ....tensor.smpc.share_tensor import ShareTensor
 from ....tensor.smpc.utils import ispointer
 from ...abstract.node import AbstractNode
@@ -35,6 +35,7 @@ class PRZSAction(ImmediateActionWithoutReply):
     """
 
     __attr_allowlist__ = [
+        "seed_id_locations",
         "path",
         "args",
         "kwargs",
@@ -44,15 +45,19 @@ class PRZSAction(ImmediateActionWithoutReply):
         "id",
         "_id",
     ]
+    __serde_overrides__ = {
+        "seed_id_locations": [lambda x: str(x), lambda y: int(y)],
+    }
 
     def __init__(
         self,
+        seed_id_locations: int,
         path: str,
         args: List[Any],
         kwargs: Dict[Any, Any],
         id_at_location: UID,
         is_dp_tensor: bool,
-        address: Address,
+        address: UID,
         msg_id: Optional[UID] = None,
     ):
         self.path = path
@@ -60,6 +65,7 @@ class PRZSAction(ImmediateActionWithoutReply):
         self.kwargs = kwargs
         self.id_at_location = id_at_location
         self.is_dp_tensor = is_dp_tensor
+        self.seed_id_locations = seed_id_locations
         # logging needs .path to exist before calling
         # this which is why i've put this super().__init__ down here
         super().__init__(address=address, msg_id=msg_id)
@@ -76,6 +82,8 @@ class PRZSAction(ImmediateActionWithoutReply):
         return f"PRZSAction ({arg_names}, {kwargs_names})"
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
+        # If if there's another object with the same ID.
+        node.store.check_collision(self.id_at_location)
 
         (
             upcasted_args,
@@ -87,6 +95,10 @@ class PRZSAction(ImmediateActionWithoutReply):
                 node, upcasted_kwargs["value"].id_at_location, self.path
             ).data
 
+        context.SMPC_CONTEXT = {
+            "seed_id_locations": self.seed_id_locations,
+            "node": node,
+        }
         if not self.is_dp_tensor:
             result = ShareTensor.generate_przs(*upcasted_args, **upcasted_kwargs)
         else:
@@ -96,11 +108,9 @@ class PRZSAction(ImmediateActionWithoutReply):
 
         result_read_permissions = {
             node.verify_key: node.id,
-            verify_key: None,  # we dont have the passed in sender's UID
         }
         result_write_permissions = {
             node.verify_key: node.id,
-            verify_key: None,  # we dont have the passed in sender's UID
         }
 
         if not isinstance(result, StorableObject):
@@ -110,5 +120,4 @@ class PRZSAction(ImmediateActionWithoutReply):
                 read_permissions=result_read_permissions,
                 write_permissions=result_write_permissions,
             )
-
         node.store[self.id_at_location] = store_obj

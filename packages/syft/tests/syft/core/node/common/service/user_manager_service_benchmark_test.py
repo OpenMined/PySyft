@@ -1,5 +1,6 @@
 # stdlib
 import timeit
+from typing import Tuple
 
 # third party
 from faker import Faker
@@ -54,18 +55,26 @@ from syft.core.node.domain_interface import DomainInterface
 from syft.core.node.domain_service import DomainServiceClass
 
 
-def _create_dummy_user(faker: Faker, is_admin=False):
-
+def _create_dummy_user(
+    faker: Faker, domain: DomainInterface, is_admin: bool = False
+) -> Tuple[dict, VerifyKey]:
     # Create dummy user
+    private_key = SigningKey.generate()
+    verify_key = private_key.verify_key
+
+    # Check if generated email is already been used for another account previously registered.
+    email = faker.free_email()
+    while domain.users.contain(email=email):
+        email = faker.free_email()
+
     user = {
         "name": faker.name(),
-        "email": faker.free_email(),
+        "email": email,
         "password": faker.password(),
         "budget": faker.random.random() * 100,
         "role": 4 if is_admin else 1,
-        "private_key": "",
+        "private_key": private_key.encode(HexEncoder).decode("utf-8"),
     }
-    verify_key = SigningKey.generate().verify_key
 
     return user, verify_key
 
@@ -89,19 +98,17 @@ def _signup_user(
 @pytest.mark.skip
 class TestCreateUserMessageBenchmarking:
     def setup_users(self, domain: DomainInterface, faker: Faker) -> None:
-
         # Register domain setup configuration
         domain.setup.register_once(domain_name=domain.name)
 
         self.do_users = []
 
         # Create a Data Owner
-        user, verify_key = _create_dummy_user(faker, is_admin=True)
+        user, verify_key = _create_dummy_user(faker, domain, is_admin=True)
         user, verify_key = _signup_user(domain, user, verify_key)
         self.do_users.append((user, verify_key))
 
     def test_create_user_message(self, domain: sy.Domain, faker: Faker) -> None:
-
         # Setup users
         self.setup_users(domain, faker)
         _, do_verify_key = self.do_users[0]
@@ -128,11 +135,9 @@ class TestCreateUserMessageBenchmarking:
         }
 
         # Create user message
-        old_user_msg = CreateUserMessage(
-            address=domain.address, reply_to=domain.address, **user1
-        )
+        old_user_msg = CreateUserMessage(address=domain.id, reply_to=domain.id, **user1)
         new_user_msg = NewCreateUserMessage(
-            address=domain.address, reply_to=domain.address, kwargs=user2
+            address=domain.id, reply_to=domain.id, kwargs=user2
         )
 
         # Benchmark the serialization and de-serialization time
@@ -201,23 +206,22 @@ class TestGetUserMessageBenchmarking:
         self.do_users = []
 
         # Create a Data Owner
-        user, verify_key = _create_dummy_user(faker, is_admin=True)
+        user, verify_key = _create_dummy_user(faker, domain, is_admin=True)
         user, verify_key = _signup_user(domain, user, verify_key)
         self.do_users.append((user, verify_key))
 
     def test_get_user_message(self, domain: sy.Domain, faker: Faker) -> None:
-
         # Setup users
         self.setup_users(domain, faker)
         do_user, do_verify_key = self.do_users[0]
 
         # Create get user message
         old_user_msg = GetUserMessage(
-            address=domain.address, reply_to=domain.address, **{"user_id": do_user.id}
+            address=domain.id, reply_to=domain.id, **{"user_id": do_user.id}
         )
         new_user_msg = NewGetUserMessage(
-            address=domain.address,
-            reply_to=domain.address,
+            address=domain.id,
+            reply_to=domain.id,
             kwargs={"user_id": do_user.id},
         )
 
@@ -286,14 +290,14 @@ class TestGetUsersMessageBenchmarking:
         self.do_users = []
 
         # Create a Data Owner
-        user, verify_key = _create_dummy_user(faker, is_admin=True)
+        user, verify_key = _create_dummy_user(faker, domain, is_admin=True)
         user, verify_key = _signup_user(domain, user, verify_key)
         self.do_users.append((user, verify_key))
 
         self.ds_users = []
         # Create two data scientist users
         for _ in range(2):
-            user, verify_key = _create_dummy_user(faker)
+            user, verify_key = _create_dummy_user(faker, domain)
             user, verify_key = _signup_user(domain, user, verify_key)
             self.ds_users.append((user, verify_key))
 
@@ -303,10 +307,8 @@ class TestGetUsersMessageBenchmarking:
         _, do_verify_key = self.do_users[0]
 
         # Create get user message
-        old_user_msg = GetUsersMessage(address=domain.address, reply_to=domain.address)
-        new_user_msg = NewGetUsersMessage(
-            address=domain.address, reply_to=domain.address
-        )
+        old_user_msg = GetUsersMessage(address=domain.id, reply_to=domain.id)
+        new_user_msg = NewGetUsersMessage(address=domain.id, reply_to=domain.id)
 
         # Benchmark the serialization and de-serialization time
         start = timeit.default_timer()
@@ -374,19 +376,18 @@ class TestUpdateUserMessageBenchmarking:
         self.do_users = []
 
         # Create a Data Owner
-        user, verify_key = _create_dummy_user(faker, is_admin=True)
+        user, verify_key = _create_dummy_user(faker, domain, is_admin=True)
         user, verify_key = _signup_user(domain, user, verify_key)
         self.do_users.append((user, verify_key))
 
         self.ds_users = []
         # Create two data scientist users
         for _ in range(2):
-            user, verify_key = _create_dummy_user(faker)
+            user, verify_key = _create_dummy_user(faker, domain)
             user, verify_key = _signup_user(domain, user, verify_key)
             self.ds_users.append((user, verify_key))
 
     def test_update_user_message(self, domain: DomainInterface, faker: Faker) -> None:
-
         self.setup_users(domain, faker)
 
         _, do_verify_key = self.do_users[0]
@@ -417,10 +418,10 @@ class TestUpdateUserMessageBenchmarking:
 
         # Create user update messages
         old_user_msg = UpdateUserMessage(
-            address=domain.address, reply_to=domain.address, **user1_updated_info
+            address=domain.id, reply_to=domain.id, **user1_updated_info
         )
         new_user_msg = NewUpdateUserMessage(
-            address=domain.address, reply_to=domain.address, kwargs=user2_updated_info
+            address=domain.id, reply_to=domain.id, kwargs=user2_updated_info
         )
 
         # Benchmark the serialization and de-serialization time
@@ -488,14 +489,14 @@ class TestDeleteUserMessageBenchmarking:
         self.do_users = []
 
         # Create a Data Owner
-        user, verify_key = _create_dummy_user(faker, is_admin=True)
+        user, verify_key = _create_dummy_user(faker, domain, is_admin=True)
         user, verify_key = _signup_user(domain, user, verify_key)
         self.do_users.append((user, verify_key))
 
         self.ds_users = []
         # Create two data scientist users
         for _ in range(2):
-            user, verify_key = _create_dummy_user(faker)
+            user, verify_key = _create_dummy_user(faker, domain)
             user, verify_key = _signup_user(domain, user, verify_key)
             self.ds_users.append((user, verify_key))
 
@@ -508,11 +509,11 @@ class TestDeleteUserMessageBenchmarking:
 
         # Create Old and New User Delete Messages
         old_user_msg = DeleteUserMessage(
-            address=domain.address, reply_to=domain.address, **{"user_id": ds_user1.id}
+            address=domain.id, reply_to=domain.id, **{"user_id": ds_user1.id}
         )
         new_user_msg = NewDeleteUserMessage(
-            address=domain.address,
-            reply_to=domain.address,
+            address=domain.id,
+            reply_to=domain.id,
             kwargs={"user_id": ds_user2.id},
         )
 

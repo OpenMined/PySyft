@@ -1,4 +1,5 @@
 # stdlib
+import inspect
 import logging
 import sys
 import time
@@ -16,28 +17,30 @@ import names
 import pandas as pd
 
 # relative
+from ... import __version__
+from ...core.node.new.api import APIRegistry
+from ...core.node.new.api import SyftAPI
 from ...logger import traceback_and_raise
 from ...telemetry import instrument
+from ...util import bcolors
+from ...util import print_dynamic_log
 from ...util import validate_field
 from ..common.message import SyftMessage
 from ..common.serde.serialize import _serialize as serialize  # noqa: F401
 from ..common.uid import UID
-from ..io.address import Address
 from ..io.location import Location
 from ..io.location.specific import SpecificLocation
 from ..io.route import Route
-from ..node.common.node_service.network_search.network_search_messages import (
-    NetworkSearchMessage,
-)
+from ..io.virtual import VirtualClientConnection
 from ..pointer.pointer import Pointer
 from ..store.proxy_dataset import ProxyDataset
-from ..tensor.autodp.adp_tensor import ADPTensor
 from ..tensor.tensor import Tensor
 from .abstract.node import AbstractNodeClient
 from .common.action.exception_action import ExceptionMessage
 from .common.client import Client
 from .common.client_manager.association_api import AssociationRequestAPI
 from .common.client_manager.dataset_api import DatasetRequestAPI
+from .common.client_manager.oblv_api import OblvAPI
 from .common.client_manager.role_api import RoleRequestAPI
 from .common.client_manager.user_api import UserRequestAPI
 from .common.client_manager.vpn_api import VPNAPI
@@ -55,6 +58,9 @@ from .common.node_service.request_receiver.request_receiver_messages import (
     RequestMessage,
 )
 from .common.node_service.simple.obj_exists import DoesObjectExistMessage
+from .common.node_service.task_submission.task_submission import CreateTask
+from .common.node_service.task_submission.task_submission import GetTasks
+from .common.node_service.task_submission.task_submission import ReviewTask
 from .common.util import check_send_to_blob_storage
 from .common.util import upload_to_s3_using_presigned
 from .enums import PyGridClientEnums
@@ -72,17 +78,17 @@ class RequestQueueClient(AbstractNodeClient):
         self.roles = RoleRequestAPI(client=self)
         self.association = AssociationRequestAPI(client=self)
         self.datasets = DatasetRequestAPI(client=self)
+        self.oblv = OblvAPI(client=self)
 
     @property
     def requests(self) -> List[RequestMessage]:
-
         # relative
         from .common.node_service.object_request.object_request_messages import (
             GetAllRequestsMessage,
         )
 
         msg = GetAllRequestsMessage(
-            address=self.client.address, reply_to=self.client.address
+            address=self.client.node_uid, reply_to=self.client.node_uid
         )
 
         requests = self.client.send_immediate_msg_with_reply(msg=msg).requests  # type: ignore
@@ -213,12 +219,12 @@ class RequestQueueClient(AbstractNodeClient):
 
     def _update_handler(self, request_handler: Dict[str, Any], keep: bool) -> None:
         # relative
-        from ..common.node_service.request_handler.request_handler_messages import (
+        from .common.node_service.request_handler.request_handler_messages import (
             UpdateRequestHandlerMessage,
         )
 
         msg = UpdateRequestHandlerMessage(
-            address=self.client.address, handler=request_handler, keep=keep
+            address=self.client.node_uid, handler=request_handler, keep=keep
         )
         self.client.send_immediate_msg_without_reply(msg=msg)
 
@@ -230,12 +236,12 @@ class RequestHandlerQueueClient:
     @property
     def handlers(self) -> List[Dict]:
         # relative
-        from ..common.node_service.request_handler.request_handler_messages import (
+        from .common.node_service.request_handler.request_handler_messages import (
             GetAllRequestHandlersMessage,
         )
 
         msg = GetAllRequestHandlersMessage(
-            address=self.client.address, reply_to=self.client.address
+            address=self.client.node_uid, reply_to=self.client.node_uid
         )
         return validate_field(
             self.client.send_immediate_msg_with_reply(msg=msg), "handlers"
@@ -296,15 +302,15 @@ class RequestHandlerQueueClient:
 
 @instrument
 class DomainClient(Client):
-
     domain: SpecificLocation
     requests: RequestQueueClient
 
     def __init__(
         self,
+        node_uid: UID,
         name: Optional[str],
         routes: List[Route],
-        domain: SpecificLocation,
+        domain: Optional[SpecificLocation] = None,
         network: Optional[Location] = None,
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
@@ -322,6 +328,7 @@ class DomainClient(Client):
             signing_key=signing_key,
             verify_key=verify_key,
             version=version,
+            node_uid=node_uid,
         )
 
         self.requests = RequestQueueClient(client=self)
@@ -332,6 +339,7 @@ class DomainClient(Client):
         self.association = AssociationRequestAPI(client=self)
         self.datasets = DatasetRequestAPI(client=self)
         self.vpn = VPNAPI(client=self)
+        self.oblv = OblvAPI(client=self)
 
     def obj_exists(self, obj_id: UID) -> bool:
         msg = DoesObjectExistMessage(obj_id=obj_id)
@@ -339,8 +347,51 @@ class DomainClient(Client):
 
     @property
     def privacy_budget(self) -> float:
-        msg = GetRemainingBudgetMessage(address=self.address, reply_to=self.address)
+        msg = GetRemainingBudgetMessage(address=self.node_uid, reply_to=self.node_uid)
         return self.send_immediate_msg_with_reply(msg=msg).budget  # type: ignore
+
+    @property
+    def tasks(self) -> List[Dict[str, str]]:
+        msg = GetTasks(address=self.node_uid, reply_to=self.node_uid, kwargs={}).sign(  # type: ignore
+            signing_key=self.signing_key
+        )
+        return self.send_immediate_msg_with_reply(msg=msg).kwargs
+
+    def code_request(
+        self, code: Union[str, callable], inputs: Dict[str, Any], outputs: List[str]
+    ) -> None:
+        if not inspect.isfunction(code) and not isinstance(code, str):
+            raise Exception("The code should either be a function or  string ...")
+
+        if inspect.isfunction(code):
+            code_str = inspect.getsource(code)
+        else:
+            code_str = code
+
+        for key, value in inputs.items():
+            if not isinstance(value, str):
+                inputs[key] = value.id_at_location.to_string()
+
+        msg = CreateTask(
+            address=self.node_uid,
+            reply_to=self.node_uid,
+            kwargs={"code": code_str, "inputs": inputs, "outputs": outputs},
+        ).sign(  # type: ignore
+            signing_key=self.signing_key
+        )
+
+        self.send_immediate_msg_with_reply(msg=msg)
+
+    def review(self, task_uid: str, approve: True, reason: str) -> None:
+        status = "accepted" if approve else "denied"
+        msg = ReviewTask(
+            address=self.node_uid,
+            reply_to=self.node_uid,
+            kwargs={"task_uid": task_uid, "status": status, "reason": reason},
+        ).sign(  # type: ignore
+            signing_key=self.signing_key
+        )
+        self.send_immediate_msg_with_reply(msg=msg)
 
     def request_budget(
         self,
@@ -348,7 +399,6 @@ class DomainClient(Client):
         reason: str = "",
         skip_checks: bool = False,
     ) -> Any:
-
         if not skip_checks:
             if eps == 0.0:
                 eps = float(input("Please specify how much more epsilon you want:"))
@@ -361,7 +411,7 @@ class DomainClient(Client):
         msg = CreateBudgetRequestMessage(
             reason=reason,
             budget=eps,
-            address=self.address,
+            address=self.node_uid,
         )
 
         self.send_immediate_msg_without_reply(msg=msg)
@@ -373,7 +423,7 @@ class DomainClient(Client):
         )
 
     def load(
-        self, obj_ptr: Type[Pointer], address: Address, pointable: bool = False
+        self, obj_ptr: Type[Pointer], address: UID, pointable: bool = False
     ) -> None:
         content = {
             RequestAPIFields.ADDRESS: serialize(address, to_bytes=True).decode(
@@ -404,23 +454,14 @@ class DomainClient(Client):
         if response == "y":
             response = self.routes[0].connection.reset()  # type: ignore
 
-    def search(self, query: List, pandas: bool = False) -> Any:
-        response = self._perform_grid_request(
-            grid_msg=NetworkSearchMessage, content={RequestAPIFields.QUERY: query}
-        )
-        if pandas:
-            response = pd.DataFrame(response)
-
-        return response
-
     def _perform_grid_request(
         self, grid_msg: Any, content: Optional[Dict[Any, Any]] = None
     ) -> SyftMessage:
         if content is None:
             content = {}
         # Build Syft Message
-        content[RequestAPIFields.ADDRESS] = self.address
-        content[RequestAPIFields.REPLY_TO] = self.address
+        content[RequestAPIFields.ADDRESS] = self.node_uid
+        content[RequestAPIFields.REPLY_TO] = self.node_uid
         signed_msg = grid_msg(**content).sign(signing_key=self.signing_key)
         # Send to the dest
         response = self.send_immediate_msg_with_reply(msg=signed_msg)
@@ -439,40 +480,54 @@ class DomainClient(Client):
         **metadata: str,
     ) -> None:
         try:
-            print("1/3 Joining Network")
-            # joining the network might take some time and won't block
+            finish, success = print_dynamic_log("[1/4] Checking Syft Versions")
+            if self.version == client.version and client.version == __version__:  # type: ignore
+                success.set()
+            else:
+                print(f"{bcolors.warning('WARNING')}: Syft versions mismatch!")
+                print(f"{bcolors.bold('Domain',True)}: {bcolors.underline(self.version,True)}")  # type: ignore
+                print(f"{bcolors.bold('Network',True)}: {bcolors.underline(client.version,True)}")  # type: ignore
+                print(
+                    f"{bcolors.bold('Environment',True)}: {bcolors.underline(__version__,True)}"
+                )
 
-            # Check if the version of the network client is same as the domain client
-            if client and hasattr(client, "version"):
-                if self.version != client.version:  # type: ignore
-                    print(
-                        "\n**Warning**: The syft version on your domain and the network are different."
-                    )
-                    print(
-                        f"Domain version: {self.version}\nNetwork Version: {client.version}"  # type: ignore
-                    )
+                response = input(
+                    "\033[1mThis may cause unexpected errors, are you willing to continue? (y/N)\033[0m"
+                )
+                if response.lower() == "y":
+                    success.set()
+                else:
+                    finish.set()
+                    return
+            finish.set()
 
+            finish, success = print_dynamic_log("[2/4] Joining Network")
             self.join_network(client=client)
+            success.set()
+            finish.set()
 
             timeout = 30
             connected = False
             network_vpn_ip = ""
             domain_vpn_ip = ""
 
+            finish, success = print_dynamic_log("[3/4] Connecting to Secure VPN")
             # get the vpn ips
             while timeout > 0 and connected is False:
                 timeout -= 1
                 try:
                     vpn_status = self.vpn_status()
                     if vpn_status["connected"]:
-                        print("2/3 Secure VPN Connected")
+                        finish.set()
+                        success.set()
                         connected = True
                         continue
                 except Exception as e:
+                    finish.set()
                     print(f"Failed to get vpn status. {e}")
-                print(".", end="")
                 time.sleep(1)
 
+            finish, success = print_dynamic_log("[4/4] Registering on the Secure VPN")
             if vpn_status.get("status") == "error":
                 raise Exception("Failed to get vpn status.")
 
@@ -501,13 +556,15 @@ class DomainClient(Client):
                 retry=retry,
             )
 
-            print("3/3 Network Registration Complete")
+            success.set()
+            finish.set()
         except Exception as e:
+            finish.set()
             print(f"Failed to apply to network with {client}. {e}")
 
     @property
     def id(self) -> UID:
-        return self.domain.id
+        return self.node_uid
 
     @property
     def device(self) -> Optional[Location]:
@@ -576,6 +633,10 @@ class DomainClient(Client):
         use_blob_storage: bool = True,
         **metadata: Any,
     ) -> None:
+        # relative
+        from ..tensor.autodp.gamma_tensor import GammaTensor
+        from ..tensor.autodp.phi_tensor import PhiTensor
+
         sys.stdout.write("Loading dataset...")
         if assets is None or not isinstance(assets, dict):
             raise Exception(
@@ -588,7 +649,8 @@ class DomainClient(Client):
                 "Please pass in a dictionary where the key is the name of the asset and the value is "
                 "the private dataset object (tensor) itself. We recommend uploading assets which "
                 "are differential-privacy trackable objects, such as a syft.Tensor() wrapped "
-                "numpy.int32 or numpy.float32 object which you then call .private() on. \n\nOnce "
+                "numpy.int32 or numpy.float32 object which you "
+                "then call .annotate_with_dp_metadata() on. \n\nOnce "
                 "you have an assets dictionary call load_dataset(assets=<your dict of objects>)."
             )
         sys.stdout.write("\rLoading dataset... checking assets...")
@@ -651,17 +713,14 @@ class DomainClient(Client):
 
         if not skip_checks:
             for _, asset in assets.items():
-
                 if not isinstance(asset, Tensor) or not isinstance(
-                    getattr(asset, "child", None), ADPTensor
+                    getattr(asset, "child", None), (PhiTensor, GammaTensor)
                 ):
                     raise Exception(
-                        "ERROR: all private assets must be NumPy ndarray.int32 assets "
-                        + "with proper Differential Privacy metadata applied.\n"
+                        "ERROR: All private assets must have "
+                        + "proper Differential Privacy metadata applied.\n"
                         + "\n"
-                        + "Example: syft.Tensor(np.ndarray([1,2,3,4]).astype(np.int32)).private()\n\n"
-                        + "or\n\n"
-                        + "Example: syft.Tensor([1,2,3,4]).private()\n\n"
+                        + "Example: syft.Tensor([1,2,3,4]).annotate_with_dp_metadata()\n\n"
                         + "and then follow the wizard. 🧙"
                     )
                     # print(
@@ -673,7 +732,8 @@ class DomainClient(Client):
                     #     + "This means you'll need to manually approve any requests which "
                     #     + "leverage this data. If this is ok with you, proceed. If you'd like to use "
                     #     + "automatic differential privacy budgeting, please pass in a DP-compatible tensor type "
-                    #     + "such as by calling .private() on a sy.Tensor with a np.int32 or np.float32 inside."
+                    #     + "such as by calling .annotate_with_dp_metadata() "
+                    #     + "on a sy.Tensor with a np.int32 or np.float32 inside."
                     # )
                     #
                     # pref = input("Are you sure you want to proceed? (y/n)")
@@ -740,15 +800,24 @@ class DomainClient(Client):
             "\n\nRun `<your client variable>.datasets` to see your new dataset loaded into your machine!"
         )
 
-    def create_user(self, name: str, email: str, password: str, budget: int) -> dict:
+    def create_user(self, name: str, email: str, password: str, budget: float) -> dict:
+        if budget < 0:
+            raise ValueError(f"Budget should be a positive number, but got {budget}")
         try:
             self.users.create(name=name, email=email, password=password, budget=budget)
-            response = {
-                "name": name,
-                "email": email,
-                "password": password,
-                "url": self.routes[0].connection.base_url.host_or_ip,  # type: ignore
-            }
+            url = ""
+            if not isinstance(self.routes[0].connection, VirtualClientConnection):  # type: ignore
+                url = self.routes[0].connection.base_url.host_or_ip  # type: ignore
+            response = {"name": name, "email": email, "password": password, "url": url}
             return response
         except Exception as e:
             raise e
+
+    @property
+    def api(self) -> SyftAPI:
+        if hasattr(self, "_api"):
+            return self._api
+        api = self.routes[0].connection._get_api()
+        APIRegistry.set_api_for(node_uid=self.id, api=api)
+        self._api = api
+        return api

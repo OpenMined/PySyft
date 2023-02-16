@@ -14,6 +14,8 @@ from typing import Union
 
 # third party
 import names
+import numpy as np
+from numpy.typing import ArrayLike
 
 # relative
 from ..common import UID
@@ -26,7 +28,6 @@ class DataSubject:
     __attr_allowlist__ = ("name",)
 
     def __init__(self, name: str = "") -> None:
-
         # If someone doesn't provide a unique name - make one up!
         if name == "":
             name = names.get_full_name().replace(" ", "_") + "_g"
@@ -68,7 +69,13 @@ class DataSubject:
         return self.name < other.name
 
     def __add__(
-        self, other: Union[DataSubject, DataSubjectGroup, int, float]
+        self,
+        other: Union[
+            DataSubject,
+            DataSubjectGroup,
+            int,
+            float,
+        ],
     ) -> Union[DataSubjectGroup, DataSubject]:
         if isinstance(other, DataSubject):
             return DataSubjectGroup([self, other])
@@ -149,7 +156,13 @@ class DataSubjectGroup:
         return DataSubjectGroup(entity_set)  # type: ignore
 
     def __add__(
-        self, other: Union[DataSubjectGroup, DataSubject, int, float]
+        self,
+        other: Union[
+            DataSubjectGroup,
+            DataSubject,
+            int,
+            float,
+        ],
     ) -> DataSubjectGroup:
         if isinstance(other, DataSubject):
             return DataSubjectGroup(self.entity_set.union({other}))
@@ -171,3 +184,16 @@ class DataSubjectGroup:
 
     def __repr__(self) -> str:
         return f"DSG{[i.__repr__() for i in self.entity_set]}"
+
+
+def numpyutf8tods(np_bytes: np.ndarray) -> DataSubject:
+    output_bytes = np_bytes.astype(np.uint8).tobytes()
+    name = output_bytes.decode("utf-8")
+    data_subject = DataSubject(name)
+    return data_subject
+
+
+def dstonumpyutf8(data_subject: DataSubject) -> ArrayLike:
+    name_bytes = data_subject.to_string().encode("utf-8")
+    np_bytes = np.frombuffer(name_bytes, dtype=np.uint8).astype(np.uint64)
+    return np_bytes

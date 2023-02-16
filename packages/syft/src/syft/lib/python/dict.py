@@ -10,7 +10,6 @@ from typing import Optional
 from typing import Union
 
 # relative
-from ...core.common import UID
 from ...logger import traceback_and_raise
 from ...logger import warning
 from .iterator import Iterator
@@ -56,11 +55,6 @@ class Dict(UserDict, PyPrimitive):
             self.update(args_dict)
         if kwargs:
             self.update(kwargs)
-
-        # We cant add UID from kwargs or it could easily be overwritten by the dict
-        # that is being passed in for __init__
-        # If you want to update it use the _id setter after creation.
-        self._id = UID()
 
         temporary_box = kwargs["temporary_box"] if "temporary_box" in kwargs else False
         if temporary_box:

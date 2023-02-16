@@ -4,28 +4,22 @@ services:
     profiles:
       - vpn
     volumes:
-      - ./vpn:/tailscale
+      - ${RELATIVE_PATH}./vpn:/tailscale
 
   proxy:
     ports:
       - "8080"
+    extra_hosts:
+      - host.docker.internal:host-gateway
     command:
       - "--api" # admin panel
       - "--api.insecure=true" # admin panel no password
 
   frontend:
-    build:
-      target: "grid-ui-development"
     volumes:
-      - ./frontend:/app
-
-  # svelte:
-  #   volumes:
-  #     - ./svelte:/app
-
-  db:
-    ports:
-      - "5432"
+      - ${RELATIVE_PATH}./frontend/:/app
+    environment:
+      - FRONTEND_TARGET=grid-ui-development
 
   redis:
     ports:
@@ -34,38 +28,41 @@ services:
   queue:
     image: rabbitmq:3-management
     ports:
-      - "5672"
-      - "15672"
+      - "15672" # admin web port
+      # - "5672" # AMQP port
 
   backend:
     volumes:
-      - ./backend/grid:/app/grid
-      - ./backend/alembic:/app/alembic
-      - ../syft:/app/syft
-      - ./data/package-cache:/root/.cache
-    command: /start-reload.sh
+      - ${RELATIVE_PATH}./backend/grid:/app/grid
+      - ${RELATIVE_PATH}../syft:/app/syft
+      - ${RELATIVE_PATH}./data/package-cache:/root/.cache
+    environment:
+      - DEV_MODE=True
+    command: /start.sh
 
   backend_stream:
     volumes:
-      - ./backend/grid:/app/grid
-      - ./backend/alembic:/app/alembic
-      - ../syft:/app/syft
-      - ./data/package-cache:/root/.cache
-    command: "/start-reload.sh"
+      - ${RELATIVE_PATH}./backend/grid:/app/grid
+      - ${RELATIVE_PATH}../syft:/app/syft
+      - ${RELATIVE_PATH}./data/package-cache:/root/.cache
+    environment:
+      - DEV_MODE=True
+    command: "/start.sh"
 
   celeryworker:
     volumes:
-      - ./backend/grid:/app/grid
-      - ./backend/alembic:/app/alembic
-      - ../syft:/app/syft
-      - ./data/package-cache:/root/.cache
-    command: "/worker-start-reload.sh"
+      - ${RELATIVE_PATH}./backend/grid:/app/grid
+      - ${RELATIVE_PATH}../syft/:/app/syft
+      - ${RELATIVE_PATH}./data/package-cache:/root/.cache
+    environment:
+      - DEV_MODE=True
+    command: "/worker-start.sh"
 
   headscale:
     profiles:
       - network
     volumes:
-      - ./vpn:/headscale
+      - ${RELATIVE_PATH}./vpn:/headscale
     ports:
       - "4000"
 
@@ -75,6 +72,6 @@ services:
     # volumes:
     #   - ./data/seaweedfs:/data
     ports:
-      - "9333" # admin
-      - "8888" # filer
-      - "8333" # S3
+      - "9333" # admin web port
+      - "8888" # filer web port
+      # - "8333" # S3 API port

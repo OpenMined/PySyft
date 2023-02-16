@@ -12,7 +12,6 @@ from typing import Union
 from typing_extensions import SupportsIndex
 
 # relative
-from ...core.common import UID
 from .int import Int
 from .primitive_factory import PrimitiveFactory
 from .primitive_interface import PyPrimitive
@@ -24,17 +23,13 @@ class String(UserString, PyPrimitive):
     def __init__(
         self,
         value: Any = None,
-        id: Optional[UID] = None,
         temporary_box: bool = False,
     ):
-
         if value is None:
             value = ""
 
         UserString.__init__(self, value)
         PyPrimitive.__init__(self, temporary_box=temporary_box)
-
-        self._id: UID = id if id else UID()
 
     def upcast(self) -> str:
         return str(self)
@@ -244,7 +239,7 @@ class String(UserString, PyPrimitive):
         )
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def ljust(self, width: Union[int], *args: Any) -> SyPrimitiveRet:
+    def ljust(self, width: int, *args: Any) -> SyPrimitiveRet:
         if args:
             _args_0 = str(args[0]) if isinstance(args[0], String) else args[0]
             res = super().ljust(width, _args_0, *args[1:])

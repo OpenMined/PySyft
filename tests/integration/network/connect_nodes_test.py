@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import subprocess
 import time
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -37,7 +38,7 @@ print("PROTOCOL", PROTOCOL)
 
 def join_to_network_python(
     email: str, password: str, port: int, network_host: str
-) -> None:
+) -> Optional[Dict[str, Any]]:
     root_client = sy.login(email=email, password=password, port=port)
 
     # test Syft API
@@ -58,10 +59,9 @@ def join_to_network_python(
         status = response["status"]
         host = response["host"]
         if status == "ok" and "ip" in host:
-            break
-        time.sleep(1)
-
-    return response
+            return response
+        time.sleep(3)
+    return None
 
 
 def join_to_network_rest(
@@ -92,18 +92,30 @@ def join_to_network_rest(
         response = requests.get(grid_url.url, headers=headers)
         result = response.json()
         if "status" in result and result["status"] == "ok":
-            break
-        time.sleep(1)
-    return result
+            return result
+        time.sleep(3)
+    return None
 
 
-def run_network_tests(port: int, hostname: str, vpn_ip: str) -> None:
-    response = join_to_network_python(
-        email=TEST_ROOT_EMAIL,
-        password=TEST_ROOT_PASS,
-        port=port,
-        network_host=NETWORK_PUBLIC_HOST,
-    )
+def run_network_test_python(port: int, hostname: str, vpn_ip: str) -> None:
+    retry_time = 3
+    while retry_time > 0:
+        retry_time -= 1
+
+        try:
+            response = join_to_network_python(
+                email=TEST_ROOT_EMAIL,
+                password=TEST_ROOT_PASS,
+                port=port,
+                network_host=NETWORK_PUBLIC_HOST,
+            )
+            if response is not None:
+                break
+            else:
+                time.sleep(10)
+        except Exception:
+            print(f"failed to run_network_test_python: {retry_time}")
+            time.sleep(10)
 
     assert response["status"] == "ok"
     host = response["host"]
@@ -115,12 +127,27 @@ def run_network_tests(port: int, hostname: str, vpn_ip: str) -> None:
     )  # kubernetes forces - not _
     assert host["os"] == "linux"
 
-    response = join_to_network_rest(
-        email=TEST_ROOT_EMAIL,
-        password=TEST_ROOT_PASS,
-        port=port,
-        network_host=NETWORK_PUBLIC_HOST,
-    )
+
+def run_network_test_rest(port: int) -> None:
+    retry_time = 3
+    while retry_time > 0:
+        retry_time -= 1
+
+        try:
+            response = join_to_network_rest(
+                email=TEST_ROOT_EMAIL,
+                password=TEST_ROOT_PASS,
+                port=port,
+                network_host=NETWORK_PUBLIC_HOST,
+            )
+            if response is not None:
+                break
+            else:
+                time.sleep(10)
+        except Exception:
+            print(f"failed to run_network_test_rest: {retry_time}")
+            time.sleep(10)
+
     if "status" not in response or response["status"] != "ok":
         print(response)
     assert response["status"] == "ok"
@@ -130,6 +157,44 @@ def check_node_is_connected(email: str, password: str, port: int) -> None:
     root_client = sy.login(email=email, password=password, port=port)
     response = root_client.vpn_status()
     return response
+
+
+# @pytest.mark.network
+# def test_check_settings_fields() -> None:
+#     domain = sy.login(
+#         email="info@openmined.org",
+#         password="changethis",
+#         port=DOMAIN1_PORT,
+#     )
+
+#     # Assert placeholder and service respone are the same
+#     assert domain.settings == domain.get_setup().content
+
+#     domain_settings_keys = list(domain.settings.keys())
+
+#     expected_keys = [
+#         "domain_name",
+#         "description",
+#         "contact",
+#         "daa",
+#         "node_uid",
+#         "tags",
+#         "deployed_on",
+#         "use_blob_storage",
+#     ]
+
+#     # Be sure that there's any additional field than the expected ones.
+#     if sy.__version__ == "0.7.0":
+#         assert 10 == len(domain_settings_keys)
+#     else:
+#         assert len(expected_keys) == len(domain_settings_keys)
+
+#     # Be sure that all the expected fields are there.
+#     for key in expected_keys:
+#         if sy.__version__ == "0.7.0":
+#             if key == "node_uid":
+#                 key = "id"
+#         assert key in domain_settings_keys
 
 
 def disconnect_network() -> None:
@@ -259,7 +324,7 @@ def add_route(
     network_host: str,
     source_node_url: str,
     private: bool = False,
-    autodetect: bool = False,
+    autodetect: bool = False,  # 🟡 TODO 20: Change this back to True after building it
 ) -> None:
     root_client = sy.login(email=email, password=password, port=port)
 
@@ -325,34 +390,76 @@ def test_1_exchange_credentials_domain1_to_network() -> None:
     assert len(routes) >= 0  # can run this test multiple times
 
 
+def get_vpn_status(domain: sy.Domain) -> Optional[Dict[str, Any]]:
+    status = domain.vpn_status()
+    if isinstance(status, dict) and "connected" in status.keys():
+        return domain.vpn_status()["connected"]
+    return None
+
+
 @pytest.mark.network
 def test_reconnect_domain_node() -> None:
     domain = sy.login(email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=DOMAIN1_PORT)
     network = sy.login(
         email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=NETWORK_PORT
     )
-    domain.apply_to_network(network)
 
-    # Verify if it's really connected
-    assert domain.vpn_status()["connected"]
+    retry_time = 3
+    while retry_time > 0:
+        print(f"test_reconnect_domain_node attempt: {retry_time}")
+        retry_time -= 1
 
-    # Disconnect Domain Node
-    exec_node_command(command="tailscale down", node_name="test_domain_1")
+        try:
+            domain.apply_to_network(network)
+            status = get_vpn_status(
+                domain=domain,
+            )
+            if status:
+                break
+            else:
+                time.sleep(10)
+        except Exception as e:
+            print(f"test_reconnect_domain_node failed. {e}")
+
+    # connected
+    assert status is True
+
+    retry_time = 3
+    while retry_time > 0:
+        print(f"test_reconnect_domain_node attempt: {retry_time}")
+        retry_time -= 1
+
+        try:
+            # Disconnect Domain Node
+            exec_node_command(command="tailscale down", node_name="test_domain_1")
+            status = get_vpn_status(
+                domain=domain,
+            )
+            if not status:
+                break
+            else:
+                time.sleep(10)
+        except Exception as e:
+            print(f"test_reconnect_domain_node failed. {e}")
 
     # Verify if it's really disconnected
-    assert not domain.vpn_status()["connected"]
+    assert not status
 
     # wait for DOMAIN_CHECK_INTERVAL to trigger auto reconnect
     retry_time = 20
     while retry_time > 0:
+        print(f"test_reconnect_domain_node attempt: {retry_time}")
         retry_time -= 1
         # check network has auto connected
-        res = check_node_is_connected(
-            email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=DOMAIN1_PORT
-        )
-        if res["connected"] is True:
-            break
-        time.sleep(1)
+        try:
+            res = check_node_is_connected(
+                email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=DOMAIN1_PORT
+            )
+            if res["connected"] is True:
+                break
+            time.sleep(10)
+        except Exception as e:
+            print(f"test_reconnect_domain_node failed. {e}")
     assert res["connected"] is True
 
 
@@ -393,10 +500,15 @@ def test_2_add_route_domain1_to_network() -> None:
 
 
 @pytest.mark.network
-def test_3_connect_domain1_to_network_vpn() -> None:
-    run_network_tests(
+def test_3a_connect_domain1_to_network_vpn() -> None:
+    run_network_test_python(
         port=DOMAIN1_PORT, hostname="test_domain_1", vpn_ip=DOMAIN1_VPN_IP
     )
+
+
+@pytest.mark.network
+def test_3b_connect_domain1_to_network_vpn() -> None:
+    run_network_test_rest(port=DOMAIN1_PORT)
 
 
 @pytest.mark.network

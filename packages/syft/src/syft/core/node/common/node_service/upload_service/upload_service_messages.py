@@ -14,6 +14,7 @@ from typing_extensions import final
 # relative
 from ......grid import GridURL
 from .....common.serde.serializable import serializable
+from .....common.uid import UID
 from ....domain_interface import DomainInterface
 from ....domain_msg_registry import DomainMessageRegistry
 from ...permissions.permissions import BasePermission
@@ -27,7 +28,6 @@ from ..generic_payload.syft_message import RequestPayload
 @serializable(recursive_serde=True)
 @final
 class UploadDataMessage(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         """Payload fields and types used during a User Creation Request."""
@@ -57,8 +57,15 @@ class UploadDataMessage(SyftMessage, DomainMessageRegistry):
         # TODO : Move to permissions
         # if not node.users.can_upload_data(verify_key=verify_key):
         #    return {"message": "You're not authorized to do this."}
-
         key = f"{self.payload.filename}"
+
+        # If we're saving the new object using UID keys as its asset name
+        # Then we need to check if this UID was registered previously.
+        if UID.is_valid_uuid(key.split("/")[-1]):
+            id_at_location = UID.from_string(key.split("/")[-1])  # Get Object ID.
+            # If if there's another object with the same ID.
+            node.store.check_collision(id_at_location)
+
         s3_client = get_s3_client(settings=node.settings)
         result = s3_client.create_multipart_upload(Bucket=node.id.no_dash, Key=key)
         total_parts = math.ceil(self.payload.file_size / self.payload.chunk_size)
@@ -94,7 +101,6 @@ class UploadDataMessage(SyftMessage, DomainMessageRegistry):
 @serializable(recursive_serde=True)
 @final
 class UploadDataCompleteMessage(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         """Payload fields and types used during a User Creation Request."""
@@ -119,7 +125,6 @@ class UploadDataCompleteMessage(SyftMessage, DomainMessageRegistry):
     def run(  # type: ignore
         self, node: DomainInterface, verify_key: Optional[VerifyKey] = None
     ) -> ReplyPayload:  # type: ignore
-
         # TODO: Move to permissions
         # user_role = node.roles.first(**{"id": current_user.role})
         # if not user_role.can_upload_data:
@@ -143,7 +148,6 @@ class UploadDataCompleteMessage(SyftMessage, DomainMessageRegistry):
 @serializable(recursive_serde=True)
 @final
 class AbortDataUploadMessage(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         """Payload fields and types used during Deletion of Incomplete Data Upload Request."""
@@ -167,7 +171,6 @@ class AbortDataUploadMessage(SyftMessage, DomainMessageRegistry):
     def run(  # type: ignore
         self, node: DomainInterface, verify_key: Optional[VerifyKey] = None
     ) -> ReplyPayload:  # type: ignore
-
         # TODO: Move to permissions
         # user_role = node.roles.first(**{"id": current_user.role})
         # if not user_role.can_upload_data:

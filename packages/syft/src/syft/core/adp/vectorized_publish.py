@@ -2,60 +2,31 @@
 from __future__ import annotations
 
 # stdlib
+from copy import deepcopy
 import secrets
 from typing import Callable
-from typing import List
+from typing import Dict
+
+# from typing import List
 from typing import TYPE_CHECKING
 from typing import Tuple
-from typing import Union
 
 # third party
 import jax
 from jax import numpy as jnp
 import numpy as np
-from tqdm import tqdm
 
 # relative
-from ..tensor.fixed_precision_tensor import FixedPrecisionTensor
-from ..tensor.lazy_repeat_array import lazyrepeatarray
+from ...core.node.common.node_manager.user_manager import RefreshBudgetException
+from ...core.tensor.fixed_precision_tensor import FixedPrecisionTensor
 from ..tensor.passthrough import PassthroughTensor  # type: ignore
 from .data_subject_ledger import DataSubjectLedger
 from .data_subject_ledger import RDPParams
-from .data_subject_list import DataSubjectList
+from .data_subject_ledger import compute_rdp_constant
 
 if TYPE_CHECKING:
     # relative
     from ..tensor.autodp.gamma_tensor import GammaTensor
-
-# def calculate_bounds_for_mechanism(
-#     value_array: np.ndarray, min_val_array: np.ndarray, max_val_array: np.ndarray
-# ) -> Tuple[np.ndarray, np.ndarray]:
-#     """Calculates the squared L2 norm values needed to create a Mechanism, and calculate
-#     privacy budget + spend. If you calculate the privacy budget spend with the worst
-#     case bound, you can show this number to the DS. If you calculate it with the
-#     regular value (the value computed below when public_only = False, you cannot show
-#     the privacy budget to the DS because this violates privacy."""
-
-#     # TODO: Double check whether the iDPGaussianMechanism class squares its
-#     # squared_l2_norm values!!
-
-#     # min_val_array = min_val_array.astype(np.int64)
-#     # max_val_array = max_val_array.astype(np.int64)
-
-#     # using np.ones_like dtype=value_array.dtype because without it the output was
-#     # of type "O" python object causing issues when doing operations against JAX
-#     worst_case_l2_norm = np.sqrt(
-#         np.sum(np.square(max_val_array - min_val_array))
-#     ) * np.ones_like(
-#         value_array
-#     )  # dtype=value_array.dtype)
-
-#     l2_norm = np.sqrt(np.sum(np.square(value_array))) * np.ones_like(value_array)
-#     # dtype=value_array.dtype
-#     #
-#     # print(l2_norm.shape, worst_case_l2_norm.shape)
-#     # print(l2_norm.shape)
-#     return l2_norm, worst_case_l2_norm
 
 
 @jax.jit
@@ -63,163 +34,187 @@ def calculate_bounds_for_mechanism(
     value_array: jnp.ndarray,
     min_val_array: jnp.ndarray,
     max_val_array: jnp.ndarray,
-    sigma: float,
-) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.array, jnp.array]:
-    ones_like = jnp.ones_like(value_array)
-    one_dim = jnp.reshape(ones_like, -1)
+) -> Tuple[jnp.array, jnp.array]:
+    worst_case_l2_norm = jnp.sqrt(jnp.sum(jnp.square(max_val_array - min_val_array)))
 
-    worst_case_l2_norm = (
-        jnp.sqrt(jnp.sum(jnp.square(max_val_array - min_val_array))) * one_dim
-    )
-
-    l2_norm = jnp.sqrt(jnp.sum(jnp.square(value_array))) * one_dim
-    return l2_norm, worst_case_l2_norm, one_dim * sigma, one_dim
+    l2_norm = jnp.sqrt(jnp.sum(jnp.square(value_array)))
+    return l2_norm, worst_case_l2_norm
 
 
-def vectorized_publish(
-    min_vals: np.ndarray,
-    max_vals: np.ndarray,
-    state_tree: dict[int, "GammaTensor"],
-    data_subjects: DataSubjectList,
+def publish(
+    tensor: GammaTensor,
     ledger: DataSubjectLedger,
     get_budget_for_user: Callable,
     deduct_epsilon_for_user: Callable,
+    sigma: float,
     is_linear: bool = True,
-    sigma: float = 1.5,
-    output_func: Callable = lambda x: x,
-) -> Union[np.ndarray, jax.numpy.DeviceArray]:
-    # relative
-    from ..tensor.autodp.gamma_tensor import GammaTensor
+    private: bool = True,
+) -> np.ndarray:
+    # root_child = None
+    while isinstance(tensor, PassthroughTensor):
+        root_child = tensor.child
+        tensor = root_child
 
-    # print(f"Starting vectorized publish: {type(ledger)}")
-    # print("Starting RDP Params Calculation")
-    # TODO: Vectorize this to return a larger GammaTensor instead of a list of Tensors
-    input_tensors: List[GammaTensor] = GammaTensor.get_input_tensors(state_tree)
+    privacy_budget = get_budget_for_user(verify_key=ledger.user_key)
 
-    filtered_inputs = []
+    original_output, epsilon_spend, rdp_constants = compute_epsilon(
+        tensor, privacy_budget, is_linear, sigma, private, ledger
+    )
 
-    # This will reveal the # of input tensors to the user- remove this before merging to dev
-    for input_tensor in tqdm(input_tensors):
-        # TODO: Double check with Andrew if this is correct- if we use the individual min/max values
+    raw_rdp_constants = np.array(list(rdp_constants.values()))
 
-        # t1 = time()
-        # Calculate everything needed for RDP
-
-        if isinstance(input_tensor.child, FixedPrecisionTensor):
-            value = input_tensor.child.decode()
-        else:
-            value = input_tensor.child
-
-        while isinstance(value, PassthroughTensor):
-            value = value.child
-
-        if isinstance(input_tensor.min_vals, lazyrepeatarray):
-            min_val_array = input_tensor.min_vals.to_numpy()
-        else:
-            min_val_array = input_tensor.min_vals
-
-        if isinstance(input_tensor.max_vals, lazyrepeatarray):
-            max_val_array = input_tensor.max_vals.to_numpy()
-        else:
-            max_val_array = input_tensor.max_vals
-
-        l2_norms, l2_norm_bounds, sigmas, coeffs = calculate_bounds_for_mechanism(
-            value_array=value,
-            min_val_array=min_val_array,
-            max_val_array=max_val_array,
-            sigma=sigma,
+    if np.any(raw_rdp_constants < 0):
+        raise Exception(
+            "Negative budget spend not allowed in PySyft for safety reasons."
+            "Please contact the OpenMined support team for help."
+            "For that you can either:"
+            " * describe your issue on our Slack #support channel. To join: https://openmined.slack.com/"
+            " * send us an email describing your problem at support@openmined.org"
+            " * leave us an issue here: https://github.com/OpenMined/PySyft/issues"
         )
 
-        if is_linear:
-            lipschitz_bounds = coeffs.copy()
-        else:
-            lipschitz_bounds = input_tensor.lipschitz_bound
-            # raise Exception("gamma_tensor.lipschitz_bound property would be used here")
+    if jnp.isnan(epsilon_spend):
+        raise Exception("Epsilon is NaN")
 
-        if isinstance(input_tensor.data_subjects, np.ndarray):
-            # TODO: THIS IS A HACK FOR AA AND SHOULD __NOT__ BE MERGED INTO DEV
-            # Need to convert newDSL to old DSL-> this works because for each step we only use 1 data subject at a time
-            root_child = None
-            while isinstance(input_tensor, PassthroughTensor):
-                root_child = input_tensor.child
-                input_tensor = root_child
-            # input_entities = np.zeros_like(root_child)
-            input_entities = input_tensor.data_subjects
-        elif isinstance(input_tensor.data_subjects, DataSubjectList):
-            input_entities = input_tensor.data_subjects.data_subjects_indexed
-        else:
-            raise NotImplementedError(
-                f"Undefined behaviour for data subjects type: {type(input_tensor.data_subjects)}"
-            )
-        # data_subjects.data_subjects_indexed[0].reshape(-1)
-        # t2 = time()
-        # print("Obtained RDP Params, calculation time", t2 - t1)
+    if jnp.any(jnp.isnan(raw_rdp_constants)):
+        raise Exception("RDP constant in NaN")
 
-        # Query budget spend of all unique data_subjects
-        rdp_params = RDPParams(
-            sigmas=sigmas,
-            l2_norms=l2_norms,
-            l2_norm_bounds=l2_norm_bounds,
-            Ls=lipschitz_bounds,
-            coeffs=coeffs,
+    if jnp.any(jnp.isinf(raw_rdp_constants)):
+        raise Exception("RDP constant in inf")
+
+    if epsilon_spend < 0:
+        raise Exception(
+            "Negative budget spend not allowed in PySyft for safety reasons."
+            "Please contact the OpenMined support team for help."
+            "\nFor that you can either:"
+            "\n * describe your issue on our Slack #support channel. To join: https://openmined.slack.com/"
+            "\n * send us an email describing your problem at support@openmined.org"
+            "\n * leave us an issue here: https://github.com/OpenMined/PySyft/issues"
         )
-        # print("Finished RDP Params Initialization")
+
+    # The user spends their privacy budget before getting the result
+    attempts = 0
+    while attempts < 5:
+        attempts += 1
         try:
-            # query and save
-            mask = ledger.get_entity_overbudget_mask_for_epsilon_and_append(
-                unique_entity_ids_query=input_entities,
-                rdp_params=rdp_params,
-                private=True,
-                get_budget_for_user=get_budget_for_user,
+            ledger.spend_epsilon(
                 deduct_epsilon_for_user=deduct_epsilon_for_user,
+                epsilon_spend=epsilon_spend,
+                old_user_budget=privacy_budget,
             )
-            # We had to flatten the mask so the code generalized for N-dim arrays, here we reshape it back
-            reshaped_mask = mask.reshape(value.shape)
-            # print("Fixed mask shape!")
-            # here we have the final mask and highest possible spend has been applied
-            # to the data scientists budget field in the database
-
-            if mask is None:
-                raise Exception("Failed to publish mask is None")
-
-            # print("Obtained overbudgeted entity mask", mask.dtype)
-
-            # multiply values by the inverted mask
-            filtered_input_tensor = value * (
-                1 - reshaped_mask
-            )  # + gauss(0, sigma)  # Double check that noise has mean of 0
-
-            filtered_inputs.append(filtered_input_tensor)
-            # output = np.asarray(output_func(filtered_inputs) + noise)
+            break
+        except RefreshBudgetException:  # nosec
+            ledger.spend_epsilon(
+                deduct_epsilon_for_user=deduct_epsilon_for_user,
+                epsilon_spend=epsilon_spend,
+                old_user_budget=privacy_budget,
+            )
 
         except Exception as e:
-            # stdlib
-            import traceback
+            print(f"Problem spending epsilon. {e}")
+            raise e
 
-            print(traceback.format_exc())
-            print(f"Failed to run vectorized_publish. {e}")
+    # The RDP constants are adjusted to account for the amount of exposure every
+    # data subject's data has had.
+    data_subject_rdp_constants: Dict[str, np.ndarray] = {}
+    for tensor_id in rdp_constants:
+        data_subject = tensor.sources[tensor_id].data_subject.to_string()
+        # convert back to numpy for serde
+        data_subject_rdp_constants[data_subject] = np.array(
+            max(
+                data_subject_rdp_constants.get(data_subject, -np.inf),
+                rdp_constants[tensor_id],
+            )
+        )
 
-    print("We have filtered all the input tensors. Now to compute the result:")
+    ledger.update_rdp_constants(data_subject_rdp_constants=data_subject_rdp_constants)
+    ledger._write_ledger()
 
-    # noise = secrets.SystemRandom().gauss(0, sigma)
-    print(
-        "Filtered inputs ",
-        type(filtered_inputs),
-        type(filtered_input_tensor),
-        filtered_inputs,
-    )
-    # GammaTensor.convert_dsl(state_tree)
-    print("Converted DSLs")
-    original_output = np.asarray(output_func(filtered_inputs))
-    print("original output (before noise:", original_output)
+    # We sample noise from a cryptographically secure distribution
+    # TODO(0.8): Replace with discrete gaussian distribution instead of regular
+    # gaussian to eliminate floating pt vulns
     noise = np.asarray(
         [secrets.SystemRandom().gauss(0, sigma) for _ in range(original_output.size)]
-    )
-    noise.resize(original_output.shape)
-    print("noise: ", noise)
+    ).reshape(original_output.shape)
 
-    output = np.asarray(output_func(filtered_inputs) + noise)
+    return original_output + noise
 
-    print("got output", output, type(output), output.dtype)
 
-    return output.squeeze()
+# TODO(0.8): this function should be vectorized for jax
+def compute_epsilon(
+    tensor: GammaTensor,
+    privacy_budget: float,
+    is_linear: bool,
+    sigma: float,
+    private: bool,
+    ledger: DataSubjectLedger,
+) -> Tuple:
+    # create a copy so we can recompute the final value after filtering
+    tensor_copy = deepcopy(tensor)
+
+    # traverse the computation tree to get the phi_tensors
+    phi_tensors = tensor_copy.sources
+
+    # For each PhiTensor we either need the lipschitz bound or we can use
+    # one to keep the same formula for the linear queries
+    lipschitz_bound = 1 if is_linear else tensor.lipschitz_bound
+
+    # compute the rdp constant for each phi tensor
+    rdp_constants = {}
+    for phi_tensor_id in phi_tensors:
+        # TODO 0.8: figure a way to iterate over data_subjects and group phi_tensors when computing
+        # the Lipschitz bound
+        # TODO 0.8 optimize the computation of l2_norm_bounds
+        phi_tensor = phi_tensors[phi_tensor_id]
+
+        # handle bools
+        if str(phi_tensor.dtype) == "bool":
+            phi_tensor = deepcopy(phi_tensor.astype("float"))
+
+        child = phi_tensor.child
+        min_vals = phi_tensor.min_vals.to_numpy()
+        max_vals = phi_tensor.max_vals.to_numpy()
+
+        # handle FixedPrecisionTensor
+        if isinstance(child, FixedPrecisionTensor):
+            child = child.decode()
+
+        l2_norms, l2_norm_bounds = calculate_bounds_for_mechanism(
+            child,
+            min_vals,
+            max_vals,
+        )  # , tensor.min_vals.to_numpy(), tensor.max_vals.to_numpy())
+        param = RDPParams(
+            sigmas=sigma,
+            l2_norms=l2_norms,
+            l2_norm_bounds=l2_norm_bounds,
+            Ls=lipschitz_bound,
+        )
+        rdp_constants[phi_tensor_id] = compute_rdp_constant(
+            rdp_params=param, private=private
+        )
+
+    # get epsilon for each tensor based on the rdp constant
+    epsilons = {
+        phi_tensor_id: ledger._get_epsilon_spend(
+            np.array([rdp_constants[phi_tensor_id]])
+        )  # this is kinda dumb
+        for phi_tensor_id in phi_tensors
+    }
+
+    filtered = {eps: epsilons[eps] <= privacy_budget for eps in epsilons}
+    epsilon_spend = max([epsilons[eps_id] * filtered[eps_id] for eps_id in epsilons])
+
+    new_state = {
+        phi_tensor_id: phi_tensor.child
+        if filtered[phi_tensor_id]
+        else jnp.zeros_like(phi_tensors[phi_tensor_id].child)
+        for phi_tensor_id, phi_tensor in phi_tensors.items()
+    }
+
+    # compute the new output based on the filtered values
+    if False in filtered.values():
+        original_output = tensor.reconstruct(new_state)
+    else:
+        original_output = tensor.child
+    return original_output, epsilon_spend, rdp_constants

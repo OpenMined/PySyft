@@ -8,6 +8,7 @@
 .python-version
 .vscode/
 .tox/*
+.creds
 
 # python stuff
 *__pycache__*
@@ -57,3 +58,14 @@ k3d-registry
 
 .envfile
 packages/hagrid/.envfile
+
+# temporarily ignore sveltekit
+packages/grid/svelte
+
+# rendered template dir
+packages/grid/rendered
+
+js/node_modules/*
+
+#nohup
+nohup.out

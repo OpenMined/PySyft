@@ -16,7 +16,6 @@ from .utils import split_and_preprocess_dataset
 
 
 def add_dataset_to_domain(domain_ip, dataset_url):
-
     # Need to run update_syft.sh on every domain
     #         sshpass -p MflpTeamOne@31052022 ssh azureuser@20.253.155.189 update_syft.sh
 
@@ -35,10 +34,10 @@ def add_dataset_to_domain(domain_ip, dataset_url):
     for i, patient in enumerate(train["patient_ids"]):
         data_subjects_labels[i] = DataSubjectArray([str(patient)])
 
-    train_image_data = sy.Tensor(train["images"]).annotated_with_dp_metadata(
+    train_image_data = sy.Tensor(train["images"]).annotate_with_dp_metadata(
         min_val=0, max_val=255, data_subjects=data_subjects_image
     )
-    train_label_data = sy.Tensor(train["labels"]).annotated_with_dp_metadata(
+    train_label_data = sy.Tensor(train["labels"]).annotate_with_dp_metadata(
         min_val=0, max_val=1, data_subjects=data_subjects_labels
     )
 

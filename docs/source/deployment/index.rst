@@ -181,7 +181,7 @@ Local deployment using Docker
 
    .. code-block:: bash
 
-      $ pip install hagrid
+      $ pip install -U hagrid
 
 2. Launch a Domain Node:
 
@@ -656,7 +656,7 @@ Deploying to Azure
 
    .. code-block:: bash
 
-      $ hagrid launch node --username=azureuser --key_path=~/hagriddeploy_key.pem domain to 51.124.153.133
+      $ hagrid launch node --username=azureuser --key-path=~/hagriddeploy_key.pem domain to 51.124.153.133
 
 
    Additionally, you are being asked if you want to provide another repository and branch to fetch and update HAGrid, which you can skip by pressing ``Enter``.

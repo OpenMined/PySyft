@@ -6,7 +6,6 @@ from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.serializable import serializable
 from .....common.uid import UID
-from .....io.address import Address
 
 
 @serializable(recursive_serde=True)
@@ -16,8 +15,8 @@ class ResolvePointerTypeMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         id_at_location: UID,
-        address: Address,
-        reply_to: Address,
+        address: UID,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -31,7 +30,7 @@ class ResolvePointerTypeAnswerMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         type_path: str,
-        address: Address,
+        address: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)

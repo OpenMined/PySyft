@@ -11,7 +11,6 @@ from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.serializable import serializable
 from .....common.uid import UID
-from .....io.address import Address
 
 
 @final
@@ -28,10 +27,10 @@ class CreateDatasetMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         dataset: bytes,
         metadata: Dict[str, str],
-        reply_to: Address,
+        reply_to: UID,
         platform: str,
         msg_id: Optional[UID] = None,
     ) -> None:
@@ -48,9 +47,9 @@ class GetDatasetMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         dataset_id: str,
-        reply_to: Address,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -64,7 +63,7 @@ class GetDatasetResponse(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         metadata: Dict,
         msg_id: Optional[UID] = None,
     ):
@@ -79,8 +78,8 @@ class GetDatasetsMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
-        reply_to: Address,
+        address: UID,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -93,7 +92,7 @@ class GetDatasetsResponse(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         metadatas: List[Dict],
         msg_id: Optional[UID] = None,
     ):
@@ -115,10 +114,10 @@ class UpdateDatasetMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         dataset_id: str,
         metadata: Dict,
-        reply_to: Address,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -140,9 +139,9 @@ class DeleteDatasetMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         dataset_id: str,
-        reply_to: Address,
+        reply_to: UID,
         bin_object_id: Optional[str] = None,
         msg_id: Optional[UID] = None,
     ):

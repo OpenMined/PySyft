@@ -4,8 +4,6 @@
 # stdlib
 from typing import Any
 from typing import Callable as CallableT
-from typing import Dict
-from typing import List
 from typing import Optional
 from typing import Union
 
@@ -79,7 +77,7 @@ class StaticAttribute(ast.attribute.Attribute):
         msg = GetSetStaticAttributeAction(
             path=self.path_and_name,
             id_at_location=ptr.id_at_location,
-            address=self.client.address,
+            address=self.client.node_uid,
             action=StaticAttributeAction.GET,
         )
         self.client.send_immediate_msg_without_reply(msg=msg)
@@ -157,7 +155,7 @@ class StaticAttribute(ast.attribute.Attribute):
         cmd = GetSetStaticAttributeAction(
             path=self.path_and_name,
             id_at_location=result_id_at_location,
-            address=self.client.address,
+            address=self.client.node_uid,
             action=StaticAttributeAction.SET,
             set_arg=downcasted_set_arg_ptr,
         )
@@ -177,7 +175,7 @@ class StaticAttribute(ast.attribute.Attribute):
         """
         raise ValueError("MAKE PROPER SCHEMA, THIS SHOULD NEVER BE CALLED")
 
-    def add_path(self, *args: List[Any], **kwargs: Dict[Any, Any]) -> None:  # type: ignore
+    def add_path(self, *args: Any, **kwargs: Any) -> None:  # type: ignore
         """An `StaticAttribute` can no longer have children nodes.
 
         Args:

@@ -7,30 +7,20 @@ from fastapi import Body
 from fastapi.responses import JSONResponse
 
 # syft absolute
-from syft import flags
+from syft.core.node.common.node_service.user_manager.new_user_messages import (
+    CreateUserMessage,
+)
 
 # grid absolute
 from grid.core.config import settings
 from grid.core.node import node
 from grid.utils import send_message_with_reply
 
-if flags.USE_NEW_SERVICE:
-    # syft absolute
-    from syft.core.node.common.node_service.user_manager.new_user_messages import (
-        CreateUserMessage,
-    )
-else:
-    # syft absolute
-    from syft.core.node.common.node_service.user_manager.user_manager_service import (
-        CreateUserMessage,
-    )
-
 router = APIRouter()
 
 
 @router.post("/register", name="register", status_code=200, response_class=JSONResponse)
 def register(data: dict = Body(..., example="sheldon@caltech.edu")) -> Any:
-
     if not settings.OPEN_REGISTRATION:
         return {
             "error": "This node doesn't allow for anyone to register a user. Please contact the domain"
@@ -59,6 +49,4 @@ def register(data: dict = Body(..., example="sheldon@caltech.edu")) -> Any:
         signing_key=node.signing_key, message_type=CreateUserMessage, **dict(new_user)
     )
 
-    if flags.USE_NEW_SERVICE:
-        return reply.message
-    return reply.resp_msg
+    return reply.message

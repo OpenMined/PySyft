@@ -39,14 +39,14 @@ DEFAULT_SEARCH_TIMEOUT = 120  # seconds
 
 @final
 class NetworkClient(Client):
-
     network: SpecificLocation  # redefine the type of self.vm to not be optional
 
     def __init__(
         self,
+        node_uid: UID,
         name: Optional[str],
         routes: List[Route],
-        network: SpecificLocation,
+        network: Optional[SpecificLocation] = None,
         domain: Optional[Location] = None,
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
@@ -64,6 +64,7 @@ class NetworkClient(Client):
             signing_key=signing_key,
             verify_key=verify_key,
             version=version,
+            node_uid=node_uid,
         )
 
         self.users = UserRequestAPI(client=self)
@@ -78,7 +79,7 @@ class NetworkClient(Client):
 
     @property
     def id(self) -> UID:
-        return self.network.id
+        return self.node_uid
 
     @property
     def domain(self) -> Optional[Location]:
@@ -191,8 +192,8 @@ class NetworkClient(Client):
         if content is None:
             content = {}
         # Build Syft Message
-        content[RequestAPIFields.ADDRESS] = self.address
-        content[RequestAPIFields.REPLY_TO] = self.address
+        content[RequestAPIFields.ADDRESS] = self.node_uid
+        content[RequestAPIFields.REPLY_TO] = self.node_uid
         signed_msg = grid_msg(**content).sign(signing_key=self.signing_key)
         # Send to the dest
         response = self.send_immediate_msg_with_reply(msg=signed_msg, timeout=timeout)
@@ -217,7 +218,7 @@ class NetworkClient(Client):
             content = {}
         signed_msg = (
             syft_msg_constructor(kwargs=content)
-            .to(address=self.address, reply_to=self.address)
+            .to(address=self.node_uid, reply_to=self.node_uid)
             .sign(signing_key=self.signing_key)
         )  # type: ignore
         response = self.send_immediate_msg_with_reply(msg=signed_msg)

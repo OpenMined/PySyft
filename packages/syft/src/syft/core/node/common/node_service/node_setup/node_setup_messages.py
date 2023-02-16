@@ -1,17 +1,25 @@
 # stdlib
 from typing import Dict
-from typing import List as TypeList
+from typing import List
 from typing import Optional
+from typing import Type
 
 # third party
 from nacl.signing import SigningKey
+from nacl.signing import VerifyKey
 
 # relative
 from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.serializable import serializable
 from .....common.uid import UID
-from .....io.address import Address
+from ....domain_interface import DomainInterface
+from ....domain_msg_registry import DomainMessageRegistry
+from ...permissions.permissions import BasePermission
+from ...permissions.user_permissions import UserIsOwner
+from ..generic_payload.syft_message import NewSyftMessage as SyftMessage
+from ..generic_payload.syft_message import ReplyPayload
+from ..generic_payload.syft_message import RequestPayload
 
 
 @serializable(recursive_serde=True)
@@ -20,8 +28,8 @@ class GetSetUpMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
-        reply_to: Address,
+        address: UID,
+        reply_to: UID,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -33,7 +41,7 @@ class GetSetUpResponse(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):
@@ -57,13 +65,13 @@ class CreateInitialSetUpMessage(ImmediateSyftMessageWithReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         name: str,
         email: str,
         password: str,
         domain_name: str,
         budget: float,
-        reply_to: Address,
+        reply_to: UID,
         signing_key: SigningKey,
         msg_id: Optional[UID] = None,
     ):
@@ -77,38 +85,45 @@ class CreateInitialSetUpMessage(ImmediateSyftMessageWithReply):
 
 
 @serializable(recursive_serde=True)
-class UpdateSetupMessage(ImmediateSyftMessageWithReply):
-    __attr_allowlist__ = [
-        "id",
-        "address",
-        "domain_name",
-        "contact",
-        "daa",
-        "description",
-        "daa_document",
-        "tags",
-        "reply_to",
-    ]
+class UpdateSetupMessage(SyftMessage, DomainMessageRegistry):
+    # Pydantic Inner class to define expected request payload fields.
+    class Request(RequestPayload):
+        """Payload fields and types used during a message request."""
 
-    def __init__(
-        self,
-        address: Address,
-        domain_name: str,
-        description: str,
-        daa: bool,
-        contact: str,
-        reply_to: Address,
-        daa_document: Optional[bytes] = b"",
-        tags: Optional[TypeList] = None,
-        msg_id: Optional[UID] = None,
-    ):
-        super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
-        self.daa = daa
-        self.contact = contact
-        self.description = description
-        self.domain_name = domain_name
-        self.daa_document = daa_document
-        self.tags = tags if tags is not None else []
+        domain_name: str
+        organization: Optional[str] = ""
+        description: Optional[str] = ""
+
+    # Pydantic Inner class to define expected reply payload fields.
+    class Reply(ReplyPayload):
+        """Payload fields and types used during a message response."""
+
+        message: str = "Domain Setup updated successfully!"
+
+    request_payload_type = (
+        Request  # Converts generic syft dict into a CreateUserMessage.Request object.
+    )
+    reply_payload_type = (
+        Reply  # Creates a proper Reply payload message structure as a response.
+    )
+
+    def run(  # type: ignore
+        self, node: DomainInterface, verify_key: Optional[VerifyKey] = None
+    ) -> ReplyPayload:  # type: ignore
+        node.setup.update_config(
+            domain_name=self.payload.domain_name,
+            description=self.payload.description,
+            organization=self.payload.organization,
+            on_board=True,
+        )
+        print(node.setup.all()[0].domain_name)
+        print(node.setup.all()[0].description)
+        print(node.setup.all()[0].organization)
+        return UpdateSetupMessage.Reply()
+
+    def get_permissions(self) -> List[Type[BasePermission]]:
+        """Returns the list of permission classes."""
+        return [UserIsOwner]
 
 
 @serializable(recursive_serde=True)
@@ -117,7 +132,7 @@ class UpdateSetupResponse(ImmediateSyftMessageWithoutReply):
 
     def __init__(
         self,
-        address: Address,
+        address: UID,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):
