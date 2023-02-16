@@ -1,7 +1,8 @@
 # stdlib
 from typing import Dict
 from typing import List
-from typing import Type,Optional
+from typing import Optional
+from typing import Type
 
 # third party
 from pymongo import ASCENDING
@@ -60,7 +61,9 @@ def syft_obj_to_mongo():
 
 
 @transform_method(MongoBsonObject, SyftObject)
-def from_mongo(storage_obj: Dict, context: Optional[TransformContext] = None) -> SyftObject:
+def from_mongo(
+    storage_obj: Dict, context: Optional[TransformContext] = None
+) -> SyftObject:
     constructor = SyftObjectRegistry.versioned_class(
         name=storage_obj["__canonical_name__"], version=storage_obj["__version__"]
     )
@@ -200,10 +203,10 @@ class MongoStorePartition(StorePartition):
     def get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
         query_filter = self._create_filter(qks=qks)
         storage_objs = self.collection.find(filter=query_filter)
-        syft_objs =[]
+        syft_objs = []
         for storage_obj in storage_objs:
             obj = self.storage_type(storage_obj)
-            transform_context = TransformContext(output={},obj=obj)
+            transform_context = TransformContext(output={}, obj=obj)
             syft_objs.append(obj.to(self.settings.object_type, transform_context))
 
         return Ok(syft_objs)
