@@ -127,6 +127,9 @@ class DictStorePartition(StorePartition):
     def all(self) -> Result[List[BaseStash.object_type], str]:
         return Ok(list(self.data.values()))
 
+    def __len__(self) -> int:
+        return len(self.data.values())
+
     def find_index_or_search_keys(
         self, index_qks: QueryKeys, search_qks: QueryKeys
     ) -> Result[List[SyftObject], str]:

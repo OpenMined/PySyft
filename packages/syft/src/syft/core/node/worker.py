@@ -134,7 +134,8 @@ class Worker(NewNode):
             password="changethis",
             node=self,
         )
-        create_oblv_key_pair(worker=self)
+        if os.getenv("INSTALL_OBLV_CLI") == "true":
+            create_oblv_key_pair(worker=self)
         self.post_init()
 
     def __repr__(self) -> str:
@@ -282,22 +283,23 @@ def create_admin_new(
             user = user_stash.set(user=create_user.to(User))
             return user.ok()
     except Exception as e:
-        raise e
+        print("Unable to create new admin", e)
 
 
 def create_oblv_key_pair(
     worker: Worker,
 ) -> Optional[str]:
     try:
-        if os.getenv("INSTALL_OBLV_CLI") == "true":
-            oblv_keys_stash = OblvKeysStash(store=worker.document_store)
+        oblv_keys_stash = OblvKeysStash(store=worker.document_store)
 
-            if not len(oblv_keys_stash):
-                public_key, private_key = generate_oblv_key()
-                oblv_keys = OblvKeys(public_key=public_key, private_key=private_key)
-                res = oblv_keys_stash.set(oblv_keys)
-                if res.is_ok():
-                    print("Successfully generated Oblv Key pair at startup")
-                return res.err()
+        if not len(oblv_keys_stash):
+            public_key, private_key = generate_oblv_key()
+            oblv_keys = OblvKeys(public_key=public_key, private_key=private_key)
+            res = oblv_keys_stash.set(oblv_keys)
+            if res.is_ok():
+                print("Successfully generated Oblv Key pair at startup")
+            return res.err()
+        else:
+            print(f"Using Existing Public/Private Key pair: {len(oblv_keys_stash)}")
     except Exception as e:
         print("Unable to create Oblv Keys.", e)
