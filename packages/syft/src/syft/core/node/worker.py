@@ -40,6 +40,7 @@ from .new.dict_document_store import DictStoreConfig
 from .new.document_store import StoreConfig
 from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
+from .new.request_service import RequestService
 from .new.service import AbstractService
 from .new.service import ServiceConfigRegistry
 from .new.test_service import TestService
@@ -104,7 +105,14 @@ class Worker(NewNode):
             name = random_name()
         self.name = name
         services = (
-            [UserService, ActionService, TestService, DatasetService, UserCodeService]
+            [
+                UserService,
+                ActionService,
+                TestService,
+                DatasetService,
+                UserCodeService,
+                RequestService,
+            ]
             if services is None
             else services
         )
@@ -139,9 +147,16 @@ class Worker(NewNode):
             if service_klass == ActionService:
                 action_store = ActionStore(root_verify_key=self.signing_key.verify_key)
                 kwargs["store"] = action_store
-            if service_klass in [UserService, DatasetService, UserCodeService]:
+            if service_klass in [
+                UserService,
+                DatasetService,
+                UserCodeService,
+                RequestService,
+            ]:
                 kwargs["store"] = self.document_store
-            self.service_path_map[service_klass.__name__] = service_klass(**kwargs)
+            self.service_path_map[service_klass.__name__.lower()] = service_klass(
+                **kwargs
+            )
 
     def get_service_method(self, path_or_func: Union[str, Callable]) -> Callable:
         if callable(path_or_func):
@@ -158,7 +173,7 @@ class Worker(NewNode):
         if len(path_list) > 1:
             _ = path_list.pop()
         service_name = path_list.pop()
-        return self.service_path_map[service_name]
+        return self.service_path_map[service_name.lower()]
 
     def _get_service_method_from_path(self, path: str) -> Callable:
         path_list = path.split(".")
