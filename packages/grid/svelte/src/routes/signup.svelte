@@ -7,11 +7,11 @@
   import TagCloud from '$lib/components/TagCloud.svelte';
 </script>
 
-<!-- <img src="/images/auth-circles.svg" aria-hidden="true" /> -->
 <div class="fixed top-0 right-0 w-full h-full max-w-[808px] max-h-[880px] z-[-1]">
   <AuthCircles />
 </div>
-<main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col h-full">
+
+<main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col h-full w-full">
   <!-- Header Logo -->
   <span>
     <img src="/images/pygrid-logo.png" alt="PyGrid logo" />

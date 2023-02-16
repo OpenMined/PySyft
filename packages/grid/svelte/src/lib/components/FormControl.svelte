@@ -7,6 +7,7 @@
   export let error = '';
   export let hint = '';
   export let type = 'text';
+  export let placeholder = '';
 </script>
 
 <div aria-disabled={disabled} class="space-y-2">
@@ -21,7 +22,7 @@
   {#if hint}
     <p class="hint">{hint}</p>
   {/if}
-  <input {type} {id} class="w-full border border-gray-500" />
+  <input {type} {id} {placeholder} class="w-full border border-gray-500" />
   {#if error}
     <p class="error">{error}</p>
   {/if}
