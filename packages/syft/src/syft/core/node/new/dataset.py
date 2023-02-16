@@ -37,6 +37,8 @@ class Contributor(SyftObject):
     phone: Optional[str]
     note: Optional[str]
 
+    __attr_repr_cols__ = ["name", "role", "email"]
+
 
 @serializable(recursive_serde=True)
 class Asset(SyftObject):
@@ -132,6 +134,7 @@ class Dataset(SyftObject):
 
     __attr_searchable__ = ["name", "citation", "url", "description"]
     __attr_unique__ = ["name"]
+    __attr_repr_cols__ = ["name", "url"]
 
     @property
     def assets(self) -> Dict[str, str]:

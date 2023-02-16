@@ -354,7 +354,7 @@ def list_dict_repr_html(self) -> str:
                 cols["id"].append(getattr(item, "id", None))
                 for field in extra_fields:
                     value = getattr(item, field, None)
-                    cols[field] = value
+                    cols[field].append(value)
 
             x = pd.DataFrame(cols)
             collection_type = (
