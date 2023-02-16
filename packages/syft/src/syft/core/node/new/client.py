@@ -31,6 +31,7 @@ from ...common.uid import UID
 from ...node.new.credentials import UserLoginCredentials
 from ...node.new.node_metadata import NodeMetadataJSON
 from ...node.new.user import UserPrivateKey
+from .api import APIModule
 from .api import APIRegistry
 from .api import SyftAPI
 from .api import SyftAPICall
@@ -276,6 +277,12 @@ class SyftClient:
             asset.node_uid = self.id
 
         return self.api.services.dataset.add(dataset=dataset)
+
+    @property
+    def data_subject_registry(self) -> Optional[APIModule]:
+        if self.api is not None and hasattr(self.api.services, "data_subject"):
+            return self.api.services.data_subject
+        return None
 
     def connect(self, email: str, password: str, cache: bool = True) -> None:
         signing_key = self.connection.connect(email=email, password=password)
