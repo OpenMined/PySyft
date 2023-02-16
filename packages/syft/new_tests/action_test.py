@@ -6,11 +6,11 @@ import numpy as np
 from result import Result
 
 # syft absolute
-from syft.core.node.new.action_service import NumpyArrayObject
 from syft.core.node.new.api import APIRegistry
 from syft.core.node.new.api import SyftAPI
 from syft.core.node.new.context import AuthedServiceContext
 from syft.core.node.new.credentials import SyftSigningKey
+from syft.core.node.new.numpy_array import NumpyArrayObject
 from syft.core.node.worker import Worker
 
 

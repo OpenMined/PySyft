@@ -1,6 +1,7 @@
 # stdlib
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Type
 
 # third party
@@ -25,6 +26,7 @@ from .document_store import StoreConfig
 from .document_store import StorePartition
 from .mongo_client import MongoClient
 from .response import SyftSuccess
+from .transforms import TransformContext
 from .transforms import transform
 from .transforms import transform_method
 
@@ -33,23 +35,24 @@ class MongoBsonObject(StorableObjectType, dict):
     pass
 
 
-def to_mongo(_self, output) -> Dict:
+def to_mongo(context: TransformContext) -> TransformContext:
     output_dict = {}
-    for k in _self.__attr_searchable__:
+    for k in context.obj.__attr_searchable__:
         # 🟡 TODO 24: pass in storage abstraction and detect unsupported types
         # if unsupported, convert to string
-        value = getattr(_self, k, "")
+        value = getattr(context.obj, k, "")
         if isinstance(value, SyftVerifyKey):
             value = str(value)
         output_dict[k] = value
-    blob = serialize(dict(_self), to_bytes=True)
-    output_dict["_id"] = output["id"].value  # type: ignore
-    output_dict["__canonical_name__"] = _self.__canonical_name__
-    output_dict["__version__"] = _self.__version__
-    output_dict["__blob__"] = blob
-    output_dict["__repr__"] = _self.__repr__()
 
-    return output_dict
+    blob = serialize(dict(context.obj), to_bytes=True)
+    output_dict["_id"] = context.output["id"].value  # type: ignore
+    output_dict["__canonical_name__"] = context.obj.__canonical_name__
+    output_dict["__version__"] = context.obj.__version__
+    output_dict["__blob__"] = blob
+    output_dict["__repr__"] = context.obj.__repr__()
+    context.output = output_dict
+    return context
 
 
 @transform(SyftObject, MongoBsonObject)
@@ -58,7 +61,9 @@ def syft_obj_to_mongo():
 
 
 @transform_method(MongoBsonObject, SyftObject)
-def from_mongo(storage_obj: Dict) -> SyftObject:
+def from_mongo(
+    storage_obj: Dict, context: Optional[TransformContext] = None
+) -> SyftObject:
     constructor = SyftObjectRegistry.versioned_class(
         name=storage_obj["__canonical_name__"], version=storage_obj["__version__"]
     )
@@ -198,10 +203,12 @@ class MongoStorePartition(StorePartition):
     def get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
         query_filter = self._create_filter(qks=qks)
         storage_objs = self.collection.find(filter=query_filter)
-        syft_objs = [
-            self.storage_type(storage_obj).to(self.settings.object_type)
-            for storage_obj in storage_objs
-        ]
+        syft_objs = []
+        for storage_obj in storage_objs:
+            obj = self.storage_type(storage_obj)
+            transform_context = TransformContext(output={}, obj=obj)
+            syft_objs.append(obj.to(self.settings.object_type, transform_context))
+
         return Ok(syft_objs)
 
     def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:

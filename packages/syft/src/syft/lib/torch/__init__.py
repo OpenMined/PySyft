@@ -8,11 +8,11 @@ from packaging import version
 import torch
 
 # relative
-from . import device  # noqa: 401
-from . import parameter  # noqa: 401
-from . import return_types  # noqa: 401
-from . import size  # noqa: 401
-from . import uppercase_tensor  # noqa: 401
+from . import device  # noqa: F401
+from . import parameter  # noqa: F401
+from . import return_types  # noqa: F401
+from . import size  # noqa: F401
+from . import uppercase_tensor  # noqa: F401
 from ...ast import add_dynamic_objects
 from ...ast.globals import Globals
 from ...logger import info
