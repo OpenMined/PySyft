@@ -377,6 +377,7 @@ aggressive_set_attr(type({}), "_repr_html_", list_dict_repr_html)
 
 
 class StorableObjectType:
-    def to(self, projection: type) -> Any:
+    def to(self, projection: type, context: Optional[Context] = None) -> Any:
+        # 🟡 TODO 19: Could we do an mro style inheritence conversion? Risky?
         transform = SyftObjectRegistry.get_transform(type(self), projection)
-        return transform(self)
+        return transform(self, context)
