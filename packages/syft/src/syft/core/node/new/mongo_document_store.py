@@ -25,9 +25,9 @@ from .document_store import StoreConfig
 from .document_store import StorePartition
 from .mongo_client import MongoClient
 from .response import SyftSuccess
+from .transforms import TransformContext
 from .transforms import transform
 from .transforms import transform_method
-from .transforms import TransformContext
 
 
 class MongoBsonObject(StorableObjectType, dict):
@@ -35,21 +35,21 @@ class MongoBsonObject(StorableObjectType, dict):
 
 
 def to_mongo(context: TransformContext) -> TransformContext:
-     for k in context.obj.__attr_searchable__:
-         # 🟡 TODO 24: pass in storage abstraction and detect unsupported types
-         # if unsupported, convert to string
-         value = getattr(context.obj, k, "")
-         if isinstance(value, SyftVerifyKey):
-             value = str(value)
-         context.output[k] = value
-     blob = serialize(dict(context.obj), to_bytes=True)
-     context.output["_id"] = context.output["id"].value  # type: ignore
-     context.output["__canonical_name__"] = context.obj.__canonical_name__
-     context.output["__version__"] = context.obj.__version__
-     context.output["__blob__"] = blob
-     context.output["__repr__"] = context.obj.__repr__()
+    for k in context.obj.__attr_searchable__:
+        # 🟡 TODO 24: pass in storage abstraction and detect unsupported types
+        # if unsupported, convert to string
+        value = getattr(context.obj, k, "")
+        if isinstance(value, SyftVerifyKey):
+            value = str(value)
+        context.output[k] = value
+    blob = serialize(dict(context.obj), to_bytes=True)
+    context.output["_id"] = context.output["id"].value  # type: ignore
+    context.output["__canonical_name__"] = context.obj.__canonical_name__
+    context.output["__version__"] = context.obj.__version__
+    context.output["__blob__"] = blob
+    context.output["__repr__"] = context.obj.__repr__()
 
-     return context
+    return context
 
 
 @transform(SyftObject, MongoBsonObject)
