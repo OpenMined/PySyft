@@ -127,6 +127,7 @@ dont_wrap_output_attrs = [
     "_repr_latex_",
     "__array_struct__",
     "__array_prepare__",
+    "__bool__",
 ]
 dont_make_side_effects = [
     "_repr_html_",
@@ -211,7 +212,7 @@ class ActionObject(SyftObject):
     def check_action_data(
         cls, v: ActionObject.syft_pointer_type
     ) -> ActionObject.syft_pointer_type:
-        if isinstance(v, cls.syft_internal_type):
+        if cls == ActionObject or isinstance(v, cls.syft_internal_type):
             return v
         raise SyftException(
             f"Must init {cls} with {cls.syft_internal_type} not {type(v)}"
@@ -225,6 +226,13 @@ class ActionObject(SyftObject):
 
     def get_from(self, domain_client) -> Any:
         return domain_client.api.services.action.get(self.id).syft_action_data
+
+    @staticmethod
+    def from_obj(obj: Any) -> ActionObject:
+        action_type = action_type_for_type(obj)
+        if action_type is None:
+            raise Exception(f"{type(obj)} not in action_types")
+        return action_type(syft_action_data=obj)
 
     syft_action_data: Union[Any, Tuple[Any, Any]]
     syft_node_uid: Optional[UID]
@@ -245,9 +253,6 @@ class ActionObject(SyftObject):
         if HOOK_ALWAYS not in self._syft_post_hooks__:
             self._syft_post_hooks__[HOOK_ALWAYS] = set()
         self._syft_post_hooks__[HOOK_ALWAYS].add(propagate_node_uid)
-
-    def __eq__(self, other: Any) -> bool:
-        return self.__add__(other)
 
     def _syft_run_pre_hooks__(
         self, context, name, args, kwargs
@@ -284,6 +289,8 @@ class ActionObject(SyftObject):
         # can check types here
         if not issubclass(type(result), ActionObject):
             constructor = action_type_for_type(result)
+            if not constructor:
+                raise Exception(f"output: {type(result)} no in action_types")
             result = constructor(syft_action_data=result)
         return result
 
@@ -311,7 +318,7 @@ class ActionObject(SyftObject):
 
         if is_property(context_self, name):
             context = PreHookContext(obj=self, op_name=name)
-            context, _, _, _ = self._syft_run_pre_hooks__(context, name, (), {})
+            context, _, _ = self._syft_run_pre_hooks__(context, name, (), {})
             # no input needs to propagate
             result = self._syft_run_post_hooks__(
                 context, name, object.__getattribute__(context_self, name)
@@ -452,6 +459,9 @@ class ActionObject(SyftObject):
     def __getitem__(self, key: Any) -> Any:
         return self._syft_output_action_object(self.__getitem__(key))
 
+    def __eq__(self, other: Any) -> Any:
+        return self._syft_output_action_object(self.__eq__(other))
+
     def __setitem__(self, key: Any, value: Any) -> Any:
         return self.__setitem__(key, value)
 
@@ -476,8 +486,8 @@ class ActionObject(SyftObject):
     def __mod__(self, other: Any) -> Any:
         return self._syft_output_action_object(self.__mod__(other))
 
-    def __bool__(self, other: Any) -> bool:
-        return self.__bool__(other)
+    def __bool__(self) -> bool:
+        return self.__bool__()
 
     def __add__(self, other: Any) -> Any:
         return self._syft_output_action_object(self.__add__(other))
