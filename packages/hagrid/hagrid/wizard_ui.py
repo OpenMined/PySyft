@@ -55,5 +55,10 @@ class WizardUI:
 
     @property
     def check_grid_docker(self) -> Union[Dict[str, Dependency], NBOutput]:
+        print("Deprecated. Please use .check_docker")
+        return self.check_docker
+
+    @property
+    def check_docker(self) -> Union[Dict[str, Dependency], NBOutput]:
         steps["check_grid"] = True
         return complete_install_wizard(check_grid_docker())

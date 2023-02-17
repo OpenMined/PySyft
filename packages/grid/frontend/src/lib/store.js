@@ -1,27 +1,19 @@
 import { writable } from 'svelte/store';
-import { JSSerde } from './jsserde/jsserde.svelte';
-
-export const credentials = writable('');
-export const jsSerde = writable('');
+import { JSClient } from './jsserde/jsClient.svelte';
 
 export const store = writable({
-	jsserde: ''
+  client: ''
 });
 
-export async function getSerde() {
-	let newStore = '';
-	store.subscribe((value) => {
-		newStore = value;
-	});
+export async function getClient() {
+  let newStore = '';
+  store.subscribe((value) => {
+    newStore = value;
+  });
 
-	if (!newStore.jsserde) {
-		let type_bank = await fetch('http://localhost:8081/api/v1/syft/serde')
-			.then((response) => response.json())
-			.then(function (response) {
-				return response['bank'];
-			});
-		newStore.jsserde = new JSSerde(type_bank);
-		store.set(newStore);
-	}
-	return newStore.jsserde;
+  if (!newStore.client) {
+    newStore.client = await new JSClient('http://localhost:8081');
+    store.set(newStore);
+  }
+  return newStore.client;
 }

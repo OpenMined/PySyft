@@ -41,6 +41,7 @@ from .new.context import NodeServiceContext
 from .new.context import UnauthedServiceContext
 from .new.context import UserLoginCredentials
 from .new.credentials import SyftSigningKey
+from .new.data_subject_service import DataSubjectService
 from .new.dataset_service import DatasetService
 from .new.dict_document_store import DictStoreConfig
 from .new.document_store import StoreConfig
@@ -150,6 +151,7 @@ class Worker(NewNode):
                 DatasetService,
                 UserCodeService,
                 RequestService,
+                DataSubjectService,
             ]
             if services is None
             else services
@@ -212,6 +214,7 @@ class Worker(NewNode):
                 DatasetService,
                 UserCodeService,
                 RequestService,
+                DataSubjectService,
             ]:
                 kwargs["store"] = self.document_store
             self.service_path_map[service_klass.__name__.lower()] = service_klass(

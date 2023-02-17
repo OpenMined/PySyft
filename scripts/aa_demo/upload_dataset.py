@@ -20,7 +20,9 @@ def add_dataset_to_domain(domain_ip, dataset_url):
     #         sshpass -p MflpTeamOne@31052022 ssh azureuser@20.253.155.189 update_syft.sh
 
     # Log into domain
-    domain = sy.login(email="info@openmined.org", password="changethis", url=domain_ip)
+    domain = sy.old_login(
+        email="info@openmined.org", password="changethis", url=domain_ip
+    )
 
     # Preprocess dataset split
     dataset = download_dataset(dataset_url)
