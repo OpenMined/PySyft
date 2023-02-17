@@ -40,7 +40,7 @@ async def get_body(request: Request) -> bytes:
 
 # provide information about the node in JSON
 @router.get("/metadata", response_class=JSONResponse)
-async def syft_metadata() -> JSONResponse:
+def syft_metadata() -> JSONResponse:
     return worker.metadata().to(NodeMetadataJSON)
 
 
@@ -53,7 +53,7 @@ def handle_syft_new_api() -> Response:
 
 # get the SyftAPI object
 @router.get("/api")
-async def syft_new_api(request: Request) -> Response:
+def syft_new_api(request: Request) -> Response:
     if TRACE_MODE:
         with trace.get_tracer(syft_new_api.__module__).start_as_current_span(
             syft_new_api.__qualname__,
@@ -76,9 +76,7 @@ def handle_new_api_call(data: bytes) -> Response:
 
 # make a request to the SyftAPI
 @router.post("/api_call")
-async def syft_new_api_call(
-    request: Request, data: bytes = Depends(get_body)
-) -> Response:
+def syft_new_api_call(request: Request, data: bytes = Depends(get_body)) -> Response:
     if TRACE_MODE:
         with trace.get_tracer(syft_new_api_call.__module__).start_as_current_span(
             syft_new_api_call.__qualname__,
@@ -117,7 +115,7 @@ def handle_login(email: str, password: str, node: NewNode) -> Any:
 
 # exchange email and password for a SyftSigningKey
 @router.post("/login", name="login", status_code=200)
-async def login(
+def login(
     request: Request,
     email: str = Body(..., example="info@openmined.org"),
     password: str = Body(..., example="changethis"),

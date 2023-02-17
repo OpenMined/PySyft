@@ -10,7 +10,7 @@ router = APIRouter()
 
 
 @router.get("/{domain_id}/{step}", status_code=200, response_class=JSONResponse)
-async def remote_ping(domain_id: str, step: int) -> Dict[str, Any]:
+def remote_ping(domain_id: str, step: int) -> Dict[str, Any]:
     if step == 0:
         return {"score": 0.95, "step": 0, "level": "pass", "total_steps": 4}
     elif step == 1:

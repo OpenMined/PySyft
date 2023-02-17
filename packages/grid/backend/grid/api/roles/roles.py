@@ -40,7 +40,7 @@ router = APIRouter()
 
 
 @router.post("", status_code=201, response_class=JSONResponse)
-async def create_role_route(
+def create_role_route(
     current_user: Any = Depends(get_current_user),
     name: str = Body(False, example="Researcher"),
     can_make_data_requests: bool = Body(False, example="false"),
@@ -100,7 +100,7 @@ async def create_role_route(
 
 
 @router.get("", status_code=200, response_class=JSONResponse)
-async def get_all_roles_route(
+def get_all_roles_route(
     current_user: Any = Depends(get_current_user),
 ) -> Union[Dict[str, str], List[Dict[str, Any]]]:
     """Retrieves all registered roles
@@ -129,7 +129,7 @@ async def get_all_roles_route(
 
 
 @router.get("/{role_id}", status_code=200, response_class=JSONResponse)
-async def get_specific_role_route(
+def get_specific_role_route(
     role_id: int,
     current_user: Any = Depends(get_current_user),
 ) -> Dict[str, Any]:
@@ -161,7 +161,7 @@ async def get_specific_role_route(
 
 
 @router.patch("/{role_id}", status_code=200, response_class=JSONResponse)
-async def update_use_route(
+def update_use_route(
     role_id: int,
     current_user: Any = Depends(get_current_user),
     name: str = Body(..., example="Researcher"),
@@ -224,7 +224,7 @@ async def update_use_route(
 
 
 @router.delete("/{role_id}", status_code=200, response_class=JSONResponse)
-async def delete_user_role(
+def delete_user_role(
     role_id: int,
     current_user: Any = Depends(get_current_user),
 ) -> Dict[str, str]:

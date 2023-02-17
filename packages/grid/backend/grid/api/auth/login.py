@@ -24,7 +24,7 @@ router = APIRouter()
 
 
 @router.post("/key", name="key", status_code=200, response_class=JSONResponse)
-async def auth_using_signing_key(
+def auth_using_signing_key(
     signing_key: str = Body(..., embed=True),
 ) -> Any:
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -47,7 +47,7 @@ async def auth_using_signing_key(
 
 
 @router.post("/guest", name="guest", status_code=200, response_class=JSONResponse)
-async def guest_user() -> Any:
+def guest_user() -> Any:
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     active_guests = len(node.guest_signing_key_registry)
     access_token = security.create_access_token(
@@ -73,7 +73,7 @@ async def guest_user() -> Any:
 
 
 @router.post("/login", name="login", status_code=200, response_class=JSONResponse)
-async def login_access_token(
+def login_access_token(
     email: str = Body(..., example="info@openmined.org"),
     password: str = Body(..., example="changethis"),
 ) -> Any:

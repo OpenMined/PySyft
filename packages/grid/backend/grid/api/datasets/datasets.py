@@ -44,7 +44,7 @@ router = APIRouter()
 
 
 @router.post("", status_code=201, response_class=JSONResponse)
-async def upload_dataset_route(
+def upload_dataset_route(
     current_user: Any = Depends(get_current_user),
     file: UploadFile = File(...),
     metadata: str = Form(...),
@@ -82,7 +82,7 @@ async def upload_dataset_route(
 
 
 @router.get("", status_code=200, response_class=JSONResponse)
-async def get_all_dataset_metadata_route(
+def get_all_dataset_metadata_route(
     current_user: Any = Depends(get_current_user),
 ) -> Union[Dict[str, str], List[Any]]:
     """Retrieves all registered datasets
@@ -121,7 +121,7 @@ async def get_all_dataset_metadata_route(
 
 
 @router.get("/{dataset_id}", status_code=200, response_class=JSONResponse)
-async def get_specific_dataset_metadata_route(
+def get_specific_dataset_metadata_route(
     dataset_id: str,
     current_user: Any = Depends(get_current_user),
 ) -> Union[Dict[str, str], Any]:
@@ -153,7 +153,7 @@ async def get_specific_dataset_metadata_route(
 
 
 @router.put("/{dataset_id}", status_code=200, response_class=JSONResponse)
-async def update_dataset_metadata_route(
+def update_dataset_metadata_route(
     dataset_id: str,
     current_user: Any = Depends(get_current_user),
     manifest: str = Body(default=None, example="Dataset Manifest"),
@@ -188,7 +188,7 @@ async def update_dataset_metadata_route(
 
 
 @router.delete("/{dataset_id}", status_code=200, response_class=JSONResponse)
-async def delete_dataset_route(
+def delete_dataset_route(
     dataset_id: str,
     current_user: Any = Depends(get_current_user),
 ) -> Dict[str, str]:
