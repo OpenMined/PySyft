@@ -70,8 +70,8 @@ class ExactMatch(SyftObject):
     id: Optional[UID]
     inputs: Dict[str, Any]
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(inputs=kwargs)
+    # def __init__(self, *args: Any, **kwargs: Any) -> None:
+    #     super().__init__(inputs=kwargs)
 
 
 @serializable(recursive_serde=True)
@@ -107,6 +107,8 @@ class SubmitUserCode(SyftObject):
 
 
 def syft_function(input_policy, output_policy) -> SubmitUserCode:
+    # TODO: fix this for jupyter
+    # TODO: add import validator
     def decorator(f):
         return SubmitUserCode(
             code=inspect.getsource(f),
@@ -144,13 +146,14 @@ def new_check_code(context: TransformContext) -> TransformContext:
     func_name = context.output["unique_func_name"]
     service_func_name = context.output["service_func_name"]
     inputs = context.output["input_policy"].inputs
+    input_kwargs = list(inputs.keys())
     outputs = context.output["output_policy"].outputs
 
     tree = ast.parse(raw_code)
     f = tree.body[0]
     f.decorator_list = []
 
-    keywords = [ast.keyword(arg=i, value=[ast.Name(id=i)]) for i in inputs]
+    keywords = [ast.keyword(arg=i, value=[ast.Name(id=i)]) for i in input_kwargs]
     call_stmt = ast.Assign(
         targets=[ast.Name(id="result")],
         value=ast.Call(func=ast.Name(id=service_func_name), args=[], keywords=keywords),
@@ -175,7 +178,7 @@ def new_check_code(context: TransformContext) -> TransformContext:
 
     new_body = tree.body + [call_stmt, return_stmt]
 
-    return_annotation = ast.parse("Dict[str, Any]").body[0].value
+    return_annotation = ast.parse("Dict[str, Any]", mode="eval").body
 
     wrapper_function = ast.FunctionDef(
         name=func_name,
@@ -187,7 +190,7 @@ def new_check_code(context: TransformContext) -> TransformContext:
     )
 
     context.output["parsed_code"] = ast.unparse(wrapper_function)
-    context.output["input_kwargs"] = inputs
+    context.output["input_kwargs"] = input_kwargs
     context.output["output_arg"] = outputs[0]
 
     return context

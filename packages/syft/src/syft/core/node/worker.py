@@ -51,6 +51,8 @@ from .new.user_code_service import UserCodeService
 from .new.user_service import UserService
 from .new.user_stash import UserStash
 from .new.policy_code_service import PolicyCodeService
+from .new.policy_service import PolicyService
+
 
 NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
 NODE_UID = "NODE_UID"
@@ -115,7 +117,8 @@ class Worker(NewNode):
                 UserCodeService,
                 RequestService,
                 DataSubjectService,
-                PolicyCodeService
+                PolicyCodeService,
+                PolicyService
             ]
             if services is None
             else services
@@ -157,7 +160,8 @@ class Worker(NewNode):
                 UserCodeService,
                 RequestService,
                 DataSubjectService,
-                PolicyCodeService
+                PolicyCodeService,
+                PolicyService
             ]:
                 kwargs["store"] = self.document_store
             self.service_path_map[service_klass.__name__.lower()] = service_klass(

@@ -30,3 +30,6 @@ class PolicyStash(BaseUIDStoreStash):
     ) -> Result[List[Policy], str]:
         qks = QueryKeys(qks=[UserVerifyKeyPartitionKey.with_obj(user_verify_key)])
         return self.query_one(qks=qks)
+    
+    def update(self, policy: Policy) -> Result[Policy, str]:
+        return self.check_type(policy, self.object_type).and_then(super().update)

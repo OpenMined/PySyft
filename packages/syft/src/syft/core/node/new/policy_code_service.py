@@ -21,7 +21,7 @@ class PolicyCodeService(AbstractService):
         self.store = store
         self.stash = PolicyCodeStash(store=store)
         
-    @service_method(path="policy.get_all", name="get_all")
+    @service_method(path="policy_code.get_all", name="get_all")
     def get_all(
         self, context: AuthedServiceContext
     ) -> Union[List[PolicyCode], SyftError]:
@@ -30,7 +30,7 @@ class PolicyCodeService(AbstractService):
             return result.ok()
         return SyftError(message=result.err())
 
-    @service_method(path="policy.add", name="add")
+    @service_method(path="policy_code.add", name="add")
     def add(
         self, context: AuthedServiceContext, policy_code: SubmitPolicyCode
     ) -> Union[SyftSuccess, SyftError]:
@@ -39,7 +39,7 @@ class PolicyCodeService(AbstractService):
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="Policy Code Submitted")
 
-    @service_method(path="policy_code.get_by_id", name="get_by_id")
+    @service_method(path="policy_code.get_by_uid", name="get_by_uid")
     def get_by_uid(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:

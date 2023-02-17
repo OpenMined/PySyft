@@ -4,15 +4,18 @@ from typing import Dict
 from typing import Any
 
 from ...common.serde.serializable import serializable
+from ...common.serde.serialize import _serialize
+from ...common.serde.deserialize import _deserialize
 from ...common.uid import UID
 from .context import AuthedServiceContext
-from .policy_code import Policy, CreatePolicy
+from .policy import Policy, CreatePolicy
 from .service import AbstractService
 from .service import service_method
 from .response import SyftError
 from .response import SyftSuccess
 from .document_store import DocumentStore
 from .policy_stash import PolicyStash
+from .user_code import execute_byte_code
 
 @serializable(recursive_serde=True)
 class PolicyService(AbstractService):
@@ -32,7 +35,7 @@ class PolicyService(AbstractService):
             return result.ok()
         return SyftError(message=result.err())
 
-    @service_method(path="policy.add", name="add")
+    @service_method(path="policy.create", name="create")
     def create(
         self, context: AuthedServiceContext, create_policy: CreatePolicy
     ) -> Union[SyftSuccess, SyftError]:
@@ -63,15 +66,15 @@ class PolicyService(AbstractService):
         self, context: AuthedServiceContext, uid: UID, inputs: Dict[str, Any]
     ) -> Union[SyftSuccess, SyftError]:
         """Call a User Code Function"""
-        result = self.stash.get_by_uid(uid=uid)
-        if result.is_ok():
-            code_item = result.ok()
-            # TODO fix this
-            exec_result = execute_byte_code(code_item, kwargs)
-            policy_object = deserialize(result["serde"], from_bytes=True)
-            policy_results = policy_object.apply_output()
-            serde = serialize(policy_object, from_bytes=True)
-            result.update...
-            return exec_result.result
-        return SyftError(message=result.err())
+        policy = self.stash.get_by_uid(uid=uid)
+        if policy.is_ok():
+            code_item = policy.ok()
+            exec_result = execute_byte_code(code_item, inputs)
+            policy_object = _deserialize(policy["serde"], from_bytes=True)
+            policy_results = policy_object.apply_output(exec_result.result)
+            serde = _serialize(policy_object, from_bytes=True)
+            policy["serde"] = serde
+            self.stash.udpate(policy)
+            return policy_results
+        return SyftError(message=policy.err())
 
