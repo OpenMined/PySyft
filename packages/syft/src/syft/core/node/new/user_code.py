@@ -139,16 +139,13 @@ def check_code(context: TransformContext) -> TransformContext:
     return context
 
 
-def new_check_code(context: TransformContext) -> TransformContext:
-    raw_code = context.output["raw_code"]
-    func_name = context.output["unique_func_name"]
-    service_func_name = context.output["service_func_name"]
-
-    inputs = context.output["input_policy"].inputs
-    input_kwargs = list(inputs.keys())
-
-    outputs = context.output["output_policy"].outputs
-
+def process_code(
+    raw_code: str,
+    func_name: str,
+    original_func_name: str,
+    input_kwargs: List[str],
+    outputs: List[str],
+) -> str:
     tree = ast.parse(raw_code)
     f = tree.body[0]
     f.decorator_list = []
@@ -156,7 +153,9 @@ def new_check_code(context: TransformContext) -> TransformContext:
     keywords = [ast.keyword(arg=i, value=[ast.Name(id=i)]) for i in input_kwargs]
     call_stmt = ast.Assign(
         targets=[ast.Name(id="result")],
-        value=ast.Call(func=ast.Name(id=service_func_name), args=[], keywords=keywords),
+        value=ast.Call(
+            func=ast.Name(id=original_func_name), args=[], keywords=keywords
+        ),
         lineno=0,
     )
 
@@ -189,7 +188,24 @@ def new_check_code(context: TransformContext) -> TransformContext:
         lineno=0,
     )
 
-    context.output["parsed_code"] = ast.unparse(wrapper_function)
+    return ast.unparse(wrapper_function)
+
+
+def new_check_code(context: TransformContext) -> TransformContext:
+    inputs = context.output["input_policy"].inputs
+    input_kwargs = list(inputs.keys())
+
+    outputs = context.output["output_policy"].outputs
+
+    processed_code = process_code(
+        raw_code=context.output["raw_code"],
+        func_name=context.output["unique_func_name"],
+        original_func_name=context.output["service_func_name"],
+        input_kwargs=input_kwargs,
+        outputs=outputs,
+    )
+
+    context.output["parsed_code"] = processed_code
     context.output["input_kwargs"] = input_kwargs
     context.output["output_arg"] = outputs[0]
 
