@@ -2,6 +2,9 @@
 import os
 from typing import Optional
 
+# third party
+from gevent import monkey
+
 
 def str_to_bool(bool_str: Optional[str]) -> bool:
     result = False
@@ -9,6 +12,14 @@ def str_to_bool(bool_str: Optional[str]) -> bool:
     if bool_str == "true" or bool_str == "1":
         result = True
     return result
+
+
+GEVENT_MONKEYPATCH = str_to_bool(os.environ.get("GEVENT_MONKEYPATCH", "False"))
+
+# 🟡 TODO 30: Move this to where we manage the different concurrency modes later
+# make sure its stable in containers and other run targets
+# if GEVENT_MONKEYPATCH:
+#     monkey.patch_all(ssl=False)
 
 
 def is_notebook() -> bool:
@@ -24,15 +35,8 @@ def is_notebook() -> bool:
         return False  # Probably standard Python interpreter
 
 
-GEVENT_MONKEYPATCH = str_to_bool(os.environ.get("GEVENT_MONKEYPATCH", "False"))
 jupyter_notebook = is_notebook()
 
-if GEVENT_MONKEYPATCH or jupyter_notebook:
-    # third party
-    from gevent import monkey
-
-    # 🟡 TODO 30: Move this to where we manage the different concurrency modes later
-    # make sure its stable in containers and other run targets
-    thread = not jupyter_notebook
-    monkey.patch_all(ssl=False, thread=thread)
-    # monkey.patch_all(thread=thread)
+if jupyter_notebook:
+    print("Patching Gevent in Jupyter")
+    monkey.patch_all(thread=False)

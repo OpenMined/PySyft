@@ -33,5 +33,6 @@ source install_oblivious.sh
 # initialize data
 python grid/db/init_db.py
 
-export GEVENT_MONKEYPATCH="True"
-exec uvicorn $RELOAD --host $HOST --port $PORT --log-level $LOG_LEVEL "$APP_MODULE" --workers 1 --loop uvloop
+# export GEVENT_MONKEYPATCH="True"
+exec uvicorn $RELOAD --host $HOST --port $PORT --log-level $LOG_LEVEL "$APP_MODULE"
+
