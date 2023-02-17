@@ -175,7 +175,7 @@ def new_check_code(context: TransformContext) -> TransformContext:
 
     new_body = tree.body + [call_stmt, return_stmt]
 
-    return_annotation = ast.parse("Dict[str, Any]").body[0].value
+    return_annotation = ast.parse("Dict[str, Any]", mode="eval").body
 
     wrapper_function = ast.FunctionDef(
         name=func_name,
