@@ -53,7 +53,7 @@ class UserCode(SyftObject):
     user_verify_key: SyftVerifyKey
     raw_code: str
     input_kwargs: List[str]
-    output_arg: str
+    output_args: List[str]
     parsed_code: str
     service_func_name: str
     unique_func_name: str
@@ -76,7 +76,7 @@ class SubmitUserCode(SyftObject):
     code: str
     func_name: str
     input_kwargs: List[str]
-    output_arg: str
+    output_args: List[str]
 
     def compile(self) -> PyCodeObject:
         return compile_restricted(self.code, "<string>", "exec")
@@ -96,7 +96,7 @@ def check_code(context: TransformContext) -> TransformContext:
         func_name=context.output["unique_func_name"],
         raw_code=context.output["raw_code"],
         input_kwargs=context.output["input_kwargs"],
-        output_arg=context.output["output_arg"],
+        output_args=context.output["output_args"],
     )
     context.output["parsed_code"] = parsed_code
     return context

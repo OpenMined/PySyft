@@ -30,9 +30,11 @@ def check_no_returns(module: ast.Module) -> None:
             raise Exception("Main body of function cannot return")
 
 
-def make_return(var_name: str) -> ast.Return:
-    name = ast.Name(id=var_name)
-    return ast.Return(value=name)
+def make_return(var_names: str) -> ast.Return:
+    keys = [ast.Constant(value=var_name) for var_name in var_names]
+    values = [ast.Name(id=var_name) for var_name in var_names]
+    ast_dict = ast.Dict(keys, values)
+    return ast.Return(value=ast_dict)
 
 
 def make_ast_args(args: List[str]) -> ast.arguments:
@@ -44,10 +46,10 @@ def make_ast_args(args: List[str]) -> ast.arguments:
 
 
 def make_ast_func(
-    name: str, input_kwargs: List[str], output_arg: str, body=List[ast.AST]
+    name: str, input_kwargs: List[str], output_args: List[str], body=List[ast.AST]
 ) -> ast.FunctionDef:
     args = make_ast_args(input_kwargs)
-    r = make_return(output_arg)
+    r = make_return(output_args)
     new_body = body + [r]
     f = ast.FunctionDef(
         name=name, args=args, body=new_body, decorator_list=[], lineno=0
@@ -59,7 +61,7 @@ def parse_and_wrap_code(
     func_name: str,
     raw_code: str,
     input_kwargs: List[str],
-    output_arg: str,
+    output_args: List[str],
 ) -> str:
     # convert to AST
     ast_code = ast.parse(raw_code)
@@ -75,7 +77,7 @@ def parse_and_wrap_code(
     wrapper_function = make_ast_func(
         func_name,
         input_kwargs=input_kwargs,
-        output_arg=output_arg,
+        output_args=output_args,
         body=ast_code.body,
     )
 
