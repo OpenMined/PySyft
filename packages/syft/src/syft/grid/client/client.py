@@ -161,7 +161,7 @@ def login(
                 f"timed out after {timeout} seconds.\n"
                 "\tPlease try the following options:\n"
                 "\t- Please try increasing the timeout by passing it as an argument to the login method.\n"
-                "\te.g. `sy.login(email='my@email.com', password='password', url='localhost', timeout=30)`\n"
+                "\te.g. `sy.old_login(email='my@email.com', password='password', url='localhost', timeout=30)`\n"
                 "\t- The domain/network node you're trying to connect could be offline "
                 "at the current moment. Please try again later.\t"
             )

@@ -8,7 +8,6 @@
 
   export class JSSerde {
     constructor(type_bank) {
-      var _this = this;
       this.type_bank = type_bank;
       this.type_bank['builtins.int'] = [
         true,
@@ -106,7 +105,7 @@
       ];
       this.type_bank['syft.core.common.uid.UID'] = [
         false,
-        function (uuid) {
+        (uuid) => {
           const message = new capnp.Message();
           const rs = message.initRoot(RecursiveSerde);
           const fields = rs.initFieldsName(1);
@@ -114,7 +113,7 @@
           rs.setFullyQualifiedName('syft.core.common.uid.UID');
 
           fields.set(0, 'value');
-          let serializedObj = _this.serialize(uuidParse(uuid.value));
+          let serializedObj = this.serialize(uuidParse(uuid.value));
           let dataMsg = new capnp.Message(serializedObj, false);
           let dataCapnpObj = capnp.Struct.initData(
             0,
@@ -126,7 +125,7 @@
 
           return message.toArrayBuffer();
         },
-        function (buffer) {
+        (buffer) => {
           let uuidMap = new Map();
           const message = new capnp.Message(buffer, false);
           const rs = message.getRoot(RecursiveSerde);
@@ -135,7 +134,7 @@
           for (let index = 0; index < fieldsName.getLength(); index++) {
             const key = fieldsName.get(index);
             const bytes = fieldsData.get(index);
-            const obj = uuidStringify(_this.deserialize(bytes.toArrayBuffer()));
+            const obj = uuidStringify(this.deserialize(bytes.toArrayBuffer()));
             uuidMap.set(key, obj);
           }
           return uuidMap;
@@ -156,13 +155,13 @@
       ];
       this.type_bank['builtins.list'] = [
         true,
-        function (list) {
+        (list) => {
           const message = new capnp.Message();
           const rs = message.initRoot(Iterable);
           const listStruct = rs.initValues(list.length);
           let count = 0;
           for (let index = 0; index < list.length; index++) {
-            let serializedObj = _this.serialize(list[index]);
+            let serializedObj = this.serialize(list[index]);
             let dataMsg = new capnp.Message(serializedObj, false);
             let dataCapnpObj = capnp.Struct.initData(
               0,
@@ -183,7 +182,7 @@
           const size = values.getLength();
           for (let index = 0; index < size; index++) {
             const value = values.get(index);
-            iter.push(_this.deserialize(value.toArrayBuffer()));
+            iter.push(this.deserialize(value.toArrayBuffer()));
           }
           return iter;
         },
@@ -192,26 +191,39 @@
       ];
       this.type_bank['builtins.NoneType'] = [
         true,
+        // eslint-disable-next-line
         function (NoneType) {
           return new Uint8Array([49]).buffer;
         },
+        // eslint-disable-next-line
         function (buffer) {
           return undefined;
         },
         null,
         {}
       ];
+      this.type_bank['nacl.signing.VerifyKey'] = [
+        true,
+        (key) => {
+          console.log(key);
+        },
+        (buffer) => {
+          console.log(buffer);
+        },
+        null,
+        {}
+      ];
       this.type_bank['builtins.dict'] = [
         true,
-        function (dict) {
+        (dict) => {
           const message = new capnp.Message();
           const rs = message.initRoot(KVIterable);
           const keys = rs.initKeys(dict.size);
           const values = rs.initValues(dict.size);
           let count = 0;
           dict.forEach((value, key) => {
-            let serializedKey = _this.serialize(key);
-            let serializedValue = _this.serialize(value);
+            let serializedKey = this.serialize(key);
+            let serializedValue = this.serialize(value);
             let keyMsg = new capnp.Message(serializedKey, false);
             let valueMsg = new capnp.Message(serializedKey, false);
             let keyDataCapnpObj = capnp.Struct.initData(
@@ -232,7 +244,7 @@
           });
           return message.toArrayBuffer();
         },
-        function (buffer) {
+        (buffer) => {
           var kv_iter = {};
           const message = new capnp.Message(buffer, false);
           const rs = message.getRoot(KVIterable);
@@ -242,7 +254,7 @@
           for (let index = 0; index < size; index++) {
             const value = values.get(index);
             const key = keys.get(index);
-            kv_iter[_this.deserialize(key.toArrayBuffer())] = _this.deserialize(
+            kv_iter[this.deserialize(key.toArrayBuffer())] = this.deserialize(
               value.toArrayBuffer()
             );
           }
@@ -251,10 +263,6 @@
         null,
         {}
       ];
-    }
-
-    async loadTypeBank() {
-      var _this = this;
     }
 
     serialize(obj) {
@@ -320,6 +328,7 @@
       const size = fieldsName.getLength();
       const fqn = rs.getFullyQualifiedName();
       let objSerdeProps = this.type_bank[fqn];
+      console.log('FQN: ', fqn);
       if (size < 1) {
         return this.type_bank[fqn][2](rs.getNonrecursiveBlob().toArrayBuffer());
       } else if (objSerdeProps[2] !== null) {

@@ -6,10 +6,10 @@ export class SyftMessage {
   id: UUID;
   reply_to: UUID;
   reply: boolean;
-  kwargs: any;
+  kwargs: object;
   fqn: string;
 
-  constructor(address: string, reply_to: string, reply: boolean, kwargs: any, fqn: string) {
+  constructor(address: string, reply_to: string, reply: boolean, kwargs: object, fqn: string) {
     this.address = new UUID(address);
     this.id = new UUID(uuidv4());
     this.reply_to = new UUID(reply_to);
@@ -20,13 +20,13 @@ export class SyftMessage {
 }
 
 export class SyftMessageWithReply extends SyftMessage {
-  constructor(address: string, reply_to: string, kwargs: any, fqn: string) {
+  constructor(address: string, reply_to: string, kwargs: object, fqn: string) {
     super(address, reply_to, true, kwargs, fqn);
   }
 }
 
 export class SyftMessageWithoutReply extends SyftMessage {
-  constructor(address: string, kwargs: string, fqn: string) {
+  constructor(address: string, kwargs: object, fqn: string) {
     super(address, address, false, kwargs, fqn);
   }
 }

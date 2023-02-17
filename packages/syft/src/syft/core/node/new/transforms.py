@@ -16,6 +16,7 @@ from ....core.node.common.node_table.syft_object import SyftBaseObject
 from ....core.node.common.node_table.syft_object import SyftObjectRegistry
 from ....grid.grid_url import GridURL
 from ...common.uid import UID
+from .context import AuthedServiceContext
 from .context import NodeServiceContext
 from .credentials import SyftVerifyKey
 from .node import NewNode
@@ -45,6 +46,13 @@ class TransformContext(Context):
         if hasattr(context, "node"):
             t_context.node = context.node
         return t_context
+
+    def to_node_context(self) -> NodeServiceContext:
+        if self.credentials:
+            return AuthedServiceContext(node=self.node, credentials=self.credentials)
+        if self.node:
+            return NodeServiceContext(self.node)
+        return Context()
 
 
 def geteitherattr(

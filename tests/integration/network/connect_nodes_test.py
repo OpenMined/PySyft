@@ -39,7 +39,7 @@ print("PROTOCOL", PROTOCOL)
 def join_to_network_python(
     email: str, password: str, port: int, network_host: str
 ) -> Optional[Dict[str, Any]]:
-    root_client = sy.login(email=email, password=password, port=port)
+    root_client = sy.old_login(email=email, password=password, port=port)
 
     # test Syft API
     try:
@@ -154,14 +154,14 @@ def run_network_test_rest(port: int) -> None:
 
 
 def check_node_is_connected(email: str, password: str, port: int) -> None:
-    root_client = sy.login(email=email, password=password, port=port)
+    root_client = sy.old_login(email=email, password=password, port=port)
     response = root_client.vpn_status()
     return response
 
 
 # @pytest.mark.network
 # def test_check_settings_fields() -> None:
-#     domain = sy.login(
+#     domain = sy.old_login(
 #         email="info@openmined.org",
 #         password="changethis",
 #         port=DOMAIN1_PORT,
@@ -299,7 +299,7 @@ def test_auto_connect_network_to_self() -> None:
 def exchange_credentials(
     email: str, password: str, port: int, network_host: str
 ) -> None:
-    root_client = sy.login(email=email, password=password, port=port)
+    root_client = sy.old_login(email=email, password=password, port=port)
 
     # test Syft API
     try:
@@ -326,7 +326,7 @@ def add_route(
     private: bool = False,
     autodetect: bool = False,  # 🟡 TODO 20: Change this back to True after building it
 ) -> None:
-    root_client = sy.login(email=email, password=password, port=port)
+    root_client = sy.old_login(email=email, password=password, port=port)
 
     # test Syft API
     try:
@@ -354,7 +354,7 @@ def get_routes(
     network_host: str,
     timeout: Optional[int] = None,
 ) -> List[Dict]:
-    root_client = sy.login(email=email, password=password, port=port)
+    root_client = sy.old_login(email=email, password=password, port=port)
 
     try:
         response = root_client.networking.list_routes(
@@ -399,8 +399,10 @@ def get_vpn_status(domain: sy.Domain) -> Optional[Dict[str, Any]]:
 
 @pytest.mark.network
 def test_reconnect_domain_node() -> None:
-    domain = sy.login(email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=DOMAIN1_PORT)
-    network = sy.login(
+    domain = sy.old_login(
+        email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=DOMAIN1_PORT
+    )
+    network = sy.old_login(
         email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=NETWORK_PORT
     )
 

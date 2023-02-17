@@ -23,11 +23,11 @@ DOMAIN1_VPN_IP = "100.64.0.2"
 @pytest.mark.network
 def test_domain1_via_network_proxy_client() -> None:
     unique_tag = str(uuid.uuid4())
-    network_client = sy.login(
+    network_client = sy.old_login(
         email="info@openmined.org", password="changethis", port=NETWORK_PORT
     )
 
-    domain_client = sy.login(
+    domain_client = sy.old_login(
         email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
     )
 
@@ -76,11 +76,11 @@ def test_domain1_via_network_proxy_client() -> None:
 @pytest.mark.network
 def test_domain2_via_network_proxy_client() -> None:
     unique_tag = str(uuid.uuid4())
-    network_client = sy.login(
+    network_client = sy.old_login(
         email="info@openmined.org", password="changethis", port=NETWORK_PORT
     )
 
-    domain_client = sy.login(
+    domain_client = sy.old_login(
         email="info@openmined.org", password="changethis", port=DOMAIN2_PORT
     )
 
@@ -143,14 +143,14 @@ def search_network(network_client: sy.Network, query: str) -> Optional[Dict[str,
 @pytest.mark.network
 def test_search_network() -> None:
     unique_tag = str(uuid.uuid4())
-    domain_client = sy.login(
+    domain_client = sy.old_login(
         email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
     )
 
     x = torch.Tensor([1, 2, 3])
     x.send(domain_client, tags=[unique_tag])
 
-    network_client = sy.login(port=NETWORK_PORT)
+    network_client = sy.old_login(port=NETWORK_PORT)
     query = [unique_tag]
 
     retry_time = 3
@@ -178,14 +178,14 @@ def test_search_network() -> None:
 def test_proxy_login_logout_network() -> None:
     unique_tag = str(uuid.uuid4())
 
-    domain_client = sy.login(
+    domain_client = sy.old_login(
         email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
     )
 
     x = torch.Tensor([1, 2, 3])
     x.send(domain_client, tags=[unique_tag])
     time.sleep(5)
-    network_client = sy.login(port=NETWORK_PORT)
+    network_client = sy.old_login(port=NETWORK_PORT)
     domain_list = network_client.domains.all(pandas=False)
     assert len(domain_list) > 0
 

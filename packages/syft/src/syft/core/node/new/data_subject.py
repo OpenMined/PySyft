@@ -26,7 +26,7 @@ class DataSubject(SyftObject):
     aliases: Optional[List[str]]
     members: Dict[str, "DataSubject"] = {}
 
-    __attr_searchable__ = ["name", "aliases", "description"]
+    __attr_searchable__ = ["name", "description"]
     __attr_unique__ = ["name"]
 
     def __hash__(self) -> int:
@@ -46,25 +46,4 @@ class DataSubject(SyftObject):
         _repr_str += f"Description: {self.description}\n"
         _repr_str += f"Aliases: {self.aliases}\n"
         _repr_str += f"Members: {len(self.members)}\n"
-        return "```python\n" + _repr_str + "\n```"
-
-
-@serializable(recursive_serde=True)
-class DataSubjectRegistry(SyftObject):
-    # version
-    __canonical_name__ = "DataSubjectRegistry"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    data_subjects: List[DataSubject] = []
-
-    def add_data_subject(self, data_subject: DataSubject) -> None:
-        # TODO: Check for uniqueness, it could happen member is already
-        # registered, therefore, the registry could be a set instead of
-        # list -> Need to confirm the representation
-        self.data_subjects.append(data_subject)
-        for _, member in data_subject.members.items():
-            self.add_data_subject(member)
-
-    def _repr_markdown_(self) -> str:
-        _repr_str = f"DataSubjects: {len(self.data_subjects)}\n"
         return "```python\n" + _repr_str + "\n```"
