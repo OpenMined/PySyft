@@ -16,19 +16,18 @@ from typing import TypeVar
 from typing import Union
 from typing import _GenericAlias
 from typing import _SpecialForm
-
-try:
-    # stdlib
-    from typing import _UnionGenericAlias
-except Exception:
-    _UnionGenericAlias = None
-
-# stdlib
 from typing import cast
 
 # relative
 from .capnp import get_capnp_schema
 from .recursive import recursive_serde_register
+
+# import types unsupported on python 3.8
+if sys.version_info >= (3, 9):
+    # stdlib
+    from typing import _SpecialGenericAlias
+    from typing import _UnionGenericAlias
+
 
 iterable_schema = get_capnp_schema("iterable.capnp").Iterable  # type: ignore
 kv_iterable_schema = get_capnp_schema("kv_iterable.capnp").KVIterable  # type: ignore
@@ -326,11 +325,13 @@ def recursive_serde_register_type(
 
 
 recursive_serde_register_type(_SpecialForm)
-if _UnionGenericAlias is not None:
-    recursive_serde_register_type(_UnionGenericAlias)
 recursive_serde_register_type(_GenericAlias)
 recursive_serde_register_type(Union)
 recursive_serde_register_type(TypeVar)
+
+if sys.version_info >= (3, 9):
+    recursive_serde_register_type(_UnionGenericAlias)
+    recursive_serde_register_type(_SpecialGenericAlias)
 
 recursive_serde_register_type(EnumMeta)
 

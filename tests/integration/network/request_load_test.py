@@ -46,7 +46,9 @@ def send_msg(domain: DomainClient) -> SleepMessageWithReply:
 
 @pytest.mark.network
 def test_parallel_sync_io_requests() -> None:
-    domain = sy.login(port=DOMAIN1_PORT, email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS)
+    domain = sy.old_login(
+        port=DOMAIN1_PORT, email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS
+    )
 
     # FastAPI and Starlette use anyio under the hood to use a threadpool for non async
     # CapacityLimiter in anyio is default 40 threads

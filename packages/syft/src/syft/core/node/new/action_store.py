@@ -19,6 +19,7 @@ from ...common.uid import UID
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .response import SyftSuccess
+from .twin_object import TwinObject
 
 
 @serializable(recursive_serde=True)
@@ -100,9 +101,11 @@ class ActionStore:
         # 🟡 TODO 34: do we want pointer read permissions?
         if uid in self.data:
             data = self.data[uid]
-            syft_object_ptr = SyftObject.from_mongo(data).to_pointer(node_uid)
-            if syft_object_ptr:
-                return Ok(syft_object_ptr)
+            obj = SyftObject.from_mongo(data)
+            if isinstance(obj, TwinObject):
+                obj = obj.mock
+            obj.syft_point_to(node_uid)
+            return Ok(obj)
         return Err("Permission denied")
 
     def exists(self, uid: UID) -> bool:
