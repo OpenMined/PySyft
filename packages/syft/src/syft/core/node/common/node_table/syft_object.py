@@ -1,5 +1,6 @@
 # stdlib
 from collections import defaultdict
+from collections.abc import KeysView
 import inspect
 from inspect import Signature
 from typing import Any
@@ -224,13 +225,13 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
                 de[attr] = funcs[1](de[attr])
         return constructor(**de)
 
-    # # allows splatting with **
-    # def keys(self) -> KeysView[str]:
-    #     return self.keys()
+    # allows splatting with **
+    def keys(self) -> KeysView[str]:
+        return self.__dict__.keys()
 
-    # # allows splatting with **
-    # def __getitem__(self, key: str) -> Any:
-    #     return self.__getitem__(key)
+    # allows splatting with **
+    def __getitem__(self, key: str) -> Any:
+        return self.__dict__.__getitem__(key)
 
     def _upgrade_version(self, latest: bool = True) -> "SyftObject":
         constructor = SyftObjectRegistry.versioned_class(

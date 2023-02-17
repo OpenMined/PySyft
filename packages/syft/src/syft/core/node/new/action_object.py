@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from collections.abc import KeysView
 import inspect
 import types
 from typing import Any
@@ -448,6 +449,10 @@ class ActionObject(SyftObject):
             return self.syft_make_method_action(op=op, args=args, kwargs=kwargs)
 
         return wrapper
+
+    # overwrite the SyftObject implementation
+    def keys(self) -> KeysView[str]:
+        return self.syft_action_data.keys()
 
     ###### __DUNDER_MIFFLIN__
 
