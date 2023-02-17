@@ -37,19 +37,21 @@ class MongoBsonObject(StorableObjectType, dict):
 
 
 def to_mongo(context: TransformContext) -> TransformContext:
+    output = {}
     for k in context.obj.__attr_searchable__:
         # 🟡 TODO 24: pass in storage abstraction and detect unsupported types
         # if unsupported, convert to string
         value = getattr(context.obj, k, "")
         if isinstance(value, SyftVerifyKey):
             value = str(value)
-        context.output[k] = value
+        output[k] = value
     blob = serialize(dict(context.obj), to_bytes=True)
-    context.output["_id"] = context.output["id"].value  # type: ignore
-    context.output["__canonical_name__"] = context.obj.__canonical_name__
-    context.output["__version__"] = context.obj.__version__
-    context.output["__blob__"] = blob
-    context.output["__repr__"] = context.obj.__repr__()
+    output["_id"] = context.output["id"].value  # type: ignore
+    output["__canonical_name__"] = context.obj.__canonical_name__
+    output["__version__"] = context.obj.__version__
+    output["__blob__"] = blob
+    output["__repr__"] = context.obj.__repr__()
+    context.output = output
     return context
 
 

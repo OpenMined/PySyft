@@ -73,13 +73,17 @@ store_config = (
 
 if settings.NODE_TYPE.lower() == "domain":
     node = Domain("Domain", settings=settings, document_store=True)
-    worker = Worker(id=node.id, signing_key=node.signing_key, store_config=store_config)
+    worker = Worker(
+        processes=1, id=node.id, signing_key=node.signing_key, store_config=store_config
+    )
     if settings.USE_BLOB_STORAGE:
         create_s3_bucket(bucket_name=node.id.no_dash, settings=settings)
 
 elif settings.NODE_TYPE.lower() == "network":
     node = Network("Network", settings=settings, document_store=True)
-    worker = Worker(id=node.id, signing_key=node.signing_key, store_config=store_config)
+    worker = Worker(
+        processes=1, id=node.id, signing_key=node.signing_key, store_config=store_config
+    )
     format = "%(asctime)s: %(message)s"
     logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
 else:

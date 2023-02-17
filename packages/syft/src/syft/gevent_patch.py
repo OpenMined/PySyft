@@ -35,3 +35,4 @@ if GEVENT_MONKEYPATCH or jupyter_notebook:
     # make sure its stable in containers and other run targets
     thread = not jupyter_notebook
     monkey.patch_all(ssl=False, thread=thread)
+    # monkey.patch_all(thread=thread)
