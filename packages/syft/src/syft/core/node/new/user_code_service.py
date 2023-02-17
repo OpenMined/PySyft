@@ -1,6 +1,5 @@
 # stdlib
 from typing import Any
-from typing import Dict
 from typing import List
 from typing import Union
 
@@ -73,7 +72,7 @@ class UserCodeService(AbstractService):
 
     @service_method(path="code.call", name="call")
     def call(
-        self, context: AuthedServiceContext, uid: UID, **kwargs: Dict[str, Any]
+        self, context: AuthedServiceContext, uid: UID, **kwargs: Any
     ) -> Union[SyftSuccess, SyftError]:
         """Call a User Code Function"""
         result = self.stash.get_by_uid(uid=uid)

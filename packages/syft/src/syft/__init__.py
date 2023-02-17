@@ -70,6 +70,7 @@ from .core.node.new.data_subject import DataSubject  # noqa: F401
 from .core.node.new.dataset import CreateAsset as Asset  # noqa: F401
 from .core.node.new.dataset import CreateDataset as Dataset  # noqa: F401
 from .core.node.new.roles import Roles as roles  # noqa: F401
+from .core.node.new.user_code import syft_function  # noqa: F401
 from .core.node.new.user_service import UserService  # noqa: F401
 
 # Convenience Constructors
