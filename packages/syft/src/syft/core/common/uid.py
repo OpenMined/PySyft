@@ -89,6 +89,9 @@ class UID:
         if isinstance(value, str):
             value = uuid.UUID(value)
 
+        if isinstance(value, str):
+            value = uuid.UUID(value)
+
         self.value = (
             next(uuid_value_generator, uuid.uuid4()) if value is None else value
         )

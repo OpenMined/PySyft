@@ -39,7 +39,7 @@ from ..core.node.common.node_service.resolve_pointer_type.resolve_pointer_type_m
 from ..core.node.common.util import check_send_to_blob_storage
 from ..core.node.common.util import upload_to_s3_using_presigned
 from ..core.node.new.action_object import ActionObjectPointer
-from ..core.node.new.numpy_array import NumpyArrayObject
+from ..core.node.new.numpy import NumpyArrayObject
 from ..core.node.new.response import SyftError
 from ..core.pointer.pointer import Pointer
 from ..core.store.storeable_object import StorableObject

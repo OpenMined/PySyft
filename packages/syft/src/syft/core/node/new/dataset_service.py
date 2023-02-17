@@ -32,7 +32,7 @@ class DatasetService(AbstractService):
         self, context: AuthedServiceContext, dataset: CreateDataset
     ) -> Union[SyftSuccess, SyftError]:
         """Add a Dataset"""
-        result = self.stash.set(dataset.to(Dataset))
+        result = self.stash.set(dataset.to(Dataset, context=context))
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="Dataset Added")
