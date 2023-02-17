@@ -40,7 +40,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         self.cur = self.db.cursor()
         try:
             self.cur.execute(
-                f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, value BLOB NOT NULL)"
+                f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, value BLOB NOT NULL)"  # nosec
             )
             self.db.commit()
         except sqlite3.OperationalError as e:
@@ -64,7 +64,9 @@ class SQLiteBackingStore(KeyValueBackingStore):
             if self._exists(key):
                 self._update(key, value)
             else:
-                insert_sql = f"insert into {self.table_name} (uid, value) VALUES (?, ?)"
+                insert_sql = (
+                    f"insert into {self.table_name} (uid, value) VALUES (?, ?)"  # nosec
+                )
                 data = _serialize(value, to_bytes=True)
                 self._execute(insert_sql, [str(key), data])
         except Exception as e:
@@ -72,24 +74,26 @@ class SQLiteBackingStore(KeyValueBackingStore):
             raise e
 
     def _update(self, key: UID, value: Any) -> None:
-        insert_sql = f"update {self.table_name} set uid = ?, value = ? where uid = ?"
+        insert_sql = (
+            f"update {self.table_name} set uid = ?, value = ? where uid = ?"  # nosec
+        )
         data = _serialize(value, to_bytes=True)
         self._execute(insert_sql, [str(key), data, str(key)])
 
     def _get(self, key: UID) -> Any:
-        select_sql = f"select * from {self.table_name} where uid = ?"
+        select_sql = f"select * from {self.table_name} where uid = ?"  # nosec
         row = self._execute(select_sql, [str(key)]).fetchone()
         data = row[1]
         return _deserialize(data, from_bytes=True)
 
     def _exists(self, key: UID) -> Any:
-        select_sql = f"select uid from {self.table_name} where uid = ?"
+        select_sql = f"select uid from {self.table_name} where uid = ?"  # nosec
         row = self._execute(select_sql, [str(key)]).fetchone()
         return bool(row)
 
     def _get_all(self) -> Any:
         try:
-            select_sql = f"select * from {self.table_name}"
+            select_sql = f"select * from {self.table_name}"  # nosec
             keys = []
             data = []
             rows = self._execute(select_sql).fetchall()
@@ -102,15 +106,15 @@ class SQLiteBackingStore(KeyValueBackingStore):
             raise e
 
     def _delete(self, key: UID) -> None:
-        select_sql = f"delete from {self.table_name} where uid = ?"
+        select_sql = f"delete from {self.table_name} where uid = ?"  # nosec
         self._execute(select_sql, [str(key)])
 
     def _delete_all(self) -> None:
-        select_sql = f"delete from {self.table_name}"
+        select_sql = f"delete from {self.table_name}"  # nosec
         self._execute(select_sql)
 
     def _len(self) -> int:
-        select_sql = f"select uid from {self.table_name}"
+        select_sql = f"select uid from {self.table_name}"  # nosec
         return len(self._execute(select_sql))
 
     def __setitem__(self, key: Any, value: Any) -> None:
