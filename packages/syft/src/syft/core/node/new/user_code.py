@@ -309,9 +309,7 @@ def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
         )
 
     except Exception as e:
-        sys.stdout = stdout_
-        sys.stderr = stderr_
-        print("execute_byte_code failed", e)
+        print("execute_byte_code failed", e, file=stderr_)
     finally:
         sys.stdout = stdout_
         sys.stderr = stderr_
