@@ -26,11 +26,11 @@ import requests
 # relative
 from ..core.common.serde.deserialize import _deserialize as deserialize
 from ..core.common.uid import UID
-from ..core.node.abstract.node import AbstractNodeClient
 from ..core.node.common.exceptions import OblvEnclaveError
 from ..core.node.common.exceptions import OblvUnAuthorizedError
 from ..core.node.new.action_object import ActionObjectPointer
 from ..core.node.new.api import SyftAPI
+from ..core.node.new.client import SyftClient
 from ..core.node.new.task.task import NodeView
 from ..util import bcolors
 from .constants import LOCAL_MODE
@@ -229,7 +229,7 @@ class DeploymentClient:
 
     def request_code_execution(
         self,
-        inputs: Dict[AbstractNodeClient, Dict],
+        inputs: Dict[SyftClient, Dict],
         code: Union[str, Callable],
         outputs: Iterable[str],
     ):
@@ -249,7 +249,7 @@ class DeploymentClient:
         # TODO: 🟣 Simplify code structure for inputs fields
         # TODO: 🟣 Additional sanity checks for inputs fields
         for client, client_input_map in inputs.items():
-            if not isinstance(client, AbstractNodeClient):
+            if not isinstance(client, SyftClient):
                 raise ValueError(
                     "Each entry in inputs for enclave execution must be Client to inputs mapping"
                 )

@@ -128,16 +128,11 @@ class ActionService(AbstractService):
         return result.err()
 
     @service_method(path="action.get", name="get")
-    def get(
-        self, context: AuthedServiceContext, uid: UID, by_pointer: bool = False
-    ) -> Result[ActionObject, str]:
+    def get(self, context: AuthedServiceContext, uid: UID) -> Result[ActionObject, str]:
         """Get an object from the action store"""
         result = self.store.get(uid=uid, credentials=context.credentials)
         if result.is_ok():
-            if not by_pointer:
-                return Ok(result.ok())
-            else:
-                return Ok(result.ok().to_pointer(context.node.id))
+            return Ok(result.ok().to_pointer(context.node.id))
         return Err(result.err())
 
     @service_method(path="action.get_pointer", name="get_pointer")
