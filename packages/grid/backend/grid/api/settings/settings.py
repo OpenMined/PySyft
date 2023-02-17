@@ -33,7 +33,7 @@ router = APIRouter()
 
 
 @router.post("", status_code=200, response_class=JSONResponse)
-def update_settings(
+async def update_settings(
     current_user: UserPrivate = Depends(get_current_user),
     file: Optional[UploadFile] = File(...),
     settings: str = Form(...),
@@ -71,7 +71,7 @@ def update_settings(
 
 
 @router.get("", status_code=200, response_class=JSONResponse)
-def get_setup() -> Any:
+async def get_setup() -> Any:
     msg = GetSetUpMessage(address=node.node_uid, reply_to=node.node_uid).sign(
         signing_key=node.signing_key
     )

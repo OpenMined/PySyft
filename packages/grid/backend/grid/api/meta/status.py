@@ -7,7 +7,7 @@ router = APIRouter()
 
 
 @router.get("", status_code=200)
-def ping() -> str:
+async def ping() -> str:
     """Check if the grid client is up.
 
     Check for Ping? Get a Pong!

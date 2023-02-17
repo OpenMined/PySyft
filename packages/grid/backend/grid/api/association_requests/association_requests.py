@@ -41,7 +41,7 @@ router = APIRouter()
 
 
 @router.post("/request", status_code=200, response_class=JSONResponse)
-def send_association_request(
+async def send_association_request(
     target: str,
     source: str,
     current_user: Any = Depends(get_current_user),
@@ -80,7 +80,7 @@ def send_association_request(
 
 
 @router.post("/receive", status_code=201, response_class=JSONResponse)
-def receive_association_request(
+async def receive_association_request(
     name: str = Body(..., example="Nodes Association Request"),
     source: str = Body(..., example="http://<node_address>/api/v1"),
     target: str = Body(..., example="http://<target_address>/api/v1"),
@@ -114,7 +114,7 @@ def receive_association_request(
 
 
 @router.post("/reply", status_code=201, response_class=JSONResponse)
-def respond_association_request(
+async def respond_association_request(
     source: str,
     target: str,
     current_user: Any = Depends(get_current_user),
@@ -152,7 +152,7 @@ def respond_association_request(
 
 
 @router.get("", status_code=200, response_class=JSONResponse)
-def get_all_association_requests(
+async def get_all_association_requests(
     current_user: Any = Depends(get_current_user),
 ) -> Dict[str, Any]:
     """Retrieves all association requests
@@ -180,7 +180,7 @@ def get_all_association_requests(
 
 
 @router.get("/{association_request_id}", status_code=200, response_class=JSONResponse)
-def get_specific_association_route(
+async def get_specific_association_route(
     association_request_id: int,
     current_user: Any = Depends(get_current_user),
 ) -> Dict[str, Any]:
@@ -214,7 +214,7 @@ def get_specific_association_route(
 @router.delete(
     "/{association_request_id}", status_code=200, response_class=JSONResponse
 )
-def delete_association_route(
+async def delete_association_route(
     association_request_id: int,
     current_user: Any = Depends(get_current_user),
 ) -> Dict[str, str]:

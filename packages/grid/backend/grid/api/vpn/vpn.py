@@ -38,7 +38,7 @@ router = APIRouter()
 # this endpoint will tell the tailscale vpn container internally to connect to the
 # supplied host with the supplied key
 @router.post("/connect/{host_or_ip}", status_code=200, response_class=JSONResponse)
-def connect(
+async def connect(
     host_or_ip: str,
     vpn_auth_key: str = Body(..., example="headscale vpn auth key"),
     network_id: str = Body(..., example="network UID"),
@@ -70,7 +70,7 @@ def connect(
 # this endpoint will tell the node to contact the supplied host network and ask
 # for a vpn key, then use that vpn key to connect
 @router.post("/join/{host_or_ip}", status_code=200, response_class=JSONResponse)
-def join(
+async def join(
     host_or_ip: str,
     current_user: Any = Depends(get_current_user),
 ) -> Dict[str, Any]:
@@ -95,7 +95,7 @@ def join(
 # this endpoint will ask the node to get the status of the vpn connection which returns
 # a bool for connected, the host details and the peers
 @router.get("/status", status_code=200, response_class=JSONResponse)
-def status(
+async def status(
     current_user: Any = Depends(get_current_user),
 ) -> Dict[str, Any]:
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
@@ -120,7 +120,7 @@ def status(
 if settings.NODE_TYPE.lower() == "network":
 
     @router.post("/register", status_code=200, response_class=JSONResponse)
-    def register() -> Dict[str, Any]:
+    async def register() -> Dict[str, Any]:
         msg = (
             VPNRegisterMessageWithReply(kwargs={}).to(
                 address=node.node_uid, reply_to=node.node_uid

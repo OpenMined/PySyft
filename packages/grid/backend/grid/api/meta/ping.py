@@ -21,7 +21,7 @@ router = APIRouter()
 
 
 @router.get("/{host_or_ip}", status_code=200, response_class=JSONResponse)
-def remote_ping(
+async def remote_ping(
     host_or_ip: str, current_user: Any = Depends(get_current_user)
 ) -> Dict[str, Any]:
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)

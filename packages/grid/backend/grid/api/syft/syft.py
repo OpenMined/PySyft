@@ -28,7 +28,6 @@ from grid.api.users.models import UserPrivate
 from grid.core.celery_app import celery_app
 from grid.core.config import settings
 from grid.core.node import node
-from grid.core.node import worker
 
 if TRACE_MODE:
     # third party
@@ -43,12 +42,12 @@ async def get_body(request: Request) -> bytes:
 
 
 @router.get("/version")
-def syft_version() -> Response:
+async def syft_version() -> Response:
     return JSONResponse(content={"version": __version__})
 
 
 @router.get("/serde")
-def syft_serde() -> Response:
+async def syft_serde() -> Response:
     bank = {}
     for key, items in list(TYPE_BANK.items()):
         bank[key] = [item if not callable(item) else None for item in items[:-1]]
@@ -56,33 +55,16 @@ def syft_serde() -> Response:
 
 
 @router.get("/metadata", response_model=str)
-def syft_metadata() -> Response:
+async def syft_metadata() -> Response:
+    print("are we getting this?")
     return Response(
         serialize(node.get_metadata_for_client(), to_bytes=True),
         media_type="application/octet-stream",
     )
 
 
-@router.get("/new_api", response_model=str)
-def syft_new_api() -> Response:
-    return Response(
-        serialize(node.get_api(), to_bytes=True),
-        media_type="application/octet-stream",
-    )
-
-
-@router.post("/new_api_call", response_model=str)
-def syft_new_api_call(request: Request, data: bytes = Depends(get_body)) -> Any:
-    obj_msg = deserialize(blob=data, from_bytes=True)
-    result = worker.handle_api_call(api_call=obj_msg)
-    return Response(
-        serialize(result, to_bytes=True),
-        media_type="application/octet-stream",
-    )
-
-
 @router.delete("", response_model=str)
-def delete(current_user: UserPrivate = Depends(get_current_user)) -> Response:
+async def delete(current_user: UserPrivate = Depends(get_current_user)) -> Response:
     # If current user is the node owner ...
     success = node.clear(current_user.role)
     if success:
@@ -113,7 +95,7 @@ def handle_syft_route(data: bytes) -> Any:
 
 
 @router.post("", response_model=str)
-def syft_route(request: Request, data: bytes = Depends(get_body)) -> Any:
+async def syft_route(request: Request, data: bytes = Depends(get_body)) -> Any:
     if TRACE_MODE:
         with trace.get_tracer(syft_route.__module__).start_as_current_span(
             syft_route.__qualname__,
@@ -126,7 +108,7 @@ def syft_route(request: Request, data: bytes = Depends(get_body)) -> Any:
 
 
 @router.post("/stream", response_model=str)
-def syft_stream(data: bytes = Depends(get_body)) -> Any:
+async def syft_stream(data: bytes = Depends(get_body)) -> Any:
     if settings.STREAM_QUEUE:
         print("Queuing streaming message for processing on worker node")
         try:
@@ -148,7 +130,7 @@ def syft_stream(data: bytes = Depends(get_body)) -> Any:
 
 
 @router.post("/js", response_model=str)
-def js_route(
+async def js_route(
     request: Request,
     current_user: UserPrivate = Depends(get_current_user),
     data: bytes = Depends(get_body),

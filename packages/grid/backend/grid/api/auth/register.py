@@ -20,7 +20,7 @@ router = APIRouter()
 
 
 @router.post("/register", name="register", status_code=200, response_class=JSONResponse)
-def register(data: dict = Body(..., example="sheldon@caltech.edu")) -> Any:
+async def register(data: dict = Body(..., example="sheldon@caltech.edu")) -> Any:
     if not settings.OPEN_REGISTRATION:
         return {
             "error": "This node doesn't allow for anyone to register a user. Please contact the domain"

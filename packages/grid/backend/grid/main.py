@@ -38,7 +38,7 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
     status_code=200,
     response_class=JSONResponse,
 )
-def healthcheck() -> Dict[str, str]:
+async def healthcheck() -> Dict[str, str]:
     """
     Currently, all service backends must satisfy either of the following requirements to
     pass the HTTP health checks sent to it from the GCE loadbalancer: 1. Respond with a
