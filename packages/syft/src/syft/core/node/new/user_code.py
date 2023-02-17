@@ -147,14 +147,30 @@ def new_check_code(context: TransformContext) -> TransformContext:
     f = tree.body[0]
     f.decorator_list = []
 
-    input_kwargs = ", ".join(f"{i}={i}" for i in inputs)
-    call_stmt = f"result = {service_func_name}({input_kwargs})"
+    keywords = [ast.keyword(arg=i, value=[ast.Name(id=i)]) for i in inputs]
+    call_stmt = ast.Assign(
+        targets=[ast.Name(id="result")],
+        value=ast.Call(func=ast.Name(id=service_func_name), args=[], keywords=keywords),
+        lineno=0,
+    )
 
-    return_value = "{" + f"k: result[k] for k in {outputs}" + "}"
-    return_stmt = f"return {return_value}"
+    output_list = ast.List(elts=[ast.Constant(value=x) for x in outputs])
+    return_stmt = ast.Return(
+        value=ast.DictComp(
+            key=ast.Name(id="k"),
+            value=ast.Subscript(
+                value=ast.Name(id="result"),
+                slice=ast.Name(id="k"),
+            ),
+            generators=[
+                ast.comprehension(
+                    target=ast.Name(id="k"), iter=output_list, ifs=[], is_async=0
+                )
+            ],
+        )
+    )
 
-    post = [ast.parse(stmt).body[0] for stmt in (call_stmt, return_stmt)]
-    new_body = tree.body + post
+    new_body = tree.body + [call_stmt, return_stmt]
 
     return_annotation = ast.parse("Dict[str, Any]").body[0].value
 
