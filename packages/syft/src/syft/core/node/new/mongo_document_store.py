@@ -1,4 +1,5 @@
 # stdlib
+from enum import Enum
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -43,6 +44,9 @@ def to_mongo(context: TransformContext) -> TransformContext:
         value = getattr(context.obj, k, "")
         if isinstance(value, SyftVerifyKey):
             value = str(value)
+        if isinstance(value, Enum):
+            value = value.value
+
         output_dict[k] = value
 
     blob = serialize(dict(context.obj), to_bytes=True)
