@@ -17,12 +17,12 @@ from ...common.uid import UID
 from .action_object import Action
 from .action_object import ActionObject
 from .action_object import ActionObjectPointer
-from .action_object import TwinObject
 from .action_store import ActionStore
 from .context import AuthedServiceContext
 from .numpy import NumpyArrayObject
 from .service import AbstractService
 from .service import service_method
+from .twin_object import TwinObject
 
 
 @serializable(recursive_serde=True)
@@ -57,7 +57,7 @@ class ActionService(AbstractService):
         self,
         context: AuthedServiceContext,
         action_object: Union[ActionObject, TwinObject],
-    ) -> Result[ActionObjectPointer, str]:
+    ) -> Result[ActionObject, str]:
         """Save an object to the action store"""
         # 🟡 TODO 9: Create some kind of type checking / protocol for SyftSerializable
         result = self.store.set(

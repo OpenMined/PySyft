@@ -16,10 +16,10 @@ from result import Result
 from ....core.node.common.node_table.syft_object import SyftObject
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
-from .action_object import TwinObject
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .response import SyftSuccess
+from .twin_object import TwinObject
 
 
 @serializable(recursive_serde=True)
@@ -103,9 +103,8 @@ class ActionStore:
             obj = SyftObject.from_mongo(data)
             if isinstance(obj, TwinObject):
                 obj = obj.mock
-            syft_object_ptr = obj.to_pointer(node_uid)
-            if syft_object_ptr:
-                return Ok(syft_object_ptr)
+            obj.syft_point_to(node_uid)
+            return Ok(obj)
         return Err("Permission denied")
 
     def exists(self, uid: UID) -> bool:

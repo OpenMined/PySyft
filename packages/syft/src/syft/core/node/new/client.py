@@ -275,8 +275,13 @@ class SyftClient:
             data_ptr = response
             asset.action_id = data_ptr.id
             asset.node_uid = self.id
-
-        return self.api.services.dataset.add(dataset=dataset)
+        valid = dataset.check()
+        if valid.ok():
+            return self.api.services.dataset.add(dataset=dataset)
+        else:
+            if len(valid.err()) > 0:
+                return tuple(valid.err())
+            return valid.err()
 
     @property
     def data_subject_registry(self) -> Optional[APIModule]:
