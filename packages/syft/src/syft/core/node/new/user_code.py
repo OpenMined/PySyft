@@ -1,4 +1,5 @@
 # stdlib
+import ast
 from enum import Enum
 import hashlib
 import inspect
@@ -61,6 +62,26 @@ class UserCode(SyftObject):
 
 
 @serializable(recursive_serde=True)
+class ExactMatch(SyftObject):
+    # version
+    __canonical_name__ = "ExactMatch"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: Optional[UID]
+    inputs: List[str]
+
+
+@serializable(recursive_serde=True)
+class SingleExecutionExactOutput(SyftObject):
+    # version
+    __canonical_name__ = "SingleExecutionExactOutput"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: Optional[UID]
+    outputs: List[str]
+
+
+@serializable(recursive_serde=True)
 class SubmitUserCode(SyftObject):
     # version
     __canonical_name__ = "SubmitUserCode"
@@ -69,8 +90,30 @@ class SubmitUserCode(SyftObject):
     id: Optional[UID]
     code: str
     func_name: str
-    input_kwargs: List[str]
-    output_arg: str
+    signature: inspect.Signature
+    input_policy: ExactMatch
+    output_policy: SingleExecutionExactOutput
+
+    @property
+    def kwargs(self) -> List[str]:
+        return self.input_policy.inputs
+
+    @property
+    def outputs(self) -> List[str]:
+        return self.output_policy.outputs
+
+
+def syft_function(input_policy, output_policy) -> SubmitUserCode:
+    def decorator(f):
+        return SubmitUserCode(
+            code=inspect.getsource(f),
+            func_name=f.__name__,
+            signature=inspect.signature(f),
+            input_policy=input_policy,
+            output_policy=output_policy,
+        )
+
+    return decorator
 
 
 def generate_unique_func_name(context: TransformContext) -> TransformContext:
@@ -90,6 +133,44 @@ def check_code(context: TransformContext) -> TransformContext:
         output_arg=context.output["output_arg"],
     )
     context.output["parsed_code"] = parsed_code
+    return context
+
+
+def new_check_code(context: TransformContext) -> TransformContext:
+    raw_code = context.output["raw_code"]
+    func_name = context.output["unique_func_name"]
+    service_func_name = context.output["service_func_name"]
+    inputs = context.output["input_policy"].inputs
+    outputs = context.output["output_policy"].outputs
+
+    tree = ast.parse(raw_code)
+    f = tree.body[0]
+    f.decorator_list = []
+
+    input_kwargs = ", ".join(f"{i}={i}" for i in inputs)
+    call_stmt = f"result = {service_func_name}({input_kwargs})"
+
+    return_value = "{" + f"k: result[k] for k in {outputs}" + "}"
+    return_stmt = f"return {return_value}"
+
+    post = [ast.parse(stmt).body[0] for stmt in (call_stmt, return_stmt)]
+    new_body = tree.body + post
+
+    return_annotation = ast.parse("Dict[str, Any]").body[0].value
+
+    wrapper_function = ast.FunctionDef(
+        name=func_name,
+        args=f.args,
+        body=new_body,
+        decorator_list=[],
+        returns=return_annotation,
+        lineno=0,
+    )
+
+    context.output["parsed_code"] = ast.unparse(wrapper_function)
+    context.output["input_kwargs"] = inputs
+    context.output["output_arg"] = outputs[0]
+
     return context
 
 
@@ -127,14 +208,20 @@ def generate_signature(context: TransformContext) -> TransformContext:
     return context
 
 
+def modify_signature(context: TransformContext) -> TransformContext:
+    sig = context.output["signature"]
+    context.output["signature"] = sig.replace(return_annotation=Dict[str, Any])
+    return context
+
+
 @transform(SubmitUserCode, UserCode)
 def submit_user_code_to_user_code() -> List[Callable]:
     return [
         generate_id,
         hash_code,
         generate_unique_func_name,
-        generate_signature,
-        check_code,
+        modify_signature,
+        new_check_code,
         compile_code,
         add_credentials_for_key("user_verify_key"),
     ]
