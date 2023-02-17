@@ -25,6 +25,9 @@ TYPE_BANK = {}
 
 recursive_scheme = get_capnp_schema("recursive_serde.capnp").RecursiveSerde  # type: ignore
 
+# C-python api module mapping does not map correctly
+OVERRIDE_FQN = {"builtins.code": "types.CodeType"}
+
 
 def recursive_serde_register(
     cls: Union[object, type],
@@ -57,6 +60,9 @@ def recursive_serde_register(
         attribute_list += ["value"]
     # without fqn duplicate class names overwrite
     fqn = f"{cls.__module__}.{cls.__name__}"
+    if fqn in OVERRIDE_FQN:
+        fqn = OVERRIDE_FQN[fqn]
+
     TYPE_BANK[fqn] = (
         nonrecursive,
         _serialize,
@@ -69,6 +75,8 @@ def recursive_serde_register(
 def rs_object2proto(self: Any) -> _DynamicStructBuilder:
     msg = recursive_scheme.new_message()
     fqn = get_fully_qualified_name(self)
+    if fqn in OVERRIDE_FQN:
+        fqn = OVERRIDE_FQN[fqn]
     if fqn not in TYPE_BANK:
         raise Exception(f"{fqn} not in TYPE_BANK")
 

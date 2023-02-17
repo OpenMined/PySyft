@@ -5,6 +5,7 @@ from enum import Enum
 from enum import EnumMeta
 import functools
 import sys
+from types import CodeType
 from types import MappingProxyType
 from typing import Any
 from typing import Collection
@@ -332,3 +333,53 @@ recursive_serde_register_type(Union)
 recursive_serde_register_type(TypeVar)
 
 recursive_serde_register_type(EnumMeta)
+
+
+# serde for code object
+code_ser_args = [
+    "co_argcount",  # serde arguments for code object
+    "co_posonlyargcount",
+    "co_kwonlyargcount",
+    "co_nlocals",
+    "co_stacksize",
+    "co_flags",
+    "co_code",
+    "co_consts",
+    "co_names",
+    "co_varnames",
+    "co_filename",
+    "co_name",
+    "co_firstlineno",
+    "co_linetable",
+    "co_freevars",
+    "co_cellvars",
+]
+
+
+def serialize_code_object(code: CodeType) -> bytes:
+    # relative
+    from .serialize import _serialize
+
+    values = []
+    for arg in code_ser_args:
+        if not hasattr(code, arg):
+            raise TypeError(f"Code object does not contain {arg}")
+
+        values.append(getattr(code, arg))
+    return _serialize(values, to_bytes=True)
+
+
+def deserialize_code_object(blob: bytes) -> CodeType:
+    # relative
+    from .deserialize import _deserialize
+
+    values = _deserialize(blob, from_bytes=True)
+    # C-python API does not take keyword arguments
+    return CodeType(*values)
+
+
+recursive_serde_register(
+    CodeType,
+    serialize=serialize_code_object,
+    deserialize=deserialize_code_object,
+)
