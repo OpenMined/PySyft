@@ -48,7 +48,7 @@ class UserCode(SyftObject):
     user_verify_key: SyftVerifyKey
     raw_code: str
     input_kwargs: List[str]
-    output_arg: str
+    output_kwargs: List[str]
     parsed_code: str
     service_func_name: str
     unique_func_name: str
@@ -207,7 +207,7 @@ def new_check_code(context: TransformContext) -> TransformContext:
 
     context.output["parsed_code"] = processed_code
     context.output["input_kwargs"] = input_kwargs
-    context.output["output_arg"] = outputs[0]
+    context.output["output_kwargs"] = outputs
 
     return context
 
