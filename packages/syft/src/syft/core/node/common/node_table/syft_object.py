@@ -1,11 +1,11 @@
 # stdlib
 from collections import defaultdict
-from collections.abc import KeysView
 import inspect
 from inspect import Signature
 from typing import Any
 from typing import Callable
 from typing import Dict
+from typing import KeysView
 from typing import List
 from typing import Optional
 from typing import Sequence

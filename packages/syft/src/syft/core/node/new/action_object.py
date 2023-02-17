@@ -2,13 +2,13 @@
 from __future__ import annotations
 
 # stdlib
-from collections.abc import KeysView
 import inspect
 import types
 from typing import Any
 from typing import Callable
 from typing import ClassVar
 from typing import Dict
+from typing import KeysView
 from typing import List
 from typing import Optional
 from typing import Set
