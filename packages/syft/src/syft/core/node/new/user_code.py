@@ -168,16 +168,9 @@ def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
         result = None
 
         exec(code_item.byte_code)  # nosec
-        evil_string = f"result = {code_item.unique_func_name}(**kwargs)"
 
-        # copy locals
-        _locals = locals()
-
-        # pass in kwargs and evaluate
-        exec(evil_string, None, _locals)  # nosec
-
-        # assign result back to local scope
-        result = _locals["result"]
+        evil_string = f"{code_item.unique_func_name}(**kwargs)"
+        result = eval(evil_string, None, locals())
 
         # restore stdout and stderr
         sys.stdout = stdout_
