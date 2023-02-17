@@ -18,8 +18,11 @@ from .action_object import Action
 from .action_object import ActionObject
 from .action_object import ActionObjectPointer
 from .action_store import ActionStore
+from .action_types import action_type_for_type
 from .context import AuthedServiceContext
 from .numpy import NumpyArrayObject
+from .pandas import PandasDataFrameObject  # noqa: F401
+from .pandas import PandasSeriesObject  # noqa: F401
 from .service import AbstractService
 from .service import service_method
 from .twin_object import TwinObject
@@ -255,15 +258,13 @@ def execute_object(
 
 def wrap_result(action: Action, result: Any) -> ActionObject:
     # 🟡 TODO 11: Figure out how we want to store action object results
-    if isinstance(result, np.ndarray):
-        result_action_object = NumpyArrayObject(
-            id=action.result_id, parent_id=action.id, syft_action_data=result
-        )
-    else:
-        # 🔵 TODO 12: Create an AnyPointer to handle unexpected results
-        result_action_object = ActionObject(
-            id=action.result_id, parent_id=action.id, syft_action_data=result  # type: ignore
-        )
+    action_type = action_type_for_type(result)
+    if action_type is None:
+        print("action_type_for_type(result)", action_type_for_type(result))
+        raise Exception(f"No Action Type for type: {type(result)}")
+    result_action_object = action_type(
+        id=action.result_id, parent_id=action.id, syft_action_data=result
+    )
     return result_action_object
 
 

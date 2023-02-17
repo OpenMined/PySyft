@@ -5,7 +5,6 @@ from inspect import Signature
 from typing import Any
 from typing import Callable
 from typing import Dict
-from typing import KeysView
 from typing import List
 from typing import Optional
 from typing import Sequence
@@ -225,13 +224,13 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
                 de[attr] = funcs[1](de[attr])
         return constructor(**de)
 
-    # allows splatting with **
-    def keys(self) -> KeysView[str]:
-        return self.__dict__.keys()
+    # # allows splatting with **
+    # def keys(self) -> KeysView[str]:
+    #     return self.keys()
 
-    # allows splatting with **
-    def __getitem__(self, key: str) -> Any:
-        return self.__dict__.__getitem__(key)
+    # # allows splatting with **
+    # def __getitem__(self, key: str) -> Any:
+    #     return self.__getitem__(key)
 
     def _upgrade_version(self, latest: bool = True) -> "SyftObject":
         constructor = SyftObjectRegistry.versioned_class(

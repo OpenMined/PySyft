@@ -58,7 +58,6 @@ class Asset(SyftObject):
     description: Optional[str]
     contributors: List[Contributor] = []
     data_subjects: List[DataSubject] = []
-    twin_uid: UID
     mock_is_real: bool = False
     shape: Tuple
 
@@ -85,7 +84,7 @@ class Asset(SyftObject):
         from .api import APIRegistry
 
         api = APIRegistry.api_for(node_uid=self.node_uid)
-        return api.services.action.get_pointer(self.twin_uid)
+        return api.services.action.get_pointer(self.action_id)
 
 
 @serializable(recursive_serde=True)
@@ -99,7 +98,6 @@ class CreateAsset(SyftObject):
     description: Optional[str]
     contributors: List[Contributor] = []
     data_subjects: List[DataSubject] = []
-    action_id: Optional[UID]
     node_uid: Optional[UID]
     data: Optional[Any]
     mock: Optional[Any]
@@ -271,7 +269,7 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
     if result.is_err():
         raise Exception(f"Failed to create and store twin. {result}")
 
-    context.output["twin_uid"] = twin.id
+    context.output["action_id"] = twin.id
     return context
 
 

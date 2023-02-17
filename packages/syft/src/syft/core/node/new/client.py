@@ -268,12 +268,12 @@ class SyftClient:
     def upload_dataset(self, dataset: CreateDataset) -> Union[SyftSuccess, SyftError]:
         for asset in tqdm(dataset.asset_list):
             print(f"Uploading: {asset.name}")
-            response = asset.data.new_send(self)
-            if isinstance(response, SyftError):
-                print(f"Failed to upload asset\n: {asset}")
-                return response
-            data_ptr = response
-            asset.action_id = data_ptr.id
+            # response = asset.data.new_send(self)
+            # if isinstance(response, SyftError):
+            #     print(f"Failed to upload asset\n: {asset}")
+            #     return response
+            # data_ptr = response
+            # asset.action_id = data_ptr.id
             asset.node_uid = self.id
         valid = dataset.check()
         if valid.ok():
