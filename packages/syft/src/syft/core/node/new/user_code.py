@@ -68,7 +68,10 @@ class ExactMatch(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: Optional[UID]
-    inputs: List[str]
+    inputs: Dict[str, Any]
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(inputs=kwargs)
 
 
 @serializable(recursive_serde=True)
@@ -78,7 +81,7 @@ class SingleExecutionExactOutput(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: Optional[UID]
-    outputs: List[str]
+    outputs: Optional[List[str]]
 
 
 @serializable(recursive_serde=True)
