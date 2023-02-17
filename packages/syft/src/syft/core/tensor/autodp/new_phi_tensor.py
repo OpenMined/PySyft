@@ -8,9 +8,11 @@ from typing import Optional
 from typing import Union
 from typing import Tuple
 from typing import Any
+from typing import Dict
 from ...common.uid import UID
 from ..passthrough import is_acceptable_simple_type
 from ..broadcastable import is_broadcastable
+from .jax_ops import SyftTerminalNoop
 
 class Bounds():
     lower_bound: int
@@ -72,6 +74,27 @@ class BoundsArray():
         upper_bounds = np.sum(self.upper_bounds * prod_shape) 
         return BoundsArray(lower_bounds=lower_bounds,upper_bounds=upper_bounds,shape=shape)
 
+    def to_numpy(self) -> np.ndarray:
+        # FIX: shape is not set sometimes
+        if not self.shape:
+            self.shape = self.data.shape
+
+        return np.broadcast_to(self.data, self.shape)
+
+    def delete(self, indexes, axis):
+        raise NotImplemented
+
+    @staticmethod
+    def compress_data(min_data, max_data):
+        
+        return BoundsArray(...)
+
+def is_op_linear(op):
+    if op == "sum":
+        return True
+    return False
+
+
 class RowPhiTensors():
     data: np.array
     data_subjects: List[DataSubject]
@@ -104,13 +127,51 @@ class RowPhiTensors():
         new_data = getattr(self.data, op)(*args, **kwargs)
         new_bounds = getattr(self.bounds, op)(*args, **kwargs)
         return RowPhiTensors(data=new_data, bounds=new_bounds, data_subjects=self.data_subjects)
-    
+   
     def reduce_op(self, op, *args, **kwargs):
         new_data = getattr(self.data, op)(*args, **kwargs)
-        return GammaTensor(child=new_data, jax_op=None, sources={self.id})
+        is_linear = is_op_linear(op)
+        return GammaTensor(child=new_data, jax_op=None, sources={self.id}, is_linear=is_linear)
+    
+    def create_gamma(self):
+        jax_op = SyftTerminalNoop(phi_id=self.id)
+        return GammaTensor(
+            child=self.data,
+            jax_op=jax_op,
+            sources={self.id},
+            is_linear=True
+        )
+
+    def reconstruct(self, state: Dict[str, np.ndarray]) -> np.ndarray:
+        return state[self.id] 
+
+    def filtered(self, data_subjects):
+        # TODO: Optimize this???
+        data_subjects_indexes = [
+            self.data_subjects.index(data_subject) for data_subject in data_subjects
+        ]
+        new_data_subjects = []
+        for data_subject in self.data_subjects:
+            if data_subject not in data_subjects:
+                new_data_subjects.append(data_subject)
+        
+        new_data = np.delete(self.data, data_subjects_indexes, 0)
+        new_bounds = self.bounds.delete(data_subjects_indexes, 0)
+        
+        return RowPhiTensors(
+            data=new_data,
+            data_subjects=new_data_subjects,
+            bounds=new_bounds
+        )
     
     def __add__(self, other):
         return self.broadcast_op('__add__', other)
     
     def sum(self, axis: Optional[Union[int, Tuple[int, ...]]]):
         return self.reduce_op("sum", axis)
+    
+class FlexibleMultiPhiTensors():
+    
+    def __init__(self) -> None:
+        pass
+    

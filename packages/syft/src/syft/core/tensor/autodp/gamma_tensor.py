@@ -2547,6 +2547,7 @@ class GammaTensor:
         def convert_state_to_bounds(input_sizes: Dict, input_states: Dict) -> List:
             bounds = []
             for id in input_sizes:
+                # TODO: Change this to use BoundsArray/RowPhiTensor as well
                 bounds.extend(
                     list(
                         zip(
