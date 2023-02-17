@@ -12,9 +12,6 @@ from typing import Dict
 from typing import List
 from typing import Optional
 
-# third party
-from RestrictedPython import compile_restricted
-
 # relative
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import SyftObject
@@ -74,9 +71,6 @@ class SubmitUserCode(SyftObject):
     func_name: str
     input_kwargs: List[str]
     output_arg: str
-
-    def compile(self) -> PyCodeObject:
-        return compile_restricted(self.code, "<string>", "exec")
 
 
 def generate_unique_func_name(context: TransformContext) -> TransformContext:
