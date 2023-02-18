@@ -16,6 +16,7 @@ from result import Result
 from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize as serialize
+from ...common.uid import UID
 from ..common.node_table.syft_object import StorableObjectType
 from ..common.node_table.syft_object import SyftObject
 from ..common.node_table.syft_object import SyftObjectRegistry
@@ -47,6 +48,8 @@ def to_mongo(context: TransformContext) -> TransformContext:
             value = str(value)
         if isinstance(value, Enum):
             value = value.value
+        if isinstance(value, UID):
+            value = value.no_dash
 
         output[k] = value
     blob = serialize(dict(context.obj), to_bytes=True)

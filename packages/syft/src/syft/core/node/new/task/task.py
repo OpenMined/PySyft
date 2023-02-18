@@ -45,7 +45,7 @@ class NodeView(BaseModel):
 
     @staticmethod
     def from_client(client: AbstractNodeClient):
-        return NodeView(name=client.name, node_uid=client.node_uid)
+        return NodeView(name=client.name, node_uid=client.id)
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, NodeView):

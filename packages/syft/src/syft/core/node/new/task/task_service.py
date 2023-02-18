@@ -1,6 +1,7 @@
 # stdlib
 from datetime import date
 from io import StringIO
+import os
 import random
 import sys
 from typing import Dict
@@ -16,15 +17,18 @@ from result import Result
 
 # relative
 from .....logger import logger
+from .....oblv.constants import DOMAIN_CONNECTION_PORT
 from .....oblv.constants import LOCAL_MODE
-from .....oblv.constants import LOCAL_MODE_CONNECTION_PORT
 from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ..action_object import ActionObject
 from ..action_store import ActionStore
 from ..api import SyftAPI
+from ..client import HTTPConnection
+from ..client import Routes
 from ..context import AuthedServiceContext
+from ..credentials import SyftSigningKey
 from ..document_store import DocumentStore
 from ..response import SyftError
 from ..response import SyftSuccess
@@ -230,18 +234,16 @@ class TaskService(AbstractService):
                 port = OBLV_PROCESS_CACHE[deployment_id][1]
             else:
                 # randomized port staring point, to quickly find free port
-                port_start = 3000 + random.randint(1, 10_000)
+                port_start = 3000 + random.randint(1, 10_000)  # nosec
                 port = find_available_port(
                     host="127.0.0.1", port=port_start, search=True
                 )
             connection_string = f"http://127.0.0.1:{port}"
         else:
-            port = LOCAL_MODE_CONNECTION_PORT
-            connection_string = (
-                f"http://host.docker.internal:{LOCAL_MODE_CONNECTION_PORT}"
-            )
+            port = os.getenv("DOMAIN_CONNECTION_PORT", DOMAIN_CONNECTION_PORT)
+            connection_string = f"http://host.docker.internal:{port}"
         req = make_request_to_enclave(
-            connection_string=connection_string + "/worker/api",
+            connection_string=connection_string + Routes.ROUTE_API.value,
             deployment_id=deployment_id,
             oblv_client=oblv_client,
             oblv_keys_stash=self.oblv_keys_stash,
@@ -250,7 +252,9 @@ class TaskService(AbstractService):
         )
 
         obj = deserialize(req.content, from_bytes=True)
-        obj.api_url = f"{connection_string}/worker/syft_api_call"
+        # TODO 🟣 Retrieve of signing key of user after permission  is fully integrated
+        obj.signing_key = SyftSigningKey.generate()
+        obj.connection = HTTPConnection(connection_string)
         return cast(SyftAPI, obj)
 
     @service_method(path="task.send_status_to_enclave", name="send_status_to_enclave")
@@ -421,8 +425,13 @@ class TaskService(AbstractService):
     # Below method checks if  the domain nodes are able to connect to enclaves
     @service_method(path="task.send_hello_to_enclave", name="send_hello_to_enclave")
     def send_hello_to_enclave(
-        self, context: AuthedServiceContext, oblv_metadata: dict
+        self, context: AuthedServiceContext, oblv_metadata: Optional[dict] = None
     ) -> Result[Ok, Err]:
-        api = self._get_api(oblv_metadata)
+        if LOCAL_MODE:
+            api = self._get_api({"oblv_client": None, "deployment_id": None})
+        else:
+            if not oblv_metadata:
+                return Err("Should pass oblv metadata for testing cloud deployment")
+            api = self._get_api(oblv_metadata)
         res = api.services.test.send_name("Natsu")
         return Ok(res)

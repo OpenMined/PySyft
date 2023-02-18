@@ -87,6 +87,7 @@ class ActionStore:
     def get(
         self, uid: UID, credentials: SyftVerifyKey, skip_permission: bool = False
     ) -> Result[SyftObject, str]:
+        # TODO 🟣 Temporarily added skip permission for enclave tests
         # if you get something you need READ permission
         read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
         if skip_permission or self.has_permission(read_permission):

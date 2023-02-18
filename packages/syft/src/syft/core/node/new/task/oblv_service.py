@@ -1,7 +1,7 @@
 # stdlib
 from base64 import encodebytes
 import os
-import subprocess
+import subprocess  # nosec
 from typing import Callable
 from typing import Dict
 from typing import List
@@ -264,29 +264,3 @@ class OblvService(AbstractService):
         return Err(
             "Public Key not present for the domain node, Kindly request the admin to create a new one"
         )
-
-    # TODO 🟣 Temporary method to help in testing an enclave
-    # as with the in-memory we do not have persistent database
-    # due to which oblv keys are generated during each hot reload
-    # These test method should be removed when we have persistent database in the worker
-    @service_method(path="oblv.retrieve_key", name="retrieve_key")
-    def retrieve_key(
-        self,
-        context: AuthedServiceContext,
-    ) -> Result[Ok, Err]:
-        res = self.oblv_keys_stash.get_all()[0]
-        assert isinstance(res, OblvKeys)
-        return res
-
-    @service_method(path="oblv.override_key", name="override_key")
-    def override_key(
-        self,
-        context: AuthedServiceContext,
-        oblv_key: OblvKeys,
-    ) -> Result[Ok, Err]:
-        self.oblv_keys_stash.clear()
-        res = self.oblv_keys_stash.set(oblv_key)
-
-        if res.is_ok():
-            return Ok("Successfully overrided key")
-        return res.err()
