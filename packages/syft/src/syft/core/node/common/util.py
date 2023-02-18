@@ -5,8 +5,6 @@ from typing import Generator
 from typing import List
 
 # third party
-import boto3
-from botocore.client import Config
 from pydantic import BaseSettings
 import requests
 from tqdm import tqdm
@@ -123,9 +121,7 @@ def upload_result_to_s3(
     return proxy_obj
 
 
-def abort_s3_object_upload(
-    client: boto3.client, upload_id: str, asset_name: str
-) -> None:
+def abort_s3_object_upload(client: Any, upload_id: str, asset_name: str) -> None:
     """Abort upload to s3 for the given asset.
 
     Args:
@@ -282,11 +278,16 @@ def upload_to_s3_using_presigned(
     return proxy_data
 
 
-def get_s3_client(settings: BaseSettings) -> "boto3.client.S3":
+def get_s3_client(settings: BaseSettings) -> Any:
     try:
         s3_endpoint = settings.S3_ENDPOINT
         s3_port = settings.S3_PORT
         s3_grid_url = GridURL(host_or_ip=s3_endpoint, port=s3_port)
+
+        # third party
+        import boto3
+        from botocore.client import Config
+
         return boto3.client(
             "s3",
             endpoint_url=s3_grid_url.url,
