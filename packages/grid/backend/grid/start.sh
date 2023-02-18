@@ -2,6 +2,7 @@
 set -e
 
 echo "Running start.sh with RELEASE=${RELEASE}"
+export GEVENT_MONKEYPATCH="False"
 
 APP_MODULE=grid.main:app
 LOG_LEVEL=${LOG_LEVEL:-info}
@@ -32,4 +33,6 @@ source install_oblivious.sh
 # initialize data
 python grid/db/init_db.py
 
+# export GEVENT_MONKEYPATCH="True"
 exec uvicorn $RELOAD --host $HOST --port $PORT --log-level $LOG_LEVEL "$APP_MODULE"
+

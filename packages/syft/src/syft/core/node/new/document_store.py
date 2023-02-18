@@ -34,13 +34,8 @@ def first_or_none(result: Any) -> Optional[Any]:
     return Ok(None)
 
 
-@serializable(recursive_serde=True)
 class StoreClientConfig(BaseModel):
-    hostname: str
-    port: int
-    username: str
-    password: str
-    tls: Optional[bool] = False
+    pass
 
 
 @serializable(recursive_serde=True)
@@ -191,7 +186,6 @@ class PartitionSettings(SyftBaseModel):
     name: str
     object_type: type
     store_key: PartitionKey = UIDPartitionKey
-    db_name: str = "app"
 
     @property
     def unique_keys(self) -> PartitionKeys:
@@ -209,10 +203,10 @@ class StorePartition:
     def __init__(
         self,
         settings: PartitionSettings,
-        client_config: Optional[StoreClientConfig] = None,
+        store_config: StoreConfig,
     ) -> None:
         self.settings = settings
-        self.store_client_config = client_config
+        self.store_config = store_config
         self.init_store()
 
     def init_store(self) -> None:
@@ -253,14 +247,16 @@ class DocumentStore:
     partitions: Dict[str, StorePartition]
     partition_type: Type[StorePartition]
 
-    def __init__(self, client_config: Optional[StoreClientConfig] = None) -> None:
+    def __init__(self, store_config: StoreConfig) -> None:
+        if store_config is None:
+            raise Exception("must have store config")
         self.partitions = {}
-        self.client_config = client_config
+        self.store_config = store_config
 
     def partition(self, settings: PartitionSettings) -> StorePartition:
         if settings.name not in self.partitions:
             self.partitions[settings.name] = self.partition_type(
-                settings=settings, client_config=self.client_config
+                settings=settings, store_config=self.store_config
             )
         return self.partitions[settings.name]
 
@@ -313,7 +309,6 @@ class BaseStash:
 
         index_qks = QueryKeys(qks=unique_keys)
         search_qks = QueryKeys(qks=searchable_keys)
-
         return self.partition.find_index_or_search_keys(
             index_qks=index_qks, search_qks=search_qks
         )

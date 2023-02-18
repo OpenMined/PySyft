@@ -31,7 +31,8 @@ VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
 class UserStash(BaseStash):
     object_type = User
     settings: PartitionSettings = PartitionSettings(
-        name=User.__canonical_name__, object_type=User, db_name="app"
+        name=User.__canonical_name__,
+        object_type=User,
     )
 
     def __init__(self, store: DocumentStore) -> None:

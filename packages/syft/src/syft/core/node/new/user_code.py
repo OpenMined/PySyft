@@ -276,7 +276,7 @@ def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
         exec(code_item.byte_code)  # nosec
 
         evil_string = f"{code_item.unique_func_name}(**kwargs)"
-        result = eval(evil_string, None, locals())
+        result = eval(evil_string, None, locals())  # nosec
 
         # restore stdout and stderr
         sys.stdout = stdout_

@@ -116,7 +116,7 @@ services:
       - DEV_MODE=${DEV_MODE}
       - DOMAIN_CONNECTION_PORT=${DOMAIN_CONNECTION_PORT}
       - INSTALL_OBLV_CLI=${INSTALL_OBLV_CLI}
-    command: /start.sh
+    command: "/app/grid/start.sh"
     network_mode: service:proxy
     volumes:
       - credentials-data:/credentials
@@ -149,7 +149,7 @@ services:
       - DEV_MODE=${DEV_MODE}
       - DOMAIN_CONNECTION_PORT=${DOMAIN_CONNECTION_PORT}
       - INSTALL_OBLV_CLI=${INSTALL_OBLV_CLI}
-    command: "/start.sh"
+    command: "/app/grid/start.sh"
     network_mode: service:proxy
     volumes:
       - credentials-data:/credentials
@@ -184,7 +184,7 @@ services:
       - DEV_MODE=${DEV_MODE}
       - DOMAIN_CONNECTION_PORT=${DOMAIN_CONNECTION_PORT}
       - INSTALL_OBLV_CLI=${INSTALL_OBLV_CLI}
-    command: "/worker-start.sh"
+    command: "/app/grid/worker-start.sh"
     network_mode: service:proxy
     volumes:
       - credentials-data:/credentials

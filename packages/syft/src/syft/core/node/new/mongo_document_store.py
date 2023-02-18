@@ -23,6 +23,7 @@ from .credentials import SyftVerifyKey
 from .document_store import DocumentStore
 from .document_store import QueryKey
 from .document_store import QueryKeys
+from .document_store import StoreClientConfig
 from .document_store import StoreConfig
 from .document_store import StorePartition
 from .mongo_client import MongoClient
@@ -37,7 +38,7 @@ class MongoBsonObject(StorableObjectType, dict):
 
 
 def to_mongo(context: TransformContext) -> TransformContext:
-    output_dict = {}
+    output = {}
     for k in context.obj.__attr_searchable__:
         # 🟡 TODO 24: pass in storage abstraction and detect unsupported types
         # if unsupported, convert to string
@@ -47,15 +48,14 @@ def to_mongo(context: TransformContext) -> TransformContext:
         if isinstance(value, Enum):
             value = value.value
 
-        output_dict[k] = value
-
+        output[k] = value
     blob = serialize(dict(context.obj), to_bytes=True)
-    output_dict["_id"] = context.output["id"].value  # type: ignore
-    output_dict["__canonical_name__"] = context.obj.__canonical_name__
-    output_dict["__version__"] = context.obj.__version__
-    output_dict["__blob__"] = blob
-    output_dict["__repr__"] = context.obj.__repr__()
-    context.output = output_dict
+    output["_id"] = context.output["id"].value  # type: ignore
+    output["__canonical_name__"] = context.obj.__canonical_name__
+    output["__version__"] = context.obj.__version__
+    output["__blob__"] = blob
+    output["__repr__"] = context.obj.__repr__()
+    context.output = output
     return context
 
 
@@ -87,7 +87,7 @@ class MongoStorePartition(StorePartition):
     __attr_allowlist__ = [
         "storage_type",
         "settings",
-        "store_client_config",
+        "store_config",
         "unique_cks",
         "searchable_cks",
     ]
@@ -98,8 +98,10 @@ class MongoStorePartition(StorePartition):
         self._init_collection()
 
     def _init_collection(self):
-        client = MongoClient.from_config(config=self.store_client_config)
-        self._collection = client.with_collection(collection_settings=self.settings)
+        client = MongoClient.from_config(config=self.store_config.client_config)
+        self._collection = client.with_collection(
+            collection_settings=self.settings, store_config=self.store_config
+        )
         self._create_update_index()
 
     @property
@@ -239,4 +241,6 @@ class MongoDocumentStore(DocumentStore):
 
 @serializable(recursive_serde=True)
 class MongoStoreConfig(StoreConfig):
+    client_config: StoreClientConfig
     store_type: Type[DocumentStore] = MongoDocumentStore
+    db_name: str = "app"
