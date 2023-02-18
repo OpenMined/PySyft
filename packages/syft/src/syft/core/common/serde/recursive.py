@@ -90,7 +90,6 @@ def rs_object2proto(self: Any) -> _DynamicStructBuilder:
 
     msg.init("fieldsName", len(attribute_list))
     msg.init("fieldsData", len(attribute_list))
-
     for idx, attr_name in enumerate(sorted(attribute_list)):
         if not hasattr(self, attr_name):
             raise ValueError(

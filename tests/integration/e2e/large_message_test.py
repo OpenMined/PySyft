@@ -27,7 +27,7 @@ def test_large_blob_upload() -> None:
     # from syft.grid.connections.http_connection import HTTPConnection
     # HTTPConnection.proxies = {"http": "http://127.0.0.1:8080"}
 
-    domain_client = sy.login(
+    domain_client = sy.old_login(
         email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
     )
 

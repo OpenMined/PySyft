@@ -12,6 +12,9 @@ from typing import Type
 from typing import Union
 
 # third party
+import gevent
+import gipc
+from gipc.gipc import _GIPCDuplexHandle
 from nacl.signing import SigningKey
 from result import Err
 from result import Result
@@ -20,10 +23,13 @@ from result import Result
 from ... import __version__
 from ...core.node.common.node_table.syft_object import HIGHEST_SYFT_OBJECT_VERSION
 from ...core.node.common.node_table.syft_object import LOWEST_SYFT_OBJECT_VERSION
+from ...core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ...core.node.common.node_table.syft_object import SyftObject
 from ...telemetry import instrument
 from ...util import random_name
+from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import serializable
+from ..common.serde.serialize import _serialize
 from ..common.uid import UID
 from .new.action_service import ActionService
 from .new.action_store import ActionStore
@@ -35,20 +41,35 @@ from .new.context import NodeServiceContext
 from .new.context import UnauthedServiceContext
 from .new.context import UserLoginCredentials
 from .new.credentials import SyftSigningKey
+from .new.data_subject_service import DataSubjectService
 from .new.dataset_service import DatasetService
 from .new.dict_document_store import DictStoreConfig
 from .new.document_store import StoreConfig
 from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
+from .new.queue_stash import QueueItem
+from .new.queue_stash import QueueStash
 from .new.request_service import RequestService
+from .new.response import SyftError
 from .new.service import AbstractService
 from .new.service import ServiceConfigRegistry
+from .new.sqlite_document_store import SQLiteStoreClientConfig
+from .new.sqlite_document_store import SQLiteStoreConfig
 from .new.test_service import TestService
 from .new.user import User
 from .new.user import UserCreate
 from .new.user_code_service import UserCodeService
 from .new.user_service import UserService
 from .new.user_stash import UserStash
+
+
+def gipc_encoder(obj):
+    return _serialize(obj, to_bytes=True)
+
+
+def gipc_decoder(obj_bytes):
+    return _deserialize(obj_bytes, from_bytes=True)
+
 
 NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
 NODE_UID = "NODE_UID"
@@ -70,6 +91,17 @@ signing_key_env = get_private_key_env()
 node_uid_env = get_node_uid_env()
 
 
+@serializable(recursive_serde=True)
+class WorkerSettings(SyftObject):
+    __canonical_name__ = "WorkerSettings"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID
+    name: str
+    signing_key: SyftSigningKey
+    store_config: StoreConfig
+
+
 @instrument
 @serializable(recursive_serde=True)
 class Worker(NewNode):
@@ -82,10 +114,14 @@ class Worker(NewNode):
         name: Optional[str] = None,
         id: Optional[UID] = None,
         services: Optional[List[Type[AbstractService]]] = None,
-        signing_key: Optional[SigningKey] = SigningKey.generate(),
+        signing_key: Optional[
+            Union[SyftSigningKey, SigningKey]
+        ] = SigningKey.generate(),
         store_config: Optional[StoreConfig] = None,
         root_email: str = "info@openmined.org",
         root_password: str = "changethis",
+        processes: int = 0,
+        is_subprocess: bool = False,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -99,8 +135,11 @@ class Worker(NewNode):
         if signing_key_env is not None:
             self.signing_key = SyftSigningKey.from_string(signing_key_env)
         else:
-            self.signing_key = SyftSigningKey(signing_key=signing_key)
-
+            if isinstance(signing_key, SigningKey):
+                signing_key = SyftSigningKey(signing_key=signing_key)
+            self.signing_key = signing_key
+        self.processes = processes
+        self.is_subprocess = is_subprocess
         if name is None:
             name = random_name()
         self.name = name
@@ -112,13 +151,14 @@ class Worker(NewNode):
                 DatasetService,
                 UserCodeService,
                 RequestService,
+                DataSubjectService,
             ]
             if services is None
             else services
         )
         self.services = services
+
         self.service_config = ServiceConfigRegistry.get_registered_configs()
-        store_config = DictStoreConfig() if store_config is None else store_config
         self.init_stores(store_config=store_config)
         self._construct_services()
         create_admin_new(  # nosec B106
@@ -127,18 +167,40 @@ class Worker(NewNode):
             password="changethis",
             node=self,
         )
+
         self.post_init()
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}: {self.name} - {self.id} {self.services}"
 
     def post_init(self) -> None:
-        print(f"Starting {self}")
+        if self.is_subprocess:
+            print(f"Starting Subprocess {self}")
+        else:
+            print(f"Starting {self}")
         # super().post_init()
 
-    def init_stores(self, store_config: StoreConfig):
+    def init_stores(self, store_config: Optional[StoreConfig]):
+        if store_config is None:
+            if self.processes > 0 and not self.is_subprocess:
+                client_config = SQLiteStoreClientConfig()
+                store_config = SQLiteStoreConfig(client_config=client_config)
+            else:
+                store_config = DictStoreConfig()
+        if (
+            isinstance(store_config, SQLiteStoreConfig)
+            and store_config.client_config.filename is None
+        ):
+            store_config.client_config.filename
+            store_config.client_config.filename = f"{self.id}.sqlite"
+            print(
+                f"SQLite Store Path:\n!open file://{store_config.client_config.file_path}\n"
+            )
         document_store = store_config.store_type
-        self.document_store = document_store(client_config=store_config.client_config)
+        self.store_config = store_config
+
+        self.document_store = document_store(store_config=store_config)
+        self.queue_stash = QueueStash(store=self.document_store)
 
     def _construct_services(self):
         self.service_path_map = {}
@@ -152,6 +214,7 @@ class Worker(NewNode):
                 DatasetService,
                 UserCodeService,
                 RequestService,
+                DataSubjectService,
             ]:
                 kwargs["store"] = self.document_store
             self.service_path_map[service_klass.__name__.lower()] = service_klass(
@@ -208,9 +271,15 @@ class Worker(NewNode):
 
         return True
 
+    def resolve_future(self, uid: UID) -> Union[Optional[QueueItem], SyftError]:
+        result = self.queue_stash.pop(uid)
+        if result.is_ok():
+            return result.ok()
+        return result.err()
+
     def handle_api_call(
         self, api_call: Union[SyftAPICall, SignedSyftAPICall]
-    ) -> Result[SyftObject, Err]:
+    ) -> Result[Union[QueueItem, SyftObject], Err]:
         if self.required_signed_calls and isinstance(api_call, SyftAPICall):
             return Err(
                 f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."  # type: ignore
@@ -219,19 +288,49 @@ class Worker(NewNode):
             if not api_call.is_valid:
                 return Err("Your message signature is invalid")  # type: ignore
 
-        credentials = api_call.credentials
-        api_call = api_call.message
+        if api_call.message.path == "queue":
+            return self.resolve_future(uid=api_call.message.kwargs["uid"])
 
-        context = AuthedServiceContext(node=self, credentials=credentials)
+        result = None
+        if self.is_subprocess or self.processes == 0:
+            credentials = api_call.credentials
+            api_call = api_call.message
 
-        # 🔵 TODO 4: Add @service decorator to autobind services into the SyftAPI
-        if api_call.path not in self.service_config:
-            return Err(f"API call not in registered services: {api_call.path}")  # type: ignore
+            context = AuthedServiceContext(node=self, credentials=credentials)
 
-        _private_api_path = ServiceConfigRegistry.private_path_for(api_call.path)
+            # 🔵 TODO 4: Add @service decorator to autobind services into the SyftAPI
+            if api_call.path not in self.service_config:
+                return Err(f"API call not in registered services: {api_call.path}")  # type: ignore
 
-        method = self.get_service_method(_private_api_path)
-        result = method(context, *api_call.args, **api_call.kwargs)
+            _private_api_path = ServiceConfigRegistry.private_path_for(api_call.path)
+            method = self.get_service_method(_private_api_path)
+            result = method(context, *api_call.args, **api_call.kwargs)
+        else:
+            worker_settings = WorkerSettings(
+                id=self.id,
+                name=self.name,
+                signing_key=self.signing_key,
+                store_config=self.store_config,
+            )
+
+            task_uid = UID()
+            item = QueueItem(id=task_uid, node_uid=self.id)
+            # 🟡 TODO 36: Needs distributed lock
+            # self.queue_stash.set_placeholder(item)
+            # self.queue_stash.partition.commit()
+
+            thread = gevent.spawn(
+                queue_task,
+                api_call,
+                worker_settings,
+                task_uid,
+                api_call.message.blocking,
+            )
+            if api_call.message.blocking:
+                gevent.joinall([thread])
+                result = thread.value
+            else:
+                result = item
         return result
 
     def get_api(self) -> SyftAPI:
@@ -247,6 +346,84 @@ class Worker(NewNode):
         self, login_credentials: UserLoginCredentials
     ) -> NodeServiceContext:
         return UnauthedServiceContext(node=self, login_credentials=login_credentials)
+
+
+def task_producer(
+    pipe: _GIPCDuplexHandle, api_call: SyftAPICall, blocking: bool
+) -> Any:
+    try:
+        result = None
+        with pipe:
+            pipe.put(api_call)
+            gevent.sleep(0)
+            if blocking:
+                try:
+                    result = pipe.get()
+                except EOFError:
+                    pass
+            pipe.close()
+        if blocking:
+            return result
+    except gipc.gipc.GIPCClosed:
+        pass
+    except Exception as e:
+        print("Exception in task_producer", e)
+
+
+def task_runner(
+    pipe: _GIPCDuplexHandle,
+    worker_settings: WorkerSettings,
+    task_uid: UID,
+    blocking: bool,
+) -> None:
+    worker = Worker(
+        id=worker_settings.id,
+        name=worker_settings.name,
+        signing_key=worker_settings.signing_key,
+        store_config=worker_settings.store_config,
+        is_subprocess=True,
+    )
+    try:
+        with pipe:
+            api_call = pipe.get()
+            result = worker.handle_api_call(api_call)
+            if blocking:
+                pipe.put(result)
+            else:
+                item = QueueItem(
+                    node_uid=worker.id, id=task_uid, result=result, resolved=True
+                )
+                worker.queue_stash.set_result(item)
+                worker.queue_stash.partition.close()
+            pipe.close()
+    except Exception as e:
+        print("Exception in task_runner", e)
+
+
+def queue_task(
+    api_call: SyftAPICall,
+    worker_settings: WorkerSettings,
+    task_uid: UID,
+    blocking: bool,
+) -> Optional[Any]:
+    with gipc.pipe(encoder=gipc_encoder, decoder=gipc_decoder, duplex=True) as (
+        cend,
+        pend,
+    ):
+        process = gipc.start_process(
+            task_runner, args=(cend, worker_settings, task_uid, blocking)
+        )
+        producer = gevent.spawn(task_producer, pend, api_call, blocking)
+        try:
+            process.join()
+        except KeyboardInterrupt:
+            producer.kill(block=True)
+            process.terminate()
+        process.join()
+
+    if blocking:
+        return producer.value
+    return None
 
 
 def create_admin_new(
