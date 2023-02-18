@@ -20,6 +20,7 @@ from typing_extensions import Self
 
 # relative
 from .... import __version__
+from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....grid import GridURL
 from ....logger import debug
 from ....telemetry import instrument
@@ -73,9 +74,14 @@ class Routes(Enum):
 DEFAULT_PYGRID_PORT = 80
 DEFAULT_PYGRID_ADDRESS = f"http://localhost:{DEFAULT_PYGRID_PORT}"
 
+PYTHON_WORKERS = {}
+
 
 @serializable(recursive_serde=True)
 class HTTPConnection(NodeConnection):
+    __canonical_name__ = "HTTPConnection"
+    __version__ = SYFT_OBJECT_VERSION_1
+
     proxies: Dict[str, str] = {}
     url: GridURL
     routes: Routes = Routes
@@ -172,10 +178,10 @@ class HTTPConnection(NodeConnection):
 
 @serializable(recursive_serde=True)
 class PythonConnection(NodeConnection):
-    node: NewNode
+    __canonical_name__ = "PythonConnection"
+    __version__ = SYFT_OBJECT_VERSION_1
 
-    def __init__(self, node: NewNode) -> None:
-        self.node = node
+    node: NewNode
 
     def get_node_metadata(self) -> NodeMetadataJSON:
         return self.node.metadata().to(NodeMetadataJSON)
@@ -244,6 +250,8 @@ class SyftClient:
 
     @staticmethod
     def from_node(node: NewNode) -> Self:
+        if node.id not in PYTHON_WORKERS:
+            PYTHON_WORKERS[node.id] = node
         return SyftClient(connection=PythonConnection(node=node))
 
     @property
@@ -338,6 +346,8 @@ def login(
     cache: bool = True,
 ) -> SyftClient:
     if node:
+        if node.id not in PYTHON_WORKERS:
+            PYTHON_WORKERS[node.id] = node
         connection = PythonConnection(node=node)
     else:
         url = GridURL.from_url(url)

@@ -85,7 +85,7 @@ class SyftObjectRegistry:
         cls, type_from: Type["SyftObject"], type_to: Type["SyftObject"]
     ) -> Callable:
         for type_from_mro in type_from.mro():
-            if issubclass(type_from_mro, SyftBaseObject):
+            if issubclass(type_from_mro, SyftObject):
                 klass_from = type_from_mro.__canonical_name__
                 version_from = type_from_mro.__version__
             else:
@@ -186,6 +186,18 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
             return fqn
         except Exception:
             return str(type(self))
+
+    def _repr_debug_(self) -> str:
+        class_name = get_qualname_for(type(self))
+        _repr_str = f"class {class_name}:\n"
+        fields = getattr(self, "__fields__", {})
+        for attr in fields.keys():
+            value = getattr(self, attr, "<Missing>")
+            value_type = full_name_with_qualname(type(attr))
+            value_type = value_type.replace("builtins.", "")
+            value = f'"{value}"' if isinstance(value, str) else value
+            _repr_str += f"  {attr}: {value_type} = {value}\n"
+        return _repr_str
 
     def _repr_markdown_(self) -> str:
         class_name = get_qualname_for(type(self))

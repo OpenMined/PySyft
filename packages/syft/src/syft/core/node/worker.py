@@ -23,7 +23,6 @@ from result import Result
 from ... import __version__
 from ...core.node.common.node_table.syft_object import HIGHEST_SYFT_OBJECT_VERSION
 from ...core.node.common.node_table.syft_object import LOWEST_SYFT_OBJECT_VERSION
-from ...core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ...core.node.common.node_table.syft_object import SyftObject
 from ...telemetry import instrument
 from ...util import random_name
@@ -45,6 +44,7 @@ from .new.data_subject_service import DataSubjectService
 from .new.dataset_service import DatasetService
 from .new.dict_document_store import DictStoreConfig
 from .new.document_store import StoreConfig
+from .new.network_service import NetworkService
 from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
 from .new.queue_stash import QueueItem
@@ -61,6 +61,7 @@ from .new.user import UserCreate
 from .new.user_code_service import UserCodeService
 from .new.user_service import UserService
 from .new.user_stash import UserStash
+from .new.worker_settings import WorkerSettings
 
 
 def gipc_encoder(obj):
@@ -89,17 +90,6 @@ def get_env(key: str) -> Optional[str]:
 
 signing_key_env = get_private_key_env()
 node_uid_env = get_node_uid_env()
-
-
-@serializable(recursive_serde=True)
-class WorkerSettings(SyftObject):
-    __canonical_name__ = "WorkerSettings"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    id: UID
-    name: str
-    signing_key: SyftSigningKey
-    store_config: StoreConfig
 
 
 @instrument
@@ -152,6 +142,7 @@ class Worker(NewNode):
                 UserCodeService,
                 RequestService,
                 DataSubjectService,
+                NetworkService,
             ]
             if services is None
             else services
@@ -215,6 +206,7 @@ class Worker(NewNode):
                 UserCodeService,
                 RequestService,
                 DataSubjectService,
+                NetworkService,
             ]:
                 kwargs["store"] = self.document_store
             self.service_path_map[service_klass.__name__.lower()] = service_klass(

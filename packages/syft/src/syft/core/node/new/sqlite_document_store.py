@@ -27,6 +27,12 @@ from .kv_document_store import KeyValueBackingStore
 from .kv_document_store import KeyValueStorePartition
 
 
+def _repr_debug_(value: Any) -> str:
+    if hasattr(value, "_repr_debug_"):
+        return value._repr_debug_()
+    return repr(value)
+
+
 class SQLiteBackingStore(KeyValueBackingStore):
     def __init__(
         self, index_name: str, settings: PartitionSettings, store_config: StoreConfig
@@ -40,7 +46,8 @@ class SQLiteBackingStore(KeyValueBackingStore):
         self.cur = self.db.cursor()
         try:
             self.cur.execute(
-                f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, value BLOB NOT NULL)"  # nosec
+                f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
+                + "repr TEXT NOT NULL, value BLOB NOT NULL)"  # nosec
             )
             self.db.commit()
         except sqlite3.OperationalError as e:
@@ -64,26 +71,22 @@ class SQLiteBackingStore(KeyValueBackingStore):
             if self._exists(key):
                 self._update(key, value)
             else:
-                insert_sql = (
-                    f"insert into {self.table_name} (uid, value) VALUES (?, ?)"  # nosec
-                )
+                insert_sql = f"insert into {self.table_name} (uid, repr, value) VALUES (?, ?, ?)"  # nosec
                 data = _serialize(value, to_bytes=True)
-                self._execute(insert_sql, [str(key), data])
+                self._execute(insert_sql, [str(key), _repr_debug_(value), data])
         except Exception as e:
             print("Failed to _set", e)
             raise e
 
     def _update(self, key: UID, value: Any) -> None:
-        insert_sql = (
-            f"update {self.table_name} set uid = ?, value = ? where uid = ?"  # nosec
-        )
+        insert_sql = f"update {self.table_name} set uid = ?, repr = ?, value = ? where uid = ?"  # nosec
         data = _serialize(value, to_bytes=True)
-        self._execute(insert_sql, [str(key), data, str(key)])
+        self._execute(insert_sql, [str(key), _repr_debug_(value), data, str(key)])
 
     def _get(self, key: UID) -> Any:
         select_sql = f"select * from {self.table_name} where uid = ?"  # nosec
         row = self._execute(select_sql, [str(key)]).fetchone()
-        data = row[1]
+        data = row[2]
         return _deserialize(data, from_bytes=True)
 
     def _exists(self, key: UID) -> Any:
@@ -99,7 +102,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
             rows = self._execute(select_sql).fetchall()
             for row in rows:
                 keys.append(UID(row[0]))
-                data.append(_deserialize(row[1], from_bytes=True))
+                data.append(_deserialize(row[2], from_bytes=True))
             return dict(zip(keys, data))
         except Exception as e:
             print("Failed to _get_all", e)
