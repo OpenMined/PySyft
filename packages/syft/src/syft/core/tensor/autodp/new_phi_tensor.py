@@ -79,10 +79,22 @@ class BoundsArray():
         if not self.shape:
             self.shape = self.data.shape
 
-        return np.broadcast_to(self.data, self.shape)
+        return np.broadcast_to(self.lower_bounds, self.shape), np.broadcast_to(self.upper_bounds, self.shape)
 
-    def delete(self, indexes, axis):
-        raise NotImplemented
+    def __getitem__(self, item: Union[str, int, slice]):
+        if isinstance(item, int):
+            if item < self.lower_bounds.shape[0]:
+                return BoundsArray(
+                    lower_bounds=self.lower_bounds[item],
+                    upper_bounds=self.upper_bounds[item],
+                    shape=self.shape[1:]
+                )
+            else:
+                return BoundsArray(
+                    lower_bounds=self.lower_bounds[item//self.lower_bounds.shape[0]],
+                    upper_bounds=self.upper_bounds[item//self.lower_bounds.shape[0]],
+                    shape=self.shape[1:]
+                )
 
     @staticmethod
     def compress_data(min_data, max_data):
@@ -131,7 +143,7 @@ class RowPhiTensors():
     def reduce_op(self, op, *args, **kwargs):
         new_data = getattr(self.data, op)(*args, **kwargs)
         is_linear = is_op_linear(op)
-        return GammaTensor(child=new_data, jax_op=None, sources={self.id}, is_linear=is_linear)
+        return GammaTensor(child=new_data, jax_op=None, sources={self.id: self}, is_linear=is_linear)
     
     def create_gamma(self):
         jax_op = SyftTerminalNoop(phi_id=self.id)
@@ -146,6 +158,8 @@ class RowPhiTensors():
         return state[self.id] 
 
     def filtered(self, data_subjects):
+        if len(data_subjects) == 0:
+            return self.data 
         # TODO: Optimize this???
         data_subjects_indexes = [
             self.data_subjects.index(data_subject) for data_subject in data_subjects
@@ -156,13 +170,8 @@ class RowPhiTensors():
                 new_data_subjects.append(data_subject)
         
         new_data = np.delete(self.data, data_subjects_indexes, 0)
-        new_bounds = self.bounds.delete(data_subjects_indexes, 0)
         
-        return RowPhiTensors(
-            data=new_data,
-            data_subjects=new_data_subjects,
-            bounds=new_bounds
-        )
+        return new_data
     
     def __add__(self, other):
         return self.broadcast_op('__add__', other)

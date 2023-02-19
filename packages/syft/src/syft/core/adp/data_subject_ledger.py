@@ -455,7 +455,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
             )
 
         # get the budget
-        print("got user budget", old_user_budget, "epsilon_spent", epsilon_spend)
+        # print("got user budget", old_user_budget, "epsilon_spent", epsilon_spend)
         deduct_epsilon_for_user(
             verify_key=self.user_key,
             old_budget=old_user_budget,

@@ -16,6 +16,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 from numpy.typing import NDArray
 from scipy.ndimage import rotate
+import jax.numpy as jnp
 
 # relative
 from .... import lib
@@ -3907,6 +3908,9 @@ class PhiTensor(PassthroughTensor):
             min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
             max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
         )
+
+    def filtered(self):
+        return jnp.zeros_like(self.child)
 
     # def _object2bytes(self) -> bytes:
     #     schema = get_capnp_schema(schema_file="phi_tensor.capnp")

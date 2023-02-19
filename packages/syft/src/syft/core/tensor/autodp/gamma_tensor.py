@@ -1969,7 +1969,7 @@ class GammaTensor:
             "data_subjects": self.data_subjects,
         }  # TODO 0.7: maybe this is obsolete now?
 
-    def reconstruct(self, state: Dict) -> GammaTensor:
+    def reconstruct(self, state: Dict) -> np.ndarray:
         return self.func(state)
 
     def swap_state(self, state: dict) -> GammaTensor:
