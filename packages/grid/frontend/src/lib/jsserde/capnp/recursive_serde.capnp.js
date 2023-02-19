@@ -7,6 +7,9 @@ import * as capnp from 'capnp-ts';
 import * as capnp_ts_1 from 'capnp-ts';
 export const _capnpFileId = BigInt('0xd7dd27f3820d22ee');
 export class RecursiveSerde extends capnp_ts_1.Struct {
+  /**
+   * @param {capnp.Orphan<capnp.Pointer>} value
+   */
   adoptFieldsName(value) {
     capnp_ts_1.Struct.adopt(value, capnp_ts_1.Struct.getPointer(0, this));
   }
@@ -19,12 +22,21 @@ export class RecursiveSerde extends capnp_ts_1.Struct {
   hasFieldsName() {
     return !capnp_ts_1.Struct.isNull(capnp_ts_1.Struct.getPointer(0, this));
   }
+  /**
+   * @param {number} length
+   */
   initFieldsName(length) {
     return capnp_ts_1.Struct.initList(0, capnp.TextList, length, this);
   }
+  /**
+   * @param {capnp.Pointer} value
+   */
   setFieldsName(value) {
     capnp_ts_1.Struct.copyFrom(value, capnp_ts_1.Struct.getPointer(0, this));
   }
+  /**
+   * @param {capnp.Orphan<capnp.Pointer>} value
+   */
   adoptFieldsData(value) {
     capnp_ts_1.Struct.adopt(value, capnp_ts_1.Struct.getPointer(1, this));
   }
@@ -37,18 +49,30 @@ export class RecursiveSerde extends capnp_ts_1.Struct {
   hasFieldsData() {
     return !capnp_ts_1.Struct.isNull(capnp_ts_1.Struct.getPointer(1, this));
   }
+  /**
+   * @param {number} length
+   */
   initFieldsData(length) {
     return capnp_ts_1.Struct.initList(1, capnp.DataList, length, this);
   }
+  /**
+   * @param {capnp.Pointer} value
+   */
   setFieldsData(value) {
     capnp_ts_1.Struct.copyFrom(value, capnp_ts_1.Struct.getPointer(1, this));
   }
   getFullyQualifiedName() {
     return capnp_ts_1.Struct.getText(2, this);
   }
+  /**
+   * @param {string} value
+   */
   setFullyQualifiedName(value) {
     capnp_ts_1.Struct.setText(2, value, this);
   }
+  /**
+   * @param {capnp.Orphan<capnp.Pointer>} value
+   */
   adoptNonrecursiveBlob(value) {
     capnp_ts_1.Struct.adopt(value, capnp_ts_1.Struct.getPointer(3, this));
   }
@@ -61,9 +85,15 @@ export class RecursiveSerde extends capnp_ts_1.Struct {
   hasNonrecursiveBlob() {
     return !capnp_ts_1.Struct.isNull(capnp_ts_1.Struct.getPointer(3, this));
   }
+  /**
+   * @param {number} length
+   */
   initNonrecursiveBlob(length) {
     return capnp_ts_1.Struct.initData(3, length, this);
   }
+  /**
+   * @param {capnp.Pointer} value
+   */
   setNonrecursiveBlob(value) {
     capnp_ts_1.Struct.copyFrom(value, capnp_ts_1.Struct.getPointer(3, this));
   }

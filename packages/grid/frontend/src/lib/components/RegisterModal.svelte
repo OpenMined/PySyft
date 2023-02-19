@@ -1,6 +1,6 @@
 <script>
   import { Input, Label, Modal, Checkbox, Button, Helper } from 'flowbite-svelte';
-  import { SyftMessageWithoutReply } from '../lib/jsserde/objects/syftMessage.ts';
+  import { SyftMessageWithoutReply } from '$lib/jsserde/objects/syftMessage.ts';
   export let formModal;
   export let client;
   export let nodeId;

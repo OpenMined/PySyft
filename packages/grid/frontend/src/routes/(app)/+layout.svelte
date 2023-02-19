@@ -1,9 +1,9 @@
 <script>
   import '../../app.postcss';
   import { goto } from '$app/navigation';
-  import OnBoardModal from '../../components/onBoardModal.svelte';
-  import Sidebar from '../../components/Sidebar.svelte';
-  import Navbar from '../../components/Navbar.svelte';
+  import OnBoardModal from '../../lib/components/onBoardModal.svelte';
+  import Sidebar from '../../lib/components/Sidebar.svelte';
+  import Navbar from '../../lib/components/Navbar.svelte';
   import { store } from '../../lib/store.js';
 
   let client;

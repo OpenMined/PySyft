@@ -1,19 +1,19 @@
 import { writable } from 'svelte/store';
-import { JSClient } from './jsserde/jsClient.svelte';
+import { JSClient } from './jsserde/jsClient.js';
 
 export const store = writable({
-  client: ''
+  client: JSClient
 });
 
 export async function getClient() {
-  let newStore = '';
+  let newClient = JSClient;
   store.subscribe((value) => {
-    newStore = value;
+    newClient = value.client;
   });
 
-  if (!newStore.client) {
-    newStore.client = await new JSClient('http://localhost:8081');
-    store.set(newStore);
+  if (!newClient) {
+    newClient = await new JSClient('http://localhost:8081');
+    store.set(newClient);
   }
-  return newStore.client;
+  return newClient;
 }
