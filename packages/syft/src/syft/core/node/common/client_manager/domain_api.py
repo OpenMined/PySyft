@@ -123,7 +123,6 @@ class DomainRequestAPI(RequestAPI):
 def check_domain_status(
     self: DomainRequestAPI, i: int, n: int, domain_uid: str
 ) -> bool:
-
     sys.stdout.write(
         "\rChecking whether domains are online: " + str(i + 1) + " of " + str(n)
     )

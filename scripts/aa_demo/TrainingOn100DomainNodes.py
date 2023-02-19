@@ -25,7 +25,6 @@ def get_domain_addresses():
 
 
 def initialize_model(input_shape) -> nn.Model:
-
     # create an empty model
     model = nn.Model()
 
@@ -58,7 +57,7 @@ def initialize_model(input_shape) -> nn.Model:
 
 
 def get_input_shape(domain_address):
-    domain = sy.login(url=domain_address, email=USER_EMAIL, password=USER_PASSWORD)
+    domain = sy.old_login(url=domain_address, email=USER_EMAIL, password=USER_PASSWORD)
     X_train = domain.datasets[-1]["train_images"][:2]  # just taking first two images.
     return X_train.public_shape
 
@@ -86,12 +85,11 @@ def train_on_domains(domain_addresses):
     model = initialize_model(input_shape=input_shape)
 
     for i, address in enumerate(domain_addresses):
-
         print()
         print("=================================" * 3)
 
         # Log into the domain
-        domain = sy.login(url=address, email=USER_EMAIL, password=USER_PASSWORD)
+        domain = sy.old_login(url=address, email=USER_EMAIL, password=USER_PASSWORD)
 
         print(f"Domain: {i+1} ({domain.name})")
 

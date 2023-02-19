@@ -1,8 +1,6 @@
 # stdlib
 from enum import Enum
-from typing import Any
 from typing import Callable
-from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -17,14 +15,17 @@ from pydantic.networks import EmailStr
 # relative
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import SyftObject
-from ....core.node.common.node_table.syft_object import transform
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
+from .transforms import TransformContext
 from .transforms import drop
+from .transforms import generate_id
 from .transforms import keep
 from .transforms import make_set_default
+from .transforms import transform
+from .transforms import validate_email
 
 
 class ServiceRoleCapability(Enum):
@@ -51,7 +52,7 @@ class User(SyftObject):
     __canonical_name__ = "User"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID] = None
+    id: Optional[UID]
 
     @pydantic.validator("email", pre=True, always=True)
     def make_email(cls, v: EmailStr) -> EmailStr:
@@ -71,6 +72,7 @@ class User(SyftObject):
 
     # serde / storage rules
     __attr_state__ = [
+        "id",
         "email",
         "name",
         "hashed_password",
@@ -82,33 +84,28 @@ class User(SyftObject):
     ]
     __attr_searchable__ = ["name", "email"]
     __attr_unique__ = ["email", "signing_key", "verify_key"]
+    __attr_repr_cols__ = ["name", "email"]
 
 
 def default_role(role: ServiceRole) -> Callable:
     return make_set_default(key="role", value=role)
 
 
-def hash_password(_self: Any, output: Dict) -> Dict:
-    if output["password"] is not None and (
-        output["password"] == output["password_verify"]
+def hash_password(context: TransformContext) -> TransformContext:
+    if context.output["password"] is not None and (
+        context.output["password"] == context.output["password_verify"]
     ):
-        salt, hashed = __salt_and_hash_password(output["password"], 12)
-        output["hashed_password"] = hashed
-        output["salt"] = salt
-    return output
+        salt, hashed = __salt_and_hash_password(context.output["password"], 12)
+        context.output["hashed_password"] = hashed
+        context.output["salt"] = salt
+    return context
 
 
-def generate_key(_self: Any, output: Dict) -> Dict:
+def generate_key(context: TransformContext) -> TransformContext:
     signing_key = SyftSigningKey.generate()
-    output["signing_key"] = signing_key
-    output["verify_key"] = signing_key.verify_key
-    return output
-
-
-def generate_id(_self: Any, output: Dict) -> Dict:
-    if not isinstance(output["id"], UID):
-        output["id"] = UID()
-    return output
+    context.output["signing_key"] = signing_key
+    context.output["verify_key"] = signing_key.verify_key
+    return context
 
 
 def __salt_and_hash_password(password: str, rounds: int) -> Tuple[str, str]:
@@ -125,13 +122,6 @@ def check_pwd(password: str, hashed_password: str) -> bool:
         password=password.encode("utf-8"),
         hashed_password=hashed_password.encode("utf-8"),
     )
-
-
-def validate_email(_self: Any, output: Dict) -> Dict:
-    if output["email"] is not None:
-        output["email"] = EmailStr(output["email"])
-        EmailStr.validate(output["email"])
-    return output
 
 
 @serializable(recursive_serde=True)
@@ -169,11 +159,26 @@ class UserCreate(UserUpdate):
     institution: Optional[str] = None
     website: Optional[str] = None
 
+    __attr_repr_cols__ = ["name", "email"]
+
+
+@serializable(recursive_serde=True)
+class UserSearch(SyftObject):
+    __canonical_name__ = "UserSearch"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: Optional[UID]
+    email: Optional[EmailStr]
+    verify_key: Optional[SyftVerifyKey]
+    name: Optional[str]
+
 
 @serializable(recursive_serde=True)
 class UserView(UserUpdate):
     __canonical_name__ = "UserView"
     __version__ = SYFT_OBJECT_VERSION_1
+
+    __attr_repr_cols__ = ["name", "email"]
 
 
 @transform(UserUpdate, User)

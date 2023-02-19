@@ -1,8 +1,13 @@
+# stdlib
+
 # third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from oblv.oblv_client import OblvClient
+from pandas import DataFrame
+from pandas import Series
 import pydantic
+from pymongo.collection import Collection
 from result import Err
 from result import Ok
 from result import Result
@@ -41,6 +46,29 @@ recursive_serde_register_type(Result, attr_allowlist=["_value"])
 
 # exceptions
 recursive_serde_register(cls=TypeError)
+
+# mongo collection
+recursive_serde_register_type(Collection)
+
+
+# pandas
+recursive_serde_register(
+    DataFrame,
+    serialize=lambda x: serialize(x.to_dict(), to_bytes=True),
+    deserialize=lambda x: DataFrame.from_dict(deserialize(x, from_bytes=True)),
+)
+
+
+def deserialize_series(blob: bytes) -> Series:
+    df = DataFrame.from_dict(deserialize(blob, from_bytes=True))
+    return df[df.columns[0]]
+
+
+recursive_serde_register(
+    Series,
+    serialize=lambda x: serialize(DataFrame(x).to_dict(), to_bytes=True),
+    deserialize=deserialize_series,
+)
 
 # how else do you import a relative file to execute it?
 NOTHING = None

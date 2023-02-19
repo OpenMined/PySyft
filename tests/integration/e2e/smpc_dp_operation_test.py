@@ -72,8 +72,8 @@ def test_addition(
     create_data_scientist(domain2_port, **data_scientist(email, password))
 
     # Data Scientist logs in to both domains
-    domain1 = sy.login(email=email, password=password, port=domain1_port)
-    domain2 = sy.login(email=email, password=password, port=domain2_port)
+    domain1 = sy.old_login(email=email, password=password, port=domain1_port)
+    domain2 = sy.old_login(email=email, password=password, port=domain2_port)
 
     # Check that datasets are visible
     assert len(domain1.datasets) > 0
@@ -125,8 +125,8 @@ def test_subtraction(
     create_data_scientist(domain2_port, **data_scientist(email, password))
 
     # Data Scientist logs in to both domains
-    domain1 = sy.login(email=email, password=password, port=domain1_port)
-    domain2 = sy.login(email=email, password=password, port=domain2_port)
+    domain1 = sy.old_login(email=email, password=password, port=domain1_port)
+    domain2 = sy.old_login(email=email, password=password, port=domain2_port)
 
     # Check that datasets are visible
     assert len(domain1.datasets) > 0
@@ -164,8 +164,8 @@ def test_mul(
     create_data_scientist(domain2_port, **data_scientist(email, password))
 
     # Data Scientist logs in to both domains
-    domain1 = sy.login(email=email, password=password, port=domain1_port)
-    domain2 = sy.login(email=email, password=password, port=domain2_port)
+    domain1 = sy.old_login(email=email, password=password, port=domain1_port)
+    domain2 = sy.old_login(email=email, password=password, port=domain2_port)
 
     # Check that datasets are visible
     assert len(domain1.datasets) > 0
@@ -203,8 +203,8 @@ def test_matmul(
     create_data_scientist(domain2_port, **data_scientist(email, password))
 
     # Data Scientist logs in to both domains
-    domain1 = sy.login(email=email, password=password, port=domain1_port)
-    domain2 = sy.login(email=email, password=password, port=domain2_port)
+    domain1 = sy.old_login(email=email, password=password, port=domain1_port)
+    domain2 = sy.old_login(email=email, password=password, port=domain2_port)
 
     # Check that datasets are visible
     assert len(domain1.datasets) > 0
@@ -242,8 +242,8 @@ def test_lt(
     create_data_scientist(domain2_port, **data_scientist(email, password))
 
     # Data Scientist logs in to both domains
-    domain1 = sy.login(email=email, password=password, port=domain1_port)
-    domain2 = sy.login(email=email, password=password, port=domain2_port)
+    domain1 = sy.old_login(email=email, password=password, port=domain1_port)
+    domain2 = sy.old_login(email=email, password=password, port=domain2_port)
 
     # Check that datasets are visible
     assert len(domain1.datasets) > 0
@@ -281,8 +281,8 @@ def test_gt(
     create_data_scientist(domain2_port, **data_scientist(email, password))
 
     # Data Scientist logs in to both domains
-    domain1 = sy.login(email=email, password=password, port=domain1_port)
-    domain2 = sy.login(email=email, password=password, port=domain2_port)
+    domain1 = sy.old_login(email=email, password=password, port=domain1_port)
+    domain2 = sy.old_login(email=email, password=password, port=domain2_port)
 
     # Check that datasets are visible
     assert len(domain1.datasets) > 0
@@ -323,8 +323,8 @@ def test_gt(
 #     create_data_scientist(domain2_port, **data_scientist(email, password))
 
 #     # Data Scientist logs in to both domains
-#     domain1 = sy.login(email=email, password=password, port=domain1_port)
-#     domain2 = sy.login(email=email, password=password, port=domain2_port)
+#     domain1 = sy.old_login(email=email, password=password, port=domain1_port)
+#     domain2 = sy.old_login(email=email, password=password, port=domain2_port)
 
 #     # Check that datasets are visible
 #     assert len(domain1.datasets) > 0
@@ -363,8 +363,8 @@ def test_gt(
 #     create_data_scientist(domain2_port, **data_scientist(email, password))
 
 #     # Data Scientist logs in to both domains
-#     domain1 = sy.login(email=email, password=password, port=domain1_port)
-#     domain2 = sy.login(email=email, password=password, port=domain2_port)
+#     domain1 = sy.old_login(email=email, password=password, port=domain1_port)
+#     domain2 = sy.old_login(email=email, password=password, port=domain2_port)
 
 #     # Check that datasets are visible
 #     assert len(domain1.datasets) > 0
@@ -403,8 +403,8 @@ def test_gt(
 #     create_data_scientist(domain2_port, **data_scientist(email, password))
 
 #     # Data Scientist logs in to both domains
-#     domain1 = sy.login(email=email, password=password, port=domain1_port)
-#     domain2 = sy.login(email=email, password=password, port=domain2_port)
+#     domain1 = sy.old_login(email=email, password=password, port=domain1_port)
+#     domain2 = sy.old_login(email=email, password=password, port=domain2_port)
 
 #     # Check that datasets are visible
 #     assert len(domain1.datasets) > 0
@@ -443,8 +443,8 @@ def test_gt(
 #     create_data_scientist(domain2_port, **data_scientist(email, password))
 
 #     # Data Scientist logs in to both domains
-#     domain1 = sy.login(email=email, password=password, port=domain1_port)
-#     domain2 = sy.login(email=email, password=password, port=domain2_port)
+#     domain1 = sy.old_login(email=email, password=password, port=domain1_port)
+#     domain2 = sy.old_login(email=email, password=password, port=domain2_port)
 
 #     # Check that datasets are visible
 #     assert len(domain1.datasets) > 0

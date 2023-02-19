@@ -13,7 +13,7 @@ DOMAIN1_PORT = 9082
 
 @pytest.mark.e2e
 def test_get_timeout() -> None:
-    domain_client = sy.login(
+    domain_client = sy.old_login(
         email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
     )
 

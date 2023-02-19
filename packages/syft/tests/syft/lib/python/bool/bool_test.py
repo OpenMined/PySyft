@@ -278,10 +278,10 @@ def test_sane_len():
 
         try:
             Bool(A())
-        except (Exception) as e_bool:
+        except Exception as e_bool:
             try:
                 len(A())
-            except (Exception) as e_len:
+            except Exception as e_len:
                 assert str(e_bool) == str(e_len)
 
 

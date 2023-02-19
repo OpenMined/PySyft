@@ -28,7 +28,6 @@ class DataSubject:
     __attr_allowlist__ = ("name",)
 
     def __init__(self, name: str = "") -> None:
-
         # If someone doesn't provide a unique name - make one up!
         if name == "":
             name = names.get_full_name().replace(" ", "_") + "_g"

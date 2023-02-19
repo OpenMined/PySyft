@@ -11,18 +11,18 @@ from result import Result
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ..document_store import BaseStash
-from ..document_store import CollectionSettings
 from ..document_store import DocumentStore
+from ..document_store import PartitionSettings
 from ..document_store import QueryKeys
-from ..document_store import UIDCollectionKey
+from ..document_store import UIDPartitionKey
 from .oblv_keys import OblvKeys
 
 
 @serializable(recursive_serde=True)
 class OblvKeysStash(BaseStash):
     object_type = OblvKeys
-    settings: CollectionSettings = CollectionSettings(
-        name=OblvKeys.__canonical_name__, object_type=OblvKeys
+    settings: PartitionSettings = PartitionSettings(
+        name=OblvKeys.__canonical_name__, object_type=OblvKeys, db_name="app"
     )
 
     def __init__(self, store: DocumentStore) -> None:
@@ -42,11 +42,11 @@ class OblvKeysStash(BaseStash):
             return Err("Domain Node already has an existing public/private key pair")
 
     def get_by_uid(self, uid: UID) -> Result[Optional[OblvKeys], str]:
-        qks = QueryKeys(qks=[UIDCollectionKey.with_obj(uid)])
+        qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
         return Ok(self.query_one(qks=qks))
 
     def delete_by_uid(self, uid: UID) -> Result[bool, str]:
-        qk = UIDCollectionKey.with_obj(uid)
+        qk = UIDPartitionKey.with_obj(uid)
         return super().delete(qk=qk)
 
     def update(self, oblv_keys: OblvKeys) -> Result[OblvKeys, str]:

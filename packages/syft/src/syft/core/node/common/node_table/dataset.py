@@ -34,7 +34,7 @@ class NoSQLBinObjDataset(SyftObject):
 @serializable(recursive_serde=True)
 class NoSQLDataset(SyftObject):
     # version
-    __canonical_name__ = "Dataset"
+    __canonical_name__ = "NoSQLDataset"
     __version__ = SYFT_OBJECT_VERSION_1
 
     # fields

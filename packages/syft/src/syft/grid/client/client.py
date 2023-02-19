@@ -91,12 +91,10 @@ def login(
     retry: Optional[int] = None,
     via_new_client: Optional[bool] = None,
 ) -> Union[Client, SyftClient]:
-
     retry = 5 if retry is None else retry  # Default to 5 retries
     timeout = 30 if timeout is None else timeout  # Default to 10 seconds
 
     if password == "changethis":  # nosec
-
         if email == "info@openmined.org":
             print(
                 f"{bcolors.YELLOW}WARNING:{bcolors.ENDC} CHANGE YOUR USERNAME AND PASSWORD!!! \n\n"
@@ -163,7 +161,7 @@ def login(
                 f"timed out after {timeout} seconds.\n"
                 "\tPlease try the following options:\n"
                 "\t- Please try increasing the timeout by passing it as an argument to the login method.\n"
-                "\te.g. `sy.login(email='my@email.com', password='password', url='localhost', timeout=30)`\n"
+                "\te.g. `sy.old_login(email='my@email.com', password='password', url='localhost', timeout=30)`\n"
                 "\t- The domain/network node you're trying to connect could be offline "
                 "at the current moment. Please try again later.\t"
             )

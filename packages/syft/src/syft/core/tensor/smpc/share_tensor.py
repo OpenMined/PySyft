@@ -862,7 +862,6 @@ class ShareTensor(PassthroughTensor):
         """
 
         def method_all_shares(_self: ShareTensor, *args: Any, **kwargs: Any) -> Any:
-
             share = _self.child
 
             method = getattr(share, method_name)

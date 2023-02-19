@@ -5,5 +5,5 @@ REF = "manual_code"
 REGION = "us-west-2"
 VCS = "github"
 VISIBILITY = "private"
-LOCAL_MODE = False
-LOCAL_MODE_CONNECTION_PORT = 3030
+LOCAL_MODE = True
+DOMAIN_CONNECTION_PORT = 3030

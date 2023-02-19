@@ -7,7 +7,6 @@ from typing import Optional
 from typing import Type
 
 # third party
-import boto3
 from nacl.signing import VerifyKey
 from typing_extensions import final
 
@@ -28,7 +27,6 @@ from ..generic_payload.syft_message import RequestPayload
 @serializable(recursive_serde=True)
 @final
 class UploadDataMessage(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         """Payload fields and types used during a User Creation Request."""
@@ -102,7 +100,6 @@ class UploadDataMessage(SyftMessage, DomainMessageRegistry):
 @serializable(recursive_serde=True)
 @final
 class UploadDataCompleteMessage(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         """Payload fields and types used during a User Creation Request."""
@@ -127,13 +124,15 @@ class UploadDataCompleteMessage(SyftMessage, DomainMessageRegistry):
     def run(  # type: ignore
         self, node: DomainInterface, verify_key: Optional[VerifyKey] = None
     ) -> ReplyPayload:  # type: ignore
-
         # TODO: Move to permissions
         # user_role = node.roles.first(**{"id": current_user.role})
         # if not user_role.can_upload_data:
         #    return {"message": "You're not authorized to do this."}
 
         key = f"{self.payload.filename}"
+        # third party
+        import boto3
+
         client: boto3.client.S3 = get_s3_client(settings=node.settings)
         _ = client.complete_multipart_upload(
             Bucket=node.id.no_dash,
@@ -151,7 +150,6 @@ class UploadDataCompleteMessage(SyftMessage, DomainMessageRegistry):
 @serializable(recursive_serde=True)
 @final
 class AbortDataUploadMessage(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         """Payload fields and types used during Deletion of Incomplete Data Upload Request."""
@@ -175,11 +173,12 @@ class AbortDataUploadMessage(SyftMessage, DomainMessageRegistry):
     def run(  # type: ignore
         self, node: DomainInterface, verify_key: Optional[VerifyKey] = None
     ) -> ReplyPayload:  # type: ignore
-
         # TODO: Move to permissions
         # user_role = node.roles.first(**{"id": current_user.role})
         # if not user_role.can_upload_data:
         #    return {"message": "You're not authorized to do this."}
+        # third party
+        import boto3
 
         client: boto3.client.S3 = get_s3_client(settings=node.settings)
 

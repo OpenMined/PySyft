@@ -2,8 +2,10 @@
 from collections import OrderedDict
 from collections import defaultdict
 from enum import Enum
+from enum import EnumMeta
 import functools
 import sys
+from types import CodeType
 from types import MappingProxyType
 from typing import Any
 from typing import Collection
@@ -14,19 +16,18 @@ from typing import TypeVar
 from typing import Union
 from typing import _GenericAlias
 from typing import _SpecialForm
-
-try:
-    # stdlib
-    from typing import _UnionGenericAlias
-except Exception:
-    _UnionGenericAlias = None
-
-# stdlib
 from typing import cast
 
 # relative
 from .capnp import get_capnp_schema
 from .recursive import recursive_serde_register
+
+# import types unsupported on python 3.8
+if sys.version_info >= (3, 9):
+    # stdlib
+    from typing import _SpecialGenericAlias
+    from typing import _UnionGenericAlias
+
 
 iterable_schema = get_capnp_schema("iterable.capnp").Iterable  # type: ignore
 kv_iterable_schema = get_capnp_schema("kv_iterable.capnp").KVIterable  # type: ignore
@@ -56,7 +57,6 @@ def deserialize_iterable(iterable_type: type, blob: bytes) -> Collection:
     with iterable_schema.from_bytes(  # type: ignore
         blob, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
     ) as msg:
-
         for element in msg.values:
             values.append(_deserialize(element, from_bytes=True))
 
@@ -89,7 +89,7 @@ def get_deserialized_kv_pairs(blob: bytes) -> List[Any]:
     with kv_iterable_schema.from_bytes(  # type: ignore
         blob, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
     ) as msg:
-        for (key, value) in zip(msg.keys, msg.values):
+        for key, value in zip(msg.keys, msg.values):
             pairs.append(
                 (
                     _deserialize(key, from_bytes=True),
@@ -325,8 +325,62 @@ def recursive_serde_register_type(
 
 
 recursive_serde_register_type(_SpecialForm)
-if _UnionGenericAlias is not None:
-    recursive_serde_register_type(_UnionGenericAlias)
 recursive_serde_register_type(_GenericAlias)
 recursive_serde_register_type(Union)
 recursive_serde_register_type(TypeVar)
+
+if sys.version_info >= (3, 9):
+    recursive_serde_register_type(_UnionGenericAlias)
+    recursive_serde_register_type(_SpecialGenericAlias)
+
+recursive_serde_register_type(EnumMeta)
+
+
+# serde for code object
+code_ser_args = [
+    "co_argcount",  # serde arguments for code object
+    "co_posonlyargcount",
+    "co_kwonlyargcount",
+    "co_nlocals",
+    "co_stacksize",
+    "co_flags",
+    "co_code",
+    "co_consts",
+    "co_names",
+    "co_varnames",
+    "co_filename",
+    "co_name",
+    "co_firstlineno",
+    "co_linetable",
+    "co_freevars",
+    "co_cellvars",
+]
+
+
+def serialize_code_object(code: CodeType) -> bytes:
+    # relative
+    from .serialize import _serialize
+
+    values = []
+    for arg in code_ser_args:
+        if not hasattr(code, arg):
+            raise TypeError(f"Code object does not contain {arg}")
+
+        values.append(getattr(code, arg))
+    return _serialize(values, to_bytes=True)
+
+
+def deserialize_code_object(blob: bytes) -> CodeType:
+    # relative
+    from .deserialize import _deserialize
+
+    values = _deserialize(blob, from_bytes=True)
+    # C-python API does not take keyword arguments
+    return CodeType(*values)
+
+
+recursive_serde_register(
+    CodeType,
+    serialize=serialize_code_object,
+    deserialize=deserialize_code_object,
+)

@@ -26,11 +26,14 @@ import requests
 # relative
 from ..core.common.serde.deserialize import _deserialize as deserialize
 from ..core.common.uid import UID
-from ..core.node.abstract.node import AbstractNodeClient
 from ..core.node.common.exceptions import OblvEnclaveError
 from ..core.node.common.exceptions import OblvUnAuthorizedError
 from ..core.node.new.action_object import ActionObjectPointer
 from ..core.node.new.api import SyftAPI
+from ..core.node.new.client import HTTPConnection
+from ..core.node.new.client import Routes
+from ..core.node.new.client import SyftClient
+from ..core.node.new.client import SyftSigningKey
 from ..core.node.new.task.task import NodeView
 from ..util import bcolors
 from .constants import LOCAL_MODE
@@ -38,7 +41,6 @@ from .oblv_proxy import check_oblv_proxy_installation_status
 
 
 class DeploymentClient:
-
     deployment_id: str
     user_key_name: str
     domain_clients: List[Any] = []  # List of domain client objects
@@ -230,7 +232,7 @@ class DeploymentClient:
 
     def request_code_execution(
         self,
-        inputs: Dict[AbstractNodeClient, Dict],
+        inputs: Dict[SyftClient, Dict],
         code: Union[str, Callable],
         outputs: Iterable[str],
     ):
@@ -250,7 +252,7 @@ class DeploymentClient:
         # TODO: 🟣 Simplify code structure for inputs fields
         # TODO: 🟣 Additional sanity checks for inputs fields
         for client, client_input_map in inputs.items():
-            if not isinstance(client, AbstractNodeClient):
+            if not isinstance(client, SyftClient):
                 raise ValueError(
                     "Each entry in inputs for enclave execution must be Client to inputs mapping"
                 )
@@ -289,6 +291,7 @@ class DeploymentClient:
             oblv_metadata=oblv_metadata,
         )
         display(HTML(res._repr_html_()))
+        return task_id
 
     def get_uploaded_datasets(self) -> Dict:
         self.check_connection_string()
@@ -356,11 +359,13 @@ class DeploymentClient:
         self.check_connection_string()
         req = self.make_request_to_enclave(
             requests.get,
-            connection_string=self.__conn_string + "/worker/api",
+            connection_string=self.__conn_string + Routes.ROUTE_API.value,
         )
         self.sanity_check_oblv_response(req)
         obj = deserialize(req.content, from_bytes=True)
-        obj.api_url = f"{self.__conn_string}/worker/syft_api_call"
+        # TODO 🟣 Retrieve of signing key of user after permission  is fully integrated
+        obj.signing_key = SyftSigningKey.generate()
+        obj.connection = HTTPConnection(self.__conn_string)
         return cast(SyftAPI, obj)
 
     # public attributes

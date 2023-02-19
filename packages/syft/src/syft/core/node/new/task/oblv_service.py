@@ -2,7 +2,7 @@
 from base64 import encodebytes
 from datetime import date
 import os
-import subprocess
+import subprocess  # nosec
 from typing import Callable
 from typing import Dict
 from typing import List
@@ -220,7 +220,7 @@ def generate_oblv_key() -> Tuple[bytes]:
 
 @serializable(recursive_serde=True)
 class OblvService(AbstractService):
-    document_store: DocumentStore
+    store: DocumentStore
     oblv_keys_stash: OblvKeysStash
     enclave_transfer_request_stash: EnclaveTransferRequestStash
 
@@ -261,7 +261,12 @@ class OblvService(AbstractService):
         "Retrieves the public key present on the Domain Node."
 
         if len(self.oblv_keys_stash):
-            oblv_keys = self.oblv_keys_stash.get_all()[0]
+            oblv_keys = self.oblv_keys_stash.get_all()
+            if oblv_keys.is_ok():
+                oblv_keys = oblv_keys.ok()[0]
+            else:
+                return oblv_keys.err()
+
             public_key_str = (
                 encodebytes(oblv_keys.public_key).decode("UTF-8").replace("\n", "")
             )
@@ -345,7 +350,6 @@ class OblvService(AbstractService):
         self,
         context: AuthedServiceContext,
     ) -> Result[Ok, Err]:
-
         res = self.oblv_keys_stash.get_all()[0]
         assert isinstance(res, OblvKeys)
         return res
@@ -356,7 +360,6 @@ class OblvService(AbstractService):
         context: AuthedServiceContext,
         oblv_key: OblvKeys,
     ) -> Result[Ok, Err]:
-
         self.oblv_keys_stash.clear()
         res = self.oblv_keys_stash.set(oblv_key)
 
