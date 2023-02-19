@@ -1,10 +1,9 @@
 # stdlib
-from uuid import uuid4
 
 # third party
 import numpy as np
+import pandas as pd
 import pytest
-import requests
 
 # syft absolute
 import syft as sy
@@ -17,11 +16,12 @@ LOCAL_ENCLAVE_PORT = 8010
 
 
 def download_dataset(url: str) -> np.ndarray:
-    req = requests.get(url)
-    uid = str(uuid4())
-    csv_file = open(f"/tmp/{uid}.csv", "wb")
-    csv_file.write(req.content)
-    np_data = np.genfromtxt(fname=f"/tmp/{uid}.csv", delimiter=",", dtype=str)
+    data = pd.read_csv(
+        "https://raw.githubusercontent.com/OpenMined/datasets/main/PUMS_DATA/canada_data.csv",
+        header=None,
+        dtype=str,
+    )
+    np_data = data._values.astype(np.str_)
     return NumpyArrayObject(syft_action_data=np_data)
 
 
