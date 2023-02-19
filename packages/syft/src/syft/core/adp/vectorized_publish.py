@@ -136,24 +136,15 @@ def publish(
     # gaussian to eliminate floating pt vulns
 
     # Continuous Gaussian Noise
-    noise = np.asarray(
-        [secrets.SystemRandom().gauss(0, sigma) for _ in range(original_output.size)]
-    ).reshape(original_output.shape)
-
-    # print("ORIGINAL: ", original_output)
-    # print("NOISE: ", noise)
-    # print("FINAL: ", original_output + noise)
+    # noise = np.asarray(
+    #     [secrets.SystemRandom().gauss(0, sigma) for _ in range(original_output.size)]
+    # ).reshape(original_output.shape)
 
     # Discrete Gaussian Noise
     noise = np.asarray(
         [discrete_gaussian(sigma) for _ in range(original_output.size)]
         ).reshape(original_output.shape)
-
-    print("\n\n\n DISCRETE")
-    print("ORIGINAL: ", original_output)
-    print("\nNOISE: ", noise)
     
-    # print("\nFINAL: ", original_output + noise)
     return original_output + noise
 
 
