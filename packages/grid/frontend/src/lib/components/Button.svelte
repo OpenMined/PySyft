@@ -44,7 +44,6 @@
   .outlined-primary {
     @apply text-primary-500 border-solid border-2 border-primary-500 rounded;
   }
-
   .delete {
     @apply bg-magenta-500 text-white;
   }
@@ -68,7 +67,6 @@
   .right {
     @apply mr-0;
   }
-
   .none {
   }
 </style>

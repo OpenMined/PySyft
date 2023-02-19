@@ -39,7 +39,7 @@
     await client
       .login(email, password)
       .then(() => {
-        goto('/home');
+        goto('/signup');
       })
       .catch((error) => {
         errorText = error.message;
