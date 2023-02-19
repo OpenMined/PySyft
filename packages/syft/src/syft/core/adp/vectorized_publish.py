@@ -23,6 +23,7 @@ from ..tensor.passthrough import PassthroughTensor  # type: ignore
 from .data_subject_ledger import DataSubjectLedger
 from .data_subject_ledger import RDPParams
 from .data_subject_ledger import compute_rdp_constant
+from .discrete_gaussian import discrete_gaussian
 
 if TYPE_CHECKING:
     # relative
@@ -113,12 +114,12 @@ def publish(
         except Exception as e:
             print(f"Problem spending epsilon. {e}")
             raise e
-
+    
     # The RDP constants are adjusted to account for the amount of exposure every
     # data subject's data has had.
     data_subject_rdp_constants: Dict[str, np.ndarray] = {}
     for tensor_id in rdp_constants:
-        data_subject = tensor.sources[tensor_id].data_subject.to_string()
+        data_subject = tensor.sources[tensor_id].data_subject #.to_string()
         # convert back to numpy for serde
         data_subject_rdp_constants[data_subject] = np.array(
             max(
@@ -133,10 +134,26 @@ def publish(
     # We sample noise from a cryptographically secure distribution
     # TODO(0.8): Replace with discrete gaussian distribution instead of regular
     # gaussian to eliminate floating pt vulns
+
+    # Continuous Gaussian Noise
     noise = np.asarray(
         [secrets.SystemRandom().gauss(0, sigma) for _ in range(original_output.size)]
     ).reshape(original_output.shape)
 
+    # print("ORIGINAL: ", original_output)
+    # print("NOISE: ", noise)
+    # print("FINAL: ", original_output + noise)
+
+    # Discrete Gaussian Noise
+    noise = np.asarray(
+        [discrete_gaussian(sigma) for _ in range(original_output.size)]
+        ).reshape(original_output.shape)
+
+    print("\n\n\n DISCRETE")
+    print("ORIGINAL: ", original_output)
+    print("\nNOISE: ", noise)
+    
+    # print("\nFINAL: ", original_output + noise)
     return original_output + noise
 
 
