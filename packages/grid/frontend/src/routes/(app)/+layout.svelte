@@ -1,10 +1,10 @@
 <script>
-  import '../../app.postcss';
+  import '../../app.css';
   import { goto } from '$app/navigation';
-  import OnBoardModal from '../../lib/components/onBoardModal.svelte';
-  import Sidebar from '../../lib/components/Sidebar.svelte';
-  import Navbar from '../../lib/components/Navbar.svelte';
-  import { store } from '../../lib/store.js';
+  import OnBoardModal from '$lib/components/onBoardModal.svelte';
+  import Sidebar from '$lib/components/Sidebar.svelte';
+  import Navbar from '$lib/components/Navbar.svelte';
+  import { store } from '$lib/store.js';
 
   let client;
   let activeUrl = '/home';
@@ -39,10 +39,9 @@
 
 <main>
   {#await loadGlobalInfos() then none}
-    <Navbar bind:user_info />
+    <Navbar bind:user_info bind:client/>
     <Sidebar bind:activeUrl bind:metadata bind:user_info />
-    <OnBoardModal {client} bind:user_info bind:metadata />
+    <!--<OnBoardModal {client} bind:user_info bind:metadata />-->
   {/await}
 </main>
-<svelte:window />
 <slot />
