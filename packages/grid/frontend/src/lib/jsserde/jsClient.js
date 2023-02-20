@@ -18,7 +18,7 @@ export class JSClient {
       this.url = url;
       this.msg_url = url + '/api/v1/syft/js';
       this.node_id = await this.metadata.then((metadata) => {
-        return metadata.get('id').get('value');
+        return metadata.id.value;
       });
       return this;
     })();
@@ -75,7 +75,7 @@ export class JSClient {
 
         metadataObj.id = nodeAddrObj;
         window.sessionStorage.setItem('metadata', JSON.stringify(metadataObj));
-        return metadata;
+        return metadataObj;
       });
   }
 
