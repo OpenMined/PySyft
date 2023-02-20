@@ -1,5 +1,4 @@
 # stdlib
-from enum import Enum
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -16,7 +15,6 @@ from result import Result
 from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize as serialize
-from ...common.uid import UID
 from ..common.node_table.syft_object import StorableObjectType
 from ..common.node_table.syft_object import SyftObject
 from ..common.node_table.syft_object import SyftObjectRegistry
@@ -46,11 +44,6 @@ def to_mongo(context: TransformContext) -> TransformContext:
         value = getattr(context.obj, k, "")
         if isinstance(value, SyftVerifyKey):
             value = str(value)
-        if isinstance(value, Enum):
-            value = value.value
-        if isinstance(value, UID):
-            value = value.no_dash
-
         output[k] = value
     blob = serialize(dict(context.obj), to_bytes=True)
     output["_id"] = context.output["id"].value  # type: ignore
@@ -232,9 +225,6 @@ class MongoStorePartition(StorePartition):
     def all(self):
         qks = QueryKeys(qks=())
         return self.get_all_from_store(qks=qks)
-
-    def __len__(self):
-        return self._collection.count_documents(filter={})
 
 
 @serializable(recursive_serde=True)

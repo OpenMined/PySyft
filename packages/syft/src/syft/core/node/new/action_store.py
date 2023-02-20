@@ -84,13 +84,11 @@ class ActionStore:
             root_verify_key = SyftSigningKey.generate().verify_key
         self.root_verify_key = root_verify_key
 
-    def get(
-        self, uid: UID, credentials: SyftVerifyKey, skip_permission: bool = False
-    ) -> Result[SyftObject, str]:
-        # TODO 🟣 Temporarily added skip permission for enclave tests
+    def get(self, uid: UID, credentials: SyftVerifyKey) -> Result[SyftObject, str]:
         # if you get something you need READ permission
         read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
-        if skip_permission or self.has_permission(read_permission):
+        # if True:
+        if self.has_permission(read_permission):
             data = self.data[uid]
             syft_object = SyftObject.from_mongo(data)
             return Ok(syft_object)

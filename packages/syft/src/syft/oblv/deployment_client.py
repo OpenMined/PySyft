@@ -3,7 +3,6 @@ from __future__ import annotations
 
 # stdlib
 from datetime import datetime
-import inspect
 import json
 import os
 from signal import SIGTERM
@@ -13,10 +12,8 @@ import time
 from typing import Any
 from typing import Callable
 from typing import Dict
-from typing import Iterable
 from typing import List
 from typing import Optional
-from typing import Union
 from typing import cast
 
 # third party
@@ -25,16 +22,9 @@ import requests
 
 # relative
 from ..core.common.serde.deserialize import _deserialize as deserialize
-from ..core.common.uid import UID
 from ..core.node.common.exceptions import OblvEnclaveError
 from ..core.node.common.exceptions import OblvUnAuthorizedError
-from ..core.node.new.action_object import ActionObjectPointer
 from ..core.node.new.api import SyftAPI
-from ..core.node.new.client import HTTPConnection
-from ..core.node.new.client import Routes
-from ..core.node.new.client import SyftClient
-from ..core.node.new.client import SyftSigningKey
-from ..core.node.new.task.task import NodeView
 from ..util import bcolors
 from .constants import LOCAL_MODE
 from .oblv_proxy import check_oblv_proxy_installation_status
@@ -230,69 +220,6 @@ class DeploymentClient:
                 f"Failed to perform the operation  with status {req.status_code}"
             )
 
-    def request_code_execution(
-        self,
-        inputs: Dict[SyftClient, Dict],
-        code: Union[str, Callable],
-        outputs: Iterable[str],
-    ):
-        # third party
-        from IPython.display import HTML
-        from IPython.display import display
-
-        if not inspect.isfunction(code) and not isinstance(code, str):
-            raise Exception("The code should either be a function or  string ...")
-
-        if inspect.isfunction(code):
-            code = inspect.getsource(code)
-
-        # Step1 : Restructing inputs
-        node_input_map = {}
-        clients = inputs.keys()
-        # TODO: 🟣 Simplify code structure for inputs fields
-        # TODO: 🟣 Additional sanity checks for inputs fields
-        for client, client_input_map in inputs.items():
-            if not isinstance(client, SyftClient):
-                raise ValueError(
-                    "Each entry in inputs for enclave execution must be Client to inputs mapping"
-                )
-            node_view = NodeView.from_client(client)
-            for data_name, data_value in client_input_map.items():
-                if isinstance(data_value, ActionObjectPointer):
-                    client_input_map[data_name] = data_value.id
-            node_input_map[node_view] = client_input_map
-
-        # Step2: Send manual code requests to the domains clients
-        task_id = UID()  # Set a unique task id to be sent to all the data owners
-        owners: List[NodeView] = []
-        oblv_metadata = {
-            "deployment_id": self.deployment_id,
-            "oblv_client": self.oblv_client,
-        }
-        for client in clients:
-            node_view = NodeView.from_client(client)
-            owners.append(node_view)
-            res = client.api.services.task.create_domain_task(
-                inputs=node_input_map,
-                code=code,
-                outputs=outputs,
-                owners=[node_view],
-                task_id=task_id,
-                oblv_metadata=oblv_metadata,
-            )
-            display(HTML(res._repr_html_()))
-
-        res = self.api.services.task.create_enclave_task(
-            inputs=node_input_map,
-            code=code,
-            outputs=outputs,
-            owners=owners,
-            task_id=task_id,
-            oblv_metadata=oblv_metadata,
-        )
-        display(HTML(res._repr_html_()))
-        return task_id
-
     def get_uploaded_datasets(self) -> Dict:
         self.check_connection_string()
 
@@ -359,13 +286,11 @@ class DeploymentClient:
         self.check_connection_string()
         req = self.make_request_to_enclave(
             requests.get,
-            connection_string=self.__conn_string + Routes.ROUTE_API.value,
+            connection_string=self.__conn_string + "/worker/api",
         )
         self.sanity_check_oblv_response(req)
         obj = deserialize(req.content, from_bytes=True)
-        # TODO 🟣 Retrieve of signing key of user after permission  is fully integrated
-        obj.signing_key = SyftSigningKey.generate()
-        obj.connection = HTTPConnection(self.__conn_string)
+        obj.api_url = f"{self.__conn_string}/worker/syft_api_call"
         return cast(SyftAPI, obj)
 
     # public attributes

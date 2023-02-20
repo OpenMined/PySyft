@@ -115,7 +115,6 @@ services:
       - ASSOCIATION_TIMEOUT=${ASSOCIATION_TIMEOUT}
       - DEV_MODE=${DEV_MODE}
       - DOMAIN_CONNECTION_PORT=${DOMAIN_CONNECTION_PORT}
-      - INSTALL_OBLV_CLI=${INSTALL_OBLV_CLI}
     command: "/app/grid/start.sh"
     network_mode: service:proxy
     volumes:
@@ -148,7 +147,6 @@ services:
       - JAEGER_PORT=${JAEGER_PORT}
       - DEV_MODE=${DEV_MODE}
       - DOMAIN_CONNECTION_PORT=${DOMAIN_CONNECTION_PORT}
-      - INSTALL_OBLV_CLI=${INSTALL_OBLV_CLI}
     command: "/app/grid/start.sh"
     network_mode: service:proxy
     volumes:
@@ -183,7 +181,6 @@ services:
       - JAEGER_PORT=${JAEGER_PORT}
       - DEV_MODE=${DEV_MODE}
       - DOMAIN_CONNECTION_PORT=${DOMAIN_CONNECTION_PORT}
-      - INSTALL_OBLV_CLI=${INSTALL_OBLV_CLI}
     command: "/app/grid/worker-start.sh"
     network_mode: service:proxy
     volumes:
