@@ -20,6 +20,7 @@ from typing_extensions import Self
 
 # relative
 from .... import __version__
+from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....grid import GridURL
 from ....logger import debug
 from ....telemetry import instrument
@@ -76,6 +77,9 @@ DEFAULT_PYGRID_ADDRESS = f"http://localhost:{DEFAULT_PYGRID_PORT}"
 
 @serializable(recursive_serde=True)
 class HTTPConnection(NodeConnection):
+    __canonical_name__ = "HTTPConnection"
+    __version__ = SYFT_OBJECT_VERSION_1
+
     proxies: Dict[str, str] = {}
     url: GridURL
     routes: Routes = Routes
@@ -151,7 +155,6 @@ class HTTPConnection(NodeConnection):
         obj = _deserialize(response, from_bytes=True)
         if isinstance(obj, UserPrivateKey):
             return obj.signing_key
-        print(obj)
         return None
 
     def make_call(self, signed_call: SyftAPICall) -> Union[Any, SyftError]:
@@ -172,13 +175,13 @@ class HTTPConnection(NodeConnection):
 
 @serializable(recursive_serde=True)
 class PythonConnection(NodeConnection):
+    __canonical_name__ = "PythonConnection"
+    __version__ = SYFT_OBJECT_VERSION_1
+
     node: NewNode
 
-    def __init__(self, node: NewNode) -> None:
-        self.node = node
-
     def get_node_metadata(self) -> NodeMetadataJSON:
-        return self.node.metadata().to(NodeMetadataJSON)
+        return self.node.metadata.to(NodeMetadataJSON)
 
     def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
         obj = self.node.get_api()
@@ -207,7 +210,6 @@ class PythonConnection(NodeConnection):
         obj = self.exchange_credentials(email=email, password=password)
         if isinstance(obj, UserPrivateKey):
             return obj.signing_key
-        print(obj)
         return None
 
     def make_call(self, signed_call: SyftAPICall) -> Union[Any, SyftError]:
@@ -215,6 +217,7 @@ class PythonConnection(NodeConnection):
 
 
 @instrument
+@serializable(recursive_serde=True)
 class SyftClient:
     connection: NodeConnection
     metadata: Optional[NodeMetadataJSON]
@@ -283,6 +286,14 @@ class SyftClient:
                 return tuple(valid.err())
             return valid.err()
 
+    def exchange_route(self, client: Self) -> None:
+        result = self.api.services.network.exchange_credentials_with(client=client)
+        if result:
+            result = self.api.services.network.add_route_for(
+                route=self.route, client=client
+            )
+        return result
+
     @property
     def data_subject_registry(self) -> Optional[APIModule]:
         if self.api is not None and hasattr(self.api.services, "data_subject"):
@@ -301,6 +312,17 @@ class SyftClient:
                     connection=self.connection,
                     syft_client=self,
                 )
+
+    @property
+    def peer(self) -> Any:
+        # relative
+        from .network_service import NodePeer
+
+        return NodePeer.from_client(self)
+
+    @property
+    def route(self) -> Any:
+        return self.connection.route
 
     def __hash__(self) -> int:
         return hash(self.id) + hash(self.connection)
