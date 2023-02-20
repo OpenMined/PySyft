@@ -27,25 +27,55 @@ from .kv_document_store import KeyValueBackingStore
 from .kv_document_store import KeyValueStorePartition
 
 
+def _repr_debug_(value: Any) -> str:
+    if hasattr(value, "_repr_debug_"):
+        return value._repr_debug_()
+    return repr(value)
+
+
+@serializable(recursive_serde=True)
 class SQLiteBackingStore(KeyValueBackingStore):
+    __attr_state__ = ["index_name", "settings", "store_config"]
+
     def __init__(
         self, index_name: str, settings: PartitionSettings, store_config: StoreConfig
     ) -> None:
+        self.index_name = index_name
         self.settings = settings
         self.store_config = store_config
-        self.index_name = index_name
-        self.table_name = f"{self.settings.name}_{self.index_name}"
+
+    @property
+    def table_name(self) -> str:
+        return f"{self.settings.name}_{self.index_name}"
+
+    def _connect(self) -> None:
         self.file_path = self.store_config.client_config.file_path
-        self.db = sqlite3.connect(self.file_path)
-        self.cur = self.db.cursor()
+        self._db = sqlite3.connect(self.file_path)
+        # self._db.set_trace_callback(print)
+        self._cur = self._db.cursor()
         try:
-            self.cur.execute(
-                f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, value BLOB NOT NULL)"  # nosec
+            self._cur.execute(
+                f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
+                + "repr TEXT NOT NULL, value BLOB NOT NULL)"  # nosec
             )
-            self.db.commit()
+            self._db.commit()
         except sqlite3.OperationalError as e:
             if f"table {self.table_name} already exists" not in str(e):
                 raise e
+
+    @property
+    def db(self) -> sqlite3.Connection:
+        if hasattr(self, "_db"):
+            return self._db
+        self._connect()
+        return self._db
+
+    @property
+    def cur(self) -> sqlite3.Cursor:
+        if hasattr(self, "_cur"):
+            return self._cur
+        self._connect()
+        return self._cur
 
     def _close(self) -> None:
         self._commit()
@@ -64,26 +94,22 @@ class SQLiteBackingStore(KeyValueBackingStore):
             if self._exists(key):
                 self._update(key, value)
             else:
-                insert_sql = (
-                    f"insert into {self.table_name} (uid, value) VALUES (?, ?)"  # nosec
-                )
+                insert_sql = f"insert into {self.table_name} (uid, repr, value) VALUES (?, ?, ?)"  # nosec
                 data = _serialize(value, to_bytes=True)
-                self._execute(insert_sql, [str(key), data])
+                self._execute(insert_sql, [str(key), _repr_debug_(value), data])
         except Exception as e:
             print("Failed to _set", e)
             raise e
 
     def _update(self, key: UID, value: Any) -> None:
-        insert_sql = (
-            f"update {self.table_name} set uid = ?, value = ? where uid = ?"  # nosec
-        )
+        insert_sql = f"update {self.table_name} set uid = ?, repr = ?, value = ? where uid = ?"  # nosec
         data = _serialize(value, to_bytes=True)
-        self._execute(insert_sql, [str(key), data, str(key)])
+        self._execute(insert_sql, [str(key), _repr_debug_(value), data, str(key)])
 
     def _get(self, key: UID) -> Any:
         select_sql = f"select * from {self.table_name} where uid = ?"  # nosec
         row = self._execute(select_sql, [str(key)]).fetchone()
-        data = row[1]
+        data = row[2]
         return _deserialize(data, from_bytes=True)
 
     def _exists(self, key: UID) -> Any:
@@ -99,7 +125,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
             rows = self._execute(select_sql).fetchall()
             for row in rows:
                 keys.append(UID(row[0]))
-                data.append(_deserialize(row[1], from_bytes=True))
+                data.append(_deserialize(row[2], from_bytes=True))
             return dict(zip(keys, data))
         except Exception as e:
             print("Failed to _get_all", e)

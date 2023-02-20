@@ -99,7 +99,7 @@ class UserService(AbstractService):
         context: AuthedServiceContext,
         user_search: UserSearch,
     ) -> Union[List[UserView], SyftError]:
-        kwargs = user_search.dict(exclude_none=True)
+        kwargs = user_search.to_dict(exclude_none=True)
         result = self.stash.find_all(**kwargs)
         if result.is_err():
             return SyftError(message=str(result.err()))

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from functools import partial
+import hashlib
 import os
 from typing import Any
 from typing import Callable
@@ -23,7 +24,6 @@ from result import Result
 from ... import __version__
 from ...core.node.common.node_table.syft_object import HIGHEST_SYFT_OBJECT_VERSION
 from ...core.node.common.node_table.syft_object import LOWEST_SYFT_OBJECT_VERSION
-from ...core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ...core.node.common.node_table.syft_object import SyftObject
 from ...telemetry import instrument
 from ...util import random_name
@@ -45,6 +45,7 @@ from .new.data_subject_service import DataSubjectService
 from .new.dataset_service import DatasetService
 from .new.dict_document_store import DictStoreConfig
 from .new.document_store import StoreConfig
+from .new.network_service import NetworkService
 from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
 from .new.queue_stash import QueueItem
@@ -61,9 +62,8 @@ from .new.user import UserCreate
 from .new.user_code_service import UserCodeService
 from .new.user_service import UserService
 from .new.user_stash import UserStash
-from .new.policy_code_service import PolicyCodeService
+from .new.worker_settings import WorkerSettings
 from .new.policy_service import PolicyService
-
 
 
 def gipc_encoder(obj):
@@ -92,17 +92,6 @@ def get_env(key: str) -> Optional[str]:
 
 signing_key_env = get_private_key_env()
 node_uid_env = get_node_uid_env()
-
-
-@serializable(recursive_serde=True)
-class WorkerSettings(SyftObject):
-    __canonical_name__ = "WorkerSettings"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    id: UID
-    name: str
-    signing_key: SyftSigningKey
-    store_config: StoreConfig
 
 
 @instrument
@@ -155,7 +144,7 @@ class Worker(NewNode):
                 UserCodeService,
                 RequestService,
                 DataSubjectService,
-                PolicyCodeService,
+                NetworkService,
                 PolicyService
             ]
             if services is None
@@ -175,14 +164,21 @@ class Worker(NewNode):
 
         self.post_init()
 
+    @staticmethod
+    def named(name: str, processes: int = 0) -> Worker:
+        name_hash = hashlib.sha256(name.encode("utf8")).digest()
+        uid = UID(name_hash[0:16])
+        key = SyftSigningKey(SigningKey(name_hash))
+        return Worker(name=name, id=uid, signing_key=key, processes=processes)
+
     def __repr__(self) -> str:
         return f"{type(self).__name__}: {self.name} - {self.id} {self.services}"
 
     def post_init(self) -> None:
         if self.is_subprocess:
-            print(f"Starting Subprocess {self}")
+            print(f"> Starting Subprocess {self}")
         else:
-            print(f"Starting {self}")
+            print(f"> Starting {self}")
         # super().post_init()
 
     def init_stores(self, store_config: Optional[StoreConfig]):
@@ -220,7 +216,7 @@ class Worker(NewNode):
                 UserCodeService,
                 RequestService,
                 DataSubjectService,
-                PolicyCodeService,
+                NetworkService,
                 PolicyService
             ]:
                 kwargs["store"] = self.document_store
@@ -252,6 +248,7 @@ class Worker(NewNode):
 
         return getattr(service_obj, method_name)
 
+    @property
     def metadata(self) -> NodeMetadata:
         return NodeMetadata(
             name=self.name,

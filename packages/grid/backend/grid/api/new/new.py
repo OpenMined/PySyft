@@ -41,7 +41,7 @@ async def get_body(request: Request) -> bytes:
 # provide information about the node in JSON
 @router.get("/metadata", response_class=JSONResponse)
 def syft_metadata() -> JSONResponse:
-    return worker.metadata().to(NodeMetadataJSON)
+    return worker.metadata.to(NodeMetadataJSON)
 
 
 def handle_syft_new_api() -> Response:

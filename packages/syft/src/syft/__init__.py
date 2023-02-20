@@ -53,6 +53,7 @@ from .core.adp.data_subject_list import DataSubjectList  # noqa: F401
 # Convenience Methods
 from .core.common.serde.deserialize import _deserialize as deserialize  # noqa: F401
 from .core.common.serde.serialize import _serialize as serialize  # noqa: F401
+from .core.common.uid import UID  # noqa: F401
 
 # TFF
 from .core.node.common.node_service import tff  # noqa: F401
@@ -67,6 +68,7 @@ from .core.node.network import Network  # noqa: F401
 from .core.node.network_client import NetworkClient  # noqa: F401
 from .core.node.new.client import login  # noqa: F401
 from .core.node.new.client import login as new_login  # noqa: F401
+from .core.node.new.credentials import SyftSigningKey  # noqa: F401
 from .core.node.new.data_subject import DataSubject  # noqa: F401
 from .core.node.new.dataset import CreateAsset as Asset  # noqa: F401
 from .core.node.new.dataset import CreateDataset as Dataset  # noqa: F401
