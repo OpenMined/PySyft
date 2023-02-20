@@ -35,7 +35,7 @@ class MessageService(AbstractService):
     ) -> Union[Message, SyftError]:
         """Send a new message"""
 
-        result = self.stash.set(message=message)
+        result = self.stash.set(message)
         if result.is_err():
             return SyftError(message=str(result.err()))
         return result.ok()

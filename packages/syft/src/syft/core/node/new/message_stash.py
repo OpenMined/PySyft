@@ -15,7 +15,6 @@ from .document_store import QueryKeys
 from .messages import Message
 from .messages import MessageStatus
 from .response import SyftError
-from .user import User
 
 FromUserVerifyKeyPartitionKey = PartitionKey(
     key="from_user_verify_key", type_=SyftVerifyKey
@@ -31,7 +30,7 @@ StatusPartitionKey = PartitionKey(key="status", type_=MessageStatus)
 class MessageStash(BaseUIDStoreStash):
     object_type = Message
     settings: PartitionSettings = PartitionSettings(
-        name=User.__canonical_name__,
+        name=Message.__canonical_name__,
         object_type=Message,
     )
 
