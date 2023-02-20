@@ -52,7 +52,7 @@ class User(SyftObject):
     __canonical_name__ = "User"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID] = None
+    id: Optional[UID]
 
     @pydantic.validator("email", pre=True, always=True)
     def make_email(cls, v: EmailStr) -> EmailStr:
@@ -72,6 +72,7 @@ class User(SyftObject):
 
     # serde / storage rules
     __attr_state__ = [
+        "id",
         "email",
         "name",
         "hashed_password",
@@ -83,6 +84,7 @@ class User(SyftObject):
     ]
     __attr_searchable__ = ["name", "email"]
     __attr_unique__ = ["email", "signing_key", "verify_key"]
+    __attr_repr_cols__ = ["name", "email"]
 
 
 def default_role(role: ServiceRole) -> Callable:

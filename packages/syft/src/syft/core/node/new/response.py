@@ -25,7 +25,7 @@ class SyftResponseMessage(SyftBaseModel):
     def _repr_html_(self) -> str:
         return (
             f'<div class="{self._repr_html_class_}" style="padding:5px;">'
-            + f"<strong>{type(self).__name__}</strong>: {self.message}.</div><br />"
+            + f"<strong>{type(self).__name__}</strong>: {self.message}</div><br />"
         )
 
 
@@ -46,6 +46,13 @@ class SyftSuccess(SyftResponseMessage):
 
 
 @serializable(recursive_serde=True)
+class SyftNotReady(SyftResponseMessage):
+    @property
+    def _repr_html_class_(self) -> str:
+        return "alert-info"
+
+
+@serializable(recursive_serde=True)
 class SyftException(Exception):
     @property
     def _repr_html_class_(self) -> str:
@@ -54,5 +61,5 @@ class SyftException(Exception):
     def _repr_html_(self) -> str:
         return (
             f'<div class="{self._repr_html_class_}" style="padding:5px;">'
-            + f"<strong>{type(self).__name__}</strong>: {self.args}.</div><br />"
+            + f"<strong>{type(self).__name__}</strong>: {self.args}</div><br />"
         )
