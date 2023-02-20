@@ -38,7 +38,6 @@ services:
       - ${RELATIVE_PATH}./data/package-cache:/root/.cache
     environment:
       - DEV_MODE=True
-    command: /start.sh
 
   backend_stream:
     volumes:
@@ -47,7 +46,6 @@ services:
       - ${RELATIVE_PATH}./data/package-cache:/root/.cache
     environment:
       - DEV_MODE=True
-    command: "/start.sh"
 
   celeryworker:
     volumes:
@@ -56,7 +54,6 @@ services:
       - ${RELATIVE_PATH}./data/package-cache:/root/.cache
     environment:
       - DEV_MODE=True
-    command: "/worker-start.sh"
 
   headscale:
     profiles:

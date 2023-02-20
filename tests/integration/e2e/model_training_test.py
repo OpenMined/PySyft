@@ -30,7 +30,7 @@
 #     dataset_url = DATASET_URL
 #
 #     # Log into domain
-#     domain = sy.login(
+#     domain = sy.old_login(
 #         email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
 #     )
 #
@@ -121,7 +121,7 @@
 #
 # #     # Get input shape of the images
 # #     # We assume images on all domains have the same shape.
-# #     domain = sy.login(port=DOMAIN1_PORT, email=DS_EMAIL, password=DS_PASSWORD)
+# #     domain = sy.old_login(port=DOMAIN1_PORT, email=DS_EMAIL, password=DS_PASSWORD)
 # #     X_train = domain.datasets[-1]["train_images"][:2]  # just taking first two images.
 # #     input_shape = X_train.public_shape  # Shape Format -> (N, C, H, W)
 #
@@ -131,7 +131,7 @@
 # #     model = initialize_model(input_shape=input_shape)
 #
 # #     # Log into the domain
-# #     domain = sy.login(port=DOMAIN1_PORT, email=DS_EMAIL, password=DS_PASSWORD)
+# #     domain = sy.old_login(port=DOMAIN1_PORT, email=DS_EMAIL, password=DS_PASSWORD)
 #
 # #     # Check if dataset is present on the domain
 # #     if len(domain.datasets) == 0:

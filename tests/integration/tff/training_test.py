@@ -50,7 +50,7 @@ def test_tff():
 
 @pytest.mark.tff
 def test_training():
-    domain = sy.login(email="info@openmined.org", password="changethis", port=9081)
+    domain = sy.old_login(email="info@openmined.org", password="changethis", port=9081)
     load_dataset(domain)
 
     # Set params

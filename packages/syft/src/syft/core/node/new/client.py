@@ -31,6 +31,7 @@ from ...common.uid import UID
 from ...node.new.credentials import UserLoginCredentials
 from ...node.new.node_metadata import NodeMetadataJSON
 from ...node.new.user import UserPrivateKey
+from .api import APIModule
 from .api import APIRegistry
 from .api import SyftAPI
 from .api import SyftAPICall
@@ -267,15 +268,26 @@ class SyftClient:
     def upload_dataset(self, dataset: CreateDataset) -> Union[SyftSuccess, SyftError]:
         for asset in tqdm(dataset.asset_list):
             print(f"Uploading: {asset.name}")
-            response = asset.data.new_send(self)
-            if isinstance(response, SyftError):
-                print(f"Failed to upload asset\n: {asset}")
-                return response
-            data_ptr = response
-            asset.action_id = data_ptr.id
+            # response = asset.data.new_send(self)
+            # if isinstance(response, SyftError):
+            #     print(f"Failed to upload asset\n: {asset}")
+            #     return response
+            # data_ptr = response
+            # asset.action_id = data_ptr.id
             asset.node_uid = self.id
+        valid = dataset.check()
+        if valid.ok():
+            return self.api.services.dataset.add(dataset=dataset)
+        else:
+            if len(valid.err()) > 0:
+                return tuple(valid.err())
+            return valid.err()
 
-        return self.api.services.dataset.add(dataset=dataset)
+    @property
+    def data_subject_registry(self) -> Optional[APIModule]:
+        if self.api is not None and hasattr(self.api.services, "data_subject"):
+            return self.api.services.data_subject
+        return None
 
     def connect(self, email: str, password: str, cache: bool = True) -> None:
         signing_key = self.connection.connect(email=email, password=password)
