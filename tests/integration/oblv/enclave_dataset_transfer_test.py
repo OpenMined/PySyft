@@ -5,11 +5,14 @@ import pytest
 # syft absolute
 import syft as sy
 
-CANADA_DOMAIN_PORT = 9082
-ITALY_DOMAIN_PORT = 9083
+PORT = 9082
+CANADA_DOMAIN_PORT = PORT
+ITALY_DOMAIN_PORT = PORT + 1
 LOCAL_ENCLAVE_PORT = 8010
 
 
+# TODO 🟣 To be re-enabled when transfer service is integrated with derived services
+@pytest.mark.skip
 @pytest.mark.oblv
 def test_dataset_upload_to_enclave() -> None:
     data_scientist = {
