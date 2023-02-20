@@ -113,16 +113,16 @@ def rs_object2proto(self: Any) -> _DynamicStructBuilder:
     return msg
 
 
-def rs_bytes2object(blob: bytes) -> Any:
+def rs_bytes2object(blob: bytes, class_type: Type = type(None)) -> Any:
     MAX_TRAVERSAL_LIMIT = 2**64 - 1
 
     with recursive_scheme.from_bytes(  # type: ignore
         blob, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
     ) as msg:
-        return rs_proto2object(msg)
+        return rs_proto2object(msg, class_type)
 
 
-def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
+def rs_proto2object(proto: _DynamicStructBuilder, class_type: Type = type(None)) -> Any:
     # relative
     from .deserialize import _deserialize
 
@@ -130,12 +130,17 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
     module_parts = proto.fullyQualifiedName.split(".")
     klass = module_parts.pop()
 
-    class_type: Type = type(None)
-    if klass != "NoneType":
-        try:
-            class_type = index_syft_by_module_name(proto.fullyQualifiedName)  # type: ignore
-        except Exception:  # nosec
-            class_type = getattr(sys.modules[".".join(module_parts)], klass)
+    if class_type == type(None):
+        if klass != "NoneType":
+            # class_type: Type = type(None)
+            try:
+                class_type = index_syft_by_module_name(proto.fullyQualifiedName)  # type: ignore
+            except Exception:  # nosec
+                try:
+                    class_type = getattr(sys.modules[".".join(module_parts)], klass)
+                except Exception:
+                    class_type = locals()[klass]
+
 
     if proto.fullyQualifiedName not in TYPE_BANK:
         raise Exception(f"{proto.fully_qualified_name} not in TYPE_BANK")

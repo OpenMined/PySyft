@@ -1,5 +1,6 @@
 # stdlib
 from typing import Any
+from typing import Type
 
 # third party
 from capnp.lib.capnp import _DynamicStructBuilder
@@ -9,6 +10,7 @@ def _deserialize(
     blob: Any,
     from_proto: bool = True,
     from_bytes: bool = False,
+    class_type: Type = type(None),
 ) -> Any:
     # relative
     from .recursive import rs_bytes2object
@@ -26,7 +28,7 @@ def _deserialize(
         raise TypeError("Wrong deserialization format.")
 
     if from_bytes:
-        return rs_bytes2object(blob)
+        return rs_bytes2object(blob, class_type)
 
     if from_proto:
-        return rs_proto2object(blob)
+        return rs_proto2object(blob, class_type)

@@ -10,8 +10,8 @@ from .document_store import BaseUIDStoreStash
 from .document_store import PartitionSettings
 from .document_store import QueryKeys
 from .document_store import DocumentStore
-from .policy_code import PolicyCode
-from .policy_code import UserVerifyKeyPartitionKey
+from .policy import PolicyCode
+from .policy import UserVerifyKeyPartitionKey
 
 
 @serializable(recursive_serde=True)
