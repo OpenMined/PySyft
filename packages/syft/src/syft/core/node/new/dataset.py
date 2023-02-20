@@ -188,7 +188,7 @@ class Dataset(SyftObject):
     __attr_repr_cols__ = ["name", "url"]
 
     @property
-    def assets(self) -> TupleDict[str, str]:
+    def assets(self) -> TupleDict:
         data = TupleDict()
         for asset in self.asset_list:
             data[asset.name] = asset
