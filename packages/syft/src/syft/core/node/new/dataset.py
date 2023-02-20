@@ -1,8 +1,8 @@
 # stdlib
+from collections import OrderedDict
 from enum import Enum
 from typing import Any
 from typing import Callable
-from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -28,6 +28,15 @@ from .transforms import TransformContext
 from .transforms import generate_id
 from .transforms import transform
 from .transforms import validate_url
+
+
+@serializable(recursive_serde=True)
+class TupleDict(OrderedDict):
+    def __getitem__(self, key: Union[str, int]) -> Any:
+        if isinstance(key, int):
+            return list(self.values())[key]
+        return super(TupleDict, self).__getitem__(key)
+
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
 
@@ -179,8 +188,8 @@ class Dataset(SyftObject):
     __attr_repr_cols__ = ["name", "url"]
 
     @property
-    def assets(self) -> Dict[str, str]:
-        data = {}
+    def assets(self) -> TupleDict:
+        data = TupleDict()
         for asset in self.asset_list:
             data[asset.name] = asset
         return data

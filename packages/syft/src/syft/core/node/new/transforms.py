@@ -145,6 +145,21 @@ def validate_email(context: TransformContext) -> TransformContext:
     return context
 
 
+def generate_transform_wrapper(
+    klass_from: type, klass_to: type, transforms: List[Callable]
+) -> Callable:
+    def wrapper(
+        self: klass_from,
+        context: Optional[Union[TransformContext, NodeServiceContext]] = None,
+    ) -> klass_to:
+        t_context = TransformContext.from_context(obj=self, context=context)
+        for transform in transforms:
+            t_context = transform(t_context)
+        return klass_to(**t_context.output)
+
+    return wrapper
+
+
 def transform_method(
     klass_from: Union[type, str],
     klass_to: Union[type, str],
@@ -185,21 +200,6 @@ def transform_method(
         return function
 
     return decorator
-
-
-def generate_transform_wrapper(
-    klass_from: type, klass_to: type, transforms: List[Callable]
-) -> Callable:
-    def wrapper(
-        self: klass_from,
-        context: Optional[Union[TransformContext, NodeServiceContext]] = None,
-    ) -> klass_to:
-        t_context = TransformContext.from_context(obj=self, context=context)
-        for transform in transforms:
-            t_context = transform(t_context)
-        return klass_to(**t_context.output)
-
-    return wrapper
 
 
 def transform(

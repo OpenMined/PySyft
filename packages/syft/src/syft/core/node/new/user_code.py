@@ -48,7 +48,7 @@ class UserCode(SyftObject):
     user_verify_key: SyftVerifyKey
     raw_code: str
     input_kwargs: List[str]
-    output_arg: str
+    output_kwargs: List[str]
     parsed_code: str
     service_func_name: str
     unique_func_name: str
@@ -67,11 +67,16 @@ class ExactMatch(SyftObject):
     __canonical_name__ = "ExactMatch"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID]
+    id: UID
     inputs: Dict[str, Any]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(inputs=kwargs)
+        uid = UID()
+        if "id" in kwargs:
+            uid = kwargs["id"]
+        if "inputs" in kwargs:
+            kwargs = kwargs["inputs"]
+        super().__init__(id=uid, inputs=kwargs)
 
 
 @serializable(recursive_serde=True)
@@ -80,7 +85,7 @@ class SingleExecutionExactOutput(SyftObject):
     __canonical_name__ = "SingleExecutionExactOutput"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID]
+    id: UID
     outputs: Optional[List[str]]
 
 
@@ -139,21 +144,23 @@ def check_code(context: TransformContext) -> TransformContext:
     return context
 
 
-def new_check_code(context: TransformContext) -> TransformContext:
-    raw_code = context.output["raw_code"]
-    func_name = context.output["unique_func_name"]
-    service_func_name = context.output["service_func_name"]
-    inputs = context.output["input_policy"].inputs
-    outputs = context.output["output_policy"].outputs
-
+def process_code(
+    raw_code: str,
+    func_name: str,
+    original_func_name: str,
+    input_kwargs: List[str],
+    outputs: List[str],
+) -> str:
     tree = ast.parse(raw_code)
     f = tree.body[0]
     f.decorator_list = []
 
-    keywords = [ast.keyword(arg=i, value=[ast.Name(id=i)]) for i in inputs]
+    keywords = [ast.keyword(arg=i, value=[ast.Name(id=i)]) for i in input_kwargs]
     call_stmt = ast.Assign(
         targets=[ast.Name(id="result")],
-        value=ast.Call(func=ast.Name(id=service_func_name), args=[], keywords=keywords),
+        value=ast.Call(
+            func=ast.Name(id=original_func_name), args=[], keywords=keywords
+        ),
         lineno=0,
     )
 
@@ -175,7 +182,7 @@ def new_check_code(context: TransformContext) -> TransformContext:
 
     new_body = tree.body + [call_stmt, return_stmt]
 
-    return_annotation = ast.parse("Dict[str, Any]").body[0].value
+    return_annotation = ast.parse("Dict[str, Any]", mode="eval").body
 
     wrapper_function = ast.FunctionDef(
         name=func_name,
@@ -186,9 +193,26 @@ def new_check_code(context: TransformContext) -> TransformContext:
         lineno=0,
     )
 
-    context.output["parsed_code"] = ast.unparse(wrapper_function)
-    context.output["input_kwargs"] = inputs
-    context.output["output_arg"] = outputs[0]
+    return ast.unparse(wrapper_function)
+
+
+def new_check_code(context: TransformContext) -> TransformContext:
+    inputs = context.output["input_policy"].inputs
+    input_kwargs = list(inputs.keys())
+
+    outputs = context.output["output_policy"].outputs
+
+    processed_code = process_code(
+        raw_code=context.output["raw_code"],
+        func_name=context.output["unique_func_name"],
+        original_func_name=context.output["service_func_name"],
+        input_kwargs=input_kwargs,
+        outputs=outputs,
+    )
+
+    context.output["parsed_code"] = processed_code
+    context.output["input_kwargs"] = input_kwargs
+    context.output["output_kwargs"] = outputs
 
     return context
 
@@ -290,9 +314,7 @@ def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
         )
 
     except Exception as e:
-        sys.stdout = stdout_
-        sys.stderr = stderr_
-        print("execute_byte_code failed", e)
+        print("execute_byte_code failed", e, file=stderr_)
     finally:
         sys.stdout = stdout_
         sys.stderr = stderr_

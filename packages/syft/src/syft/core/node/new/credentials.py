@@ -21,6 +21,11 @@ SIGNING_KEY_FOR = "SigningKey for"
 class SyftVerifyKey(SyftBaseModel):
     verify_key: VerifyKey
 
+    def __init__(self, verify_key: Union[str, VerifyKey]) -> None:
+        if isinstance(verify_key, str):
+            verify_key = VerifyKey(bytes.fromhex(verify_key))
+        super().__init__(verify_key=verify_key)
+
     def __str__(self) -> str:
         return self.verify_key.encode(encoder=HexEncoder).decode("utf-8")
 
@@ -47,6 +52,11 @@ class SyftVerifyKey(SyftBaseModel):
 @serializable(recursive_serde=True)
 class SyftSigningKey(SyftBaseModel):
     signing_key: SigningKey
+
+    def __init__(self, signing_key: Union[str, SigningKey]) -> None:
+        if isinstance(signing_key, str):
+            signing_key = SigningKey(bytes.fromhex(signing_key))
+        super().__init__(signing_key=signing_key)
 
     @property
     def verify_key(self) -> SyftVerifyKey:
