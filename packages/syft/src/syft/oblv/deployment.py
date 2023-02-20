@@ -88,12 +88,19 @@ def create_deployment(
         )
     except Exception as e:
         raise Exception(e)
+
+    verify_keys = {
+        "data_owner_verify_keys": [
+            client.metadata.verify_key for client in domain_clients
+        ],
+        "data_scientist_verify_key": "TBD",
+    }
     build_args = {
         "auth": {},
         "users": {"domain": [], "user": []},
         "additional_args": {},
         "infra_reqs": infra,
-        "runtime_args": "",
+        "runtime_args": verify_keys,
     }
     users = []
     runtime_args = []
