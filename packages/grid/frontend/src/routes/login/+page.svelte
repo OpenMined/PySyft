@@ -1,45 +1,32 @@
-<script lang="ts">
-  import AuthCircles from '$lib/components/AuthCircles.svelte';
-  import Badge from '$lib/components/Badge.svelte';
-  import Button from '$lib/components/Button.svelte';
-  import Capital from '$lib/components/Capital.svelte';
-  import FormControl from '$lib/components/FormControl.svelte';
-  import StatusIndicator from '$lib/components/StatusIndicator.svelte';
-  import RegisterModal from '../../lib/components/RegisterModal.svelte';
 
-  import { onMount } from 'svelte';
-  import { Link } from 'svelte-routing';
-  import { url } from '$lib/stores/nav';
-  import { parseActiveRoute } from '$lib/helpers';
-  import { prettyName } from '../../lib/utils.js';
-  import { getClient, store } from '../../lib/store.js';
-  import { goto } from '$app/navigation';
+<script>
+    import { getClient } from "$lib/store";
+    import Github from "$lib/components/icons/Github.svelte";
+    import AuthCircles from '$lib/components/AuthCircles.svelte';
+    import Button from '$lib/components/Button.svelte';
+    import Capital from '$lib/components/Capital.svelte';
+    import FormControl from '$lib/components/FormControl.svelte';
+    import { Helper } from 'flowbite-svelte';
+    import { prettyName } from '$lib/utils.js';
+    import { goto } from '$app/navigation';
+    import { browser } from '$app/environment';
+    import Badge from '$lib/components/Badge.svelte';
+    let inputColor = 'base';
+    let displayError = 'none';
+    let errorText = '';
 
-  export let location: any;
-  let inputColor = 'base';
-  let displayError = 'none';
-  let errorText = '';
-  let localStore;
-  let email = '';
-  let password = '';
-  $: formModal = false;
+    async function login(client) {
+    let password = document.getElementById('password').value
+    let email = document.getElementById('email').value
 
-  onMount(() => url.set(parseActiveRoute(location.pathname)));
-
-  store.subscribe((value) => {
-    localStore = value;
-  });
-
-  // TODO: On submit for login button
-  async function login(
-    client: { login: (arg0: any, arg1: any) => Promise<any> },
-    email: any,
-    password: any
-  ) {
     await client
       .login(email, password)
-      .then(() => {
-        goto('/signup');
+      .then((body) => {
+        if (browser){
+          window.sessionStorage.setItem('session_token', "Bearer " + body['access_token'])
+          window.sessionStorage.setItem('key', body['key'])
+        }
+        goto('/home');
       })
       .catch((error) => {
         errorText = error.message;
@@ -48,17 +35,16 @@
       });
   }
 
-  // TODO: Use for copying domain ID to clipboard
-  // const copyToClipBoard = () => {
-  //   // Get the text field
-  //   var copyText = document.getElementById('gridUID');
+  const copyToClipBoard = () => {
+    // Get the text field
+    var copyText = document.getElementById('gridUID');
 
-  //   // Copy the text inside the text field
-  //   navigator.clipboard.writeText(copyText?.textContent);
+    // Copy the text inside the text field
+    navigator.clipboard.writeText(copyText?.textContent);
 
-  //   // Alert the copied text
-  //   alert('Domain UID copied!');
-  // };
+    // Alert the copied text
+    alert('Domain UID copied!');
+  };
 </script>
 
 <div class="fixed top-0 right-0 w-full h-full max-w-[808px] max-h-[880px] z-[-1]">
@@ -67,26 +53,57 @@
 
 <main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col h-full w-full">
   {#await getClient() then client}
-    <!-- {#await client.metadata then metadata} -->
+    {#await client.metadata then metadata }
+      
     <!-- Header Logo -->
-    <span>
-      <img src="/images/pygrid-logo.png" alt="PyGrid logo" />
-    </span>
-
-    <!-- Register Modal -->
-    <!-- <RegisterModal bind:formModal {client} nodeId={metadata.get('id').get('value')} /> -->
+    <div class='w-full flex justify-between '>
+      <div class='flex items-center gap-2'>
+        <img
+          width='100px'
+          src="../../public/assets/small-logo.png"
+          alt="pygrid-logo.png"
+        />
+        <span class='font-roboto'>Version: {metadata.version}</span>
+      </div>
+      <div class='flex justify-end gap-5'>
+        <a href="https://openmined.github.io/PySyft/index.html">Docs</a>
+        <a href="https://www.openmined.org/">Community</a>
+        <a href="https://github.com/OpenMined/PySyft"><Github/></a>
+      </div>
+    </div>
 
     <!-- Body content -->
     <section class="md:flex md:gap-x-[62px] lg:gap-x-[124px] mt-14 h-full">
-      <div class="w-full">
-        <div class="space-y-6 mt-2">
-          <h1 class="text-5xl leading-[1.1] font-medium text-gray-800 font-rubik">Canada Domain</h1>
+      <div class="w-full" >
+        <div class="mt-2">
+          <h1 class="text-5xl leading-[1.1] font-medium text-gray-800 font-rubik">{prettyName(metadata.name)}</h1>
         </div>
+        <div class="mt-2 h-2/5">
+          <h1 class="text-2xl leading-[1.1] font-medium text-gray-500 font-rubik">{metadata.organization}</h1>
+        </div>
+        <div class="mt-5">
+          <p class="text-medium leading-[1.1] font-medium text-gray-800 font-roboto">{metadata.description}</p>
+        </div>
+
+
         <!-- List (Domain information) -->
-        <ul class="mt-[42px] space-y-4">
+        <div class="flex flex-col py-7 px-3 border-t border-gray-300 ">
+          <div class='flex items-center gap-2'>
+            <h1 class="font-bold">ID:</h1>
+            <Badge variant="gray">{metadata.id.value}</Badge>
+          </div>
+          
+          <div  class='flex items-center gap-2'>
+            <span class='font-bold'> DEPLOYED ON: </span>
+            <span>{metadata.deployed_on.split(" ")[0]}</span>
+          </div>
+        </div>
+
+        <!---
+        <ul class="flex mt-[42px]">
           <li>
             <span class="font-bold">ID:</span>
-            <!-- Badge -->
+
             <Badge variant="gray">ID#449f4f997a96467f90f7af8b396928f1</Badge>
           </li>
           <li>
@@ -106,6 +123,7 @@
             <span>United Nations</span>
           </li>
         </ul>
+        -->
       </div>
 
       <!-- Login form -->
@@ -120,7 +138,6 @@
               Welcome Back
             </h2>
             <div class="flex justify-center items-center">
-              <StatusIndicator status="active" />
               <p class="pl-2 flex justify-center">Domain Online</p>
             </div>
           </div>
@@ -137,10 +154,9 @@
           <!-- Capital Footer (slot: footer) -->
           <div class="space-y-6" slot="footer">
             <p class="text-center">
-              Don't have an account yet?<br />
-              <Link to="/signup">Apply for an account here</Link>
+              Don't have an account yet? Apply for an account <a class="font-medium text-blue-600 hover:underline dark:text-blue-500" href='/signup'>here</a>
             </p>
-            <Button onClick={login}>Login</Button>
+            <Button onClick={() => {login(client)}}>Login</Button>
           </div>
         </Capital>
       </form>
@@ -150,5 +166,9 @@
       <img src="/images/empowered-by-openmined.png" alt="Empowered by OpenMined logo" />
     </span>
   {/await}
-  <!-- {/await} -->
+  {/await}
 </main>
+
+<style>
+
+</style>
