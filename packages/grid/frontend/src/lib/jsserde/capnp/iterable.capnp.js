@@ -7,6 +7,9 @@ import * as capnp_ts_1 from 'capnp-ts';
 
 export const _capnpFileId = BigInt('0x979a7994b9718d24');
 export class Iterable extends capnp_ts_1.Struct {
+  /**
+   * @param {capnp.Orphan<capnp.Pointer>} value
+   */
   adoptValues(value) {
     capnp_ts_1.Struct.adopt(value, capnp_ts_1.Struct.getPointer(0, this));
   }
@@ -19,9 +22,15 @@ export class Iterable extends capnp_ts_1.Struct {
   hasValues() {
     return !capnp_ts_1.Struct.isNull(capnp_ts_1.Struct.getPointer(0, this));
   }
+  /**
+   * @param {number} length
+   */
   initValues(length) {
     return capnp_ts_1.Struct.initList(0, capnp.DataList, length, this);
   }
+  /**
+   * @param {capnp.Pointer} value
+   */
   setValues(value) {
     capnp_ts_1.Struct.copyFrom(value, capnp_ts_1.Struct.getPointer(0, this));
   }

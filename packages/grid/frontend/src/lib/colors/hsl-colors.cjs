@@ -1,3 +1,9 @@
+/**
+ * @param {string} colorName
+ * @param {number} hue
+ * @param {number} saturation
+ * @param {number} baseLightness
+ */
 function buildColor(colorName, hue, saturation, baseLightness) {
   const MIN_L = 3;
   const MAX_L = 95;

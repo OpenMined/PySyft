@@ -109,7 +109,7 @@
       <div slot="actions" class="flex justify-center pt-6">
         <Button
           variant="delete"
-          option="sm-pad"
+          option="margin-x-sm"
           onClick={() => {
             showDeleteAccountModal = false;
             showDeleteConfirmModal = true;
@@ -136,7 +136,7 @@
         follow the instructions here to transfer ownership of your domain node.
       </p>
       <div slot="actions" class="flex justify-center pt-6">
-        <Button variant="delete" option="sm-pad">Delete Node</Button>
+        <Button variant="delete" option="margin-x-sm">Delete Node</Button>
         <a class="flex items-center no-underline pl-8 font-bold text-magenta-500" href="/">Cancel</a
         >
       </div>
@@ -175,7 +175,7 @@
         </form>
       </div>
       <div slot="actions" class="flex justify-center pt-6">
-        <Button option="sm-pad">Submit Response</Button>
+        <Button option="margin-x-sm">Submit Response</Button>
         <a class="flex items-center no-underline pl-8 font-bold" href="/">Cancel</a>
       </div>
     </Modal>

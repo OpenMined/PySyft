@@ -8,7 +8,7 @@
   export let hint = '';
   export let type = 'text';
   export let placeholder = '';
-  export let rows=4;
+  export let rows = 4;
 </script>
 
 <div aria-disabled={disabled} class="space-y-2">
@@ -23,8 +23,8 @@
   {#if hint}
     <p class="hint">{hint}</p>
   {/if}
-  {#if type=='textarea'}
-    <textarea {id} {placeholder} {rows} class="w-full border border-gray-500"/>
+  {#if type == 'textarea'}
+    <textarea {id} {placeholder} {rows} class="w-full border border-gray-500" />
   {:else}
     <input {type} {id} {placeholder} class="w-full border border-gray-500" />
   {/if}

@@ -7,7 +7,7 @@
   import TagCloud from '$lib/components/TagCloud.svelte';
 
   import { onMount } from 'svelte';
-
+  import { Link } from 'svelte-routing';
   import { url } from '$lib/stores/nav';
   import { parseActiveRoute } from '$lib/helpers';
 
@@ -100,6 +100,7 @@
         <!-- Capital Footer (slot: footer) -->
         <div class="space-y-6" slot="footer">
           <Button>Submit application</Button>
+          <p class="text-center"><Link to="/login">Have an account already?</Link></p>
         </div>
       </Capital>
     </form>

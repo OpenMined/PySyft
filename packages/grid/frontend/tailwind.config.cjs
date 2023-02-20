@@ -4,8 +4,11 @@ const config = {
   content: [
     './src/**/*.{html,js,svelte,ts}',
     './node_modules/flowbite-svelte/**/*.{html,js,svelte,ts}'
-  ],
+  ]
+};
 
+module.exports = {
+  content: ['./src/**/*.{html,js,svelte,ts}'],
   theme: {
     extend: {
       fontFamily: {
@@ -32,9 +35,5 @@ const config = {
       }
     }
   },
-
-  plugins: [require('flowbite/plugin')],
-  darkMode: 'class'
+  plugins: []
 };
-
-module.exports = config;

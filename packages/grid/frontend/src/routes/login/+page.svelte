@@ -1,22 +1,41 @@
-<script>
-  import LoginHeader from '../../components/LoginHeader.svelte';
+<script lang="ts">
+  import AuthCircles from '$lib/components/AuthCircles.svelte';
+  import Badge from '$lib/components/Badge.svelte';
   import Button from '$lib/components/Button.svelte';
   import Capital from '$lib/components/Capital.svelte';
   import FormControl from '$lib/components/FormControl.svelte';
-  import Badge from '$lib/components/Badge.svelte';
-  import { getClient, store } from '../../lib/store.js';
+  import StatusIndicator from '$lib/components/StatusIndicator.svelte';
+  import RegisterModal from '../../lib/components/RegisterModal.svelte';
+
+  import { onMount } from 'svelte';
+  import { Link } from 'svelte-routing';
+  import { url } from '$lib/stores/nav';
+  import { parseActiveRoute } from '$lib/helpers';
   import { prettyName } from '../../lib/utils.js';
+  import { getClient, store } from '../../lib/store.js';
   import { goto } from '$app/navigation';
 
-  $: formModal = false;
+  export let location: any;
   let inputColor = 'base';
   let displayError = 'none';
   let errorText = '';
+  let localStore;
+  let email = '';
+  let password = '';
+  $: formModal = false;
 
-  async function login(client) {
-    let password = document.getElementById('password').value
-    let email = document.getElementById('email').value
-    console.log("Here!")
+  onMount(() => url.set(parseActiveRoute(location.pathname)));
+
+  store.subscribe((value) => {
+    localStore = value;
+  });
+
+  // TODO: On submit for login button
+  async function login(
+    client: { login: (arg0: any, arg1: any) => Promise<any> },
+    email: any,
+    password: any
+  ) {
     await client
       .login(email, password)
       .then(() => {
@@ -29,182 +48,107 @@
       });
   }
 
-  const copyToClipBoard = () => {
-    // Get the text field
-    var copyText = document.getElementById('gridUID');
+  // TODO: Use for copying domain ID to clipboard
+  // const copyToClipBoard = () => {
+  //   // Get the text field
+  //   var copyText = document.getElementById('gridUID');
 
-    // Copy the text inside the text field
-    navigator.clipboard.writeText(copyText?.textContent);
+  //   // Copy the text inside the text field
+  //   navigator.clipboard.writeText(copyText?.textContent);
 
-    // Alert the copied text
-    alert('Domain UID copied!');
-  };
+  //   // Alert the copied text
+  //   alert('Domain UID copied!');
+  // };
 </script>
 
-<main>
+<div class="fixed top-0 right-0 w-full h-full max-w-[808px] max-h-[880px] z-[-1]">
+  <AuthCircles />
+</div>
+
+<main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col h-full w-full">
   {#await getClient() then client}
-    {#await client.metadata then metadata}
-      <!-- Login Screen Header -->
-      <LoginHeader version={metadata.get('version')} />
+    <!-- {#await client.metadata then metadata} -->
+    <!-- Header Logo -->
+    <span>
+      <img src="/images/pygrid-logo.png" alt="PyGrid logo" />
+    </span>
 
-      <!-- Login Screen Body -->
-      <div id="login-screen">
-        <!-- Background Circles -->
-        <div id="login-orange-circle-bg" />
-        <div id="login-blue-circle-bg" />
+    <!-- Register Modal -->
+    <!-- <RegisterModal bind:formModal {client} nodeId={metadata.get('id').get('value')} /> -->
 
-        <form style='position:absolute;top:24%;left:50%;z-index:2' class="w-[35%] flex-shrink-0">
-          <Capital>
-              <!-- Capital Header (slot: header) -->
-              <div slot="header">
-                <h2 class="flex justify-center text-gray-800 font-rubik text-2xl leading-normal font-medium">
-                  Welcome
-                </h2>
-                <br>
-                <div class="flex justify-center items-center">
-                  <span class="dot" />
-                  <p class="pl-2 flex justify-center">Domain Online</p>
-                </div>
-              </div>
-              <!-- Capital Body (slot: body) -->
-              <div class="flex flex-col gap-y-4 gap-x-6" slot="body">
-                <FormControl placeholder='info@openmined.org' label="Email" id="email" type="email" required />
-                <div class="flex w-full gap-x-6">
-                  <span class="w-full">
-                    <FormControl  placeholder='*******' label="Password" id="password" type="password" required />
-                  </span>
-                </div>
-              </div>
-
-              <!-- Capital Footer (slot: footer) -->
-              <div class="space-y-6" slot="footer">
-                <p class="text-center">
-                  Don't have an account yet? Apply for an account <a class="font-medium text-blue-600 hover:underline dark:text-blue-500" href='/signup'>here</a>
-                </p>
-                <div style='display:flex;justify-content:center'>
-                  <Button onClick={() => {login(client)}}>Login</Button>
-                </div>
-              </div>
-          </Capital>
-        </form>
-
-        <!-- Domain Info Text -->
-        <div id="domain-info">
-          <div style="border-bottom: solid; height: 45vh;">
-            <h1 style="font-size: 45px;">
-              <b>{prettyName(metadata.get('name'))}</b>
-              <h1>
-                <h5 style="font-size: 15px;"><b> {metadata.get('organization')} </b></h5>
-                <p style="font-size:17px;">{metadata.get('description')}</p>
-              </h1>
-            </h1>
-          </div>
-          <h3 class="info-foot">
-            <b> ID# </b>
-            <button
-              id="gridUID"
-              on:click={() => copyToClipBoard()}
-              style="margin-left: 5px; color: black;padding-left:10px; padding-right:10px; background-color: #DDDDDD"
-            ><Badge variant="gray">{metadata.get('id').get('value')}</Badge></button>
-          </h3>
-          <h3 class="info-foot"><b> DEPLOYED ON:&nbsp;&nbsp;</b> {metadata.get('deployed_on')}</h3>
+    <!-- Body content -->
+    <section class="md:flex md:gap-x-[62px] lg:gap-x-[124px] mt-14 h-full">
+      <div class="w-full">
+        <div class="space-y-6 mt-2">
+          <h1 class="text-5xl leading-[1.1] font-medium text-gray-800 font-rubik">Canada Domain</h1>
         </div>
+        <!-- List (Domain information) -->
+        <ul class="mt-[42px] space-y-4">
+          <li>
+            <span class="font-bold">ID:</span>
+            <!-- Badge -->
+            <Badge variant="gray">ID#449f4f997a96467f90f7af8b396928f1</Badge>
+          </li>
+          <li>
+            <span class="font-bold">Hosted datasets:</span>
+            <span>2</span>
+          </li>
+          <li>
+            <span class="font-bold">Deployed on:</span>
+            <span>09.07.2010</span>
+          </li>
+          <li>
+            <span class="font-bold">Owner:</span>
+            <span>Kyoko Eng, United Nations</span>
+          </li>
+          <li>
+            <span class="font-bold">Network(s):</span>
+            <span>United Nations</span>
+          </li>
+        </ul>
       </div>
 
-      <a href="https://www.openmined.org/">
-        <div id="login-footer">
-          <h3>Empowered by</h3>
-          <img
-            style="margin-left: 10px; margin-right: 8vh;"
-            alt="openmined-logo.png"
-            width="120"
-            height="120"
-            src="../../public/assets/small-om-logo.png"
-          />
-        </div></a
-      >
-    {/await}
+      <!-- Login form -->
+      <form class="w-[572px] flex-shrink-0">
+        <!-- Capital -->
+        <Capital>
+          <!-- Capital Header (slot: header) -->
+          <div slot="header">
+            <h2
+              class="flex justify-center text-gray-800 font-rubik text-2xl leading-normal font-medium"
+            >
+              Welcome Back
+            </h2>
+            <div class="flex justify-center items-center">
+              <StatusIndicator status="active" />
+              <p class="pl-2 flex justify-center">Domain Online</p>
+            </div>
+          </div>
+          <!-- Capital Body (slot: body) -->
+          <div class="flex flex-col gap-y-4 gap-x-6" slot="body">
+            <FormControl label="Email" id="email" type="email" required />
+            <div class="flex w-full gap-x-6">
+              <span class="w-full">
+                <FormControl label="Password" id="password" type="password" required />
+              </span>
+            </div>
+          </div>
+
+          <!-- Capital Footer (slot: footer) -->
+          <div class="space-y-6" slot="footer">
+            <p class="text-center">
+              Don't have an account yet?<br />
+              <Link to="/signup">Apply for an account here</Link>
+            </p>
+            <Button onClick={login}>Login</Button>
+          </div>
+        </Capital>
+      </form>
+    </section>
+    <!-- Footer -->
+    <span>
+      <img src="/images/empowered-by-openmined.png" alt="Empowered by OpenMined logo" />
+    </span>
   {/await}
+  <!-- {/await} -->
 </main>
-
-<svelte:window />
-
-<style>
-  #login-screen {
-    height: 100%;
-    width: 100%;
-    position: absolute;
-    overflow: hidden;
-  }
-
-  #login-footer {
-    height: 10%;
-    width: 100%;
-    position: absolute;
-    top: 90%;
-    display: flex;
-    justify-content: right;
-    align-items: center;
-    z-index: 2;
-  }
-
-  #domain-info {
-    position: absolute;
-    z-index: 2;
-    top: 24%;
-    left: 10%;
-    width: 30%;
-    height: 55%;
-  }
-
-  #login-orange-circle-bg {
-    height: 100vh;
-    width: 100vh;
-    border-radius: 50%;
-    position: absolute;
-    z-index: 1;
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 100%),
-      #ec9913;
-    filter: blur(50px);
-    left: 50%;
-    z-index: 1;
-  }
-
-  #login-blue-circle-bg {
-    height: 40vh;
-    width: 40vh;
-    border-radius: 50%;
-    position: absolute;
-    z-index: 3;
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 100%),
-      rgb(13, 110, 237);
-    filter: blur(50px);
-    top: -15%;
-    left: 90%;
-    z-index: 1;
-  }
-
-  .info-foot {
-    margin: 15px;
-    display: flex;
-    color: grey;
-    font-size: 11px;
-  }
-
-  .dot {
-    height: 10px;
-    width: 10px;
-    background-color: green;
-    border-radius: 50%;
-    display: inline-block;
-    margin-right: 5px;
-    box-shadow: 0px 0px 2px 2px green;
-    animation: glow 1.5s linear infinite alternate;
-  }
-
-  @keyframes glow {
-    to {
-      box-shadow: 0px 0px 1px 1px greenyellow;
-    }
-  }
-</style>

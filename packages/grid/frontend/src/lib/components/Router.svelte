@@ -2,8 +2,8 @@
   import { Route } from 'svelte-routing';
   import Login from '../../routes/login/+page.svelte';
   import Signup from '../../routes/signup/+page.svelte';
-  import Home from '../../routes/+page.svelte';
-  import Users from '../../routes/users/+page.svelte';
+  import Home from '../../routes/(app)/home/+page.svelte';
+  import Users from '../../routes/(app)/users/+page.svelte';
 </script>
 
 <div class="w-full">
