@@ -1,19 +1,19 @@
-import adapter from '@sveltejs/adapter-auto';
-import nodeAdapter from '@sveltejs/adapter-node';
 import preprocess from 'svelte-preprocess';
-import tailwind from 'tailwindcss';
-import autoprefixer from 'autoprefixer';
-// import { vitePreprocess } from '@sveltejs/kit/vite';
-import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
-
-const Docker = process.env.DOCKER;
+import adapter from '@sveltejs/adapter-node';
+import { vitePreprocess } from '@sveltejs/kit/vite';
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
+  preprocess: [
+    vitePreprocess(),
+    preprocess({
+      postcss: true
+    })
+  ],
+
   kit: {
-    adapter: Docker ? nodeAdapter({ out: 'out' }) : adapter()
-  },
-  preprocess: vitePreprocess()
+    adapter: adapter()
+  }
 };
 
 export default config;
