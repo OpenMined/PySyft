@@ -112,16 +112,13 @@ class SyftAPICall(SyftObject):
     # version
     __canonical_name__ = "SyftAPICall"
     __version__ = SYFT_OBJECT_VERSION_1
-    __attr_allowlist__ = ["path", "args", "kwargs", "blocking"]
 
     # fields
+    node_uid: UID
     path: str
     args: List
     kwargs: Dict[str, Any]
     blocking: bool = True
-
-    # serde / storage rules
-    __attr_state__ = ["path", "args", "kwargs", "blocking"]
 
     def sign(self, credentials: SyftSigningKey) -> SignedSyftAPICall:
         signed_message = credentials.signing_key.sign(_serialize(self, to_bytes=True))
@@ -134,7 +131,11 @@ class SyftAPICall(SyftObject):
 
 
 def generate_remote_function(
-    signature: Signature, path: str, make_call: Callable, pre_kwargs: Dict[str, Any]
+    node_uid: UID,
+    signature: Signature,
+    path: str,
+    make_call: Callable,
+    pre_kwargs: Dict[str, Any],
 ):
     if "blocking" in signature.parameters:
         raise Exception(
@@ -216,7 +217,11 @@ def generate_remote_function(
         if pre_kwargs:
             _valid_kwargs.update(pre_kwargs)
         api_call = SyftAPICall(
-            path=path, args=_valid_args, kwargs=_valid_kwargs, blocking=blocking
+            node_uid=node_uid,
+            path=path,
+            args=_valid_args,
+            kwargs=_valid_kwargs,
+            blocking=blocking,
         )
         result = make_call(api_call=api_call)
         return result
@@ -332,7 +337,11 @@ class SyftAPI(SyftObject):
                 signature = signature_remove_self(signature)
             signature = signature_remove_context(signature)
             endpoint_function = generate_remote_function(
-                signature, v.path, self.make_call, pre_kwargs=v.pre_kwargs
+                self.node_uid,
+                signature,
+                v.path,
+                self.make_call,
+                pre_kwargs=v.pre_kwargs,
             )
             endpoint_function.__doc__ = v.doc_string
             self._add_route(api_module, v, endpoint_function)
