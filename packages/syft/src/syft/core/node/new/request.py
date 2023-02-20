@@ -28,6 +28,8 @@ from .node import NewNode
 from .response import SyftError
 from .response import SyftSuccess
 from .transforms import TransformContext
+from .transforms import add_credentials_for_key
+from .transforms import add_node_uid_for_key
 from .transforms import generate_id
 from .transforms import transform
 
@@ -177,22 +179,6 @@ def hash_changes(context: TransformContext) -> TransformContext:
 
     context.output["request_hash"] = final_hash
     return context
-
-
-def add_credentials_for_key(key: str) -> Callable:
-    def add_credentials(context: TransformContext) -> TransformContext:
-        context.output[key] = context.credentials
-        return context
-
-    return add_credentials
-
-
-def add_node_uid_for_key(key: str) -> Callable:
-    def add_node_uid(context: TransformContext) -> TransformContext:
-        context.output[key] = context.node.id
-        return context
-
-    return add_node_uid
 
 
 def add_request_time(context: TransformContext) -> TransformContext:

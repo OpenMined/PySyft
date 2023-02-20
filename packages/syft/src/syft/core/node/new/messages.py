@@ -11,6 +11,10 @@ from ...common.uid import UID
 from .credentials import SyftVerifyKey
 from .request import DateTime
 from .service import AbstractService
+from .transforms import TransformContext
+from .transforms import add_credentials_for_key
+from .transforms import add_node_uid_for_key
+from .transforms import generate_id
 from .transforms import transform
 
 
@@ -54,14 +58,30 @@ class Message(SyftObject):
         "status",
     ]
     __attr_unique__ = ["id"]
+    __attr_repr_cols__ = ["id", "subject", "status"]
 
 
-class MessageDelivered(Message):
-    __canonical_name__ = "MessageDelivered"
+@serializable(recursive_serde=True)
+class CreateMessage(Message):
+    __canonical_name__ = "CreateMessage"
     __version__ = SYFT_OBJECT_VERSION_1
-    status: MessageStatus = MessageStatus.DELIVERED
+
+    id: Optional[UID]
+    node_uid: Optional[UID]
+    from_user_verify_key: Optional[SyftVerifyKey]
+    created_at: Optional[DateTime]
 
 
-@transform(Message, MessageDelivered)
-def msg_to_msg_delivered():
-    return []
+def add_msg_creation_time(context: TransformContext) -> TransformContext:
+    context.output["created_at"] = DateTime.now()
+    return context
+
+
+@transform(CreateMessage, Message)
+def createmessage_to_message():
+    return [
+        generate_id,
+        add_msg_creation_time,
+        add_credentials_for_key("from_user_verify_key"),
+        add_node_uid_for_key("node_uid"),
+    ]
