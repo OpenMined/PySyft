@@ -5,7 +5,7 @@ from .syft_object import SyftObject
 
 class NoSQLOblvKeys(SyftObject):
     # version
-    __canonical_name__ = "OblvKeys"
+    __canonical_name__ = "OldOblvKeys"
     __version__ = SYFT_OBJECT_VERSION_1
 
     # fields

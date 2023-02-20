@@ -55,6 +55,11 @@ from .new.service import AbstractService
 from .new.service import ServiceConfigRegistry
 from .new.sqlite_document_store import SQLiteStoreClientConfig
 from .new.sqlite_document_store import SQLiteStoreConfig
+from .new.task.oblv_keys_stash import OblvKeys
+from .new.task.oblv_keys_stash import OblvKeysStash
+from .new.task.oblv_service import OblvService
+from .new.task.oblv_service import generate_oblv_key
+from .new.task.task_service import TaskService
 from .new.test_service import TestService
 from .new.user import User
 from .new.user import UserCreate
@@ -148,6 +153,8 @@ class Worker(NewNode):
                 UserService,
                 ActionService,
                 TestService,
+                TaskService,
+                OblvService,
                 DatasetService,
                 UserCodeService,
                 RequestService,
@@ -167,6 +174,8 @@ class Worker(NewNode):
             password="changethis",
             node=self,
         )
+        if os.getenv("INSTALL_OBLV_CLI") == "true":
+            create_oblv_key_pair(worker=self)
 
         self.post_init()
 
@@ -197,26 +206,33 @@ class Worker(NewNode):
                 f"SQLite Store Path:\n!open file://{store_config.client_config.file_path}\n"
             )
         document_store = store_config.store_type
+
         self.store_config = store_config
 
         self.document_store = document_store(store_config=store_config)
+        self.action_store = ActionStore(root_verify_key=self.signing_key.verify_key)
         self.queue_stash = QueueStash(store=self.document_store)
 
     def _construct_services(self):
         self.service_path_map = {}
+
         for service_klass in self.services:
             kwargs = {}
             if service_klass == ActionService:
-                action_store = ActionStore(root_verify_key=self.signing_key.verify_key)
+                action_store = self.action_store
                 kwargs["store"] = action_store
             if service_klass in [
                 UserService,
                 DatasetService,
                 UserCodeService,
                 RequestService,
+                OblvService,
                 DataSubjectService,
             ]:
                 kwargs["store"] = self.document_store
+            if service_klass == TaskService:
+                kwargs["document_store"] = self.document_store
+                kwargs["action_store"] = self.action_store
             self.service_path_map[service_klass.__name__.lower()] = service_klass(
                 **kwargs
             )
@@ -445,4 +461,23 @@ def create_admin_new(
             user = user_stash.set(user=create_user.to(User))
             return user.ok()
     except Exception as e:
-        print("create_admin failed", e)
+        print("Unable to create new admin", e)
+
+
+def create_oblv_key_pair(
+    worker: Worker,
+) -> Optional[str]:
+    try:
+        oblv_keys_stash = OblvKeysStash(store=worker.document_store)
+
+        if not len(oblv_keys_stash):
+            public_key, private_key = generate_oblv_key()
+            oblv_keys = OblvKeys(public_key=public_key, private_key=private_key)
+            res = oblv_keys_stash.set(oblv_keys)
+            if res.is_ok():
+                print("Successfully generated Oblv Key pair at startup")
+            return res.err()
+        else:
+            print(f"Using Existing Public/Private Key pair: {len(oblv_keys_stash)}")
+    except Exception as e:
+        print("Unable to create Oblv Keys.", e)
