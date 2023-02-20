@@ -84,9 +84,10 @@ jobs:
         if: steps.changes.outputs.syft == 'true'
         run: |
           bandit -r src
-          safety check -i 51668 -i 51516 -i 51549
+          safety check -i 51668 -i 51516 -i 51549 -i 52495
 
       - name: Run normal tests
         if: steps.changes.outputs.syft == 'true'
         run: |
           pytest -s -m 'fast or slow' --cov syft --cov-fail-under 60 -n auto --durations=50
+          pytest new_tests

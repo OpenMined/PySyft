@@ -10,7 +10,6 @@ DOMAIN1_PORT = 9082
 
 @pytest.mark.e2e
 def test_publish_with_bool_type_values(capfd) -> None:
-
     data_scientist = {
         "name": "Joker",
         "email": "joker@ace.com",
@@ -18,7 +17,7 @@ def test_publish_with_bool_type_values(capfd) -> None:
         "budget": 10000,
     }
 
-    domain_client = sy.login(
+    domain_client = sy.old_login(
         email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
     )
 
@@ -31,7 +30,7 @@ def test_publish_with_bool_type_values(capfd) -> None:
 
     domain_client.create_user(**data_scientist)
 
-    ds_client = sy.login(
+    ds_client = sy.old_login(
         email=data_scientist["email"],
         password=data_scientist["password"],
         port=DOMAIN1_PORT,

@@ -1,4 +1,5 @@
 # stdlib
+import inspect
 import logging
 import sys
 import time
@@ -57,6 +58,9 @@ from .common.node_service.request_receiver.request_receiver_messages import (
     RequestMessage,
 )
 from .common.node_service.simple.obj_exists import DoesObjectExistMessage
+from .common.node_service.task_submission.task_submission import CreateTask
+from .common.node_service.task_submission.task_submission import GetTasks
+from .common.node_service.task_submission.task_submission import ReviewTask
 from .common.util import check_send_to_blob_storage
 from .common.util import upload_to_s3_using_presigned
 from .enums import PyGridClientEnums
@@ -78,7 +82,6 @@ class RequestQueueClient(AbstractNodeClient):
 
     @property
     def requests(self) -> List[RequestMessage]:
-
         # relative
         from .common.node_service.object_request.object_request_messages import (
             GetAllRequestsMessage,
@@ -299,7 +302,6 @@ class RequestHandlerQueueClient:
 
 @instrument
 class DomainClient(Client):
-
     domain: SpecificLocation
     requests: RequestQueueClient
 
@@ -348,13 +350,55 @@ class DomainClient(Client):
         msg = GetRemainingBudgetMessage(address=self.node_uid, reply_to=self.node_uid)
         return self.send_immediate_msg_with_reply(msg=msg).budget  # type: ignore
 
+    @property
+    def tasks(self) -> List[Dict[str, str]]:
+        msg = GetTasks(address=self.node_uid, reply_to=self.node_uid, kwargs={}).sign(  # type: ignore
+            signing_key=self.signing_key
+        )
+        return self.send_immediate_msg_with_reply(msg=msg).kwargs
+
+    def code_request(
+        self, code: Union[str, callable], inputs: Dict[str, Any], outputs: List[str]
+    ) -> None:
+        if not inspect.isfunction(code) and not isinstance(code, str):
+            raise Exception("The code should either be a function or  string ...")
+
+        if inspect.isfunction(code):
+            code_str = inspect.getsource(code)
+        else:
+            code_str = code
+
+        for key, value in inputs.items():
+            if not isinstance(value, str):
+                inputs[key] = value.id_at_location.to_string()
+
+        msg = CreateTask(
+            address=self.node_uid,
+            reply_to=self.node_uid,
+            kwargs={"code": code_str, "inputs": inputs, "outputs": outputs},
+        ).sign(  # type: ignore
+            signing_key=self.signing_key
+        )
+
+        self.send_immediate_msg_with_reply(msg=msg)
+
+    def review(self, task_uid: str, approve: True, reason: str) -> None:
+        status = "accepted" if approve else "denied"
+        msg = ReviewTask(
+            address=self.node_uid,
+            reply_to=self.node_uid,
+            kwargs={"task_uid": task_uid, "status": status, "reason": reason},
+        ).sign(  # type: ignore
+            signing_key=self.signing_key
+        )
+        self.send_immediate_msg_with_reply(msg=msg)
+
     def request_budget(
         self,
         eps: float = 0.0,
         reason: str = "",
         skip_checks: bool = False,
     ) -> Any:
-
         if not skip_checks:
             if eps == 0.0:
                 eps = float(input("Please specify how much more epsilon you want:"))
@@ -669,7 +713,6 @@ class DomainClient(Client):
 
         if not skip_checks:
             for _, asset in assets.items():
-
                 if not isinstance(asset, Tensor) or not isinstance(
                     getattr(asset, "child", None), (PhiTensor, GammaTensor)
                 ):

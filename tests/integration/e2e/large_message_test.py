@@ -9,7 +9,6 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.adp.data_subject_list import DataSubjectArray
 from syft.core.store.proxy_dataset import ProxyDataset
 from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
 from syft.util import size_mb
@@ -24,12 +23,11 @@ def highest() -> int:
 
 @pytest.mark.e2e
 def test_large_blob_upload() -> None:
-
     # use to enable mitm proxy
     # from syft.grid.connections.http_connection import HTTPConnection
     # HTTPConnection.proxies = {"http": "http://127.0.0.1:8080"}
 
-    domain_client = sy.login(
+    domain_client = sy.old_login(
         email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
     )
 

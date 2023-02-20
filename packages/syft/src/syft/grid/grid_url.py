@@ -119,8 +119,16 @@ class GridURL:
         return f"{self.base_url}{self.path}{self.query_string}"
 
     @property
+    def url_no_port(self) -> str:
+        return f"{self.base_url_no_port}{self.path}{self.query_string}"
+
+    @property
     def base_url(self) -> str:
         return f"{self.protocol}://{self.host_or_ip}:{self.port}"
+
+    @property
+    def base_url_no_port(self) -> str:
+        return f"{self.protocol}://{self.host_or_ip}"
 
     @property
     def url_path(self) -> str:
@@ -150,3 +158,7 @@ class GridURL:
 
     def copy(self) -> GridURL:
         return GridURL.from_url(self.url)
+
+    def set_port(self, port: int) -> GridURL:
+        self.port = port
+        return self

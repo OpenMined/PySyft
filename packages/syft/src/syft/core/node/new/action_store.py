@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from enum import Enum
 from typing import List
+from typing import Optional
 
 # third party
 from result import Err
@@ -15,10 +16,13 @@ from result import Result
 from ....core.node.common.node_table.syft_object import SyftObject
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
-from .credentials import SyftCredentials
+from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
+from .response import SyftSuccess
+from .twin_object import TwinObject
 
 
+@serializable(recursive_serde=True)
 class ActionPermission(Enum):
     OWNER = 1
     READ = 2
@@ -29,7 +33,7 @@ class ActionPermission(Enum):
 @serializable(recursive_serde=True)
 class ActionObjectPermission:
     def __init__(
-        self, uid: UID, credentials: SyftCredentials, permission: ActionPermission
+        self, uid: UID, credentials: SyftVerifyKey, permission: ActionPermission
     ):
         self.uid = uid
         self.credentials = credentials
@@ -44,60 +48,71 @@ class ActionObjectPermission:
 
 
 class ActionObjectOWNER(ActionObjectPermission):
-    def __init__(self, uid: UID, credentials: SyftCredentials):
+    def __init__(self, uid: UID, credentials: SyftVerifyKey):
         self.uid = uid
         self.credentials = credentials
         self.permission = ActionPermission.OWNER
 
 
 class ActionObjectREAD(ActionObjectPermission):
-    def __init__(self, uid: UID, credentials: SyftCredentials):
+    def __init__(self, uid: UID, credentials: SyftVerifyKey):
         self.uid = uid
         self.credentials = credentials
         self.permission = ActionPermission.READ
 
 
 class ActionObjectWRITE(ActionObjectPermission):
-    def __init__(self, uid: UID, credentials: SyftCredentials):
+    def __init__(self, uid: UID, credentials: SyftVerifyKey):
         self.uid = uid
         self.credentials = credentials
         self.permission = ActionPermission.WRITE
 
 
 class ActionObjectEXECUTE(ActionObjectPermission):
-    def __init__(self, uid: UID, credentials: SyftCredentials):
+    def __init__(self, uid: UID, credentials: SyftVerifyKey):
         self.uid = uid
         self.credentials = credentials
         self.permission = ActionPermission.EXECUTE
 
 
 @serializable(recursive_serde=True)
-class ActionStorePermissionUpdate:
-    def __init__(self) -> None:
-        pass
-
-
 class ActionStore:
-    def __init__(self, root_verify_key=SyftVerifyKey) -> None:
+    def __init__(self, root_verify_key: Optional[SyftVerifyKey] = None) -> None:
         self.data = {}
         self.permissions = defaultdict(set)
+        if root_verify_key is None:
+            root_verify_key = SyftSigningKey.generate().verify_key
         self.root_verify_key = root_verify_key
 
-    def get(self, uid: UID, credentials: SyftCredentials) -> Result[SyftObject, str]:
+    def get(self, uid: UID, credentials: SyftVerifyKey) -> Result[SyftObject, str]:
         # if you get something you need READ permission
         read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
+        # if True:
         if self.has_permission(read_permission):
             data = self.data[uid]
             syft_object = SyftObject.from_mongo(data)
             return Ok(syft_object)
         return Err(f"Permission: {read_permission} denied")
 
-    def exists(self, uid: UID) -> Result[bool, str]:
+    def get_pointer(
+        self, uid: UID, credentials: SyftVerifyKey, node_uid: UID
+    ) -> Result[SyftObject, str]:
+        # 🟡 TODO 34: do we want pointer read permissions?
+        if uid in self.data:
+            data = self.data[uid]
+            obj = SyftObject.from_mongo(data)
+            if isinstance(obj, TwinObject):
+                obj = obj.mock
+            obj.syft_point_to(node_uid)
+            return Ok(obj)
+        return Err("Permission denied")
+
+    def exists(self, uid: UID) -> bool:
         return uid in self.data
 
     def set(
-        self, uid: UID, credentials: SyftCredentials, syft_object: SyftObject
-    ) -> Result[bool, str]:
+        self, uid: UID, credentials: SyftVerifyKey, syft_object: SyftObject
+    ) -> Result[SyftSuccess, Err]:
         # if you set something you need WRITE permission
         write_permission = ActionObjectWRITE(uid=uid, credentials=credentials)
         can_write = self.has_permission(write_permission)
@@ -119,12 +134,12 @@ class ActionStore:
                 self.permissions[uid] = set()
             permission = f"{credentials.verify}_READ"
             self.permissions[uid].add(permission)
-            return Ok(True)
+            return Ok(SyftSuccess(message=f"Set for ID: {uid}"))
         return Err(f"Permission: {write_permission} denied")
 
     def take_ownership(
-        self, uid: UID, credentials: SyftCredentials
-    ) -> Result[bool, str]:
+        self, uid: UID, credentials: SyftVerifyKey
+    ) -> Result[SyftSuccess, str]:
         # first person using this UID can claim ownership
         if uid not in self.permissions and uid not in self.data:
             self.add_permissions(
@@ -135,10 +150,10 @@ class ActionStore:
                     ActionObjectEXECUTE(uid=uid, credentials=credentials),
                 ]
             )
-            return Ok(True)
+            return Ok(SyftSuccess(message=f"Ownership of ID: {uid} taken."))
         return Err(f"UID: {uid} already owned.")
 
-    def delete(self, uid: UID, credentials: SyftCredentials) -> Result[bool, str]:
+    def delete(self, uid: UID, credentials: SyftVerifyKey) -> Result[SyftSuccess, str]:
         # if you delete something you need OWNER permission
         # is it bad to evict a key and have someone else reuse it?
         # perhaps we should keep permissions but no data?
@@ -146,7 +161,7 @@ class ActionStore:
         if self.has_permission(owner_permission):
             del self.data[uid]
             del self.permissions[uid]
-            return Ok(True)
+            return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
         return Err(f"Permission: {owner_permission} denied")
 
     def has_permission(self, permission: ActionObjectPermission) -> bool:
@@ -174,15 +189,13 @@ class ActionStore:
 
         return False
 
-    def add_permission(self, permission: ActionObjectPermission) -> Result[bool, str]:
+    def add_permission(self, permission: ActionObjectPermission) -> None:
         self.permissions[permission.uid].add(permission.permission_string)
 
     def remove_permission(self, permission: ActionObjectPermission):
         self.permissions[permission.uid].remove(permission.permission_string)
 
-    def add_permissions(
-        self, permissions: List[ActionObjectPermission]
-    ) -> Result[List[Result[bool, str]], str]:
+    def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
         results = []
         for permission in permissions:
             results.append(self.add_permission(permission))

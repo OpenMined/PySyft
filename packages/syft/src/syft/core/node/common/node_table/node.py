@@ -4,14 +4,15 @@ from typing import Optional
 
 # relative
 from ....common.serde.serializable import serializable
+from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
 
 
 @serializable(recursive_serde=True)
 class NoSQLNodeRoute(SyftObject):
     # version
-    __canonical_name__ = "NodeRoute"
-    __version__ = 1
+    __canonical_name__ = "OldNodeRoute"
+    __version__ = SYFT_OBJECT_VERSION_1
 
     # fields
     host_or_ip: str
@@ -41,7 +42,7 @@ class NoSQLNodeRoute(SyftObject):
 class NoSQLNode(SyftObject):
     # version
     __canonical_name__ = "Node"
-    __version__ = 1
+    __version__ = SYFT_OBJECT_VERSION_1
 
     # fields
     node_uid: str

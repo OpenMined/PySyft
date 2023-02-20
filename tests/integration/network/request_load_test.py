@@ -9,6 +9,8 @@ import pytest
 # syft absolute
 import syft as sy
 from syft import DomainClient
+from syft.core.io.address import Address
+from syft.core.io.location.specific import SpecificLocation
 from syft.core.node.common.node_service.sleep.sleep_messages import (
     SleepMessageWithReply,
 )
@@ -29,15 +31,24 @@ print("EMULATION", EMULATION)
 
 
 def send_msg(domain: DomainClient) -> SleepMessageWithReply:
+    if sy.__version__ == "0.7.0":
+        node_uid = domain.id
+        address = Address(domain=SpecificLocation(id=node_uid))
+    else:
+        node_uid = domain.node_uid
+        address = node_uid
+
     msg = SleepMessageWithReply(kwargs={"seconds": 0.5}).to(
-        address=domain.node_uid, reply_to=domain.node_uid
+        address=address, reply_to=address
     )
     return domain.send_immediate_msg_with_reply(msg=msg)
 
 
 @pytest.mark.network
 def test_parallel_sync_io_requests() -> None:
-    domain = sy.login(port=DOMAIN1_PORT, email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS)
+    domain = sy.old_login(
+        port=DOMAIN1_PORT, email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS
+    )
 
     # FastAPI and Starlette use anyio under the hood to use a threadpool for non async
     # CapacityLimiter in anyio is default 40 threads

@@ -5,18 +5,19 @@ from typing import Any
 import numpy as np
 
 # syft absolute
+import syft as sy
 from syft.core.common.uid import UID
 from syft.core.node.new.action_object import ActionObject
 from syft.core.node.new.action_store import ActionStore
+from syft.core.node.new.context import AuthedServiceContext
 from syft.core.node.new.credentials import SIGNING_KEY_FOR
 from syft.core.node.new.credentials import SyftSigningKey
 from syft.core.node.new.credentials import SyftVerifyKey
 from syft.core.node.new.user import User
-from syft.core.node.new.user import UserCollection
-from syft.core.node.new.user import UserUpdate
+from syft.core.node.new.user import UserCreate
+from syft.core.node.new.user import UserView
+from syft.core.node.new.user_service import UserService
 from syft.core.node.worker import Worker
-
-# from syft.core.node.worker import Worker
 
 test_signing_key_string = (
     "b7803e90a6f3f4330afbd943cef3451c716b338b17a9cf40a0a309bc38bc366d"
@@ -71,7 +72,7 @@ def test_action_store() -> None:
     action_store = ActionStore()
     uid = UID()
     raw_data = np.array([1, 2, 3])
-    test_object = ActionObject(syft_action_data=raw_data)
+    test_object = ActionObject.from_obj(raw_data)
 
     set_result = action_store.set(
         uid=uid, credentials=test_signing_key, syft_object=test_object
@@ -88,7 +89,7 @@ def test_action_store() -> None:
 
 
 def test_user_transform() -> None:
-    new_user = UserUpdate(
+    new_user = UserCreate(
         email="alice@bob.com",
         name="Alice",
         password="letmein",
@@ -110,55 +111,55 @@ def test_user_transform() -> None:
     assert user.hashed_password is not None
     assert user.salt is not None
 
-    edit_user = user.to(UserUpdate)
+    edit_user = user.to(UserView)
     # assert edit_user.id is not None # need to insert / update first
     assert edit_user.email == "alice@bob.com"
     assert edit_user.name == "Alice"
     assert edit_user.password is None
     assert edit_user.password_verify is None
+
     assert not hasattr(edit_user, "signing_key")
-    assert not hasattr(edit_user, "verify_key")
 
 
-def test_user_collection() -> None:
+def test_user_service() -> None:
     test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
     worker = Worker()
-    user_collection = UserCollection(worker)
+    user_service = worker.get_service(UserService)
 
     # create a user
-    new_user = UserUpdate(
+    new_user = UserCreate(
         email="alice@bob.com",
         name="Alice",
         password="letmein",
         password_verify="letmein",
     )
 
+    # create a context
+    context = AuthedServiceContext(node=worker, credentials=test_signing_key.verify_key)
+
     # call the create function
-    user_view_result = user_collection.create(
-        credentials=test_signing_key, user_update=new_user
-    )
+    user_view = user_service.create(context=context, user_create=new_user)
 
     # get the result
-    assert user_view_result.is_ok()
-    user_view = user_view_result.ok()
+    assert user_view is not None
+
+    assert user_view.email == new_user.email
+    assert user_view.name == new_user.name
 
     # we have a UID
     assert user_view.id is not None
 
     # we can query the same user again
-    user_view_2_result = user_collection.view(
-        uid=user_view.id, credentials=test_signing_key
-    )
+    user_view_2 = user_service.view(context=context, uid=user_view.id)
 
     # the object matches
-    assert user_view_2_result.is_ok()
-    user_view_2 = user_view_2_result.ok()
+    assert user_view_2 is not None
     assert user_view == user_view_2
 
 
 def test_syft_object_serde() -> None:
     # create a user
-    new_user = UserUpdate(
+    new_user = UserCreate(
         email="alice@bob.com",
         name="Alice",
         password="letmein",
@@ -180,7 +181,7 @@ def test_worker() -> None:
 
 def test_action_object_add() -> None:
     raw_data = np.array([1, 2, 3])
-    action_object = ActionObject(syft_action_data=raw_data)
+    action_object = ActionObject.from_obj(raw_data)
     result = action_object + action_object
     x = result.syft_action_data
     y = raw_data * 2
@@ -189,23 +190,35 @@ def test_action_object_add() -> None:
 
 def test_action_object_hooks() -> None:
     raw_data = np.array([1, 2, 3])
-    action_object = ActionObject(syft_action_data=raw_data)
+    action_object = ActionObject.from_obj(raw_data)
 
-    def pre_add(*args: Any, **kwargs: Any) -> Any:
+    def pre_add(context: Any, *args: Any, **kwargs: Any) -> Any:
         # double it
         new_value = args[0]
         new_value.syft_action_data = new_value.syft_action_data * 2
-        return (new_value,), kwargs
+        return context, (new_value,), kwargs
 
-    def post_add(result: Any) -> Any:
+    def post_add(context: Any, name: str, new_result: Any) -> Any:
         # change return type to sum
-        return sum(result.syft_action_data)
+        return sum(new_result.syft_action_data)
 
-    action_object.syft_pre_hooks__["__add__"] = [pre_add]
-    action_object.syft_post_hooks__["__add__"] = [post_add]
+    action_object._syft_pre_hooks__["__add__"] = [pre_add]
+    action_object._syft_post_hooks__["__add__"] = [post_add]
 
     result = action_object + action_object
     x = result.syft_action_data
     y = sum((raw_data * 2) + raw_data)
     assert y == 18
     assert x == y
+
+    action_object._syft_pre_hooks__["__add__"] = []
+    action_object._syft_post_hooks__["__add__"] = []
+
+
+def test_worker_serde() -> None:
+    worker = Worker()
+    ser = sy.serialize(worker, to_bytes=True)
+    de = sy.deserialize(ser, from_bytes=True)
+
+    assert de.signing_key == worker.signing_key
+    assert de.id == worker.id

@@ -11,6 +11,7 @@ from nacl.signing import VerifyKey
 
 # relative
 from .....common.message import ImmediateSyftMessageWithReply
+from .....node.new.user import User
 from ....domain_interface import DomainInterface
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
@@ -246,6 +247,8 @@ def get_all_users_msg(
         users = node.users.all()
         _msg = []
         for user in users:
+            if isinstance(user, User):
+                continue
             _user_json = syft_object_to_json(user)
             # Use role name instead of role ID.
             _user_json["role"] = _user_json["role"].get("name", None)
@@ -301,7 +304,6 @@ def del_user_msg(
     node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
-
     _target_user = node.users.first(id_int=msg.user_id)
     _not_owner = _target_user.role["name"] != node.roles.owner_role["name"]
 

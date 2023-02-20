@@ -20,6 +20,7 @@ from pymongo import MongoClient
 
 # relative
 from ....common.serde.serialize import _serialize
+from ...new.user import User
 from ..exceptions import InvalidCredentialsError
 from ..exceptions import UserNotFoundError
 from ..node_manager.role_manager import NewRoleManager
@@ -280,35 +281,37 @@ class NoSQLUserManager(NoSQLDatabaseManager):
         added_by: Optional[str] = "",
         institution: Optional[str] = "",
         website: Optional[str] = "",
-    ) -> Optional[NoSQLSyftUser]:
+    ) -> Optional[User]:
         salt, hashed = self.__salt_and_hash_password(password, 12)
         curr_len = len(self)
-
-        row_exists = self.find_one({email: email})
-        if row_exists:
-            return None
-        else:
-            private_key = SigningKey(bytes.fromhex(node.setup.first().signing_key))
-            user = NoSQLSyftUser(
-                name=name,
-                email=email,
-                role=role,
-                budget=budget,
-                private_key=private_key.encode(encoder=HexEncoder).decode("utf-8"),
-                verify_key=private_key.verify_key.encode(encoder=HexEncoder).decode(
-                    "utf-8"
-                ),
-                hashed_password=hashed,
-                salt=salt,
-                created_at=str(datetime.now()),
-                id_int=curr_len + 1,
-                daa_pdf=daa_pdf,
-                added_by=added_by,
-                institution=institution,
-                website=website,
-            )
-            self._collection.insert_one(user.to_mongo())
-            return user
+        try:
+            row_exists = self.find_one({email: email})
+            if row_exists:
+                return None
+            else:
+                private_key = SigningKey(bytes.fromhex(node.setup.first().signing_key))
+                user = NoSQLSyftUser(
+                    name=name,
+                    email=email,
+                    role=role,
+                    budget=budget,
+                    private_key=private_key.encode(encoder=HexEncoder).decode("utf-8"),
+                    verify_key=private_key.verify_key.encode(encoder=HexEncoder).decode(
+                        "utf-8"
+                    ),
+                    hashed_password=hashed,
+                    salt=salt,
+                    created_at=str(datetime.now()),
+                    id_int=curr_len + 1,
+                    daa_pdf=daa_pdf,
+                    added_by=added_by,
+                    institution=institution,
+                    website=website,
+                )
+                self._collection.insert_one(user.to_mongo())
+                return user
+        except Exception as e:
+            print("create_admin failed", e)
 
     def first(self, **kwargs: Any) -> NoSQLSyftUser:
         result = super().find_one(kwargs)
@@ -372,24 +375,15 @@ class NoSQLUserManager(NoSQLDatabaseManager):
 
         self.update_one(query={"id_int": user_id}, values=attributes)
 
-    def change_password(self, user_id: str, current_pwd: str, new_pwd: str) -> None:
+    def change_password(self, user_id: str, new_pwd: str) -> None:
         user = self.first(id_int=int(user_id))
-
-        hashed = user.hashed_password.encode("UTF-8")
-        salt = user.salt.encode("UTF-8")
-        bytes_pass = current_pwd.encode("UTF-8")
-
-        if checkpw(bytes_pass, salt + hashed):
-            new_salt, new_hashed = self.__salt_and_hash_password(new_pwd, 12)
-            user.salt = new_salt
-            user.hashed_password = new_hashed
-            self.update_one(
-                query={"id_int": int(user_id)},
-                values={"__blob__": _serialize(user, to_bytes=True)},
-            )
-        else:
-            # Should it warn the user about his wrong current password input?
-            raise InvalidCredentialsError
+        new_salt, new_hashed = self.__salt_and_hash_password(new_pwd, 12)
+        user.salt = new_salt
+        user.hashed_password = new_hashed
+        self.update_one(
+            query={"id_int": int(user_id)},
+            values={"__blob__": _serialize(user, to_bytes=True)},
+        )
 
     def can_create_users(self, verify_key: VerifyKey) -> bool:
         """Checks if a user has permissions to create new users."""
@@ -468,7 +462,6 @@ class NoSQLUserManager(NoSQLDatabaseManager):
             else:
                 raise InvalidCredentialsError
         except UserNotFoundError:
-
             raise InvalidCredentialsError
 
     def __salt_and_hash_password(self, password: str, rounds: int) -> Tuple[str, str]:

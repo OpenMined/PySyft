@@ -85,6 +85,7 @@ from .mode import EDITABLE_MODE
 from .parse_template import render_templates
 from .parse_template import setup_from_manifest_template
 from .quickstart_ui import fetch_notebooks_for_url
+from .quickstart_ui import fetch_notebooks_from_zipfile
 from .quickstart_ui import quickstart_download_notebook
 from .rand_sec import generate_sec_random_password
 from .style import RichGroup
@@ -131,7 +132,6 @@ def cli() -> None:
 )
 @click.argument("location", type=str, nargs=1)
 def clean(location: str) -> None:
-
     if location == "library" or location == "volumes":
         print("Deleting all Docker volumes in 2 secs (Ctrl-C to stop)")
         time.sleep(2)
@@ -325,6 +325,11 @@ def clean(location: str) -> None:
     is_flag=True,
     help="Turn off auto health checks post node launch",
 )
+@click.option(
+    "--oblv",
+    is_flag=True,
+    help="Installs Oblivious CLI tool",
+)
 def launch(args: TypeTuple[str], **kwargs: Any) -> None:
     verb = get_launch_verb()
     try:
@@ -379,10 +384,10 @@ def launch(args: TypeTuple[str], **kwargs: Any) -> None:
                 port = match_port.group().replace("HTTP_PORT=", "")
                 check_status("localhost" + ":" + port)
 
-            node_name = verb.get_named_term_type(name="node_name").raw_input
+            node_name = verb.get_named_term_type(name="node_name").snake_input
             rich.get_console().print(
                 rich.panel.Panel.fit(
-                    f"🚨🚨🚨 To view container logs run [bold red] hagrid logs {node_name} [/bold red]\t"
+                    f"✨ To view container logs run [bold green]hagrid logs {node_name}[/bold green]\t"
                 )
             )
 
@@ -438,7 +443,6 @@ def check_pulling(line: str, cmd_name: str, progress_bar: Progress) -> None:
 
 
 def check_building(line: str, cmd_name: str, progress_bar: Progress) -> None:
-
     load_pattern = re.compile(
         r"^#.* load build definition from [A-Za-z0-9]+\.dockerfile$", re.IGNORECASE
     )
@@ -675,7 +679,6 @@ def display_vm_status(process_list: TypeList) -> None:
 
     # Render the live table
     with Live(status_table, refresh_per_second=1) as live:
-
         # Loop till all processes have not completed executing
         while not process_completed:
             status_table, process_completed = generate_process_status_table(
@@ -1065,6 +1068,8 @@ def create_launch_cmd(
     headless = bool(kwargs["headless"])
     parsed_kwargs["headless"] = headless
 
+    parsed_kwargs["oblv"] = bool(kwargs["oblv"])
+
     parsed_kwargs["tls"] = bool(kwargs["tls"])
     parsed_kwargs["test"] = bool(kwargs["test"])
     parsed_kwargs["dev"] = bool(kwargs["dev"])
@@ -1129,7 +1134,6 @@ def create_launch_cmd(
         parsed_kwargs.update(kwargs)
 
     if host in ["docker"]:
-
         # Check docker service status
         if not ignore_docker_version_check:
             check_docker_service_status()
@@ -1188,7 +1192,6 @@ def create_launch_cmd(
             login_azure()
 
         if DEPENDENCIES["ansible-playbook"]:
-
             resource_group = ask(
                 question=Question(
                     var_name="azure_resource_group",
@@ -1601,7 +1604,7 @@ def pull_command(cmd: str, kwargs: TypeDict[str, Any]) -> TypeList[str]:
         pull_cmd += " --file docker-compose.yml"
     else:
         pull_cmd += " --file docker-compose.pull.yml"
-    pull_cmd += " pull --ignore-pull-failures"  # ignore missing svelte kit for now
+    pull_cmd += " pull --ignore-pull-failures"  # ignore missing version from Dockerhub
     return [pull_cmd]
 
 
@@ -1675,7 +1678,7 @@ def create_launch_docker_cmd(
         elif version_string is None:
             version_string = "latest"
 
-    if platform.uname().machine == "x86_64":
+    if platform.uname().machine.lower() in ["x86_64", "amd64"]:
         docker_platform = "linux/amd64"
     else:
         docker_platform = "linux/arm64"
@@ -1683,6 +1686,7 @@ def create_launch_docker_cmd(
     if "platform" in kwargs and kwargs["platform"] is not None:
         docker_platform = kwargs["platform"]
 
+    install_oblv_cli = bool(kwargs["oblv"])
     print("  - NAME: " + str(snake_name))
     print("  - RELEASE: " + kwargs["release"])
     print("  - ARCH: " + docker_platform)
@@ -1695,6 +1699,7 @@ def create_launch_docker_cmd(
         print("  - HAGRID_REPO_SHA: " + commit_hash())
     print("  - PORT: " + str(host_term.free_port))
     print("  - DOCKER COMPOSE: " + docker_version)
+    print("  - OBLV_CLI: ", install_oblv_cli)
 
     print("\n")
 
@@ -1719,6 +1724,7 @@ def create_launch_docker_cmd(
         "STACK_API_KEY": str(
             generate_sec_random_password(length=48, special_chars=False)
         ),
+        "INSTALL_OBLV_CLI": str(install_oblv_cli).lower(),
     }
 
     if "trace" in kwargs and kwargs["trace"] is True:
@@ -1958,7 +1964,6 @@ def extract_host_ip_gcp(stdout: bytes) -> Optional[str]:
 
 
 def extract_host_ip_from_cmd(cmd: str) -> Optional[str]:
-
     try:
         matcher = r"(?:[0-9]{1,3}\.){3}[0-9]{1,3}"
         ips = re.findall(matcher, cmd)
@@ -1973,7 +1978,6 @@ def extract_host_ip_from_cmd(cmd: str) -> Optional[str]:
 def check_ip_for_ssh(
     host_ip: str, timeout: int = 600, wait_time: int = 5, silent: bool = False
 ) -> bool:
-
     if not silent:
         print(f"Checking VM at {host_ip} is up")
     checks = int(timeout / wait_time)  # 10 minutes in 5 second chunks
@@ -2204,7 +2208,6 @@ def create_launch_azure_cmd(
     ansible_extras: str,
     kwargs: TypeDict[str, Any],
 ) -> TypeList[str]:
-
     get_or_make_resource_group(resource_group=resource_group, location=location)
 
     node_count = kwargs.get("node_count", 1)
@@ -2782,7 +2785,6 @@ def get_host_name(container_name: str) -> str:
 
 
 def from_url(url: str) -> Tuple[str, str, int, str, Union[Any, str]]:
-
     try:
         # urlparse doesnt handle no protocol properly
         if "://" not in url:
@@ -3029,6 +3031,7 @@ def run_quickstart(
     branch: str = DEFAULT_BRANCH,
     commit: Optional[str] = None,
     python: Optional[str] = None,
+    zip_file: Optional[str] = None,
 ) -> None:
     try:
         quickstart_art()
@@ -3054,7 +3057,13 @@ def run_quickstart(
                 python=python,
             )
         downloaded_files = []
-        if url:
+        if zip_file:
+            downloaded_files = fetch_notebooks_from_zipfile(
+                zip_file,
+                directory=directory,
+                reset=reset,
+            )
+        elif url:
             downloaded_files = fetch_notebooks_for_url(
                 url=url,
                 directory=directory,
@@ -3307,7 +3316,6 @@ def quickstart_setup(
     pre: bool = False,
     python: Optional[str] = None,
 ) -> None:
-
     console = rich.get_console()
     OK_EMOJI = RichEmoji("white_heavy_check_mark").to_str()
 
@@ -3401,26 +3409,18 @@ def add_intro_notebook(directory: str, reset: bool = False) -> str:
 
 
 @click.command(help="Walk the Path", context_settings={"show_default": True})
-@click.option(
-    "--repo",
-    default=DEFAULT_REPO,
-    help="Choose a repo to fetch the notebook from or just use OpenMined/PySyft",
-)
-@click.option(
-    "--branch",
-    default=DEFAULT_BRANCH,
-    help="Choose a branch to fetch from or just use dev",
-)
-@click.option(
-    "--commit",
-    help="Choose a specific commit to fetch the notebook from",
-)
-def dagobah(
-    repo: str = DEFAULT_REPO,
-    branch: str = DEFAULT_BRANCH,
-    commit: Optional[str] = None,
-) -> None:
-    return run_quickstart(url="padawan", repo=repo, branch=branch, commit=commit)
+@click.argument("zip_file", type=str, default="padawan.zip", metavar="ZIPFILE")
+def dagobah(zip_file: str) -> None:
+    if not os.path.exists(zip_file):
+        for text in (
+            f"{zip_file} does not exists.",
+            "Please specify the path to the zip file containing the notebooks.",
+            "hagrid dagobah [ZIPFILE]",
+        ):
+            print(text, file=sys.stderr)
+        sys.exit(1)
+
+    return run_quickstart(zip_file=zip_file)
 
 
 cli.add_command(dagobah)
@@ -3522,7 +3522,6 @@ cli.add_command(ssh)
 )
 @click.argument("domain_name", type=str)
 def logs(domain_name: str) -> None:  # nosec
-
     container_ids = (
         subprocess.check_output(  # nosec
             f"docker ps -qf name=^{domain_name}-*", shell=True

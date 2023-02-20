@@ -60,28 +60,12 @@ services:
       - SERVICE_NAME=frontend
       - RELEASE=${RELEASE:-production}
       - NODE_TYPE=${NODE_TYPE?Variable not set}
+      - FRONTEND_TARGET=${FRONTEND_TARGET}
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
+      - PORT=80
       - HTTP_PORT=${HTTP_PORT}
       - HTTPS_PORT=${HTTPS_PORT}
-
-  svelte:
-    restart: always
-    image: "${DOCKER_IMAGE_SVELTE?Variable not set}:${VERSION-latest}"
-    profiles:
-      - frontend
-    depends_on:
-      - proxy
-    environment:
-      - SERVICE_NAME=frontend
-      - RELEASE=${RELEASE:-production}
-      - NODE_TYPE=${NODE_TYPE?Variable not set}
-      - VERSION=${VERSION}
-      - VERSION_HASH=${VERSION_HASH}
-      - HTTP_PORT=${HTTP_PORT}
-      - HTTPS_PORT=${HTTPS_PORT}
-    ports:
-      - "3000"
 
   redis:
     restart: always
@@ -130,7 +114,8 @@ services:
       - JAEGER_PORT=${JAEGER_PORT}
       - ASSOCIATION_TIMEOUT=${ASSOCIATION_TIMEOUT}
       - DEV_MODE=${DEV_MODE}
-    command: /start.sh
+      - DOMAIN_CONNECTION_PORT=${DOMAIN_CONNECTION_PORT}
+    command: "/app/grid/start.sh"
     network_mode: service:proxy
     volumes:
       - credentials-data:/credentials
@@ -161,7 +146,8 @@ services:
       - JAEGER_HOST=${JAEGER_HOST}
       - JAEGER_PORT=${JAEGER_PORT}
       - DEV_MODE=${DEV_MODE}
-    command: "/start.sh"
+      - DOMAIN_CONNECTION_PORT=${DOMAIN_CONNECTION_PORT}
+    command: "/app/grid/start.sh"
     network_mode: service:proxy
     volumes:
       - credentials-data:/credentials
@@ -194,7 +180,8 @@ services:
       - JAEGER_HOST=${JAEGER_HOST}
       - JAEGER_PORT=${JAEGER_PORT}
       - DEV_MODE=${DEV_MODE}
-    command: "/worker-start.sh"
+      - DOMAIN_CONNECTION_PORT=${DOMAIN_CONNECTION_PORT}
+    command: "/app/grid/worker-start.sh"
     network_mode: service:proxy
     volumes:
       - credentials-data:/credentials

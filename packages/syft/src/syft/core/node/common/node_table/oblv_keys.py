@@ -1,11 +1,12 @@
 # relative
+from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
 
 
 class NoSQLOblvKeys(SyftObject):
     # version
     __canonical_name__ = "OblvKeys"
-    __version__ = 1
+    __version__ = SYFT_OBJECT_VERSION_1
 
     # fields
     public_key: bytes

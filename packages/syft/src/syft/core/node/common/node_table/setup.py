@@ -5,6 +5,7 @@ from typing import List
 
 # relative
 from ....common.serde.serializable import serializable
+from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
 
 
@@ -12,7 +13,7 @@ from .syft_object import SyftObject
 class NoSQLSetup(SyftObject):
     # version
     __canonical_name__ = "Setup"
-    __version__ = 1
+    __version__ = SYFT_OBJECT_VERSION_1
 
     # fields
     domain_name: str
@@ -20,15 +21,19 @@ class NoSQLSetup(SyftObject):
     contact: str = ""
     daa: bool = False
     node_uid: str
+    organization: str = ""
     daa_document: bytes = b""
     tags: List[str] = []
     deployed_on: str
     signing_key: str
+    on_board: bool = False
 
     # serde / storage rules
     __attr_state__ = [
         "domain_name",
         "description",
+        "on_board",
+        "organization",
         "contact",
         "daa",
         "node_uid",

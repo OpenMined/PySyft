@@ -26,7 +26,7 @@ Syft "python" functionality includes the following modules:
 To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
 
-__version__ = "0.7.0"
+__version__ = "0.8.0-beta.0"
 
 # stdlib
 from pathlib import Path
@@ -40,6 +40,7 @@ from pkg_resources import get_distribution  # noqa: F401
 # relative
 # Package Imports
 from . import filterwarnings  # noqa: F401
+from . import gevent_patch  # noqa: F401
 from . import jax_settings  # noqa: F401
 from . import lib  # noqa: F401
 from . import logger  # noqa: F401
@@ -52,6 +53,7 @@ from .core.adp.data_subject_list import DataSubjectList  # noqa: F401
 # Convenience Methods
 from .core.common.serde.deserialize import _deserialize as deserialize  # noqa: F401
 from .core.common.serde.serialize import _serialize as serialize  # noqa: F401
+from .core.common.uid import UID  # noqa: F401
 
 # TFF
 from .core.node.common.node_service import tff  # noqa: F401
@@ -64,7 +66,17 @@ from .core.node.domain import Domain  # noqa: F401
 from .core.node.domain import DomainClient  # noqa: F401
 from .core.node.network import Network  # noqa: F401
 from .core.node.network_client import NetworkClient  # noqa: F401
-from .core.node.new.user import UserCollection  # noqa: F401
+from .core.node.new.client import login  # noqa: F401
+from .core.node.new.client import login as new_login  # noqa: F401
+from .core.node.new.credentials import SyftSigningKey  # noqa: F401
+from .core.node.new.data_subject import DataSubject  # noqa: F401
+from .core.node.new.dataset import CreateAsset as Asset  # noqa: F401
+from .core.node.new.dataset import CreateDataset as Dataset  # noqa: F401
+from .core.node.new.roles import Roles as roles  # noqa: F401
+from .core.node.new.user_code import ExactMatch  # noqa: F401
+from .core.node.new.user_code import SingleExecutionExactOutput  # noqa: F401
+from .core.node.new.user_code import syft_function  # noqa: F401
+from .core.node.new.user_service import UserService  # noqa: F401
 
 # Convenience Constructors
 from .core.node.vm import VirtualMachine  # noqa: F401
@@ -72,6 +84,8 @@ from .core.node.vm_client import VirtualMachineClient  # noqa: F401
 
 # new code
 from .core.node.worker import Worker  # noqa: F401
+
+# Convenience Objects
 from .core.tensor import autodp  # noqa: F401
 from .core.tensor import nn  # noqa: F401
 from .core.tensor.autodp.gamma_tensor import GammaTensor  # noqa: F401
@@ -80,7 +94,7 @@ from .core.tensor.lazy_repeat_array import lazyrepeatarray  # noqa: F401
 from .core.tensor.tensor import Tensor  # noqa: F401
 from .experimental_flags import flags  # noqa: F401
 from .grid.client.client import connect  # noqa: F401
-from .grid.client.client import login  # noqa: F401
+from .grid.client.client import login as old_login  # noqa: F401
 from .grid.client.client import register  # noqa: F401
 
 # Convenience Objects

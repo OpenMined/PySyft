@@ -19,7 +19,6 @@ from .vm_client import VirtualMachineClient
 
 @final
 class Device(Node):
-
     device: SpecificLocation
 
     client_type = DeviceClient

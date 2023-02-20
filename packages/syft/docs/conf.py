@@ -12,7 +12,6 @@
 import datetime
 import inspect
 import os
-from pathlib import Path
 import shutil
 import sys
 from typing import Any
@@ -88,6 +87,7 @@ extensions.append("recommonmark")
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
+
 
 # override autodoc defaults to skip/not skip certain methods
 def skip(
@@ -208,6 +208,8 @@ html_theme_path = ["_themes/"]
 try:
     # syft absolute
     from syft import __version__ as version
+
+    release = version
 except ImportError:
     pass
 else:

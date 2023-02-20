@@ -12,7 +12,6 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.adp.data_subject_list import DataSubjectArray
 from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
 
 sy.logger.remove()
@@ -43,7 +42,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     unique_email = f"{uuid.uuid4()}@caltech.edu"
 
     # Canada
-    ca_root = sy.login(email="info@openmined.org", password="changethis", port=9082)
+    ca_root = sy.old_login(email="info@openmined.org", password="changethis", port=9082)
     canada_dataset_url = "https://github.com/OpenMined/datasets/blob/main/trade_flow/ca%20-%20feb%202021.csv?raw=True"
     ca_data = pd.read_csv(canada_dataset_url)[0:10]
 
@@ -81,7 +80,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     ca_root.users.create(**get_user_details(unique_email=unique_email))
 
     # Italy
-    it_root = sy.login(email="info@openmined.org", password="changethis", port=9083)
+    it_root = sy.old_login(email="info@openmined.org", password="changethis", port=9083)
 
     italy_dataset_url = "https://github.com/OpenMined/datasets/blob/main/trade_flow/it%20-%20feb%202021.csv?raw=True"
     it_data = pd.read_csv(italy_dataset_url)[0:10]
@@ -123,10 +122,10 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     it_root.users.create(**get_user_details(unique_email=unique_email))
 
     # Data Scientist
-    ca = sy.login(email=unique_email, password="bazinga", port=9082)
+    ca = sy.old_login(email=unique_email, password="bazinga", port=9082)
 
     ca.request_budget(eps=BUDGET_INCREASE, reason="increase budget!")
-    it = sy.login(email=unique_email, password="bazinga", port=9083)
+    it = sy.old_login(email=unique_email, password="bazinga", port=9083)
 
     it.request_budget(eps=BUDGET_INCREASE, reason="increase budget!")
 

@@ -54,7 +54,7 @@ def create_initial_setup(
     msg: CreateInitialSetUpMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> SuccessResponseMessage:
     # use a lock in mongodb to ensure we run this on each backend container in sequence
-    print("Performing initial setup...")
+
     with Lock("create_initial_setup"):
         # 1 - Should not run if Node has an owner
 
@@ -114,9 +114,12 @@ def create_initial_setup(
         if create_user and create_setup:
             print("CreateInitialSetUpMessage Successful!")
         else:
-            print(
-                f"Failed CreateInitialSetUpMessage User: {create_user} Setup: {create_setup}"
-            )
+            if len(node.users) == 0:
+                print(
+                    f"Failed CreateInitialSetUpMessage User: {create_user} Setup: {create_setup}"
+                )
+            else:
+                print("Already got a User")
 
         return SuccessResponseMessage(
             address=msg.reply_to,
@@ -127,7 +130,6 @@ def create_initial_setup(
 def get_setup(
     msg: GetSetUpMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> GetSetUpResponse:
-
     _setup = node.setup.first(domain_name=node.name).to_dict()
     _setup["tags"] = _setup["tags"]
     # TODO: Make this a little more defensive so we dont accidentally spill secrets
@@ -169,7 +171,6 @@ def update_settings(
 
 
 class NodeSetupService(ImmediateNodeServiceWithReply):
-
     msg_handler_map: Dict[type, Callable] = {
         CreateInitialSetUpMessage: create_initial_setup,
         GetSetUpMessage: get_setup,

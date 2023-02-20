@@ -23,11 +23,11 @@ DOMAIN1_VPN_IP = "100.64.0.2"
 @pytest.mark.network
 def test_domain1_via_network_proxy_client() -> None:
     unique_tag = str(uuid.uuid4())
-    network_client = sy.login(
+    network_client = sy.old_login(
         email="info@openmined.org", password="changethis", port=NETWORK_PORT
     )
 
-    domain_client = sy.login(
+    domain_client = sy.old_login(
         email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
     )
 
@@ -40,9 +40,19 @@ def test_domain1_via_network_proxy_client() -> None:
 
     domain_list = network_client.domains.all(pandas=False)
     assert len(domain_list) > 0
-    proxy_client = network_client.domains[domain_client.node_uid]
+    if sy.__version__ == "0.7.0":
+        node_uid = domain_client.id
+    else:
+        node_uid = domain_client.node_uid
 
-    assert proxy_client.node_uid == domain_client.node_uid
+    proxy_client = network_client.domains[node_uid]
+
+    if sy.__version__ == "0.7.0":
+        proxy_client_uid = proxy_client.id
+    else:
+        proxy_client_uid = proxy_client.node_uid
+
+    assert proxy_client_uid == node_uid
     assert proxy_client.name == domain_client.name
     assert proxy_client.routes[0] != domain_client.routes[0]
 
@@ -66,11 +76,11 @@ def test_domain1_via_network_proxy_client() -> None:
 @pytest.mark.network
 def test_domain2_via_network_proxy_client() -> None:
     unique_tag = str(uuid.uuid4())
-    network_client = sy.login(
+    network_client = sy.old_login(
         email="info@openmined.org", password="changethis", port=NETWORK_PORT
     )
 
-    domain_client = sy.login(
+    domain_client = sy.old_login(
         email="info@openmined.org", password="changethis", port=DOMAIN2_PORT
     )
 
@@ -83,9 +93,22 @@ def test_domain2_via_network_proxy_client() -> None:
 
     domain_list = network_client.domains.all(pandas=False)
     assert len(domain_list) > 0
-    proxy_client = network_client.domains[domain_client.node_uid]
 
-    assert proxy_client.node_uid == domain_client.node_uid
+    if sy.__version__ == "0.7.0":
+        node_uid = domain_client.id
+    else:
+        node_uid = domain_client.node_uid
+
+    proxy_client = network_client.domains[node_uid]
+
+    if sy.__version__ == "0.7.0":
+        proxy_client_uid = proxy_client.id
+    else:
+        proxy_client_uid = proxy_client.node_uid
+
+    proxy_client = network_client.domains[node_uid]
+
+    assert proxy_client_uid == node_uid
     assert proxy_client.name == domain_client.name
     assert proxy_client.routes[0] != domain_client.routes[0]
 
@@ -120,14 +143,14 @@ def search_network(network_client: sy.Network, query: str) -> Optional[Dict[str,
 @pytest.mark.network
 def test_search_network() -> None:
     unique_tag = str(uuid.uuid4())
-    domain_client = sy.login(
+    domain_client = sy.old_login(
         email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
     )
 
     x = torch.Tensor([1, 2, 3])
     x.send(domain_client, tags=[unique_tag])
 
-    network_client = sy.login(port=NETWORK_PORT)
+    network_client = sy.old_login(port=NETWORK_PORT)
     query = [unique_tag]
 
     retry_time = 3
@@ -155,14 +178,14 @@ def test_search_network() -> None:
 def test_proxy_login_logout_network() -> None:
     unique_tag = str(uuid.uuid4())
 
-    domain_client = sy.login(
+    domain_client = sy.old_login(
         email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
     )
 
     x = torch.Tensor([1, 2, 3])
     x.send(domain_client, tags=[unique_tag])
     time.sleep(5)
-    network_client = sy.login(port=NETWORK_PORT)
+    network_client = sy.old_login(port=NETWORK_PORT)
     domain_list = network_client.domains.all(pandas=False)
     assert len(domain_list) > 0
 

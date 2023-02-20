@@ -54,3 +54,19 @@ def deserialize_signature(blob: bytes) -> Signature:
 
 
 recursive_serde_register(Signature, serialize_signature, deserialize_signature)
+
+
+def signature_remove_self(signature: Signature) -> Signature:
+    params = dict(signature.parameters)
+    params.pop("self", None)
+    return Signature(
+        list(params.values()), return_annotation=signature.return_annotation
+    )
+
+
+def signature_remove_context(signature: Signature) -> Signature:
+    params = dict(signature.parameters)
+    params.pop("context", None)
+    return Signature(
+        list(params.values()), return_annotation=signature.return_annotation
+    )

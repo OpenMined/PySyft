@@ -22,6 +22,8 @@ from ...core.io.route import SoloRoute
 from ...core.node.common.client import Client
 from ...core.node.domain_client import DomainClient
 from ...core.node.network_client import NetworkClient
+from ...core.node.new.client import SyftClient
+from ...telemetry import instrument
 from ...util import bcolors
 from ...util import verify_tls
 from .grid_connection import GridHTTPConnection
@@ -30,6 +32,7 @@ DEFAULT_PYGRID_PORT = 80
 DEFAULT_PYGRID_ADDRESS = f"http://127.0.0.1:{DEFAULT_PYGRID_PORT}"
 
 
+@instrument
 def connect(
     url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
     conn_type: Type[ClientConnection] = GridHTTPConnection,
@@ -76,6 +79,7 @@ def connect(
     return node
 
 
+@instrument
 def login(
     url: Optional[Union[str, GridURL]] = None,
     port: Optional[int] = None,
@@ -85,13 +89,12 @@ def login(
     verbose: Optional[bool] = True,
     timeout: Optional[float] = None,
     retry: Optional[int] = None,
-) -> Client:
-
+    via_new_client: Optional[bool] = None,
+) -> Union[Client, SyftClient]:
     retry = 5 if retry is None else retry  # Default to 5 retries
-    timeout = 10 if timeout is None else timeout  # Default to 10 seconds
+    timeout = 30 if timeout is None else timeout  # Default to 10 seconds
 
     if password == "changethis":  # nosec
-
         if email == "info@openmined.org":
             print(
                 f"{bcolors.YELLOW}WARNING:{bcolors.ENDC} CHANGE YOUR USERNAME AND PASSWORD!!! \n\n"
@@ -158,7 +161,7 @@ def login(
                 f"timed out after {timeout} seconds.\n"
                 "\tPlease try the following options:\n"
                 "\t- Please try increasing the timeout by passing it as an argument to the login method.\n"
-                "\te.g. `sy.login(email='my@email.com', password='password', url='localhost', timeout=30)`\n"
+                "\te.g. `sy.old_login(email='my@email.com', password='password', url='localhost', timeout=30)`\n"
                 "\t- The domain/network node you're trying to connect could be offline "
                 "at the current moment. Please try again later.\t"
             )
@@ -213,6 +216,7 @@ def login(
     return node
 
 
+@instrument
 def register(
     name: Optional[str] = None,
     email: Optional[str] = None,

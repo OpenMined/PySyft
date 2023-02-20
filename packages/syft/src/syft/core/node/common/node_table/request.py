@@ -7,14 +7,15 @@ from typing import Optional
 # relative
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
+from .syft_object import SYFT_OBJECT_VERSION_1
 from .syft_object import SyftObject
 
 
 @serializable(recursive_serde=True)
 class NoSQLRequest(SyftObject):
     # version
-    __canonical_name__ = "Request"
-    __version__ = 1
+    __canonical_name__ = "OldRequest"
+    __version__ = SYFT_OBJECT_VERSION_1
 
     # fields
     id: UID

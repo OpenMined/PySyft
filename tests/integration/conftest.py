@@ -12,7 +12,6 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.adp.data_subject_list import DataSubjectArray
 from syft.core.node.common.client import Client
 
 clients = []  # clients for smpc test
@@ -23,7 +22,7 @@ def login_clients() -> None:
     PARTIES = 3
     for i in range(PARTIES):
         try:
-            client = sy.login(
+            client = sy.old_login(
                 email="info@openmined.org",
                 password="changethis",
                 port=(PORT + i),
@@ -64,7 +63,7 @@ def reference_data(data_shape: np.ndarray, data_max: int) -> np.ndarray:
 
 @pytest.fixture
 def domain_owner() -> Client:
-    return sy.login(email="info@openmined.org", password="changethis", port=PORT)
+    return sy.old_login(email="info@openmined.org", password="changethis", port=PORT)
 
 
 @pytest.fixture
@@ -94,7 +93,7 @@ def load_dataset() -> None:
 
     for i in range(PARTIES):
         try:
-            client = sy.login(
+            client = sy.old_login(
                 email="info@openmined.org",
                 password="changethis",
                 port=(PORT + i),

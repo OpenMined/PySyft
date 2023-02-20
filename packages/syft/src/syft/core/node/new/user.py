@@ -1,33 +1,31 @@
 # stdlib
 from enum import Enum
-from typing import Any
 from typing import Callable
-from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
-from typing import Type
 
 # third party
+from bcrypt import checkpw
 from bcrypt import gensalt
 from bcrypt import hashpw
-from result import Err
-from result import Ok
-from result import Result
+import pydantic
+from pydantic.networks import EmailStr
 
 # relative
+from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import SyftObject
-from ....core.node.common.node_table.syft_object import transform
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
-from .service import AbstractNode
-from .service import AbstractService
-from .service import service_method
+from .transforms import TransformContext
 from .transforms import drop
+from .transforms import generate_id
 from .transforms import keep
 from .transforms import make_set_default
+from .transforms import transform
+from .transforms import validate_email
 
 
 class ServiceRoleCapability(Enum):
@@ -52,20 +50,29 @@ class ServiceRole(Enum):
 class User(SyftObject):
     # version
     __canonical_name__ = "User"
-    __version__ = 1
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: Optional[UID]
+
+    @pydantic.validator("email", pre=True, always=True)
+    def make_email(cls, v: EmailStr) -> EmailStr:
+        return EmailStr(v)
 
     # fields
-    email: str
-    name: str
-    hashed_password: str
-    salt: str
-    signing_key: SyftSigningKey
-    verify_key: SyftVerifyKey
-    role: ServiceRole
+    email: Optional[EmailStr]
+    name: Optional[str]
+    hashed_password: Optional[str]
+    salt: Optional[str]
+    signing_key: Optional[SyftSigningKey]
+    verify_key: Optional[SyftVerifyKey]
+    role: Optional[ServiceRole]
+    institution: Optional[str]
+    website: Optional[str] = None
     created_at: Optional[str]
 
     # serde / storage rules
     __attr_state__ = [
+        "id",
         "email",
         "name",
         "hashed_password",
@@ -75,55 +82,119 @@ class User(SyftObject):
         "role",
         "created_at",
     ]
-    __attr_searchable__ = ["name", "email", "verify_key"]
-    __attr_unique__ = ["email", "signing_key"]
+    __attr_searchable__ = ["name", "email"]
+    __attr_unique__ = ["email", "signing_key", "verify_key"]
+    __attr_repr_cols__ = ["name", "email"]
 
 
 def default_role(role: ServiceRole) -> Callable:
     return make_set_default(key="role", value=role)
 
 
-def hash_password(output: dict):
-    if output["password"] == output["password_verify"]:
-        salt, hashed = __salt_and_hash_password(output["password"], 12)
-        output["hashed_password"] = hashed
-        output["salt"] = salt
-    return output
+def hash_password(context: TransformContext) -> TransformContext:
+    if context.output["password"] is not None and (
+        context.output["password"] == context.output["password_verify"]
+    ):
+        salt, hashed = __salt_and_hash_password(context.output["password"], 12)
+        context.output["hashed_password"] = hashed
+        context.output["salt"] = salt
+    return context
 
 
-def generate_key(output: dict) -> dict:
+def generate_key(context: TransformContext) -> TransformContext:
     signing_key = SyftSigningKey.generate()
-    output["signing_key"] = signing_key
-    output["verify_key"] = signing_key.verify_key
-    return output
+    context.output["signing_key"] = signing_key
+    context.output["verify_key"] = signing_key.verify_key
+    return context
 
 
 def __salt_and_hash_password(password: str, rounds: int) -> Tuple[str, str]:
     bytes_pass = password.encode("UTF-8")
     salt = gensalt(rounds=rounds)
-    salt_len = len(salt)
     hashed = hashpw(bytes_pass, salt)
-    hashed = hashed[salt_len:]
-    hashed = hashed.decode("UTF-8")
-    salt = salt.decode("UTF-8")
-    return salt, hashed
+    hashed_bytes = hashed.decode("UTF-8")
+    salt_bytes = salt.decode("UTF-8")
+    return salt_bytes, hashed_bytes
+
+
+def check_pwd(password: str, hashed_password: str) -> bool:
+    return checkpw(
+        password=password.encode("utf-8"),
+        hashed_password=hashed_password.encode("utf-8"),
+    )
 
 
 @serializable(recursive_serde=True)
 class UserUpdate(SyftObject):
     __canonical_name__ = "UserUpdate"
-    __version__ = 1
+    __version__ = SYFT_OBJECT_VERSION_1
 
-    email: str
-    name: str
+    id: Optional[UID] = None
+
+    @pydantic.validator("email", pre=True, always=True)
+    def make_email(cls, v: EmailStr) -> EmailStr:
+        return EmailStr(v) if v is not None else v
+
+    email: Optional[EmailStr]
+    name: Optional[str]
     role: Optional[ServiceRole] = None  # make sure role cant be set without uid
     password: Optional[str] = None
     password_verify: Optional[str] = None
+    verify_key: Optional[SyftVerifyKey] = None
+    institution: Optional[str] = None
+    website: Optional[str] = None
+
+
+@serializable(recursive_serde=True)
+class UserCreate(UserUpdate):
+    __canonical_name__ = "UserCreate"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    email: EmailStr
+    name: str
+    role: Optional[ServiceRole] = None  # make sure role cant be set without uid
+    password: str
+    password_verify: str
+    verify_key: Optional[SyftVerifyKey] = None
+    institution: Optional[str] = None
+    website: Optional[str] = None
+
+    __attr_repr_cols__ = ["name", "email"]
+
+
+@serializable(recursive_serde=True)
+class UserSearch(SyftObject):
+    __canonical_name__ = "UserSearch"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: Optional[UID]
+    email: Optional[EmailStr]
+    verify_key: Optional[SyftVerifyKey]
+    name: Optional[str]
+
+
+@serializable(recursive_serde=True)
+class UserView(UserUpdate):
+    __canonical_name__ = "UserView"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    __attr_repr_cols__ = ["name", "email"]
 
 
 @transform(UserUpdate, User)
 def user_update_to_user() -> List[Callable]:
     return [
+        validate_email,
+        hash_password,
+        drop(["password", "password_verify"]),
+    ]
+
+
+@transform(UserCreate, User)
+def user_create_to_user() -> List[Callable]:
+    return [
+        generate_id,
+        validate_email,
         hash_password,
         generate_key,
         default_role(ServiceRole.GUEST),
@@ -131,112 +202,20 @@ def user_update_to_user() -> List[Callable]:
     ]
 
 
-@transform(User, UserUpdate)
-def user_to_update_user() -> List[Callable]:
-    return [keep(["id", "email", "name", "role"])]
+@transform(User, UserView)
+def user_to_view_user() -> List[Callable]:
+    return [keep(["id", "email", "name", "role", "institution", "website"])]
 
 
-class SyftServiceRegistry:
-    __service_registry__: Dict[str, Callable] = {}
+@serializable(recursive_serde=True)
+class UserPrivateKey(SyftObject):
+    __canonical_name__ = "UserPrivateKey"
+    __version__ = SYFT_OBJECT_VERSION_1
 
-    def __init_subclass__(cls, **kwargs: Any) -> None:
-        super().__init_subclass__(**kwargs)
-        if hasattr(cls, "__canonical_name__") and hasattr(cls, "__version__"):
-            mapping_string = f"{cls.__canonical_name__}_{cls.__version__}"
-            cls.__object_version_registry__[mapping_string] = cls
-
-    @classmethod
-    def versioned_class(cls, name: str, version: int) -> Optional[Type["SyftObject"]]:
-        mapping_string = f"{name}_{version}"
-        if mapping_string not in cls.__object_version_registry__:
-            return None
-        return cls.__object_version_registry__[mapping_string]
-
-    @classmethod
-    def add_transform(
-        cls,
-        klass_from: str,
-        version_from: int,
-        klass_to: str,
-        version_to: int,
-        method: Callable,
-    ) -> None:
-        mapping_string = f"{klass_from}_{version_from}_x_{klass_to}_{version_to}"
-        cls.__object_transform_registry__[mapping_string] = method
-
-    @classmethod
-    def get_transform(
-        cls, type_from: Type["SyftObject"], type_to: Type["SyftObject"]
-    ) -> Callable:
-        klass_from = type_from.__canonical_name__
-        version_from = type_from.__version__
-        klass_to = type_to.__canonical_name__
-        version_to = type_to.__version__
-        mapping_string = f"{klass_from}_{version_from}_x_{klass_to}_{version_to}"
-        return cls.__object_transform_registry__[mapping_string]
+    email: str
+    signing_key: SyftSigningKey
 
 
-# def service() -> Callable:
-#     def decorator(function: Callable):
-#         transforms = function()
-
-#         def wrapper(self: klass_from) -> klass_to:
-#             output = dict(self)
-#             for transform in transforms:
-#                 output = transform(output)
-#             return klass_to(**output)
-
-#         SyftObjectRegistry.add_transform(
-#             klass_from=klass_from_str,
-#             version_from=version_from,
-#             klass_to=klass_to_str,
-#             version_to=version_to,
-#             method=wrapper,
-#         )
-
-#         return function
-
-#     return decorator
-
-
-class UserCollection(AbstractService):
-    def __init__(self, node: AbstractNode) -> None:
-        self.node = node
-        self.node_uid = node.id
-        self.data = {}
-        self.primary_keys = {}
-
-    # @service(path="services.happy.maybe_create", name="create_user")
-    @service_method(path="user.create", name="create")
-    def create(
-        self, credentials: SyftVerifyKey, user_update: UserUpdate
-    ) -> Result[UserUpdate, str]:
-        """TEST MY DOCS"""
-        if user_update.id is None:
-            user_update.id = UID()
-        user = user_update.to(User)
-
-        result = self.set(credentials=credentials, uid=user.id, syft_object=user)
-        if result.is_ok():
-            return Ok(user.to(UserUpdate))
-        else:
-            return Err("Failed to create User.")
-
-    def view(self, credentials: SyftVerifyKey, uid: UID) -> Result[UserUpdate, str]:
-        user_result = self.get(credentials=credentials, uid=uid)
-        if user_result.is_ok():
-            return Ok(user_result.ok().to(UserUpdate))
-        else:
-            return Err(f"Failed to get User for UID: {uid}")
-
-    def set(
-        self, credentials: SyftVerifyKey, uid: UID, syft_object: SyftObject
-    ) -> Result[bool, str]:
-        self.data[uid] = syft_object.to_mongo()
-        return Ok(True)
-
-    def get(self, credentials: SyftVerifyKey, uid: UID) -> Result[SyftObject, str]:
-        if uid not in self.data:
-            return Err(f"UID: {uid} not in {type(self)} store.")
-        syft_object = SyftObject.from_mongo(self.data[uid])
-        return Ok(syft_object)
+@transform(User, UserPrivateKey)
+def user_to_user_verify() -> List[Callable]:
+    return [keep(["email", "signing_key"])]

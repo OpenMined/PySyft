@@ -40,14 +40,15 @@ jobs:
     secrets: inherit
 
   deploy-syft:
-    needs: [
+    needs:
+      [
         call-linting,
         call-syft_tests,
         call-grid-backend_test,
         call-syft-security,
         call-grid-frontend_test,
         call-syft-version_tests,
-        # call-stack-integration_tests,
+        call-stack-integration_tests,
       ]
     runs-on: ubuntu-latest
     steps:
@@ -62,16 +63,16 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install --upgrade setuptools wheel twine bump2version PyYAML
-          pip install tox==3.27.1
-      # - name: Bump the Version
-      #   run: |
-      #     ls **/VERSION | xargs -I {} python {}
-      #     cat packages/grid/devspace.yaml | grep '0\.'
-      #     bump2version prenum --allow-dirty --no-commit
-      #     tox -e lint || true
-      #     ls **/VERSION | xargs -I {} python {}
-      #     cat packages/grid/devspace.yaml | grep '0\.'
-      #     python packages/hagrid/scripts/update_manifest.py $(python packages/grid/VERSION)
+          pip install -U tox
+      - name: Bump the Version
+        run: |
+          ls **/VERSION | xargs -I {} python {}
+          cat packages/grid/devspace.yaml | grep '0\.'
+          bump2version prenum --allow-dirty --no-commit
+          tox -e lint || true
+          ls **/VERSION | xargs -I {} python {}
+          cat packages/grid/devspace.yaml | grep '0\.'
+          python packages/hagrid/scripts/update_manifest.py $(python packages/grid/VERSION)
       - name: Commit changes
         uses: EndBug/add-and-commit@v7
         with:
@@ -112,7 +113,7 @@ jobs:
           images: openmined/grid-backend
           tags: |
             type=raw,value=${{ env.GRID_VERSION }}
-            type=raw,value=latest
+            type=raw,value=beta
 
       - name: Build and push `grid-backend` image to DockerHub
         uses: docker/build-push-action@v3
@@ -131,7 +132,7 @@ jobs:
           images: openmined/grid-frontend
           tags: |
             type=raw,value=${{ env.GRID_VERSION }}
-            type=raw,value=latest
+            type=raw,value=beta
 
       - name: Build and push `grid-frontend` image to DockerHub
         uses: docker/build-push-action@v3
@@ -150,7 +151,7 @@ jobs:
           images: openmined/grid-vpn-headscale
           tags: |
             type=raw,value=${{ env.GRID_VERSION }}
-            type=raw,value=latest
+            type=raw,value=beta
 
       - name: Build and push `grid-headscale` image to DockerHub
         uses: docker/build-push-action@v3
@@ -168,7 +169,7 @@ jobs:
           images: openmined/grid-vpn-tailscale
           tags: |
             type=raw,value=${{ env.GRID_VERSION }}
-            type=raw,value=latest
+            type=raw,value=beta
 
       - name: Build and push `grid-tailscale` image to DockerHub
         uses: docker/build-push-action@v3
@@ -186,7 +187,7 @@ jobs:
           images: openmined/grid-vpn-iptables
           tags: |
             type=raw,value=${{ env.GRID_VERSION }}
-            type=raw,value=latest
+            type=raw,value=beta
 
       - name: Build and push `grid-vpn-iptables` image to DockerHub
         uses: docker/build-push-action@v2
