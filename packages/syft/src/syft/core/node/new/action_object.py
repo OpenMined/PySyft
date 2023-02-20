@@ -396,7 +396,9 @@ class ActionObject(SyftObject):
         api = APIRegistry.api_for(node_uid=self.syft_node_uid)
 
         kwargs = {"action": action}
-        api_call = SyftAPICall(path="action.execute", args=[], kwargs=kwargs)
+        api_call = SyftAPICall(
+            node_uid=self.syft_node_uid, path="action.execute", args=[], kwargs=kwargs
+        )
         return api.make_call(api_call)
 
     def syft_make_action(

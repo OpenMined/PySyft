@@ -161,7 +161,7 @@ class Worker(NewNode):
             password="changethis",
             node=self,
         )
-
+        self.client_cache = {}
         self.post_init()
 
     @staticmethod
@@ -176,7 +176,8 @@ class Worker(NewNode):
 
     def post_init(self) -> None:
         if self.is_subprocess:
-            print(f"> Starting Subprocess {self}")
+            # print(f"> Starting Subprocess {self}")
+            pass
         else:
             print(f"> Starting {self}")
         # super().post_init()
@@ -281,19 +282,55 @@ class Worker(NewNode):
             return result.ok()
         return result.err()
 
+    def forward_message(
+        self, api_call: Union[SyftAPICall, SignedSyftAPICall]
+    ) -> Result[Union[QueueItem, SyftObject], Err]:
+        node_uid = api_call.message.node_uid
+        if NetworkService not in self.services:
+            return SyftError(
+                message=(
+                    "Node has no network service so we can't "
+                    f"forward this message to {node_uid}"
+                )
+            )
+
+        client = None
+        if node_uid in self.client_cache:
+            client = self.client_cache[node_uid]
+        else:
+            network_service = self.get_service(NetworkService)
+            peer = network_service.stash.get_by_uid(node_uid)
+
+            if peer.is_ok() and peer.ok():
+                peer = peer.ok()
+                context = NodeServiceContext(node=self)
+                client = peer.client_with_context(context=context)
+                self.client_cache[node_uid] = client
+
+        if client:
+            return client.connection.make_call(api_call)
+
+        return SyftError(message=(f"Node has no route to {node_uid}"))
+
     def handle_api_call(
         self, api_call: Union[SyftAPICall, SignedSyftAPICall]
     ) -> Result[Union[QueueItem, SyftObject], Err]:
         if self.required_signed_calls and isinstance(api_call, SyftAPICall):
-            return Err(
-                f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."  # type: ignore
+            return SyftError(
+                message=f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."  # type: ignore
             )
         else:
             if not api_call.is_valid:
-                return Err("Your message signature is invalid")  # type: ignore
+                return SyftError(message="Your message signature is invalid")  # type: ignore
+
+        if api_call.message.node_uid != self.id:
+            return self.forward_message(api_call=api_call)
 
         if api_call.message.path == "queue":
             return self.resolve_future(uid=api_call.message.kwargs["uid"])
+
+        if api_call.message.path == "metadata":
+            return self.metadata
 
         result = None
         if self.is_subprocess or self.processes == 0:
@@ -304,7 +341,7 @@ class Worker(NewNode):
 
             # 🔵 TODO 4: Add @service decorator to autobind services into the SyftAPI
             if api_call.path not in self.service_config:
-                return Err(f"API call not in registered services: {api_call.path}")  # type: ignore
+                return SyftError(message=f"API call not in registered services: {api_call.path}")  # type: ignore
 
             _private_api_path = ServiceConfigRegistry.private_path_for(api_call.path)
             method = self.get_service_method(_private_api_path)
@@ -322,7 +359,6 @@ class Worker(NewNode):
             # 🟡 TODO 36: Needs distributed lock
             # self.queue_stash.set_placeholder(item)
             # self.queue_stash.partition.commit()
-
             thread = gevent.spawn(
                 queue_task,
                 api_call,
