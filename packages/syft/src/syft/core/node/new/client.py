@@ -74,8 +74,6 @@ class Routes(Enum):
 DEFAULT_PYGRID_PORT = 80
 DEFAULT_PYGRID_ADDRESS = f"http://localhost:{DEFAULT_PYGRID_PORT}"
 
-PYTHON_WORKERS = {}
-
 
 @serializable(recursive_serde=True)
 class HTTPConnection(NodeConnection):
@@ -157,7 +155,6 @@ class HTTPConnection(NodeConnection):
         obj = _deserialize(response, from_bytes=True)
         if isinstance(obj, UserPrivateKey):
             return obj.signing_key
-        print(obj)
         return None
 
     def make_call(self, signed_call: SyftAPICall) -> Union[Any, SyftError]:
@@ -184,7 +181,7 @@ class PythonConnection(NodeConnection):
     node: NewNode
 
     def get_node_metadata(self) -> NodeMetadataJSON:
-        return self.node.metadata().to(NodeMetadataJSON)
+        return self.node.metadata.to(NodeMetadataJSON)
 
     def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
         obj = self.node.get_api()
@@ -213,7 +210,6 @@ class PythonConnection(NodeConnection):
         obj = self.exchange_credentials(email=email, password=password)
         if isinstance(obj, UserPrivateKey):
             return obj.signing_key
-        print(obj)
         return None
 
     def make_call(self, signed_call: SyftAPICall) -> Union[Any, SyftError]:
@@ -221,6 +217,7 @@ class PythonConnection(NodeConnection):
 
 
 @instrument
+@serializable(recursive_serde=True)
 class SyftClient:
     connection: NodeConnection
     metadata: Optional[NodeMetadataJSON]
@@ -250,8 +247,6 @@ class SyftClient:
 
     @staticmethod
     def from_node(node: NewNode) -> Self:
-        if node.id not in PYTHON_WORKERS:
-            PYTHON_WORKERS[node.id] = node
         return SyftClient(connection=PythonConnection(node=node))
 
     @property
@@ -291,6 +286,14 @@ class SyftClient:
                 return tuple(valid.err())
             return valid.err()
 
+    def exchange_route(self, client: Self) -> None:
+        result = self.api.services.network.exchange_credentials_with(client=client)
+        if result:
+            result = self.api.services.network.add_route_for(
+                route=self.route, client=client
+            )
+        return result
+
     @property
     def data_subject_registry(self) -> Optional[APIModule]:
         if self.api is not None and hasattr(self.api.services, "data_subject"):
@@ -309,6 +312,17 @@ class SyftClient:
                     connection=self.connection,
                     syft_client=self,
                 )
+
+    @property
+    def peer(self) -> Any:
+        # relative
+        from .network_service import NodePeer
+
+        return NodePeer.from_client(self)
+
+    @property
+    def route(self) -> Any:
+        return self.connection.route
 
     def __hash__(self) -> int:
         return hash(self.id) + hash(self.connection)
@@ -346,8 +360,6 @@ def login(
     cache: bool = True,
 ) -> SyftClient:
     if node:
-        if node.id not in PYTHON_WORKERS:
-            PYTHON_WORKERS[node.id] = node
         connection = PythonConnection(node=node)
     else:
         url = GridURL.from_url(url)

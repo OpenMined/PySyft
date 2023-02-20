@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from functools import partial
+import hashlib
 import os
 from typing import Any
 from typing import Callable
@@ -161,14 +162,21 @@ class Worker(NewNode):
 
         self.post_init()
 
+    @staticmethod
+    def named(name: str, processes: int = 0) -> Worker:
+        name_hash = hashlib.sha256(name.encode("utf8")).digest()
+        uid = UID(name_hash[0:16])
+        key = SyftSigningKey(SigningKey(name_hash))
+        return Worker(name=name, id=uid, signing_key=key, processes=processes)
+
     def __repr__(self) -> str:
         return f"{type(self).__name__}: {self.name} - {self.id} {self.services}"
 
     def post_init(self) -> None:
         if self.is_subprocess:
-            print(f"Starting Subprocess {self}")
+            print(f"> Starting Subprocess {self}")
         else:
-            print(f"Starting {self}")
+            print(f"> Starting {self}")
         # super().post_init()
 
     def init_stores(self, store_config: Optional[StoreConfig]):
@@ -237,6 +245,7 @@ class Worker(NewNode):
 
         return getattr(service_obj, method_name)
 
+    @property
     def metadata(self) -> NodeMetadata:
         return NodeMetadata(
             name=self.name,

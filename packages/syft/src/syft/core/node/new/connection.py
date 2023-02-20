@@ -1,3 +1,6 @@
+# stdlib
+from typing import Any
+
 # relative
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import SyftObject
@@ -12,3 +15,10 @@ class NodeConnection(SyftObject):
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__}"
+
+    @property
+    def route(self) -> Any:
+        # relative
+        from .network_service import connection_to_route
+
+        return connection_to_route(self)

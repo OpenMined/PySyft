@@ -264,9 +264,16 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         transform = SyftObjectRegistry.get_transform(type(self), projection)
         return transform(self, context)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self, exclude_none: bool = False) -> Dict[str, Any]:
         # 🟡 TODO 18: Remove to_dict and replace usage with transforms etc
-        return dict(self)
+        if not exclude_none:
+            return dict(self)
+        else:
+            new_dict = {}
+            for k, v in dict(self).items():
+                if v is not None:
+                    new_dict[k] = v
+            return new_dict
 
     def __post_init__(self) -> None:
         pass

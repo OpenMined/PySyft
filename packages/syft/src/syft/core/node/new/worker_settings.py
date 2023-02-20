@@ -32,3 +32,11 @@ class WorkerSettings(SyftObject):
             signing_key=node.signing_key,
             store_config=node.store_config,
         )
+
+    def __hash__(self) -> int:
+        return (
+            hash(self.id)
+            + hash(self.name)
+            + hash(self.signing_key)
+            + hash(self.store_config)
+        )

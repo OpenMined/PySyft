@@ -33,26 +33,49 @@ def _repr_debug_(value: Any) -> str:
     return repr(value)
 
 
+@serializable(recursive_serde=True)
 class SQLiteBackingStore(KeyValueBackingStore):
+    __attr_state__ = ["index_name", "settings", "store_config"]
+
     def __init__(
         self, index_name: str, settings: PartitionSettings, store_config: StoreConfig
     ) -> None:
+        self.index_name = index_name
         self.settings = settings
         self.store_config = store_config
-        self.index_name = index_name
-        self.table_name = f"{self.settings.name}_{self.index_name}"
+
+    @property
+    def table_name(self) -> str:
+        return f"{self.settings.name}_{self.index_name}"
+
+    def _connect(self) -> None:
         self.file_path = self.store_config.client_config.file_path
-        self.db = sqlite3.connect(self.file_path)
-        self.cur = self.db.cursor()
+        self._db = sqlite3.connect(self.file_path)
+        # self._db.set_trace_callback(print)
+        self._cur = self._db.cursor()
         try:
-            self.cur.execute(
+            self._cur.execute(
                 f"create table {self.table_name} (uid VARCHAR(32) NOT NULL PRIMARY KEY, "  # nosec
                 + "repr TEXT NOT NULL, value BLOB NOT NULL)"  # nosec
             )
-            self.db.commit()
+            self._db.commit()
         except sqlite3.OperationalError as e:
             if f"table {self.table_name} already exists" not in str(e):
                 raise e
+
+    @property
+    def db(self) -> sqlite3.Connection:
+        if hasattr(self, "_db"):
+            return self._db
+        self._connect()
+        return self._db
+
+    @property
+    def cur(self) -> sqlite3.Cursor:
+        if hasattr(self, "_cur"):
+            return self._cur
+        self._connect()
+        return self._cur
 
     def _close(self) -> None:
         self._commit()
