@@ -1,9 +1,8 @@
-INFRA = "m5.4xlarge"
+INFRA = "r5.xlarge"
 REPO_OWNER = "OpenMined"
 REPO_NAME = "syft-enclave"
-REF = "manual_code"
-REGION = "us-west-2"
+REF = "dev"
+REGION = "us-east-1"
 VCS = "github"
 VISIBILITY = "private"
 LOCAL_MODE = True
-DOMAIN_CONNECTION_PORT = 3030
