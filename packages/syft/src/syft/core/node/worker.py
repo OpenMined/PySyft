@@ -45,6 +45,7 @@ from .new.data_subject_service import DataSubjectService
 from .new.dataset_service import DatasetService
 from .new.dict_document_store import DictStoreConfig
 from .new.document_store import StoreConfig
+from .new.message_service import MessageService
 from .new.network_service import NetworkService
 from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
@@ -144,6 +145,7 @@ class Worker(NewNode):
                 RequestService,
                 DataSubjectService,
                 NetworkService,
+                MessageService,
             ]
             if services is None
             else services
@@ -225,6 +227,7 @@ class Worker(NewNode):
                 RequestService,
                 DataSubjectService,
                 NetworkService,
+                MessageService,
             ]:
                 kwargs["store"] = self.document_store
             self.service_path_map[service_klass.__name__.lower()] = service_klass(
