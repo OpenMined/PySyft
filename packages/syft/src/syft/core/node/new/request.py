@@ -45,6 +45,9 @@ class DateTime(SyftObject):
     def now() -> Self:
         return DateTime(utc_timestamp=datetime.utcnow().timestamp())
 
+    def __str__(self) -> str:
+        return str(datetime.utcfromtimestamp(self.utc_timestamp))
+
 
 @serializable(recursive_serde=True)
 class RequestStatus(Enum):
