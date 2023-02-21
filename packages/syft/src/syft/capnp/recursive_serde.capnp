@@ -2,7 +2,7 @@
 
 struct RecursiveSerde {
     fieldsName @0 :List(Text);
-    fieldsData @1 :List(Data);
+    fieldsData @1 :List(List(Data));
     fullyQualifiedName @2 :Text;
-    nonrecursiveBlob @3 :Data;
+    nonrecursiveBlob @3 :List(Data);
 }
