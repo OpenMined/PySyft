@@ -66,9 +66,9 @@
         <span class='font-roboto'>Version: {metadata.version}</span>
       </div>
       <div class='flex justify-end gap-5'>
-        <a href="https://openmined.github.io/PySyft/index.html">Docs</a>
-        <a href="https://www.openmined.org/">Community</a>
-        <a href="https://github.com/OpenMined/PySyft"><Github/></a>
+        <a href="https://openmined.github.io/PySyft/index.html" style='text-decoration:none;color:black'> Docs </a>
+        <a href="https://www.openmined.org/" style='text-decoration:none;color:black'>Community</a>
+        <a href="https://github.com/OpenMined/PySyft" style='text-decoration:none;color:black'><Github/></a>
       </div>
     </div>
 
@@ -78,10 +78,10 @@
         <div class="mt-2">
           <h1 class="text-5xl leading-[1.1] font-medium text-gray-800 font-rubik">{prettyName(metadata.name)}</h1>
         </div>
-        <div class="mt-2 h-2/5">
+        <div class="mt-2 ">
           <h1 class="text-2xl leading-[1.1] font-medium text-gray-500 font-rubik">{metadata.organization}</h1>
         </div>
-        <div class="mt-5">
+        <div class="mt-5 h-2/5">
           <p class="text-medium leading-[1.1] font-medium text-gray-800 font-roboto">{metadata.description}</p>
         </div>
 
