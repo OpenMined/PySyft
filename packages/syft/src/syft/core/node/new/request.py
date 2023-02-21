@@ -46,7 +46,8 @@ class DateTime(SyftObject):
         return DateTime(utc_timestamp=datetime.utcnow().timestamp())
 
     def __str__(self) -> str:
-        return str(datetime.utcfromtimestamp(self.utc_timestamp))
+        utc_datetime = datetime.utcfromtimestamp(self.utc_timestamp)
+        return utc_datetime.strftime("%Y-%m-%d %H:%M:%S.%f")
 
 
 @serializable(recursive_serde=True)

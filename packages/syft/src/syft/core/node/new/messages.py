@@ -10,7 +10,6 @@ from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .credentials import SyftVerifyKey
 from .request import DateTime
-from .service import AbstractService
 from .transforms import TransformContext
 from .transforms import add_credentials_for_key
 from .transforms import add_node_uid_for_key
@@ -35,8 +34,11 @@ class DocumentLink(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     node_uid: UID
-    service: Type[AbstractService]
-    document_uid: UID
+    object_type: Type[SyftObject]
+    object_uid: UID
+
+    def __str__(self) -> str:
+        return f"<{self.object_type.__canonical_name__}: {self.object_uid}>"
 
 
 @serializable(recursive_serde=True)
