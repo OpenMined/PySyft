@@ -32,7 +32,8 @@ from ..common.serde.serializable import serializable
 from ..common.serde.serialize import _serialize
 from ..common.uid import UID
 from .new.action_service import ActionService
-from .new.action_store import ActionStore
+from .new.action_store import DictActionStore
+from .new.action_store import SQLiteActionStore
 from .new.api import SignedSyftAPICall
 from .new.api import SyftAPI
 from .new.api import SyftAPICall
@@ -211,6 +212,14 @@ class Worker(NewNode):
         self.store_config = store_config
 
         self.document_store = document_store(store_config=store_config)
+        if self.processes > 0 and not self.is_subprocess:
+            self.action_store = SQLiteActionStore(
+                store_config=store_config, root_verify_key=self.signing_key.verify_key
+            )
+        else:
+            self.action_store = DictActionStore(
+                store_config=store_config, root_verify_key=self.signing_key.verify_key
+            )
         self.queue_stash = QueueStash(store=self.document_store)
 
     def _construct_services(self):
@@ -218,8 +227,7 @@ class Worker(NewNode):
         for service_klass in self.services:
             kwargs = {}
             if service_klass == ActionService:
-                action_store = ActionStore(root_verify_key=self.signing_key.verify_key)
-                kwargs["store"] = action_store
+                kwargs["store"] = self.action_store
             if service_klass in [
                 UserService,
                 DatasetService,

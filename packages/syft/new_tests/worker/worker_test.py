@@ -8,7 +8,7 @@ import numpy as np
 import syft as sy
 from syft.core.common.uid import UID
 from syft.core.node.new.action_object import ActionObject
-from syft.core.node.new.action_store import ActionStore
+from syft.core.node.new.action_store import DictActionStore
 from syft.core.node.new.context import AuthedServiceContext
 from syft.core.node.new.credentials import SIGNING_KEY_FOR
 from syft.core.node.new.credentials import SyftSigningKey
@@ -69,7 +69,7 @@ def test_signing_key() -> None:
 
 def test_action_store() -> None:
     test_signing_key = SyftSigningKey.from_string(test_signing_key_string)
-    action_store = ActionStore()
+    action_store = DictActionStore()
     uid = UID()
     raw_data = np.array([1, 2, 3])
     test_object = ActionObject.from_obj(raw_data)

@@ -28,6 +28,11 @@ from .base import SyftBaseModel
 from .response import SyftSuccess
 
 
+@serializable(recursive_serde=True)
+class BasePartitionSettings(SyftBaseModel):
+    name: str
+
+
 def first_or_none(result: Any) -> Optional[Any]:
     if hasattr(result, "__len__") and len(result) > 0:
         return Ok(result[0])
@@ -182,8 +187,7 @@ UIDPartitionKey = PartitionKey(key="id", type_=UID)
 
 
 @serializable(recursive_serde=True)
-class PartitionSettings(SyftBaseModel):
-    name: str
+class PartitionSettings(BasePartitionSettings):
     object_type: type
     store_key: PartitionKey = UIDPartitionKey
 
