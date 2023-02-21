@@ -134,12 +134,6 @@ def publish(
     # We sample noise from a cryptographically secure distribution
     # TODO(0.8): Replace with discrete gaussian distribution instead of regular
     # gaussian to eliminate floating pt vulns
-
-    # Continuous Gaussian Noise
-    # noise = np.asarray(
-    #     [secrets.SystemRandom().gauss(0, sigma) for _ in range(original_output.size)]
-    # ).reshape(original_output.shape)
-
     # Discrete Gaussian Noise
     noise = np.asarray(
         [discrete_gaussian(sigma) for _ in range(original_output.size)]
