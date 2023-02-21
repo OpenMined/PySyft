@@ -350,6 +350,9 @@ class SyftClient:
             )
         return result
 
+    def apply_to_gateway(self, client: Self) -> None:
+        return self.exchange_route(client)
+
     @property
     def data_subject_registry(self) -> Optional[APIModule]:
         if self.api is not None and hasattr(self.api.services, "data_subject"):
