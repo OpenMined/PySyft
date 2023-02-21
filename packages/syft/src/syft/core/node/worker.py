@@ -171,6 +171,15 @@ class Worker(NewNode):
         key = SyftSigningKey(SigningKey(name_hash))
         return Worker(name=name, id=uid, signing_key=key, processes=processes)
 
+    @property
+    def root_client(self) -> Any:
+        # relative
+        from .new.client import PythonConnection
+        from .new.client import SyftClient
+
+        connection = PythonConnection(node=self)
+        return SyftClient(connection=connection, credentials=self.signing_key)
+
     def __repr__(self) -> str:
         return f"{type(self).__name__}: {self.name} - {self.id} {self.services}"
 

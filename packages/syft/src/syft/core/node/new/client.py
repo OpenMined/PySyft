@@ -356,6 +356,12 @@ class SyftClient:
             return self.api.services.data_subject
         return None
 
+    @property
+    def datasets(self) -> Optional[APIModule]:
+        if self.api is not None and hasattr(self.api.services, "dataset"):
+            return self.api.services.dataset
+        return None
+
     def connect(self, email: str, password: str, cache: bool = True) -> None:
         signing_key = self.connection.connect(email=email, password=password)
         if signing_key is not None:

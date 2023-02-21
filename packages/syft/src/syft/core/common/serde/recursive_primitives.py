@@ -19,6 +19,8 @@ from typing import cast
 
 # relative
 from .capnp import get_capnp_schema
+from .recursive import chunk_bytes
+from .recursive import combine_bytes
 from .recursive import recursive_serde_register
 
 # import types unsupported on python 3.8
@@ -41,7 +43,8 @@ def serialize_iterable(iterable: Collection) -> bytes:
     message.init("values", len(iterable))
 
     for idx, it in enumerate(iterable):
-        message.values[idx] = _serialize(it, to_bytes=True)
+        serialized = _serialize(it, to_bytes=True)
+        chunk_bytes(serialized, idx, message.values)
 
     return message.to_bytes()
 
@@ -57,7 +60,7 @@ def deserialize_iterable(iterable_type: type, blob: bytes) -> Collection:
         blob, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
     ) as msg:
         for element in msg.values:
-            values.append(_deserialize(element, from_bytes=True))
+            values.append(_deserialize(combine_bytes(element), from_bytes=True))
 
     return iterable_type(values)
 
@@ -73,7 +76,8 @@ def serialize_kv(map: Mapping) -> bytes:
 
     for index, (k, v) in enumerate(map.items()):
         message.keys[index] = _serialize(k, to_bytes=True)
-        message.values[index] = _serialize(v, to_bytes=True)
+        serialized = _serialize(v, to_bytes=True)
+        chunk_bytes(serialized, index, message.values)
 
     return message.to_bytes()
 
@@ -92,7 +96,7 @@ def get_deserialized_kv_pairs(blob: bytes) -> List[Any]:
             pairs.append(
                 (
                     _deserialize(key, from_bytes=True),
-                    _deserialize(value, from_bytes=True),
+                    _deserialize(combine_bytes(value), from_bytes=True),
                 )
             )
     return pairs
