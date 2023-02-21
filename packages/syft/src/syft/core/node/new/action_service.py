@@ -23,6 +23,7 @@ from .context import AuthedServiceContext
 from .numpy import NumpyArrayObject
 from .pandas import PandasDataFrameObject  # noqa: F401
 from .pandas import PandasSeriesObject  # noqa: F401
+from .response import SyftSuccess
 from .service import AbstractService
 from .service import service_method
 from .twin_object import TwinObject
@@ -73,6 +74,23 @@ class ActionService(AbstractService):
                 action_object = action_object.mock
             action_object.syft_point_to(context.node.id)
             return Ok(action_object)
+        return result.err()
+
+    @service_method(path="action.save", name="save")
+    def save(
+        self,
+        context: AuthedServiceContext,
+        action_object: Union[ActionObject, TwinObject],
+    ) -> Result[SyftSuccess, str]:
+        """Save an object to the action store"""
+        # 🟡 TODO 9: Create some kind of type checking / protocol for SyftSerializable
+        result = self.store.set(
+            uid=action_object.id,
+            credentials=context.credentials,
+            syft_object=action_object,
+        )
+        if result.is_ok():
+            return Ok(SyftSuccess(message=f"{type(action_object)} saved"))
         return result.err()
 
     @service_method(path="action.get", name="get")

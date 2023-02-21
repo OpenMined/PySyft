@@ -57,7 +57,7 @@ class Message(SyftObject):
         "to_user_verify_key",
         "status",
     ]
-    __attr_unique__ = ["id"]
+    __attr_unique__ = []
     __attr_repr_cols__ = ["subject", "status", "created_at"]
 
 
