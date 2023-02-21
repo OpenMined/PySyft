@@ -19,6 +19,7 @@ from ....core.node.common.node_table.syft_object import SyftObject
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .credentials import SyftVerifyKey
+from .dataset import Asset
 from .document_store import PartitionKey
 from .transforms import TransformContext
 from .transforms import generate_id
@@ -101,6 +102,16 @@ class SubmitUserCode(SyftObject):
     signature: inspect.Signature
     input_policy: ExactMatch
     output_policy: SingleExecutionExactOutput
+    local_function: Optional[Callable]
+
+    __attr_state__ = [
+        "id",
+        "code",
+        "func_name",
+        "signature",
+        "input_policy",
+        "output_policy",
+    ]
 
     @property
     def kwargs(self) -> List[str]:
@@ -109,6 +120,29 @@ class SubmitUserCode(SyftObject):
     @property
     def outputs(self) -> List[str]:
         return self.output_policy.outputs
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        # only run this on the client side
+        if self.local_function:
+            # filtered_args = []
+            filtered_kwargs = {}
+            # for arg in args:
+            #     filtered_args.append(debox_asset(arg))
+            for k, v in kwargs.items():
+                filtered_kwargs[k] = debox_asset(v)
+
+            return self.local_function(**filtered_kwargs)
+        else:
+            raise NotImplementedError
+
+
+def debox_asset(arg: Any) -> Any:
+    deboxed_arg = arg
+    if isinstance(deboxed_arg, Asset):
+        deboxed_arg = arg.mock
+    if hasattr(deboxed_arg, "syft_action_data"):
+        deboxed_arg = deboxed_arg.syft_action_data
+    return deboxed_arg
 
 
 def syft_function(input_policy, output_policy) -> SubmitUserCode:
@@ -119,6 +153,7 @@ def syft_function(input_policy, output_policy) -> SubmitUserCode:
             signature=inspect.signature(f),
             input_policy=input_policy,
             output_policy=output_policy,
+            local_function=f,
         )
 
     return decorator
