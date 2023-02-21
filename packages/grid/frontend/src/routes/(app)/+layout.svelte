@@ -13,27 +13,29 @@
   $: user_info = '';
 
   async function loadGlobalInfos() {
+    let newStore = {}
     // Load JSSerde from local Storage
     store.subscribe(async (value) => {
-      if (value) {
-        client = value.client;
-      } else {
-        goto('/login');
+      newStore = value;
+      // If we already have a client obj in store.
+      if (newStore.client) {
+        client = newStore.client;
       }
     });
 
-    // Load metadata from session Storage
-    metadata = JSON.parse(window.sessionStorage.getItem('metadata'));
-    if (!metadata) {
-      metadata = await client.metadata;
-      window.sessionStorage.setItem('metadata', JSON.stringify(metadata));
+    if (!client){
+      client = await getClient();
+      client.access_token = window.sessionStorage.getItem('session_token')
     }
 
-    user_info = JSON.parse(window.sessionStorage.getItem('user_info'));
-    if (!user_info) {
-      user_info = await client.user;
-      window.sessionStorage.setItem('user_info', JSON.stringify(user_info));
-    }
+    // Load metadata from session Storage
+    metadata = await client.metadata
+    newStore.metadata = metadata
+    // Load current user session info
+    user_info = await client.user;
+    newStore.user_info = user_info
+
+    store.set(newStore);
   }
 </script>
 
@@ -41,7 +43,7 @@
   {#await loadGlobalInfos() then none}
     <Navbar bind:user_info bind:client/>
     <Sidebar bind:activeUrl bind:metadata bind:user_info />
-    <!--<OnBoardModal {client} bind:user_info bind:metadata />-->
+    <OnBoardModal {client} bind:user_info bind:metadata />
   {/await}
 </main>
 <slot />
