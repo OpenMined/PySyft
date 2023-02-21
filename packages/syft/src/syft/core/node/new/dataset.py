@@ -1,8 +1,8 @@
 # stdlib
+from collections import OrderedDict
 from enum import Enum
 from typing import Any
 from typing import Callable
-from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -28,6 +28,15 @@ from .transforms import TransformContext
 from .transforms import generate_id
 from .transforms import transform
 from .transforms import validate_url
+
+
+@serializable(recursive_serde=True)
+class TupleDict(OrderedDict):
+    def __getitem__(self, key: Union[str, int]) -> Any:
+        if isinstance(key, int):
+            return list(self.values())[key]
+        return super(TupleDict, self).__getitem__(key)
+
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
 
@@ -99,6 +108,7 @@ class CreateAsset(SyftObject):
     contributors: List[Contributor] = []
     data_subjects: List[DataSubject] = []
     node_uid: Optional[UID]
+    action_id: Optional[UID]
     data: Optional[Any]
     mock: Optional[Any]
     shape: Optional[Tuple]
@@ -179,8 +189,8 @@ class Dataset(SyftObject):
     __attr_repr_cols__ = ["name", "url"]
 
     @property
-    def assets(self) -> Dict[str, str]:
-        data = {}
+    def assets(self) -> TupleDict:
+        data = TupleDict()
         for asset in self.asset_list:
             data[asset.name] = asset
         return data
@@ -257,19 +267,28 @@ class CreateDataset(Dataset):
 
 
 def create_and_store_twin(context: TransformContext) -> TransformContext:
-    # relative
-    from .twin_object import TwinObject
+    action_id = context.output["action_id"]
+    if action_id is None:
+        # relative
+        from .twin_object import TwinObject
 
-    twin = TwinObject(
-        private_obj=context.output.pop("data", None),
-        mock_obj=context.output.pop("mock", None),
-    )
-    action_service = context.node.get_service("actionservice")
-    result = action_service.set(context=context.to_node_context(), action_object=twin)
-    if result.is_err():
-        raise Exception(f"Failed to create and store twin. {result}")
+        private_obj = context.output.pop("data", None)
+        mock_obj = context.output.pop("mock", None)
+        if private_obj is None and mock_obj is None:
+            raise Exception("No data and no action_id means this asset has no data")
 
-    context.output["action_id"] = twin.id
+        twin = TwinObject(
+            private_obj=private_obj,
+            mock_obj=mock_obj,
+        )
+        action_service = context.node.get_service("actionservice")
+        result = action_service.set(
+            context=context.to_node_context(), action_object=twin
+        )
+        if result.is_err():
+            raise Exception(f"Failed to create and store twin. {result}")
+
+        context.output["action_id"] = twin.id
     return context
 
 

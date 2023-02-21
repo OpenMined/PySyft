@@ -23,6 +23,7 @@ from .client import PythonConnection
 from .client import SyftClient
 from .context import AuthedServiceContext
 from .context import NodeServiceContext
+from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .data_subject import NamePartitionKey
 from .document_store import BaseUIDStoreStash
@@ -92,6 +93,7 @@ class PythonNodeRoute(SyftObject, NodeRoute):
             name=self.worker_settings.name,
             signing_key=self.worker_settings.signing_key,
             store_config=self.worker_settings.store_config,
+            processes=1,
         )
         return node
 
@@ -113,7 +115,9 @@ class PythonNodeRoute(SyftObject, NodeRoute):
         return self == other
 
 
-def route_to_connection(route: NodeRoute, context: TransformContext) -> NodeConnection:
+def route_to_connection(
+    route: NodeRoute, context: Optional[TransformContext] = None
+) -> NodeConnection:
     if isinstance(route, HTTPNodeRoute):
         return route.to(HTTPConnection, context=context)
     else:
@@ -164,8 +168,18 @@ class NodePeer(SyftObject):
         if len(self.node_routes) < 1:
             raise Exception(f"No routes to peer: {self}")
         route = self.node_routes[0]
-        connection = route_to_connection(route=route, context=context)
+        connection = route_to_connection(route=route)
         return SyftClient(connection=connection, credentials=context.node.signing_key)
+
+    def client_with_key(self, credentials: SyftSigningKey) -> SyftClient:
+        if len(self.node_routes) < 1:
+            raise Exception(f"No routes to peer: {self}")
+        route = self.node_routes[0]
+        connection = route_to_connection(route=route)
+        return SyftClient(connection=connection, credentials=credentials)
+
+    def proxy_from(self, client: SyftClient) -> SyftClient:
+        return client.proxy_to(self)
 
 
 def from_grid_url(context: TransformContext) -> TransformContext:
