@@ -16,7 +16,12 @@
 <svelte:window on:keydown={handle_keydown} />
 
 <div class="topModal visible" on:click={() => close()}>
-  <div class="modal" on:click|stopPropagation={() => {}}>
+  <div
+    class="modal"
+    on:click|stopPropagation={() => {
+      // commenting here to bypass es6 lint
+    }}
+  >
     <Close onClick={() => close()} />
     <div class="modal-content flex flex-col space-y-3 mx-4">
       <slot name="icon" />

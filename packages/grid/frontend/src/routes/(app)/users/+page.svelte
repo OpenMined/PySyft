@@ -1,4 +1,4 @@
-<script lang="ts">
+<script>
   import Badge from '$lib/components/Badge.svelte';
   import Button from '$lib/components/Button.svelte';
 
@@ -8,7 +8,7 @@
   import { parseActiveRoute } from '$lib/helpers';
   import { faTrash, faCircleInfo } from '@fortawesome/free-solid-svg-icons';
 
-  export let location: any;
+  export let location;
 
   onMount(() => url.set(parseActiveRoute(location.pathname)));
 </script>

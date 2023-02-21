@@ -8,9 +8,11 @@
     | 'link'
     | 'delete' = 'solid-primary';
   export let size: 'xs' | 'sm' | 'md' | 'lg' = 'md';
-  export let disabled: boolean = false;
+  export let disabled = false;
   export let option: 'right' | 'left' | 'margin-x-sm' | 'none' = 'none';
-  export let onClick: Function = () => {};
+  export let onClick: () => void = () => {
+    // commenting this to bypass es lint errors
+  };
 </script>
 
 <button

@@ -56,6 +56,7 @@
             activeUrl = '/datasets';
           }}
           active={activeUrl === '/datasets'}
+          style="text-decoration:none"
         >
           <svelte:fragment slot="icon">
             <svg
@@ -77,6 +78,7 @@
             activeUrl = '/requests';
           }}
           active={activeUrl === '/requests'}
+          style="text-decoration:none"
           {spanClass}
         >
           <svelte:fragment slot="icon">
@@ -104,6 +106,7 @@
             activeUrl = '/policies';
           }}
           active={activeUrl === '/policies'}
+          style="text-decoration:none"
           {spanClass}
         >
           <svelte:fragment slot="icon">

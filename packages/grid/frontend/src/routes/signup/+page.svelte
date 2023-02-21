@@ -11,7 +11,6 @@
   let guestCredentials;
 
   async function createUser(node_id, client) {
-
     if (!guestCredentials) {
       await fetch('http://localhost:8081/api/v1/guest', {
         method: 'POST',
@@ -23,25 +22,35 @@
         });
     }
 
-    let email = ( document.getElementById('email') ) ?  document.getElementById('email').value : null
-    let password = ( document.getElementById('password') ) ?  document.getElementById('password').value : null
-    let passwordConfirmation = ( document.getElementById('password') ) ?  document.getElementById('confirm').value : null
-    let name = ( document.getElementById('fullname') ) ?  document.getElementById('fullname').value : null
-    let institution = ( document.getElementById('company') ) ?  document.getElementById('company').value : null
-    let website = ( document.getElementById('website') ) ?  document.getElementById('website').value : null
+    let email = document.getElementById('email') ? document.getElementById('email').value : null;
+    let password = document.getElementById('password')
+      ? document.getElementById('password').value
+      : null;
+    let passwordConfirmation = document.getElementById('password')
+      ? document.getElementById('confirm').value
+      : null;
+    let name = document.getElementById('fullname')
+      ? document.getElementById('fullname').value
+      : null;
+    let institution = document.getElementById('company')
+      ? document.getElementById('company').value
+      : null;
+    let website = document.getElementById('website')
+      ? document.getElementById('website').value
+      : null;
 
-    if (password !== passwordConfirmation){
-      throw Error("Password and password confirmation mismatch")
+    if (password !== passwordConfirmation) {
+      throw Error('Password and password confirmation mismatch');
     }
 
     let newUser = {
-      email:email,
-      password:password,
-      name:name,
-      institution:institution,
+      email: email,
+      password: password,
+      name: name,
+      institution: institution,
       role: 'Data Scientist',
-      website:website,
-    }
+      website: website
+    };
     // Filter attributes that doesn't exist
     Object.keys(newUser).forEach((k) => newUser[k] == null && delete newUser[k]);
 
@@ -80,7 +89,9 @@
         <div class="w-full">
           <TagCloud tags={['Commodities', 'Trade', 'Canada']} />
           <div class="space-y-6 mt-2">
-            <h1 class="text-5xl leading-[1.1] font-medium text-gray-800 font-rubik">{prettyName(metadata.name)}</h1>
+            <h1 class="text-5xl leading-[1.1] font-medium text-gray-800 font-rubik">
+              {prettyName(metadata.name)}
+            </h1>
             <p>{metadata.description}</p>
           </div>
           <!-- List (Domain information) -->
@@ -137,7 +148,11 @@
             </div>
             <!-- Capital Footer (slot: footer) -->
             <div class="space-y-6" slot="footer">
-              <Button onClick={ () => {createUser(metadata.id.value,client)}} >Submit application</Button>
+              <Button
+                onClick={() => {
+                  createUser(metadata.id.value, client);
+                }}>Submit application</Button
+              >
             </div>
           </Capital>
         </form>
@@ -146,6 +161,6 @@
       <span>
         <img src="/images/empowered-by-openmined.png" alt="Empowered by OpenMined logo" />
       </span>
-      {/await}
+    {/await}
   {/await}
 </main>

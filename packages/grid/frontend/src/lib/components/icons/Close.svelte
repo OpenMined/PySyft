@@ -1,5 +1,7 @@
 <script lang="ts">
-  export let onClick: Function = () => {};
+  export let onClick: () => void = () => {
+    // commenting this to bypass es6 lint
+  };
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->

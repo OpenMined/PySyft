@@ -1,25 +1,16 @@
 <script>
-  import { Input, Label, Modal, Textarea, Button, Helper } from 'flowbite-svelte';
+  import { Modal, Button } from 'flowbite-svelte';
+  import FormControl from '$lib/components/FormControl.svelte';
+
   import { Progressbar } from 'flowbite-svelte';
   export let onBoardModal = false;
   export let user_info;
   export let metadata;
   export let client;
-
-  let domainInfo = {
-    domain_name: '',
-    organization: '',
-    description: ''
-  };
-
-  let userInfo = {
-    user_id: '',
-    email: '',
-    password: '',
-    name: '',
-    institution: '',
-    website: ''
-  };
+  let passwordHint =
+    'To make your account more secure please update your password. Passwords should be at least 7 characters long and contain alphanumeric characters.';
+  let websiteHint =
+    'To help others verify who you are you can add a link to your university profile, Google Scholar profile, or any other profile page that helps showcase your work.';
 
   let steps = ['inline', 'none', 'none', 'none'];
   let stepIndex = 0;
@@ -37,7 +28,7 @@
   }
 
   function checkOnBoard() {
-    if (user_info.role === 'Owner' && !metadata['on_board']) {
+    if (user_info.role === 'Owner' && !metadata.on_board) {
       setTimeout(() => {
         onBoardModal = true;
       }, 1000);
@@ -45,10 +36,24 @@
   }
 
   async function submitChanges() {
+    let domainInfo = {
+      domain_name: document.getElementById('domain_name').value,
+      organization: document.getElementById('organization').value,
+      description: document.getElementById('description').value
+    };
+
     // Set Domain name, organization and description
     await client.updateConfigs(domainInfo);
 
-    userInfo.user_id = user_info.id;
+    let userInfo = {
+      user_id: user_info.id,
+      email: document.getElementById('email').value,
+      password: document.getElementById('password').value,
+      name: document.getElementById('name').value,
+      institution: document.getElementById('team').value,
+      website: document.getElementById('website').value
+    };
+
     await client.updateUser(userInfo);
 
     // Update layout metadata variable
@@ -78,20 +83,25 @@
       <Progressbar size="h-1.5" progress="25" />
 
       <h2>
-        Congratulations on deploying {metadata['name']} node. This wizard will help get you started in
-        setting up your domain node and user account. You can skip this wizard by pressing "Cancel" below.
-        You can edit any of your responses later by going to "Domain Settings" indicated in the gear
-        icon in the top left corner of your navigation or by going to "Account Settings" indicated by
-        your avatar in the top right corner of the navigation.
+        Congratulations on deploying {metadata.name} node. This wizard will help get you started in setting
+        up your domain node and user account. You can skip this wizard by pressing "Cancel" below. You
+        can edit any of your responses later by going to "Domain Settings" indicated in the gear icon
+        in the top left corner of your navigation or by going to "Account Settings" indicated by your
+        avatar in the top right corner of the navigation.
       </h2>
       <h2>Click "Next" to begin.</h2>
 
       <div style="display:flex; justify-content: right">
-        <button class="cancel-button" on:click={(onBoardModal = false)}><h1>Cancel</h1></button>
-
+        <button
+          class="cancel-button"
+          on:click={() => {
+            onBoardModal = false;
+          }}>Cancel</button
+        >
         <Button pill={true} on:click={() => nextStep()} color="dark">Next</Button>
       </div>
     </div>
+
     <!-- Modal Second Step -->
     <div class="space-y-4" style="display:{steps[1]}; justify-content: center; align-items:center">
       <div style="display:flex;justify-content:center;align-items:center">
@@ -106,6 +116,7 @@
           >
         </div>
       </div>
+
       <div style="display:flex; justify-content: center;">
         <h1 style="color:black; text-align:center"><b> Domain Profile</b></h1>
       </div>
@@ -119,53 +130,34 @@
       </h2>
 
       <form class="flex flex-col space-y-6" action="#">
-        <Label class="space-y-2">
-          <Label class="block mb-2"
-            >Domain Name <span style="color: rgb(59 130 246);">*</span></Label
-          >
-          <Input
-            bind:value={domainInfo.domain_name}
-            type="text"
-            name="name"
-            placeholder=" Oxford Parkinson's Disease Center"
-            required
-          />
-        </Label>
-
-        <Label class="space-y-2">
-          <Label class="block mb-2">Organization</Label>
-          <Input
-            bind:value={domainInfo.organization}
-            type="text"
-            name="name"
-            placeholder="ABC University"
-            required
-          />
-        </Label>
-
-        <Label class="space-y-2">
-          <Label class="block mb-2">Description</Label>
-          <Textarea
-            bind:value={domainInfo.description}
-            style="background-color: #f9fafb"
-            id="textarea-id"
-            placeholder="Domain description"
-            rows="4"
-            name="message"
-          />
-        </Label>
+        <FormControl
+          placeholder="Oxford Parkinson's Disease Center"
+          label="Domain Name"
+          id="domain_name"
+          required
+        />
+        <FormControl placeholder="ABC University" label="Organization" id="organization" required />
+        <FormControl
+          placeholder="ABC University"
+          label="Description"
+          id="description"
+          type="textarea"
+          optional
+        />
       </form>
 
       <div style="display:flex; justify-content: space-between;">
         <Button pill={true} on:click={() => previousStep()} color="dark">Back</Button>
         <div style="display: flex">
-          <div class="cancel-button"><h1>Cancel</h1></div>
-          <Button
-            disabled={domainInfo.domain_name === ''}
-            pill={true}
-            on:click={() => nextStep()}
-            color="dark">Next</Button
+          <button
+            class="cancel-button"
+            on:click={() => {
+              onBoardModal = false;
+            }}
           >
+            <h1>Cancel</h1>
+          </button>
+          <Button pill={true} on:click={() => nextStep()} color="dark">Next</Button>
         </div>
       </div>
     </div>
@@ -199,85 +191,52 @@
       </h2>
 
       <form class="flex flex-col space-y-6" action="#">
-        <Label class="space-y-2">
-          <Label class="block mb-2">Email <span style="color: rgb(25, 179, 230);">*</span></Label>
-          <Input
-            bind:value={userInfo.email}
-            type="email"
-            name="email"
-            placeholder="info@openmined.org"
-            required
-          />
-        </Label>
+        <FormControl
+          placeholder="info@openmined.org"
+          type="email"
+          label="Email"
+          id="email"
+          required
+        />
+        <FormControl
+          hint={passwordHint}
+          placeholder="*******"
+          type="password"
+          label="Password"
+          id="password"
+          required
+        />
 
-        <Label class="space-y-2">
-          <Label class="block mb-2"
-            ><h6>Password <span style="color: rgb(25, 179, 230);">*</span></h6></Label
-          >
-          <Helper class="text-sm">
-            To make your account more secure please update your password. Passwords should be at
-            least 7 characters long and contain alphanumeric characters.
-          </Helper>
-          <Input
-            bind:value={userInfo.password}
-            type="password"
-            name="name"
-            placeholder="********"
-            required
-          />
-        </Label>
         <h3><b> PROFILE INFORMATION </b></h3>
-        <Label class="space-y-2">
-          <Label class="block mb-2"
-            >Full Name <span style="color: rgb(25, 179, 230);">*</span>
-          </Label>
-          <Input
-            bind:value={userInfo.name}
-            type="email"
-            name="email"
-            placeholder="Jana Doe"
-            required
-          />
-        </Label>
-        <Label class="space-y-2">
-          <Label class="block mb-2">Team</Label>
-          <Helper class="text-sm">
-            Please identify the team or department you primarily work with at this organization.</Helper
-          >
-          <Input
-            bind:value={userInfo.institution}
-            type="text"
-            name="institution"
-            placeholder="Team name here"
-            required
-          />
-        </Label>
-        <Label class="space-y-2">
-          <Label class="block mb-2">Website</Label>
-          <Helper
-            >To help others verify who you are you can add a link to your university profile, Google
-            Scholar profile, or any other profile page that helps showcase your work.</Helper
-          >
-          <Input
-            bind:value={userInfo.website}
-            type="text"
-            name="website"
-            placeholder="www.abc.com"
-            required
-          />
-        </Label>
+        <FormControl placeholder="Jana Doe" label="Full name" id="name" required />
+        <FormControl
+          hint="Please identify the team or department you primarily work with at this organization."
+          placeholder="OpenMined Team"
+          label="Team"
+          id="team"
+          optional
+        />
+        <FormControl
+          hint={websiteHint}
+          placeholder="www.openmined.org"
+          label="Website"
+          id="website"
+          optional
+        />
       </form>
 
       <div style="display:flex; justify-content: space-between;">
         <Button pill={true} on:click={() => previousStep()} color="dark">Back</Button>
         <div style="display: flex">
-          <div class="cancel-button"><h1>Cancel</h1></div>
-          <Button
-            disabled={!(userInfo.email !== '' && userInfo.password !== '' && userInfo.name !== '')}
-            pill={true}
-            on:click={() => submitChanges()}
-            color="dark">Finish</Button
+          <button
+            class="cancel-button"
+            on:click={() => {
+              onBoardModal = false;
+            }}
           >
+            <h1>Cancel</h1>
+          </button>
+          <Button pill={true} on:click={() => submitChanges()} color="dark">Finish</Button>
         </div>
       </div>
     </div>
@@ -293,7 +252,7 @@
       <Progressbar size="h-1.5" progress="100" />
 
       <h2>
-        Congratulations on setting up {domainInfo.name} node. To edit any of your responses you can go
+        Congratulations on setting up {metadata.name} node. To edit any of your responses you can go
         to "Domain Settings" indicated by a gear icon in the top left corner of your navigation or by
         going to "Account Settings" indicated by your avatar in the top right corner of the navigation.
       </h2>

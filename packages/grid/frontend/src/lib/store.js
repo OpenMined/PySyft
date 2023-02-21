@@ -5,7 +5,7 @@ export const store = writable({
   client: '',
   session_token: '',
   metadata: {},
-  user_info: {},
+  user_info: {}
 });
 
 export async function getClient() {

@@ -17,7 +17,12 @@
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <div class="topModal visible" on:click={() => close()}>
-  <div class="modal" on:click|stopPropagation={() => {}}>
+  <div
+    class="modal"
+    on:click|stopPropagation={() => {
+      // do nothing
+    }}
+  >
     <Close onClick={() => close()} />
     <div class="modal-content flex flex-col">
       <slot name="top-actions" />
