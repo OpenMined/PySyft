@@ -17,6 +17,7 @@ from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
+from .dict_document_store import DictStoreConfig
 from .document_store import BasePartitionSettings
 from .document_store import StoreConfig
 from .response import SyftSuccess
@@ -210,7 +211,13 @@ class KeyValueActionStore(ActionStore):
 
 @serializable(recursive_serde=True)
 class DictActionStore(KeyValueActionStore):
-    pass
+    def __init__(
+        self,
+        store_config: Optional[StoreConfig] = None,
+        root_verify_key: Optional[SyftVerifyKey] = None,
+    ) -> None:
+        store_config = store_config if store_config is not None else DictStoreConfig()
+        super().__init__(store_config=store_config, root_verify_key=root_verify_key)
 
 
 @serializable(recursive_serde=True)
