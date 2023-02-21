@@ -241,6 +241,12 @@ class APIModule:
         setattr(self, attr_name, module_or_func)
         self._modules.append(attr_name)
 
+    def _repr_html_(self) -> Any:
+        if not hasattr(self, "get_all"):
+            return NotImplementedError
+        results = self.get_all()
+        return results._repr_html_()
+
 
 @instrument
 @serializable(recursive_serde=True)
