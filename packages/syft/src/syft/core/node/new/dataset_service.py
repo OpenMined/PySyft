@@ -55,7 +55,7 @@ class DatasetService(AbstractService):
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:
         """Get a Dataset"""
-        result = self.stash.get_by_id(uid=uid)
+        result = self.stash.get_by_uid(uid=uid)
         if result.is_ok():
             dataset = result.ok()
             dataset.node_uid = context.node.id

@@ -10,6 +10,7 @@ from .context import AuthedServiceContext
 from .document_store import DocumentStore
 from .message_stash import MessageStash
 from .messages import CreateMessage
+from .messages import LinkedDocument
 from .messages import Message
 from .messages import MessageStatus
 from .response import SyftError
@@ -80,4 +81,14 @@ class MessageService(AbstractService):
         if result.is_err():
             return SyftError(message=str(result.err()))
 
+        return result.ok()
+
+    @service_method(path="messages.resolve_document", name="resolve_document")
+    def resolve_document(
+        self, context: AuthedServiceContext, linked_document: LinkedDocument
+    ) -> Union[Message, SyftError]:
+        document_service = context.node.get_service(linked_document.service_name)
+        result = document_service.stash.get_by_uid(linked_document.object_uid)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
         return result.ok()
