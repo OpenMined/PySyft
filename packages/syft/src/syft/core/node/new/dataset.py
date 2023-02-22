@@ -308,8 +308,9 @@ def createasset_to_asset() -> List[Callable]:
 
 def convert_asset(context: TransformContext) -> TransformContext:
     assets = context.output.pop("asset_list", [])
-    for idx, asset in enumerate(assets):
-        assets[idx] = asset.to(Asset, context=context)
+    for idx, create_asset in enumerate(assets):
+        asset_context = TransformContext.from_context(obj=create_asset, context=context)
+        assets[idx] = create_asset.to(Asset, context=asset_context)
     context.output["asset_list"] = assets
     return context
 
