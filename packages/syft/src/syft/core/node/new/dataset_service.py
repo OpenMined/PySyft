@@ -14,6 +14,8 @@ from .document_store import DocumentStore
 from .response import SyftError
 from .response import SyftSuccess
 from .service import AbstractService
+from .service import SERVICE_TO_TYPES
+from .service import TYPE_TO_SERVICE
 from .service import service_method
 
 
@@ -61,3 +63,7 @@ class DatasetService(AbstractService):
             dataset.node_uid = context.node.id
             return dataset
         return SyftError(message=result.err())
+
+
+TYPE_TO_SERVICE[Dataset] = DatasetService
+SERVICE_TO_TYPES[DatasetService].update({Dataset})

@@ -25,6 +25,8 @@ from .pandas import PandasDataFrameObject  # noqa: F401
 from .pandas import PandasSeriesObject  # noqa: F401
 from .response import SyftSuccess
 from .service import AbstractService
+from .service import SERVICE_TO_TYPES
+from .service import TYPE_TO_SERVICE
 from .service import service_method
 from .twin_object import TwinObject
 from .user_code import UserCode
@@ -392,3 +394,9 @@ def filter_twin_kwargs(kwargs: Dict, twin_mode: TwinMode) -> Any:
         else:
             filtered[k] = v.syft_action_data
     return filtered
+
+
+TYPE_TO_SERVICE[ActionObject] = ActionService
+TYPE_TO_SERVICE[TwinObject] = ActionService
+
+SERVICE_TO_TYPES[ActionService].update({ActionObject, TwinObject})
