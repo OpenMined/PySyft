@@ -87,7 +87,7 @@ class Message(SyftObject):
         "status",
     ]
     __attr_unique__ = ["id"]
-    __attr_repr_cols__ = ["subject", "status", "created_at"]
+    __attr_repr_cols__ = ["subject", "status", "created_at", "linked_document"]
 
 
 @serializable(recursive_serde=True)
