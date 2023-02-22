@@ -41,6 +41,14 @@ class RequestService(AbstractService):
             return SyftError(message=str(result.err()))
         return result.ok()
 
+    @service_method(path="request.get_all", name="get_all")
+    def get_all(self, context: AuthedServiceContext) -> Union[List[Request], SyftError]:
+        result = self.stash.get_all()
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        requests = result.ok()
+        return requests
+
     @service_method(path="request.get_all_for_status", name="get_all_for_status")
     def get_all_for_status(
         self, context: AuthedServiceContext, status: RequestStatus

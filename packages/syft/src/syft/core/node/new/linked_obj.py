@@ -2,6 +2,7 @@
 from typing import Any
 from typing import Optional
 from typing import Type
+from typing import Union
 
 # third party
 from typing_extensions import Self
@@ -11,6 +12,9 @@ from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import SyftObject
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
+from .context import NodeServiceContext
+from .response import SyftError
+from .response import SyftSuccess
 
 
 @serializable(recursive_serde=True)
@@ -33,6 +37,18 @@ class LinkedObject(SyftObject):
 
         api = APIRegistry.api_for(node_uid=self.node_uid)
         return api.services.messages.resolve_object(self)
+
+    def resolve_with_context(self, context: NodeServiceContext) -> Any:
+        return context.node.get_service(self.service_type).resolve_link(
+            context=context, linked_obj=self
+        )
+
+    def update_with_context(
+        self, context: NodeServiceContext, obj: Any
+    ) -> Union[SyftSuccess, SyftError]:
+        result = context.node.get_service(self.service_type).stash.update(obj)
+        if result.is_ok():
+            return result
 
     @classmethod
     def from_obj(
