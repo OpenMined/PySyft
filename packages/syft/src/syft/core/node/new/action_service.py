@@ -27,6 +27,8 @@ from .response import SyftSuccess
 from .service import AbstractService
 from .service import service_method
 from .twin_object import TwinObject
+from .user_code import UserCode
+from .user_code import execute_byte_code
 
 
 @serializable(recursive_serde=True)
@@ -128,6 +130,68 @@ class ActionService(AbstractService):
         if result.is_ok():
             return Ok(result.ok())
         return Err(result.err())
+
+    # not a public service endpoint
+    def _user_code_execute(
+        self, context: AuthedServiceContext, code_item: UserCode, kwargs: Dict[str, Any]
+    ) -> Result[ActionObjectPointer, Err]:
+        filtered_kwargs = code_item.input_policy.filter_kwargs(kwargs)
+        has_twin_inputs = False
+        kwargs = {}
+        for key, arg_id in filtered_kwargs.items():
+            kwarg_value = self.get(context=context, uid=arg_id, twin_mode=TwinMode.NONE)
+            if kwarg_value.is_err():
+                return kwarg_value.err()
+            if isinstance(kwarg_value.ok(), TwinObject):
+                has_twin_inputs = True
+            kwargs[key] = kwarg_value.ok()
+
+        result_id = UID()
+
+        try:
+            if not has_twin_inputs:
+                # no twins
+                filtered_kwargs = filter_twin_kwargs(kwargs, twin_mode=TwinMode.NONE)
+                exec_result = execute_byte_code(code_item, filtered_kwargs)
+                result_action_object = wrap_result(
+                    code_item.id, result_id, exec_result.result
+                )
+            else:
+                # twins
+                private_kwargs = filter_twin_kwargs(kwargs, twin_mode=TwinMode.PRIVATE)
+                private_exec_result = execute_byte_code(code_item, private_kwargs)
+                result_action_object_private = wrap_result(
+                    code_item.id, result_id, private_exec_result.result
+                )
+
+                mock_kwargs = filter_twin_kwargs(kwargs, twin_mode=TwinMode.MOCK)
+                mock_exec_result = execute_byte_code(code_item, mock_kwargs)
+                result_action_object_mock = wrap_result(
+                    code_item.id, result_id, mock_exec_result.result
+                )
+
+                result_action_object = TwinObject(
+                    id=result_id,
+                    private_obj=result_action_object_private,
+                    mock_obj=result_action_object_mock,
+                )
+        except Exception as e:
+            print("what is this exception", e)
+            return Err("_user_code_execute failed")
+
+        set_result = self.store.set(
+            uid=result_id,
+            credentials=context.credentials,
+            syft_object=result_action_object,
+        )
+        if set_result.is_err():
+            return set_result.err()
+
+        if isinstance(result_action_object, TwinObject):
+            result_action_object = result_action_object.mock
+        result_action_object.syft_point_to(context.node.id)
+
+        return Ok(result_action_object)
 
     @service_method(path="action.execute", name="execute")
     def execute(
@@ -232,18 +296,24 @@ def execute_object(
                 filtered_args = filter_twin_args(args, twin_mode=twin_mode)
                 filtered_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
                 result = target_method(*filtered_args, **filtered_kwargs)
-                result_action_object = wrap_result(action, result)
+                result_action_object = wrap_result(
+                    action.parent_id, action.result_id, result
+                )
             elif twin_mode == TwinMode.NONE and has_twin_inputs:
                 # self isn't a twin but one of the inputs is
                 private_args = filter_twin_args(args, twin_mode=twin_mode)
                 private_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
                 private_result = target_method(*private_args, **private_kwargs)
-                result_action_object_private = wrap_result(action, private_result)
+                result_action_object_private = wrap_result(
+                    action.parent_id, action.result_id, private_result
+                )
 
                 mock_args = filter_twin_args(args, twin_mode=twin_mode)
                 mock_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
                 mock_result = target_method(*mock_args, **mock_kwargs)
-                result_action_object_mock = wrap_result(action, mock_result)
+                result_action_object_mock = wrap_result(
+                    action.parent_id, action.result_id, mock_result
+                )
 
                 result_action_object = TwinObject(
                     id=action.result_id,
@@ -255,14 +325,18 @@ def execute_object(
                 private_args = filter_twin_args(args, twin_mode=twin_mode)
                 private_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
                 result = target_method(*private_args, **private_kwargs)
-                result_action_object = wrap_result(action, result)
+                result_action_object = wrap_result(
+                    action.parent_id, action.result_id, result
+                )
             elif twin_mode == twin_mode.MOCK:
                 # twin mock path
                 mock_args = filter_twin_args(args, twin_mode=twin_mode)
                 mock_kwargs = filter_twin_kwargs(kwargs, twin_mode=twin_mode)
                 target_method = getattr(resolved_self, action.op, None)
                 result = target_method(*mock_args, **mock_kwargs)
-                result_action_object = wrap_result(action, result)
+                result_action_object = wrap_result(
+                    action.parent_id, action.result_id, result
+                )
             else:
                 raise Exception(
                     f"Bad combination of: twin_mode: {twin_mode} and has_twin_inputs: {has_twin_inputs}"
@@ -274,14 +348,14 @@ def execute_object(
     return Ok(result_action_object)
 
 
-def wrap_result(action: Action, result: Any) -> ActionObject:
+def wrap_result(parent_id: UID, result_id: UID, result: Any) -> ActionObject:
     # 🟡 TODO 11: Figure out how we want to store action object results
     action_type = action_type_for_type(result)
     if action_type is None:
         print("action_type_for_type(result)", action_type_for_type(result))
         raise Exception(f"No Action Type for type: {type(result)}")
     result_action_object = action_type(
-        id=action.result_id, parent_id=action.id, syft_action_data=result
+        id=result_id, parent_id=parent_id, syft_action_data=result
     )
     return result_action_object
 

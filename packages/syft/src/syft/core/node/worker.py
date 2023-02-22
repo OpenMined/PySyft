@@ -386,7 +386,10 @@ class Worker(NewNode):
 
             _private_api_path = ServiceConfigRegistry.private_path_for(api_call.path)
             method = self.get_service_method(_private_api_path)
-            result = method(context, *api_call.args, **api_call.kwargs)
+            try:
+                result = method(context, *api_call.args, **api_call.kwargs)
+            except Exception as e:
+                result = SyftError(message=f"Exception calling {api_call.path}. {e}")
         else:
             worker_settings = WorkerSettings(
                 id=self.id,
@@ -481,6 +484,7 @@ def task_runner(
             pipe.close()
     except Exception as e:
         print("Exception in task_runner", e)
+        raise e
 
 
 def queue_task(
