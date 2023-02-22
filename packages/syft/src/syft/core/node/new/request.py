@@ -222,10 +222,10 @@ def type_for_field(object_type: type, attr_name: str) -> Optional[type]:
     field_type = None
     try:
         field_type = object_type.__dict__["__annotations__"][attr_name]
-    except Exception:
+    except Exception:  # nosec
         try:
             field_type = object_type.__fields__.get(attr_name, None).type_
-        except Exception:
+        except Exception:  # nosec
             pass
     return field_type
 
