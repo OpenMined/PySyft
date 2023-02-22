@@ -38,14 +38,14 @@ def attempt_to_connect(network: sy.Network, domain: sy.Domain) -> str:
 
 @pytest.mark.network
 def test_domain1_association_network1() -> None:
-    network = sy.login(
+    network = sy.old_login(
         email="info@openmined.org",
         password="changethis",
         port=NETWORK_PORT,
         url=HOST_IP,
     )
 
-    domain = sy.login(
+    domain = sy.old_login(
         email="info@openmined.org",
         password="changethis",
         port=DOMAIN1_PORT,

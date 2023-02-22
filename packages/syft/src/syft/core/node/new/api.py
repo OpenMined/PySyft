@@ -112,15 +112,13 @@ class SyftAPICall(SyftObject):
     # version
     __canonical_name__ = "SyftAPICall"
     __version__ = SYFT_OBJECT_VERSION_1
-    __attr_allowlist__ = ["path", "args", "kwargs"]
 
     # fields
+    node_uid: UID
     path: str
     args: List
     kwargs: Dict[str, Any]
-
-    # serde / storage rules
-    __attr_state__ = ["path", "args", "kwargs"]
+    blocking: bool = True
 
     def sign(self, credentials: SyftSigningKey) -> SignedSyftAPICall:
         signed_message = credentials.signing_key.sign(_serialize(self, to_bytes=True))
@@ -133,9 +131,23 @@ class SyftAPICall(SyftObject):
 
 
 def generate_remote_function(
-    signature: Signature, path: str, make_call: Callable, pre_kwargs: Dict[str, Any]
+    node_uid: UID,
+    signature: Signature,
+    path: str,
+    make_call: Callable,
+    pre_kwargs: Dict[str, Any],
 ):
+    if "blocking" in signature.parameters:
+        raise Exception(
+            f"Signature {signature} can't have 'blocking' kwarg because its reserved"
+        )
+
     def wrapper(*args, **kwargs):
+        blocking = True
+        if "blocking" in kwargs:
+            blocking = bool(kwargs["blocking"])
+            del kwargs["blocking"]
+
         _valid_kwargs = {}
         if "kwargs" in signature.parameters:
             _valid_kwargs = kwargs
@@ -204,7 +216,13 @@ def generate_remote_function(
 
         if pre_kwargs:
             _valid_kwargs.update(pre_kwargs)
-        api_call = SyftAPICall(path=path, args=_valid_args, kwargs=_valid_kwargs)
+        api_call = SyftAPICall(
+            node_uid=node_uid,
+            path=path,
+            args=_valid_args,
+            kwargs=_valid_kwargs,
+            blocking=blocking,
+        )
         result = make_call(api_call=api_call)
         return result
 
@@ -222,6 +240,17 @@ class APIModule:
     def _add_submodule(self, attr_name, module_or_func):
         setattr(self, attr_name, module_or_func)
         self._modules.append(attr_name)
+
+    def __getitem__(self, key: Union[str, int]) -> Any:
+        if isinstance(key, int) and hasattr(self, "get_all"):
+            return self.get_all()[0]
+        raise NotImplementedError
+
+    def _repr_html_(self) -> Any:
+        if not hasattr(self, "get_all"):
+            return NotImplementedError
+        results = self.get_all()
+        return results._repr_html_()
 
 
 @instrument
@@ -319,7 +348,11 @@ class SyftAPI(SyftObject):
                 signature = signature_remove_self(signature)
             signature = signature_remove_context(signature)
             endpoint_function = generate_remote_function(
-                signature, v.path, self.make_call, pre_kwargs=v.pre_kwargs
+                self.node_uid,
+                signature,
+                v.path,
+                self.make_call,
+                pre_kwargs=v.pre_kwargs,
             )
             endpoint_function.__doc__ = v.doc_string
             self._add_route(api_module, v, endpoint_function)

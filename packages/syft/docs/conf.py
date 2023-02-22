@@ -12,7 +12,6 @@
 import datetime
 import inspect
 import os
-from pathlib import Path
 import shutil
 import sys
 from typing import Any
@@ -209,6 +208,8 @@ html_theme_path = ["_themes/"]
 try:
     # syft absolute
     from syft import __version__ as version
+
+    release = version
 except ImportError:
     pass
 else:

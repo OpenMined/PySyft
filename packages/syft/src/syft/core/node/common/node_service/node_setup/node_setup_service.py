@@ -54,7 +54,7 @@ def create_initial_setup(
     msg: CreateInitialSetUpMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> SuccessResponseMessage:
     # use a lock in mongodb to ensure we run this on each backend container in sequence
-    print("Performing initial setup...")
+
     with Lock("create_initial_setup"):
         # 1 - Should not run if Node has an owner
 

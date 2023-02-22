@@ -12,8 +12,19 @@ from pymongo.mongo_client import MongoClient as PyMongoClient
 from typing_extensions import Self
 
 # relative
+from ...common.serde.serializable import serializable
 from .document_store import PartitionSettings
 from .document_store import StoreClientConfig
+from .document_store import StoreConfig
+
+
+@serializable(recursive_serde=True)
+class MongoStoreClientConfig(StoreClientConfig):
+    hostname: str
+    port: int
+    username: str
+    password: str
+    tls: Optional[bool] = False
 
 
 class MongoClientCache:
@@ -21,11 +32,11 @@ class MongoClientCache:
     _lock: Lock = Lock()
 
     @classmethod
-    def from_cache(cls, config: StoreClientConfig) -> Optional[PyMongoClient]:
+    def from_cache(cls, config: MongoStoreClientConfig) -> Optional[PyMongoClient]:
         return cls.__client_cache__.get(hash(str(config)), None)
 
     @classmethod
-    def set_cache(cls, config: StoreClientConfig, client: PyMongoClient) -> None:
+    def set_cache(cls, config: MongoStoreClientConfig, client: PyMongoClient) -> None:
         with cls._lock:
             cls.__client_cache__[hash(str(config))] = client
 
@@ -33,13 +44,13 @@ class MongoClientCache:
 class MongoClient:
     client: PyMongoClient = None
 
-    def __init__(self, config: StoreClientConfig, cache: bool = True) -> None:
+    def __init__(self, config: MongoStoreClientConfig, cache: bool = True) -> None:
         if cache:
             self.client = MongoClientCache.from_cache(config=config)
         if not cache or self.client is None:
             self.connect(config=config)
 
-    def connect(self, config: StoreClientConfig):
+    def connect(self, config: MongoStoreClientConfig):
         self.client = PyMongoClient(
             host=config.hostname,
             port=config.port,
@@ -60,11 +71,11 @@ class MongoClient:
         return self.client[db_name]
 
     def with_collection(
-        self, collection_settings: PartitionSettings
+        self, collection_settings: PartitionSettings, store_config: StoreConfig
     ) -> MongoCollection:
-        db = self.with_db(db_name=collection_settings.db_name)
+        db = self.with_db(db_name=store_config.db_name)
         return db.get_collection(name=collection_settings.name)
 
     @staticmethod
-    def from_config(config: StoreClientConfig, cache: bool = True) -> Self:
+    def from_config(config: MongoStoreClientConfig, cache: bool = True) -> Self:
         return MongoClient(config=config, cache=cache)

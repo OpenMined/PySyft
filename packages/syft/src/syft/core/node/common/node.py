@@ -18,7 +18,6 @@ from pydantic import BaseSettings
 
 # relative
 from .... import __version__
-from ....core.node.new.api import SyftAPI
 from ....grid import GridURL
 from ....lib import lib_ast
 from ....logger import critical
@@ -375,15 +374,17 @@ class Node(AbstractNode):
         return client
 
     def get_metadata_for_client(self) -> Metadata:
+        node_setup = self.setup.first()
         return Metadata(
-            name=self.name if self.name else "",
+            name=node_setup.domain_name,
             id=self.id,
             node_type=str(type(self).__name__),
             version=str(__version__),
+            description=node_setup.description,
+            deployed_on=node_setup.deployed_on,
+            organization=node_setup.organization,
+            on_board=node_setup.on_board,
         )
-
-    def get_api(self) -> SyftAPI:
-        return SyftAPI.for_user(node=self)
 
     def add_peer_routes(self, peer: NoSQLNode) -> None:
         try:

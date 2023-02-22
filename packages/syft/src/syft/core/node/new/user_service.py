@@ -74,6 +74,15 @@ class UserService(AbstractService):
 
         return SyftError(message=str(result.err()))
 
+    @service_method(path="user.get_all", name="get_all")
+    def get_all(
+        self, context: AuthedServiceContext
+    ) -> Union[Optional[UserView], SyftError]:
+        result = self.stash.get_all()
+        if result.is_ok():
+            return result.ok()
+        return SyftError(message="No users exists")
+
     @service_method(path="user.find_all", name="find_all")
     def find_all(
         self, context: AuthedServiceContext, **kwargs: Dict[str, Any]
@@ -90,7 +99,7 @@ class UserService(AbstractService):
         context: AuthedServiceContext,
         user_search: UserSearch,
     ) -> Union[List[UserView], SyftError]:
-        kwargs = user_search.dict(exclude_none=True)
+        kwargs = user_search.to_dict(exclude_none=True)
         result = self.stash.find_all(**kwargs)
         if result.is_err():
             return SyftError(message=str(result.err()))

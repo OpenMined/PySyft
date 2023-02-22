@@ -1,4 +1,5 @@
 # stdlib
+import ast
 from enum import Enum
 import hashlib
 import inspect
@@ -11,9 +12,6 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
-
-# third party
-from RestrictedPython import compile_restricted
 
 # relative
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
@@ -29,9 +27,6 @@ from .user_code_parse import parse_and_wrap_code
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 CodeHashPartitionKey = PartitionKey(key="code_hash", type_=int)
-
-stdout_ = sys.stdout
-stderr_ = sys.stderr
 
 PyCodeObject = Any
 
@@ -53,7 +48,7 @@ class UserCode(SyftObject):
     user_verify_key: SyftVerifyKey
     raw_code: str
     input_kwargs: List[str]
-    output_arg: str
+    output_kwargs: List[str]
     parsed_code: str
     service_func_name: str
     unique_func_name: str
@@ -67,6 +62,34 @@ class UserCode(SyftObject):
 
 
 @serializable(recursive_serde=True)
+class ExactMatch(SyftObject):
+    # version
+    __canonical_name__ = "ExactMatch"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID
+    inputs: Dict[str, Any]
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        uid = UID()
+        if "id" in kwargs:
+            uid = kwargs["id"]
+        if "inputs" in kwargs:
+            kwargs = kwargs["inputs"]
+        super().__init__(id=uid, inputs=kwargs)
+
+
+@serializable(recursive_serde=True)
+class SingleExecutionExactOutput(SyftObject):
+    # version
+    __canonical_name__ = "SingleExecutionExactOutput"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID
+    outputs: Optional[List[str]]
+
+
+@serializable(recursive_serde=True)
 class SubmitUserCode(SyftObject):
     # version
     __canonical_name__ = "SubmitUserCode"
@@ -75,11 +98,30 @@ class SubmitUserCode(SyftObject):
     id: Optional[UID]
     code: str
     func_name: str
-    input_kwargs: List[str]
-    output_arg: str
+    signature: inspect.Signature
+    input_policy: ExactMatch
+    output_policy: SingleExecutionExactOutput
 
-    def compile(self) -> PyCodeObject:
-        return compile_restricted(self.code, "<string>", "exec")
+    @property
+    def kwargs(self) -> List[str]:
+        return self.input_policy.inputs
+
+    @property
+    def outputs(self) -> List[str]:
+        return self.output_policy.outputs
+
+
+def syft_function(input_policy, output_policy) -> SubmitUserCode:
+    def decorator(f):
+        return SubmitUserCode(
+            code=inspect.getsource(f),
+            func_name=f.__name__,
+            signature=inspect.signature(f),
+            input_policy=input_policy,
+            output_policy=output_policy,
+        )
+
+    return decorator
 
 
 def generate_unique_func_name(context: TransformContext) -> TransformContext:
@@ -99,6 +141,79 @@ def check_code(context: TransformContext) -> TransformContext:
         output_arg=context.output["output_arg"],
     )
     context.output["parsed_code"] = parsed_code
+    return context
+
+
+def process_code(
+    raw_code: str,
+    func_name: str,
+    original_func_name: str,
+    input_kwargs: List[str],
+    outputs: List[str],
+) -> str:
+    tree = ast.parse(raw_code)
+    f = tree.body[0]
+    f.decorator_list = []
+
+    keywords = [ast.keyword(arg=i, value=[ast.Name(id=i)]) for i in input_kwargs]
+    call_stmt = ast.Assign(
+        targets=[ast.Name(id="result")],
+        value=ast.Call(
+            func=ast.Name(id=original_func_name), args=[], keywords=keywords
+        ),
+        lineno=0,
+    )
+
+    output_list = ast.List(elts=[ast.Constant(value=x) for x in outputs])
+    return_stmt = ast.Return(
+        value=ast.DictComp(
+            key=ast.Name(id="k"),
+            value=ast.Subscript(
+                value=ast.Name(id="result"),
+                slice=ast.Name(id="k"),
+            ),
+            generators=[
+                ast.comprehension(
+                    target=ast.Name(id="k"), iter=output_list, ifs=[], is_async=0
+                )
+            ],
+        )
+    )
+
+    new_body = tree.body + [call_stmt, return_stmt]
+
+    return_annotation = ast.parse("Dict[str, Any]", mode="eval").body
+
+    wrapper_function = ast.FunctionDef(
+        name=func_name,
+        args=f.args,
+        body=new_body,
+        decorator_list=[],
+        returns=return_annotation,
+        lineno=0,
+    )
+
+    return ast.unparse(wrapper_function)
+
+
+def new_check_code(context: TransformContext) -> TransformContext:
+    inputs = context.output["input_policy"].inputs
+    input_kwargs = list(inputs.keys())
+
+    outputs = context.output["output_policy"].outputs
+
+    processed_code = process_code(
+        raw_code=context.output["raw_code"],
+        func_name=context.output["unique_func_name"],
+        original_func_name=context.output["service_func_name"],
+        input_kwargs=input_kwargs,
+        outputs=outputs,
+    )
+
+    context.output["parsed_code"] = processed_code
+    context.output["input_kwargs"] = input_kwargs
+    context.output["output_kwargs"] = outputs
+
     return context
 
 
@@ -127,10 +242,18 @@ def add_credentials_for_key(key: str) -> Callable:
 
 
 def generate_signature(context: TransformContext) -> TransformContext:
-    for k in context.output["input_kwargs"]:
-        param = Parameter(name=k, kind=Parameter.POSITIONAL_OR_KEYWORD)
-    sig = Signature(parameters=[param])
+    params = [
+        Parameter(name=k, kind=Parameter.POSITIONAL_OR_KEYWORD)
+        for k in context.output["input_kwargs"]
+    ]
+    sig = Signature(parameters=params)
     context.output["signature"] = sig
+    return context
+
+
+def modify_signature(context: TransformContext) -> TransformContext:
+    sig = context.output["signature"]
+    context.output["signature"] = sig.replace(return_annotation=Dict[str, Any])
     return context
 
 
@@ -140,8 +263,8 @@ def submit_user_code_to_user_code() -> List[Callable]:
         generate_id,
         hash_code,
         generate_unique_func_name,
-        generate_signature,
-        check_code,
+        modify_signature,
+        new_check_code,
         compile_code,
         add_credentials_for_key("user_verify_key"),
     ]
@@ -161,8 +284,9 @@ class UserCodeExecutionResult(SyftObject):
 
 
 def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
-    global stdout_
-    global stderr_
+    stdout_ = sys.stdout
+    stderr_ = sys.stderr
+
     try:
         stdout = StringIO()
         stderr = StringIO()
@@ -174,16 +298,9 @@ def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
         result = None
 
         exec(code_item.byte_code)  # nosec
-        evil_string = f"result = {code_item.unique_func_name}(**kwargs)"
 
-        # copy locals
-        _locals = locals()
-
-        # pass in kwargs and evaluate
-        exec(evil_string, None, _locals)  # nosec
-
-        # assign result back to local scope
-        result = _locals["result"]
+        evil_string = f"{code_item.unique_func_name}(**kwargs)"
+        result = eval(evil_string, None, locals())  # nosec
 
         # restore stdout and stderr
         sys.stdout = stdout_
@@ -197,9 +314,7 @@ def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
         )
 
     except Exception as e:
-        sys.stdout = stdout_
-        sys.stderr = stderr_
-        print("execute_byte_code failed", e)
+        print("execute_byte_code failed", e, file=stderr_)
     finally:
         sys.stdout = stdout_
         sys.stderr = stderr_
