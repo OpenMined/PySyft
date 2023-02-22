@@ -1,7 +1,6 @@
 # stdlib
 from enum import Enum
 from typing import Optional
-from typing import Type
 
 # relative
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
@@ -9,8 +8,8 @@ from ....core.node.common.node_table.syft_object import SyftObject
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .credentials import SyftVerifyKey
+from .linked_obj import LinkedObject
 from .request import DateTime
-from .service import AbstractService
 from .transforms import TransformContext
 from .transforms import add_credentials_for_key
 from .transforms import add_node_uid_for_key
@@ -30,16 +29,6 @@ class MessageExpiryStatus(Enum):
 
 
 @serializable(recursive_serde=True)
-class DocumentLink(SyftObject):
-    __canonical_name__ = "DocumentLink"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    node_uid: UID
-    service: Type[AbstractService]
-    document_uid: UID
-
-
-@serializable(recursive_serde=True)
 class Message(SyftObject):
     __canonical_name__ = "Message"
     __version__ = SYFT_OBJECT_VERSION_1
@@ -50,15 +39,14 @@ class Message(SyftObject):
     to_user_verify_key: SyftVerifyKey
     created_at: DateTime
     status: MessageStatus = MessageStatus.UNDELIVERED
-    document_link: Optional[DocumentLink]
+    linked_obj: Optional[LinkedObject]
 
     __attr_searchable__ = [
         "from_user_verify_key",
         "to_user_verify_key",
         "status",
     ]
-    __attr_unique__ = ["id"]
-    __attr_repr_cols__ = ["subject", "status", "created_at"]
+    __attr_repr_cols__ = ["subject", "status", "created_at", "linked_obj"]
 
 
 @serializable(recursive_serde=True)

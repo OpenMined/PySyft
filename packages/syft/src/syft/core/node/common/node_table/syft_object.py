@@ -132,10 +132,9 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         return values
 
     __attr_state__: List[str]  # persistent recursive serde keys
-    __attr_searchable__: List[str]  # keys which can be searched in the ORM
-    __attr_unique__: List[
-        str
-    ]  # the unique keys for the particular Collection the objects will be stored in
+    __attr_searchable__: List[str] = []  # keys which can be searched in the ORM
+    __attr_unique__: List[str] = []
+    # the unique keys for the particular Collection the objects will be stored in
     __serde_overrides__: Dict[
         str, Sequence[Callable]
     ] = {}  # List of attributes names which require a serde override.

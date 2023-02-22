@@ -22,7 +22,8 @@ class WorkerSettings(SyftObject):
     id: UID
     name: str
     signing_key: SyftSigningKey
-    store_config: StoreConfig
+    document_store_config: StoreConfig
+    action_store_config: StoreConfig
 
     @staticmethod
     def from_node(node: NewNode) -> Self:
@@ -30,7 +31,8 @@ class WorkerSettings(SyftObject):
             id=node.id,
             name=node.name,
             signing_key=node.signing_key,
-            store_config=node.store_config,
+            document_store_config=node.document_store_config,
+            action_store_config=node.action_store_config,
         )
 
     def __hash__(self) -> int:
@@ -38,5 +40,6 @@ class WorkerSettings(SyftObject):
             hash(self.id)
             + hash(self.name)
             + hash(self.signing_key)
-            + hash(self.store_config)
+            + hash(self.document_store_config)
+            + hash(self.action_store_config)
         )

@@ -10,10 +10,13 @@ from .context import AuthedServiceContext
 from .document_store import DocumentStore
 from .message_stash import MessageStash
 from .messages import CreateMessage
+from .messages import LinkedObject
 from .messages import Message
 from .messages import MessageStatus
 from .response import SyftError
 from .service import AbstractService
+from .service import SERVICE_TO_TYPES
+from .service import TYPE_TO_SERVICE
 from .service import service_method
 
 
@@ -81,3 +84,17 @@ class MessageService(AbstractService):
             return SyftError(message=str(result.err()))
 
         return result.ok()
+
+    @service_method(path="messages.resolve_object", name="resolve_object")
+    def resolve_object(
+        self, context: AuthedServiceContext, linked_obj: LinkedObject
+    ) -> Union[Message, SyftError]:
+        service = context.node.get_service(linked_obj.service_type)
+        result = service.resolve_link(context=context, linked_obj=linked_obj)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        return result.ok()
+
+
+TYPE_TO_SERVICE[Message] = MessageService
+SERVICE_TO_TYPES[MessageService].update({Message})

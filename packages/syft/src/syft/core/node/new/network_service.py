@@ -35,6 +35,8 @@ from .node import NewNode
 from .response import SyftError
 from .response import SyftSuccess
 from .service import AbstractService
+from .service import SERVICE_TO_TYPES
+from .service import TYPE_TO_SERVICE
 from .service import service_method
 from .transforms import TransformContext
 from .transforms import keep
@@ -92,7 +94,8 @@ class PythonNodeRoute(SyftObject, NodeRoute):
             id=self.worker_settings.id,
             name=self.worker_settings.name,
             signing_key=self.worker_settings.signing_key,
-            store_config=self.worker_settings.store_config,
+            document_store_config=self.worker_settings.document_store_config,
+            action_store_config=self.worker_settings.action_store_config,
             processes=1,
         )
         return node
@@ -402,3 +405,7 @@ class NetworkService(AbstractService):
             peers = result.ok()
             return peers
         return SyftError(message=result.err())
+
+
+TYPE_TO_SERVICE[NodePeer] = NetworkService
+SERVICE_TO_TYPES[NetworkService].update({NodePeer})
