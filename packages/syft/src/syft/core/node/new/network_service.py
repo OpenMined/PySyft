@@ -35,6 +35,8 @@ from .node import NewNode
 from .response import SyftError
 from .response import SyftSuccess
 from .service import AbstractService
+from .service import SERVICE_TO_TYPES
+from .service import TYPE_TO_SERVICE
 from .service import service_method
 from .transforms import TransformContext
 from .transforms import keep
@@ -403,3 +405,7 @@ class NetworkService(AbstractService):
             peers = result.ok()
             return peers
         return SyftError(message=result.err())
+
+
+TYPE_TO_SERVICE[NodePeer] = NetworkService
+SERVICE_TO_TYPES[NetworkService].update({NodePeer})

@@ -20,6 +20,8 @@ from .document_store import QueryKeys
 from .response import SyftError
 from .response import SyftSuccess
 from .service import AbstractService
+from .service import SERVICE_TO_TYPES
+from .service import TYPE_TO_SERVICE
 from .service import service_method
 
 
@@ -84,3 +86,7 @@ class DataSubjectService(AbstractService):
             data_subject = result.ok()
             return data_subject
         return SyftError(message=result.err())
+
+
+TYPE_TO_SERVICE[DataSubject] = DataSubjectService
+SERVICE_TO_TYPES[DataSubjectService].update({DataSubject})

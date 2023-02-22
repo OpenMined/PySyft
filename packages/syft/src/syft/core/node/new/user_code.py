@@ -162,7 +162,7 @@ class SingleExecutionExactOutput(OutputPolicy):
 class UserCodeStatus(Enum):
     SUBMITTED = "submitted"
     DENIED = "denied"
-    APPROVED = "approved"
+    EXECUTE = "execute"
 
 
 @serializable(recursive_serde=True)
