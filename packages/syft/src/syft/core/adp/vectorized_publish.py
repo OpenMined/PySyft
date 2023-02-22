@@ -135,6 +135,12 @@ def publish(
     # TODO(0.8): Replace with discrete gaussian distribution instead of regular
     # gaussian to eliminate floating pt vulns
     # Discrete Gaussian Noise
+
+    # Continuous Gaussian Noise
+    # noise = np.asarray(
+    #     [secrets.SystemRandom().gauss(0, sigma) for _ in range(original_output.size)]
+    # ).reshape(original_output.shape)
+
     noise = np.asarray(
         [discrete_gaussian(sigma) for _ in range(original_output.size)]
         ).reshape(original_output.shape)
