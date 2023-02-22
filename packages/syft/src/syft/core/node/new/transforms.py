@@ -145,6 +145,22 @@ def validate_email(context: TransformContext) -> TransformContext:
     return context
 
 
+def add_credentials_for_key(key: str) -> Callable:
+    def add_credentials(context: TransformContext) -> TransformContext:
+        context.output[key] = context.credentials
+        return context
+
+    return add_credentials
+
+
+def add_node_uid_for_key(key: str) -> Callable:
+    def add_node_uid(context: TransformContext) -> TransformContext:
+        context.output[key] = context.node.id
+        return context
+
+    return add_node_uid
+
+
 def generate_transform_wrapper(
     klass_from: type, klass_to: type, transforms: List[Callable]
 ) -> Callable:

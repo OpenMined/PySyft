@@ -108,6 +108,7 @@ class CreateAsset(SyftObject):
     contributors: List[Contributor] = []
     data_subjects: List[DataSubject] = []
     node_uid: Optional[UID]
+    action_id: Optional[UID]
     data: Optional[Any]
     mock: Optional[Any]
     shape: Optional[Tuple]
@@ -266,19 +267,31 @@ class CreateDataset(Dataset):
 
 
 def create_and_store_twin(context: TransformContext) -> TransformContext:
-    # relative
-    from .twin_object import TwinObject
+    action_id = context.output["action_id"]
+    if action_id is None:
+        # relative
+        from .twin_object import TwinObject
 
-    twin = TwinObject(
-        private_obj=context.output.pop("data", None),
-        mock_obj=context.output.pop("mock", None),
-    )
-    action_service = context.node.get_service("actionservice")
-    result = action_service.set(context=context.to_node_context(), action_object=twin)
-    if result.is_err():
-        raise Exception(f"Failed to create and store twin. {result}")
+        private_obj = context.output.pop("data", None)
+        mock_obj = context.output.pop("mock", None)
+        if private_obj is None and mock_obj is None:
+            raise Exception("No data and no action_id means this asset has no data")
 
-    context.output["action_id"] = twin.id
+        twin = TwinObject(
+            private_obj=private_obj,
+            mock_obj=mock_obj,
+        )
+        action_service = context.node.get_service("actionservice")
+        result = action_service.set(
+            context=context.to_node_context(), action_object=twin
+        )
+        if result.is_err():
+            raise Exception(f"Failed to create and store twin. {result}")
+
+        context.output["action_id"] = twin.id
+    else:
+        private_obj = context.output.pop("data", None)
+        mock_obj = context.output.pop("mock", None)
     return context
 
 

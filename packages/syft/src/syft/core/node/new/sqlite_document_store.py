@@ -19,8 +19,8 @@ from ...common.serde.deserialize import _deserialize
 from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize
 from ...common.uid import UID
+from .document_store import BasePartitionSettings
 from .document_store import DocumentStore
-from .document_store import PartitionSettings
 from .document_store import StoreClientConfig
 from .document_store import StoreConfig
 from .kv_document_store import KeyValueBackingStore
@@ -38,11 +38,16 @@ class SQLiteBackingStore(KeyValueBackingStore):
     __attr_state__ = ["index_name", "settings", "store_config"]
 
     def __init__(
-        self, index_name: str, settings: PartitionSettings, store_config: StoreConfig
+        self,
+        index_name: str,
+        settings: BasePartitionSettings,
+        store_config: StoreConfig,
+        ddtype: Optional[type] = None,
     ) -> None:
         self.index_name = index_name
         self.settings = settings
         self.store_config = store_config
+        self._ddtype = ddtype
 
     @property
     def table_name(self) -> str:
@@ -107,10 +112,13 @@ class SQLiteBackingStore(KeyValueBackingStore):
         self._execute(insert_sql, [str(key), _repr_debug_(value), data, str(key)])
 
     def _get(self, key: UID) -> Any:
-        select_sql = f"select * from {self.table_name} where uid = ?"  # nosec
-        row = self._execute(select_sql, [str(key)]).fetchone()
-        data = row[2]
-        return _deserialize(data, from_bytes=True)
+        try:
+            select_sql = f"select * from {self.table_name} where uid = ?"  # nosec
+            row = self._execute(select_sql, [str(key)]).fetchone()
+            data = row[2]
+            return _deserialize(data, from_bytes=True)
+        except Exception:
+            raise KeyError(f"{key} not in {type(self)}")
 
     def _exists(self, key: UID) -> Any:
         select_sql = f"select uid from {self.table_name} where uid = ?"  # nosec
@@ -147,7 +155,12 @@ class SQLiteBackingStore(KeyValueBackingStore):
         self._set(key, value)
 
     def __getitem__(self, key: Any) -> Self:
-        return self._get(key)
+        try:
+            return self._get(key)
+        except KeyError as e:
+            if self._ddtype is not None:
+                return self._ddtype()
+            raise e
 
     def __repr__(self) -> str:
         return repr(self._get_all())
