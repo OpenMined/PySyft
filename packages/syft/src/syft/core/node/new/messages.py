@@ -3,13 +3,18 @@ from enum import Enum
 from typing import Optional
 from typing import Type
 
+# third party
+from typing_extensions import Self
+
 # relative
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import SyftObject
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
+from .api import APIRegistry
 from .credentials import SyftVerifyKey
 from .request import DateTime
+from .service import AbstractService
 from .transforms import TransformContext
 from .transforms import add_credentials_for_key
 from .transforms import add_node_uid_for_key
@@ -29,16 +34,38 @@ class MessageExpiryStatus(Enum):
 
 
 @serializable(recursive_serde=True)
-class DocumentLink(SyftObject):
-    __canonical_name__ = "DocumentLink"
+class LinkedDocument(SyftObject):
+    __canonical_name__ = "LinkedObject"
     __version__ = SYFT_OBJECT_VERSION_1
 
     node_uid: UID
-    object_type: Type[SyftObject]
+    document_cname: str
+    service_name: str
     object_uid: UID
 
     def __str__(self) -> str:
-        return f"<{self.object_type.__canonical_name__}: {self.object_uid}>"
+        return f"<{self.document_cname}: {self.object_uid}>"
+
+    @property
+    def resolve(self) -> SyftObject:
+        api = APIRegistry.api_for(node_uid=self.node_uid)
+        return api.services.messages.resolve_document(self)
+
+    @staticmethod
+    def create_document(
+        node_uid: UID,
+        object_type: Type[SyftObject],
+        object_service: Type[AbstractService],
+        object_uid: UID,
+    ) -> Self:
+        document_cname = object_type.__canonical_name__
+        service_name = object_service.__qualname__
+        return LinkedDocument(
+            node_uid=node_uid,
+            document_cname=document_cname,
+            service_name=service_name,
+            object_uid=object_uid,
+        )
 
 
 @serializable(recursive_serde=True)
@@ -52,7 +79,7 @@ class Message(SyftObject):
     to_user_verify_key: SyftVerifyKey
     created_at: DateTime
     status: MessageStatus = MessageStatus.UNDELIVERED
-    document_link: Optional[DocumentLink]
+    linked_document: Optional[LinkedDocument]
 
     __attr_searchable__ = [
         "from_user_verify_key",
