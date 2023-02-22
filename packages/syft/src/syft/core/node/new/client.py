@@ -31,6 +31,7 @@ from ...common.serde.serialize import _serialize
 from ...common.uid import UID
 from ...node.new.credentials import UserLoginCredentials
 from ...node.new.node_metadata import NodeMetadataJSON
+from ...node.new.user import UserCreate
 from ...node.new.user import UserPrivateKey
 from .api import APIModule
 from .api import APIRegistry
@@ -38,6 +39,7 @@ from .api import SignedSyftAPICall
 from .api import SyftAPI
 from .api import SyftAPICall
 from .connection import NodeConnection
+from .context import NodeServiceContext
 from .credentials import SyftSigningKey
 from .dataset import CreateDataset
 from .node import NewNode
@@ -69,6 +71,7 @@ class Routes(Enum):
     ROUTE_METADATA = f"{API_PATH}/metadata"
     ROUTE_API = f"{API_PATH}/api"
     ROUTE_LOGIN = f"{API_PATH}/login"
+    ROUTE_SIGNUP = f"{API_PATH}/signup"
     ROUTE_API_CALL = f"{API_PATH}/api_call"
 
 
@@ -181,6 +184,12 @@ class HTTPConnection(NodeConnection):
             return obj.signing_key
         return None
 
+    def signup(self, new_user: UserCreate) -> SyftSigningKey:
+        data = _serialize(new_user, to_bytes=True)
+        response = self._make_post(self.routes.ROUTE_SIGNUP.value, data)
+        response = _deserialize(response, from_bytes=True)
+        return response
+
     def make_call(self, signed_call: SignedSyftAPICall) -> Union[Any, SyftError]:
         msg_bytes: bytes = _serialize(obj=signed_call, to_bytes=True)
         response = requests.post(
@@ -261,6 +270,12 @@ class PythonConnection(NodeConnection):
         if isinstance(obj, UserPrivateKey):
             return obj.signing_key
         return None
+
+    def signup(self, new_user: UserCreate) -> Optional[SyftSigningKey]:
+        service_context = NodeServiceContext(node=self.node)
+        method = self.node.get_service_method(UserService.register)
+        response = method(context=service_context, new_user=new_user)
+        return response
 
     def make_call(self, signed_call: SignedSyftAPICall) -> Union[Any, SyftError]:
         return self.node.handle_api_call(signed_call)
@@ -380,6 +395,23 @@ class SyftClient:
                     connection=self.connection,
                     syft_client=self,
                 )
+
+    def signup(
+        self, name: str, email: str, password: str, institution: str, website: str
+    ):
+        try:
+            new_user = UserCreate(
+                name=name,
+                email=email,
+                password=password,
+                password_verify=password,
+                institution=institution,
+                website=website,
+            )
+        except Exception as e:
+            return SyftError(message=str(e))
+        response = self.connection.signup(new_user=new_user)
+        return response
 
     @property
     def peer(self) -> Any:

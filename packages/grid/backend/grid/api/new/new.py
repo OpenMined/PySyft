@@ -14,10 +14,13 @@ from pydantic import ValidationError
 # syft absolute
 from syft import deserialize
 from syft import serialize  # type: ignore
+from syft.core.node.new.context import NodeServiceContext
 from syft.core.node.new.context import UnauthedServiceContext
 from syft.core.node.new.credentials import UserLoginCredentials
 from syft.core.node.new.node import NewNode
 from syft.core.node.new.node_metadata import NodeMetadataJSON
+from syft.core.node.new.response import SyftError
+from syft.core.node.new.user import UserCreate
 from syft.core.node.new.user import UserPrivateKey
 from syft.core.node.new.user_service import UserService
 from syft.telemetry import TRACE_MODE
@@ -113,6 +116,29 @@ def handle_login(email: str, password: str, node: NewNode) -> Any:
     )
 
 
+def handle_signup(data: bytes, node: NewNode) -> Any:
+    user_create = deserialize(data, from_bytes=True)
+
+    if not isinstance(user_create, UserCreate):
+        raise Exception(f"Incorrect type received: {user_create}")
+
+    context = NodeServiceContext(node)
+    method = node.get_method_with_context(UserService.register, context)
+
+    result = method(user=user_create)
+
+    if isinstance(result, SyftError):
+        logger.bind(payload={"user": user_create}).error(result.message)
+        response = {"Error": result.message}
+    else:
+        response = result
+
+    return Response(
+        serialize(response, to_bytes=True),
+        media_type="application/octet-stream",
+    )
+
+
 # exchange email and password for a SyftSigningKey
 @router.post("/login", name="login", status_code=200)
 def login(
@@ -129,3 +155,16 @@ def login(
             return handle_login(email, password, worker)
     else:
         return handle_login(email, password, worker)
+
+
+@router.post("/signup", name="signup", status_code=200)
+def signup(request: Request, data: bytes = Depends(get_body)) -> Any:
+    if TRACE_MODE:
+        with trace.get_tracer(signup.__module__).start_as_current_span(
+            signup.__qualname__,
+            context=extract(request.headers),
+            kind=trace.SpanKind.SERVER,
+        ):
+            return handle_signup(data, worker)
+    else:
+        return handle_signup(data, worker)
