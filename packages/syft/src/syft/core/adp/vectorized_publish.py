@@ -3,7 +3,6 @@ from __future__ import annotations
 
 # stdlib
 from copy import deepcopy
-import secrets
 from typing import Callable
 from typing import Dict
 
@@ -114,12 +113,12 @@ def publish(
         except Exception as e:
             print(f"Problem spending epsilon. {e}")
             raise e
-    
+
     # The RDP constants are adjusted to account for the amount of exposure every
     # data subject's data has had.
     data_subject_rdp_constants: Dict[str, np.ndarray] = {}
     for tensor_id in rdp_constants:
-        data_subject = tensor.sources[tensor_id].data_subject #.to_string()
+        data_subject = tensor.sources[tensor_id].data_subject  # .to_string()
         # convert back to numpy for serde
         data_subject_rdp_constants[data_subject] = np.array(
             max(
@@ -143,8 +142,8 @@ def publish(
 
     noise = np.asarray(
         [discrete_gaussian(sigma) for _ in range(original_output.size)]
-        ).reshape(original_output.shape)
-    
+    ).reshape(original_output.shape)
+
     return original_output + noise
 
 
