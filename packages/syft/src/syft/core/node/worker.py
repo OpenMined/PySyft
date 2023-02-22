@@ -47,7 +47,6 @@ from .new.dataset_service import DatasetService
 from .new.dict_document_store import DictStoreConfig
 from .new.document_store import StoreConfig
 from .new.message_service import MessageService
-from .new.mongo_document_store import MongoStoreConfig
 from .new.network_service import NetworkService
 from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
@@ -111,7 +110,8 @@ class Worker(NewNode):
         signing_key: Optional[
             Union[SyftSigningKey, SigningKey]
         ] = SigningKey.generate(),
-        store_config: Optional[StoreConfig] = None,
+        action_store_config: Optional[StoreConfig] = None,
+        document_store_config: Optional[StoreConfig] = None,
         root_email: str = "info@openmined.org",
         root_password: str = "changethis",
         processes: int = 0,
@@ -155,7 +155,10 @@ class Worker(NewNode):
         self.services = services
 
         self.service_config = ServiceConfigRegistry.get_registered_configs()
-        self.init_stores(store_config=store_config)
+        self.init_stores(
+            action_store_config=action_store_config,
+            document_store_config=document_store_config,
+        )
         self._construct_services()
         create_admin_new(  # nosec B106
             name="Jane Doe",
@@ -193,39 +196,54 @@ class Worker(NewNode):
             print(f"> Starting {self}")
         # super().post_init()
 
-    def init_stores(self, store_config: Optional[StoreConfig]):
-        if store_config is None:
+    def init_stores(
+        self,
+        document_store_config: Optional[StoreConfig] = None,
+        action_store_config: Optional[StoreConfig] = None,
+    ):
+        if document_store_config is None:
             if self.processes > 0 and not self.is_subprocess:
                 client_config = SQLiteStoreClientConfig()
-                store_config = SQLiteStoreConfig(client_config=client_config)
+                document_store_config = SQLiteStoreConfig(client_config=client_config)
             else:
-                store_config = DictStoreConfig()
+                document_store_config = DictStoreConfig()
         if (
-            isinstance(store_config, SQLiteStoreConfig)
-            and store_config.client_config.filename is None
+            isinstance(document_store_config, SQLiteStoreConfig)
+            and document_store_config.client_config.filename is None
         ):
-            store_config.client_config.filename
-            store_config.client_config.filename = f"{self.id}.sqlite"
+            document_store_config.client_config.filename
+            document_store_config.client_config.filename = f"{self.id}.sqlite"
             print(
-                f"SQLite Store Path:\n!open file://{store_config.client_config.file_path}\n"
+                f"SQLite Store Path:\n!open file://{document_store_config.client_config.file_path}\n"
             )
-        document_store = store_config.store_type
-        self.store_config = store_config
+        document_store = document_store_config.store_type
+        self.document_store_config = document_store_config
 
-        self.document_store = document_store(store_config=store_config)
-
-        if self.processes > 0 and not self.is_subprocess:
-            # TODO: Change this to either use mongo or add RedisActionStore
-            if isinstance(store_config, MongoStoreConfig):
+        self.document_store = document_store(store_config=document_store_config)
+        if action_store_config is None:
+            if self.processes > 0 and not self.is_subprocess:
                 client_config = SQLiteStoreClientConfig()
-                store_config = SQLiteStoreConfig(client_config=client_config)
+                action_store_config = SQLiteStoreConfig(client_config=client_config)
+                if (
+                    isinstance(action_store_config, SQLiteStoreConfig)
+                    and action_store_config.client_config.filename is None
+                ):
+                    action_store_config.client_config.filename
+                    action_store_config.client_config.filename = f"{self.id}.sqlite"
+            else:
+                action_store_config = DictStoreConfig()
+
+        if isinstance(action_store_config, SQLiteStoreConfig):
             self.action_store = SQLiteActionStore(
-                store_config=store_config, root_verify_key=self.signing_key.verify_key
+                store_config=action_store_config,
+                root_verify_key=self.signing_key.verify_key,
             )
         else:
             self.action_store = DictActionStore(
                 root_verify_key=self.signing_key.verify_key
             )
+
+        self.action_store_config = action_store_config
         self.queue_stash = QueueStash(store=self.document_store)
 
     def _construct_services(self):
@@ -368,13 +386,17 @@ class Worker(NewNode):
 
             _private_api_path = ServiceConfigRegistry.private_path_for(api_call.path)
             method = self.get_service_method(_private_api_path)
-            result = method(context, *api_call.args, **api_call.kwargs)
+            try:
+                result = method(context, *api_call.args, **api_call.kwargs)
+            except Exception as e:
+                result = SyftError(message=f"Exception calling {api_call.path}. {e}")
         else:
             worker_settings = WorkerSettings(
                 id=self.id,
                 name=self.name,
                 signing_key=self.signing_key,
-                store_config=self.store_config,
+                document_store_config=self.document_store_config,
+                action_store_config=self.action_store_config,
             )
 
             task_uid = UID()
@@ -443,7 +465,8 @@ def task_runner(
         id=worker_settings.id,
         name=worker_settings.name,
         signing_key=worker_settings.signing_key,
-        store_config=worker_settings.store_config,
+        document_store_config=worker_settings.document_store_config,
+        action_store_config=worker_settings.action_store_config,
         is_subprocess=True,
     )
     try:
@@ -461,6 +484,7 @@ def task_runner(
             pipe.close()
     except Exception as e:
         print("Exception in task_runner", e)
+        raise e
 
 
 def queue_task(
