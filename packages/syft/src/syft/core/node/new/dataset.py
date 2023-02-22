@@ -289,6 +289,9 @@ def create_and_store_twin(context: TransformContext) -> TransformContext:
             raise Exception(f"Failed to create and store twin. {result}")
 
         context.output["action_id"] = twin.id
+    else:
+        private_obj = context.output.pop("data", None)
+        mock_obj = context.output.pop("mock", None)
     return context
 
 
