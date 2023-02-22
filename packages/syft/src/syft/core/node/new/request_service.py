@@ -15,6 +15,8 @@ from .request_stash import RequestStash
 from .response import SyftError
 from .response import SyftSuccess
 from .service import AbstractService
+from .service import SERVICE_TO_TYPES
+from .service import TYPE_TO_SERVICE
 from .service import service_method
 
 
@@ -69,3 +71,7 @@ class RequestService(AbstractService):
             result = request.ok().revert(context=context)
             return result.value
         return request.value
+
+
+TYPE_TO_SERVICE[Request] = RequestService
+SERVICE_TO_TYPES[RequestService].update({Request})

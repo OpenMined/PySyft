@@ -1,5 +1,6 @@
 # stdlib
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Union
 
@@ -15,7 +16,6 @@ from .service import AbstractService
 from .service import service_method
 from .user_code import SubmitUserCode
 from .user_code import UserCode
-from .user_code import execute_byte_code
 from .user_code_stash import UserCodeStash
 
 
@@ -29,8 +29,8 @@ class UserCodeService(AbstractService):
         self.store = store
         self.stash = UserCodeStash(store=store)
 
-    @service_method(path="code.add", name="add")
-    def add(
+    @service_method(path="code.submit", name="submit")
+    def submit(
         self, context: AuthedServiceContext, code: SubmitUserCode
     ) -> Union[SyftSuccess, SyftError]:
         """Add User Code"""
@@ -70,14 +70,61 @@ class UserCodeService(AbstractService):
             return result.ok()
         return SyftError(message=result.err())
 
+    def update_code_state(
+        self, context: AuthedServiceContext, code_item: UserCode
+    ) -> Union[SyftSuccess, SyftError]:
+        result = self.stash.update(code_item)
+        if result.is_ok():
+            return SyftSuccess(message="Code State Updated")
+        return SyftError(message="Unable to Update Code State")
+
     @service_method(path="code.call", name="call")
     def call(
         self, context: AuthedServiceContext, uid: UID, **kwargs: Any
     ) -> Union[SyftSuccess, SyftError]:
         """Call a User Code Function"""
-        result = self.stash.get_by_uid(uid=uid)
-        if result.is_ok():
-            code_item = result.ok()
-            exec_result = execute_byte_code(code_item, kwargs)
-            return exec_result.result
-        return SyftError(message=result.err())
+        filtered_kwargs = filter_kwargs(kwargs)
+        try:
+            result = self.stash.get_by_uid(uid=uid)
+            if result.is_ok():
+                code_item = result.ok()
+                is_valid = code_item.output_policy_state.valid
+                if not is_valid:
+                    return is_valid
+                else:
+                    action_service = context.node.get_service("actionservice")
+                    result = action_service._user_code_execute(
+                        context, code_item, filtered_kwargs
+                    )
+                    if result.is_ok():
+                        code_item.output_policy_state.update_state()
+                        state_result = self.update_code_state(
+                            context=context, code_item=code_item
+                        )
+                        if state_result:
+                            return result.ok()
+                        else:
+                            return state_result
+
+            return SyftError(message=result.err())
+        except Exception as e:
+            return SyftError(message=f"Failed to run. {e}")
+
+
+def filter_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    # relative
+    from .action_object import ActionObject
+    from .dataset import Asset
+    from .twin_object import TwinObject
+
+    filtered_kwargs = {}
+    for k, v in kwargs.items():
+        value = v
+        if isinstance(v, ActionObject):
+            value = v.id
+        if isinstance(v, TwinObject):
+            value = v.id
+        if isinstance(v, Asset):
+            value = v.action_id
+        filtered_kwargs[k] = value
+    return filtered_kwargs

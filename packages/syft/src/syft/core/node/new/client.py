@@ -335,8 +335,7 @@ class SyftClient:
             if isinstance(response, SyftError):
                 print(f"Failed to upload asset\n: {asset}")
                 return response
-            data_ptr = response
-            asset.action_id = data_ptr.id
+            asset.action_id = twin.id
             asset.node_uid = self.id
         valid = dataset.check()
         if valid.ok():

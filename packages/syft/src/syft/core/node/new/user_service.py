@@ -20,6 +20,8 @@ from .credentials import UserLoginCredentials
 from .document_store import DocumentStore
 from .response import SyftError
 from .service import AbstractService
+from .service import SERVICE_TO_TYPES
+from .service import TYPE_TO_SERVICE
 from .service import service_method
 from .user import User
 from .user import UserCreate
@@ -163,3 +165,7 @@ class UserService(AbstractService):
     # @service_method(path="user.search", name="search", splat_kwargs_from=["query_obj"])
     # def search(self, context: AuthedServiceContext, query_obj: UserQuery, limit: int):
     #     pass
+
+
+TYPE_TO_SERVICE[User] = UserService
+SERVICE_TO_TYPES[UserService].update({User})

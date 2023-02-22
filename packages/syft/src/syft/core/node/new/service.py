@@ -1,4 +1,5 @@
 # stdlib
+from collections import defaultdict
 from copy import deepcopy
 import inspect
 from inspect import Parameter
@@ -9,15 +10,22 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Type
+from typing import Union
 
 # relative
 from ....core.node.common.node_table.syft_object import SyftBaseObject
 from ....core.node.common.node_table.syft_object import SyftObject
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
+from .context import AuthedServiceContext
+from .linked_obj import LinkedObject
+from .response import SyftError
 from .signature import Signature
 from .signature import signature_remove_context
 from .signature import signature_remove_self
+
+TYPE_TO_SERVICE = {}
+SERVICE_TO_TYPES = defaultdict(set)
 
 
 class AbstractNode:
@@ -27,6 +35,11 @@ class AbstractNode:
 class AbstractService:
     node: AbstractNode
     node_uid: UID
+
+    def resolve_link(
+        self, context: AuthedServiceContext, linked_obj: LinkedObject
+    ) -> Union[Any, SyftError]:
+        return self.stash.get_by_uid(uid=linked_obj.object_uid)
 
 
 @serializable(recursive_serde=True)
