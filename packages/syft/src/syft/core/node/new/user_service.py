@@ -176,8 +176,8 @@ class UserService(AbstractService):
             return SyftError(message=str(result.err()))
 
         user = result.ok()
-
-        return SyftSuccess(message=f"{user.email} User successfully registered !!!")
+        msg = SyftSuccess(message=f"{user.email} User successfully registered !!!")
+        return tuple([msg, user.to(UserPrivateKey)])
 
 
 TYPE_TO_SERVICE[User] = UserService

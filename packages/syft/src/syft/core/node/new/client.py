@@ -71,7 +71,7 @@ class Routes(Enum):
     ROUTE_METADATA = f"{API_PATH}/metadata"
     ROUTE_API = f"{API_PATH}/api"
     ROUTE_LOGIN = f"{API_PATH}/login"
-    ROUTE_SIGNUP = f"{API_PATH}/signup"
+    ROUTE_REGISTER = f"{API_PATH}/register"
     ROUTE_API_CALL = f"{API_PATH}/api_call"
 
 
@@ -176,7 +176,7 @@ class HTTPConnection(NodeConnection):
             obj.node_uid = self.proxy_target_uid
         return cast(SyftAPI, obj)
 
-    def connect(self, email: str, password: str) -> SyftSigningKey:
+    def login(self, email: str, password: str) -> SyftSigningKey:
         credentials = {"email": email, "password": password}
         response = self._make_post(self.routes.ROUTE_LOGIN.value, credentials)
         obj = _deserialize(response, from_bytes=True)
@@ -184,9 +184,9 @@ class HTTPConnection(NodeConnection):
             return obj.signing_key
         return None
 
-    def signup(self, new_user: UserCreate) -> SyftSigningKey:
+    def register(self, new_user: UserCreate) -> SyftSigningKey:
         data = _serialize(new_user, to_bytes=True)
-        response = self._make_post(self.routes.ROUTE_SIGNUP.value, data)
+        response = self._make_post(self.routes.ROUTE_REGISTER.value, data)
         response = _deserialize(response, from_bytes=True)
         return response
 
@@ -265,13 +265,13 @@ class PythonConnection(NodeConnection):
             return result.value
         return result
 
-    def connect(self, email: str, password: str) -> Optional[SyftSigningKey]:
+    def login(self, email: str, password: str) -> Optional[SyftSigningKey]:
         obj = self.exchange_credentials(email=email, password=password)
         if isinstance(obj, UserPrivateKey):
             return obj.signing_key
         return None
 
-    def signup(self, new_user: UserCreate) -> Optional[SyftSigningKey]:
+    def register(self, new_user: UserCreate) -> Optional[SyftSigningKey]:
         service_context = NodeServiceContext(node=self.node)
         method = self.node.get_service_method(UserService.register)
         response = method(context=service_context, new_user=new_user)
@@ -311,6 +311,10 @@ class SyftClient:
     def post_init(self) -> None:
         if self.metadata is None:
             self._fetch_node_metadata(self.credentials)
+
+    @property
+    def authed(self) -> bool:
+        return bool(self.credentials)
 
     @staticmethod
     def from_url(url: Union[str, GridURL]) -> Self:
@@ -383,8 +387,8 @@ class SyftClient:
             return self.api.services.dataset
         return None
 
-    def connect(self, email: str, password: str, cache: bool = True) -> None:
-        signing_key = self.connection.connect(email=email, password=password)
+    def login(self, email: str, password: str, cache: bool = True) -> None:
+        signing_key = self.connection.login(email=email, password=password)
         if signing_key is not None:
             self.credentials = signing_key
             self._fetch_api(self.credentials)
@@ -396,7 +400,7 @@ class SyftClient:
                     syft_client=self,
                 )
 
-    def signup(
+    def register(
         self, name: str, email: str, password: str, institution: str, website: str
     ):
         try:
@@ -410,7 +414,11 @@ class SyftClient:
             )
         except Exception as e:
             return SyftError(message=str(e))
-        response = self.connection.signup(new_user=new_user)
+        response = self.connection.register(new_user=new_user)
+        if isinstance(response, tuple):
+            self.credentials = response[1].signing_key
+            self._fetch_api(self.credentials)
+            response = response[0]
         return response
 
     @property
@@ -470,13 +478,10 @@ class SyftClient:
 
 
 @instrument
-def login(
+def connect(
     url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
     node: Optional[NewNode] = None,
     port: Optional[int] = None,
-    email: Optional[str] = None,
-    password: Optional[str] = None,
-    cache: bool = True,
 ) -> SyftClient:
     if node:
         connection = PythonConnection(node=node)
@@ -485,30 +490,46 @@ def login(
         if isinstance(port, (int, str)):
             url.set_port(int(port))
         connection = HTTPConnection(url=url)
+    _client = SyftClient(connection=connection)
+    return _client
+
+
+@instrument
+def login(
+    url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
+    node: Optional[NewNode] = None,
+    port: Optional[int] = None,
+    email: Optional[str] = None,
+    password: Optional[str] = None,
+    cache: bool = True,
+) -> SyftClient:
+    _client = connect(url=url, node=node, port=port)
+    connection = _client.connection
 
     login_credentials = UserLoginCredentials(email=email, password=password)
 
-    _client = None
     if cache:
-        _client = SyftClientSessionCache.get_client(
+        _client_cache = SyftClientSessionCache.get_client(
             login_credentials.email,
             login_credentials.password,
             connection=connection,
         )
-        if _client:
+        if _client_cache:
             print(
                 f"Using cached client for {_client.name} as <{login_credentials.email}>"
             )
+            _client = _client_cache
 
-    if _client is None:
-        _client = SyftClient(connection=connection)
-        _client.connect(
+    if not _client.authed:
+        _client.login(
             email=login_credentials.email,
             password=login_credentials.password,
             cache=cache,
         )
-        if _client.credentials:
+        if _client.authed:
             print(f"Logged into {_client.name} as <{login_credentials.email}>")
+        else:
+            return SyftError(message=f"Failed to login as {login_credentials.email}")
 
     return _client
 

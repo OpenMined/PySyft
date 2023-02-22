@@ -66,8 +66,8 @@ from .core.node.domain import Domain  # noqa: F401
 from .core.node.domain import DomainClient  # noqa: F401
 from .core.node.network import Network  # noqa: F401
 from .core.node.network_client import NetworkClient  # noqa: F401
+from .core.node.new.client import connect  # noqa: F401
 from .core.node.new.client import login  # noqa: F401
-from .core.node.new.client import login as new_login  # noqa: F401
 from .core.node.new.credentials import SyftSigningKey  # noqa: F401
 from .core.node.new.data_subject import DataSubject  # noqa: F401
 from .core.node.new.dataset import CreateAsset as Asset  # noqa: F401
@@ -94,7 +94,7 @@ from .core.tensor.autodp.phi_tensor import PhiTensor  # noqa: F401
 from .core.tensor.lazy_repeat_array import lazyrepeatarray  # noqa: F401
 from .core.tensor.tensor import Tensor  # noqa: F401
 from .experimental_flags import flags  # noqa: F401
-from .grid.client.client import connect  # noqa: F401
+from .grid.client.client import connect as old_connect  # noqa: F401
 from .grid.client.client import login as old_login  # noqa: F401
 from .grid.client.client import register  # noqa: F401
 

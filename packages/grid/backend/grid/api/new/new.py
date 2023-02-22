@@ -116,7 +116,7 @@ def handle_login(email: str, password: str, node: NewNode) -> Any:
     )
 
 
-def handle_signup(data: bytes, node: NewNode) -> Any:
+def handle_register(data: bytes, node: NewNode) -> Any:
     user_create = deserialize(data, from_bytes=True)
 
     if not isinstance(user_create, UserCreate):
@@ -157,14 +157,14 @@ def login(
         return handle_login(email, password, worker)
 
 
-@router.post("/signup", name="signup", status_code=200)
-def signup(request: Request, data: bytes = Depends(get_body)) -> Any:
+@router.post("/register", name="register", status_code=200)
+def register(request: Request, data: bytes = Depends(get_body)) -> Any:
     if TRACE_MODE:
-        with trace.get_tracer(signup.__module__).start_as_current_span(
-            signup.__qualname__,
+        with trace.get_tracer(register.__module__).start_as_current_span(
+            register.__qualname__,
             context=extract(request.headers),
             kind=trace.SpanKind.SERVER,
         ):
-            return handle_signup(data, worker)
+            return handle_register(data, worker)
     else:
-        return handle_signup(data, worker)
+        return handle_register(data, worker)
