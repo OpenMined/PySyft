@@ -2,8 +2,6 @@
 from enum import Enum
 from typing import Optional
 
-# third party
-
 # relative
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import SyftObject
