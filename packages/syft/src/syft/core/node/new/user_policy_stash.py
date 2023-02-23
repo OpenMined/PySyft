@@ -10,15 +10,15 @@ from .document_store import BaseUIDStoreStash
 from .document_store import PartitionSettings
 from .document_store import QueryKeys
 from .document_store import DocumentStore
-from .policy import PolicyCode
+from .policy import UserPolicy
 from .policy import UserVerifyKeyPartitionKey
 
 
 @serializable(recursive_serde=True)
-class PolicyCodeStash(BaseUIDStoreStash):
-    object_type = PolicyCode
+class UserPolicyStash(BaseUIDStoreStash):
+    object_type = UserPolicy
     settings: PartitionSettings = PartitionSettings(
-        name=PolicyCode.__canonical_name__, object_type=PolicyCode
+        name=UserPolicy.__canonical_name__, object_type=UserPolicy
     )
     
     def __init__(self, store: DocumentStore) -> None:
@@ -27,6 +27,6 @@ class PolicyCodeStash(BaseUIDStoreStash):
 
     def get_all_by_user_verify_key(
         self, user_verify_key: SyftVerifyKey
-    ) -> Result[List[PolicyCode], str]:
+    ) -> Result[List[UserPolicy], str]:
         qks = QueryKeys(qks=[UserVerifyKeyPartitionKey.with_obj(user_verify_key)])
         return self.query_one(qks=qks)

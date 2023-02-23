@@ -12,7 +12,6 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Type
 from typing import Union
 
 # relative
@@ -29,133 +28,14 @@ from .transforms import TransformContext
 from .transforms import generate_id
 from .transforms import transform
 from .user_code_parse import GlobalsVisitor
+from .policy import UserPolicy, SubmitUserPolicy, InputPolicy, OutputPolicy, OutputPolicyState
+from IPython.core.magics.code import extract_symbols
+from ....util import is_interpreter_jupyter
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 CodeHashPartitionKey = PartitionKey(key="code_hash", type_=int)
 
 PyCodeObject = Any
-
-
-class InputPolicy(SyftObject):
-    # version
-    __canonical_name__ = "InputPolicy"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    id: UID
-    inputs: Dict[str, Any]
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        uid = UID()
-        if "id" in kwargs:
-            uid = kwargs["id"]
-        if "inputs" in kwargs:
-            kwargs = kwargs["inputs"]
-        uid_kwargs = extract_uids(kwargs)
-        super().__init__(id=uid, inputs=uid_kwargs)
-
-    def filter_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
-        raise NotImplementedError
-
-
-def allowed_ids_only(
-    allowed_inputs: Dict[str, UID], kwargs: Dict[str, Any]
-) -> Dict[str, UID]:
-    filtered_kwargs = {}
-    for key in allowed_inputs.keys():
-        if key in kwargs:
-            value = kwargs[key]
-            uid = value
-            if not isinstance(uid, UID):
-                uid = getattr(value, "id", None)
-
-            if uid != allowed_inputs[key]:
-                raise Exception(
-                    f"Input {type(value)} for {key} not in allowed {allowed_inputs}"
-                )
-            filtered_kwargs[key] = value
-    return filtered_kwargs
-
-
-@serializable(recursive_serde=True)
-class ExactMatch(InputPolicy):
-    # version
-    __canonical_name__ = "ExactMatch"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    def filter_kwargs(self, kwargs: Dict[str, Any]) -> Dict[str, Any]:
-        return allowed_ids_only(self.inputs, kwargs)
-
-
-class OutputPolicyState(SyftObject):
-    # version
-    __canonical_name__ = "OutputPolicyState"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    @property
-    def valid(self) -> Union[SyftSuccess, SyftError]:
-        raise NotImplementedError
-
-    def update_state(self) -> None:
-        raise NotImplementedError
-
-
-@serializable(recursive_serde=True)
-class OutputPolicyStateExecuteCount(OutputPolicyState):
-    # version
-    __canonical_name__ = "OutputPolicyStateExecuteCount"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    count: int = 0
-    limit: int
-
-    @property
-    def valid(self) -> Union[SyftSuccess, SyftError]:
-        is_valid = self.count < self.limit
-        if is_valid:
-            return SyftSuccess(
-                message=f"Policy is still valid. count: {self.count} < limit: {self.limit}"
-            )
-        return SyftError(
-            message=f"Policy is no longer valid. count: {self.count} >= limit: {self.limit}"
-        )
-
-    def update_state(self) -> None:
-        if self.count >= self.limit:
-            raise Exception(
-                f"Update state being called with count: {self.count} "
-                f"beyond execution limit: {self.limit}"
-            )
-        self.count += 1
-
-
-@serializable(recursive_serde=True)
-class OutputPolicyStateExecuteOnce(OutputPolicyStateExecuteCount):
-    __canonical_name__ = "OutputPolicyStateExecuteOnce"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    limit: int = 1
-
-
-class OutputPolicy(SyftObject):
-    # version
-    __canonical_name__ = "OutputPolicy"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    id: UID
-    outputs: List[str] = []
-    state_type: Optional[Type[OutputPolicyState]]
-
-    def update() -> None:
-        raise NotImplementedError
-
-
-@serializable(recursive_serde=True)
-class SingleExecutionExactOutput(OutputPolicy):
-    # version
-    __canonical_name__ = "SingleExecutionExactOutput"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    state_type: Type[OutputPolicyState] = OutputPolicyStateExecuteOnce
 
 
 @serializable(recursive_serde=True)
@@ -174,9 +54,10 @@ class UserCode(SyftObject):
     id: UID
     user_verify_key: SyftVerifyKey
     raw_code: str
-    input_policy: InputPolicy
-    output_policy: OutputPolicy
-    output_policy_state: OutputPolicyState
+    input_policy: Union[InputPolicy, UserPolicy]
+    input_policy_state: Union[OutputPolicyState, str]
+    output_policy: Union[OutputPolicy, UserPolicy]
+    output_policy_state: Union[OutputPolicyState, str]
     parsed_code: str
     service_func_name: str
     unique_func_name: str
@@ -184,6 +65,8 @@ class UserCode(SyftObject):
     code_hash: str
     signature: inspect.Signature
     status: UserCodeStatus = UserCodeStatus.SUBMITTED
+    input_kwargs: List[str]
+    outputs: List[str]
 
     __attr_searchable__ = ["status", "service_func_name"]
     __attr_unique__ = ["user_verify_key", "code_hash", "user_unique_func_name"]
@@ -192,28 +75,6 @@ class UserCode(SyftObject):
     @property
     def byte_code(self) -> Optional[PyCodeObject]:
         return compile_byte_code(self.parsed_code)
-
-
-def extract_uids(kwargs: Dict[str, Any]) -> Dict[str, UID]:
-    # relative
-    from .action_object import ActionObject
-    from .twin_object import TwinObject
-
-    uid_kwargs = {}
-    for k, v in kwargs.items():
-        uid = v
-        if isinstance(v, ActionObject):
-            uid = v.id
-        if isinstance(v, TwinObject):
-            uid = v.id
-        if isinstance(v, Asset):
-            uid = v.action_id
-
-        if not isinstance(uid, UID):
-            raise Exception(f"Input {k} must have a UID not {type(v)}")
-
-        uid_kwargs[k] = uid
-    return uid_kwargs
 
 
 @serializable(recursive_serde=True)
@@ -226,10 +87,14 @@ class SubmitUserCode(SyftObject):
     code: str
     func_name: str
     signature: inspect.Signature
-    input_policy: InputPolicy
-    output_policy: OutputPolicy
+    input_policy: Union[InputPolicy, SubmitUserPolicy]
+    input_policy_init_args: Dict[str, Any]
+    output_policy: Union[OutputPolicy, SubmitUserPolicy]
+    output_policy_init_args: Dict[str, Any]
     local_function: Optional[Callable]
-
+    input_kwargs: List[str]
+    outputs: List[str]
+    
     __attr_state__ = [
         "id",
         "code",
@@ -239,13 +104,13 @@ class SubmitUserCode(SyftObject):
         "output_policy",
     ]
 
-    @property
-    def kwargs(self) -> List[str]:
-        return self.input_policy.inputs
+    # @property
+    # def kwargs(self) -> List[str]:
+    #     return self.input_policy.inputs
 
-    @property
-    def outputs(self) -> List[str]:
-        return self.output_policy.outputs
+    # @property
+    # def outputs(self) -> List[str]:
+    #     return self.output_policy.outputs
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         # only run this on the client side
@@ -271,17 +136,78 @@ def debox_asset(arg: Any) -> Any:
     return deboxed_arg
 
 
-def syft_function(input_policy, output_policy) -> SubmitUserCode:
+def new_getfile(object):
+    if not inspect.isclass(object):
+        return inspect.getfile(object)
+    
+    # Lookup by parent module (as in current inspect)
+    if hasattr(object, '__module__'):
+        object_ = sys.modules.get(object.__module__)
+        if hasattr(object_, '__file__'):
+            return object_.__file__
+    
+    # If parent module is __main__, lookup by methods (NEW)
+    for _, member in inspect.getmembers(object):
+        if inspect.isfunction(member) and object.__qualname__ + '.' + member.__name__ == member.__qualname__:
+            return inspect.getfile(member)
+    else:
+        raise TypeError('Source for {!r} not found'.format(object))
+
+def get_code_from_class(policy):
+    klasses = inspect.getmro(policy)[-2::-1]
+    whole_str = ""
+    for klass in klasses:
+        if is_interpreter_jupyter():
+            cell_code = "".join(inspect.linecache.getlines(new_getfile(klass)))
+            class_code = extract_symbols(cell_code, klass.__name__)[0][0]
+        else:
+            class_code = inspect.getsource(klass)
+        whole_str += class_code
+    return whole_str
+
+def syft_function(
+    input_policy: Union[InputPolicy, Any],
+    input_policy_init_args: Dict[str, Any],
+    output_policy: Union[OutputPolicy, Any],
+    output_policy_init_args: Dict[str, Any],
+    outputs: List[str]
+) -> SubmitUserCode:
     # TODO: fix this for jupyter
     # TODO: add import validator
+    
+    if isinstance(input_policy, InputPolicy):
+        input_policy = input_policy(input_policy_init_args)
+        input_policy_init_args = None
+    else:
+          input_policy = SubmitUserPolicy(
+            code='@serializable(recursive_serde=True)\n'+get_code_from_class(input_policy),
+            class_name=input_policy.__name__,
+            input_kwargs=input_policy.__init__.__code__.co_varnames[1:],
+        )
+    
+    
+    if isinstance(output_policy, OutputPolicy):
+        output_policy = output_policy(output_policy_init_args)
+        output_policy_init_args = None
+    else:
+        output_policy_submit = SubmitUserPolicy(
+            code='@serializable(recursive_serde=True)\n'+get_code_from_class(output_policy),
+            class_name=output_policy.__name__,
+            input_kwargs=output_policy.__init__.__code__.co_varnames[1:],
+        )
+    
     def decorator(f):
         return SubmitUserCode(
             code=inspect.getsource(f),
             func_name=f.__name__,
             signature=inspect.signature(f),
             input_policy=input_policy,
-            output_policy=output_policy,
+            output_policy=output_policy_submit,
             local_function=f,
+            input_kwargs=f.__code__.co_varnames,
+            outputs=outputs,
+            input_policy_init_args=input_policy_init_args,
+            output_policy_init_args=output_policy_init_args
         )
 
     return decorator
@@ -302,12 +228,9 @@ def process_code(
     raw_code: str,
     func_name: str,
     original_func_name: str,
-    input_policy: InputPolicy,
-    output_policy: OutputPolicy,
+    input_kwargs: Dict[str, Any],
+    outputs: List[str],
 ) -> str:
-    input_kwargs = input_policy.inputs
-    outputs = output_policy.outputs
-
     tree = ast.parse(raw_code)
 
     # check there are no globals
@@ -367,8 +290,8 @@ def new_check_code(context: TransformContext) -> TransformContext:
             raw_code=context.output["raw_code"],
             func_name=context.output["unique_func_name"],
             original_func_name=context.output["service_func_name"],
-            input_policy=context.output["input_policy"],
-            output_policy=context.output["output_policy"],
+            input_kwargs=context.output["input_kwargs"],
+            outputs=context.output["outputs"],
         )
         context.output["parsed_code"] = processed_code
 
@@ -430,7 +353,8 @@ def modify_signature(context: TransformContext) -> TransformContext:
 
 
 def init_output_policy_state(context: TransformContext) -> TransformContext:
-    context.output["output_policy_state"] = context.output["output_policy"].state_type()
+    if isinstance(context.output["output_policy"], OutputPolicy):
+        context.output["output_policy_state"] = context.output["output_policy"].state_type()
     return context
 
 

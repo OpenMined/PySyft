@@ -34,6 +34,10 @@ class UserCodeService(AbstractService):
         self, context: AuthedServiceContext, code: SubmitUserCode
     ) -> Union[SyftSuccess, SyftError]:
         """Add User Code"""
+        # input_policy = code.input_policy.to(UserPolicy, context=context)
+        # output_policy = code.output_policy.to(UserPolicy, context=context)
+        # code.input_policy = input_policy
+        # code.output_policy = output_policy
         result = self.stash.set(code.to(UserCode, context=context))
         if result.is_err():
             return SyftError(message=str(result.err()))

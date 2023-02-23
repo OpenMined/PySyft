@@ -3,6 +3,9 @@ from typing import Callable
 from typing import Dict
 from typing import Optional
 from typing import Any
+from typing import Type
+from typing import Union
+
 from enum import Enum
 import hashlib
 from RestrictedPython import compile_restricted
@@ -16,49 +19,49 @@ from .credentials import SyftVerifyKey
 from .document_store import PartitionKey
 from ...common.serde.serializable import serializable
 from ...common.serde import _serialize
-from .user_code import UserCode
 from .transforms import transform
 from .transforms import generate_id
 from .transforms import TransformContext
 from .response import SyftError
+from .dataset import Asset
+from .response import SyftError
+from .response import SyftSuccess
 
-# TODO: check if we need 2 partition keys or if one is enough
-UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 PyCodeObject = Any
 
-@serializable(recursive_serde=True)
-class Policy(SyftObject):
-    __canonical_name__ = "Policy"
-    __version__ = SYFT_OBJECT_VERSION_1
+# @serializable(recursive_serde=True)
+# class Policy(SyftObject):
+#     __canonical_name__ = "Policy"
+#     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: UID
-    user_verify_key: SyftVerifyKey
-    policy_code_uid: UID
-    user_code_uid: UID
-    serde: Optional[bytes] = None
+#     id: UID
+#     user_verify_key: SyftVerifyKey
+#     policy_code_uid: UID
+#     user_code_uid: UID
+#     serde: Optional[bytes] = None
     
-@serializable(recursive_serde=True)
-class CreatePolicy(SyftObject):
-    __canonical_name__ = "CreatePolicy"
-    __version__ = SYFT_OBJECT_VERSION_1
+# @serializable(recursive_serde=True)
+# class CreatePolicy(SyftObject):
+#     __canonical_name__ = "CreatePolicy"
+#     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: Optional[UID]
-    policy_code_uid: UID
-    user_code_uid: UID
-    policy_init_args: Dict[str, Any]
+#     id: Optional[UID]
+#     policy_code_uid: UID
+#     user_code_uid: UID
+#     policy_init_args: Dict[str, Any]
 
-def check_policy_uid(context: TransformContext) -> TransformContext:
-    result = context.node.api.services.policy_code.get_by_uid(context.output["policy_code_uid"])
-    if not result.is_ok():
-        return SyftError(message=result.err())
-    return context
+# def check_policy_uid(context: TransformContext) -> TransformContext:
+#     result = context.node.api.services.policy_code.get_by_uid(context.output["policy_code_uid"])
+#     if not result.is_ok():
+#         return SyftError(message=result.err())
+#     return context
 
-def check_user_uid(context: TransformContext) -> TransformContext:
-    result = context.node.api.services.user_code.get_by_uid(context.output["user_code_uid"])
-    if not result.is_ok():
-        return SyftError(message=result.err())
-    return context
+# def check_user_uid(context: TransformContext) -> TransformContext:
+#     result = context.node.api.services.user_code.get_by_uid(context.output["user_code_uid"])
+#     if not result.is_ok():
+#         return SyftError(message=result.err())
+#     return context
     
 # def create_object(context: TransformContext) -> TransformContext:
 #     result = context.node.get_api().services.policy_code.get_by_uid(context.output["policy_code_uid"])
@@ -69,15 +72,157 @@ def check_user_uid(context: TransformContext) -> TransformContext:
 #     context.output["serde"] = _serialize(obj, to_bytes=True)
 #     return context
 
+def extract_uids(kwargs: Dict[str, Any]) -> Dict[str, UID]:
+    # relative
+    from .action_object import ActionObject
+    from .twin_object import TwinObject
+
+    uid_kwargs = {}
+    for k, v in kwargs.items():
+        uid = v
+        if isinstance(v, ActionObject):
+            uid = v.id
+        if isinstance(v, TwinObject):
+            uid = v.id
+        if isinstance(v, Asset):
+            uid = v.action_id
+
+        if not isinstance(uid, UID):
+            raise Exception(f"Input {k} must have a UID not {type(v)}")
+
+        uid_kwargs[k] = uid
+    return uid_kwargs
+
+
+class InputPolicy(SyftObject):
+    # version
+    __canonical_name__ = "InputPolicy"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID
+    inputs: Dict[str, Any]
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        uid = UID()
+        if "id" in kwargs:
+            uid = kwargs["id"]
+        if "inputs" in kwargs:
+            kwargs = kwargs["inputs"]
+        uid_kwargs = extract_uids(kwargs)
+        super().__init__(id=uid, inputs=uid_kwargs)
+
+    def filter_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        raise NotImplementedError
+
+
+def allowed_ids_only(
+    allowed_inputs: Dict[str, UID], kwargs: Dict[str, Any]
+) -> Dict[str, UID]:
+    filtered_kwargs = {}
+    for key in allowed_inputs.keys():
+        if key in kwargs:
+            value = kwargs[key]
+            uid = value
+            if not isinstance(uid, UID):
+                uid = getattr(value, "id", None)
+
+            if uid != allowed_inputs[key]:
+                raise Exception(
+                    f"Input {type(value)} for {key} not in allowed {allowed_inputs}"
+                )
+            filtered_kwargs[key] = value
+    return filtered_kwargs
+
 
 @serializable(recursive_serde=True)
-class PolicyCodeStatus(Enum):
+class ExactMatch(InputPolicy):
+    # version
+    __canonical_name__ = "ExactMatch"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    def filter_kwargs(self, kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        return allowed_ids_only(self.inputs, kwargs)
+
+
+class OutputPolicyState(SyftObject):
+    # version
+    __canonical_name__ = "OutputPolicyState"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    @property
+    def valid(self) -> Union[SyftSuccess, SyftError]:
+        raise NotImplementedError
+
+    def update_state(self) -> None:
+        raise NotImplementedError
+
+
+@serializable(recursive_serde=True)
+class OutputPolicyStateExecuteCount(OutputPolicyState):
+    # version
+    __canonical_name__ = "OutputPolicyStateExecuteCount"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    count: int = 0
+    limit: int
+
+    @property
+    def valid(self) -> Union[SyftSuccess, SyftError]:
+        is_valid = self.count < self.limit
+        if is_valid:
+            return SyftSuccess(
+                message=f"Policy is still valid. count: {self.count} < limit: {self.limit}"
+            )
+        return SyftError(
+            message=f"Policy is no longer valid. count: {self.count} >= limit: {self.limit}"
+        )
+
+    def update_state(self) -> None:
+        if self.count >= self.limit:
+            raise Exception(
+                f"Update state being called with count: {self.count} "
+                f"beyond execution limit: {self.limit}"
+            )
+        self.count += 1
+
+
+@serializable(recursive_serde=True)
+class OutputPolicyStateExecuteOnce(OutputPolicyStateExecuteCount):
+    __canonical_name__ = "OutputPolicyStateExecuteOnce"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    limit: int = 1
+
+
+class OutputPolicy(SyftObject):
+    # version
+    __canonical_name__ = "OutputPolicy"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID
+    state_type: Optional[Type[OutputPolicyState]]
+
+    def update() -> None:
+        raise NotImplementedError
+
+
+@serializable(recursive_serde=True)
+class SingleExecutionExactOutput(OutputPolicy):
+    # version
+    __canonical_name__ = "SingleExecutionExactOutput"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    state_type: Type[OutputPolicyState] = OutputPolicyStateExecuteOnce
+
+
+@serializable(recursive_serde=True)
+class UserPolicyStatus(Enum):
     SUBMITTED = "submitted"
     DENIED = "denied"
     APPROVED = "approved"
 
 @serializable(recursive_serde=True)
-class PolicyCode(SyftObject):
+class UserPolicy(SyftObject):
     __canonical_name__ = "PolicyCode"
     __version__ = SYFT_OBJECT_VERSION_1
 
@@ -90,11 +235,11 @@ class PolicyCode(SyftObject):
     unique_name: str
     code_hash: str
     byte_code: PyCodeObject
-    status: PolicyCodeStatus = PolicyCodeStatus.SUBMITTED
+    status: UserPolicyStatus = UserPolicyStatus.SUBMITTED
     
     
 @serializable(recursive_serde=True)
-class SubmitPolicyCode(SyftObject):
+class SubmitUserPolicy(SyftObject):
     __canonical_name__ = "SubmitPolicyCode"
     __version__ = SYFT_OBJECT_VERSION_1
     
@@ -151,17 +296,17 @@ def generate_signature(context: TransformContext) -> TransformContext:
     context.output["signature"] = sig
     return context
 
-@transform(CreatePolicy, Policy)
-def create_policy_to_policy() -> List[Callable]:
-    return [
-        generate_id,
-        add_credentials_for_key("user_verify_key")
-        # check_policy_uid,
-        # check_user_uid,
-        # create_object
-    ]
+# @transform(CreatePolicy, Policy)
+# def create_policy_to_policy() -> List[Callable]:
+#     return [
+#         generate_id,
+#         add_credentials_for_key("user_verify_key")
+#         # check_policy_uid,
+#         # check_user_uid,
+#         # create_object
+#     ]
 
-@transform(SubmitPolicyCode, PolicyCode)
+@transform(SubmitUserPolicy, UserPolicy)
 def submit_policy_code_to_user_code() -> List[Callable]:
     return [
         generate_id,
