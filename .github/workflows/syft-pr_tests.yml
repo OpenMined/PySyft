@@ -17,11 +17,11 @@ on:
       - "0.7.0"
       - "0.8"
 
-workflow_dispatch:
-  inputs:
-    none:
-      description: "Run Tests Manually"
-      required: false
+  workflow_dispatch:
+    inputs:
+      none:
+        description: "Run Tests Manually"
+        required: false
 
 defaults:
   run:
