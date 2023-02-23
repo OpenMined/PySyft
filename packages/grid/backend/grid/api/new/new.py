@@ -47,6 +47,15 @@ def syft_metadata() -> JSONResponse:
     return worker.metadata.to(NodeMetadataJSON)
 
 
+@router.get("/metadata_capnp")
+def syft_metadata_capnp() -> Response:
+    # print("what is metadata", str(worker.metadata))
+    return Response(
+        serialize(worker.metadata, to_bytes=True),
+        media_type="application/octet-stream",
+    )
+
+
 def handle_syft_new_api() -> Response:
     return Response(
         serialize(worker.get_api(), to_bytes=True),
