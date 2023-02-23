@@ -2,8 +2,9 @@
   import { JSSerde } from './jsserde.svelte';
   import { SyftMessageWithoutReply } from './objects/syftMessage.ts';
   export class JSClient {
-    constructor(url) {
+    constructor() {
       return (async () => {
+        const url = window.location.protocol + '//' + window.location.host;
         await fetch(url + '/api/v1/syft/serde')
           .then((response) => response.json())
           .then((response) => {
@@ -52,7 +53,7 @@
     }
 
     get metadata() {
-      return fetch('http://localhost:8081/api/v1/syft/metadata')
+      return fetch(this.url + '/api/v1/new/metadata_capnp')
         .then((response) => response.arrayBuffer())
         .then((response) => {
           let metadata = this.serde.deserialize(response);
