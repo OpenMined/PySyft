@@ -155,16 +155,6 @@ def debug_original_func(name, func):
     print("inspect.ismethoddescriptor", inspect.ismethoddescriptor(func))
 
 
-def is_property(obj, method) -> bool:
-    klass_method = getattr(type(obj), method, None)
-    return isinstance(klass_method, property)
-
-
-def get_property(obj, method) -> Any:
-    klass_method = getattr(type(obj), method, None)
-    return klass_method.__get__(obj)
-
-
 def send_action_side_effect(context: PreHookContext, *args: Any, **kwargs: Any) -> Any:
     try:
         if context.op_name not in dont_make_side_effects and hasattr(
@@ -242,6 +232,14 @@ class ActionObject(SyftObject):
 
     def syft_point_to(self, node_uid: UID) -> None:
         self.syft_node_uid = node_uid
+
+    def syft_get_property(self, obj, method) -> Any:
+        klass_method = getattr(type(obj), method, None)
+        return klass_method.__get__(obj)
+
+    def syft_is_property(self, obj, method) -> bool:
+        klass_method = getattr(type(obj), method, None)
+        return isinstance(klass_method, property)
 
     def send(self, client: SyftClient) -> Self:
         return client.api.services.action.set(self)
@@ -324,7 +322,7 @@ class ActionObject(SyftObject):
     def _syft_dont_wrap_attrs(self) -> List[str]:
         return dont_wrap_output_attrs + getattr(self, "syft_dont_wrap_attrs", [])
 
-    def __getattribute__(self, name):
+    def __getattribute__(self, name: str) -> Any:
         # bypass certain attrs to prevent recursion issues
         if name.startswith("_syft") or name.startswith("syft"):
             return object.__getattribute__(self, name)
@@ -357,12 +355,12 @@ class ActionObject(SyftObject):
             return __wrapper__bool__
 
         # check for other types that aren't methods, functions etc
-        if is_property(context_self, name):
+        if self.syft_is_property(context_self, name):
             context = PreHookContext(obj=self, op_name=name)
             context, _, _ = self._syft_run_pre_hooks__(context, name, (), {})
             # no input needs to propagate
             result = self._syft_run_post_hooks__(
-                context, name, object.__getattribute__(context_self, name)
+                context, name, self.syft_get_property(context_self, name)
             )
             if name not in self._syft_dont_wrap_attrs():
                 result = self._syft_output_action_object(result)

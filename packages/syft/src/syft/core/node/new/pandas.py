@@ -24,6 +24,18 @@ class PandasDataFrameObject(ActionObject):
     def __dataframe__(self, *args: Any, **kwargs: Any) -> Any:
         return self.__dataframe__(*args, **kwargs)
 
+    def __getattribute__(self, name: str) -> Any:
+        return super().__getattribute__(name)
+
+    def syft_get_property(self, obj: Any, method: str) -> Any:
+        return getattr(self.syft_action_data, method)
+
+    def syft_is_property(self, obj: Any, method: str) -> bool:
+        cols = self.syft_action_data.columns.values.tolist()
+        if method in cols:
+            return True
+        return super().syft_is_property(obj, method)
+
 
 @serializable(recursive_serde=True)
 class PandasSeriesObject(ActionObject):
@@ -33,6 +45,18 @@ class PandasSeriesObject(ActionObject):
     syft_internal_type = Series
     syft_passthrough_attrs = []
     # syft_dont_wrap_attrs = ["shape"]
+
+    def __getattribute__(self, name: str) -> Any:
+        return super().__getattribute__(name)
+
+    def syft_get_property(self, obj: Any, method: str) -> Any:
+        return getattr(self.syft_action_data, method)
+
+    def syft_is_property(self, obj: Any, method: str) -> bool:
+        cols = self.syft_action_data.columns.values.tolist()
+        if method in cols:
+            return True
+        return super().syft_is_property(obj, method)
 
 
 action_types[DataFrame] = PandasDataFrameObject

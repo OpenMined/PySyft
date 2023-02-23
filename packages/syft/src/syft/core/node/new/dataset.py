@@ -214,6 +214,18 @@ class Dataset(SyftObject):
             _repr_str += f"Description: {self.description}\n"
         return "```python\n" + _repr_str + "\n```"
 
+    @property
+    def client(self) -> Optional[Any]:
+        # relative
+        from .client import SyftClientSessionCache
+
+        client = SyftClientSessionCache.get_client_for_node_uid(self.node_uid)
+        if client is None:
+            return SyftError(
+                message=f"No clients for {self.node_uid} in memory. Please login with sy.login"
+            )
+        return client
+
 
 @serializable(recursive_serde=True)
 class CreateDataset(Dataset):
