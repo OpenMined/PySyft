@@ -6,6 +6,7 @@ from typing import Type
 
 # third party
 from pymongo import ASCENDING
+from pymongo import WriteConcern
 from pymongo.errors import DuplicateKeyError
 from result import Err
 from result import Ok
@@ -157,12 +158,18 @@ class MongoStorePartition(StorePartition):
     def set(
         self,
         obj: SyftObject,
+        ignore_duplicates: bool = False,
     ) -> Result[SyftObject, str]:
         storage_obj = obj.to(self.storage_type)
+
+        collection = self.collection
+
+        if ignore_duplicates:
+            collection = collection.with_options(write_concern=WriteConcern(w=0))
         try:
-            self.collection.insert_one(storage_obj)
+            collection.insert_one(storage_obj)
         except DuplicateKeyError as e:
-            return Err(f"Duplicate Key Error: {e}")
+            return Err(f"Duplicate Key Error for {obj}: {e}")
 
         return Ok(obj)
 
