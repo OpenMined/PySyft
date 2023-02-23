@@ -85,6 +85,8 @@ class HTTPConnection(NodeConnection):
     __canonical_name__ = "HTTPConnection"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    __attr_state__ = ["proxy_target_uid", "url"]
+
     proxy_target_uid: Optional[UID]
     url: GridURL
     routes: Type[Routes] = Routes

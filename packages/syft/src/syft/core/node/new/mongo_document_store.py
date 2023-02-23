@@ -179,8 +179,8 @@ class MongoStorePartition(StorePartition):
 
         if result.matched_count == 0:
             return Err(f"No object found with query key: {qk}")
-        elif result.modified_count == 0:
-            return Err(f"Failed to modify obj: {obj} with qk: {qk}")
+        # elif result.modified_count == 0:
+        #     return Err(f"Failed to modify obj: {obj} with qk: {qk}")
         return Ok(obj)
 
     def find_index_or_search_keys(
@@ -193,11 +193,13 @@ class MongoStorePartition(StorePartition):
     def get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
         storage_objs = self.collection.find(filter=qks.as_dict)
         syft_objs = []
-        for storage_obj in storage_objs:
-            obj = self.storage_type(storage_obj)
-            transform_context = TransformContext(output={}, obj=obj)
-            syft_objs.append(obj.to(self.settings.object_type, transform_context))
-
+        try:
+            for storage_obj in storage_objs:
+                obj = self.storage_type(storage_obj)
+                transform_context = TransformContext(output={}, obj=obj)
+                syft_objs.append(obj.to(self.settings.object_type, transform_context))
+        except Exception as e:
+            print("Failing to query mongo", e)
         return Ok(syft_objs)
 
     def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
