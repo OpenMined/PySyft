@@ -109,6 +109,7 @@ from .oblv import create_oblv_key_pair  # noqa: F401
 from .oblv import get_oblv_public_key  # noqa: F401
 from .oblv import install_oblv_proxy  # noqa: F401
 from .oblv import login as oblv_login  # noqa: F401
+from .registry import DomainRegistry  # noqa: F401
 from .registry import NetworkRegistry  # noqa: F401
 from .search import Search  # noqa: F401
 from .search import SearchResults  # noqa: F401
@@ -148,6 +149,11 @@ def module_property(func: Any) -> None:
 @module_property
 def _gateways() -> NetworkRegistry:
     return NetworkRegistry()
+
+
+@module_property
+def _domains() -> DomainRegistry:
+    return DomainRegistry()
 
 
 @module_property
