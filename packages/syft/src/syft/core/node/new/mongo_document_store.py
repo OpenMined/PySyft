@@ -19,7 +19,6 @@ from ...common.serde.serialize import _serialize as serialize
 from ..common.node_table.syft_object import StorableObjectType
 from ..common.node_table.syft_object import SyftObject
 from ..common.node_table.syft_object import SyftObjectRegistry
-from .credentials import SyftVerifyKey
 from .document_store import DocumentStore
 from .document_store import QueryKey
 from .document_store import QueryKeys
@@ -40,14 +39,10 @@ class MongoBsonObject(StorableObjectType, dict):
 def to_mongo(context: TransformContext) -> TransformContext:
     output = {}
     for k in context.obj.__attr_searchable__:
-        # 🟡 TODO 24: pass in storage abstraction and detect unsupported types
-        # if unsupported, convert to string
         value = getattr(context.obj, k, "")
-        if isinstance(value, SyftVerifyKey):
-            value = str(value)
         output[k] = value
     blob = serialize(dict(context.obj), to_bytes=True)
-    output["_id"] = context.output["id"].value  # type: ignore
+    output["_id"] = context.output["id"]
     output["__canonical_name__"] = context.obj.__canonical_name__
     output["__version__"] = context.obj.__version__
     output["__blob__"] = blob
