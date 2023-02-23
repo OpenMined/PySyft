@@ -239,7 +239,9 @@ class ActionObject(SyftObject):
 
     def syft_is_property(self, obj, method) -> bool:
         klass_method = getattr(type(obj), method, None)
-        return isinstance(klass_method, property)
+        return isinstance(klass_method, property) or inspect.isdatadescriptor(
+            klass_method
+        )
 
     def send(self, client: SyftClient) -> Self:
         return client.api.services.action.set(self)

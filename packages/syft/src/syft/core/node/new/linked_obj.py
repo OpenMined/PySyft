@@ -79,6 +79,34 @@ class LinkedObject(SyftObject):
             object_uid=object_uid,
         )
 
+    @classmethod
+    def with_context(
+        cls,
+        obj: SyftObject,
+        context: NodeServiceContext,
+        object_uid: Optional[UID] = None,
+        service_type: Optional[Type[Any]] = None,
+    ) -> Self:
+        if service_type is None:
+            # relative
+            from .service import TYPE_TO_SERVICE
+
+            service_type = TYPE_TO_SERVICE[type(obj)]
+
+        if object_uid is None and hasattr(obj, "id"):
+            object_uid = getattr(obj, "id", None)
+        if object_uid is None:
+            raise Exception(f"{cls} Requires an object UID")
+
+        node_uid = context.node.id
+
+        return LinkedObject(
+            node_uid=node_uid,
+            service_type=service_type,
+            object_type=type(obj),
+            object_uid=object_uid,
+        )
+
     @staticmethod
     def from_uid(
         object_uid: UID,
