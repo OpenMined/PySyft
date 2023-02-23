@@ -23,6 +23,7 @@ from ...common.uid import UID
 from .data_subject import DataSubject
 from .document_store import PartitionKey
 from .response import SyftError
+from .response import SyftException
 from .response import SyftSuccess
 from .transforms import TransformContext
 from .transforms import generate_id
@@ -135,9 +136,13 @@ class CreateAsset(SyftObject):
         self.description = description
 
     def set_obj(self, data: Any) -> None:
+        if isinstance(data, SyftError):
+            raise SyftException(data)
         self.data = data
 
-    def set_mock(self, mock_data: Any, mock_is_real: bool) -> None:
+    def set_mock(self, mock_data: Any, mock_is_real: bool) -> Any:
+        if isinstance(mock_data, SyftError):
+            raise SyftException(mock_data)
         self.mock = mock_data
         self.mock_is_real = mock_is_real
 
@@ -160,9 +165,10 @@ class CreateAsset(SyftObject):
 
 
 def get_shape_or_len(obj: Any) -> Optional[Union[Tuple[int, ...], int]]:
-    shape = getattr(obj, "shape", None)
-    if shape:
-        return shape
+    if hasattr(obj, "shape"):
+        shape = getattr(obj, "shape", None)
+        if shape:
+            return shape
     len_attr = getattr(obj, "__len__", None)
     if len_attr is not None:
         return len_attr()
@@ -207,6 +213,18 @@ class Dataset(SyftObject):
         if self.description:
             _repr_str += f"Description: {self.description}\n"
         return "```python\n" + _repr_str + "\n```"
+
+    @property
+    def client(self) -> Optional[Any]:
+        # relative
+        from .client import SyftClientSessionCache
+
+        client = SyftClientSessionCache.get_client_for_node_uid(self.node_uid)
+        if client is None:
+            return SyftError(
+                message=f"No clients for {self.node_uid} in memory. Please login with sy.login"
+            )
+        return client
 
 
 @serializable(recursive_serde=True)
@@ -308,8 +326,9 @@ def createasset_to_asset() -> List[Callable]:
 
 def convert_asset(context: TransformContext) -> TransformContext:
     assets = context.output.pop("asset_list", [])
-    for idx, asset in enumerate(assets):
-        assets[idx] = asset.to(Asset, context=context)
+    for idx, create_asset in enumerate(assets):
+        asset_context = TransformContext.from_context(obj=create_asset, context=context)
+        assets[idx] = create_asset.to(Asset, context=asset_context)
     context.output["asset_list"] = assets
     return context
 

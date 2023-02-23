@@ -259,7 +259,6 @@ class SyftAPI(SyftObject):
     # version
     __canonical_name__ = "SyftAPI"
     __version__ = SYFT_OBJECT_VERSION_1
-    __attr_allowlist__ = ["endpoints"]
 
     # fields
     connection: Optional[NodeConnection] = None
@@ -268,7 +267,7 @@ class SyftAPI(SyftObject):
     api_module: Optional[APIModule] = None
     signing_key: Optional[SyftSigningKey] = None
     # serde / storage rules
-    __attr_state__ = ["endpoints"]
+    __attr_state__ = ["endpoints", "node_uid"]
 
     # def __post_init__(self) -> None:
     #     pass
