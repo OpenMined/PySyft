@@ -168,25 +168,11 @@ class MongoStorePartition(StorePartition):
 
         return Ok(obj)
 
-    def _create_filter(self, qks: QueryKeys) -> Dict:
-        query_filter = {}
-        for qk in qks.all:
-            qk_key = qk.key
-            qk_value = qk.value
-            if self.settings.store_key == qk.partition_key:
-                qk_key = f"_{qk_key}"
-                qk_value = qk_value.value
-
-            query_filter[qk_key] = qk_value
-
-        return query_filter
-
     def update(self, qk: QueryKey, obj: SyftObject) -> Result[SyftObject, str]:
-        filter_params = self._create_filter(QueryKeys(qks=qk))
         storage_obj = obj.to(self.storage_type)
         try:
             result = self.collection.update_one(
-                filter=filter_params, update={"$set": storage_obj}
+                filter=qk.as_dict, update={"$set": storage_obj}
             )
         except Exception as e:
             return Err(f"Failed to update obj: {obj} with qk: {qk}. Error: {e}")
@@ -205,8 +191,7 @@ class MongoStorePartition(StorePartition):
         return self.get_all_from_store(qks=qks)
 
     def get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
-        query_filter = self._create_filter(qks=qks)
-        storage_objs = self.collection.find(filter=query_filter)
+        storage_objs = self.collection.find(filter=qks.as_dict)
         syft_objs = []
         for storage_obj in storage_objs:
             obj = self.storage_type(storage_obj)
@@ -216,8 +201,8 @@ class MongoStorePartition(StorePartition):
         return Ok(syft_objs)
 
     def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
-        query_filter = self._create_filter(qks=QueryKeys(qks=qk))
-        result = self.collection.delete_one(filter=query_filter)
+        qks = QueryKeys(qks=qk)
+        result = self.collection.delete_one(filter=qks.as_dict)
 
         if result.deleted_count == 1:
             return Ok(SyftSuccess(message="Deleted"))

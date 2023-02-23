@@ -183,6 +183,15 @@ class QueryKeys(SyftBaseModel):
             qks.append(QueryKey(key=k, type_=type(v), value=v))
         return QueryKeys(qks=qks)
 
+    @property
+    def as_dict(self):
+        qk_dict = {}
+        for qk in self.all:
+            qk_key = qk.key
+            qk_value = qk.value
+            qk_dict[qk_key] = qk_value
+        return qk_dict
+
 
 UIDPartitionKey = PartitionKey(key="id", type_=UID)
 
