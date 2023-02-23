@@ -110,14 +110,17 @@ class KeyValueActionStore(ActionStore):
     def get_pointer(
         self, uid: UID, credentials: SyftVerifyKey, node_uid: UID
     ) -> Result[SyftObject, str]:
-        # 🟡 TODO 34: do we want pointer read permissions?
-        if uid in self.data:
-            obj = self.data[uid]
-            if isinstance(obj, TwinObject):
-                obj = obj.mock
-            obj.syft_point_to(node_uid)
-            return Ok(obj)
-        return Err("Permission denied")
+        try:
+            # 🟡 TODO 34: do we want pointer read permissions?
+            if uid in self.data:
+                obj = self.data[uid]
+                if isinstance(obj, TwinObject):
+                    obj = obj.mock
+                obj.syft_point_to(node_uid)
+                return Ok(obj)
+            return Err("Permission denied")
+        except Exception as e:
+            return Err(str(e))
 
     def exists(self, uid: UID) -> bool:
         return uid in self.data

@@ -11,11 +11,15 @@ from ...common.uid import UID
 from .context import AuthedServiceContext
 from .document_store import DocumentStore
 from .response import SyftError
+from .response import SyftNotReady
 from .response import SyftSuccess
 from .service import AbstractService
+from .service import SERVICE_TO_TYPES
+from .service import TYPE_TO_SERVICE
 from .service import service_method
 from .user_code import SubmitUserCode
 from .user_code import UserCode
+from .user_code import UserCodeStatus
 from .user_code_stash import UserCodeStash
 
 
@@ -92,24 +96,32 @@ class UserCodeService(AbstractService):
             result = self.stash.get_by_uid(uid=uid)
             if result.is_ok():
                 code_item = result.ok()
-                is_valid = code_item.output_policy_state.valid
-                if not is_valid:
-                    return is_valid
-                else:
-                    action_service = context.node.get_service("actionservice")
-                    result = action_service._user_code_execute(
-                        context, code_item, filtered_kwargs
-                    )
-                    if result.is_ok():
-                        code_item.output_policy_state.update_state()
-                        state_result = self.update_code_state(
-                            context=context, code_item=code_item
+                if code_item.status == UserCodeStatus.EXECUTE:
+                    is_valid = code_item.output_policy_state.valid
+                    if not is_valid:
+                        return is_valid
+                    else:
+                        action_service = context.node.get_service("actionservice")
+                        result = action_service._user_code_execute(
+                            context, code_item, filtered_kwargs
                         )
-                        if state_result:
-                            return result.ok()
-                        else:
-                            return state_result
-
+                        if result.is_ok():
+                            code_item.output_policy_state.update_state()
+                            state_result = self.update_code_state(
+                                context=context, code_item=code_item
+                            )
+                            if state_result:
+                                return result.ok()
+                            else:
+                                return state_result
+                elif code_item.status == UserCodeStatus.SUBMITTED:
+                    return SyftNotReady(
+                        message=f"{type(code_item)} Your code is waiting for approval: {code_item.status}"
+                    )
+                else:
+                    return SyftError(
+                        message=f"{type(code_item)} Your code cannot be run: {code_item.status}"
+                    )
             return SyftError(message=result.err())
         except Exception as e:
             return SyftError(message=f"Failed to run. {e}")
@@ -132,3 +144,7 @@ def filter_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
             value = v.action_id
         filtered_kwargs[k] = value
     return filtered_kwargs
+
+
+TYPE_TO_SERVICE[UserCode] = UserCodeService
+SERVICE_TO_TYPES[UserCodeService].update({UserCode})
