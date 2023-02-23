@@ -41,7 +41,7 @@ def to_mongo(context: TransformContext) -> TransformContext:
     for k in context.obj.__attr_searchable__:
         value = getattr(context.obj, k, "")
         output[k] = value
-    blob = serialize(dict(context.obj), to_bytes=True)
+    blob = serialize(context.obj.to_dict(), to_bytes=True)
     output["_id"] = context.output["id"]
     output["__canonical_name__"] = context.obj.__canonical_name__
     output["__version__"] = context.obj.__version__
