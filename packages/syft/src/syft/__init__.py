@@ -32,7 +32,6 @@ __version__ = "0.8.0-beta.0"
 from pathlib import Path
 import sys
 from typing import Any
-from typing import List
 
 # third party
 from pkg_resources import DistributionNotFound  # noqa: F401
@@ -111,6 +110,8 @@ from .oblv import get_oblv_public_key  # noqa: F401
 from .oblv import install_oblv_proxy  # noqa: F401
 from .oblv import login as oblv_login  # noqa: F401
 from .registry import NetworkRegistry  # noqa: F401
+from .search import Search  # noqa: F401
+from .search import SearchResults  # noqa: F401
 from .telemetry import instrument  # noqa: F401
 from .user_settings import UserSettings  # noqa: F401
 from .user_settings import settings  # noqa: F401
@@ -154,16 +155,5 @@ def _settings() -> UserSettings:
     return settings
 
 
-def __search_one_node(client, name):
-    try:
-        return client.api.services.dataset.search(name=name)
-    except:  # noqa
-        return []
-
-
-def search(name: str) -> List[Any]:
-    results = (__search_one_node(client, name) for client in _gateways())
-    filtered = (result for result in results if result)  # filter out SyftError results
-    flattened = sum(filtered, start=[])
-
-    return flattened
+def search(name: str) -> SearchResults:
+    return Search(_gateways()).search(name=name)
