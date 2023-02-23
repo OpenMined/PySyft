@@ -23,6 +23,7 @@ from ...common.uid import UID
 from .data_subject import DataSubject
 from .document_store import PartitionKey
 from .response import SyftError
+from .response import SyftException
 from .response import SyftSuccess
 from .transforms import TransformContext
 from .transforms import generate_id
@@ -135,9 +136,13 @@ class CreateAsset(SyftObject):
         self.description = description
 
     def set_obj(self, data: Any) -> None:
+        if isinstance(data, SyftError):
+            raise SyftException(data)
         self.data = data
 
-    def set_mock(self, mock_data: Any, mock_is_real: bool) -> None:
+    def set_mock(self, mock_data: Any, mock_is_real: bool) -> Any:
+        if isinstance(mock_data, SyftError):
+            raise SyftException(mock_data)
         self.mock = mock_data
         self.mock_is_real = mock_is_real
 
@@ -160,9 +165,10 @@ class CreateAsset(SyftObject):
 
 
 def get_shape_or_len(obj: Any) -> Optional[Union[Tuple[int, ...], int]]:
-    shape = getattr(obj, "shape", None)
-    if shape:
-        return shape
+    if hasattr(obj, "shape"):
+        shape = getattr(obj, "shape", None)
+        if shape:
+            return shape
     len_attr = getattr(obj, "__len__", None)
     if len_attr is not None:
         return len_attr()

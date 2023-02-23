@@ -19,7 +19,7 @@ class PandasDataFrameObject(ActionObject):
 
     syft_internal_type = DataFrame
     syft_passthrough_attrs = []
-    syft_dont_wrap_attrs = []
+    # syft_dont_wrap_attrs = ["shape"]
 
     def __dataframe__(self, *args: Any, **kwargs: Any) -> Any:
         return self.__dataframe__(*args, **kwargs)
@@ -32,7 +32,7 @@ class PandasSeriesObject(ActionObject):
 
     syft_internal_type = Series
     syft_passthrough_attrs = []
-    syft_dont_wrap_attrs = []
+    # syft_dont_wrap_attrs = ["shape"]
 
 
 action_types[DataFrame] = PandasDataFrameObject
