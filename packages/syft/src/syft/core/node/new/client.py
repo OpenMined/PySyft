@@ -349,7 +349,10 @@ class SyftClient:
 
         for asset in tqdm(dataset.asset_list):
             print(f"Uploading: {asset.name}")
-            twin = TwinObject(private_obj=asset.data, mock_obj=asset.mock)
+            try:
+                twin = TwinObject(private_obj=asset.data, mock_obj=asset.mock)
+            except Exception as e:
+                return SyftError(message=f"Failed to create twin. {e}")
             response = self.api.services.action.set(twin)
             if isinstance(response, SyftError):
                 print(f"Failed to upload asset\n: {asset}")
@@ -387,7 +390,7 @@ class SyftClient:
             return self.api.services.dataset
         return None
 
-    def login(self, email: str, password: str, cache: bool = True) -> None:
+    def login(self, email: str, password: str, cache: bool = True) -> Self:
         signing_key = self.connection.login(email=email, password=password)
         if signing_key is not None:
             self.credentials = signing_key
@@ -399,9 +402,15 @@ class SyftClient:
                     connection=self.connection,
                     syft_client=self,
                 )
+        return self
 
     def register(
-        self, name: str, email: str, password: str, institution: str, website: str
+        self,
+        name: str,
+        email: str,
+        password: str,
+        institution: Optional[str] = None,
+        website: Optional[str] = None,
     ):
         try:
             new_user = UserCreate(
@@ -537,6 +546,7 @@ def login(
 class SyftClientSessionCache:
     __credentials_store__: Dict = {}
     __cache_key_format__ = "{email}-{password}-{connection}"
+    __client_cache__: Dict = {}
 
     @classmethod
     def _get_key(cls, email: str, password: str, connection: str) -> str:
@@ -555,6 +565,7 @@ class SyftClientSessionCache:
     ):
         hash_key = cls._get_key(email, password, connection.get_cache_key())
         cls.__credentials_store__[hash_key] = syft_client
+        cls.__client_cache__[syft_client.id] = syft_client
 
     @classmethod
     def get_client(
@@ -562,3 +573,7 @@ class SyftClientSessionCache:
     ) -> Optional[SyftClient]:
         hash_key = cls._get_key(email, password, connection.get_cache_key())
         return cls.__credentials_store__.get(hash_key, None)
+
+    @classmethod
+    def get_client_for_node_uid(cls, node_uid: UID) -> Optional[SyftClient]:
+        return cls.__client_cache__.get(node_uid, None)

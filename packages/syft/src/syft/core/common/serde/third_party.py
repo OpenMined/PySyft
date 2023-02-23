@@ -14,6 +14,7 @@ from pandas import DataFrame
 from pandas import Series
 from pandas._libs.tslibs.timestamps import Timestamp
 import pyarrow as pa
+import pyarrow.parquet as pq
 import pydantic
 from pymongo.collection import Collection
 from result import Err
@@ -67,7 +68,7 @@ def serialize_dataframe(df: DataFrame) -> bytes:
         "coerce_timestamps": "us",
         "allow_truncated_timestamps": True,
     }
-    pa.parquet.write_table(table, sink, **parquet_args)
+    pq.write_table(table, sink, **parquet_args)
     buffer = sink.getvalue()
     numpy_bytes = buffer.to_pybytes()
     return numpy_bytes
@@ -76,7 +77,7 @@ def serialize_dataframe(df: DataFrame) -> bytes:
 def deserialize_dataframe(buf: bytes) -> DataFrame:
     reader = pa.BufferReader(buf)
     numpy_bytes = reader.read_buffer()
-    result = pa.parquet.read_table(numpy_bytes)
+    result = pq.read_table(numpy_bytes)
     df = result.to_pandas()
     return df
 

@@ -16,6 +16,7 @@ from ...common.uid import UID
 from .context import AuthedServiceContext
 from .context import NodeServiceContext
 from .context import UnauthedServiceContext
+from .credentials import SyftVerifyKey
 from .credentials import UserLoginCredentials
 from .document_store import DocumentStore
 from .response import SyftError
@@ -178,6 +179,12 @@ class UserService(AbstractService):
         user = result.ok()
         msg = SyftSuccess(message=f"{user.email} User successfully registered !!!")
         return tuple([msg, user.to(UserPrivateKey)])
+
+    def user_verify_key(self, email: str) -> Union[SyftVerifyKey, SyftError]:
+        result = self.stash.get_by_email(email=email)
+        if result.is_ok():
+            return result.ok().verify_key
+        return SyftError(f"No user with email: {email}")
 
 
 TYPE_TO_SERVICE[User] = UserService
