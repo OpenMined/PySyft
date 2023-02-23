@@ -34,10 +34,6 @@ class TransformContext(Context):
 
     @staticmethod
     def from_context(obj: Any, context: Optional[Context] = None) -> Self:
-        if isinstance(context, TransformContext):
-            context.obj = obj
-            context.output = dict(obj)
-            return context
         t_context = TransformContext()
         t_context.obj = obj
         t_context.output = dict(obj)

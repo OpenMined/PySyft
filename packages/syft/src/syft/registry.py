@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     from .core.node.common.client import Client
 
 NETWORK_REGISTRY_URL = (
-    "https://raw.githubusercontent.com/OpenMined/NetworkRegistry/main/networks.json"
+    "https://raw.githubusercontent.com/OpenMined/NetworkRegistry/main/gateways.json"
 )
 NETWORK_REGISTRY_REPO = "https://github.com/OpenMined/NetworkRegistry"
 
@@ -35,7 +35,7 @@ class NetworkRegistry:
         try:
             response = requests.get(NETWORK_REGISTRY_URL)
             network_json = response.json()
-            self.all_networks = network_json["networks"]
+            self.all_networks = network_json["2.0.0"]["gateways"]
         except Exception as e:
             warning(
                 f"Failed to get Network Registry, go checkout: {NETWORK_REGISTRY_REPO}. {e}"
@@ -69,10 +69,10 @@ class NetworkRegistry:
                 if not version or version == "unknown":
                     # If not defined, try to ask in /syft/version endpoint (supported by 0.7.0)
                     try:
-                        version_url = url + "api/v1/syft/version"
+                        version_url = url + "api/v1/new/metadata"
                         res = requests.get(version_url, timeout=0.5)
                         if res.status_code == 200:
-                            network["version"] = res.json()["version"]
+                            network["version"] = res.json()["syft_version"]
                         else:
                             network["version"] = "unknown"
                     except Exception:
@@ -107,14 +107,15 @@ class NetworkRegistry:
 
     def create_client(self, network: Dict[str, Any]) -> Client:  # type: ignore
         # relative
-        from .grid.client.client import login
+        from .core.node.new.client import connect
 
         try:
             port = int(network["port"])
             protocol = network["protocol"]
             host_or_ip = network["host_or_ip"]
             grid_url = GridURL(port=port, protocol=protocol, host_or_ip=host_or_ip)
-            return login(url=str(grid_url), port=port)
+            client = connect(url=str(grid_url))
+            return client.guest()
         except Exception as e:
             error(f"Failed to login with: {network}. {e}")
             raise e
