@@ -32,6 +32,7 @@ __version__ = "0.8.0-beta.0"
 from pathlib import Path
 import sys
 from typing import Any
+from typing import List
 
 # third party
 from pkg_resources import DistributionNotFound  # noqa: F401
@@ -151,3 +152,18 @@ def _gateways() -> NetworkRegistry:
 @module_property
 def _settings() -> UserSettings:
     return settings
+
+
+def __search_one_node(client, name):
+    try:
+        return client.api.services.dataset.search(name=name)
+    except:  # noqa
+        return []
+
+
+def search(name: str) -> List[Any]:
+    results = (__search_one_node(client, name) for client in _gateways())
+    filtered = (result for result in results if result)  # filter out SyftError results
+    flattened = sum(filtered, start=[])
+
+    return flattened
