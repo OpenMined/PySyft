@@ -38,13 +38,20 @@ class MongoBsonObject(StorableObjectType, dict):
 
 def to_mongo(context: TransformContext) -> TransformContext:
     output = {}
-    for k in context.obj.__attr_searchable__:
+    for k in context.obj._syft_searchable_keys_dict():
         # 🟡 TODO 24: pass in storage abstraction and detect unsupported types
         # if unsupported, convert to string
         value = getattr(context.obj, k, "")
         if isinstance(value, SyftVerifyKey):
             value = str(value)
         output[k] = value
+
+    for k in context.obj._syft_unique_keys_dict():
+        value = getattr(context.obj, k, "")
+        if isinstance(value, SyftVerifyKey):
+            value = str(value)
+        output[k] = value
+
     blob = serialize(dict(context.obj), to_bytes=True)
     output["_id"] = context.output["id"].value  # type: ignore
     output["__canonical_name__"] = context.obj.__canonical_name__
@@ -170,10 +177,10 @@ class MongoStorePartition(StorePartition):
         query_filter = {}
         for qk in qks.all:
             qk_key = qk.key
-            qk_value = qk.value
+            qk_value = str(qk.value)
             if self.settings.store_key == qk.partition_key:
                 qk_key = f"_{qk_key}"
-                qk_value = qk_value.value
+                qk_value = qk.value.value
 
             query_filter[qk_key] = qk_value
 
