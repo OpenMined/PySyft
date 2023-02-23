@@ -144,7 +144,7 @@ def module_property(func: Any) -> None:
 
 
 @module_property
-def _networks() -> NetworkRegistry:
+def _gateways() -> NetworkRegistry:
     return NetworkRegistry()
 
 

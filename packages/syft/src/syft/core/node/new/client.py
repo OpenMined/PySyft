@@ -5,6 +5,7 @@ import json
 from typing import Any
 from typing import Dict
 from typing import Optional
+from typing import Type
 from typing import Union
 from typing import cast
 
@@ -85,17 +86,16 @@ class HTTPConnection(NodeConnection):
     __version__ = SYFT_OBJECT_VERSION_1
 
     proxy_target_uid: Optional[UID]
-    proxies: Dict[str, str] = {}
     url: GridURL
-    routes: Routes = Routes
-    _session: Optional[Session]
+    routes: Type[Routes] = Routes
+    session_cache: Optional[Session]
 
     def __init__(
         self, url: Union[GridURL, str], proxy_target_uid: Optional[UID] = None
     ) -> None:
-        self.url = GridURL.from_url(url)
-        self.proxy_target_uid = proxy_target_uid
-        self._session = None
+        url = GridURL.from_url(url)
+        proxy_target_uid = proxy_target_uid
+        super().__init__(url=url, proxy_target_uid=proxy_target_uid)
 
     def with_proxy(self, proxy_target_uid: UID) -> Self:
         return HTTPConnection(url=self.url, proxy_target_uid=proxy_target_uid)
@@ -109,20 +109,18 @@ class HTTPConnection(NodeConnection):
 
     @property
     def session(self) -> Session:
-        if self._session is None:
+        if self.session_cache is None:
             session = requests.Session()
             retry = Retry(total=3, backoff_factor=0.5)
             adapter = HTTPAdapter(max_retries=retry)
             session.mount("http://", adapter)
             session.mount("https://", adapter)
-            self._session = session
-        return self._session
+            self.session_cache = session
+        return self.session_cache
 
     def _make_get(self, path: str) -> bytes:
         url = self.url.with_path(path)
-        response = self.session.get(
-            str(url), verify=verify_tls(), proxies=HTTPConnection.proxies
-        )
+        response = self.session.get(str(url), verify=verify_tls(), proxies={})
         if response.status_code != 200:
             raise requests.ConnectionError(
                 f"Failed to fetch {url}. Response returned with code {response.status_code}"
@@ -136,7 +134,7 @@ class HTTPConnection(NodeConnection):
     def _make_post(self, path: str, json: Dict[str, Any]) -> bytes:
         url = self.url.with_path(path)
         response = self.session.post(
-            str(url), verify=verify_tls(), json=json, proxies=HTTPConnection.proxies
+            str(url), verify=verify_tls(), json=json, proxies={}
         )
         if response.status_code != 200:
             raise requests.ConnectionError(
@@ -343,6 +341,10 @@ class SyftClient:
 
         return self._api
 
+    def guest(self) -> Self:
+        self.credentials = SyftSigningKey.generate()
+        return self
+
     def upload_dataset(self, dataset: CreateDataset) -> Union[SyftSuccess, SyftError]:
         # relative
         from .twin_object import TwinObject
@@ -388,6 +390,12 @@ class SyftClient:
     def datasets(self) -> Optional[APIModule]:
         if self.api is not None and hasattr(self.api.services, "dataset"):
             return self.api.services.dataset
+        return None
+
+    @property
+    def domains(self) -> Optional[APIModule]:
+        if self.api is not None and hasattr(self.api.services, "network"):
+            return self.api.services.network.get_all_peers()
         return None
 
     def login(self, email: str, password: str, cache: bool = True) -> Self:
@@ -478,7 +486,6 @@ class SyftClient:
         if isinstance(metadata, NodeMetadataJSON):
             metadata.check_version(__version__)
             self.metadata = metadata
-        print(metadata)
 
     def _fetch_api(self, credentials: SyftSigningKey):
         _api = self.connection.get_api(credentials=credentials)
