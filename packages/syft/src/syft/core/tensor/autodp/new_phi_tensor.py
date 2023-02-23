@@ -13,6 +13,11 @@ from ...common.uid import UID
 from ..passthrough import is_acceptable_simple_type
 from ..broadcastable import is_broadcastable
 from .jax_ops import SyftTerminalNoop
+from ...pointer.pointer import Pointer
+# from .gamma_tensor import TensorWrappedGammaTensorPointer
+from .phi_tensor import TensorWrappedPhiTensorPointer
+from ..smpc.mpc_tensor import MPCTensor
+
 
 class Bounds():
     lower_bound: int
@@ -106,6 +111,39 @@ def is_op_linear(op):
         return True
     return False
 
+class TensorWrappedRowPhiTensorPointer(Pointer):
+
+    def __init__(self) -> None:
+        pass
+    
+    def synthetic(self) -> np.ndarray:
+        pass
+    
+    def __repr__(self) -> str:
+        pass 
+    
+    def shape(self) -> Optional[Tuple[int, ...]]:
+        pass
+
+    def _apply_tensor_op(self, other, op_str: str) -> Any:
+        pass
+    
+    def _apply_self_tensor_op(self, op_str: str, *args: Any, **kwargs: Any) -> Any:
+        pass
+    
+    @staticmethod
+    def _apply_op(
+        self: TensorWrappedPhiTensorPointer,
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
+        op_str: str,
+    ) -> Union[MPCTensor, TensorWrappedPhiTensorPointer]:
+        pass
+
+    # def __add__
+    
+    # def sum
+    
+    # def __mul__
 
 class RowPhiTensors():
     data: np.array
