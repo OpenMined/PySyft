@@ -10,6 +10,7 @@ from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .context import AuthedServiceContext
 from .document_store import DocumentStore
+from .linked_obj import LinkedObject
 from .response import SyftError
 from .response import SyftNotReady
 from .response import SyftSuccess
@@ -42,6 +43,33 @@ class UserCodeService(AbstractService):
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="User Code Submitted")
+
+    @service_method(path="code.request_code_execution", name="request_code_execution")
+    def request_code_execution(
+        self, context: AuthedServiceContext, code: SubmitUserCode
+    ) -> Union[SyftSuccess, SyftError]:
+        """Request Code execution on user code"""
+        # relative
+        from .request import EnumMutation
+        from .request import SubmitRequest
+        from .request_service import RequestService
+
+        user_code = code.to(UserCode, context=context)
+
+        result = self.stash.set(user_code)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+
+        linked_obj = LinkedObject.from_obj(user_code, node_uid=context.node.id)
+        CODE_EXECUTE = EnumMutation.from_obj(
+            linked_obj=linked_obj, attr_name="status", value=UserCodeStatus.EXECUTE
+        )
+        request = SubmitRequest(changes=[CODE_EXECUTE])
+        method = context.node.get_service_method(RequestService.submit)
+        result = method(context=context, request=request)
+
+        # The Request service already returns either a SyftSuccess or SyftError
+        return result
 
     @service_method(path="code.get_all", name="get_all")
     def get_all(

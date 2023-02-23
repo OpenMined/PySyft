@@ -25,6 +25,7 @@ from ...common.uid import UID
 from .action_service import ActionService
 from .action_store import ActionObjectPermission
 from .action_store import ActionPermission
+from .api import APIRegistry
 from .context import AuthedServiceContext
 from .credentials import SyftVerifyKey
 from .document_store import BasePartitionSettings
@@ -147,6 +148,10 @@ class Request(SyftObject):
         "status",
     ]
     __attr_unique__ = ["request_hash"]
+
+    def approve(self):
+        api = APIRegistry.api_for(self.node_uid)
+        return api.services.request.apply(self.id)
 
     def apply(self, context: AuthedServiceContext) -> Result[SyftSuccess, SyftError]:
         change_context = ChangeContext.from_service(context)
