@@ -402,6 +402,12 @@ class SyftClient:
         return None
 
     @property
+    def notifications(self) -> Optional[APIModule]:
+        if self.api is not None and hasattr(self.api.services, "messages"):
+            return self.api.services.messages
+        return None
+
+    @property
     def domains(self) -> Optional[APIModule]:
         if self.api is not None and hasattr(self.api.services, "network"):
             return self.api.services.network.get_all_peers()
