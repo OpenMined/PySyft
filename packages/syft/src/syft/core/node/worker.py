@@ -228,7 +228,6 @@ class Worker(NewNode):
                     isinstance(action_store_config, SQLiteStoreConfig)
                     and action_store_config.client_config.filename is None
                 ):
-                    action_store_config.client_config.filename
                     action_store_config.client_config.filename = f"{self.id}.sqlite"
             else:
                 action_store_config = DictStoreConfig()
