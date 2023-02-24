@@ -181,6 +181,11 @@ class NodePeer(SyftObject):
         connection = route_to_connection(route=route)
         return SyftClient(connection=connection, credentials=credentials)
 
+    @property
+    def guest_client(self) -> SyftClient:
+        guest_key = SyftSigningKey.generate()
+        return self.client_with_key(credentials=guest_key)
+
     def proxy_from(self, client: SyftClient) -> SyftClient:
         return client.proxy_to(self)
 
@@ -263,7 +268,7 @@ class NetworkStash(BaseUIDStoreStash):
             result = self.update(existing)
             return result
         else:
-            result = self.set(peer, ignore_duplicates=True)
+            result = self.set(peer)
             return result
 
     def get_for_verify_key(

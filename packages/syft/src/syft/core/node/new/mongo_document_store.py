@@ -183,15 +183,15 @@ class MongoStorePartition(StorePartition):
         storage_obj = obj.to(self.storage_type)
         try:
             result = self.collection.update_one(
-                filter=qk.as_dict, update={"$set": storage_obj}
+                filter=qk.as_dict_mongo, update={"$set": storage_obj}
             )
         except Exception as e:
             return Err(f"Failed to update obj: {obj} with qk: {qk}. Error: {e}")
 
         if result.matched_count == 0:
             return Err(f"No object found with query key: {qk}")
-        elif result.modified_count == 0:
-            return Err(f"Failed to modify obj: {obj} with qk: {qk}")
+        # elif result.modified_count == 0:
+        #     return Err(f"Failed to modify obj: {obj} with qk: {qk}")
         return Ok(obj)
 
     def find_index_or_search_keys(
@@ -202,7 +202,7 @@ class MongoStorePartition(StorePartition):
         return self.get_all_from_store(qks=qks)
 
     def get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
-        storage_objs = self.collection.find(filter=qks.as_dict)
+        storage_objs = self.collection.find(filter=qks.as_dict_mongo)
         syft_objs = []
         for storage_obj in storage_objs:
             obj = self.storage_type(storage_obj)
@@ -212,7 +212,7 @@ class MongoStorePartition(StorePartition):
 
     def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
         qks = QueryKeys(qks=qk)
-        result = self.collection.delete_one(filter=qks.as_dict)
+        result = self.collection.delete_one(filter=qks.as_dict_mongo)
 
         if result.deleted_count == 1:
             return Ok(SyftSuccess(message="Deleted"))

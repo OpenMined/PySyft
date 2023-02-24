@@ -124,6 +124,17 @@ class QueryKey(PartitionKey):
             )
         return QueryKey(key=pk_key, type_=pk_type, value=pk_value)
 
+    @property
+    def as_dict(self):
+        return {self.key: self.value}
+
+    @property
+    def as_dict_mongo(self):
+        key = self.key
+        if key == "id":
+            key = "_id"
+        return {key: self.value}
+
 
 @serializable(recursive_serde=True)
 class PartitionKeysWithUID(PartitionKeys):
@@ -189,6 +200,17 @@ class QueryKeys(SyftBaseModel):
         for qk in self.all:
             qk_key = qk.key
             qk_value = qk.value
+            qk_dict[qk_key] = qk_value
+        return qk_dict
+
+    @property
+    def as_dict_mongo(self):
+        qk_dict = {}
+        for qk in self.all:
+            qk_key = qk.key
+            qk_value = qk.value
+            if qk_key == "id":
+                qk_key = "_id"
             qk_dict[qk_key] = qk_value
         return qk_dict
 

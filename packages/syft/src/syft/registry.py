@@ -15,6 +15,7 @@ import pandas as pd
 import requests
 
 # relative
+from .core.node.new.network_service import NodePeer
 from .grid import GridURL
 from .logger import error
 from .logger import warning
@@ -199,39 +200,17 @@ class DomainRegistry:
 
     @property
     def online_domains(self) -> List[Dict]:
-        def check_domain(domain: Dict) -> Optional[Dict[Any, Any]]:
-            url = "http://" + domain["host_or_ip"] + ":" + str(domain["port"]) + "/"
+        def check_domain(peer: NodePeer) -> Optional[NodePeer]:
             try:
-                res = requests.get(url, timeout=0.5)
-                online = "This is a PyGrid Network node." in res.text
-            except Exception:
-                online = False
-
-            # networks without frontend have a /ping route in 0.7.0
-            if not online:
-                try:
-                    ping_url = url + "ping"
-                    res = requests.get(ping_url, timeout=0.5)
-                    online = res.status_code == 200
-                except Exception:
-                    online = False
-
-            if online:
-                version = domain.get("syft_version", None)
-                # Check if syft version was described in NetworkRegistry
-                # If it's unknown, try to update it to an available version.
-                if not version or version == "unknown":
-                    # If not defined, try to ask in /syft/version endpoint (supported by 0.7.0)
-                    try:
-                        version_url = url + "api/v1/new/metadata"
-                        res = requests.get(version_url, timeout=0.5)
-                        if res.status_code == 200:
-                            network["version"] = res.json()["syft_version"]
-                        else:
-                            network["version"] = "unknown"
-                    except Exception:
-                        network["version"] = "unknown"
-                return network
+                guest_client = peer.guest_client
+                metadata = guest_client.metadata
+                print(metadata)
+                if len(peer.node_routes):
+                    connection = peer.node_routes[0]
+                    print(connection)
+                return peer
+            except Exception:  # nosec
+                pass
             return None
 
         networks = self.online_networks
@@ -245,8 +224,6 @@ class DomainRegistry:
                 network_client = NetworkRegistry.create_client(network)
                 domains = network_client.domains
                 self.all_domains += domains
-                print("k", network)
-                print("domaisn", domains)
                 _online_domains = list(
                     executor.map(lambda domain: check_domain(domain), domains)
                 )
@@ -258,39 +235,47 @@ class DomainRegistry:
                 online_domains.append(each)
         return online_domains
 
-    def _repr_html_(self) -> str:
+    def __make_dict__(self) -> List[Dict[str, str]]:
         on = self.online_domains
+        domains = []
+        domain_dict = {}
+        for domain in on:
+            domain_dict["name"] = domain.name
+            route = None
+            if len(domain.node_routes) > 0:
+                route = domain.node_routes[0]
+            domain_dict["host_or_ip"] = route.host_or_ip if route else "-"
+            domain_dict["protocol"] = route.protocol if route else "-"
+            domain_dict["port"] = route.port if route else "-"
+            domain_dict["id"] = domain.id
+            domains.append(domain_dict)
+        return domains
+
+    def _repr_html_(self) -> str:
+        on = self.__make_dict__()
         if len(on) == 0:
             return "(no domains online - try syft.domains.all_domains to see offline domains)"
         return pd.DataFrame(on)._repr_html_()
 
     def __repr__(self) -> str:
-        on = self.online_domains
+        on = self.__make_dict__()
         if len(on) == 0:
             return "(no domains online - try syft.domains.all_domains to see offline domains)"
         return pd.DataFrame(on).to_string()
 
-    def create_client(self, domain: Dict[str, Any]) -> Client:  # type: ignore
-        # relative
-        from .core.node.new.client import connect
-
+    def create_client(self, peer: NodePeer) -> Client:  # type: ignore
         try:
-            port = int(domain["port"])
-            protocol = domain["protocol"]
-            host_or_ip = domain["host_or_ip"]
-            grid_url = GridURL(port=port, protocol=protocol, host_or_ip=host_or_ip)
-            client = connect(url=str(grid_url))
-            return client.guest()
+            return peer.guest_client
         except Exception as e:
-            error(f"Failed to login with: {domain}. {e}")
+            error(f"Failed to login to: {peer}. {e}")
             raise e
 
     def __getitem__(self, key: Union[str, int]) -> Client:  # type: ignore
         if isinstance(key, int):
-            return self.create_client(network=self.online_networks[key])
+            return self.create_client(self.online_domains[key])
         else:
-            on = self.online_networks
-            for network in on:
-                if network["name"] == key:
-                    return self.create_client(network=network)
+            on = self.online_domains
+            for domain in on:
+                if domain.name == key:
+                    return self.create_client(self.online_domains[key])
         raise KeyError(f"Invalid key: {key} for {on}")
