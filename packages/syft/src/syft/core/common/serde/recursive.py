@@ -131,7 +131,6 @@ def rs_object2proto(self: Any) -> _DynamicStructBuilder:
 
         if isinstance(field_obj, types.FunctionType):
             continue
-
         serialized = sy.serialize(field_obj, to_bytes=True)
         msg.fieldsName[idx] = attr_name
         chunk_bytes(serialized, idx, msg.fieldsData)

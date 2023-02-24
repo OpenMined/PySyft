@@ -21,7 +21,11 @@ from .user_code import SubmitUserCode
 from .user_code import UserCode
 from .user_code import UserCodeStatus
 from .user_code_stash import UserCodeStash
-
+from .policy import UserPolicy, SubmitUserPolicy, InputPolicy, OutputPolicy
+from .policy import get_policy_object, update_policy_state, init_policy
+import sys
+from ...common.serde import _serialize
+from ...common.serde import _deserialize
 
 @instrument
 @serializable(recursive_serde=True)
@@ -38,11 +42,23 @@ class UserCodeService(AbstractService):
         self, context: AuthedServiceContext, code: SubmitUserCode
     ) -> Union[SyftSuccess, SyftError]:
         """Add User Code"""
-        # input_policy = code.input_policy.to(UserPolicy, context=context)
-        # output_policy = code.output_policy.to(UserPolicy, context=context)
-        # code.input_policy = input_policy
-        # code.output_policy = output_policy
-        result = self.stash.set(code.to(UserCode, context=context))
+        from .policy_service import PolicyService
+        policy_service = context.node.get_service(PolicyService)
+        code_item = code.to(UserCode, context=context)
+        if isinstance(code.input_policy, SubmitUserPolicy):
+            submit_input_policy = code.input_policy
+            policy_service.add_user_policy(context, submit_input_policy)
+            input_policy = policy_service.get_all_user_policy(context)[-1]
+            code_item.input_policy = input_policy
+        
+        if isinstance(code.output_policy, SubmitUserPolicy):
+            submit_output_policy = code.output_policy
+            policy_service.add_user_policy(context, submit_output_policy)
+            output_policy = policy_service.get_all_user_policy(context)[-1]
+            print(type(output_policy), file=sys.stderr)
+            code_item.output_policy = output_policy
+
+        result = self.stash.set(code_item)
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="User Code Submitted")
@@ -86,6 +102,37 @@ class UserCodeService(AbstractService):
             return SyftSuccess(message="Code State Updated")
         return SyftError(message="Unable to Update Code State")
 
+    @service_method(path="code.review", name="review")
+    def review(self, context: AuthedServiceContext, uid: UID, approved: bool):
+        # TODO: Check for permissions
+        result = self.stash.get_by_uid(uid=uid)
+        print(result, file=sys.stderr)
+        if result.is_ok():
+            code_item = result.ok()
+            if approved:
+                print(type(code_item.input_policy),type(code_item.output_policy), file=sys.stderr)
+
+                code_item.status = UserCodeStatus.EXECUTE 
+                if isinstance(code_item.input_policy, UserPolicy):
+                    policy_object = init_policy(code_item.input_policy, code_item.input_policy_init_args)
+                    code_item.input_policy_state = _serialize(policy_object, to_bytes=True)
+                    
+                if isinstance(code_item.output_policy, UserPolicy):
+                    print(code_item.output_policy_init_args, file=sys.stderr)
+                    policy_object = init_policy(code_item.output_policy, code_item.output_policy_init_args)
+                    code_item.output_policy_state = _serialize(policy_object, to_bytes=True)
+
+                # put user submitted policy in the policy stash
+            else:
+                code_item.status = UserCodeStatus.DENIED
+                
+            self.update_code_state(context=context, code_item=code_item)
+            return SyftSuccess("Review submitted")    
+
+        return SyftError(message=result.err())
+
+
+
     @service_method(path="code.call", name="call")
     def call(
         self, context: AuthedServiceContext, uid: UID, **kwargs: Any
@@ -97,21 +144,46 @@ class UserCodeService(AbstractService):
             if result.is_ok():
                 code_item = result.ok()
                 if code_item.status == UserCodeStatus.EXECUTE:
-                    is_valid = code_item.output_policy_state.valid
+                    is_valid = True #= code_item.output_policy_state.valid
                     if not is_valid:
                         return is_valid
                     else:
                         action_service = context.node.get_service("actionservice")
+                        if isinstance(code_item.input_policy, InputPolicy):
+                            # TODO: fix bug with dev InputPolicy
+                            # filtered_kwargs = code_item.input_policy.filter_kwargs(filtered_kwargs)
+                            filtered_kwargs = filtered_kwargs
+                        else:
+                            policy_object = get_policy_object(
+                                code_item.input_policy, code_item.input_policy_state
+                            )
+                            filtered_kwargs = policy_object.filter_kwargs(filtered_kwargs)
+                            code_item.input_policy_state = update_policy_state(policy_object)
+                                
                         result = action_service._user_code_execute(
                             context, code_item, filtered_kwargs
                         )
+                        print(result, file=sys.stderr)
                         if result.is_ok():
-                            code_item.output_policy_state.update_state()
+                            final_results = result.ok()
+                            if isinstance(code_item.output_policy, OutputPolicy):
+                                code_item.output_policy_state.update_state()
+                            else:
+                                policy_object = get_policy_object(
+                                    code_item.output_policy, code_item.output_policy_state
+                                )
+                                print(policy_object, file=sys.stderr)
+                                print(policy_object)
+                                final_results = policy_object.apply_output(final_results)
+                                print(final_results, file=sys.stderr) 
+                                code_item.output_policy_state = update_policy_state(policy_object)
+                                print(update_policy_state(policy_object), file=sys.stderr) 
+                                
                             state_result = self.update_code_state(
                                 context=context, code_item=code_item
                             )
                             if state_result:
-                                return result.ok()
+                               return final_results
                             else:
                                 return state_result
                 elif code_item.status == UserCodeStatus.SUBMITTED:

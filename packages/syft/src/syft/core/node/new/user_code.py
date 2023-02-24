@@ -31,6 +31,7 @@ from .user_code_parse import GlobalsVisitor
 from .policy import UserPolicy, SubmitUserPolicy, InputPolicy, OutputPolicy, OutputPolicyState
 from IPython.core.magics.code import extract_symbols
 from ....util import is_interpreter_jupyter
+# from .policy_service import PolicyService
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 CodeHashPartitionKey = PartitionKey(key="code_hash", type_=int)
@@ -54,9 +55,9 @@ class UserCode(SyftObject):
     id: UID
     user_verify_key: SyftVerifyKey
     raw_code: str
-    input_policy: Union[InputPolicy, UserPolicy]
+    input_policy: Union[InputPolicy, UserPolicy, SubmitUserPolicy]
     input_policy_state: Union[OutputPolicyState, str]
-    output_policy: Union[OutputPolicy, UserPolicy]
+    output_policy: Union[OutputPolicy, UserPolicy, SubmitUserPolicy]
     output_policy_state: Union[OutputPolicyState, str]
     parsed_code: str
     service_func_name: str
@@ -67,6 +68,8 @@ class UserCode(SyftObject):
     status: UserCodeStatus = UserCodeStatus.SUBMITTED
     input_kwargs: List[str]
     outputs: List[str]
+    input_policy_init_args: Dict[str, Any]
+    output_policy_init_args: Dict[str, Any]
 
     __attr_searchable__ = ["status", "service_func_name"]
     __attr_unique__ = ["user_verify_key", "code_hash", "user_unique_func_name"]
@@ -106,6 +109,10 @@ class SubmitUserCode(SyftObject):
         "signature",
         "input_policy",
         "output_policy",
+        "input_kwargs",
+        "outputs",
+        "input_policy_init_args",
+        "output_policy_init_args"
     ]
 
     # @property
@@ -179,9 +186,8 @@ def syft_function(
     # TODO: fix this for jupyter
     # TODO: add import validator
     
-    if isinstance(input_policy, InputPolicy):
+    if issubclass(input_policy, InputPolicy):
         input_policy = input_policy(input_policy_init_args)
-        input_policy_init_args = None
     else:
           input_policy = SubmitUserPolicy(
             code='@serializable(recursive_serde=True)\n'+get_code_from_class(input_policy),
@@ -189,12 +195,11 @@ def syft_function(
             input_kwargs=input_policy.__init__.__code__.co_varnames[1:],
         )
     
-    
-    if isinstance(output_policy, OutputPolicy):
-        output_policy = output_policy(output_policy_init_args)
-        output_policy_init_args = None
+    if issubclass(output_policy, OutputPolicy):
+        output_policy = output_policy()#(**output_policy_init_args)
     else:
-        output_policy_submit = SubmitUserPolicy(
+        # TODO: move serializable injection in the server side
+        output_policy = SubmitUserPolicy(
             code='@serializable(recursive_serde=True)\n'+get_code_from_class(output_policy),
             class_name=output_policy.__name__,
             input_kwargs=output_policy.__init__.__code__.co_varnames[1:],
@@ -206,7 +211,7 @@ def syft_function(
             func_name=f.__name__,
             signature=inspect.signature(f),
             input_policy=input_policy,
-            output_policy=output_policy_submit,
+            output_policy=output_policy,
             local_function=f,
             input_kwargs=f.__code__.co_varnames,
             outputs=outputs,
@@ -343,7 +348,7 @@ def add_credentials_for_key(key: str) -> Callable:
 def generate_signature(context: TransformContext) -> TransformContext:
     params = [
         Parameter(name=k, kind=Parameter.POSITIONAL_OR_KEYWORD)
-        for k in context.output["input_policy"].inputs.keys()
+        for k in context.output["input_kwargs"]
     ]
     sig = Signature(parameters=params)
     context.output["signature"] = sig
@@ -356,9 +361,16 @@ def modify_signature(context: TransformContext) -> TransformContext:
     return context
 
 
-def init_output_policy_state(context: TransformContext) -> TransformContext:
+def init_policy_state(context: TransformContext) -> TransformContext:
+    if isinstance(context.output["output_policy"], InputPolicy):
+        context.output["input_policy_state"] = context.output["input_policy"].state_type()
+    else:
+        context.output["input_policy_state"] = ''
+        
     if isinstance(context.output["output_policy"], OutputPolicy):
         context.output["output_policy_state"] = context.output["output_policy"].state_type()
+    else:
+        context.output["output_policy_state"] = ''
     return context
 
 
@@ -372,7 +384,7 @@ def submit_user_code_to_user_code() -> List[Callable]:
         new_check_code,
         compile_code,
         add_credentials_for_key("user_verify_key"),
-        init_output_policy_state,
+        init_policy_state,
     ]
 
 
@@ -405,6 +417,7 @@ def execute_byte_code(code_item: UserCode, kwargs: Dict[str, Any]) -> Any:
 
         exec(code_item.byte_code)  # nosec
 
+        print(kwargs, file=stderr_)
         evil_string = f"{code_item.unique_func_name}(**kwargs)"
         result = eval(evil_string, None, locals())  # nosec
 

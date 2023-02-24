@@ -135,9 +135,8 @@ class ActionService(AbstractService):
 
     # not a public service endpoint
     def _user_code_execute(
-        self, context: AuthedServiceContext, code_item: UserCode, kwargs: Dict[str, Any]
+        self, context: AuthedServiceContext, code_item: UserCode, filtered_kwargs: Dict[str, Any]
     ) -> Result[ActionObjectPointer, Err]:
-        filtered_kwargs = code_item.input_policy.filter_kwargs(kwargs)
         has_twin_inputs = False
         kwargs = {}
         for key, arg_id in filtered_kwargs.items():

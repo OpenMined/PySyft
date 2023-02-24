@@ -5,6 +5,9 @@ from typing import Optional
 from typing import Any
 from typing import Type
 from typing import Union
+from result import Err
+from result import Ok
+from result import Result
 
 from enum import Enum
 import hashlib
@@ -19,6 +22,7 @@ from .credentials import SyftVerifyKey
 from .document_store import PartitionKey
 from ...common.serde.serializable import serializable
 from ...common.serde import _serialize
+from ...common.serde import _deserialize
 from .transforms import transform
 from .transforms import generate_id
 from .transforms import TransformContext
@@ -317,3 +321,20 @@ def submit_policy_code_to_user_code() -> List[Callable]:
         compile_code,
         add_credentials_for_key("user_verify_key")
     ]
+    
+def init_policy(user_policy: UserPolicy, init_args: Dict[str, Any]):
+    exec(user_policy.raw_code)
+    policy_class_name = eval(user_policy.class_name)
+    policy_object = policy_class_name(**init_args)
+    return policy_object 
+    
+def get_policy_object(user_policy: UserPolicy, state: str) -> Result[Any,str]:
+    # if user_policy.status != UserPolicyStatus.APPROVED:
+    #     return Err() 
+    exec(user_policy.raw_code)
+    policy_class_name = eval(user_policy.class_name)
+    policy_object = _deserialize(state, from_bytes=True, class_type=policy_class_name)
+    return policy_object#Ok(policy_object)
+
+def update_policy_state(policy_object):
+    return _serialize(policy_object, to_bytes=True)
