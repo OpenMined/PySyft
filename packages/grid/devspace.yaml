@@ -371,12 +371,12 @@ deployments:
         containers:
           - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
             command:
-              - /start.sh
+              - /app/grid/start.sh
             volumeMounts:
               - containerPath: /credentials
                 volume:
-                    name: credentials-data
-                    readOnly: true
+                  name: credentials-data
+                  readOnly: true
             securityContext:
               capabilities:
                 add: ["NET_ADMIN"]
@@ -472,12 +472,12 @@ deployments:
         containers:
           - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
             command:
-              - /start.sh
+              - /app/grid/start.sh
             volumeMounts:
               - containerPath: /credentials
                 volume:
-                    name: credentials-data
-                    readOnly: true
+                  name: credentials-data
+                  readOnly: true
             securityContext:
               capabilities:
                 add: ["NET_ADMIN"]
@@ -573,12 +573,12 @@ deployments:
         containers:
           - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
             command:
-              - /worker-start.sh
+              - /app/grid/worker-start.sh
             volumeMounts:
               - containerPath: /credentials
                 volume:
-                    name: credentials-data
-                    readOnly: true
+                  name: credentials-data
+                  readOnly: true
             securityContext:
               capabilities:
                 add: ["NET_ADMIN"]

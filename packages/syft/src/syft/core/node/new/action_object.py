@@ -27,6 +27,7 @@ from ....core.node.common.node_table.syft_object import SyftObject
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .action_types import action_type_for_type
+from .action_types import action_types
 from .client import SyftClient
 from .response import SyftException
 
@@ -129,6 +130,7 @@ dont_wrap_output_attrs = [
     "__array_struct__",
     "__array_prepare__",
     "__bool__",
+    "__len__",
 ]
 dont_make_side_effects = [
     "_repr_html_",
@@ -137,6 +139,8 @@ dont_make_side_effects = [
     "__repr__",
     "__getitem__",
     "__setitem__",
+    "__len__",
+    "shape",
 ]
 show_print = False
 
@@ -151,42 +155,49 @@ def debug_original_func(name, func):
     print("inspect.ismethoddescriptor", inspect.ismethoddescriptor(func))
 
 
-def is_property(obj, method) -> bool:
-    klass_method = getattr(type(obj), method, None)
-    return inspect.isgetsetdescriptor(klass_method)
-
-
-def get_property(obj, method) -> Any:
-    klass_method = getattr(type(obj), method, None)
-    return klass_method.__get__(obj)
-
-
 def send_action_side_effect(context: PreHookContext, *args: Any, **kwargs: Any) -> Any:
-    if context.op_name not in dont_make_side_effects:
-        if getattr(context.obj, "syft_node_uid", None):
-            action = context.obj.syft_make_method_action(
-                op=context.op_name, args=args, kwargs=kwargs
-            )
-            action_result = context.obj.syft_execute_action(action, sync=True)
-            context.node_uid = action_result.syft_node_uid
-            context.result_id = action.result_id
-            print("IGNORING: got action result", action_result)
-        else:
-            print(
-                "Can't Send Action without a target node. Use .point_to(node_uid: UID)"
-            )
+    try:
+        if context.op_name not in dont_make_side_effects and hasattr(
+            context.obj, "syft_node_uid"
+        ):
+            if getattr(context.obj, "syft_node_uid", None):
+                action = context.obj.syft_make_method_action(
+                    op=context.op_name, args=args, kwargs=kwargs
+                )
+                action_result = context.obj.syft_execute_action(action, sync=True)
+                if not isinstance(action_result, ActionObject):
+                    print("Got back unexpected response", action_result)
+                else:
+                    context.node_uid = action_result.syft_node_uid
+                    context.result_id = action.result_id
+                    print("IGNORING: got action result", action_result)
+            else:
+                print(
+                    "Can't Send Action without a target node. Use .point_to(node_uid: UID)"
+                )
+    except Exception as e:
+        print("Exception in send_action_side_effect", e)
     return context, args, kwargs
 
 
 def propagate_node_uid(context: PreHookContext, op: str, result: Any) -> Any:
-    if context.op_name not in dont_make_side_effects:
-        syft_node_uid = getattr(context.obj, "syft_node_uid", None)
-        if syft_node_uid:
-            if not hasattr(result, "syft_node_uid"):
-                print("result doesnt have a syft_node_uid attr")
-            setattr(result, "syft_node_uid", syft_node_uid)
-        else:
-            print("Can't proagate node_uid because parent doesnt have one")
+    try:
+        if context.op_name not in dont_make_side_effects and hasattr(
+            context.obj, "syft_node_uid"
+        ):
+            syft_node_uid = getattr(context.obj, "syft_node_uid", None)
+            if syft_node_uid:
+                if not hasattr(result, "syft_node_uid"):
+                    print("result doesnt have a syft_node_uid attr")
+                if op not in context.obj._syft_dont_wrap_attrs():
+                    if hasattr(result, "syft_node_uid"):
+                        setattr(result, "syft_node_uid", syft_node_uid)
+                else:
+                    print("dont propogate node_uid because output isnt wrapped")
+            else:
+                print("Can't proagate node_uid because parent doesnt have one")
+    except Exception as e:
+        print("Exception in propagate_node_uid", e)
     return result
 
 
@@ -213,7 +224,7 @@ class ActionObject(SyftObject):
     def check_action_data(
         cls, v: ActionObject.syft_pointer_type
     ) -> ActionObject.syft_pointer_type:
-        if cls == ActionObject or isinstance(v, cls.syft_internal_type):
+        if cls == AnyActionObject or isinstance(v, cls.syft_internal_type):
             return v
         raise SyftException(
             f"Must init {cls} with {cls.syft_internal_type} not {type(v)}"
@@ -221,6 +232,16 @@ class ActionObject(SyftObject):
 
     def syft_point_to(self, node_uid: UID) -> None:
         self.syft_node_uid = node_uid
+
+    def syft_get_property(self, obj, method) -> Any:
+        klass_method = getattr(type(obj), method, None)
+        return klass_method.__get__(obj)
+
+    def syft_is_property(self, obj, method) -> bool:
+        klass_method = getattr(type(obj), method, None)
+        return isinstance(klass_method, property) or inspect.isdatadescriptor(
+            klass_method
+        )
 
     def send(self, client: SyftClient) -> Self:
         return client.api.services.action.set(self)
@@ -258,20 +279,22 @@ class ActionObject(SyftObject):
     def _syft_run_pre_hooks__(
         self, context, name, args, kwargs
     ) -> Tuple[PreHookContext, Tuple[Any, ...], Dict[str, Any]]:
-        result_args, result_kwargs = args, kwargs
-        if name in self._syft_pre_hooks__:
-            for hook in self._syft_pre_hooks__[name]:
-                context, result_args, result_kwargs = hook(
-                    context, *result_args, **result_kwargs
-                )
-
-        if name not in self._syft_dont_wrap_attrs():
-            if HOOK_ALWAYS in self._syft_pre_hooks__:
-                for hook in self._syft_pre_hooks__[HOOK_ALWAYS]:
+        try:
+            result_args, result_kwargs = args, kwargs
+            if name in self._syft_pre_hooks__:
+                for hook in self._syft_pre_hooks__[name]:
                     context, result_args, result_kwargs = hook(
                         context, *result_args, **result_kwargs
                     )
 
+            if name not in self._syft_dont_wrap_attrs():
+                if HOOK_ALWAYS in self._syft_pre_hooks__:
+                    for hook in self._syft_pre_hooks__[HOOK_ALWAYS]:
+                        context, result_args, result_kwargs = hook(
+                            context, *result_args, **result_kwargs
+                        )
+        except Exception as e:
+            print("Exception in pre hooks", e)
         return context, result_args, result_kwargs
 
     def _syft_run_post_hooks__(self, context, name, result):
@@ -301,7 +324,7 @@ class ActionObject(SyftObject):
     def _syft_dont_wrap_attrs(self) -> List[str]:
         return dont_wrap_output_attrs + getattr(self, "syft_dont_wrap_attrs", [])
 
-    def __getattribute__(self, name):
+    def __getattribute__(self, name: str) -> Any:
         # bypass certain attrs to prevent recursion issues
         if name.startswith("_syft") or name.startswith("syft"):
             return object.__getattribute__(self, name)
@@ -317,18 +340,34 @@ class ActionObject(SyftObject):
         if not defined_on_self:
             context_self = self.syft_action_data
 
-        if is_property(context_self, name):
+        # TODO: weird edge cases here for things like tuples
+        if name == "__bool__" and not hasattr(self.syft_action_data, "__bool__"):
             context = PreHookContext(obj=self, op_name=name)
             context, _, _ = self._syft_run_pre_hooks__(context, name, (), {})
             # no input needs to propagate
             result = self._syft_run_post_hooks__(
-                context, name, object.__getattribute__(context_self, name)
+                context, name, bool(self.syft_action_data)
+            )
+            if name not in self._syft_dont_wrap_attrs():
+                result = self._syft_output_action_object(result)
+
+            def __wrapper__bool__() -> bool:
+                return result
+
+            return __wrapper__bool__
+
+        # check for other types that aren't methods, functions etc
+        if self.syft_is_property(context_self, name):
+            context = PreHookContext(obj=self, op_name=name)
+            context, _, _ = self._syft_run_pre_hooks__(context, name, (), {})
+            # no input needs to propagate
+            result = self._syft_run_post_hooks__(
+                context, name, self.syft_get_property(context_self, name)
             )
             if name not in self._syft_dont_wrap_attrs():
                 result = self._syft_output_action_object(result)
             return result
 
-        # check for other types that aren't methods, functions etc
         original_func = getattr(self.syft_action_data, name)
         if show_print:
             debug_original_func(name, original_func)
@@ -396,7 +435,9 @@ class ActionObject(SyftObject):
         api = APIRegistry.api_for(node_uid=self.syft_node_uid)
 
         kwargs = {"action": action}
-        api_call = SyftAPICall(path="action.execute", args=[], kwargs=kwargs)
+        api_call = SyftAPICall(
+            node_uid=self.syft_node_uid, path="action.execute", args=[], kwargs=kwargs
+        )
         return api.make_call(api_call)
 
     def syft_make_action(
@@ -461,6 +502,9 @@ class ActionObject(SyftObject):
     def __repr__(self) -> str:
         return self.__repr__()
 
+    def __len__(self) -> int:
+        return self.__len__()
+
     def __getitem__(self, key: Any) -> Any:
         return self._syft_output_action_object(self.__getitem__(key))
 
@@ -502,3 +546,16 @@ class ActionObject(SyftObject):
 
     def __matmul__(self, other: Any) -> Any:
         return self._syft_output_action_object(self.__matmul__(other))
+
+
+@serializable(recursive_serde=True)
+class AnyActionObject(ActionObject):
+    __canonical_name__ = "AnyActionObject"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    syft_internal_type: Any = Any
+    syft_passthrough_attrs = []
+    syft_dont_wrap_attrs = []
+
+
+action_types[Any] = AnyActionObject

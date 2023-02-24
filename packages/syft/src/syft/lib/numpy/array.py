@@ -4,8 +4,8 @@ from numpy import frombuffer
 
 # relative
 from ...core.common.serde import recursive_serde_register
-from ...core.common.serde.arrow import numpy_deserialize
-from ...core.common.serde.arrow import numpy_serialize
+from ...core.common.serde.arrow import arrow_deserialize
+from ...core.common.serde.arrow import arrow_serialize
 
 SUPPORTED_BOOL_TYPES = [np.bool_]
 SUPPORTED_INT_TYPES = [
@@ -34,7 +34,7 @@ DTYPE_REFACTOR = {
 }
 
 recursive_serde_register(
-    np.ndarray, serialize=numpy_serialize, deserialize=numpy_deserialize
+    np.ndarray, serialize=arrow_serialize, deserialize=arrow_deserialize
 )
 
 

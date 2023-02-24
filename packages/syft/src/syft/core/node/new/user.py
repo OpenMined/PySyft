@@ -82,7 +82,7 @@ class User(SyftObject):
         "role",
         "created_at",
     ]
-    __attr_searchable__ = ["name", "email"]
+    __attr_searchable__ = ["name", "email", "verify_key"]
     __attr_unique__ = ["email", "signing_key", "verify_key"]
     __attr_repr_cols__ = ["name", "email"]
 

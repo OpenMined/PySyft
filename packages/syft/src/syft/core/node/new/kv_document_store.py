@@ -151,8 +151,7 @@ class KeyValueStorePartition(StorePartition):
         self.data[store_query_key.value] = obj
 
     def set(
-        self,
-        obj: SyftObject,
+        self, obj: SyftObject, ignore_duplicates: bool = False
     ) -> Result[SyftObject, str]:
         try:
             store_query_key = self.settings.store_key.with_obj(obj)
@@ -170,6 +169,8 @@ class KeyValueStorePartition(StorePartition):
                     searchable_query_keys=searchable_query_keys,
                     obj=obj,
                 )
+            elif not ignore_duplicates:
+                return Err(f"Duplication Key Error: {obj}")
         except Exception as e:
             return Err(f"Failed to write obj {obj}. {e}")
         return Ok(obj)
@@ -245,7 +246,7 @@ class KeyValueStorePartition(StorePartition):
             )
 
             # update the object with new data
-            for key, value in dict(obj).items():
+            for key, value in obj.to_dict().items():
                 setattr(_original_obj, key, value)
 
             # update data and keys

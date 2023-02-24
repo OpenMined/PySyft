@@ -3,7 +3,6 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
-from typing import Dict
 from typing import Optional
 from typing import Type
 
@@ -17,8 +16,18 @@ from .kv_document_store import KeyValueStorePartition
 
 @serializable(recursive_serde=True)
 class DictBackingStore(dict, KeyValueBackingStore):
-    def __init__(self, *args: Any, **kwargs: Any) -> Dict:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super(dict).__init__()
+        self._ddtype = kwargs.get("ddtype", None)
+
+    def __getitem__(self, key: Any) -> Any:
+        try:
+            value = super().__getitem__(key)
+            return value
+        except KeyError as e:
+            if self._ddtype:
+                return self._ddtype()
+            raise e
 
 
 @serializable(recursive_serde=True)

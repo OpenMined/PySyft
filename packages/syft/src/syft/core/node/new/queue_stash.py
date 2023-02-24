@@ -39,7 +39,11 @@ class QueueItem(SyftObject):
     def fetch(self) -> None:
         api = APIRegistry.api_for(node_uid=self.node_uid)
         call = SyftAPICall(
-            path="queue", args=[], kwargs={"uid": self.id}, blocking=True
+            node_uid=self.node_uid,
+            path="queue",
+            args=[],
+            kwargs={"uid": self.id},
+            blocking=True,
         )
         result = api.make_call(call)
         if isinstance(result, QueueItem) and result.resolved:

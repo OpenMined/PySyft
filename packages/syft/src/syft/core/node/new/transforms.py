@@ -34,10 +34,6 @@ class TransformContext(Context):
 
     @staticmethod
     def from_context(obj: Any, context: Optional[Context] = None) -> Self:
-        if isinstance(context, TransformContext):
-            context.obj = obj
-            context.output = dict(obj)
-            return context
         t_context = TransformContext()
         t_context.obj = obj
         t_context.output = dict(obj)
@@ -145,6 +141,37 @@ def validate_email(context: TransformContext) -> TransformContext:
     return context
 
 
+def add_credentials_for_key(key: str) -> Callable:
+    def add_credentials(context: TransformContext) -> TransformContext:
+        context.output[key] = context.credentials
+        return context
+
+    return add_credentials
+
+
+def add_node_uid_for_key(key: str) -> Callable:
+    def add_node_uid(context: TransformContext) -> TransformContext:
+        context.output[key] = context.node.id
+        return context
+
+    return add_node_uid
+
+
+def generate_transform_wrapper(
+    klass_from: type, klass_to: type, transforms: List[Callable]
+) -> Callable:
+    def wrapper(
+        self: klass_from,
+        context: Optional[Union[TransformContext, NodeServiceContext]] = None,
+    ) -> klass_to:
+        t_context = TransformContext.from_context(obj=self, context=context)
+        for transform in transforms:
+            t_context = transform(t_context)
+        return klass_to(**t_context.output)
+
+    return wrapper
+
+
 def transform_method(
     klass_from: Union[type, str],
     klass_to: Union[type, str],
@@ -185,21 +212,6 @@ def transform_method(
         return function
 
     return decorator
-
-
-def generate_transform_wrapper(
-    klass_from: type, klass_to: type, transforms: List[Callable]
-) -> Callable:
-    def wrapper(
-        self: klass_from,
-        context: Optional[Union[TransformContext, NodeServiceContext]] = None,
-    ) -> klass_to:
-        t_context = TransformContext.from_context(obj=self, context=context)
-        for transform in transforms:
-            t_context = transform(t_context)
-        return klass_to(**t_context.output)
-
-    return wrapper
 
 
 def transform(

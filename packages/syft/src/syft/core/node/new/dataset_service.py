@@ -14,6 +14,8 @@ from .document_store import DocumentStore
 from .response import SyftError
 from .response import SyftSuccess
 from .service import AbstractService
+from .service import SERVICE_TO_TYPES
+from .service import TYPE_TO_SERVICE
 from .service import service_method
 
 
@@ -50,14 +52,31 @@ class DatasetService(AbstractService):
             return results
         return SyftError(message=result.err())
 
+    @service_method(path="dataset.search", name="search")
+    def search(
+        self, context: AuthedServiceContext, name: str
+    ) -> Union[List[Dataset], SyftError]:
+        """Search a Dataset by name"""
+        results = self.get_all(context)
+
+        return (
+            results
+            if isinstance(results, SyftError)
+            else [dataset for dataset in results if name in dataset.name]
+        )
+
     @service_method(path="dataset.get_by_id", name="get_by_id")
     def get_by_id(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:
         """Get a Dataset"""
-        result = self.stash.get_by_id(uid=uid)
+        result = self.stash.get_by_uid(uid=uid)
         if result.is_ok():
             dataset = result.ok()
             dataset.node_uid = context.node.id
             return dataset
         return SyftError(message=result.err())
+
+
+TYPE_TO_SERVICE[Dataset] = DatasetService
+SERVICE_TO_TYPES[DatasetService].update({Dataset})

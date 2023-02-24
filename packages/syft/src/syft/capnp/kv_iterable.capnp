@@ -2,5 +2,5 @@
 
 struct KVIterable {
     keys @0 :List(Data);
-    values @1: List(Data);
+    values @1: List(List(Data));
 }
