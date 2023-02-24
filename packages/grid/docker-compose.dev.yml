@@ -31,6 +31,10 @@ services:
       - "15672" # admin web port
       # - "5672" # AMQP port
 
+  mongo:
+    ports:
+      - "27017"
+
   backend:
     volumes:
       - ${RELATIVE_PATH}./backend/grid:/app/grid

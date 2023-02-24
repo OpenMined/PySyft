@@ -85,6 +85,8 @@ class HTTPConnection(NodeConnection):
     __canonical_name__ = "HTTPConnection"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    __attr_state__ = ["proxy_target_uid", "url"]
+
     proxy_target_uid: Optional[UID]
     url: GridURL
     routes: Type[Routes] = Routes
@@ -377,9 +379,11 @@ class SyftClient:
     def exchange_route(self, client: Self) -> None:
         result = self.api.services.network.exchange_credentials_with(client=client)
         if result:
-            result = self.api.services.network.add_route_for(
-                route=self.route, client=client
-            )
+            # relative
+            from .network_service import connection_to_route
+
+            route = connection_to_route(self.connection)
+            result = self.api.services.network.add_route_for(route=route, client=client)
         return result
 
     def apply_to_gateway(self, client: Self) -> None:
