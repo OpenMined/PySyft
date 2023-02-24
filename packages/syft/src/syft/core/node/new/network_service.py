@@ -309,6 +309,11 @@ class NetworkService(AbstractService):
         client = remote_peer.client_with_context(context=context)
         remote_peer_metadata = client.api.services.network.add_peer(self_node_peer)
 
+        if isinstance(remote_peer_metadata, SyftError):
+            return SyftError(
+                f"Failed to add peer with error: {remote_peer_metadata.message}"
+            )
+
         if remote_peer_metadata.verify_key != remote_peer.verify_key:
             return SyftError(
                 (
@@ -368,7 +373,7 @@ class NetworkService(AbstractService):
         result = client.api.services.network.verify_route(route)
 
         if not isinstance(result, SyftSuccess):
-            return SyftError(message=str(result.err()))
+            return result
         return SyftSuccess(message="Route Verified")
 
     @service_method(path="network.verify_route", name="verify_route")
