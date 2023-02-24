@@ -107,9 +107,7 @@ class Worker(NewNode):
         name: Optional[str] = None,
         id: Optional[UID] = None,
         services: Optional[List[Type[AbstractService]]] = None,
-        signing_key: Optional[
-            Union[SyftSigningKey, SigningKey]
-        ] = SigningKey.generate(),
+        signing_key: Optional[Union[SyftSigningKey, SigningKey]],
         action_store_config: Optional[StoreConfig] = None,
         document_store_config: Optional[StoreConfig] = None,
         root_email: str = "info@openmined.org",
@@ -528,7 +526,13 @@ def create_admin_new(
                 name=name, email=email, password=password, password_verify=password
             )
             # New User Initialization
-            user = user_stash.set(user=create_user.to(User))
-            return user.ok()
+            # 🟡 TODO: change later but for now this gives the main user super user automatically
+            user = create_user.to(User)
+            user.signing_key = node.signing_key
+            user.verify_key = user.signing_key.verify_key
+            result = user_stash.set(user=user)
+            if result.is_ok():
+                return result.ok()
+            return None
     except Exception as e:
         print("create_admin failed", e)

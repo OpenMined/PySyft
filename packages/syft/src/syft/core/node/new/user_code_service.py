@@ -129,6 +129,8 @@ class UserCodeService(AbstractService):
                         result = action_service._user_code_execute(
                             context, code_item, filtered_kwargs
                         )
+                        if isinstance(result, str):
+                            return SyftError(message=result)
                         if result.is_ok():
                             code_item.output_policy_state.update_state()
                             state_result = self.update_code_state(
