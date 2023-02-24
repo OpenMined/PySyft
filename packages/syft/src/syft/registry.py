@@ -8,6 +8,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
+from typing import Tuple
 from typing import Union
 
 # third party
@@ -16,6 +17,7 @@ import requests
 
 # relative
 from .core.node.new.network_service import NodePeer
+from .core.node.new.node_metadata import NodeMetadataJSON
 from .grid import GridURL
 from .logger import error
 from .logger import warning
@@ -199,16 +201,12 @@ class DomainRegistry:
         return online_networks
 
     @property
-    def online_domains(self) -> List[Dict]:
-        def check_domain(peer: NodePeer) -> Optional[NodePeer]:
+    def online_domains(self) -> List[Tuple[NodePeer, NodeMetadataJSON]]:
+        def check_domain(peer: NodePeer) -> Optional[Tuple[NodePeer, NodeMetadataJSON]]:
             try:
                 guest_client = peer.guest_client
                 metadata = guest_client.metadata
-                print(metadata)
-                if len(peer.node_routes):
-                    connection = peer.node_routes[0]
-                    print(connection)
-                return peer
+                return peer, metadata
             except Exception:  # nosec
                 pass
             return None
@@ -239,8 +237,10 @@ class DomainRegistry:
         on = self.online_domains
         domains = []
         domain_dict = {}
-        for domain in on:
+        for domain, metadata in on:
             domain_dict["name"] = domain.name
+            domain_dict["organization"] = metadata.organization
+            domain_dict["version"] = metadata.syft_version
             route = None
             if len(domain.node_routes) > 0:
                 route = domain.node_routes[0]
@@ -272,10 +272,12 @@ class DomainRegistry:
 
     def __getitem__(self, key: Union[str, int]) -> Client:  # type: ignore
         if isinstance(key, int):
-            return self.create_client(self.online_domains[key])
+            return self.create_client(self.online_domains[key][0])
         else:
             on = self.online_domains
-            for domain in on:
+            count = 0
+            for domain, _ in on:
                 if domain.name == key:
-                    return self.create_client(self.online_domains[key])
+                    return self.create_client(self.online_domains[count][0])
+                count += 1
         raise KeyError(f"Invalid key: {key} for {on}")
