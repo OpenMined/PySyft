@@ -162,4 +162,4 @@ def _settings() -> UserSettings:
 
 
 def search(name: str) -> SearchResults:
-    return Search(_gateways()).search(name=name)
+    return Search(_domains()).search(name=name)
