@@ -6,6 +6,7 @@ from typing import Type
 
 # third party
 from pymongo import ASCENDING
+from pymongo import WriteConcern
 from pymongo.errors import DuplicateKeyError
 from result import Err
 from result import Ok
@@ -18,7 +19,6 @@ from ...common.serde.serialize import _serialize as serialize
 from ..common.node_table.syft_object import StorableObjectType
 from ..common.node_table.syft_object import SyftObject
 from ..common.node_table.syft_object import SyftObjectRegistry
-from .credentials import SyftVerifyKey
 from .document_store import DocumentStore
 from .document_store import QueryKey
 from .document_store import QueryKeys
@@ -39,14 +39,10 @@ class MongoBsonObject(StorableObjectType, dict):
 def to_mongo(context: TransformContext) -> TransformContext:
     output = {}
     for k in context.obj.__attr_searchable__:
-        # 🟡 TODO 24: pass in storage abstraction and detect unsupported types
-        # if unsupported, convert to string
         value = getattr(context.obj, k, "")
-        if isinstance(value, SyftVerifyKey):
-            value = str(value)
         output[k] = value
-    blob = serialize(dict(context.obj), to_bytes=True)
-    output["_id"] = context.output["id"].value  # type: ignore
+    blob = serialize(context.obj.to_dict(), to_bytes=True)
+    output["_id"] = context.output["id"]
     output["__canonical_name__"] = context.obj.__canonical_name__
     output["__version__"] = context.obj.__version__
     output["__blob__"] = blob
@@ -157,34 +153,26 @@ class MongoStorePartition(StorePartition):
     def set(
         self,
         obj: SyftObject,
+        ignore_duplicates: bool = False,
     ) -> Result[SyftObject, str]:
         storage_obj = obj.to(self.storage_type)
+
+        collection = self.collection
+
+        if ignore_duplicates:
+            collection = collection.with_options(write_concern=WriteConcern(w=0))
         try:
-            self.collection.insert_one(storage_obj)
+            collection.insert_one(storage_obj)
         except DuplicateKeyError as e:
-            return Err(f"Duplicate Key Error: {e}")
+            return Err(f"Duplicate Key Error for {obj}: {e}")
 
         return Ok(obj)
 
-    def _create_filter(self, qks: QueryKeys) -> Dict:
-        query_filter = {}
-        for qk in qks.all:
-            qk_key = qk.key
-            qk_value = qk.value
-            if self.settings.store_key == qk.partition_key:
-                qk_key = f"_{qk_key}"
-                qk_value = qk_value.value
-
-            query_filter[qk_key] = qk_value
-
-        return query_filter
-
     def update(self, qk: QueryKey, obj: SyftObject) -> Result[SyftObject, str]:
-        filter_params = self._create_filter(QueryKeys(qks=qk))
         storage_obj = obj.to(self.storage_type)
         try:
             result = self.collection.update_one(
-                filter=filter_params, update={"$set": storage_obj}
+                filter=qk.as_dict, update={"$set": storage_obj}
             )
         except Exception as e:
             return Err(f"Failed to update obj: {obj} with qk: {qk}. Error: {e}")
@@ -203,8 +191,7 @@ class MongoStorePartition(StorePartition):
         return self.get_all_from_store(qks=qks)
 
     def get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
-        query_filter = self._create_filter(qks=qks)
-        storage_objs = self.collection.find(filter=query_filter)
+        storage_objs = self.collection.find(filter=qks.as_dict)
         syft_objs = []
         for storage_obj in storage_objs:
             obj = self.storage_type(storage_obj)
@@ -214,8 +201,8 @@ class MongoStorePartition(StorePartition):
         return Ok(syft_objs)
 
     def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:
-        query_filter = self._create_filter(qks=QueryKeys(qks=qk))
-        result = self.collection.delete_one(filter=query_filter)
+        qks = QueryKeys(qks=qk)
+        result = self.collection.delete_one(filter=qks.as_dict)
 
         if result.deleted_count == 1:
             return Ok(SyftSuccess(message="Deleted"))

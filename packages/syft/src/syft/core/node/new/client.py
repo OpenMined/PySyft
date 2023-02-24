@@ -131,10 +131,15 @@ class HTTPConnection(NodeConnection):
 
         return response.content
 
-    def _make_post(self, path: str, json: Dict[str, Any]) -> bytes:
+    def _make_post(
+        self,
+        path: str,
+        json: Optional[Dict[str, Any]] = None,
+        data: Optional[bytes] = None,
+    ) -> bytes:
         url = self.url.with_path(path)
         response = self.session.post(
-            str(url), verify=verify_tls(), json=json, proxies={}
+            str(url), verify=verify_tls(), json=json, proxies={}, data=data
         )
         if response.status_code != 200:
             raise requests.ConnectionError(
@@ -184,7 +189,7 @@ class HTTPConnection(NodeConnection):
 
     def register(self, new_user: UserCreate) -> SyftSigningKey:
         data = _serialize(new_user, to_bytes=True)
-        response = self._make_post(self.routes.ROUTE_REGISTER.value, data)
+        response = self._make_post(self.routes.ROUTE_REGISTER.value, data=data)
         response = _deserialize(response, from_bytes=True)
         return response
 

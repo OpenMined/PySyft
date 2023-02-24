@@ -16,6 +16,7 @@ from ...common.serde.serializable import serializable
 from .document_store import PartitionSettings
 from .document_store import StoreClientConfig
 from .document_store import StoreConfig
+from .mongo_codecs import SYFT_CODEC_OPTIONS
 
 
 @serializable(recursive_serde=True)
@@ -74,7 +75,9 @@ class MongoClient:
         self, collection_settings: PartitionSettings, store_config: StoreConfig
     ) -> MongoCollection:
         db = self.with_db(db_name=store_config.db_name)
-        return db.get_collection(name=collection_settings.name)
+        return db.get_collection(
+            name=collection_settings.name, codec_options=SYFT_CODEC_OPTIONS
+        )
 
     @staticmethod
     def from_config(config: MongoStoreClientConfig, cache: bool = True) -> Self:
