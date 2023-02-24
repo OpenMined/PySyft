@@ -11,6 +11,7 @@ from ...common.uid import UID
 from .action_store import ActionPermission
 from .credentials import SyftVerifyKey
 from .request import ActionStoreChange
+from .request import Change
 from .request import Request
 from .request import SubmitRequest
 from .request_service import RequestService
@@ -35,6 +36,12 @@ class Project(SyftObject):
         "name",
     ]
     __attr_unique__ = ["name"]
+
+    @property
+    def changes(self) -> Optional[List[Change]]:
+        if self.request is not None:
+            return self.request.changes
+        return None
 
 
 @serializable(recursive_serde=True)
