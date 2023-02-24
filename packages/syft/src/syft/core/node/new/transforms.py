@@ -34,10 +34,6 @@ class TransformContext(Context):
 
     @staticmethod
     def from_context(obj: Any, context: Optional[Context] = None) -> Self:
-        if isinstance(context, TransformContext):
-            context.obj = obj
-            context.output = dict(obj)
-            return context
         t_context = TransformContext()
         t_context.obj = obj
         t_context.output = dict(obj)
@@ -143,6 +139,22 @@ def validate_email(context: TransformContext) -> TransformContext:
         context.output["email"] = EmailStr(context.output["email"])
         EmailStr.validate(context.output["email"])
     return context
+
+
+def add_credentials_for_key(key: str) -> Callable:
+    def add_credentials(context: TransformContext) -> TransformContext:
+        context.output[key] = context.credentials
+        return context
+
+    return add_credentials
+
+
+def add_node_uid_for_key(key: str) -> Callable:
+    def add_node_uid(context: TransformContext) -> TransformContext:
+        context.output[key] = context.node.id
+        return context
+
+    return add_node_uid
 
 
 def generate_transform_wrapper(

@@ -51,6 +51,11 @@ class NodeMetadata(SyftObject):
     highest_object_version: int
     lowest_object_version: int
     syft_version: str
+    node_type: str = "Domain"
+    deployed_on: str = "Date"
+    organization: str = "OpenMined"
+    on_board: bool = False
+    description: str = "Text"
 
     def check_version(self, client_version: str) -> None:
         return check_version(
@@ -69,6 +74,11 @@ class NodeMetadataJSON(BaseModel, StorableObjectType):
     highest_object_version: int
     lowest_object_version: int
     syft_version: str
+    node_type: str = "Domain"
+    deployed_on: str = "Date"
+    organization: str = "OpenMined"
+    on_board: bool = False
+    description: str = "My cool domain"
 
     def check_version(self, client_version: str) -> bool:
         return check_version(

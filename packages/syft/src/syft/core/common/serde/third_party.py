@@ -1,11 +1,20 @@
 # stdlib
 
+# stdlib
+from datetime import date
+from datetime import datetime
+from datetime import time
+
 # third party
+from dateutil import parser
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from oblv.oblv_client import OblvClient
 from pandas import DataFrame
 from pandas import Series
+from pandas._libs.tslibs.timestamps import Timestamp
+import pyarrow as pa
+import pyarrow.parquet as pq
 import pydantic
 from pymongo.collection import Collection
 from result import Err
@@ -51,11 +60,33 @@ recursive_serde_register(cls=TypeError)
 recursive_serde_register_type(Collection)
 
 
+def serialize_dataframe(df: DataFrame) -> bytes:
+    table = pa.Table.from_pandas(df)
+    sink = pa.BufferOutputStream()
+    # 🟡 TODO 37: Should we warn about this?
+    parquet_args = {
+        "coerce_timestamps": "us",
+        "allow_truncated_timestamps": True,
+    }
+    pq.write_table(table, sink, **parquet_args)
+    buffer = sink.getvalue()
+    numpy_bytes = buffer.to_pybytes()
+    return numpy_bytes
+
+
+def deserialize_dataframe(buf: bytes) -> DataFrame:
+    reader = pa.BufferReader(buf)
+    numpy_bytes = reader.read_buffer()
+    result = pq.read_table(numpy_bytes)
+    df = result.to_pandas()
+    return df
+
+
 # pandas
 recursive_serde_register(
     DataFrame,
-    serialize=lambda x: serialize(x.to_dict(), to_bytes=True),
-    deserialize=lambda x: DataFrame.from_dict(deserialize(x, from_bytes=True)),
+    serialize=serialize_dataframe,
+    deserialize=deserialize_dataframe,
 )
 
 
@@ -69,6 +100,32 @@ recursive_serde_register(
     serialize=lambda x: serialize(DataFrame(x).to_dict(), to_bytes=True),
     deserialize=deserialize_series,
 )
+
+
+recursive_serde_register(
+    datetime,
+    serialize=lambda x: serialize(x.isoformat(), to_bytes=True),
+    deserialize=lambda x: parser.isoparse(deserialize(x, from_bytes=True)),
+)
+
+recursive_serde_register(
+    time,
+    serialize=lambda x: serialize(x.isoformat(), to_bytes=True),
+    deserialize=lambda x: parser.parse(deserialize(x, from_bytes=True)).time(),
+)
+
+recursive_serde_register(
+    date,
+    serialize=lambda x: serialize(x.isoformat(), to_bytes=True),
+    deserialize=lambda x: parser.parse(deserialize(x, from_bytes=True)).date(),
+)
+
+recursive_serde_register(
+    Timestamp,
+    serialize=lambda x: serialize(x.value, to_bytes=True),
+    deserialize=lambda x: Timestamp(deserialize(x, from_bytes=True)),
+)
+
 
 # how else do you import a relative file to execute it?
 NOTHING = None

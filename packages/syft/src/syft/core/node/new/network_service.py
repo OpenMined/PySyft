@@ -23,6 +23,7 @@ from .client import PythonConnection
 from .client import SyftClient
 from .context import AuthedServiceContext
 from .context import NodeServiceContext
+from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
 from .data_subject import NamePartitionKey
 from .document_store import BaseUIDStoreStash
@@ -34,6 +35,8 @@ from .node import NewNode
 from .response import SyftError
 from .response import SyftSuccess
 from .service import AbstractService
+from .service import SERVICE_TO_TYPES
+from .service import TYPE_TO_SERVICE
 from .service import service_method
 from .transforms import TransformContext
 from .transforms import keep
@@ -91,7 +94,9 @@ class PythonNodeRoute(SyftObject, NodeRoute):
             id=self.worker_settings.id,
             name=self.worker_settings.name,
             signing_key=self.worker_settings.signing_key,
-            store_config=self.worker_settings.store_config,
+            document_store_config=self.worker_settings.document_store_config,
+            action_store_config=self.worker_settings.action_store_config,
+            processes=1,
         )
         return node
 
@@ -113,7 +118,9 @@ class PythonNodeRoute(SyftObject, NodeRoute):
         return self == other
 
 
-def route_to_connection(route: NodeRoute, context: TransformContext) -> NodeConnection:
+def route_to_connection(
+    route: NodeRoute, context: Optional[TransformContext] = None
+) -> NodeConnection:
     if isinstance(route, HTTPNodeRoute):
         return route.to(HTTPConnection, context=context)
     else:
@@ -164,12 +171,27 @@ class NodePeer(SyftObject):
         if len(self.node_routes) < 1:
             raise Exception(f"No routes to peer: {self}")
         route = self.node_routes[0]
-        connection = route_to_connection(route=route, context=context)
+        connection = route_to_connection(route=route)
         return SyftClient(connection=connection, credentials=context.node.signing_key)
+
+    def client_with_key(self, credentials: SyftSigningKey) -> SyftClient:
+        if len(self.node_routes) < 1:
+            raise Exception(f"No routes to peer: {self}")
+        route = self.node_routes[0]
+        connection = route_to_connection(route=route)
+        return SyftClient(connection=connection, credentials=credentials)
+
+    @property
+    def guest_client(self) -> SyftClient:
+        guest_key = SyftSigningKey.generate()
+        return self.client_with_key(credentials=guest_key)
+
+    def proxy_from(self, client: SyftClient) -> SyftClient:
+        return client.proxy_to(self)
 
 
 def from_grid_url(context: TransformContext) -> TransformContext:
-    url = context.obj.url
+    url = context.obj.url.as_container_host()
     context.output["host_or_ip"] = url.host_or_ip
     context.output["protocol"] = url.protocol
     context.output["port"] = url.port
@@ -204,7 +226,9 @@ def node_route_to_python_connection(
 def node_route_to_http_connection(
     obj: Any, context: Optional[TransformContext] = None
 ) -> List[Callable]:
-    url = GridURL(protocol=obj.protocol, host_or_ip=obj.host_or_ip, port=obj.port)
+    url = GridURL(
+        protocol=obj.protocol, host_or_ip=obj.host_or_ip, port=obj.port
+    ).as_container_host()
     return HTTPConnection(url=url)
 
 
@@ -349,7 +373,7 @@ class NetworkService(AbstractService):
         result = client.api.services.network.verify_route(route)
 
         if not isinstance(result, SyftSuccess):
-            return SyftError(message=str(result.err()))
+            return result
         return SyftSuccess(message="Route Verified")
 
     @service_method(path="network.verify_route", name="verify_route")
@@ -388,3 +412,7 @@ class NetworkService(AbstractService):
             peers = result.ok()
             return peers
         return SyftError(message=result.err())
+
+
+TYPE_TO_SERVICE[NodePeer] = NetworkService
+SERVICE_TO_TYPES[NetworkService].update({NodePeer})

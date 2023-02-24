@@ -1,8 +1,8 @@
 # stdlib
+from collections import OrderedDict
 from enum import Enum
 from typing import Any
 from typing import Callable
-from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -23,11 +23,21 @@ from ...common.uid import UID
 from .data_subject import DataSubject
 from .document_store import PartitionKey
 from .response import SyftError
+from .response import SyftException
 from .response import SyftSuccess
 from .transforms import TransformContext
 from .transforms import generate_id
 from .transforms import transform
 from .transforms import validate_url
+
+
+@serializable(recursive_serde=True)
+class TupleDict(OrderedDict):
+    def __getitem__(self, key: Union[str, int]) -> Any:
+        if isinstance(key, int):
+            return list(self.values())[key]
+        return super(TupleDict, self).__getitem__(key)
+
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
 
@@ -86,6 +96,14 @@ class Asset(SyftObject):
         api = APIRegistry.api_for(node_uid=self.node_uid)
         return api.services.action.get_pointer(self.action_id)
 
+    @property
+    def data(self) -> Any:
+        # relative
+        from .api import APIRegistry
+
+        api = APIRegistry.api_for(node_uid=self.node_uid)
+        return api.services.action.get(self.action_id)
+
 
 @serializable(recursive_serde=True)
 class CreateAsset(SyftObject):
@@ -99,6 +117,7 @@ class CreateAsset(SyftObject):
     contributors: List[Contributor] = []
     data_subjects: List[DataSubject] = []
     node_uid: Optional[UID]
+    action_id: Optional[UID]
     data: Optional[Any]
     mock: Optional[Any]
     shape: Optional[Tuple]
@@ -125,9 +144,13 @@ class CreateAsset(SyftObject):
         self.description = description
 
     def set_obj(self, data: Any) -> None:
+        if isinstance(data, SyftError):
+            raise SyftException(data)
         self.data = data
 
-    def set_mock(self, mock_data: Any, mock_is_real: bool) -> None:
+    def set_mock(self, mock_data: Any, mock_is_real: bool) -> Any:
+        if isinstance(mock_data, SyftError):
+            raise SyftException(mock_data)
         self.mock = mock_data
         self.mock_is_real = mock_is_real
 
@@ -150,9 +173,10 @@ class CreateAsset(SyftObject):
 
 
 def get_shape_or_len(obj: Any) -> Optional[Union[Tuple[int, ...], int]]:
-    shape = getattr(obj, "shape", None)
-    if shape:
-        return shape
+    if hasattr(obj, "shape"):
+        shape = getattr(obj, "shape", None)
+        if shape:
+            return shape
     len_attr = getattr(obj, "__len__", None)
     if len_attr is not None:
         return len_attr()
@@ -179,8 +203,8 @@ class Dataset(SyftObject):
     __attr_repr_cols__ = ["name", "url"]
 
     @property
-    def assets(self) -> Dict[str, str]:
-        data = {}
+    def assets(self) -> TupleDict:
+        data = TupleDict()
         for asset in self.asset_list:
             data[asset.name] = asset
         return data
@@ -197,6 +221,18 @@ class Dataset(SyftObject):
         if self.description:
             _repr_str += f"Description: {self.description}\n"
         return "```python\n" + _repr_str + "\n```"
+
+    @property
+    def client(self) -> Optional[Any]:
+        # relative
+        from .client import SyftClientSessionCache
+
+        client = SyftClientSessionCache.get_client_for_node_uid(self.node_uid)
+        if client is None:
+            return SyftError(
+                message=f"No clients for {self.node_uid} in memory. Please login with sy.login"
+            )
+        return client
 
 
 @serializable(recursive_serde=True)
@@ -257,19 +293,31 @@ class CreateDataset(Dataset):
 
 
 def create_and_store_twin(context: TransformContext) -> TransformContext:
-    # relative
-    from .twin_object import TwinObject
+    action_id = context.output["action_id"]
+    if action_id is None:
+        # relative
+        from .twin_object import TwinObject
 
-    twin = TwinObject(
-        private_obj=context.output.pop("data", None),
-        mock_obj=context.output.pop("mock", None),
-    )
-    action_service = context.node.get_service("actionservice")
-    result = action_service.set(context=context.to_node_context(), action_object=twin)
-    if result.is_err():
-        raise Exception(f"Failed to create and store twin. {result}")
+        private_obj = context.output.pop("data", None)
+        mock_obj = context.output.pop("mock", None)
+        if private_obj is None and mock_obj is None:
+            raise Exception("No data and no action_id means this asset has no data")
 
-    context.output["action_id"] = twin.id
+        twin = TwinObject(
+            private_obj=private_obj,
+            mock_obj=mock_obj,
+        )
+        action_service = context.node.get_service("actionservice")
+        result = action_service.set(
+            context=context.to_node_context(), action_object=twin
+        )
+        if result.is_err():
+            raise Exception(f"Failed to create and store twin. {result}")
+
+        context.output["action_id"] = twin.id
+    else:
+        private_obj = context.output.pop("data", None)
+        mock_obj = context.output.pop("mock", None)
     return context
 
 
@@ -286,8 +334,9 @@ def createasset_to_asset() -> List[Callable]:
 
 def convert_asset(context: TransformContext) -> TransformContext:
     assets = context.output.pop("asset_list", [])
-    for idx, asset in enumerate(assets):
-        assets[idx] = asset.to(Asset, context=context)
+    for idx, create_asset in enumerate(assets):
+        asset_context = TransformContext.from_context(obj=create_asset, context=context)
+        assets[idx] = create_asset.to(Asset, context=asset_context)
     context.output["asset_list"] = assets
     return context
 

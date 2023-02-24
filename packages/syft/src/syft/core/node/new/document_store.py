@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from functools import partial
 from typing import Any
 from typing import Dict
 from typing import Iterable
@@ -26,6 +27,11 @@ from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .base import SyftBaseModel
 from .response import SyftSuccess
+
+
+@serializable(recursive_serde=True)
+class BasePartitionSettings(SyftBaseModel):
+    name: str
 
 
 def first_or_none(result: Any) -> Optional[Any]:
@@ -118,6 +124,17 @@ class QueryKey(PartitionKey):
             )
         return QueryKey(key=pk_key, type_=pk_type, value=pk_value)
 
+    @property
+    def as_dict(self):
+        return {self.key: self.value}
+
+    @property
+    def as_dict_mongo(self):
+        key = self.key
+        if key == "id":
+            key = "_id"
+        return {key: self.value}
+
 
 @serializable(recursive_serde=True)
 class PartitionKeysWithUID(PartitionKeys):
@@ -177,13 +194,32 @@ class QueryKeys(SyftBaseModel):
             qks.append(QueryKey(key=k, type_=type(v), value=v))
         return QueryKeys(qks=qks)
 
+    @property
+    def as_dict(self):
+        qk_dict = {}
+        for qk in self.all:
+            qk_key = qk.key
+            qk_value = qk.value
+            qk_dict[qk_key] = qk_value
+        return qk_dict
+
+    @property
+    def as_dict_mongo(self):
+        qk_dict = {}
+        for qk in self.all:
+            qk_key = qk.key
+            qk_value = qk.value
+            if qk_key == "id":
+                qk_key = "_id"
+            qk_dict[qk_key] = qk_value
+        return qk_dict
+
 
 UIDPartitionKey = PartitionKey(key="id", type_=UID)
 
 
 @serializable(recursive_serde=True)
-class PartitionSettings(SyftBaseModel):
-    name: str
+class PartitionSettings(BasePartitionSettings):
     object_type: type
     store_key: PartitionKey = UIDPartitionKey
 
@@ -225,7 +261,11 @@ class StorePartition:
     def all(self) -> Result[List[BaseStash.object_type], str]:
         raise NotImplementedError
 
-    def set(self, obj: SyftObject) -> Result[SyftObject, str]:
+    def set(
+        self,
+        obj: SyftObject,
+        ignore_duplicates: bool = False,
+    ) -> Result[SyftObject, str]:
         raise NotImplementedError
 
     def update(self, qk: QueryKey, obj: SyftObject) -> Result[SyftObject, str]:
@@ -284,8 +324,12 @@ class BaseStash:
     def __len__(self) -> int:
         return self.partition.__len__()
 
-    def set(self, obj: BaseStash.object_type) -> Result[BaseStash.object_type, str]:
-        return self.partition.set(obj=obj)
+    def set(
+        self,
+        obj: BaseStash.object_type,
+        ignore_duplicates: bool = False,
+    ) -> Result[BaseStash.object_type, str]:
+        return self.partition.set(obj=obj, ignore_duplicates=ignore_duplicates)
 
     def query_all(
         self, qks: Union[QueryKey, QueryKeys]
@@ -378,9 +422,12 @@ class BaseUIDStoreStash(BaseStash):
         return self.query_one(qks=qks)
 
     def set(
-        self, obj: BaseUIDStoreStash.object_type
+        self,
+        obj: BaseUIDStoreStash.object_type,
+        ignore_duplicates: bool = False,
     ) -> Result[BaseUIDStoreStash.object_type, str]:
-        return self.check_type(obj, self.object_type).and_then(super().set)
+        set_method = partial(super().set, ignore_duplicates=ignore_duplicates)
+        return self.check_type(obj, self.object_type).and_then(set_method)
 
 
 @serializable(recursive_serde=True)

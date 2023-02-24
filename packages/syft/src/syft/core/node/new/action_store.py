@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 # stdlib
-from collections import defaultdict
 from enum import Enum
 from typing import List
 from typing import Optional
@@ -18,6 +17,9 @@ from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .credentials import SyftSigningKey
 from .credentials import SyftVerifyKey
+from .dict_document_store import DictStoreConfig
+from .document_store import BasePartitionSettings
+from .document_store import StoreConfig
 from .response import SyftSuccess
 from .twin_object import TwinObject
 
@@ -75,11 +77,23 @@ class ActionObjectEXECUTE(ActionObjectPermission):
         self.permission = ActionPermission.EXECUTE
 
 
-@serializable(recursive_serde=True)
 class ActionStore:
-    def __init__(self, root_verify_key: Optional[SyftVerifyKey] = None) -> None:
-        self.data = {}
-        self.permissions = defaultdict(set)
+    pass
+
+
+@serializable(recursive_serde=True)
+class KeyValueActionStore(ActionStore):
+    def __init__(
+        self, store_config: StoreConfig, root_verify_key: Optional[SyftVerifyKey] = None
+    ) -> None:
+        self.store_config = store_config
+        self.settings = BasePartitionSettings(name="Action")
+        self.data = self.store_config.backing_store(
+            "data", self.settings, self.store_config
+        )
+        self.permissions = self.store_config.backing_store(
+            "permissions", self.settings, self.store_config, ddtype=set
+        )
         if root_verify_key is None:
             root_verify_key = SyftSigningKey.generate().verify_key
         self.root_verify_key = root_verify_key
@@ -90,24 +104,26 @@ class ActionStore:
         # TODO 🟣 Temporarily added skip permission for enclave tests
         # if you get something you need READ permission
         read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
+        # if True:
         if skip_permission or self.has_permission(read_permission):
-            data = self.data[uid]
-            syft_object = SyftObject.from_mongo(data)
+            syft_object = self.data[uid]
             return Ok(syft_object)
         return Err(f"Permission: {read_permission} denied")
 
     def get_pointer(
         self, uid: UID, credentials: SyftVerifyKey, node_uid: UID
     ) -> Result[SyftObject, str]:
-        # 🟡 TODO 34: do we want pointer read permissions?
-        if uid in self.data:
-            data = self.data[uid]
-            obj = SyftObject.from_mongo(data)
-            if isinstance(obj, TwinObject):
-                obj = obj.mock
-            obj.syft_point_to(node_uid)
-            return Ok(obj)
-        return Err("Permission denied")
+        try:
+            # 🟡 TODO 34: do we want pointer read permissions?
+            if uid in self.data:
+                obj = self.data[uid]
+                if isinstance(obj, TwinObject):
+                    obj = obj.mock
+                obj.syft_point_to(node_uid)
+                return Ok(obj)
+            return Err("Permission denied")
+        except Exception as e:
+            return Err(str(e))
 
     def exists(self, uid: UID) -> bool:
         return uid in self.data
@@ -126,11 +142,7 @@ class ActionStore:
             can_write = True if ownership_result.is_ok() else False
 
         if can_write:
-            self.data[
-                uid
-            ] = (
-                syft_object.to_mongo()
-            )  # 🟡 TODO 13: Create to_storage interface with Mongo first
+            self.data[uid] = syft_object
             if uid not in self.permissions:
                 # create default permissions
                 self.permissions[uid] = set()
@@ -201,3 +213,19 @@ class ActionStore:
         results = []
         for permission in permissions:
             results.append(self.add_permission(permission))
+
+
+@serializable(recursive_serde=True)
+class DictActionStore(KeyValueActionStore):
+    def __init__(
+        self,
+        store_config: Optional[StoreConfig] = None,
+        root_verify_key: Optional[SyftVerifyKey] = None,
+    ) -> None:
+        store_config = store_config if store_config is not None else DictStoreConfig()
+        super().__init__(store_config=store_config, root_verify_key=root_verify_key)
+
+
+@serializable(recursive_serde=True)
+class SQLiteActionStore(KeyValueActionStore):
+    pass

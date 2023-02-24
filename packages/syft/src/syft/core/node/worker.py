@@ -32,7 +32,8 @@ from ..common.serde.serializable import serializable
 from ..common.serde.serialize import _serialize
 from ..common.uid import UID
 from .new.action_service import ActionService
-from .new.action_store import ActionStore
+from .new.action_store import DictActionStore
+from .new.action_store import SQLiteActionStore
 from .new.api import SignedSyftAPICall
 from .new.api import SyftAPI
 from .new.api import SyftAPICall
@@ -45,6 +46,7 @@ from .new.data_subject_service import DataSubjectService
 from .new.dataset_service import DatasetService
 from .new.dict_document_store import DictStoreConfig
 from .new.document_store import StoreConfig
+from .new.message_service import MessageService
 from .new.network_service import NetworkService
 from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
@@ -110,10 +112,9 @@ class Worker(NewNode):
         name: Optional[str] = None,
         id: Optional[UID] = None,
         services: Optional[List[Type[AbstractService]]] = None,
-        signing_key: Optional[
-            Union[SyftSigningKey, SigningKey]
-        ] = SigningKey.generate(),
-        store_config: Optional[StoreConfig] = None,
+        signing_key: Optional[Union[SyftSigningKey, SigningKey]] = None,
+        action_store_config: Optional[StoreConfig] = None,
+        document_store_config: Optional[StoreConfig] = None,
         root_email: str = "info@openmined.org",
         root_password: str = "changethis",
         processes: int = 0,
@@ -128,12 +129,17 @@ class Worker(NewNode):
                 id = UID()
             self.id = id
 
+        self.signing_key = None
         if signing_key_env is not None:
             self.signing_key = SyftSigningKey.from_string(signing_key_env)
         else:
             if isinstance(signing_key, SigningKey):
                 signing_key = SyftSigningKey(signing_key=signing_key)
             self.signing_key = signing_key
+
+        if self.signing_key is None:
+            self.signing_key = SyftSigningKey.generate()
+
         self.processes = processes
         self.is_subprocess = is_subprocess
         if name is None:
@@ -151,6 +157,7 @@ class Worker(NewNode):
                 RequestService,
                 DataSubjectService,
                 NetworkService,
+                MessageService,
             ]
             if services is None
             else services
@@ -158,7 +165,10 @@ class Worker(NewNode):
         self.services = services
 
         self.service_config = ServiceConfigRegistry.get_registered_configs()
-        self.init_stores(store_config=store_config)
+        self.init_stores(
+            action_store_config=action_store_config,
+            document_store_config=document_store_config,
+        )
         self._construct_services()
         create_admin_new(  # nosec B106
             name="Jane Doe",
@@ -169,6 +179,7 @@ class Worker(NewNode):
         if os.getenv("INSTALL_OBLV_CLI") == "true":
             create_oblv_key_pair(worker=self)
 
+        self.client_cache = {}
         self.post_init()
 
     @staticmethod
@@ -178,38 +189,73 @@ class Worker(NewNode):
         key = SyftSigningKey(SigningKey(name_hash))
         return Worker(name=name, id=uid, signing_key=key, processes=processes)
 
+    @property
+    def root_client(self) -> Any:
+        # relative
+        from .new.client import PythonConnection
+        from .new.client import SyftClient
+
+        connection = PythonConnection(node=self)
+        return SyftClient(connection=connection, credentials=self.signing_key)
+
     def __repr__(self) -> str:
         return f"{type(self).__name__}: {self.name} - {self.id} {self.services}"
 
     def post_init(self) -> None:
         if self.is_subprocess:
-            print(f"> Starting Subprocess {self}")
+            # print(f"> Starting Subprocess {self}")
+            pass
         else:
             print(f"> Starting {self}")
         # super().post_init()
 
-    def init_stores(self, store_config: Optional[StoreConfig]):
-        if store_config is None:
+    def init_stores(
+        self,
+        document_store_config: Optional[StoreConfig] = None,
+        action_store_config: Optional[StoreConfig] = None,
+    ):
+        if document_store_config is None:
             if self.processes > 0 and not self.is_subprocess:
                 client_config = SQLiteStoreClientConfig()
-                store_config = SQLiteStoreConfig(client_config=client_config)
+                document_store_config = SQLiteStoreConfig(client_config=client_config)
             else:
-                store_config = DictStoreConfig()
+                document_store_config = DictStoreConfig()
         if (
-            isinstance(store_config, SQLiteStoreConfig)
-            and store_config.client_config.filename is None
+            isinstance(document_store_config, SQLiteStoreConfig)
+            and document_store_config.client_config.filename is None
         ):
-            store_config.client_config.filename
-            store_config.client_config.filename = f"{self.id}.sqlite"
+            document_store_config.client_config.filename
+            document_store_config.client_config.filename = f"{self.id}.sqlite"
             print(
-                f"SQLite Store Path:\n!open file://{store_config.client_config.file_path}\n"
+                f"SQLite Store Path:\n!open file://{document_store_config.client_config.file_path}\n"
             )
-        document_store = store_config.store_type
+        document_store = document_store_config.store_type
+        self.document_store_config = document_store_config
 
-        self.store_config = store_config
+        self.document_store = document_store(store_config=document_store_config)
+        if action_store_config is None:
+            if self.processes > 0 and not self.is_subprocess:
+                client_config = SQLiteStoreClientConfig()
+                action_store_config = SQLiteStoreConfig(client_config=client_config)
+                if (
+                    isinstance(action_store_config, SQLiteStoreConfig)
+                    and action_store_config.client_config.filename is None
+                ):
+                    action_store_config.client_config.filename = f"{self.id}.sqlite"
+            else:
+                action_store_config = DictStoreConfig()
 
-        self.document_store = document_store(store_config=store_config)
-        self.action_store = ActionStore(root_verify_key=self.signing_key.verify_key)
+        if isinstance(action_store_config, SQLiteStoreConfig):
+            self.action_store = SQLiteActionStore(
+                store_config=action_store_config,
+                root_verify_key=self.signing_key.verify_key,
+            )
+        else:
+            self.action_store = DictActionStore(
+                root_verify_key=self.signing_key.verify_key
+            )
+
+        self.action_store_config = action_store_config
         self.queue_stash = QueueStash(store=self.document_store)
 
     def _construct_services(self):
@@ -218,8 +264,7 @@ class Worker(NewNode):
         for service_klass in self.services:
             kwargs = {}
             if service_klass == ActionService:
-                action_store = self.action_store
-                kwargs["store"] = action_store
+                kwargs["store"] = self.action_store
             if service_klass in [
                 UserService,
                 DatasetService,
@@ -228,6 +273,7 @@ class Worker(NewNode):
                 OblvService,
                 DataSubjectService,
                 NetworkService,
+                MessageService,
             ]:
                 kwargs["store"] = self.document_store
             if service_klass == TaskService:
@@ -294,19 +340,55 @@ class Worker(NewNode):
             return result.ok()
         return result.err()
 
+    def forward_message(
+        self, api_call: Union[SyftAPICall, SignedSyftAPICall]
+    ) -> Result[Union[QueueItem, SyftObject], Err]:
+        node_uid = api_call.message.node_uid
+        if NetworkService not in self.services:
+            return SyftError(
+                message=(
+                    "Node has no network service so we can't "
+                    f"forward this message to {node_uid}"
+                )
+            )
+
+        client = None
+        if node_uid in self.client_cache:
+            client = self.client_cache[node_uid]
+        else:
+            network_service = self.get_service(NetworkService)
+            peer = network_service.stash.get_by_uid(node_uid)
+
+            if peer.is_ok() and peer.ok():
+                peer = peer.ok()
+                context = NodeServiceContext(node=self)
+                client = peer.client_with_context(context=context)
+                self.client_cache[node_uid] = client
+
+        if client:
+            return client.connection.make_call(api_call)
+
+        return SyftError(message=(f"Node has no route to {node_uid}"))
+
     def handle_api_call(
         self, api_call: Union[SyftAPICall, SignedSyftAPICall]
     ) -> Result[Union[QueueItem, SyftObject], Err]:
         if self.required_signed_calls and isinstance(api_call, SyftAPICall):
-            return Err(
-                f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."  # type: ignore
+            return SyftError(
+                message=f"You sent a {type(api_call)}. This node requires SignedSyftAPICall."  # type: ignore
             )
         else:
             if not api_call.is_valid:
-                return Err("Your message signature is invalid")  # type: ignore
+                return SyftError(message="Your message signature is invalid")  # type: ignore
+
+        if api_call.message.node_uid != self.id:
+            return self.forward_message(api_call=api_call)
 
         if api_call.message.path == "queue":
             return self.resolve_future(uid=api_call.message.kwargs["uid"])
+
+        if api_call.message.path == "metadata":
+            return self.metadata
 
         result = None
         if self.is_subprocess or self.processes == 0:
@@ -317,17 +399,21 @@ class Worker(NewNode):
 
             # 🔵 TODO 4: Add @service decorator to autobind services into the SyftAPI
             if api_call.path not in self.service_config:
-                return Err(f"API call not in registered services: {api_call.path}")  # type: ignore
+                return SyftError(message=f"API call not in registered services: {api_call.path}")  # type: ignore
 
             _private_api_path = ServiceConfigRegistry.private_path_for(api_call.path)
             method = self.get_service_method(_private_api_path)
-            result = method(context, *api_call.args, **api_call.kwargs)
+            try:
+                result = method(context, *api_call.args, **api_call.kwargs)
+            except Exception as e:
+                result = SyftError(message=f"Exception calling {api_call.path}. {e}")
         else:
             worker_settings = WorkerSettings(
                 id=self.id,
                 name=self.name,
                 signing_key=self.signing_key,
-                store_config=self.store_config,
+                document_store_config=self.document_store_config,
+                action_store_config=self.action_store_config,
             )
 
             task_uid = UID()
@@ -335,7 +421,6 @@ class Worker(NewNode):
             # 🟡 TODO 36: Needs distributed lock
             # self.queue_stash.set_placeholder(item)
             # self.queue_stash.partition.commit()
-
             thread = gevent.spawn(
                 queue_task,
                 api_call,
@@ -397,7 +482,8 @@ def task_runner(
         id=worker_settings.id,
         name=worker_settings.name,
         signing_key=worker_settings.signing_key,
-        store_config=worker_settings.store_config,
+        document_store_config=worker_settings.document_store_config,
+        action_store_config=worker_settings.action_store_config,
         is_subprocess=True,
     )
     try:
@@ -415,6 +501,7 @@ def task_runner(
             pipe.close()
     except Exception as e:
         print("Exception in task_runner", e)
+        raise e
 
 
 def queue_task(
@@ -459,8 +546,14 @@ def create_admin_new(
                 name=name, email=email, password=password, password_verify=password
             )
             # New User Initialization
-            user = user_stash.set(user=create_user.to(User))
-            return user.ok()
+            # 🟡 TODO: change later but for now this gives the main user super user automatically
+            user = create_user.to(User)
+            user.signing_key = node.signing_key
+            user.verify_key = user.signing_key.verify_key
+            result = user_stash.set(user=user)
+            if result.is_ok():
+                return result.ok()
+            return None
     except Exception as e:
         print("Unable to create new admin", e)
 
