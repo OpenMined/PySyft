@@ -107,7 +107,7 @@ class Worker(NewNode):
         name: Optional[str] = None,
         id: Optional[UID] = None,
         services: Optional[List[Type[AbstractService]]] = None,
-        signing_key: Optional[Union[SyftSigningKey, SigningKey]],
+        signing_key: Optional[Union[SyftSigningKey, SigningKey]] = None,
         action_store_config: Optional[StoreConfig] = None,
         document_store_config: Optional[StoreConfig] = None,
         root_email: str = "info@openmined.org",
@@ -124,12 +124,17 @@ class Worker(NewNode):
                 id = UID()
             self.id = id
 
+        self.signing_key = None
         if signing_key_env is not None:
             self.signing_key = SyftSigningKey.from_string(signing_key_env)
         else:
             if isinstance(signing_key, SigningKey):
                 signing_key = SyftSigningKey(signing_key=signing_key)
             self.signing_key = signing_key
+
+        if self.signing_key is None:
+            self.signing_key = SyftSigningKey.generate()
+
         self.processes = processes
         self.is_subprocess = is_subprocess
         if name is None:
