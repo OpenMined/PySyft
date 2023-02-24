@@ -59,6 +59,7 @@ from .new.service import ServiceConfigRegistry
 from .new.sqlite_document_store import SQLiteStoreClientConfig
 from .new.sqlite_document_store import SQLiteStoreConfig
 from .new.test_service import TestService
+from .new.user import ServiceRole
 from .new.user import User
 from .new.user import UserCreate
 from .new.user_code_service import UserCodeService
@@ -528,7 +529,11 @@ def create_admin_new(
             return None
         else:
             create_user = UserCreate(
-                name=name, email=email, password=password, password_verify=password
+                name=name,
+                email=email,
+                password=password,
+                password_verify=password,
+                role=ServiceRole.ADMIN,
             )
             # New User Initialization
             # 🟡 TODO: change later but for now this gives the main user super user automatically

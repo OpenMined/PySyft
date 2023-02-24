@@ -25,6 +25,7 @@ from .service import AbstractService
 from .service import SERVICE_TO_TYPES
 from .service import TYPE_TO_SERVICE
 from .service import service_method
+from .user import ServiceRole
 from .user import User
 from .user import UserCreate
 from .user import UserPrivateKey
@@ -158,6 +159,12 @@ class UserService(AbstractService):
         return Err(
             f"Failed to retrieve user with {context.login_credentials.email} with error: {result.err()}"
         )
+
+    def admin_verify_key(self) -> Union[SyftVerifyKey, SyftError]:
+        result = self.stash.get_by_role(role=ServiceRole.ADMIN)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        return result.ok().verify_key
 
     def register(
         self, context: NodeServiceContext, new_user: UserCreate
