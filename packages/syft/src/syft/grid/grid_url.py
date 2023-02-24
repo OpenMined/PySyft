@@ -96,9 +96,15 @@ class GridURL:
         if container_host is None:
             # TODO: we could move config.py to syft and then the Settings singleton
             # could be importable in all parts of the code
-            container_host = os.getenv("CONTAINER_HOST", "docker")
+            container_host = os.getenv("CONTAINER_HOST", None)
 
-        hostname = "docker-host" if container_host == "docker" else "host.k3d.internal"
+        if container_host:
+            hostname = (
+                "docker-host" if container_host == "docker" else "host.k3d.internal"
+            )
+        else:
+            # convert it back for non container clients
+            hostname = "localhost"
 
         return GridURL(
             protocol=self.protocol,

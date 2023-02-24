@@ -317,6 +317,12 @@ class EnumMutation(ObjectMutation):
     def revert(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
         return self._run(context=context, apply=False)
 
+    @property
+    def link(self) -> Optional[SyftObject]:
+        if self.linked_obj:
+            return self.linked_obj.resolve
+        return None
+
 
 @serializable(recursive_serde=True)
 class DocumentStoreChange(Change):

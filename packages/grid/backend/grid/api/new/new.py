@@ -131,14 +131,14 @@ def handle_register(data: bytes, node: NewNode) -> Any:
     if not isinstance(user_create, UserCreate):
         raise Exception(f"Incorrect type received: {user_create}")
 
-    context = NodeServiceContext(node)
+    context = NodeServiceContext(node=node)
     method = node.get_method_with_context(UserService.register, context)
 
-    result = method(user=user_create)
+    result = method(new_user=user_create)
 
     if isinstance(result, SyftError):
         logger.bind(payload={"user": user_create}).error(result.message)
-        response = {"Error": result.message}
+        response = SyftError(message=f"User Registration failed: {result.message}")
     else:
         response = result
 
