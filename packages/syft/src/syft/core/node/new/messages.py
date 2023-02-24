@@ -48,6 +48,12 @@ class Message(SyftObject):
     ]
     __attr_repr_cols__ = ["subject", "status", "created_at", "linked_obj"]
 
+    @property
+    def link(self) -> Optional[SyftObject]:
+        if self.linked_obj:
+            return self.linked_obj.resolve
+        return None
+
 
 @serializable(recursive_serde=True)
 class CreateMessage(Message):

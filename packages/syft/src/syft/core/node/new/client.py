@@ -85,6 +85,8 @@ class HTTPConnection(NodeConnection):
     __canonical_name__ = "HTTPConnection"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    __attr_state__ = ["proxy_target_uid", "url"]
+
     proxy_target_uid: Optional[UID]
     url: GridURL
     routes: Type[Routes] = Routes
@@ -131,10 +133,15 @@ class HTTPConnection(NodeConnection):
 
         return response.content
 
-    def _make_post(self, path: str, json: Dict[str, Any]) -> bytes:
+    def _make_post(
+        self,
+        path: str,
+        json: Optional[Dict[str, Any]] = None,
+        data: Optional[bytes] = None,
+    ) -> bytes:
         url = self.url.with_path(path)
         response = self.session.post(
-            str(url), verify=verify_tls(), json=json, proxies={}
+            str(url), verify=verify_tls(), json=json, proxies={}, data=data
         )
         if response.status_code != 200:
             raise requests.ConnectionError(
@@ -184,7 +191,7 @@ class HTTPConnection(NodeConnection):
 
     def register(self, new_user: UserCreate) -> SyftSigningKey:
         data = _serialize(new_user, to_bytes=True)
-        response = self._make_post(self.routes.ROUTE_REGISTER.value, data)
+        response = self._make_post(self.routes.ROUTE_REGISTER.value, data=data)
         response = _deserialize(response, from_bytes=True)
         return response
 
@@ -372,9 +379,11 @@ class SyftClient:
     def exchange_route(self, client: Self) -> None:
         result = self.api.services.network.exchange_credentials_with(client=client)
         if result:
-            result = self.api.services.network.add_route_for(
-                route=self.route, client=client
-            )
+            # relative
+            from .network_service import connection_to_route
+
+            route = connection_to_route(self.connection)
+            result = self.api.services.network.add_route_for(route=route, client=client)
         return result
 
     def apply_to_gateway(self, client: Self) -> None:
@@ -390,6 +399,12 @@ class SyftClient:
     def datasets(self) -> Optional[APIModule]:
         if self.api is not None and hasattr(self.api.services, "dataset"):
             return self.api.services.dataset
+        return None
+
+    @property
+    def notifications(self) -> Optional[APIModule]:
+        if self.api is not None and hasattr(self.api.services, "messages"):
+            return self.api.services.messages
         return None
 
     @property

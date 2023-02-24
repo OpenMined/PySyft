@@ -76,6 +76,10 @@ class UserCode(SyftObject):
     def byte_code(self) -> Optional[PyCodeObject]:
         return compile_byte_code(self.parsed_code)
 
+    @property
+    def code(self) -> str:
+        return self.raw_code
+
 
 @serializable(recursive_serde=True)
 class SubmitUserCode(SyftObject):
