@@ -1,4 +1,5 @@
 # stdlib
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -36,9 +37,19 @@ class MongoBsonObject(StorableObjectType, dict):
     pass
 
 
+def _repr_debug_(value: Any) -> str:
+    if hasattr(value, "_repr_debug_"):
+        return value._repr_debug_()
+    return repr(value)
+
+
 def to_mongo(context: TransformContext) -> TransformContext:
     output = {}
-    for k in context.obj.__attr_searchable__:
+    unique_keys_dict = context.obj._syft_unique_keys_dict()
+    search_keys_dict = context.obj._syft_searchable_keys_dict()
+    all_dict = unique_keys_dict
+    all_dict.update(search_keys_dict)
+    for k in all_dict:
         value = getattr(context.obj, k, "")
         output[k] = value
     blob = serialize(context.obj.to_dict(), to_bytes=True)
@@ -46,7 +57,7 @@ def to_mongo(context: TransformContext) -> TransformContext:
     output["__canonical_name__"] = context.obj.__canonical_name__
     output["__version__"] = context.obj.__version__
     output["__blob__"] = blob
-    output["__repr__"] = context.obj.__repr__()
+    output["__arepr__"] = _repr_debug_(context.obj)  # a comes first in alphabet
     context.output = output
     return context
 
@@ -179,8 +190,8 @@ class MongoStorePartition(StorePartition):
 
         if result.matched_count == 0:
             return Err(f"No object found with query key: {qk}")
-        # elif result.modified_count == 0:
-        #     return Err(f"Failed to modify obj: {obj} with qk: {qk}")
+        elif result.modified_count == 0:
+            return Err(f"Failed to modify obj: {obj} with qk: {qk}")
         return Ok(obj)
 
     def find_index_or_search_keys(
@@ -193,13 +204,10 @@ class MongoStorePartition(StorePartition):
     def get_all_from_store(self, qks: QueryKeys) -> Result[List[SyftObject], str]:
         storage_objs = self.collection.find(filter=qks.as_dict)
         syft_objs = []
-        try:
-            for storage_obj in storage_objs:
-                obj = self.storage_type(storage_obj)
-                transform_context = TransformContext(output={}, obj=obj)
-                syft_objs.append(obj.to(self.settings.object_type, transform_context))
-        except Exception as e:
-            print("Failing to query mongo", e)
+        for storage_obj in storage_objs:
+            obj = self.storage_type(storage_obj)
+            transform_context = TransformContext(output={}, obj=obj)
+            syft_objs.append(obj.to(self.settings.object_type, transform_context))
         return Ok(syft_objs)
 
     def delete(self, qk: QueryKey) -> Result[SyftSuccess, Err]:

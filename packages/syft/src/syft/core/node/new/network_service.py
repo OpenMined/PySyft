@@ -263,7 +263,7 @@ class NetworkStash(BaseUIDStoreStash):
             result = self.update(existing)
             return result
         else:
-            result = self.set(peer)
+            result = self.set(peer, ignore_duplicates=True)
             return result
 
     def get_for_verify_key(
@@ -368,7 +368,7 @@ class NetworkService(AbstractService):
         result = client.api.services.network.verify_route(route)
 
         if not isinstance(result, SyftSuccess):
-            return SyftError(message=str(result.err()))
+            return result
         return SyftSuccess(message="Route Verified")
 
     @service_method(path="network.verify_route", name="verify_route")
