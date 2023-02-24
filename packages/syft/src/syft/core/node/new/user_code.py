@@ -155,6 +155,11 @@ class OutputPolicy(SyftObject):
     def update() -> None:
         raise NotImplementedError
 
+    @classmethod
+    @property
+    def policy_code(cls) -> str:
+        return inspect.getsource(cls)
+
 
 @serializable(recursive_serde=True)
 class SingleExecutionExactOutput(OutputPolicy):
