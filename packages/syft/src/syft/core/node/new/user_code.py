@@ -56,6 +56,13 @@ class InputPolicy(SyftObject):
     def filter_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
         raise NotImplementedError
 
+    def __getitem__(self, key: Union[int, str]) -> Optional[SyftObject]:
+        if isinstance(key, int):
+            key = list(self.inputs.keys())[key]
+        uid = self.inputs[key]
+        # TODO Add NODE UID or LINK so we can resolve this object
+        return uid
+
 
 def allowed_ids_only(
     allowed_inputs: Dict[str, UID], kwargs: Dict[str, Any]
@@ -192,6 +199,10 @@ class UserCode(SyftObject):
     @property
     def byte_code(self) -> Optional[PyCodeObject]:
         return compile_byte_code(self.parsed_code)
+
+    @property
+    def code(self) -> str:
+        return self.raw_code
 
 
 def extract_uids(kwargs: Dict[str, Any]) -> Dict[str, UID]:
