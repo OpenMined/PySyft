@@ -249,7 +249,7 @@ class EnumMutation(ObjectMutation):
     value: Optional[Enum]
     match_type: bool = True
 
-    __attr_repr_cols__ = ["linked_obj", "enum_type", "attr_name"]
+    __attr_repr_cols__ = ["linked_obj", "attr_name", "value"]
 
     def __init__(
         self,

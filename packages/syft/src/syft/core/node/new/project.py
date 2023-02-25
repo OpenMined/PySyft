@@ -12,7 +12,6 @@ from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .credentials import SyftVerifyKey
 from .linked_obj import LinkedObject
-from .request import Change
 from .request import EnumMutation
 from .request import Request
 from .request import SubmitRequest
@@ -32,7 +31,7 @@ class Project(SyftObject):
     name: str
     description: str
     user_verify_key: SyftVerifyKey
-    request: Optional[Request]
+    requests: Optional[List[Request]]
 
     __attr_searchable__ = [
         "user_verify_key",
@@ -40,11 +39,7 @@ class Project(SyftObject):
     ]
     __attr_unique__ = ["name"]
 
-    @property
-    def requests(self) -> Optional[List[Change]]:
-        if self.request is not None:
-            return self.request.changes
-        return None
+    __attr_repr_cols__ = ["requests"]
 
 
 @serializable(recursive_serde=True)
@@ -100,7 +95,7 @@ def submit_changes(context: TransformContext) -> TransformContext:
         result = request_submit_method(context=context, request=submit_request)
         if isinstance(result, SyftError):
             return result
-        context.output["request"] = result
+        context.output["requests"] = [result]
     context.output["user_verify_key"] = context.credentials
     return context
 
