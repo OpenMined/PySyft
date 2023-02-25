@@ -12,7 +12,6 @@ from typing import Hashable
 from typing import KeysView
 from typing import List
 from typing import Optional
-from typing import Tuple
 from typing import Set
 from typing import Tuple
 from typing import Type
@@ -346,11 +345,16 @@ class ActionObject(SyftObject):
                     else other.syft_result_obj
                 )
                 return self._syft_output_action_object(
-                    result=None, parent_hashes=[self.syft_history_hash, other.syft_history_hash], result_obj=output, op_name="add"
+                    result=None,
+                    parent_hashes=[self.syft_history_hash, other.syft_history_hash],
+                    result_obj=output,
+                    op_name="add",
                 )
             result2 = self.syft_action_data + other.syft_action_data
             return self._syft_output_action_object(
-                result2, parent_hashes=[self.syft_history_hash, other.syft_history_hash], op_name="add"
+                result2,
+                parent_hashes=[self.syft_history_hash, other.syft_history_hash],
+                op_name="add",
             )
         result = self.__add__(other)
         return self._syft_output_action_object(result, op_name="add")
@@ -368,11 +372,16 @@ class ActionObject(SyftObject):
                     else other.syft_result_obj
                 )
                 return self._syft_output_action_object(
-                    result=None, parent_hashes=[self.syft_history_hash, other.syft_history_hash], result_obj=output, op_name="lt"
+                    result=None,
+                    parent_hashes=[self.syft_history_hash, other.syft_history_hash],
+                    result_obj=output,
+                    op_name="lt",
                 )
             result2 = self.syft_action_data < other.syft_action_data
             return self._syft_output_action_object(
-                result2, parent_hashes=[self.syft_history_hash, other.syft_history_hash], op_name="lt"
+                result2,
+                parent_hashes=[self.syft_history_hash, other.syft_history_hash],
+                op_name="lt",
             )
         result = self.__lt__(other)
         return self._syft_output_action_object(result, op_name="lt")
@@ -387,11 +396,16 @@ class ActionObject(SyftObject):
                     else other.syft_result_obj
                 )
                 return self._syft_output_action_object(
-                    result=None, parent_hashes=[self.syft_history_hash, other.syft_history_hash], result_obj=output, op_name="gt"
+                    result=None,
+                    parent_hashes=[self.syft_history_hash, other.syft_history_hash],
+                    result_obj=output,
+                    op_name="gt",
                 )
             result2 = self.syft_action_data < other.syft_action_data
             return self._syft_output_action_object(
-                result2, parent_hashes=[self.syft_history_hash, other.syft_history_hash], op_name="gt"
+                result2,
+                parent_hashes=[self.syft_history_hash, other.syft_history_hash],
+                op_name="gt",
             )
         result = self.__gt__(other)
         return self._syft_output_action_object(result, op_name="gt")
@@ -406,11 +420,16 @@ class ActionObject(SyftObject):
                     else other.syft_result_obj
                 )
                 return self._syft_output_action_object(
-                    result=None, parent_hashes=[self.syft_history_hash, other.syft_history_hash], result_obj=output, op_name="le"
+                    result=None,
+                    parent_hashes=[self.syft_history_hash, other.syft_history_hash],
+                    result_obj=output,
+                    op_name="le",
                 )
             result2 = self.syft_action_data < other.syft_action_data
             return self._syft_output_action_object(
-                result2, parent_hashes=[self.syft_history_hash, other.syft_history_hash], op_name="le"
+                result2,
+                parent_hashes=[self.syft_history_hash, other.syft_history_hash],
+                op_name="le",
             )
         result = self.__le__(other)
         return self._syft_output_action_object(result, op_name="le")
@@ -425,11 +444,16 @@ class ActionObject(SyftObject):
                     else other.syft_result_obj
                 )
                 return self._syft_output_action_object(
-                    result=None, parent_hashes=[self.syft_history_hash, other.syft_history_hash], result_obj=output, op_name="ge"
+                    result=None,
+                    parent_hashes=[self.syft_history_hash, other.syft_history_hash],
+                    result_obj=output,
+                    op_name="ge",
                 )
             result2 = self.syft_action_data < other.syft_action_data
             return self._syft_output_action_object(
-                result2, parent_hashes=[self.syft_history_hash, other.syft_history_hash], op_name="ge"
+                result2,
+                parent_hashes=[self.syft_history_hash, other.syft_history_hash],
+                op_name="ge",
             )
         result = self.__ge__(other)
         return self._syft_output_action_object(result, op_name="ge")
@@ -444,17 +468,22 @@ class ActionObject(SyftObject):
                     else other.syft_result_obj
                 )
                 return self._syft_output_action_object(
-                    result=None, parent_hashes=[self.syft_history_hash, other.syft_history_hash], result_obj=output, op_name="sub"
+                    result=None,
+                    parent_hashes=[self.syft_history_hash, other.syft_history_hash],
+                    result_obj=output,
+                    op_name="sub",
                 )
             result2 = self.syft_action_data + other.syft_action_data
             return self._syft_output_action_object(
-                result2, parent_hashes=[self.syft_history_hash, other.syft_history_hash], op_name="sub"
+                result2,
+                parent_hashes=[self.syft_history_hash, other.syft_history_hash],
+                op_name="sub",
             )
         result = self.__sub__(other)
         return self._syft_output_action_object(result, op_name="sub")
 
     # def __rsub__(self, other: Any) -> Any:
-        # return self.__add__(other)
+    # return self.__add__(other)
 
     def __mul__(self, other: Any) -> Any:
         if isinstance(other, ActionObject):
@@ -466,11 +495,16 @@ class ActionObject(SyftObject):
                     else other.syft_result_obj
                 )
                 return self._syft_output_action_object(
-                    result=None, parent_hashes=[self.syft_history_hash, other.syft_history_hash], result_obj=output, op_name="mul"
+                    result=None,
+                    parent_hashes=[self.syft_history_hash, other.syft_history_hash],
+                    result_obj=output,
+                    op_name="mul",
                 )
             result2 = self.syft_action_data + other.syft_action_data
             return self._syft_output_action_object(
-                result2, parent_hashes=[self.syft_history_hash, other.syft_history_hash], op_name="mul"
+                result2,
+                parent_hashes=[self.syft_history_hash, other.syft_history_hash],
+                op_name="mul",
             )
         result = self.__add__(other)
         return self._syft_output_action_object(result, op_name="mul")
@@ -485,11 +519,16 @@ class ActionObject(SyftObject):
                     else other.syft_result_obj
                 )
                 return self._syft_output_action_object(
-                    result=None, parent_hashes=[self.syft_history_hash, other.syft_history_hash], result_obj=output, op_name="matmul"
+                    result=None,
+                    parent_hashes=[self.syft_history_hash, other.syft_history_hash],
+                    result_obj=output,
+                    op_name="matmul",
                 )
             result2 = self.syft_action_data @ other.syft_action_data
             return self._syft_output_action_object(
-                result2, parent_hashes=[self.syft_history_hash, other.syft_history_hash], op_name="matmul"
+                result2,
+                parent_hashes=[self.syft_history_hash, other.syft_history_hash],
+                op_name="matmul",
             )
         result = self.__matmul__(other)
         print(type(result))
@@ -506,11 +545,16 @@ class ActionObject(SyftObject):
                     else other.syft_result_obj
                 )
                 return self._syft_output_action_object(
-                    result=None, parent_hashes=[self.syft_history_hash, other.syft_history_hash], result_obj=output, op_name="matmul"
+                    result=None,
+                    parent_hashes=[self.syft_history_hash, other.syft_history_hash],
+                    result_obj=output,
+                    op_name="matmul",
                 )
             result2 = other.syft_action_data @ self.syft_action_data
             return self._syft_output_action_object(
-                result2, parent_hashes=[self.syft_history_hash, other.syft_history_hash], op_name="matmul"
+                result2,
+                parent_hashes=[self.syft_history_hash, other.syft_history_hash],
+                op_name="matmul",
             )
         else:
             if self.syft_action_data is None:
@@ -519,7 +563,7 @@ class ActionObject(SyftObject):
                     result=None,
                     parent_hashes=[self.syft_history_hash, other_id],
                     result_obj=self.syft_result_obj,
-                    op_name="matmul"
+                    op_name="matmul",
                 )
             else:
                 result = other @ self.syft_action_data
@@ -631,7 +675,9 @@ class ActionObject(SyftObject):
                     parent_hashes = [parent_hashes, self.syft_history_hash]
             else:
                 raise NotImplementedError(
-                    "Not implemented for Parent_id type: ", type(parent_hashes), parent_hashes
+                    "Not implemented for Parent_id type: ",
+                    type(parent_hashes),
+                    parent_hashes,
                 )
 
             if result_obj is None:
@@ -656,7 +702,6 @@ class ActionObject(SyftObject):
 
     def _syft_dont_wrap_attrs(self) -> List[str]:
         return dont_wrap_output_attrs + getattr(self, "syft_dont_wrap_attrs", [])
-
 
     def __getattribute__(self, name):
         # bypass certain attrs to prevent recursion issues
@@ -877,21 +922,11 @@ class ActionObject(SyftObject):
     def keys(self) -> KeysView[str]:
         return self.syft_action_data.keys()
 
-    ###### __DUNDER_MIFFLIN__
-
-    # if we do not implement __add__ then x + y won't trigger __getattribute__
-    # no implementation necessary here as we will defer to __getattribute__
-    def __repr__(self) -> str:
-        return self.__repr__()
-
     def __len__(self) -> int:
         return self.__len__()
 
     def __getitem__(self, key: Any) -> Any:
         return self._syft_output_action_object(self.__getitem__(key))
-
-    def __eq__(self, other: Any) -> Any:
-        return self._syft_output_action_object(self.__eq__(other))
 
     def __setitem__(self, key: Any, value: Any) -> Any:
         return self.__setitem__(key, value)
@@ -919,15 +954,6 @@ class ActionObject(SyftObject):
 
     def __bool__(self) -> bool:
         return self.__bool__()
-
-    def __add__(self, other: Any) -> Any:
-        return self._syft_output_action_object(self.__add__(other))
-
-    def __mul__(self, other: Any) -> Any:
-        return self._syft_output_action_object(self.__mul__(other))
-
-    def __matmul__(self, other: Any) -> Any:
-        return self._syft_output_action_object(self.__matmul__(other))
 
 
 @serializable(recursive_serde=True)
