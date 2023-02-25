@@ -42,13 +42,13 @@ class RequestService(AbstractService):
     @service_method(path="request.submit", name="submit")
     def submit(
         self, context: AuthedServiceContext, request: SubmitRequest
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> Union[Request, SyftError]:
         """Submit a Request"""
         try:
             result = self.stash.set(request.to(Request, context=context))
             if result.is_ok():
-                result = result.ok()
-                link = LinkedObject.with_context(result, context=context)
+                request = result.ok()
+                link = LinkedObject.with_context(request, context=context)
                 user_verify_key = context.node.get_service_method(
                     UserService.user_verify_key
                 )
@@ -62,7 +62,7 @@ class RequestService(AbstractService):
                 method = context.node.get_service_method(MessageService.send)
                 result = method(context=context, message=message)
                 if isinstance(result, Message):
-                    result = Ok(SyftSuccess(message="Request Submitted"))
+                    result = Ok(request)
                 else:
                     result = Err(result)
 

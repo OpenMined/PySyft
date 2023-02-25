@@ -53,7 +53,14 @@ class MessageService(AbstractService):
         result = self.stash.get_all_inbox_for_verify_key(verify_key=context.credentials)
         if result.err():
             return SyftError(message=str(result.err()))
-        messages = result.ok()
+        inbox_messages = result.ok()
+        result = self.stash.get_all_inbox_for_verify_key(verify_key=context.credentials)
+        if result.err():
+            return SyftError(message=str(result.err()))
+        sent_messages = result.ok()
+
+        messages = inbox_messages + sent_messages
+
         return messages
 
     @service_method(

@@ -50,6 +50,7 @@ from .new.message_service import MessageService
 from .new.network_service import NetworkService
 from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
+from .new.project_service import ProjectService
 from .new.queue_stash import QueueItem
 from .new.queue_stash import QueueStash
 from .new.request_service import RequestService
@@ -152,6 +153,7 @@ class Worker(NewNode):
                 DataSubjectService,
                 NetworkService,
                 MessageService,
+                ProjectService,
             ]
             if services is None
             else services
@@ -263,6 +265,7 @@ class Worker(NewNode):
                 DataSubjectService,
                 NetworkService,
                 MessageService,
+                ProjectService,
             ]:
                 kwargs["store"] = self.document_store
             self.service_path_map[service_klass.__name__.lower()] = service_klass(
