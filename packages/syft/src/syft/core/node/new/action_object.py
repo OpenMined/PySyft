@@ -174,9 +174,11 @@ def send_action_side_effect(context: PreHookContext, *args: Any, **kwargs: Any) 
                     context.result_id = action.result_id
                     print("IGNORING: got action result", action_result)
             else:
-                print(
-                    "Can't Send Action without a target node. Use .point_to(node_uid: UID)"
-                )
+                # 🟡 TODO
+                pass
+                # print(
+                #     "Can't Send Action without a target node. Use .point_to(node_uid: UID)"
+                # )
     except Exception as e:
         print("Exception in send_action_side_effect", e)
     return context, args, kwargs
@@ -197,7 +199,9 @@ def propagate_node_uid(context: PreHookContext, op: str, result: Any) -> Any:
                 else:
                     print("dont propogate node_uid because output isnt wrapped")
             else:
-                print("Can't proagate node_uid because parent doesnt have one")
+                # 🟡 TODO
+                # print("Can't proagate node_uid because parent doesnt have one")
+                pass
     except Exception as e:
         print("Exception in propagate_node_uid", e)
     return result
