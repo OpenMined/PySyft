@@ -5,6 +5,7 @@ import json
 from typing import Any
 from typing import Dict
 from typing import Optional
+from typing import Type
 from typing import Union
 from typing import cast
 
@@ -15,10 +16,12 @@ from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from result import OkErr
+from tqdm import tqdm
 from typing_extensions import Self
 
 # relative
 from .... import __version__
+from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....grid import GridURL
 from ....logger import debug
 from ....telemetry import instrument
@@ -29,14 +32,20 @@ from ...common.serde.serialize import _serialize
 from ...common.uid import UID
 from ...node.new.credentials import UserLoginCredentials
 from ...node.new.node_metadata import NodeMetadataJSON
+from ...node.new.user import UserCreate
 from ...node.new.user import UserPrivateKey
+from .api import APIModule
 from .api import APIRegistry
+from .api import SignedSyftAPICall
 from .api import SyftAPI
 from .api import SyftAPICall
 from .connection import NodeConnection
+from .context import NodeServiceContext
 from .credentials import SyftSigningKey
+from .dataset import CreateDataset
 from .node import NewNode
 from .response import SyftError
+from .response import SyftSuccess
 from .user_service import UserService
 
 # use to enable mitm proxy
@@ -63,6 +72,7 @@ class Routes(Enum):
     ROUTE_METADATA = f"{API_PATH}/metadata"
     ROUTE_API = f"{API_PATH}/api"
     ROUTE_LOGIN = f"{API_PATH}/login"
+    ROUTE_REGISTER = f"{API_PATH}/register"
     ROUTE_API_CALL = f"{API_PATH}/api_call"
 
 
@@ -72,14 +82,23 @@ DEFAULT_PYGRID_ADDRESS = f"http://localhost:{DEFAULT_PYGRID_PORT}"
 
 @serializable(recursive_serde=True)
 class HTTPConnection(NodeConnection):
-    proxies: Dict[str, str] = {}
-    url: GridURL
-    routes: Routes = Routes
-    _session: Optional[Session]
+    __canonical_name__ = "HTTPConnection"
+    __version__ = SYFT_OBJECT_VERSION_1
 
-    def __init__(self, url: Union[GridURL, str]) -> None:
-        self.url = GridURL.from_url(url)
-        self._session = None
+    proxy_target_uid: Optional[UID]
+    url: GridURL
+    routes: Type[Routes] = Routes
+    session_cache: Optional[Session]
+
+    def __init__(
+        self, url: Union[GridURL, str], proxy_target_uid: Optional[UID] = None
+    ) -> None:
+        url = GridURL.from_url(url)
+        proxy_target_uid = proxy_target_uid
+        super().__init__(url=url, proxy_target_uid=proxy_target_uid)
+
+    def with_proxy(self, proxy_target_uid: UID) -> Self:
+        return HTTPConnection(url=self.url, proxy_target_uid=proxy_target_uid)
 
     def get_cache_key(self) -> str:
         return str(self.url)
@@ -90,20 +109,18 @@ class HTTPConnection(NodeConnection):
 
     @property
     def session(self) -> Session:
-        if self._session is None:
+        if self.session_cache is None:
             session = requests.Session()
             retry = Retry(total=3, backoff_factor=0.5)
             adapter = HTTPAdapter(max_retries=retry)
             session.mount("http://", adapter)
             session.mount("https://", adapter)
-            self._session = session
-        return self._session
+            self.session_cache = session
+        return self.session_cache
 
     def _make_get(self, path: str) -> bytes:
         url = self.url.with_path(path)
-        response = self.session.get(
-            str(url), verify=verify_tls(), proxies=HTTPConnection.proxies
-        )
+        response = self.session.get(str(url), verify=verify_tls(), proxies={})
         if response.status_code != 200:
             raise requests.ConnectionError(
                 f"Failed to fetch {url}. Response returned with code {response.status_code}"
@@ -117,7 +134,7 @@ class HTTPConnection(NodeConnection):
     def _make_post(self, path: str, json: Dict[str, Any]) -> bytes:
         url = self.url.with_path(path)
         response = self.session.post(
-            str(url), verify=verify_tls(), json=json, proxies=HTTPConnection.proxies
+            str(url), verify=verify_tls(), json=json, proxies={}
         )
         if response.status_code != 200:
             raise requests.ConnectionError(
@@ -129,28 +146,49 @@ class HTTPConnection(NodeConnection):
 
         return response.content
 
-    def get_node_metadata(self) -> NodeMetadataJSON:
-        response = self._make_get(self.routes.ROUTE_METADATA.value)
-        metadata_json = json.loads(response)
-        return NodeMetadataJSON(**metadata_json)
+    def get_node_metadata(self, credentials: SyftSigningKey) -> NodeMetadataJSON:
+        if self.proxy_target_uid:
+            call = SyftAPICall(
+                node_uid=self.proxy_target_uid,
+                path="metadata",
+                args=[],
+                kwargs={},
+                blocking=True,
+            )
+            signed_call = call.sign(credentials=credentials)
+            response = self.make_call(signed_call)
+            if isinstance(response, SyftError):
+                return response
+            return response.to(NodeMetadataJSON)
+        else:
+            response = self._make_get(self.routes.ROUTE_METADATA.value)
+            metadata_json = json.loads(response)
+            return NodeMetadataJSON(**metadata_json)
 
     def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
         content = self._make_get(self.routes.ROUTE_API.value)
         obj = _deserialize(content, from_bytes=True)
         obj.connection = self
         obj.signing_key = credentials
+        if self.proxy_target_uid:
+            obj.node_uid = self.proxy_target_uid
         return cast(SyftAPI, obj)
 
-    def connect(self, email: str, password: str) -> SyftSigningKey:
+    def login(self, email: str, password: str) -> SyftSigningKey:
         credentials = {"email": email, "password": password}
         response = self._make_post(self.routes.ROUTE_LOGIN.value, credentials)
         obj = _deserialize(response, from_bytes=True)
         if isinstance(obj, UserPrivateKey):
             return obj.signing_key
-        print(obj)
         return None
 
-    def make_call(self, signed_call: SyftAPICall) -> Union[Any, SyftError]:
+    def register(self, new_user: UserCreate) -> SyftSigningKey:
+        data = _serialize(new_user, to_bytes=True)
+        response = self._make_post(self.routes.ROUTE_REGISTER.value, data)
+        response = _deserialize(response, from_bytes=True)
+        return response
+
+    def make_call(self, signed_call: SignedSyftAPICall) -> Union[Any, SyftError]:
         msg_bytes: bytes = _serialize(obj=signed_call, to_bytes=True)
         response = requests.post(
             url=str(self.api_url),
@@ -165,21 +203,47 @@ class HTTPConnection(NodeConnection):
         result = _deserialize(response.content, from_bytes=True)
         return result
 
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}: {self.url}"
+
+    def __str__(self) -> str:
+        return f"{type(self).__name__}: {self.url}"
+
 
 @serializable(recursive_serde=True)
 class PythonConnection(NodeConnection):
+    __canonical_name__ = "PythonConnection"
+    __version__ = SYFT_OBJECT_VERSION_1
+
     node: NewNode
+    proxy_target_uid: Optional[UID]
 
-    def __init__(self, node: NewNode) -> None:
-        self.node = node
+    def with_proxy(self, proxy_target_uid: UID) -> Self:
+        return PythonConnection(node=self.node, proxy_target_uid=proxy_target_uid)
 
-    def get_node_metadata(self) -> NodeMetadataJSON:
-        return self.node.metadata().to(NodeMetadataJSON)
+    def get_node_metadata(self, credentials: SyftSigningKey) -> NodeMetadataJSON:
+        if self.proxy_target_uid:
+            call = SyftAPICall(
+                node_uid=self.proxy_target_uid,
+                path="metadata",
+                args=[],
+                kwargs={},
+                blocking=True,
+            )
+            signed_call = call.sign(credentials=credentials)
+            response = self.make_call(signed_call)
+            if isinstance(response, SyftError):
+                return response
+            return response.to(NodeMetadataJSON)
+        else:
+            return self.node.metadata.to(NodeMetadataJSON)
 
     def get_api(self, credentials: SyftSigningKey) -> SyftAPI:
         obj = self.node.get_api()
         obj.connection = self
         obj.signing_key = credentials
+        if self.proxy_target_uid:
+            obj.node_uid = self.proxy_target_uid
         return obj
 
     def get_cache_key(self) -> str:
@@ -199,18 +263,30 @@ class PythonConnection(NodeConnection):
             return result.value
         return result
 
-    def connect(self, email: str, password: str) -> Optional[SyftSigningKey]:
+    def login(self, email: str, password: str) -> Optional[SyftSigningKey]:
         obj = self.exchange_credentials(email=email, password=password)
         if isinstance(obj, UserPrivateKey):
             return obj.signing_key
-        print(obj)
         return None
 
-    def make_call(self, signed_call: SyftAPICall) -> Union[Any, SyftError]:
+    def register(self, new_user: UserCreate) -> Optional[SyftSigningKey]:
+        service_context = NodeServiceContext(node=self.node)
+        method = self.node.get_service_method(UserService.register)
+        response = method(context=service_context, new_user=new_user)
+        return response
+
+    def make_call(self, signed_call: SignedSyftAPICall) -> Union[Any, SyftError]:
         return self.node.handle_api_call(signed_call)
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}"
+
+    def __str__(self) -> str:
+        return f"{type(self).__name__}"
 
 
 @instrument
+@serializable(recursive_serde=True)
 class SyftClient:
     connection: NodeConnection
     metadata: Optional[NodeMetadataJSON]
@@ -232,7 +308,11 @@ class SyftClient:
 
     def post_init(self) -> None:
         if self.metadata is None:
-            self._fetch_node_metadata()
+            self._fetch_node_metadata(self.credentials)
+
+    @property
+    def authed(self) -> bool:
+        return bool(self.credentials)
 
     @staticmethod
     def from_url(url: Union[str, GridURL]) -> Self:
@@ -248,7 +328,7 @@ class SyftClient:
 
     @property
     def id(self) -> Optional[UID]:
-        return self.metadata.id if self.metadata else None
+        return UID.from_string(self.metadata.id) if self.metadata else None
 
     @property
     def icon(self) -> str:
@@ -261,8 +341,65 @@ class SyftClient:
 
         return self._api
 
-    def connect(self, email: str, password: str, cache: bool = True) -> None:
-        signing_key = self.connection.connect(email=email, password=password)
+    def guest(self) -> Self:
+        self.credentials = SyftSigningKey.generate()
+        return self
+
+    def upload_dataset(self, dataset: CreateDataset) -> Union[SyftSuccess, SyftError]:
+        # relative
+        from .twin_object import TwinObject
+
+        for asset in tqdm(dataset.asset_list):
+            print(f"Uploading: {asset.name}")
+            try:
+                twin = TwinObject(private_obj=asset.data, mock_obj=asset.mock)
+            except Exception as e:
+                return SyftError(message=f"Failed to create twin. {e}")
+            response = self.api.services.action.set(twin)
+            if isinstance(response, SyftError):
+                print(f"Failed to upload asset\n: {asset}")
+                return response
+            asset.action_id = twin.id
+            asset.node_uid = self.id
+        valid = dataset.check()
+        if valid.ok():
+            return self.api.services.dataset.add(dataset=dataset)
+        else:
+            if len(valid.err()) > 0:
+                return tuple(valid.err())
+            return valid.err()
+
+    def exchange_route(self, client: Self) -> None:
+        result = self.api.services.network.exchange_credentials_with(client=client)
+        if result:
+            result = self.api.services.network.add_route_for(
+                route=self.route, client=client
+            )
+        return result
+
+    def apply_to_gateway(self, client: Self) -> None:
+        return self.exchange_route(client)
+
+    @property
+    def data_subject_registry(self) -> Optional[APIModule]:
+        if self.api is not None and hasattr(self.api.services, "data_subject"):
+            return self.api.services.data_subject
+        return None
+
+    @property
+    def datasets(self) -> Optional[APIModule]:
+        if self.api is not None and hasattr(self.api.services, "dataset"):
+            return self.api.services.dataset
+        return None
+
+    @property
+    def domains(self) -> Optional[APIModule]:
+        if self.api is not None and hasattr(self.api.services, "network"):
+            return self.api.services.network.get_all_peers()
+        return None
+
+    def login(self, email: str, password: str, cache: bool = True) -> Self:
+        signing_key = self.connection.login(email=email, password=password)
         if signing_key is not None:
             self.credentials = signing_key
             self._fetch_api(self.credentials)
@@ -273,6 +410,52 @@ class SyftClient:
                     connection=self.connection,
                     syft_client=self,
                 )
+        return self
+
+    def register(
+        self,
+        name: str,
+        email: str,
+        password: str,
+        institution: Optional[str] = None,
+        website: Optional[str] = None,
+    ):
+        try:
+            new_user = UserCreate(
+                name=name,
+                email=email,
+                password=password,
+                password_verify=password,
+                institution=institution,
+                website=website,
+            )
+        except Exception as e:
+            return SyftError(message=str(e))
+        response = self.connection.register(new_user=new_user)
+        if isinstance(response, tuple):
+            self.credentials = response[1].signing_key
+            self._fetch_api(self.credentials)
+            response = response[0]
+        return response
+
+    @property
+    def peer(self) -> Any:
+        # relative
+        from .network_service import NodePeer
+
+        return NodePeer.from_client(self)
+
+    @property
+    def route(self) -> Any:
+        return self.connection.route
+
+    def proxy_to(self, peer: Any) -> Self:
+        connection = self.connection.with_proxy(peer.id)
+        client = SyftClient(
+            connection=connection,
+            credentials=self.credentials,
+        )
+        return client
 
     def __hash__(self) -> int:
         return hash(self.id) + hash(self.connection)
@@ -287,17 +470,44 @@ class SyftClient:
         )
 
     def __repr__(self) -> str:
-        return f"<{type(self).__name__} - {self.name}: {self.id} {self.connection}>"
+        proxy_target_uid = None
+        if self.connection and self.connection.proxy_target_uid:
+            proxy_target_uid = self.connection.proxy_target_uid
+        client_type = type(self).__name__
+        uid = self.id
+        if proxy_target_uid:
+            client_type = "ProxyClient"
+            uid = proxy_target_uid
+            return f"<{client_type} - <{uid}>: via {self.id} {self.connection}>"
+        return f"<{client_type} - {self.name} <{uid}>: {self.connection}>"
 
-    def _fetch_node_metadata(self) -> None:
-        metadata = self.connection.get_node_metadata()
-        metadata.check_version(__version__)
-        self.metadata = metadata
+    def _fetch_node_metadata(self, credentials: SyftSigningKey) -> None:
+        metadata = self.connection.get_node_metadata(credentials=credentials)
+        if isinstance(metadata, NodeMetadataJSON):
+            metadata.check_version(__version__)
+            self.metadata = metadata
 
     def _fetch_api(self, credentials: SyftSigningKey):
         _api = self.connection.get_api(credentials=credentials)
         APIRegistry.set_api_for(node_uid=self.id, api=_api)
         self._api = _api
+
+
+@instrument
+def connect(
+    url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
+    node: Optional[NewNode] = None,
+    port: Optional[int] = None,
+) -> SyftClient:
+    if node:
+        connection = PythonConnection(node=node)
+    else:
+        url = GridURL.from_url(url)
+        if isinstance(port, (int, str)):
+            url.set_port(int(port))
+        connection = HTTPConnection(url=url)
+    _client = SyftClient(connection=connection)
+    return _client
 
 
 @instrument
@@ -309,37 +519,33 @@ def login(
     password: Optional[str] = None,
     cache: bool = True,
 ) -> SyftClient:
-    if node:
-        connection = PythonConnection(node=node)
-    else:
-        url = GridURL.from_url(url)
-        if isinstance(port, (int, str)):
-            url.set_port(int(port))
-        connection = HTTPConnection(url=url)
+    _client = connect(url=url, node=node, port=port)
+    connection = _client.connection
 
     login_credentials = UserLoginCredentials(email=email, password=password)
 
-    _client = None
     if cache:
-        _client = SyftClientSessionCache.get_client(
+        _client_cache = SyftClientSessionCache.get_client(
             login_credentials.email,
             login_credentials.password,
             connection=connection,
         )
-        if _client:
+        if _client_cache:
             print(
                 f"Using cached client for {_client.name} as <{login_credentials.email}>"
             )
+            _client = _client_cache
 
-    if _client is None:
-        _client = SyftClient(connection=connection)
-        _client.connect(
+    if not _client.authed:
+        _client.login(
             email=login_credentials.email,
             password=login_credentials.password,
             cache=cache,
         )
-        if _client.credentials:
+        if _client.authed:
             print(f"Logged into {_client.name} as <{login_credentials.email}>")
+        else:
+            return SyftError(message=f"Failed to login as {login_credentials.email}")
 
     return _client
 
@@ -347,6 +553,7 @@ def login(
 class SyftClientSessionCache:
     __credentials_store__: Dict = {}
     __cache_key_format__ = "{email}-{password}-{connection}"
+    __client_cache__: Dict = {}
 
     @classmethod
     def _get_key(cls, email: str, password: str, connection: str) -> str:
@@ -365,6 +572,7 @@ class SyftClientSessionCache:
     ):
         hash_key = cls._get_key(email, password, connection.get_cache_key())
         cls.__credentials_store__[hash_key] = syft_client
+        cls.__client_cache__[syft_client.id] = syft_client
 
     @classmethod
     def get_client(
@@ -372,3 +580,7 @@ class SyftClientSessionCache:
     ) -> Optional[SyftClient]:
         hash_key = cls._get_key(email, password, connection.get_cache_key())
         return cls.__credentials_store__.get(hash_key, None)
+
+    @classmethod
+    def get_client_for_node_uid(cls, node_uid: UID) -> Optional[SyftClient]:
+        return cls.__client_cache__.get(node_uid, None)

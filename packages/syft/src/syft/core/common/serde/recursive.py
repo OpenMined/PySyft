@@ -66,6 +66,28 @@ def recursive_serde_register(
     )
 
 
+def chunk_bytes(
+    data: bytes, field_name: Union[str, int], builder: _DynamicStructBuilder
+) -> None:
+    CHUNK_SIZE = int(5.12e8)  # capnp max for a List(Data) field
+    list_size = len(data) // CHUNK_SIZE + 1
+    data_lst = builder.init(field_name, list_size)
+    END_INDEX = CHUNK_SIZE
+    for idx in range(list_size):
+        START_INDEX = idx * CHUNK_SIZE
+        END_INDEX = min(START_INDEX + CHUNK_SIZE, len(data))
+        data_lst[idx] = data[START_INDEX:END_INDEX]
+
+
+def combine_bytes(capnp_list: List[bytes]) -> bytes:
+    # TODO: make sure this doesn't copy, perhaps allocate a fixed size buffer
+    # and move the bytes into it as we go
+    bytes_value = b""
+    for value in capnp_list:
+        bytes_value += value
+    return bytes_value
+
+
 def rs_object2proto(self: Any) -> _DynamicStructBuilder:
     msg = recursive_scheme.new_message()
     fqn = get_fully_qualified_name(self)
@@ -73,16 +95,20 @@ def rs_object2proto(self: Any) -> _DynamicStructBuilder:
         raise Exception(f"{fqn} not in TYPE_BANK")
 
     msg.fullyQualifiedName = fqn
-    nonrecursive, serialize, deserialize, attribute_list, serde_overrides = TYPE_BANK[
-        fqn
-    ]
+    (
+        nonrecursive,
+        serialize,
+        deserialize,
+        attribute_list,
+        serde_overrides,
+    ) = TYPE_BANK[fqn]
 
     if nonrecursive:
         if serialize is None:
             raise Exception(
                 f"Cant serialize {type(self)} nonrecursive without serialize."
             )
-        msg.nonrecursiveBlob = serialize(self)
+        chunk_bytes(serialize(self), "nonrecursiveBlob", msg)
         return msg
 
     if attribute_list is None:
@@ -107,9 +133,8 @@ def rs_object2proto(self: Any) -> _DynamicStructBuilder:
             continue
 
         serialized = sy.serialize(field_obj, to_bytes=True)
-
         msg.fieldsName[idx] = attr_name
-        msg.fieldsData[idx] = serialized
+        chunk_bytes(serialized, idx, msg.fieldsData)
 
     return msg
 
@@ -150,11 +175,13 @@ def rs_proto2object(proto: _DynamicStructBuilder) -> Any:
             raise Exception(
                 f"Cant serialize {type(proto)} nonrecursive without serialize."
             )
-        return deserialize(proto.nonrecursiveBlob)
+
+        return deserialize(combine_bytes(proto.nonrecursiveBlob))
 
     kwargs = {}
 
-    for attr_name, attr_bytes in zip(proto.fieldsName, proto.fieldsData):
+    for attr_name, attr_bytes_list in zip(proto.fieldsName, proto.fieldsData):
+        attr_bytes = combine_bytes(attr_bytes_list)
         attr_value = _deserialize(attr_bytes, from_bytes=True)
         transforms = serde_overrides.get(attr_name, None)
 

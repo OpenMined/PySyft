@@ -18,10 +18,8 @@ services:
   frontend:
     volumes:
       - ${RELATIVE_PATH}./frontend/:/app
-
-  # svelte:
-  #   volumes:
-  #     - ./svelte:/app
+    environment:
+      - FRONTEND_TARGET=grid-ui-development
 
   redis:
     ports:
@@ -40,7 +38,6 @@ services:
       - ${RELATIVE_PATH}./data/package-cache:/root/.cache
     environment:
       - DEV_MODE=True
-    command: /start.sh
 
   backend_stream:
     volumes:
@@ -49,7 +46,6 @@ services:
       - ${RELATIVE_PATH}./data/package-cache:/root/.cache
     environment:
       - DEV_MODE=True
-    command: "/start.sh"
 
   celeryworker:
     volumes:
@@ -58,7 +54,6 @@ services:
       - ${RELATIVE_PATH}./data/package-cache:/root/.cache
     environment:
       - DEV_MODE=True
-    command: "/worker-start.sh"
 
   headscale:
     profiles:

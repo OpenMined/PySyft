@@ -85,7 +85,7 @@ class SyftObjectRegistry:
         cls, type_from: Type["SyftObject"], type_to: Type["SyftObject"]
     ) -> Callable:
         for type_from_mro in type_from.mro():
-            if issubclass(type_from_mro, SyftBaseObject):
+            if issubclass(type_from_mro, SyftObject):
                 klass_from = type_from_mro.__canonical_name__
                 version_from = type_from_mro.__version__
             else:
@@ -132,10 +132,9 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         return values
 
     __attr_state__: List[str]  # persistent recursive serde keys
-    __attr_searchable__: List[str]  # keys which can be searched in the ORM
-    __attr_unique__: List[
-        str
-    ]  # the unique keys for the particular Collection the objects will be stored in
+    __attr_searchable__: List[str] = []  # keys which can be searched in the ORM
+    __attr_unique__: List[str] = []
+    # the unique keys for the particular Collection the objects will be stored in
     __serde_overrides__: Dict[
         str, Sequence[Callable]
     ] = {}  # List of attributes names which require a serde override.
@@ -186,6 +185,18 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
             return fqn
         except Exception:
             return str(type(self))
+
+    def _repr_debug_(self) -> str:
+        class_name = get_qualname_for(type(self))
+        _repr_str = f"class {class_name}:\n"
+        fields = getattr(self, "__fields__", {})
+        for attr in fields.keys():
+            value = getattr(self, attr, "<Missing>")
+            value_type = full_name_with_qualname(type(attr))
+            value_type = value_type.replace("builtins.", "")
+            value = f'"{value}"' if isinstance(value, str) else value
+            _repr_str += f"  {attr}: {value_type} = {value}\n"
+        return _repr_str
 
     def _repr_markdown_(self) -> str:
         class_name = get_qualname_for(type(self))
@@ -252,9 +263,16 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
         transform = SyftObjectRegistry.get_transform(type(self), projection)
         return transform(self, context)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self, exclude_none: bool = False) -> Dict[str, Any]:
         # 🟡 TODO 18: Remove to_dict and replace usage with transforms etc
-        return dict(self)
+        if not exclude_none:
+            return dict(self)
+        else:
+            new_dict = {}
+            for k, v in dict(self).items():
+                if v is not None:
+                    new_dict[k] = v
+            return new_dict
 
     def __post_init__(self) -> None:
         pass
@@ -354,7 +372,7 @@ def list_dict_repr_html(self) -> str:
                 cols["id"].append(getattr(item, "id", None))
                 for field in extra_fields:
                     value = getattr(item, field, None)
-                    cols[field] = value
+                    cols[field].append(value)
 
             x = pd.DataFrame(cols)
             collection_type = (
@@ -377,6 +395,7 @@ aggressive_set_attr(type({}), "_repr_html_", list_dict_repr_html)
 
 
 class StorableObjectType:
-    def to(self, projection: type) -> Any:
+    def to(self, projection: type, context: Optional[Context] = None) -> Any:
+        # 🟡 TODO 19: Could we do an mro style inheritence conversion? Risky?
         transform = SyftObjectRegistry.get_transform(type(self), projection)
-        return transform(self)
+        return transform(self, context)

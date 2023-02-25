@@ -7,7 +7,6 @@ from typing import Optional
 from typing import Type
 
 # third party
-import boto3
 from nacl.signing import VerifyKey
 from typing_extensions import final
 
@@ -131,6 +130,9 @@ class UploadDataCompleteMessage(SyftMessage, DomainMessageRegistry):
         #    return {"message": "You're not authorized to do this."}
 
         key = f"{self.payload.filename}"
+        # third party
+        import boto3
+
         client: boto3.client.S3 = get_s3_client(settings=node.settings)
         _ = client.complete_multipart_upload(
             Bucket=node.id.no_dash,
@@ -175,6 +177,8 @@ class AbortDataUploadMessage(SyftMessage, DomainMessageRegistry):
         # user_role = node.roles.first(**{"id": current_user.role})
         # if not user_role.can_upload_data:
         #    return {"message": "You're not authorized to do this."}
+        # third party
+        import boto3
 
         client: boto3.client.S3 = get_s3_client(settings=node.settings)
 

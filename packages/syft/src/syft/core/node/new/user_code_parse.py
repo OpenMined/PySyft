@@ -1,20 +1,6 @@
 # stdlib
 import ast
-import sys
-from typing import Any
 from typing import List
-
-# relative
-from .credentials import SyftVerifyKey
-from .document_store import PartitionKey
-
-UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
-CodeHashPartitionKey = PartitionKey(key="code_hash", type_=int)
-
-stdout_ = sys.stdout
-stderr_ = sys.stderr
-
-PyCodeObject = Any
 
 
 class GlobalsVisitor(ast.NodeVisitor):

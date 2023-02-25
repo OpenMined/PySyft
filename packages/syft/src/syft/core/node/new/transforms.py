@@ -14,7 +14,9 @@ from typing_extensions import Self
 from ....core.node.common.node_table.syft_object import Context
 from ....core.node.common.node_table.syft_object import SyftBaseObject
 from ....core.node.common.node_table.syft_object import SyftObjectRegistry
+from ....grid.grid_url import GridURL
 from ...common.uid import UID
+from .context import AuthedServiceContext
 from .context import NodeServiceContext
 from .credentials import SyftVerifyKey
 from .node import NewNode
@@ -32,10 +34,6 @@ class TransformContext(Context):
 
     @staticmethod
     def from_context(obj: Any, context: Optional[Context] = None) -> Self:
-        if isinstance(context, TransformContext):
-            context.obj = obj
-            context.output = dict(obj)
-            return context
         t_context = TransformContext()
         t_context.obj = obj
         t_context.output = dict(obj)
@@ -44,6 +42,13 @@ class TransformContext(Context):
         if hasattr(context, "node"):
             t_context.node = context.node
         return t_context
+
+    def to_node_context(self) -> NodeServiceContext:
+        if self.credentials:
+            return AuthedServiceContext(node=self.node, credentials=self.credentials)
+        if self.node:
+            return NodeServiceContext(self.node)
+        return Context()
 
 
 def geteitherattr(
@@ -123,11 +128,48 @@ def generate_id(context: TransformContext) -> TransformContext:
     return context
 
 
+def validate_url(context: TransformContext) -> TransformContext:
+    if context.output["url"] is not None:
+        context.output["url"] = GridURL.from_url(context.output["url"]).url_no_port
+    return context
+
+
 def validate_email(context: TransformContext) -> TransformContext:
     if context.output["email"] is not None:
         context.output["email"] = EmailStr(context.output["email"])
         EmailStr.validate(context.output["email"])
     return context
+
+
+def add_credentials_for_key(key: str) -> Callable:
+    def add_credentials(context: TransformContext) -> TransformContext:
+        context.output[key] = context.credentials
+        return context
+
+    return add_credentials
+
+
+def add_node_uid_for_key(key: str) -> Callable:
+    def add_node_uid(context: TransformContext) -> TransformContext:
+        context.output[key] = context.node.id
+        return context
+
+    return add_node_uid
+
+
+def generate_transform_wrapper(
+    klass_from: type, klass_to: type, transforms: List[Callable]
+) -> Callable:
+    def wrapper(
+        self: klass_from,
+        context: Optional[Union[TransformContext, NodeServiceContext]] = None,
+    ) -> klass_to:
+        t_context = TransformContext.from_context(obj=self, context=context)
+        for transform in transforms:
+            t_context = transform(t_context)
+        return klass_to(**t_context.output)
+
+    return wrapper
 
 
 def transform_method(
@@ -170,21 +212,6 @@ def transform_method(
         return function
 
     return decorator
-
-
-def generate_transform_wrapper(
-    klass_from: type, klass_to: type, transforms: List[Callable]
-) -> Callable:
-    def wrapper(
-        self: klass_from,
-        context: Optional[Union[TransformContext, NodeServiceContext]] = None,
-    ) -> klass_to:
-        t_context = TransformContext.from_context(obj=self, context=context)
-        for transform in transforms:
-            t_context = transform(t_context)
-        return klass_to(**t_context.output)
-
-    return wrapper
 
 
 def transform(

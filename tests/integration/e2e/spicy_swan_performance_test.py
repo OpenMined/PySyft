@@ -143,7 +143,7 @@ def test_benchmark_datasets() -> None:
     # in the integration test
     key_size = "100K"
     files, ordered_sizes = download_spicy_bird_benchmark(sizes=[key_size])
-    domain = sy.login(
+    domain = sy.old_login(
         email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
     )
 
