@@ -88,10 +88,10 @@ dp_result = dp_sum(preprocessed_income)
 @pytest.mark.oblv
 def test_enclave_manual_code_submission() -> None:
     # Step1: Login Phase
-    canada_root = sy.new_login(
+    canada_root = sy.login(
         email="info@openmined.org", password="changethis", port=CANADA_DOMAIN_PORT
     )
-    italy_root = sy.new_login(
+    italy_root = sy.login(
         email="info@openmined.org", password="changethis", port=ITALY_DOMAIN_PORT
     )
 
