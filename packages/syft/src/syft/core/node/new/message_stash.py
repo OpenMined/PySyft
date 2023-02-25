@@ -35,17 +35,31 @@ class MessageStash(BaseUIDStoreStash):
         object_type=Message,
     )
 
-    def get_all_for_verify_key(
+    def get_all_inbox_for_verify_key(
         self, verify_key: SyftVerifyKey
     ) -> Result[List[Message], str]:
-        if isinstance(verify_key, str):
-            verify_key = SyftVerifyKey.from_string(verify_key)
         qks = QueryKeys(
             qks=[
-                FromUserVerifyKeyPartitionKey.with_obj(verify_key),
                 ToUserVerifyKeyPartitionKey.with_obj(verify_key),
             ]
         )
+        return self.get_all_for_verify_key(verify_key=verify_key, qks=qks)
+
+    def get_all_sent_for_verify_key(
+        self, verify_key: SyftVerifyKey
+    ) -> Result[List[Message], str]:
+        qks = QueryKeys(
+            qks=[
+                FromUserVerifyKeyPartitionKey.with_obj(verify_key),
+            ]
+        )
+        return self.get_all_for_verify_key(verify_key=verify_key, qks=qks)
+
+    def get_all_for_verify_key(
+        self, verify_key: SyftVerifyKey, qks: QueryKeys
+    ) -> Result[List[Message], str]:
+        if isinstance(verify_key, str):
+            verify_key = SyftVerifyKey.from_string(verify_key)
         return self.query_all(qks=qks)
 
     def get_all_by_verify_key_for_status(
