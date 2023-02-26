@@ -26,6 +26,7 @@ from .action_service import ActionService
 from .action_store import ActionObjectPermission
 from .action_store import ActionPermission
 from .api import APIRegistry
+from .api import UserNodeView
 from .context import AuthedServiceContext
 from .credentials import SyftVerifyKey
 from .document_store import BasePartitionSettings
@@ -38,6 +39,8 @@ from .transforms import add_credentials_for_key
 from .transforms import add_node_uid_for_key
 from .transforms import generate_id
 from .transforms import transform
+from .user_code import UserCodeStatus
+from .user_code import UserCodeStatusContext
 
 
 @serializable(recursive_serde=True)
@@ -304,6 +307,73 @@ class EnumMutation(ObjectMutation):
             if apply:
                 obj = self.mutate(obj)
                 self.linked_obj.update_with_context(context, obj)
+            else:
+                raise NotImplementedError
+            return Ok(SyftSuccess(message=f"{type(self)} Success"))
+        except Exception as e:
+            print(f"failed to apply {type(self)}. {e}")
+            return Err(SyftError(message=e))
+
+    def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+        return self._run(context=context, apply=True)
+
+    def revert(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+        return self._run(context=context, apply=False)
+
+    @property
+    def link(self) -> Optional[SyftObject]:
+        if self.linked_obj:
+            return self.linked_obj.resolve
+        return None
+
+
+@serializable(recursive_serde=True)
+class UserCodeStatusChange(Change):
+    __canonical_name__ = "UserCodeStatusChange"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    value: UserCodeStatus
+    linked_obj: LinkedObject
+    match_type: bool = True
+
+    @property
+    def valid(self) -> Union[SyftSuccess, SyftError]:
+        if self.match_type and not isinstance(self.value, UserCodeStatus):
+            return SyftError(
+                message=f"{type(self.value)} must be of type: {UserCodeStatus}"
+            )
+        return SyftSuccess(message=f"{type(self)} valid")
+
+    def mutate(self, obj: UserCodeStatusContext, context: ChangeContext) -> Any:
+        user_node_view = UserNodeView(
+            node_name=context.node.name, verify_key=context.node.signing_key.verify_key
+        )
+        base_dict = obj.status.base_dict
+        if user_node_view in base_dict:
+            base_dict[user_node_view] = self.value
+            setattr(obj.status, "base_dict", base_dict)
+            return Ok(obj)
+        else:
+            return Err(
+                "Cannot Modify Status as the Domain's data is not included in the request"
+            )
+
+    def _run(
+        self, context: ChangeContext, apply: bool
+    ) -> Result[SyftSuccess, SyftError]:
+        try:
+            valid = self.valid
+            if not valid:
+                return Err(valid)
+            obj = self.linked_obj.resolve_with_context(context)
+            if obj.is_err():
+                return SyftError(message=obj.err())
+            obj = obj.ok()
+            if apply:
+                res = obj = self.mutate(obj, context)
+                if res.is_err():
+                    return res
+                self.linked_obj.update_with_context(context, res.ok())
             else:
                 raise NotImplementedError
             return Ok(SyftSuccess(message=f"{type(self)} Success"))

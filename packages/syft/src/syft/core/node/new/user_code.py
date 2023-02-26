@@ -194,20 +194,20 @@ class UserCodeStatus(Enum):
 @serializable(recursive_serde=True)
 class UserCodeStatusContext:
     __attr_allowlist__ = [
-        "value",
+        "base_dict",
     ]
 
-    value: Dict = {}
+    base_dict: Dict = {}
 
-    def __init__(self, value: Dict):
-        self.value = value
+    def __init__(self, base_dict: Dict):
+        self.base_dict = base_dict
 
     def __repr__(self):
-        return str(self.value)
+        return str(self.base_dict)
 
     def __hash__(self) -> int:
         hash_sum = 0
-        for k, v in self.value.items():
+        for k, v in self.base_dict.items():
             hash_sum = hash(k) + hash(v)
         return hash_sum
 
@@ -513,17 +513,17 @@ def add_custom_status(context: TransformContext) -> TransformContext:
         )
         if user_node_view in context.obj.input_policy.inputs.keys():
             context.output["status"] = UserCodeStatusContext(
-                value={user_node_view: UserCodeStatus.SUBMITTED}
+                base_dict={user_node_view: UserCodeStatus.SUBMITTED}
             )
         else:
             raise NotImplementedError
     elif context.node.node_type == NodeType.ENCLAVE:
-        value = {
+        base_dict = {
             key: UserCodeStatus.SUBMITTED
             for key in context.obj.input_policy.inputs.keys()
         }
 
-        context.output["status"] = UserCodeStatusContext(value=value)
+        context.output["status"] = UserCodeStatusContext(base_dict=base_dict)
     else:
         # Consult with Madhava, on propogating errors from transforms
         raise NotImplementedError

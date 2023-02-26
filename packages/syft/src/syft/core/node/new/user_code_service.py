@@ -11,6 +11,7 @@ from ...common.uid import UID
 from .context import AuthedServiceContext
 from .document_store import DocumentStore
 from .linked_obj import LinkedObject
+from .request import UserCodeStatusChange
 from .response import SyftError
 from .response import SyftNotReady
 from .response import SyftSuccess
@@ -50,7 +51,6 @@ class UserCodeService(AbstractService):
     ) -> Union[SyftSuccess, SyftError]:
         """Request Code execution on user code"""
         # relative
-        from .request import EnumMutation
         from .request import SubmitRequest
         from .request_service import RequestService
 
@@ -60,8 +60,9 @@ class UserCodeService(AbstractService):
             return SyftError(message=str(result.err()))
 
         linked_obj = LinkedObject.from_obj(user_code, node_uid=context.node.id)
-        CODE_EXECUTE = EnumMutation.from_obj(
-            linked_obj=linked_obj, attr_name="status", value=UserCodeStatus.EXECUTE
+
+        CODE_EXECUTE = UserCodeStatusChange(
+            value=UserCodeStatus.EXECUTE, linked_obj=linked_obj
         )
         request = SubmitRequest(changes=[CODE_EXECUTE])
         method = context.node.get_service_method(RequestService.submit)
