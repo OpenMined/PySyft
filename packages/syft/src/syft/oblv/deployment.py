@@ -5,6 +5,8 @@ from typing import Optional
 from oblv import OblvClient
 from oblv.models import CreateDeploymentInput
 import yaml
+from syft.core.node.new.credentials import SyftSigningKey
+
 
 # relative
 from ..core.node.common.exceptions import OblvKeyNotFoundError
@@ -89,11 +91,12 @@ def create_deployment(
     except Exception as e:
         raise Exception(e)
 
+    ds_key = SyftSigningKey()
     verify_keys = {
         "data_owner_verify_keys": [
             client.metadata.verify_key for client in domain_clients
         ],
-        "data_scientist_verify_key": "TBD",
+        "data_scientist_verify_key": ds_key.verify_key,
     }
     build_args = {
         "auth": {},
