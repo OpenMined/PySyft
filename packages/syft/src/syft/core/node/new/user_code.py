@@ -20,9 +20,11 @@ from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import SyftObject
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
+from .api import UserNodeView
 from .credentials import SyftVerifyKey
 from .dataset import Asset
 from .document_store import PartitionKey
+from .node import NodeType
 from .response import SyftError
 from .response import SyftSuccess
 from .transforms import TransformContext
@@ -41,17 +43,23 @@ class InputPolicy(SyftObject):
     __canonical_name__ = "InputPolicy"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    # relative
+    from .api import UserNodeView
+
     id: UID
-    inputs: Dict[str, Any]
+    inputs: Dict[UserNodeView, Any]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        # TODO: This method initialization would conflict if one of the input variables
+        # to the code submission function happens to be id or inputs
         uid = UID()
         if "id" in kwargs:
             uid = kwargs["id"]
         if "inputs" in kwargs:
             kwargs = kwargs["inputs"]
-        uid_kwargs = extract_uids(kwargs)
-        super().__init__(id=uid, inputs=uid_kwargs)
+        else:
+            kwargs = partition_by_node(kwargs)
+        super().__init__(id=uid, inputs=kwargs)
 
     def filter_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
         raise NotImplementedError
@@ -176,6 +184,33 @@ class UserCodeStatus(Enum):
     DENIED = "denied"
     EXECUTE = "execute"
 
+    def __hash__(self) -> int:
+        return hash(self.value)
+
+
+# User Code status context for multiple approvals
+# To make nested dicts hashable for mongodb
+# as status is in attr_searchable
+@serializable(recursive_serde=True)
+class UserCodeStatusContext:
+    __attr_allowlist__ = [
+        "value",
+    ]
+
+    value: Dict = {}
+
+    def __init__(self, value: Dict):
+        self.value = value
+
+    def __repr__(self):
+        return str(self.value)
+
+    def __hash__(self) -> int:
+        hash_sum = 0
+        for k, v in self.value.items():
+            hash_sum = hash(k) + hash(v)
+        return hash_sum
+
 
 @serializable(recursive_serde=True)
 class UserCode(SyftObject):
@@ -195,7 +230,7 @@ class UserCode(SyftObject):
     user_unique_func_name: str
     code_hash: str
     signature: inspect.Signature
-    status: UserCodeStatus = UserCodeStatus.SUBMITTED
+    status: UserCodeStatusContext
 
     __attr_searchable__ = ["status", "service_func_name"]
     __attr_unique__ = ["user_verify_key", "code_hash", "user_unique_func_name"]
@@ -210,12 +245,17 @@ class UserCode(SyftObject):
         return self.raw_code
 
 
-def extract_uids(kwargs: Dict[str, Any]) -> Dict[str, UID]:
+def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
     # relative
     from .action_object import ActionObject
+    from .api import APIRegistry
+    from .api import UserNodeView
     from .twin_object import TwinObject
 
-    uid_kwargs = {}
+    # fetches the all the current api's connected
+    api_list = APIRegistry.get_all_api()
+
+    output_kwargs = {}
     for k, v in kwargs.items():
         uid = v
         if isinstance(v, ActionObject):
@@ -228,8 +268,22 @@ def extract_uids(kwargs: Dict[str, Any]) -> Dict[str, UID]:
         if not isinstance(uid, UID):
             raise Exception(f"Input {k} must have a UID not {type(v)}")
 
-        uid_kwargs[k] = uid
-    return uid_kwargs
+        _obj_exists = False
+        for api in api_list:
+            if api.services.action.exists(uid):
+                user_node_view = UserNodeView.from_api(api)
+                output_kwargs[user_node_view] = (
+                    output_kwargs[user_node_view].update({k: uid})
+                    if user_node_view in output_kwargs
+                    else {k: uid}
+                )
+                _obj_exists = True
+                break
+
+        if not _obj_exists:
+            raise Exception(f"Input data {k}:{uid} does not belong to any Domain")
+
+    return output_kwargs
 
 
 @serializable(recursive_serde=True)
@@ -331,7 +385,11 @@ def process_code(
     f = tree.body[0]
     f.decorator_list = []
 
-    keywords = [ast.keyword(arg=i, value=[ast.Name(id=i)]) for i in input_kwargs]
+    keywords = [
+        ast.keyword(arg=i, value=[ast.Name(id=i)])
+        for _, inputs in input_kwargs.items()
+        for i in inputs
+    ]
     call_stmt = ast.Assign(
         targets=[ast.Name(id="result")],
         value=ast.Call(
@@ -448,6 +506,30 @@ def init_output_policy_state(context: TransformContext) -> TransformContext:
     return context
 
 
+def add_custom_status(context: TransformContext) -> TransformContext:
+    if context.node.node_type == NodeType.DOMAIN:
+        user_node_view = UserNodeView(
+            node_name=context.node.name, verify_key=context.node.signing_key.verify_key
+        )
+        if user_node_view in context.obj.input_policy.inputs.keys():
+            context.output["status"] = UserCodeStatusContext(
+                value={user_node_view: UserCodeStatus.SUBMITTED}
+            )
+        else:
+            raise NotImplementedError
+    elif context.node.node_type == NodeType.ENCLAVE:
+        value = {
+            key: UserCodeStatus.SUBMITTED
+            for key in context.obj.input_policy.inputs.keys()
+        }
+
+        context.output["status"] = UserCodeStatusContext(value=value)
+    else:
+        # Consult with Madhava, on propogating errors from transforms
+        raise NotImplementedError
+    return context
+
+
 @transform(SubmitUserCode, UserCode)
 def submit_user_code_to_user_code() -> List[Callable]:
     return [
@@ -459,6 +541,7 @@ def submit_user_code_to_user_code() -> List[Callable]:
         compile_code,
         add_credentials_for_key("user_verify_key"),
         init_output_policy_state,
+        add_custom_status,
     ]
 
 

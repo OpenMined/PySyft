@@ -55,7 +55,6 @@ class UserCodeService(AbstractService):
         from .request_service import RequestService
 
         user_code = code.to(UserCode, context=context)
-
         result = self.stash.set(user_code)
         if result.is_err():
             return SyftError(message=str(result.err()))

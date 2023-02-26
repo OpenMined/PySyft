@@ -23,6 +23,7 @@ from .context import AuthedServiceContext
 from .numpy import NumpyArrayObject
 from .pandas import PandasDataFrameObject  # noqa: F401
 from .pandas import PandasSeriesObject  # noqa: F401
+from .response import SyftError
 from .response import SyftSuccess
 from .service import AbstractService
 from .service import SERVICE_TO_TYPES
@@ -252,6 +253,16 @@ class ActionService(AbstractService):
         result_action_object.syft_point_to(context.node.id)
 
         return Ok(result_action_object)
+
+    @service_method(path="action.exists", name="exists")
+    def exists(
+        self, context: AuthedServiceContext, obj_id: UID
+    ) -> Result[SyftSuccess, SyftError]:
+        """Checks if the given object id exists in the Action Store"""
+        if self.store.exists(obj_id):
+            return SyftSuccess(message=f"Object: {obj_id} exists")
+        else:
+            return SyftError(message=f"Object: {obj_id} does not exist")
 
 
 def execute_object(

@@ -49,6 +49,7 @@ from .new.document_store import StoreConfig
 from .new.message_service import MessageService
 from .new.network_service import NetworkService
 from .new.node import NewNode
+from .new.node import NodeType
 from .new.node_metadata import NodeMetadata
 from .new.queue_stash import QueueItem
 from .new.queue_stash import QueueStash
@@ -119,6 +120,7 @@ class Worker(NewNode):
         root_password: str = "changethis",
         processes: int = 0,
         is_subprocess: bool = False,
+        node_type: NodeType = NodeType.DOMAIN,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -180,6 +182,7 @@ class Worker(NewNode):
             create_oblv_key_pair(worker=self)
 
         self.client_cache = {}
+        self.node_type = node_type
         self.post_init()
 
     @staticmethod
@@ -199,7 +202,7 @@ class Worker(NewNode):
         return SyftClient(connection=connection, credentials=self.signing_key)
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__}: {self.name} - {self.id} {self.services}"
+        return f"{type(self).__name__}: {self.name} - {self.id} - {self.node_type} - {self.services}"
 
     def post_init(self) -> None:
         if self.is_subprocess:

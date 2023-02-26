@@ -43,7 +43,7 @@ class SyftVerifyKey(SyftBaseModel):
         return self.verify_key == other.verify_key
 
     def __repr__(self) -> str:
-        return str(self)
+        return "..." + str(self)[-5::]
 
     def __hash__(self) -> int:
         return self.verify_key.__hash__()
