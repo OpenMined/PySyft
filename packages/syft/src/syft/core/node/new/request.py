@@ -370,7 +370,7 @@ class UserCodeStatusChange(Change):
                 return SyftError(message=obj.err())
             obj = obj.ok()
             if apply:
-                res = obj = self.mutate(obj, context)
+                res = self.mutate(obj, context)
                 if res.is_err():
                     return res
                 self.linked_obj.update_with_context(context, res.ok())
