@@ -15,7 +15,6 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import TYPE_CHECKING
 from typing import Type
 from typing import Union
 
@@ -42,10 +41,6 @@ from .transforms import TransformContext
 from .transforms import generate_id
 from .transforms import transform
 from .user_code_parse import GlobalsVisitor
-
-if TYPE_CHECKING:
-    # relative
-    from .request import ChangeContext
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 CodeHashPartitionKey = PartitionKey(key="code_hash", type_=int)
@@ -246,11 +241,9 @@ class UserCodeStatusContext:
             )
 
     def mutate(
-        self, value: UserCodeStatus, context: Union[ChangeContext, AuthedServiceContext]
+        self, value: UserCodeStatus, node_name: str, verify_key: SyftVerifyKey
     ) -> Result[Ok, Err]:
-        user_node_view = UserNodeView(
-            node_name=context.node.name, verify_key=context.node.signing_key.verify_key
-        )
+        user_node_view = UserNodeView(node_name=node_name, verify_key=verify_key)
         base_dict = self.base_dict
         if user_node_view in base_dict:
             base_dict[user_node_view] = value

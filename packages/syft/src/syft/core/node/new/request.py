@@ -332,7 +332,11 @@ class UserCodeStatusChange(Change):
         return SyftSuccess(message=f"{type(self)} valid")
 
     def mutate(self, obj: UserCode, context: ChangeContext) -> Any:
-        res = obj.status.mutate(value=self.value, context=context)
+        res = obj.status.mutate(
+            value=self.value,
+            node_name=context.node.name,
+            verify_key=context.node.signing_key.verify_key,
+        )
         if res.is_ok():
             obj.status = res.ok()
             return Ok(obj)
@@ -351,15 +355,18 @@ class UserCodeStatusChange(Change):
             obj = obj.ok()
             if apply:
                 res = self.mutate(obj, context)
+
                 if res.is_err():
                     return res
                 res = res.ok()
+
                 enclave_res = check_enclave_transfer(
                     user_code=res, value=self.value, context=context
                 )
+
                 if enclave_res.is_err():
                     return enclave_res
-                self.linked_obj.update_with_context(context, res.ok())
+                self.linked_obj.update_with_context(context, res)
             else:
                 raise NotImplementedError
             return Ok(SyftSuccess(message=f"{type(self)} Success"))
