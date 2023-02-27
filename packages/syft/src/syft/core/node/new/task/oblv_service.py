@@ -3,6 +3,7 @@ from base64 import encodebytes
 import os
 import random
 import subprocess  # nosec
+from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import List
@@ -18,6 +19,8 @@ from result import Ok
 from result import Result
 
 # relative
+from .....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
+from .....core.node.common.node_table.syft_object import SyftObject
 from .....oblv.constants import DOMAIN_CONNECTION_PORT
 from .....oblv.constants import LOCAL_MODE
 from .....oblv.deployment_client import OblvMetadata
@@ -44,6 +47,26 @@ from .util import find_available_port
 
 # caches the connection to Enclave using the deployment ID
 OBLV_PROCESS_CACHE: Dict[str, List] = {}
+
+
+# TODO: 🟡 Duplication of PyPrimitive Dict
+# This is emulated since the action store curently accepts  only SyftObject types
+@serializable(recursive_serde=True)
+class DictObject(SyftObject):
+    # version
+    __canonical_name__ = "Dict"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    base_dict: Dict[Any, Any] = {}
+
+    # serde / storage rules
+    __attr_state__ = ["id", "base_dict"]
+
+    __attr_searchable__ = []
+    __attr_unique__ = ["id"]
+
+    def __repr__(self) -> str:
+        return self.base_dict.__repr__()
 
 
 def connect_to_enclave(
@@ -329,12 +352,38 @@ class OblvService(AbstractService):
         context: AuthedServiceContext,
         user_code_id: UID,
         inputs: Dict,
-        node_name: str,
     ) -> Result[Ok, Err]:
-        print("reached in Enclave....")
-        print("user code id", user_code_id)
-        print("inputs", inputs)
-        print("node name", node_name)
+        user_code_service = context.node.get_service("usercodeservice")
+        action_service = context.node.get_service("actionservice")
+        user_code = user_code_service.get_by_uid(context, uid=user_code_id)
+        res = user_code.status.mutate(
+            value=UserCodeStatus.EXECUTE,
+            node_name=context.node.name,
+            verify_key=context.credentials,
+        )
+        if res.is_err():
+            return res
+
+        user_code.status = res.ok()
+        user_code_service.update_code_state(context=context, code_item=user_code)
+        if action_service.exists(context=context, obj_id=user_code_id):
+            dict_object = DictObject(id=user_code_id)
+            dict_object.base_dict[str(context.credentials)] = inputs
+            action_service.store.set(
+                uid=user_code_id,
+                credentials=context.node.signing_key.verify_key,
+                action_object=dict_object,
+            )
+        else:
+            dict_object = action_service.store.get(
+                uid=user_code_id, credentials=context.node.signing_key.verify_key
+            )
+            dict_object.base_dict[str(context.credentials)] = inputs
+            action_service.store.set(
+                uid=user_code_id,
+                credentials=context.node.signing_key.verify_key,
+                action_object=dict_object,
+            )
 
 
 # Checks if the given user code would  propogate value to enclave on acceptance
@@ -366,8 +415,10 @@ def check_enclave_transfer(
             inputs[var_name] = action_object.ok()
 
         res = api.services.oblv.send_user_code_inputs_to_enclave(
-            user_code_id=user_code.id, inputs=inputs, node_name=context.node.name
+            user_code_id=user_code.id, inputs=inputs
         )
 
         if res.is_err():
             return res
+    else:
+        return Ok()
