@@ -1,3 +1,6 @@
+# future
+from __future__ import annotations
+
 # stdlib
 import ast
 from enum import Enum
@@ -12,8 +15,14 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Type
 from typing import Union
+
+# third party
+from result import Err
+from result import Ok
+from result import Result
 
 # relative
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
@@ -33,6 +42,10 @@ from .transforms import TransformContext
 from .transforms import generate_id
 from .transforms import transform
 from .user_code_parse import GlobalsVisitor
+
+if TYPE_CHECKING:
+    # relative
+    from .request import ChangeContext
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 CodeHashPartitionKey = PartitionKey(key="code_hash", type_=int)
@@ -230,6 +243,22 @@ class UserCodeStatusContext:
         else:
             raise Exception(
                 f"Code Object does not contain {context.node.name} Domain's data"
+            )
+
+    def mutate(
+        self, value: UserCodeStatus, context: Union[ChangeContext, AuthedServiceContext]
+    ) -> Result[Ok, Err]:
+        user_node_view = UserNodeView(
+            node_name=context.node.name, verify_key=context.node.signing_key.verify_key
+        )
+        base_dict = self.base_dict
+        if user_node_view in base_dict:
+            base_dict[user_node_view] = value
+            setattr(self, "base_dict", base_dict)
+            return Ok(self)
+        else:
+            return Err(
+                "Cannot Modify Status as the Domain's data is not included in the request"
             )
 
 

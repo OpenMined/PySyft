@@ -26,7 +26,6 @@ from .action_service import ActionService
 from .action_store import ActionObjectPermission
 from .action_store import ActionPermission
 from .api import APIRegistry
-from .api import UserNodeView
 from .context import AuthedServiceContext
 from .credentials import SyftVerifyKey
 from .document_store import BasePartitionSettings
@@ -39,8 +38,8 @@ from .transforms import add_credentials_for_key
 from .transforms import add_node_uid_for_key
 from .transforms import generate_id
 from .transforms import transform
+from .user_code import UserCode
 from .user_code import UserCodeStatus
-from .user_code import UserCodeStatusContext
 
 
 @serializable(recursive_serde=True)
@@ -344,19 +343,12 @@ class UserCodeStatusChange(Change):
             )
         return SyftSuccess(message=f"{type(self)} valid")
 
-    def mutate(self, obj: UserCodeStatusContext, context: ChangeContext) -> Any:
-        user_node_view = UserNodeView(
-            node_name=context.node.name, verify_key=context.node.signing_key.verify_key
-        )
-        base_dict = obj.status.base_dict
-        if user_node_view in base_dict:
-            base_dict[user_node_view] = self.value
-            setattr(obj.status, "base_dict", base_dict)
+    def mutate(self, obj: UserCode, context: ChangeContext) -> Any:
+        res = obj.status.mutate(value=self.value, context=context)
+        if res.is_ok():
+            obj.status = res.ok()
             return Ok(obj)
-        else:
-            return Err(
-                "Cannot Modify Status as the Domain's data is not included in the request"
-            )
+        return res
 
     def _run(
         self, context: ChangeContext, apply: bool
