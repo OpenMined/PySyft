@@ -3,6 +3,7 @@ from typing import List
 
 # third party
 from result import Err
+from result import Ok
 from result import Result
 
 # relative
@@ -86,3 +87,11 @@ class MessageStash(BaseUIDStoreStash):
             return Err(f"No message exists for id: {uid}")
         message.status = status
         return self.update(obj=message)
+
+    def delete_all_for_verify_key(self, verify_key: SyftVerifyKey) -> Result[bool, str]:
+        messages = self.get_all_inbox_for_verify_key(verify_key=verify_key)
+        for message in messages:
+            result = self.delete_by_uid(uid=message.id)
+            if result.is_err():
+                return result
+        return Ok(True)
