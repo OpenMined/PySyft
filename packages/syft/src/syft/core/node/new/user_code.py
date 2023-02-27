@@ -63,7 +63,6 @@ class InputPolicy(SyftObject):
 
     id: UID
     inputs: Dict[UserNodeView, Any]
-    inputs: Dict[str, Any]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         # TODO: This method initialization would conflict if one of the input variables
