@@ -352,38 +352,47 @@ class OblvService(AbstractService):
         context: AuthedServiceContext,
         user_code_id: UID,
         inputs: Dict,
+        node_name: str,
     ) -> Result[Ok, Err]:
         user_code_service = context.node.get_service("usercodeservice")
         action_service = context.node.get_service("actionservice")
         user_code = user_code_service.get_by_uid(context, uid=user_code_id)
+
         res = user_code.status.mutate(
             value=UserCodeStatus.EXECUTE,
-            node_name=context.node.name,
+            node_name=node_name,
             verify_key=context.credentials,
         )
         if res.is_err():
             return res
-
         user_code.status = res.ok()
         user_code_service.update_code_state(context=context, code_item=user_code)
-        if action_service.exists(context=context, obj_id=user_code_id):
+
+        if not action_service.exists(context=context, obj_id=user_code_id):
             dict_object = DictObject(id=user_code_id)
             dict_object.base_dict[str(context.credentials)] = inputs
             action_service.store.set(
                 uid=user_code_id,
                 credentials=context.node.signing_key.verify_key,
-                action_object=dict_object,
+                syft_object=dict_object,
             )
+
         else:
-            dict_object = action_service.store.get(
+            res = action_service.store.get(
                 uid=user_code_id, credentials=context.node.signing_key.verify_key
             )
-            dict_object.base_dict[str(context.credentials)] = inputs
-            action_service.store.set(
-                uid=user_code_id,
-                credentials=context.node.signing_key.verify_key,
-                action_object=dict_object,
-            )
+            if res.is_ok():
+                dict_object = res.ok()
+                dict_object.base_dict[str(context.credentials)] = inputs
+                action_service.store.set(
+                    uid=user_code_id,
+                    credentials=context.node.signing_key.verify_key,
+                    syft_object=dict_object,
+                )
+            else:
+                return res
+
+        return Ok(Ok(True))
 
 
 # Checks if the given user code would  propogate value to enclave on acceptance
@@ -415,10 +424,9 @@ def check_enclave_transfer(
             inputs[var_name] = action_object.ok()
 
         res = api.services.oblv.send_user_code_inputs_to_enclave(
-            user_code_id=user_code.id, inputs=inputs
+            user_code_id=user_code.id, inputs=inputs, node_name=context.node.name
         )
 
-        if res.is_err():
-            return res
+        return res
     else:
         return Ok()
