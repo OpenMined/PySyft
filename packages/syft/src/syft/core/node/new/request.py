@@ -33,6 +33,7 @@ from .linked_obj import LinkedObject
 from .node import NewNode
 from .response import SyftError
 from .response import SyftSuccess
+from .task.oblv_service import check_enclave_transfer
 from .transforms import TransformContext
 from .transforms import add_credentials_for_key
 from .transforms import add_node_uid_for_key
@@ -365,6 +366,12 @@ class UserCodeStatusChange(Change):
                 res = self.mutate(obj, context)
                 if res.is_err():
                     return res
+                res = res.ok()
+                enclave_res = check_enclave_transfer(
+                    user_code=res, value=self.value, context=context
+                )
+                if enclave_res.is_err():
+                    return enclave_res
                 self.linked_obj.update_with_context(context, res.ok())
             else:
                 raise NotImplementedError
