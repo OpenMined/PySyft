@@ -469,6 +469,21 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         """
         return TensorWrappedPhiTensorPointer._apply_op(self, other, "__add__")
 
+    def __mul__(
+        self,
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
+        """Apply the "add" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__mul__")
+
+
     def __sub__(
         self,
         other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
@@ -2674,6 +2689,43 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         else:
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
+        
+    def __mul__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
+        if isinstance(other, PhiTensor):
+            if np.array(self.data_subjects != other.data_subjects).all():
+                return self.gamma * other.gamma
+            else:
+                min_min = self.min_vals.data * other.min_vals.data
+                min_max = self.min_vals.data * other.max_vals.data
+                max_min = self.max_vals.data * other.min_vals.data
+                max_max = self.max_vals.data * other.max_vals.data
+
+                _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+                _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+
+                return PhiTensor(
+                    child=self.child * other.child,
+                    data_subjects=self.data_subjects,
+                    min_vals=lazyrepeatarray(data=_min_vals, shape=self.shape),
+                    max_vals=lazyrepeatarray(data=_max_vals, shape=self.shape),
+                )
+        elif isinstance(other, GammaTensor):
+            return self.gamma * other
+        elif is_acceptable_simple_type(other):
+            return PhiTensor(
+                child=self.child * other,
+                data_subjects=self.data_subjects,
+                min_vals=lazyrepeatarray(
+                    data=self.min_vals.data * other, shape=self.min_vals.shape
+                ),
+                max_vals=lazyrepeatarray(
+                    data=self.max_vals.data * other, shape=self.max_vals.shape
+                ),
+            )
+        else:
+            raise NotImplementedError(
+                f"mul not supported between PhiTensor & {type(other)}"
+            )
 
     def __sub__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
