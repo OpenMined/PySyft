@@ -3,6 +3,7 @@ from enum import Enum
 import hashlib
 import json
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import Optional
 from typing import Type
@@ -396,9 +397,20 @@ class SyftClient:
         return None
 
     @property
+    def code(self) -> Optional[APIModule]:
+        if self.api is not None and hasattr(self.api.services, "code"):
+            return self.api.services.code
+
+    @property
     def datasets(self) -> Optional[APIModule]:
         if self.api is not None and hasattr(self.api.services, "dataset"):
             return self.api.services.dataset
+        return None
+
+    @property
+    def submit_project(self) -> Callable:
+        if self.api is not None and hasattr(self.api.services, "project"):
+            return self.api.services.project.submit
         return None
 
     @property
