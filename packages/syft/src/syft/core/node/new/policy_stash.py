@@ -20,7 +20,7 @@
 #     settings: PartitionSettings = PartitionSettings(
 #         name=Policy.__canonical_name__, object_type=Policy
 #     )
-    
+
 #     def __init__(self, store: DocumentStore) -> None:
 #         super().__init__(store=store)
 
@@ -29,6 +29,6 @@
 #     ) -> Result[List[Policy], str]:
 #         qks = QueryKeys(qks=[UserVerifyKeyPartitionKey.with_obj(user_verify_key)])
 #         return self.query_one(qks=qks)
-    
+
 #     def update(self, policy: Policy) -> Result[Policy, str]:
 #         return self.check_type(policy, self.object_type).and_then(super().update)

@@ -166,7 +166,6 @@ def rs_proto2object(proto: _DynamicStructBuilder, class_type: Type = type(None))
                 except Exception:
                     class_type = locals()[klass]
 
-
     if proto.fullyQualifiedName not in TYPE_BANK:
         raise Exception(f"{proto.fully_qualified_name} not in TYPE_BANK")
 

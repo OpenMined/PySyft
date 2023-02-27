@@ -72,11 +72,11 @@ from .core.node.new.credentials import SyftSigningKey  # noqa: F401
 from .core.node.new.data_subject import DataSubject  # noqa: F401
 from .core.node.new.dataset import CreateAsset as Asset  # noqa: F401
 from .core.node.new.dataset import CreateDataset as Dataset  # noqa: F401
+from .core.node.new.policy import ExactMatch  # noqa: F401
+from .core.node.new.policy import SingleExecutionExactOutput  # noqa: F401
 from .core.node.new.project import ProjectSubmit as Project  # noqa: F401
 from .core.node.new.request import SubmitRequest as Request  # noqa: F401
 from .core.node.new.roles import Roles as roles  # noqa: F401
-from .core.node.new.policy import ExactMatch  # noqa: F401
-from .core.node.new.policy import SingleExecutionExactOutput  # noqa: F401
 from .core.node.new.user_code import UserCodeStatus  # noqa: F401
 from .core.node.new.user_code import syft_function  # noqa: F401
 from .core.node.new.user_service import UserService  # noqa: F401

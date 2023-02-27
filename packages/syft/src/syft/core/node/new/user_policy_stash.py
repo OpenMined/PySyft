@@ -1,15 +1,16 @@
+# stdlib
 from typing import List
-from typing import Optional
 
+# third party
 from result import Result
 
+# relative
 from ...common.serde.serializable import serializable
 from .credentials import SyftVerifyKey
-
 from .document_store import BaseUIDStoreStash
+from .document_store import DocumentStore
 from .document_store import PartitionSettings
 from .document_store import QueryKeys
-from .document_store import DocumentStore
 from .policy import UserPolicy
 from .policy import UserVerifyKeyPartitionKey
 
@@ -20,10 +21,9 @@ class UserPolicyStash(BaseUIDStoreStash):
     settings: PartitionSettings = PartitionSettings(
         name=UserPolicy.__canonical_name__, object_type=UserPolicy
     )
-    
+
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
-        
 
     def get_all_by_user_verify_key(
         self, user_verify_key: SyftVerifyKey

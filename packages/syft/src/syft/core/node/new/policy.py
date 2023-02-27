@@ -1,41 +1,42 @@
-from typing import List
-from typing import Callable
-from typing import Dict
-from typing import Optional
-from typing import Any
-from typing import Type
-from typing import Union
-from result import Err
-from result import Ok
-from result import Result
-
-from enum import Enum
+# stdlib
 import ast
+from enum import Enum
 import hashlib
-from RestrictedPython import compile_restricted
 import inspect
 from inspect import Parameter
 from inspect import Signature
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Type
+from typing import Union
+
+# third party
+from RestrictedPython import compile_restricted
+from result import Result
+
+# relative
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import SyftObject
+from ...common.serde import _deserialize
+from ...common.serde import _serialize
+from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .credentials import SyftVerifyKey
-from .document_store import PartitionKey
-from ...common.serde.serializable import serializable
-from ...common.serde import _serialize
-from ...common.serde import _deserialize
-from .transforms import transform
-from .transforms import generate_id
-from .transforms import TransformContext
-from .response import SyftError
 from .dataset import Asset
+from .document_store import PartitionKey
+from .policy_code_parse import GlobalsVisitor
 from .response import SyftError
 from .response import SyftSuccess
-from .policy_code_parse import GlobalsVisitor
-
+from .transforms import TransformContext
+from .transforms import generate_id
+from .transforms import transform
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 PyCodeObject = Any
+
 
 def extract_uids(kwargs: Dict[str, Any]) -> Dict[str, UID]:
     # relative
@@ -192,6 +193,7 @@ class OutputPolicyStateExecuteOnce(OutputPolicyStateExecuteCount):
 
     limit: int = 1
 
+
 @serializable(recursive_serde=True)
 class OutputPolicy(SyftObject):
     # version
@@ -209,6 +211,7 @@ class OutputPolicy(SyftObject):
     def policy_code(cls) -> str:
         return inspect.getsource(cls)
 
+
 @serializable(recursive_serde=True)
 class SingleExecutionExactOutput(OutputPolicy):
     # version
@@ -224,6 +227,7 @@ class UserPolicyStatus(Enum):
     DENIED = "denied"
     APPROVED = "approved"
 
+
 @serializable(recursive_serde=True)
 class UserPolicy(SyftObject):
     __canonical_name__ = "UserPolicy"
@@ -234,25 +238,26 @@ class UserPolicy(SyftObject):
     raw_code: str
     parsed_code: str
     signature: inspect.Signature
-    class_name: str 
+    class_name: str
     unique_name: str
     code_hash: str
     byte_code: PyCodeObject
     status: UserPolicyStatus = UserPolicyStatus.SUBMITTED
-    
-    
+
+
 @serializable(recursive_serde=True)
 class SubmitUserPolicy(SyftObject):
     __canonical_name__ = "SubmitUserPolicy"
     __version__ = SYFT_OBJECT_VERSION_1
-    
+
     id: Optional[UID]
     code: str
     class_name: str
     input_kwargs: List[str]
-    
+
     def compile(self) -> PyCodeObject:
         return compile_restricted(self.code, "<string>", "exec")
+
 
 def hash_code(context: TransformContext) -> TransformContext:
     code = context.output["code"]
@@ -261,6 +266,7 @@ def hash_code(context: TransformContext) -> TransformContext:
     code_hash = hashlib.sha256(code.encode("utf8")).hexdigest()
     context.output["code_hash"] = code_hash
     return context
+
 
 def generate_unique_class_name(context: TransformContext) -> TransformContext:
     code_hash = context.output["code_hash"]
@@ -278,10 +284,7 @@ def compile_byte_code(parsed_code: str) -> Optional[PyCodeObject]:
     return None
 
 
-def process_class_code(
-    raw_code: str,
-    class_name: str
-) -> str:
+def process_class_code(raw_code: str, class_name: str) -> str:
     tree = ast.parse(raw_code)
 
     v = GlobalsVisitor()
@@ -289,6 +292,7 @@ def process_class_code(
 
     f = tree.body[0]
     f.decorator_list = []
+
 
 def check_class_code(context: TransformContext) -> TransformContext:
     # TODO: define the proper checking for this case based on the ideas from UserCode
@@ -300,6 +304,7 @@ def check_class_code(context: TransformContext) -> TransformContext:
     context.output["parsed_code"] = parsed_code
     return context
 
+
 def compile_code(context: TransformContext) -> TransformContext:
     byte_code = compile_byte_code(context.output["parsed_code"])
     if byte_code is None:
@@ -308,6 +313,8 @@ def compile_code(context: TransformContext) -> TransformContext:
             + context.output["parsed_code"]
         )
     return context
+
+
 def add_credentials_for_key(key: str) -> Callable:
     def add_credentials(context: TransformContext) -> TransformContext:
         context.output[key] = context.credentials
@@ -315,12 +322,14 @@ def add_credentials_for_key(key: str) -> Callable:
 
     return add_credentials
 
+
 def generate_signature(context: TransformContext) -> TransformContext:
     for k in context.output["input_kwargs"]:
         param = Parameter(name=k, kind=Parameter.POSITIONAL_OR_KEYWORD)
     sig = Signature(parameters=[param])
     context.output["signature"] = sig
     return context
+
 
 @transform(SubmitUserPolicy, UserPolicy)
 def submit_policy_code_to_user_code() -> List[Callable]:
@@ -331,19 +340,23 @@ def submit_policy_code_to_user_code() -> List[Callable]:
         generate_signature,
         check_class_code,
         compile_code,
-        add_credentials_for_key("user_verify_key")
+        add_credentials_for_key("user_verify_key"),
     ]
-    
+
+
 def init_policy(user_policy: UserPolicy, init_args: Dict[str, Any]):
     exec(user_policy.raw_code)
     policy_class_name = eval(user_policy.class_name)
     policy_object = policy_class_name(**init_args)
-    return policy_object 
-    
-def get_policy_object(user_policy: UserPolicy, state: str) -> Result[Any,str]:
+    return policy_object
+
+
+def get_policy_object(user_policy: UserPolicy, state: str) -> Result[Any, str]:
     exec(user_policy.raw_code)
     policy_class_name = eval(user_policy.class_name)
     policy_object = _deserialize(state, from_bytes=True, class_type=policy_class_name)
     return policy_object
+
+
 def update_policy_state(policy_object):
     return _serialize(policy_object, to_bytes=True)

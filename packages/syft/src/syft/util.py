@@ -725,19 +725,23 @@ def print_dynamic_log(
     ).start()
     return (finish, success)
 
+
 # Note: In the future there might be other interpreters that we want to use
 def is_interpreter_jupyter() -> bool:
-    return get_interpreter_module() == 'ipykernel.zmqshell'
+    return get_interpreter_module() == "ipykernel.zmqshell"
+
 
 def is_interpreter_colab() -> bool:
-    return get_interpreter_module() == 'google.colab._shell'
+    return get_interpreter_module() == "google.colab._shell"
+
 
 def is_interpreter_standard() -> bool:
-    return get_interpreter_module() == 'StandardInterpreter'
+    return get_interpreter_module() == "StandardInterpreter"
+
 
 def get_interpreter_module() -> str:
     try:
         shell = get_ipython().__class__.__module__
         return shell
     except NameError:
-        return "StandardInterpreter" # not sure    
+        return "StandardInterpreter"  # not sure

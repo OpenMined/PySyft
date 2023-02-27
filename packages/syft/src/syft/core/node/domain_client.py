@@ -10,8 +10,8 @@ from typing import Optional
 from typing import Type
 from typing import Union
 
-
 # third party
+from IPython.core.magics.code import extract_symbols
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import names
@@ -24,10 +24,9 @@ from ...core.node.new.api import SyftAPI
 from ...logger import traceback_and_raise
 from ...telemetry import instrument
 from ...util import bcolors
+from ...util import is_interpreter_jupyter
 from ...util import print_dynamic_log
 from ...util import validate_field
-from ...util import is_interpreter_jupyter
-from ...util import is_interpreter_standard
 from ..common.message import SyftMessage
 from ..common.serde.serialize import _serialize as serialize  # noqa: F401
 from ..common.uid import UID
@@ -69,7 +68,6 @@ from .common.util import check_send_to_blob_storage
 from .common.util import upload_to_s3_using_presigned
 from .enums import PyGridClientEnums
 from .enums import RequestAPIFields
-from IPython.core.magics.code import extract_symbols
 
 SAVE_DATASET_TIMEOUT = 300  # seconds
 
@@ -363,7 +361,11 @@ class DomainClient(Client):
         return self.send_immediate_msg_with_reply(msg=msg).kwargs
 
     def code_request(
-        self, code: Union[str, callable], inputs: Dict[str, Any], outputs: List[str], policy: type
+        self,
+        code: Union[str, callable],
+        inputs: Dict[str, Any],
+        outputs: List[str],
+        policy: type,
     ) -> None:
         if not inspect.isfunction(code) and not isinstance(code, str):
             raise Exception("The code should either be a function or  string ...")
@@ -380,23 +382,27 @@ class DomainClient(Client):
         # TODO: add some better verifications
         if not inspect.isclass(policy):
             raise Exception("The policy must be a class")
-        
+
         def new_getfile(object):
             if not inspect.isclass(object):
                 return inspect.getfile(object)
-            
+
             # Lookup by parent module (as in current inspect)
-            if hasattr(object, '__module__'):
+            if hasattr(object, "__module__"):
                 object_ = sys.modules.get(object.__module__)
-                if hasattr(object_, '__file__'):
+                if hasattr(object_, "__file__"):
                     return object_.__file__
-            
+
             # If parent module is __main__, lookup by methods (NEW)
             for _, member in inspect.getmembers(object):
-                if inspect.isfunction(member) and object.__qualname__ + '.' + member.__name__ == member.__qualname__:
+                if (
+                    inspect.isfunction(member)
+                    and object.__qualname__ + "." + member.__name__
+                    == member.__qualname__
+                ):
                     return inspect.getfile(member)
             else:
-                raise TypeError('Source for {!r} not found'.format(object))
+                raise TypeError("Source for {!r} not found".format(object))
 
         def get_code_from_class(policy):
             klasses = inspect.getmro(policy)[-2::-1]
@@ -409,19 +415,19 @@ class DomainClient(Client):
                     class_code = inspect.getsource(klass)
                 whole_str += class_code
             return whole_str
-                
+
         policy_code = get_code_from_class(policy)
-                
+
         msg = CreateTask(
             address=self.node_uid,
             reply_to=self.node_uid,
             kwargs={
-                "code": code_str, 
-                "inputs": inputs, 
-                "outputs": outputs, 
+                "code": code_str,
+                "inputs": inputs,
+                "outputs": outputs,
                 "policy_code": policy_code,
-                "policy_name": policy.__name__
-                },
+                "policy_name": policy.__name__,
+            },
         ).sign(  # type: ignore
             signing_key=self.signing_key
         )
@@ -447,7 +453,7 @@ class DomainClient(Client):
         ).sign(  # type: ignore
             signing_key=self.signing_key
         )
-        return self.send_immediate_msg_with_reply(msg=msg).payload      
+        return self.send_immediate_msg_with_reply(msg=msg).payload
 
     def request_budget(
         self,

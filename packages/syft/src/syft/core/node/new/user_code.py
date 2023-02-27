@@ -14,23 +14,28 @@ from typing import List
 from typing import Optional
 from typing import Union
 
+# third party
+from IPython.core.magics.code import extract_symbols
+
 # relative
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import SyftObject
+from ....util import is_interpreter_jupyter
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .credentials import SyftVerifyKey
 from .dataset import Asset
 from .document_store import PartitionKey
-from .response import SyftError
-from .response import SyftSuccess
+from .policy import InputPolicy
+from .policy import OutputPolicy
+from .policy import OutputPolicyState
+from .policy import SubmitUserPolicy
+from .policy import UserPolicy
 from .transforms import TransformContext
 from .transforms import generate_id
 from .transforms import transform
 from .user_code_parse import GlobalsVisitor
-from .policy import UserPolicy, SubmitUserPolicy, InputPolicy, OutputPolicy, OutputPolicyState
-from IPython.core.magics.code import extract_symbols
-from ....util import is_interpreter_jupyter
+
 # from .policy_service import PolicyService
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
@@ -261,7 +266,7 @@ class SubmitUserCode(SyftObject):
     local_function: Optional[Callable]
     input_kwargs: List[str]
     outputs: List[str]
-    
+
     __attr_state__ = [
         "id",
         "code",
@@ -272,7 +277,7 @@ class SubmitUserCode(SyftObject):
         "input_kwargs",
         "outputs",
         "input_policy_init_args",
-        "output_policy_init_args"
+        "output_policy_init_args",
     ]
 
     # @property
@@ -310,19 +315,23 @@ def debox_asset(arg: Any) -> Any:
 def new_getfile(object):
     if not inspect.isclass(object):
         return inspect.getfile(object)
-    
+
     # Lookup by parent module (as in current inspect)
-    if hasattr(object, '__module__'):
+    if hasattr(object, "__module__"):
         object_ = sys.modules.get(object.__module__)
-        if hasattr(object_, '__file__'):
+        if hasattr(object_, "__file__"):
             return object_.__file__
-    
+
     # If parent module is __main__, lookup by methods (NEW)
     for _, member in inspect.getmembers(object):
-        if inspect.isfunction(member) and object.__qualname__ + '.' + member.__name__ == member.__qualname__:
+        if (
+            inspect.isfunction(member)
+            and object.__qualname__ + "." + member.__name__ == member.__qualname__
+        ):
             return inspect.getfile(member)
     else:
-        raise TypeError('Source for {!r} not found'.format(object))
+        raise TypeError("Source for {!r} not found".format(object))
+
 
 def get_code_from_class(policy):
     klasses = inspect.getmro(policy)[-2::-1]
@@ -336,27 +345,29 @@ def get_code_from_class(policy):
         whole_str += class_code
     return whole_str
 
+
 def syft_function(
     input_policy: Union[InputPolicy, UID, Any],
     input_policy_init_args: Dict[str, Any],
     output_policy: Union[OutputPolicy, UID, Any],
     output_policy_init_args: Dict[str, Any],
-    outputs: List[str]
+    outputs: List[str],
 ) -> SubmitUserCode:
     # TODO: fix this for jupyter
     # TODO: add import validator
-    
+
     if isinstance(input_policy, UID):
         input_policy = input_policy
     elif issubclass(input_policy, InputPolicy):
-        input_policy = input_policy(input_policy_init_args)        
+        input_policy = input_policy(input_policy_init_args)
     else:
-          input_policy = SubmitUserPolicy(
-            code='@serializable(recursive_serde=True)\n'+get_code_from_class(input_policy),
+        input_policy = SubmitUserPolicy(
+            code="@serializable(recursive_serde=True)\n"
+            + get_code_from_class(input_policy),
             class_name=input_policy.__name__,
             input_kwargs=input_policy.__init__.__code__.co_varnames[1:],
         )
-    
+
     print("Output policy is")
     if isinstance(output_policy, UID):
         print("UserPolicy")
@@ -368,7 +379,8 @@ def syft_function(
         print("SubmitUserPolicy")
         # TODO: move serializable injection in the server side
         output_policy = SubmitUserPolicy(
-            code='@serializable(recursive_serde=True)\n'+get_code_from_class(output_policy),
+            code="@serializable(recursive_serde=True)\n"
+            + get_code_from_class(output_policy),
             class_name=output_policy.__name__,
             input_kwargs=output_policy.__init__.__code__.co_varnames[1:],
         )
@@ -384,7 +396,7 @@ def syft_function(
             input_kwargs=f.__code__.co_varnames,
             outputs=outputs,
             input_policy_init_args=input_policy_init_args,
-            output_policy_init_args=output_policy_init_args
+            output_policy_init_args=output_policy_init_args,
         )
 
     return decorator
@@ -530,22 +542,27 @@ def modify_signature(context: TransformContext) -> TransformContext:
 
 
 def init_policy_state(context: TransformContext) -> TransformContext:
+    # stdlib
     import sys
+
     print("Enterd init_policy_state", file=sys.stderr)
     if isinstance(context.output["input_policy"], InputPolicy):
         # context.output["input_policy_state"] = context.output["input_policy"].state_type()
-        context.output["input_policy_state"] = ''
+        context.output["input_policy_state"] = ""
     else:
-        context.output["input_policy_state"] = ''
-        
+        context.output["input_policy_state"] = ""
+
     print("passed input", file=sys.stderr)
     if isinstance(context.output["output_policy"], OutputPolicy):
         print(context.output["output_policy"], file=sys.stderr)
-        context.output["output_policy_state"] = context.output["output_policy"].state_type()
+        context.output["output_policy_state"] = context.output[
+            "output_policy"
+        ].state_type()
     else:
-        context.output["output_policy_state"] = ''
+        context.output["output_policy_state"] = ""
     print("Exited init_policy_state", file=sys.stderr)
     return context
+
 
 def check_input_policy(context: TransformContext) -> TransformContext:
     ip = context.output["input_policy"]

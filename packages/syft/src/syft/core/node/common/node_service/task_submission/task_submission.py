@@ -219,14 +219,14 @@ class ReviewTask(SyftMessage, DomainMessageRegistry):
             TASK_SERVICE_FIELDS.UPDATED_AT.value: date.today().strftime("%d/%m/%Y"),
             TASK_SERVICE_FIELDS.EXECUTION.value: {"status": "not executing"}
             if status != TASK_SERVICE_STATUS.ACCEPTED.value
-            else {TASK_SERVICE_FIELDS.STATUS.value: EXECUTION_STATUS.ENQUEUED.value}, 
+            else {TASK_SERVICE_FIELDS.STATUS.value: EXECUTION_STATUS.ENQUEUED.value},
         }
 
         node.tasks.update(
             search_params={TASK_SERVICE_FIELDS.UID.value: self.payload.task_uid},
             updated_args=update_values,
         )
-        
+
         task = node.tasks.find(search_params={"uid": self.payload.task_uid})
         if not task:
             raise Exception(f"The given task_id:{self.payload.task_uid} does not exist")
@@ -234,15 +234,13 @@ class ReviewTask(SyftMessage, DomainMessageRegistry):
 
         init_state = init_policy_state(task.policy_code, task.policy_name)
         # TODO use our better serialization for the state variable
-        
+
         node.tasks.update(
             search_params={"uid": task.uid},
             # updated_args={
             #     "execution": {"status": "executing"},
             # },
-            updated_args={
-                "state": str(init_state) 
-            }
+            updated_args={"state": str(init_state)},
         )
         # execute_task(node, task.uid, task.code, task.inputs, task.outputs)
 
@@ -253,16 +251,14 @@ class ReviewTask(SyftMessage, DomainMessageRegistry):
         return [UserIsOwner]
 
 
-
 @serializable(recursive_serde=True)
 @final
 class RunTask(SyftMessage, DomainMessageRegistry):
-
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
         task_uid: str
         policy_args: str
-        
+
     # Pydantic Inner class to define expected reply payload fields.
     class Reply(ReplyPayload):
         outputs: Dict[str, str]
@@ -282,26 +278,30 @@ class RunTask(SyftMessage, DomainMessageRegistry):
         if not task:
             raise Exception(f"The given task_id:{self.payload.task_uid} does not exist")
         task = task[0]
-        if task.user != user.id.to_string(): # TODO find a better wayt to check this
-            raise Exception(f"User {user.id.to_string()} does not have access to task {task.uid}")
-        
+        if task.user != user.id.to_string():  # TODO find a better wayt to check this
+            raise Exception(
+                f"User {user.id.to_string()} does not have access to task {task.uid}"
+            )
+
         # if task.status != EXECUTION_STATUS.ENQUEUED.value:
         #     raise Exception(f"Task {task.uid} not approved")
-        
-        outputs = execute_task(node, task.uid, task.code, task.inputs, self.payload.outputs)
-    
-        # TODO deserialize state   
+
+        outputs = execute_task(
+            node, task.uid, task.code, task.inputs, self.payload.outputs
+        )
+
+        # TODO deserialize state
         print(task.state)
         deserialized_state = eval(task.state)
         print(deserialized_state)
         outputs, state = apply_policy(
-                            outputs, 
-                            task.policy_code, 
-                            task.policy_name, 
-                            deserialized_state,
-                            task.policy_args
-                        )
-        
+            outputs,
+            task.policy_code,
+            task.policy_name,
+            deserialized_state,
+            task.policy_args,
+        )
+
         # TODO update state
         serialized_state = str(state)
         node.tasks.update(
@@ -316,28 +316,35 @@ class RunTask(SyftMessage, DomainMessageRegistry):
         """Returns the list of permission classes."""
         return [UserIsOwner]
 
+
 # TODO: Figure what to do when the policy code is using object outside our context
 def get_policy(policy_code, policy_name):
     print(policy_code)
-    import syft as sy
+    # syft absolute
+
     exec(policy_code)
     print(vars().keys())
     policy_class = eval(policy_name)
     # de_policy_args = eval(policy_args)
-    return policy_class() #TODO: add args
+    return policy_class()  # TODO: add args
+
 
 def init_policy_state(policy_code, policy_name):
     policy_obj = get_policy(policy_code, policy_name)
     policy_obj.start()
     return policy_obj.state
 
+
 def apply_policy(outputs, policy_code, policy_name, state, policy_args):
     policy_obj = get_policy(policy_code, policy_name)
     policy_obj.set_state(state)
     policy_args_dict = eval(policy_args)
-    new_outputs = policy_obj.apply_output(outputs, **policy_args_dict) # TODO: add kwargs
+    new_outputs = policy_obj.apply_output(
+        outputs, **policy_args_dict
+    )  # TODO: add kwargs
     new_state = policy_obj.state
     return new_outputs, new_state
+
 
 stdout_ = sys.stdout
 stderr_ = sys.stderr
@@ -429,7 +436,9 @@ def execute_task(
             search_params={"uid": task_uid},
             updated_args={
                 "execution": {"status": "done"},
-                "outputs": {"output": new_id.to_string()}, # TODO change this to be more readable
+                "outputs": {
+                    "output": new_id.to_string()
+                },  # TODO change this to be more readable
             },
         )
         return {"output": new_id.to_string()}

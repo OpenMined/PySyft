@@ -6,11 +6,19 @@ from typing import Union
 
 # relative
 from ....telemetry import instrument
+from ...common.serde import _serialize
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .context import AuthedServiceContext
 from .document_store import DocumentStore
 from .linked_obj import LinkedObject
+from .policy import InputPolicy
+from .policy import OutputPolicy
+from .policy import SubmitUserPolicy
+from .policy import UserPolicy
+from .policy import get_policy_object
+from .policy import init_policy
+from .policy import update_policy_state
 from .response import SyftError
 from .response import SyftNotReady
 from .response import SyftSuccess
@@ -22,11 +30,7 @@ from .user_code import SubmitUserCode
 from .user_code import UserCode
 from .user_code import UserCodeStatus
 from .user_code_stash import UserCodeStash
-from .policy import UserPolicy, SubmitUserPolicy, InputPolicy, OutputPolicy
-from .policy import get_policy_object, update_policy_state, init_policy
-import sys
-from ...common.serde import _serialize
-from ...common.serde import _deserialize
+
 
 @instrument
 @serializable(recursive_serde=True)
@@ -44,7 +48,9 @@ class UserCodeService(AbstractService):
     ) -> Union[UserCode, SyftError]:
         """Add User Code"""
         code_item = code.to(UserCode, context=context)
+        # relative
         from .policy_service import PolicyService
+
         policy_service = context.node.get_service(PolicyService)
 
         if isinstance(code.input_policy, SubmitUserPolicy):
@@ -56,17 +62,19 @@ class UserCodeService(AbstractService):
                 code_item.input_policy = input_policy.ok()
             else:
                 return input_policy
-        
+
         if isinstance(code.output_policy, SubmitUserPolicy):
             submit_output_policy = code.output_policy
-            code_item.output_policy = submit_output_policy.to(UserPolicy, context=context)
+            code_item.output_policy = submit_output_policy.to(
+                UserPolicy, context=context
+            )
         elif isinstance(code.output_policy, UID):
             output_policy = policy_service.policy_stash.get_by_uid(code.output_policy)
             if output_policy.is_ok():
                 code_item.output_policy = output_policy.ok()
             else:
                 return output_policy
-        
+
         result = self.stash.set(code_item)
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -142,34 +150,40 @@ class UserCodeService(AbstractService):
     def review(self, context: AuthedServiceContext, uid: UID, approved: bool):
         # TODO: Check for permissions
         # TODO: for some reason the output is a SyftError, even tho everything works
+        # relative
         from .policy_service import PolicyService
+
         policy_service = context.node.get_service(PolicyService)
         result = self.stash.get_by_uid(uid=uid)
         if result.is_ok():
             code_item = result.ok()
             if approved:
-
-                code_item.status = UserCodeStatus.EXECUTE 
+                code_item.status = UserCodeStatus.EXECUTE
                 if isinstance(code_item.input_policy, UserPolicy):
-                    
                     policy_service.add_user_policy(context, code_item.input_policy)
-                    policy_object = init_policy(code_item.input_policy, code_item.input_policy_init_args)
-                    code_item.input_policy_state = _serialize(policy_object, to_bytes=True)
-                    
+                    policy_object = init_policy(
+                        code_item.input_policy, code_item.input_policy_init_args
+                    )
+                    code_item.input_policy_state = _serialize(
+                        policy_object, to_bytes=True
+                    )
+
                 if isinstance(code_item.output_policy, UserPolicy):
                     policy_service.add_user_policy(context, code_item.output_policy)
-                    policy_object = init_policy(code_item.output_policy, code_item.output_policy_init_args)
-                    code_item.output_policy_state = _serialize(policy_object, to_bytes=True)
+                    policy_object = init_policy(
+                        code_item.output_policy, code_item.output_policy_init_args
+                    )
+                    code_item.output_policy_state = _serialize(
+                        policy_object, to_bytes=True
+                    )
             else:
                 code_item.status = UserCodeStatus.DENIED
-                
+
             self.update_code_state(context=context, code_item=code_item)
 
-            return SyftSuccess("Review submitted")    
+            return SyftSuccess("Review submitted")
 
         return SyftError(message=result.err())
-
-
 
     @service_method(path="code.call", name="call")
     def call(
@@ -182,7 +196,7 @@ class UserCodeService(AbstractService):
             if result.is_ok():
                 code_item = result.ok()
                 if code_item.status == UserCodeStatus.EXECUTE:
-                    is_valid = True #= code_item.output_policy_state.valid
+                    is_valid = True  # = code_item.output_policy_state.valid
                     if not is_valid:
                         return is_valid
                     else:
@@ -195,9 +209,13 @@ class UserCodeService(AbstractService):
                             policy_object = get_policy_object(
                                 code_item.input_policy, code_item.input_policy_state
                             )
-                            filtered_kwargs = policy_object.filter_kwargs(filtered_kwargs)
-                            code_item.input_policy_state = update_policy_state(policy_object)
-                                
+                            filtered_kwargs = policy_object.filter_kwargs(
+                                filtered_kwargs
+                            )
+                            code_item.input_policy_state = update_policy_state(
+                                policy_object
+                            )
+
                         result = action_service._user_code_execute(
                             context, code_item, filtered_kwargs
                         )
@@ -209,17 +227,22 @@ class UserCodeService(AbstractService):
                                 code_item.output_policy_state.update_state()
                             else:
                                 policy_object = get_policy_object(
-                                    code_item.output_policy, code_item.output_policy_state
+                                    code_item.output_policy,
+                                    code_item.output_policy_state,
                                 )
 
-                                final_results = policy_object.apply_output(final_results)
-                                code_item.output_policy_state = update_policy_state(policy_object)
-                                
+                                final_results = policy_object.apply_output(
+                                    final_results
+                                )
+                                code_item.output_policy_state = update_policy_state(
+                                    policy_object
+                                )
+
                             state_result = self.update_code_state(
                                 context=context, code_item=code_item
                             )
                             if state_result:
-                               return final_results
+                                return final_results
                             else:
                                 return state_result
                 elif code_item.status == UserCodeStatus.SUBMITTED:

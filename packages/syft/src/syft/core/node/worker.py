@@ -50,6 +50,7 @@ from .new.message_service import MessageService
 from .new.network_service import NetworkService
 from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
+from .new.policy_service import PolicyService
 from .new.project_service import ProjectService
 from .new.queue_stash import QueueItem
 from .new.queue_stash import QueueStash
@@ -67,7 +68,6 @@ from .new.user_code_service import UserCodeService
 from .new.user_service import UserService
 from .new.user_stash import UserStash
 from .new.worker_settings import WorkerSettings
-from .new.policy_service import PolicyService
 
 
 def gipc_encoder(obj):
