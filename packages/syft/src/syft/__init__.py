@@ -77,6 +77,7 @@ from .core.node.new.request import SubmitRequest as Request  # noqa: F401
 from .core.node.new.roles import Roles as roles  # noqa: F401
 from .core.node.new.user_code import ExactMatch  # noqa: F401
 from .core.node.new.user_code import SingleExecutionExactOutput  # noqa: F401
+from .core.node.new.user_code import UserCodeStatus  # noqa: F401
 from .core.node.new.user_code import syft_function  # noqa: F401
 from .core.node.new.user_service import UserService  # noqa: F401
 

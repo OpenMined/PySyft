@@ -41,7 +41,10 @@ class RequestService(AbstractService):
 
     @service_method(path="request.submit", name="submit")
     def submit(
-        self, context: AuthedServiceContext, request: SubmitRequest
+        self,
+        context: AuthedServiceContext,
+        request: SubmitRequest,
+        send_message: bool = True,
     ) -> Union[Request, SyftError]:
         """Submit a Request"""
         try:
@@ -53,18 +56,21 @@ class RequestService(AbstractService):
                     UserService.user_verify_key
                 )
                 root_verify_key = user_verify_key(email="info@openmined.org")
-                message = CreateMessage(
-                    subject="Approval Request",
-                    from_user_verify_key=context.credentials,
-                    to_user_verify_key=root_verify_key,
-                    linked_obj=link,
-                )
-                method = context.node.get_service_method(MessageService.send)
-                result = method(context=context, message=message)
-                if isinstance(result, Message):
-                    result = Ok(request)
-                else:
-                    result = Err(result)
+                if send_message:
+                    message = CreateMessage(
+                        subject="Approval Request",
+                        from_user_verify_key=context.credentials,
+                        to_user_verify_key=root_verify_key,
+                        linked_obj=link,
+                    )
+                    method = context.node.get_service_method(MessageService.send)
+                    result = method(context=context, message=message)
+                    if isinstance(result, Message):
+                        return Ok(request)
+                    else:
+                        return Err(result)
+
+                return Ok(request)
 
             if result.is_err():
                 return SyftError(message=str(result.err()))

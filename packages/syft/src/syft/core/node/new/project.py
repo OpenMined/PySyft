@@ -5,6 +5,9 @@ from typing import List
 from typing import Optional
 from typing import Type
 
+# third party
+from result import OkErr
+
 # relative
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import SyftObject
@@ -92,9 +95,14 @@ def submit_changes(context: TransformContext) -> TransformContext:
             mutations.append(mutation)
         submit_request = SubmitRequest(changes=mutations)
         request_submit_method = context.node.get_service_method(RequestService.submit)
-        result = request_submit_method(context=context, request=submit_request)
+        result = request_submit_method(
+            context=context, request=submit_request, send_message=False
+        )
+
         if isinstance(result, SyftError):
             return result
+        if isinstance(result, OkErr):
+            result = result.ok()
         context.output["requests"] = [result]
     context.output["user_verify_key"] = context.credentials
     return context
