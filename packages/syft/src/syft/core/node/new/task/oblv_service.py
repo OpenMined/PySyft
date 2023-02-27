@@ -1,6 +1,3 @@
-# future
-from __future__ import annotations
-
 # stdlib
 from base64 import encodebytes
 import os
@@ -10,7 +7,6 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import cast
 
@@ -35,6 +31,7 @@ from ..api import UserNodeView
 from ..client import HTTPConnection
 from ..client import Routes
 from ..context import AuthedServiceContext
+from ..context import ChangeContext
 from ..credentials import SyftSigningKey
 from ..document_store import DocumentStore
 from ..service import AbstractService
@@ -44,11 +41,6 @@ from ..user_code import UserCodeStatus
 from .oblv_keys import OblvKeys
 from .oblv_keys_stash import OblvKeysStash
 from .util import find_available_port
-
-if TYPE_CHECKING:
-    # relative
-    from ..request import ChangeContext
-
 
 # caches the connection to Enclave using the deployment ID
 OBLV_PROCESS_CACHE: Dict[str, List] = {}

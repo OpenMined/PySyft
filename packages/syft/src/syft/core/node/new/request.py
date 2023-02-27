@@ -17,7 +17,6 @@ from typing_extensions import Self
 
 # relative
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
-from ....core.node.common.node_table.syft_object import SyftBaseObject
 from ....core.node.common.node_table.syft_object import SyftObject
 from ...common.serde import _serialize
 from ...common.serde.serializable import serializable
@@ -27,10 +26,10 @@ from .action_store import ActionObjectPermission
 from .action_store import ActionPermission
 from .api import APIRegistry
 from .context import AuthedServiceContext
+from .context import ChangeContext
 from .credentials import SyftVerifyKey
 from .document_store import BasePartitionSettings
 from .linked_obj import LinkedObject
-from .node import NewNode
 from .response import SyftError
 from .response import SyftSuccess
 from .task.oblv_service import check_enclave_transfer
@@ -64,18 +63,6 @@ class RequestStatus(Enum):
     PENDING = 0
     REJECTED = 1
     APPROVED = 2
-
-
-class ChangeContext(SyftBaseObject):
-    node: Optional[NewNode] = None
-    approving_user_credentials: Optional[SyftVerifyKey]
-    requesting_user_credentials: Optional[SyftVerifyKey]
-
-    @staticmethod
-    def from_service(context: AuthedServiceContext) -> Self:
-        return ChangeContext(
-            node=context.node, approving_user_credentials=context.credentials
-        )
 
 
 @serializable(recursive_serde=True)
