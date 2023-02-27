@@ -21,6 +21,7 @@ from ....core.node.common.node_table.syft_object import SyftObject
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .api import UserNodeView
+from .context import AuthedServiceContext
 from .credentials import SyftVerifyKey
 from .dataset import Asset
 from .document_store import PartitionKey
@@ -210,6 +211,17 @@ class UserCodeStatusContext:
         for k, v in self.base_dict.items():
             hash_sum = hash(k) + hash(v)
         return hash_sum
+
+    def for_context(self, context: AuthedServiceContext) -> UserCodeStatus:
+        user_node_view = UserNodeView(
+            node_name=context.node.name, verify_key=context.node.signing_key.verify_key
+        )
+        if user_node_view in self.base_dict:
+            return self.base_dict[user_node_view]
+        else:
+            raise Exception(
+                f"Code Object does not contain {context.node.name} Domain's data"
+            )
 
 
 @serializable(recursive_serde=True)

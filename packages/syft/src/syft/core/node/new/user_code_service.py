@@ -120,7 +120,7 @@ class UserCodeService(AbstractService):
             result = self.stash.get_by_uid(uid=uid)
             if result.is_ok():
                 code_item = result.ok()
-                if code_item.status == UserCodeStatus.EXECUTE:
+                if code_item.status.for_context(context) == UserCodeStatus.EXECUTE:
                     is_valid = code_item.output_policy_state.valid
                     if not is_valid:
                         return is_valid
@@ -140,7 +140,7 @@ class UserCodeService(AbstractService):
                                 return result.ok()
                             else:
                                 return state_result
-                elif code_item.status == UserCodeStatus.SUBMITTED:
+                elif code_item.status.for_context(context) == UserCodeStatus.SUBMITTED:
                     return SyftNotReady(
                         message=f"{type(code_item)} Your code is waiting for approval: {code_item.status}"
                     )
