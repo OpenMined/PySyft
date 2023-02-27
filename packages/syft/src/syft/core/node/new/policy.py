@@ -10,6 +10,7 @@ from result import Ok
 from result import Result
 
 from enum import Enum
+import ast
 import hashlib
 from RestrictedPython import compile_restricted
 import inspect
@@ -30,7 +31,8 @@ from .response import SyftError
 from .dataset import Asset
 from .response import SyftError
 from .response import SyftSuccess
-from .user_code import compile_byte_code
+from .policy_code_parse import GlobalsVisitor
+
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 PyCodeObject = Any
@@ -266,6 +268,27 @@ def generate_unique_class_name(context: TransformContext) -> TransformContext:
     unique_name = f"user_func_{service_class_name}_{context.credentials}_{code_hash}"
     context.output["unique_name"] = unique_name
     return context
+
+
+def compile_byte_code(parsed_code: str) -> Optional[PyCodeObject]:
+    try:
+        return compile(parsed_code, "<string>", "exec")
+    except Exception as e:
+        print("WARNING: to compile byte code", e)
+    return None
+
+
+def process_class_code(
+    raw_code: str,
+    class_name: str
+) -> str:
+    tree = ast.parse(raw_code)
+
+    v = GlobalsVisitor()
+    v.visit(tree)
+
+    f = tree.body[0]
+    f.decorator_list = []
 
 def check_class_code(context: TransformContext) -> TransformContext:
     # TODO: define the proper checking for this case based on the ideas from UserCode
