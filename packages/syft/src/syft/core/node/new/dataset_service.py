@@ -52,6 +52,19 @@ class DatasetService(AbstractService):
             return results
         return SyftError(message=result.err())
 
+    @service_method(path="dataset.search", name="search")
+    def search(
+        self, context: AuthedServiceContext, name: str
+    ) -> Union[List[Dataset], SyftError]:
+        """Search a Dataset by name"""
+        results = self.get_all(context)
+
+        return (
+            results
+            if isinstance(results, SyftError)
+            else [dataset for dataset in results if name in dataset.name]
+        )
+
     @service_method(path="dataset.get_by_id", name="get_by_id")
     def get_by_id(
         self, context: AuthedServiceContext, uid: UID
