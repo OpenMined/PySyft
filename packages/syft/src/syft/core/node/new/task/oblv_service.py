@@ -369,7 +369,9 @@ def check_enclave_transfer(
             action_object = action_service.store.get(
                 uid=uid, credentials=context.node.signing_key.verify_key
             )
-            inputs[var_name] = action_object
+            if action_object.is_err():
+                return action_object
+            inputs[var_name] = action_object.ok()
 
         res = api.services.oblv.send_user_code_inputs_to_enclave(
             user_code_id=user_code.id, inputs=inputs, node_name=context.node.name
