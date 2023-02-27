@@ -131,10 +131,12 @@
           const rs = message.getRoot(RecursiveSerde);
           const fieldsName = rs.getFieldsName();
           const fieldsData = rs.getFieldsData();
+
           for (let index = 0; index < fieldsName.getLength(); index++) {
             const key = fieldsName.get(index);
             const bytes = fieldsData.get(index);
-            const obj = uuidStringify(this.deserialize(bytes.toArrayBuffer()));
+            const objBlob = this.processObject(bytes);
+            const obj = uuidStringify(objBlob);
             uuidMap.set(key, obj);
           }
           return uuidMap;
@@ -182,7 +184,8 @@
           const size = values.getLength();
           for (let index = 0; index < size; index++) {
             const value = values.get(index);
-            iter.push(this.deserialize(value.toArrayBuffer()));
+            const obj = this.processObject(value);
+            iter.push(obj);
           }
           return iter;
         },
@@ -254,9 +257,8 @@
           for (let index = 0; index < size; index++) {
             const value = values.get(index);
             const key = keys.get(index);
-            kv_iter[this.deserialize(key.toArrayBuffer())] = this.deserialize(
-              value.toArrayBuffer()
-            );
+            const obj = this.processObject(value);
+            kv_iter[this.deserialize(key.toArrayBuffer())] = obj;
           }
           return kv_iter;
         },
@@ -321,6 +323,42 @@
       return message.toArrayBuffer();
     }
 
+    processChunks(chunks) {
+      let totalSize = 0;
+      // Get Total Size
+      for (let idx = 0; idx < chunks.getLength(); idx++) {
+        totalSize = totalSize + chunks.get(idx).getLength();
+      }
+
+      // Create new array using total size length
+      var tmp = new Uint8Array(totalSize);
+      var position = 0;
+
+      // Fill the tmp array
+      for (let idx = 0; idx < chunks.getLength(); idx++) {
+        let data_chunk = new Uint8Array(this.deserialize(chunks.get(idx).toArrayBuffer()));
+        tmp.set(data_chunk, position);
+        position += data_chunk.byteLength;
+      }
+
+      return tmp;
+    }
+
+    processObject(obj) {
+      let result = null;
+      // Object < 512 mb
+      if (obj.getLength() === 1) {
+        result = this.deserialize(obj.get(0).toArrayBuffer());
+      }
+      // Object > 512, therefore splitted into different chunks
+      else {
+        let totalChunk = this.processChunks(obj);
+        result = this.deserialize(totalChunk.buffer);
+      }
+
+      return result;
+    }
+
     deserialize(buffer) {
       const message = new capnp.Message(buffer, false);
       const rs = message.getRoot(RecursiveSerde);
@@ -328,9 +366,16 @@
       const size = fieldsName.getLength();
       const fqn = rs.getFullyQualifiedName();
       let objSerdeProps = this.type_bank[fqn];
-      console.log('FQN: ', fqn);
       if (size < 1) {
-        return this.type_bank[fqn][2](rs.getNonrecursiveBlob().toArrayBuffer());
+        const blob = rs.getNonrecursiveBlob();
+        // Blob < 512 mb
+        if (blob.getLength() === 1) {
+          return this.type_bank[fqn][2](blob.get(0).toArrayBuffer());
+        } else {
+          // Blob > 512 mb
+          let totalChunk = this.processChunks(blob);
+          return this.type_bank[fqn][2](totalChunk.buffer);
+        }
       } else if (objSerdeProps[2] !== null) {
         return this.type_bank[fqn][2](buffer);
       } else {
@@ -342,7 +387,7 @@
           for (let index = 0; index < size; index++) {
             const key = fieldsName.get(index);
             const bytes = fieldsData.get(index);
-            const obj = this.deserialize(bytes.toArrayBuffer());
+            const obj = this.processObject(bytes);
             kv_iterable.set(key, obj);
           }
         }
