@@ -115,8 +115,8 @@ class UserCodeService(AbstractService):
         self, context: AuthedServiceContext, uid: UID, **kwargs: Any
     ) -> Union[SyftSuccess, SyftError]:
         """Call a User Code Function"""
-        filtered_kwargs = filter_kwargs(kwargs)
         try:
+            filtered_kwargs = filter_kwargs(kwargs)
             result = self.stash.get_by_uid(uid=uid)
             if result.is_ok():
                 code_item = result.ok()
@@ -168,6 +168,9 @@ def filter_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
             value = v.id
         if isinstance(v, Asset):
             value = v.action_id
+
+        if not isinstance(value, UID):
+            raise Exception(f"Input {k} must have a UID not {type(v)}")
         filtered_kwargs[k] = value
     return filtered_kwargs
 

@@ -138,7 +138,9 @@ class ActionService(AbstractService):
     def _user_code_execute(
         self, context: AuthedServiceContext, code_item: UserCode, kwargs: Dict[str, Any]
     ) -> Result[ActionObjectPointer, Err]:
-        filtered_kwargs = code_item.input_policy.filter_kwargs(kwargs)
+        filtered_kwargs = code_item.input_policy.filter_kwargs(
+            kwargs=kwargs, context=context
+        )
         has_twin_inputs = False
         kwargs = {}
         for key, arg_id in filtered_kwargs.items():

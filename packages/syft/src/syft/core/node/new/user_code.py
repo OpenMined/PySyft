@@ -74,8 +74,14 @@ class InputPolicy(SyftObject):
 
 
 def allowed_ids_only(
-    allowed_inputs: Dict[str, UID], kwargs: Dict[str, Any]
+    allowed_inputs: Dict[str, UID],
+    kwargs: Dict[str, Any],
+    context: AuthedServiceContext,
 ) -> Dict[str, UID]:
+    user_node_view = UserNodeView(
+        node_name=context.node.name, verify_key=context.node.signing_key.verify_key
+    )
+    allowed_inputs = allowed_inputs[user_node_view]
     filtered_kwargs = {}
     for key in allowed_inputs.keys():
         if key in kwargs:
@@ -98,8 +104,10 @@ class ExactMatch(InputPolicy):
     __canonical_name__ = "ExactMatch"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    def filter_kwargs(self, kwargs: Dict[str, Any]) -> Dict[str, Any]:
-        return allowed_ids_only(self.inputs, kwargs)
+    def filter_kwargs(
+        self, kwargs: Dict[str, Any], context: AuthedServiceContext
+    ) -> Dict[str, Any]:
+        return allowed_ids_only(self.inputs, kwargs, context)
 
 
 class OutputPolicyState(SyftObject):
