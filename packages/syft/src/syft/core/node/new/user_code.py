@@ -42,17 +42,23 @@ class InputPolicy(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
-    node_uid: Optional[UID]
     inputs: Dict[str, Any]
+    node_uid: Optional[UID]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         uid = UID()
+        node_uid = None
         if "id" in kwargs:
             uid = kwargs["id"]
+        if "node_uid" in kwargs:
+            node_uid = kwargs["node_uid"]
+
+        # finally get inputs
         if "inputs" in kwargs:
             kwargs = kwargs["inputs"]
         uid_kwargs = extract_uids(kwargs)
-        super().__init__(id=uid, inputs=uid_kwargs)
+
+        super().__init__(id=uid, inputs=uid_kwargs, node_uid=node_uid)
 
     def filter_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
         raise NotImplementedError

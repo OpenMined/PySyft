@@ -38,8 +38,6 @@ class MessageService(AbstractService):
         """Send a new message"""
 
         new_message = message.to(Message, context=context)
-
-        print("New Message:", new_message)
         result = self.stash.set(new_message)
         if result.is_err():
             return SyftError(message=str(result.err()))
