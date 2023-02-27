@@ -1,5 +1,4 @@
 # stdlib
-from typing import List
 from typing import Optional
 
 # third party
@@ -8,7 +7,6 @@ from result import Result
 # relative
 from ....telemetry import instrument
 from ...common.serde.serializable import serializable
-from ...common.uid import UID
 from .dataset import Dataset
 from .dataset import DatasetUpdate
 from .document_store import BaseUIDStoreStash
@@ -18,7 +16,6 @@ from .document_store import PartitionSettings
 from .document_store import QueryKeys
 
 NamePartitionKey = PartitionKey(key="name", type_=str)
-ActionIDsPartitionKey = PartitionKey(key="action_ids", type_=List[UID])
 
 
 @instrument
@@ -38,7 +35,3 @@ class DatasetStash(BaseUIDStoreStash):
 
     def update(self, dataset_update: DatasetUpdate) -> Result[Dataset, str]:
         return self.check_type(dataset_update, DatasetUpdate).and_then(super().update)
-
-    def search_action_ids(self, uid: UID) -> Result[List[Dataset], str]:
-        qks = QueryKeys(qks=[ActionIDsPartitionKey.with_obj(uid)])
-        return self.query_all(qks=qks)

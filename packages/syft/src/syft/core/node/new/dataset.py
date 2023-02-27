@@ -198,16 +198,9 @@ class Dataset(SyftObject):
     url: Optional[str]
     description: Optional[str]
 
-    __attr_searchable__ = ["name", "citation", "url", "description", "action_ids"]
+    __attr_searchable__ = ["name", "citation", "url", "description"]
     __attr_unique__ = ["name"]
     __attr_repr_cols__ = ["name", "url"]
-
-    def action_ids(self) -> List[UID]:
-        data = []
-        for asset in self.asset_list:
-            if asset.action_id:
-                data.append(asset.action_id)
-        return data
 
     @property
     def assets(self) -> TupleDict:
