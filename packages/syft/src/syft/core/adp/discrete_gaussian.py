@@ -1,4 +1,4 @@
-# stdlib
+# based on https://arxiv.org/pdf/2004.00010.pdf
 from fractions import Fraction  # we will work with rational numbers
 import secrets  # use cryptographically secure library
 
@@ -16,7 +16,8 @@ def discrete_gaussian(sigma2, rng=None):
     sigma2 = Fraction(sigma2)
     if sigma2 == 0:
         return 0
-    assert sigma2 > 0
+    if sigma2 < 0:
+        raise ValueError("sigma2 must be a non-negative value")
     t = floorsqrt(sigma2) + 1
     while True:
         candidate = sample_dlaplace(t, rng=rng)
@@ -30,7 +31,8 @@ def floorsqrt(x):
     compute floor(sqrt(x)) exactly
     only requires comparisons between x and integer
     """
-    assert x >= 0
+    if x < 0:
+        raise ValueError("x must be a non-negative value")
     a = 0
     b = 1
     while b * b <= x:
@@ -54,7 +56,8 @@ def sample_dlaplace(scale, rng=None):
     if rng is None:
         rng = secrets.SystemRandom()
     scale = Fraction(scale)
-    assert scale >= 0
+    if scale < 0:
+        raise ValueError("scale must be a non-negative value")
     while True:
         sign = sample_bernoulli(Fraction(1, 2), rng)
         magnitude = sample_geometric_exp_fast(1 / scale, rng)
@@ -68,18 +71,22 @@ def sample_uniform(m, rng):
     sample uniformly from range(m)
     all randomness comes from calling this
     """
-    assert isinstance(m, int)
-    assert m > 0
+    if not isinstance(m, int):
+        raise TypeError("m must be an integer value")
+    if m <= 0:
+        raise ValueError("m must be a positive value")
     return rng.randrange(m)
-
 
 def sample_bernoulli(p, rng):
     """
     sample from a Bernoulli(p) distribution
     assumes p is a rational number in [0,1]
     """
-    assert isinstance(p, Fraction)
-    assert 0 <= p <= 1
+    if not isinstance(p, Fraction):
+        raise TypeError("p must be a Fraction value")
+    if p < 0 or p > 1:
+        raise ValueError("p must be a Fraction value in the range [0, 1]")
+    
     m = sample_uniform(p.denominator, rng)
     if m < p.numerator:
         return 1
@@ -92,8 +99,11 @@ def sample_bernoulli_exp1(x, rng):
     sample from a Bernoulli(exp(-x)) distribution
     assumes x is a rational number in [0,1]
     """
-    assert isinstance(x, Fraction)
-    assert 0 <= x <= 1
+
+    if not isinstance(x, Fraction):
+        raise TypeError("x must be a Fraction value")
+    if x < 0 or x > 1:
+        raise ValueError("x must be a Fraction value in the range [0, 1]")
     k = 1
     while True:
         if sample_bernoulli(x / k, rng) == 1:
@@ -108,8 +118,11 @@ def sample_bernoulli_exp(x, rng):
     sample from a Bernoulli(exp(-x)) distribution
     assumes x is a rational number >=0
     """
-    assert isinstance(x, Fraction)
-    assert x >= 0
+    if not isinstance(x, Fraction):
+        raise TypeError("x must be a Fraction value")
+    if x < 0:
+        raise ValueError("x must be a greater than 0")
+    
     while x > 1:
         if sample_bernoulli_exp1(Fraction(1, 1), rng) == 1:
             x = x - 1
@@ -123,8 +136,11 @@ def sample_geometric_exp_slow(x, rng):
     sample from a geometric(1-exp(-x)) distribution
     assumes x is a rational number >= 0
     """
-    assert isinstance(x, Fraction)
-    assert x >= 0
+    if not isinstance(x, Fraction):
+        raise TypeError("x must be a Fraction value")
+    if x < 0:
+        raise ValueError("x must be a greater than 0")
+    
     k = 0
     while True:
         if sample_bernoulli_exp(x, rng) == 1:
@@ -138,10 +154,10 @@ def sample_geometric_exp_fast(x, rng):
     sample from a geometric(1-exp(-x)) distribution
     assumes x >= 0 rational
     """
-    assert isinstance(x, Fraction)
-    if x == 0:
-        return 0
-    assert x > 0
+    if not isinstance(x, Fraction):
+        raise TypeError("x must be a Fraction value")
+    if x < 0:
+        raise ValueError("x must be a greater than 0")
 
     t = x.denominator
     while True:

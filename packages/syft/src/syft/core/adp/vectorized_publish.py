@@ -130,16 +130,6 @@ def publish(
     ledger.update_rdp_constants(data_subject_rdp_constants=data_subject_rdp_constants)
     ledger._write_ledger()
 
-    # We sample noise from a cryptographically secure distribution
-    # TODO(0.8): Replace with discrete gaussian distribution instead of regular
-    # gaussian to eliminate floating pt vulns
-    # Discrete Gaussian Noise
-
-    # Continuous Gaussian Noise
-    # noise = np.asarray(
-    #     [secrets.SystemRandom().gauss(0, sigma) for _ in range(original_output.size)]
-    # ).reshape(original_output.shape)
-
     noise = np.asarray(
         [discrete_gaussian(sigma) for _ in range(original_output.size)]
     ).reshape(original_output.shape)
