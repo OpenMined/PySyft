@@ -43,7 +43,6 @@ class ServiceRoleCapability(Enum):
 
 @serializable(recursive_serde=True)
 class ServiceRole(Enum):
-    ADMIN = 0
     GUEST = 1
 
 
@@ -83,7 +82,7 @@ class User(SyftObject):
         "role",
         "created_at",
     ]
-    __attr_searchable__ = ["name", "email", "verify_key", "role"]
+    __attr_searchable__ = ["name", "email", "verify_key"]
     __attr_unique__ = ["email", "signing_key", "verify_key"]
     __attr_repr_cols__ = ["name", "email"]
 

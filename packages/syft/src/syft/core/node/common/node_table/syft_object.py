@@ -2,7 +2,6 @@
 from collections import defaultdict
 import inspect
 from inspect import Signature
-import types
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -309,22 +308,10 @@ class SyftObject(SyftBaseObject, SyftObjectRegistry):
     def _syft_keys_types_dict(cls, attr_name: str) -> Dict[str, type]:
         kt_dict = {}
         for key in getattr(cls, attr_name, []):
-            if key in cls.__fields__:
-                type_ = cls.__fields__[key].type_
-            else:
-                try:
-                    method = getattr(cls, key)
-                    if isinstance(method, types.FunctionType):
-                        type_ = method.__annotations__["return"]
-                except Exception as e:
-                    print(
-                        f"Failed to get attribute from key {key} type for {cls} storage. {e}"
-                    )
-                    raise e
+            type_ = cls.__fields__[key].type_
             # EmailStr seems to be lost every time the value is set even with a validator
             # this means the incoming type is str so our validators fail
-
-            if type(type_) is type and issubclass(type_, EmailStr):
+            if issubclass(type_, EmailStr):
                 type_ = str
             kt_dict[key] = type_
         return kt_dict

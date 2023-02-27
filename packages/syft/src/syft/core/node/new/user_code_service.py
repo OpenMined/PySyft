@@ -37,7 +37,7 @@ class UserCodeService(AbstractService):
     @service_method(path="code.submit", name="submit")
     def submit(
         self, context: AuthedServiceContext, code: SubmitUserCode
-    ) -> Union[UserCode, SyftError]:
+    ) -> Union[SyftSuccess, SyftError]:
         """Add User Code"""
         result = self.stash.set(code.to(UserCode, context=context))
         if result.is_err():
