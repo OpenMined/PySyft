@@ -46,7 +46,6 @@ class InputPolicy(SyftObject):
     node_uid: Optional[UID]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        print("calliung input polic init", kwargs)
         uid = UID()
         node_uid = None
         if "id" in kwargs:
