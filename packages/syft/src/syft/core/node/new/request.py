@@ -25,6 +25,7 @@ from ...common.uid import UID
 from .action_service import ActionService
 from .action_store import ActionObjectPermission
 from .action_store import ActionPermission
+from .api import APIRegistry
 from .context import AuthedServiceContext
 from .credentials import SyftVerifyKey
 from .document_store import BasePartitionSettings
@@ -147,6 +148,10 @@ class Request(SyftObject):
         "status",
     ]
     __attr_unique__ = ["request_hash"]
+
+    def approve(self):
+        api = APIRegistry.api_for(self.node_uid)
+        return api.services.request.apply(self.id)
 
     def apply(self, context: AuthedServiceContext) -> Result[SyftSuccess, SyftError]:
         change_context = ChangeContext.from_service(context)
@@ -311,6 +316,12 @@ class EnumMutation(ObjectMutation):
 
     def revert(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
         return self._run(context=context, apply=False)
+
+    @property
+    def link(self) -> Optional[SyftObject]:
+        if self.linked_obj:
+            return self.linked_obj.resolve
+        return None
 
 
 @serializable(recursive_serde=True)

@@ -62,7 +62,7 @@ class DataSubjectService(AbstractService):
         data_subject_members = list(data_subject.members.values())
         data_subjects = [data_subject] + data_subject_members
         for data_subject in data_subjects:
-            result = self.stash.set(data_subject)
+            result = self.stash.set(data_subject, ignore_duplicates=True)
             if result.is_err():
                 return SyftError(message=str(result.err()))
         return SyftSuccess(message="Data Subject Added")

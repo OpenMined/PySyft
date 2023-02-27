@@ -96,6 +96,14 @@ class Asset(SyftObject):
         api = APIRegistry.api_for(node_uid=self.node_uid)
         return api.services.action.get_pointer(self.action_id)
 
+    @property
+    def data(self) -> Any:
+        # relative
+        from .api import APIRegistry
+
+        api = APIRegistry.api_for(node_uid=self.node_uid)
+        return api.services.action.get(self.action_id)
+
 
 @serializable(recursive_serde=True)
 class CreateAsset(SyftObject):
