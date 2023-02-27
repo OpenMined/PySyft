@@ -18,6 +18,7 @@ from typing import Union
 # relative
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import SyftObject
+from ....oblv.deployment_client import EnclaveMetadata
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .api import UserNodeView
@@ -251,6 +252,7 @@ class UserCode(SyftObject):
     code_hash: str
     signature: inspect.Signature
     status: UserCodeStatusContext
+    enclave_metadata: Optional[EnclaveMetadata] = None
 
     __attr_searchable__ = ["status", "service_func_name"]
     __attr_unique__ = ["user_verify_key", "code_hash", "user_unique_func_name"]
@@ -319,6 +321,7 @@ class SubmitUserCode(SyftObject):
     input_policy: InputPolicy
     output_policy: OutputPolicy
     local_function: Optional[Callable]
+    enclave_metadata: Optional[EnclaveMetadata] = None
 
     __attr_state__ = [
         "id",
@@ -327,6 +330,7 @@ class SubmitUserCode(SyftObject):
         "signature",
         "input_policy",
         "output_policy",
+        "enclave_metadata",
     ]
 
     @property

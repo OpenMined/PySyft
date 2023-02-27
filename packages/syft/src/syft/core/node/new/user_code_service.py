@@ -45,11 +45,11 @@ class UserCodeService(AbstractService):
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="User Code Submitted")
 
-    @service_method(path="code.request_code_execution", name="request_code_execution")
-    def request_code_execution(
-        self, context: AuthedServiceContext, code: SubmitUserCode
-    ) -> Union[SyftSuccess, SyftError]:
-        """Request Code execution on user code"""
+    def _code_execution(
+        self,
+        context: AuthedServiceContext,
+        code: SubmitUserCode,
+    ):
         # relative
         from .request import SubmitRequest
         from .request_service import RequestService
@@ -70,6 +70,13 @@ class UserCodeService(AbstractService):
 
         # The Request service already returns either a SyftSuccess or SyftError
         return result
+
+    @service_method(path="code.request_code_execution", name="request_code_execution")
+    def request_code_execution(
+        self, context: AuthedServiceContext, code: SubmitUserCode
+    ) -> Union[SyftSuccess, SyftError]:
+        """Request Code execution on user code"""
+        return self._code_execution(context=context, code=code)
 
     @service_method(path="code.get_all", name="get_all")
     def get_all(
