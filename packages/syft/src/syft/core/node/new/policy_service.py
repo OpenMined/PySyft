@@ -30,74 +30,38 @@ class PolicyService(AbstractService):
     def __init__(self, store: DocumentStore) -> None:
         self.store = store
         # self.policy_stash = PolicyStash(store=store)
-        self.policy_code_stash = UserPolicyStash(store=store)
-    
-    @service_method(path="policy.run_code", name="run_code")
-    def run_code(
-        self, context: AuthedServiceContext, uid: UID, inputs: Dict[str, Any]
-    ) -> Union[SyftSuccess, SyftError]:
-        """Call a User Code Function"""
-        policy = self.policy_stash.get_by_uid(uid=uid)
-        if policy.is_ok():
-            policy = policy.ok()
-            policy_code = self.policy_code_stash.get_by_uid(policy.policy_code_uid).value
-            # print(policy_code.raw_code)
-            exec(policy_code.raw_code)
-            code_uid = policy.user_code_uid
-            code_item = context.node.get_service(UserCodeService).get_by_uid(context, code_uid)
-            exec_result = execute_byte_code(code_item, inputs)
-            
-            # print(exec_result.result)
-            policy_class_name = eval(policy_code.class_name)
-            # p = policy_class_name()
-            # s = _serialize(p, to_bytes=True)
-        
-            policy_object = _deserialize(policy.serde, from_bytes=True, class_type=policy_class_name)
-            # print(policy_object.public_state())
+        self.policy_stash = UserPolicyStash(store=store)
 
-            policy_results = policy_object.apply_output(exec_result.result)
-            # print(policy_object.public_state())
-            serde = _serialize(policy_object, to_bytes=True)
-            policy.serde = serde
-            policy = self.policy_stash.update(policy=policy)
-            return SyftSuccess(message=str(policy_results))
-        return SyftError(message=policy.err())
-
-    @service_method(path="policy_code.get_all", name="get_all")
+    @service_method(path="policy.get_all", name="get_all")
     def get_all_user_policy(
         self, context: AuthedServiceContext
     ) -> Union[List[UserPolicy], SyftError]:
-        result = self.policy_code_stash.get_all()
+        result = self.policy_stash.get_all()
         if result.is_ok():
             return result.ok()
         return SyftError(message=result.err())
 
-    @service_method(path="policy_code.add", name="add")
+    @service_method(path="policy.add", name="add")
     def add_user_policy(
-        self, context: AuthedServiceContext, policy_code: SubmitUserPolicy
+        self, context: AuthedServiceContext, policy_code: Union[SubmitUserPolicy, UserPolicy]
     ) -> Union[SyftSuccess, SyftError]:
-        result = self.policy_code_stash.set(policy_code.to(UserPolicy, context=context))
+        if isinstance(policy_code, SubmitUserPolicy):
+            policy_code = policy_code.to(UserPolicy, context=context)
+        result = self.policy_stash.set(policy_code)
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="Policy Code Submitted")
+    
 
-    @service_method(path="policy_code.get_by_uid", name="get_by_uid")
-    def get_policy_code_by_uid(
+    @service_method(path="policy.get_by_uid", name="get_by_uid")
+    def get_policy_by_uid(
         self, context: AuthedServiceContext, uid: UID
     ) -> Union[SyftSuccess, SyftError]:
-        result = self.policy_code_stash.get_by_uid(uid=uid)
+        result = self.policy_stash.get_by_uid(uid=uid)
         if result.is_ok():
             return result.ok()
         return SyftError(message=result.err())
-    
-    @service_method(path="policy_code.get_all_for_user", name="get_all_for_user")
-    def get_all_policy_code_for_user(
-        self, context: AuthedServiceContext
-    ) -> Union[SyftSuccess, SyftError]:
-        result = self.policy_code_stash.get_all_by_user_verify_key(user_verify_key=context.credentials)
-        if result.is_ok():
-            return result.ok()
-        return SyftError(message=result.err())
+
     
 # move them in the database
 ALLOWED_POLICIES = [ExactMatch, SingleExecutionExactOutput]

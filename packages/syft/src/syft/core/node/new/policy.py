@@ -30,51 +30,10 @@ from .response import SyftError
 from .dataset import Asset
 from .response import SyftError
 from .response import SyftSuccess
+from .user_code import compile_byte_code
 
 UserVerifyKeyPartitionKey = PartitionKey(key="user_verify_key", type_=SyftVerifyKey)
 PyCodeObject = Any
-
-# @serializable(recursive_serde=True)
-# class Policy(SyftObject):
-#     __canonical_name__ = "Policy"
-#     __version__ = SYFT_OBJECT_VERSION_1
-
-#     id: UID
-#     user_verify_key: SyftVerifyKey
-#     policy_code_uid: UID
-#     user_code_uid: UID
-#     serde: Optional[bytes] = None
-    
-# @serializable(recursive_serde=True)
-# class CreatePolicy(SyftObject):
-#     __canonical_name__ = "CreatePolicy"
-#     __version__ = SYFT_OBJECT_VERSION_1
-
-#     id: Optional[UID]
-#     policy_code_uid: UID
-#     user_code_uid: UID
-#     policy_init_args: Dict[str, Any]
-
-# def check_policy_uid(context: TransformContext) -> TransformContext:
-#     result = context.node.api.services.policy_code.get_by_uid(context.output["policy_code_uid"])
-#     if not result.is_ok():
-#         return SyftError(message=result.err())
-#     return context
-
-# def check_user_uid(context: TransformContext) -> TransformContext:
-#     result = context.node.api.services.user_code.get_by_uid(context.output["user_code_uid"])
-#     if not result.is_ok():
-#         return SyftError(message=result.err())
-#     return context
-    
-# def create_object(context: TransformContext) -> TransformContext:
-#     result = context.node.get_api().services.policy_code.get_by_uid(context.output["policy_code_uid"])
-#     # TODO
-#     exec(result.byte_code)
-#     policy_name = eval(result.unique_name)
-#     obj = policy_name(**context.output["policy_init_args"])
-#     context.output["serde"] = _serialize(obj, to_bytes=True)
-#     return context
 
 def extract_uids(kwargs: Dict[str, Any]) -> Dict[str, UID]:
     # relative
@@ -98,6 +57,7 @@ def extract_uids(kwargs: Dict[str, Any]) -> Dict[str, UID]:
     return uid_kwargs
 
 
+@serializable(recursive_serde=True)
 class InputPolicy(SyftObject):
     # version
     __canonical_name__ = "InputPolicy"
@@ -125,12 +85,12 @@ class InputPolicy(SyftObject):
     def filter_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
         raise NotImplementedError
 
-    def __getitem__(self, key: Union[int, str]) -> Optional[SyftObject]:
-        if isinstance(key, int):
-            key = list(self.inputs.keys())[key]
-        uid = self.inputs[key]
-        # TODO Add NODE UID or LINK so we can resolve this object
-        return uid
+    # def __getitem__(self, key: Union[int, str]) -> Optional[SyftObject]:
+    #     if isinstance(key, int):
+    #         key = list(self.inputs.keys())[key]
+    #     uid = self.inputs[key]
+    #     # TODO Add NODE UID or LINK so we can resolve this object
+    #     return uid
 
     @property
     def assets(self) -> List[Asset]:
@@ -230,7 +190,7 @@ class OutputPolicyStateExecuteOnce(OutputPolicyStateExecuteCount):
 
     limit: int = 1
 
-
+@serializable(recursive_serde=True)
 class OutputPolicy(SyftObject):
     # version
     __canonical_name__ = "OutputPolicy"
@@ -264,7 +224,7 @@ class UserPolicyStatus(Enum):
 
 @serializable(recursive_serde=True)
 class UserPolicy(SyftObject):
-    __canonical_name__ = "PolicyCode"
+    __canonical_name__ = "UserPolicy"
     __version__ = SYFT_OBJECT_VERSION_1
 
     id: UID
@@ -281,7 +241,7 @@ class UserPolicy(SyftObject):
     
 @serializable(recursive_serde=True)
 class SubmitUserPolicy(SyftObject):
-    __canonical_name__ = "SubmitPolicyCode"
+    __canonical_name__ = "SubmitUserPolicy"
     __version__ = SYFT_OBJECT_VERSION_1
     
     id: Optional[UID]
@@ -318,11 +278,13 @@ def check_class_code(context: TransformContext) -> TransformContext:
     return context
 
 def compile_code(context: TransformContext) -> TransformContext:
-    # byte_code = compile_restricted(context.output["parsed_code"], "<string>", "exec")
-    byte_code = compile(context.output["parsed_code"], "<string>", "exec")
-    context.output["byte_code"] = byte_code
+    byte_code = compile_byte_code(context.output["parsed_code"])
+    if byte_code is None:
+        raise Exception(
+            "Unable to compile byte code from parsed code. "
+            + context.output["parsed_code"]
+        )
     return context
-
 def add_credentials_for_key(key: str) -> Callable:
     def add_credentials(context: TransformContext) -> TransformContext:
         context.output[key] = context.credentials
@@ -336,16 +298,6 @@ def generate_signature(context: TransformContext) -> TransformContext:
     sig = Signature(parameters=[param])
     context.output["signature"] = sig
     return context
-
-# @transform(CreatePolicy, Policy)
-# def create_policy_to_policy() -> List[Callable]:
-#     return [
-#         generate_id,
-#         add_credentials_for_key("user_verify_key")
-#         # check_policy_uid,
-#         # check_user_uid,
-#         # create_object
-#     ]
 
 @transform(SubmitUserPolicy, UserPolicy)
 def submit_policy_code_to_user_code() -> List[Callable]:
@@ -366,12 +318,9 @@ def init_policy(user_policy: UserPolicy, init_args: Dict[str, Any]):
     return policy_object 
     
 def get_policy_object(user_policy: UserPolicy, state: str) -> Result[Any,str]:
-    # if user_policy.status != UserPolicyStatus.APPROVED:
-    #     return Err() 
     exec(user_policy.raw_code)
     policy_class_name = eval(user_policy.class_name)
     policy_object = _deserialize(state, from_bytes=True, class_type=policy_class_name)
-    return policy_object#Ok(policy_object)
-
+    return policy_object
 def update_policy_state(policy_object):
     return _serialize(policy_object, to_bytes=True)

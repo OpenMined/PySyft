@@ -43,22 +43,30 @@ class UserCodeService(AbstractService):
         self, context: AuthedServiceContext, code: SubmitUserCode
     ) -> Union[UserCode, SyftError]:
         """Add User Code"""
+        code_item = code.to(UserCode, context=context)
         from .policy_service import PolicyService
         policy_service = context.node.get_service(PolicyService)
-        code_item = code.to(UserCode, context=context)
+
         if isinstance(code.input_policy, SubmitUserPolicy):
             submit_input_policy = code.input_policy
-            policy_service.add_user_policy(context, submit_input_policy)
-            input_policy = policy_service.get_all_user_policy(context)[-1]
-            code_item.input_policy = input_policy
+            code_item.input_policy = submit_input_policy.to(UserPolicy, context=context)
+        elif isinstance(code.input_policy, UID):
+            input_policy = policy_service.get_policy_by_uid(context, code.input_policy)
+            if input_policy.is_ok():
+                code_item.input_policy = input_policy.ok()
+            else:
+                return input_policy
         
         if isinstance(code.output_policy, SubmitUserPolicy):
             submit_output_policy = code.output_policy
-            policy_service.add_user_policy(context, submit_output_policy)
-            output_policy = policy_service.get_all_user_policy(context)[-1]
-            print(type(output_policy), file=sys.stderr)
-            code_item.output_policy = output_policy
-
+            code_item.output_policy = submit_output_policy.to(UserPolicy, context=context)
+        elif isinstance(code.output_policy, UID):
+            output_policy = policy_service.policy_stash.get_by_uid(code.output_policy)
+            if output_policy.is_ok():
+                code_item.output_policy = output_policy.ok()
+            else:
+                return output_policy
+        
         result = self.stash.set(code_item)
         if result.is_err():
             return SyftError(message=str(result.err()))
@@ -133,28 +141,30 @@ class UserCodeService(AbstractService):
     @service_method(path="code.review", name="review")
     def review(self, context: AuthedServiceContext, uid: UID, approved: bool):
         # TODO: Check for permissions
+        # TODO: for some reason the output is a SyftError, even tho everything works
+        from .policy_service import PolicyService
+        policy_service = context.node.get_service(PolicyService)
         result = self.stash.get_by_uid(uid=uid)
-        print(result, file=sys.stderr)
         if result.is_ok():
             code_item = result.ok()
             if approved:
-                print(type(code_item.input_policy),type(code_item.output_policy), file=sys.stderr)
 
                 code_item.status = UserCodeStatus.EXECUTE 
                 if isinstance(code_item.input_policy, UserPolicy):
+                    
+                    policy_service.add_user_policy(context, code_item.input_policy)
                     policy_object = init_policy(code_item.input_policy, code_item.input_policy_init_args)
                     code_item.input_policy_state = _serialize(policy_object, to_bytes=True)
                     
                 if isinstance(code_item.output_policy, UserPolicy):
-                    print(code_item.output_policy_init_args, file=sys.stderr)
+                    policy_service.add_user_policy(context, code_item.output_policy)
                     policy_object = init_policy(code_item.output_policy, code_item.output_policy_init_args)
                     code_item.output_policy_state = _serialize(policy_object, to_bytes=True)
-
-                # put user submitted policy in the policy stash
             else:
                 code_item.status = UserCodeStatus.DENIED
                 
             self.update_code_state(context=context, code_item=code_item)
+
             return SyftSuccess("Review submitted")    
 
         return SyftError(message=result.err())
@@ -201,12 +211,9 @@ class UserCodeService(AbstractService):
                                 policy_object = get_policy_object(
                                     code_item.output_policy, code_item.output_policy_state
                                 )
-                                print(policy_object, file=sys.stderr)
-                                print(policy_object)
+
                                 final_results = policy_object.apply_output(final_results)
-                                print(final_results, file=sys.stderr) 
                                 code_item.output_policy_state = update_policy_state(policy_object)
-                                print(update_policy_state(policy_object), file=sys.stderr) 
                                 
                             state_result = self.update_code_state(
                                 context=context, code_item=code_item

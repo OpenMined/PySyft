@@ -172,31 +172,31 @@ PyCodeObject = Any
 #     limit: int = 1
 
 
-class OutputPolicy(SyftObject):
-    # version
-    __canonical_name__ = "OutputPolicy"
-    __version__ = SYFT_OBJECT_VERSION_1
+# class OutputPolicy(SyftObject):
+#     # version
+#     __canonical_name__ = "OutputPolicy"
+#     __version__ = SYFT_OBJECT_VERSION_1
 
-    id: UID
-    outputs: List[str] = []
-    state_type: Optional[Type[OutputPolicyState]]
+#     id: UID
+#     outputs: List[str] = []
+#     state_type: Optional[Type[OutputPolicyState]]
 
-    def update() -> None:
-        raise NotImplementedError
+#     def update() -> None:
+#         raise NotImplementedError
 
-    @classmethod
-    @property
-    def policy_code(cls) -> str:
-        return inspect.getsource(cls)
+#     @classmethod
+#     @property
+#     def policy_code(cls) -> str:
+#         return inspect.getsource(cls)
 
 
-@serializable(recursive_serde=True)
-class SingleExecutionExactOutput(OutputPolicy):
-    # version
-    __canonical_name__ = "SingleExecutionExactOutput"
-    __version__ = SYFT_OBJECT_VERSION_1
+# @serializable(recursive_serde=True)
+# class SingleExecutionExactOutput(OutputPolicy):
+#     # version
+#     __canonical_name__ = "SingleExecutionExactOutput"
+#     __version__ = SYFT_OBJECT_VERSION_1
 
-    state_type: Type[OutputPolicyState] = OutputPolicyStateExecuteOnce
+#     state_type: Type[OutputPolicyState] = OutputPolicyStateExecuteOnce
 
 
 @serializable(recursive_serde=True)
@@ -215,9 +215,9 @@ class UserCode(SyftObject):
     id: UID
     user_verify_key: SyftVerifyKey
     raw_code: str
-    input_policy: Union[InputPolicy, UserPolicy, SubmitUserPolicy]
+    input_policy: Union[InputPolicy, UserPolicy, SubmitUserPolicy, UID]
     input_policy_state: Union[OutputPolicyState, str]
-    output_policy: Union[OutputPolicy, UserPolicy, SubmitUserPolicy]
+    output_policy: Union[OutputPolicy, UserPolicy, SubmitUserPolicy, UID]
     output_policy_state: Union[OutputPolicyState, str]
     parsed_code: str
     service_func_name: str
@@ -254,9 +254,9 @@ class SubmitUserCode(SyftObject):
     code: str
     func_name: str
     signature: inspect.Signature
-    input_policy: Union[InputPolicy, SubmitUserPolicy]
+    input_policy: Union[SubmitUserPolicy, UID, InputPolicy]
     input_policy_init_args: Dict[str, Any]
-    output_policy: Union[OutputPolicy, SubmitUserPolicy]
+    output_policy: Union[SubmitUserPolicy, UID, OutputPolicy]
     output_policy_init_args: Dict[str, Any]
     local_function: Optional[Callable]
     input_kwargs: List[str]
@@ -337,17 +337,19 @@ def get_code_from_class(policy):
     return whole_str
 
 def syft_function(
-    input_policy: Union[InputPolicy, Any],
+    input_policy: Union[InputPolicy, UID, Any],
     input_policy_init_args: Dict[str, Any],
-    output_policy: Union[OutputPolicy, Any],
+    output_policy: Union[OutputPolicy, UID, Any],
     output_policy_init_args: Dict[str, Any],
     outputs: List[str]
 ) -> SubmitUserCode:
     # TODO: fix this for jupyter
     # TODO: add import validator
     
-    if issubclass(input_policy, InputPolicy):
-        input_policy = input_policy(input_policy_init_args)
+    if isinstance(input_policy, UID):
+        input_policy = input_policy
+    elif issubclass(input_policy, InputPolicy):
+        input_policy = input_policy(input_policy_init_args)        
     else:
           input_policy = SubmitUserPolicy(
             code='@serializable(recursive_serde=True)\n'+get_code_from_class(input_policy),
@@ -355,16 +357,22 @@ def syft_function(
             input_kwargs=input_policy.__init__.__code__.co_varnames[1:],
         )
     
-    if issubclass(output_policy, OutputPolicy):
-        output_policy = output_policy()#(**output_policy_init_args)
+    print("Output policy is")
+    if isinstance(output_policy, UID):
+        print("UserPolicy")
+        # output_policy.byte_code = None
+    elif issubclass(output_policy, OutputPolicy):
+        print("OutputPolicy")
+        output_policy = output_policy(**output_policy_init_args)
     else:
+        print("SubmitUserPolicy")
         # TODO: move serializable injection in the server side
         output_policy = SubmitUserPolicy(
             code='@serializable(recursive_serde=True)\n'+get_code_from_class(output_policy),
             class_name=output_policy.__name__,
             input_kwargs=output_policy.__init__.__code__.co_varnames[1:],
         )
-    
+
     def decorator(f):
         return SubmitUserCode(
             code=inspect.getsource(f),
@@ -522,15 +530,21 @@ def modify_signature(context: TransformContext) -> TransformContext:
 
 
 def init_policy_state(context: TransformContext) -> TransformContext:
-    if isinstance(context.output["output_policy"], InputPolicy):
-        context.output["input_policy_state"] = context.output["input_policy"].state_type()
+    import sys
+    print("Enterd init_policy_state", file=sys.stderr)
+    if isinstance(context.output["input_policy"], InputPolicy):
+        # context.output["input_policy_state"] = context.output["input_policy"].state_type()
+        context.output["input_policy_state"] = ''
     else:
         context.output["input_policy_state"] = ''
         
+    print("passed input", file=sys.stderr)
     if isinstance(context.output["output_policy"], OutputPolicy):
+        print(context.output["output_policy"], file=sys.stderr)
         context.output["output_policy_state"] = context.output["output_policy"].state_type()
     else:
         context.output["output_policy_state"] = ''
+    print("Exited init_policy_state", file=sys.stderr)
     return context
 
 def check_input_policy(context: TransformContext) -> TransformContext:
