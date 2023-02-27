@@ -50,6 +50,7 @@ from .new.message_service import MessageService
 from .new.network_service import NetworkService
 from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
+from .new.project_service import ProjectService
 from .new.queue_stash import QueueItem
 from .new.queue_stash import QueueStash
 from .new.request_service import RequestService
@@ -59,6 +60,7 @@ from .new.service import ServiceConfigRegistry
 from .new.sqlite_document_store import SQLiteStoreClientConfig
 from .new.sqlite_document_store import SQLiteStoreConfig
 from .new.test_service import TestService
+from .new.user import ServiceRole
 from .new.user import User
 from .new.user import UserCreate
 from .new.user_code_service import UserCodeService
@@ -108,9 +110,7 @@ class Worker(NewNode):
         name: Optional[str] = None,
         id: Optional[UID] = None,
         services: Optional[List[Type[AbstractService]]] = None,
-        signing_key: Optional[
-            Union[SyftSigningKey, SigningKey]
-        ] = SigningKey.generate(),
+        signing_key: Optional[Union[SyftSigningKey, SigningKey]] = None,
         action_store_config: Optional[StoreConfig] = None,
         document_store_config: Optional[StoreConfig] = None,
         root_email: str = "info@openmined.org",
@@ -127,12 +127,17 @@ class Worker(NewNode):
                 id = UID()
             self.id = id
 
+        self.signing_key = None
         if signing_key_env is not None:
             self.signing_key = SyftSigningKey.from_string(signing_key_env)
         else:
             if isinstance(signing_key, SigningKey):
                 signing_key = SyftSigningKey(signing_key=signing_key)
             self.signing_key = signing_key
+
+        if self.signing_key is None:
+            self.signing_key = SyftSigningKey.generate()
+
         self.processes = processes
         self.is_subprocess = is_subprocess
         if name is None:
@@ -150,6 +155,7 @@ class Worker(NewNode):
                 NetworkService,
                 PolicyService,
                 MessageService,
+                ProjectService,
             ]
             if services is None
             else services
@@ -230,7 +236,6 @@ class Worker(NewNode):
                     isinstance(action_store_config, SQLiteStoreConfig)
                     and action_store_config.client_config.filename is None
                 ):
-                    action_store_config.client_config.filename
                     action_store_config.client_config.filename = f"{self.id}.sqlite"
             else:
                 action_store_config = DictStoreConfig()
@@ -263,6 +268,7 @@ class Worker(NewNode):
                 NetworkService,
                 PolicyService,
                 MessageService,
+                ProjectService,
             ]:
                 kwargs["store"] = self.document_store
             self.service_path_map[service_klass.__name__.lower()] = service_klass(
@@ -529,10 +535,20 @@ def create_admin_new(
             return None
         else:
             create_user = UserCreate(
-                name=name, email=email, password=password, password_verify=password
+                name=name,
+                email=email,
+                password=password,
+                password_verify=password,
+                role=ServiceRole.ADMIN,
             )
             # New User Initialization
-            user = user_stash.set(user=create_user.to(User))
-            return user.ok()
+            # 🟡 TODO: change later but for now this gives the main user super user automatically
+            user = create_user.to(User)
+            user.signing_key = node.signing_key
+            user.verify_key = user.signing_key.verify_key
+            result = user_stash.set(user=user)
+            if result.is_ok():
+                return result.ok()
+            return None
     except Exception as e:
         print("create_admin failed", e)

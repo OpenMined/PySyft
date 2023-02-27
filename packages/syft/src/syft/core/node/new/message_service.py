@@ -14,6 +14,7 @@ from .messages import LinkedObject
 from .messages import Message
 from .messages import MessageStatus
 from .response import SyftError
+from .response import SyftSuccess
 from .service import AbstractService
 from .service import SERVICE_TO_TYPES
 from .service import TYPE_TO_SERVICE
@@ -37,23 +38,28 @@ class MessageService(AbstractService):
         """Send a new message"""
 
         new_message = message.to(Message, context=context)
-
-        print("New Message:", new_message)
         result = self.stash.set(new_message)
         if result.is_err():
             return SyftError(message=str(result.err()))
         return result.ok()
 
-    @service_method(
-        path="messages.get_all",
-        name="get_all",
-    )
+    @service_method(path="messages.get_all", name="get_all")
     def get_all(self, context: AuthedServiceContext) -> Union[List[Message], SyftError]:
-        print("Context Credentials:", context.credentials)
         result = self.stash.get_all_inbox_for_verify_key(verify_key=context.credentials)
         if result.err():
             return SyftError(message=str(result.err()))
         messages = result.ok()
+        return messages
+
+    @service_method(path="messages.get_all_sent", name="outbox")
+    def get_all_sent(
+        self, context: AuthedServiceContext
+    ) -> Union[List[Message], SyftError]:
+        result = self.stash.get_all_sent_for_verify_key(verify_key=context.credentials)
+        if result.err():
+            return SyftError(message=str(result.err()))
+        messages = result.ok()
+        print(messages)
         return messages
 
     @service_method(
@@ -94,6 +100,13 @@ class MessageService(AbstractService):
         if result.is_err():
             return SyftError(message=str(result.err()))
         return result.ok()
+
+    @service_method(path="messages.clear", name="clear")
+    def clear(self, context: AuthedServiceContext) -> Union[SyftError, SyftSuccess]:
+        result = self.stash.delete_all_for_verify_key(verify_key=context.credentials)
+        if result.is_ok():
+            return SyftSuccess(message="All messages cleared !!")
+        return SyftError(message=str(result.err()))
 
 
 TYPE_TO_SERVICE[Message] = MessageService

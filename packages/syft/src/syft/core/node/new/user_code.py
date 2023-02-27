@@ -39,6 +39,166 @@ CodeHashPartitionKey = PartitionKey(key="code_hash", type_=int)
 PyCodeObject = Any
 
 
+# class InputPolicy(SyftObject):
+#     # version
+#     __canonical_name__ = "InputPolicy"
+#     __version__ = SYFT_OBJECT_VERSION_1
+
+#     id: UID
+#     inputs: Dict[str, Any]
+#     node_uid: Optional[UID]
+
+#     def __init__(self, *args: Any, **kwargs: Any) -> None:
+#         uid = UID()
+#         node_uid = None
+#         if "id" in kwargs:
+#             uid = kwargs["id"]
+#         if "node_uid" in kwargs:
+#             node_uid = kwargs["node_uid"]
+
+#         # finally get inputs
+#         if "inputs" in kwargs:
+#             kwargs = kwargs["inputs"]
+#         uid_kwargs = extract_uids(kwargs)
+
+#         super().__init__(id=uid, inputs=uid_kwargs, node_uid=node_uid)
+
+#     def filter_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
+#         raise NotImplementedError
+
+#     def __getitem__(self, key: Union[int, str]) -> Optional[SyftObject]:
+#         if isinstance(key, int):
+#             key = list(self.inputs.keys())[key]
+#         uid = self.inputs[key]
+#         # TODO Add NODE UID or LINK so we can resolve this object
+#         return uid
+
+#     @property
+#     def assets(self) -> List[Asset]:
+#         # relative
+#         from .api import APIRegistry
+
+#         api = APIRegistry.api_for(self.node_uid)
+#         if api is None:
+#             return SyftError(message=f"You must login to {self.node_uid}")
+
+#         all_assets = []
+#         for k, uid in self.inputs.items():
+#             if isinstance(uid, UID):
+#                 assets = api.services.dataset.get_assets_by_action_id(uid)
+#                 if not isinstance(assets, list):
+#                     return assets
+
+#                 all_assets += assets
+#         return all_assets
+
+
+# def allowed_ids_only(
+#     allowed_inputs: Dict[str, UID], kwargs: Dict[str, Any]
+# ) -> Dict[str, UID]:
+#     filtered_kwargs = {}
+#     for key in allowed_inputs.keys():
+#         if key in kwargs:
+#             value = kwargs[key]
+#             uid = value
+#             if not isinstance(uid, UID):
+#                 uid = getattr(value, "id", None)
+
+#             if uid != allowed_inputs[key]:
+#                 raise Exception(
+#                     f"Input {type(value)} for {key} not in allowed {allowed_inputs}"
+#                 )
+#             filtered_kwargs[key] = value
+#     return filtered_kwargs
+
+
+# @serializable(recursive_serde=True)
+# class ExactMatch(InputPolicy):
+#     # version
+#     __canonical_name__ = "ExactMatch"
+#     __version__ = SYFT_OBJECT_VERSION_1
+
+#     def filter_kwargs(self, kwargs: Dict[str, Any]) -> Dict[str, Any]:
+#         return allowed_ids_only(self.inputs, kwargs)
+
+
+# class OutputPolicyState(SyftObject):
+#     # version
+#     __canonical_name__ = "OutputPolicyState"
+#     __version__ = SYFT_OBJECT_VERSION_1
+
+#     @property
+#     def valid(self) -> Union[SyftSuccess, SyftError]:
+#         raise NotImplementedError
+
+#     def update_state(self) -> None:
+#         raise NotImplementedError
+
+
+# @serializable(recursive_serde=True)
+# class OutputPolicyStateExecuteCount(OutputPolicyState):
+#     # version
+#     __canonical_name__ = "OutputPolicyStateExecuteCount"
+#     __version__ = SYFT_OBJECT_VERSION_1
+
+#     count: int = 0
+#     limit: int
+
+#     @property
+#     def valid(self) -> Union[SyftSuccess, SyftError]:
+#         is_valid = self.count < self.limit
+#         if is_valid:
+#             return SyftSuccess(
+#                 message=f"Policy is still valid. count: {self.count} < limit: {self.limit}"
+#             )
+#         return SyftError(
+#             message=f"Policy is no longer valid. count: {self.count} >= limit: {self.limit}"
+#         )
+
+#     def update_state(self) -> None:
+#         if self.count >= self.limit:
+#             raise Exception(
+#                 f"Update state being called with count: {self.count} "
+#                 f"beyond execution limit: {self.limit}"
+#             )
+#         self.count += 1
+
+
+# @serializable(recursive_serde=True)
+# class OutputPolicyStateExecuteOnce(OutputPolicyStateExecuteCount):
+#     __canonical_name__ = "OutputPolicyStateExecuteOnce"
+#     __version__ = SYFT_OBJECT_VERSION_1
+
+#     limit: int = 1
+
+
+class OutputPolicy(SyftObject):
+    # version
+    __canonical_name__ = "OutputPolicy"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    id: UID
+    outputs: List[str] = []
+    state_type: Optional[Type[OutputPolicyState]]
+
+    def update() -> None:
+        raise NotImplementedError
+
+    @classmethod
+    @property
+    def policy_code(cls) -> str:
+        return inspect.getsource(cls)
+
+
+@serializable(recursive_serde=True)
+class SingleExecutionExactOutput(OutputPolicy):
+    # version
+    __canonical_name__ = "SingleExecutionExactOutput"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    state_type: Type[OutputPolicyState] = OutputPolicyStateExecuteOnce
+
+
 @serializable(recursive_serde=True)
 class UserCodeStatus(Enum):
     SUBMITTED = "submitted"
@@ -373,6 +533,12 @@ def init_policy_state(context: TransformContext) -> TransformContext:
         context.output["output_policy_state"] = ''
     return context
 
+def check_input_policy(context: TransformContext) -> TransformContext:
+    ip = context.output["input_policy"]
+    ip.node_uid = context.node.id
+    context.output["input_policy"] = ip
+    return context
+
 
 @transform(SubmitUserCode, UserCode)
 def submit_user_code_to_user_code() -> List[Callable]:
@@ -384,6 +550,7 @@ def submit_user_code_to_user_code() -> List[Callable]:
         new_check_code,
         compile_code,
         add_credentials_for_key("user_verify_key"),
+        check_input_policy,
         init_policy_state,
     ]
 

@@ -105,18 +105,51 @@ class InputPolicy(SyftObject):
 
     id: UID
     inputs: Dict[str, Any]
+    node_uid: Optional[UID]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         uid = UID()
+        node_uid = None
         if "id" in kwargs:
             uid = kwargs["id"]
+        if "node_uid" in kwargs:
+            node_uid = kwargs["node_uid"]
+
+        # finally get inputs
         if "inputs" in kwargs:
             kwargs = kwargs["inputs"]
         uid_kwargs = extract_uids(kwargs)
-        super().__init__(id=uid, inputs=uid_kwargs)
+
+        super().__init__(id=uid, inputs=uid_kwargs, node_uid=node_uid)
 
     def filter_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
         raise NotImplementedError
+
+    def __getitem__(self, key: Union[int, str]) -> Optional[SyftObject]:
+        if isinstance(key, int):
+            key = list(self.inputs.keys())[key]
+        uid = self.inputs[key]
+        # TODO Add NODE UID or LINK so we can resolve this object
+        return uid
+
+    @property
+    def assets(self) -> List[Asset]:
+        # relative
+        from .api import APIRegistry
+
+        api = APIRegistry.api_for(self.node_uid)
+        if api is None:
+            return SyftError(message=f"You must login to {self.node_uid}")
+
+        all_assets = []
+        for k, uid in self.inputs.items():
+            if isinstance(uid, UID):
+                assets = api.services.dataset.get_assets_by_action_id(uid)
+                if not isinstance(assets, list):
+                    return assets
+
+                all_assets += assets
+        return all_assets
 
 
 def allowed_ids_only(
@@ -209,6 +242,10 @@ class OutputPolicy(SyftObject):
     def update() -> None:
         raise NotImplementedError
 
+    @classmethod
+    @property
+    def policy_code(cls) -> str:
+        return inspect.getsource(cls)
 
 @serializable(recursive_serde=True)
 class SingleExecutionExactOutput(OutputPolicy):
