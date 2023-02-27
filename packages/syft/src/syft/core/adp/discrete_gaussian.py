@@ -1,4 +1,5 @@
 # based on https://arxiv.org/pdf/2004.00010.pdf
+# stdlib
 from fractions import Fraction  # we will work with rational numbers
 import secrets  # use cryptographically secure library
 
@@ -77,6 +78,7 @@ def sample_uniform(m, rng):
         raise ValueError("m must be a positive value")
     return rng.randrange(m)
 
+
 def sample_bernoulli(p, rng):
     """
     sample from a Bernoulli(p) distribution
@@ -86,7 +88,7 @@ def sample_bernoulli(p, rng):
         raise TypeError("p must be a Fraction value")
     if p < 0 or p > 1:
         raise ValueError("p must be a Fraction value in the range [0, 1]")
-    
+
     m = sample_uniform(p.denominator, rng)
     if m < p.numerator:
         return 1
@@ -122,7 +124,7 @@ def sample_bernoulli_exp(x, rng):
         raise TypeError("x must be a Fraction value")
     if x < 0:
         raise ValueError("x must be a greater than 0")
-    
+
     while x > 1:
         if sample_bernoulli_exp1(Fraction(1, 1), rng) == 1:
             x = x - 1
@@ -140,7 +142,7 @@ def sample_geometric_exp_slow(x, rng):
         raise TypeError("x must be a Fraction value")
     if x < 0:
         raise ValueError("x must be a greater than 0")
-    
+
     k = 0
     while True:
         if sample_bernoulli_exp(x, rng) == 1:
