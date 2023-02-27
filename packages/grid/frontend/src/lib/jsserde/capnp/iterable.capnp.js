@@ -14,13 +14,13 @@ export class Iterable extends capnp_ts_1.Struct {
     return capnp_ts_1.Struct.disown(this.getValues());
   }
   getValues() {
-    return capnp_ts_1.Struct.getList(0, capnp.DataList, this);
+    return capnp_ts_1.Struct.getList(0, Iterable._Values, this);
   }
   hasValues() {
     return !capnp_ts_1.Struct.isNull(capnp_ts_1.Struct.getPointer(0, this));
   }
   initValues(length) {
-    return capnp_ts_1.Struct.initList(0, capnp.DataList, length, this);
+    return capnp_ts_1.Struct.initList(0, Iterable._Values, length, this);
   }
   setValues(value) {
     capnp_ts_1.Struct.copyFrom(value, capnp_ts_1.Struct.getPointer(0, this));
@@ -34,3 +34,4 @@ Iterable._capnp = {
   id: 'bca6aae15eaab9b2',
   size: new capnp_ts_1.ObjectSize(0, 1)
 };
+Iterable._Values = capnp.PointerList(capnp.DataList);

@@ -33,13 +33,13 @@ export class KVIterable extends capnp_ts_1.Struct {
     return capnp_ts_1.Struct.disown(this.getValues());
   }
   getValues() {
-    return capnp_ts_1.Struct.getList(1, capnp.DataList, this);
+    return capnp_ts_1.Struct.getList(1, KVIterable._Values, this);
   }
   hasValues() {
     return !capnp_ts_1.Struct.isNull(capnp_ts_1.Struct.getPointer(1, this));
   }
   initValues(length) {
-    return capnp_ts_1.Struct.initList(1, capnp.DataList, length, this);
+    return capnp_ts_1.Struct.initList(1, KVIterable._Values, length, this);
   }
   setValues(value) {
     capnp_ts_1.Struct.copyFrom(value, capnp_ts_1.Struct.getPointer(1, this));
@@ -53,3 +53,4 @@ KVIterable._capnp = {
   id: 'edaa1b80ab4d437e',
   size: new capnp_ts_1.ObjectSize(0, 2)
 };
+KVIterable._Values = capnp.PointerList(capnp.DataList);
