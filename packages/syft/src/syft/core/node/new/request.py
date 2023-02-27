@@ -92,6 +92,8 @@ class ActionStoreChange(Change):
     action_object_uid: UID
     apply_permission_type: ActionPermission
 
+    __attr_repr_cols__ = ["action_object_uid", "apply_permission_type"]
+
     def _run(
         self, context: ChangeContext, apply: bool
     ) -> Result[SyftSuccess, SyftError]:
@@ -151,6 +153,7 @@ class Request(SyftObject):
         "status",
     ]
     __attr_unique__ = ["request_hash"]
+    __attr_repr_cols__ = ["request_time", "status", "changes"]
 
     def approve(self):
         api = APIRegistry.api_for(self.node_uid)
@@ -225,6 +228,8 @@ class ObjectMutation(Change):
     value: Optional[Any]
     match_type: bool
 
+    __attr_repr_cols__ = ["linked_obj", "attr_name"]
+
 
 def type_for_field(object_type: type, attr_name: str) -> Optional[type]:
     field_type = None
@@ -246,6 +251,8 @@ class EnumMutation(ObjectMutation):
     enum_type: Type[Enum]
     value: Optional[Enum]
     match_type: bool = True
+
+    __attr_repr_cols__ = ["linked_obj", "attr_name", "value"]
 
     def __init__(
         self,
