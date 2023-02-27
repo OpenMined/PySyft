@@ -51,7 +51,11 @@ def to_mongo(context: TransformContext) -> TransformContext:
     all_dict.update(search_keys_dict)
     for k in all_dict:
         value = getattr(context.obj, k, "")
-        output[k] = value
+        # if the value is a method, store its value
+        if callable(value):
+            output[k] = value()
+        else:
+            output[k] = value
     blob = serialize(context.obj.to_dict(), to_bytes=True)
     output["_id"] = context.output["id"]
     output["__canonical_name__"] = context.obj.__canonical_name__
