@@ -42,6 +42,7 @@ from .new.context import NodeServiceContext
 from .new.context import UnauthedServiceContext
 from .new.context import UserLoginCredentials
 from .new.credentials import SyftSigningKey
+from .new.credentials import SyftVerifyKey
 from .new.data_subject_service import DataSubjectService
 from .new.dataset_service import DatasetService
 from .new.dict_document_store import DictStoreConfig
@@ -50,6 +51,7 @@ from .new.message_service import MessageService
 from .new.network_service import NetworkService
 from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
+from .new.project_service import ProjectService
 from .new.queue_stash import QueueItem
 from .new.queue_stash import QueueStash
 from .new.request_service import RequestService
@@ -64,6 +66,7 @@ from .new.task.oblv_service import OblvService
 from .new.task.oblv_service import generate_oblv_key
 from .new.task.task_service import TaskService
 from .new.test_service import TestService
+from .new.user import ServiceRole
 from .new.user import User
 from .new.user import UserCreate
 from .new.user_code_service import UserCodeService
@@ -158,6 +161,7 @@ class Worker(NewNode):
                 DataSubjectService,
                 NetworkService,
                 MessageService,
+                ProjectService,
             ]
             if services is None
             else services
@@ -188,6 +192,9 @@ class Worker(NewNode):
         uid = UID(name_hash[0:16])
         key = SyftSigningKey(SigningKey(name_hash))
         return Worker(name=name, id=uid, signing_key=key, processes=processes)
+
+    def is_root(self, credentials: SyftVerifyKey) -> bool:
+        return credentials == self.signing_key.verify_key
 
     @property
     def root_client(self) -> Any:
@@ -274,6 +281,7 @@ class Worker(NewNode):
                 DataSubjectService,
                 NetworkService,
                 MessageService,
+                ProjectService,
             ]:
                 kwargs["store"] = self.document_store
             if service_klass == TaskService:
@@ -543,7 +551,11 @@ def create_admin_new(
             return None
         else:
             create_user = UserCreate(
-                name=name, email=email, password=password, password_verify=password
+                name=name,
+                email=email,
+                password=password,
+                password_verify=password,
+                role=ServiceRole.ADMIN,
             )
             # New User Initialization
             # 🟡 TODO: change later but for now this gives the main user super user automatically

@@ -4,6 +4,7 @@
 from datetime import date
 from datetime import datetime
 from datetime import time
+from io import BytesIO
 
 # third party
 from dateutil import parser
@@ -127,5 +128,26 @@ recursive_serde_register(
 )
 
 
+def serialize_bytes_io(io: BytesIO) -> bytes:
+    io.seek(0)
+    return serialize(io.read(), to_bytes=True)
+
+
+recursive_serde_register(
+    BytesIO,
+    serialize=serialize_bytes_io,
+    deserialize=lambda x: BytesIO(deserialize(x, from_bytes=True)),
+)
+
+
 # how else do you import a relative file to execute it?
 NOTHING = None
+
+try:
+    # third party
+    from IPython.display import Image
+
+    recursive_serde_register(Image)
+
+except Exception:  # nosec
+    pass
