@@ -136,6 +136,18 @@ class lazyrepeatarray:
         else:
             return self.__class__(data=self.data - other.data, shape=self.shape)
 
+    def __mul__(self, other: Any) -> lazyrepeatarray:
+        if is_acceptable_simple_type(other):
+            return self.__class__(data=self.data * other, shape=self.shape)
+
+        if not is_broadcastable(self.shape, other.shape):
+            raise Exception(
+                "Cannot broadcast arrays with shapes for LazyRepeatArray FloorDiv:"
+                + f" {self.shape} & {other.shape}"
+            )
+        else:
+            return self.__class__(data=self.data * other.data, shape=self.shape)
+
     def __matmul__(self, other: Any) -> lazyrepeatarray:
         """
         THIS MIGHT LOOK LIKE COPY-PASTED CODE!

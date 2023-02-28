@@ -2727,6 +2727,30 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=max_vals,
         )
 
+    def __mul__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
+        # If the `other` is a `PhiTensor` we turn both the
+        # `self` and the `other` into `GammaTensor` and
+        # then ask it to handle the `__mul__`.
+        if isinstance(other, PhiTensor):
+            return self.gamma * other.gamma
+        # if the tensor being added is a public tensor / int / float / etc.
+        # we can best try to do broadcast * to `child`, `min_vals`,
+        # `max_vals` and keep the `data_subjects` unchanged
+        elif is_acceptable_simple_type(other):
+            return PhiTensor(
+                child=self.child * other,
+                min_vals=self.min_vals * other,
+                max_vals=self.max_vals * other,
+                data_subjects=self.data_subjects,
+            )
+        # If the other is already a `GammaTensor` we can just 
+        # convert `self` to a GammaTensor and let it handle the multiplication
+        elif isinstance(other, GammaTensor):
+            return self.gamma * other
+        else:
+            print("Type is unsupported:" + str(type(other)))
+            raise NotImplementedError
+
     def __truediv__(self, other: Any) -> Union[PhiTensor, GammaTensor]:
         if isinstance(other, PhiTensor):
             if np.array(self.data_subjects != other.data_subjects).all():
