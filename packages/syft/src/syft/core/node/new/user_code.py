@@ -82,15 +82,61 @@ class InputPolicy(SyftObject):
         return uid
 
 
+def retrieve_from_db(
+    code_item_id: UID, allowed_inputs: Dict[str, UID], context: AuthedServiceContext
+) -> Dict:
+    # relative
+    from .action_service import TwinMode
+
+    action_service = context.node.get_service("actionservice")
+    code_inputs = {}
+
+    if context.node.node_type == NodeType.DOMAIN:
+        for var_name, arg_id in allowed_inputs.items():
+            kwarg_value = action_service.get(
+                context=context, uid=arg_id, twin_mode=TwinMode.NONE
+            )
+            if kwarg_value.is_err():
+                return kwarg_value
+            code_inputs[var_name] = kwarg_value.ok()
+
+    elif context.node.node_type == NodeType.ENCLAVE:
+        # TODO 🟣 Temporarily added skip permission arguments for enclave
+        # until permissions are fully integrated
+        dict_object = action_service.get(
+            context=context, uid=code_item_id, skip_permission=True
+        )
+        if dict_object.is_err():
+            return dict_object
+        for value in dict_object.ok().base_dict.values():
+            code_inputs.update(value)
+
+    else:
+        raise Exception(
+            f"Invalid Node Type for Code Submission:{context.node.node_type}"
+        )
+    return Ok(code_inputs)
+
+
 def allowed_ids_only(
     allowed_inputs: Dict[str, UID],
     kwargs: Dict[str, Any],
     context: AuthedServiceContext,
 ) -> Dict[str, UID]:
-    user_node_view = UserNodeView(
-        node_name=context.node.name, verify_key=context.node.signing_key.verify_key
-    )
-    allowed_inputs = allowed_inputs[user_node_view]
+    if context.node.node_type == NodeType.DOMAIN:
+        user_node_view = UserNodeView(
+            node_name=context.node.name, verify_key=context.node.signing_key.verify_key
+        )
+        allowed_inputs = allowed_inputs[user_node_view]
+    elif context.node.node_type == NodeType.ENCLAVE:
+        base_dict = {}
+        for key in allowed_inputs.values():
+            base_dict.update(key)
+        allowed_inputs = base_dict
+    else:
+        raise Exception(
+            f"Invalid Node Type for Code Submission:{context.node.node_type}"
+        )
     filtered_kwargs = {}
     for key in allowed_inputs.keys():
         if key in kwargs:
@@ -114,9 +160,14 @@ class ExactMatch(InputPolicy):
     __version__ = SYFT_OBJECT_VERSION_1
 
     def filter_kwargs(
-        self, kwargs: Dict[str, Any], context: AuthedServiceContext
+        self, kwargs: Dict[str, Any], context: AuthedServiceContext, code_item_id: UID
     ) -> Dict[str, Any]:
-        return allowed_ids_only(self.inputs, kwargs, context)
+        allowed_inputs = allowed_ids_only(
+            allowed_inputs=self.inputs, kwargs=kwargs, context=context
+        )
+        return retrieve_from_db(
+            code_item_id=code_item_id, allowed_inputs=allowed_inputs, context=context
+        )
 
 
 class OutputPolicyState(SyftObject):
