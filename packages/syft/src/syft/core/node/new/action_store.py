@@ -132,8 +132,7 @@ class KeyValueActionStore(ActionStore):
         write_permission = ActionObjectWRITE(uid=uid, credentials=credentials)
         can_write = self.has_permission(write_permission)
 
-        # if the user cant write maybe it doesnt exist
-        if not can_write and not self.exists(uid=uid):
+        if not self.exists(uid=uid):
             # attempt to claim it for writing
             ownership_result = self.take_ownership(uid=uid, credentials=credentials)
             can_write = True if ownership_result.is_ok() else False
@@ -144,7 +143,9 @@ class KeyValueActionStore(ActionStore):
                 # create default permissions
                 self.permissions[uid] = set()
             permission = f"{credentials.verify}_READ"
-            self.permissions[uid].add(permission)
+            permissions = self.permissions[uid]
+            permissions.add(permission)
+            self.permissions[uid] = permissions
             return Ok(SyftSuccess(message=f"Set for ID: {uid}"))
         return Err(f"Permission: {write_permission} denied")
 
@@ -201,10 +202,14 @@ class KeyValueActionStore(ActionStore):
         return False
 
     def add_permission(self, permission: ActionObjectPermission) -> None:
-        self.permissions[permission.uid].add(permission.permission_string)
+        permissions = self.permissions[permission.uid]
+        permissions.add(permission.permission_string)
+        self.permissions[permission.uid] = permissions
 
     def remove_permission(self, permission: ActionObjectPermission):
-        self.permissions[permission.uid].remove(permission.permission_string)
+        permissions = self.permissions[permission.uid]
+        permissions.remove(permission.permission_string)
+        self.permissions[permission.uid] = permissions
 
     def add_permissions(self, permissions: List[ActionObjectPermission]) -> None:
         results = []
