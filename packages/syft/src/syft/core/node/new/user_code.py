@@ -43,15 +43,22 @@ class InputPolicy(SyftObject):
 
     id: UID
     inputs: Dict[str, Any]
+    node_uid: Optional[UID]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         uid = UID()
+        node_uid = None
         if "id" in kwargs:
             uid = kwargs["id"]
+        if "node_uid" in kwargs:
+            node_uid = kwargs["node_uid"]
+
+        # finally get inputs
         if "inputs" in kwargs:
             kwargs = kwargs["inputs"]
         uid_kwargs = extract_uids(kwargs)
-        super().__init__(id=uid, inputs=uid_kwargs)
+
+        super().__init__(id=uid, inputs=uid_kwargs, node_uid=node_uid)
 
     def filter_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
         raise NotImplementedError
@@ -62,6 +69,25 @@ class InputPolicy(SyftObject):
         uid = self.inputs[key]
         # TODO Add NODE UID or LINK so we can resolve this object
         return uid
+
+    @property
+    def assets(self) -> List[Asset]:
+        # relative
+        from .api import APIRegistry
+
+        api = APIRegistry.api_for(self.node_uid)
+        if api is None:
+            return SyftError(message=f"You must login to {self.node_uid}")
+
+        all_assets = []
+        for k, uid in self.inputs.items():
+            if isinstance(uid, UID):
+                assets = api.services.dataset.get_assets_by_action_id(uid)
+                if not isinstance(assets, list):
+                    return assets
+
+                all_assets += assets
+        return all_assets
 
 
 def allowed_ids_only(
@@ -443,6 +469,13 @@ def modify_signature(context: TransformContext) -> TransformContext:
     return context
 
 
+def check_input_policy(context: TransformContext) -> TransformContext:
+    ip = context.output["input_policy"]
+    ip.node_uid = context.node.id
+    context.output["input_policy"] = ip
+    return context
+
+
 def init_output_policy_state(context: TransformContext) -> TransformContext:
     context.output["output_policy_state"] = context.output["output_policy"].state_type()
     return context
@@ -458,6 +491,7 @@ def submit_user_code_to_user_code() -> List[Callable]:
         new_check_code,
         compile_code,
         add_credentials_for_key("user_verify_key"),
+        check_input_policy,
         init_output_policy_state,
     ]
 
