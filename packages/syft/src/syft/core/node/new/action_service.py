@@ -104,9 +104,14 @@ class ActionService(AbstractService):
         context: AuthedServiceContext,
         uid: UID,
         twin_mode: TwinMode = TwinMode.PRIVATE,
+        skip_permission: bool = False,
     ) -> Result[ActionObject, str]:
         """Get an object from the action store"""
-        result = self.store.get(uid=uid, credentials=context.credentials)
+        # TODO 🟣 Temporarily added skip permission arguments for enclave
+        # until permissions are fully integrated
+        result = self.store.get(
+            uid=uid, credentials=context.credentials, skip_permission=skip_permission
+        )
         if result.is_ok():
             obj = result.ok()
             if isinstance(obj, TwinObject):
@@ -139,17 +144,17 @@ class ActionService(AbstractService):
         self, context: AuthedServiceContext, code_item: UserCode, kwargs: Dict[str, Any]
     ) -> Result[ActionObjectPointer, Err]:
         filtered_kwargs = code_item.input_policy.filter_kwargs(
-            kwargs=kwargs, context=context
+            kwargs=kwargs, context=context, code_item_id=code_item.id
         )
+        if filtered_kwargs.is_err():
+            return filtered_kwargs
+        filtered_kwargs = filtered_kwargs.ok()
         has_twin_inputs = False
         kwargs = {}
-        for key, arg_id in filtered_kwargs.items():
-            kwarg_value = self.get(context=context, uid=arg_id, twin_mode=TwinMode.NONE)
-            if kwarg_value.is_err():
-                return kwarg_value.err()
-            if isinstance(kwarg_value.ok(), TwinObject):
+        for key, kwarg_value in filtered_kwargs.items():
+            if isinstance(kwarg_value, TwinObject):
                 has_twin_inputs = True
-            kwargs[key] = kwarg_value.ok()
+            kwargs[key] = kwarg_value
 
         result_id = UID()
 
