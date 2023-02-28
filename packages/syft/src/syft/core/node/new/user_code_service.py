@@ -156,7 +156,7 @@ class UserCodeService(AbstractService):
                             return SyftError(message=result)
                         if result.is_ok():
                             code_item.output_policy_state.update_state(
-                                context=context, outputs=result.id
+                                context=context, outputs=result.ok().id
                             )
                             state_result = self.update_code_state(
                                 context=context, code_item=code_item
