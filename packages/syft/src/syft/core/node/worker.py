@@ -116,6 +116,7 @@ class Worker(NewNode):
         root_password: str = "changethis",
         processes: int = 0,
         is_subprocess: bool = False,
+        local_db: bool = False,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -161,6 +162,7 @@ class Worker(NewNode):
         self.services = services
 
         self.service_config = ServiceConfigRegistry.get_registered_configs()
+        self.local_db = local_db
         self.init_stores(
             action_store_config=action_store_config,
             document_store_config=document_store_config,
@@ -208,7 +210,7 @@ class Worker(NewNode):
         action_store_config: Optional[StoreConfig] = None,
     ):
         if document_store_config is None:
-            if self.processes > 0 and not self.is_subprocess:
+            if self.local_db or (self.processes > 0 and not self.is_subprocess):
                 client_config = SQLiteStoreClientConfig()
                 document_store_config = SQLiteStoreConfig(client_config=client_config)
             else:
@@ -227,7 +229,7 @@ class Worker(NewNode):
 
         self.document_store = document_store(store_config=document_store_config)
         if action_store_config is None:
-            if self.processes > 0 and not self.is_subprocess:
+            if self.local_db or (self.processes > 0 and not self.is_subprocess):
                 client_config = SQLiteStoreClientConfig()
                 action_store_config = SQLiteStoreConfig(client_config=client_config)
                 if (
