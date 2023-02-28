@@ -190,10 +190,6 @@ def make_request_to_enclave(
         return req
     else:
         headers = {"x-oblv-user-name": "enclave-test", "x-oblv-user-role": "domain"}
-        if not WORKER_MODE:
-            connection_string = connection_string.replace(
-                "127.0.0.1", "host.docker.internal"
-            )
 
         return request_method(
             connection_string,
@@ -329,11 +325,14 @@ class OblvService(AbstractService):
                 port = find_available_port(
                     host="127.0.0.1", port=port_start, search=True
                 )
-
+            connection_string = f"http://127.0.0.1:{port}"
         else:
             port = os.getenv("DOMAIN_CONNECTION_PORT", DOMAIN_CONNECTION_PORT)
-
-        connection_string = f"http://127.0.0.1:{port}"
+            connection_string = f"http://127.0.0.1:{port}"
+            if not WORKER_MODE:
+                connection_string = connection_string.replace(
+                    "127.0.0.1", "host.docker.internal"
+                )
 
         req = make_request_to_enclave(
             connection_string=connection_string + Routes.ROUTE_API.value,
