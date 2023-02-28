@@ -133,6 +133,9 @@ class QueryKey(PartitionKey):
         key = self.key
         if key == "id":
             key = "_id"
+        if self.type_list:
+            # We want to search inside the list of values
+            return {key: {"$in": self.value}}
         return {key: self.value}
 
 
@@ -211,7 +214,11 @@ class QueryKeys(SyftBaseModel):
             qk_value = qk.value
             if qk_key == "id":
                 qk_key = "_id"
-            qk_dict[qk_key] = qk_value
+            if qk.type_list:
+                # We want to search inside the list of values
+                qk_dict[qk_key] = {"$in": qk_value}
+            else:
+                qk_dict[qk_key] = qk_value
         return qk_dict
 
 

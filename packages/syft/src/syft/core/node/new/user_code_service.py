@@ -4,6 +4,9 @@ from typing import Dict
 from typing import List
 from typing import Union
 
+# third party
+from result import OkErr
+
 # relative
 from ....telemetry import instrument
 from ...common.serde.serializable import serializable
@@ -18,6 +21,7 @@ from .service import AbstractService
 from .service import SERVICE_TO_TYPES
 from .service import TYPE_TO_SERVICE
 from .service import service_method
+from .user_code import OutputHistory
 from .user_code import SubmitUserCode
 from .user_code import UserCode
 from .user_code import UserCodeStatus
@@ -123,6 +127,18 @@ class UserCodeService(AbstractService):
                 if code_item.status == UserCodeStatus.EXECUTE:
                     is_valid = code_item.output_policy_state.valid
                     if not is_valid:
+                        if (
+                            len(
+                                code_item.output_policy_state.output_history,
+                            )
+                            > 0
+                        ):
+                            return get_outputs(
+                                context=context,
+                                output_history=code_item.output_policy_state.output_history[
+                                    -1
+                                ],
+                            )
                         return is_valid
                     else:
                         action_service = context.node.get_service("actionservice")
@@ -132,7 +148,9 @@ class UserCodeService(AbstractService):
                         if isinstance(result, str):
                             return SyftError(message=result)
                         if result.is_ok():
-                            code_item.output_policy_state.update_state()
+                            code_item.output_policy_state.update_state(
+                                context=context, outputs=result.id
+                            )
                             state_result = self.update_code_state(
                                 context=context, code_item=code_item
                             )
@@ -151,6 +169,29 @@ class UserCodeService(AbstractService):
             return SyftError(message=result.err())
         except Exception as e:
             return SyftError(message=f"Failed to run. {e}")
+
+
+def get_outputs(context: AuthedServiceContext, output_history: OutputHistory) -> Any:
+    # relative
+    from .action_service import TwinMode
+
+    if isinstance(output_history.outputs, list):
+        if len(output_history.outputs) == 0:
+            return None
+        outputs = []
+        for output_id in output_history.outputs:
+            action_service = context.node.get_service("actionservice")
+            result = action_service.get(
+                context, uid=output_id, twin_mode=TwinMode.PRIVATE
+            )
+            if isinstance(result, OkErr):
+                result = result.value
+            outputs.append(result)
+        if len(outputs) == 1:
+            return outputs[0]
+        return outputs
+    else:
+        raise NotImplementedError
 
 
 def filter_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:

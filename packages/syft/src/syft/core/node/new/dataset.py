@@ -21,6 +21,8 @@ from ...common.uid import UID
 
 # from .action_object import ActionObjectPointer
 from .data_subject import DataSubject
+from .data_subject import DataSubjectCreate
+from .data_subject_service import DataSubjectService
 from .document_store import PartitionKey
 from .response import SyftError
 from .response import SyftException
@@ -115,7 +117,7 @@ class CreateAsset(SyftObject):
     name: str
     description: Optional[str]
     contributors: List[Contributor] = []
-    data_subjects: List[DataSubject] = []
+    data_subjects: List[DataSubjectCreate] = []
     node_uid: Optional[UID]
     action_id: Optional[UID]
     data: Optional[Any]
@@ -327,9 +329,23 @@ def infer_shape(context: TransformContext) -> TransformContext:
     return context
 
 
+def set_data_subjects(context: TransformContext) -> TransformContext:
+    data_subjects = context.output["data_subjects"]
+    get_data_subject = context.node.get_service_method(DataSubjectService.get_by_name)
+
+    resultant_data_subjects = []
+    for data_subject in data_subjects:
+        result = get_data_subject(context=context, name=data_subject.name)
+        if isinstance(result, SyftError):
+            return result
+        resultant_data_subjects.append(result)
+    context.output["data_subjects"] = resultant_data_subjects
+    return context
+
+
 @transform(CreateAsset, Asset)
 def createasset_to_asset() -> List[Callable]:
-    return [generate_id, infer_shape, create_and_store_twin]
+    return [generate_id, infer_shape, create_and_store_twin, set_data_subjects]
 
 
 def convert_asset(context: TransformContext) -> TransformContext:

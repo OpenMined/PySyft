@@ -42,6 +42,7 @@ from .new.context import NodeServiceContext
 from .new.context import UnauthedServiceContext
 from .new.context import UserLoginCredentials
 from .new.credentials import SyftSigningKey
+from .new.credentials import SyftVerifyKey
 from .new.data_subject_service import DataSubjectService
 from .new.dataset_service import DatasetService
 from .new.dict_document_store import DictStoreConfig
@@ -188,6 +189,9 @@ class Worker(NewNode):
         uid = UID(name_hash[0:16])
         key = SyftSigningKey(SigningKey(name_hash))
         return Worker(name=name, id=uid, signing_key=key, processes=processes)
+
+    def is_root(self, credentials: SyftVerifyKey) -> bool:
+        return credentials == self.signing_key.verify_key
 
     @property
     def root_client(self) -> Any:

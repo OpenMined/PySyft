@@ -1,5 +1,4 @@
 # stdlib
-from datetime import datetime
 from enum import Enum
 import hashlib
 from typing import Any
@@ -22,38 +21,24 @@ from ....core.node.common.node_table.syft_object import SyftObject
 from ...common.serde import _serialize
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
+from .action_object import ActionObject
 from .action_service import ActionService
 from .action_store import ActionObjectPermission
 from .action_store import ActionPermission
 from .api import APIRegistry
 from .context import AuthedServiceContext
 from .credentials import SyftVerifyKey
-from .document_store import BasePartitionSettings
+from .datetime import DateTime
 from .linked_obj import LinkedObject
 from .node import NewNode
 from .response import SyftError
 from .response import SyftSuccess
 from .transforms import TransformContext
-from .transforms import add_credentials_for_key
 from .transforms import add_node_uid_for_key
 from .transforms import generate_id
 from .transforms import transform
-
-
-@serializable(recursive_serde=True)
-class DateTime(SyftObject):
-    __canonical_name__ = "DateTime"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    utc_timestamp: float
-
-    @staticmethod
-    def now() -> Self:
-        return DateTime(utc_timestamp=datetime.utcnow().timestamp())
-
-    def __str__(self) -> str:
-        utc_datetime = datetime.utcfromtimestamp(self.utc_timestamp)
-        return utc_datetime.strftime("%Y-%m-%d %H:%M:%S")
+from .user_code import UserCode
+from .user_code import UserCodeStatus
 
 
 @serializable(recursive_serde=True)
@@ -80,14 +65,21 @@ class Change(SyftObject):
     __canonical_name__ = "Change"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    linked_obj: Optional[LinkedObject]
+
+    def is_type(self, type_: type) -> bool:
+        return self.linked_obj and type_ == self.linked_obj.object_type
+
 
 @serializable(recursive_serde=True)
 class ActionStoreChange(Change):
     __canonical_name__ = "ActionStoreChange"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    action_object_uid: UID
+    linked_obj: LinkedObject
     apply_permission_type: ActionPermission
+
+    __attr_repr_cols__ = ["linked_obj", "apply_permission_type"]
 
     def _run(
         self, context: ChangeContext, apply: bool
@@ -96,13 +88,13 @@ class ActionStoreChange(Change):
             action_service = context.node.get_service(ActionService)
             action_store = action_service.store
             owner_permission = ActionObjectPermission(
-                uid=self.action_object_uid,
+                uid=self.linked_obj.object_uid,
                 credentials=context.approving_user_credentials,
                 permission=self.apply_permission_type,
             )
             if action_store.has_permission(permission=owner_permission):
                 requesting_permission = ActionObjectPermission(
-                    uid=self.action_object_uid,
+                    uid=self.linked_obj.object_uid,
                     credentials=context.requesting_user_credentials,
                     permission=self.apply_permission_type,
                 )
@@ -171,6 +163,66 @@ class Request(SyftObject):
                 return result
         return Ok(SyftSuccess(message=f"Request {self.id} changes reverted"))
 
+    def accept_by_depositing_result(self, result: Any):
+        if len(self.changes) != 1:
+            raise Exception(
+                f"accept_by_depositing_result can only be run on {UserCode} Requests"
+            )
+
+        change = self.changes[0]
+        if not change.is_type(UserCode):
+            raise Exception(
+                f"accept_by_depositing_result can only be run on {UserCode} not "
+                f"{change.linked_obj.object_type}"
+            )
+        if not change.enum_type == UserCodeStatus:
+            raise Exception(
+                f"accept_by_depositing_result can only be run on {UserCodeStatus} not "
+                f"{change.enum_type}"
+            )
+
+        api = APIRegistry.api_for(self.node_uid)
+        if not api:
+            raise Exception(f"Login to {self.node_uid} first.")
+
+        action_object = ActionObject.from_obj(result)
+        result = api.services.action.save(action_object)
+        if not result:
+            return result
+
+        code = change.linked_obj.resolve
+        state = code.output_policy_state
+        ctx = AuthedServiceContext(credentials=api.signing_key.verify_key)
+        state.update_state(outputs=action_object.id, context=ctx)
+        policy_state_mutation = ObjectMutation(
+            linked_obj=change.linked_obj,
+            attr_name="output_policy_state",
+            match_type=True,
+            value=state,
+        )
+
+        action_object_link = LinkedObject.from_obj(
+            action_object, node_uid=self.node_uid
+        )
+
+        permission_change = ActionStoreChange(
+            linked_obj=action_object_link, apply_permission_type=ActionPermission.READ
+        )
+
+        submit_request = SubmitRequest(
+            changes=[policy_state_mutation, permission_change],
+            requesting_user_verify_key=self.requesting_user_verify_key,
+        )
+
+        new_request = api.services.request.submit(submit_request)
+        if not new_request:
+            return new_request
+        new_request_result = api.services.request.apply(new_request.id)
+        if not new_request_result:
+            return new_request_result
+        result = api.services.request.apply(self.id)
+        return result
+
 
 @serializable(recursive_serde=True)
 class SubmitRequest(SyftObject):
@@ -178,6 +230,7 @@ class SubmitRequest(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     changes: List[Change]
+    requesting_user_verify_key: Optional[SyftVerifyKey]
 
 
 def hash_changes(context: TransformContext) -> TransformContext:
@@ -201,13 +254,25 @@ def add_request_time(context: TransformContext) -> TransformContext:
     return context
 
 
+def check_requesting_user_verify_key(context: TransformContext) -> TransformContext:
+    if context.obj.requesting_user_verify_key and context.node.is_root(
+        context.credentials
+    ):
+        context.output[
+            "requesting_user_verify_key"
+        ] = context.obj.requesting_user_verify_key
+    else:
+        context.output["requesting_user_verify_key"] = context.credentials
+    return context
+
+
 @transform(SubmitRequest, Request)
 def submit_request_to_request() -> List[Callable]:
     return [
         generate_id,
         add_node_uid_for_key("node_uid"),
         add_request_time,
-        add_credentials_for_key("requesting_user_verify_key"),
+        check_requesting_user_verify_key,
         hash_changes,
     ]
 
@@ -221,6 +286,33 @@ class ObjectMutation(Change):
     attr_name: str
     value: Optional[Any]
     match_type: bool
+
+    __attr_repr_cols__ = ["linked_obj", "attr_name"]
+
+    def mutate(self, obj: Any) -> Any:
+        setattr(obj, self.attr_name, self.value)
+        return obj
+
+    def _run(
+        self, context: ChangeContext, apply: bool
+    ) -> Result[SyftSuccess, SyftError]:
+        try:
+            obj = self.linked_obj.resolve_with_context(context)
+            if obj.is_err():
+                return SyftError(message=obj.err())
+            obj = obj.ok()
+            if apply:
+                obj = self.mutate(obj)
+                self.linked_obj.update_with_context(context, obj)
+            else:
+                raise NotImplementedError
+            return Ok(SyftSuccess(message=f"{type(self)} Success"))
+        except Exception as e:
+            print(f"failed to apply {type(self)}. {e}")
+            return Err(SyftError(message=e))
+
+    def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+        return self._run(context=context, apply=True)
 
 
 def type_for_field(object_type: type, attr_name: str) -> Optional[type]:
@@ -273,10 +365,6 @@ class EnumMutation(ObjectMutation):
             )
         return SyftSuccess(message=f"{type(self)} valid")
 
-    def mutate(self, obj: Any) -> Any:
-        setattr(obj, self.attr_name, self.value)
-        return obj
-
     @staticmethod
     def from_obj(
         linked_obj: LinkedObject, attr_name: str, value: Optional[Enum] = None
@@ -322,51 +410,3 @@ class EnumMutation(ObjectMutation):
         if self.linked_obj:
             return self.linked_obj.resolve
         return None
-
-
-@serializable(recursive_serde=True)
-class DocumentStoreChange(Change):
-    __canonical_name__ = "DocumentStoreChange"
-    __version__ = SYFT_OBJECT_VERSION_1
-
-    partition_uid: UID
-    partition: BasePartitionSettings
-    object_mutator: ObjectMutation
-
-    def _run(
-        self, context: ChangeContext, apply: bool
-    ) -> Result[SyftSuccess, SyftError]:
-        try:
-            action_service = context.node.get_service(ActionService)
-            action_store = action_service.store
-            owner_permission = ActionObjectPermission(
-                uid=self.action_object_uid,
-                credentials=context.approving_user_credentials,
-                permission=self.apply_permission_type,
-            )
-            if action_store.has_permission(permission=owner_permission):
-                requesting_permission = ActionObjectPermission(
-                    uid=self.action_object_uid,
-                    credentials=context.requesting_user_credentials,
-                    permission=self.apply_permission_type,
-                )
-                if apply:
-                    action_store.add_permission(requesting_permission)
-                else:
-                    action_store.remove_permission(requesting_permission)
-            else:
-                return Err(
-                    SyftError(
-                        message=f"No permission for approving_user_credentials {context.approving_user_credentials}"
-                    )
-                )
-            return Ok(SyftSuccess(message=f"{type(self)} Success"))
-        except Exception as e:
-            print(f"failed to apply {type(self)}")
-            return Err(SyftError(message=e))
-
-    def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
-        return self._run(context=context, apply=True)
-
-    def revert(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
-        return self._run(context=context, apply=False)
