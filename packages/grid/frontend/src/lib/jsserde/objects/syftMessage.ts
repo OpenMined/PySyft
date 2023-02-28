@@ -9,13 +9,16 @@ class SignedMessage {
   signature: Uint8Array;
   verify_key: Uint8Array;
 
-
-  constructor(address: UUID, msg: Uint8Array, private_key: Uint8Array, verify_key: Uint8Array){
+  constructor(address: UUID, msg: Uint8Array, private_key: Uint8Array, verify_key: Uint8Array) {
     this.serialized_message = msg;
     this.id = new UUID(uuidv4());
     this.address = address;
     this.verify_key = verify_key;
     this.signature = sodium.crypto_sign_detached(this.serialized_message, private_key);
+  }
+
+  message(serde) {
+    return serde.deserialize(this.message);
   }
 }
 
@@ -36,9 +39,9 @@ export class SyftMessage {
     this.fqn = fqn;
   }
 
-  sign(serde, private_key, verify_key){
-    const serialized_message = new Uint8Array(serde.serialize(this))
-    return new SignedMessage(this.address, serialized_message, private_key, verify_key)
+  sign(serde, private_key, verify_key) {
+    const serialized_message = new Uint8Array(serde.serialize(this));
+    return new SignedMessage(this.address, serialized_message, private_key, verify_key);
   }
 }
 

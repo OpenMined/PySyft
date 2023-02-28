@@ -30,8 +30,8 @@
           throw new Error('Incorrect email or password!');
         } else {
           return response.json().then((body) => {
-            this.private_key = sodium.from_hex(body['key'])
-            this.public_key = sodium.from_hex(body['verify_key'])
+            this.private_key = sodium.from_hex(body['key']);
+            this.public_key = sodium.from_hex(body['verify_key']);
             this.access_token = 'Bearer ' + body['access_token'];
             return body;
           });
