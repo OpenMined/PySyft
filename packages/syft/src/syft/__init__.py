@@ -70,7 +70,7 @@ from .core.node.new.action_object import ActionObject  # noqa: F401
 from .core.node.new.client import connect  # noqa: F401
 from .core.node.new.client import login  # noqa: F401
 from .core.node.new.credentials import SyftSigningKey  # noqa: F401
-from .core.node.new.data_subject import DataSubject  # noqa: F401
+from .core.node.new.data_subject import DataSubjectCreate as DataSubject  # noqa: F401
 from .core.node.new.dataset import CreateAsset as Asset  # noqa: F401
 from .core.node.new.dataset import CreateDataset as Dataset  # noqa: F401
 from .core.node.new.project import ProjectSubmit as Project  # noqa: F401
