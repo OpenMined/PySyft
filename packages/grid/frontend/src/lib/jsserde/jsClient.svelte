@@ -1,6 +1,7 @@
 <script context="module">
   import { JSSerde } from './jsserde.svelte';
   import { SyftMessageWithoutReply } from './objects/syftMessage.ts';
+  import sodium from 'libsodium-wrappers';
   export class JSClient {
     constructor() {
       return (async () => {
@@ -29,8 +30,9 @@
           throw new Error('Incorrect email or password!');
         } else {
           return response.json().then((body) => {
+            this.private_key = sodium.from_hex(body['key'])
+            this.public_key = sodium.from_hex(body['verify_key'])
             this.access_token = 'Bearer ' + body['access_token'];
-            this.key = body['key'];
             return body;
           });
         }
