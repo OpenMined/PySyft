@@ -86,7 +86,7 @@ def test_user_code_manual_code_submission_enclave() -> None:
     assert isinstance(simple_function, SubmitUserCode)
 
     # Step 5 :Code Submission Phase
-    print(depl.new_request_code_execution(code=simple_function))
+    print(depl.request_code_execution(code=simple_function))
 
     # Step 6: Code review phase
     canada_requests = canada_root.api.services.request.get_all()

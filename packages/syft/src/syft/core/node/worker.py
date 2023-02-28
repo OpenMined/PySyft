@@ -65,7 +65,6 @@ from .new.task.oblv_keys_stash import OblvKeys
 from .new.task.oblv_keys_stash import OblvKeysStash
 from .new.task.oblv_service import OblvService
 from .new.task.oblv_service import generate_oblv_key
-from .new.task.task_service import TaskService
 from .new.test_service import TestService
 from .new.user import ServiceRole
 from .new.user import User
@@ -156,7 +155,6 @@ class Worker(NewNode):
                 UserService,
                 ActionService,
                 TestService,
-                TaskService,
                 OblvService,
                 DatasetService,
                 UserCodeService,
@@ -292,9 +290,6 @@ class Worker(NewNode):
                 ProjectService,
             ]:
                 kwargs["store"] = self.document_store
-            if service_klass == TaskService:
-                kwargs["document_store"] = self.document_store
-                kwargs["action_store"] = self.action_store
             self.service_path_map[service_klass.__name__.lower()] = service_klass(
                 **kwargs
             )
