@@ -189,11 +189,13 @@ class Worker(NewNode):
         self.post_init()
 
     @staticmethod
-    def named(name: str, processes: int = 0) -> Worker:
+    def named(name: str, processes: int = 0, local_db: bool = False) -> Worker:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         uid = UID(name_hash[0:16])
         key = SyftSigningKey(SigningKey(name_hash))
-        return Worker(name=name, id=uid, signing_key=key, processes=processes)
+        return Worker(
+            name=name, id=uid, signing_key=key, processes=processes, local_db=local_db
+        )
 
     @property
     def root_client(self) -> Any:
