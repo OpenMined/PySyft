@@ -68,7 +68,7 @@ class LinkedObject(SyftObject):
             raise Exception(f"{cls} Requires an object UID")
 
         if node_uid is None:
-            node_uid = getattr(obj, "node_id", None)
+            node_uid = getattr(obj, "node_uid", None)
             if node_uid is None:
                 raise Exception(f"{cls} Requires an object UID")
 

@@ -66,6 +66,7 @@ from .core.node.domain import Domain  # noqa: F401
 from .core.node.domain import DomainClient  # noqa: F401
 from .core.node.network import Network  # noqa: F401
 from .core.node.network_client import NetworkClient  # noqa: F401
+from .core.node.new.action_object import ActionObject  # noqa: F401
 from .core.node.new.client import connect  # noqa: F401
 from .core.node.new.client import login  # noqa: F401
 from .core.node.new.credentials import SyftSigningKey  # noqa: F401
