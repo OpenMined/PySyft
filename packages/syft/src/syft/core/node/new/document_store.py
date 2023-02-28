@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from functools import partial
+import types
 from typing import Any
 from typing import Dict
 from typing import Iterable
@@ -11,12 +12,14 @@ from typing import Optional
 from typing import Tuple
 from typing import Type
 from typing import Union
+from typing import _GenericAlias
 
 # third party
 from pydantic import BaseModel
 from result import Err
 from result import Ok
 from result import Result
+from typeguard import check_type
 
 # relative
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
@@ -47,7 +50,7 @@ class StoreClientConfig(BaseModel):
 @serializable(recursive_serde=True)
 class PartitionKey(BaseModel):
     key: str
-    type_: type
+    type_: Union[type, object]
 
     def __eq__(self, other: Any) -> bool:
         if type(other) == type(self):
@@ -56,6 +59,28 @@ class PartitionKey(BaseModel):
 
     def with_obj(self, obj: SyftObject) -> QueryKey:
         return QueryKey.from_obj(partition_key=self, obj=obj)
+
+    def is_valid_list(self, obj: SyftObject) -> bool:
+        # not a list and matches the internal list type of the _GenericAlias
+        if not isinstance(obj, list):
+            if not isinstance(obj, self.type_.__args__):
+                obj = getattr(obj, self.key)
+                if isinstance(obj, (types.FunctionType, types.MethodType)):
+                    obj = obj()
+
+            if not isinstance(obj, list) and isinstance(obj, self.type_.__args__):
+                # still not a list but the right type
+                obj = [obj]
+
+        # is a list type so lets compare directly
+        check_type("obj", obj, self.type_)
+        return obj
+
+    @property
+    def type_list(self) -> bool:
+        if isinstance(self.type_, _GenericAlias) and self.type_.__origin__ == list:
+            return True
+        return False
 
 
 @serializable(recursive_serde=True)
@@ -113,15 +138,24 @@ class QueryKey(PartitionKey):
         pk_key = partition_key.key
         pk_type = partition_key.type_
 
-        if isinstance(obj, pk_type):
-            pk_value = obj
+        # 🟡 TODO: support more advanced types than List[type]
+        if partition_key.type_list:
+            pk_value = partition_key.is_valid_list(obj)
         else:
-            pk_value = getattr(obj, pk_key)
+            if isinstance(obj, pk_type):
+                pk_value = obj
+            else:
+                pk_value = getattr(obj, pk_key)
+                # object has a method for getting these types
+                # we can't use properties because we don't seem to be able to get the
+                # return types
+                if isinstance(pk_value, (types.FunctionType, types.MethodType)):
+                    pk_value = pk_value()
 
-        if pk_value and not isinstance(pk_value, pk_type):
-            raise Exception(
-                f"PartitionKey {pk_value} of type {type(pk_value)} must be {pk_type}."
-            )
+            if pk_value and not isinstance(pk_value, pk_type):
+                raise Exception(
+                    f"PartitionKey {pk_value} of type {type(pk_value)} must be {pk_type}."
+                )
         return QueryKey(key=pk_key, type_=pk_type, value=pk_value)
 
     @property
@@ -133,6 +167,9 @@ class QueryKey(PartitionKey):
         key = self.key
         if key == "id":
             key = "_id"
+        if self.type_list:
+            # We want to search inside the list of values
+            return {key: {"$in": self.value}}
         return {key: self.value}
 
 
@@ -165,10 +202,18 @@ class QueryKeys(SyftBaseModel):
             pk_key = partition_key.key
             pk_type = partition_key.type_
             pk_value = getattr(obj, pk_key)
-            if pk_value and not isinstance(pk_value, pk_type):
-                raise Exception(
-                    f"PartitionKey {pk_value} of type {type(pk_value)} must be {pk_type}."
-                )
+            # object has a method for getting these types
+            # we can't use properties because we don't seem to be able to get the
+            # return types
+            if isinstance(pk_value, (types.FunctionType, types.MethodType)):
+                pk_value = pk_value()
+            if partition_key.type_list:
+                pk_value = partition_key.is_valid_list(obj)
+            else:
+                if pk_value and not isinstance(pk_value, pk_type):
+                    raise Exception(
+                        f"PartitionKey {pk_value} of type {type(pk_value)} must be {pk_type}."
+                    )
             qk = QueryKey(key=pk_key, type_=pk_type, value=pk_value)
             qks.append(qk)
         return QueryKeys(qks=qks)
@@ -211,7 +256,11 @@ class QueryKeys(SyftBaseModel):
             qk_value = qk.value
             if qk_key == "id":
                 qk_key = "_id"
-            qk_dict[qk_key] = qk_value
+            if qk.type_list:
+                # We want to search inside the list of values
+                qk_dict[qk_key] = {"$in": qk_value}
+            else:
+                qk_dict[qk_key] = qk_value
         return qk_dict
 
 
@@ -248,6 +297,16 @@ class StorePartition:
     def init_store(self) -> None:
         self.unique_cks = self.settings.unique_keys.all
         self.searchable_cks = self.settings.searchable_keys.all
+
+    def matches_unique_cks(self, partition_key: PartitionKey) -> bool:
+        if partition_key in self.unique_cks:
+            return True
+        return False
+
+    def matches_searchable_cks(self, partition_key: PartitionKey) -> bool:
+        if partition_key in self.searchable_cks:
+            return True
+        return False
 
     def store_query_key(self, obj: Any) -> QueryKey:
         return self.settings.store_key.with_obj(obj)
@@ -339,9 +398,9 @@ class BaseStash:
 
         for qk in qks.all:
             pk = qk.partition_key
-            if pk in self.partition.unique_cks:
+            if self.partition.matches_unique_cks(pk):
                 unique_keys.append(qk)
-            elif pk in self.partition.searchable_cks:
+            elif self.partition.matches_searchable_cks(pk):
                 searchable_keys.append(qk)
             else:
                 return Err(
