@@ -31,8 +31,10 @@ from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .api import UserNodeView
 from .context import AuthedServiceContext
+from .context import NodeServiceContext
 from .credentials import SyftVerifyKey
 from .dataset import Asset
+from .datetime import DateTime
 from .document_store import PartitionKey
 from .node import NodeType
 from .response import SyftError
@@ -58,18 +60,24 @@ class InputPolicy(SyftObject):
 
     id: UID
     inputs: Dict[UserNodeView, Any]
+    node_uid: Optional[UID]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         # TODO: This method initialization would conflict if one of the input variables
         # to the code submission function happens to be id or inputs
         uid = UID()
+        node_uid = None
         if "id" in kwargs:
             uid = kwargs["id"]
+        if "node_uid" in kwargs:
+            node_uid = kwargs["node_uid"]
+
+        # finally get inputs
         if "inputs" in kwargs:
             kwargs = kwargs["inputs"]
         else:
             kwargs = partition_by_node(kwargs)
-        super().__init__(id=uid, inputs=kwargs)
+        super().__init__(id=uid, inputs=kwargs, node_uid=node_uid)
 
     def filter_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
         raise NotImplementedError
@@ -80,6 +88,25 @@ class InputPolicy(SyftObject):
         uid = self.inputs[key]
         # TODO Add NODE UID or LINK so we can resolve this object
         return uid
+
+    @property
+    def assets(self) -> List[Asset]:
+        # relative
+        from .api import APIRegistry
+
+        api = APIRegistry.api_for(self.node_uid)
+        if api is None:
+            return SyftError(message=f"You must login to {self.node_uid}")
+
+        all_assets = []
+        for k, uid in self.inputs.items():
+            if isinstance(uid, UID):
+                assets = api.services.dataset.get_assets_by_action_id(uid)
+                if not isinstance(assets, list):
+                    return assets
+
+                all_assets += assets
+        return all_assets
 
 
 def retrieve_from_db(
@@ -170,10 +197,23 @@ class ExactMatch(InputPolicy):
         )
 
 
+@serializable(recursive_serde=True)
+class OutputHistory(SyftObject):
+    # version
+    __canonical_name__ = "OutputHistory"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    output_time: DateTime
+    outputs: Optional[Union[List[UID], Dict[str, UID]]]
+    executing_user_verify_key: SyftVerifyKey
+
+
 class OutputPolicyState(SyftObject):
     # version
     __canonical_name__ = "OutputPolicyState"
     __version__ = SYFT_OBJECT_VERSION_1
+
+    output_history: List[OutputHistory] = []
 
     @property
     def valid(self) -> Union[SyftSuccess, SyftError]:
@@ -203,12 +243,24 @@ class OutputPolicyStateExecuteCount(OutputPolicyState):
             message=f"Policy is no longer valid. count: {self.count} >= limit: {self.limit}"
         )
 
-    def update_state(self) -> None:
+    def update_state(
+        self,
+        context: NodeServiceContext,
+        outputs: Optional[Union[UID, List[UID], Dict[str, UID]]],
+    ) -> None:
         if self.count >= self.limit:
             raise Exception(
                 f"Update state being called with count: {self.count} "
                 f"beyond execution limit: {self.limit}"
             )
+        if isinstance(outputs, UID):
+            outputs = [outputs]
+        history = OutputHistory(
+            output_time=DateTime.now(),
+            outputs=outputs,
+            executing_user_verify_key=context.credentials,
+        )
+        self.output_history.append(history)
         self.count += 1
 
 
@@ -615,6 +667,13 @@ def modify_signature(context: TransformContext) -> TransformContext:
     return context
 
 
+def check_input_policy(context: TransformContext) -> TransformContext:
+    ip = context.output["input_policy"]
+    ip.node_uid = context.node.id
+    context.output["input_policy"] = ip
+    return context
+
+
 def init_output_policy_state(context: TransformContext) -> TransformContext:
     context.output["output_policy_state"] = context.output["output_policy"].state_type()
     return context
@@ -654,6 +713,7 @@ def submit_user_code_to_user_code() -> List[Callable]:
         new_check_code,
         compile_code,
         add_credentials_for_key("user_verify_key"),
+        check_input_policy,
         init_output_policy_state,
         add_custom_status,
     ]

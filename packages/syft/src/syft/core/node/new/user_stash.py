@@ -18,10 +18,12 @@ from .document_store import PartitionSettings
 from .document_store import QueryKeys
 from .document_store import UIDPartitionKey
 from .response import SyftSuccess
+from .user import ServiceRole
 from .user import User
 
 # 🟡 TODO 27: it would be nice if these could be defined closer to the User
 EmailPartitionKey = PartitionKey(key="email", type_=str)
+RolePartitionKey = PartitionKey(key="role", type_=ServiceRole)
 SigningKeyPartitionKey = PartitionKey(key="signing_key", type_=SyftSigningKey)
 VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
 
@@ -47,6 +49,10 @@ class UserStash(BaseStash):
 
     def get_by_email(self, email: str) -> Result[Optional[User], str]:
         qks = QueryKeys(qks=[EmailPartitionKey.with_obj(email)])
+        return self.query_one(qks=qks)
+
+    def get_by_role(self, role: ServiceRole) -> Result[Optional[User], str]:
+        qks = QueryKeys(qks=[RolePartitionKey.with_obj(role)])
         return self.query_one(qks=qks)
 
     def get_by_signing_key(

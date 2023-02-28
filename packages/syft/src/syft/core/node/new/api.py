@@ -247,7 +247,7 @@ class APIModule:
 
     def __getitem__(self, key: Union[str, int]) -> Any:
         if isinstance(key, int) and hasattr(self, "get_all"):
-            return self.get_all()[0]
+            return self.get_all()[key]
         raise NotImplementedError
 
     def _repr_html_(self) -> Any:
