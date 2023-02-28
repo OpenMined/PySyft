@@ -3,6 +3,8 @@
   import { RecursiveSerde } from './capnp/recursive_serde.capnp.js';
   import { KVIterable } from './capnp/kv_iterable.capnp.js';
   import { Iterable } from './capnp/iterable.capnp.js';
+  import { DataList } from './capnp/datalist.capnp.js';
+  import { DataBox } from './capnp/databox.capnp.js';
   import { stringify as uuidStringify } from 'uuid';
   import { parse as uuidParse } from 'uuid';
 
@@ -114,15 +116,13 @@
 
           fields.set(0, 'value');
           let serializedObj = this.serialize(uuidParse(uuid.value));
-          let dataMsg = new capnp.Message(serializedObj, false);
-          let dataCapnpObj = capnp.Struct.initData(
-            0,
-            serializedObj.byteLength,
-            dataMsg.getRoot(capnp.Data)
-          );
-          dataCapnpObj.copyBuffer(serializedObj);
-          data.set(0, dataCapnpObj);
 
+          let dataList = this.createDataList(1);
+
+          let dataStruct = this.createData(serializedObj.byteLength);
+          dataStruct.copyBuffer(serializedObj);
+          dataList.set(0, dataStruct);
+          data.set(0, dataList);
           return message.toArrayBuffer();
         },
         (buffer) => {
@@ -160,23 +160,18 @@
         (list) => {
           const message = new capnp.Message();
           const rs = message.initRoot(Iterable);
-          const listStruct = rs.initValues(list.length);
+          const listStruct = rs.initValues(1);
           let count = 0;
           for (let index = 0; index < list.length; index++) {
             let serializedObj = this.serialize(list[index]);
-            let dataMsg = new capnp.Message(serializedObj, false);
-            let dataCapnpObj = capnp.Struct.initData(
-              0,
-              serializedObj.byteLength,
-              dataMsg.getRoot(capnp.Data)
-            );
-            dataCapnpObj.copyBuffer(serializedObj);
-            listStruct.set(count, dataCapnpObj);
+            let chunks = this.splitChunks(serializedObj);
+            let chunkList = this.serializeChunks(chunks);
+            listStruct.set(count, chunkList);
             count += 1;
           }
           return message.toArrayBuffer();
         },
-        function (buffer) {
+        (buffer) => {
           var iter = [];
           const message = new capnp.Message(buffer, false);
           const rs = message.getRoot(Iterable);
@@ -225,24 +220,18 @@
           const values = rs.initValues(dict.size);
           let count = 0;
           dict.forEach((value, key) => {
+            // Saving Key
             let serializedKey = this.serialize(key);
+            let keyDataStruct = this.createData(serializedKey.byteLength);
+            keyDataStruct.copyBuffer(serializedKey);
+            keys.set(count, keyDataStruct);
+
+            // Saving Values
             let serializedValue = this.serialize(value);
-            let keyMsg = new capnp.Message(serializedKey, false);
-            let valueMsg = new capnp.Message(serializedKey, false);
-            let keyDataCapnpObj = capnp.Struct.initData(
-              0,
-              serializedKey.byteLength,
-              keyMsg.getRoot(capnp.Data)
-            );
-            let valueDataCapnpObj = capnp.Struct.initData(
-              0,
-              serializedValue.byteLength,
-              valueMsg.getRoot(capnp.Data)
-            );
-            keyDataCapnpObj.copyBuffer(serializedKey);
-            valueDataCapnpObj.copyBuffer(serializedValue);
-            keys.set(count, keyDataCapnpObj);
-            values.set(count, valueDataCapnpObj);
+            let chunks = this.splitChunks(serializedValue);
+            let chunkList = this.serializeChunks(chunks);
+            values.set(count, chunkList);
+
             count += 1;
           });
           return message.toArrayBuffer();
@@ -267,6 +256,51 @@
       ];
     }
 
+    createData(length) {
+      let newDataMsg = new capnp.Message();
+      let dataRoot = newDataMsg.initRoot(DataBox);
+      dataRoot.initValue(length);
+      return dataRoot.getValue();
+    }
+
+    createDataList(length) {
+      let newDataList = new capnp.Message();
+      let dataListRoot = newDataList.initRoot(DataList);
+      dataListRoot.initValues(length);
+      return dataListRoot.getValues();
+    }
+
+    splitChunks(serializedObj) {
+      let sizeLimit = 5.12 ** 8;
+      let chunks = [];
+      let pointer = 0;
+
+      if (serializedObj.byteLength < sizeLimit) {
+        chunks.push(serializedObj);
+      } else {
+        let slices = serializedObj.byteLength / sizeLimit;
+        for (let index = 0; index < slices - 1; index++) {
+          chunks.push(serializedObj.slice(pointer, pointer + sizeLimit));
+          pointer = pointer + sizeLimit;
+        }
+        chunks.push(serializedObj.slice(pointer, serializedObj.byteLength));
+      }
+
+      return chunks;
+    }
+
+    serializeChunks(chunks) {
+      let chunkList = this.createDataList(chunks.length);
+
+      for (let index = 0; index < chunks.length; index++) {
+        let dataStruct = this.createData(chunks[index].byteLength);
+        dataStruct.copyBuffer(chunks[index]);
+        chunkList.set(index, dataStruct);
+      }
+
+      return chunkList;
+    }
+
     serialize(obj) {
       let fqn = '';
       if (typeof obj === 'boolean') {
@@ -288,17 +322,28 @@
       } else {
         fqn = obj.fqn;
       }
+
       const message = new capnp.Message();
       const rs = message.initRoot(RecursiveSerde);
       let objSerdeProps = this.type_bank[fqn];
       let notRecursive = objSerdeProps[0];
       rs.setFullyQualifiedName(fqn);
-
       delete obj.fqn;
+      // If not recursive
       if (notRecursive) {
         let serializedObj = this.type_bank[fqn][1](obj);
-        let data = rs.initNonrecursiveBlob(serializedObj.byteLength);
-        data.copyBuffer(serializedObj);
+        // Split data into chunks
+        let chunks = this.splitChunks(serializedObj);
+
+        // Create Data List using chunk size
+        let data = rs.initNonrecursiveBlob(chunks.length);
+
+        // Fill the list iterating over chunk elements
+        for (let index = 0; index < chunks.length; index++) {
+          let payload = this.createData(chunks[index].byteLength);
+          payload.copyBuffer(chunks[index]);
+          data.set(index, payload);
+        }
       } else if (objSerdeProps[1] !== null) {
         return this.type_bank[fqn][1](obj);
       } else {
@@ -308,14 +353,9 @@
         for (let attr in obj) {
           txt.set(count, attr);
           let serializedObj = this.serialize(obj[attr]);
-          let dataMsg = new capnp.Message(serializedObj, false);
-          let dataCapnpObj = capnp.Struct.initData(
-            0,
-            serializedObj.byteLength,
-            dataMsg.getRoot(capnp.Data)
-          );
-          dataCapnpObj.copyBuffer(serializedObj);
-          data.set(count, dataCapnpObj);
+          let chunks = this.splitChunks(serializedObj);
+          let chunkList = this.serializeChunks(chunks);
+          data.set(count, chunkList);
           count += 1;
         }
       }
@@ -366,6 +406,7 @@
       const size = fieldsName.getLength();
       const fqn = rs.getFullyQualifiedName();
       let objSerdeProps = this.type_bank[fqn];
+
       if (size < 1) {
         const blob = rs.getNonrecursiveBlob();
         // Blob < 512 mb
