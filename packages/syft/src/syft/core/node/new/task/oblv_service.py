@@ -23,6 +23,7 @@ from .....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from .....core.node.common.node_table.syft_object import SyftObject
 from .....oblv.constants import DOMAIN_CONNECTION_PORT
 from .....oblv.constants import LOCAL_MODE
+from .....oblv.constants import WORKER_MODE
 from .....oblv.deployment_client import OblvMetadata
 from ....common.serde.deserialize import _deserialize as deserialize
 from ....common.serde.serializable import serializable
@@ -189,8 +190,13 @@ def make_request_to_enclave(
         return req
     else:
         headers = {"x-oblv-user-name": "enclave-test", "x-oblv-user-role": "domain"}
+        if not WORKER_MODE:
+            connection_string = connection_string.replace(
+                "127.0.0.1", "host.docker.internal"
+            )
+
         return request_method(
-            connection_string.replace("127.0.0.1", "host.docker.internal"),
+            connection_string,
             headers=headers,
             params=params,
             files=files,
@@ -323,10 +329,11 @@ class OblvService(AbstractService):
                 port = find_available_port(
                     host="127.0.0.1", port=port_start, search=True
                 )
-            connection_string = f"http://127.0.0.1:{port}"
+
         else:
             port = os.getenv("DOMAIN_CONNECTION_PORT", DOMAIN_CONNECTION_PORT)
-            connection_string = f"http://host.docker.internal:{port}"
+
+        connection_string = f"http://127.0.0.1:{port}"
 
         req = make_request_to_enclave(
             connection_string=connection_string + Routes.ROUTE_API.value,
