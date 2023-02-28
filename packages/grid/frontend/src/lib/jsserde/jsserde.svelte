@@ -206,7 +206,7 @@
           console.log(key);
         },
         (buffer) => {
-          console.log(buffer);
+          return new Uint8Array(buffer);
         },
         null,
         {}
