@@ -2003,6 +2003,9 @@ class GammaTensor:
         )
 
     def __mul__(self, other: Any) -> GammaTensor:
+        """
+        The multiplication of 2 GammaTensors
+        """
         # relative
         from .phi_tensor import PhiTensor
 

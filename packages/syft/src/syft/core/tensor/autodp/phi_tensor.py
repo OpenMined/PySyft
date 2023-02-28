@@ -2743,7 +2743,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 max_vals=self.max_vals * other,
                 data_subjects=self.data_subjects,
             )
-        # If the other is already a `GammaTensor` we can just 
+        # If the other is already a `GammaTensor` we can just
         # convert `self` to a GammaTensor and let it handle the multiplication
         elif isinstance(other, GammaTensor):
             return self.gamma * other
