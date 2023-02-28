@@ -20,8 +20,10 @@ from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import SyftObject
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
+from .context import NodeServiceContext
 from .credentials import SyftVerifyKey
 from .dataset import Asset
+from .datetime import DateTime
 from .document_store import PartitionKey
 from .response import SyftError
 from .response import SyftSuccess
@@ -119,10 +121,23 @@ class ExactMatch(InputPolicy):
         return allowed_ids_only(self.inputs, kwargs)
 
 
+@serializable(recursive_serde=True)
+class OutputHistory(SyftObject):
+    # version
+    __canonical_name__ = "OutputHistory"
+    __version__ = SYFT_OBJECT_VERSION_1
+
+    output_time: DateTime
+    outputs: Optional[Union[List[UID], Dict[str, UID]]]
+    executing_user_verify_key: SyftVerifyKey
+
+
 class OutputPolicyState(SyftObject):
     # version
     __canonical_name__ = "OutputPolicyState"
     __version__ = SYFT_OBJECT_VERSION_1
+
+    output_history: List[OutputHistory] = []
 
     @property
     def valid(self) -> Union[SyftSuccess, SyftError]:
@@ -152,12 +167,24 @@ class OutputPolicyStateExecuteCount(OutputPolicyState):
             message=f"Policy is no longer valid. count: {self.count} >= limit: {self.limit}"
         )
 
-    def update_state(self) -> None:
+    def update_state(
+        self,
+        context: NodeServiceContext,
+        outputs: Optional[Union[UID, List[UID], Dict[str, UID]]],
+    ) -> None:
         if self.count >= self.limit:
             raise Exception(
                 f"Update state being called with count: {self.count} "
                 f"beyond execution limit: {self.limit}"
             )
+        if isinstance(outputs, UID):
+            outputs = [outputs]
+        history = OutputHistory(
+            output_time=DateTime.now(),
+            outputs=outputs,
+            executing_user_verify_key=context.credentials,
+        )
+        self.output_history.append(history)
         self.count += 1
 
 
