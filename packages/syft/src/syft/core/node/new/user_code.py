@@ -230,14 +230,31 @@ class UserCodeStatusContext:
         return hash_sum
 
     def for_context(self, context: AuthedServiceContext) -> UserCodeStatus:
-        user_node_view = UserNodeView(
-            node_name=context.node.name, verify_key=context.node.signing_key.verify_key
-        )
-        if user_node_view in self.base_dict:
-            return self.base_dict[user_node_view]
+        if context.node.node_type == NodeType.ENCLAVE:
+            keys = set(self.base_dict.values())
+            if len(keys) == 1 and UserCodeStatus.EXECUTE in keys:
+                return UserCodeStatus.EXECUTE
+            elif UserCodeStatus.SUBMITTED in keys and UserCodeStatus.DENIED not in keys:
+                return UserCodeStatus.SUBMITTED
+            elif UserCodeStatus.DENIED in keys:
+                return UserCodeStatus.DENIED
+            else:
+                return Exception(f"Invalid types in {keys} for Code Submission")
+
+        elif context.node.node_type == NodeType.DOMAIN:
+            user_node_view = UserNodeView(
+                node_name=context.node.name,
+                verify_key=context.node.signing_key.verify_key,
+            )
+            if user_node_view in self.base_dict:
+                return self.base_dict[user_node_view]
+            else:
+                raise Exception(
+                    f"Code Object does not contain {context.node.name} Domain's data"
+                )
         else:
             raise Exception(
-                f"Code Object does not contain {context.node.name} Domain's data"
+                f"Invalid Node Type for Code Submission:{context.node.node_type}"
             )
 
     def mutate(

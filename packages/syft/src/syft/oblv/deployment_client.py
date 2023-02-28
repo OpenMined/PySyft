@@ -451,6 +451,9 @@ class DeploymentClient:
 
         return self._api
 
+    def refresh(self) -> None:
+        self._set_api()
+
     def check_publish_request_status(self, publish_request_id):
         self.check_connection_string()
 
