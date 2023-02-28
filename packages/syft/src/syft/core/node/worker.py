@@ -50,6 +50,7 @@ from .new.document_store import StoreConfig
 from .new.message_service import MessageService
 from .new.network_service import NetworkService
 from .new.node import NewNode
+from .new.node import NodeType
 from .new.node_metadata import NodeMetadata
 from .new.project_service import ProjectService
 from .new.queue_stash import QueueItem
@@ -122,6 +123,8 @@ class Worker(NewNode):
         root_password: str = "changethis",
         processes: int = 0,
         is_subprocess: bool = False,
+        node_type: NodeType = NodeType.DOMAIN,
+        local_db: bool = False,
     ):
         # 🟡 TODO 22: change our ENV variable format and default init args to make this
         # less horrible or add some convenience functions
@@ -169,6 +172,7 @@ class Worker(NewNode):
         self.services = services
 
         self.service_config = ServiceConfigRegistry.get_registered_configs()
+        self.local_db = local_db
         self.init_stores(
             action_store_config=action_store_config,
             document_store_config=document_store_config,
@@ -184,14 +188,18 @@ class Worker(NewNode):
             create_oblv_key_pair(worker=self)
 
         self.client_cache = {}
+        self.node_type = node_type
+
         self.post_init()
 
     @staticmethod
-    def named(name: str, processes: int = 0) -> Worker:
+    def named(name: str, processes: int = 0, local_db: bool = False) -> Worker:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         uid = UID(name_hash[0:16])
         key = SyftSigningKey(SigningKey(name_hash))
-        return Worker(name=name, id=uid, signing_key=key, processes=processes)
+        return Worker(
+            name=name, id=uid, signing_key=key, processes=processes, local_db=local_db
+        )
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
         return credentials == self.signing_key.verify_key
@@ -206,7 +214,7 @@ class Worker(NewNode):
         return SyftClient(connection=connection, credentials=self.signing_key)
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__}: {self.name} - {self.id} {self.services}"
+        return f"{type(self).__name__}: {self.name} - {self.id} - {self.node_type} - {self.services}"
 
     def post_init(self) -> None:
         if self.is_subprocess:
@@ -222,7 +230,7 @@ class Worker(NewNode):
         action_store_config: Optional[StoreConfig] = None,
     ):
         if document_store_config is None:
-            if self.processes > 0 and not self.is_subprocess:
+            if self.local_db or (self.processes > 0 and not self.is_subprocess):
                 client_config = SQLiteStoreClientConfig()
                 document_store_config = SQLiteStoreConfig(client_config=client_config)
             else:
@@ -241,7 +249,7 @@ class Worker(NewNode):
 
         self.document_store = document_store(store_config=document_store_config)
         if action_store_config is None:
-            if self.processes > 0 and not self.is_subprocess:
+            if self.local_db or (self.processes > 0 and not self.is_subprocess):
                 client_config = SQLiteStoreClientConfig()
                 action_store_config = SQLiteStoreConfig(client_config=client_config)
                 if (

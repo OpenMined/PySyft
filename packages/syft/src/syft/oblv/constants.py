@@ -7,3 +7,4 @@ VCS = "github"
 VISIBILITY = "private"
 LOCAL_MODE = True
 DOMAIN_CONNECTION_PORT = 3030
+WORKER_MODE = False  # Used for testing with the enclave being the in-memory worker

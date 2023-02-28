@@ -101,7 +101,8 @@ class KeyValueActionStore(ActionStore):
     def get(
         self, uid: UID, credentials: SyftVerifyKey, skip_permission: bool = False
     ) -> Result[SyftObject, str]:
-        # TODO 🟣 Temporarily added skip permission for enclave tests
+        # TODO 🟣 Temporarily added skip permission argument for enclave
+        # until permissions are fully integrated
         # if you get something you need READ permission
         read_permission = ActionObjectREAD(uid=uid, credentials=credentials)
         # if True:

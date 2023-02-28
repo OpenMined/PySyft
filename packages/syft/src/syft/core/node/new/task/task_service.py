@@ -35,9 +35,9 @@ from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
 from .oblv_keys_stash import OblvKeysStash
+from .oblv_service import DictObject
 from .oblv_service import OBLV_PROCESS_CACHE
 from .oblv_service import make_request_to_enclave
-from .task import DictObject
 from .task import NodeView
 from .task import Task
 from .task_stash import TaskStash

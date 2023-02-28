@@ -1,3 +1,6 @@
+# future
+from __future__ import annotations
+
 # stdlib
 import ast
 from enum import Enum
@@ -15,16 +18,25 @@ from typing import Optional
 from typing import Type
 from typing import Union
 
+# third party
+from result import Err
+from result import Ok
+from result import Result
+
 # relative
 from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import SyftObject
+from ....oblv.deployment_client import EnclaveMetadata
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
+from .api import UserNodeView
+from .context import AuthedServiceContext
 from .context import NodeServiceContext
 from .credentials import SyftVerifyKey
 from .dataset import Asset
 from .datetime import DateTime
 from .document_store import PartitionKey
+from .node import NodeType
 from .response import SyftError
 from .response import SyftSuccess
 from .transforms import TransformContext
@@ -43,11 +55,16 @@ class InputPolicy(SyftObject):
     __canonical_name__ = "InputPolicy"
     __version__ = SYFT_OBJECT_VERSION_1
 
+    # relative
+    from .api import UserNodeView
+
     id: UID
-    inputs: Dict[str, Any]
+    inputs: Dict[UserNodeView, Any]
     node_uid: Optional[UID]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
+        # TODO: This method initialization would conflict if one of the input variables
+        # to the code submission function happens to be id or inputs
         uid = UID()
         node_uid = None
         if "id" in kwargs:
@@ -58,9 +75,9 @@ class InputPolicy(SyftObject):
         # finally get inputs
         if "inputs" in kwargs:
             kwargs = kwargs["inputs"]
-        uid_kwargs = extract_uids(kwargs)
-
-        super().__init__(id=uid, inputs=uid_kwargs, node_uid=node_uid)
+        else:
+            kwargs = partition_by_node(kwargs)
+        super().__init__(id=uid, inputs=kwargs, node_uid=node_uid)
 
     def filter_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
         raise NotImplementedError
@@ -92,9 +109,61 @@ class InputPolicy(SyftObject):
         return all_assets
 
 
+def retrieve_from_db(
+    code_item_id: UID, allowed_inputs: Dict[str, UID], context: AuthedServiceContext
+) -> Dict:
+    # relative
+    from .action_service import TwinMode
+
+    action_service = context.node.get_service("actionservice")
+    code_inputs = {}
+
+    if context.node.node_type == NodeType.DOMAIN:
+        for var_name, arg_id in allowed_inputs.items():
+            kwarg_value = action_service.get(
+                context=context, uid=arg_id, twin_mode=TwinMode.NONE
+            )
+            if kwarg_value.is_err():
+                return kwarg_value
+            code_inputs[var_name] = kwarg_value.ok()
+
+    elif context.node.node_type == NodeType.ENCLAVE:
+        # TODO 🟣 Temporarily added skip permission arguments for enclave
+        # until permissions are fully integrated
+        dict_object = action_service.get(
+            context=context, uid=code_item_id, skip_permission=True
+        )
+        if dict_object.is_err():
+            return dict_object
+        for value in dict_object.ok().base_dict.values():
+            code_inputs.update(value)
+
+    else:
+        raise Exception(
+            f"Invalid Node Type for Code Submission:{context.node.node_type}"
+        )
+    return Ok(code_inputs)
+
+
 def allowed_ids_only(
-    allowed_inputs: Dict[str, UID], kwargs: Dict[str, Any]
+    allowed_inputs: Dict[str, UID],
+    kwargs: Dict[str, Any],
+    context: AuthedServiceContext,
 ) -> Dict[str, UID]:
+    if context.node.node_type == NodeType.DOMAIN:
+        user_node_view = UserNodeView(
+            node_name=context.node.name, verify_key=context.node.signing_key.verify_key
+        )
+        allowed_inputs = allowed_inputs[user_node_view]
+    elif context.node.node_type == NodeType.ENCLAVE:
+        base_dict = {}
+        for key in allowed_inputs.values():
+            base_dict.update(key)
+        allowed_inputs = base_dict
+    else:
+        raise Exception(
+            f"Invalid Node Type for Code Submission:{context.node.node_type}"
+        )
     filtered_kwargs = {}
     for key in allowed_inputs.keys():
         if key in kwargs:
@@ -117,8 +186,15 @@ class ExactMatch(InputPolicy):
     __canonical_name__ = "ExactMatch"
     __version__ = SYFT_OBJECT_VERSION_1
 
-    def filter_kwargs(self, kwargs: Dict[str, Any]) -> Dict[str, Any]:
-        return allowed_ids_only(self.inputs, kwargs)
+    def filter_kwargs(
+        self, kwargs: Dict[str, Any], context: AuthedServiceContext, code_item_id: UID
+    ) -> Dict[str, Any]:
+        allowed_inputs = allowed_ids_only(
+            allowed_inputs=self.inputs, kwargs=kwargs, context=context
+        )
+        return retrieve_from_db(
+            code_item_id=code_item_id, allowed_inputs=allowed_inputs, context=context
+        )
 
 
 @serializable(recursive_serde=True)
@@ -229,6 +305,75 @@ class UserCodeStatus(Enum):
     DENIED = "denied"
     EXECUTE = "execute"
 
+    def __hash__(self) -> int:
+        return hash(self.value)
+
+
+# User Code status context for multiple approvals
+# To make nested dicts hashable for mongodb
+# as status is in attr_searchable
+@serializable(recursive_serde=True)
+class UserCodeStatusContext:
+    __attr_allowlist__ = [
+        "base_dict",
+    ]
+
+    base_dict: Dict = {}
+
+    def __init__(self, base_dict: Dict):
+        self.base_dict = base_dict
+
+    def __repr__(self):
+        return str(self.base_dict)
+
+    def __hash__(self) -> int:
+        hash_sum = 0
+        for k, v in self.base_dict.items():
+            hash_sum = hash(k) + hash(v)
+        return hash_sum
+
+    def for_context(self, context: AuthedServiceContext) -> UserCodeStatus:
+        if context.node.node_type == NodeType.ENCLAVE:
+            keys = set(self.base_dict.values())
+            if len(keys) == 1 and UserCodeStatus.EXECUTE in keys:
+                return UserCodeStatus.EXECUTE
+            elif UserCodeStatus.SUBMITTED in keys and UserCodeStatus.DENIED not in keys:
+                return UserCodeStatus.SUBMITTED
+            elif UserCodeStatus.DENIED in keys:
+                return UserCodeStatus.DENIED
+            else:
+                return Exception(f"Invalid types in {keys} for Code Submission")
+
+        elif context.node.node_type == NodeType.DOMAIN:
+            user_node_view = UserNodeView(
+                node_name=context.node.name,
+                verify_key=context.node.signing_key.verify_key,
+            )
+            if user_node_view in self.base_dict:
+                return self.base_dict[user_node_view]
+            else:
+                raise Exception(
+                    f"Code Object does not contain {context.node.name} Domain's data"
+                )
+        else:
+            raise Exception(
+                f"Invalid Node Type for Code Submission:{context.node.node_type}"
+            )
+
+    def mutate(
+        self, value: UserCodeStatus, node_name: str, verify_key: SyftVerifyKey
+    ) -> Result[Ok, Err]:
+        user_node_view = UserNodeView(node_name=node_name, verify_key=verify_key)
+        base_dict = self.base_dict
+        if user_node_view in base_dict:
+            base_dict[user_node_view] = value
+            setattr(self, "base_dict", base_dict)
+            return Ok(self)
+        else:
+            return Err(
+                "Cannot Modify Status as the Domain's data is not included in the request"
+            )
+
 
 @serializable(recursive_serde=True)
 class UserCode(SyftObject):
@@ -248,7 +393,8 @@ class UserCode(SyftObject):
     user_unique_func_name: str
     code_hash: str
     signature: inspect.Signature
-    status: UserCodeStatus = UserCodeStatus.SUBMITTED
+    status: UserCodeStatusContext
+    enclave_metadata: Optional[EnclaveMetadata] = None
 
     __attr_searchable__ = ["status", "service_func_name"]
     __attr_unique__ = ["user_verify_key", "code_hash", "user_unique_func_name"]
@@ -263,12 +409,17 @@ class UserCode(SyftObject):
         return self.raw_code
 
 
-def extract_uids(kwargs: Dict[str, Any]) -> Dict[str, UID]:
+def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
     # relative
     from .action_object import ActionObject
+    from .api import APIRegistry
+    from .api import UserNodeView
     from .twin_object import TwinObject
 
-    uid_kwargs = {}
+    # fetches the all the current api's connected
+    api_list = APIRegistry.get_all_api()
+
+    output_kwargs = {}
     for k, v in kwargs.items():
         uid = v
         if isinstance(v, ActionObject):
@@ -281,8 +432,22 @@ def extract_uids(kwargs: Dict[str, Any]) -> Dict[str, UID]:
         if not isinstance(uid, UID):
             raise Exception(f"Input {k} must have a UID not {type(v)}")
 
-        uid_kwargs[k] = uid
-    return uid_kwargs
+        _obj_exists = False
+        for api in api_list:
+            if api.services.action.exists(uid):
+                user_node_view = UserNodeView.from_api(api)
+                output_kwargs[user_node_view] = (
+                    output_kwargs[user_node_view].update({k: uid})
+                    if user_node_view in output_kwargs
+                    else {k: uid}
+                )
+                _obj_exists = True
+                break
+
+        if not _obj_exists:
+            raise Exception(f"Input data {k}:{uid} does not belong to any Domain")
+
+    return output_kwargs
 
 
 @serializable(recursive_serde=True)
@@ -298,6 +463,7 @@ class SubmitUserCode(SyftObject):
     input_policy: InputPolicy
     output_policy: OutputPolicy
     local_function: Optional[Callable]
+    enclave_metadata: Optional[EnclaveMetadata] = None
 
     __attr_state__ = [
         "id",
@@ -306,6 +472,7 @@ class SubmitUserCode(SyftObject):
         "signature",
         "input_policy",
         "output_policy",
+        "enclave_metadata",
     ]
 
     @property
@@ -384,7 +551,11 @@ def process_code(
     f = tree.body[0]
     f.decorator_list = []
 
-    keywords = [ast.keyword(arg=i, value=[ast.Name(id=i)]) for i in input_kwargs]
+    keywords = [
+        ast.keyword(arg=i, value=[ast.Name(id=i)])
+        for _, inputs in input_kwargs.items()
+        for i in inputs
+    ]
     call_stmt = ast.Assign(
         targets=[ast.Name(id="result")],
         value=ast.Call(
@@ -508,6 +679,30 @@ def init_output_policy_state(context: TransformContext) -> TransformContext:
     return context
 
 
+def add_custom_status(context: TransformContext) -> TransformContext:
+    if context.node.node_type == NodeType.DOMAIN:
+        user_node_view = UserNodeView(
+            node_name=context.node.name, verify_key=context.node.signing_key.verify_key
+        )
+        if user_node_view in context.obj.input_policy.inputs.keys():
+            context.output["status"] = UserCodeStatusContext(
+                base_dict={user_node_view: UserCodeStatus.SUBMITTED}
+            )
+        else:
+            raise NotImplementedError
+    elif context.node.node_type == NodeType.ENCLAVE:
+        base_dict = {
+            key: UserCodeStatus.SUBMITTED
+            for key in context.obj.input_policy.inputs.keys()
+        }
+
+        context.output["status"] = UserCodeStatusContext(base_dict=base_dict)
+    else:
+        # Consult with Madhava, on propogating errors from transforms
+        raise NotImplementedError
+    return context
+
+
 @transform(SubmitUserCode, UserCode)
 def submit_user_code_to_user_code() -> List[Callable]:
     return [
@@ -520,6 +715,7 @@ def submit_user_code_to_user_code() -> List[Callable]:
         add_credentials_for_key("user_verify_key"),
         check_input_policy,
         init_output_policy_state,
+        add_custom_status,
     ]
 
 
