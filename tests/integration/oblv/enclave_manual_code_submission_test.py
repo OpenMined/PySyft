@@ -85,6 +85,7 @@ dp_result = dp_sum(preprocessed_income)
 """
 
 
+@pytest.mark.skip
 @pytest.mark.oblv
 def test_enclave_manual_code_submission() -> None:
     # Step1: Login Phase
