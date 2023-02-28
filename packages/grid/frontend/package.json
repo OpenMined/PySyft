@@ -37,6 +37,8 @@
   "type": "module",
   "dependencies": {
     "capnp-ts": "^0.7.0",
+    "libsodium": "^0.7.11",
+    "libsodium-wrappers": "^0.7.11",
     "svelte-heros-v2": "^0.3.18",
     "uuid": "^9.0.0"
   }
