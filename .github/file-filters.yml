@@ -41,7 +41,7 @@ hagrid:
 syft:
   - .github/workflows/syft**.yml
   - packages/syft/**/*.py
-  - packages/syft/**/*.proto
+  - packages/syft/**/*.capnp
   - packages/syft/**/*.yml
   - packages/syft/**/*.cfg
   - packages/syft/**/*.dockerfile
@@ -71,3 +71,17 @@ frontend:
   - packages/grid/frontend/**/*.lock
   - packages/grid/frontend/**/*.ts
   - packages/grid/frontend/**/*.tsx
+
+notebooks:
+  - .github/workflows/syft-notebook-tests.yml
+  - notebooks/api/**/*.ipynb
+  - packages/syft/**/*.py
+  - packages/syft/**/*.capnp
+  - packages/syft/**/*.yml
+  - packages/syft/**/*.cfg
+  - packages/syft/**/*.dockerfile
+  - packages/syft/**/*.toml
+  - packages/syft/**/*.txt
+  - packages/syft/**/*.ini
+  - packages/syft/**/*.sh
+  - packages/syft/**/*.mako
