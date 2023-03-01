@@ -67,7 +67,6 @@ jobs:
         run: |
           pip install packaging wheel --default-timeout=60
           python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
-          pip install -e .[dev] -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: Run notebook tests
         if: steps.changes.outputs.syft == 'true'
