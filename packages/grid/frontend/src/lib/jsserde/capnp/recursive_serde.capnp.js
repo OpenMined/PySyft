@@ -44,7 +44,7 @@ export class RecursiveSerde extends capnp_ts_1.Struct {
     return capnp_ts_1.Struct.disown(this.getFieldsData());
   }
   getFieldsData() {
-    return capnp_ts_1.Struct.getList(1, capnp.DataList, this);
+    return capnp_ts_1.Struct.getList(1, RecursiveSerde._FieldsData, this);
   }
   hasFieldsData() {
     return !capnp_ts_1.Struct.isNull(capnp_ts_1.Struct.getPointer(1, this));
@@ -53,7 +53,7 @@ export class RecursiveSerde extends capnp_ts_1.Struct {
    * @param {number} length
    */
   initFieldsData(length) {
-    return capnp_ts_1.Struct.initList(1, capnp.DataList, length, this);
+    return capnp_ts_1.Struct.initList(1, RecursiveSerde._FieldsData, length, this);
   }
   /**
    * @param {capnp.Pointer} value
@@ -80,7 +80,7 @@ export class RecursiveSerde extends capnp_ts_1.Struct {
     return capnp_ts_1.Struct.disown(this.getNonrecursiveBlob());
   }
   getNonrecursiveBlob() {
-    return capnp_ts_1.Struct.getData(3, this);
+    return capnp_ts_1.Struct.getList(3, capnp.DataList, this);
   }
   hasNonrecursiveBlob() {
     return !capnp_ts_1.Struct.isNull(capnp_ts_1.Struct.getPointer(3, this));
@@ -89,7 +89,7 @@ export class RecursiveSerde extends capnp_ts_1.Struct {
    * @param {number} length
    */
   initNonrecursiveBlob(length) {
-    return capnp_ts_1.Struct.initData(3, length, this);
+    return capnp_ts_1.Struct.initList(3, capnp.DataList, length, this);
   }
   /**
    * @param {capnp.Pointer} value
@@ -101,8 +101,10 @@ export class RecursiveSerde extends capnp_ts_1.Struct {
     return 'RecursiveSerde_' + super.toString();
   }
 }
+
 RecursiveSerde._capnp = {
   displayName: 'RecursiveSerde',
   id: 'f8884f5048511037',
   size: new capnp_ts_1.ObjectSize(0, 4)
 };
+RecursiveSerde._FieldsData = capnp.PointerList(capnp.DataList);

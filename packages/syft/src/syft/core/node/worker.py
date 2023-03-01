@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+import contextlib
 from functools import partial
 import hashlib
 import os
@@ -42,6 +43,7 @@ from .new.context import NodeServiceContext
 from .new.context import UnauthedServiceContext
 from .new.context import UserLoginCredentials
 from .new.credentials import SyftSigningKey
+from .new.credentials import SyftVerifyKey
 from .new.data_subject_service import DataSubjectService
 from .new.dataset_service import DatasetService
 from .new.dict_document_store import DictStoreConfig
@@ -50,6 +52,7 @@ from .new.message_service import MessageService
 from .new.network_service import NetworkService
 from .new.node import NewNode
 from .new.node_metadata import NodeMetadata
+from .new.project_service import ProjectService
 from .new.queue_stash import QueueItem
 from .new.queue_stash import QueueStash
 from .new.request_service import RequestService
@@ -59,6 +62,7 @@ from .new.service import ServiceConfigRegistry
 from .new.sqlite_document_store import SQLiteStoreClientConfig
 from .new.sqlite_document_store import SQLiteStoreConfig
 from .new.test_service import TestService
+from .new.user import ServiceRole
 from .new.user import User
 from .new.user import UserCreate
 from .new.user_code_service import UserCodeService
@@ -107,9 +111,7 @@ class Worker(NewNode):
         name: Optional[str] = None,
         id: Optional[UID] = None,
         services: Optional[List[Type[AbstractService]]] = None,
-        signing_key: Optional[
-            Union[SyftSigningKey, SigningKey]
-        ] = SigningKey.generate(),
+        signing_key: Optional[Union[SyftSigningKey, SigningKey]] = None,
         action_store_config: Optional[StoreConfig] = None,
         document_store_config: Optional[StoreConfig] = None,
         root_email: str = "info@openmined.org",
@@ -126,12 +128,17 @@ class Worker(NewNode):
                 id = UID()
             self.id = id
 
+        self.signing_key = None
         if signing_key_env is not None:
             self.signing_key = SyftSigningKey.from_string(signing_key_env)
         else:
             if isinstance(signing_key, SigningKey):
                 signing_key = SyftSigningKey(signing_key=signing_key)
             self.signing_key = signing_key
+
+        if self.signing_key is None:
+            self.signing_key = SyftSigningKey.generate()
+
         self.processes = processes
         self.is_subprocess = is_subprocess
         if name is None:
@@ -148,6 +155,7 @@ class Worker(NewNode):
                 DataSubjectService,
                 NetworkService,
                 MessageService,
+                ProjectService,
             ]
             if services is None
             else services
@@ -170,11 +178,20 @@ class Worker(NewNode):
         self.post_init()
 
     @staticmethod
-    def named(name: str, processes: int = 0) -> Worker:
+    def named(name: str, processes: int = 0, reset: bool = False) -> Worker:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         uid = UID(name_hash[0:16])
         key = SyftSigningKey(SigningKey(name_hash))
+        if reset:
+            store_config = SQLiteStoreClientConfig()
+            store_config.filename = f"{uid}.sqlite"
+            with contextlib.suppress(FileNotFoundError):
+                if os.path.exists(store_config.file_path):
+                    os.unlink(store_config.file_path)
         return Worker(name=name, id=uid, signing_key=key, processes=processes)
+
+    def is_root(self, credentials: SyftVerifyKey) -> bool:
+        return credentials == self.signing_key.verify_key
 
     @property
     def root_client(self) -> Any:
@@ -228,7 +245,6 @@ class Worker(NewNode):
                     isinstance(action_store_config, SQLiteStoreConfig)
                     and action_store_config.client_config.filename is None
                 ):
-                    action_store_config.client_config.filename
                     action_store_config.client_config.filename = f"{self.id}.sqlite"
             else:
                 action_store_config = DictStoreConfig()
@@ -260,6 +276,7 @@ class Worker(NewNode):
                 DataSubjectService,
                 NetworkService,
                 MessageService,
+                ProjectService,
             ]:
                 kwargs["store"] = self.document_store
             self.service_path_map[service_klass.__name__.lower()] = service_klass(
@@ -526,10 +543,20 @@ def create_admin_new(
             return None
         else:
             create_user = UserCreate(
-                name=name, email=email, password=password, password_verify=password
+                name=name,
+                email=email,
+                password=password,
+                password_verify=password,
+                role=ServiceRole.ADMIN,
             )
             # New User Initialization
-            user = user_stash.set(user=create_user.to(User))
-            return user.ok()
+            # 🟡 TODO: change later but for now this gives the main user super user automatically
+            user = create_user.to(User)
+            user.signing_key = node.signing_key
+            user.verify_key = user.signing_key.verify_key
+            result = user_stash.set(user=user)
+            if result.is_ok():
+                return result.ok()
+            return None
     except Exception as e:
         print("create_admin failed", e)

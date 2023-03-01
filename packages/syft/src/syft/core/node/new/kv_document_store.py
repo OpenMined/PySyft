@@ -145,14 +145,17 @@ class KeyValueStorePartition(StorePartition):
         for qk in sqks:
             pk_key, pk_value = qk.key, qk.value
             ck_col = self.searchable_keys[pk_key]
+            if qk.type_list:
+                # coerce the list of objects to strings for a single key
+                pk_value = " ".join([str(obj) for obj in pk_value])
+
             ck_col[pk_value].append(store_query_key.value)
             self.searchable_keys[pk_key] = ck_col
 
         self.data[store_query_key.value] = obj
 
     def set(
-        self,
-        obj: SyftObject,
+        self, obj: SyftObject, ignore_duplicates: bool = False
     ) -> Result[SyftObject, str]:
         try:
             store_query_key = self.settings.store_key.with_obj(obj)
@@ -170,6 +173,8 @@ class KeyValueStorePartition(StorePartition):
                     searchable_query_keys=searchable_query_keys,
                     obj=obj,
                 )
+            elif not ignore_duplicates:
+                return Err(f"Duplication Key Error: {obj}")
         except Exception as e:
             return Err(f"Failed to write obj {obj}. {e}")
         return Ok(obj)
@@ -318,11 +323,28 @@ class KeyValueStorePartition(StorePartition):
                 if pk_key not in self.searchable_keys:
                     return Err(f"Failed to search with {qk}")
                 ck_col = self.searchable_keys[pk_key]
-                if pk_value not in ck_col.keys():
-                    # must be at least one in all query keys
-                    continue
-                store_values = ck_col[pk_value]
-                subsets.append(set(store_values))
+                if qk.type_list:
+                    # 🟡 TODO: change this hacky way to do on to many relationships
+                    # this is when you search a QueryKey which is a list of items
+                    # at the moment its mostly just a List[UID]
+                    # match OR against all keys for this col
+                    # the values of the list will be turned into strings in a single key
+                    matches = set()
+                    for item in pk_value:
+                        for col_key in ck_col.keys():
+                            if str(item) in col_key:
+                                store_values = ck_col[col_key]
+                                for value in store_values:
+                                    matches.add(value)
+                    if len(matches):
+                        subsets.append(matches)
+                else:
+                    # this is the normal path
+                    if pk_value not in ck_col.keys():
+                        # must be at least one in all query keys
+                        continue
+                    store_values = ck_col[pk_value]
+                    subsets.append(set(store_values))
 
             if len(subsets) == 0:
                 return Ok(set())
@@ -330,7 +352,6 @@ class KeyValueStorePartition(StorePartition):
             subset = subsets.pop()
             for s in subsets:
                 subset = subset.intersection(s)
-
             return Ok(subset)
         except Exception as e:
             return Err(f"Failed to query with {qks}. {e}")

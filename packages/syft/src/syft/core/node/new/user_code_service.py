@@ -4,18 +4,27 @@ from typing import Dict
 from typing import List
 from typing import Union
 
+# third party
+from result import OkErr
+
 # relative
 from ....telemetry import instrument
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .context import AuthedServiceContext
 from .document_store import DocumentStore
+from .linked_obj import LinkedObject
 from .response import SyftError
+from .response import SyftNotReady
 from .response import SyftSuccess
 from .service import AbstractService
+from .service import SERVICE_TO_TYPES
+from .service import TYPE_TO_SERVICE
 from .service import service_method
+from .user_code import OutputHistory
 from .user_code import SubmitUserCode
 from .user_code import UserCode
+from .user_code import UserCodeStatus
 from .user_code_stash import UserCodeStash
 
 
@@ -32,12 +41,39 @@ class UserCodeService(AbstractService):
     @service_method(path="code.submit", name="submit")
     def submit(
         self, context: AuthedServiceContext, code: SubmitUserCode
-    ) -> Union[SyftSuccess, SyftError]:
+    ) -> Union[UserCode, SyftError]:
         """Add User Code"""
         result = self.stash.set(code.to(UserCode, context=context))
         if result.is_err():
             return SyftError(message=str(result.err()))
         return SyftSuccess(message="User Code Submitted")
+
+    @service_method(path="code.request_code_execution", name="request_code_execution")
+    def request_code_execution(
+        self, context: AuthedServiceContext, code: SubmitUserCode
+    ) -> Union[SyftSuccess, SyftError]:
+        """Request Code execution on user code"""
+        # relative
+        from .request import EnumMutation
+        from .request import SubmitRequest
+        from .request_service import RequestService
+
+        user_code = code.to(UserCode, context=context)
+
+        result = self.stash.set(user_code)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+
+        linked_obj = LinkedObject.from_obj(user_code, node_uid=context.node.id)
+        CODE_EXECUTE = EnumMutation.from_obj(
+            linked_obj=linked_obj, attr_name="status", value=UserCodeStatus.EXECUTE
+        )
+        request = SubmitRequest(changes=[CODE_EXECUTE])
+        method = context.node.get_service_method(RequestService.submit)
+        result = method(context=context, request=request)
+
+        # The Request service already returns either a SyftSuccess or SyftError
+        return result
 
     @service_method(path="code.get_all", name="get_all")
     def get_all(
@@ -88,27 +124,74 @@ class UserCodeService(AbstractService):
             result = self.stash.get_by_uid(uid=uid)
             if result.is_ok():
                 code_item = result.ok()
-                is_valid = code_item.output_policy_state.valid
-                if not is_valid:
-                    return is_valid
-                else:
-                    action_service = context.node.get_service("actionservice")
-                    result = action_service._user_code_execute(
-                        context, code_item, filtered_kwargs
-                    )
-                    if result.is_ok():
-                        code_item.output_policy_state.update_state()
-                        state_result = self.update_code_state(
-                            context=context, code_item=code_item
+                if code_item.status == UserCodeStatus.EXECUTE:
+                    is_valid = code_item.output_policy_state.valid
+                    if not is_valid:
+                        if (
+                            len(
+                                code_item.output_policy_state.output_history,
+                            )
+                            > 0
+                        ):
+                            return get_outputs(
+                                context=context,
+                                output_history=code_item.output_policy_state.output_history[
+                                    -1
+                                ],
+                            )
+                        return is_valid
+                    else:
+                        action_service = context.node.get_service("actionservice")
+                        result = action_service._user_code_execute(
+                            context, code_item, filtered_kwargs
                         )
-                        if state_result:
-                            return result.ok()
-                        else:
-                            return state_result
-
+                        if isinstance(result, str):
+                            return SyftError(message=result)
+                        if result.is_ok():
+                            code_item.output_policy_state.update_state(
+                                context=context, outputs=result.id
+                            )
+                            state_result = self.update_code_state(
+                                context=context, code_item=code_item
+                            )
+                            if state_result:
+                                return result.ok()
+                            else:
+                                return state_result
+                elif code_item.status == UserCodeStatus.SUBMITTED:
+                    return SyftNotReady(
+                        message=f"{type(code_item)} Your code is waiting for approval: {code_item.status}"
+                    )
+                else:
+                    return SyftError(
+                        message=f"{type(code_item)} Your code cannot be run: {code_item.status}"
+                    )
             return SyftError(message=result.err())
         except Exception as e:
             return SyftError(message=f"Failed to run. {e}")
+
+
+def get_outputs(context: AuthedServiceContext, output_history: OutputHistory) -> Any:
+    # relative
+    from .action_service import TwinMode
+
+    if isinstance(output_history.outputs, list):
+        if len(output_history.outputs) == 0:
+            return None
+        outputs = []
+        for output_id in output_history.outputs:
+            action_service = context.node.get_service("actionservice")
+            result = action_service.get(
+                context, uid=output_id, twin_mode=TwinMode.PRIVATE
+            )
+            if isinstance(result, OkErr):
+                result = result.value
+            outputs.append(result)
+        if len(outputs) == 1:
+            return outputs[0]
+        return outputs
+    else:
+        raise NotImplementedError
 
 
 def filter_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
@@ -128,3 +211,7 @@ def filter_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
             value = v.action_id
         filtered_kwargs[k] = value
     return filtered_kwargs
+
+
+TYPE_TO_SERVICE[UserCode] = UserCodeService
+SERVICE_TO_TYPES[UserCodeService].update({UserCode})

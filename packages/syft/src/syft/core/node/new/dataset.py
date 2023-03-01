@@ -21,8 +21,11 @@ from ...common.uid import UID
 
 # from .action_object import ActionObjectPointer
 from .data_subject import DataSubject
+from .data_subject import DataSubjectCreate
+from .data_subject_service import DataSubjectService
 from .document_store import PartitionKey
 from .response import SyftError
+from .response import SyftException
 from .response import SyftSuccess
 from .transforms import TransformContext
 from .transforms import generate_id
@@ -95,6 +98,14 @@ class Asset(SyftObject):
         api = APIRegistry.api_for(node_uid=self.node_uid)
         return api.services.action.get_pointer(self.action_id)
 
+    @property
+    def data(self) -> Any:
+        # relative
+        from .api import APIRegistry
+
+        api = APIRegistry.api_for(node_uid=self.node_uid)
+        return api.services.action.get(self.action_id)
+
 
 @serializable(recursive_serde=True)
 class CreateAsset(SyftObject):
@@ -106,7 +117,7 @@ class CreateAsset(SyftObject):
     name: str
     description: Optional[str]
     contributors: List[Contributor] = []
-    data_subjects: List[DataSubject] = []
+    data_subjects: List[DataSubjectCreate] = []
     node_uid: Optional[UID]
     action_id: Optional[UID]
     data: Optional[Any]
@@ -135,9 +146,13 @@ class CreateAsset(SyftObject):
         self.description = description
 
     def set_obj(self, data: Any) -> None:
+        if isinstance(data, SyftError):
+            raise SyftException(data)
         self.data = data
 
-    def set_mock(self, mock_data: Any, mock_is_real: bool) -> None:
+    def set_mock(self, mock_data: Any, mock_is_real: bool) -> Any:
+        if isinstance(mock_data, SyftError):
+            raise SyftException(mock_data)
         self.mock = mock_data
         self.mock_is_real = mock_is_real
 
@@ -160,9 +175,10 @@ class CreateAsset(SyftObject):
 
 
 def get_shape_or_len(obj: Any) -> Optional[Union[Tuple[int, ...], int]]:
-    shape = getattr(obj, "shape", None)
-    if shape:
-        return shape
+    if hasattr(obj, "shape"):
+        shape = getattr(obj, "shape", None)
+        if shape:
+            return shape
     len_attr = getattr(obj, "__len__", None)
     if len_attr is not None:
         return len_attr()
@@ -184,9 +200,16 @@ class Dataset(SyftObject):
     url: Optional[str]
     description: Optional[str]
 
-    __attr_searchable__ = ["name", "citation", "url", "description"]
+    __attr_searchable__ = ["name", "citation", "url", "description", "action_ids"]
     __attr_unique__ = ["name"]
     __attr_repr_cols__ = ["name", "url"]
+
+    def action_ids(self) -> List[UID]:
+        data = []
+        for asset in self.asset_list:
+            if asset.action_id:
+                data.append(asset.action_id)
+        return data
 
     @property
     def assets(self) -> TupleDict:
@@ -207,6 +230,18 @@ class Dataset(SyftObject):
         if self.description:
             _repr_str += f"Description: {self.description}\n"
         return "```python\n" + _repr_str + "\n```"
+
+    @property
+    def client(self) -> Optional[Any]:
+        # relative
+        from .client import SyftClientSessionCache
+
+        client = SyftClientSessionCache.get_client_for_node_uid(self.node_uid)
+        if client is None:
+            return SyftError(
+                message=f"No clients for {self.node_uid} in memory. Please login with sy.login"
+            )
+        return client
 
 
 @serializable(recursive_serde=True)
@@ -301,15 +336,30 @@ def infer_shape(context: TransformContext) -> TransformContext:
     return context
 
 
+def set_data_subjects(context: TransformContext) -> TransformContext:
+    data_subjects = context.output["data_subjects"]
+    get_data_subject = context.node.get_service_method(DataSubjectService.get_by_name)
+
+    resultant_data_subjects = []
+    for data_subject in data_subjects:
+        result = get_data_subject(context=context, name=data_subject.name)
+        if isinstance(result, SyftError):
+            return result
+        resultant_data_subjects.append(result)
+    context.output["data_subjects"] = resultant_data_subjects
+    return context
+
+
 @transform(CreateAsset, Asset)
 def createasset_to_asset() -> List[Callable]:
-    return [generate_id, infer_shape, create_and_store_twin]
+    return [generate_id, infer_shape, create_and_store_twin, set_data_subjects]
 
 
 def convert_asset(context: TransformContext) -> TransformContext:
     assets = context.output.pop("asset_list", [])
-    for idx, asset in enumerate(assets):
-        assets[idx] = asset.to(Asset, context=context)
+    for idx, create_asset in enumerate(assets):
+        asset_context = TransformContext.from_context(obj=create_asset, context=context)
+        assets[idx] = create_asset.to(Asset, context=asset_context)
     context.output["asset_list"] = assets
     return context
 

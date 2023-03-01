@@ -10,19 +10,22 @@ from result import Err
 from result import Ok
 
 # relative
-from ....core.node.common.node_table.syft_object import SyftObject
 from ....telemetry import instrument
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .context import AuthedServiceContext
+from .context import NodeServiceContext
 from .context import UnauthedServiceContext
+from .credentials import SyftVerifyKey
 from .credentials import UserLoginCredentials
 from .document_store import DocumentStore
 from .response import SyftError
+from .response import SyftSuccess
 from .service import AbstractService
 from .service import SERVICE_TO_TYPES
 from .service import TYPE_TO_SERVICE
 from .service import service_method
+from .user import ServiceRole
 from .user import User
 from .user import UserCreate
 from .user import UserPrivateKey
@@ -157,14 +160,38 @@ class UserService(AbstractService):
             f"Failed to retrieve user with {context.login_credentials.email} with error: {result.err()}"
         )
 
-    def signup(
-        self, context: UnauthedServiceContext, user_update: UserUpdate
-    ) -> Union[SyftObject, SyftError]:
-        pass
+    def admin_verify_key(self) -> Union[SyftVerifyKey, SyftError]:
+        result = self.stash.get_by_role(role=ServiceRole.ADMIN)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        return result.ok().verify_key
 
-    # @service_method(path="user.search", name="search", splat_kwargs_from=["query_obj"])
-    # def search(self, context: AuthedServiceContext, query_obj: UserQuery, limit: int):
-    #     pass
+    def register(
+        self, context: NodeServiceContext, new_user: UserCreate
+    ) -> Union[SyftSuccess, SyftError]:
+        """Register new user"""
+
+        user = new_user.to(User)
+        result = self.stash.get_by_email(email=user.email)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+        user_exists = result.ok() is not None
+        if user_exists:
+            return SyftError(message=f"User already exists with email: {user.email}")
+
+        result = self.stash.set(user=user)
+        if result.is_err():
+            return SyftError(message=str(result.err()))
+
+        user = result.ok()
+        msg = SyftSuccess(message=f"{user.email} User successfully registered !!!")
+        return tuple([msg, user.to(UserPrivateKey)])
+
+    def user_verify_key(self, email: str) -> Union[SyftVerifyKey, SyftError]:
+        result = self.stash.get_by_email(email=email)
+        if result.is_ok():
+            return result.ok().verify_key
+        return SyftError(f"No user with email: {email}")
 
 
 TYPE_TO_SERVICE[User] = UserService

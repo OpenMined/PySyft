@@ -2,6 +2,7 @@
 from typing import Any
 from typing import Optional
 from typing import Type
+from typing import Union
 
 # third party
 from typing_extensions import Self
@@ -11,6 +12,9 @@ from ....core.node.common.node_table.syft_object import SYFT_OBJECT_VERSION_1
 from ....core.node.common.node_table.syft_object import SyftObject
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
+from .context import NodeServiceContext
+from .response import SyftError
+from .response import SyftSuccess
 
 
 @serializable(recursive_serde=True)
@@ -34,6 +38,18 @@ class LinkedObject(SyftObject):
         api = APIRegistry.api_for(node_uid=self.node_uid)
         return api.services.messages.resolve_object(self)
 
+    def resolve_with_context(self, context: NodeServiceContext) -> Any:
+        return context.node.get_service(self.service_type).resolve_link(
+            context=context, linked_obj=self
+        )
+
+    def update_with_context(
+        self, context: NodeServiceContext, obj: Any
+    ) -> Union[SyftSuccess, SyftError]:
+        result = context.node.get_service(self.service_type).stash.update(obj)
+        if result.is_ok():
+            return result
+
     @classmethod
     def from_obj(
         cls,
@@ -52,9 +68,37 @@ class LinkedObject(SyftObject):
             raise Exception(f"{cls} Requires an object UID")
 
         if node_uid is None:
-            node_uid = getattr(obj, "node_id", None)
+            node_uid = getattr(obj, "node_uid", None)
             if node_uid is None:
                 raise Exception(f"{cls} Requires an object UID")
+
+        return LinkedObject(
+            node_uid=node_uid,
+            service_type=service_type,
+            object_type=type(obj),
+            object_uid=object_uid,
+        )
+
+    @classmethod
+    def with_context(
+        cls,
+        obj: SyftObject,
+        context: NodeServiceContext,
+        object_uid: Optional[UID] = None,
+        service_type: Optional[Type[Any]] = None,
+    ) -> Self:
+        if service_type is None:
+            # relative
+            from .service import TYPE_TO_SERVICE
+
+            service_type = TYPE_TO_SERVICE[type(obj)]
+
+        if object_uid is None and hasattr(obj, "id"):
+            object_uid = getattr(obj, "id", None)
+        if object_uid is None:
+            raise Exception(f"{cls} Requires an object UID")
+
+        node_uid = context.node.id
 
         return LinkedObject(
             node_uid=node_uid,

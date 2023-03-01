@@ -1,10 +1,4 @@
-# PR Tests
-# To speed up development we don't run all the tests when opening and updating a PR.
-# Instead we first run the lint check which fails fast and then only run the
-# `pytest -m fast` tests against Ubuntu and Windows and the notebook examples.
-# Once these checks pass and we decide to do a merge, the actions in `merge_tests.yml`
-# get executed.
-name: Syft PR Tests
+name: Syft Notebook Tests
 
 on:
   workflow_call:
@@ -13,8 +7,6 @@ on:
     branches:
       - dev
       - main
-      - "0.6.0"
-      - "0.7.0"
       - "0.8"
 
   workflow_dispatch:
@@ -23,23 +15,14 @@ on:
         description: "Run Tests Manually"
         required: false
 
-defaults:
-  run:
-    working-directory: ./packages/syft
-
 jobs:
-  syft-core-tests-latest-versions:
+  notebook-tests:
     strategy:
       max-parallel: 4
       matrix:
         # os: [windows-latest, ubuntu-latest, macos-latest]
         os: [ubuntu-latest, macos-latest] # issues with windows and pymongo_inmemory
         python-version: ["3.10"]
-        torch-version: ["1.13.1"]
-        include:
-          - python-version: "3.8"
-            torch-version: "1.13.1"
-            os: "ubuntu-latest"
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -83,18 +66,10 @@ jobs:
         if: steps.changes.outputs.syft == 'true'
         run: |
           pip install packaging wheel --default-timeout=60
-          python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           python -c "import platform; import os; os.system('pip install jaxlib==0.3.14 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
-          pip install -e .[dev] -f https://download.pytorch.org/whl/torch_stable.html
 
-      - name: Scan for security issues python 3.8+
+      - name: Run notebook tests
         if: steps.changes.outputs.syft == 'true'
         run: |
-          bandit -r src
-          safety check -i 51668 -i 51516 -i 51549 -i 52495
-
-      - name: Run normal tests
-        if: steps.changes.outputs.syft == 'true'
-        run: |
-          pytest -s -m 'fast or slow' --cov syft -n auto --durations=50
-          pytest new_tests
+          pip install -U tox
+          tox -e notebook.test

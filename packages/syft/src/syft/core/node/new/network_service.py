@@ -181,12 +181,17 @@ class NodePeer(SyftObject):
         connection = route_to_connection(route=route)
         return SyftClient(connection=connection, credentials=credentials)
 
+    @property
+    def guest_client(self) -> SyftClient:
+        guest_key = SyftSigningKey.generate()
+        return self.client_with_key(credentials=guest_key)
+
     def proxy_from(self, client: SyftClient) -> SyftClient:
         return client.proxy_to(self)
 
 
 def from_grid_url(context: TransformContext) -> TransformContext:
-    url = context.obj.url
+    url = context.obj.url.as_container_host()
     context.output["host_or_ip"] = url.host_or_ip
     context.output["protocol"] = url.protocol
     context.output["port"] = url.port
@@ -221,7 +226,9 @@ def node_route_to_python_connection(
 def node_route_to_http_connection(
     obj: Any, context: Optional[TransformContext] = None
 ) -> List[Callable]:
-    url = GridURL(protocol=obj.protocol, host_or_ip=obj.host_or_ip, port=obj.port)
+    url = GridURL(
+        protocol=obj.protocol, host_or_ip=obj.host_or_ip, port=obj.port
+    ).as_container_host()
     return HTTPConnection(url=url)
 
 
@@ -366,7 +373,7 @@ class NetworkService(AbstractService):
         result = client.api.services.network.verify_route(route)
 
         if not isinstance(result, SyftSuccess):
-            return SyftError(message=str(result.err()))
+            return result
         return SyftSuccess(message="Route Verified")
 
     @service_method(path="network.verify_route", name="verify_route")

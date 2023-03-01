@@ -66,16 +66,22 @@ from .core.node.domain import Domain  # noqa: F401
 from .core.node.domain import DomainClient  # noqa: F401
 from .core.node.network import Network  # noqa: F401
 from .core.node.network_client import NetworkClient  # noqa: F401
+from .core.node.new.action_object import ActionObject  # noqa: F401
+from .core.node.new.client import connect  # noqa: F401
 from .core.node.new.client import login  # noqa: F401
-from .core.node.new.client import login as new_login  # noqa: F401
 from .core.node.new.credentials import SyftSigningKey  # noqa: F401
-from .core.node.new.data_subject import DataSubject  # noqa: F401
+from .core.node.new.data_subject import DataSubjectCreate as DataSubject  # noqa: F401
 from .core.node.new.dataset import CreateAsset as Asset  # noqa: F401
 from .core.node.new.dataset import CreateDataset as Dataset  # noqa: F401
+from .core.node.new.project import ProjectSubmit as Project  # noqa: F401
 from .core.node.new.request import SubmitRequest as Request  # noqa: F401
+from .core.node.new.response import SyftError  # noqa: F401
+from .core.node.new.response import SyftNotReady  # noqa: F401
+from .core.node.new.response import SyftSuccess  # noqa: F401
 from .core.node.new.roles import Roles as roles  # noqa: F401
 from .core.node.new.user_code import ExactMatch  # noqa: F401
 from .core.node.new.user_code import SingleExecutionExactOutput  # noqa: F401
+from .core.node.new.user_code import UserCodeStatus  # noqa: F401
 from .core.node.new.user_code import syft_function  # noqa: F401
 from .core.node.new.user_service import UserService  # noqa: F401
 
@@ -94,7 +100,7 @@ from .core.tensor.autodp.phi_tensor import PhiTensor  # noqa: F401
 from .core.tensor.lazy_repeat_array import lazyrepeatarray  # noqa: F401
 from .core.tensor.tensor import Tensor  # noqa: F401
 from .experimental_flags import flags  # noqa: F401
-from .grid.client.client import connect  # noqa: F401
+from .grid.client.client import connect as old_connect  # noqa: F401
 from .grid.client.client import login as old_login  # noqa: F401
 from .grid.client.client import register  # noqa: F401
 
@@ -109,7 +115,10 @@ from .oblv import create_oblv_key_pair  # noqa: F401
 from .oblv import get_oblv_public_key  # noqa: F401
 from .oblv import install_oblv_proxy  # noqa: F401
 from .oblv import login as oblv_login  # noqa: F401
+from .registry import DomainRegistry  # noqa: F401
 from .registry import NetworkRegistry  # noqa: F401
+from .search import Search  # noqa: F401
+from .search import SearchResults  # noqa: F401
 from .telemetry import instrument  # noqa: F401
 from .user_settings import UserSettings  # noqa: F401
 from .user_settings import settings  # noqa: F401
@@ -144,10 +153,19 @@ def module_property(func: Any) -> None:
 
 
 @module_property
-def _networks() -> NetworkRegistry:
+def _gateways() -> NetworkRegistry:
     return NetworkRegistry()
+
+
+@module_property
+def _domains() -> DomainRegistry:
+    return DomainRegistry()
 
 
 @module_property
 def _settings() -> UserSettings:
     return settings
+
+
+def search(name: str) -> SearchResults:
+    return Search(_domains()).search(name=name)

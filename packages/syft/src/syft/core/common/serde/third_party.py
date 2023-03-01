@@ -4,6 +4,7 @@
 from datetime import date
 from datetime import datetime
 from datetime import time
+from io import BytesIO
 
 # third party
 from dateutil import parser
@@ -14,6 +15,7 @@ from pandas import DataFrame
 from pandas import Series
 from pandas._libs.tslibs.timestamps import Timestamp
 import pyarrow as pa
+import pyarrow.parquet as pq
 import pydantic
 from pymongo.collection import Collection
 from result import Err
@@ -67,7 +69,7 @@ def serialize_dataframe(df: DataFrame) -> bytes:
         "coerce_timestamps": "us",
         "allow_truncated_timestamps": True,
     }
-    pa.parquet.write_table(table, sink, **parquet_args)
+    pq.write_table(table, sink, **parquet_args)
     buffer = sink.getvalue()
     numpy_bytes = buffer.to_pybytes()
     return numpy_bytes
@@ -76,7 +78,7 @@ def serialize_dataframe(df: DataFrame) -> bytes:
 def deserialize_dataframe(buf: bytes) -> DataFrame:
     reader = pa.BufferReader(buf)
     numpy_bytes = reader.read_buffer()
-    result = pa.parquet.read_table(numpy_bytes)
+    result = pq.read_table(numpy_bytes)
     df = result.to_pandas()
     return df
 
@@ -126,5 +128,26 @@ recursive_serde_register(
 )
 
 
+def serialize_bytes_io(io: BytesIO) -> bytes:
+    io.seek(0)
+    return serialize(io.read(), to_bytes=True)
+
+
+recursive_serde_register(
+    BytesIO,
+    serialize=serialize_bytes_io,
+    deserialize=lambda x: BytesIO(deserialize(x, from_bytes=True)),
+)
+
+
 # how else do you import a relative file to execute it?
 NOTHING = None
+
+try:
+    # third party
+    from IPython.display import Image
+
+    recursive_serde_register(Image)
+
+except Exception:  # nosec
+    pass

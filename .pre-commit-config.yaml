@@ -162,8 +162,15 @@ repos:
             "--non-interactive",
             "--config-file=tox.ini",
           ]
+
+  - repo: https://github.com/kynan/nbstripout
+    rev: 0.6.1
+    hooks:
+      - id: nbstripout
+        files: "notebooks/api/*"
+
   # - repo: meta
   #   hooks:
   #     - id: identity
   #       always_run: true
-  #       files: "^packages/syft(?!(/tests/|.*_pb2\\.py$)).*\\.py"
+  #       files: "notebooks/api/*"

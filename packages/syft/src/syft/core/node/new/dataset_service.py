@@ -7,6 +7,7 @@ from ....telemetry import instrument
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from .context import AuthedServiceContext
+from .dataset import Asset
 from .dataset import CreateDataset
 from .dataset import Dataset
 from .dataset_stash import DatasetStash
@@ -52,6 +53,19 @@ class DatasetService(AbstractService):
             return results
         return SyftError(message=result.err())
 
+    @service_method(path="dataset.search", name="search")
+    def search(
+        self, context: AuthedServiceContext, name: str
+    ) -> Union[List[Dataset], SyftError]:
+        """Search a Dataset by name"""
+        results = self.get_all(context)
+
+        return (
+            results
+            if isinstance(results, SyftError)
+            else [dataset for dataset in results if name in dataset.name]
+        )
+
     @service_method(path="dataset.get_by_id", name="get_by_id")
     def get_by_id(
         self, context: AuthedServiceContext, uid: UID
@@ -63,6 +77,38 @@ class DatasetService(AbstractService):
             dataset.node_uid = context.node.id
             return dataset
         return SyftError(message=result.err())
+
+    @service_method(path="dataset.get_by_action_id", name="get_by_action_id")
+    def get_by_action_id(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Union[List[Dataset], SyftError]:
+        """Get Datasets by an Action ID"""
+        result = self.stash.search_action_ids(uid=uid)
+        if result.is_ok():
+            datasets = result.ok()
+            for dataset in datasets:
+                dataset.node_uid = context.node.id
+            return datasets
+        return SyftError(message=result.err())
+
+    @service_method(
+        path="dataset.get_assets_by_action_id", name="get_assets_by_action_id"
+    )
+    def get_assets_by_action_id(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Union[List[Asset], SyftError]:
+        """Get Assets by an Action ID"""
+        datasets = self.get_by_action_id(context=context, uid=uid)
+        assets = []
+        if isinstance(datasets, list):
+            for dataset in datasets:
+                for asset in dataset.asset_list:
+                    if asset.action_id == uid:
+                        assets.append(asset)
+            return assets
+        elif isinstance(datasets, SyftError):
+            return datasets
+        return []
 
 
 TYPE_TO_SERVICE[Dataset] = DatasetService

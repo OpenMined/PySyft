@@ -11,8 +11,8 @@ from ....telemetry import instrument
 from ...common.serde.serializable import serializable
 from .context import AuthedServiceContext
 from .data_subject import DataSubject
+from .data_subject import DataSubjectCreate
 from .data_subject import NamePartitionKey
-from .dataset import Dataset
 from .document_store import BaseUIDStoreStash
 from .document_store import DocumentStore
 from .document_store import PartitionSettings
@@ -40,7 +40,7 @@ class DataSubjectStash(BaseUIDStoreStash):
         qks = QueryKeys(qks=[NamePartitionKey.with_obj(name)])
         return self.query_one(qks=qks)
 
-    def update(self, data_subject: DataSubject) -> Result[Dataset, str]:
+    def update(self, data_subject: DataSubject) -> Result[DataSubject, str]:
         return self.check_type(data_subject, DataSubject).and_then(super().update)
 
 
@@ -54,21 +54,42 @@ class DataSubjectService(AbstractService):
         self.store = store
         self.stash = DataSubjectStash(store=store)
 
+    def as_flatten_dict(self, data_subject, flattened_dict):
+        members = data_subject.members
+        for member in members.values():
+            self.as_flatten_dict(member, flattened_dict)
+
+        if data_subject.name not in flattened_dict:
+            flattened_dict[data_subject.name] = data_subject
+
     @service_method(path="data_subject.add", name="add_data_subject")
     def add(
-        self, context: AuthedServiceContext, data_subject: DataSubject
+        self, context: AuthedServiceContext, data_subject: DataSubjectCreate
     ) -> Union[SyftSuccess, SyftError]:
-        """Add a Dataset"""
-        data_subject_members = list(data_subject.members.values())
-        data_subjects = [data_subject] + data_subject_members
-        for data_subject in data_subjects:
-            result = self.stash.set(data_subject)
+        """Register a data subject."""
+        flattened_ds_dict = {}
+        self.as_flatten_dict(data_subject, flattened_ds_dict)
+        registered_count = 0
+        for name, data_subject in flattened_ds_dict.items():
+            result = self.stash.get_by_name(name=name)
             if result.is_err():
                 return SyftError(message=str(result.err()))
-        return SyftSuccess(message="Data Subject Added")
+            ds_exists = result.ok()
+
+            if ds_exists is None:
+                ds = data_subject.to(DataSubject, context=context)
+                result = self.stash.set(ds)
+                if result.is_err():
+                    return SyftError(message=str(result.err()))
+                registered_count += 1
+        return SyftSuccess(
+            message=f"Data Subjects: New Registered: {registered_count}, Existing: {len(flattened_ds_dict)}"
+        )
 
     @service_method(path="data_subject.get_all", name="get_all")
-    def get_all(self, context: AuthedServiceContext) -> Union[List[Dataset], SyftError]:
+    def get_all(
+        self, context: AuthedServiceContext
+    ) -> Union[List[DataSubject], SyftError]:
         """Get all Data subjects"""
         result = self.stash.get_all()
         if result.is_ok():
@@ -80,7 +101,7 @@ class DataSubjectService(AbstractService):
     def get_by_name(
         self, context: AuthedServiceContext, name: str
     ) -> Union[SyftSuccess, SyftError]:
-        """Get a Dataset subject"""
+        """Get a Data Subject by its name."""
         result = self.stash.get_by_name(name=name)
         if result.is_ok():
             data_subject = result.ok()

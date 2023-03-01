@@ -115,10 +115,13 @@ class SQLiteBackingStore(KeyValueBackingStore):
         try:
             select_sql = f"select * from {self.table_name} where uid = ?"  # nosec
             row = self._execute(select_sql, [str(key)]).fetchone()
+            if row is None or len(row) == 0:
+                raise KeyError(f"{key} not in {type(self)}")
             data = row[2]
             return _deserialize(data, from_bytes=True)
-        except Exception:
-            raise KeyError(f"{key} not in {type(self)}")
+        except Exception as e:
+            print("Failed to _get", e)
+            raise e
 
     def _exists(self, key: UID) -> Any:
         select_sql = f"select uid from {self.table_name} where uid = ?"  # nosec
@@ -137,6 +140,18 @@ class SQLiteBackingStore(KeyValueBackingStore):
             return dict(zip(keys, data))
         except Exception as e:
             print("Failed to _get_all", e)
+            raise e
+
+    def _get_all_keys(self) -> Any:
+        try:
+            select_sql = f"select uid from {self.table_name}"  # nosec
+            keys = []
+            rows = self._execute(select_sql).fetchall()
+            for row in rows:
+                keys.append(UID(row[0]))
+            return keys
+        except Exception as e:
+            print("Failed to _get_all_keys", e)
             raise e
 
     def _delete(self, key: UID) -> None:
@@ -178,7 +193,7 @@ class SQLiteBackingStore(KeyValueBackingStore):
         return deepcopy(self)
 
     def keys(self) -> Any:
-        return self._get_all().keys()
+        return self._get_all_keys()
 
     def values(self) -> Any:
         return self._get_all().values()
