@@ -177,10 +177,14 @@ class Worker(NewNode):
         self.post_init()
 
     @staticmethod
-    def named(name: str, processes: int = 0) -> Worker:
+    def named(name: str, processes: int = 0, reset: bool = False) -> Worker:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         uid = UID(name_hash[0:16])
         key = SyftSigningKey(SigningKey(name_hash))
+        if reset:
+            store_config = SQLiteStoreClientConfig()
+            store_config.filename = f"{uid}.sqlite"
+            os.unlink(store_config.file_path)
         return Worker(name=name, id=uid, signing_key=key, processes=processes)
 
     def is_root(self, credentials: SyftVerifyKey) -> bool:
