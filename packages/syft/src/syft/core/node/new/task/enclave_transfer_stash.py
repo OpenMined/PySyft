@@ -45,7 +45,7 @@ class EnclaveTransferStash(BaseStash):
 
     def get_by_uid(self, uid: UID) -> Result[Optional[EnclaveTransfer], str]:
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
-        return Ok(self.query_one(qks=qks))
+        return self.query_one(qks=qks)
 
     def update(self, request: EnclaveTransfer) -> Result[EnclaveTransfer, str]:
         return self.check_type(request, self.object_type).and_then(super().update)
