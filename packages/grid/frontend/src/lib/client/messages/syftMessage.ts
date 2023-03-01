@@ -1,6 +1,50 @@
-import { UUID } from './uid.js';
+import { UUID } from '../objects/uid.js';
 import { v4 as uuidv4 } from 'uuid';
+import { SyftVerifyKey } from '../objects/key.js';
 import sodium from 'libsodium-wrappers';
+
+export class SignedAPICall {
+  credentials: SyftVerifyKey
+  signature: Uint8Array
+  serialized_message: Uint8Array
+  fqn: String
+
+  constructor(serialized_msg, signature, credentials){
+    this.serialized_message = serialized_msg;
+    this.signature = signature;
+    this.credentials = new SyftVerifyKey(credentials);
+    this.fqn = "syft.core.node.new.api.SignedSyftAPICall"
+  }
+
+  get valid(){
+    return sodium.crypto_sign_verify_detached(this.signature, this.serialized_message, this.credentials);
+  }
+
+  message(serde){
+    return serde.deserialize(this.serialized_message)
+  }
+}
+
+export class APICall {
+  id: UUID;
+  path: string;
+  args: any;
+  kwargs: any;
+  
+  constructor(id, path, args, kwargs) {
+    this.id = new UUID(id);
+    this.path = path
+    this.args = args
+    this.kwargs = new Map(Object.entries(kwargs));
+    this.fqn = "syft.core.node.new.api.SyftAPICall"
+  }
+
+  sign(key, serde){
+    const serialized_message = new Uint8Array(serde.serialize(this));
+    const signature = sodium.crypto_sign_detached(serialized_message, key.privateKey);
+    return new SignedAPICall(serialized_message, signature, key.publicKey)
+  }
+}
 
 class SignedMessage {
   address: UUID;
