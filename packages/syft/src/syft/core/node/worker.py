@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+import contextlib
 from functools import partial
 import hashlib
 import os
@@ -191,10 +192,18 @@ class Worker(NewNode):
         self.post_init()
 
     @staticmethod
-    def named(name: str, processes: int = 0, local_db: bool = False) -> Worker:
+    def named(
+        name: str, processes: int = 0, reset: bool = False, local_db: bool = False
+    ) -> Worker:
         name_hash = hashlib.sha256(name.encode("utf8")).digest()
         uid = UID(name_hash[0:16])
         key = SyftSigningKey(SigningKey(name_hash))
+        if reset:
+            store_config = SQLiteStoreClientConfig()
+            store_config.filename = f"{uid}.sqlite"
+            with contextlib.suppress(FileNotFoundError):
+                if os.path.exists(store_config.file_path):
+                    os.unlink(store_config.file_path)
         return Worker(
             name=name, id=uid, signing_key=key, processes=processes, local_db=local_db
         )
