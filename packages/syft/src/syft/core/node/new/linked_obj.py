@@ -26,6 +26,7 @@ class LinkedObject(SyftObject):
     service_type: Type[Any]
     object_type: Type[SyftObject]
     object_uid: UID
+    stash_name: str = "stash"
 
     def __str__(self) -> str:
         return f"<{self.object_type}: {self.object_uid}@<Node: {self.node_uid}>"
@@ -46,7 +47,9 @@ class LinkedObject(SyftObject):
     def update_with_context(
         self, context: NodeServiceContext, obj: Any
     ) -> Union[SyftSuccess, SyftError]:
-        result = context.node.get_service(self.service_type).stash.update(obj)
+        result = getattr(
+            context.node.get_service(self.service_type), self.stash_name
+        ).update(obj)
         if result.is_ok():
             return result
 
@@ -56,27 +59,26 @@ class LinkedObject(SyftObject):
         obj: SyftObject,
         service_type: Optional[Type[Any]] = None,
         node_uid: Optional[UID] = None,
+        stash_name: Optional[str] = "stash",
     ) -> Self:
         if service_type is None:
             # relative
             from .service import TYPE_TO_SERVICE
 
             service_type = TYPE_TO_SERVICE[type(obj)]
-
         object_uid = getattr(obj, "id", None)
         if object_uid is None:
             raise Exception(f"{cls} Requires an object UID")
-
         if node_uid is None:
             node_uid = getattr(obj, "node_uid", None)
             if node_uid is None:
                 raise Exception(f"{cls} Requires an object UID")
-
         return LinkedObject(
             node_uid=node_uid,
             service_type=service_type,
             object_type=type(obj),
             object_uid=object_uid,
+            stash_name=stash_name,
         )
 
     @classmethod

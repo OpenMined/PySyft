@@ -39,7 +39,9 @@ class AbstractService:
     def resolve_link(
         self, context: AuthedServiceContext, linked_obj: LinkedObject
     ) -> Union[Any, SyftError]:
-        return self.stash.get_by_uid(uid=linked_obj.object_uid)
+        return getattr(self, linked_obj.stash_name, "stash").get_by_uid(
+            uid=linked_obj.object_uid
+        )
 
 
 @serializable(recursive_serde=True)

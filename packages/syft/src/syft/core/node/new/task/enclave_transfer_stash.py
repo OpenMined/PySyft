@@ -15,15 +15,15 @@ from ..document_store import DocumentStore
 from ..document_store import PartitionSettings
 from ..document_store import QueryKeys
 from ..document_store import UIDPartitionKey
-from .enclave_transfer_request import EnclaveTransferRequest
+from .enclave_transfer import EnclaveTransfer
 
 
 @serializable(recursive_serde=True)
-class EnclaveTransferRequestStash(BaseStash):
-    object_type = EnclaveTransferRequest
+class EnclaveTransferStash(BaseStash):
+    object_type = EnclaveTransfer
     settings: PartitionSettings = PartitionSettings(
-        name=EnclaveTransferRequest.__canonical_name__,
-        object_type=EnclaveTransferRequest,
+        name=EnclaveTransfer.__canonical_name__,
+        object_type=EnclaveTransfer,
     )
 
     def __init__(self, store: DocumentStore) -> None:
@@ -37,17 +37,15 @@ class EnclaveTransferRequestStash(BaseStash):
         )
 
     def set(
-        self, enclave_transfer_request: EnclaveTransferRequest
-    ) -> Result[EnclaveTransferRequest, Err]:
+        self, enclave_transfer_request: EnclaveTransfer
+    ) -> Result[EnclaveTransfer, Err]:
         return self.check_type(enclave_transfer_request, self.object_type).and_then(
             super().set
         )
 
-    def get_by_uid(self, uid: UID) -> Result[Optional[EnclaveTransferRequest], str]:
+    def get_by_uid(self, uid: UID) -> Result[Optional[EnclaveTransfer], str]:
         qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
         return Ok(self.query_one(qks=qks))
 
-    def update(
-        self, request: EnclaveTransferRequest
-    ) -> Result[EnclaveTransferRequest, str]:
+    def update(self, request: EnclaveTransfer) -> Result[EnclaveTransfer, str]:
         return self.check_type(request, self.object_type).and_then(super().update)
