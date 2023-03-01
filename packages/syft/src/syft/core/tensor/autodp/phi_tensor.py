@@ -2780,6 +2780,23 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
 
+    def __mul__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
+        if isinstance(other, PhiTensor):
+            return self.gamma * other.gamma
+
+        elif is_acceptable_simple_type(other):
+            return PhiTensor(
+                child=self.child * other,
+                min_vals=self.min_vals * other,
+                max_vals=self.max_vals * other,
+                data_subjects=self.data_subjects,
+            )
+        elif isinstance(other, GammaTensor):
+            return self.gamma + other
+        else:
+            print("Type is unsupported:" + str(type(other)))
+            raise NotImplementedError
+
     def __matmul__(
         self, other: Union[np.ndarray, PhiTensor]
     ) -> Union[PhiTensor, GammaTensor]:

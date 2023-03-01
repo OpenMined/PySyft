@@ -2161,6 +2161,36 @@ class GammaTensor:
     def divmod(self, other: Any) -> Tuple[GammaTensor, GammaTensor]:
         return self.__divmod__(other)
 
+    def __mul__(self, other: SupportedChainType) -> GammaTensor:
+        from .phi_tensor import PhiTensor
+        output_state = dict()
+        output_state[self.id] = self
+        if isinstance(other, PhiTensor):
+            other = other.gamma
+
+        if isinstance(other, GammaTensor):
+            output_state[other.id] = other
+
+            child = self.child * other.child
+            min_val = self.min_vals * other.min_vals
+            max_val = self.max_vals * other.max_vals
+            output_ds = self.data_subjects * other.data_subjects
+        else:
+            output_state[np.random.randint(low=0, high=2 ** 31 - 1)] = other
+
+            child = self.child * other
+            min_val = self.min_vals * other
+            max_val = self.max_vals * other
+            output_ds = self.data_subjects
+        return GammaTensor(
+            child=child,
+            data_subjects=output_ds,
+            min_vals=min_val,
+            max_vals=max_val,
+            func_str=GAMMA_TENSOR_OP.MULTIPLY.value,
+            sources=output_state
+        )
+
     def __matmul__(self, other: Any) -> GammaTensor:
         # relative
         from .phi_tensor import PhiTensor
