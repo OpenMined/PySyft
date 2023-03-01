@@ -11,17 +11,17 @@ from result import Result
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ..document_store import BaseStash
-from ..document_store import CollectionSettings
 from ..document_store import DocumentStore
+from ..document_store import PartitionSettings
 from ..document_store import QueryKeys
-from ..document_store import UIDCollectionKey
+from ..document_store import UIDPartitionKey
 from .enclave_transfer_request import EnclaveTransferRequest
 
 
 @serializable(recursive_serde=True)
 class EnclaveTransferRequestStash(BaseStash):
     object_type = EnclaveTransferRequest
-    settings: CollectionSettings = CollectionSettings(
+    settings: PartitionSettings = PartitionSettings(
         name=EnclaveTransferRequest.__canonical_name__,
         object_type=EnclaveTransferRequest,
     )
@@ -44,7 +44,7 @@ class EnclaveTransferRequestStash(BaseStash):
         )
 
     def get_by_uid(self, uid: UID) -> Result[Optional[EnclaveTransferRequest], str]:
-        qks = QueryKeys(qks=[UIDCollectionKey.with_obj(uid)])
+        qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
         return Ok(self.query_one(qks=qks))
 
     def update(
