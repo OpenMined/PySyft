@@ -36,6 +36,7 @@ packages/hagrid/grid
 
 # venv
 venv
+.venv
 
 # docs
 docs/build
