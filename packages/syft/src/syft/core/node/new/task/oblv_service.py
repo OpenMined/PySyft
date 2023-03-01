@@ -39,6 +39,7 @@ from ..context import AuthedServiceContext
 from ..context import ChangeContext
 from ..credentials import SyftSigningKey
 from ..document_store import DocumentStore
+from ..response import SyftError
 from ..response import SyftSuccess
 from ..service import AbstractService
 from ..service import service_method
@@ -425,8 +426,9 @@ class OblvService(AbstractService):
 
         if res.is_ok():
             return SyftSuccess(
-                f"Successfully created request for data transfer approval with id {request.id}"
+                message=f"Successfully created request for data transfer  with id {request.id}"
             )
+        return SyftError(message=str(res.err()))
 
     @service_method(path="oblv.review_enclave_transfer", name="review_enclave_transfer")
     def review_enclave_transfer(
