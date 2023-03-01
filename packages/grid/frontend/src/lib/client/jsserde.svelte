@@ -160,7 +160,7 @@
         (list) => {
           const message = new capnp.Message();
           const rs = message.initRoot(Iterable);
-          const listStruct = rs.initValues(1);
+          const listStruct = rs.initValues(list.length);
           let count = 0;
           for (let index = 0; index < list.length; index++) {
             let serializedObj = this.serialize(list[index]);
@@ -200,10 +200,21 @@
         null,
         {}
       ];
+      this.type_bank['nacl.signing.SigningKey'] = [
+        true,
+        (key) => {
+          return key
+        },
+        (buffer) => {
+          return new Uint8Array(buffer);
+        },
+        null,
+        {}
+      ]
       this.type_bank['nacl.signing.VerifyKey'] = [
         true,
         (key) => {
-          console.log(key);
+          return key.key.buffer
         },
         (buffer) => {
           return new Uint8Array(buffer);
@@ -344,6 +355,8 @@
     getFqn(obj) {
       if (typeof obj === 'boolean') {
         return 'builtins.bool';
+      } else if (typeof obj === 'undefined') {
+        return 'builtins.NoneType'
       } else if (typeof obj === 'string') {
         return 'builtins.str';
       } else if (typeof obj === 'number') {
@@ -367,6 +380,7 @@
      * @param {function} serializer - The function to use to serialize the object.
      */
     serializeNonRecursive(obj, rs, serializer) {
+
       // Serialize the object using the specified serializer function
       const serializedObj = serializer(obj);
       // Split the serialized object into chunks and initialize the data field
@@ -392,9 +406,13 @@
       const txt = rs.initFieldsName(Object.keys(obj).length);
       const data = rs.initFieldsData(Object.keys(obj).length);
 
-      // Loop over each property of the object
+
+      // Loop over each property of the object      
       let count = 0;
       for (let attr in obj) {
+        if (attr == "fqn"){
+          continue;
+        }
         // Serialize the property's value and store it in the Cap'n Proto message
         txt.set(count, attr);
         const serializedObj = this.serialize(obj[attr]);
