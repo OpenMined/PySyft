@@ -33,21 +33,16 @@ class DataSubject(SyftObject):
     name: str
     description: Optional[str]
     aliases: List[str] = []
-    _members: List[str] = None
 
     @property
     def members(self) -> List:
-        if self._members is not None:
-            return self._members
-
         # relative
         from .api import APIRegistry
 
         api = APIRegistry.api_for(self.node_uid)
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
-        members = api.services.data_subject.members(self.name)
-        self._members = members
+        members = api.services.data_subject.members_for(self.name)
         return members
 
     __attr_searchable__ = ["name", "description"]

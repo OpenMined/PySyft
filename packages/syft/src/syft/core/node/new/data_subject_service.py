@@ -93,6 +93,28 @@ class DataSubjectService(AbstractService):
             return data_subjects
         return SyftError(message=result.err())
 
+    @service_method(path="data_subject.get_members", name="members_for")
+    def get_members(
+        self, context: AuthedServiceContext, data_subject_name: str
+    ) -> Union[List[DataSubject], SyftError]:
+        get_relatives = context.node.get_service_method(
+            DataSubjectMemberService.get_relatives
+        )
+
+        relatives = get_relatives(context, data_subject_name)
+
+        if isinstance(relatives, SyftError):
+            return relatives
+
+        members = []
+        for relative in relatives:
+            result = self.get_by_name(context=context, name=relative.child)
+            if isinstance(result, SyftError):
+                return result
+            members.append(result)
+
+        return members
+
     @service_method(path="data_subject.get_by_name", name="get_by_name")
     def get_by_name(
         self, context: AuthedServiceContext, name: str

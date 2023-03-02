@@ -22,7 +22,6 @@ from .response import SyftSuccess
 from .service import AbstractService
 from .service import SERVICE_TO_TYPES
 from .service import TYPE_TO_SERVICE
-from .service import service_method
 
 
 @instrument
@@ -70,8 +69,7 @@ class DataSubjectMemberService(AbstractService):
             return SyftError(result.err())
         return SyftSuccess(message=f"Relationship added for: {parent} -> {child}")
 
-    @service_method(path="data_subject.get_members", name="members_for")
-    def get_members(
+    def get_relatives(
         self, context: AuthedServiceContext, data_subject_name: str
     ) -> Union[List[str], SyftError]:
         """Get all Members for given data subject"""
