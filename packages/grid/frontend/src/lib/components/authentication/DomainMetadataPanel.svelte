@@ -3,13 +3,14 @@
   import Badge from '$lib/components/Badge.svelte';
   import type { DomainMetadata } from '../../../types/domain/metadata';
   export let metadata: DomainMetadata;
+  export let initials = 'OM';
 </script>
 
 <div
   class="py-11 w-full sm:w-[36%] sm:min-w-[544px] max-w-[784px] flex flex-col gap-4 xl:h-full px-8"
 >
   <div class="w-[97.5px]">
-    <Avatar initials="sd" src="https://avatars.githubusercontent.com/u/424628?v=4" />
+    <Avatar {initials} />
   </div>
   <h2>{metadata.title}</h2>
   {#if metadata.organization}
