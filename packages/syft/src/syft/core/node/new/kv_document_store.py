@@ -162,10 +162,15 @@ class KeyValueStorePartition(StorePartition):
             exists = store_query_key.value in self.data
             unique_query_keys = self.settings.unique_keys.with_obj(obj)
             searchable_query_keys = self.settings.searchable_keys.with_obj(obj)
-
+            exists_for_unique_keys = any(
+                unique_query_key.value in self.unique_keys.get(unique_query_key.key, [])
+                for unique_query_key in unique_query_keys.all
+            )
             ck_check = self.validate_partition_keys(
                 store_query_key=store_query_key, unique_query_keys=unique_query_keys
             )
+
+            exists = exists or exists_for_unique_keys
             if not exists and ck_check == UniqueKeyCheck.EMPTY:
                 self.set_data_and_keys(
                     store_query_key=store_query_key,
