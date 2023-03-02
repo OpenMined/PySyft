@@ -26,16 +26,18 @@ export class SignedAPICall {
 }
 
 export class APICall {
-  id: UUID;
+  node_uid: UUID;
   path: string;
   args: any;
   kwargs: any;
-  
-  constructor(id, path, args, kwargs) {
-    this.id = new UUID(id);
+  blocking: boolean
+
+  constructor(id, path, args, kwargs, blocking = true) {
+    this.node_uid = new UUID(id);
     this.path = path
     this.args = args
     this.kwargs = new Map(Object.entries(kwargs));
+    this.blocking = blocking
     this.fqn = "syft.core.node.new.api.SyftAPICall"
   }
 
