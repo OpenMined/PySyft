@@ -14,9 +14,7 @@ from result import Ok
 from result import Result
 
 # relative
-from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
-from ...common.serde.serialize import _serialize as serialize
 from ..common.node_table.syft_object import StorableObjectType
 from ..common.node_table.syft_object import SyftObject
 from ..common.node_table.syft_object import SyftObjectRegistry
@@ -56,11 +54,11 @@ def to_mongo(context: TransformContext) -> TransformContext:
             output[k] = value()
         else:
             output[k] = value
-    blob = serialize(context.obj.to_dict(), to_bytes=True)
+
     output["_id"] = context.output["id"]
     output["__canonical_name__"] = context.obj.__canonical_name__
     output["__version__"] = context.obj.__version__
-    output["__blob__"] = blob
+    output["__obj__"] = context.obj.to_dict()
     output["__arepr__"] = _repr_debug_(context.obj)  # a comes first in alphabet
     context.output = output
     return context
@@ -82,7 +80,7 @@ def from_mongo(
         raise ValueError(
             "Versioned class should not be None for initialization of SyftObject."
         )
-    output = deserialize(storage_obj["__blob__"], from_bytes=True)
+    output = storage_obj["__obj__"]
     for attr, funcs in constructor.__serde_overrides__.items():
         if attr in output:
             output[attr] = funcs[1](output[attr])
