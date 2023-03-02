@@ -5,8 +5,8 @@
 import * as capnp from 'capnp-ts';
 import * as capnp_ts_1 from 'capnp-ts';
 
-export const _capnpFileId = BigInt('0x979a7994b9718d24');
-export class Iterable extends capnp_ts_1.Struct {
+export const _capnpFileId = BigInt('0x979a7994ba718a24');
+export class DataList extends capnp_ts_1.Struct {
   adoptValues(value) {
     capnp_ts_1.Struct.adopt(value, capnp_ts_1.Struct.getPointer(0, this));
   }
@@ -14,24 +14,23 @@ export class Iterable extends capnp_ts_1.Struct {
     return capnp_ts_1.Struct.disown(this.getValues());
   }
   getValues() {
-    return capnp_ts_1.Struct.getList(0, Iterable._Values, this);
+    return capnp_ts_1.Struct.getList(0, capnp.DataList, this);
   }
   hasValues() {
     return !capnp_ts_1.Struct.isNull(capnp_ts_1.Struct.getPointer(0, this));
   }
   initValues(length) {
-    return capnp_ts_1.Struct.initList(0, Iterable._Values, length, this);
+    return capnp_ts_1.Struct.initList(0, capnp.DataList, length, this);
   }
   setValues(value) {
     capnp_ts_1.Struct.copyFrom(value, capnp_ts_1.Struct.getPointer(0, this));
   }
   toString() {
-    return 'Iterable_' + super.toString();
+    return 'DataList_' + super.toString();
   }
 }
-Iterable._capnp = {
-  displayName: 'Iterable',
-  id: 'bca6aae15eaab9b2',
+DataList._capnp = {
+  displayName: 'DataList',
+  id: 'bfce2a2b5874c56c',
   size: new capnp_ts_1.ObjectSize(0, 1)
 };
-Iterable._Values = capnp.PointerList(capnp.DataList);
