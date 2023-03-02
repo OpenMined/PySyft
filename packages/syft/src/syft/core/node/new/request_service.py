@@ -18,6 +18,7 @@ from .message_service import Message
 from .message_service import MessageService
 from .request import Request
 from .request import RequestStatus
+from .request import Status
 from .request import SubmitRequest
 from .request_stash import RequestStash
 from .response import SyftError
@@ -97,16 +98,27 @@ class RequestService(AbstractService):
         requests = result.ok()
         return requests
 
-    @service_method(path="request.apply", name="apply")
     def apply(
-        self, context: AuthedServiceContext, uid: UID
+        self, context: AuthedServiceContext, uid: UID, status: Status
     ) -> Union[SyftSuccess, SyftError]:
         request = self.stash.get_by_uid(uid)
         if request.is_ok():
             request = request.ok()
-            result = request.apply(context=context)
+            result = request.apply(context=context, status=status)
             return result.value
         return request.value
+
+    @service_method(path="request.approve", name="approve")
+    def approve(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Union[SyftSuccess, SyftError]:
+        return self.apply(context, uid, Status.APPROVE)
+
+    @service_method(path="request.deny", name="deny")
+    def deny(
+        self, context: AuthedServiceContext, uid: UID
+    ) -> Union[SyftSuccess, SyftError]:
+        return self.apply(context, uid, Status.DENY)
 
     @service_method(path="request.revert", name="revert")
     def revert(

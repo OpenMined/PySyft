@@ -442,7 +442,9 @@ class OblvService(AbstractService):
         REQUEST_APPROVE = EnumMutation.from_obj(
             linked_obj=linked_obj,
             attr_name="status",
-            value=EnclaveTransferStatus.APPROVED,
+            approved_value=EnclaveTransferStatus.APPROVED,
+            denied_value=EnclaveTransferStatus.DENIED,
+            old_value=getattr(request, "status"),
         )
         request = SubmitRequest(changes=[REQUEST_APPROVE])
         method = context.node.get_service_method(RequestService.submit)

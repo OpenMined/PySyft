@@ -42,6 +42,12 @@ from .user_code import UserCodeStatus
 
 
 @serializable(recursive_serde=True)
+class Status(Enum):
+    APPROVE = "approve"
+    DENY = "deny"
+
+
+@serializable(recursive_serde=True)
 class RequestStatus(Enum):
     PENDING = 0
     REJECTED = 1
@@ -101,7 +107,9 @@ class ActionStoreChange(Change):
             print(f"failed to apply {type(self)}")
             return Err(SyftError(message=str(e)))
 
-    def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+    def apply(
+        self, context: ChangeContext, status: Status
+    ) -> Result[SyftSuccess, SyftError]:
         return self._run(context=context, apply=True)
 
     def revert(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
@@ -132,13 +140,21 @@ class Request(SyftObject):
 
     def approve(self):
         api = APIRegistry.api_for(self.node_uid)
-        return api.services.request.apply(self.id)
+        return api.services.request.approve(self.id)
 
-    def apply(self, context: AuthedServiceContext) -> Result[SyftSuccess, SyftError]:
+    def deny(self):
+        api = APIRegistry.api_for(self.node_uid)
+        return api.services.request.deny(self.id)
+
+    def apply(
+        self, context: AuthedServiceContext, status: Status
+    ) -> Result[SyftSuccess, SyftError]:
         change_context = ChangeContext.from_service(context)
         change_context.requesting_user_credentials = self.requesting_user_verify_key
         for change in self.changes:
-            result = change.apply(context=change_context)
+            # ToDo - Check if object has old value before changing.
+            # This is to restrict from approving already denied requests or vice-versa
+            result = change.apply(context=change_context, status=status)
             if result.is_err():
                 return result
         return Ok(SyftSuccess(message=f"Request {self.id} changes applied"))
@@ -273,17 +289,23 @@ class ObjectMutation(Change):
 
     linked_obj: Optional[LinkedObject]
     attr_name: str
-    value: Optional[Any]
+    old_value: Any
+    approved_value: Any
+    denied_value: Any
     match_type: bool
 
     __attr_repr_cols__ = ["linked_obj", "attr_name"]
 
-    def mutate(self, obj: Any) -> Any:
-        setattr(obj, self.attr_name, self.value)
+    def mutate(self, obj: Any, status: Status) -> Any:
+        setattr(
+            obj,
+            self.attr_name,
+            self.approved_value if status == Status.APPROVE else self.denied_value,
+        )
         return obj
 
     def _run(
-        self, context: ChangeContext, apply: bool
+        self, context: ChangeContext, apply: bool, status: Status
     ) -> Result[SyftSuccess, SyftError]:
         try:
             obj = self.linked_obj.resolve_with_context(context)
@@ -291,16 +313,20 @@ class ObjectMutation(Change):
                 return SyftError(message=obj.err())
             obj = obj.ok()
             if apply:
+                if status == Status.DENY:
+                    raise NotImplementedError
                 obj = self.mutate(obj)
-                self.linked_obj.update_with_context(context, obj)
             else:
-                raise NotImplementedError
+                setattr(obj, self.attr_name, self.old_value)
+            self.linked_obj.update_with_context(context, obj)
             return Ok(SyftSuccess(message=f"{type(self)} Success"))
         except Exception as e:
             print(f"failed to apply {type(self)}. {e}")
             return Err(SyftError(message=e))
 
-    def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+    def apply(
+        self, context: ChangeContext, status: Status
+    ) -> Result[SyftSuccess, SyftError]:
         return self._run(context=context, apply=True)
 
 
@@ -322,18 +348,25 @@ class EnumMutation(ObjectMutation):
     __version__ = SYFT_OBJECT_VERSION_1
 
     enum_type: Type[Enum]
-    value: Optional[Enum]
     match_type: bool = True
 
-    __attr_repr_cols__ = ["linked_obj", "attr_name", "value"]
+    __attr_repr_cols__ = [
+        "linked_obj",
+        "attr_name",
+        "old_value",
+        "approved_value",
+        "denied_value",
+    ]
 
     def __init__(
         self,
+        linked_obj: LinkedObject,
         attr_name: str,
         enum_type: Type[Enum],
         match_type: bool = True,
-        linked_obj: Optional[LinkedObject] = None,
-        value: Optional[Enum] = None,
+        old_value: Optional[Enum] = None,
+        approved_value: Optional[Enum] = None,
+        denied_value: Optional[Enum] = None,
         id: Optional[UID] = None,
     ) -> None:
         if id is None:
@@ -343,34 +376,42 @@ class EnumMutation(ObjectMutation):
             id=id,
             linked_obj=linked_obj,
             attr_name=attr_name,
-            value=value,
+            old_value=old_value,
+            approved_value=approved_value,
+            denied_value=denied_value,
             enum_type=enum_type,
             match_type=match_type,
         )
 
     @property
     def valid(self) -> Union[SyftSuccess, SyftError]:
-        if self.match_type and not isinstance(self.value, self.enum_type):
+        if self.match_type and not isinstance(self.approved_value, self.enum_type):
             return SyftError(
-                message=f"{type(self.value)} must be of type: {self.enum_type}"
+                message=f"{type(self.approved_value)} must be of type: {self.enum_type}"
             )
         return SyftSuccess(message=f"{type(self)} valid")
 
     @staticmethod
     def from_obj(
-        linked_obj: LinkedObject, attr_name: str, value: Optional[Enum] = None
+        linked_obj: LinkedObject,
+        attr_name: str,
+        old_value: Optional[Enum] = None,
+        approved_value: Optional[Enum] = None,
+        denied_value: Optional[Enum] = None,
     ) -> Self:
         enum_type = type_for_field(linked_obj.object_type, attr_name)
         return EnumMutation(
             linked_obj=linked_obj,
             attr_name=attr_name,
             enum_type=enum_type,
-            value=value,
+            approved_value=approved_value,
+            denied_value=denied_value,
+            old_value=old_value,
             match_type=True,
         )
 
     def _run(
-        self, context: ChangeContext, apply: bool
+        self, context: ChangeContext, apply: bool, status: Status
     ) -> Result[SyftSuccess, SyftError]:
         try:
             valid = self.valid
@@ -381,17 +422,19 @@ class EnumMutation(ObjectMutation):
                 return SyftError(message=obj.err())
             obj = obj.ok()
             if apply:
-                obj = self.mutate(obj)
-                self.linked_obj.update_with_context(context, obj)
+                obj = self.mutate(obj, status)
             else:
-                raise NotImplementedError
+                setattr(obj, self.attr_name, self.old_value)
+            self.linked_obj.update_with_context(context, obj)
             return Ok(SyftSuccess(message=f"{type(self)} Success"))
         except Exception as e:
             print(f"failed to apply {type(self)}. {e}")
             return Err(SyftError(message=e))
 
-    def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
-        return self._run(context=context, apply=True)
+    def apply(
+        self, context: ChangeContext, status: Status = True
+    ) -> Result[SyftSuccess, SyftError]:
+        return self._run(context=context, apply=True, status=status)
 
     def revert(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
         return self._run(context=context, apply=False)
@@ -463,7 +506,9 @@ class UserCodeStatusChange(Change):
             print(f"failed to apply {type(self)}. {e}")
             return Err(SyftError(message=e))
 
-    def apply(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:
+    def apply(
+        self, context: ChangeContext, status: Status
+    ) -> Result[SyftSuccess, SyftError]:
         return self._run(context=context, apply=True)
 
     def revert(self, context: ChangeContext) -> Result[SyftSuccess, SyftError]:

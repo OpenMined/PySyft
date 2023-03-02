@@ -35,9 +35,6 @@ class EnclaveTransfer(SyftObject):
     user_verify_key: SyftVerifyKey
     status: EnclaveTransferStatus = EnclaveTransferStatus.SUBMITTED
     created_at: str
-    reviewed_at: str = ""
-    reviewed_by: str = ""
-    reason: str = ""
     oblv_client: OblvClient
 
     # serde / storage rules
@@ -48,9 +45,6 @@ class EnclaveTransfer(SyftObject):
         "user_verify_key",
         "status",
         "created_at",
-        "reviewed_at",
-        "reason",
-        "reviewed_by",
         "oblv_client",
     ]
     __attr_searchable__ = [
