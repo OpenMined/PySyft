@@ -4,47 +4,51 @@ import { SyftVerifyKey } from '../objects/key.js';
 import sodium from 'libsodium-wrappers';
 
 export class SignedAPICall {
-  credentials: SyftVerifyKey
-  signature: Uint8Array
-  serialized_message: Uint8Array
-  fqn: String
+  credentials: SyftVerifyKey;
+  signature: Uint8Array;
+  serialized_message: Uint8Array;
+  fqn: string;
 
-  constructor(serialized_msg, signature, credentials){
+  constructor(serialized_msg, signature, credentials) {
     this.serialized_message = serialized_msg;
     this.signature = signature;
     this.credentials = new SyftVerifyKey(credentials);
-    this.fqn = "syft.core.node.new.api.SignedSyftAPICall"
+    this.fqn = 'syft.core.node.new.api.SignedSyftAPICall';
   }
 
-  get valid(){
-    return sodium.crypto_sign_verify_detached(this.signature, this.serialized_message, this.credentials);
+  get valid() {
+    return sodium.crypto_sign_verify_detached(
+      this.signature,
+      this.serialized_message,
+      this.credentials
+    );
   }
 
-  message(serde){
-    return serde.deserialize(this.serialized_message)
+  message(serde) {
+    return serde.deserialize(this.serialized_message);
   }
 }
 
 export class APICall {
   node_uid: UUID;
   path: string;
-  args: any;
-  kwargs: any;
-  blocking: boolean
+  args: object;
+  kwargs: object;
+  blocking: boolean;
 
   constructor(id, path, args, kwargs, blocking = true) {
     this.node_uid = new UUID(id);
-    this.path = path
-    this.args = args
+    this.path = path;
+    this.args = args;
     this.kwargs = new Map(Object.entries(kwargs));
-    this.blocking = blocking
-    this.fqn = "syft.core.node.new.api.SyftAPICall"
+    this.blocking = blocking;
+    this.fqn = 'syft.core.node.new.api.SyftAPICall';
   }
 
-  sign(key, serde){
+  sign(key, serde) {
     const serialized_message = new Uint8Array(serde.serialize(this));
     const signature = sodium.crypto_sign_detached(serialized_message, key.privateKey);
-    return new SignedAPICall(serialized_message, signature, key.publicKey)
+    return new SignedAPICall(serialized_message, signature, key.publicKey);
   }
 }
 

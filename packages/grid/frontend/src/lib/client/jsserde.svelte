@@ -203,18 +203,18 @@
       this.type_bank['nacl.signing.SigningKey'] = [
         true,
         (key) => {
-          return key
+          return key;
         },
         (buffer) => {
           return new Uint8Array(buffer);
         },
         null,
         {}
-      ]
+      ];
       this.type_bank['nacl.signing.VerifyKey'] = [
         true,
         (key) => {
-          return key.key.buffer
+          return key.key.buffer;
         },
         (buffer) => {
           return new Uint8Array(buffer);
@@ -356,7 +356,7 @@
       if (typeof obj === 'boolean') {
         return 'builtins.bool';
       } else if (typeof obj === 'undefined') {
-        return 'builtins.NoneType'
+        return 'builtins.NoneType';
       } else if (typeof obj === 'string') {
         return 'builtins.str';
       } else if (typeof obj === 'number') {
@@ -380,7 +380,6 @@
      * @param {function} serializer - The function to use to serialize the object.
      */
     serializeNonRecursive(obj, rs, serializer) {
-
       // Serialize the object using the specified serializer function
       const serializedObj = serializer(obj);
       // Split the serialized object into chunks and initialize the data field
@@ -409,11 +408,9 @@
       const txt = rs.initFieldsName(Object.keys(newObj).length);
       const data = rs.initFieldsData(Object.keys(newObj).length);
 
-
-      // Loop over each property of the object      
+      // Loop over each property of the object
       let count = 0;
       for (let attr in newObj) {
-
         // Serialize the property's value and store it in the Cap'n Proto message
         txt.set(count, attr);
         const serializedObj = this.serialize(newObj[attr]);
