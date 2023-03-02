@@ -79,7 +79,7 @@ class DataSubjectService(AbstractService):
                 return result
 
         return SyftSuccess(
-            message=f"{len(member_relationships+1)} Data Subjects Registered"
+            message=f"{len(member_relationships)+1} Data Subjects Registered"
         )
 
     @service_method(path="data_subject.get_all", name="get_all")
