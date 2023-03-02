@@ -3,6 +3,8 @@
   import { RecursiveSerde } from './capnp/recursive_serde.capnp.js';
   import { KVIterable } from './capnp/kv_iterable.capnp.js';
   import { Iterable } from './capnp/iterable.capnp.js';
+  import { DataList } from './capnp/datalist.capnp.js';
+  import { DataBox } from './capnp/databox.capnp.js';
   import { stringify as uuidStringify } from 'uuid';
   import { parse as uuidParse } from 'uuid';
 
@@ -114,15 +116,13 @@
 
           fields.set(0, 'value');
           let serializedObj = this.serialize(uuidParse(uuid.value));
-          let dataMsg = new capnp.Message(serializedObj, false);
-          let dataCapnpObj = capnp.Struct.initData(
-            0,
-            serializedObj.byteLength,
-            dataMsg.getRoot(capnp.Data)
-          );
-          dataCapnpObj.copyBuffer(serializedObj);
-          data.set(0, dataCapnpObj);
 
+          let dataList = this.createDataList(1);
+
+          let dataStruct = this.createData(serializedObj.byteLength);
+          dataStruct.copyBuffer(serializedObj);
+          dataList.set(0, dataStruct);
+          data.set(0, dataList);
           return message.toArrayBuffer();
         },
         (buffer) => {
@@ -131,10 +131,12 @@
           const rs = message.getRoot(RecursiveSerde);
           const fieldsName = rs.getFieldsName();
           const fieldsData = rs.getFieldsData();
+
           for (let index = 0; index < fieldsName.getLength(); index++) {
             const key = fieldsName.get(index);
             const bytes = fieldsData.get(index);
-            const obj = uuidStringify(this.deserialize(bytes.toArrayBuffer()));
+            const objBlob = this.processObject(bytes);
+            const obj = uuidStringify(objBlob);
             uuidMap.set(key, obj);
           }
           return uuidMap;
@@ -158,23 +160,18 @@
         (list) => {
           const message = new capnp.Message();
           const rs = message.initRoot(Iterable);
-          const listStruct = rs.initValues(list.length);
+          const listStruct = rs.initValues(1);
           let count = 0;
           for (let index = 0; index < list.length; index++) {
             let serializedObj = this.serialize(list[index]);
-            let dataMsg = new capnp.Message(serializedObj, false);
-            let dataCapnpObj = capnp.Struct.initData(
-              0,
-              serializedObj.byteLength,
-              dataMsg.getRoot(capnp.Data)
-            );
-            dataCapnpObj.copyBuffer(serializedObj);
-            listStruct.set(count, dataCapnpObj);
+            let chunks = this.splitChunks(serializedObj);
+            let chunkList = this.serializeChunks(chunks);
+            listStruct.set(count, chunkList);
             count += 1;
           }
           return message.toArrayBuffer();
         },
-        function (buffer) {
+        (buffer) => {
           var iter = [];
           const message = new capnp.Message(buffer, false);
           const rs = message.getRoot(Iterable);
@@ -182,7 +179,8 @@
           const size = values.getLength();
           for (let index = 0; index < size; index++) {
             const value = values.get(index);
-            iter.push(this.deserialize(value.toArrayBuffer()));
+            const obj = this.processObject(value);
+            iter.push(obj);
           }
           return iter;
         },
@@ -222,41 +220,48 @@
           const values = rs.initValues(dict.size);
           let count = 0;
           dict.forEach((value, key) => {
+            // Saving Key
             let serializedKey = this.serialize(key);
+            let keyDataStruct = this.createData(serializedKey.byteLength);
+            keyDataStruct.copyBuffer(serializedKey);
+            keys.set(count, keyDataStruct);
+
+            // Saving Values
             let serializedValue = this.serialize(value);
-            let keyMsg = new capnp.Message(serializedKey, false);
-            let valueMsg = new capnp.Message(serializedKey, false);
-            let keyDataCapnpObj = capnp.Struct.initData(
-              0,
-              serializedKey.byteLength,
-              keyMsg.getRoot(capnp.Data)
-            );
-            let valueDataCapnpObj = capnp.Struct.initData(
-              0,
-              serializedValue.byteLength,
-              valueMsg.getRoot(capnp.Data)
-            );
-            keyDataCapnpObj.copyBuffer(serializedKey);
-            valueDataCapnpObj.copyBuffer(serializedValue);
-            keys.set(count, keyDataCapnpObj);
-            values.set(count, valueDataCapnpObj);
+            let chunks = this.splitChunks(serializedValue);
+            let chunkList = this.serializeChunks(chunks);
+            values.set(count, chunkList);
+
             count += 1;
           });
           return message.toArrayBuffer();
         },
         (buffer) => {
+          // Initialize an empty object to store the key-value pairs.
           var kv_iter = {};
+
+          // Create a capnp.Message object from the input buffer and get the root object of type KVIterable.
           const message = new capnp.Message(buffer, false);
           const rs = message.getRoot(KVIterable);
+
+          // Get the values, keys, and size of the KVIterable object.
           const values = rs.getValues();
           const keys = rs.getKeys();
           const size = values.getLength();
+
+          // Iterate over the KVIterable object and process each value.
           for (let index = 0; index < size; index++) {
             const value = values.get(index);
             const key = keys.get(index);
-            kv_iter[this.deserialize(key.toArrayBuffer())] = this.deserialize(
-              value.toArrayBuffer()
-            );
+
+            // Process the value using the processObject function.
+            const obj = this.processObject(value);
+
+            // Deserialize the key using the deserialize method and convert it to an ArrayBuffer.
+            const deserializedKey = this.deserialize(key.toArrayBuffer());
+
+            // Store the processed object as a value corresponding to the deserialized key in the kv_iter object.
+            kv_iter[deserializedKey] = obj;
           }
           return kv_iter;
         },
@@ -265,88 +270,272 @@
       ];
     }
 
-    serialize(obj) {
-      let fqn = '';
-      if (typeof obj === 'boolean') {
-        fqn = 'builtins.bool';
-      } else if (typeof obj === 'string') {
-        fqn = 'builtins.str';
-      } else if (typeof obj === 'number') {
-        if (Number.isInteger(obj)) {
-          fqn = 'builtins.int';
-        } else {
-          fqn = 'builtins.float';
-        }
-      } else if (Array.isArray(obj)) {
-        fqn = 'builtins.list';
-      } else if (obj && obj.byteLength !== undefined) {
-        fqn = 'builtins.bytes';
-      } else if (obj instanceof Map) {
-        fqn = 'builtins.dict';
+    createData(length) {
+      let newDataMsg = new capnp.Message();
+      let dataRoot = newDataMsg.initRoot(DataBox);
+      dataRoot.initValue(length);
+      return dataRoot.getValue();
+    }
+
+    createDataList(length) {
+      let newDataList = new capnp.Message();
+      let dataListRoot = newDataList.initRoot(DataList);
+      dataListRoot.initValues(length);
+      return dataListRoot.getValues();
+    }
+
+    /**
+     * Splits a serialized data object into chunks of a maximum size.
+     *
+     * @param {DataObject} serializedObj - The serialized data object to split.
+     * @returns {ArrayBuffer[]} An array of binary data chunks.
+     */
+    splitChunks(serializedObj) {
+      const sizeLimit = 5.12 ** 8;
+      const chunks = [];
+      let pointer = 0;
+
+      if (serializedObj.byteLength <= sizeLimit) {
+        // If the serialized object is smaller than the size limit, add it as a single chunk
+        chunks.push(serializedObj);
       } else {
-        fqn = obj.fqn;
+        // If the serialized object is larger than the size limit, split it into multiple chunks
+        const numSlices = Math.ceil(serializedObj.byteLength / sizeLimit);
+        for (let i = 0; i < numSlices - 1; i++) {
+          // Push a slice of the serialized object to the chunks array
+          chunks.push(serializedObj.slice(pointer, pointer + sizeLimit));
+          pointer += sizeLimit;
+        }
+        // Push the last slice to the chunks array
+        chunks.push(serializedObj.slice(pointer));
       }
+
+      return chunks;
+    }
+
+    /**
+     * Serializes an array of binary data chunks into a data list.
+     *
+     * @param {ArrayBuffer[]} chunks - An array of binary data chunks.
+     * @returns {DataList} A serialized data list.
+     */
+    serializeChunks(chunks) {
+      // Create a new data list with a length equal to the number of input chunks
+      const dataList = this.createDataList(chunks.length);
+
+      // Iterate over each chunk and add it to the data list
+      for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
+
+        // Create a new data structure with the same length as the current chunk
+        const dataStruct = this.createData(chunk.byteLength);
+
+        // Copy the contents of the current chunk into the data structure
+        dataStruct.copyBuffer(chunk);
+
+        // Add the data structure to the data list
+        dataList.set(i, dataStruct);
+      }
+
+      return dataList;
+    }
+
+    // Determine the fully qualified name (FQN) of the object.
+    getFqn(obj) {
+      if (typeof obj === 'boolean') {
+        return 'builtins.bool';
+      } else if (typeof obj === 'string') {
+        return 'builtins.str';
+      } else if (typeof obj === 'number') {
+        return Number.isInteger(obj) ? 'builtins.int' : 'builtins.float';
+      } else if (Array.isArray(obj)) {
+        return 'builtins.list';
+      } else if (obj && obj.byteLength !== undefined) {
+        return 'builtins.bytes';
+      } else if (obj instanceof Map) {
+        return 'builtins.dict';
+      } else {
+        return obj.fqn;
+      }
+    }
+
+    /**
+     * Serializes a non-recursive object and stores it in the Cap'n Proto message.
+     *
+     * @param {Object} obj - The object to serialize.
+     * @param {RecursiveSerde} rs - The Cap'n Proto object to store the serialized data in.
+     * @param {function} serializer - The function to use to serialize the object.
+     */
+    serializeNonRecursive(obj, rs, serializer) {
+      // Serialize the object using the specified serializer function
+      const serializedObj = serializer(obj);
+      // Split the serialized object into chunks and initialize the data field
+      const chunks = this.splitChunks(serializedObj);
+      const data = rs.initNonrecursiveBlob(chunks.length);
+
+      // Copy each chunk into a new payload and set it in the data field
+      for (let i = 0; i < chunks.length; i++) {
+        const payload = this.createData(chunks[i].byteLength);
+        payload.copyBuffer(chunks[i]);
+        data.set(i, payload);
+      }
+    }
+
+    /**
+     * Serializes a recursive object and its properties and stores them in the Cap'n Proto message.
+     *
+     * @param {Object} obj - The object to serialize.
+     * @param {RecursiveSerde} rs - The Cap'n Proto object to store the serialized data in.
+     */
+    serializeRecursive(obj, rs) {
+      // Initialize the fields for the object's text and data
+      const txt = rs.initFieldsName(Object.keys(obj).length);
+      const data = rs.initFieldsData(Object.keys(obj).length);
+
+      // Loop over each property of the object
+      let count = 0;
+      for (let attr in obj) {
+        // Serialize the property's value and store it in the Cap'n Proto message
+        txt.set(count, attr);
+        const serializedObj = this.serialize(obj[attr]);
+        const chunks = this.splitChunks(serializedObj);
+        const chunkList = this.serializeChunks(chunks);
+        data.set(count, chunkList);
+        count += 1;
+      }
+    }
+
+    /**
+     * Serializes the given object into a Cap'n Proto message.
+     *
+     * @param {Object} obj - The object to serialize.
+     * @returns {ArrayBuffer} - The serialized object as an ArrayBuffer.
+     */
+    serialize(obj) {
+      // Get the fully qualified name of the object
+      const fqn = this.getFqn(obj);
+      // Create a new Cap'n Proto message
       const message = new capnp.Message();
+
+      // Initialize the root object of the message
       const rs = message.initRoot(RecursiveSerde);
-      let objSerdeProps = this.type_bank[fqn];
-      let notRecursive = objSerdeProps[0];
       rs.setFullyQualifiedName(fqn);
 
-      delete obj.fqn;
+      // Get the serialization properties for the object
+      const objSerdeProps = this.type_bank[fqn];
+      let notRecursive = objSerdeProps[0];
+
+      // Check if the object is not recursive
       if (notRecursive) {
-        let serializedObj = this.type_bank[fqn][1](obj);
-        let data = rs.initNonrecursiveBlob(serializedObj.byteLength);
-        data.copyBuffer(serializedObj);
+        // If the object is not recursive, serialize it non-recursively
+        this.serializeNonRecursive(obj, rs, objSerdeProps[1]);
       } else if (objSerdeProps[1] !== null) {
-        return this.type_bank[fqn][1](obj);
+        // If the object has a custom serializer function, use it
+        return objSerdeProps[1](obj);
       } else {
-        const txt = rs.initFieldsName(Object.keys(obj).length);
-        const data = rs.initFieldsData(Object.keys(obj).length);
-        let count = 0;
-        for (let attr in obj) {
-          txt.set(count, attr);
-          let serializedObj = this.serialize(obj[attr]);
-          let dataMsg = new capnp.Message(serializedObj, false);
-          let dataCapnpObj = capnp.Struct.initData(
-            0,
-            serializedObj.byteLength,
-            dataMsg.getRoot(capnp.Data)
-          );
-          dataCapnpObj.copyBuffer(serializedObj);
-          data.set(count, dataCapnpObj);
-          count += 1;
-        }
+        // Otherwise, serialize it recursively
+        this.serializeRecursive(obj, rs);
       }
 
+      // Return the serialized message as an ArrayBuffer
       return message.toArrayBuffer();
     }
 
+    /**
+     * Processes an array of binary data chunks into a single binary data array.
+     *
+     * @param {DataList} chunks - An array of binary data chunks.
+     * @returns {Uint8Array} A single binary data array.
+     */
+    processChunks(chunks) {
+      let totalSize = 0;
+
+      // Calculate the total size of all the chunks
+      for (let i = 0; i < chunks.getLength(); i++) {
+        totalSize += chunks.get(i).getLength();
+      }
+
+      // Create a new array with the total size
+      const tmp = new Uint8Array(totalSize);
+      let position = 0;
+
+      // Fill the new array with the data from the chunks
+      for (let i = 0; i < chunks.getLength(); i++) {
+        const chunkData = this.deserialize(chunks.get(i).toArrayBuffer());
+        const dataChunk = new Uint8Array(chunkData);
+        tmp.set(dataChunk, position);
+        position += dataChunk.byteLength;
+      }
+
+      return tmp;
+    }
+
+    /**
+     * Processes a serialized data object into its original data form.
+     *
+     * @param {DataObject} obj - The serialized data object to process.
+     * @returns {*} The original data object.
+     */
+    processObject(obj) {
+      let result = null;
+
+      if (obj.getLength() === 1) {
+        // If the object fits into a single chunk, deserialize the chunk and return it
+        result = this.deserialize(obj.get(0).toArrayBuffer());
+      } else {
+        // If the object is split into multiple chunks, process the chunks and deserialize the result
+        const totalChunk = this.processChunks(obj);
+        result = this.deserialize(totalChunk.buffer);
+      }
+
+      return result;
+    }
+
+    /**
+     * Deserializes a binary data buffer into its original data form.
+     *
+     * @param {ArrayBuffer} buffer - The binary data buffer to deserialize.
+     * @returns {*} The original data object.
+     */
     deserialize(buffer) {
       const message = new capnp.Message(buffer, false);
       const rs = message.getRoot(RecursiveSerde);
       const fieldsName = rs.getFieldsName();
       const size = fieldsName.getLength();
       const fqn = rs.getFullyQualifiedName();
-      let objSerdeProps = this.type_bank[fqn];
-      console.log('FQN: ', fqn);
+      const objSerdeProps = this.type_bank[fqn];
+
       if (size < 1) {
-        return this.type_bank[fqn][2](rs.getNonrecursiveBlob().toArrayBuffer());
-      } else if (objSerdeProps[2] !== null) {
-        return this.type_bank[fqn][2](buffer);
-      } else {
-        let kv_iterable = new Map();
-        const fieldsData = rs.getFieldsData();
-        if (fieldsData.getLength() != fieldsName.getLength()) {
-          console.log('Error !!');
+        // If the data is a blob, deserialize the blob and return it
+        const blob = rs.getNonrecursiveBlob();
+        if (blob.getLength() === 1) {
+          return objSerdeProps[2](blob.get(0).toArrayBuffer());
         } else {
-          for (let index = 0; index < size; index++) {
-            const key = fieldsName.get(index);
-            const bytes = fieldsData.get(index);
-            const obj = this.deserialize(bytes.toArrayBuffer());
-            kv_iterable.set(key, obj);
+          const totalChunk = this.processChunks(blob);
+          return objSerdeProps[2](totalChunk.buffer);
+        }
+      } else if (objSerdeProps[2] !== null) {
+        // If the data is a primitive type, deserialize it and return it
+        return objSerdeProps[2](buffer);
+      } else {
+        // If the data is a structured object, deserialize its fields into a map
+        const fieldsData = rs.getFieldsData();
+        const kvIterable = new Map();
+
+        // Check if the number of fields in the object matches the number of field names
+        if (fieldsData.getLength() !== fieldsName.getLength()) {
+          console.log('Error!!');
+        } else {
+          // Iterate over the fields in the object and deserialize their values
+          for (let i = 0; i < size; i++) {
+            const key = fieldsName.get(i); // Get the name of the current field
+            const bytes = fieldsData.get(i); // Get the binary data buffer for the current field
+            const obj = this.processObject(bytes); // Recursively deserialize the binary data buffer
+            kvIterable.set(key, obj); // Add the deserialized value to the key-value iterable
           }
         }
-        return kv_iterable;
+
+        return kvIterable;
       }
     }
   }
