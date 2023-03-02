@@ -56,7 +56,7 @@
       <div class="w-full flex justify-between ">
         <div class="flex items-center gap-2">
           <img width="100px" src="../../public/assets/small-logo.png" alt="pygrid-logo.png" />
-          <span class="font-roboto">Version: {metadata.version}</span>
+          <span class="font-roboto">Version: {metadata.get('syft_version')}</span>
         </div>
         <div class="flex justify-end gap-5">
           <a
@@ -78,17 +78,17 @@
         <div class="w-full">
           <div class="mt-2">
             <h1 class="text-5xl leading-[1.1] font-medium text-gray-800 font-rubik">
-              {prettyName(metadata.name)}
+              {prettyName(metadata.get('name'))}
             </h1>
           </div>
           <div class="mt-2 ">
             <h1 class="text-2xl leading-[1.1] font-medium text-gray-500 font-rubik">
-              {metadata.organization}
+              {metadata.get('organization')}
             </h1>
           </div>
           <div class="mt-5 h-2/5">
             <p class="text-medium leading-[1.1] font-medium text-gray-800 font-roboto">
-              {metadata.description}
+              {metadata.get('description')}
             </p>
           </div>
 
@@ -101,12 +101,12 @@
               class="flex items-center gap-2"
             >
               <h1 class="font-bold">ID:</h1>
-              <Badge variant="gray">{metadata.id.value}</Badge>
+              <Badge variant="gray">{metadata.get('id').get('value')}</Badge>
             </button>
 
             <div class="flex items-center gap-2">
               <span class="font-bold"> DEPLOYED ON: </span>
-              <span>{metadata.deployed_on.split(' ')[0]}</span>
+              <span>{metadata.get('deployed_on').split(' ')[0]}</span>
             </div>
           </div>
 

@@ -1,15 +1,9 @@
-import { JSSerde } from './jsSerde';
-import { SyftMessageWithoutReply } from './objects/syftMessage';
+import { JSSerde } from './jsserde.js';
+import { SyftMessageWithoutReply } from './objects/syftMessage.ts';
 export class JSClient {
-  url = '';
-  msg_url = '';
-  node_id = '';
-  access_token = '';
-  key = '';
-  serde = JSSerde;
-
-  constructor(url) {
+  constructor() {
     return (async () => {
+      const url = window.location.protocol + '//' + window.location.host;
       await fetch(url + '/api/v1/syft/serde')
         .then((response) => response.json())
         .then((response) => {
@@ -18,7 +12,7 @@ export class JSClient {
       this.url = url;
       this.msg_url = url + '/api/v1/syft/js';
       this.node_id = await this.metadata.then((metadata) => {
-        return metadata.id.value;
+        return metadata.get('id').get('value');
       });
       return this;
     })();
@@ -58,10 +52,10 @@ export class JSClient {
   }
 
   get metadata() {
-    return fetch('http://localhost:8081/api/v1/syft/metadata')
+    return fetch(this.url + '/api/v1/new/metadata_capnp')
       .then((response) => response.arrayBuffer())
       .then((response) => {
-        const metadata = this.serde.deserialize(response);
+        let metadata = this.serde.deserialize(response);
 
         let nodeAddrObj = {};
         metadata.get('id').forEach((value, key) => {
@@ -75,7 +69,7 @@ export class JSClient {
 
         metadataObj.id = nodeAddrObj;
         window.sessionStorage.setItem('metadata', JSON.stringify(metadataObj));
-        return metadataObj;
+        return metadata;
       });
   }
 
