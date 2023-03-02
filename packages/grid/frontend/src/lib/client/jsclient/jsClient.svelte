@@ -41,7 +41,6 @@
       })
     }
     
-    
     get user() {
       if (!this.access_token) {
         throw new Error('User not authenticated!');
@@ -100,8 +99,8 @@
       );
     }
 
-    send_new_api(id, args, kwargs, path){
-      const signed_call = new APICall(id,path,args,kwargs).sign(this.key,this.serde)
+    send(args, kwargs, path){
+      const signed_call = new APICall(this.node_id,path,args,kwargs).sign(this.key,this.serde)
 
       return fetch(this.url + "/api/v1/new/api_call", {
         method: 'POST',
@@ -116,21 +115,6 @@
           } else {
             return signed_msg.message(this.serde)
           }
-        });
-    }
-
-    send(parameters, fqn) {
-      // Update User Profile
-      let msg = new SyftMessageWithoutReply(this.node_id, parameters, fqn);
-
-      return fetch(this.msg_url, {
-        method: 'POST',
-        headers: { 'content-type': 'application/octect-stream', Authorization: this.access_token },
-        body: this.serde.serialize(msg)
-      })
-        .then((response) => response.arrayBuffer())
-        .then((response) => {
-          return this.serde.deserialize(response);
         });
     }
   }

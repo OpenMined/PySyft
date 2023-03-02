@@ -402,20 +402,21 @@
      * @param {RecursiveSerde} rs - The Cap'n Proto object to store the serialized data in.
      */
     serializeRecursive(obj, rs) {
+      // Remove fqn obj property to avoid serializing it as a valid field attribute.
+      const { fqn, ...newObj } = obj;
+
       // Initialize the fields for the object's text and data
-      const txt = rs.initFieldsName(Object.keys(obj).length);
-      const data = rs.initFieldsData(Object.keys(obj).length);
+      const txt = rs.initFieldsName(Object.keys(newObj).length);
+      const data = rs.initFieldsData(Object.keys(newObj).length);
 
 
       // Loop over each property of the object      
       let count = 0;
-      for (let attr in obj) {
-        if (attr == "fqn"){
-          continue;
-        }
+      for (let attr in newObj) {
+
         // Serialize the property's value and store it in the Cap'n Proto message
         txt.set(count, attr);
-        const serializedObj = this.serialize(obj[attr]);
+        const serializedObj = this.serialize(newObj[attr]);
         const chunks = this.splitChunks(serializedObj);
         const chunkList = this.serializeChunks(chunks);
         data.set(count, chunkList);
