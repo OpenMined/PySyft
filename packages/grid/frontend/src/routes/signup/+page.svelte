@@ -6,7 +6,7 @@
   import FormControl from '$lib/components/FormControl.svelte';
   import TagCloud from '$lib/components/TagCloud.svelte';
   import { getClient } from '$lib/store';
-  import { SyftMessageWithoutReply } from '$lib/jsserde/objects/syftMessage.ts';
+  import { SyftMessageWithoutReply } from '$lib/client/messages/syftMessage.ts';
   import { prettyName } from '$lib/utils';
   let guestCredentials;
 
@@ -90,24 +90,20 @@
           <TagCloud tags={['Commodities', 'Trade', 'Canada']} />
           <div class="space-y-6 mt-2">
             <h1 class="text-5xl leading-[1.1] font-medium text-gray-800 font-rubik">
-              {prettyName(metadata.get('name'))}
+              {prettyName(metadata.name)}
             </h1>
-            <p>{metadata.get('description')}</p>
+            <p>{metadata.description}</p>
           </div>
           <!-- List (Domain information) -->
           <ul class="mt-[42px] space-y-4">
             <li>
               <span class="font-bold">ID:</span>
               <!-- Badge -->
-              <Badge variant="gray">{metadata.get('id').get('value')}</Badge>
+              <Badge variant="gray">{metadata.id.value}</Badge>
             </li>
             <li>
               <span class="font-bold">Deployed on:</span>
-              <span>{metadata.get('deployed_on').split(' ')[0]}</span>
-            </li>
-            <li>
-              <span class="font-bold">Owner:</span>
-              <span>{metadata.get('owner')}</span>
+              <span>{metadata.deployed_on.split(' ')[0]}</span>
             </li>
           </ul>
           <hr class="mt-10" />
