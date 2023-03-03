@@ -1851,6 +1851,11 @@ svelte-fa@^3.0.3:
   resolved "https://registry.yarnpkg.com/svelte-fa/-/svelte-fa-3.0.3.tgz#49aa8627725b2533fb4d109b39cd8e64f7e54b7c"
   integrity sha512-GIikJjcVCD+5Y/x9hZc2R4gvuA0gVftacuWu1a+zVQWSFjFYZ+hhU825x+QNs2slsppfrgmFiUyU9Sz9gj4Rdw==
 
+svelte-heros-v2@^0.3.18:
+  version "0.3.21"
+  resolved "https://registry.yarnpkg.com/svelte-heros-v2/-/svelte-heros-v2-0.3.21.tgz#7020b84c842dafe4c8630076c481328278b270a5"
+  integrity sha512-IcFzoKuDJ6i0qiINfwwaDX5ZTsx/0A5EgB/LPZXMZa+BzxXnlalbcDwyV9ukNvdQLfxVamTb9HuZS677pD/rdQ==
+
 svelte-hmr@^0.15.1:
   version "0.15.1"
   resolved "https://registry.yarnpkg.com/svelte-hmr/-/svelte-hmr-0.15.1.tgz#d11d878a0bbb12ec1cba030f580cd2049f4ec86b"
