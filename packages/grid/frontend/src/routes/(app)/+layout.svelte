@@ -3,7 +3,7 @@
   import OnBoardModal from '$lib/components/onBoardModal.svelte';
   import Sidebar from '$lib/components/Sidebar.svelte';
   import Navbar from '$lib/components/NavBar.svelte';
-  import { getClient, store } from '$lib/store.js';
+  import { getClient } from '$lib/store.js';
 
   let client;
   let activeUrl = '/home';
@@ -12,29 +12,19 @@
   $: user_info = '';
 
   async function loadGlobalInfos() {
-    let newStore = {};
-    // Load JSSerde from local Storage
-    store.subscribe(async (value) => {
-      newStore = value;
-      // If we already have a client obj in store.
-      if (newStore.client) {
-        client = newStore.client;
-      }
-    });
-
-    if (!client) {
-      client = await getClient();
-      client.access_token = window.sessionStorage.getItem('session_token');
+    // Get JSClient
+    client = await getClient()
+    
+    // Load metadata from session Storage
+    if (!metadata){
+      metadata = await client.metadata;
     }
 
-    // Load metadata from session Storage
-    metadata = await client.metadata;
-    newStore.metadata = metadata;
     // Load current user session info
-    user_info = await client.user;
-    newStore.user_info = user_info;
-
-    store.set(newStore);
+    if (!user_info){
+      user_info = await client.user;
+    }
+  
   }
 </script>
 
