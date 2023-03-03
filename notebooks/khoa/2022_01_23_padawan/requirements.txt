@@ -1,0 +1,5 @@
+# best install hagrid, then do hagrid quickstart to install the isolated env
+# into ~/.hagrid
+hagrid==0.2.130
+jupyter
+syft==0.7.0
