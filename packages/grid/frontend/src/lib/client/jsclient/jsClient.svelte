@@ -58,21 +58,40 @@
       const responseData = this.serde.deserialize(body);
 
       try {
-        this.userId = new UUID(responseData.id.value)
-
         // Extract the private key seed from the response data and generate a keypair using sodium.
         const { signing_key: { signing_key: private_key_seed } } = responseData;
-
+        
+        // Create the keypair using private key seed
         const keypair = sodium.crypto_sign_seed_keypair(private_key_seed);
-
+        
         // Set the keypair as the key for this instance.
         this.key = keypair;
+        // Set current userId 
+        this.userId = new UUID(responseData.id.value)
+
+        // Create Session obj to be stored at sessionStorage
+        const arr = Array.from // if available
+        ? Array.from(private_key_seed) // use Array#from
+        : [].map.call(private_key_seed, (v => v)); // otherwise map()
+
+        const session = {
+          key: arr,
+          id: responseData.id.value,
+        }
+        window.sessionStorage.setItem('session',JSON.stringify(session))
+
       } catch (error) {
         // If an error occurs while extracting the private key seed or generating the keypair, throw an error with the response data's error message.
         throw new Error(responseData.Error);
       }
     }
-    
+
+    recoverSession(session) {
+      const sessionObj = JSON.parse(session);
+      this.key = sodium.crypto_sign_seed_keypair(new Uint8Array(sessionObj.key));
+      this.userId = new UUID(sessionObj.id)
+    }
+
     
     get user() {
       return ( async () => { 
@@ -99,27 +118,6 @@
       })();
     }
 
-
-    createUser(parameters) {
-      return this.send(
-        parameters,
-        'syft.core.node.common.node_service.user_manager.new_user_messages.CreateUserMessage'
-      );
-    }
-
-    updateUser(parameters) {
-      return this.send(
-        parameters,
-        'syft.core.node.common.node_service.user_manager.new_user_messages.UpdateUserMessage'
-      );
-    }
-
-    updateConfigs(parameters) {
-      return this.send(
-        parameters,
-        'syft.core.node.common.node_service.node_setup.node_setup_messages.UpdateSetupMessage'
-      );
-    }
 
     /**
      * Sends an API call to the server.
