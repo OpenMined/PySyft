@@ -56,8 +56,8 @@ ENV PYTHONPATH=/app
 ENV PATH=/root/.local/bin:$PATH
 
 # 🟣 TODO: Remove install_oblivious.sh
-COPY grid/backend/install_oblivious.sh /install_oblivious.sh
-RUN chmod +x /install_oblivious.sh
+# COPY grid/backend/install_oblivious.sh /install_oblivious.sh
+# RUN chmod +x /install_oblivious.sh
 
 RUN --mount=type=cache,target=/root/.cache \
   pip install -U pip

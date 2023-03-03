@@ -28,7 +28,7 @@ export NODE_UID=$NODE_UID
 export NODE_PRIVATE_KEY=$NODE_PRIVATE_KEY
 
 # 🟣 TODO: Remove
-source install_oblivious.sh
+# source install_oblivious.sh
 
 # initialize data
 python grid/db/init_db.py
