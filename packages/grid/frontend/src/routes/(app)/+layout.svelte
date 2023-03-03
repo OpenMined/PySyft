@@ -13,18 +13,17 @@
 
   async function loadGlobalInfos() {
     // Get JSClient
-    client = await getClient()
-    
+    client = await getClient();
+
     // Load metadata from session Storage
-    if (!metadata){
+    if (!metadata) {
       metadata = await client.metadata;
     }
 
     // Load current user session info
-    if (!user_info){
+    if (!user_info) {
       user_info = await client.user;
     }
-  
   }
 </script>
 

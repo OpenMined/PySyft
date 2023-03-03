@@ -13,14 +13,15 @@
   let displayError = 'none';
   let errorText = '';
 
-
   async function login(client) {
     let password = document.getElementById('password').value;
     let email = document.getElementById('email').value;
 
     await client
       .login(email, password)
-      .then(() => {goto('/home')})
+      .then(() => {
+        goto('/home');
+      })
       .catch((error) => {
         errorText = error.message;
         inputColor = 'red';

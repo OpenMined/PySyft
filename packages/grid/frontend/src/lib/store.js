@@ -16,11 +16,10 @@ export async function getClient() {
   if (!newStore.client) {
     newStore.client = await new JSClient(`${window.location.protocol}//${window.location.host}`);
 
+    const session = window.sessionStorage.getItem('session');
 
-    const session = window.sessionStorage.getItem('session')
-    
-    if (session){
-      newStore.client.recoverSession(session)
+    if (session) {
+      newStore.client.recoverSession(session);
     }
 
     store.set(newStore);

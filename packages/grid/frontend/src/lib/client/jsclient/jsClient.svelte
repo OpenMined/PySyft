@@ -4,7 +4,6 @@
   import { APICall } from '../messages/syftMessage.ts';
   import sodium from 'libsodium-wrappers';
   export class JSClient {
-
     /**
      * Constructs a new instance of the class.
      * @returns {Promise} A promise that resolves to an instance of the class.
@@ -59,27 +58,28 @@
 
       try {
         // Extract the private key seed from the response data and generate a keypair using sodium.
-        const { signing_key: { signing_key: private_key_seed } } = responseData;
-        
+        const {
+          signing_key: { signing_key: private_key_seed }
+        } = responseData;
+
         // Create the keypair using private key seed
         const keypair = sodium.crypto_sign_seed_keypair(private_key_seed);
-        
+
         // Set the keypair as the key for this instance.
         this.key = keypair;
-        // Set current userId 
-        this.userId = new UUID(responseData.id.value)
+        // Set current userId
+        this.userId = new UUID(responseData.id.value);
 
         // Create Session obj to be stored at sessionStorage
         const arr = Array.from // if available
-        ? Array.from(private_key_seed) // use Array#from
-        : [].map.call(private_key_seed, (v => v)); // otherwise map()
+          ? Array.from(private_key_seed) // use Array#from
+          : [].map.call(private_key_seed, (v) => v); // otherwise map()
 
         const session = {
           key: arr,
-          id: responseData.id.value,
-        }
-        window.sessionStorage.setItem('session',JSON.stringify(session))
-
+          id: responseData.id.value
+        };
+        window.sessionStorage.setItem('session', JSON.stringify(session));
       } catch (error) {
         // If an error occurs while extracting the private key seed or generating the keypair, throw an error with the response data's error message.
         throw new Error(responseData.Error);
@@ -89,14 +89,13 @@
     recoverSession(session) {
       const sessionObj = JSON.parse(session);
       this.key = sodium.crypto_sign_seed_keypair(new Uint8Array(sessionObj.key));
-      this.userId = new UUID(sessionObj.id)
+      this.userId = new UUID(sessionObj.id);
     }
 
-    
     get user() {
-      return ( async () => { 
-        return await this.send([], {'uid': this.userId }, "user.view")
-      } )()
+      return (async () => {
+        return await this.send([], { uid: this.userId }, 'user.view');
+      })();
     }
 
     /**
@@ -118,7 +117,6 @@
       })();
     }
 
-
     /**
      * Sends an API call to the server.
      *
@@ -132,14 +130,14 @@
       const signedCall = new APICall(this.nodeId, path, args, kwargs).sign(this.key, this.serde);
 
       try {
-         // Make a POST request to the server with the signed call.
+        // Make a POST request to the server with the signed call.
         const response = await fetch(this.msg_url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/octet-stream' },
           body: this.serde.serialize(signedCall)
         });
 
-         // Deserialize the response and check its signature.
+        // Deserialize the response and check its signature.
         const responseBuffer = await response.arrayBuffer();
         const signedMsg = this.serde.deserialize(responseBuffer);
 
@@ -151,11 +149,11 @@
         // Return the message contained in the response.
         return signedMsg.message(this.serde);
         */
-       return signedMsg
+        return signedMsg;
       } catch (error) {
         console.error('Error occurred in send()', error);
         throw error;
       }
     }
-}
+  }
 </script>
