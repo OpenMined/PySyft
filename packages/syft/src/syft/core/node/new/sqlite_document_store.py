@@ -103,7 +103,6 @@ class SQLiteBackingStore(KeyValueBackingStore):
                 data = _serialize(value, to_bytes=True)
                 self._execute(insert_sql, [str(key), _repr_debug_(value), data])
         except Exception as e:
-            print("Failed to _set", e)
             raise e
 
     def _update(self, key: UID, value: Any) -> None:
@@ -120,7 +119,6 @@ class SQLiteBackingStore(KeyValueBackingStore):
             data = row[2]
             return _deserialize(data, from_bytes=True)
         except Exception as e:
-            print("Failed to _get", e)
             raise e
 
     def _exists(self, key: UID) -> Any:
@@ -139,7 +137,6 @@ class SQLiteBackingStore(KeyValueBackingStore):
                 data.append(_deserialize(row[2], from_bytes=True))
             return dict(zip(keys, data))
         except Exception as e:
-            print("Failed to _get_all", e)
             raise e
 
     def _get_all_keys(self) -> Any:
@@ -151,7 +148,6 @@ class SQLiteBackingStore(KeyValueBackingStore):
                 keys.append(UID(row[0]))
             return keys
         except Exception as e:
-            print("Failed to _get_all_keys", e)
             raise e
 
     def _delete(self, key: UID) -> None:
