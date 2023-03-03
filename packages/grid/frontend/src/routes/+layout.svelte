@@ -1,5 +1,6 @@
 <script>
-  import '../app.postcss';
+  import '../app.css';
 </script>
 
+<title>PyGrid</title>
 <slot />

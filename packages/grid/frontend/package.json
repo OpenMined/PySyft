@@ -36,10 +36,13 @@
   },
   "type": "module",
   "dependencies": {
+    "@fortawesome/free-solid-svg-icons": "^6.3.0",
     "capnp-ts": "^0.7.0",
     "libsodium": "^0.7.11",
     "libsodium-wrappers": "^0.7.11",
     "svelte-heros-v2": "^0.3.18",
+    "svelte-fa": "^3.0.3",
+    "svelte-routing": "^1.6.0",
     "uuid": "^9.0.0"
   }
 }

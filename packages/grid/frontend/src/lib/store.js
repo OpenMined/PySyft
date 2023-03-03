@@ -2,7 +2,10 @@ import { writable } from 'svelte/store';
 import { JSClient } from './client/jsclient/jsClient.svelte';
 
 export const store = writable({
-  client: ''
+  client: '',
+  session_token: '',
+  metadata: {},
+  user_info: {}
 });
 
 export async function getClient() {
