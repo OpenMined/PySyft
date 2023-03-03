@@ -20,7 +20,7 @@
 
     await client
       .login(email, password)
-      .then(goto('/home'))
+      .then(() => {goto('/home')})
       .catch((error) => {
         errorText = error.message;
         inputColor = 'red';
