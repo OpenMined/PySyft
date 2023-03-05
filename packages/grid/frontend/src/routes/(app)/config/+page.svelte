@@ -53,9 +53,11 @@
     // Filter attributes that doesn't exist
     Object.keys(domainInfo).forEach((k) => domainInfo[k] == null && delete domainInfo[k]);
 
+
     // Set Domain name, organization and description
     await client.updateConfigs(domainInfo);
     localStore.metadata = await client.metadata;
+
     store.set(localStore);
 
     // Cleaning Element Values
@@ -112,7 +114,7 @@
             <div>
               <div id="domain-profile-border">
                 <div id="domain-profile-circle">
-                  <h3 style="color:white"><b> {shortName(prettyName(metadata.name))} </b></h3>
+                  <h3 style="color:white"><b> {shortName(prettyName(metadata.get('name')))} </b></h3>
                 </div>
               </div>
             </div>
@@ -122,7 +124,7 @@
             <span class="font-bold"> PROFILE INFORMATION</span>
             <div class="flex flex-col space-y-2">
               <span class="font-bold">Domain Name</span>
-              <span class="font-roboto">{metadata.name}</span>
+              <span class="font-roboto">{metadata.get('name')}</span>
               <button
                 on:click={() => {
                   modalActiveList[0] = !modalActiveList[0];
@@ -134,7 +136,7 @@
 
             <div class="flex flex-col space-y-2">
               <span class="font-bold">Organization</span>
-              <span class="font-roboto">{metadata.organization}</span>
+              <span class="font-roboto">{metadata.get('organization')}</span>
               <button
                 on:click={() => {
                   modalActiveList[1] = !modalActiveList[1];
@@ -146,7 +148,7 @@
 
             <div class="flex flex-col space-y-2">
               <span class="font-bold">Description</span>
-              <span class="font-roboto">{metadata.description}</span>
+              <span class="font-roboto">{metadata.get('description')}</span>
               <button
                 on:click={() => {
                   modalActiveList[2] = !modalActiveList[2];
@@ -162,19 +164,19 @@
               <div class="flex justify-center">
                 <div id="user-profile-circle" style="height:10vh;width:10vh;">
                   <h3 style="color:white">
-                    <b> {shortName(metadata.owner ? metadata.owner : 'None')} </b>
+                    <b> {shortName(metadata.get('owner') ? metadata.get('owner') : 'None')} </b>
                   </h3>
                 </div>
                 <div style="justify-content:center;display:flex;flex-direction:column">
-                  <span class="font-bold">{metadata.owner}</span>
+                  <span class="font-bold">{metadata.get('owner')}</span>
                   <span class="font-roboto">Domain Owner</span>
                 </div>
               </div>
               <div class="flex flex-col justify-center">
                 <span class="font-bold">
-                  ID # <Badge variant="gray">{metadata.id.value}</Badge></span
+                  ID # <Badge variant="gray">{metadata.get('id').get('value')}</Badge></span
                 >
-                <span> <b> DEPLOYED ON:</b> {metadata.deployed_on.split(' ')[0]}</span>
+                <span> <b> DEPLOYED ON:</b> {metadata.get('deployed_on').split(' ')[0]}</span>
               </div>
             </div>
           </div>

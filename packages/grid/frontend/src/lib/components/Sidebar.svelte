@@ -34,12 +34,12 @@
             <div style="display: flex;  justify-content:center;">
               <div id="domain-profile-border">
                 <div id="domain-profile-circle">
-                  <h3 style="color:white"><b> {shortName(prettyName(metadata['name']))} </b></h3>
+                  <h3 style="color:white"><b> {shortName(prettyName(metadata.get('name')))} </b></h3>
                 </div>
               </div>
             </div>
             <h5 style="text-align: center;font-size: 8;font-weight: bold;">
-              {prettyName(metadata['name'])}
+              {prettyName(metadata.get('name'))}
             </h5>
             <h5 style="text-align: center;margin-bottom: 35px;">
               <a href="/login"> <u> Logout </u> </a>
