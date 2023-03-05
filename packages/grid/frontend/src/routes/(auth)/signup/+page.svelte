@@ -82,10 +82,7 @@
 </script>
 
 <div class="flex flex-col xl:flex-row w-full h-full xl:justify-around items-center gap-12">
-  <section>
-    <TagCloud tags={['ok']} />
-    <DomainMetadataPanel {metadata} />
-  </section>
+  <DomainMetadataPanel {metadata} />
   <form class="contents">
     <Modal>
       <div
