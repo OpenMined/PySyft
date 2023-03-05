@@ -6,4 +6,5 @@ export type DomainMetadata = {
     value: string;
   };
   deployed_on: string;
+  tags: string[];
 };
