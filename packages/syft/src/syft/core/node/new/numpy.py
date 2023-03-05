@@ -96,6 +96,9 @@ class NumpyScalarObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):
     syft_passthrough_attrs = []
     syft_dont_wrap_attrs = ["dtype"]
 
+    def __float__(self) -> float:
+        return float(self.syft_action_data)
+
 
 @serializable(recursive_serde=True)
 class NumpyBoolObject(ActionObject, np.lib.mixins.NDArrayOperatorsMixin):

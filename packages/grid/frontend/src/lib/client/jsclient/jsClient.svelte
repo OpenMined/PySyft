@@ -1,9 +1,11 @@
 <script context="module">
-  import { JSSerde } from './jsserde.svelte';
-  import { SyftMessageWithoutReply } from './objects/syftMessage.ts';
+  import { JSSerde } from '../jsserde.svelte';
+  import { APICall } from '../messages/syftMessage.ts';
+  import sodium from 'libsodium-wrappers';
   export class JSClient {
-    constructor(url) {
+    constructor() {
       return (async () => {
+        const url = window.location.protocol + '//' + window.location.host;
         await fetch(url + '/api/v1/syft/serde')
           .then((response) => response.json())
           .then((response) => {
@@ -19,18 +21,19 @@
     }
 
     login(email, password) {
-      return fetch(this.url + '/api/v1/login', {
+      return fetch(this.url + '/api/v1/new/login', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ email: email, password: password })
       }).then((response) => {
         if (response.status === 401) {
-          throw new Error('Incorrect email or password!');
+          throw new Error('Incorred email or password!');
         } else {
-          return response.json().then((body) => {
-            this.access_token = 'Bearer ' + body['access_token'];
-            this.key = body['key'];
-            return body;
+          return response.arrayBuffer().then((body) => {
+            response = this.serde.deserialize(body);
+            let private_key_seed = response.get('signing_key').get('signing_key');
+            const keypair = sodium.crypto_sign_seed_keypair(private_key_seed);
+            this.key = keypair;
           });
         }
       });
@@ -52,7 +55,7 @@
     }
 
     get metadata() {
-      return fetch('http://localhost:8081/api/v1/syft/metadata')
+      return fetch(this.url + '/api/v1/new/metadata_capnp')
         .then((response) => response.arrayBuffer())
         .then((response) => {
           let metadata = this.serde.deserialize(response);
@@ -94,18 +97,22 @@
       );
     }
 
-    send(parameters, fqn) {
-      // Update User Profile
-      let msg = new SyftMessageWithoutReply(this.node_id, parameters, fqn);
+    send(args, kwargs, path) {
+      const signed_call = new APICall(this.node_id, path, args, kwargs).sign(this.key, this.serde);
 
-      return fetch(this.msg_url, {
+      return fetch(this.url + '/api/v1/new/api_call', {
         method: 'POST',
-        headers: { 'content-type': 'application/octect-stream', Authorization: this.access_token },
-        body: this.serde.serialize(msg)
+        headers: { 'content-type': 'application/octect-stream' },
+        body: this.serde.serialize(signed_call)
       })
         .then((response) => response.arrayBuffer())
         .then((response) => {
-          return this.serde.deserialize(response);
+          const signed_msg = this.serde.deserialize(response);
+          if (!signed_msg.valid) {
+            throw new Error("Message signature and public key doesn't match!");
+          } else {
+            return signed_msg.message(this.serde);
+          }
         });
     }
   }

@@ -90,24 +90,24 @@
           <TagCloud tags={['Commodities', 'Trade', 'Canada']} />
           <div class="space-y-6 mt-2">
             <h1 class="text-5xl leading-[1.1] font-medium text-gray-800 font-rubik">
-              {prettyName(metadata.name)}
+              {prettyName(metadata.get('name'))}
             </h1>
-            <p>{metadata.description}</p>
+            <p>{metadata.get('description')}</p>
           </div>
           <!-- List (Domain information) -->
           <ul class="mt-[42px] space-y-4">
             <li>
               <span class="font-bold">ID:</span>
               <!-- Badge -->
-              <Badge variant="gray">{metadata.id.value}</Badge>
+              <Badge variant="gray">{metadata.get('id').get('value')}</Badge>
             </li>
             <li>
               <span class="font-bold">Deployed on:</span>
-              <span>{metadata.deployed_on.split(' ')[0]}</span>
+              <span>{metadata.get('deployed_on').split(' ')[0]}</span>
             </li>
             <li>
               <span class="font-bold">Owner:</span>
-              <span>{metadata.owner}</span>
+              <span>{metadata.get('owner')}</span>
             </li>
           </ul>
           <hr class="mt-10" />
@@ -150,7 +150,7 @@
             <div class="space-y-6" slot="footer">
               <Button
                 onClick={() => {
-                  createUser(metadata.id.value, client);
+                  createUser(metadata.get('id').get('value'), client);
                 }}>Submit application</Button
               >
             </div>

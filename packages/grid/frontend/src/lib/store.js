@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import { JSClient } from './jsserde/jsClient';
+import { JSClient } from './client/jsclient/jsClient.svelte';
 
 export const store = writable({
   client: '',

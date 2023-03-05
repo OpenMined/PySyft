@@ -167,7 +167,7 @@ repos:
     rev: 0.6.1
     hooks:
       - id: nbstripout
-        files: "notebooks/api/*"
+        files: "notebooks/api/0.8/*"
 
   # - repo: meta
   #   hooks:
