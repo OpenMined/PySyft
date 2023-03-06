@@ -169,7 +169,7 @@ class GridHTTPConnection(HTTPConnection):
         self.token_type = content["token_type"]
 
         # Return node metadata / user private key
-        return (metadata, content["key"])
+        return (metadata, content["old_key"])
 
     def new_login(self, credentials: Dict) -> Dict:
         url = str(self.base_url) + GridHTTPConnection.NEW_LOGIN_ROUTE
