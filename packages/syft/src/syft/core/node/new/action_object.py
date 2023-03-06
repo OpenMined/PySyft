@@ -179,7 +179,7 @@ def send_action_side_effect(context: PreHookContext, *args: Any, **kwargs: Any) 
                 # print(
                 #     "Can't Send Action without a target node. Use .point_to(node_uid: UID)"
                 # )
-    except Exception as e:
+    except Exception:
         # print("Exception in send_action_side_effect", e)  # TODO: Put this Exception back
         pass
     return context, args, kwargs
