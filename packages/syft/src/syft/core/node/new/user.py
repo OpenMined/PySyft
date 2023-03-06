@@ -219,4 +219,4 @@ class UserPrivateKey(SyftObject):
 
 @transform(User, UserPrivateKey)
 def user_to_user_verify() -> List[Callable]:
-    return [keep(["email", "signing_key"])]
+    return [keep(["email", "signing_key", "id"])]

@@ -100,5 +100,6 @@ def login_access_token(
         "token_type": "bearer",
         "metadata": metadata,
         "key": private_key._signing_key.hex(),
+        "old_key": user.private_key,
         "verify_key": user.verify_key,
     }

@@ -7,8 +7,8 @@
   import FormControl from '$lib/components/FormControl.svelte';
   import { prettyName } from '$lib/utils.js';
   import { goto } from '$app/navigation';
-  import { browser } from '$app/environment';
   import Badge from '$lib/components/Badge.svelte';
+
   let inputColor = 'base';
   let displayError = 'none';
   let errorText = '';
@@ -19,11 +19,7 @@
 
     await client
       .login(email, password)
-      .then((body) => {
-        if (browser) {
-          window.sessionStorage.setItem('session_token', 'Bearer ' + body['access_token']);
-          window.sessionStorage.setItem('key', body['key']);
-        }
+      .then(() => {
         goto('/home');
       })
       .catch((error) => {
@@ -56,7 +52,7 @@
       <div class="w-full flex justify-between ">
         <div class="flex items-center gap-2">
           <img width="100px" src="../../public/assets/small-logo.png" alt="pygrid-logo.png" />
-          <span class="font-roboto">Version: {metadata.get('syft_version')}</span>
+          <span class="font-roboto">Version: {metadata.syft_version}</span>
         </div>
         <div class="flex justify-end gap-5">
           <a
@@ -78,17 +74,17 @@
         <div class="w-full">
           <div class="mt-2">
             <h1 class="text-5xl leading-[1.1] font-medium text-gray-800 font-rubik">
-              {prettyName(metadata.get('name'))}
+              {prettyName(metadata.name)}
             </h1>
           </div>
           <div class="mt-2 ">
             <h1 class="text-2xl leading-[1.1] font-medium text-gray-500 font-rubik">
-              {metadata.get('organization')}
+              {metadata.organization}
             </h1>
           </div>
           <div class="mt-5 h-2/5">
             <p class="text-medium leading-[1.1] font-medium text-gray-800 font-roboto">
-              {metadata.get('description')}
+              {metadata.description}
             </p>
           </div>
 
@@ -101,12 +97,12 @@
               class="flex items-center gap-2"
             >
               <h1 class="font-bold">ID:</h1>
-              <Badge variant="gray">{metadata.get('id').get('value')}</Badge>
+              <Badge variant="gray">{metadata.id.value}</Badge>
             </button>
 
             <div class="flex items-center gap-2">
               <span class="font-bold"> DEPLOYED ON: </span>
-              <span>{metadata.get('deployed_on').split(' ')[0]}</span>
+              <span>{metadata.deployed_on.split(' ')[0]}</span>
             </div>
           </div>
 
