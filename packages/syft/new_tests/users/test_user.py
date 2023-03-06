@@ -235,7 +235,7 @@ def test_fuzz_drop(list_keys: typing.List[str]) -> None:
     syft.core.node.new.user.drop(list_keys=list_keys)
 
 
-@given(context=st.from_type(TransformContext))
+@given(context=st.builds(TransformContext, output=st.from_type(dict)))
 def test_fuzz_generate_key(
     context: syft.core.node.new.transforms.TransformContext,
 ) -> None:
