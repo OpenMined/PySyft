@@ -126,7 +126,7 @@
           return message.toArrayBuffer();
         },
         (buffer) => {
-          let uuidMap = new Map();
+          let uuidMap = {};
           const message = new capnp.Message(buffer, false);
           const rs = message.getRoot(RecursiveSerde);
           const fieldsName = rs.getFieldsName();
@@ -137,7 +137,7 @@
             const bytes = fieldsData.get(index);
             const objBlob = this.processObject(bytes);
             const obj = uuidStringify(objBlob);
-            uuidMap.set(key, obj);
+            uuidMap[key] = obj;
           }
           return uuidMap;
         },
@@ -536,7 +536,7 @@
       } else {
         // If the data is a structured object, deserialize its fields into a map
         const fieldsData = rs.getFieldsData();
-        const kvIterable = new Map();
+        const kvIterable = {};
 
         // Check if the number of fields in the object matches the number of field names
         if (fieldsData.getLength() !== fieldsName.getLength()) {
@@ -547,7 +547,7 @@
             const key = fieldsName.get(i); // Get the name of the current field
             const bytes = fieldsData.get(i); // Get the binary data buffer for the current field
             const obj = this.processObject(bytes); // Recursively deserialize the binary data buffer
-            kvIterable.set(key, obj); // Add the deserialized value to the key-value iterable
+            kvIterable[key] = obj; // Add the deserialized value to the key-value iterable
           }
         }
 
