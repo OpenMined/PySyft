@@ -53,7 +53,6 @@
     // Filter attributes that doesn't exist
     Object.keys(domainInfo).forEach((k) => domainInfo[k] == null && delete domainInfo[k]);
 
-
     // Set Domain name, organization and description
     await client.updateConfigs(domainInfo);
     localStore.metadata = await client.metadata;
@@ -114,7 +113,9 @@
             <div>
               <div id="domain-profile-border">
                 <div id="domain-profile-circle">
-                  <h3 style="color:white"><b> {shortName(prettyName(metadata.get('name')))} </b></h3>
+                  <h3 style="color:white">
+                    <b> {shortName(prettyName(metadata.get('name')))} </b>
+                  </h3>
                 </div>
               </div>
             </div>
