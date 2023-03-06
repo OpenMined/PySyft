@@ -144,7 +144,7 @@ repos:
       - id: mypy
         name: mypy-syft
         always_run: true
-        files: "^packages/syft(?!(/src/syft/shylock/|/tests/|._pb2\\.py$)).\\.py"
+        files: "^packages/syft(?!(/src/syft/shylock/|/tests/|._pb2\\.py$)).*\\.py"
         args: [
             "--ignore-missing-imports",
             "--scripts-are-modules",
@@ -173,4 +173,5 @@ repos:
   #   hooks:
   #     - id: identity
   #       always_run: true
-  #       files: "notebooks/api/*"
+  #       files: "^packages/syft(?!(/src/syft/shylock/|/tests/|._pb2\\.py$)).*\\.py"
+  #       files: "^packages/syft/.*.py"
