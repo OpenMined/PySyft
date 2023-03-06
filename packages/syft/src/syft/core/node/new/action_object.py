@@ -180,7 +180,8 @@ def send_action_side_effect(context: PreHookContext, *args: Any, **kwargs: Any) 
                 #     "Can't Send Action without a target node. Use .point_to(node_uid: UID)"
                 # )
     except Exception as e:
-        print("Exception in send_action_side_effect", e)
+        # print("Exception in send_action_side_effect", e)  # TODO: Put this Exception back
+        pass
     return context, args, kwargs
 
 
@@ -192,7 +193,8 @@ def propagate_node_uid(context: PreHookContext, op: str, result: Any) -> Any:
             syft_node_uid = getattr(context.obj, "syft_node_uid", None)
             if syft_node_uid:
                 if not hasattr(result, "syft_node_uid"):
-                    print("result doesnt have a syft_node_uid attr")
+                    # print("result doesnt have a syft_node_uid attr")
+                    pass
                 if op not in context.obj._syft_dont_wrap_attrs():
                     if hasattr(result, "syft_node_uid"):
                         setattr(result, "syft_node_uid", syft_node_uid)
@@ -290,15 +292,21 @@ class ActionObject(SyftObject):
     def make_id(cls, v: Optional[UID]) -> UID:
         return v if isinstance(v, UID) else UID()
 
-    @pydantic.validator("syft_action_data", pre=True, always=True)
-    def check_action_data(
-        cls, v: ActionObject.syft_pointer_type
-    ) -> ActionObject.syft_pointer_type:
-        if cls == AnyActionObject or isinstance(v, cls.syft_internal_type):
-            return v
-        raise SyftException(
-            f"Must init {cls} with {cls.syft_internal_type} not {type(v)}"
-        )
+    # @pydantic.validator("syft_action_data", pre=True, always=True)
+    # def check_action_data(
+    #     cls, v: ActionObject.syft_pointer_type
+    # ) -> ActionObject.syft_pointer_type:
+    #     # if cls == AnyActionObject or isinstance(v, cls.syft_internal_type):
+    #     #     return v
+    #     if cls == AnyActionObject:
+    #         return v
+    #     print(cls)
+    #     if isinstance(v, cls.syft_internal_type):
+    #         return v
+    #
+    #     raise SyftException(
+    #         f"Must init {cls} with {cls.syft_internal_type} not {type(v)}"
+    #     )
 
     def syft_point_to(self, node_uid: UID) -> None:
         self.syft_node_uid = node_uid
@@ -405,7 +413,7 @@ class ActionObject(SyftObject):
                     result_obj=output,
                     op_name="gt",
                 )
-            result2 = self.syft_action_data < other.syft_action_data
+            result2 = self.syft_action_data > other.syft_action_data
             return self._syft_output_action_object(
                 result2,
                 parent_hashes=[self.syft_history_hash, other.syft_history_hash],
@@ -429,7 +437,7 @@ class ActionObject(SyftObject):
                     result_obj=output,
                     op_name="le",
                 )
-            result2 = self.syft_action_data < other.syft_action_data
+            result2 = self.syft_action_data <= other.syft_action_data
             return self._syft_output_action_object(
                 result2,
                 parent_hashes=[self.syft_history_hash, other.syft_history_hash],
@@ -453,7 +461,7 @@ class ActionObject(SyftObject):
                     result_obj=output,
                     op_name="ge",
                 )
-            result2 = self.syft_action_data < other.syft_action_data
+            result2 = self.syft_action_data >= other.syft_action_data
             return self._syft_output_action_object(
                 result2,
                 parent_hashes=[self.syft_history_hash, other.syft_history_hash],
@@ -477,7 +485,7 @@ class ActionObject(SyftObject):
                     result_obj=output,
                     op_name="sub",
                 )
-            result2 = self.syft_action_data + other.syft_action_data
+            result2 = self.syft_action_data - other.syft_action_data
             return self._syft_output_action_object(
                 result2,
                 parent_hashes=[self.syft_history_hash, other.syft_history_hash],
@@ -504,13 +512,14 @@ class ActionObject(SyftObject):
                     result_obj=output,
                     op_name="mul",
                 )
-            result2 = self.syft_action_data + other.syft_action_data
+
+            result2 = self.syft_action_data * other.syft_action_data
             return self._syft_output_action_object(
                 result2,
                 parent_hashes=[self.syft_history_hash, other.syft_history_hash],
                 op_name="mul",
             )
-        result = self.__add__(other)
+        result = self.__mul__(other)
         return self._syft_output_action_object(result, op_name="mul")
 
     def __matmul__(self, other: Any) -> Any:
@@ -584,6 +593,11 @@ class ActionObject(SyftObject):
         if HOOK_ALWAYS not in self._syft_post_hooks__:
             self._syft_post_hooks__[HOOK_ALWAYS] = set()
         self._syft_post_hooks__[HOOK_ALWAYS].add(propagate_node_uid)
+
+        # TODO: Replace this with a Pydantic Validator- fails b/c ActionObject doesn't have syft_internal_types
+        while isinstance(self.syft_action_data, ActionObject):
+            # print("Action Data was ActionObject")
+            self.syft_action_data = self.syft_action_data.syft_action_data
 
         if self.syft_parent_hashes is not None:
             if not isinstance(self.syft_parent_hashes, list):
