@@ -284,10 +284,14 @@ class OutputPolicy(SyftObject):
     def update() -> None:
         raise NotImplementedError
 
-    @classmethod
     @property
-    def policy_code(cls) -> str:
-        return inspect.getsource(cls)
+    def policy_code(self) -> str:
+        cls = type(self)
+        op_code = inspect.getsource(cls)
+        if self.state_type:
+            state_code = inspect.getsource(self.state_type)
+            op_code += "\n" + state_code
+        return op_code
 
 
 @serializable(recursive_serde=True)
@@ -403,6 +407,27 @@ class UserCode(SyftObject):
     @property
     def byte_code(self) -> Optional[PyCodeObject]:
         return compile_byte_code(self.parsed_code)
+
+    @property
+    def unsafe_function(self) -> Optional[Callable]:
+        print("WARNING: This code was submitted by a User and could be UNSAFE.")
+
+        # 🟡 TODO: re-use the same infrastructure as the execute_byte_code function
+        def wrapper(*args: Any, **kwargs: Any) -> Callable:
+            # remove the decorator
+            inner_function = ast.parse(self.raw_code).body[0]
+            inner_function.decorator_list = []
+            # compile the function
+            raw_byte_code = compile_byte_code(ast.unparse(inner_function))
+            # load it
+            exec(raw_byte_code)  # nosec
+            # execute it
+            evil_string = f"{self.service_func_name}(*args, **kwargs)"
+            result = eval(evil_string, None, locals())  # nosec
+            # return the results
+            return result
+
+        return wrapper
 
     @property
     def code(self) -> str:
@@ -580,10 +605,12 @@ def process_code(
                 ],
             )
         )
-        return_annotation = ast.parse("Dict[str, Any]", mode="eval").body
+        # requires typing module imported but main code returned is FunctionDef not Module
+        # return_annotation = ast.parse("typing.Dict[str, typing.Any]", mode="eval").body
     else:
         return_stmt = ast.Return(value=ast.Name(id="result"))
-        return_annotation = ast.parse("Any", mode="eval").body
+        # requires typing module imported but main code returned is FunctionDef not Module
+        # return_annotation = ast.parse("typing.Any", mode="eval").body
 
     new_body = tree.body + [call_stmt, return_stmt]
 
@@ -592,7 +619,7 @@ def process_code(
         args=f.args,
         body=new_body,
         decorator_list=[],
-        returns=return_annotation,
+        returns=None,
         lineno=0,
     )
 

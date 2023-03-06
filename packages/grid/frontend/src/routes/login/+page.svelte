@@ -1,23 +1,22 @@
 <script>
-  import LoginHeader from '../../components/LoginHeader.svelte';
-  import RegisterModal from '../../components/RegisterModal.svelte';
-  import { Input, Label, Helper, Button } from 'flowbite-svelte';
-  import { getClient, store } from '../../lib/store.js';
-  import { prettyName } from '../../lib/utils.js';
+  import { getClient } from '$lib/store';
+  import Github from '$lib/components/icons/Github.svelte';
+  import AuthCircles from '$lib/components/AuthCircles.svelte';
+  import Button from '$lib/components/Button.svelte';
+  import Capital from '$lib/components/Capital.svelte';
+  import FormControl from '$lib/components/FormControl.svelte';
+  import { prettyName } from '$lib/utils.js';
   import { goto } from '$app/navigation';
-  let email = '';
-  let password = '';
-  $: formModal = false;
+  import Badge from '$lib/components/Badge.svelte';
+
   let inputColor = 'base';
   let displayError = 'none';
   let errorText = '';
-  let localStore;
 
-  store.subscribe((value) => {
-    localStore = value;
-  });
+  async function login(client) {
+    let password = document.getElementById('password').value;
+    let email = document.getElementById('email').value;
 
-  async function login(client, email, password) {
     await client
       .login(email, password)
       .then(() => {
@@ -42,229 +41,147 @@
   };
 </script>
 
-<main>
+<div class="fixed top-0 right-0 w-full h-full max-w-[808px] max-h-[880px] z-[-1]">
+  <AuthCircles />
+</div>
+
+<main class="px-4 py-3 md:12 md:py-6 lg:px-36 lg:py-10 z-10 flex flex-col h-full w-full">
   {#await getClient() then client}
     {#await client.metadata then metadata}
-      <!-- Login Screen Header -->
-      <LoginHeader version={metadata.get('version')} />
-
-      <!-- Login Screen Body -->
-      <div id="login-screen">
-        <!-- Background Circles -->
-        <div id="login-orange-circle-bg" />
-        <div id="login-blue-circle-bg" />
-
-        <!-- Register Modal -->
-        <RegisterModal bind:formModal {client} nodeId={metadata.get('id').get('value')} />
-
-        <!-- Login Window -->
-        <div id="login-window">
-          <div class="space-y-3" style="margin-top: 5%;">
-            <h1 style="font-size:20px; text-align:center"><b> Welcome </b></h1>
-            <h3 style="text-align:center;"><span class="dot" />Domain Online</h3>
-            <Label class="space-y-2" style="margin-top: 50px;width:60vh;">
-              <span>Email</span>
-              <Input
-                color={inputColor}
-                type="email"
-                bind:value={email}
-                placeholder="info@openmined.org"
-                size="md"
-              >
-                <svg
-                  slot="left"
-                  aria-hidden="true"
-                  class="w-4 h-4"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                  xmlns="http://www.w3.org/2000/svg"
-                  ><path
-                    d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"
-                  /><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" /></svg
-                >
-              </Input>
-            </Label>
-            <Label class="space-y-2" style="width:60vh;">
-              <span>Password</span>
-              <Input
-                color={inputColor}
-                type="password"
-                placeholder="**********"
-                bind:value={password}
-                size="md"
-              >
-                <svg
-                  slot="left"
-                  width="24"
-                  height="24"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill-rule="evenodd"
-                  clip-rule="evenodd"
-                  ><path
-                    d="M24 11.5c0 3.613-2.951 6.5-6.475 6.5-2.154 0-4.101-1.214-5.338-3h-2.882l-1.046-1.013-1.302 1.019-1.362-1.075-1.407 1.081-4.188-3.448 3.346-3.564h8.841c1.145-1.683 3.104-3 5.339-3 3.497 0 6.474 2.866 6.474 6.5zm-10.691 1.5c.98 1.671 2.277 3 4.217 3 2.412 0 4.474-1.986 4.474-4.5 0-2.498-2.044-4.5-4.479-4.5-2.055 0-3.292 1.433-4.212 3h-9.097l-1.293 1.376 1.312 1.081 1.38-1.061 1.351 1.066 1.437-1.123 1.715 1.661h3.195zm5.691-3.125c.828 0 1.5.672 1.5 1.5s-.672 1.5-1.5 1.5-1.5-.672-1.5-1.5.672-1.5 1.5-1.5z"
-                  /></svg
-                >
-              </Input>
-              <Helper
-                color="red"
-                class="text-sm"
-                style="text-align: center;display: {displayError}"
-              >
-                {errorText}
-              </Helper>
-              <Helper class="text-sm" style="text-align: center"
-                >Don't you have an account yet? Apply for an account <button
-                  on:click={() => {
-                    formModal = true;
-                  }}
-                  class="font-medium text-blue-600 hover:underline dark:text-blue-500">here</button
-                >.</Helper
-              >
-            </Label>
-            <div style="display:flex; justify-content:center">
-              <Button
-                on:click={() => login(client, email, password)}
-                style="width: 30vh;"
-                color="dark">Login</Button
-              >
-            </div>
-          </div>
+      <!-- Header Logo -->
+      <div class="w-full flex justify-between ">
+        <div class="flex items-center gap-2">
+          <img width="100px" src="../../public/assets/small-logo.png" alt="pygrid-logo.png" />
+          <span class="font-roboto">Version: {metadata.syft_version}</span>
         </div>
-
-        <!-- Domain Info Text -->
-        <div id="domain-info">
-          <div style="border-bottom: solid; height: 45vh;">
-            <h1 style="font-size: 45px;">
-              <b>{prettyName(metadata.get('name'))}</b>
-              <h1>
-                <h5 style="font-size: 15px;"><b> {metadata.get('organization')} </b></h5>
-                <p style="font-size:17px;">{metadata.get('description')}</p>
-              </h1>
-            </h1>
-          </div>
-          <h3 class="info-foot">
-            <b> ID# </b>
-            <button
-              id="gridUID"
-              on:click={() => copyToClipBoard()}
-              style="margin-left: 5px; color: black;padding-left:10px; padding-right:10px; background-color: #DDDDDD"
-            >
-              <p>{metadata.get('id').get('value')}</p>
-            </button>
-          </h3>
-          <h3 class="info-foot"><b> DEPLOYED ON:&nbsp;&nbsp;</b> {metadata.get('deployed_on')}</h3>
+        <div class="flex justify-end gap-5">
+          <a
+            href="https://openmined.github.io/PySyft/index.html"
+            style="text-decoration:none;color:black"
+          >
+            Docs
+          </a>
+          <a href="https://www.openmined.org/" style="text-decoration:none;color:black">Community</a
+          >
+          <a href="https://github.com/OpenMined/PySyft" style="text-decoration:none;color:black"
+            ><Github /></a
+          >
         </div>
       </div>
 
-      <a href="https://www.openmined.org/">
-        <div id="login-footer">
-          <h3>Empowered by</h3>
-          <img
-            style="margin-left: 10px; margin-right: 8vh;"
-            alt="openmined-logo.png"
-            width="120"
-            height="120"
-            src="../../public/assets/small-om-logo.png"
-          />
-        </div></a
-      >
+      <!-- Body content -->
+      <section class="md:flex md:gap-x-[62px] lg:gap-x-[124px] mt-14 h-full">
+        <div class="w-full">
+          <div class="mt-2">
+            <h1 class="text-5xl leading-[1.1] font-medium text-gray-800 font-rubik">
+              {prettyName(metadata.name)}
+            </h1>
+          </div>
+          <div class="mt-2 ">
+            <h1 class="text-2xl leading-[1.1] font-medium text-gray-500 font-rubik">
+              {metadata.organization}
+            </h1>
+          </div>
+          <div class="mt-5 h-2/5">
+            <p class="text-medium leading-[1.1] font-medium text-gray-800 font-roboto">
+              {metadata.description}
+            </p>
+          </div>
+
+          <!-- List (Domain information) -->
+          <div class="flex flex-col py-7 px-3 border-t border-gray-300 ">
+            <button
+              on:click={() => {
+                copyToClipBoard();
+              }}
+              class="flex items-center gap-2"
+            >
+              <h1 class="font-bold">ID:</h1>
+              <Badge variant="gray">{metadata.id.value}</Badge>
+            </button>
+
+            <div class="flex items-center gap-2">
+              <span class="font-bold"> DEPLOYED ON: </span>
+              <span>{metadata.deployed_on.split(' ')[0]}</span>
+            </div>
+          </div>
+
+          <!---
+        <ul class="flex mt-[42px]">
+          <li>
+            <span class="font-bold">ID:</span>
+
+            <Badge variant="gray">ID#449f4f997a96467f90f7af8b396928f1</Badge>
+          </li>
+          <li>
+            <span class="font-bold">Hosted datasets:</span>
+            <span>2</span>
+          </li>
+          <li>
+            <span class="font-bold">Deployed on:</span>
+            <span>09.07.2010</span>
+          </li>
+          <li>
+            <span class="font-bold">Owner:</span>
+            <span>Kyoko Eng, United Nations</span>
+          </li>
+          <li>
+            <span class="font-bold">Network(s):</span>
+            <span>United Nations</span>
+          </li>
+        </ul>
+        -->
+        </div>
+
+        <!-- Login form -->
+        <form class="w-[572px] flex-shrink-0">
+          <!-- Capital -->
+          <Capital>
+            <!-- Capital Header (slot: header) -->
+            <div slot="header">
+              <h2
+                class="flex justify-center text-gray-800 font-rubik text-2xl leading-normal font-medium"
+              >
+                Welcome Back
+              </h2>
+              <div class="flex justify-center items-center">
+                <p class="pl-2 flex justify-center">Domain Online</p>
+              </div>
+            </div>
+            <!-- Capital Body (slot: body) -->
+            <div class="flex flex-col gap-y-4 gap-x-6" slot="body">
+              <FormControl label="Email" id="email" type="email" required />
+              <div class="flex w-full gap-x-6">
+                <span class="w-full">
+                  <FormControl label="Password" id="password" type="password" required />
+                </span>
+              </div>
+            </div>
+
+            <!-- Capital Footer (slot: footer) -->
+            <div class="space-y-6" slot="footer">
+              <p class="text-center">
+                Don't have an account yet? Apply for an account <a
+                  class="font-medium text-blue-600 hover:underline dark:text-blue-500"
+                  href="/signup">here</a
+                >
+              </p>
+              <Button
+                onClick={() => {
+                  login(client);
+                }}>Login</Button
+              >
+            </div>
+          </Capital>
+        </form>
+      </section>
+      <!-- Footer -->
+      <span>
+        <img src="/images/empowered-by-openmined.png" alt="Empowered by OpenMined logo" />
+      </span>
     {/await}
   {/await}
 </main>
 
-<svelte:window />
-
 <style>
-  #login-screen {
-    height: 100%;
-    width: 100%;
-    position: absolute;
-    overflow: hidden;
-  }
-
-  #login-footer {
-    height: 10%;
-    width: 100%;
-    position: absolute;
-    top: 90%;
-    display: flex;
-    justify-content: right;
-    align-items: center;
-    z-index: 2;
-  }
-
-  #login-window {
-    border-radius: 5px;
-    justify-content: center;
-    display: flex;
-    padding: 10px;
-    box-shadow: 5px 10px 18px #888888;
-    position: absolute;
-    top: 24%;
-    left: 50%;
-    width: 40%;
-    height: 55%;
-    z-index: 2;
-    background-color: white;
-  }
-
-  #domain-info {
-    position: absolute;
-    z-index: 2;
-    top: 24%;
-    left: 10%;
-    width: 30%;
-    height: 55%;
-  }
-
-  #login-orange-circle-bg {
-    height: 100vh;
-    width: 100vh;
-    border-radius: 50%;
-    position: absolute;
-    z-index: 1;
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 100%),
-      #ec9913;
-    filter: blur(50px);
-    left: 50%;
-    z-index: 1;
-  }
-
-  #login-blue-circle-bg {
-    height: 40vh;
-    width: 40vh;
-    border-radius: 50%;
-    position: absolute;
-    z-index: 3;
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 100%),
-      rgb(13, 110, 237);
-    filter: blur(50px);
-    top: -15%;
-    left: 90%;
-    z-index: 1;
-  }
-
-  .info-foot {
-    margin: 15px;
-    display: flex;
-    color: grey;
-    font-size: 11px;
-  }
-
-  .dot {
-    height: 10px;
-    width: 10px;
-    background-color: green;
-    border-radius: 50%;
-    display: inline-block;
-    margin-right: 5px;
-    box-shadow: 0px 0px 2px 2px green;
-    animation: glow 1.5s linear infinite alternate;
-  }
-
-  @keyframes glow {
-    to {
-      box-shadow: 0px 0px 1px 1px greenyellow;
-    }
-  }
 </style>

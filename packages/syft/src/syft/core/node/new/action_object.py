@@ -561,5 +561,8 @@ class AnyActionObject(ActionObject):
     syft_passthrough_attrs = []
     syft_dont_wrap_attrs = []
 
+    def __float__(self) -> float:
+        return float(self.syft_action_data)
+
 
 action_types[Any] = AnyActionObject
