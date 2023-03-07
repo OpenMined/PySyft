@@ -31,6 +31,7 @@ from .policy import OutputPolicy
 from .policy import OutputPolicyState
 from .policy import SubmitUserPolicy
 from .policy import UserPolicy
+from .policy import init_policy, get_policy_object
 from .transforms import TransformContext
 from .transforms import generate_id
 from .transforms import transform
@@ -243,6 +244,26 @@ class UserCode(SyftObject):
     @property
     def byte_code(self) -> Optional[PyCodeObject]:
         return compile_byte_code(self.parsed_code)
+
+    # @property
+    # def input_policy(self):
+    #     if isinstance(self.hidden_input_policy, InputPolicy):
+    #         return self.hidden_input_policy
+    #     elif isinstance(self.hidden_input_policy, UserPolicy):
+    #         if self.status != UserCodeStatus.EXECUTE:
+    #             return self.hidden_input_policy 
+    #         return get_policy_object(self.hidden_input_policy, self.input_policy_state)
+
+    # @property
+    # def output_policy(self) -> Union[OutputPolicy, UserPolicy, SubmitUserPolicy, UID]:
+    #     import sys
+    #     print("No error", file=sys.stderr)
+    #     if isinstance(self.hidden_output_policy, OutputPolicy):
+    #         return self.hidden_output_policy
+    #     else:
+    #         if self.status != UserCodeStatus.EXECUTE:
+    #             return self.hidden_output_policy
+    #         return get_policy_object(self.hidden_output_policy, self.output_policy_state)
 
     @property
     def code(self) -> str:
@@ -545,22 +566,21 @@ def init_policy_state(context: TransformContext) -> TransformContext:
     # stdlib
     import sys
 
-    print("Enterd init_policy_state", file=sys.stderr)
     if isinstance(context.output["input_policy"], InputPolicy):
         # context.output["input_policy_state"] = context.output["input_policy"].state_type()
         context.output["input_policy_state"] = ""
     else:
         context.output["input_policy_state"] = ""
 
-    print("passed input", file=sys.stderr)
     if isinstance(context.output["output_policy"], OutputPolicy):
-        print(context.output["output_policy"], file=sys.stderr)
         context.output["output_policy_state"] = context.output[
             "output_policy"
         ].state_type()
     else:
         context.output["output_policy_state"] = ""
-    print("Exited init_policy_state", file=sys.stderr)
+        
+    # context.output["hidden_input_policy"] = context.output["input_policy"]
+    # context.output["hidden_output_policy"] = context.output["output_policy"]
     return context
 
 

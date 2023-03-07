@@ -12,6 +12,9 @@ from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
+import sys
+from io import StringIO
+
 
 # third party
 from RestrictedPython import compile_restricted
@@ -244,6 +247,9 @@ class UserPolicy(SyftObject):
     byte_code: PyCodeObject
     status: UserPolicyStatus = UserPolicyStatus.SUBMITTED
 
+    @property
+    def byte_code(self) -> Optional[PyCodeObject]:
+        return compile_byte_code(self.parsed_code)
 
 @serializable(recursive_serde=True)
 class SubmitUserPolicy(SyftObject):
@@ -342,19 +348,42 @@ def submit_policy_code_to_user_code() -> List[Callable]:
         compile_code,
         add_credentials_for_key("user_verify_key"),
     ]
+    
+def execute_policy_code(user_policy: UserPolicy):
+    stdout_ = sys.stdout
+    stderr_ = sys.stderr
 
+    try:
+        stdout = StringIO()
+        stderr = StringIO()
+
+        sys.stdout = stdout
+        sys.stderr = stderr
+
+        exec(user_policy.byte_code) # nosec
+        policy_class = eval(user_policy.class_name) # nosec
+        
+        sys.stdout = stdout_
+        sys.stderr = stderr_
+
+        return policy_class
+
+    except Exception as e:
+        print("execute_byte_code failed", e, file=stderr_)
+    finally:
+        sys.stdout = stdout_
+        sys.stderr = stderr_
+        
 
 def init_policy(user_policy: UserPolicy, init_args: Dict[str, Any]):
-    exec(user_policy.raw_code)
-    policy_class_name = eval(user_policy.class_name)
-    policy_object = policy_class_name(**init_args)
+    policy_class = execute_policy_code(user_policy)
+    policy_object = policy_class(**init_args)
     return policy_object
 
 
 def get_policy_object(user_policy: UserPolicy, state: str) -> Result[Any, str]:
-    exec(user_policy.raw_code)
-    policy_class_name = eval(user_policy.class_name)
-    policy_object = _deserialize(state, from_bytes=True, class_type=policy_class_name)
+    policy_class = execute_policy_code(user_policy)
+    policy_object = _deserialize(state, from_bytes=True, class_type=policy_class)
     return policy_object
 
 
