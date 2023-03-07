@@ -17,6 +17,10 @@ module.exports = {
         ...openminedColors,
         primary: openminedColors.cyan
       },
+      spacing: {
+        4.5: '1.125rem',
+        13: '3.25rem'
+      },
       lineHeight: {
         120: '1.2',
         160: '1.6'
