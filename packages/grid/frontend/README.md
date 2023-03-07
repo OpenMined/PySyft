@@ -1,18 +1,16 @@
 # PyGrid UI
 
-PyGrid Admin is the user interface that allows data owners to manage their
+The PyGrid UI is the user interface that allows data owners to manage their
 **deployed** PyGrid domains and networks.
 
 ## Installation
 
-You need to install all dependencies first.
-
 ```bash
-cd <pysyft-root>/packages/grid/svelte
+cd <pysyft-root>/packages/grid/frontend
 pnpm install
 ```
 
-`svelte` is a temporary name. Check back down the road as we'll probably rename it.
+You can use other package managers such as yarn or npm.
 
 ## Developing
 
