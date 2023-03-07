@@ -76,12 +76,3 @@ services:
       - "9333" # admin web port
       - "8888" # filer web port
       # - "8333" # S3 API port
-
-  worker:
-    volumes:
-      - ${RELATIVE_PATH}./worker:/app
-      - ${RELATIVE_PATH}../syft:/app/syft
-      - ${RELATIVE_PATH}./data/package-cache:/root/.cache
-    environment:
-      - DEV_MODE=True
-    command: /start.sh

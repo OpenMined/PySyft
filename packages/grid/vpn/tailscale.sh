@@ -20,7 +20,6 @@ iptables -A INPUT -i tailscale0 -p tcp --destination-port 443:450 -j REJECT
 iptables -A INPUT -i tailscale0 -p tcp --destination-port 4000 -j REJECT
 iptables -A INPUT -i tailscale0 -p tcp --destination-port 8001 -j REJECT
 iptables -A INPUT -i tailscale0 -p tcp --destination-port 8011 -j REJECT
-iptables -A INPUT -i tailscale0 -p tcp --destination-port 8111 -j REJECT
 iptables -A INPUT -i tailscale0 -p tcp --destination-port 8080 -j REJECT
 
 # allow k8s pods to use tailscale as a Gateway NAT

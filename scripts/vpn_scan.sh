@@ -30,5 +30,5 @@ tailscale status | grep -v "$(hostname | tr '_' -)" | awk '{print $1}' | while r
         # just run one for now
         break
     fi
-    # nc -z -v "$line" 21 80 4000 8001 8011 8111 8080 5050 5432 5555 5672 15672 2>&1 | grep succeeded
+    # nc -z -v "$line" 21 80 4000 8001 8011 8080 5050 5432 5555 5672 15672 2>&1 | grep succeeded
 done

@@ -33,9 +33,3 @@ services:
     build:
       context: ${RELATIVE_PATH}./vpn
       dockerfile: headscale.dockerfile
-
-  worker:
-    build:
-      context: ${RELATIVE_PATH}../
-      dockerfile: ./grid/worker/worker.dockerfile
-      target: "worker"

@@ -12,10 +12,6 @@ http:
       loadBalancer:
         servers:
           - url: "http://proxy:8011"
-    worker:
-      loadBalancer:
-        servers:
-          - url: "http://proxy:8111"
     seaweedfs:
       loadBalancer:
         servers:
@@ -46,13 +42,6 @@ http:
         - vpn
         - websecure
       service: "backend-stream"
-    worker:
-      rule: "PathPrefix(`/api`) && PathPrefix(`/api/v1/syft/worker`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)"
-      entryPoints:
-        - web
-        - vpn
-        - websecure
-      service: "worker"
     blob-storage:
       rule: "PathPrefix(`/blob`)"
       entryPoints:
