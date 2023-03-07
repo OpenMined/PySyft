@@ -354,7 +354,6 @@ class SyftAPI(SyftObject):
                 return result.ok()
             else:
                 return result.err()
-
         return result
 
     @staticmethod
