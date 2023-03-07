@@ -445,6 +445,10 @@ class Worker(NewNode):
             if api_call.message.blocking:
                 gevent.joinall([thread])
                 signed_result = thread.value
+
+                if not signed_result.is_valid.is_ok():
+                    return SyftError(message="The result signature is invalid")  # type: ignore
+
                 result = signed_result.message.data
             else:
                 result = item

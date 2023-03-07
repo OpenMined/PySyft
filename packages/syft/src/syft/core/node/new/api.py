@@ -338,7 +338,7 @@ class SyftAPI(SyftObject):
         if not isinstance(signed_result, SignedSyftAPICall):
             return SyftError(message="The result is not signed")  # type: ignore
 
-        if not signed_result.is_valid:
+        if not signed_result.is_valid.is_ok():
             return SyftError(message="The result signature is invalid")  # type: ignore
 
         result = signed_result.message.data
