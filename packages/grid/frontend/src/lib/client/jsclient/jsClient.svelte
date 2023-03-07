@@ -118,6 +118,60 @@
     }
 
     /**
+     * Registers a new user with the server.
+     * @param {Object} newUser - An object representing the new user to be registered.
+     * @returns {Promise} A Promise that resolves to the result of the registration call.
+     * @throws {Error} If the registration fails for any reason.
+     */
+    register(newUser) {
+      return (async () => {
+        // Create a register payload object by copying the newUser object and adding a fully-qualified name (fqn) property.
+        const registerPayload = { ...newUser, fqn: 'syft.core.node.new.user.UserCreate' };
+
+        // Make a POST request to the server with the register payload.
+        const response = await fetch(`${this.url}/api/v1/new/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(registerPayload)
+        });
+
+        // If the response is not OK, throw an error with the HTTP status.
+        if (!response.ok) {
+          throw new Error(`HTTP error ${response.status}`);
+        }
+
+        // Deserialize the response and check its type.
+        const responseMsg = await response.json();
+        if (Array.isArray(responseMsg)) {
+          // If the response is an array, return it.
+          return responseMsg;
+        } else {
+          // If the response is not an array, throw an error with the message.
+          throw new Error(responseMsg.message);
+        }
+      })();
+    }
+
+    /** Updates the current user with new fields using an API call and returns a Promise that resolves to the result of the call.
+     * @param {Object} updatedFields - An object of user fields to pass to the API call.
+     * @returns {Promise<object>} A Promise that resolves to an object containing the new user information.
+     * */
+    updateCurrentUser(updatedFields) {
+      // Create a new object called 'userUpdate' with updated fields and a new property called 'fqn' with a value.
+      const userUpdate = { ...updatedFields, fqn: 'syft.core.node.new.user.UserUpdate' };
+
+      // Create a new object called 'reqFields' with two properties: 'uid', which is set to the value of 'userId', and 'user_update', which is set to 'userUpdate'.
+      const reqFields = { uid: this.userId, user_update: userUpdate };
+
+      // Return a new Promise that calls the 'send' method on 'this' with arguments to update user and resolves to the result of the call.
+      return new Promise((resolve, reject) => {
+        this.send([], reqFields, 'user.update')
+          .then((result) => resolve(result))
+          .catch((error) => reject(error));
+      });
+    }
+
+    /**
      * Returns metadata from the server.
      *
      * @returns {Promise<object>} A Promise that resolves to an object containing metadata information.

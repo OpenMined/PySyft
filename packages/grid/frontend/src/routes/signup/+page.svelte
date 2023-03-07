@@ -6,22 +6,9 @@
   import FormControl from '$lib/components/FormControl.svelte';
   import TagCloud from '$lib/components/TagCloud.svelte';
   import { getClient } from '$lib/store';
-  import { SyftMessageWithoutReply } from '$lib/client/messages/syftMessage.ts';
   import { prettyName } from '$lib/utils';
-  let guestCredentials;
 
-  async function createUser(node_id, client) {
-    if (!guestCredentials) {
-      await fetch('http://localhost:8081/api/v1/guest', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' }
-      })
-        .then((response) => response.json())
-        .then(function (response) {
-          guestCredentials = response['access_token'];
-        });
-    }
-
+  async function createUser(client) {
     let email = document.getElementById('email') ? document.getElementById('email').value : null;
     let password = document.getElementById('password')
       ? document.getElementById('password').value
@@ -46,30 +33,15 @@
     let newUser = {
       email: email,
       password: password,
+      password_verify: passwordConfirmation,
       name: name,
       institution: institution,
-      role: 'Data Scientist',
       website: website
     };
+
     // Filter attributes that doesn't exist
     Object.keys(newUser).forEach((k) => newUser[k] == null && delete newUser[k]);
-
-    let msg = new SyftMessageWithoutReply(
-      node_id,
-      newUser,
-      'syft.core.node.common.node_service.user_manager.new_user_messages.CreateUserMessage'
-    );
-
-    let client_bytes = client.serde.serialize(msg);
-
-    let token = 'Bearer ' + guestCredentials;
-    await fetch('http://localhost:8081/api/v1/syft/js', {
-      method: 'POST',
-      headers: { 'content-type': 'application/octect-stream', Authorization: token },
-      body: client_bytes
-    })
-      .then((response) => response.arrayBuffer())
-      .then((byte_msg) => client.serde.deserialize(byte_msg));
+    await client.register(newUser); // This will return a success message and the new user info
   }
 </script>
 
@@ -92,6 +64,11 @@
             <h1 class="text-5xl leading-[1.1] font-medium text-gray-800 font-rubik">
               {prettyName(metadata.name)}
             </h1>
+            <div class="mt-2 ">
+              <h1 class="text-2xl leading-[1.1] font-medium text-gray-500 font-rubik">
+                {metadata.organization}
+              </h1>
+            </div>
             <p>{metadata.description}</p>
           </div>
           <!-- List (Domain information) -->
@@ -146,7 +123,7 @@
             <div class="space-y-6" slot="footer">
               <Button
                 onClick={() => {
-                  createUser(metadata.get('id').get('value'), client);
+                  createUser(client);
                 }}>Submit application</Button
               >
             </div>
