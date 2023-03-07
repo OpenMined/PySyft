@@ -416,10 +416,10 @@ def check_enclave_transfer(
             context.node.signing_key,
         )
         # send data of the current node to enclave
-        user_node_view = NodeView(
+        node_view = NodeView(
             node_name=context.node.name, verify_key=context.node.signing_key.verify_key
         )
-        inputs = user_code.input_policy.inputs[user_node_view]
+        inputs = user_code.input_policy.inputs[node_view]
         action_service = context.node.get_service("actionservice")
         for var_name, uid in inputs.items():
             action_object = action_service.store.get(

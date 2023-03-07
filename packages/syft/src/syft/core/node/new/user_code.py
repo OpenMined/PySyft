@@ -155,10 +155,10 @@ def allowed_ids_only(
     context: AuthedServiceContext,
 ) -> Dict[str, UID]:
     if context.node.node_type == NodeType.DOMAIN:
-        user_node_view = NodeView(
+        node_view = NodeView(
             node_name=context.node.name, verify_key=context.node.signing_key.verify_key
         )
-        allowed_inputs = allowed_inputs[user_node_view]
+        allowed_inputs = allowed_inputs[node_view]
     elif context.node.node_type == NodeType.ENCLAVE:
         base_dict = {}
         for key in allowed_inputs.values():
@@ -353,12 +353,12 @@ class UserCodeStatusContext:
                 return Exception(f"Invalid types in {keys} for Code Submission")
 
         elif context.node.node_type == NodeType.DOMAIN:
-            user_node_view = NodeView(
+            node_view = NodeView(
                 node_name=context.node.name,
                 verify_key=context.node.signing_key.verify_key,
             )
-            if user_node_view in self.base_dict:
-                return self.base_dict[user_node_view]
+            if node_view in self.base_dict:
+                return self.base_dict[node_view]
             else:
                 raise Exception(
                     f"Code Object does not contain {context.node.name} Domain's data"
@@ -371,10 +371,10 @@ class UserCodeStatusContext:
     def mutate(
         self, value: UserCodeStatus, node_name: str, verify_key: SyftVerifyKey
     ) -> Result[Ok, Err]:
-        user_node_view = NodeView(node_name=node_name, verify_key=verify_key)
+        node_view = NodeView(node_name=node_name, verify_key=verify_key)
         base_dict = self.base_dict
-        if user_node_view in base_dict:
-            base_dict[user_node_view] = value
+        if node_view in base_dict:
+            base_dict[node_view] = value
             setattr(self, "base_dict", base_dict)
             return Ok(self)
         else:
@@ -463,11 +463,11 @@ def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
         _obj_exists = False
         for api in api_list:
             if api.services.action.exists(uid):
-                user_node_view = NodeView.from_api(api)
-                if user_node_view not in output_kwargs:
-                    output_kwargs[user_node_view] = {k: uid}
+                node_view = NodeView.from_api(api)
+                if node_view not in output_kwargs:
+                    output_kwargs[node_view] = {k: uid}
                 else:
-                    output_kwargs[user_node_view].update({k: uid})
+                    output_kwargs[node_view].update({k: uid})
 
                 _obj_exists = True
                 break
@@ -711,12 +711,12 @@ def init_output_policy_state(context: TransformContext) -> TransformContext:
 
 def add_custom_status(context: TransformContext) -> TransformContext:
     if context.node.node_type == NodeType.DOMAIN:
-        user_node_view = NodeView(
+        node_view = NodeView(
             node_name=context.node.name, verify_key=context.node.signing_key.verify_key
         )
-        if user_node_view in context.obj.input_policy.inputs.keys():
+        if node_view in context.obj.input_policy.inputs.keys():
             context.output["status"] = UserCodeStatusContext(
-                base_dict={user_node_view: UserCodeStatus.SUBMITTED}
+                base_dict={node_view: UserCodeStatus.SUBMITTED}
             )
         else:
             raise NotImplementedError
