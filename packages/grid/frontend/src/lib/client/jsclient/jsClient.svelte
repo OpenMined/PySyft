@@ -98,6 +98,25 @@
       })();
     }
 
+    /** Updates the current user with new fields using an API call and returns a Promise that resolves to the result of the call.
+     * @param {Object} updatedFields - An object of user fields to pass to the API call.
+     * @returns {Promise<object>} A Promise that resolves to an object containing the new user information.
+     * */
+    updateCurrentUser(updatedFields) {
+      // Create a new object called 'userUpdate' with updated fields and a new property called 'fqn' with a value.
+      const userUpdate = { ...updatedFields, fqn: 'syft.core.node.new.user.UserUpdate' };
+
+      // Create a new object called 'reqFields' with two properties: 'uid', which is set to the value of 'userId', and 'user_update', which is set to 'userUpdate'.
+      const reqFields = { uid: this.userId, user_update: userUpdate };
+
+      // Return a new Promise that calls the 'send' method on 'this' with arguments to update user and resolves to the result of the call.
+      return new Promise((resolve, reject) => {
+        this.send([], reqFields, 'user.update')
+          .then((result) => resolve(result))
+          .catch((error) => reject(error));
+      });
+    }
+
     /**
      * Returns metadata from the server.
      *
@@ -140,7 +159,6 @@
         // Deserialize the response and check its signature.
         const responseBuffer = await response.arrayBuffer();
         const signedMsg = this.serde.deserialize(responseBuffer);
-
         /**
         if (!signedMsg.valid) {
           throw new Error("Message signature and public key don't match!");

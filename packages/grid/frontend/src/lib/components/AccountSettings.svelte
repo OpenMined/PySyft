@@ -32,7 +32,6 @@
       : null;
 
     let userInfo = {
-      user_id: user_info.id,
       email: email,
       password: password,
       name: name,
@@ -42,10 +41,9 @@
 
     // Filter attributes that doesn't exist
     Object.keys(userInfo).forEach((k) => userInfo[k] == null && delete userInfo[k]);
-    await client.updateUser(userInfo);
 
     // Update user info
-    user_info = await client.user;
+    user_info = await client.updateCurrentUser(userInfo);
 
     // Cleaning Element Values
     const elementsList = [
