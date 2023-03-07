@@ -41,7 +41,7 @@
 
     // Filter attributes that doesn't exist
     Object.keys(userInfo).forEach((k) => userInfo[k] == null && delete userInfo[k]);
-    
+
     // Update user info
     user_info = await client.updateCurrentUser(userInfo);
 
