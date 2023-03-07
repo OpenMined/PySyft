@@ -39,7 +39,7 @@ module.exports = {
   ...buildColor('gray', 252, 15, 50),
   ...buildColor('lime', 120, 54, 43),
   ...buildColor('magenta', 330, 75, 50),
-  ...buildColor('marigold', 37, 85, 50),
+  ...buildColor('marigold', 50, 85, 50),
   ...buildColor('orange', 20, 85, 50),
   ...buildColor('purple', 255, 65, 50),
   ...buildColor('red', 350, 75, 50),
