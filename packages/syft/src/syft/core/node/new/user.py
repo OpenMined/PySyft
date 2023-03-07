@@ -96,7 +96,7 @@ def hash_password(context: TransformContext) -> TransformContext:
     if context.output["password"] is not None and (
         context.output["password"] == context.output["password_verify"]
     ):
-        salt, hashed = __salt_and_hash_password(context.output["password"], 12)
+        salt, hashed = salt_and_hash_password(context.output["password"], 12)
         context.output["hashed_password"] = hashed
         context.output["salt"] = salt
     return context
@@ -109,7 +109,7 @@ def generate_key(context: TransformContext) -> TransformContext:
     return context
 
 
-def __salt_and_hash_password(password: str, rounds: int) -> Tuple[str, str]:
+def salt_and_hash_password(password: str, rounds: int) -> Tuple[str, str]:
     bytes_pass = password.encode("UTF-8")
     salt = gensalt(rounds=rounds)
     hashed = hashpw(bytes_pass, salt)
