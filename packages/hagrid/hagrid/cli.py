@@ -2265,9 +2265,8 @@ def make_aws_ec2_instance(
 ) -> TypeList:
     # From the docs: "For security groups in a nondefault VPC, you must specify the security group ID".
     # Right now, since we're using default VPC, we can use security group name instead of ID.
-    # TODO using 20 GB for now for testing. Increase to 200 as done in azure, gcp
 
-    ebs_size = 20  # gb
+    ebs_size = 200  # gb
     cmd = f"aws ec2 run-instances --image-id {ami_id} --count 1 --instance-type {ec2_instance_type} "
     cmd += f"--key-name {key_name} --security-groups {security_group_name} "
     tmp_cmd = rf"[{{\"DeviceName\":\"/dev/sdf\",\"Ebs\":{{\"VolumeSize\":{ebs_size},\"DeleteOnTermination\":false}}}}]"
