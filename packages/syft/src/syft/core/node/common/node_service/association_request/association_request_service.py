@@ -402,7 +402,6 @@ def del_association_request_msg(
 
 
 class AssociationRequestService(ImmediateNodeServiceWithReply):
-
     msg_handler_map: Dict[type, Callable] = {
         SendAssociationRequestMessage: send_association_request_msg,
         GetAssociationRequestMessage: get_association_request_msg,
@@ -443,7 +442,6 @@ class AssociationRequestService(ImmediateNodeServiceWithReply):
 
 
 class AssociationRequestWithoutReplyService(ImmediateNodeServiceWithoutReply):
-
     msg_handler_map: Dict[type, Callable] = {
         ReceiveAssociationRequestMessage: recv_association_request_msg,
     }

@@ -11,6 +11,10 @@ from syft import Domain  # type: ignore
 from syft import Network  # type: ignore
 from syft.core.node.common.client import Client
 from syft.core.node.common.util import get_s3_client
+from syft.core.node.new.mongo_client import MongoStoreClientConfig
+from syft.core.node.new.mongo_document_store import MongoStoreConfig
+from syft.core.node.new.sqlite_document_store import SQLiteStoreClientConfig
+from syft.core.node.new.sqlite_document_store import SQLiteStoreConfig
 from syft.core.node.worker import Worker
 
 # grid absolute
@@ -57,15 +61,41 @@ def create_s3_bucket(bucket_name: str, settings: Settings, attempt: int = 0) -> 
         raise e
 
 
+mongo_client_config = MongoStoreClientConfig(
+    hostname=settings.MONGO_HOST,
+    port=settings.MONGO_PORT,
+    username=settings.MONGO_USERNAME,
+    password=settings.MONGO_PASSWORD,
+)
+
+store_config = (
+    MongoStoreConfig(client_config=mongo_client_config) if settings.MONGO_HOST else None
+)
+
+action_store_client_config = SQLiteStoreClientConfig()
+action_store_config = SQLiteStoreConfig(client_config=action_store_client_config)
+
 if settings.NODE_TYPE.lower() == "domain":
     node = Domain("Domain", settings=settings, document_store=True)
-    worker = Worker(id=node.id, signing_key=node.signing_key)
+    action_store_config.client_config.filename = f"{node.id}.sqlite"
+    worker = Worker(
+        id=node.id,
+        signing_key=node.signing_key,
+        document_store_config=store_config,
+        action_store_config=action_store_config,
+    )
     if settings.USE_BLOB_STORAGE:
         create_s3_bucket(bucket_name=node.id.no_dash, settings=settings)
 
 elif settings.NODE_TYPE.lower() == "network":
     node = Network("Network", settings=settings, document_store=True)
-    worker = Worker(id=node.id, signing_key=node.signing_key)
+    action_store_config.client_config.filename = f"{node.id}.sqlite"
+    worker = Worker(
+        id=node.id,
+        signing_key=node.signing_key,
+        document_store_config=store_config,
+        action_store_config=action_store_config,
+    )
     format = "%(asctime)s: %(message)s"
     logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
 else:
@@ -76,9 +106,8 @@ else:
         + "NODE_TYPE to either 'Domain' or 'Network'."
     )
 
-
-root_user = node.users.find_one(search_params={"email": "newinfo@openmined.org"})
-worker.root_user = root_user
+# 🟡 TODO 29: Remove this once we move to mongo instead of in-memory dict
+# This is done to reload in root user to in-memory store
 
 node.loud_print()
 

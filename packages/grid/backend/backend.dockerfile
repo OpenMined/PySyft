@@ -55,16 +55,9 @@ COPY --from=build /root/.local /root/.local
 ENV PYTHONPATH=/app
 ENV PATH=/root/.local/bin:$PATH
 
-# copy start scripts and gunicorn conf
-COPY grid/backend/docker-scripts/start.sh /start.sh
-COPY grid/backend/worker-start.sh /worker-start.sh
-
 # 🟣 TODO: Remove install_oblivious.sh
-COPY grid/backend/install_oblivious.sh /install_oblivious.sh
-
-RUN chmod +x /start.sh
-RUN chmod +x /worker-start.sh
-RUN chmod +x /install_oblivious.sh
+# COPY grid/backend/install_oblivious.sh /install_oblivious.sh
+# RUN chmod +x /install_oblivious.sh
 
 RUN --mount=type=cache,target=/root/.cache \
   pip install -U pip
@@ -95,4 +88,4 @@ RUN --mount=type=cache,target=/root/.cache \
 COPY syft/src /app/syft/src
 
 # change to worker-start.sh or start-reload.sh as needed
-CMD ["bash", "start.sh"]
+CMD ["bash", "/app/grid/start.sh"]

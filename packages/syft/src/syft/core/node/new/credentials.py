@@ -21,6 +21,11 @@ SIGNING_KEY_FOR = "SigningKey for"
 class SyftVerifyKey(SyftBaseModel):
     verify_key: VerifyKey
 
+    def __init__(self, verify_key: Union[str, VerifyKey]) -> None:
+        if isinstance(verify_key, str):
+            verify_key = VerifyKey(bytes.fromhex(verify_key))
+        super().__init__(verify_key=verify_key)
+
     def __str__(self) -> str:
         return self.verify_key.encode(encoder=HexEncoder).decode("utf-8")
 
@@ -40,10 +45,18 @@ class SyftVerifyKey(SyftBaseModel):
     def __repr__(self) -> str:
         return str(self)
 
+    def __hash__(self) -> int:
+        return self.verify_key.__hash__()
+
 
 @serializable(recursive_serde=True)
 class SyftSigningKey(SyftBaseModel):
     signing_key: SigningKey
+
+    def __init__(self, signing_key: Union[str, SigningKey]) -> None:
+        if isinstance(signing_key, str):
+            signing_key = SigningKey(bytes.fromhex(signing_key))
+        super().__init__(signing_key=signing_key)
 
     @property
     def verify_key(self) -> SyftVerifyKey:
@@ -67,6 +80,9 @@ class SyftSigningKey(SyftBaseModel):
     def verify(self) -> str:
         return str(self.verify_key)
 
+    def __hash__(self) -> int:
+        return self.signing_key.__hash__()
+
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, SyftSigningKey):
             return False
@@ -78,6 +94,5 @@ SyftCredentials = Union[SyftVerifyKey, SyftSigningKey]
 
 @serializable(recursive_serde=True)
 class UserLoginCredentials(SyftBaseModel):
-
     email: str
     password: str

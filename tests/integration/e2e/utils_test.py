@@ -161,7 +161,7 @@ def clean_datasets_on_domain(domain_port):
     import syft as sy
 
     # login as root user
-    domain = sy.login(
+    domain = sy.old_login(
         email="info@openmined.org", password="changethis", port=domain_port
     )
     try:

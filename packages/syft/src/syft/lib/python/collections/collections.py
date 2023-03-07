@@ -20,7 +20,6 @@ class DefaultDict(defaultdict):
 
 @serializable(recursive_serde=True)
 class SerializableCounter(Counter):
-
     __attr_allowlist__ = []  # type: ignore
 
     def __init__(self, iterable: Optional[Any] = None, **kwargs: Any) -> None:

@@ -1,119 +1,82 @@
+# stdlib
+from typing import Optional
+
 # third party
+from result import Ok
 from result import Result
 
 # relative
+from ....telemetry import instrument
+from ...common.serde.serializable import serializable
 from ...common.uid import UID
+from .credentials import SyftSigningKey
+from .credentials import SyftVerifyKey
 from .document_store import BaseStash
-from .document_store import CollectionSettings
 from .document_store import DocumentStore
-from .document_store import UIDPrimaryKey
+from .document_store import PartitionKey
+from .document_store import PartitionSettings
+from .document_store import QueryKeys
+from .document_store import UIDPartitionKey
+from .response import SyftSuccess
+from .user import ServiceRole
 from .user import User
 
+# 🟡 TODO 27: it would be nice if these could be defined closer to the User
+EmailPartitionKey = PartitionKey(key="email", type_=str)
+RolePartitionKey = PartitionKey(key="role", type_=ServiceRole)
+SigningKeyPartitionKey = PartitionKey(key="signing_key", type_=SyftSigningKey)
+VerifyKeyPartitionKey = PartitionKey(key="verify_key", type_=SyftVerifyKey)
 
+
+@instrument
+@serializable(recursive_serde=True)
 class UserStash(BaseStash):
     object_type = User
-    settings: CollectionSettings = CollectionSettings(
-        name=User.__canonical_name__, primary_key=UIDPrimaryKey
+    settings: PartitionSettings = PartitionSettings(
+        name=User.__canonical_name__,
+        object_type=User,
     )
 
     def __init__(self, store: DocumentStore) -> None:
         super().__init__(store=store)
 
     def set(self, user: User) -> Result[User, str]:
-        return super().set(obj=user)
+        return self.check_type(user, self.object_type).and_then(super().set)
 
-    def get(self, uid: UID) -> Result[User, str]:
-        return super().get(pk=self.settings.primary_key.make(uid))
+    def get_by_uid(self, uid: UID) -> Result[Optional[User], str]:
+        qks = QueryKeys(qks=[UIDPartitionKey.with_obj(uid)])
+        return self.query_one(qks=qks)
 
-    # def set(self, user: Any) -> None:
-    #     self.collection.set(syft_object=user)
+    def get_by_email(self, email: str) -> Result[Optional[User], str]:
+        qks = QueryKeys(qks=[EmailPartitionKey.with_obj(email)])
+        return self.query_one(qks=qks)
 
-    # def get(self, uid: UID) -> Any:
-    #     return self.collection.get(uid=uid)
+    def get_by_role(self, role: ServiceRole) -> Result[Optional[User], str]:
+        qks = QueryKeys(qks=[RolePartitionKey.with_obj(role)])
+        return self.query_one(qks=qks)
 
-    # def delete
-    # def exists(self, uid: UID) -> Result[bool, str]:
+    def get_by_signing_key(
+        self, signing_key: SigningKeyPartitionKey
+    ) -> Result[Optional[User], str]:
+        if isinstance(signing_key, str):
+            signing_key = SyftSigningKey.from_string(signing_key)
+        qks = QueryKeys(qks=[SigningKeyPartitionKey.with_obj(signing_key)])
+        return self.query_one(qks=qks)
 
-    # def __init__(self, client: MongoClient, db_name: str) -> None:
-    #     self._client = client
-    #     self._database = client[db_name]
-    #     self._collection = self._database[self._collection_name]
+    def get_by_verify_key(
+        self, verify_key: VerifyKeyPartitionKey
+    ) -> Result[Optional[User], str]:
+        if isinstance(verify_key, str):
+            verify_key = SyftVerifyKey.from_string(verify_key)
+        qks = QueryKeys(qks=[VerifyKeyPartitionKey.with_obj(verify_key)])
+        return self.query_one(qks=qks)
 
-    # def add(self, obj: SyftObject) -> SyftObject:
-    #     self._collection.insert_one(obj.to_mongo())
-    #     return obj
+    def delete_by_uid(self, uid: UID) -> Result[SyftSuccess, str]:
+        qk = UIDPartitionKey.with_obj(uid)
+        result = super().delete(qk=qk)
+        if result.is_ok():
+            return Ok(SyftSuccess(message=f"ID: {uid} deleted"))
+        return result
 
-    # def drop(self) -> None:
-    #     self._collection.drop()
-
-    # def delete(self, **search_params: Any) -> None:
-    #     search_params = convert_to_mongo_id(search_params)
-    #     self._collection.delete_many(search_params)
-
-    # def update(
-    #     self, search_params: Dict[str, Any], updated_args: Dict[str, Any]
-    # ) -> None:
-    #     search_params = convert_to_mongo_id(search_params)
-    #     obj = self.first(**search_params)
-    #     attributes: Dict[str, Any] = {}
-    #     for k, v in updated_args.items():
-    #         if k not in obj.__attr_state__:  # type: ignore
-    #             raise ValueError(f"Cannot set an non existing field:{k} to Syft Object")
-    #         else:
-    #             setattr(obj, k, v)
-    #         if k in obj.__attr_searchable__:  # type: ignore
-    #             attributes[k] = v
-    #     attributes["__blob__"] = _serialize(obj, to_bytes=True)  # type: ignore
-    #     attributes = convert_to_mongo_id(attributes)
-    #     self.update_one(query=search_params, values=attributes)
-
-    # def find(self, search_params: Dict[str, Any]) -> List[SyftObject]:
-    #     search_params = convert_to_mongo_id(search_params)
-    #     results = []
-    #     res = self._collection.find(search_params)
-    #     for d in res:
-    #         results.append(SyftObject.from_mongo(d))
-    #     return results
-
-    # def find_one(self, search_params: Dict[str, Any]) -> Optional[SyftObject]:
-    #     search_params = convert_to_mongo_id(search_params)
-    #     d = self._collection.find_one(search_params)
-    #     if d is None:
-    #         return d
-    #     return SyftObject.from_mongo(d)
-
-    # def first(self, **search_params: Any) -> Optional[SyftObject]:
-    #     search_params = convert_to_mongo_id(search_params)
-    #     d = self._collection.find_one(search_params)
-    #     if d is None:
-    #         raise ObjectNotFoundError
-    #     return SyftObject.from_mongo(d)
-
-    # def __len__(self) -> int:
-    #     # empty document filter counts all documents.
-    #     return self._collection.count_documents(filter={})
-
-    # def query(self, **search_params: Any) -> List[SyftObject]:
-    #     """Query db objects filtering by parameters
-    #     Args:
-    #         parameters : List of parameters used to filter.
-    #     """
-    #     search_params = convert_to_mongo_id(search_params)
-    #     cursor = self._collection.find(search_params)
-    #     objects = [SyftObject.from_mongo(obj) for obj in list(cursor)]
-    #     return objects
-
-    # def update_one(self, query: dict, values: dict) -> None:
-    #     query = convert_to_mongo_id(query)
-    #     values = convert_to_mongo_id(values)
-    #     values = {"$set": values}
-    #     self._collection.update_one(query, values)
-
-    # def all(self) -> List[SyftObject]:
-    #     return self.find({})
-
-    # def clear(self) -> None:
-    #     self.drop()
-
-    # def contain(self, **search_params: Any) -> bool:
-    #     return bool(self.query(**search_params))
+    def update(self, user: User) -> Result[User, str]:
+        return self.check_type(user, self.object_type).and_then(super().update)

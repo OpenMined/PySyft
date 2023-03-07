@@ -16,7 +16,6 @@ from ....abstract.node import AbstractNode
 
 @serializable(recursive_serde=True)
 class NodeRunnableMessageWithReply:
-
     __attr_allowlist__ = ["stuff"]
 
     def __init__(self, stuff: str) -> None:

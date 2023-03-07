@@ -1,9 +1,6 @@
-FROM node:16-alpine as grid-ui-development
-ENV NEXT_PUBLIC_ENVIRONMENT development
-ENV NEXT_PUBLIC_API_URL /api/v1
+FROM node:18-alpine as grid-ui-development
 ENV NODE_TYPE domain
-ENV NEXT_TELEMETRY_DISABLED 1
-
+ENV PORT $PORT
 WORKDIR /app
 COPY package.json yarn.lock /app/
 # cant use the cache for multi architecture builds in CI because it fails
@@ -11,23 +8,17 @@ COPY package.json yarn.lock /app/
 # RUN --mount=type=cache,target=/root/.yarn YARN_CACHE_FOLDER=/root/.yarn yarn install --frozen-lockfile
 RUN yarn install --frozen-lockfile
 COPY . .
-CMD ["sh", "/app/scripts/run.sh"]
+CMD ["yarn", "dev"]
 
 FROM grid-ui-development as build-stage
 RUN yarn build
-RUN yarn export
 
-FROM nginx:stable-alpine as grid-ui-production
-ENV NEXT_PUBLIC_ENVIRONMENT production
-ENV NEXT_PUBLIC_API_URL /api/v1
+FROM node:18-alpine as grid-ui-production
 ENV NODE_TYPE $NODE_TYPE
-ENV NEXT_TELEMETRY_DISABLED 1
 
-# copy generated html
-COPY --from=build-stage /app/out /usr/share/nginx/html
-
-# copy nginx config
-COPY --from=build-stage /app/docker/default.conf.template /etc/nginx/templates/default.conf.template
-COPY --from=build-stage /app/docker/domain.conf /etc/nginx/conf.d/nodes/domain.conf
-COPY --from=build-stage /app/docker/network.conf /etc/nginx/conf.d/nodes/network.conf
-COPY --from=build-stage /app/docker/nginx-backend-not-found.conf /etc/nginx/extra-conf.d/backend-not-found
+WORKDIR /app
+RUN rm -rf ./*
+COPY --from=build-stage /app/package.json .
+COPY --from=build-stage /app/build .
+RUN yarn --prod
+CMD ["node", "index.js"]

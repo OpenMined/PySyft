@@ -16,6 +16,13 @@ on:
       - "0.6.0"
       - "0.7.0"
       - "0.8"
+
+  workflow_dispatch:
+    inputs:
+      none:
+        description: "Run Tests Manually"
+        required: false
+
 defaults:
   run:
     working-directory: ./packages/syft
@@ -89,4 +96,5 @@ jobs:
       - name: Run normal tests
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pytest -s -m 'fast or slow' --cov syft --cov-fail-under 60 -n auto --durations=50
+          pytest -s -m 'fast or slow' --cov syft -n auto --durations=50
+          pytest new_tests

@@ -1,4 +1,4 @@
-ipython==8.1.0
+ipython==8.10.0
 markupsafe==2.0.1
 pydata-sphinx-theme==0.7.2
 sphinx==4.3.0

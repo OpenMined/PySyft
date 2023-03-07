@@ -26,7 +26,6 @@ if TYPE_CHECKING:
 
 
 def mul_master(x: MPCTensor, y: MPCTensor, op_str: str, **kwargs: Any) -> MPCTensor:
-
     """Function that is executed by the orchestrator to multiply two secret values.
 
     Args:

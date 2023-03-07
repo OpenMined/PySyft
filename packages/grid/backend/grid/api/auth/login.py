@@ -94,10 +94,10 @@ def login_access_token(
     metadata = serialize(node.get_metadata_for_client(), to_bytes=True).decode(
         "ISO-8859-1"
     )
-
     return {
         "access_token": access_token,
         "token_type": "bearer",
         "metadata": metadata,
         "key": user.private_key,
+        "verify_key": user.verify_key,
     }

@@ -12,7 +12,6 @@ LOCAL_ENCLAVE_PORT = 8010
 
 @pytest.mark.oblv
 def test_dataset_upload_to_enclave() -> None:
-
     data_scientist = {
         "name": "DS",
         "email": "DS@om.com",
@@ -20,10 +19,10 @@ def test_dataset_upload_to_enclave() -> None:
         "budget": 1000000,
     }
 
-    ca_root = sy.login(
+    ca_root = sy.old_login(
         email="info@openmined.org", password="changethis", port=CANADA_DOMAIN_PORT
     )
-    it_root = sy.login(
+    it_root = sy.old_login(
         email="info@openmined.org", password="changethis", port=ITALY_DOMAIN_PORT
     )
 
@@ -38,8 +37,10 @@ def test_dataset_upload_to_enclave() -> None:
     ca_root.create_user(**data_scientist)
     it_root.create_user(**data_scientist)
 
-    canada = sy.login(port=CANADA_DOMAIN_PORT, email="DS@om.com", password="enclave")
-    italy = sy.login(port=ITALY_DOMAIN_PORT, email="DS@om.com", password="enclave")
+    canada = sy.old_login(
+        port=CANADA_DOMAIN_PORT, email="DS@om.com", password="enclave"
+    )
+    italy = sy.old_login(port=ITALY_DOMAIN_PORT, email="DS@om.com", password="enclave")
 
     depl = sy.oblv.deployment_client.DeploymentClient(
         deployment_id="d-2dfedbb1-7904-493b-8793-1a9554badae7",

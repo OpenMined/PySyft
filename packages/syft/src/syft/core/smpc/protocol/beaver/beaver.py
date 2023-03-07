@@ -361,7 +361,6 @@ def count_wraps_rand(
     primitives = []
 
     for _ in range(nr_instances):
-
         rand_val = Tensor(
             ttp_generator.integers(
                 low=min_value,
