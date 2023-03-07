@@ -32,9 +32,9 @@ arg_defaults = {
     "aws_region": "us-east-1",
     "aws_security_group_name": "openmined_sg",
     "aws_security_group_cidr": "0.0.0.0/0",
-    "aws_image_id": "ami-0b0dcb5067f052a63",  # TODO comment exact AMI name here (Amazon linux 2)
-    "aws_ec2_instance_type": "t2.micro",
-    "aws_ec2_instance_username": "ec2-user",  # TODO for Amazon Linux 2, the default user name is ec2-user
+    "aws_image_id": "ami-09cd747c78a9add63",  # Ubuntu Server 20.04 LTS (HVM), SSD Volume Type
+    "aws_ec2_instance_type": "t2.micro",  # TODO change to a bigger instance type
+    "aws_ec2_instance_username": "ubuntu",  # For Ubuntu AMI, the default user name is ubuntu
     "aws_repo": DEFAULT_REPO,
     "aws_branch": STABLE_BRANCH,
 }

@@ -985,9 +985,6 @@ def generate_aws_key_at_path(key_path: str, key_name: str) -> str:
     if os.path.exists(key_path):
         raise Exception(f"Can't generate key since path already exists. {key_path}")
     else:
-        # TODO check if key_path ends with .pem, and otherwise append '.pem' to file path?
-        # TODO try a dry run first?
-
         # TODO we need to do differently for powershell.
         # Ex: aws ec2 create-key-pair --key-name MyKeyPair --query 'KeyMaterial'
         # --output text | out-file -encoding ascii -filepath MyKeyPair.pem
@@ -997,8 +994,8 @@ def generate_aws_key_at_path(key_path: str, key_name: str) -> str:
         try:
             subprocess.check_call(cmd, shell=True)  # nosec
             subprocess.check_call(f"chmod 400 {key_path}", shell=True)  # nosec
-        except Exception:  # nosec
-            pass
+        except Exception as e:  # nosec
+            print(f"Failed to create key: {e}")
         if not os.path.exists(key_path):
             raise Exception(f"AWS failed to generate key pair at: {key_path}")
 
@@ -1659,7 +1656,6 @@ def create_launch_cmd(
             username = arg_cache["aws_ec2_instance_username"]
             auth = AuthCredentials(username=username, key_path=key_path)
 
-            # TODO need to add optional question for vpc_id (for security group?) and subnet_id (for creating instance)
             return create_launch_aws_cmd(
                 verb=verb,
                 region=aws_region,
@@ -1678,7 +1674,6 @@ def create_launch_cmd(
             )
 
         else:
-            # TODO refactor this to another method? Because, we're copying the same code for azure, gcp, etc.
             errors = []
             if not DEPENDENCIES["ansible-playbook"]:
                 errors.append("ansible-playbook")
@@ -2218,30 +2213,15 @@ def open_port_aws(
 ) -> None:
     cmd = f"aws ec2 authorize-security-group-ingress --group-name {security_group_name} --protocol tcp "
     cmd += f"--port {port_no} --cidr {cidr} --region {region}"
-    # TODO not sure why, but this call is waiting for prompt from user (have to enter q to proceed)
     subprocess.check_call(  # nosec
         cmd,
         shell=True,
     )
 
 
-# def extract_host_ips_aws(stdout: bytes) -> Optional[TypeList]:
-#     output = stdout.decode("utf-8")
-#     output_dict = json.loads(output)
-#     print(f'extract_host_ips_aws, output_dict: {output_dict}')
-#     host_ips: Optional[TypeList] = []
-#     if "Instances" in output_dict:
-#         for ec2_instance_metadata in output_dict["Instances"]:
-#             if "PublicIpAddress" in ec2_instance_metadata:
-#                 host_ips.append(ec2_instance_metadata["PublicIpAddress"])
-
-#     return host_ips
-
-
 def extract_instance_ids_aws(stdout: bytes) -> TypeList:
     output = stdout.decode("utf-8")
     output_dict = json.loads(output)
-    print(f"extract_instance_ids_aws, output_dict: {output_dict}")
     instance_ids: TypeList = []
     if "Instances" in output_dict:
         for ec2_instance_metadata in output_dict["Instances"]:
@@ -2261,13 +2241,9 @@ def get_host_ips_given_instance_ids(
     cmd += " --output json"
     while checks > 0:
         checks -= 1
-        print(
-            f"Inside get_host_ips_given_instance_ids, waiting for {wait_time} seconds"
-        )
         time.sleep(wait_time)
         desc_ec2_output = subprocess.check_output(cmd, shell=True)  # nosec
         instances_output_json = json.loads(desc_ec2_output.decode("utf-8"))
-        print(f"instances_output_json: {instances_output_json}")  # TODO remove
         host_ips: TypeList = []
         all_instances_running = True
         for reservation in instances_output_json:
@@ -2277,9 +2253,7 @@ def get_host_ips_given_instance_ids(
                     break
                 else:
                     host_ips.append(instance_metadata["PublicIpAddress"])
-        print(f"all_instances_running: {all_instances_running}")  # TODO remove
         if all_instances_running:
-            print(f"Returning host_ips: {host_ips}")  # TODO remove
             return host_ips
         # else, wait another wait_time seconds and try again
 
@@ -2289,16 +2263,13 @@ def get_host_ips_given_instance_ids(
 def make_aws_ec2_instance(
     ami_id: str, ec2_instance_type: str, key_name: str, security_group_name: str
 ) -> TypeList:
-    # TODO incorporate "node_count" parameter to create multiple instances?
-    # TODO From the docs: "For security groups in a nondefault VPC, you must specify the security group ID".
+    # From the docs: "For security groups in a nondefault VPC, you must specify the security group ID".
     # Right now, since we're using default VPC, we can use security group name instead of ID.
-    # TODO should we attach any tags to the instance?
     # TODO using 20 GB for now for testing. Increase to 200 as done in azure, gcp
 
     ebs_size = 20  # gb
     cmd = f"aws ec2 run-instances --image-id {ami_id} --count 1 --instance-type {ec2_instance_type} "
     cmd += f"--key-name {key_name} --security-groups {security_group_name} "
-    # TODO verify DeleteOnTermination false
     tmp_cmd = rf"[{{\"DeviceName\":\"/dev/sdf\",\"Ebs\":{{\"VolumeSize\":{ebs_size},\"DeleteOnTermination\":false}}}}]"
     cmd += f'--block-device-mappings "{tmp_cmd}"'
 
@@ -2306,7 +2277,6 @@ def make_aws_ec2_instance(
     try:
         print(f"Creating EC2 instance.\nRunning: {cmd}")
         create_ec2_output = subprocess.check_output(cmd, shell=True)  # nosec
-        # print(f"create_ec2_output: {create_ec2_output}")  # TODO remove
         instance_ids = extract_instance_ids_aws(create_ec2_output)
         host_ips = get_host_ips_given_instance_ids(instance_ids=instance_ids)
     except Exception as e:
@@ -2336,11 +2306,7 @@ def create_launch_aws_cmd(
 ) -> TypeList[str]:
     node_name = verb.get_named_term_type(name="node_name")
     snake_name = str(node_name.snake_input)
-    print(f"snake_name: {snake_name}")
-    security_group_id = create_aws_security_group(
-        security_group_name, region, snake_name
-    )
-    print(f"security_group_id: {security_group_id}")
+    create_aws_security_group(security_group_name, region, snake_name)
     open_port_aws(
         security_group_name=security_group_name,
         port_no=80,
@@ -2373,7 +2339,6 @@ def create_launch_aws_cmd(
         key_name=key_name,
         security_group_name=security_group_name,
     )
-    print(f"host_ips: {host_ips}")  # TODO remove
 
     launch_cmds: TypeList[str] = []
 
@@ -2388,7 +2353,6 @@ def create_launch_aws_cmd(
         if not bool(kwargs["provision"]):
             print("Skipping automatic provisioning.")
             print("VM created with:")
-            # print(f"Name: {snake_name}") # TODO print the corresponding instance_id?
             print(f"IP: {host_ip}")
             print(f"Key: {key_path}")
             print("\nConnect with:")
