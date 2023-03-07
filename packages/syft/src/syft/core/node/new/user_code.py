@@ -29,7 +29,7 @@ from ....core.node.common.node_table.syft_object import SyftObject
 from ....oblv.deployment_client import EnclaveMetadata
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
-from .api import UserNodeView
+from .api import NodeView
 from .context import AuthedServiceContext
 from .context import NodeServiceContext
 from .credentials import SyftVerifyKey
@@ -56,10 +56,10 @@ class InputPolicy(SyftObject):
     __version__ = SYFT_OBJECT_VERSION_1
 
     # relative
-    from .api import UserNodeView
+    from .api import NodeView
 
     id: UID
-    inputs: Dict[UserNodeView, Any]
+    inputs: Dict[NodeView, Any]
     node_uid: Optional[UID]
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -98,7 +98,7 @@ class InputPolicy(SyftObject):
         if api is None:
             return SyftError(message=f"You must login to {self.node_uid}")
 
-        node_view = UserNodeView(
+        node_view = NodeView(
             node_name=api.node_name, verify_key=api.signing_key.verify_key
         )
         inputs = self.inputs[node_view]
@@ -155,7 +155,7 @@ def allowed_ids_only(
     context: AuthedServiceContext,
 ) -> Dict[str, UID]:
     if context.node.node_type == NodeType.DOMAIN:
-        user_node_view = UserNodeView(
+        user_node_view = NodeView(
             node_name=context.node.name, verify_key=context.node.signing_key.verify_key
         )
         allowed_inputs = allowed_inputs[user_node_view]
@@ -353,7 +353,7 @@ class UserCodeStatusContext:
                 return Exception(f"Invalid types in {keys} for Code Submission")
 
         elif context.node.node_type == NodeType.DOMAIN:
-            user_node_view = UserNodeView(
+            user_node_view = NodeView(
                 node_name=context.node.name,
                 verify_key=context.node.signing_key.verify_key,
             )
@@ -371,7 +371,7 @@ class UserCodeStatusContext:
     def mutate(
         self, value: UserCodeStatus, node_name: str, verify_key: SyftVerifyKey
     ) -> Result[Ok, Err]:
-        user_node_view = UserNodeView(node_name=node_name, verify_key=verify_key)
+        user_node_view = NodeView(node_name=node_name, verify_key=verify_key)
         base_dict = self.base_dict
         if user_node_view in base_dict:
             base_dict[user_node_view] = value
@@ -442,7 +442,7 @@ def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
     # relative
     from .action_object import ActionObject
     from .api import APIRegistry
-    from .api import UserNodeView
+    from .api import NodeView
     from .twin_object import TwinObject
 
     # fetches the all the current api's connected
@@ -463,7 +463,7 @@ def partition_by_node(kwargs: Dict[str, Any]) -> Dict[str, UID]:
         _obj_exists = False
         for api in api_list:
             if api.services.action.exists(uid):
-                user_node_view = UserNodeView.from_api(api)
+                user_node_view = NodeView.from_api(api)
                 if user_node_view not in output_kwargs:
                     output_kwargs[user_node_view] = {k: uid}
                 else:
@@ -711,7 +711,7 @@ def init_output_policy_state(context: TransformContext) -> TransformContext:
 
 def add_custom_status(context: TransformContext) -> TransformContext:
     if context.node.node_type == NodeType.DOMAIN:
-        user_node_view = UserNodeView(
+        user_node_view = NodeView(
             node_name=context.node.name, verify_key=context.node.signing_key.verify_key
         )
         if user_node_view in context.obj.input_policy.inputs.keys():

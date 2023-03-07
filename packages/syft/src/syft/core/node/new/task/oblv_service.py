@@ -30,8 +30,8 @@ from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ...common.exceptions import OblvEnclaveError
 from ...common.exceptions import OblvProxyConnectPCRError
+from ..api import NodeView
 from ..api import SyftAPI
-from ..api import UserNodeView
 from ..client import HTTPConnection
 from ..client import Routes
 from ..context import AuthedServiceContext
@@ -416,7 +416,7 @@ def check_enclave_transfer(
             context.node.signing_key,
         )
         # send data of the current node to enclave
-        user_node_view = UserNodeView(
+        user_node_view = NodeView(
             node_name=context.node.name, verify_key=context.node.signing_key.verify_key
         )
         inputs = user_code.input_policy.inputs[user_node_view]
