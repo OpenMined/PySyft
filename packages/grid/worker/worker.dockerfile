@@ -55,10 +55,6 @@ COPY --from=build /root/.local /root/.local
 ENV PYTHONPATH=/app
 ENV PATH=/root/.local/bin:$PATH
 
-COPY grid/worker/start.sh /start.sh
-
-RUN chmod +x /start.sh
-
 RUN --mount=type=cache,target=/root/.cache \
     pip install -U pip
 
@@ -66,6 +62,9 @@ WORKDIR /app
 
 # copy grid
 COPY grid/worker /app/
+COPY grid/backend/grid/bootstrap.py /app/bootstrap.py
+COPY grid/backend/grid/api/new/new_routes.py /app/new_routes.py
+RUN chmod +x /app/start.sh
 
 # copy skeleton to do package install
 COPY syft/setup.py /app/syft/setup.py
@@ -83,5 +82,4 @@ RUN --mount=type=cache,target=/root/.cache \
 # copy any changed source
 COPY syft/src /app/syft/src
 
-
-CMD ["bash", "start.sh"]
+CMD ["bash", "/app/start.sh"]

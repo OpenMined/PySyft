@@ -1,104 +1,31 @@
 # stdlib
-from typing import Any
 
 # third party
-from fastapi import APIRouter
-from fastapi import Body
-from fastapi import Depends
 from fastapi import FastAPI
-from fastapi import Request
-from fastapi import Response
-from fastapi.responses import JSONResponse
-from loguru import logger
-from pydantic import ValidationError
+from new_routes import make_routes
 
 # syft absolute
-from syft import deserialize
-from syft import serialize  # type: ignore
-from syft.core.node.new.context import UnauthedServiceContext
-from syft.core.node.new.credentials import UserLoginCredentials
-from syft.core.node.new.node_metadata import NodeMetadataJSON
-from syft.core.node.new.user import UserPrivateKey
-from syft.core.node.new.user_service import UserService
+from syft.core.node.new.sqlite_document_store import SQLiteStoreClientConfig
+from syft.core.node.new.sqlite_document_store import SQLiteStoreConfig
 from syft.core.node.worker import Worker
 from syft.core.node.worker import create_admin_new
 
-API_V1_SYFT_STR = "/api/v1/syft/worker"
-router = APIRouter()
+API_PATH = "/api/v1/new"
 
 
-worker = Worker()
+client_config = SQLiteStoreClientConfig()
+sql_store_config = SQLiteStoreConfig(client_config=client_config)
+worker = Worker(
+    action_store_config=sql_store_config, document_store_config=sql_store_config
+)
+
+router = make_routes(worker=worker)
 
 create_admin_new(
-    name="Jane Doe", email="info@openmined.org", password="changethis", worker=worker
+    name="Jane Doe", email="info@openmined.org", password="changethis", node=worker
 )
 print("worker", worker.id, worker.signing_key)
 
 
-async def get_body(request: Request) -> bytes:
-    return await request.body()
-
-
-@router.get("/", response_model=str)
-def root() -> Response:
-    return Response(
-        b"hello",
-        media_type="application/octet-stream",
-    )
-
-
-# provide information about the node in JSON
-@router.get("/metadata", response_class=JSONResponse)
-def syft_metadata() -> JSONResponse:
-    return worker.metadata().to(NodeMetadataJSON)
-
-
-@router.get("/new_api", response_model=str)
-def syft_new_api() -> Response:
-    return Response(
-        serialize(worker.get_api(), to_bytes=True),
-        media_type="application/octet-stream",
-    )
-
-
-@router.post("/new_api_call", response_model=str)
-def syft_new_api_call(request: Request, data: bytes = Depends(get_body)) -> Any:
-    obj_msg = deserialize(blob=data, from_bytes=True)
-    result = worker.handle_api_call(api_call=obj_msg)
-    return Response(
-        serialize(result, to_bytes=True),
-        media_type="application/octet-stream",
-    )
-
-
-@router.post(
-    "/new_login", name="new_login", status_code=200, response_class=JSONResponse
-)
-def login(
-    email: str = Body(..., example="info@openmined.org"),
-    password: str = Body(..., example="changethis"),
-) -> Any:
-    try:
-        login_credentials = UserLoginCredentials(email=email, password=password)
-    except ValidationError as e:
-        return {"Error": e.json()}
-
-    method = worker.get_service_method(UserService.exchange_credentials)
-    context = UnauthedServiceContext(node=worker, login_credentials=login_credentials)
-    result = method(context=context)
-    if result.is_err():
-        logger.bind(payload={"email": email}).error(result.err())
-        return {"Error": result.err()}
-
-    user_private_key = result.ok()
-    if not isinstance(user_private_key, UserPrivateKey):
-        raise Exception(f"Incorrect return type: {type(user_private_key)}")
-
-    return Response(
-        serialize(user_private_key, to_bytes=True),
-        media_type="application/octet-stream",
-    )
-
-
 app = FastAPI(title="Worker")
-app.include_router(router, prefix=API_V1_SYFT_STR)
+app.include_router(router, prefix=API_PATH)

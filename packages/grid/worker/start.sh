@@ -18,8 +18,8 @@ export CREDENTIALS_PATH=$CREDENTIALS_PATH
 export RUST_BACKTRACE=$RUST_BACKTRACE
 
 set +e
-NODE_PRIVATE_KEY=$(python ./bootstrap.py --private_key)
-NODE_UID=$(python ./bootstrap.py --uid)
+NODE_PRIVATE_KEY=$(python bootstrap.py --private_key)
+NODE_UID=$(python bootstrap.py --uid)
 set -e
 
 echo "NODE_PRIVATE_KEY=$NODE_PRIVATE_KEY"

@@ -29,7 +29,7 @@ def get_env(key: str, default: str = "") -> Optional[str]:
     return None
 
 
-CREDENTIALS_PATH = get_env("CREDENTIALS_PATH", "/credentials/credentials.json")
+CREDENTIALS_PATH = str(get_env("CREDENTIALS_PATH", "/credentials/credentials.json"))
 NODE_PRIVATE_KEY = "NODE_PRIVATE_KEY"
 NODE_UID = "NODE_UID"
 
